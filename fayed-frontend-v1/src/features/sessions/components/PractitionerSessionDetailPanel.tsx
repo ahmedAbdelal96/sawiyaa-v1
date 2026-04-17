@@ -1,0 +1,688 @@
+"use client";
+
+import { useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
+import { Link } from "@/i18n/navigation";
+import {
+  AlertCircle,
+  CalendarDays,
+  CheckCircle2,
+  Clock,
+  ExternalLink,
+  Loader2,
+  User,
+  Video,
+  XCircle,
+} from "lucide-react";
+import { ListStateSkeleton, StateCard } from "@/components/shared/ContentStates";
+import Button from "@/components/ui/button/Button";
+import { ConfirmModal, DestructiveConfirmModal } from "@/components/ui/modal";
+import {
+  useMarkPractitionerSessionCompleted,
+  useMarkPractitionerSessionNoShow,
+  usePreparePractitionerSessionRuntime,
+  usePractitionerSession,
+  useResolvePractitionerSessionJoinContract,
+} from "../hooks/use-sessions";
+import {
+  buildTokenizedSessionRoomUrl,
+  canPrepareSessionRuntime,
+  getRuntimeBlockedReasonKey,
+  getRuntimePreparedState,
+  getRuntimeProvider,
+  getRuntimeRoomName,
+  hasSessionRuntimeAccess,
+  isJoinWindowOpen,
+} from "../lib/session-runtime";
+import SessionStatusBadge from "./SessionStatusBadge";
+import type {
+  SessionJoinItem,
+  SessionRuntimeItem,
+  SessionStatus,
+} from "../types/sessions.types";
+
+const ACTIVE_STATUSES: SessionStatus[] = [
+  "PENDING_PAYMENT",
+  "PENDING_PRACTITIONER_RESPONSE",
+  "CONFIRMED",
+  "UPCOMING",
+  "READY_TO_JOIN",
+  "IN_PROGRESS",
+];
+
+const COMPLETE_ALLOWED_STATUSES: SessionStatus[] = ["READY_TO_JOIN", "IN_PROGRESS"];
+const NO_SHOW_ALLOWED_STATUSES: SessionStatus[] = [
+  "UPCOMING",
+  "READY_TO_JOIN",
+  "IN_PROGRESS",
+];
+
+function getHandlingNowKey(status: SessionStatus): string {
+  switch (status) {
+    case "PENDING_PAYMENT":
+      return "awaitingPayment";
+    case "PENDING_PRACTITIONER_RESPONSE":
+      return "awaitingPractitionerResponse";
+    case "CONFIRMED":
+      return "confirmedWaiting";
+    case "UPCOMING":
+      return "prepareSoon";
+    case "READY_TO_JOIN":
+      return "readyToOpen";
+    case "IN_PROGRESS":
+      return "liveNow";
+    case "COMPLETED":
+      return "completed";
+    case "NO_SHOW":
+      return "noShow";
+    case "CANCELLED":
+      return "cancelled";
+    case "EXPIRED":
+      return "expired";
+    case "REFUND_PENDING":
+      return "refundPending";
+    case "REFUNDED":
+      return "refunded";
+    default:
+      return "inactive";
+  }
+}
+
+function getCloseoutStateKey(status: SessionStatus): string {
+  if (COMPLETE_ALLOWED_STATUSES.includes(status) || NO_SHOW_ALLOWED_STATUSES.includes(status)) {
+    return "available";
+  }
+
+  switch (status) {
+    case "COMPLETED":
+      return "completed";
+    case "NO_SHOW":
+      return "noShow";
+    case "CANCELLED":
+      return "cancelled";
+    case "EXPIRED":
+      return "expired";
+    case "REFUND_PENDING":
+      return "refundPending";
+    case "REFUNDED":
+      return "refunded";
+    case "PENDING_PAYMENT":
+      return "awaitingPayment";
+    case "PENDING_PRACTITIONER_RESPONSE":
+      return "awaitingPractitionerResponse";
+    case "CONFIRMED":
+    case "UPCOMING":
+      return "notOpenYet";
+    default:
+      return "notAvailable";
+  }
+}
+
+function formatDatetime(isoString: string | null, numLocale: string): string {
+  if (!isoString) return "";
+  return new Date(isoString).toLocaleString(numLocale, {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: !numLocale.startsWith("ar"),
+  });
+}
+
+type Props = {
+  sessionId: string;
+};
+
+export default function PractitionerSessionDetailPanel({ sessionId }: Props) {
+  const t = useTranslations("sessions.practitioner");
+  const commonT = useTranslations("sessions");
+  const locale = useLocale();
+  const numLocale = locale === "ar" ? "ar-SA" : "en-US";
+
+  const [confirmingAction, setConfirmingAction] = useState<"complete" | "no-show" | null>(
+    null,
+  );
+  const [recentAction, setRecentAction] = useState<"complete" | "no-show" | null>(null);
+  const [joinResult, setJoinResult] = useState<SessionJoinItem | null>(null);
+  const [prepareResult, setPrepareResult] = useState<SessionRuntimeItem | null>(null);
+
+  const { data: session, isLoading, isError } = usePractitionerSession(sessionId);
+  const completeMutation = useMarkPractitionerSessionCompleted();
+  const noShowMutation = useMarkPractitionerSessionNoShow();
+  const prepareMutation = usePreparePractitionerSessionRuntime();
+  const joinMutation = useResolvePractitionerSessionJoinContract();
+
+  if (isLoading) {
+    return (
+      <div className="mx-auto max-w-5xl">
+        <ListStateSkeleton items={3} heightClass="h-32" />
+      </div>
+    );
+  }
+
+  if (isError || !session) {
+    return (
+      <StateCard
+        icon={<AlertCircle size={36} className="text-primary" />}
+        title={t("list.errorHeading")}
+        note={t("list.errorNote")}
+        action={{
+          label: t("detail.backToSessions"),
+          href: (
+            <Link
+              href="/practitioner/sessions"
+              className="inline-flex items-center justify-center rounded-2xl border border-border-light px-5 py-2 text-sm text-text-secondary hover:bg-surface-tertiary dark:hover:bg-white/5"
+            >
+              {t("detail.backToSessions")}
+            </Link>
+          ),
+        }}
+      />
+    );
+  }
+
+  const isActive = ACTIVE_STATUSES.includes(session.status);
+  const hasRuntimeAccess = hasSessionRuntimeAccess(session.status);
+  const canMarkCompleted = COMPLETE_ALLOWED_STATUSES.includes(session.status);
+  const canMarkNoShow = NO_SHOW_ALLOWED_STATUSES.includes(session.status);
+  const isBusy =
+    completeMutation.isPending || noShowMutation.isPending || joinMutation.isPending;
+  const joinUrl =
+    joinResult?.canJoin && joinResult.roomUrl && joinResult.joinToken
+      ? buildTokenizedSessionRoomUrl(joinResult.roomUrl, joinResult.joinToken)
+      : null;
+  const runtimePrepared = getRuntimePreparedState({ prepareResult, joinResult });
+  const runtimeProvider = getRuntimeProvider({ prepareResult, joinResult });
+  const runtimeRoomName = getRuntimeRoomName({ prepareResult, joinResult });
+  const prepareAllowed = hasRuntimeAccess && !runtimePrepared && canPrepareSessionRuntime(session);
+  const joinWindowOpen = isJoinWindowOpen(session);
+  const handlingNowKey = getHandlingNowKey(session.status);
+  const closeoutStateKey = getCloseoutStateKey(session.status);
+  const shouldShowJoinCheck =
+    hasRuntimeAccess &&
+    !(joinResult?.canJoin && joinUrl) &&
+    (joinWindowOpen ||
+      session.status === "READY_TO_JOIN" ||
+      session.status === "IN_PROGRESS" ||
+      runtimePrepared ||
+      Boolean(joinResult));
+
+  const liveFlowKey = !hasRuntimeAccess
+    ? "unavailable"
+    : session.status === "IN_PROGRESS"
+      ? "liveNow"
+      : joinResult?.canJoin && joinUrl
+        ? "readyToJoin"
+        : runtimePrepared
+          ? "preparedWaiting"
+          : prepareAllowed
+            ? "readyToPrepare"
+            : "awaitingWindow";
+
+  const handleMarkCompleted = async () => {
+    try {
+      await completeMutation.mutateAsync(session.id);
+      setConfirmingAction(null);
+      setRecentAction("complete");
+      noShowMutation.reset();
+    } catch {
+      setRecentAction(null);
+    }
+  };
+
+  const handleMarkNoShow = async () => {
+    try {
+      await noShowMutation.mutateAsync(session.id);
+      setConfirmingAction(null);
+      setRecentAction("no-show");
+      completeMutation.reset();
+    } catch {
+      setRecentAction(null);
+    }
+  };
+
+  const handleResolveJoin = async () => {
+    try {
+      const result = await joinMutation.mutateAsync(session.id);
+      setJoinResult(result);
+    } catch {
+      setJoinResult(null);
+    }
+  };
+
+  const handlePrepareRuntime = async () => {
+    try {
+      const result = await prepareMutation.mutateAsync(session.id);
+      setPrepareResult(result);
+    } catch {
+      setPrepareResult(null);
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
+        <div className="rounded-2xl border border-border-light bg-surface-primary p-5 dark:bg-white/5">
+          <div className="mb-3 flex items-start justify-between gap-2">
+            <div>
+              <h2 className="text-base font-semibold text-text-primary dark:text-white/90">
+                {t("detail.with")} {session.patient?.displayName ?? "-"}
+              </h2>
+              <p className="mt-1 font-mono text-xs text-text-muted">{session.sessionCode}</p>
+            </div>
+            <SessionStatusBadge status={session.status} />
+          </div>
+
+          <div className="space-y-1.5 text-sm text-text-secondary">
+            {session.patient?.displayName && (
+              <div className="flex items-center gap-2">
+                <User size={14} className="shrink-0 text-text-muted" />
+                <span>{session.patient.displayName}</span>
+              </div>
+            )}
+            <div className="flex items-center gap-2">
+              <CalendarDays size={14} className="shrink-0 text-text-muted" />
+              {session.scheduledStartAt ? (
+                <span>{formatDatetime(session.scheduledStartAt, numLocale)}</span>
+              ) : (
+                <span className="text-text-muted">{t("detail.noSchedule")}</span>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              <Clock size={14} className="shrink-0 text-text-muted" />
+              <span>{commonT("card.duration", { n: session.durationMinutes })}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Video size={14} className="shrink-0 text-text-muted" />
+              <span>{commonT("detail.mode.VIDEO")}</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-border-light bg-surface-primary p-5 dark:bg-white/5">
+          <div className="mb-4">
+            <h3 className="text-sm font-semibold text-text-primary dark:text-white/90">
+              {t("detail.runtime.heading")}
+            </h3>
+            <p className="mt-1 text-sm text-text-secondary">
+              {t(
+                `detail.runtime.status.${session.status}` as Parameters<typeof t>[0],
+              )}
+            </p>
+          </div>
+
+          {hasRuntimeAccess && (
+            <div className="space-y-3">
+              {joinResult?.canJoin && joinUrl ? (
+                <>
+                  <div className="rounded-2xl border border-primary/15 bg-primary-light px-4 py-3 text-sm text-text-primary dark:border-primary/20 dark:bg-primary/10 dark:text-white/90">
+                    <div className="flex items-start gap-2">
+                      <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-primary" />
+                      <p>{t("detail.runtime.ready")}</p>
+                    </div>
+                  </div>
+                  <a
+                    href={joinUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-2.5 text-sm font-semibold text-white hover:bg-primary/90 sm:w-auto"
+                  >
+                    <ExternalLink size={16} />
+                    {t("detail.runtime.actions.openRoom")}
+                  </a>
+                </>
+              ) : (
+                <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+                  {prepareAllowed && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handlePrepareRuntime}
+                      disabled={prepareMutation.isPending}
+                      className="w-full sm:w-auto"
+                    >
+                      {prepareMutation.isPending ? (
+                        <>
+                          <Loader2 size={14} className="animate-spin" />
+                          {t("detail.runtime.actions.preparing")}
+                        </>
+                      ) : (
+                        t("detail.runtime.actions.prepare")
+                      )}
+                    </Button>
+                  )}
+                  {shouldShowJoinCheck && (
+                    <Button
+                      size="sm"
+                      onClick={handleResolveJoin}
+                      disabled={joinMutation.isPending}
+                      className="w-full sm:w-auto"
+                    >
+                      {joinMutation.isPending ? (
+                        <>
+                          <Loader2 size={14} className="animate-spin" />
+                          {t("detail.runtime.actions.checking")}
+                        </>
+                      ) : session.status === "READY_TO_JOIN" ||
+                        session.status === "IN_PROGRESS" ? (
+                        t("detail.runtime.actions.joinNow")
+                      ) : (
+                        t("detail.runtime.actions.checkAccess")
+                      )}
+                    </Button>
+                  )}
+                </div>
+              )}
+
+              {prepareResult?.isPrepared && !joinResult?.canJoin && (
+                <div className="rounded-2xl border border-primary/15 bg-primary-light px-4 py-3 text-sm text-text-primary dark:border-primary/20 dark:bg-primary/10 dark:text-white/90">
+                  <div className="flex items-start gap-2">
+                    <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-primary" />
+                    <p>{t("detail.runtime.prepared")}</p>
+                  </div>
+                </div>
+              )}
+
+              {joinResult && !joinResult.canJoin && (
+                <div className="rounded-2xl border border-border-light bg-surface-tertiary px-4 py-3 text-sm text-text-secondary dark:bg-white/5">
+                  {t(
+                    `detail.runtime.blocked.${getRuntimeBlockedReasonKey(joinResult.blockedReason)}` as Parameters<typeof t>[0],
+                  )}
+                </div>
+              )}
+
+              {prepareMutation.isError && (
+                <div className="rounded-2xl border border-accent/20 bg-accent/10 px-4 py-3 text-sm text-text-primary dark:border-accent/25 dark:bg-accent/10 dark:text-white/90">
+                  {t("detail.runtime.prepareError")}
+                </div>
+              )}
+
+              {joinMutation.isError && (
+                <div className="rounded-2xl border border-accent/20 bg-accent/10 px-4 py-3 text-sm text-text-primary dark:border-accent/25 dark:bg-accent/10 dark:text-white/90">
+                  {t("detail.runtime.error")}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="rounded-2xl border border-border-light bg-surface-primary p-5 dark:bg-white/5">
+        <h3 className="mb-2 text-sm font-semibold text-text-primary dark:text-white/90">
+          {t("detail.currentStateHeading")}
+        </h3>
+        <p className="text-sm text-text-secondary">
+          {t(`detail.${session.status}.note` as Parameters<typeof t>[0])}
+        </p>
+        {session.status === "CANCELLED" && session.cancellationReason && (
+          <p className="mt-1 text-xs text-text-muted">
+            {t("detail.CANCELLED.reason", {
+              reason: session.cancellationReason,
+            })}
+          </p>
+        )}
+      </div>
+
+      <div className="rounded-2xl border border-border-light bg-surface-primary p-5 dark:bg-white/5">
+        <h3 className="mb-2 text-sm font-semibold text-text-primary dark:text-white/90">
+          {t("detail.handlingNow.heading")}
+        </h3>
+        <p className="text-sm font-medium text-text-primary dark:text-white/90">
+          {t(`detail.handlingNow.states.${handlingNowKey}.title` as Parameters<typeof t>[0])}
+        </p>
+        <p className="mt-1 text-sm text-text-secondary">
+          {t(`detail.handlingNow.states.${handlingNowKey}.note` as Parameters<typeof t>[0])}
+        </p>
+
+        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          <div className="rounded-2xl bg-surface-tertiary px-4 py-3 text-sm dark:bg-white/5">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-text-muted">
+              {t("detail.handlingNow.facts.sessionTime")}
+            </p>
+            <p className="mt-1 text-sm font-medium text-text-primary dark:text-white/90">
+              {session.scheduledStartAt
+                ? formatDatetime(session.scheduledStartAt, numLocale)
+                : t("detail.noSchedule")}
+            </p>
+          </div>
+          <div className="rounded-2xl bg-surface-tertiary px-4 py-3 text-sm dark:bg-white/5">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-text-muted">
+              {t("detail.handlingNow.facts.closeout")}
+            </p>
+            <p className="mt-1 text-sm font-medium text-text-primary dark:text-white/90">
+              {t(
+                `detail.handlingNow.closeout.${closeoutStateKey}` as Parameters<typeof t>[0],
+              )}
+            </p>
+          </div>
+        </div>
+
+        {session.completedAt && (
+          <p className="mt-4 text-sm text-text-secondary">
+            {t("detail.handlingNow.completedAt", {
+              datetime: formatDatetime(session.completedAt, numLocale),
+            })}
+          </p>
+        )}
+      </div>
+
+      <div className="rounded-2xl border border-border-light bg-surface-primary p-5 dark:bg-white/5">
+        <h3 className="mb-2 text-sm font-semibold text-text-primary dark:text-white/90">
+          {t("detail.liveFlow.heading")}
+        </h3>
+        <p className="text-sm font-medium text-text-primary dark:text-white/90">
+          {t(`detail.liveFlow.phases.${liveFlowKey}.title` as Parameters<typeof t>[0])}
+        </p>
+        <p className="mt-1 text-sm text-text-secondary">
+          {t(`detail.liveFlow.phases.${liveFlowKey}.note` as Parameters<typeof t>[0])}
+        </p>
+
+        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          <div className="rounded-2xl bg-surface-tertiary px-4 py-3 text-sm dark:bg-white/5">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-text-muted">
+              {t("detail.liveFlow.facts.provider")}
+            </p>
+            <p className="mt-1 text-sm font-medium text-text-primary dark:text-white/90">
+              {runtimeProvider
+                ? t(
+                    `detail.liveFlow.provider.${runtimeProvider}` as Parameters<typeof t>[0],
+                  )
+                : t("detail.liveFlow.provider.NONE")}
+            </p>
+          </div>
+          <div className="rounded-2xl bg-surface-tertiary px-4 py-3 text-sm dark:bg-white/5">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-text-muted">
+              {t("detail.liveFlow.facts.room")}
+            </p>
+            <p className="mt-1 text-sm font-medium text-text-primary dark:text-white/90">
+              {runtimeRoomName ?? t("detail.liveFlow.facts.roomPending")}
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-4 space-y-2 text-sm text-text-secondary">
+          {prepareAllowed && (
+            <p>{t("detail.liveFlow.notes.prepareWindow")}</p>
+          )}
+          {hasRuntimeAccess && !joinWindowOpen && (
+            <p>{t("detail.liveFlow.notes.joinWindow")}</p>
+          )}
+          {runtimePrepared && (
+            <p>{t("detail.liveFlow.notes.returnToSession")}</p>
+          )}
+          {joinUrl && (
+            <p>{t("detail.liveFlow.notes.openInNewTab")}</p>
+          )}
+          {(session.status === "IN_PROGRESS" || session.status === "COMPLETED") && (
+            <p>{t("detail.liveFlow.notes.closeoutAfterSession")}</p>
+          )}
+        </div>
+      </div>
+
+      <div className="rounded-2xl border border-border-light bg-surface-primary p-5 dark:bg-white/5">
+        <div className="mb-4">
+          <h3 className="text-sm font-semibold text-text-primary dark:text-white/90">
+            {t("detail.actions.heading")}
+          </h3>
+          <p className="mt-1 text-sm text-text-secondary">
+            {t("detail.actions.note")}
+          </p>
+        </div>
+
+        {recentAction === "complete" && !completeMutation.isError && (
+          <div className="mb-4 flex items-start gap-2 rounded-2xl border border-primary/15 bg-primary-light px-4 py-3 text-sm text-text-primary dark:border-primary/20 dark:bg-primary/10 dark:text-white/90">
+            <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-primary" />
+            <p>{t("detail.actions.completeSuccess")}</p>
+          </div>
+        )}
+
+        {recentAction === "no-show" && !noShowMutation.isError && (
+          <div className="mb-4 flex items-start gap-2 rounded-2xl border border-primary/15 bg-primary-light px-4 py-3 text-sm text-text-primary dark:border-primary/20 dark:bg-primary/10 dark:text-white/90">
+            <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-primary" />
+            <p>{t("detail.actions.noShowSuccess")}</p>
+          </div>
+        )}
+
+        {(completeMutation.isError || noShowMutation.isError) && (
+          <div className="mb-4 flex items-start gap-2 rounded-2xl border border-accent/20 bg-accent/10 px-4 py-3 text-sm text-text-primary dark:border-accent/25 dark:bg-accent/10 dark:text-white/90">
+            <AlertCircle size={16} className="mt-0.5 shrink-0 text-accent" />
+            <p>{t("detail.actions.error")}</p>
+          </div>
+        )}
+
+        {canMarkCompleted || canMarkNoShow ? (
+          <div className="space-y-3">
+            <p className="text-sm text-text-secondary">
+              {t("detail.actions.availability.available")}
+            </p>
+            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+              {canMarkCompleted && (
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    setConfirmingAction("complete");
+                    setRecentAction(null);
+                    noShowMutation.reset();
+                  }}
+                  disabled={isBusy}
+                  className="w-full sm:w-auto"
+                >
+                  {t("detail.actions.complete")}
+                </Button>
+              )}
+              {canMarkNoShow && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setConfirmingAction("no-show");
+                    setRecentAction(null);
+                    completeMutation.reset();
+                  }}
+                  disabled={isBusy}
+                  className="w-full sm:w-auto"
+                >
+                  {t("detail.actions.noShow")}
+                </Button>
+              )}
+            </div>
+          </div>
+        ) : (
+          <div className="rounded-2xl bg-surface-tertiary px-4 py-3 text-sm text-text-secondary dark:bg-white/5">
+            {t(
+              `detail.actions.availability.${closeoutStateKey}` as Parameters<typeof t>[0],
+            )}
+          </div>
+        )}
+      </div>
+
+      {!isActive && (
+        <div className="pt-1">
+          <Link
+            href="/practitioner/sessions"
+            className="inline-flex w-full items-center justify-center rounded-2xl border border-border-light px-5 py-2.5 text-sm text-text-secondary hover:bg-surface-tertiary dark:hover:bg-white/5 sm:w-auto"
+          >
+            {t("detail.backToSessions")}
+          </Link>
+        </div>
+      )}
+
+      <ConfirmModal
+        isOpen={confirmingAction === "complete"}
+        onClose={() => {
+          setConfirmingAction(null);
+          completeMutation.reset();
+        }}
+        size="sm"
+        title={t("detail.actions.completeConfirm.heading")}
+        description={t("detail.actions.completeConfirm.note")}
+        confirmLabel={
+          completeMutation.isPending ? (
+            <>
+              <Loader2 size={14} className="animate-spin" />
+              {t("detail.actions.completePending")}
+            </>
+          ) : (
+            t("detail.actions.completeConfirm.confirm")
+          )
+        }
+        cancelLabel={t("detail.actions.completeConfirm.back")}
+        onConfirm={handleMarkCompleted}
+        loading={isBusy}
+      >
+        <div className="rounded-2xl border border-primary/15 bg-primary-light px-4 py-4 text-sm text-text-brand dark:border-primary/20 dark:bg-primary/10 dark:text-primary-light">
+          <div className="flex items-start gap-3">
+            <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-primary" />
+            <div>
+              <p className="font-medium">{session.patient?.displayName ?? "-"}</p>
+              <p className="mt-1 text-xs opacity-80">
+                {session.scheduledStartAt
+                  ? formatDatetime(session.scheduledStartAt, numLocale)
+                  : t("detail.noSchedule")}
+              </p>
+            </div>
+          </div>
+        </div>
+      </ConfirmModal>
+
+      <DestructiveConfirmModal
+        isOpen={confirmingAction === "no-show"}
+        onClose={() => {
+          setConfirmingAction(null);
+          noShowMutation.reset();
+        }}
+        size="sm"
+        title={t("detail.actions.noShowConfirm.heading")}
+        description={t("detail.actions.noShowConfirm.note")}
+        confirmLabel={
+          noShowMutation.isPending ? (
+            <>
+              <Loader2 size={14} className="animate-spin" />
+              {t("detail.actions.noShowPending")}
+            </>
+          ) : (
+            t("detail.actions.noShowConfirm.confirm")
+          )
+        }
+        cancelLabel={t("detail.actions.noShowConfirm.back")}
+        onConfirm={handleMarkNoShow}
+        loading={isBusy}
+      >
+        <div className="rounded-2xl border border-warning-200 bg-warning-50 px-4 py-4 text-sm text-warning-800 dark:border-warning-500/20 dark:bg-warning-500/10 dark:text-warning-300">
+          <div className="flex items-start gap-3">
+            <XCircle size={16} className="mt-0.5 shrink-0" />
+            <div>
+              <p className="font-medium">{session.patient?.displayName ?? "-"}</p>
+              <p className="mt-1 text-xs opacity-80">
+                {session.scheduledStartAt
+                  ? formatDatetime(session.scheduledStartAt, numLocale)
+                  : t("detail.noSchedule")}
+              </p>
+            </div>
+          </div>
+        </div>
+      </DestructiveConfirmModal>
+    </div>
+  );
+}

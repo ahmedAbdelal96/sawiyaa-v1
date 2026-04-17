@@ -1,0 +1,114 @@
+{
+  "meta": {
+    "title": "Fayed | My Profile",
+    "description": "Edit your profile details and personal photo."
+  },
+  "page": {
+    "title": "My Profile",
+    "subtitle": "Keep your details up to date for a smoother care journey."
+  },
+  "summary": {
+    "title": "Profile Details",
+    "subtitle": "Review your information, then edit only when needed."
+  },
+  "editModal": {
+    "title": "Edit Profile",
+    "description": "Update your details, then save."
+  },
+  "sections": {
+    "personal": "Personal Information",
+    "preferences": "Preferences"
+  },
+  "fields": {
+    "displayName": {
+      "label": "Display Name",
+      "placeholder": "Enter your display name"
+    },
+    "dateOfBirth": {
+      "label": "Date of Birth",
+      "placeholder": "YYYY-MM-DD"
+    },
+    "gender": {
+      "label": "Gender",
+      "placeholder": "Select gender",
+      "options": {
+        "male": "Male",
+        "female": "Female"
+      }
+    },
+    "locale": {
+      "label": "Preferred Language",
+      "placeholder": "Select language",
+      "options": {
+        "ar": "Arabic",
+        "en": "English"
+      }
+    },
+    "countryCode": {
+      "label": "Country Code",
+      "placeholder": "e.g. SA, EG, AE"
+    },
+    "timezone": {
+      "label": "Timezone",
+      "placeholder": "e.g. Africa/Cairo"
+    }
+  },
+  "avatar": {
+    "title": "Profile Photo",
+    "subtitle": "Upload, replace, or remove your photo.",
+    "alt": "Patient profile photo",
+    "hint": "Allowed formats: JPG, PNG, WEBP. Max size: 5MB.",
+    "selectedFile": "Selected file: {fileName}",
+    "actions": {
+      "upload": "Upload photo",
+      "uploading": "Uploading...",
+      "remove": "Remove photo",
+      "removing": "Removing...",
+      "clearSelection": "Clear selection"
+    },
+    "validation": {
+      "fileRequired": "Please select an image first.",
+      "invalidType": "Unsupported image format. Use JPG, PNG, or WEBP.",
+      "fileTooLarge": "Image size exceeds 5MB."
+    },
+    "feedback": {
+      "uploadSuccess": "Profile photo updated successfully.",
+      "uploadError": "Failed to upload profile photo.",
+      "removeSuccess": "Profile photo removed successfully.",
+      "removeError": "Failed to remove profile photo."
+    }
+  },
+  "actions": {
+    "edit": "Edit Details",
+    "save": "Save Changes",
+    "saving": "Saving...",
+    "cancel": "Cancel",
+    "retry": "Try again"
+  },
+  "validation": {
+    "displayNameMax": "Display name cannot exceed 80 characters.",
+    "countryCodeMax": "Country code cannot exceed 10 characters.",
+    "timezoneMax": "Timezone cannot exceed 60 characters."
+  },
+  "feedback": {
+    "success": "Profile updated successfully.",
+    "error": "Failed to update profile. Please try again.",
+    "loadError": "Failed to load profile data. Please refresh the page."
+  },
+  "help": {
+    "title": "Profile Help",
+    "summary": "Short tips for quick updates.",
+    "sections": {
+      "profile": {
+        "heading": "Profile details",
+        "item1": "Use your real display name so support can identify your account faster.",
+        "item2": "Keep language and timezone correct to avoid scheduling confusion."
+      },
+      "photo": {
+        "heading": "Profile photo",
+        "item1": "Use a clear photo to make your account easier to recognize.",
+        "item2": "You can replace or remove your photo at any time."
+      }
+    }
+  }
+}

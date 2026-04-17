@@ -1,0 +1,187 @@
+import type { PublicPractitioner, PractitionerFilterParams } from "../types/practitioner";
+
+export const MOCK_PRACTITIONERS: PublicPractitioner[] = [
+  {
+    id: "sara-al-ahmad",
+    slug: "sara-al-ahmad",
+    nameAr: "د. سارة الأحمد",
+    nameEn: "Dr. Sara Al-Ahmad",
+    titleAr: "أخصائية نفسية إكلينيكية",
+    titleEn: "Clinical Psychologist",
+    specialties: ["anxiety", "depression"],
+    languages: ["ar", "en"],
+    country: "sa",
+    rating: 4.9,
+    reviewCount: 142,
+    sessionCount: 856,
+    yearsExperience: 8,
+    isVerified: true,
+    initials: "سأ",
+  },
+  {
+    id: "faisal-omar",
+    slug: "faisal-omar",
+    nameAr: "د. فيصل عمر",
+    nameEn: "Dr. Faisal Omar",
+    titleAr: "استشاري أسري وزوجي",
+    titleEn: "Family & Couples Therapist",
+    specialties: ["family", "relationships"],
+    languages: ["ar", "en"],
+    country: "ae",
+    rating: 4.8,
+    reviewCount: 98,
+    sessionCount: 614,
+    yearsExperience: 11,
+    isVerified: true,
+    initials: "فع",
+  },
+  {
+    id: "noura-khaled",
+    slug: "noura-khaled",
+    nameAr: "د. نورا خالد",
+    nameEn: "Dr. Noura Khaled",
+    titleAr: "أخصائية نفسية إكلينيكية",
+    titleEn: "Clinical Psychologist",
+    specialties: ["depression", "trauma"],
+    languages: ["ar"],
+    country: "kw",
+    rating: 5.0,
+    reviewCount: 217,
+    sessionCount: 1203,
+    yearsExperience: 14,
+    isVerified: true,
+    initials: "نخ",
+  },
+  {
+    id: "hind-al-subai",
+    slug: "hind-al-subai",
+    nameAr: "أ. هند السبيعي",
+    nameEn: "Hind Al-Subai",
+    titleAr: "معالجة سلوكية معرفية",
+    titleEn: "Cognitive Behavioral Therapist",
+    specialties: ["anxiety", "ocd"],
+    languages: ["ar", "en"],
+    country: "sa",
+    rating: 4.7,
+    reviewCount: 73,
+    sessionCount: 421,
+    yearsExperience: 6,
+    isVerified: true,
+    initials: "هس",
+  },
+  {
+    id: "omar-al-qahtani",
+    slug: "omar-al-qahtani",
+    nameAr: "د. عمر القحطاني",
+    nameEn: "Dr. Omar Al-Qahtani",
+    titleAr: "أخصائي علاج الإدمان",
+    titleEn: "Addiction Specialist",
+    specialties: ["addiction", "depression"],
+    languages: ["ar"],
+    country: "sa",
+    rating: 4.6,
+    reviewCount: 59,
+    sessionCount: 338,
+    yearsExperience: 9,
+    isVerified: true,
+    initials: "عق",
+  },
+  {
+    id: "layla-al-mansouri",
+    slug: "layla-al-mansouri",
+    nameAr: "د. ليلى المنصوري",
+    nameEn: "Dr. Layla Al-Mansouri",
+    titleAr: "أخصائية نفسية إكلينيكية",
+    titleEn: "Clinical Psychologist",
+    specialties: ["trauma", "relationships"],
+    languages: ["ar", "en", "fr"],
+    country: "ae",
+    rating: 4.9,
+    reviewCount: 184,
+    sessionCount: 972,
+    yearsExperience: 12,
+    isVerified: true,
+    initials: "لم",
+  },
+  {
+    id: "fahad-al-rashid",
+    slug: "fahad-al-rashid",
+    nameAr: "د. فهد الراشد",
+    nameEn: "Dr. Fahad Al-Rashid",
+    titleAr: "استشاري طب نفسي",
+    titleEn: "Consultant Psychiatrist",
+    specialties: ["psychiatry", "depression"],
+    languages: ["ar", "en"],
+    country: "sa",
+    rating: 4.7,
+    reviewCount: 126,
+    sessionCount: 703,
+    yearsExperience: 15,
+    isVerified: true,
+    initials: "فر",
+  },
+  {
+    id: "ahmed-al-zayd",
+    slug: "ahmed-al-zayd",
+    nameAr: "د. أحمد الزيد",
+    nameEn: "Dr. Ahmed Al-Zayd",
+    titleAr: "أخصائي نفس الأطفال والأسرة",
+    titleEn: "Child & Family Psychologist",
+    specialties: ["family", "anxiety"],
+    languages: ["ar", "en"],
+    country: "eg",
+    rating: 4.8,
+    reviewCount: 91,
+    sessionCount: 547,
+    yearsExperience: 10,
+    isVerified: true,
+    initials: "أز",
+  },
+  {
+    id: "reem-al-otaibi",
+    slug: "reem-al-otaibi",
+    nameAr: "أ. ريم العتيبي",
+    nameEn: "Reem Al-Otaibi",
+    titleAr: "معالجة نفسية واجتماعية",
+    titleEn: "Psychosocial Therapist",
+    specialties: ["anxiety", "relationships"],
+    languages: ["ar"],
+    country: "jo",
+    rating: 4.5,
+    reviewCount: 44,
+    sessionCount: 261,
+    yearsExperience: 5,
+    isVerified: false,
+    initials: "رع",
+  },
+];
+
+export function filterAndSortPractitioners(
+  practitioners: PublicPractitioner[],
+  params: PractitionerFilterParams,
+): PublicPractitioner[] {
+  const { q = "", specialty = "", lang = "", sort = "rating" } = params;
+
+  const filtered = practitioners.filter((p) => {
+    if (
+      q &&
+      !p.nameAr.includes(q) &&
+      !p.nameEn.toLowerCase().includes(q.toLowerCase()) &&
+      !p.titleAr.includes(q) &&
+      !p.titleEn.toLowerCase().includes(q.toLowerCase())
+    ) {
+      return false;
+    }
+    if (specialty && !p.specialties.includes(specialty)) return false;
+    if (lang && !p.languages.includes(lang)) return false;
+    return true;
+  });
+
+  return filtered.sort((a, b) => {
+    if (sort === "experience") return b.yearsExperience - a.yearsExperience;
+    if (sort === "sessions") return (b.sessionCount ?? 0) - (a.sessionCount ?? 0);
+    return b.rating - a.rating;
+  });
+}
+
+

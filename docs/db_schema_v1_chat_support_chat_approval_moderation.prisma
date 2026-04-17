@@ -1,0 +1,399 @@
+// DB Schema v1 — Chat / Support / Chat Approval / Moderation
+// Notes:
+// - Support conversations are different from patient/practitioner care conversations
+// - Care conversations require explicit approval
+// - Moderation is separate from message data itself
+// - No SEO slugs needed here; use UUID and optional human refs only
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ConversationType {
+  SUPPORT
+  CARE_APPROVED
+  SYSTEM
+}
+
+enum ConversationStatus {
+  OPEN
+  PENDING
+  CLOSED
+  EXPIRED
+  SUSPENDED
+}
+
+enum ConversationParticipantRole {
+  PATIENT
+  PRACTITIONER
+  SUPPORT_AGENT
+  ADMIN
+  SYSTEM
+}
+
+enum MessageType {
+  TEXT
+  SYSTEM
+  FILE
+  IMAGE
+  NOTE_REFERENCE
+  APPROVAL_NOTICE
+}
+
+enum MessageStatus {
+  SENT
+  DELIVERED
+  READ
+  FAILED
+  DELETED
+}
+
+enum MessageVisibility {
+  NORMAL
+  HIDDEN_FROM_PARTIES
+  INTERNAL_ONLY
+}
+
+enum SupportTicketType {
+  PAYMENT
+  SESSION
+  TECHNICAL
+  ACCOUNT
+  CONTENT
+  CHAT
+  OTHER
+}
+
+enum SupportTicketStatus {
+  OPEN
+  IN_PROGRESS
+  WAITING_FOR_USER
+  ESCALATED
+  RESOLVED
+  CLOSED
+}
+
+enum SupportTicketPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum ChatApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  EXPIRED
+  CANCELLED
+  REVOKED
+}
+
+enum ChatModerationReportReason {
+  ABUSE
+  HARASSMENT
+  SPAM
+  SHARING_CONTACT_INFO
+  OUTSIDE_PLATFORM_PAYMENT
+  INAPPROPRIATE_CONTENT
+  PRIVACY_BREACH
+  OTHER
+}
+
+enum ChatModerationReportStatus {
+  OPEN
+  UNDER_REVIEW
+  RESOLVED
+  DISMISSED
+}
+
+enum ChatModerationActionType {
+  MESSAGE_HIDDEN
+  MESSAGE_RESTORED
+  CONVERSATION_SUSPENDED
+  CONVERSATION_CLOSED
+  USER_WARNED
+  USER_RESTRICTED
+  APPROVAL_REVOKED
+  INTERNAL_ESCALATION
+}
+
+// NOTE:
+// Expected existing models:
+// model User
+// model PatientProfile
+// model PractitionerProfile
+// model Session
+
+model Conversation {
+  id                      String                    @id @default(uuid()) @db.Uuid
+  conversationType        ConversationType
+  status                  ConversationStatus        @default(OPEN)
+
+  patientId               String?                   @db.Uuid
+  practitionerId          String?                   @db.Uuid
+  supportTicketId         String?                   @unique @db.Uuid
+  sessionId               String?                   @db.Uuid
+  chatApprovalRequestId   String?                   @unique @db.Uuid
+
+  conversationRef         String?                   @unique @db.VarChar(64)
+
+  startedAt               DateTime                  @default(now())
+  closedAt                DateTime?
+  expiresAt               DateTime?
+
+  createdAt               DateTime                  @default(now())
+  updatedAt               DateTime                  @updatedAt
+
+  patient                 PatientProfile?           @relation(fields: [patientId], references: [id], onDelete: SetNull)
+  practitioner            PractitionerProfile?      @relation(fields: [practitionerId], references: [id], onDelete: SetNull)
+  session                 Session?                  @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+
+  participants            ConversationParticipant[]
+  messages                Message[]
+  internalNotes           InternalConversationNote[]
+  moderationReports       ChatModerationReport[]
+  moderationActions       ChatModerationAction[]
+  supportTicket           SupportTicket?
+  chatApprovalRequest     ChatApprovalRequest?
+
+  @@index([conversationType, status, startedAt])
+  @@index([patientId, status])
+  @@index([practitionerId, status])
+  @@index([supportTicketId])
+  @@index([chatApprovalRequestId])
+  @@index([sessionId])
+}
+
+model ConversationParticipant {
+  id                  String                      @id @default(uuid()) @db.Uuid
+  conversationId      String                      @db.Uuid
+  userId              String                      @db.Uuid
+  participantRole     ConversationParticipantRole
+  joinedAt            DateTime                    @default(now())
+  leftAt              DateTime?
+  lastReadMessageId   String?                     @db.Uuid
+  lastReadAt          DateTime?
+  isMuted             Boolean                     @default(false)
+  isActive            Boolean                     @default(true)
+
+  conversation        Conversation                @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@unique([conversationId, userId])
+  @@index([userId, isActive])
+  @@index([conversationId, participantRole])
+}
+
+model Message {
+  id                  String             @id @default(uuid()) @db.Uuid
+  conversationId      String             @db.Uuid
+  senderUserId        String?            @db.Uuid
+  messageType         MessageType        @default(TEXT)
+  status              MessageStatus      @default(SENT)
+  visibility          MessageVisibility  @default(NORMAL)
+
+  contentText         String?
+  replyToMessageId    String?            @db.Uuid
+
+  sentAt              DateTime           @default(now())
+  deliveredAt         DateTime?
+  readAt              DateTime?
+  editedAt            DateTime?
+  deletedAt           DateTime?
+  isFlagged           Boolean            @default(false)
+
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+
+  conversation        Conversation       @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  replyToMessage      Message?           @relation("MessageReplies", fields: [replyToMessageId], references: [id], onDelete: SetNull)
+  replies             Message[]          @relation("MessageReplies")
+  attachments         MessageAttachment[]
+  moderationReports   ChatModerationReport[]
+  moderationActions   ChatModerationAction[]
+
+  @@index([conversationId, sentAt])
+  @@index([senderUserId, sentAt])
+  @@index([replyToMessageId])
+  @@index([status, sentAt])
+  @@index([isFlagged, sentAt])
+}
+
+model MessageAttachment {
+  id                  String             @id @default(uuid()) @db.Uuid
+  messageId           String             @db.Uuid
+  fileUrl             String             @db.VarChar(500)
+  mimeType            String             @db.VarChar(191)
+  fileSize            Int?
+  originalName        String?            @db.VarChar(191)
+  storageProvider     String?            @db.VarChar(100)
+  uploadedAt          DateTime           @default(now())
+
+  message             Message            @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@index([messageId])
+}
+
+model SupportTicket {
+  id                  String                 @id @default(uuid()) @db.Uuid
+  openedByUserId      String                 @db.Uuid
+  patientId           String?                @db.Uuid
+  practitionerId      String?                @db.Uuid
+  conversationId      String                 @unique @db.Uuid
+
+  ticketType          SupportTicketType
+  status              SupportTicketStatus    @default(OPEN)
+  priority            SupportTicketPriority  @default(MEDIUM)
+
+  subject             String?                @db.VarChar(191)
+  assignedToUserId    String?                @db.Uuid
+  publicTicketRef     String?                @unique @db.VarChar(64)
+
+  resolvedAt          DateTime?
+  closedAt            DateTime?
+  createdAt           DateTime               @default(now())
+  updatedAt           DateTime               @updatedAt
+
+  conversation        Conversation           @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  patient             PatientProfile?        @relation(fields: [patientId], references: [id], onDelete: SetNull)
+  practitioner        PractitionerProfile?   @relation(fields: [practitionerId], references: [id], onDelete: SetNull)
+  tagAssignments      SupportTicketTagAssignment[]
+
+  @@index([status, priority, createdAt])
+  @@index([assignedToUserId, status])
+  @@index([openedByUserId, createdAt])
+  @@index([patientId, status])
+  @@index([practitionerId, status])
+}
+
+model SupportTicketTag {
+  id                  String                       @id @default(uuid()) @db.Uuid
+  slug                String                       @unique @db.VarChar(191)
+  title               String                       @db.VarChar(191)
+  sortOrder           Int                          @default(0)
+  isActive            Boolean                      @default(true)
+  createdAt           DateTime                     @default(now())
+  updatedAt           DateTime                     @updatedAt
+
+  assignments         SupportTicketTagAssignment[]
+
+  @@index([isActive, sortOrder])
+}
+
+model SupportTicketTagAssignment {
+  id                  String              @id @default(uuid()) @db.Uuid
+  supportTicketId     String              @db.Uuid
+  tagId               String              @db.Uuid
+  createdAt           DateTime            @default(now())
+
+  supportTicket       SupportTicket       @relation(fields: [supportTicketId], references: [id], onDelete: Cascade)
+  tag                 SupportTicketTag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@unique([supportTicketId, tagId])
+  @@index([tagId, supportTicketId])
+}
+
+model InternalConversationNote {
+  id                  String              @id @default(uuid()) @db.Uuid
+  conversationId      String              @db.Uuid
+  createdByUserId     String?             @db.Uuid
+  noteText            String              @db.VarChar(2000)
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+
+  conversation        Conversation        @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, createdAt])
+  @@index([createdByUserId, createdAt])
+}
+
+model ChatApprovalRequest {
+  id                    String                @id @default(uuid()) @db.Uuid
+  patientId             String                @db.Uuid
+  practitionerId        String                @db.Uuid
+  requestedByUserId     String                @db.Uuid
+  relatedSessionId      String?               @db.Uuid
+  reviewedByUserId      String?               @db.Uuid
+  linkedConversationId  String?               @unique @db.Uuid
+
+  status                ChatApprovalStatus    @default(PENDING)
+  requestReason         String?               @db.VarChar(1000)
+  internalReviewNote    String?               @db.VarChar(1000)
+
+  approvalRef           String?               @unique @db.VarChar(64)
+
+  requestedAt           DateTime              @default(now())
+  reviewedAt            DateTime?
+  approvedAt            DateTime?
+  rejectedAt            DateTime?
+  expiresAt             DateTime?
+  cancelledAt           DateTime?
+  revokedAt             DateTime?
+
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+
+  patient               PatientProfile        @relation(fields: [patientId], references: [id], onDelete: Restrict)
+  practitioner          PractitionerProfile   @relation(fields: [practitionerId], references: [id], onDelete: Restrict)
+  session               Session?              @relation(fields: [relatedSessionId], references: [id], onDelete: SetNull)
+  linkedConversation    Conversation?
+  moderationActions     ChatModerationAction[]
+
+  @@index([patientId, status, requestedAt])
+  @@index([practitionerId, status, requestedAt])
+  @@index([relatedSessionId])
+  @@index([reviewedByUserId, reviewedAt])
+}
+
+model ChatModerationReport {
+  id                  String                      @id @default(uuid()) @db.Uuid
+  conversationId      String                      @db.Uuid
+  messageId           String?                     @db.Uuid
+  reportedByUserId    String?                     @db.Uuid
+  reviewedByUserId    String?                     @db.Uuid
+
+  reportReason        ChatModerationReportReason
+  reportNote          String?                     @db.VarChar(1000)
+  status              ChatModerationReportStatus  @default(OPEN)
+
+  createdAt           DateTime                    @default(now())
+  reviewedAt          DateTime?
+  resolvedAt          DateTime?
+
+  conversation        Conversation                @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  message             Message?                    @relation(fields: [messageId], references: [id], onDelete: SetNull)
+  actions             ChatModerationAction[]
+
+  @@index([conversationId, status, createdAt])
+  @@index([messageId, status])
+  @@index([reportedByUserId, createdAt])
+  @@index([reviewedByUserId, reviewedAt])
+}
+
+model ChatModerationAction {
+  id                    String                    @id @default(uuid()) @db.Uuid
+  reportId              String?                   @db.Uuid
+  conversationId        String?                   @db.Uuid
+  messageId             String?                   @db.Uuid
+  chatApprovalRequestId String?                   @db.Uuid
+  actedByUserId         String?                   @db.Uuid
+
+  actionType            ChatModerationActionType
+  actionNote            String?                   @db.VarChar(1000)
+  actedAt               DateTime                  @default(now())
+
+  report                ChatModerationReport?     @relation(fields: [reportId], references: [id], onDelete: SetNull)
+  conversation          Conversation?             @relation(fields: [conversationId], references: [id], onDelete: SetNull)
+  message               Message?                  @relation(fields: [messageId], references: [id], onDelete: SetNull)
+  chatApprovalRequest   ChatApprovalRequest?      @relation(fields: [chatApprovalRequestId], references: [id], onDelete: SetNull)
+
+  @@index([reportId, actedAt])
+  @@index([conversationId, actedAt])
+  @@index([messageId, actedAt])
+  @@index([actedByUserId, actedAt])
+}

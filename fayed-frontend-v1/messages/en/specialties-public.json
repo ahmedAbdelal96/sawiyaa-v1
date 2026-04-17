@@ -1,0 +1,70 @@
+{
+  "listing": {
+    "title": "Mental Health Specialties",
+    "subtitle": "Start from the kind of support you need, then move quickly to the specialty that fits your situation.",
+    "breadcrumb": "Specialties",
+    "eyebrow": "Clear care paths",
+    "searchTitle": "Search or browse by category",
+    "searchSubtitle": "If you know the specialty name, search directly. Otherwise, use categories to narrow your path faster.",
+    "resultCount": "{count} specialties",
+    "resultCountSingle": "1 specialty",
+    "categoryCount": "{count} categories",
+    "categoryCountSingle": "1 category",
+    "summarySpecialties": "Available specialties",
+    "summaryCategories": "Organized categories",
+    "summarySearch": "Direct name search",
+    "search": {
+      "label": "Search specialties",
+      "placeholder": "For example: anxiety, family guidance, nutritional therapy",
+      "submit": "Search",
+      "clear": "Clear search",
+      "current": "Search results for: {query}"
+    },
+    "quickNavTitle": "Browse by category",
+    "allCategories": "All specialties",
+    "uncategorized": "Other specialties",
+    "groupTitle": "{category} specialties",
+    "groupSubtitle": "Choose the specialty that feels closest to what you need right now.",
+    "empty": {
+      "title": "No matching specialties yet",
+      "subtitle": "Try a different keyword or browse all currently available specialties."
+    },
+    "viewSpecialty": "Explore specialty",
+    "learnMore": "Learn more",
+    "categoryBadge": "In {category}"
+  },
+  "detail": {
+    "breadcrumb": "Specialties",
+    "backToListing": "Back to specialties",
+    "eyebrow": "Specialty details",
+    "subtitle": "Review the specialty description, current catalog data, then move directly to practitioners linked to it.",
+    "summaryTitle": "Quick summary",
+    "summaryDescription": "This specialty is part of the public Fayed specialty catalog and can be used to filter practitioners and move toward the care path that fits your needs.",
+    "aboutTitle": "About this specialty",
+    "aboutFallback": "No extended description has been added for this specialty yet.",
+    "metaTitle": "Specialty details",
+    "metaSubtitle": "These are the current fields available from the backend contract for this specialty.",
+    "meta": {
+      "slug": "Identifier",
+      "sortOrder": "Display order",
+      "status": "Catalog status",
+      "category": "Category",
+      "createdAt": "Created at",
+      "updatedAt": "Last updated"
+    },
+    "statusActive": "Active in the public catalog",
+    "statusInactive": "Currently hidden",
+    "categoryUnavailable": "Not available yet in this phase",
+    "practitioners": {
+      "eyebrow": "Practitioners linked to this specialty",
+      "title": "Start from practitioners in this specialty",
+      "subtitle": "This list is genuinely filtered by the current specialty so you can move directly to the most relevant practitioner.",
+      "resultCount": "{count} practitioners",
+      "resultCountSingle": "1 practitioner",
+      "cta": "View all practitioners in this specialty",
+      "fallbackCta": "Browse all practitioners",
+      "emptyTitle": "No public practitioners are currently listed for this specialty",
+      "emptySubtitle": "You can browse all practitioners or check back later when more practitioners are linked to this care path."
+    }
+  }
+}

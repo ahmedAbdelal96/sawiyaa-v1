@@ -1,0 +1,122 @@
+{
+  "page": {
+    "brand": "فايد",
+    "title": "اكتشف مختصك",
+    "subtitle": "تصفح نخبة من المعالجين النفسيين المعتمدين",
+    "breadcrumb": "المختصون",
+    "resultCount": "{count} مختص متاح",
+    "resultCountSingle": "مختص واحد متاح",
+    "showingOf": "عرض {count} من أصل {total}"
+  },
+  "search": {
+    "placeholder": "ابحث باسم المعالج أو التخصص...",
+    "button": "بحث",
+    "clear": "مسح البحث"
+  },
+  "filter": {
+    "title": "التصفية",
+    "availability": "التواجد",
+    "onlineNow": "متصل الآن",
+    "availableToday": "متاح اليوم",
+    "availableThisWeek": "متاح هذا الأسبوع",
+    "category": "المجال الرئيسي",
+    "specialty": "مجالات الاهتمام",
+    "language": "اللغة",
+    "country": "البلد",
+    "practitionerType": "نوع المعالج",
+    "practitionerTypeDoctor": "طبيب نفسي",
+    "practitionerTypeTherapist": "معالج نفسي",
+    "gender": "الجنس",
+    "genderMale": "ذكر",
+    "genderFemale": "أنثى",
+    "sessionDuration": "مدة الجلسة",
+    "duration30": "30 دقيقة",
+    "duration60": "60 دقيقة",
+    "rating": "التقييم",
+    "sessionFee": "رسوم الجلسة",
+    "minFee": "أقل رسوم",
+    "maxFee": "أعلى رسوم",
+    "acceptsCoupon": "يقبل قسيمة خصم",
+    "acceptsPackage": "يقبل الباقة",
+    "any": "الكل",
+    "yes": "نعم",
+    "no": "لا",
+    "anyRating": "أي تقييم",
+    "rating3Up": "3.0 فأعلى",
+    "rating4Up": "4.0 فأعلى",
+    "rating45Up": "4.5 فأعلى",
+    "allTypes": "كل الأنواع",
+    "allGenders": "الكل",
+    "allDurations": "كل المدد",
+    "allCategories": "جميع المجالات الرئيسية",
+    "allSpecialties": "جميع التخصصات",
+    "allLanguages": "جميع اللغات",
+    "allCountries": "جميع البلدان",
+    "clearAll": "مسح الكل",
+    "apply": "تطبيق الفلاتر",
+    "openFilters": "الفلاتر",
+    "activeFilters": "فلاتر نشطة"
+  },
+  "sort": {
+    "label": "ترتيب",
+    "recommended": "موصى به",
+    "rating": "الأعلى تقييمًا",
+    "experience": "الأكثر خبرة",
+    "newest": "الأحدث",
+    "oldest": "الأقدم"
+  },
+  "pagination": {
+    "perPage": "عرض",
+    "perPageOption": "{count} في الصفحة"
+  },
+  "specialties": {
+    "anxiety": "القلق والتوتر",
+    "depression": "الاكتئاب",
+    "relationships": "العلاقات",
+    "family": "العلاج الأسري",
+    "trauma": "الصدمة النفسية",
+    "addiction": "الإدمان",
+    "psychiatry": "الطب النفسي",
+    "ocd": "الوسواس القهري"
+  },
+  "languages": {
+    "ar": "العربية",
+    "en": "الإنجليزية",
+    "fr": "الفرنسية"
+  },
+  "countries": {
+    "eg": "مصر",
+    "sa": "السعودية",
+    "ae": "الإمارات",
+    "kw": "الكويت",
+    "jo": "الأردن"
+  },
+  "card": {
+    "verified": "معتمد",
+    "yearsExp": "سنة خبرة",
+    "sessions": "جلسات",
+    "reviews": "مراجعة",
+    "viewProfile": "عرض الملف",
+    "languages": "اللغات",
+    "rating": "التقييم",
+    "onlineNow": "متصل الآن",
+    "offline": "غير متصل"
+  },
+  "empty": {
+    "title": "لم نجد ما تبحث عنه",
+    "subtitle": "جرّب تغيير الفلاتر أو توسيع نطاق البحث للعثور على المختص المناسب",
+    "clearFilters": "مسح الفلاتر"
+  },
+  "error": {
+    "title": "تعذّر تحميل الصفحة",
+    "subtitle": "حدث خطأ أثناء جلب البيانات. يُرجى المحاولة مجددًا.",
+    "retry": "إعادة المحاولة",
+    "back": "العودة للمختصين"
+  },
+  "patientArea": {
+    "meta": {
+      "title": "فايد | اختر المعالج المناسب لك",
+      "description": "استعرض الممارسين المناسبين لك داخل مساحة العميل وابدأ رحلتك العلاجية بسهولة."
+    }
+  }
+}

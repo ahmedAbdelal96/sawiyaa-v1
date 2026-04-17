@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+
+<html class="h-full" dir="rtl" lang="ar"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-secondary-fixed": "#001b3c",
+                    "on-tertiary-fixed": "#141c27",
+                    "surface-container-highest": "#d8e3fc",
+                    "on-error-container": "#93000a",
+                    "tertiary-fixed-dim": "#bfc7d5",
+                    "surface-container-lowest": "#ffffff",
+                    "on-tertiary-fixed-variant": "#3f4753",
+                    "secondary-container": "#bfd5ff",
+                    "surface-container-high": "#dfe8ff",
+                    "surface-container-low": "#f0f3ff",
+                    "surface": "#f9f9ff",
+                    "on-primary-fixed-variant": "#004689",
+                    "on-tertiary-container": "#fdfcff",
+                    "on-error": "#ffffff",
+                    "on-primary-container": "#fefcff",
+                    "inverse-on-surface": "#ecf0ff",
+                    "inverse-primary": "#a7c8ff",
+                    "on-secondary-fixed-variant": "#31476a",
+                    "primary-fixed": "#d5e3ff",
+                    "on-secondary": "#ffffff",
+                    "surface-variant": "#d8e3fc",
+                    "on-surface-variant": "#424751",
+                    "on-primary": "#ffffff",
+                    "tertiary": "#545d69",
+                    "surface-bright": "#f9f9ff",
+                    "surface-dim": "#cfdaf3",
+                    "error": "#ba1a1a",
+                    "secondary": "#495f83",
+                    "surface-container": "#e8eeff",
+                    "inverse-surface": "#263144",
+                    "on-secondary-container": "#465c80",
+                    "on-tertiary": "#ffffff",
+                    "surface-tint": "#125eae",
+                    "on-background": "#101c2e",
+                    "on-primary-fixed": "#001b3c",
+                    "secondary-fixed-dim": "#b1c7f1",
+                    "secondary-fixed": "#d6e3ff",
+                    "outline-variant": "#c2c6d3",
+                    "primary": "#0b5cac",
+                    "on-surface": "#101c2e",
+                    "tertiary-fixed": "#dbe3f2",
+                    "primary-container": "#3575c7",
+                    "outline": "#727783",
+                    "background": "#f9f9ff",
+                    "tertiary-container": "#6d7582",
+                    "primary-fixed-dim": "#a7c8ff",
+                    "error-container": "#ffdad6"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "fontFamily": {
+                    "headline": ["Manrope"],
+                    "body": ["Manrope"],
+                    "label": ["Manrope"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .soft-flow {
+            background: radial-gradient(circle at 50% 50%, rgba(213, 227, 255, 0.4) 0%, transparent 70%);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-[#eff1f3] h-full flex flex-col font-body antialiased overflow-hidden">
+<div class="relative flex-1 flex flex-col items-center justify-center p-8 overflow-hidden">
+<!-- Subtle Flowing Background Elements -->
+<div class="absolute inset-0 z-0 pointer-events-none">
+<div class="absolute -top-[10%] -left-[10%] w-[80%] h-[80%] rounded-full soft-flow blur-[120px]"></div>
+<div class="absolute top-[40%] -right-[20%] w-[70%] h-[70%] rounded-full bg-surface-container-low/30 blur-[100px]"></div>
+<div class="absolute -bottom-[20%] left-[20%] w-[60%] h-[60%] rounded-full bg-white/40 blur-[80px]"></div>
+</div>
+<!-- Main Content (Center) -->
+<div class="relative z-10 flex flex-col items-center gap-12 max-w-md w-full">
+<!-- Brand Identity -->
+<div class="flex flex-col items-center">
+<!-- Decorative Iconography -->
+<div class="mb-6 flex items-center justify-center w-16 h-16 rounded-full bg-white shadow-[0_12px_40px_rgba(16,28,46,0.04)]">
+<span class="material-symbols-outlined text-primary text-3xl" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+</div>
+<!-- Logo text from Shared Components Hierarchy: "Fayed" -->
+<h1 class="text-5xl font-extrabold tracking-tighter text-on-surface mb-2 font-headline">Fayed</h1>
+<p class="text-tertiary tracking-widest text-[11px] font-medium uppercase opacity-60">Elevated Wellness</p>
+</div>
+<!-- Experience Teaser -->
+<div class="w-full h-[320px] rounded-[3rem] overflow-hidden shadow-[0_24px_60px_rgba(16,28,46,0.06)] bg-white relative group">
+<div class="absolute inset-0 bg-gradient-to-t from-on-surface/20 to-transparent z-10"></div>
+<img class="w-full h-full object-cover transition-transform duration-[3s] scale-105 group-hover:scale-100" data-alt="serene wellness sanctuary with soft natural light morning sun rays and minimal architectural details in calming neutral tones" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDyDeGC7bIEymI_61uLofi3srfBjyZFzBuJ1ZfnYtYD0tSjRd62sLvAgxDdLXppceHaJ13EvJiIlmG5kPyutoH0jgcLNvMOho2LT6yxtWATKiN6T45IA8nHI0RWGLHsLu6JvzHKsGf3r3LCQuhuMxNxRo0-iU8JRY2PmyRHayNnrfVELDgZF4swqnKFn2vezf_zUaE3ek9TuuYHVB9aMaJken92GLA0UHKbWBmf0t9xSX4sLrgL-K45LrCAsFHSAjfP5B0yTvXH5Uo"/>
+<!-- Overlay Quote -->
+<div class="absolute bottom-10 inset-x-8 z-20 text-center">
+<p class="text-white text-lg font-medium leading-relaxed">أهلاً بك في مساحتك الخاصة للهدوء والارتقاء</p>
+</div>
+</div>
+</div>
+<!-- Progress/Action Footer -->
+<div class="relative z-10 mt-16 flex flex-col items-center gap-8">
+<!-- Subtle Loading Indicator -->
+<div class="flex gap-3">
+<div class="w-1.5 h-1.5 rounded-full bg-primary/20"></div>
+<div class="w-1.5 h-1.5 rounded-full bg-primary/40"></div>
+<div class="w-6 h-1.5 rounded-full bg-primary"></div>
+</div>
+<!-- Start Button -->
+<button class="bg-gradient-to-r from-primary to-primary-container text-on-primary px-12 py-5 rounded-full font-semibold text-lg shadow-xl shadow-primary/20 active:scale-95 transition-all">
+                ابدأ رحلتك
+            </button>
+</div>
+</div>
+<!-- Decorative Top Edge Blur -->
+<div class="fixed top-0 inset-x-0 h-32 bg-gradient-to-b from-[#eff1f3] to-transparent z-0 pointer-events-none"></div>
+<!-- Visual Detail: Floating Grain Overlay for Premium Texture -->
+<div class="fixed inset-0 pointer-events-none opacity-[0.03] mix-blend-overlay">
+<svg viewbox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+<filter id="noise">
+<feturbulence basefrequency="0.65" numoctaves="3" stitchtiles="stitch" type="fractalNoise"></feturbulence>
+</filter>
+<rect filter="url(#noise)" height="100%" width="100%"></rect>
+</svg>
+</div>
+</body></html>

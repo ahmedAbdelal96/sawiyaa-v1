@@ -1,0 +1,117 @@
+{
+  "meta": {
+    "title": "Sessions Tracking - Admin",
+    "description": "Track session lifecycle status and delayed sessions in one operational list."
+  },
+  "header": {
+    "eyebrow": "Operations visibility",
+    "title": "Sessions tracking",
+    "note": "Use this list to track session state, identify delayed sessions, and move to runtime inspection quickly when follow-up is needed.",
+    "count": "{value, number} sessions",
+    "countLoading": "Loading..."
+  },
+  "scope": {
+    "heading": "Available now",
+    "items": {
+      "statuses": "Lifecycle visibility in one table.",
+      "delayedFilter": "Delayed-only filter directly from the list.",
+      "runtimeLink": "Fast entry to runtime inspection and attendance timeline."
+    }
+  },
+  "boundaries": {
+    "heading": "Outside current scope",
+    "items": {
+      "visibilityOnly": "This surface is visibility-first with no session control actions.",
+      "noAlerts": "Automatic late/no-show alerting is not part of this baseline.",
+      "noRealtime": "No live socket or realtime dashboard behavior is implied here."
+    }
+  },
+  "filters": {
+    "sort": "Sort by date",
+    "sortNewest": "Newest first",
+    "sortOldest": "Oldest first",
+    "moreOptions": "More filters",
+    "lessOptions": "Less filters",
+    "status": "Session status",
+    "allStatuses": "All statuses",
+    "delayedOnly": "Show delayed sessions only",
+    "missingAttendanceOnly": "Show sessions without attendance events",
+    "sessionCode": "Session code",
+    "sessionCodePlaceholder": "Search by code (SES-2026-000123)",
+    "practitionerId": "Practitioner profile ID",
+    "patientId": "Patient profile ID",
+    "scheduledFrom": "Scheduled from",
+    "scheduledTo": "Scheduled to",
+    "idPlaceholder": "Paste profile ID"
+  },
+  "quickActions": {
+    "heading": "Quick filters",
+    "delayedNow": "Start delayed now",
+    "missingAttendance": "No attendance yet",
+    "startingSoon": "Starting within 1 hour",
+    "clear": "Clear"
+  },
+  "badges": {
+    "delayed": "Start delayed"
+  },
+  "modes": {
+    "VIDEO": "Video",
+    "AUDIO": "Audio",
+    "CHAT": "Chat"
+  },
+  "table": {
+    "headers": {
+      "status": "Status",
+      "scheduledStart": "Scheduled start",
+      "practitioner": "Practitioner",
+      "patient": "Patient",
+      "mode": "Mode",
+      "id": "Session ID",
+      "sessionCode": "Session code"
+    },
+    "openRuntime": "Open runtime",
+    "ids": {
+      "practitioner": "Practitioner ID: {id}",
+      "patient": "Patient ID: {id}"
+    },
+    "fallback": {
+      "none": "-",
+      "noName": "Not available"
+    }
+  },
+  "drawer": {
+    "title": "Session quick view",
+    "description": "Session code: {code} ({id})",
+    "loading": "Loading session details...",
+    "error": "Could not load session runtime/attendance details.",
+    "empty": "No data available for this session.",
+    "runtimeHeading": "Runtime snapshot",
+    "attendanceHeading": "Attendance snapshot",
+    "noAttendance": "No attendance events were recorded for this session yet.",
+    "openFullRuntime": "Open full runtime inspection",
+    "fields": {
+      "status": "Status",
+      "scheduledStart": "Scheduled start",
+      "scheduledEnd": "Scheduled end",
+      "patientJoined": "Patient joined",
+      "practitionerJoined": "Practitioner joined",
+      "firstJoinedAt": "First joined at",
+      "lastLeftAt": "Last left at"
+    },
+    "values": {
+      "yes": "Yes",
+      "no": "No"
+    }
+  },
+  "states": {
+    "empty": {
+      "heading": "No sessions found",
+      "note": "No sessions match the current filters."
+    },
+    "error": {
+      "heading": "Could not load sessions",
+      "note": "Try again in a moment.",
+      "retry": "Retry"
+    }
+  }
+}

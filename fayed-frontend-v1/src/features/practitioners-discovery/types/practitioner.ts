@@ -1,0 +1,81 @@
+import { SUPPORTED_COUNTRY_CODES } from "@/constants/reference-data";
+
+export type SpecialtyId =
+  | "anxiety"
+  | "depression"
+  | "relationships"
+  | "family"
+  | "trauma"
+  | "addiction"
+  | "psychiatry"
+  | "ocd";
+
+export type LanguageCode = "ar" | "en" | "fr";
+
+export type CountryCode = (typeof SUPPORTED_COUNTRY_CODES)[number];
+
+export type PublicPractitioner = {
+  id: string;
+  slug: string;
+  nameAr: string;
+  nameEn: string;
+  titleAr: string;
+  titleEn: string;
+  specialties: string[];
+  languages: string[];
+  country: string;
+  practitionerType?: string;
+  practitionerGender?: "male" | "female" | null;
+  sessionPrice30?: number | null;
+  sessionPrice60?: number | null;
+  isOnlineNow?: boolean;
+  acceptsCoupon?: boolean;
+  acceptsPackage?: boolean;
+  rating: number;
+  reviewCount: number;
+  sessionCount: number | null; // null = not provided by backend public contract
+  yearsExperience: number;
+  isVerified: boolean;
+  initials: string;
+};
+
+/** Legacy filter params used by mock data helpers (not sent to backend). */
+export type PractitionerFilterParams = {
+  q?: string;
+  specialty?: string;
+  lang?: string;
+  sort?: "rating" | "experience" | "sessions";
+};
+
+/** Query params sent to the real backend API. */
+export type PractitionerQueryParams = {
+  search?: string;
+  specialtySlug?: string;
+  language?: string;
+  country?: string;
+  practitionerKind?: "doctor" | "therapist";
+  gender?: "male" | "female";
+  duration?: 30 | 60;
+  onlineNow?: boolean;
+  availableToday?: boolean;
+  availableThisWeek?: boolean;
+  acceptsCoupon?: boolean;
+  acceptsPackage?: boolean;
+  minRating?: number;
+  minSessionFee?: number;
+  maxSessionFee?: number;
+  sort?: "recommended" | "experience" | "rating";
+  page?: number;
+  limit?: number;
+};
+
+export type PractitionerPagination = {
+  page: number;
+  limit: number;
+  totalItems: number;
+  totalPages: number;
+};
+
+export const LANGUAGE_CODES: LanguageCode[] = ["ar", "en", "fr"];
+export const COUNTRY_CODES: CountryCode[] = [...SUPPORTED_COUNTRY_CODES];
+

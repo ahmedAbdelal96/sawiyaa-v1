@@ -1,0 +1,182 @@
+{
+  "meta": {
+    "title": "Session runtime inspection — Admin",
+    "description": "Inspect runtime readiness and provider linkage for a specific session."
+  },
+  "page": {
+    "eyebrow": "Operations",
+    "title": "Session runtime inspection",
+    "note": "Inspect runtime readiness and provider linkage for a specific session. This surface is visibility-only and does not provide admin controls.",
+    "active": "Inspection active",
+    "waiting": "Waiting for session ID"
+  },
+  "scope": {
+    "heading": "What this tool shows",
+    "items": {
+      "status": "Session status, mode, and scheduling timestamps.",
+      "provider": "Provider linkage details and identifiers.",
+      "readiness": "Join readiness flags and blocked reason when applicable."
+    }
+  },
+  "boundaries": {
+    "heading": "Outside current scope",
+    "items": {
+      "noControls": "No runtime preparation or join controls are exposed here.",
+      "noIntervention": "No live-session intervention or provider controls exist here.",
+      "noEdits": "This tool does not edit or override session data."
+    }
+  },
+  "lookup": {
+    "heading": "Inspect a session by ID",
+    "note": "Enter a real session ID to fetch the runtime inspection snapshot.",
+    "fieldLabel": "Session ID",
+    "placeholder": "Paste a session ID",
+    "submit": "Inspect runtime",
+    "helper": "Use a real session ID from payments, support, or session operations.",
+    "backToPayments": "Back to payments"
+  },
+  "sections": {
+    "summary": {
+      "title": "Session snapshot",
+      "note": "Baseline session context associated with the runtime inspection."
+    },
+    "provider": {
+      "title": "Provider linkage",
+      "note": "Provider identifiers used to troubleshoot runtime readiness."
+    },
+    "readiness": {
+      "title": "Runtime readiness",
+      "note": "Join readiness and blocker detail from the runtime resolver."
+    },
+    "context": {
+      "title": "Operational context",
+      "note": "This inspection is visibility-only. It does not change session status or provider state.",
+      "helper": "Locale: {locale}"
+    }
+  },
+  "result": {
+    "eyebrow": "Runtime snapshot",
+    "title": "Inspection details",
+    "note": "Use this snapshot to confirm runtime readiness and provider linkage for operations."
+  },
+  "attendance": {
+    "heading": "Attendance telemetry",
+    "note": "Visibility-only attendance signals from persisted provider events.",
+    "summary": {
+      "heading": "Attendance summary",
+      "fields": {
+        "patientHasJoined": "Patient joined",
+        "practitionerHasJoined": "Practitioner joined",
+        "patientJoinedAt": "Patient first joined",
+        "practitionerJoinedAt": "Practitioner first joined",
+        "patientLeftAt": "Patient last left",
+        "practitionerLeftAt": "Practitioner last left",
+        "firstJoinedAt": "First join observed",
+        "lastLeftAt": "Last leave observed"
+      }
+    },
+    "timeline": {
+      "heading": "Attendance timeline",
+      "providerDetails": "Provider event details",
+      "eventTypes": {
+        "JOINED": "Joined",
+        "LEFT": "Left"
+      },
+      "participantRoles": {
+        "PATIENT": "Patient",
+        "PRACTITIONER": "Practitioner",
+        "UNKNOWN": "Unknown participant"
+      },
+      "fields": {
+        "occurredAt": "Occurred at:",
+        "ingestedAt": "Ingested at:",
+        "userId": "User ID:",
+        "provider": "Provider:",
+        "providerEventType": "Provider event type:",
+        "providerEventRef": "Provider event reference:",
+        "providerRoomRef": "Provider room reference:",
+        "providerParticipantRef": "Provider participant reference:"
+      }
+    },
+    "states": {
+      "empty": {
+        "heading": "No attendance events yet",
+        "note": "Attendance telemetry has not been recorded for this session yet."
+      },
+      "error": {
+        "heading": "Attendance telemetry unavailable",
+        "retry": "Try again",
+        "notFound": "Session was not found.",
+        "generic": "Could not load attendance telemetry right now."
+      }
+    }
+  },
+  "fields": {
+    "id": "Session ID",
+    "status": "Status",
+    "mode": "Session mode",
+    "scheduledStartAt": "Scheduled start",
+    "scheduledEndAt": "Scheduled end",
+    "provider": "Provider",
+    "providerRoomId": "Provider room ID",
+    "providerSessionRef": "Provider session reference",
+    "canPrepareRuntime": "Can prepare runtime",
+    "canJoin": "Can join",
+    "blockedReason": "Blocked reason"
+  },
+  "statuses": {
+    "DRAFT": "Draft",
+    "PENDING_PAYMENT": "Pending payment",
+    "PENDING_PRACTITIONER_RESPONSE": "Pending practitioner response",
+    "CONFIRMED": "Confirmed",
+    "UPCOMING": "Upcoming",
+    "READY_TO_JOIN": "Ready to join",
+    "IN_PROGRESS": "In progress",
+    "COMPLETED": "Completed",
+    "CANCELLED": "Cancelled",
+    "NO_SHOW": "No-show",
+    "EXPIRED": "Expired",
+    "REFUND_PENDING": "Refund pending",
+    "REFUNDED": "Refunded"
+  },
+  "modes": {
+    "VIDEO": "Video",
+    "AUDIO": "Audio",
+    "CHAT": "Chat"
+  },
+  "providers": {
+    "NONE": "None",
+    "DAILY": "Daily",
+    "ZOOM": "Zoom"
+  },
+  "blockedReasons": {
+    "SESSION_NOT_JOINABLE_STATUS": "Session status does not allow joining",
+    "SESSION_NOT_VIDEO_MODE": "Session is not in video mode",
+    "SESSION_TIME_WINDOW_NOT_OPEN": "Join window is not open yet",
+    "SESSION_RUNTIME_NOT_PREPARED": "Runtime has not been prepared yet",
+    "NONE": "None"
+  },
+  "labels": {
+    "yes": "Yes",
+    "no": "No"
+  },
+  "states": {
+    "empty": {
+      "heading": "Enter a session ID",
+      "note": "Provide a session ID to load the runtime inspection snapshot."
+    },
+    "error": {
+      "heading": "Runtime inspection unavailable",
+      "note": "We could not load the runtime inspection right now.",
+      "retry": "Try again"
+    },
+    "notFound": {
+      "heading": "Session not found",
+      "note": "We could not find a session with this ID."
+    }
+  },
+  "errors": {
+    "notFound": "Session was not found.",
+    "generic": "Could not load runtime inspection right now."
+  }
+}

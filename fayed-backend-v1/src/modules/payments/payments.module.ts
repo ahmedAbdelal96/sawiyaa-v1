@@ -1,0 +1,99 @@
+import { Module } from '@nestjs/common';
+import { JwtAccessAuthGuard } from '@common/guards/authentication/jwt-access-auth.guard';
+import { RolesGuard } from '@common/guards/authorization/roles.guard';
+import { AppLoggerService } from '@common/logging/app-logger.service';
+import { FinancialOperationsModule } from '@modules/financial-operations/financial-operations.module';
+import { FinancialRulesModule } from '@modules/financial-rules/financial-rules.module';
+import { NotificationsModule } from '@modules/notifications/notifications.module';
+import { SessionsModule } from '@modules/sessions/sessions.module';
+import { PatientPaymentsController } from './controllers/patient-payments.controller';
+import { PaymentWebhooksController } from './controllers/payment-webhooks.controller';
+import { AdminPaymentRefundsController } from './controllers/admin-payment-refunds.controller';
+import { PaymentMapper } from './mappers/payment.mapper';
+import { PaymobPaymentProviderAdapter } from './providers/paymob-payment-provider.adapter';
+import { StripePaymentProviderAdapter } from './providers/stripe-payment-provider.adapter';
+import { PaymentPatientRepository } from './repositories/payment-patient.repository';
+import { PaymentRepository } from './repositories/payment.repository';
+import { PaymentSessionRepository } from './repositories/payment-session.repository';
+import { OrchestrateSessionPaymentStatusService } from './services/orchestrate-session-payment-status.service';
+import { OrchestrateTrainingEnrollmentPaymentStatusService } from './services/orchestrate-training-enrollment-payment-status.service';
+import { PaymentProviderCapabilitiesService } from './services/payment-provider-capabilities.service';
+import { PaymentConfigStartupValidationService } from './services/payment-config-startup-validation.service';
+import { PaymentRuntimeConfigService } from './services/payment-runtime-config.service';
+import { PaymentProviderRegistryService } from './services/payment-provider-registry.service';
+import { PaymentProviderResolverService } from './services/payment-provider-resolver.service';
+import { ResolveSessionPaymentPricingService } from './services/resolve-session-payment-pricing.service';
+import { ValidatePaymentStatusTransitionService } from './services/validate-payment-status-transition.service';
+import { ValidateRefundEligibilityService } from './services/validate-refund-eligibility.service';
+import { ExpirePaymentUseCase } from './use-cases/expire-payment.use-case';
+import { GetAdminPaymentOpsDetailsUseCase } from './use-cases/get-admin-payment-ops-details.use-case';
+import { GetPatientPaymentUseCase } from './use-cases/get-patient-payment.use-case';
+import { HandlePaymobWebhookUseCase } from './use-cases/handle-paymob-webhook.use-case';
+import { HandleStripeWebhookUseCase } from './use-cases/handle-stripe-webhook.use-case';
+import { InitiateSessionPaymentUseCase } from './use-cases/initiate-session-payment.use-case';
+import { ListPaymentRefundsUseCase } from './use-cases/list-payment-refunds.use-case';
+import { ListPatientPaymentsUseCase } from './use-cases/list-patient-payments.use-case';
+import { MarkPaymentFailedUseCase } from './use-cases/mark-payment-failed.use-case';
+import { MarkPaymentSucceededUseCase } from './use-cases/mark-payment-succeeded.use-case';
+import { RequestPaymentRefundUseCase } from './use-cases/request-payment-refund.use-case';
+import { RetryPaymentRefundUseCase } from './use-cases/retry-payment-refund.use-case';
+
+/**
+ * Payments Module owns payment initiation, provider webhook handling,
+ * refund execution lifecycle, and session-payment orchestration.
+ * Wallets, settlements, commissions, coupons, and broader finance tooling stay outside this phase.
+ */
+@Module({
+  imports: [
+    SessionsModule,
+    FinancialRulesModule,
+    FinancialOperationsModule,
+    NotificationsModule,
+  ],
+  controllers: [
+    PatientPaymentsController,
+    PaymentWebhooksController,
+    AdminPaymentRefundsController,
+  ],
+  providers: [
+    JwtAccessAuthGuard,
+    RolesGuard,
+    AppLoggerService,
+    PaymentMapper,
+    PaymentRepository,
+    PaymentPatientRepository,
+    PaymentSessionRepository,
+    ResolveSessionPaymentPricingService,
+    ValidatePaymentStatusTransitionService,
+    ValidateRefundEligibilityService,
+    OrchestrateSessionPaymentStatusService,
+    OrchestrateTrainingEnrollmentPaymentStatusService,
+    PaymentProviderCapabilitiesService,
+    PaymentRuntimeConfigService,
+    PaymentConfigStartupValidationService,
+    PaymentProviderResolverService,
+    StripePaymentProviderAdapter,
+    PaymobPaymentProviderAdapter,
+    PaymentProviderRegistryService,
+    InitiateSessionPaymentUseCase,
+    GetAdminPaymentOpsDetailsUseCase,
+    GetPatientPaymentUseCase,
+    ListPatientPaymentsUseCase,
+    HandleStripeWebhookUseCase,
+    HandlePaymobWebhookUseCase,
+    MarkPaymentSucceededUseCase,
+    MarkPaymentFailedUseCase,
+    ExpirePaymentUseCase,
+    ListPaymentRefundsUseCase,
+    RequestPaymentRefundUseCase,
+    RetryPaymentRefundUseCase,
+  ],
+  exports: [
+    PaymentRepository,
+    PaymentProviderRegistryService,
+    PaymentProviderResolverService,
+    ValidatePaymentStatusTransitionService,
+    ExpirePaymentUseCase,
+  ],
+})
+export class PaymentsModule {}

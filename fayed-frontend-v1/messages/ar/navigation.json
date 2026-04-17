@@ -1,0 +1,57 @@
+{
+  "main": {
+    "title": "الأساسيات",
+    "dashboard": "لوحة التحكم",
+    "patients": "المرضى",
+    "practitioners": "الممارسون",
+    "practitionerApplications": "طلبات الانضمام للممارسين",
+    "articles": "المقالات",
+    "sessions": "الجلسات",
+    "wallet": "المحفظة",
+    "ledger": "دفتر الحسابات",
+    "payments": "المدفوعات",
+    "settlements": "التسويات",
+    "settlementsBatches": "دفعات التسوية",
+    "settlementsDues": "مستحقات المعالجين",
+    "settlementsPayouts": "سجل عمليات الصرف",
+    "assessments": "الاختبارات",
+    "availability": "التوفر"
+  },
+  "practitionerMain": {
+    "title": "العمل الأساسي"
+  },
+  "practitionerWorkspace": {
+    "title": "تنسيق الرعاية"
+  },
+  "practitionerFinance": {
+    "title": "الماليات"
+  },
+  "practitionerReadiness": {
+    "title": "الجاهزية"
+  },
+  "workspace": {
+    "title": "مساحة العمل",
+    "articles": "المقالات",
+    "notifications": "الإشعارات",
+    "specialties": "التخصصات",
+    "support": "الدعم",
+    "careChat": "محادثة الرعاية",
+    "chat": "الدردشة",
+    "reviews": "المراجعات",
+    "moderationReports": "بلاغات الإشراف",
+    "training": "التدريب"
+  },
+  "settings": {
+    "title": "الإعدادات",
+    "profile": "الملف الشخصي",
+    "settings": "الإعدادات",
+    "adminOperations": "الإدارة / العمليات",
+    "specialties": "التخصصات",
+    "credentials": "الاعتمادات",
+    "application": "الطلب"
+  },
+  "patientShell": {
+    "areaTitle": "مساحة المريض",
+    "areaSubtitle": "تصفح، احجز، وأدر رحلة رعايتك بسهولة"
+  }
+}

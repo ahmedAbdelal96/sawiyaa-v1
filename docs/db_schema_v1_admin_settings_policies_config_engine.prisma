@@ -1,0 +1,208 @@
+// DB Schema v1 — Admin Settings / Policies / Config Engine
+// Notes:
+// - Catalog defines known keys
+// - Values hold current/effective scoped values
+// - ChangeLog tracks every modification
+// - FeatureFlag is separated for operational clarity
+// - Branding has a convenience layer in addition to generic config values
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ConfigKind {
+  SETTING
+  POLICY
+  LIMIT
+  THRESHOLD
+  FEATURE_DEFAULT
+  BRANDING
+}
+
+enum ConfigDataType {
+  STRING
+  NUMBER
+  BOOLEAN
+  JSON
+  STRING_ARRAY
+  NUMBER_ARRAY
+}
+
+enum ConfigCategory {
+  PLATFORM
+  BRANDING
+  LOCALE
+  SESSION
+  BOOKING
+  CANCELLATION
+  PAYMENT
+  PAYOUT
+  COUPON
+  CHAT
+  SUPPORT
+  NOTIFICATION
+  SECURITY
+  TRAINING
+  SYSTEM
+}
+
+enum ConfigScopeType {
+  GLOBAL
+  COUNTRY
+  SPECIALTY
+  PRACTITIONER
+  ROLE
+  CHANNEL
+  ENVIRONMENT
+}
+
+enum ConfigChangeAction {
+  CREATED
+  UPDATED
+  ACTIVATED
+  DEACTIVATED
+  DELETED
+  OVERRIDE_ADDED
+  OVERRIDE_REMOVED
+}
+
+// NOTE:
+// Expected existing model:
+// model User
+
+model ConfigKeyCatalog {
+  id                String             @id @default(uuid()) @db.Uuid
+  key               String             @unique @db.VarChar(191)
+  slug              String             @unique @db.VarChar(191)
+  displayName       String             @db.VarChar(191)
+  description       String?            @db.VarChar(1000)
+
+  configKind        ConfigKind
+  dataType          ConfigDataType
+  category          ConfigCategory
+
+  isSensitive       Boolean            @default(false)
+  isRequired        Boolean            @default(false)
+  supportsOverride  Boolean            @default(true)
+
+  defaultValueJson  Json?
+
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  values            ConfigValue[]
+  changeLogs        ConfigChangeLog[]
+
+  @@index([configKind, category])
+  @@index([isRequired, isSensitive])
+  @@index([supportsOverride, category])
+}
+
+model ConfigValue {
+  id                String             @id @default(uuid()) @db.Uuid
+  configKeyId       String             @db.Uuid
+
+  scopeType         ConfigScopeType    @default(GLOBAL)
+  scopeRefId        String?            @db.Uuid
+
+  valueString       String?            @db.VarChar(1000)
+  valueNumber       Decimal?           @db.Decimal(18, 4)
+  valueBoolean      Boolean?
+  valueJson         Json?
+
+  priority          Int                @default(0)
+  isActive          Boolean            @default(true)
+
+  effectiveFrom     DateTime?
+  effectiveTo       DateTime?
+
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  configKey         ConfigKeyCatalog   @relation(fields: [configKeyId], references: [id], onDelete: Cascade)
+  changeLogs        ConfigChangeLog[]
+
+  @@index([configKeyId, scopeType, scopeRefId, isActive])
+  @@index([scopeType, scopeRefId, priority])
+  @@index([effectiveFrom, effectiveTo])
+  @@index([isActive, priority])
+  @@index([valueBoolean])
+  @@index([valueNumber])
+}
+
+model ConfigChangeLog {
+  id                String             @id @default(uuid()) @db.Uuid
+  configKeyId       String             @db.Uuid
+  configValueId     String?            @db.Uuid
+  changedByUserId   String?            @db.Uuid
+
+  changeAction      ConfigChangeAction
+  oldValueSnapshot  Json?
+  newValueSnapshot  Json?
+  reason            String?            @db.VarChar(1000)
+
+  changedAt         DateTime           @default(now())
+
+  configKey         ConfigKeyCatalog   @relation(fields: [configKeyId], references: [id], onDelete: Cascade)
+  configValue       ConfigValue?       @relation(fields: [configValueId], references: [id], onDelete: SetNull)
+
+  @@index([configKeyId, changedAt])
+  @@index([configValueId, changedAt])
+  @@index([changedByUserId, changedAt])
+  @@index([changeAction, changedAt])
+}
+
+model BrandThemeConfig {
+  id                String             @id @default(uuid()) @db.Uuid
+  slug              String             @unique @db.VarChar(191)
+  displayName       String             @db.VarChar(191)
+
+  brandName         String?            @db.VarChar(191)
+  logoUrl           String?            @db.VarChar(500)
+  logoDarkUrl       String?            @db.VarChar(500)
+  faviconUrl        String?            @db.VarChar(500)
+
+  primaryColor      String?            @db.VarChar(50)
+  secondaryColor    String?            @db.VarChar(50)
+  accentColor       String?            @db.VarChar(50)
+  successColor      String?            @db.VarChar(50)
+  warningColor      String?            @db.VarChar(50)
+  errorColor        String?            @db.VarChar(50)
+
+  fontFamily        String?            @db.VarChar(191)
+  borderRadiusScale String?            @db.VarChar(50)
+
+  isActive          Boolean            @default(true)
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  @@index([isActive])
+}
+
+model FeatureFlag {
+  id                String             @id @default(uuid()) @db.Uuid
+  slug              String             @db.VarChar(191)
+  displayName       String             @db.VarChar(191)
+  description       String?            @db.VarChar(500)
+
+  isEnabled         Boolean            @default(false)
+
+  scopeType         ConfigScopeType    @default(GLOBAL)
+  scopeRefId        String?            @db.Uuid
+
+  rolloutPercent    Int?
+  effectiveFrom     DateTime?
+  effectiveTo       DateTime?
+
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  @@unique([slug, scopeType, scopeRefId])
+  @@index([isEnabled, effectiveFrom, effectiveTo])
+  @@index([scopeType, scopeRefId])
+}

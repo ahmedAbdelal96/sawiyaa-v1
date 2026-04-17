@@ -1,0 +1,137 @@
+import {
+  CredentialReviewStatus,
+  CredentialType,
+  PractitionerApplicationStatus,
+  PractitionerGender,
+  PractitionerPayoutMethodType,
+  PractitionerStatus,
+  PractitionerType,
+} from '@prisma/client';
+
+/**
+ * Shared practitioners-module view and input types.
+ * Keeping these central avoids ad-hoc inline object shapes across mappers and use cases.
+ */
+export interface UpdatePractitionerProfileInput {
+  displayName?: string;
+  professionalTitle?: string | null;
+  bio?: string | null;
+  countryCode?: string | null;
+  yearsOfExperience?: number | null;
+  practitionerType?: PractitionerType;
+  practitionerGender?: PractitionerGender | null;
+  locale?: string;
+  timezone?: string;
+  languageCodes?: string[];
+  payoutDestination?: PractitionerPayoutDestinationInput | null;
+}
+
+export interface PractitionerSpecialtySelectionInput {
+  primarySpecialtyCategoryId: string;
+  specialtyIds: string[];
+}
+
+export interface PractitionerPayoutDestinationInput {
+  methodType: PractitionerPayoutMethodType;
+  accountHolderName?: string | null;
+  bankName?: string | null;
+  bankAccountNumber?: string | null;
+  iban?: string | null;
+  walletProvider?: string | null;
+  walletIdentifier?: string | null;
+  otherDetails?: string | null;
+}
+
+export interface PractitionerPayoutDestinationViewModel {
+  methodType: PractitionerPayoutMethodType | null;
+  accountHolderName: string | null;
+  bankName: string | null;
+  bankAccountNumber: string | null;
+  iban: string | null;
+  walletProvider: string | null;
+  walletIdentifier: string | null;
+  otherDetails: string | null;
+}
+
+export interface PractitionerSpecialtyViewModel {
+  specialtyId: string;
+  slug: string;
+  title: string | null;
+  isPrimary: boolean;
+}
+
+export interface PractitionerCredentialViewModel {
+  credentialId: string;
+  credentialType: CredentialType;
+  fileUrl: string;
+  reviewStatus: CredentialReviewStatus;
+  expiresAt: Date | null;
+  uploadedAt: Date;
+  updatedAt: Date;
+}
+
+export interface PractitionerCredentialSummaryViewModel {
+  totalCredentials: number;
+  pendingCount: number;
+  approvedCount: number;
+  rejectedCount: number;
+  expiredCount: number;
+  lastUploadedAt: Date | null;
+}
+
+export interface PractitionerApplicationStatusViewModel {
+  applicationId: string | null;
+  status: PractitionerApplicationStatus | null;
+  submittedAt: Date | null;
+  reviewedAt: Date | null;
+  reviewedByUserId: string | null;
+  reviewDecisionReason: string | null;
+  reviewNotes: string | null;
+}
+
+export interface PractitionerReadinessChecks {
+  hasDisplayName: boolean;
+  hasProfessionalTitle: boolean;
+  hasBio: boolean;
+  hasCountry: boolean;
+  hasYearsOfExperience: boolean;
+  hasLanguage: boolean;
+  hasSpecialty: boolean;
+  hasCredential: boolean;
+  hasPayoutDestination: boolean;
+  isAccountActive: boolean;
+  isPractitionerOtpVerified: boolean;
+}
+
+export interface PractitionerReadinessViewModel {
+  isProfileCompleted: boolean;
+  canSubmitApplication: boolean;
+  missingRequirements: string[];
+  checks: PractitionerReadinessChecks;
+}
+
+export interface PractitionerProfileViewModel {
+  practitionerProfileId: string;
+  userId: string;
+  displayName: string | null;
+  avatarUrl: string | null;
+  professionalTitle: string | null;
+  bio: string | null;
+  countryCode: string | null;
+  locale: string | null;
+  timezone: string | null;
+  languages: string[];
+  yearsOfExperience: number | null;
+  practitionerType: PractitionerType;
+  practitionerGender: PractitionerGender | null;
+  primarySpecialtyCategoryId: string | null;
+  payoutDestination: PractitionerPayoutDestinationViewModel | null;
+  profileStatus: PractitionerStatus;
+  specialties: PractitionerSpecialtyViewModel[];
+  isProfileCompleted: boolean;
+  canSubmitApplication: boolean;
+  applicationStatusSummary: PractitionerApplicationStatusViewModel;
+  credentialSummary: PractitionerCredentialSummaryViewModel;
+  createdAt: Date;
+  updatedAt: Date;
+}

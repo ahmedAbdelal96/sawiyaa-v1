@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+
+<html dir="rtl" lang="ar"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;family=Noto+Sans+Arabic:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-variant": "#d8e3fc",
+                        "on-tertiary": "#ffffff",
+                        "secondary-fixed": "#d6e3ff",
+                        "background": "#f9f9ff",
+                        "inverse-surface": "#263144",
+                        "surface-dim": "#cfdaf3",
+                        "on-secondary-container": "#465c80",
+                        "outline-variant": "#c2c6d3",
+                        "on-primary-fixed": "#001b3c",
+                        "on-secondary-fixed-variant": "#31476a",
+                        "primary": "#0b5cac",
+                        "tertiary-fixed-dim": "#bfc7d5",
+                        "surface-bright": "#f9f9ff",
+                        "on-tertiary-container": "#fdfcff",
+                        "inverse-primary": "#a7c8ff",
+                        "tertiary-fixed": "#dbe3f2",
+                        "surface-container": "#e8eeff",
+                        "on-tertiary-fixed": "#141c27",
+                        "surface": "#f9f9ff",
+                        "primary-container": "#3575c7",
+                        "on-error-container": "#93000a",
+                        "tertiary-container": "#6d7582",
+                        "on-primary-container": "#fefcff",
+                        "on-background": "#101c2e",
+                        "outline": "#727783",
+                        "error": "#ba1a1a",
+                        "surface-container-lowest": "#ffffff",
+                        "secondary-fixed-dim": "#b1c7f1",
+                        "surface-container-highest": "#d8e3fc",
+                        "primary-fixed": "#d5e3ff",
+                        "secondary": "#495f83",
+                        "on-surface": "#101c2e",
+                        "surface-container-high": "#dfe8ff",
+                        "primary-fixed-dim": "#a7c8ff",
+                        "on-primary-fixed-variant": "#004689",
+                        "on-error": "#ffffff",
+                        "on-secondary": "#ffffff",
+                        "error-container": "#ffdad6",
+                        "inverse-on-surface": "#ecf0ff",
+                        "secondary-container": "#bfd5ff",
+                        "on-tertiary-fixed-variant": "#3f4753",
+                        "on-surface-variant": "#424751",
+                        "on-secondary-fixed": "#001b3c",
+                        "surface-tint": "#125eae",
+                        "tertiary": "#545d69",
+                        "surface-container-low": "#f0f3ff",
+                        "on-primary": "#ffffff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "2xl": "1rem",
+                        "3xl": "1.5rem",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Noto Sans Arabic", "Manrope"],
+                        "body": ["Noto Sans Arabic", "Manrope"],
+                        "label": ["Noto Sans Arabic", "Manrope"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Noto Sans Arabic', 'Manrope', sans-serif; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        .tonal-layering {
+            background: linear-gradient(180deg, rgba(249, 249, 255, 0) 0%, rgba(240, 243, 255, 1) 100%);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background min-h-screen pb-32">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-[#f9f9ff]/70 backdrop-blur-md">
+<div class="flex flex-row-reverse justify-between items-center w-full px-6 py-4 max-w-screen-xl mx-auto">
+<div class="flex items-center gap-3">
+<span class="font-headline font-bold text-lg tracking-tight text-right text-[#101c2e]">الحساب</span>
+</div>
+<div class="flex items-center gap-4">
+<button class="hover:bg-blue-50 transition-colors p-2 rounded-full">
+<span class="material-symbols-outlined text-[#3f7dcf]" data-icon="notifications">notifications</span>
+</button>
+<div class="w-10 h-10 rounded-full bg-surface-container-high border-2 border-white overflow-hidden">
+<img alt="User Profile" class="w-full h-full object-cover" data-alt="Close up portrait of a friendly man with a warm smile, soft natural outdoor lighting, high-end lifestyle photography" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCaJv8vJJOQv0pzf3OJMPkrP2JIcG3oXypk7ypLMMk_AIQEG7OGrWQHz6bER_r6Oc2gzvMO9T7bHklEyMwTxA6t4Abpq-CehWjSiwqUB2lZwS89lwA8MhyIhoxZvW7dIxqi3kPAINJQQ4geMchCOMCyySKhg81UWUV9MJT1GVAgLji_0il6KzHw_tLb6vmv0UM2In3QWKHZgwZExxl8pZZH0h6W_MZwwutBPmmPvxPXO9W7oUlUQpAHFmHOp4wtWujPPWoqBGjO0S0"/>
+</div>
+</div>
+</div>
+</header>
+<main class="pt-24 px-6 max-w-screen-md mx-auto space-y-8">
+<!-- Profile Header Section -->
+<section class="flex flex-col items-center text-center space-y-4 py-6">
+<div class="relative">
+<div class="w-28 h-28 rounded-3xl overflow-hidden shadow-sm border-4 border-white">
+<img alt="User" class="w-full h-full object-cover" data-alt="Professional studio portrait of a man in his 30s, neutral background, serene expression, soft key lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD2Imc4WZ-QFvtCFw3Yn-KUO-tqI0cOpDL8IzAG9cmD32gG9HpzxZWr1lLNFbh_1lQ8x3IrUXhMlCfYImGMqW4LukVi0auSVH0_LjWRUHv28W3QuotBptTEGaLML4yID-FghbyPiH0iI9xdSrg5FX7jUdVbuXCVefBaHkBIs4asH-cuY_goKact4M1XZMNU8fFuM35nSB6aVpNX4EWEqvXWSURwb6KQSxgf8P2vdCN-s77v4zWHyL-qB-mRxXovQ9O9f65uycWLEqs"/>
+</div>
+<button class="absolute -bottom-2 -left-2 bg-primary text-on-primary p-2 rounded-xl shadow-lg border-2 border-white">
+<span class="material-symbols-outlined text-sm" data-icon="edit">edit</span>
+</button>
+</div>
+<div>
+<h1 class="text-2xl font-bold text-on-surface">أحمد السعدني</h1>
+<p class="text-on-surface-variant text-sm">ahmed.alsadani@email.com</p>
+</div>
+</section>
+<!-- Journey Insights - Bento Style -->
+<section class="grid grid-cols-2 gap-4">
+<div class="col-span-2 bg-gradient-to-br from-primary to-primary-container p-6 rounded-3xl text-on-primary relative overflow-hidden group">
+<div class="relative z-10">
+<h3 class="text-sm font-medium opacity-80 mb-1">رؤى الرحلة</h3>
+<p class="text-2xl font-bold leading-tight">لقد أكملت 12 جلسة<br/>هذا الشهر</p>
+<div class="mt-4 inline-flex items-center gap-2 bg-white/20 px-3 py-1 rounded-full text-xs backdrop-blur-sm">
+<span>أداء ممتاز</span>
+<span class="material-symbols-outlined text-xs" data-icon="trending_up">trending_up</span>
+</div>
+</div>
+<span class="material-symbols-outlined absolute -bottom-4 -right-4 text-9xl opacity-10 rotate-12" data-icon="insights">insights</span>
+</div>
+<div class="bg-surface-container-lowest p-5 rounded-3xl flex flex-col justify-between">
+<span class="material-symbols-outlined text-primary mb-2" data-icon="schedule" data-weight="fill" style="font-variation-settings: 'FILL' 1;">schedule</span>
+<div>
+<p class="text-xs text-on-surface-variant">إجمالي الساعات</p>
+<p class="text-xl font-bold">24.5</p>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-5 rounded-3xl flex flex-col justify-between">
+<span class="material-symbols-outlined text-primary mb-2" data-icon="verified_user" data-weight="fill" style="font-variation-settings: 'FILL' 1;">verified_user</span>
+<div>
+<p class="text-xs text-on-surface-variant">مستوى الالتزام</p>
+<p class="text-xl font-bold">98%</p>
+</div>
+</div>
+</section>
+<!-- Settings List -->
+<section class="space-y-3">
+<h2 class="text-sm font-bold text-on-surface-variant px-2 mb-4">الإعدادات العامة</h2>
+<!-- List Items -->
+<div class="space-y-1">
+<button class="w-full flex items-center justify-between p-4 bg-surface-container-lowest hover:bg-surface-container transition-colors rounded-2xl group">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+</div>
+<span class="font-medium">تفاصيل شخصية</span>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant group-hover:-translate-x-1 transition-transform" data-icon="chevron_left">chevron_left</span>
+</button>
+<button class="w-full flex items-center justify-between p-4 bg-surface-container-lowest hover:bg-surface-container transition-colors rounded-2xl group">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined" data-icon="payments">payments</span>
+</div>
+<span class="font-medium">طرق الدفع</span>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant group-hover:-translate-x-1 transition-transform" data-icon="chevron_left">chevron_left</span>
+</button>
+<button class="w-full flex items-center justify-between p-4 bg-surface-container-lowest hover:bg-surface-container transition-colors rounded-2xl group">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined" data-icon="notifications_active">notifications_active</span>
+</div>
+<span class="font-medium">إعدادات التنبيهات</span>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant group-hover:-translate-x-1 transition-transform" data-icon="chevron_left">chevron_left</span>
+</button>
+<button class="w-full flex items-center justify-between p-4 bg-surface-container-lowest hover:bg-surface-container transition-colors rounded-2xl group">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined" data-icon="language">language</span>
+</div>
+<div class="text-right">
+<span class="font-medium block">اللغة</span>
+<span class="text-xs text-on-surface-variant">العربية (الافتراضية)</span>
+</div>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant group-hover:-translate-x-1 transition-transform" data-icon="chevron_left">chevron_left</span>
+</button>
+</div>
+</section>
+<!-- Logout Section -->
+<section class="pt-6">
+<button class="w-full py-4 px-6 rounded-2xl bg-error-container/30 text-error font-bold flex items-center justify-center gap-2 hover:bg-error-container/50 transition-colors">
+<span class="material-symbols-outlined" data-icon="logout">logout</span>
+<span>تسجيل الخروج</span>
+</button>
+<p class="text-center text-[10px] text-on-surface-variant/40 mt-8 font-label tracking-widest">VERSION 2.4.0 (BETA)</p>
+</section>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full flex flex-row-reverse justify-around items-center px-4 pb-6 pt-2 bg-white/70 backdrop-blur-md shadow-[0_-12px_40px_rgba(16,28,46,0.06)] rounded-t-[1.5rem] z-50">
+<a class="flex flex-col items-center justify-center text-[#101c2e]/60 hover:bg-blue-50/50 px-4 py-2 transition-colors" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="home">home</span>
+<span class="text-[11px] font-medium leading-none">الرئيسية</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#101c2e]/60 hover:bg-blue-50/50 px-4 py-2 transition-colors" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="event_note">event_note</span>
+<span class="text-[11px] font-medium leading-none">الجلسات</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#101c2e]/60 hover:bg-blue-50/50 px-4 py-2 transition-colors" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="chat_bubble">chat_bubble</span>
+<span class="text-[11px] font-medium leading-none">المحادثة</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#101c2e]/60 hover:bg-blue-50/50 px-4 py-2 transition-colors" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="payments">payments</span>
+<span class="text-[11px] font-medium leading-none">المدفوعات</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-[#d5e3ff] text-[#0b5cac] rounded-2xl px-4 py-2" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="person" data-weight="fill" style="font-variation-settings: 'FILL' 1;">person</span>
+<span class="text-[11px] font-bold leading-none">الحساب</span>
+</a>
+</nav>
+</body></html>

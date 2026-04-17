@@ -1,0 +1,407 @@
+{
+  "meta": {
+    "listTitle": "Fayed | Support",
+    "listDescription": "Create and follow real support tickets for booking, payment, account, or technical help.",
+    "detailTitle": "Fayed | Support Ticket",
+    "detailDescription": "Read your support ticket thread and send a follow-up reply."
+  },
+  "home": {
+    "eyebrow": "Support",
+    "title": "Get practical help without losing your place in the care journey.",
+    "note": "Use support for booking, payment, account, matching, or technical issues. This is separate from therapy and care conversations.",
+    "assuranceTitle": "Simple and trustworthy",
+    "assuranceNote": "Support tickets help you follow one issue clearly from the first message to the latest reply."
+  },
+  "create": {
+    "heading": "Create a support ticket",
+    "note": "Tell us what is going wrong, and the thread will stay in one clear place.",
+    "fields": {
+      "category": "Issue category",
+      "subject": "Subject",
+      "description": "What happened?"
+    },
+    "placeholders": {
+      "subject": "For example: I cannot complete payment",
+      "description": "Explain the issue in your own words. Include what you tried and what you still need help with."
+    },
+    "helper": "Attachments are not supported in this version yet, so the best first step is a clear written explanation.",
+    "submit": "Create ticket",
+    "submitting": "Creating ticket..."
+  },
+  "list": {
+    "heading": "Your support tickets",
+    "note": "Open a ticket to read the full thread or send a new reply.",
+    "count": "{value, number} tickets",
+    "countLoading": "Loading tickets",
+    "createdAt": "Created {date}",
+    "lastReplyAt": "Last reply {date}",
+    "openTicket": "Open ticket"
+  },
+  "detail": {
+    "back": "Back to support",
+    "eyebrow": "Support ticket",
+    "helperTitle": "Operational help only",
+    "helperNote": "This space is for support follow-up such as booking, payments, technical issues, or account help. It is not therapy chat.",
+    "noDescription": "This ticket does not include a separate description.",
+    "createdAt": "Created {date}",
+    "lastReplyAt": "Last reply {date}",
+    "resolvedAt": "Resolved {date}",
+    "closedAt": "Closed {date}"
+  },
+  "thread": {
+    "heading": "Conversation",
+    "note": "Read the full support thread in order and send your next reply from here.",
+    "count": "{value, number} messages",
+    "senderRoles": {
+      "PATIENT": "You",
+      "PRACTITIONER": "Practitioner",
+      "SUPPORT_AGENT": "Support",
+      "ADMIN": "Support",
+      "SYSTEM": "System"
+    },
+    "empty": {
+      "heading": "No messages yet",
+      "note": "When support replies, the conversation will appear here."
+    }
+  },
+  "reply": {
+    "heading": "Reply to this ticket",
+    "note": "Add any update or answer here. Your message will appear in the same thread.",
+    "placeholder": "Write your reply...",
+    "submit": "Send reply",
+    "submitting": "Sending reply..."
+  },
+  "states": {
+    "empty": {
+      "heading": "No support tickets yet",
+      "note": "If you need help with booking, payment, technical issues, or your account, create your first ticket here."
+    },
+    "listError": {
+      "heading": "Support tickets are not available right now",
+      "note": "We could not load your support tickets at the moment. Please try again shortly.",
+      "retry": "Try again"
+    },
+    "detailError": {
+      "heading": "This support ticket is not available right now",
+      "note": "It may have been removed, or we could not load it at the moment.",
+      "back": "Back to support"
+    }
+  },
+  "filters": {
+    "all": "All"
+  },
+  "boundaries": {
+    "heading": "What this page supports",
+    "note": "This web flow currently supports creating tickets, reading the thread, and sending text replies only."
+  },
+  "handoff": {
+    "heading": "If you need care guidance instead",
+    "note": "Support is for operational issues only. If you are deciding what to do next in your care journey, these patient routes are a better fit.",
+    "matching": "Go to guided matching",
+    "matchingNote": "Use matching when you want help narrowing down the right practitioner.",
+    "assessments": "Review initial check-ins",
+    "assessmentsNote": "Use a short check-in when you want a calmer reflection step before booking or matching."
+  },
+  "errors": {
+    "generic": "We could not complete this support action right now. Please try again."
+  },
+  "categories": {
+    "BOOKING": "Booking",
+    "PAYMENT": "Payment",
+    "SESSION": "Session",
+    "TECHNICAL": "Technical",
+    "ACCOUNT": "Account",
+    "MATCHING": "Matching",
+    "GENERAL": "General",
+    "CONTENT": "Content",
+    "CHAT": "Chat",
+    "OTHER": "Other"
+  },
+  "statuses": {
+    "OPEN": "Open",
+    "IN_PROGRESS": "In progress",
+    "WAITING_FOR_USER": "Waiting for you",
+    "ESCALATED": "Escalated",
+    "RESOLVED": "Resolved",
+    "CLOSED": "Closed"
+  },
+  "priorities": {
+    "LOW": "Low priority",
+    "NORMAL": "Normal priority",
+    "MEDIUM": "Normal priority",
+    "HIGH": "High priority",
+    "URGENT": "Urgent"
+  },
+  "practitioner": {
+    "meta": {
+      "listTitle": "Fayed | Practitioner Support",
+      "listDescription": "Create and follow real practitioner support tickets for operational, account, payment, or technical issues.",
+      "detailTitle": "Fayed | Practitioner Support Ticket",
+      "detailDescription": "Read the full practitioner support thread and send a follow-up reply."
+    },
+    "home": {
+      "eyebrow": "Support",
+      "title": "Get operational help without leaving your practitioner workspace.",
+      "note": "Use support for practitioner-side operational issues such as sessions, payments, account access, platform issues, or other non-clinical requests.",
+      "assuranceTitle": "Clear and easy to follow",
+      "assuranceNote": "Each support issue stays in one thread so you can follow replies, updates, and resolution clearly."
+    },
+    "create": {
+      "heading": "Create a support ticket",
+      "note": "Describe the issue clearly so support can follow it in one organized thread.",
+      "fields": {
+        "category": "Issue category",
+        "subject": "Subject",
+        "description": "What happened?"
+      },
+      "placeholders": {
+        "subject": "For example: I cannot update my availability",
+        "description": "Explain the issue clearly. Include what you tried, what happened, and what kind of help you need next."
+      },
+      "helper": "Attachments are not supported in this version yet, so a clear written explanation is the best first step.",
+      "submit": "Create ticket",
+      "submitting": "Creating ticket..."
+    },
+    "list": {
+      "heading": "Your support tickets",
+      "note": "Open any ticket to read the thread or send a follow-up reply.",
+      "count": "{value, number} tickets",
+      "countLoading": "Loading tickets",
+      "createdAt": "Created {date}",
+      "lastReplyAt": "Last reply {date}",
+      "openTicket": "Open ticket"
+    },
+    "detail": {
+      "back": "Back to support",
+      "eyebrow": "Support ticket",
+      "helperTitle": "Support for operational issues",
+      "helperNote": "This space is for platform and operational help such as sessions, payments, account issues, and technical problems. It is not practitioner-patient messaging.",
+      "noDescription": "This ticket does not include a separate description.",
+      "createdAt": "Created {date}",
+      "lastReplyAt": "Last reply {date}",
+      "resolvedAt": "Resolved {date}",
+      "closedAt": "Closed {date}"
+    },
+    "thread": {
+      "heading": "Conversation",
+      "note": "Read the support conversation in order and send your next reply from here.",
+      "count": "{value, number} messages",
+      "senderRoles": {
+        "PATIENT": "Patient",
+        "PRACTITIONER": "You",
+        "SUPPORT_AGENT": "Support",
+        "ADMIN": "Support",
+        "SYSTEM": "System"
+      },
+      "empty": {
+        "heading": "No messages yet",
+        "note": "When support replies, the conversation will appear here."
+      }
+    },
+    "reply": {
+      "heading": "Reply to this ticket",
+      "note": "Add any update or answer here. Your message will appear in the same thread.",
+      "placeholder": "Write your reply...",
+      "submit": "Send reply",
+      "submitting": "Sending reply..."
+    },
+    "states": {
+      "empty": {
+        "heading": "No support tickets yet",
+        "note": "If you need help with sessions, payments, account access, or technical issues, create your first ticket here."
+      },
+      "listError": {
+        "heading": "Support tickets are not available right now",
+        "note": "We could not load your support tickets at the moment. Please try again shortly.",
+        "retry": "Try again"
+      },
+      "detailError": {
+        "heading": "This support ticket is not available right now",
+        "note": "It may have been removed, or we could not load it at the moment.",
+        "back": "Back to support"
+      }
+    },
+    "filters": {
+      "all": "All"
+    },
+    "boundaries": {
+      "heading": "What this page supports",
+      "note": "This web flow currently supports creating tickets, reading the thread, and sending text replies only."
+    },
+    "errors": {
+      "generic": "We could not complete this support action right now. Please try again."
+    },
+    "categories": {
+      "BOOKING": "Booking",
+      "PAYMENT": "Payment",
+      "SESSION": "Session",
+      "TECHNICAL": "Technical",
+      "ACCOUNT": "Account",
+      "MATCHING": "Matching",
+      "GENERAL": "General",
+      "CONTENT": "Content",
+      "CHAT": "Chat",
+      "OTHER": "Other"
+    },
+    "statuses": {
+      "OPEN": "Open",
+      "IN_PROGRESS": "In progress",
+      "WAITING_FOR_USER": "Waiting for you",
+      "ESCALATED": "Escalated",
+      "RESOLVED": "Resolved",
+      "CLOSED": "Closed"
+    },
+    "priorities": {
+      "LOW": "Low priority",
+      "NORMAL": "Normal priority",
+      "MEDIUM": "Normal priority",
+      "HIGH": "High priority",
+      "URGENT": "Urgent"
+    }
+  },
+  "admin": {
+    "meta": {
+      "listTitle": "Fayed | Admin Support",
+      "listDescription": "Review and manage all platform support tickets.",
+      "detailTitle": "Fayed | Admin Support Ticket",
+      "detailDescription": "Read the ticket thread, add a reply or internal note, change status, or reassign."
+    },
+    "list": {
+      "heading": "Support tickets",
+      "note": "Open a ticket to read the thread, reply, add internal notes, or update its status.",
+      "count": "{value, number} tickets",
+      "countLoading": "Loading tickets",
+      "createdAt": "Created {date}",
+      "lastReplyAt": "Last reply {date}",
+      "openTicket": "Open ticket",
+      "assignedTo": "Assigned to {id}",
+      "unassigned": "Unassigned"
+    },
+    "filters": {
+      "all": "All",
+      "assignedToMe": "Assigned to me"
+    },
+    "detail": {
+      "back": "Back to support",
+      "eyebrow": "Support ticket",
+      "noDescription": "No description provided.",
+      "createdAt": "Created {date}",
+      "lastReplyAt": "Last reply {date}",
+      "resolvedAt": "Resolved {date}",
+      "closedAt": "Closed {date}",
+      "assignedTo": "Assigned to {id}",
+      "unassigned": "Unassigned"
+    },
+    "operations": {
+      "heading": "Operations",
+      "status": {
+        "heading": "Change status",
+        "label": "New status",
+        "save": "Update status",
+        "saving": "Updating...",
+        "success": "Status updated.",
+        "error": "Could not update status. Please try again.",
+        "closedNote": "This ticket is closed and cannot be updated."
+      },
+      "assign": {
+        "heading": "Assignment",
+        "currentLabel": "Currently assigned",
+        "label": "Admin user ID",
+        "placeholder": "Paste admin user ID...",
+        "assign": "Assign",
+        "unassign": "Unassign",
+        "assigning": "Assigning...",
+        "unassigning": "Unassigning...",
+        "success": "Assignment updated.",
+        "error": "Could not update assignment. Please try again."
+      }
+    },
+    "thread": {
+      "heading": "Message thread",
+      "note": "Messages visible to the user and practitioner.",
+      "count": "{value, number} messages",
+      "senderRoles": {
+        "PATIENT": "Patient",
+        "PRACTITIONER": "Practitioner",
+        "SUPPORT_AGENT": "Support",
+        "ADMIN": "Admin",
+        "SYSTEM": "System"
+      },
+      "empty": {
+        "heading": "No messages yet",
+        "note": "When the user or support team sends a message, it will appear here."
+      }
+    },
+    "internalNotes": {
+      "heading": "Internal notes",
+      "note": "Admin only — not visible to the user or practitioner.",
+      "count": "{value, number} notes",
+      "empty": "No internal notes yet.",
+      "addedBy": "{role}"
+    },
+    "reply": {
+      "heading": "Reply to user",
+      "note": "This message will be visible to the user in the ticket thread.",
+      "placeholder": "Write your reply...",
+      "submit": "Send reply",
+      "submitting": "Sending...",
+      "success": "Reply sent.",
+      "error": "Could not send reply. Please try again."
+    },
+    "note": {
+      "heading": "Add internal note",
+      "note": "This note is admin-only and will not be visible to the user.",
+      "placeholder": "Write an internal note...",
+      "submit": "Add note",
+      "submitting": "Adding note...",
+      "success": "Note added.",
+      "error": "Could not add note. Please try again."
+    },
+    "states": {
+      "empty": {
+        "heading": "No support tickets",
+        "note": "There are no support tickets matching the current filters."
+      },
+      "listError": {
+        "heading": "Support tickets are not available right now",
+        "note": "We could not load the support tickets. Please try again shortly.",
+        "retry": "Try again"
+      },
+      "detailError": {
+        "heading": "This ticket is not available",
+        "note": "It may have been removed, or we could not load it at the moment.",
+        "back": "Back to support"
+      }
+    },
+    "errors": {
+      "generic": "We could not complete this action right now. Please try again."
+    },
+    "categories": {
+      "BOOKING": "Booking",
+      "PAYMENT": "Payment",
+      "SESSION": "Session",
+      "TECHNICAL": "Technical",
+      "ACCOUNT": "Account",
+      "MATCHING": "Matching",
+      "GENERAL": "General",
+      "CONTENT": "Content",
+      "CHAT": "Chat",
+      "OTHER": "Other"
+    },
+    "statuses": {
+      "OPEN": "Open",
+      "IN_PROGRESS": "In progress",
+      "WAITING_FOR_USER": "Waiting for user",
+      "ESCALATED": "Escalated",
+      "RESOLVED": "Resolved",
+      "CLOSED": "Closed"
+    },
+    "priorities": {
+      "LOW": "Low",
+      "NORMAL": "Normal",
+      "MEDIUM": "Normal",
+      "HIGH": "High",
+      "URGENT": "Urgent"
+    }
+  }
+}

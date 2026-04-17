@@ -1,0 +1,167 @@
+{
+  "meta": {
+    "list": {
+      "title": "Finance operations events - Admin",
+      "description": "Inspect payment and refund operation events in a visibility-first diagnostics baseline."
+    },
+    "detail": {
+      "title": "Finance operation event - Admin",
+      "description": "Inspect one finance operation event with operational context and linked references."
+    }
+  },
+  "list": {
+    "eyebrow": "Finance diagnostics baseline",
+    "title": "Finance operations events",
+    "note": "This screen is for visibility and diagnostics only. It helps operators inspect payment and refund operation events without control actions.",
+    "count": "{value, number} events",
+    "countLoading": "Loading...",
+    "noSummary": "No summary provided",
+    "externalRef": "External ref: {value}",
+    "openAction": "Open event",
+    "headers": {
+      "type": "Type",
+      "summary": "Summary",
+      "payment": "Payment",
+      "refund": "Refund",
+      "occurredAt": "Occurred",
+      "createdAt": "Created"
+    }
+  },
+  "scope": {
+    "heading": "Available now",
+    "items": {
+      "list": "Review operation events in one queue.",
+      "detail": "Inspect one event with linked identifiers.",
+      "filters": "Use filters to narrow operational diagnostics."
+    }
+  },
+  "boundaries": {
+    "heading": "Outside current scope",
+    "items": {
+      "noControls": "No command or override controls are available here.",
+      "noAnalyticsSuite": "This is not a finance analytics suite.",
+      "noReconciliation": "Manual reconciliation workflows are not exposed."
+    }
+  },
+  "filters": {
+    "all": "All",
+    "query": "Search",
+    "queryPlaceholder": "Search by summary or external reference",
+    "operationType": "Operation type",
+    "provider": "Provider",
+    "paymentStatus": "Payment status",
+    "refundStatus": "Refund status",
+    "paymentPurpose": "Payment purpose"
+  },
+  "types": {
+    "PAYMENT": "Payment",
+    "REFUND": "Refund"
+  },
+  "providers": {
+    "STRIPE": "Stripe",
+    "PAYMOB": "Paymob"
+  },
+  "paymentPurposes": {
+    "SESSION_BOOKING": "Session booking",
+    "SESSION_INSTANT_BOOKING": "Instant session booking",
+    "SESSION_EXTENSION": "Session extension",
+    "COURSE_ENROLLMENT": "Course enrollment",
+    "MANUAL_INVOICE": "Manual invoice"
+  },
+  "paymentStatuses": {
+    "CREATED": "Created",
+    "PENDING": "Pending",
+    "REQUIRES_ACTION": "Requires action",
+    "AUTHORIZED": "Authorized",
+    "CAPTURED": "Captured",
+    "FAILED": "Failed",
+    "CANCELLED": "Cancelled",
+    "EXPIRED": "Expired",
+    "REFUND_PENDING": "Refund pending",
+    "PARTIALLY_REFUNDED": "Partially refunded",
+    "REFUNDED": "Refunded"
+  },
+  "refundStatuses": {
+    "REQUESTED": "Requested",
+    "PROCESSING": "Processing",
+    "SUCCEEDED": "Succeeded",
+    "FAILED": "Failed",
+    "CANCELLED": "Cancelled"
+  },
+  "detail": {
+    "back": "Back to events",
+    "eyebrow": "Finance operation event",
+    "title": "Event detail",
+    "note": "Use this view to inspect one event safely. This surface does not expose finance controls.",
+    "snapshot": {
+      "heading": "Operational snapshot",
+      "note": "A quick summary of current event posture.",
+      "operationType": "Operation type",
+      "lifecycle": "Lifecycle signal"
+    },
+    "lifecycle": {
+      "paymentPending": {
+        "title": "Payment is in-flight",
+        "note": "Payment is still pending or requires action."
+      },
+      "paymentRecorded": {
+        "title": "Payment has settled",
+        "note": "Payment was captured or moved into a refunded state."
+      },
+      "paymentFailed": {
+        "title": "Payment failed",
+        "note": "Payment reached a failed state and needs diagnostics context."
+      },
+      "refundInFlight": {
+        "title": "Refund is in-flight",
+        "note": "Refund exists and is still processing."
+      },
+      "refundSucceeded": {
+        "title": "Refund completed",
+        "note": "Refund succeeded and is recorded for traceability."
+      },
+      "refundFailed": {
+        "title": "Refund failed",
+        "note": "Refund failed and may require follow-up in dedicated finance workflows."
+      }
+    },
+    "fields": {
+      "heading": "Event fields",
+      "id": "Event ID",
+      "operationType": "Operation type",
+      "summary": "Summary",
+      "provider": "Provider",
+      "paymentPurpose": "Payment purpose",
+      "paymentStatus": "Payment status",
+      "refundStatus": "Refund status",
+      "paymentId": "Payment ID",
+      "refundId": "Refund ID",
+      "externalRef": "External reference",
+      "linkedSessionId": "Linked session ID",
+      "linkedPractitionerId": "Linked practitioner ID",
+      "occurredAt": "Occurred at",
+      "createdAt": "Created at"
+    }
+  },
+  "states": {
+    "empty": {
+      "heading": "No operation events found",
+      "note": "No events match the current filters."
+    },
+    "listError": {
+      "heading": "Finance operation events are not available right now",
+      "retry": "Try again"
+    },
+    "detailError": {
+      "heading": "This operation event is not available right now",
+      "retry": "Try again",
+      "back": "Back to events"
+    }
+  },
+  "errors": {
+    "invalidFilter": "One or more filters are invalid.",
+    "forbidden": "You do not have access to this finance operations scope.",
+    "notFound": "The requested operation event was not found.",
+    "generic": "Could not load finance operation data right now."
+  }
+}

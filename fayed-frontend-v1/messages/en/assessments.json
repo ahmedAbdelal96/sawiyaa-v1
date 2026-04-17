@@ -1,0 +1,127 @@
+{
+  "meta": {
+    "listTitle": "Fayed | Assessments",
+    "listDescription": "Browse supportive self-assessments to better understand your current needs.",
+    "detailTitle": "Fayed | {title}",
+    "detailDescription": "Take {title} through a calm guided web flow.",
+    "resultTitle": "Fayed | Assessment Result",
+    "resultDescription": "View your saved assessment result with a calm, non-diagnostic summary."
+  },
+  "home": {
+    "eyebrow": "Assessments",
+    "title": "Calm self-assessments that help you understand what to do next",
+    "note": "These assessments are designed to support reflection and care entry. They do not replace professional evaluation or diagnosis.",
+    "trustTitle": "Supportive, not diagnostic",
+    "trustNote": "Your result is meant to guide your next step gently. It should not be treated as a diagnosis on its own.",
+    "availableHeading": "Available assessments",
+    "availableNote": "Choose an assessment that matches what you want to understand right now.",
+    "nextHeading": "Choose your next supportive step",
+    "nextNote": "If this assessment helped you reflect and you want gentle direction, continue to matching. Use support only for booking, payment, account, or technical issues.",
+    "nextMatching": "Continue to guided matching",
+    "nextMatchingNote": "Use matching when you want help narrowing down the right practitioner after reflection.",
+    "nextSupport": "Open support",
+    "nextSupportNote": "Use support only for booking, payment, account, or technical issues around your journey.",
+    "card": {
+      "minutes": "{value} min",
+      "duration": "{value} minutes",
+      "noDescription": "A short supportive assessment to help you reflect on your current needs.",
+      "open": "Open assessment"
+    },
+    "empty": {
+      "heading": "No assessments are available right now",
+      "note": "When new assessments are published, they will appear here."
+    }
+  },
+  "history": {
+    "heading": "Your recent results",
+    "note": "A simple history of completed assessments so you can return to them when helpful.",
+    "score": "Score: {value}",
+    "completedAt": "Completed {date}",
+    "viewResult": "View result",
+    "retake": "Take again",
+    "empty": {
+      "heading": "Your completed assessments will appear here",
+      "note": "Once you complete an assessment, you will be able to revisit its result from this space."
+    }
+  },
+  "detail": {
+    "eyebrow": "Assessment",
+    "note": "Take a few moments to answer honestly. There is no need to overthink each answer.",
+    "trustTitle": "A calm and private flow",
+    "trustNote": "Your answers are submitted only when you finish. This web flow does not save partial progress yet.",
+    "meta": {
+      "duration": "{value} minutes",
+      "questionCount": "{value} questions"
+    },
+    "beforeYouBegin": {
+      "heading": "Before you begin",
+      "first": "Try to answer based on how things feel for you right now, not on the ideal answer.",
+      "second": "The result is a supportive summary, not a diagnosis or medical conclusion.",
+      "third": "If you want more personal guidance after the result, you can continue to guided matching or browse practitioners."
+    },
+    "optional": "Optional",
+    "flow": {
+      "progressLabel": "Question {current} of {total}",
+      "requiredError": "Please choose one answer before moving on.",
+      "footerNote": "You can move back and forth before submitting, but partial progress is not saved yet."
+    }
+  },
+  "result": {
+    "eyebrow": "Assessment result",
+    "note": "This is a supportive summary of your completed assessment to help you choose a practical next step.",
+    "submissionId": "Result #{id}",
+    "completedAt": "Completed {date}",
+    "score": "Score: {value}",
+    "summaryHeading": "Summary",
+    "nextStepsHeading": "Suggested next steps",
+    "nonDiagnosticTitle": "Important reminder",
+    "nonDiagnosticNote": "This result is not a diagnosis. If you need personal guidance, speaking with a qualified mental health professional is the most reliable next step.",
+    "bands": {
+      "LOW": { "title": "Low" },
+      "MILD": { "title": "Mild" },
+      "MODERATE": { "title": "Moderate" },
+      "HIGH": { "title": "High" }
+    },
+    "actions": {
+      "moreAssessments": "More assessments",
+      "moreAssessmentsNote": "Review another assessment if you want more self-reflection before deciding.",
+      "guidedMatching": "Guided matching",
+      "guidedMatchingNote": "Answer a few short questions to get practitioner suggestions that fit your current needs.",
+      "browsePractitioners": "Browse practitioners",
+      "browsePractitionersNote": "Explore practitioners directly if you are ready to book."
+    },
+    "unavailable": {
+      "heading": "This result view is not available yet",
+      "note": "The selected submission does not have a complete result that can be shown on the web."
+    }
+  },
+  "actions": {
+    "start": "Start assessment",
+    "back": "Back",
+    "next": "Next",
+    "submit": "Submit answers",
+    "submitting": "Submitting...",
+    "backToList": "Back to assessments",
+    "backToOverview": "Back to overview"
+  },
+  "states": {
+    "catalogError": {
+      "heading": "We could not load the assessments right now",
+      "note": "Please try again shortly. Your patient area is still available."
+    },
+    "historyError": {
+      "heading": "We could not load your recent assessment history",
+      "note": "You can still browse available assessments and try again later."
+    },
+    "resultError": {
+      "heading": "We could not load this assessment result",
+      "note": "Please try again. If the problem continues, return to the assessments page.",
+      "retry": "Try again"
+    },
+    "unsupported": {
+      "heading": "This assessment is not ready for the web flow yet",
+      "note": "The current web experience supports the stable single-choice assessment format only."
+    },
+    "submitError": "We could not submit your answers right now. Please try again."
+  }
+}

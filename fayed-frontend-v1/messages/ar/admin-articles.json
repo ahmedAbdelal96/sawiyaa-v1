@@ -1,0 +1,124 @@
+{
+  "meta": {
+    "listTitle": "المقالات - الإدارة",
+    "listDescription": "مراجعة المقالات وحالتها مع إجراءات الإنشاء والتعديل والنشر والأرشفة ضمن حدود العقد الحالي."
+  },
+  "list": {
+    "eyebrow": "عمليات المقالات للإدارة",
+    "title": "الخط الأساسي لإدارة المقالات",
+    "note": "واجهة تشغيلية لإدارة المقالات ضمن النطاق الحالي: إنشاء، تعديل، نشر، وأرشفة.",
+    "count": "{value, number} مقالة",
+    "countLoading": "جارٍ تحميل عدد المقالات...",
+    "slug": "المسار",
+    "publishedAt": "تاريخ النشر",
+    "updatedAt": "آخر تحديث",
+    "authorId": "المؤلف"
+  },
+  "scope": {
+    "heading": "المتاح الآن",
+    "items": {
+      "list": "مراجعة المقالات مع الحالة واللغة والتصنيف.",
+      "publish": "نشر المقالات المسودة عندما يسمح العقد بذلك.",
+      "archive": "أرشفة المقالات المسودة أو المنشورة ضمن النطاق الحالي."
+    }
+  },
+  "boundaries": {
+    "heading": "خارج النطاق الحالي",
+    "items": {
+      "noEditor": "مسارات التحرير التعاوني المتقدمة خارج هذا الخط الأساسي.",
+      "noScheduling": "الجدولة والإصدارات وموافقات التحرير خارج النطاق.",
+      "noAnalytics": "تحليلات الأداء ورؤى المحتوى غير متاحة هنا."
+    }
+  },
+  "filters": {
+    "allStatuses": "كل الحالات",
+    "search": "بحث",
+    "searchPlaceholder": "ابحث بالعنوان أو المسار",
+    "locale": "اللغة: {locale}"
+  },
+  "statuses": {
+    "DRAFT": "مسودة",
+    "SUBMITTED": "مقدم",
+    "IN_REVIEW": "قيد المراجعة",
+    "CHANGES_REQUESTED": "تعديلات مطلوبة",
+    "APPROVED": "معتمد",
+    "REJECTED": "مرفوض",
+    "PUBLISHED": "منشور",
+    "ARCHIVED": "مؤرشف"
+  },
+  "actions": {
+    "create": "إضافة مقال",
+    "creating": "جارٍ إنشاء المقال...",
+    "createSuccess": "تم إنشاء المقال.",
+    "edit": "تعديل",
+    "save": "حفظ التغييرات",
+    "saving": "جارٍ حفظ التغييرات...",
+    "updateSuccess": "تم تحديث المقال.",
+    "cancel": "إلغاء",
+    "publish": "نشر",
+    "publishing": "جارٍ النشر...",
+    "archive": "أرشفة",
+    "archiving": "جارٍ الأرشفة...",
+    "archiveConfirm": {
+      "title": "أرشفة هذه المقالة؟",
+      "description": "استخدم الأرشفة فقط عندما لا تكون هذه المقالة مناسبة للبقاء نشطة ضمن نطاق إدارة المقالات الحالي.",
+      "cancel": "الإبقاء على المقالة"
+    },
+    "publishSuccess": "تم نشر المقالة.",
+    "archiveSuccess": "تمت أرشفة المقالة.",
+    "notAvailable": "لا تتوفر إجراءات نشر أو أرشفة لهذه الحالة."
+  },
+  "form": {
+    "eyebrow": "صياغة المقال",
+    "createTitle": "إضافة مقال",
+    "createNote": "أنشئ مسودة مقال ضمن حدود عقد إدارة المقالات الحالي.",
+    "editTitle": "تعديل المقال",
+    "editNote": "حدّث بيانات المقال المحدد ضمن حدود العقد الحالي.",
+    "validation": {
+      "required": "التصنيف والعنوان والمحتوى حقول مطلوبة."
+    },
+    "fields": {
+      "category": "التصنيف",
+      "categoryPlaceholder": "اختر التصنيف",
+      "title": "العنوان",
+      "titlePlaceholder": "عنوان المقال",
+      "content": "المحتوى",
+      "contentPlaceholder": "اكتب محتوى المقال",
+      "excerpt": "ملخص قصير",
+      "excerptPlaceholder": "ملخص اختياري للمقال",
+      "coverImageUrl": "رابط صورة الغلاف",
+      "coverImageUrlPlaceholder": "https://...",
+      "featuredImageAlt": "وصف صورة الغلاف",
+      "featuredImageAltPlaceholder": "وصف بديل اختياري للصورة",
+      "metaTitle": "عنوان SEO",
+      "metaTitlePlaceholder": "عنوان اختياري لمحركات البحث",
+      "metaDescription": "وصف SEO",
+      "metaDescriptionPlaceholder": "وصف اختياري لمحركات البحث"
+    }
+  },
+  "pagination": {
+    "summary": "{from}-{to} من {total}",
+    "previous": "السابق",
+    "next": "التالي"
+  },
+  "states": {
+    "empty": {
+      "heading": "لا توجد مقالات",
+      "note": "لا توجد مقالات مطابقة للفلاتر الحالية."
+    },
+    "listError": {
+      "heading": "قائمة المقالات غير متاحة الآن",
+      "note": "تعذر تحميل المقالات.",
+      "retry": "حاول مرة أخرى"
+    }
+  },
+  "errors": {
+    "articleNotFound": "لم يتم العثور على المقالة.",
+    "categoryNotFound": "لم يتم العثور على تصنيف المقالة.",
+    "slugExists": "هذا المسار مستخدم بالفعل.",
+    "localeRequired": "يجب تحديد اللغة لتحديث الترجمة.",
+    "invalidPublishTransition": "لا يمكن نشر هذه المقالة في حالتها الحالية.",
+    "invalidArchiveTransition": "لا يمكن أرشفة هذه المقالة في حالتها الحالية.",
+    "generic": "تعذر إكمال إجراء المقالات الآن."
+  }
+}

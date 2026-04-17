@@ -1,0 +1,148 @@
+{
+  "meta": {
+    "title": "Admin Profile",
+    "description": "Review account details and update baseline preferences."
+  },
+  "page": {
+    "eyebrow": "Admin account",
+    "title": "Profile",
+    "subtitle": "Review account data and update language, timezone, and notification preferences."
+  },
+  "roles": {
+    "ADMIN": "System admin",
+    "SUPPORT_AGENT": "Support agent",
+    "CONTENT_REVIEWER": "Content reviewer",
+    "PATIENT": "User",
+    "PRACTITIONER": "Practitioner"
+  },
+  "accountStatus": {
+    "ACTIVE": "Active",
+    "INACTIVE": "Inactive",
+    "SUSPENDED": "Suspended",
+    "PENDING_VERIFICATION": "Pending verification",
+    "PENDING_APPROVAL": "Pending approval",
+    "DELETED": "Deleted"
+  },
+  "locales": {
+    "ar": "Arabic",
+    "en": "English"
+  },
+  "channels": {
+    "IN_APP": "In-app",
+    "EMAIL": "Email"
+  },
+  "states": {
+    "enabled": "Enabled",
+    "disabled": "Disabled",
+    "notSet": "Not set"
+  },
+  "actions": {
+    "edit": "Edit",
+    "save": "Save",
+    "cancel": "Cancel",
+    "copy": "Copy",
+    "changePhoto": "Change photo",
+    "savePhoto": "Save photo",
+    "removePhoto": "Remove photo",
+    "manageNotifications": "Manage notifications"
+  },
+  "tabs": {
+    "profile": "Profile",
+    "notifications": "Notifications"
+  },
+  "sections": {
+    "avatar": {
+      "title": "Profile photo",
+      "hint": "A clear face photo works best."
+    },
+    "account": {
+      "title": "Account details",
+      "fields": {
+        "displayName": "Name",
+        "email": "Email",
+        "phone": "Phone",
+        "createdAt": "Created at"
+      }
+    },
+    "preferences": {
+      "title": "Baseline preferences",
+      "fields": {
+        "locale": "Language",
+        "timezone": "Timezone"
+      }
+    },
+    "advanced": {
+      "title": "Advanced",
+      "fields": {
+        "userId": "User ID"
+      }
+    },
+    "notifications": {
+      "title": "Notification preferences",
+      "subtitle": "Choose which channels are enabled for each notification type."
+    }
+  },
+  "modals": {
+    "account": {
+      "title": "Edit account details",
+      "description": "You can update your name only. Email cannot be changed."
+    },
+    "preferences": {
+      "title": "Edit baseline preferences",
+      "description": "Update language and timezone only.",
+      "timezonePlaceholder": "Example: Africa/Cairo"
+    },
+    "notifications": {
+      "title": "Edit notification preferences",
+      "description": "Choose which channels are enabled for each notification type."
+    }
+  },
+  "revenueShare": {
+    "meta": {
+      "title": "Revenue share rules",
+      "description": "Update platform vs practitioner revenue splits for future payments only."
+    },
+    "eyebrow": "Financial rules",
+    "title": "Revenue share rules",
+    "description": "Configure platform vs practitioner revenue splits based on country relation (local vs cross-border).",
+    "note": "These rules affect future allocations only. Historical payments keep their stored snapshots.",
+    "back": "Back to settings",
+    "save": "Save",
+    "saving": "Saving...",
+    "platform": "Platform (%)",
+    "practitioner": "Practitioner (%)",
+    "local": {
+      "title": "Same country",
+      "hint": "When the patient country matches the practitioner country."
+    },
+    "crossBorder": {
+      "title": "Different country",
+      "hint": "When the patient country differs from the practitioner country."
+    },
+    "validation": {
+      "sumTo100": "Percentages must sum to 100%.",
+      "invalidSplit": "Ensure each split totals 100%."
+    },
+    "feedback": {
+      "saved": "Rules saved.",
+      "saveFailed": "Failed to save rules."
+    }
+  },
+  "feedback": {
+    "saving": "Saving...",
+    "profileSaved": "Profile saved.",
+    "profileSaveFailed": "Could not save profile.",
+    "preferencesSaved": "Baseline preferences saved.",
+    "preferencesSaveFailed": "Could not save baseline preferences.",
+    "notificationsSaved": "Notification preferences saved.",
+    "notificationsSaveFailed": "Could not save notification preferences.",
+    "avatarUpdated": "Profile photo updated.",
+    "avatarRemoved": "Profile photo removed.",
+    "avatarUpdateFailed": "Could not update profile photo.",
+    "avatarRemoveFailed": "Could not remove profile photo.",
+    "copied": "Copied."
+  },
+  "errors": {
+    "loadFailed": "Could not load profile data right now."
+  }
+}

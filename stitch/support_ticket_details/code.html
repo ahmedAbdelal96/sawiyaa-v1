@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+
+<html dir="rtl" lang="ar"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-variant": "#d8e3fc",
+                        "on-tertiary": "#ffffff",
+                        "secondary-fixed": "#d6e3ff",
+                        "background": "#f9f9ff",
+                        "inverse-surface": "#263144",
+                        "surface-dim": "#cfdaf3",
+                        "on-secondary-container": "#465c80",
+                        "outline-variant": "#c2c6d3",
+                        "on-primary-fixed": "#001b3c",
+                        "on-secondary-fixed-variant": "#31476a",
+                        "primary": "#0b5cac",
+                        "tertiary-fixed-dim": "#bfc7d5",
+                        "surface-bright": "#f9f9ff",
+                        "on-tertiary-container": "#fdfcff",
+                        "inverse-primary": "#a7c8ff",
+                        "tertiary-fixed": "#dbe3f2",
+                        "surface-container": "#e8eeff",
+                        "on-tertiary-fixed": "#141c27",
+                        "surface": "#f9f9ff",
+                        "primary-container": "#3575c7",
+                        "on-error-container": "#93000a",
+                        "tertiary-container": "#6d7582",
+                        "on-primary-container": "#fefcff",
+                        "on-background": "#101c2e",
+                        "outline": "#727783",
+                        "error": "#ba1a1a",
+                        "surface-container-lowest": "#ffffff",
+                        "secondary-fixed-dim": "#b1c7f1",
+                        "surface-container-highest": "#d8e3fc",
+                        "primary-fixed": "#d5e3ff",
+                        "secondary": "#495f83",
+                        "on-surface": "#101c2e",
+                        "surface-container-high": "#dfe8ff",
+                        "primary-fixed-dim": "#a7c8ff",
+                        "on-primary-fixed-variant": "#004689",
+                        "on-error": "#ffffff",
+                        "on-secondary": "#ffffff",
+                        "error-container": "#ffdad6",
+                        "inverse-on-surface": "#ecf0ff",
+                        "secondary-container": "#bfd5ff",
+                        "on-tertiary-fixed-variant": "#3f4753",
+                        "on-surface-variant": "#424751",
+                        "on-secondary-fixed": "#001b3c",
+                        "surface-tint": "#125eae",
+                        "tertiary": "#545d69",
+                        "surface-container-low": "#f0f3ff",
+                        "on-primary": "#ffffff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "2xl": "1.5rem",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Manrope", "sans-serif"],
+                        "body": ["Manrope", "sans-serif"],
+                        "label": ["Manrope", "sans-serif"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        body { font-family: 'Manrope', sans-serif; }
+        .glass-header {
+            background: rgba(249, 249, 255, 0.7);
+            backdrop-filter: blur(24px);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background antialiased selection:bg-primary-fixed">
+<!-- Top AppBar (Internal Page - No Main Nav) -->
+<header class="fixed top-0 w-full z-50 glass-header">
+<div class="flex flex-row-reverse justify-between items-center w-full px-6 py-4 max-w-screen-xl mx-auto">
+<div class="flex items-center gap-4">
+<button class="p-2 hover:bg-surface-container rounded-full transition-colors">
+<span class="material-symbols-outlined text-primary text-2xl">arrow_forward</span>
+</button>
+<h1 class="font-headline font-bold text-lg tracking-tight text-right text-on-surface">تفاصيل التذكرة</h1>
+</div>
+<div class="flex items-center gap-3">
+<span class="text-xs font-bold text-on-surface-variant tracking-wider">#FYD-8821</span>
+<div class="w-10 h-10 rounded-full overflow-hidden bg-surface-container-high border-2 border-white">
+<img alt="User" class="w-full h-full object-cover" data-alt="close-up portrait of a professional woman with a friendly expression in a modern office setting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuACapzBSwiPlZxriBdZ-VtYh-7SL-m7uhRS6OfQF2WLc_lQ82BTzXMmgyqchMagMjU46YrkGmvF0CNDwfvHd9l3ZqoDDZ5aROf0AXcHh2LIGGyQ2aCz3k21SFXa9m9dXnBy-4KxwXmkg-Qi3LTAgCVfd1v0CcYwMYbPqZRlFwnC-iBjVaQhuzoh93diHCPFQsRT2N3VxGJ9eSqi_Y7eGE708H2hHeuhWHJtxsnPY05e1EjwxmDEghZ9nmYl5EBKrhAIIFjnq3Eum9w"/>
+</div>
+</div>
+</div>
+</header>
+<main class="pt-24 pb-32 px-6 max-w-2xl mx-auto space-y-8">
+<!-- Ticket Overview Header Card -->
+<section class="bg-surface-container-lowest p-8 rounded-2xl shadow-[0_12px_40px_rgba(16,28,46,0.04)] relative overflow-hidden">
+<div class="absolute top-0 left-0 w-1.5 h-full bg-primary-container"></div>
+<div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+<div>
+<h2 class="text-2xl font-bold text-on-surface mb-2">مشكلة في استلام المدفوعات</h2>
+<p class="text-on-surface-variant flex items-center gap-2">
+<span class="material-symbols-outlined text-sm">calendar_today</span>
+<span>تم الإنشاء في 12 أكتوبر 2023 • 09:45 صباحاً</span>
+</p>
+</div>
+<div class="inline-flex items-center gap-2 bg-primary-fixed text-on-primary-fixed-variant px-4 py-2 rounded-full font-bold text-sm">
+<span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
+                    قيد المراجعة
+                </div>
+</div>
+</section>
+<!-- Message Timeline -->
+<section class="space-y-6">
+<!-- System Message -->
+<div class="flex justify-center">
+<span class="bg-surface-container-high text-on-secondary-container text-[11px] font-bold uppercase tracking-widest px-4 py-1.5 rounded-full">اليوم</span>
+</div>
+<!-- Client Message -->
+<div class="flex flex-col items-start gap-2 max-w-[85%]">
+<div class="bg-surface-container-lowest p-6 rounded-2xl rounded-tr-none shadow-sm border border-outline-variant/10">
+<p class="text-on-surface leading-relaxed">مرحباً فريق فايد، أواجه مشكلة في ربط حسابي البنكي لاستلام المستحقات. تظهر لي رسالة خطأ "رمز التحقق غير صالح" رغم إدخاله بشكل صحيح.</p>
+</div>
+<span class="text-[10px] text-on-surface-variant mr-2">09:46 صباحاً</span>
+</div>
+<!-- Attachment (Client) -->
+<div class="flex flex-col items-start gap-2 mr-4">
+<div class="bg-surface-container-low p-3 rounded-xl flex items-center gap-3 border border-outline-variant/20 hover:bg-surface-container-high transition-colors cursor-pointer group">
+<div class="w-10 h-10 bg-white rounded-lg flex items-center justify-center">
+<span class="material-symbols-outlined text-primary">image</span>
+</div>
+<div class="ml-4">
+<p class="text-xs font-bold text-on-surface">screenshot_error.jpg</p>
+<p class="text-[10px] text-on-surface-variant">420 KB</p>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant group-hover:text-primary">download</span>
+</div>
+</div>
+<!-- Support Agent Reply -->
+<div class="flex flex-col items-end gap-2 ml-auto max-w-[85%]">
+<div class="flex items-center gap-3 mb-1">
+<span class="text-xs font-bold text-primary">أحمد من فريق فايد</span>
+<div class="w-6 h-6 rounded-full bg-primary-container flex items-center justify-center text-[10px] text-white font-bold">A</div>
+</div>
+<div class="bg-primary text-on-primary p-6 rounded-2xl rounded-tl-none shadow-md">
+<p class="leading-relaxed">أهلاً بك. نعتذر عن هذا الإزعاج. قمت بمراجعة تقرير النظام، ويبدو أن هناك تحديثاً جارياً في بوابة البنك الخاص بك. هل يمكنك تجربة المحاولة مرة أخرى الآن؟ لقد قمت بإعادة ضبط جلسة التحقق لك.</p>
+</div>
+<span class="text-[10px] text-on-surface-variant ml-2">10:12 صباحاً</span>
+</div>
+<!-- Status Update Alert -->
+<div class="flex items-center gap-4 bg-surface-container/50 p-4 rounded-xl border border-dashed border-outline-variant/30">
+<span class="material-symbols-outlined text-on-secondary-container">history_edu</span>
+<p class="text-xs text-on-secondary-container font-medium">تم تغيير حالة التذكرة من <span class="font-bold">مفتوحة</span> إلى <span class="font-bold">قيد المراجعة</span></p>
+</div>
+</section>
+<!-- Dynamic Reply Area -->
+<section class="bg-white rounded-2xl p-4 shadow-[0_-12px_40px_rgba(16,28,46,0.06)] border border-outline-variant/10">
+<div class="mb-4">
+<textarea class="w-full bg-surface-container-low border-none rounded-xl p-4 text-sm focus:ring-2 focus:ring-primary-container placeholder:text-on-surface-variant/50 transition-all" placeholder="اكتب ردك هنا..." rows="3"></textarea>
+</div>
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<button class="p-2 hover:bg-surface-container-high rounded-full transition-colors text-on-surface-variant">
+<span class="material-symbols-outlined">attach_file</span>
+</button>
+<button class="p-2 hover:bg-surface-container-high rounded-full transition-colors text-on-surface-variant">
+<span class="material-symbols-outlined">add_reaction</span>
+</button>
+</div>
+<button class="bg-primary hover:bg-primary-container text-on-primary px-8 py-3 rounded-xl font-bold flex items-center gap-2 transition-all active:scale-95">
+<span>إرسال الرد</span>
+<span class="material-symbols-outlined text-sm">send</span>
+</button>
+</div>
+</section>
+</main>
+<!-- Bottom Action Floating Footer -->
+<footer class="fixed bottom-0 w-full bg-white/80 backdrop-blur-md px-6 py-4 flex items-center justify-between border-t border-outline-variant/10 md:hidden">
+<button class="text-on-surface-variant flex items-center gap-2 text-sm font-bold">
+<span class="material-symbols-outlined">close</span>
+            إغلاق التذكرة
+        </button>
+<button class="text-primary flex items-center gap-2 text-sm font-bold">
+<span class="material-symbols-outlined">share</span>
+            مشاركة
+        </button>
+</footer>
+</body></html>

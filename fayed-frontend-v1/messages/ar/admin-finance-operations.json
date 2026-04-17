@@ -1,0 +1,167 @@
+{
+  "meta": {
+    "list": {
+      "title": "أحداث العمليات المالية - الإدارة",
+      "description": "اطّلع على أحداث عمليات الدفع والاسترجاع ضمن خط أساس تشخيصي للعرض فقط."
+    },
+    "detail": {
+      "title": "تفاصيل حدث مالي - الإدارة",
+      "description": "افحص حدثًا ماليًا واحدًا مع السياق التشغيلي والمراجع المرتبطة."
+    }
+  },
+  "list": {
+    "eyebrow": "خط أساس تشخيص العمليات المالية",
+    "title": "أحداث العمليات المالية",
+    "note": "واجهة تشخيصية لمراجعة أحداث الدفع والاسترجاع فقط، بدون أدوات تنفيذ.",
+    "count": "{value, number} حدث",
+    "countLoading": "جاري التحميل...",
+    "noSummary": "لا يوجد ملخص",
+    "externalRef": "مرجع خارجي: {value}",
+    "openAction": "فتح الحدث",
+    "headers": {
+      "type": "النوع",
+      "summary": "الملخص",
+      "payment": "الدفع",
+      "refund": "الاسترجاع",
+      "occurredAt": "وقت الحدث",
+      "createdAt": "وقت الإنشاء"
+    }
+  },
+  "scope": {
+    "heading": "المتاح الآن",
+    "items": {
+      "list": "عرض أحداث العمليات في قائمة واحدة.",
+      "detail": "فحص حدث واحد مع المعرّفات المرتبطة.",
+      "filters": "استخدام الفلاتر لتضييق نطاق التشخيص."
+    }
+  },
+  "boundaries": {
+    "heading": "خارج النطاق الحالي",
+    "items": {
+      "noControls": "لا توجد هنا أزرار أوامر أو تعديلات يدوية.",
+      "noAnalyticsSuite": "هذه ليست منصة تحليلات مالية متكاملة.",
+      "noReconciliation": "مسارات المطابقة والتسوية اليدوية غير متاحة هنا."
+    }
+  },
+  "filters": {
+    "all": "الكل",
+    "query": "بحث",
+    "queryPlaceholder": "ابحث في الملخص أو المرجع الخارجي",
+    "operationType": "نوع العملية",
+    "provider": "مزوّد الدفع",
+    "paymentStatus": "حالة الدفع",
+    "refundStatus": "حالة الاسترجاع",
+    "paymentPurpose": "غرض الدفع"
+  },
+  "types": {
+    "PAYMENT": "دفع",
+    "REFUND": "استرجاع"
+  },
+  "providers": {
+    "STRIPE": "Stripe",
+    "PAYMOB": "Paymob"
+  },
+  "paymentPurposes": {
+    "SESSION_BOOKING": "حجز جلسة",
+    "SESSION_INSTANT_BOOKING": "حجز فوري لجلسة",
+    "SESSION_EXTENSION": "تمديد جلسة",
+    "COURSE_ENROLLMENT": "الالتحاق بدورة",
+    "MANUAL_INVOICE": "فاتورة يدوية"
+  },
+  "paymentStatuses": {
+    "CREATED": "تم الإنشاء",
+    "PENDING": "قيد الانتظار",
+    "REQUIRES_ACTION": "يتطلب إجراء",
+    "AUTHORIZED": "مخوّل",
+    "CAPTURED": "تم التحصيل",
+    "FAILED": "فشل",
+    "CANCELLED": "ملغي",
+    "EXPIRED": "منتهي",
+    "REFUND_PENDING": "الاسترجاع قيد الانتظار",
+    "PARTIALLY_REFUNDED": "استرجاع جزئي",
+    "REFUNDED": "تم الاسترجاع"
+  },
+  "refundStatuses": {
+    "REQUESTED": "تم الطلب",
+    "PROCESSING": "قيد المعالجة",
+    "SUCCEEDED": "تم بنجاح",
+    "FAILED": "فشل",
+    "CANCELLED": "ملغي"
+  },
+  "detail": {
+    "back": "العودة إلى الأحداث",
+    "eyebrow": "حدث عملية مالية",
+    "title": "تفاصيل الحدث",
+    "note": "استخدم هذه الشاشة لفحص الحدث بأمان. لا تحتوي هذه الواجهة على أدوات تحكم مالية تنفيذية.",
+    "snapshot": {
+      "heading": "لقطة تشغيلية",
+      "note": "ملخص سريع لحالة الحدث الحالية.",
+      "operationType": "نوع العملية",
+      "lifecycle": "إشارة دورة الحالة"
+    },
+    "lifecycle": {
+      "paymentPending": {
+        "title": "الدفع ما زال جاريًا",
+        "note": "عملية الدفع ما زالت قيد الانتظار أو تحتاج إجراء."
+      },
+      "paymentRecorded": {
+        "title": "تم تثبيت حالة الدفع",
+        "note": "تم تحصيل الدفع أو وصل إلى حالة استرجاع."
+      },
+      "paymentFailed": {
+        "title": "فشل الدفع",
+        "note": "وصل الدفع إلى حالة فشل ويحتاج متابعة تشخيصية."
+      },
+      "refundInFlight": {
+        "title": "الاسترجاع قيد التنفيذ",
+        "note": "الاسترجاع موجود وما زال تحت المعالجة."
+      },
+      "refundSucceeded": {
+        "title": "اكتمل الاسترجاع",
+        "note": "تم الاسترجاع بنجاح مع حفظه للتتبع."
+      },
+      "refundFailed": {
+        "title": "فشل الاسترجاع",
+        "note": "فشل الاسترجاع وقد يتطلب متابعة في مسارات مالية متخصصة."
+      }
+    },
+    "fields": {
+      "heading": "حقول الحدث",
+      "id": "معرّف الحدث",
+      "operationType": "نوع العملية",
+      "summary": "الملخص",
+      "provider": "مزوّد الدفع",
+      "paymentPurpose": "غرض الدفع",
+      "paymentStatus": "حالة الدفع",
+      "refundStatus": "حالة الاسترجاع",
+      "paymentId": "معرّف الدفع",
+      "refundId": "معرّف الاسترجاع",
+      "externalRef": "المرجع الخارجي",
+      "linkedSessionId": "معرّف الجلسة المرتبط",
+      "linkedPractitionerId": "معرّف المعالج المرتبط",
+      "occurredAt": "وقت الحدث",
+      "createdAt": "وقت الإنشاء"
+    }
+  },
+  "states": {
+    "empty": {
+      "heading": "لا توجد أحداث مطابقة",
+      "note": "لا توجد أحداث تطابق الفلاتر الحالية."
+    },
+    "listError": {
+      "heading": "تعذّر تحميل أحداث العمليات المالية الآن",
+      "retry": "إعادة المحاولة"
+    },
+    "detailError": {
+      "heading": "تعذّر تحميل هذا الحدث الآن",
+      "retry": "إعادة المحاولة",
+      "back": "العودة إلى الأحداث"
+    }
+  },
+  "errors": {
+    "invalidFilter": "أحد الفلاتر غير صالح.",
+    "forbidden": "ليس لديك صلاحية الوصول إلى نطاق العمليات المالية هذا.",
+    "notFound": "لم يتم العثور على الحدث المطلوب.",
+    "generic": "تعذّر تحميل بيانات العمليات المالية الآن."
+  }
+}

@@ -1,0 +1,179 @@
+{
+  "meta": {
+    "walletTitle": "Wallet summary — Practitioner",
+    "walletDescription": "Review your current wallet balances and summary totals without overbuilding the finance suite.",
+    "ledgerTitle": "Ledger history — Practitioner",
+    "ledgerDescription": "Review your ledger history entries without jumping into settlements or payout tooling.",
+    "settlementsTitle": "Settlements — Practitioner",
+    "settlementsDescription": "Review settlement records and status updates without entering payout tooling."
+  },
+  "summary": {
+    "eyebrow": "Practitioner wallet",
+    "title": "Review your wallet summary without jumping into ledger or settlement detail.",
+    "note": "This summary is derived from the financial ledger. It shows balances and totals that are ready for visibility now.",
+    "currency": "Currency: {currency}",
+    "scopeHeading": "Available now",
+    "scopeItems": {
+      "balances": "Current balances split by availability state.",
+      "totals": "Lifetime earned and paid out totals.",
+      "timestamps": "Last ledger update timestamps."
+    },
+    "boundaryHeading": "Outside current scope",
+    "boundaryItems": {
+      "noLedger": "Ledger detail is available in a separate ledger screen.",
+      "noSettlements": "Settlement visibility is a separate surface.",
+      "noPayouts": "Payout actions and scheduling are not part of this baseline."
+    },
+    "cards": {
+      "available": "Available balance",
+      "pending": "Pending balance",
+      "reserved": "Reserved balance",
+      "totalEarned": "Total earned",
+      "lifetimePaidOut": "Lifetime paid out"
+    },
+    "detailsHeading": "Wallet details",
+    "details": {
+      "lastLedgerEntryAt": "Last ledger entry",
+      "updatedAt": "Last wallet update"
+    }
+  },
+  "states": {
+    "empty": {
+      "heading": "Wallet summary is not available yet",
+      "note": "The current wallet summary could not be loaded."
+    },
+    "error": {
+      "heading": "Wallet summary is not available right now",
+      "retry": "Try again"
+    }
+  },
+  "ledger": {
+    "eyebrow": "Practitioner ledger",
+    "title": "Review ledger history entries tied to your practitioner wallet.",
+    "note": "This ledger provides a visibility-first history of financial entries linked to sessions, payments, and settlements.",
+    "count": "{value} entries",
+    "countLoading": "Loading entries",
+    "scopeHeading": "Available now",
+    "scopeItems": {
+      "history": "Ledger history with entry types and timestamps.",
+      "balances": "Balance bucket impact per entry.",
+      "references": "References to related payments, sessions, or settlement records."
+    },
+    "boundaryHeading": "Outside current scope",
+    "boundaryItems": {
+      "noPayouts": "Payout actions are not available in this ledger view.",
+      "noSettlements": "Settlement detail lives on the settlements surface.",
+      "noReconciliation": "Reconciliation, exports, and analytics are not part of this baseline."
+    },
+    "fields": {
+      "effectiveAt": "Effective date",
+      "createdAt": "Recorded at",
+      "description": "Description"
+    },
+    "entryTypes": {
+      "SESSION_GROSS": "Session gross",
+      "PLATFORM_COMMISSION": "Platform commission",
+      "PRACTITIONER_EARNING": "Practitioner earning",
+      "COUPON_PLATFORM_SHARE": "Coupon platform share",
+      "COUPON_PRACTITIONER_SHARE": "Coupon practitioner share",
+      "REFUND_PLATFORM_REVERSAL": "Platform refund reversal",
+      "REFUND_PRACTITIONER_REVERSAL": "Practitioner refund reversal",
+      "MANUAL_ADJUSTMENT": "Manual adjustment",
+      "SETTLEMENT_PAYOUT": "Settlement payout",
+      "SETTLEMENT_REVERSAL": "Settlement reversal"
+    },
+    "directions": {
+      "CREDIT": "Credit",
+      "DEBIT": "Debit"
+    },
+    "balanceBuckets": {
+      "AVAILABLE": "Available",
+      "PENDING": "Pending",
+      "RESERVED": "Reserved"
+    },
+    "reference": {
+      "payment": "Payment",
+      "session": "Session",
+      "settlement": "Settlement",
+      "generic": "{type} reference"
+    },
+    "pagination": {
+      "summary": "{from}-{to} of {total}",
+      "previous": "Previous",
+      "next": "Next"
+    },
+    "states": {
+      "empty": {
+        "heading": "No ledger entries yet",
+        "note": "Ledger entries will appear here when financial activity is recorded."
+      },
+      "error": {
+        "heading": "Ledger entries are not available right now",
+        "retry": "Try again"
+      }
+    }
+  },
+  "settlements": {
+    "eyebrow": "Practitioner settlements",
+    "title": "Review settlement records tied to your practitioner earnings.",
+    "note": "This surface provides a visibility-first view of settlement batches and payout status updates.",
+    "count": "{value} settlements",
+    "countLoading": "Loading settlements",
+    "scopeHeading": "Available now",
+    "scopeItems": {
+      "history": "Settlement history with timestamps and payout state.",
+      "statuses": "Current status for each settlement record.",
+      "amounts": "Gross, adjustments, and net amounts per settlement."
+    },
+    "boundaryHeading": "Outside current scope",
+    "boundaryItems": {
+      "noPayouts": "Payout actions are not available in this view.",
+      "noLedger": "Ledger history remains a separate surface.",
+      "noAdjustments": "Manual adjustments and reconciliation are not part of this baseline."
+    },
+    "fields": {
+      "gross": "Gross amount",
+      "adjustments": "Adjustments",
+      "net": "Net amount",
+      "createdAt": "Created",
+      "paidAt": "Paid at",
+      "failedAt": "Failed at",
+      "batch": "Batch",
+      "reference": "Payout reference",
+      "notes": "Notes"
+    },
+    "statuses": {
+      "DRAFT": "Draft",
+      "READY": "Ready",
+      "PROCESSING": "Processing",
+      "PAID": "Paid",
+      "FAILED": "Failed",
+      "CANCELLED": "Cancelled"
+    },
+    "filters": {
+      "allStatuses": "All statuses"
+    },
+    "pagination": {
+      "summary": "{from}-{to} of {total}",
+      "previous": "Previous",
+      "next": "Next"
+    },
+    "states": {
+      "empty": {
+        "heading": "No settlements yet",
+        "note": "Settlement records will appear here when payouts are generated."
+      },
+      "error": {
+        "heading": "Settlements are not available right now",
+        "retry": "Try again"
+      }
+    }
+  },
+  "errors": {
+    "practitionerNotFound": "Your practitioner profile could not be found.",
+    "invalidFilter": "Some ledger filters are not supported.",
+    "forbidden": "Your account is not allowed to access this finance data.",
+    "notFound": "Financial data could not be found in scope.",
+    "generic": "Could not load finance data right now."
+  }
+}

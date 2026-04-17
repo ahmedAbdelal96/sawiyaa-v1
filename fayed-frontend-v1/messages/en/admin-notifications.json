@@ -1,0 +1,235 @@
+{
+  "notifications": {
+    "meta": {
+      "listTitle": "Operational Notifications — Admin",
+      "listDescription": "Inspect pending, queued, failed, and suppressed notification diagnostics in the current admin baseline.",
+      "detailTitle": "Notification Diagnostics — Admin",
+      "detailDescription": "Inspect notification lifecycle state, payload snapshots, and delivery attempts."
+    },
+    "list": {
+      "eyebrow": "Runtime notifications baseline",
+      "title": "Inspect operational notifications",
+      "note": "This surface shows the notification diagnostics the backend currently exposes for admin and support operations. It stays intentionally lightweight and does not behave like a notification center.",
+      "count": "{value, number} active diagnostics",
+      "countLoading": "Loading diagnostics",
+      "itemTitle": "{slug}",
+      "scheduledFor": "Scheduled for {date}",
+      "updatedAt": "Updated {date}",
+      "suppressedReason": "Suppressed: {reason}",
+      "latestError": "Latest error code: {code}",
+      "openDetail": "Open the notification detail to inspect attempts and snapshots.",
+      "openAction": "Open details"
+    },
+    "scope": {
+      "heading": "Available now",
+      "items": {
+        "list": "Review operational notifications with lightweight status, channel, and category filters.",
+        "detail": "Open a single notification to inspect lifecycle state and delivery snapshots.",
+        "attempts": "See recent delivery attempts, providers, and failure codes when they exist."
+      }
+    },
+    "boundaries": {
+      "heading": "Outside current scope",
+      "items": {
+        "noInbox": "This is not a user-facing inbox or notification center.",
+        "noReadState": "Read and unread management is not part of this baseline.",
+        "noBulkActions": "Bulk actions, archive, delete, and preferences are intentionally out of scope."
+      }
+    },
+    "filters": {
+      "defaultOperational": "Operational defaults",
+      "allStatuses": "All statuses",
+      "allChannels": "All channels",
+      "allCategories": "All categories",
+      "channel": "Channel",
+      "category": "Category"
+    },
+    "pagination": {
+      "summary": "{from}–{to} of {total}",
+      "previous": "Previous",
+      "next": "Next"
+    },
+    "detail": {
+      "back": "Back to notifications",
+      "eyebrow": "Notification diagnostics",
+      "title": "Notification detail",
+      "note": "Use this screen to inspect the notification lifecycle state, linked entity context, payload snapshots, and delivery attempts that the backend currently records.",
+      "snapshotNote": "Use this operational summary to quickly tell whether the current notification is still pending work, a completed diagnostic record, or a visibility-only item with no admin control path.",
+      "visibilityNote": "This surface is diagnostic visibility only. Requeue, archive, and broader notification management remain outside the current scope.",
+      "attemptsNote": "Attempt history is shown only from the delivery attempts already recorded by the backend.",
+      "attemptLabel": "Attempt {value}"
+    },
+    "dropdown": {
+      "ariaLabel": "Operational notifications",
+      "title": "Notifications",
+      "note": "Operational diagnostics only",
+      "count": "{value, number} active",
+      "errorHeading": "Notifications are not available right now",
+      "errorNote": "Could not load notification diagnostics.",
+      "retry": "Try again",
+      "emptyHeading": "No active notification diagnostics",
+      "emptyNote": "There are no pending, queued, failed, or suppressed notification items right now.",
+      "openAll": "Open notifications"
+    },
+    "queue": {
+      "heading": "Notification diagnostics",
+      "note": "Pending, queued, failed, and suppressed deliveries that may need inspection.",
+      "count": "{value, number} active",
+      "viewAll": "View all notifications",
+      "errorHeading": "Notification diagnostics are not available right now",
+      "errorNote": "Could not load notification diagnostics.",
+      "retry": "Try again",
+      "emptyHeading": "No active notification diagnostics",
+      "empty": "There are no active notification diagnostics right now."
+    },
+    "module": {
+      "title": "Notifications",
+      "description": "Inspect notification delivery diagnostics in a bounded admin surface."
+    },
+    "sections": {
+      "snapshot": "Operational snapshot",
+      "summary": "Notification summary",
+      "related": "Linked context",
+      "body": "Body snapshot",
+      "attempts": "Delivery attempts",
+      "suppression": "Suppression reason"
+    },
+    "snapshotCards": {
+      "lifecycle": {
+        "label": "Lifecycle state",
+        "states": {
+          "pending": {
+            "title": "Still waiting to complete",
+            "note": "This notification is still pending or queued, so the main job here is inspection rather than intervention."
+          },
+          "sent": {
+            "title": "Sent but not yet confirmed delivered",
+            "note": "The notification already left the system, but final delivery confirmation is still narrower than a full notification-management workflow."
+          },
+          "delivered": {
+            "title": "Delivered diagnostic record",
+            "note": "This notification already reached a delivered or read state. The remaining posture here is visibility only."
+          },
+          "failed": {
+            "title": "Delivery problem recorded",
+            "note": "A delivery failure is already recorded for this notification. Use the attempts section below to inspect the current backend evidence."
+          },
+          "suppressed": {
+            "title": "Suppressed before delivery",
+            "note": "This notification was suppressed by the backend or provider rules, so this surface stays diagnostic only."
+          },
+          "cancelled": {
+            "title": "Cancelled before completion",
+            "note": "This notification was cancelled before completing. Review the stored snapshot only."
+          }
+        }
+      },
+      "attempts": {
+        "label": "Attempt history",
+        "states": {
+          "none": {
+            "title": "No attempts recorded yet",
+            "note": "The backend has not recorded any delivery attempts for this notification yet."
+          },
+          "recorded": {
+            "title": "Attempts are recorded",
+            "note": "Delivery attempts exist for this notification. Inspect the timeline below for provider context and error details."
+          },
+          "failed": {
+            "title": "Failed attempt history exists",
+            "note": "At least one recorded delivery attempt failed. The detail below is for diagnosis, not broader notification recovery tooling."
+          },
+          "delivered": {
+            "title": "Delivered attempt history exists",
+            "note": "At least one attempt already reached delivery. Use the attempt log below only for confirmation and traceability."
+          }
+        }
+      },
+      "controls": {
+        "label": "Action posture",
+        "visibility": {
+          "title": "Visibility only",
+          "note": "This admin baseline does not expose requeue, archive, or broader notification controls here."
+        }
+      }
+    },
+    "fields": {
+      "typeSlug": "Type slug",
+      "userId": "User ID",
+      "locale": "Locale",
+      "scheduledFor": "Scheduled for",
+      "sentAt": "Sent at",
+      "failedAt": "Failed at",
+      "createdAt": "Created at",
+      "updatedAt": "Updated at",
+      "relatedEntityType": "Related entity type",
+      "relatedEntityId": "Related entity ID",
+      "titleSnapshot": "Title snapshot",
+      "subjectSnapshot": "Subject snapshot",
+      "attemptsCount": "Attempts",
+      "provider": "Provider",
+      "errorCode": "Error code"
+    },
+    "fallback": {
+      "noValue": "—",
+      "noSnapshot": "No snapshot was stored for this field."
+    },
+    "states": {
+      "empty": {
+        "heading": "No operational notifications right now",
+        "note": "There are no notification diagnostics matching the current filters."
+      },
+      "listError": {
+        "heading": "Notifications are not available right now",
+        "note": "Could not load operational notifications.",
+        "retry": "Try again"
+      },
+      "detailError": {
+        "heading": "Notification detail is not available right now",
+        "note": "Could not load this notification detail.",
+        "retry": "Try again"
+      },
+      "notFound": {
+        "heading": "This notification was not found",
+        "note": "The requested notification could not be found or is no longer available."
+      },
+      "noAttempts": {
+        "heading": "No delivery attempts yet",
+        "note": "This notification does not have recorded delivery attempts yet."
+      }
+    },
+    "statuses": {
+      "PENDING": "Pending",
+      "QUEUED": "Queued",
+      "SENT": "Sent",
+      "DELIVERED": "Delivered",
+      "READ": "Read",
+      "FAILED": "Failed",
+      "CANCELLED": "Cancelled",
+      "SUPPRESSED": "Suppressed"
+    },
+    "channels": {
+      "EMAIL": "Email",
+      "SMS": "SMS",
+      "PUSH": "Push",
+      "IN_APP": "In app"
+    },
+    "categories": {
+      "SECURITY": "Security",
+      "SESSION": "Session",
+      "PAYMENT": "Payment",
+      "CONTENT": "Content",
+      "SUPPORT": "Support",
+      "CHAT": "Chat",
+      "SYSTEM": "System",
+      "TRAINING": "Training",
+      "MARKETING": "Marketing"
+    },
+    "deliveryStatuses": {
+      "PENDING": "Pending",
+      "SENT": "Sent",
+      "DELIVERED": "Delivered",
+      "FAILED": "Failed"
+    }
+  }
+}

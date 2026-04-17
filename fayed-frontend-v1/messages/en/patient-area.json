@@ -1,0 +1,357 @@
+{
+  "shell": {
+    "title": "Your care journey",
+    "subtitle": "Guided support, next steps, and practical help in one calmer place",
+    "home": "Journey",
+    "matching": "Matching",
+    "assessments": "Assessments",
+    "practitioners": "Practitioners",
+    "sessions": "Sessions",
+    "support": "Support",
+    "payments": "Payments",
+    "profile": "Profile"
+  },
+  "home": {
+    "eyebrow": "Patient care space",
+    "title": "Start from what matters most to you right now.",
+    "description": "Find a practitioner, review your sessions, or continue your care journey without the heavy dashboard feeling.",
+    "primaryCta": "Find a practitioner",
+    "secondaryCta": "View my sessions",
+    "panel": {
+      "title": "A simpler patient flow",
+      "description": "This area is designed around the real patient journey: discover the right practitioner first, then manage sessions and follow-up in one place.",
+      "discoveryLabel": "Discovery first",
+      "discoveryValue": "Browse practitioners and specialties before dealing with account details or workspace tools.",
+      "followupLabel": "Follow-up second",
+      "followupValue": "Sessions, messages, and payments stay nearby when you need them, without turning the experience into an admin dashboard."
+    },
+    "cards": {
+      "practitioners": {
+        "title": "Browse practitioners",
+        "description": "Explore available practitioners and start from the public discovery experience."
+      },
+      "sessions": {
+        "title": "My sessions",
+        "description": "Check upcoming appointments and the next steps in your care journey."
+      },
+      "chat": {
+        "title": "Messages",
+        "description": "Stay close to approved care conversations and future follow-up messages."
+      },
+      "profile": {
+        "title": "Profile",
+        "description": "Keep your account details and personal information easy to reach."
+      }
+    },
+    "support": {
+      "title": "Keep practical tasks within reach",
+      "description": "Payments, settings, and profile tools still exist, but they support the care journey instead of becoming the main experience.",
+      "cta": "Open payments"
+    },
+    "meta": {
+      "title": "Fayed | Patient Care Space",
+      "description": "A simple care-first entry point for patients to discover practitioners and follow their sessions."
+    }
+  },
+  "hub": {
+    "greeting": "Welcome back",
+    "greetingNamed": "Welcome back, {name}",
+    "priority": {
+      "pendingPayment": {
+        "label": "Action needed",
+        "note": "Your booking is reserved — complete the payment to confirm your session.",
+        "cta": "Complete payment"
+      },
+      "upcoming": {
+        "label": "Upcoming session",
+        "with": "with {practitioner}",
+        "cta": "View details"
+      },
+      "failedPayment": {
+        "label": "Payment issue",
+        "note": "One of your recent payments could not be processed.",
+        "cta": "Review payments"
+      }
+    },
+    "sessions": {
+      "heading": "Recent sessions",
+      "viewAll": "View all"
+    },
+    "empty": {
+      "heading": "Start your care journey",
+      "note": "Find the right practitioner and book your first session.",
+      "cta": "Browse practitioners"
+    },
+    "links": {
+      "sessions": "Sessions",
+      "payments": "Payments",
+      "practitioners": "Find a practitioner",
+      "profile": "Profile"
+    }
+  },
+  "guided": {
+    "common": {
+      "stepsTitle": "How this page helps you",
+      "tipsTitle": "Helpful guidance"
+    },
+    "sessions": {
+      "eyebrow": "My sessions",
+      "title": "Keep all your sessions and next steps easy to follow.",
+      "description": "This page is where upcoming appointments, past sessions, and care follow-up will become easiest to review.",
+      "primaryAction": "Find a practitioner",
+      "secondaryAction": "Open messages",
+      "steps": {
+        "first": {
+          "title": "Start from your booked care",
+          "description": "Your next appointment and recent sessions will appear here in a simple timeline."
+        },
+        "second": {
+          "title": "Know what to do next",
+          "description": "Each session will guide you toward confirmation, joining, follow-up, or any action you still need."
+        },
+        "third": {
+          "title": "Stay connected to the journey",
+          "description": "Messages, payments, and future care updates can stay linked to each session instead of being scattered."
+        }
+      },
+      "tips": {
+        "first": "If you are just getting started, begin by finding the practitioner who feels right for you.",
+        "second": "Come back here whenever you want a clear view of what is upcoming and what already happened.",
+        "third": "You should never need to guess the next step after booking."
+      }
+    },
+    "practitioners": {
+      "eyebrow": "Find the right practitioner",
+      "title": "Browse practitioners from a patient-first starting point.",
+      "description": "Use the same trusted discovery flow, but within your care area so choosing the right practitioner feels like part of your journey, not a separate tool.",
+      "secondaryAction": "Back to my care space",
+      "steps": {
+        "first": {
+          "title": "Start with what matters to you",
+          "description": "Use search and filters to narrow the list based on specialty, language, and the kind of support you are looking for."
+        },
+        "second": {
+          "title": "Compare with less effort",
+          "description": "Each practitioner card should help you understand enough to decide whether you want to learn more."
+        },
+        "third": {
+          "title": "Move forward when you feel ready",
+          "description": "Once someone feels right, continue into their profile and the next booking steps without leaving the patient journey."
+        }
+      },
+      "tips": {
+        "first": "You do not need to know the exact practitioner name to begin. Start with specialty or language if that is easier.",
+        "second": "If the list feels broad, use one or two filters first instead of trying to decide from everything at once.",
+        "third": "This page should help you choose with confidence, not pressure you into fast decisions."
+      }
+    },
+    "payments": {
+      "eyebrow": "Payments",
+      "title": "Make payment details easy to read and easy to trust.",
+      "description": "This page will show session-related charges, payment status, and any billing details in a clearer patient-friendly way.",
+      "primaryAction": "Go to my sessions",
+      "secondaryAction": "Browse practitioners",
+      "steps": {
+        "first": {
+          "title": "See what each payment is for",
+          "description": "Payments should connect directly to the relevant session so the reason behind each charge stays obvious."
+        },
+        "second": {
+          "title": "Check status without confusion",
+          "description": "Paid, pending, or failed states should stay visible in plain language rather than technical finance wording."
+        },
+        "third": {
+          "title": "Return to care quickly",
+          "description": "After checking a payment, it should stay easy to go back to your session or practitioner without getting lost."
+        }
+      },
+      "tips": {
+        "first": "Most patients care about clarity, not accounting language, so this page keeps the explanation simple.",
+        "second": "If a payment is linked to a session, the session context should remain nearby.",
+        "third": "Any future invoice or receipt flow should stay attached to the session journey."
+      }
+    },
+    "chat": {
+      "eyebrow": "Messages",
+      "title": "Keep follow-up messages calm, clear, and close to your care journey.",
+      "description": "This page is for approved conversations and care-related follow-up without making the patient think in workspace or admin terms.",
+      "primaryAction": "View my sessions",
+      "secondaryAction": "Open profile",
+      "steps": {
+        "first": {
+          "title": "See the right conversation quickly",
+          "description": "Messages should be grouped in a way that makes the care context obvious at a glance."
+        },
+        "second": {
+          "title": "Stay focused on care, not tooling",
+          "description": "The experience should feel like simple communication support around sessions and follow-up."
+        },
+        "third": {
+          "title": "Move easily between message and session",
+          "description": "Patients should be able to understand which session or practitioner the conversation belongs to."
+        }
+      },
+      "tips": {
+        "first": "Conversations should answer patient questions clearly and reduce uncertainty.",
+        "second": "Messaging should feel supportive, not like a back-office inbox.",
+        "third": "Context labels and timestamps should do most of the thinking for the user."
+      }
+    },
+    "settings": {
+      "eyebrow": "Settings",
+      "title": "Keep account settings simple and low-stress.",
+      "description": "Patients should find the few account controls they need without feeling like they entered an operations panel.",
+      "primaryAction": "Open my profile",
+      "secondaryAction": "Open payments",
+      "steps": {
+        "first": {
+          "title": "Focus on the essentials",
+          "description": "Language, account preferences, and security options should stay visible without overload."
+        },
+        "second": {
+          "title": "Make each option easy to understand",
+          "description": "Every setting should explain what it changes and why the patient might care."
+        },
+        "third": {
+          "title": "Keep important actions safe",
+          "description": "Sensitive account actions should be clear, deliberate, and never hidden behind confusing wording."
+        }
+      },
+      "tips": {
+        "first": "Patients usually want reassurance more than configuration depth.",
+        "second": "Short helper text matters here because it removes hesitation.",
+        "third": "Profile and settings should feel related, not like two unrelated tools."
+      }
+    },
+    "articles": {
+      "eyebrow": "Articles",
+      "title": "Turn educational content into something supportive and easy to discover.",
+      "description": "This area should help patients find practical, reassuring content that supports their care journey without distracting them from booking or sessions.",
+      "primaryAction": "Browse practitioners",
+      "secondaryAction": "Go to my sessions",
+      "steps": {
+        "first": {
+          "title": "Start with relevant guidance",
+          "description": "Patients should quickly see content that feels useful to their current stage, not an overwhelming library."
+        },
+        "second": {
+          "title": "Keep reading connected to care",
+          "description": "Educational material should support confidence before or after sessions, not compete with them."
+        },
+        "third": {
+          "title": "Make returning easy",
+          "description": "Patients should move smoothly from content back to finding a practitioner or reviewing their sessions."
+        }
+      },
+      "tips": {
+        "first": "The tone should stay calm and supportive rather than overly clinical.",
+        "second": "Helpful recommendations matter more than deep navigation structures here.",
+        "third": "This page should reduce uncertainty, not create more choices than necessary."
+      }
+    },
+    "reviews": {
+      "eyebrow": "Reviews",
+      "title": "Make feedback feel simple, useful, and connected to real care moments.",
+      "description": "Patients should understand when they can leave feedback and why it matters, without needing to think about systems or moderation flows.",
+      "primaryAction": "Go to my sessions",
+      "secondaryAction": "Browse practitioners",
+      "steps": {
+        "first": {
+          "title": "Connect feedback to completed care",
+          "description": "Reviews should be shown around finished sessions so the context stays obvious."
+        },
+        "second": {
+          "title": "Keep the action lightweight",
+          "description": "Patients should feel comfortable sharing their experience without a heavy process."
+        },
+        "third": {
+          "title": "Show what was already submitted",
+          "description": "It should be easy to understand which sessions already have feedback and which still do not."
+        }
+      },
+      "tips": {
+        "first": "Patients are more likely to leave feedback when the timing feels natural.",
+        "second": "The interface should explain expectations in plain language.",
+        "third": "Feedback tools should feel like part of the care journey, not a separate admin task."
+      }
+    },
+    "profile": {
+      "eyebrow": "My profile",
+      "primaryAction": "Go to my sessions",
+      "secondaryAction": "Open settings",
+      "helper": "Keep your basic information up to date so your care journey, communication, and future booking flows stay clearer and more reliable.",
+      "steps": {
+        "first": {
+          "title": "Review the essentials first",
+          "description": "Start with your displayed name, language, and personal details that affect how the platform communicates with you."
+        },
+        "second": {
+          "title": "Update only what matters",
+          "description": "The form should stay simple and focused so you do not need to think through unnecessary fields."
+        },
+        "third": {
+          "title": "Save with confidence",
+          "description": "Feedback messages should make it obvious whether your information was updated successfully."
+        }
+      },
+      "tips": {
+        "first": "Keeping your profile current helps future care and support flows feel smoother.",
+        "second": "Profile details should always stay understandable without technical language.",
+        "third": "This page should feel personal and supportive, not administrative."
+      }
+    }
+  },
+  "placeholder": {
+    "eyebrow": "Patient Area",
+    "backToDashboard": "Back to your journey",
+    "backToPractitioners": "Browse Practitioners",
+    "sessions": {
+      "title": "My Sessions",
+      "description": "Your upcoming and past therapy sessions will appear here.",
+      "meta": {
+        "title": "Fayed | My Sessions",
+        "description": "View your upcoming and past therapy sessions."
+      }
+    },
+    "settings": {
+      "title": "Settings",
+      "description": "Account preferences and security options.",
+      "meta": {
+        "title": "Fayed | Settings",
+        "description": "Manage your account preferences and security options."
+      }
+    },
+    "payments": {
+      "title": "My Payments",
+      "description": "Your payment history and billing information will appear here.",
+      "meta": {
+        "title": "Fayed | My Payments",
+        "description": "View your payment history and billing information."
+      }
+    },
+    "chat": {
+      "title": "Messages",
+      "description": "Care follow-up messaging and approved conversations.",
+      "meta": {
+        "title": "Fayed | Messages",
+        "description": "Care follow-up messaging and approved conversations."
+      }
+    },
+    "reviews": {
+      "title": "My Reviews",
+      "description": "Your submitted feedback and reviews will appear here.",
+      "meta": {
+        "title": "Fayed | My Reviews",
+        "description": "View and manage your submitted feedback and reviews."
+      }
+    },
+    "articles": {
+      "title": "Articles",
+      "description": "Educational content and articles for your care journey.",
+      "meta": {
+        "title": "Fayed | Articles",
+        "description": "Educational content and articles for your care journey."
+      }
+    }
+  }
+}

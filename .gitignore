@@ -1,0 +1,46 @@
+# Monorepo-wide ignores
+
+# Dependencies
+**/node_modules/
+**/.pnp
+**/.pnp.js
+
+# Build outputs
+**/dist/
+**/build/
+**/out/
+**/.next/
+**/coverage/
+**/.nyc_output/
+
+# Local env files (never commit secrets)
+**/.env
+**/.env.*
+!**/.env.example
+!**/.env.*.example
+
+# Logs & temp
+**/logs/
+**/*.log
+**/*.err.log
+**/.tmp/
+**/.temp/
+**/tmp_*
+
+# Editor/OS
+**/.idea/
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+**/.DS_Store
+**/Thumbs.db
+
+# Archives / exports
+*.zip
+*.7z
+*.rar
+
+# Local backups (do not commit)
+git-subrepos-backup/

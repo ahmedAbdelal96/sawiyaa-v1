@@ -1,0 +1,60 @@
+{
+  "meta": {
+    "siteTitle": "Fayed",
+    "siteDescription": "Guided mental care with clearer entry paths, public practitioner discovery, specialties, and trust-backed content.",
+    "home": {
+      "title": "Fayed | Guided mental care entry",
+      "description": "Start with guided matching, assessments, practitioner discovery, or support through a clearer public entry into care."
+    },
+    "practitioners": {
+      "title": "Fayed | Browse practitioners",
+      "description": "Browse real public practitioner profiles, specialties, languages, and trust context to choose a clearer next care step."
+    },
+    "practitionerProfileFallback": {
+      "title": "Fayed | Practitioner profile",
+      "description": "Review a public practitioner profile, specialties, credentials, trust context, and booking availability."
+    },
+    "specialties": {
+      "title": "Fayed | Mental health specialties",
+      "description": "Explore public mental health specialties and move into the care path that fits your needs."
+    },
+    "specialtyFallback": {
+      "title": "Fayed | Specialty details",
+      "description": "Review a public specialty, its current catalog details, and the practitioners linked to it."
+    },
+    "articles": {
+      "title": "Fayed | Articles",
+      "description": "Read published care content with trust metadata and direct links into real public care paths."
+    },
+    "articleFallback": {
+      "title": "Fayed | Article",
+      "description": "Read published public care content with author and trust context where available."
+    },
+    "notFound": {
+      "title": "Fayed | Page not found",
+      "description": "This public page is not available right now or may have moved."
+    },
+    "unavailable": {
+      "title": "Fayed | Public page unavailable",
+      "description": "This public page could not be loaded right now. Please try again or continue from another real public path."
+    }
+  },
+  "notFound": {
+    "eyebrow": "Page not found",
+    "title": "This page is not available right now",
+    "description": "The page may have moved, the link may be outdated, or this public item is no longer available.",
+    "home": "Go to home",
+    "practitioners": "Browse practitioners",
+    "specialties": "Explore specialties"
+  },
+  "unavailable": {
+    "eyebrow": "Public page unavailable",
+    "title": "We could not load this page right now",
+    "description": "This does not necessarily mean the product is unavailable. You can try again or continue from another real public path.",
+    "retry": "Try again",
+    "home": "Go to home",
+    "practitioners": "Browse practitioners",
+    "specialties": "Explore specialties",
+    "articles": "Read articles"
+  }
+}

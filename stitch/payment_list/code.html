@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+
+<html dir="rtl" lang="ar"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-variant": "#d8e3fc",
+                    "on-tertiary": "#ffffff",
+                    "secondary-fixed": "#d6e3ff",
+                    "background": "#f9f9ff",
+                    "inverse-surface": "#263144",
+                    "surface-dim": "#cfdaf3",
+                    "on-secondary-container": "#465c80",
+                    "outline-variant": "#c2c6d3",
+                    "on-primary-fixed": "#001b3c",
+                    "on-secondary-fixed-variant": "#31476a",
+                    "primary": "#0b5cac",
+                    "tertiary-fixed-dim": "#bfc7d5",
+                    "surface-bright": "#f9f9ff",
+                    "on-tertiary-container": "#fdfcff",
+                    "inverse-primary": "#a7c8ff",
+                    "tertiary-fixed": "#dbe3f2",
+                    "surface-container": "#e8eeff",
+                    "on-tertiary-fixed": "#141c27",
+                    "surface": "#f9f9ff",
+                    "primary-container": "#3575c7",
+                    "on-error-container": "#93000a",
+                    "tertiary-container": "#6d7582",
+                    "on-primary-container": "#fefcff",
+                    "on-background": "#101c2e",
+                    "outline": "#727783",
+                    "error": "#ba1a1a",
+                    "surface-container-lowest": "#ffffff",
+                    "secondary-fixed-dim": "#b1c7f1",
+                    "surface-container-highest": "#d8e3fc",
+                    "primary-fixed": "#d5e3ff",
+                    "secondary": "#495f83",
+                    "on-surface": "#101c2e",
+                    "surface-container-high": "#dfe8ff",
+                    "primary-fixed-dim": "#a7c8ff",
+                    "on-primary-fixed-variant": "#004689",
+                    "on-error": "#ffffff",
+                    "on-secondary": "#ffffff",
+                    "error-container": "#ffdad6",
+                    "inverse-on-surface": "#ecf0ff",
+                    "secondary-container": "#bfd5ff",
+                    "on-tertiary-fixed-variant": "#3f4753",
+                    "on-surface-variant": "#424751",
+                    "on-secondary-fixed": "#001b3c",
+                    "surface-tint": "#125eae",
+                    "tertiary": "#545d69",
+                    "surface-container-low": "#f0f3ff",
+                    "on-primary": "#ffffff"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "1.5rem",
+                    "full": "9999px"
+            },
+            "fontFamily": {
+                    "headline": ["Manrope", "sans-serif"],
+                    "body": ["Manrope", "sans-serif"],
+                    "label": ["Manrope", "sans-serif"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            font-family: 'Manrope', sans-serif;
+            background-color: #f9f9ff;
+        }
+        .tonal-transition-surface {
+            background: linear-gradient(to bottom, #f9f9ff, #f0f3ff);
+        }
+        .tonal-layering {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(24px);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="text-on-surface antialiased overflow-x-hidden pb-32">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-[#f9f9ff]/70 backdrop-blur-md">
+<div class="flex flex-row-reverse justify-between items-center w-full px-6 py-4 max-w-screen-xl mx-auto">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-surface-container-highest overflow-hidden border border-white">
+<img alt="User profile" class="w-full h-full object-cover" data-alt="Close-up professional portrait of a smiling man with a soft lighting and clean minimalist background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDJgDwMhW6Kuf5XAHN5O2IFqce8tm9jYeE4Bc65IQnqRUEJ9N6FiKIJdR3hZpDPb5_YzzIN8n2k0yL8Qr-BZLpiOQzEThGpCTCSkdinr9xdSJJxMAk_dpsS6G_JHDBtlHSiscXtH4Sz09kmTHnDfbQa21v2v2JT-8JzxXRsTWrCER-nvtCRtwkWKunwMCiU55C7W6Pu0FI4t4x6bRHeklnC00-F-i-B9vrG5irIrQVWYoy7ozoFtnIrWFBO9SkUARRESgZTGNT6ouM"/>
+</div>
+</div>
+<h1 class="font-manrope font-bold text-2xl tracking-tight text-right text-[#3f7dcf]">فايد</h1>
+<button class="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-blue-50 transition-colors">
+<span class="material-symbols-outlined text-primary" data-icon="notifications">notifications</span>
+</button>
+</div>
+</header>
+<main class="mt-20 px-6 max-w-screen-md mx-auto">
+<!-- Section Header -->
+<div class="py-8 text-right">
+<h2 class="text-3xl font-extrabold text-on-surface mb-2">المدفوعات</h2>
+<p class="text-on-surface-variant font-medium">تتبع جميع معاملاتك المالية وحالة جلساتك</p>
+</div>
+<!-- Filter Chips -->
+<div class="flex gap-3 mb-10 overflow-x-auto pb-2 scrollbar-hide flex-row-reverse">
+<button class="px-8 py-2.5 rounded-full bg-primary text-on-primary font-bold transition-all shadow-md">
+                الحالية
+            </button>
+<button class="px-8 py-2.5 rounded-full bg-surface-container-high text-on-surface-variant font-medium hover:bg-surface-container-highest transition-all">
+                السابقة
+            </button>
+</div>
+<!-- Transaction List -->
+<div class="space-y-6">
+<!-- Card 1: Paid -->
+<div class="bg-surface-container-lowest rounded-xl p-6 transition-all border border-transparent hover:shadow-lg">
+<div class="flex flex-row-reverse items-start justify-between mb-6">
+<div class="flex flex-row-reverse items-center gap-4">
+<div class="w-14 h-14 rounded-xl bg-surface-container-low overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="Female doctor in white lab coat smiling warmly with a stethoscope around her neck, high-end medical setting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDtnpxqMKzdmjReJPxLfgh0x_u781Bio2TTenBsRqHP5PyAtmH6nAuA2COjL7A87LoU_i_E7xv4Pf0H5VtO1W2u563C2G0EOFh3jW5RE7ahrDNLfayTyigrA32ECVWVlz3Ic-MScdzn0Jrivi13RPaEOp2BMaNl8vz3CLQ5liHQbNM70CYzGZHVvUpie7btBAuLO-mpf9HsVqrFU4wgsXxtIwnPad6eL-LW2YxCCJ4izys5G8dy5Sxx5GDpCJqF9CoH9NbgjjtS12M"/>
+</div>
+<div class="text-right">
+<h3 class="text-lg font-bold text-on-surface">د. سارة الأحمد</h3>
+<p class="text-sm text-on-surface-variant">استشاري نمو وتطور</p>
+</div>
+</div>
+<div class="bg-green-100 text-green-700 px-4 py-1.5 rounded-full text-sm font-bold">
+                        مدفوع
+                    </div>
+</div>
+<div class="flex flex-row-reverse justify-between items-center bg-surface-container-low rounded-xl p-4">
+<div class="flex items-center gap-2 text-right">
+<span class="material-symbols-outlined text-primary text-lg" data-icon="event_note">event_note</span>
+<span class="text-sm font-medium">12 أكتوبر 2023</span>
+</div>
+<div class="text-left">
+<span class="text-xl font-extrabold text-primary">250</span>
+<span class="text-xs font-bold text-primary mr-1">ر.س</span>
+</div>
+</div>
+</div>
+<!-- Card 2: Pending -->
+<div class="bg-surface-container-lowest rounded-xl p-6 transition-all border border-transparent hover:shadow-lg">
+<div class="flex flex-row-reverse items-start justify-between mb-6">
+<div class="flex flex-row-reverse items-center gap-4">
+<div class="w-14 h-14 rounded-xl bg-surface-container-low overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="Male healthcare professional with glasses in a modern blue medical uniform, soft natural window light" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCGi1J2TWHFProTJe8LcJtgEMD1DJrapo6UCGfbQNuGOOBrppCk21RL4jjsvSQPHFPVXhCXMPbeeHl_09GNB3ULlZrxQtqTzN9Qv7x2vQtrPr5pEqEFV5p2E2xndHo9-qHpT-RqT6kxoKmieGZ-JfNScGbhwnX_Udw5Fs45iGVcUdppVi89bf4vyOxyxAkLcQ7d1xwnEumQfsmXG1q6Emg4JWg3LqAmO0vAz2foLAiREBj_jRoDS-xhyctgxHPbzY2EueZmT6xx_Rc"/>
+</div>
+<div class="text-right">
+<h3 class="text-lg font-bold text-on-surface">أ. محمد خالد</h3>
+<p class="text-sm text-on-surface-variant">أخصائي تخاطب</p>
+</div>
+</div>
+<div class="bg-orange-100 text-orange-700 px-4 py-1.5 rounded-full text-sm font-bold">
+                        قيد الانتظار
+                    </div>
+</div>
+<div class="flex flex-row-reverse justify-between items-center bg-surface-container-low rounded-xl p-4">
+<div class="flex items-center gap-2 text-right">
+<span class="material-symbols-outlined text-primary text-lg" data-icon="event_note">event_note</span>
+<span class="text-sm font-medium">18 أكتوبر 2023</span>
+</div>
+<div class="text-left">
+<span class="text-xl font-extrabold text-primary">180</span>
+<span class="text-xs font-bold text-primary mr-1">ر.س</span>
+</div>
+</div>
+</div>
+<!-- Card 3: Paid -->
+<div class="bg-surface-container-lowest rounded-xl p-6 transition-all border border-transparent hover:shadow-lg">
+<div class="flex flex-row-reverse items-start justify-between mb-6">
+<div class="flex flex-row-reverse items-center gap-4">
+<div class="w-14 h-14 rounded-xl bg-surface-container-low overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="Middle-aged female physician with a gentle expression, wearing high-quality professional attire in a bright office" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDdblqoQDSuhKWIjdHflLFKqIfLNIPPzPxLUq58e3KqczF7SY8OCAfaDQ5wK0tTqM_eADKgVwveTJohBTUy_GsJbdMmwMXLCT6ujp7sSvZS2g_6sSSCmwEdrCxM59L3pCy2ggwW62XD5hhlxsGdUubZq6FVQBGLTPTuKns_yvtCWkYx495j0q7TiSxz14I0bVZKdAv1xISuZ8Lemo2ubTfGvumXX66FfCXWIRuyD6LtEAfnS4PJOT_TUKCuSHET9_ef6z7y-YjhY2U"/>
+</div>
+<div class="text-right">
+<h3 class="text-lg font-bold text-on-surface">د. ليلى حسن</h3>
+<p class="text-sm text-on-surface-variant">علاج وظيفي</p>
+</div>
+</div>
+<div class="bg-green-100 text-green-700 px-4 py-1.5 rounded-full text-sm font-bold">
+                        مدفوع
+                    </div>
+</div>
+<div class="flex flex-row-reverse justify-between items-center bg-surface-container-low rounded-xl p-4">
+<div class="flex items-center gap-2 text-right">
+<span class="material-symbols-outlined text-primary text-lg" data-icon="event_note">event_note</span>
+<span class="text-sm font-medium">25 أكتوبر 2023</span>
+</div>
+<div class="text-left">
+<span class="text-xl font-extrabold text-primary">300</span>
+<span class="text-xs font-bold text-primary mr-1">ر.س</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Summary Widget (Asymmetric Bento Style) -->
+<div class="mt-12 grid grid-cols-2 gap-4 mb-10">
+<div class="col-span-2 bg-primary rounded-xl p-6 flex flex-row-reverse justify-between items-center text-on-primary">
+<div class="text-right">
+<p class="text-sm opacity-80 mb-1">إجمالي المدفوعات هذا الشهر</p>
+<h4 class="text-3xl font-extrabold">730 ر.س</h4>
+</div>
+<div class="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center">
+<span class="material-symbols-outlined text-white" data-icon="payments">payments</span>
+</div>
+</div>
+<div class="bg-surface-container-high rounded-xl p-6 text-right">
+<p class="text-xs text-on-surface-variant mb-1">جلسات منتهية</p>
+<h4 class="text-xl font-bold">12</h4>
+</div>
+<div class="bg-surface-container-high rounded-xl p-6 text-right">
+<p class="text-xs text-on-surface-variant mb-1">نقاط الولاء</p>
+<h4 class="text-xl font-bold">450</h4>
+</div>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full flex flex-row-reverse justify-around items-center px-4 pb-8 pt-4 bg-white/70 dark:bg-slate-900/70 backdrop-blur-md rounded-t-[1.5rem] z-50 shadow-[0_-12px_40px_rgba(16,28,46,0.06)]">
+<!-- Home -->
+<a class="flex flex-col items-center justify-center text-[#101c2e]/60 px-4 py-2 hover:bg-blue-50/50 transition-colors" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="home">home</span>
+<span class="text-[11px] font-medium leading-none">الرئيسية</span>
+</a>
+<!-- Sessions -->
+<a class="flex flex-col items-center justify-center text-[#101c2e]/60 px-4 py-2 hover:bg-blue-50/50 transition-colors" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="event_note">event_note</span>
+<span class="text-[11px] font-medium leading-none">الجلسات</span>
+</a>
+<!-- Chat -->
+<a class="flex flex-col items-center justify-center text-[#101c2e]/60 px-4 py-2 hover:bg-blue-50/50 transition-colors" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="chat_bubble">chat_bubble</span>
+<span class="text-[11px] font-medium leading-none">المحادثة</span>
+</a>
+<!-- Payments (Active) -->
+<a class="flex flex-col items-center justify-center bg-[#d5e3ff] text-[#0b5cac] rounded-2xl px-5 py-2" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="payments" style="font-variation-settings: 'FILL' 1;">payments</span>
+<span class="text-[11px] font-bold leading-none">المدفوعات</span>
+</a>
+<!-- Account -->
+<a class="flex flex-col items-center justify-center text-[#101c2e]/60 px-4 py-2 hover:bg-blue-50/50 transition-colors" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="person">person</span>
+<span class="text-[11px] font-medium leading-none">الحساب</span>
+</a>
+</nav>
+</body></html>

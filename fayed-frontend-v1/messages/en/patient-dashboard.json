@@ -1,0 +1,33 @@
+{
+  "meta": {
+    "title": "Fayed | Journey Overview",
+    "description": "A simple overview that helps you continue your care journey."
+  },
+  "page": {
+    "title": "Journey overview",
+    "subtitle": "Start from the next step that feels most helpful right now."
+  },
+  "greeting": {
+    "withName": "Welcome back, {name}",
+    "generic": "Welcome back"
+  },
+  "quickLinks": {
+    "heading": "Core next steps",
+    "matching": {
+      "title": "Start matching",
+      "description": "Use guided matching to move toward a practitioner who fits your needs."
+    },
+    "assessments": {
+      "title": "Initial check-ins",
+      "description": "Start a short check-in to understand your current needs and next step."
+    },
+    "support": {
+      "title": "Open support",
+      "description": "Reach practical help without leaving your care area."
+    }
+  },
+  "feedback": {
+    "loadError": "Failed to load your journey overview. Please try again.",
+    "retry": "Try again"
+  }
+}

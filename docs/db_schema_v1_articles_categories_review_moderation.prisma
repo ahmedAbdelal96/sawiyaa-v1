@@ -1,0 +1,254 @@
+// DB Schema v1 — Articles / Categories / Review Workflow / Admin Content Moderation
+// Important note:
+// Specialties are NOT the same as article categories.
+// - Specialty => practitioner/service classification
+// - ArticleCategory => content/blog classification
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ArticleStatus {
+  DRAFT
+  SUBMITTED
+  IN_REVIEW
+  CHANGES_REQUESTED
+  APPROVED
+  REJECTED
+  PUBLISHED
+  ARCHIVED
+}
+
+enum ArticleVisibility {
+  PUBLIC
+  UNLISTED
+  PRIVATE
+}
+
+enum ReviewStatus {
+  SUBMITTED
+  IN_REVIEW
+  CHANGES_REQUESTED
+  APPROVED
+  REJECTED
+}
+
+enum ContentLocale {
+  ar
+  en
+}
+
+enum ModerationEventType {
+  SUBMITTED_FOR_REVIEW
+  MOVED_TO_IN_REVIEW
+  CHANGES_REQUESTED
+  APPROVED
+  REJECTED
+  PUBLISHED
+  ARCHIVED
+  CATEGORY_CHANGED
+  SLUG_CHANGED
+  UPDATED_AFTER_REVIEW
+}
+
+// NOTE:
+// Expected existing models:
+// model User
+// model PractitionerProfile
+
+model ArticleCategory {
+  id                String                       @id @default(uuid()) @db.Uuid
+  parentId          String?                      @db.Uuid
+  slugRoot          String                       @unique @db.VarChar(191)
+  sortOrder         Int                          @default(0)
+  isActive          Boolean                      @default(true)
+  isFeatured        Boolean                      @default(false)
+  createdByUserId   String?                      @db.Uuid
+  createdAt         DateTime                     @default(now())
+  updatedAt         DateTime                     @updatedAt
+
+  parent            ArticleCategory?             @relation("ArticleCategoryTree", fields: [parentId], references: [id], onDelete: SetNull)
+  children          ArticleCategory[]            @relation("ArticleCategoryTree")
+  translations      ArticleCategoryTranslation[]
+  primaryArticles   Article[]
+  assignments       ArticleCategoryAssignment[]
+
+  @@index([isActive, sortOrder])
+  @@index([parentId, sortOrder])
+}
+
+model ArticleCategoryTranslation {
+  id                  String            @id @default(uuid()) @db.Uuid
+  articleCategoryId   String            @db.Uuid
+  locale              ContentLocale
+  title               String            @db.VarChar(191)
+  description         String?           @db.VarChar(500)
+  slug                String            @db.VarChar(191)
+  metaTitle           String?           @db.VarChar(191)
+  metaDescription     String?           @db.VarChar(300)
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+
+  articleCategory     ArticleCategory   @relation(fields: [articleCategoryId], references: [id], onDelete: Cascade)
+
+  @@unique([locale, slug])
+  @@unique([articleCategoryId, locale])
+  @@index([locale, title])
+}
+
+model Article {
+  id                    String                     @id @default(uuid()) @db.Uuid
+  authorUserId          String                     @db.Uuid
+  authorPractitionerId  String?                    @db.Uuid
+  primaryCategoryId     String?                    @db.Uuid
+
+  status                ArticleStatus              @default(DRAFT)
+  visibility            ArticleVisibility          @default(PUBLIC)
+
+  coverImageUrl         String?                    @db.VarChar(500)
+  featuredImageAlt      String?                    @db.VarChar(191)
+
+  currentRevisionNumber Int                        @default(1)
+
+  lastSubmittedAt       DateTime?
+  approvedAt            DateTime?
+  rejectedAt            DateTime?
+  publishedAt           DateTime?
+  scheduledPublishAt    DateTime?
+  archivedAt            DateTime?
+
+  createdAt             DateTime                   @default(now())
+  updatedAt             DateTime                   @updatedAt
+
+  primaryCategory       ArticleCategory?           @relation(fields: [primaryCategoryId], references: [id], onDelete: SetNull)
+  authorPractitioner    PractitionerProfile?       @relation(fields: [authorPractitionerId], references: [id], onDelete: SetNull)
+
+  translations          ArticleTranslation[]
+  categoryAssignments   ArticleCategoryAssignment[]
+  reviews               ArticleReview[]
+  moderationLogs        ArticleModerationLog[]
+  tagAssignments        ArticleTagAssignment[]
+
+  @@index([status, publishedAt])
+  @@index([primaryCategoryId, status, publishedAt])
+  @@index([authorUserId, status])
+  @@index([authorPractitionerId, status])
+  @@index([visibility, status, publishedAt])
+  @@index([scheduledPublishAt])
+  @@index([approvedAt])
+}
+
+model ArticleTranslation {
+  id                  String            @id @default(uuid()) @db.Uuid
+  articleId           String            @db.Uuid
+  locale              ContentLocale
+  title               String            @db.VarChar(191)
+  excerpt             String?           @db.VarChar(1000)
+  contentMarkdown     String?
+  slug                String            @db.VarChar(191)
+  metaTitle           String?           @db.VarChar(191)
+  metaDescription     String?           @db.VarChar(300)
+  readingTimeMinutes  Int?
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+
+  article             Article           @relation(fields: [articleId], references: [id], onDelete: Cascade)
+
+  @@unique([locale, slug])
+  @@unique([articleId, locale])
+  @@index([locale, title])
+}
+
+model ArticleCategoryAssignment {
+  id                String            @id @default(uuid()) @db.Uuid
+  articleId         String            @db.Uuid
+  articleCategoryId String            @db.Uuid
+  isPrimary         Boolean           @default(false)
+  createdAt         DateTime          @default(now())
+
+  article           Article           @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  articleCategory   ArticleCategory   @relation(fields: [articleCategoryId], references: [id], onDelete: Cascade)
+
+  @@unique([articleId, articleCategoryId])
+  @@index([articleCategoryId, articleId])
+}
+
+model ArticleReview {
+  id                String        @id @default(uuid()) @db.Uuid
+  articleId         String        @db.Uuid
+  reviewerUserId    String        @db.Uuid
+  reviewStatus      ReviewStatus
+  reviewNote        String?       @db.VarChar(1000)
+  internalNote      String?       @db.VarChar(1000)
+  createdAt         DateTime      @default(now())
+
+  article           Article       @relation(fields: [articleId], references: [id], onDelete: Cascade)
+
+  @@index([articleId, createdAt])
+  @@index([reviewerUserId, createdAt])
+  @@index([reviewStatus, createdAt])
+}
+
+model ArticleModerationLog {
+  id                String               @id @default(uuid()) @db.Uuid
+  articleId         String               @db.Uuid
+  actorUserId       String?              @db.Uuid
+  eventType         ModerationEventType
+  note              String?              @db.VarChar(1000)
+  metadataJson      Json?
+  createdAt         DateTime             @default(now())
+
+  article           Article              @relation(fields: [articleId], references: [id], onDelete: Cascade)
+
+  @@index([articleId, createdAt])
+  @@index([actorUserId, createdAt])
+  @@index([eventType, createdAt])
+}
+
+model ArticleTag {
+  id                String                   @id @default(uuid()) @db.Uuid
+  slugRoot          String                   @unique @db.VarChar(191)
+  sortOrder         Int                      @default(0)
+  isActive          Boolean                  @default(true)
+  createdAt         DateTime                 @default(now())
+  updatedAt         DateTime                 @updatedAt
+
+  translations      ArticleTagTranslation[]
+  assignments       ArticleTagAssignment[]
+
+  @@index([isActive, sortOrder])
+}
+
+model ArticleTagTranslation {
+  id                String          @id @default(uuid()) @db.Uuid
+  articleTagId      String          @db.Uuid
+  locale            ContentLocale
+  title             String          @db.VarChar(191)
+  slug              String          @db.VarChar(191)
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  articleTag        ArticleTag      @relation(fields: [articleTagId], references: [id], onDelete: Cascade)
+
+  @@unique([locale, slug])
+  @@unique([articleTagId, locale])
+  @@index([locale, title])
+}
+
+model ArticleTagAssignment {
+  id                String          @id @default(uuid()) @db.Uuid
+  articleId         String          @db.Uuid
+  articleTagId      String          @db.Uuid
+  createdAt         DateTime        @default(now())
+
+  article           Article         @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  articleTag        ArticleTag      @relation(fields: [articleTagId], references: [id], onDelete: Cascade)
+
+  @@unique([articleId, articleTagId])
+  @@index([articleTagId, articleId])
+}

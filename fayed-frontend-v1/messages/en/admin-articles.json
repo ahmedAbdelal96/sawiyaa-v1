@@ -1,0 +1,124 @@
+{
+  "meta": {
+    "listTitle": "Articles - Admin",
+    "listDescription": "Review article records, status, and limited create/edit/publish/archive actions within the current admin scope."
+  },
+  "list": {
+    "eyebrow": "Admin article operations",
+    "title": "Article operations baseline",
+    "note": "This surface is an operational baseline. It supports article creation/editing plus limited publish/archive actions within the current backend contract.",
+    "count": "{value, number} articles",
+    "countLoading": "Loading article count...",
+    "slug": "Slug",
+    "publishedAt": "Published",
+    "updatedAt": "Updated",
+    "authorId": "Author"
+  },
+  "scope": {
+    "heading": "Available now",
+    "items": {
+      "list": "Review article records with status, locale, and category context.",
+      "publish": "Publish a draft article when the backend allows it.",
+      "archive": "Archive draft or published articles within the current contract."
+    }
+  },
+  "boundaries": {
+    "heading": "Outside current scope",
+    "items": {
+      "noEditor": "Full collaborative editorial workflows are outside this baseline.",
+      "noScheduling": "Scheduling, versioning, and editorial approvals remain outside scope.",
+      "noAnalytics": "Performance analytics and content insights are not included here."
+    }
+  },
+  "filters": {
+    "allStatuses": "All statuses",
+    "search": "Search",
+    "searchPlaceholder": "Search by title or slug",
+    "locale": "Locale: {locale}"
+  },
+  "statuses": {
+    "DRAFT": "Draft",
+    "SUBMITTED": "Submitted",
+    "IN_REVIEW": "In review",
+    "CHANGES_REQUESTED": "Changes requested",
+    "APPROVED": "Approved",
+    "REJECTED": "Rejected",
+    "PUBLISHED": "Published",
+    "ARCHIVED": "Archived"
+  },
+  "actions": {
+    "create": "Create article",
+    "creating": "Creating article...",
+    "createSuccess": "Article created.",
+    "edit": "Edit",
+    "save": "Save changes",
+    "saving": "Saving changes...",
+    "updateSuccess": "Article updated.",
+    "cancel": "Cancel",
+    "publish": "Publish",
+    "publishing": "Publishing...",
+    "archive": "Archive",
+    "archiving": "Archiving...",
+    "archiveConfirm": {
+      "title": "Archive this article?",
+      "description": "Archive only when this article should no longer stay active in the current admin article baseline.",
+      "cancel": "Keep article"
+    },
+    "publishSuccess": "Article published.",
+    "archiveSuccess": "Article archived.",
+    "notAvailable": "No publish/archive action is available for this status."
+  },
+  "form": {
+    "eyebrow": "Article authoring",
+    "createTitle": "Create article",
+    "createNote": "Create a draft article inside the current admin article contract.",
+    "editTitle": "Edit article",
+    "editNote": "Update the selected article inside the current admin article contract.",
+    "validation": {
+      "required": "Category, title, and content are required."
+    },
+    "fields": {
+      "category": "Category",
+      "categoryPlaceholder": "Select category",
+      "title": "Title",
+      "titlePlaceholder": "Article title",
+      "content": "Content",
+      "contentPlaceholder": "Write the article content",
+      "excerpt": "Excerpt",
+      "excerptPlaceholder": "Optional short summary",
+      "coverImageUrl": "Cover image URL",
+      "coverImageUrlPlaceholder": "https://...",
+      "featuredImageAlt": "Cover image alt text",
+      "featuredImageAltPlaceholder": "Optional image alternative text",
+      "metaTitle": "Meta title",
+      "metaTitlePlaceholder": "Optional SEO title",
+      "metaDescription": "Meta description",
+      "metaDescriptionPlaceholder": "Optional SEO description"
+    }
+  },
+  "pagination": {
+    "summary": "{from}-{to} of {total}",
+    "previous": "Previous",
+    "next": "Next"
+  },
+  "states": {
+    "empty": {
+      "heading": "No articles found",
+      "note": "No articles match the current filters."
+    },
+    "listError": {
+      "heading": "Articles list is not available right now",
+      "note": "Could not load articles.",
+      "retry": "Try again"
+    }
+  },
+  "errors": {
+    "articleNotFound": "Article was not found.",
+    "categoryNotFound": "Article category was not found.",
+    "slugExists": "This slug already exists.",
+    "localeRequired": "A locale is required for translation updates.",
+    "invalidPublishTransition": "This article cannot be published in its current state.",
+    "invalidArchiveTransition": "This article cannot be archived in its current state.",
+    "generic": "Could not complete this article action right now."
+  }
+}

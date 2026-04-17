@@ -1,0 +1,161 @@
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  Param,
+  Patch,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
+import { RequireAccountStates } from '@common/decorators/account-state.decorator';
+import { CurrentUser } from '@common/decorators/current-user.decorator';
+import { Roles } from '@common/decorators/roles.decorator';
+import { AccountStateRequirement } from '@common/enums/account-state-requirement.enum';
+import { AppRole } from '@common/enums/app-role.enum';
+import { JwtAccessAuthGuard } from '@common/guards/authentication/jwt-access-auth.guard';
+import { RolesGuard } from '@common/guards/authorization/roles.guard';
+import { AuthenticatedUser } from '@common/interfaces/authenticated-user.interface';
+import { AddSupportMessageDto } from '../dto/add-support-message.dto';
+import { AssignSupportTicketDto } from '../dto/assign-support-ticket.dto';
+import { ListSupportTicketsDto } from '../dto/list-support-tickets.dto';
+import {
+  AdminSupportTicketItemSuccessResponseDto,
+  SupportTicketListSuccessResponseDto,
+} from '../dto/support-response.dto';
+import { UpdateSupportTicketStatusDto } from '../dto/update-support-ticket-status.dto';
+import { AddAdminSupportMessageUseCase } from '../use-cases/add-admin-support-message.use-case';
+import { AddAdminSupportNoteUseCase } from '../use-cases/add-admin-support-note.use-case';
+import { AssignSupportTicketUseCase } from '../use-cases/assign-support-ticket.use-case';
+import { GetAdminSupportTicketUseCase } from '../use-cases/get-admin-support-ticket.use-case';
+import { ListAdminSupportTicketsUseCase } from '../use-cases/list-admin-support-tickets.use-case';
+import { UpdateSupportTicketStatusUseCase } from '../use-cases/update-support-ticket-status.use-case';
+
+@ApiTags('Support')
+@ApiBearerAuth()
+@UseGuards(JwtAccessAuthGuard, RolesGuard)
+@RequireAccountStates(AccountStateRequirement.ACTIVE_ACCOUNT)
+@Roles(AppRole.ADMIN, AppRole.SUPPORT_AGENT)
+@Controller('admin/support/tickets')
+export class AdminSupportController {
+  constructor(
+    private readonly listAdminSupportTicketsUseCase: ListAdminSupportTicketsUseCase,
+    private readonly getAdminSupportTicketUseCase: GetAdminSupportTicketUseCase,
+    private readonly addAdminSupportMessageUseCase: AddAdminSupportMessageUseCase,
+    private readonly addAdminSupportNoteUseCase: AddAdminSupportNoteUseCase,
+    private readonly updateSupportTicketStatusUseCase: UpdateSupportTicketStatusUseCase,
+    private readonly assignSupportTicketUseCase: AssignSupportTicketUseCase,
+  ) {}
+
+  @Get()
+  @ApiOperation({ summary: 'List support tickets for admin/support operations' })
+  @ApiResponse({ status: 200, type: SupportTicketListSuccessResponseDto })
+  list(
+    @CurrentUser() currentUser: AuthenticatedUser,
+    @Query() query: ListSupportTicketsDto,
+  ) {
+    return this.listAdminSupportTicketsUseCase
+      .execute({
+        userId: currentUser.id,
+        query,
+      })
+      .then((data) => ({ success: true as const, data }));
+  }
+
+  @Get(':id')
+  @ApiOperation({ summary: 'Get support ticket details with internal notes' })
+  @ApiResponse({ status: 200, type: AdminSupportTicketItemSuccessResponseDto })
+  getById(@Param('id') ticketId: string) {
+    return this.getAdminSupportTicketUseCase
+      .execute({
+        ticketId,
+      })
+      .then((data) => ({ success: true as const, data }));
+  }
+
+  @Post(':id/messages')
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Add admin/support message to support ticket thread' })
+  @ApiBody({ type: AddSupportMessageDto })
+  @ApiResponse({ status: 200, type: AdminSupportTicketItemSuccessResponseDto })
+  addMessage(
+    @CurrentUser() currentUser: AuthenticatedUser,
+    @Param('id') ticketId: string,
+    @Body() body: AddSupportMessageDto,
+  ) {
+    return this.addAdminSupportMessageUseCase
+      .execute({
+        userId: currentUser.id,
+        roles: currentUser.roles,
+        ticketId,
+        payload: body,
+      })
+      .then((data) => ({ success: true as const, data }));
+  }
+
+  @Post(':id/internal-notes')
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Add internal support/admin note' })
+  @ApiBody({ type: AddSupportMessageDto })
+  @ApiResponse({ status: 200, type: AdminSupportTicketItemSuccessResponseDto })
+  addInternalNote(
+    @CurrentUser() currentUser: AuthenticatedUser,
+    @Param('id') ticketId: string,
+    @Body() body: AddSupportMessageDto,
+  ) {
+    return this.addAdminSupportNoteUseCase
+      .execute({
+        userId: currentUser.id,
+        roles: currentUser.roles,
+        ticketId,
+        payload: body,
+      })
+      .then((data) => ({ success: true as const, data }));
+  }
+
+  @Patch(':id/status')
+  @ApiOperation({ summary: 'Update support ticket status' })
+  @ApiBody({ type: UpdateSupportTicketStatusDto })
+  @ApiResponse({ status: 200, type: AdminSupportTicketItemSuccessResponseDto })
+  updateStatus(
+    @CurrentUser() currentUser: AuthenticatedUser,
+    @Param('id') ticketId: string,
+    @Body() body: UpdateSupportTicketStatusDto,
+  ) {
+    return this.updateSupportTicketStatusUseCase
+      .execute({
+        userId: currentUser.id,
+        roles: currentUser.roles,
+        ticketId,
+        payload: body,
+      })
+      .then((data) => ({ success: true as const, data }));
+  }
+
+  @Patch(':id/assign')
+  @ApiOperation({ summary: 'Assign/unassign support ticket' })
+  @ApiBody({ type: AssignSupportTicketDto })
+  @ApiResponse({ status: 200, type: AdminSupportTicketItemSuccessResponseDto })
+  assign(
+    @CurrentUser() currentUser: AuthenticatedUser,
+    @Param('id') ticketId: string,
+    @Body() body: AssignSupportTicketDto,
+  ) {
+    return this.assignSupportTicketUseCase
+      .execute({
+        userId: currentUser.id,
+        roles: currentUser.roles,
+        ticketId,
+        payload: body,
+      })
+      .then((data) => ({ success: true as const, data }));
+  }
+}

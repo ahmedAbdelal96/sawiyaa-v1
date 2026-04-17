@@ -1,0 +1,110 @@
+{
+  "meta": {
+    "title": "Fayed | Articles",
+    "description": "Read published mental care content with clear trust metadata and direct links into real practitioner and care paths."
+  },
+  "list": {
+    "eyebrow": "Public content you can inspect",
+    "title": "Read published content with clearer trust signals",
+    "description": "These articles come from the real public content layer. You can review publication context and move smoothly to practitioner discovery when you are ready."
+  },
+  "detail": {
+    "backToArticles": "Back to articles",
+    "noPublishDate": "Publication date unavailable",
+    "nextStep": {
+      "title": "Ready for a practical next step?",
+      "note": "Use guided matching for a more directed start, or browse practitioners directly if you already know what you need.",
+      "startMatching": "Start guided matching",
+      "browsePractitioners": "Browse practitioners"
+    }
+  },
+  "card": {
+    "readArticle": "Read article",
+    "noExcerpt": "Open the article to review the full published content.",
+    "generalCategory": "General guidance",
+    "noPublishDate": "Publication date unavailable",
+    "byAuthor": "By {author}"
+  },
+  "trust": {
+    "freshness": {
+      "NEW": "New",
+      "RECENT": "Recent",
+      "ESTABLISHED": "Established",
+      "UNPUBLISHED": "Unpublished"
+    },
+    "reasons": {
+      "PUBLISHED_DATE_VERIFIED": "Published date shown",
+      "RECENTLY_PUBLISHED": "Recently published",
+      "ESTABLISHED_CONTENT": "Established content",
+      "AUTHOR_ATTRIBUTED": "Author named"
+    }
+  },
+  "empty": {
+    "eyebrow": "Public content",
+    "title": "No published articles are visible yet",
+    "description": "This does not mean the platform is unavailable. You can still continue through specialties or practitioner discovery while public content expands.",
+    "cta": "Browse practitioners"
+  },
+  "pagination": {
+    "status": "Page {page} of {totalPages}",
+    "previous": "Previous",
+    "next": "Next"
+  },
+  "patient": {
+    "meta": {
+      "title": "Fayed | Care Articles",
+      "description": "Read published care articles from inside your patient space."
+    },
+    "metaFallback": {
+      "title": "Fayed | Article",
+      "description": "Read article details and continue your care journey."
+    },
+    "list": {
+      "eyebrow": "Care guidance",
+      "title": "Articles that support your next step",
+      "description": "Read published articles in a calm, practical way while staying close to matching, practitioners, and your ongoing care journey."
+    },
+    "boundary": {
+      "heading": "What this page includes",
+      "note": "This patient view is read-only. It helps you consume published guidance; it does not include saved lists or personalized feeds."
+    },
+    "card": {
+      "readArticle": "Open article",
+      "noExcerpt": "Open this article to read the full published content.",
+      "generalCategory": "General guidance",
+      "noPublishDate": "Publication date unavailable",
+      "byAuthor": "By {author}"
+    },
+    "detail": {
+      "backToArticles": "Back to care articles",
+      "noPublishDate": "Publication date unavailable",
+      "byAuthor": "By {author}",
+      "nextStep": {
+        "title": "Ready for your next care step",
+        "note": "If you need guided direction, start matching. If you already know your preference, browse practitioners directly.",
+        "startMatching": "Start guided matching",
+        "browsePractitioners": "Browse practitioners"
+      }
+    },
+    "empty": {
+      "eyebrow": "Care guidance",
+      "title": "No published articles are visible right now",
+      "description": "You can continue your care journey through matching and practitioner discovery while content updates.",
+      "cta": "Browse practitioners"
+    },
+    "pagination": {
+      "status": "Page {page} of {totalPages}",
+      "previous": "Previous",
+      "next": "Next"
+    },
+    "states": {
+      "unavailable": {
+        "title": "Articles are not available right now",
+        "note": "Please try again. You can still continue through practitioner discovery.",
+        "retry": "Try again",
+        "practitioners": "Browse practitioners",
+        "articles": "Back to articles"
+      }
+    }
+  }
+}

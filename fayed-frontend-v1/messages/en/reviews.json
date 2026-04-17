@@ -1,0 +1,174 @@
+{
+  "admin": {
+    "list": {
+      "heading": "Reviews",
+      "count": "{value, number} {value, plural, one {review} other {reviews}}",
+      "needsModeration": "Needs moderation",
+      "unknownPractitioner": "Unknown practitioner",
+      "pagination": {
+        "previous": "Previous",
+        "next": "Next",
+        "summary": "{from}–{to} of {total}"
+      }
+    },
+    "statuses": {
+      "all": "All",
+      "DRAFT": "Draft",
+      "SUBMITTED": "Submitted",
+      "PENDING_MODERATION": "Pending moderation",
+      "PUBLISHED": "Published",
+      "REJECTED": "Rejected",
+      "HIDDEN": "Hidden",
+      "ARCHIVED": "Archived"
+    },
+    "actions": {
+      "APPROVED": "Approve (publish)",
+      "REJECTED": "Reject",
+      "HIDDEN": "Hide",
+      "RESTORED": "Restore (re-publish)",
+      "ARCHIVED": "Archive"
+    },
+    "detail": {
+      "back": "Back to reviews",
+      "heading": "Review detail",
+      "noText": "No review text provided.",
+      "practitioner": "Practitioner",
+      "patientProfileId": "Patient profile ID",
+      "sessionDate": "Session date",
+      "submittedAt": "Submitted",
+      "publishedAt": "Published",
+      "moderatedAt": "Last moderated"
+    },
+    "moderation": {
+      "heading": "Moderation",
+      "currentStatus": "Current status",
+      "actionLabel": "Action",
+      "selectAction": "Select an action",
+      "noteLabel": "Moderator note (optional)",
+      "notePlaceholder": "Optional: add an internal note for the audit trail",
+      "submit": "Apply action",
+      "submitting": "Applying...",
+      "success": "Moderation action applied successfully.",
+      "error": "Could not apply action. Please try again."
+    },
+    "states": {
+      "empty": {
+        "heading": "No reviews match these filters",
+        "note": "Try another status or turn off moderation-only filtering."
+      },
+      "listError": {
+        "heading": "Reviews are not available right now",
+        "message": "Could not load reviews.",
+        "retry": "Try again"
+      },
+      "detailError": {
+        "message": "Could not load this review.",
+        "retry": "Try again"
+      }
+    },
+    "meta": {
+      "list": {
+        "title": "Reviews — Admin",
+        "description": "Moderate and manage user reviews."
+      },
+      "detail": {
+        "title": "Review detail — Admin",
+        "description": "View and moderate a submitted review."
+      }
+    }
+  },
+  "patient": {
+    "meta": {
+      "list": {
+        "title": "My feedback — Patient",
+        "description": "See your submitted session feedback and follow what happened to each one."
+      },
+      "detail": {
+        "title": "Feedback detail — Patient",
+        "description": "Review your submitted feedback details for this session."
+      }
+    },
+    "filters": {
+      "all": "All"
+    },
+    "statuses": {
+      "DRAFT": "Draft",
+      "SUBMITTED": "Submitted",
+      "PENDING_MODERATION": "Pending moderation",
+      "PUBLISHED": "Published",
+      "REJECTED": "Not published",
+      "HIDDEN": "Hidden",
+      "ARCHIVED": "Archived"
+    },
+    "list": {
+      "eyebrow": "My feedback",
+      "title": "Session feedback history",
+      "note": "Track the feedback you already submitted after completed sessions. This page is visibility-only and does not edit or delete reviews.",
+      "count": "{value, number} {value, plural, one {feedback item} other {feedback items}}",
+      "countLoading": "Loading feedback count...",
+      "rating": "{value}/5",
+      "submittedAt": "Submitted: {date}",
+      "practitioner": "Practitioner: {name}",
+      "untitled": "Feedback without title",
+      "noText": "No written note was submitted for this feedback.",
+      "open": "Open detail"
+    },
+    "pagination": {
+      "summary": "{from}–{to} of {total}",
+      "previous": "Previous",
+      "next": "Next"
+    },
+    "boundaries": {
+      "heading": "What this page covers",
+      "note": "This page shows your submitted feedback status and details only. New feedback is still submitted from eligible session flow."
+    },
+    "detail": {
+      "back": "Back to my feedback",
+      "eyebrow": "Feedback detail",
+      "note": "This is the submitted record as saved for your session.",
+      "sections": {
+        "summary": "Summary",
+        "reviewText": "Your written note"
+      },
+      "fields": {
+        "practitioner": "Practitioner",
+        "sessionId": "Session ID",
+        "submittedAt": "Submitted",
+        "publishedAt": "Published",
+        "moderatedAt": "Last moderation update"
+      },
+      "nextStep": {
+        "heading": "Need to leave more feedback later",
+        "note": "When another session is completed and eligible, you can submit feedback from your session details.",
+        "action": "Go to sessions"
+      },
+      "states": {
+        "error": {
+          "heading": "Feedback details are not available right now",
+          "retry": "Try again",
+          "back": "Back to my feedback"
+        }
+      }
+    },
+    "states": {
+      "empty": {
+        "heading": "No feedback submitted yet",
+        "note": "After an eligible completed session, your submitted feedback will appear here.",
+        "action": "Go to sessions"
+      },
+      "error": {
+        "heading": "Your feedback history is not available right now",
+        "retry": "Try again"
+      },
+      "errors": {
+        "generic": "Something went wrong while loading your feedback.",
+        "profileNotFound": "Your patient profile is not ready yet. Please try again shortly.",
+        "notFound": "This feedback item was not found in your account.",
+        "sessionNotFound": "This session could not be found in your account.",
+        "sessionNotCompleted": "Feedback can only be submitted after session completion.",
+        "sessionNotPaid": "Feedback is available after the session payment is completed.",
+        "alreadyReviewed": "You already submitted feedback for this session."
+      }
+    }
+  }
+}

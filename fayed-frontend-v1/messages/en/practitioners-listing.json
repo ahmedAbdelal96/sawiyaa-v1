@@ -1,0 +1,122 @@
+{
+  "page": {
+    "brand": "Fayed",
+    "title": "Find your specialist",
+    "subtitle": "Browse a curated selection of certified mental health practitioners",
+    "breadcrumb": "Practitioners",
+    "resultCount": "{count} practitioners available",
+    "resultCountSingle": "1 practitioner available",
+    "showingOf": "Showing {count} of {total}"
+  },
+  "search": {
+    "placeholder": "Search by name or specialty...",
+    "button": "Search",
+    "clear": "Clear search"
+  },
+  "filter": {
+    "title": "Filters",
+    "availability": "Availability",
+    "onlineNow": "Online now",
+    "availableToday": "Available today",
+    "availableThisWeek": "Available this week",
+    "category": "Main specialty area",
+    "specialty": "Specialty",
+    "language": "Language",
+    "country": "Country",
+    "practitionerType": "Practitioner type",
+    "practitionerTypeDoctor": "Doctor",
+    "practitionerTypeTherapist": "Therapist",
+    "gender": "Gender",
+    "genderMale": "Male",
+    "genderFemale": "Female",
+    "sessionDuration": "Session duration",
+    "duration30": "30 minutes",
+    "duration60": "60 minutes",
+    "rating": "Rating",
+    "sessionFee": "Session fee",
+    "minFee": "Min fee",
+    "maxFee": "Max fee",
+    "acceptsCoupon": "Accepts discount coupon",
+    "acceptsPackage": "Accepts package",
+    "any": "Any",
+    "yes": "Yes",
+    "no": "No",
+    "anyRating": "Any rating",
+    "rating3Up": "3.0 and above",
+    "rating4Up": "4.0 and above",
+    "rating45Up": "4.5 and above",
+    "allTypes": "All types",
+    "allGenders": "All genders",
+    "allDurations": "All durations",
+    "allCategories": "All main areas",
+    "allSpecialties": "All specialties",
+    "allLanguages": "All languages",
+    "allCountries": "All countries",
+    "clearAll": "Clear all",
+    "apply": "Apply filters",
+    "openFilters": "Filters",
+    "activeFilters": "Active filters"
+  },
+  "sort": {
+    "label": "Sort",
+    "recommended": "Recommended",
+    "rating": "Highest rated",
+    "experience": "Most experienced",
+    "newest": "Newest",
+    "oldest": "Oldest"
+  },
+  "pagination": {
+    "perPage": "Show",
+    "perPageOption": "{count} per page"
+  },
+  "specialties": {
+    "anxiety": "Anxiety & Stress",
+    "depression": "Depression",
+    "relationships": "Relationships",
+    "family": "Family Therapy",
+    "trauma": "Trauma",
+    "addiction": "Addiction",
+    "psychiatry": "Psychiatry",
+    "ocd": "OCD"
+  },
+  "languages": {
+    "ar": "Arabic",
+    "en": "English",
+    "fr": "French"
+  },
+  "countries": {
+    "eg": "Egypt",
+    "sa": "Saudi Arabia",
+    "ae": "UAE",
+    "kw": "Kuwait",
+    "jo": "Jordan"
+  },
+  "card": {
+    "verified": "Verified",
+    "yearsExp": "yrs exp",
+    "sessions": "sessions",
+    "reviews": "reviews",
+    "viewProfile": "View profile",
+    "languages": "Languages",
+    "rating": "Rating",
+    "onlineNow": "Online now",
+    "offline": "Offline"
+  },
+  "empty": {
+    "title": "No results found",
+    "subtitle": "Try adjusting your filters or broadening your search to find the right specialist",
+    "clearFilters": "Clear filters"
+  },
+  "error": {
+    "title": "Failed to load page",
+    "subtitle": "Something went wrong while fetching data. Please try again.",
+    "retry": "Try again",
+    "back": "Back to practitioners"
+  },
+  "patientArea": {
+    "meta": {
+      "title": "Fayed | Choose Your Practitioner",
+      "description": "Browse the right practitioners for your needs inside the patient area."
+    }
+  }
+}

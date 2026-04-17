@@ -1,0 +1,241 @@
+// DB Schema v1 — Notifications / Templates / Email / SMS / Push / In-app
+// Notes:
+// - Templates are separate from actual notifications
+// - Preferences are per user, per type, per channel
+// - Delivery attempts are logged separately
+// - Push devices are tracked independently
+// - Slugs are administrative here, not public SEO URLs
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum NotificationChannel {
+  EMAIL
+  SMS
+  PUSH
+  IN_APP
+}
+
+enum NotificationCategory {
+  SECURITY
+  SESSION
+  PAYMENT
+  CONTENT
+  SUPPORT
+  CHAT
+  SYSTEM
+  TRAINING
+  MARKETING
+}
+
+enum NotificationStatus {
+  PENDING
+  QUEUED
+  SENT
+  DELIVERED
+  READ
+  FAILED
+  CANCELLED
+  SUPPRESSED
+}
+
+enum DeliveryAttemptStatus {
+  PENDING
+  SENT
+  DELIVERED
+  FAILED
+}
+
+enum DevicePlatform {
+  IOS
+  ANDROID
+  WEB
+}
+
+// NOTE:
+// Expected existing model:
+// model User
+
+model NotificationType {
+  id                String                    @id @default(uuid()) @db.Uuid
+  slug              String                    @unique @db.VarChar(191)
+  displayName       String                    @db.VarChar(191)
+  description       String?                   @db.VarChar(500)
+  category          NotificationCategory
+  defaultEnabled    Boolean                   @default(true)
+
+  supportsEmail     Boolean                   @default(false)
+  supportsSms       Boolean                   @default(false)
+  supportsPush      Boolean                   @default(false)
+  supportsInApp     Boolean                   @default(true)
+
+  isMandatory       Boolean                   @default(false)
+  createdAt         DateTime                  @default(now())
+  updatedAt         DateTime                  @updatedAt
+
+  templates         NotificationTemplate[]
+  preferences       NotificationPreference[]
+  notifications     Notification[]
+
+  @@index([category, defaultEnabled])
+}
+
+model NotificationTemplate {
+  id                String                    @id @default(uuid()) @db.Uuid
+  notificationTypeId String                   @db.Uuid
+  channel           NotificationChannel
+  slug              String                    @unique @db.VarChar(191)
+  isActive          Boolean                   @default(true)
+  isSystemTemplate  Boolean                   @default(true)
+  version           Int                       @default(1)
+  providerHint      String?                   @db.VarChar(100)
+  createdAt         DateTime                  @default(now())
+  updatedAt         DateTime                  @updatedAt
+
+  notificationType  NotificationType          @relation(fields: [notificationTypeId], references: [id], onDelete: Cascade)
+  translations      NotificationTemplateTranslation[]
+  notifications     Notification[]
+
+  @@index([notificationTypeId, channel, isActive])
+  @@index([isSystemTemplate, isActive])
+}
+
+model NotificationTemplateTranslation {
+  id                    String              @id @default(uuid()) @db.Uuid
+  notificationTemplateId String             @db.Uuid
+  locale                String              @db.VarChar(10)
+  subjectTemplate       String?             @db.VarChar(300)
+  titleTemplate         String?             @db.VarChar(300)
+  bodyTemplate          String?
+  ctaLabel              String?             @db.VarChar(191)
+  ctaUrlTemplate        String?             @db.VarChar(500)
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+
+  notificationTemplate  NotificationTemplate @relation(fields: [notificationTemplateId], references: [id], onDelete: Cascade)
+
+  @@unique([notificationTemplateId, locale])
+  @@index([locale])
+}
+
+model NotificationPreference {
+  id                  String               @id @default(uuid()) @db.Uuid
+  userId              String               @db.Uuid
+  notificationTypeId  String               @db.Uuid
+  channel             NotificationChannel
+  isEnabled           Boolean              @default(true)
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+
+  notificationType    NotificationType     @relation(fields: [notificationTypeId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, notificationTypeId, channel])
+  @@index([userId, channel])
+  @@index([notificationTypeId, channel, isEnabled])
+}
+
+model Notification {
+  id                  String               @id @default(uuid()) @db.Uuid
+  userId              String               @db.Uuid
+  notificationTypeId  String               @db.Uuid
+  templateId          String?              @db.Uuid
+
+  channel             NotificationChannel
+  status              NotificationStatus   @default(PENDING)
+  locale              String?              @db.VarChar(10)
+
+  payloadJson         Json?
+  titleSnapshot       String?              @db.VarChar(300)
+  subjectSnapshot     String?              @db.VarChar(300)
+  bodySnapshot        String?
+
+  relatedEntityType   String?              @db.VarChar(100)
+  relatedEntityId     String?              @db.VarChar(191)
+
+  scheduledFor        DateTime?
+  sentAt              DateTime?
+  deliveredAt         DateTime?
+  readAt              DateTime?
+  failedAt            DateTime?
+  suppressedReason    String?              @db.VarChar(500)
+
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+
+  notificationType    NotificationType     @relation(fields: [notificationTypeId], references: [id], onDelete: Restrict)
+  template            NotificationTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  deliveryAttempts    NotificationDeliveryAttempt[]
+  feedState           InAppNotificationFeedState?
+
+  @@index([userId, status, createdAt])
+  @@index([userId, channel, createdAt])
+  @@index([notificationTypeId, channel, createdAt])
+  @@index([scheduledFor, status])
+  @@index([relatedEntityType, relatedEntityId])
+  @@index([readAt])
+  @@index([failedAt])
+}
+
+model NotificationDeliveryAttempt {
+  id                  String                @id @default(uuid()) @db.Uuid
+  notificationId      String                @db.Uuid
+  provider            String?               @db.VarChar(100)
+  attemptNumber       Int                   @default(1)
+  status              DeliveryAttemptStatus @default(PENDING)
+
+  providerMessageRef  String?               @db.VarChar(191)
+  requestPayload      Json?
+  responsePayload     Json?
+  errorCode           String?               @db.VarChar(100)
+  errorMessage        String?               @db.VarChar(1000)
+
+  attemptedAt         DateTime              @default(now())
+  createdAt           DateTime              @default(now())
+
+  notification        Notification          @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+
+  @@index([notificationId, attemptNumber])
+  @@index([provider, status, attemptedAt])
+  @@index([providerMessageRef])
+}
+
+model NotificationDevice {
+  id                  String          @id @default(uuid()) @db.Uuid
+  userId              String          @db.Uuid
+  deviceToken         String          @unique @db.VarChar(500)
+  platform            DevicePlatform
+  deviceId            String?         @db.VarChar(191)
+  appVersion          String?         @db.VarChar(50)
+  isActive            Boolean         @default(true)
+  lastSeenAt          DateTime?
+  revokedAt           DateTime?
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+
+  @@index([userId, isActive])
+  @@index([platform, isActive])
+  @@index([lastSeenAt])
+}
+
+model InAppNotificationFeedState {
+  id                  String          @id @default(uuid()) @db.Uuid
+  notificationId      String          @db.Uuid
+  userId              String          @db.Uuid
+  isArchived          Boolean         @default(false)
+  isDismissed         Boolean         @default(false)
+  archivedAt          DateTime?
+  dismissedAt         DateTime?
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+
+  notification        Notification    @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+
+  @@unique([notificationId, userId])
+  @@index([userId, isArchived, isDismissed])
+}

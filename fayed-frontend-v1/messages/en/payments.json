@@ -1,0 +1,177 @@
+{
+  "meta": {
+    "payTitle": "Complete Payment",
+    "returnTitle": "Payment Status",
+    "historyTitle": "Payment History",
+    "historyDescription": "View all your payments and their status."
+  },
+  "page": {
+    "heading": "Complete Your Payment",
+    "subheading": "Review your session details and pay securely.",
+    "backToSessions": "Back to sessions",
+    "backToSummary": "Back to summary",
+    "sessionSummaryHeading": "Your Session",
+    "with": "with",
+    "minutes": "minutes",
+    "loading": "Loading session...",
+    "loadError": "Could not load session details.",
+    "retry": "Try again",
+    "sessionExpired": "Payment Window Expired",
+    "sessionExpiredNote": "The payment window for this session has closed. Please book a new slot.",
+    "bookAgain": "Browse practitioners",
+    "alreadyPaid": "Session Already Confirmed",
+    "alreadyPaidNote": "Payment has already been received and your session is secured.",
+    "viewSessions": "View my sessions",
+    "proceedToPay": "Proceed to payment",
+    "payWithAmount": "Pay {amount}",
+    "initiating": "Preparing checkout...",
+    "redirecting": "Opening checkout...",
+    "redirectingToCheckout": "We are sending you to the secure checkout page now.",
+    "paymentRequiredHeading": "Payment is still needed",
+    "paymentRequiredNote": "Complete payment now to secure this session and keep it moving forward.",
+    "sessionBlockedByPayment": "Your session will not be confirmed until payment is completed successfully.",
+    "initiateError": "Could not initiate payment. Please try again.",
+    "initiateConflict": "An active payment already exists for this session. Please refresh and try again.",
+    "REFUND_PENDING": {
+      "heading": "Refund in Progress",
+      "note": "A refund is being processed for this session. We will update your session status once it is finalized."
+    },
+    "REFUNDED": {
+      "heading": "Refund Completed",
+      "note": "This session payment has already been refunded."
+    }
+  },
+  "breakdown": {
+    "heading": "Price Summary",
+    "grossAmount": "Session price",
+    "discount": "Discount",
+    "netPaid": "Total to pay",
+    "couponApplied": "Coupon applied",
+    "couponLabel": "Have a coupon?",
+    "couponPlaceholder": "Enter coupon code",
+    "couponApply": "Apply",
+    "couponApplying": "Checking...",
+    "couponInvalid": "This coupon is not valid for this session.",
+    "loading": "Calculating price...",
+    "error": "Could not calculate price."
+  },
+  "checkout": {
+    "heading": "Pay with Card",
+    "pay": "Pay {amount}",
+    "paying": "Processing...",
+    "note": "Your payment is handled through a secure payment provider.",
+    "error": "Payment could not be completed. Please try again.",
+    "providerNote": "Secure payment"
+  },
+  "return": {
+    "confirmed": {
+      "heading": "Booking Confirmed",
+      "note": "Your payment was received and your session is confirmed.",
+      "sessionWith": "Session with {practitioner}"
+    },
+    "verifying": {
+      "heading": "Verifying Payment...",
+      "note": "We are checking your payment status. This only takes a moment."
+    },
+    "pendingTimeout": {
+      "heading": "Payment is Processing",
+      "note": "Your payment was submitted and is being finalized.",
+      "checkNote": "Your booking will be confirmed automatically. Check your sessions page for the latest status."
+    },
+    "failed": {
+      "heading": "Payment Failed",
+      "note": "Your payment could not be processed. Please check your card details and try again.",
+      "retry": "Try again"
+    },
+    "canceled": {
+      "heading": "Payment Cancelled",
+      "note": "You cancelled the payment. Your slot may still be available, so try again before the payment window closes.",
+      "retry": "Try again"
+    },
+    "expired": {
+      "heading": "Payment Window Expired",
+      "note": "The reservation window for this slot has passed. Please book a new slot.",
+      "bookAgain": "Book a new slot"
+    },
+    "sessionCancelled": {
+      "heading": "Booking Cancelled",
+      "note": "This session has been cancelled."
+    },
+    "error": {
+      "heading": "Could Not Check Status",
+      "note": "Please check your sessions page for the latest updates on your booking."
+    },
+    "viewSessions": "View my sessions"
+  },
+  "history": {
+    "heading": "Payment History",
+    "emptyHeading": "No payments yet",
+    "emptyNote": "Your payments will appear here after you book and pay for a session.",
+    "emptyAction": "View my sessions",
+    "errorHeading": "Could not load payments",
+    "errorNote": "Please try refreshing the page.",
+    "retry": "Try again",
+    "viewSession": "View session",
+    "retryPayment": "Try payment again",
+    "continuePayment": "Continue payment",
+    "paidOn": "Paid",
+    "failedOn": "Failed",
+    "expiredOn": "Expired",
+    "refundedOn": "Refunded",
+    "initiatedOn": "Initiated",
+    "notes": {
+      "CREATED": "Your payment was started but is not complete yet.",
+      "PENDING": "Your payment is being processed. Check again shortly if it does not update.",
+      "REQUIRES_ACTION": "Your payment needs one more step to finish successfully.",
+      "AUTHORIZED": "Your payment was authorized and is being finalized.",
+      "CAPTURED": "Payment was received successfully and your session is secured.",
+      "FAILED": "This payment did not go through. You can try again if the session is still payable.",
+      "CANCELLED": "This payment attempt was cancelled before it was completed.",
+      "EXPIRED": "This payment attempt expired before it was completed.",
+      "REFUND_PENDING": "A refund is currently being processed for this payment.",
+      "PARTIALLY_REFUNDED": "Part of this payment has already been refunded.",
+      "REFUNDED": "This payment has been refunded in full."
+    },
+    "status": {
+      "CREATED": "Initiated",
+      "PENDING": "Processing",
+      "REQUIRES_ACTION": "Action required",
+      "AUTHORIZED": "Authorized",
+      "CAPTURED": "Paid",
+      "FAILED": "Failed",
+      "CANCELLED": "Cancelled",
+      "EXPIRED": "Expired",
+      "REFUND_PENDING": "Refund pending",
+      "PARTIALLY_REFUNDED": "Partially refunded",
+      "REFUNDED": "Refunded"
+    },
+    "provider": {
+      "STRIPE": "Card",
+      "PAYMOB": "Paymob"
+    }
+  },
+  "sessionState": {
+    "heading": "Payment and booking",
+    "PENDING_PAYMENT": {
+      "label": "Payment still needed",
+      "note": "Your slot is not secured yet. Complete payment now so the session can be confirmed.",
+      "action": "Complete payment"
+    },
+    "SECURED": {
+      "label": "Payment received",
+      "note": "Your payment was received successfully and this session is secured."
+    },
+    "REFUND_PENDING": {
+      "label": "Refund in progress",
+      "note": "A refund is being processed for this session. It is no longer available to continue."
+    },
+    "REFUNDED": {
+      "label": "Refund completed",
+      "note": "This session payment has been refunded."
+    },
+    "EXPIRED": {
+      "label": "Payment window ended",
+      "note": "The payment window ended before this session could be confirmed."
+    }
+  }
+}

@@ -1,0 +1,163 @@
+{
+  "meta": {
+    "title": "Fayed | My Journey",
+    "description": "A calm patient journey home that helps you know what to do next."
+  },
+  "hero": {
+    "eyebrow": "Your journey",
+    "title": "A calm place to see what matters next",
+    "note": "This screen brings together your next session, payment follow-up, support status, and recent care activity in one simple view."
+  },
+  "summary": {
+    "suggested": {
+      "COMPLETE_PAYMENT": "Pending payment",
+      "JOIN_UPCOMING_SESSION": "Upcoming session",
+      "VIEW_SUPPORT_TICKET": "Open support",
+      "TAKE_ASSESSMENT": "Initial check-in suggested",
+      "START_GUIDED_MATCHING": "Matching suggested",
+      "BOOK_NEXT_SESSION": "Book your next session"
+    },
+    "chips": {
+      "pendingPayment": "A payment still needs your attention",
+      "nextSessionAt": "Next session: {date}",
+      "supportOpen": "Support is following up with you",
+      "lastAssessment": "Last check-in: {date}"
+    }
+  },
+  "primaryAction": {
+    "eyebrow": "Recommended next step"
+  },
+  "upcoming": {
+    "pendingPayment": {
+      "heading": "Pending payment",
+      "cta": "Complete payment"
+    },
+    "session": {
+      "heading": "Upcoming session",
+      "cta": "Open session details"
+    },
+    "instantBooking": {
+      "heading": "Pending instant booking request",
+      "note": "A request with {practitioner} is still active.",
+      "duration": "{n} min",
+      "expiresAt": "Expires {date}"
+    },
+    "empty": {
+      "heading": "Nothing urgent right now",
+      "note": "When there is something that needs your attention, it will appear here."
+    }
+  },
+  "recent": {
+    "heading": "Recent activity",
+    "note": "A short view of your care activity, so you can pick up where you left off.",
+    "sessions": {
+      "heading": "Recent sessions",
+      "viewAll": "View all"
+    },
+    "payments": {
+      "heading": "Recent payments",
+      "viewAll": "View all",
+      "viewSession": "View session"
+    },
+    "assessments": {
+      "heading": "Recent check-ins",
+      "completedAt": "Completed {date}",
+      "score": "Score: {score}",
+      "viewResult": "View result"
+    },
+    "matching": {
+      "heading": "Recent matching",
+      "recommendation": "Recommended practitioner: {practitioner}",
+      "noRecommendation": "No recommendation snapshot available yet.",
+      "completedAt": "Completed {date}",
+      "viewMatching": "View matching result",
+      "viewPractitioner": "View practitioner"
+    },
+    "empty": {
+      "heading": "Your recent activity will appear here",
+      "note": "Once you book sessions, complete check-ins, or make payments, this area will help you return to them quickly."
+    }
+  },
+  "support": {
+    "heading": "Support",
+    "openTicket": "You still have an open support ticket connected to your account.",
+    "viewTicket": "Open support ticket",
+    "updatedAt": "Updated {date}",
+    "empty": "If you need help, you can still reach support from your current patient area.",
+    "chatCta": "Open support",
+    "categories": {
+      "BOOKING": "Booking",
+      "PAYMENT": "Payment",
+      "SESSION": "Session",
+      "TECHNICAL": "Technical",
+      "ACCOUNT": "Account",
+      "MATCHING": "Matching",
+      "GENERAL": "General",
+      "CONTENT": "Content",
+      "CHAT": "Chat",
+      "OTHER": "Other"
+    },
+    "statuses": {
+      "OPEN": "Open",
+      "IN_PROGRESS": "In progress",
+      "WAITING_FOR_USER": "Waiting for you",
+      "ESCALATED": "Escalated",
+      "RESOLVED": "Resolved",
+      "CLOSED": "Closed"
+    }
+  },
+  "quickLinks": {
+    "careHeading": "Continue your care",
+    "careNote": "Start from the action that helps you move forward with a little less effort.",
+    "utilityHeading": "Useful shortcuts",
+    "utilityNote": "Keep practical tools nearby without letting them take over the whole journey.",
+    "sessions": "Sessions",
+    "payments": "Payments",
+    "practitioners": "Practitioners",
+    "profile": "Profile",
+    "support": "Support"
+  },
+  "nextSteps": {
+    "moreHeading": "More helpful next steps",
+    "unavailable": "This next step is part of your journey, but its dedicated web screen is not ready yet.",
+    "types": {
+      "COMPLETE_PAYMENT": {
+        "title": "Complete your pending payment",
+        "note": "Finish this payment so your care plan can continue without interruption.",
+        "cta": "Complete payment"
+      },
+      "JOIN_UPCOMING_SESSION": {
+        "title": "Get ready for your upcoming session",
+        "note": "Open your session details to review the time and current status. A direct join flow is not available on the web yet.",
+        "cta": "Open session details"
+      },
+      "VIEW_SUPPORT_TICKET": {
+        "title": "Check your support follow-up",
+        "note": "Support still has an open ticket linked to your account.",
+        "cta": "Open support"
+      },
+      "TAKE_ASSESSMENT": {
+        "title": "Start a quick check-in",
+        "note": "A short check-in can help you understand your current needs before the next step.",
+        "cta": "Start check-in"
+      },
+      "START_GUIDED_MATCHING": {
+        "title": "Start guided matching",
+        "note": "Guided matching can help you move toward a suitable practitioner.",
+        "cta": "Start matching"
+      },
+      "BOOK_NEXT_SESSION": {
+        "title": "Book your next session",
+        "note": "Explore practitioners and choose the next session that fits your journey.",
+        "cta": "Browse practitioners"
+      }
+    }
+  },
+  "states": {
+    "error": {
+      "heading": "We could not load your journey right now",
+      "note": "Please try again. Your sessions and payments are still available from the patient navigation.",
+      "retry": "Try again"
+    }
+  }
+}

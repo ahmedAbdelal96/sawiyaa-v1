@@ -1,0 +1,179 @@
+{
+  "meta": {
+    "walletTitle": "ملخص المحفظة — الممارس",
+    "walletDescription": "راجع أرصدة المحفظة الحالية وملخصاتها دون تضخيم واجهة مالية كاملة.",
+    "ledgerTitle": "دفتر المالية — الممارس",
+    "ledgerDescription": "راجع سجل دفتر المالية دون الدخول إلى التسويات أو أدوات الصرف.",
+    "settlementsTitle": "التسويات — الممارس",
+    "settlementsDescription": "راجع سجلات التسوية وحالة الصرف دون الدخول إلى أدوات الصرف."
+  },
+  "summary": {
+    "eyebrow": "محفظة الممارس",
+    "title": "راجع ملخص المحفظة دون الدخول إلى تفاصيل الدفتر أو التسويات.",
+    "note": "هذا الملخص مشتق من دفتر المالية. يعرض الأرصدة والإجماليات المتاحة للعرض الآن.",
+    "currency": "العملة: {currency}",
+    "scopeHeading": "المتاح الآن",
+    "scopeItems": {
+      "balances": "الأرصدة الحالية بحسب حالة الإتاحة.",
+      "totals": "إجمالي ما تم كسبه وما تم صرفه.",
+      "timestamps": "طوابع زمنية لآخر تحديث في الدفتر."
+    },
+    "boundaryHeading": "خارج النطاق الحالي",
+    "boundaryItems": {
+      "noLedger": "تفاصيل الدفتر متاحة في شاشة الدفتر.",
+      "noSettlements": "عرض التسويات سيكون في واجهة منفصلة.",
+      "noPayouts": "إجراءات الصرف والجدولة ليست جزءًا من هذا الخط الأساسي."
+    },
+    "cards": {
+      "available": "الرصيد المتاح",
+      "pending": "الرصيد المعلّق",
+      "reserved": "الرصيد المحجوز",
+      "totalEarned": "إجمالي المكتسب",
+      "lifetimePaidOut": "إجمالي المصروف"
+    },
+    "detailsHeading": "تفاصيل المحفظة",
+    "details": {
+      "lastLedgerEntryAt": "آخر إدخال في الدفتر",
+      "updatedAt": "آخر تحديث للمحفظة"
+    }
+  },
+  "states": {
+    "empty": {
+      "heading": "ملخص المحفظة غير متاح بعد",
+      "note": "لم نتمكن من تحميل ملخص المحفظة الحالي."
+    },
+    "error": {
+      "heading": "تعذر عرض ملخص المحفظة الآن",
+      "retry": "حاول مرة أخرى"
+    }
+  },
+  "ledger": {
+    "eyebrow": "دفتر المالية",
+    "title": "راجع سجل الحركات المرتبطة بمحفظتك كممارس.",
+    "note": "يعرض هذا الدفتر سجلًا مرئيًا لقيود مالية مرتبطة بالجلسات والمدفوعات والتسويات.",
+    "count": "{value} قيد",
+    "countLoading": "جاري تحميل القيود",
+    "scopeHeading": "المتاح الآن",
+    "scopeItems": {
+      "history": "سجل القيود مع نوع القيد والتواريخ.",
+      "balances": "أثر القيد على رصيد المحفظة.",
+      "references": "مراجع مرتبطة بالمدفوعات أو الجلسات أو التسويات."
+    },
+    "boundaryHeading": "خارج النطاق الحالي",
+    "boundaryItems": {
+      "noPayouts": "إجراءات الصرف غير متاحة في هذا العرض.",
+      "noSettlements": "تفاصيل التسويات في شاشة التسويات.",
+      "noReconciliation": "التسوية المحاسبية أو التصدير غير متاحين في هذا الخط الأساسي."
+    },
+    "fields": {
+      "effectiveAt": "تاريخ السريان",
+      "createdAt": "تاريخ التسجيل",
+      "description": "الوصف"
+    },
+    "entryTypes": {
+      "SESSION_GROSS": "إجمالي الجلسة",
+      "PLATFORM_COMMISSION": "عمولة المنصة",
+      "PRACTITIONER_EARNING": "مكسب الممارس",
+      "COUPON_PLATFORM_SHARE": "حصة المنصة من القسيمة",
+      "COUPON_PRACTITIONER_SHARE": "حصة الممارس من القسيمة",
+      "REFUND_PLATFORM_REVERSAL": "عكس ردّ المنصة",
+      "REFUND_PRACTITIONER_REVERSAL": "عكس ردّ الممارس",
+      "MANUAL_ADJUSTMENT": "تعديل يدوي",
+      "SETTLEMENT_PAYOUT": "صرف تسوية",
+      "SETTLEMENT_REVERSAL": "عكس تسوية"
+    },
+    "directions": {
+      "CREDIT": "دائن",
+      "DEBIT": "مدين"
+    },
+    "balanceBuckets": {
+      "AVAILABLE": "متاح",
+      "PENDING": "معلّق",
+      "RESERVED": "محجوز"
+    },
+    "reference": {
+      "payment": "دفعة",
+      "session": "جلسة",
+      "settlement": "تسوية",
+      "generic": "{type} مرجع"
+    },
+    "pagination": {
+      "summary": "{from}-{to} من {total}",
+      "previous": "السابق",
+      "next": "التالي"
+    },
+    "states": {
+      "empty": {
+        "heading": "لا توجد قيود بعد",
+        "note": "ستظهر القيود هنا عند تسجيل أي حركة مالية."
+      },
+      "error": {
+        "heading": "تعذّر عرض القيود الآن",
+        "retry": "حاول مرة أخرى"
+      }
+    }
+  },
+  "settlements": {
+    "eyebrow": "تسويات الممارس",
+    "title": "راجع سجلات التسوية المرتبطة بأرباحك كممارس.",
+    "note": "تعرض هذه الشاشة سجلاً مرئيًا لدفعات التسوية وحالات الصرف الحالية.",
+    "count": "{value} تسوية",
+    "countLoading": "جاري تحميل التسويات",
+    "scopeHeading": "المتاح الآن",
+    "scopeItems": {
+      "history": "سجل التسويات مع التواريخ وحالة الصرف.",
+      "statuses": "حالة كل سجل تسوية.",
+      "amounts": "الإجمالي والتعديلات والصافي لكل تسوية."
+    },
+    "boundaryHeading": "خارج النطاق الحالي",
+    "boundaryItems": {
+      "noPayouts": "إجراءات الصرف غير متاحة في هذا العرض.",
+      "noLedger": "سجل الدفتر ما زال في شاشة منفصلة.",
+      "noAdjustments": "التسوية المحاسبية أو التعديلات اليدوية ليست ضمن هذا الخط الأساسي."
+    },
+    "fields": {
+      "gross": "المبلغ الإجمالي",
+      "adjustments": "التعديلات",
+      "net": "المبلغ الصافي",
+      "createdAt": "تاريخ الإنشاء",
+      "paidAt": "تاريخ الصرف",
+      "failedAt": "تاريخ الفشل",
+      "batch": "الدفعة",
+      "reference": "مرجع الصرف",
+      "notes": "ملاحظات"
+    },
+    "statuses": {
+      "DRAFT": "مسودة",
+      "READY": "جاهزة",
+      "PROCESSING": "قيد المعالجة",
+      "PAID": "مدفوعة",
+      "FAILED": "فشلت",
+      "CANCELLED": "ملغاة"
+    },
+    "filters": {
+      "allStatuses": "كل الحالات"
+    },
+    "pagination": {
+      "summary": "{from}-{to} من {total}",
+      "previous": "السابق",
+      "next": "التالي"
+    },
+    "states": {
+      "empty": {
+        "heading": "لا توجد تسويات بعد",
+        "note": "ستظهر سجلات التسويات هنا عند إنشاء دفعات الصرف."
+      },
+      "error": {
+        "heading": "تعذر عرض التسويات الآن",
+        "retry": "حاول مرة أخرى"
+      }
+    }
+  },
+  "errors": {
+    "practitionerNotFound": "لم نتمكن من العثور على ملف الممارس.",
+    "invalidFilter": "بعض مرشحات الدفتر غير مدعومة.",
+    "forbidden": "حسابك غير مصرح له بعرض هذه البيانات المالية.",
+    "notFound": "تعذر العثور على بيانات مالية ضمن النطاق.",
+    "generic": "تعذر تحميل البيانات المالية الآن."
+  }
+}

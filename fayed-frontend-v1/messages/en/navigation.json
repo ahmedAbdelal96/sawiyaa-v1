@@ -1,0 +1,57 @@
+{
+  "main": {
+    "title": "Core",
+    "dashboard": "Dashboard",
+    "patients": "Patients",
+    "practitioners": "Practitioners",
+    "practitionerApplications": "Practitioner applications",
+    "articles": "Articles",
+    "sessions": "Sessions",
+    "wallet": "Wallet",
+    "ledger": "Ledger",
+    "payments": "Payments",
+    "settlements": "Settlements",
+    "settlementsBatches": "Settlement batches",
+    "settlementsDues": "Practitioner dues",
+    "settlementsPayouts": "Payout operations",
+    "assessments": "Assessments",
+    "availability": "Availability"
+  },
+  "practitionerMain": {
+    "title": "Operational core"
+  },
+  "practitionerWorkspace": {
+    "title": "Care coordination"
+  },
+  "practitionerFinance": {
+    "title": "Finance"
+  },
+  "practitionerReadiness": {
+    "title": "Readiness"
+  },
+  "workspace": {
+    "title": "Workspace",
+    "articles": "Articles",
+    "notifications": "Notifications",
+    "specialties": "Specialties",
+    "support": "Support",
+    "careChat": "Care chat",
+    "chat": "Chat",
+    "reviews": "Reviews",
+    "moderationReports": "Moderation reports",
+    "training": "Training"
+  },
+  "settings": {
+    "title": "Settings",
+    "profile": "Profile",
+    "settings": "Settings",
+    "adminOperations": "Admin / Operations",
+    "specialties": "Specialties",
+    "credentials": "Credentials",
+    "application": "Application"
+  },
+  "patientShell": {
+    "areaTitle": "Patient area",
+    "areaSubtitle": "Browse, book, and manage your care journey"
+  }
+}

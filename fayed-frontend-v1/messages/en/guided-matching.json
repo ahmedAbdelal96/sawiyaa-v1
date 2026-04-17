@@ -1,0 +1,184 @@
+{
+  "meta": {
+    "startTitle": "Fayed | Reach the Right Practitioner",
+    "startDescription": "A guided journey to help you find the practitioner that fits your needs.",
+    "resultTitle": "Fayed | Matching Results",
+    "resultDescription": "Review your matching recommendations and choose the best next step."
+  },
+  "journey": {
+    "title": "Reach the right practitioner",
+    "stepCounter": "Step {current} of {total}",
+    "footer": "Answer in simple steps and we will rank better-fit options for you."
+  },
+  "flow": {
+    "specialtyCategory": {
+      "title": "What main area do you need help with?",
+      "subtitle": "Choose the closest main area to start with better accuracy.",
+      "optionSubtitle": "Main area"
+    },
+    "specialty": {
+      "title": "Which sub-specialty fits you best?",
+      "subtitle": "This choice directly affects recommendation quality.",
+      "selectedCategoryReady": "Choose a sub-specialty from your selected main area.",
+      "selectCategoryFirst": "Go back one step and choose a main area first."
+    },
+    "providerType": {
+      "title": "Which provider type do you prefer?",
+      "subtitle": "You can choose one, or keep it open."
+    },
+    "gender": {
+      "title": "Do you prefer practitioner gender?",
+      "subtitle": "This helps with ranking."
+    },
+    "language": {
+      "title": "Which language is most comfortable for your session?",
+      "subtitle": "Choose the language you prefer."
+    },
+    "sessionMode": {
+      "title": "Which session mode works best for you?",
+      "subtitle": "Video, audio, or no preference."
+    },
+    "urgency": {
+      "title": "How soon do you want support?",
+      "subtitle": "This helps us prioritize recommendations."
+    },
+    "details": {
+      "title": "Optional extra details",
+      "subtitle": "Add extra preferences to improve ranking.",
+      "budgetMin": "Minimum budget",
+      "budgetMinPlaceholder": "Example: 200",
+      "budgetMax": "Maximum budget",
+      "budgetMaxPlaceholder": "Example: 600",
+      "noteLabel": "Short note (optional)",
+      "notePlaceholder": "Add any detail that can help us understand your needs better.",
+      "firstTimeYes": "This is my first therapy experience",
+      "firstTimeNo": "I tried therapy before",
+      "instantBooking": "Prefer practitioners who support instant booking",
+      "instantBookingHint": "We will increase ranking for practitioners with faster booking readiness."
+    }
+  },
+  "choices": {
+    "common": {
+      "any": "No preference",
+      "skip": "Skip"
+    },
+    "provider": {
+      "PSYCHOLOGIST": "Psychologist",
+      "PSYCHIATRIST": "Psychiatrist",
+      "COUNSELOR": "Counselor/Therapist",
+      "NUTRITIONIST": "Nutritionist",
+      "OTHER": "Other type",
+      "ANY": "No preference"
+    },
+    "gender": {
+      "MALE": "Male",
+      "FEMALE": "Female",
+      "ANY": "No preference"
+    },
+    "language": {
+      "ar": "Arabic",
+      "en": "English",
+      "fr": "French",
+      "ANY": "No preference"
+    },
+    "mode": {
+      "VIDEO": "Video session",
+      "AUDIO": "Audio session",
+      "ANY": "No preference"
+    },
+    "urgency": {
+      "FLEXIBLE": {
+        "title": "I am flexible",
+        "note": "Show the strongest matches without urgency pressure."
+      },
+      "EARLIEST_AVAILABLE": {
+        "title": "As soon as possible",
+        "note": "Prioritize practitioners with earlier availability."
+      },
+      "AVAILABLE_NOW": {
+        "title": "Prefer immediate support",
+        "note": "Prioritize instant-booking readiness where possible."
+      }
+    }
+  },
+  "actions": {
+    "back": "Back",
+    "next": "Next",
+    "submit": "Show results",
+    "submitting": "Preparing results...",
+    "startAgain": "Start a new matching session",
+    "startAgainNote": "Run matching again if your needs changed.",
+    "reviewAssessments": "Review initial check-ins",
+    "reviewAssessmentsNote": "If you need more clarity, start with a short check-in.",
+    "openSupport": "Open support",
+    "openSupportNote": "Use support for booking, payment, account, or technical issues.",
+    "browseAll": "Browse all practitioners",
+    "browseAllNote": "You can always compare practitioners manually."
+  },
+  "states": {
+    "submitError": "We could not create your matching session right now. Please try again.",
+    "submitMissingSelections": "Complete required choices before viewing results.",
+    "loadError": {
+      "heading": "We could not load this matching result right now",
+      "note": "Try again, or start a new matching session.",
+      "retry": "Try again",
+      "restart": "Start new matching"
+    }
+  },
+  "validation": {
+    "stepRequired": "Choose an answer before continuing.",
+    "primaryConcernMax": "Please keep this note under 200 characters.",
+    "budgetMin": "Enter a valid minimum amount.",
+    "budgetMax": "Enter a valid maximum amount.",
+    "budgetOrder": "Maximum budget should be equal to or greater than minimum.",
+    "specialtyCategoryRequired": "Choose the main area first.",
+    "specialtyRequired": "Choose a sub-specialty.",
+    "providerTypeRequired": "Choose a provider type or no preference.",
+    "genderRequired": "Choose a gender preference.",
+    "languageRequired": "Choose your preferred language.",
+    "sessionModeRequired": "Choose a session mode.",
+    "urgencyRequired": "Choose your urgency preference."
+  },
+  "result": {
+    "eyebrow": "Your result",
+    "title": "These practitioners are closest to your current needs",
+    "note": "Results are based on your answers. Review each profile before booking.",
+    "sessionId": "Matching session: {id}",
+    "sessionSaved": "You can revisit this result later.",
+    "nextHeading": "Choose your next step",
+    "nextNote": "You can run matching again, open support, or browse directly.",
+    "summary": {
+      "concern": "Need: {value}",
+      "specialty": "Specialty: {value}",
+      "language": "Language: {value}",
+      "mode": "Session mode: {value}",
+      "urgency": "Urgency: {value}"
+    },
+    "card": {
+      "scoreLabel": "Match score",
+      "languagesLabel": "Languages",
+      "priceLabel": "Session price",
+      "price30": "30 min: {value}",
+      "price60": "60 min: {value}",
+      "rankLabel": "Rank",
+      "viewProfile": "Open profile",
+      "notAvailable": "Not available",
+      "none": "Not specified",
+      "whyHeading": "Why this may fit you"
+    },
+    "reasons": {
+      "specialty": "Aligned with your selected specialty",
+      "language": "Matches your preferred language",
+      "budget": "Within your budget",
+      "urgency": "Compatible with your urgency",
+      "providerType": "Matches your preferred provider type",
+      "instantBooking": "Supports your instant-booking preference",
+      "genderPartial": "Gender preference is partially supported in this version"
+    },
+    "empty": {
+      "title": "No clear recommendation yet",
+      "heading": "No recommendation snapshot is available right now",
+      "note": "Try again with broader preferences or browse practitioners directly."
+    }
+  }
+}

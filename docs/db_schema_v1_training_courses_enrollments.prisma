@@ -1,0 +1,354 @@
+// DB Schema v1 — Training / Courses / Enrollments
+// Notes:
+// - V1 is owner-only training, but schema stays extensible
+// - Courses are live and delivered via external room providers (Zoom or similar)
+// - CourseCategory is separate from Specialty and ArticleCategory
+// - Enrollment is schedule-based
+// - SEO uses course/category slugs only
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum InstructorType {
+  OWNER
+  PRACTITIONER
+  INTERNAL_STAFF
+  EXTERNAL
+}
+
+enum InstructorStatus {
+  ACTIVE
+  INACTIVE
+  PENDING_APPROVAL
+}
+
+enum CourseType {
+  LIVE_COURSE
+  LIVE_WORKSHOP
+  LIVE_SERIES
+}
+
+enum CourseDeliveryMode {
+  EXTERNAL_LIVE_ROOM
+}
+
+enum CourseStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+  DISABLED
+}
+
+enum CourseVisibility {
+  PUBLIC
+  UNLISTED
+  PRIVATE
+}
+
+enum CourseScheduleStatus {
+  DRAFT
+  OPEN_FOR_ENROLLMENT
+  FULL
+  STARTED
+  COMPLETED
+  CANCELLED
+  ARCHIVED
+}
+
+enum EnrollmentStatus {
+  PENDING_PAYMENT
+  ACTIVE
+  CANCELLED
+  REFUNDED
+  COMPLETED
+  NO_SHOW
+}
+
+enum EnrollmentAttendanceStatus {
+  NOT_STARTED
+  PARTIALLY_ATTENDED
+  ATTENDED
+  MISSED
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+  LEFT_EARLY
+}
+
+enum AttendanceSource {
+  MANUAL
+  PROVIDER_IMPORT
+  AUTO_ESTIMATED
+}
+
+enum CourseReviewDecision {
+  APPROVED
+  REJECTED
+  CHANGES_REQUESTED
+}
+
+// NOTE:
+// Expected existing models:
+// model User
+// model PractitionerProfile
+// model Payment
+
+model TrainingInstructor {
+  id                String              @id @default(uuid()) @db.Uuid
+  userId            String?             @db.Uuid
+  practitionerId    String?             @db.Uuid
+
+  instructorType    InstructorType
+  status            InstructorStatus    @default(ACTIVE)
+
+  displayName       String              @db.VarChar(191)
+  bio               String?             @db.VarChar(2000)
+  avatarUrl         String?             @db.VarChar(500)
+  isOwnerDefault    Boolean             @default(false)
+
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  practitioner      PractitionerProfile? @relation(fields: [practitionerId], references: [id], onDelete: SetNull)
+  courses           Course[]
+
+  @@index([status, instructorType])
+  @@index([userId])
+  @@index([practitionerId])
+}
+
+model CourseCategory {
+  id                String                    @id @default(uuid()) @db.Uuid
+  slugRoot          String                    @unique @db.VarChar(191)
+  sortOrder         Int                       @default(0)
+  isActive          Boolean                   @default(true)
+  createdAt         DateTime                  @default(now())
+  updatedAt         DateTime                  @updatedAt
+
+  translations      CourseCategoryTranslation[]
+  courses           Course[]
+
+  @@index([isActive, sortOrder])
+}
+
+model CourseCategoryTranslation {
+  id                String            @id @default(uuid()) @db.Uuid
+  courseCategoryId  String            @db.Uuid
+  locale            String            @db.VarChar(10)
+  title             String            @db.VarChar(191)
+  description       String?           @db.VarChar(1000)
+  slug              String            @db.VarChar(191)
+  metaTitle         String?           @db.VarChar(191)
+  metaDescription   String?           @db.VarChar(300)
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  courseCategory    CourseCategory    @relation(fields: [courseCategoryId], references: [id], onDelete: Cascade)
+
+  @@unique([courseCategoryId, locale])
+  @@unique([locale, slug])
+  @@index([locale, title])
+}
+
+model Course {
+  id                    String              @id @default(uuid()) @db.Uuid
+  primaryCategoryId     String?             @db.Uuid
+  primaryInstructorId   String?             @db.Uuid
+
+  slugRoot              String              @unique @db.VarChar(191)
+  courseType            CourseType
+  deliveryMode          CourseDeliveryMode  @default(EXTERNAL_LIVE_ROOM)
+  status                CourseStatus        @default(DRAFT)
+  visibility            CourseVisibility    @default(PUBLIC)
+
+  coverImageUrl         String?             @db.VarChar(500)
+  thumbnailUrl          String?             @db.VarChar(500)
+
+  priceAmount           Decimal?            @db.Decimal(18, 2)
+  currencyCode          String?             @db.VarChar(3)
+
+  capacityMode          String?             @db.VarChar(50)
+  maxEnrollments        Int?
+  isFeatured            Boolean             @default(false)
+
+  publishedAt           DateTime?
+  archivedAt            DateTime?
+
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+
+  primaryCategory       CourseCategory?     @relation(fields: [primaryCategoryId], references: [id], onDelete: SetNull)
+  primaryInstructor     TrainingInstructor? @relation(fields: [primaryInstructorId], references: [id], onDelete: SetNull)
+
+  translations          CourseTranslation[]
+  schedules             CourseSchedule[]
+  approvals             CourseApproval[]
+
+  @@index([primaryCategoryId, status, visibility, publishedAt])
+  @@index([primaryInstructorId, status])
+  @@index([isFeatured, status, publishedAt])
+  @@index([priceAmount, currencyCode])
+}
+
+model CourseTranslation {
+  id                  String          @id @default(uuid()) @db.Uuid
+  courseId            String          @db.Uuid
+  locale              String          @db.VarChar(10)
+  title               String          @db.VarChar(191)
+  shortDescription    String?         @db.VarChar(1000)
+  fullDescription     String?
+  slug                String          @db.VarChar(191)
+  metaTitle           String?         @db.VarChar(191)
+  metaDescription     String?         @db.VarChar(300)
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+
+  course              Course          @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([courseId, locale])
+  @@unique([locale, slug])
+  @@index([locale, title])
+}
+
+model CourseSchedule {
+  id                    String                @id @default(uuid()) @db.Uuid
+  courseId              String                @db.Uuid
+  scheduleCode          String                @unique @db.VarChar(64)
+  status                CourseScheduleStatus  @default(DRAFT)
+
+  enrollmentOpenAt      DateTime?
+  enrollmentCloseAt     DateTime?
+  startsAt              DateTime?
+  endsAt                DateTime?
+  timezone              String?               @db.VarChar(50)
+
+  maxEnrollmentsOverride Int?
+  priceOverrideAmount   Decimal?              @db.Decimal(18, 2)
+  currencyCodeOverride  String?               @db.VarChar(3)
+
+  externalRoomProvider  String?               @db.VarChar(100)
+  externalRoomJoinUrl   String?               @db.VarChar(500)
+  externalRoomHostUrl   String?               @db.VarChar(500)
+
+  waitlistEnabled       Boolean               @default(false)
+
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+
+  course                Course                @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  sessions              CourseSession[]
+  enrollments           Enrollment[]
+
+  @@index([courseId, status, startsAt])
+  @@index([enrollmentOpenAt, enrollmentCloseAt, status])
+  @@index([startsAt, endsAt])
+  @@index([waitlistEnabled, status])
+}
+
+model CourseSession {
+  id                    String             @id @default(uuid()) @db.Uuid
+  courseScheduleId      String             @db.Uuid
+
+  sessionTitle          String?            @db.VarChar(191)
+  sessionOrder          Int
+  startsAt              DateTime?
+  endsAt                DateTime?
+
+  externalRoomProvider  String?            @db.VarChar(100)
+  externalRoomJoinUrl   String?            @db.VarChar(500)
+  externalRoomHostUrl   String?            @db.VarChar(500)
+
+  attendanceTrackingEnabled Boolean        @default(true)
+  isMandatory           Boolean            @default(true)
+
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+
+  courseSchedule        CourseSchedule     @relation(fields: [courseScheduleId], references: [id], onDelete: Cascade)
+  attendances           EnrollmentAttendance[]
+
+  @@unique([courseScheduleId, sessionOrder])
+  @@index([courseScheduleId, startsAt])
+  @@index([startsAt, endsAt])
+}
+
+model Enrollment {
+  id                    String                    @id @default(uuid()) @db.Uuid
+  courseId              String                    @db.Uuid
+  courseScheduleId      String                    @db.Uuid
+  userId                String                    @db.Uuid
+  paymentId             String?                   @db.Uuid
+
+  enrollmentStatus      EnrollmentStatus          @default(PENDING_PAYMENT)
+  paymentStatus         String?                   @db.VarChar(50)
+  attendanceStatus      EnrollmentAttendanceStatus @default(NOT_STARTED)
+
+  enrolledAt            DateTime                  @default(now())
+  cancelledAt           DateTime?
+  refundedAt            DateTime?
+  completedAt           DateTime?
+  notesInternal         String?                   @db.VarChar(1000)
+
+  createdAt             DateTime                  @default(now())
+  updatedAt             DateTime                  @updatedAt
+
+  course                Course                    @relation(fields: [courseId], references: [id], onDelete: Restrict)
+  courseSchedule        CourseSchedule            @relation(fields: [courseScheduleId], references: [id], onDelete: Cascade)
+  payment               Payment?                  @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+  attendances           EnrollmentAttendance[]
+
+  @@unique([courseScheduleId, userId])
+  @@index([courseId, enrollmentStatus, enrolledAt])
+  @@index([courseScheduleId, enrollmentStatus])
+  @@index([paymentStatus])
+  @@index([userId, enrollmentStatus])
+}
+
+model EnrollmentAttendance {
+  id                    String             @id @default(uuid()) @db.Uuid
+  enrollmentId          String             @db.Uuid
+  courseSessionId       String             @db.Uuid
+
+  attendanceStatus      AttendanceStatus
+  attendanceSource      AttendanceSource   @default(MANUAL)
+
+  checkInAt             DateTime?
+  checkOutAt            DateTime?
+  attendedMinutes       Int?
+  markedByUserId        String?            @db.Uuid
+
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+
+  enrollment            Enrollment         @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  courseSession         CourseSession      @relation(fields: [courseSessionId], references: [id], onDelete: Cascade)
+
+  @@unique([enrollmentId, courseSessionId])
+  @@index([courseSessionId, attendanceStatus])
+  @@index([enrollmentId, attendanceStatus])
+  @@index([markedByUserId, checkInAt])
+}
+
+model CourseApproval {
+  id                    String                @id @default(uuid()) @db.Uuid
+  courseId              String                @db.Uuid
+  reviewedByUserId      String?               @db.Uuid
+  decision              CourseReviewDecision
+  reviewNote            String?               @db.VarChar(1000)
+  createdAt             DateTime              @default(now())
+
+  course                Course                @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@index([courseId, createdAt])
+  @@index([reviewedByUserId, createdAt])
+  @@index([decision, createdAt])
+}

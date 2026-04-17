@@ -1,0 +1,182 @@
+{
+  "meta": {
+    "title": "فحص جاهزية الجلسة — الإدارة",
+    "description": "فحص جاهزية التشغيل وربط مزود الجلسة لجلسة محددة."
+  },
+  "page": {
+    "eyebrow": "تشغيل",
+    "title": "فحص جاهزية الجلسة",
+    "note": "لا تُعدّل هذه الأداة بيانات الجلسة.",
+    "active": "الفحص نشط",
+    "waiting": "بانتظار رقم الجلسة"
+  },
+  "scope": {
+    "heading": "ما الذي تعرضه هذه الأداة",
+    "items": {
+      "status": "حالة الجلسة ونمطها ومواعيدها.",
+      "provider": "تفاصيل ربط المزود والمعرّفات التشغيلية.",
+      "readiness": "مؤشرات الجاهزية وسبب المنع إن وُجد."
+    }
+  },
+  "boundaries": {
+    "heading": "خارج النطاق الحالي",
+    "items": {
+      "noControls": "لا توجد أدوات تجهيز أو انضمام في هذه الواجهة.",
+      "noIntervention": "لا توجد تدخلات على الجلسة الحية.",
+      "noEdits": "لا تُعدّل هذه الأداة بيانات الجلسة."
+    }
+  },
+  "lookup": {
+    "heading": "افحص جلسة برقمها",
+    "note": "أدخل رقم جلسة لعرض لقطة الجاهزية.",
+    "fieldLabel": "رقم الجلسة",
+    "placeholder": "الصق رقم الجلسة",
+    "submit": "فحص الجاهزية",
+    "helper": "استخدم رقم جلسة من المدفوعات أو الدعم أو التشغيل.",
+    "backToPayments": "العودة إلى المدفوعات"
+  },
+  "sections": {
+    "summary": {
+      "title": "لقطة الجلسة",
+      "note": "سياق الجلسة الأساسي المرتبط بالجاهزية."
+    },
+    "provider": {
+      "title": "ربط المزود",
+      "note": "معرّفات المزود المستخدمة في تتبع الجاهزية."
+    },
+    "readiness": {
+      "title": "جاهزية التشغيل",
+      "note": "مؤشرات الجاهزية وسبب التعطيل عند الحاجة."
+    },
+    "context": {
+      "title": "سياق تشغيلي",
+      "note": "لا تُعدّل هذه الأداة بيانات الجلسة.",
+      "helper": "اللغة: {locale}"
+    }
+  },
+  "result": {
+    "eyebrow": "لقطة التشغيل",
+    "title": "تفاصيل الفحص",
+    "note": "سياق الجلسة الأساسي المرتبط بالجاهزية."
+  },
+  "attendance": {
+    "heading": "سجل حضور الجلسة",
+    "note": "عرض تشغيلي فقط لإشارات الحضور المحفوظة من أحداث المزود.",
+    "summary": {
+      "heading": "ملخص الحضور",
+      "fields": {
+        "patientHasJoined": "المريض دخل",
+        "practitionerHasJoined": "المعالج دخل",
+        "patientJoinedAt": "أول دخول للمريض",
+        "practitionerJoinedAt": "أول دخول للمعالج",
+        "patientLeftAt": "آخر خروج للمريض",
+        "practitionerLeftAt": "آخر خروج للمعالج",
+        "firstJoinedAt": "أول دخول مسجل",
+        "lastLeftAt": "آخر خروج مسجل"
+      }
+    },
+    "timeline": {
+      "heading": "تسلسل الحضور",
+      "providerDetails": "تفاصيل حدث المزود",
+      "eventTypes": {
+        "JOINED": "دخول",
+        "LEFT": "خروج"
+      },
+      "participantRoles": {
+        "PATIENT": "مريض",
+        "PRACTITIONER": "معالج",
+        "UNKNOWN": "مشارك غير محدد"
+      },
+      "fields": {
+        "occurredAt": "وقت الحدث:",
+        "ingestedAt": "وقت الاستقبال:",
+        "userId": "معرف المستخدم:",
+        "provider": "المزود:",
+        "providerEventType": "نوع حدث المزود:",
+        "providerEventRef": "مرجع حدث المزود:",
+        "providerRoomRef": "مرجع غرفة المزود:",
+        "providerParticipantRef": "مرجع مشارك المزود:"
+      }
+    },
+    "states": {
+      "empty": {
+        "heading": "لا توجد أحداث حضور بعد",
+        "note": "لم يتم تسجيل أي أحداث حضور لهذه الجلسة حتى الآن."
+      },
+      "error": {
+        "heading": "تعذر تحميل سجل الحضور",
+        "retry": "حاول مرة أخرى",
+        "notFound": "لم يتم العثور على الجلسة.",
+        "generic": "تعذر تحميل بيانات الحضور الآن."
+      }
+    }
+  },
+  "fields": {
+    "id": "رقم الجلسة",
+    "status": "الحالة",
+    "mode": "نمط الجلسة",
+    "scheduledStartAt": "موعد البداية",
+    "scheduledEndAt": "موعد النهاية",
+    "provider": "المزود",
+    "providerRoomId": "معرّف غرفة المزود",
+    "providerSessionRef": "مرجع الجلسة لدى المزود",
+    "canPrepareRuntime": "إمكانية التجهيز",
+    "canJoin": "إمكانية الانضمام",
+    "blockedReason": "سبب المنع"
+  },
+  "statuses": {
+    "DRAFT": "مسودة",
+    "PENDING_PAYMENT": "بانتظار الدفع",
+    "PENDING_PRACTITIONER_RESPONSE": "بانتظار رد الممارس",
+    "CONFIRMED": "مؤكدة",
+    "UPCOMING": "قادمة",
+    "READY_TO_JOIN": "جاهزة للانضمام",
+    "IN_PROGRESS": "قيد التنفيذ",
+    "COMPLETED": "مكتملة",
+    "CANCELLED": "ملغاة",
+    "NO_SHOW": "لم يحضر",
+    "EXPIRED": "منتهية",
+    "REFUND_PENDING": "بانتظار الاسترداد",
+    "REFUNDED": "مستردة"
+  },
+  "modes": {
+    "VIDEO": "فيديو",
+    "AUDIO": "صوت",
+    "CHAT": "محادثة"
+  },
+  "providers": {
+    "NONE": "بدون مزود",
+    "DAILY": "Daily",
+    "ZOOM": "Zoom"
+  },
+  "blockedReasons": {
+    "SESSION_NOT_JOINABLE_STATUS": "الحالة الحالية لا تسمح بالانضمام",
+    "SESSION_NOT_VIDEO_MODE": "الجلسة ليست فيديو",
+    "SESSION_TIME_WINDOW_NOT_OPEN": "نافذة الانضمام لم تبدأ بعد",
+    "SESSION_RUNTIME_NOT_PREPARED": "لم يتم تجهيز التشغيل بعد",
+    "NONE": "لا يوجد"
+  },
+  "labels": {
+    "yes": "نعم",
+    "no": "لا"
+  },
+  "states": {
+    "empty": {
+      "heading": "أدخل رقم جلسة",
+      "note": "أدخل رقم جلسة لعرض لقطة الجاهزية."
+    },
+    "error": {
+      "heading": "فحص الجاهزية غير متاح الآن",
+      "note": "تعذر تحميل فحص الجاهزية الآن.",
+      "retry": "حاول مرة أخرى"
+    },
+    "notFound": {
+      "heading": "لم يتم العثور على الجلسة",
+      "note": "تعذر العثور على جلسة بهذا الرقم."
+    }
+  },
+  "errors": {
+    "notFound": "لم يتم العثور على الجلسة.",
+    "generic": "تعذر تحميل فحص الجاهزية الآن."
+  }
+}

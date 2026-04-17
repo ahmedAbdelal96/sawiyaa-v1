@@ -1,0 +1,117 @@
+{
+  "meta": {
+    "title": "متابعة الجلسات - الإدارة",
+    "description": "متابعة حالة الجلسات وتصفية الجلسات المتأخرة من شاشة تشغيلية واحدة."
+  },
+  "header": {
+    "eyebrow": "متابعة تشغيلية",
+    "title": "متابعة الجلسات",
+    "note": "متابعة حالة الجلسات في جدول واحد.",
+    "count": "{value, number} جلسة",
+    "countLoading": "جارٍ التحميل..."
+  },
+  "scope": {
+    "heading": "المتاح الآن",
+    "items": {
+      "statuses": "متابعة حالة الجلسات في جدول واحد.",
+      "delayedFilter": "فلتر للجلسات المتأخرة مباشرة من نفس الشاشة.",
+      "runtimeLink": "انتقال سريع لفحص التشغيل وسجل الحضور."
+    }
+  },
+  "boundaries": {
+    "heading": "خارج النطاق الحالي",
+    "items": {
+      "visibilityOnly": "هذه الصفحة للعرض فقط.",
+      "noAlerts": "هذه الصفحة للعرض فقط.",
+      "noRealtime": "لا توجد تدخلات على الجلسة الحية."
+    }
+  },
+  "filters": {
+    "sort": "الترتيب حسب التاريخ",
+    "sortNewest": "الأحدث أولًا",
+    "sortOldest": "الأقدم أولًا",
+    "moreOptions": "فلاتر أكثر",
+    "lessOptions": "فلاتر أقل",
+    "status": "حالة الجلسة",
+    "allStatuses": "كل الحالات",
+    "delayedOnly": "عرض الجلسات المتأخرة في البدء فقط",
+    "missingAttendanceOnly": "عرض الجلسات التي لا تحتوي أحداث حضور",
+    "practitionerId": "معرّف ملف المعالج",
+    "patientId": "معرّف ملف المريض",
+    "scheduledFrom": "موعد البداية من",
+    "scheduledTo": "موعد البداية إلى",
+    "idPlaceholder": "الصق معرّف الملف",
+    "sessionCode": "رمز الجلسة",
+    "sessionCodePlaceholder": "أدخل رمز الجلسة (SES-2026-000123)"
+  },
+  "quickActions": {
+    "heading": "فلاتر سريعة",
+    "delayedNow": "تأخر بدءها الآن",
+    "missingAttendance": "بدون حضور حتى الآن",
+    "startingSoon": "تبدأ خلال ساعة",
+    "clear": "مسح"
+  },
+  "badges": {
+    "delayed": "تأخر البدء"
+  },
+  "modes": {
+    "VIDEO": "فيديو",
+    "AUDIO": "صوت",
+    "CHAT": "دردشة"
+  },
+  "table": {
+    "headers": {
+      "status": "الحالة",
+      "scheduledStart": "موعد البداية",
+      "practitioner": "المعالج",
+      "patient": "المريض",
+      "mode": "نوع الجلسة",
+      "id": "رقم الجلسة",
+      "sessionCode": "رمز الجلسة"
+    },
+    "openRuntime": "افتح فحص التشغيل",
+    "ids": {
+      "practitioner": "معرّف المعالج: {id}",
+      "patient": "معرّف المريض: {id}"
+    },
+    "fallback": {
+      "none": "-",
+      "noName": "غير متاح"
+    }
+  },
+  "drawer": {
+    "title": "عرض سريع للجلسة",
+    "description": "رمز الجلسة: {code} ({id})",
+    "loading": "جارٍ تحميل تفاصيل الجلسة...",
+    "error": "تعذّر تحميل تفاصيل التشغيل أو الحضور لهذه الجلسة.",
+    "empty": "لا توجد بيانات متاحة لهذه الجلسة.",
+    "runtimeHeading": "ملخص التشغيل",
+    "attendanceHeading": "ملخص الحضور",
+    "noAttendance": "لا توجد أحداث حضور مسجلة لهذه الجلسة حتى الآن.",
+    "openFullRuntime": "افتح فحص التشغيل الكامل",
+    "fields": {
+      "status": "الحالة",
+      "scheduledStart": "موعد البداية",
+      "scheduledEnd": "موعد النهاية",
+      "patientJoined": "دخل المريض",
+      "practitionerJoined": "دخل المعالج",
+      "firstJoinedAt": "أول وقت دخول",
+      "lastLeftAt": "آخر وقت خروج"
+    },
+    "values": {
+      "yes": "نعم",
+      "no": "لا"
+    }
+  },
+  "states": {
+    "empty": {
+      "heading": "لا توجد جلسات",
+      "note": "لا توجد جلسات مطابقة للفلاتر الحالية."
+    },
+    "error": {
+      "heading": "تعذّر تحميل الجلسات",
+      "note": "حاول مرة أخرى بعد قليل.",
+      "retry": "إعادة المحاولة"
+    }
+  }
+}

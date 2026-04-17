@@ -1,0 +1,140 @@
+{
+  "nav": {
+    "home": "Home",
+    "specialties": "Specialties",
+    "practitioners": "Practitioners",
+    "articles": "Articles",
+    "courses": "Courses",
+    "about": "About",
+    "login": "Sign in",
+    "startJourney": "Get started",
+    "openMenu": "Open menu"
+  },
+  "hero": {
+    "badge": "Mental care that feels calmer and closer",
+    "headlinePart1": "Start with the",
+    "headlineHighlight": "next step",
+    "headlinePart2": "that fits how you want to begin care",
+    "subtext": "Start with guided matching, use a short initial check-in if you want more clarity, or explore verified practitioners directly. Each path is connected to real care steps you can continue right away.",
+    "ctaPrimary": "Start guided care",
+    "ctaSecondary": "Browse practitioners",
+    "panelTitle": "Choose the path that fits your situation",
+    "panelNote": "Some people want guided matching first. Others prefer to browse practitioners directly. This entry card keeps both paths clear.",
+    "sessionCta": "Create your patient account",
+    "trustBadge": "Private, secure, and protected",
+    "statPractitioners": "200+ practitioners",
+    "quickTitle": "Start from the path that feels closest to your need",
+    "quickMatching": "Create an account for matching",
+    "quickAssessment": "Create an account for initial check-ins",
+    "quickPractitioners": "Browse practitioners",
+    "quickSupport": "Sign in for support",
+    "quickCardLabel": "Guided entry",
+    "quickCardValue": "Matching, initial check-ins, discovery, or support"
+  },
+  "guidedEntry": {
+    "eyebrow": "A clearer way to start",
+    "title": "Choose the public entry path that fits you best",
+    "subtitle": "You do not need to figure out the whole product structure on your own. Start with the path that best matches how certain or uncertain you feel right now.",
+    "accountRequired": "Account required",
+    "matching": {
+      "title": "Start with guided matching",
+      "desc": "Use guided matching after creating your patient account if you want help narrowing down the right type of practitioner before browsing profiles.",
+      "cta": "Create a patient account"
+    },
+    "assessment": {
+      "title": "Understand your needs first",
+      "desc": "Start with a short initial check-in after creating your patient account if you want more clarity before choosing a practitioner or next care step.",
+      "cta": "Create a patient account"
+    },
+    "practitioners": {
+      "title": "Browse practitioners directly",
+      "desc": "Go straight to practitioner discovery if you already know you want to compare profiles, experience, and specialties.",
+      "cta": "Explore practitioners"
+    },
+    "support": {
+      "title": "Get help choosing",
+      "desc": "If you are unsure where to begin, patient support is the calmer route once you sign in to your patient account.",
+      "cta": "Sign in for support"
+    }
+  },
+  "howItWorks": {
+    "eyebrow": "A clear journey",
+    "title": "How the first care step becomes clearer",
+    "subtitle": "The public entry now points to real paths you can use today, then helps you move into booking and live sessions with less uncertainty.",
+    "stepLabel": "Step",
+    "step1Title": "Choose how you want to begin",
+    "step1Desc": "Start from matching, an initial check-in, specialties, or direct practitioner discovery depending on how much guidance you want.",
+    "step2Title": "Move into a clearer care path",
+    "step2Desc": "Review specialties or practitioner profiles with less guesswork and continue through the path that feels right for your situation.",
+    "step3Title": "Book and continue with confidence",
+    "step3Desc": "Once you are ready, booking, payment, and session access continue through calmer, clearer product flows."
+  },
+  "specialties": {
+    "eyebrow": "Start from the challenge or the kind of support",
+    "title": "Choose the care path closest to you",
+    "subtitle": "The specialties page helps you move quickly toward the area that best reflects your current need, then continue to the practitioners linked to it.",
+    "viewAll": "View all specialties",
+    "anxiety": "Anxiety",
+    "depression": "Depression",
+    "relationships": "Relationships",
+    "psychiatry": "Psychiatry"
+  },
+  "practitioners": {
+    "eyebrow": "Trusted specialists",
+    "title": "Explore real practitioner profiles with clear trust signals",
+    "subtitle": "These cards use the same live practitioner data as public discovery, so you can move from trust to booking steps without leaving the real product path.",
+    "viewAll": "Explore all practitioners",
+    "viewProfile": "View profile",
+    "reviewsCount": "{count} public reviews",
+    "experience": "{years} years experience",
+    "verified": "Verified",
+    "fallbackTitle": "Verified practitioner"
+  },
+  "articles": {
+    "eyebrow": "Read real public content",
+    "title": "Published content that supports trust and better choices",
+    "subtitle": "Articles come from the real public content layer, with clear publication context and direct paths back to practitioner discovery.",
+    "viewAll": "View all articles",
+    "viewPractitioners": "Browse practitioners",
+    "unavailableTitle": "Public articles are unavailable right now",
+    "unavailableNote": "You can continue with practitioner discovery for now while article content is temporarily unavailable.",
+    "emptyTitle": "Published articles are still limited right now",
+    "emptyNote": "You can still continue through specialties and practitioner discovery while this content expands."
+  },
+  "whyFayed": {
+    "eyebrow": "Why this experience feels more trustworthy",
+    "title": "A calmer public entry connected to real care steps",
+    "desc": "From guided entry to practitioner profiles and published content, this public flow is designed to reduce hesitation and keep your next step clear.",
+    "cta": "Explore specialties",
+    "secondaryCta": "Browse practitioners",
+    "privacyTitle": "Privacy first",
+    "privacyDesc": "A flow that respects privacy and keeps information and steps clear at every stage.",
+    "certifiedTitle": "Verified practitioners",
+    "certifiedDesc": "Practitioners shown on the platform move through a clear review and verification path.",
+    "flexibleTitle": "Flexible availability",
+    "flexibleDesc": "Available times are surfaced clearly so choosing the right appointment feels easier.",
+    "arabicTitle": "Designed for Arabic users",
+    "arabicDesc": "Language and flows that feel closer to how Arabic-speaking users search, decide, and move through care.",
+    "signals": {
+      "verifiedProfiles": "Verified practitioner profiles with real availability and specialization context.",
+      "publishedContent": "Published public articles with trust metadata, not decorative snippets.",
+      "secureJourney": "A clear path from exploration to booking and secure session flow."
+    }
+  },
+  "footer": {
+    "tagline": "An Arabic mental care platform with clearer choices, calmer flows, and an easier path through specialties and practitioners.",
+    "copyright": "Fayed Mental Wellness. All rights reserved.",
+    "sectionPlatform": "Fayed",
+    "sectionContent": "Content",
+    "sectionSupport": "Support",
+    "linkHome": "Home",
+    "linkSpecialties": "Specialties",
+    "linkPractitioners": "Practitioners",
+    "linkArticles": "Articles",
+    "linkCourses": "Courses",
+    "linkAbout": "About",
+    "linkPrivacy": "Privacy Policy",
+    "linkTerms": "Terms of Service",
+    "linkContact": "Contact us"
+  }
+}

@@ -1,0 +1,590 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { useTranslations } from "next-intl";
+import {
+  usePractitionerProfile,
+  useRemovePractitionerAvatar,
+  useUpdatePractitionerAvatar,
+  useUpdatePractitionerProfile,
+} from "../hooks/use-practitioners";
+import type {
+  UpdatePractitionerProfileRequest,
+  PractitionerType,
+  PractitionerGender,
+  PractitionerPayoutMethodType,
+} from "../types/practitioners.types";
+import Input from "@/components/form/input/InputField";
+import Label from "@/components/form/Label";
+import { FormSkeleton } from "@/components/shared/LoadingStates";
+
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
+
+type ProfileFormData = {
+  displayName?: string;
+  professionalTitle?: string;
+  bio?: string;
+  yearsOfExperience?: string;
+  practitionerType?: PractitionerType | "";
+  practitionerGender?: PractitionerGender | "";
+  countryCode?: string;
+  timezone?: string;
+  payoutMethodType?: PractitionerPayoutMethodType | "";
+  payoutAccountHolderName?: string;
+  payoutBankName?: string;
+  payoutBankAccountNumber?: string;
+  payoutIban?: string;
+  payoutWalletProvider?: string;
+  payoutWalletIdentifier?: string;
+  payoutOtherDetails?: string;
+};
+
+// ---------------------------------------------------------------------------
+// Select classes — see DEBT note in PatientProfileForm for explanation
+// ---------------------------------------------------------------------------
+
+const selectClasses =
+  "h-11 w-full appearance-none rounded-xl border border-border-light bg-surface-secondary px-4 py-2.5 text-sm text-text-primary shadow-theme-xs focus:border-border-focus focus:outline-hidden focus:ring-3 focus:ring-primary/10 dark:border-border-light dark:bg-surface-secondary dark:text-text-primary";
+
+const textareaClasses =
+  "w-full min-h-[120px] rounded-xl border border-border-light bg-surface-secondary px-4 py-3 text-sm text-text-primary shadow-theme-xs focus:border-border-focus focus:outline-hidden focus:ring-3 focus:ring-primary/10 dark:border-border-light dark:bg-surface-secondary dark:text-text-primary resize-y";
+
+const PRACTITIONER_TYPES: PractitionerType[] = [
+  "PSYCHOLOGIST",
+  "PSYCHIATRIST",
+  "NUTRITIONIST",
+  "WEIGHT_LOSS_SPECIALIST",
+  "COUNSELOR",
+  "OTHER",
+];
+const PRACTITIONER_GENDERS: PractitionerGender[] = ["MALE", "FEMALE"];
+const PAYOUT_METHOD_TYPES: PractitionerPayoutMethodType[] = [
+  "BANK_ACCOUNT",
+  "IBAN",
+  "WALLET",
+  "OTHER",
+];
+
+// ---------------------------------------------------------------------------
+// Component
+// ---------------------------------------------------------------------------
+
+type PractitionerProfileFormProps = {
+  isEditable?: boolean;
+};
+
+export default function PractitionerProfileForm({
+  isEditable = true,
+}: PractitionerProfileFormProps) {
+  const t = useTranslations("practitioner-area");
+  const [saveSuccess, setSaveSuccess] = useState(false);
+  const [avatarUrlInput, setAvatarUrlInput] = useState<string | null>(null);
+  const [avatarError, setAvatarError] = useState<string | null>(null);
+  const [avatarSuccess, setAvatarSuccess] = useState<string | null>(null);
+
+  const { data, isLoading, isError, refetch } = usePractitionerProfile();
+  const { mutate, isPending, isError: isMutateError } = useUpdatePractitionerProfile();
+  const updateAvatar = useUpdatePractitionerAvatar();
+  const removeAvatar = useRemovePractitionerAvatar();
+
+  const profile = data?.profile;
+
+  const profileSchema = useMemo(
+    () =>
+      z.object({
+        displayName: z.string().max(80, { message: t("profile.validation.displayNameMax") }).optional(),
+        professionalTitle: z.string().optional(),
+        bio: z.string().optional(),
+        yearsOfExperience: z
+          .string()
+          .optional()
+          .refine(
+            (v) => !v || (!isNaN(Number(v)) && Number(v) >= 0),
+            { message: t("profile.validation.yearsMin") }
+          )
+          .refine(
+            (v) => !v || Number(v) <= 60,
+            { message: t("profile.validation.yearsMax") }
+          ),
+        practitionerType: z.string().optional(),
+        practitionerGender: z.string().optional(),
+        countryCode: z.string().optional(),
+        timezone: z.string().optional(),
+        payoutMethodType: z.string().optional(),
+        payoutAccountHolderName: z.string().optional(),
+        payoutBankName: z.string().optional(),
+        payoutBankAccountNumber: z.string().optional(),
+        payoutIban: z.string().optional(),
+        payoutWalletProvider: z.string().optional(),
+        payoutWalletIdentifier: z.string().optional(),
+        payoutOtherDetails: z.string().optional(),
+      }),
+    [t]
+  );
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors, isDirty },
+  } = useForm<ProfileFormData>({
+    resolver: zodResolver(profileSchema),
+    defaultValues: {
+      displayName: "",
+      professionalTitle: "",
+      bio: "",
+      yearsOfExperience: "",
+      practitionerType: "",
+      practitionerGender: "",
+      countryCode: "",
+      timezone: "",
+      payoutMethodType: "",
+      payoutAccountHolderName: "",
+      payoutBankName: "",
+      payoutBankAccountNumber: "",
+      payoutIban: "",
+      payoutWalletProvider: "",
+      payoutWalletIdentifier: "",
+      payoutOtherDetails: "",
+    },
+  });
+
+  useEffect(() => {
+    if (profile) {
+      reset({
+        displayName: profile.displayName ?? "",
+        professionalTitle: profile.professionalTitle ?? "",
+        bio: profile.bio ?? "",
+        yearsOfExperience: profile.yearsOfExperience != null ? String(profile.yearsOfExperience) : "",
+        practitionerType: profile.practitionerType ?? "",
+        practitionerGender: profile.practitionerGender ?? "",
+        countryCode: profile.countryCode ?? "",
+        timezone: profile.timezone ?? "",
+        payoutMethodType: profile.payoutDestination?.methodType ?? "",
+        payoutAccountHolderName: profile.payoutDestination?.accountHolderName ?? "",
+        payoutBankName: profile.payoutDestination?.bankName ?? "",
+        payoutBankAccountNumber: profile.payoutDestination?.bankAccountNumber ?? "",
+        payoutIban: profile.payoutDestination?.iban ?? "",
+        payoutWalletProvider: profile.payoutDestination?.walletProvider ?? "",
+        payoutWalletIdentifier: profile.payoutDestination?.walletIdentifier ?? "",
+        payoutOtherDetails: profile.payoutDestination?.otherDetails ?? "",
+      });
+    }
+  }, [profile, reset]);
+
+  const onSubmit = (formData: ProfileFormData) => {
+    setSaveSuccess(false);
+
+    const payload: UpdatePractitionerProfileRequest = {};
+
+    if (formData.displayName !== undefined) {
+      payload.displayName = formData.displayName || undefined;
+    }
+    if (formData.professionalTitle !== undefined) {
+      payload.professionalTitle = formData.professionalTitle || null;
+    }
+    if (formData.bio !== undefined) {
+      payload.bio = formData.bio || null;
+    }
+    if (formData.yearsOfExperience !== undefined && formData.yearsOfExperience !== "") {
+      payload.yearsOfExperience = Number(formData.yearsOfExperience);
+    } else if (formData.yearsOfExperience === "") {
+      payload.yearsOfExperience = null;
+    }
+    if (formData.practitionerType) {
+      payload.practitionerType = formData.practitionerType as PractitionerType;
+    }
+    if (formData.practitionerGender) {
+      payload.practitionerGender = formData.practitionerGender as PractitionerGender;
+    }
+    if (formData.countryCode !== undefined) {
+      payload.countryCode = formData.countryCode || null;
+    }
+    if (formData.timezone !== undefined) {
+      payload.timezone = formData.timezone || undefined;
+    }
+    if (formData.payoutMethodType) {
+      payload.payoutDestination = {
+        methodType: formData.payoutMethodType as PractitionerPayoutMethodType,
+        accountHolderName: formData.payoutAccountHolderName?.trim() || undefined,
+        bankName: formData.payoutBankName?.trim() || undefined,
+        bankAccountNumber: formData.payoutBankAccountNumber?.trim() || undefined,
+        iban: formData.payoutIban?.trim() || undefined,
+        walletProvider: formData.payoutWalletProvider?.trim() || undefined,
+        walletIdentifier: formData.payoutWalletIdentifier?.trim() || undefined,
+        otherDetails: formData.payoutOtherDetails?.trim() || undefined,
+      };
+    }
+
+    mutate(payload, {
+      onSuccess: () => {
+        setSaveSuccess(true);
+        reset(formData);
+      },
+    });
+  };
+
+  const handleAvatarUpdate = async () => {
+    const trimmed = (avatarUrlInput ?? profile?.avatarUrl ?? "").trim();
+    setAvatarError(null);
+    setAvatarSuccess(null);
+
+    if (!trimmed) {
+      setAvatarError(t("profile.avatar.validation.required"));
+      return;
+    }
+
+    try {
+      // URL constructor is enough for client-side guard before API call.
+      new URL(trimmed);
+    } catch {
+      setAvatarError(t("profile.avatar.validation.invalidUrl"));
+      return;
+    }
+
+    try {
+      await updateAvatar.mutateAsync({ avatarUrl: trimmed });
+      setAvatarSuccess(t("profile.avatar.feedback.updateSuccess"));
+    } catch {
+      setAvatarError(t("profile.avatar.feedback.updateError"));
+    }
+  };
+
+  const handleAvatarRemove = async () => {
+    setAvatarError(null);
+    setAvatarSuccess(null);
+    try {
+      await removeAvatar.mutateAsync();
+      setAvatarUrlInput("");
+      setAvatarSuccess(t("profile.avatar.feedback.removeSuccess"));
+    } catch {
+      setAvatarError(t("profile.avatar.feedback.removeError"));
+    }
+  };
+
+  // -------------------------------------------------------------------------
+  // Loading state
+  // -------------------------------------------------------------------------
+
+  if (isLoading) {
+    return (
+      <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+        <FormSkeleton />
+      </div>
+    );
+  }
+
+  // -------------------------------------------------------------------------
+  // Fetch error
+  // -------------------------------------------------------------------------
+
+  if (isError || !profile) {
+    return (
+      <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+        <div className="flex flex-col items-center justify-center py-12 text-center">
+          <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-red-50 dark:bg-red-900/20">
+            <svg className="h-7 w-7 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M12 3a9 9 0 100 18A9 9 0 0012 3z" />
+            </svg>
+          </div>
+          <p className="mb-4 text-sm font-medium text-gray-800 dark:text-white">
+            {t("profile.feedback.loadError")}
+          </p>
+          <button
+            type="button"
+            onClick={() => refetch()}
+            className="inline-flex items-center justify-center rounded-xl border border-gray-200 bg-white px-5 py-2 text-sm font-medium text-gray-700 shadow-theme-xs transition hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+          >
+            {t("profile.feedback.retry")}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // -------------------------------------------------------------------------
+  // Form
+  // -------------------------------------------------------------------------
+
+  return (
+    <form onSubmit={handleSubmit(onSubmit)} noValidate>
+      <fieldset disabled={!isEditable} className="space-y-6">
+        {!isEditable ? (
+          <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-700/30 dark:bg-amber-900/10 dark:text-amber-300">
+            {t("application.statusMessage.UNDER_REVIEW")}
+          </div>
+        ) : null}
+
+        {/* Professional Information */}
+        <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+          <h2 className="mb-5 text-base font-semibold text-gray-800 dark:text-white">
+            {t("profile.sections.professional")}
+          </h2>
+
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+            {/* Display Name */}
+            <div className="sm:col-span-2">
+              <Label htmlFor="displayName">{t("profile.fields.displayName.label")}</Label>
+              <Input
+                id="displayName"
+                type="text"
+                placeholder={t("profile.fields.displayName.placeholder")}
+                error={!!errors.displayName}
+                {...register("displayName")}
+              />
+              {errors.displayName && (
+                <p className="mt-1.5 text-xs text-error-500">{errors.displayName.message}</p>
+              )}
+            </div>
+
+            {/* Professional Title */}
+            <div>
+              <Label htmlFor="professionalTitle">{t("profile.fields.professionalTitle.label")}</Label>
+              <Input
+                id="professionalTitle"
+                type="text"
+                placeholder={t("profile.fields.professionalTitle.placeholder")}
+                error={!!errors.professionalTitle}
+                {...register("professionalTitle")}
+              />
+            </div>
+
+            {/* Practitioner Type */}
+            <div>
+              <Label htmlFor="practitionerType">{t("profile.fields.practitionerType.label")}</Label>
+              <select id="practitionerType" className={selectClasses} {...register("practitionerType")}>
+                <option value="">{t("profile.fields.practitionerType.placeholder")}</option>
+                {PRACTITIONER_TYPES.map((type) => (
+                  <option key={type} value={type}>
+                    {t(`profile.practitionerType.${type}`)}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <Label htmlFor="practitionerGender">Gender</Label>
+              <select id="practitionerGender" className={selectClasses} {...register("practitionerGender")}>
+                <option value="">Select gender</option>
+                {PRACTITIONER_GENDERS.map((gender) => (
+                  <option key={gender} value={gender}>
+                    {gender}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Bio */}
+            <div className="sm:col-span-2">
+              <Label htmlFor="bio">{t("profile.fields.bio.label")}</Label>
+              <textarea
+                id="bio"
+                placeholder={t("profile.fields.bio.placeholder")}
+                className={textareaClasses}
+                {...register("bio")}
+              />
+            </div>
+
+            {/* Years of Experience */}
+            <div>
+              <Label htmlFor="yearsOfExperience">{t("profile.fields.yearsOfExperience.label")}</Label>
+              <Input
+                id="yearsOfExperience"
+                type="number"
+                placeholder={t("profile.fields.yearsOfExperience.placeholder")}
+                error={!!errors.yearsOfExperience}
+                {...register("yearsOfExperience")}
+              />
+              {errors.yearsOfExperience && (
+                <p className="mt-1.5 text-xs text-error-500">{errors.yearsOfExperience.message}</p>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+          <h2 className="mb-5 text-base font-semibold text-gray-800 dark:text-white">
+            {t("profile.avatar.heading")}
+          </h2>
+
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-[auto,1fr] sm:items-start">
+            <div className="mx-auto h-24 w-24 overflow-hidden rounded-full border border-border-light bg-surface-secondary sm:mx-0">
+              {profile.avatarUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={profile.avatarUrl}
+                  alt={t("profile.avatar.alt")}
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center text-xs text-text-muted">
+                  {t("profile.avatar.empty")}
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <Label htmlFor="avatarUrl">{t("profile.avatar.fieldLabel")}</Label>
+              <Input
+                id="avatarUrl"
+                type="url"
+                placeholder={t("profile.avatar.placeholder")}
+                value={avatarUrlInput ?? profile.avatarUrl ?? ""}
+                onChange={(event) => setAvatarUrlInput(event.target.value)}
+                error={!!avatarError}
+              />
+                <p className="mt-1.5 text-xs text-text-muted">{t("profile.avatar.hint")}</p>
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={handleAvatarUpdate}
+                  disabled={updateAvatar.isPending}
+                  className="inline-flex items-center justify-center rounded-xl bg-primary px-4 py-2 text-sm font-medium text-white transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {updateAvatar.isPending
+                    ? t("profile.avatar.actions.saving")
+                    : t("profile.avatar.actions.save")}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleAvatarRemove}
+                  disabled={removeAvatar.isPending || !profile.avatarUrl}
+                  className="inline-flex items-center justify-center rounded-xl border border-border-light bg-white px-4 py-2 text-sm font-medium text-text-secondary transition hover:border-error-400 hover:text-error-600 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-gray-800"
+                >
+                  {removeAvatar.isPending
+                    ? t("profile.avatar.actions.removing")
+                    : t("profile.avatar.actions.remove")}
+                </button>
+              </div>
+
+              {avatarSuccess ? (
+                <p className="text-sm font-medium text-success-600 dark:text-success-400">
+                  {avatarSuccess}
+                </p>
+              ) : null}
+              {avatarError ? <p className="text-sm font-medium text-error-500">{avatarError}</p> : null}
+            </div>
+          </div>
+        </div>
+
+        {/* Personal Details */}
+        <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+          <h2 className="mb-5 text-base font-semibold text-gray-800 dark:text-white">
+            {t("profile.sections.personal")}
+          </h2>
+
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+            {/* Country Code */}
+            <div>
+              <Label htmlFor="countryCode">{t("profile.fields.countryCode.label")}</Label>
+              <Input
+                id="countryCode"
+                type="text"
+                placeholder={t("profile.fields.countryCode.placeholder")}
+                error={!!errors.countryCode}
+                {...register("countryCode")}
+              />
+            </div>
+
+            {/* Timezone */}
+            <div>
+              <Label htmlFor="timezone">{t("profile.fields.timezone.label")}</Label>
+              <Input
+                id="timezone"
+                type="text"
+                placeholder={t("profile.fields.timezone.placeholder")}
+                error={!!errors.timezone}
+                {...register("timezone")}
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+          <h2 className="mb-5 text-base font-semibold text-gray-800 dark:text-white">
+            Payout destination
+          </h2>
+
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+            <div className="sm:col-span-2">
+              <Label htmlFor="payoutMethodType">Payout method</Label>
+              <select id="payoutMethodType" className={selectClasses} {...register("payoutMethodType")}>
+                <option value="">Select method</option>
+                {PAYOUT_METHOD_TYPES.map((method) => (
+                  <option key={method} value={method}>
+                    {method}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <Label htmlFor="payoutAccountHolderName">Account holder name</Label>
+              <Input id="payoutAccountHolderName" type="text" {...register("payoutAccountHolderName")} />
+            </div>
+            <div>
+              <Label htmlFor="payoutBankName">Bank name</Label>
+              <Input id="payoutBankName" type="text" {...register("payoutBankName")} />
+            </div>
+            <div>
+              <Label htmlFor="payoutBankAccountNumber">Bank account number</Label>
+              <Input id="payoutBankAccountNumber" type="text" {...register("payoutBankAccountNumber")} />
+            </div>
+            <div>
+              <Label htmlFor="payoutIban">IBAN</Label>
+              <Input id="payoutIban" type="text" {...register("payoutIban")} />
+            </div>
+            <div>
+              <Label htmlFor="payoutWalletProvider">Wallet provider</Label>
+              <Input id="payoutWalletProvider" type="text" {...register("payoutWalletProvider")} />
+            </div>
+            <div>
+              <Label htmlFor="payoutWalletIdentifier">Wallet identifier</Label>
+              <Input id="payoutWalletIdentifier" type="text" {...register("payoutWalletIdentifier")} />
+            </div>
+            <div className="sm:col-span-2">
+              <Label htmlFor="payoutOtherDetails">Other payout details</Label>
+              <textarea id="payoutOtherDetails" className={textareaClasses} {...register("payoutOtherDetails")} />
+            </div>
+          </div>
+        </div>
+
+        {/* Feedback + Submit */}
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-h-[24px]">
+            {saveSuccess && (
+              <p className="text-sm font-medium text-success-600 dark:text-success-400">
+                {t("profile.feedback.success")}
+              </p>
+            )}
+            {isMutateError && (
+              <p className="text-sm font-medium text-error-500">
+                {t("profile.feedback.error")}
+              </p>
+            )}
+          </div>
+
+          <button
+            type="submit"
+            disabled={isPending || !isDirty}
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-6 py-2.5 text-sm font-medium text-white shadow-theme-xs transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {isPending && (
+              <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+            )}
+            {isPending ? t("profile.actions.saving") : t("profile.actions.save")}
+          </button>
+        </div>
+
+      </fieldset>
+    </form>
+  );
+}

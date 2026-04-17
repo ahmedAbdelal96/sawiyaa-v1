@@ -1,0 +1,137 @@
+{
+  "page": {
+    "breadcrumb": "Practitioners",
+    "backToListing": "Back to listing",
+    "notFound": "Practitioner not found",
+    "notFoundDesc": "We couldn't find this profile.",
+    "backHome": "Back to home"
+  },
+  "header": {
+    "verified": "Verified",
+    "summary": "Review the practitioner's experience, specialties, and availability before you book.",
+    "location": "Location",
+    "specialtyFocus": "Specialty focus"
+  },
+  "stats": {
+    "sessions": "sessions completed",
+    "reviews": "reviews",
+    "experience": "yrs experience"
+  },
+  "sections": {
+    "about": "About",
+    "approach": "Therapeutic Approach",
+    "specialties": "Areas of Specialty",
+    "languages": "Session Languages",
+    "credentials": "Qualifications & Credentials",
+    "related": "Similar Practitioners"
+  },
+  "countries": {
+    "sa": "Saudi Arabia",
+    "ae": "United Arab Emirates",
+    "kw": "Kuwait",
+    "eg": "Egypt",
+    "jo": "Jordan"
+  },
+  "cta": {
+    "sessionDuration": "50-minute sessions",
+    "sessionOnline": "Online session"
+  },
+  "badges": {
+    "verified": "Verified by Fayed",
+    "credentials": "{approved} approved credentials out of {total}",
+    "secure": "Secure & encrypted sessions"
+  },
+  "credential": {
+    "present": "Present",
+    "total": "Total credentials",
+    "approved": "Approved credentials"
+  },
+  "presence": {
+    "online": "Currently online",
+    "away": "Currently away",
+    "busy": "Currently busy",
+    "offline": "Currently offline",
+    "unavailable": "Live availability unavailable",
+    "instantEnabled": "Instant booking is enabled",
+    "instantDisabled": "Instant booking is not enabled yet"
+  },
+  "availability": {
+    "heading": "Available Times",
+    "prevWeek": "Previous week",
+    "nextWeek": "Next week",
+    "noSlots": "No available slots this week.",
+    "loading": "Checking availability...",
+    "loadError": "Could not load availability.",
+    "retry": "Try again",
+    "timezoneNote": "Times shown in your local timezone.",
+    "browseNextWeek": "Show next week",
+    "browseOtherPractitioners": "Choose another practitioner"
+  },
+  "booking": {
+    "panelTitle": "Book a session",
+    "panelSubtitle": "Choose the time that suits you and continue when you're ready.",
+    "slotHint": "Sign in as a patient to book a slot.",
+    "backToSlots": "Back to slots",
+    "selectedSlot": "Selected slot",
+    "selectDuration": "Session duration",
+    "duration30": "30 min",
+    "duration60": "60 min",
+    "signInNote": "Sign in to your patient account to book this slot.",
+    "signInToCta": "Sign in to book",
+    "nonPatientNote": "Booking is available for patient accounts only.",
+    "confirming": "Booking...",
+    "confirmCta": "Confirm booking",
+    "createError": "Something went wrong. Please try again.",
+    "createErrorConflict": "This slot is no longer available. Please choose another.",
+    "successHeading": "Session request submitted",
+    "successStatus": "Status: Awaiting payment",
+    "successNote": "Your session is reserved for 15 minutes. Complete payment in your sessions page to confirm.",
+    "payNow": "Complete payment",
+    "viewSessions": "Go to my sessions",
+    "bookAnother": "Book another slot",
+    "jumpToAvailability": "View available times"
+  },
+  "related": {
+    "viewAll": "View all practitioners"
+  },
+  "trust": {
+    "eyebrow": "Trust and context",
+    "title": "Public trust signals grounded in real content",
+    "description": "This section shows currently available public trust signals for this practitioner, along with related reading that can help you choose your next step with more confidence.",
+    "summary": {
+      "averageRating": "Average public rating",
+      "publicReviews": "Published public reviews",
+      "freshness": "Public feedback freshness",
+      "noRating": "Not enough yet"
+    },
+    "freshness": {
+      "NONE": "No public feedback yet",
+      "RECENT": "Recent public feedback",
+      "STALE": "Public feedback is older"
+    },
+    "rationale": {
+      "NO_PUBLIC_REVIEWS": "No published public reviews are visible yet.",
+      "LOW_PUBLIC_REVIEW_VOLUME": "A limited number of public reviews are visible.",
+      "ESTABLISHED_PUBLIC_REVIEW_VOLUME": "This profile has an established base of public reviews.",
+      "RECENT_PUBLIC_FEEDBACK": "Public feedback has been updated recently.",
+      "PUBLIC_FEEDBACK_NOT_RECENT": "Public feedback exists, but it is not very recent.",
+      "NO_PUBLIC_FEEDBACK_TIMELINE": "A public feedback timeline is not available yet."
+    },
+    "reviews": {
+      "title": "Published public review snippets",
+      "rating": "{rating} out of 5",
+      "noText": "A public rating is available, but this review does not include a public text snippet."
+    },
+    "content": {
+      "title": "Related public reading",
+      "general": "General guidance",
+      "fallbackExcerpt": "Open this article to read the full published content and trust metadata."
+    },
+    "nextSteps": {
+      "title": "If this feels like a fit, continue with a clear next step",
+      "note": "You can start guided matching for a more directed path, or keep reading published articles before booking.",
+      "matching": "Start guided matching",
+      "articles": "Read more articles"
+    }
+  }
+}

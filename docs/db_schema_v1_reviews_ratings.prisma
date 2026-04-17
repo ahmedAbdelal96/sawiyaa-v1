@@ -1,0 +1,112 @@
+// DB Schema v1 — Reviews / Ratings
+// Notes:
+// - Reviews are session-linked
+// - One review per session in v1
+// - Moderation is separate
+// - Summary table is derived, not source of truth
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ReviewStatus {
+  DRAFT
+  SUBMITTED
+  PENDING_MODERATION
+  PUBLISHED
+  HIDDEN
+  REJECTED
+  ARCHIVED
+}
+
+enum ReviewModerationAction {
+  APPROVED
+  HIDDEN
+  REJECTED
+  RESTORED
+  ARCHIVED
+}
+
+// NOTE:
+// Expected existing models:
+// model Session
+// model PatientProfile
+// model PractitionerProfile
+
+model SessionReview {
+  id                String                  @id @default(uuid()) @db.Uuid
+  sessionId         String                  @unique @db.Uuid
+  patientId         String                  @db.Uuid
+  practitionerId    String                  @db.Uuid
+
+  ratingValue       Int
+  reviewTitle       String?                 @db.VarChar(191)
+  reviewText        String?                 @db.VarChar(4000)
+
+  reviewStatus      ReviewStatus            @default(DRAFT)
+  isAnonymous       Boolean                 @default(false)
+  isFeatured        Boolean                 @default(false)
+
+  submittedAt       DateTime?
+  publishedAt       DateTime?
+  hiddenAt          DateTime?
+  archivedAt        DateTime?
+
+  createdAt         DateTime                @default(now())
+  updatedAt         DateTime                @updatedAt
+
+  session           Session                 @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  patient           PatientProfile          @relation(fields: [patientId], references: [id], onDelete: Restrict)
+  practitioner      PractitionerProfile     @relation(fields: [practitionerId], references: [id], onDelete: Restrict)
+  moderations       ReviewModeration[]
+
+  @@index([patientId, submittedAt])
+  @@index([practitionerId, reviewStatus, submittedAt])
+  @@index([ratingValue, reviewStatus])
+  @@index([publishedAt])
+  @@index([hiddenAt])
+}
+
+model ReviewModeration {
+  id                String                  @id @default(uuid()) @db.Uuid
+  sessionReviewId   String                  @db.Uuid
+  reviewerUserId    String?                 @db.Uuid
+  moderationAction  ReviewModerationAction
+  moderationNote    String?                 @db.VarChar(1000)
+  internalReason    String?                 @db.VarChar(1000)
+  createdAt         DateTime                @default(now())
+
+  sessionReview     SessionReview           @relation(fields: [sessionReviewId], references: [id], onDelete: Cascade)
+
+  @@index([sessionReviewId, createdAt])
+  @@index([reviewerUserId, createdAt])
+  @@index([moderationAction, createdAt])
+}
+
+model PractitionerRatingSummary {
+  id                    String              @id @default(uuid()) @db.Uuid
+  practitionerId        String              @unique @db.Uuid
+
+  totalReviews          Int                 @default(0)
+  publishedReviewsCount Int                 @default(0)
+  averageRating         Decimal             @default(0) @db.Decimal(4, 2)
+
+  rating1Count          Int                 @default(0)
+  rating2Count          Int                 @default(0)
+  rating3Count          Int                 @default(0)
+  rating4Count          Int                 @default(0)
+  rating5Count          Int                 @default(0)
+
+  lastReviewAt          DateTime?
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+
+  practitioner          PractitionerProfile @relation(fields: [practitionerId], references: [id], onDelete: Cascade)
+
+  @@index([averageRating, publishedReviewsCount])
+}

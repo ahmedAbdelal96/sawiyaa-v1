@@ -1,0 +1,547 @@
+{
+  "placeholder": {
+    "eyebrow": "Coming soon",
+    "backToDashboard": "Back to Dashboard",
+    "sessions": {
+      "title": "Sessions",
+      "description": "Your session calendar, booking history, and appointment management will be available here.",
+      "meta": {
+        "title": "Sessions — Practitioner",
+        "description": "Manage your practitioner sessions and appointments."
+      }
+    },
+    "patients": {
+      "title": "Patients",
+      "description": "Your assigned patient roster and care coordination tools will be available here.",
+      "meta": {
+        "title": "Patients — Practitioner",
+        "description": "View and manage your patient assignments."
+      }
+    },
+    "reviews": {
+      "title": "Reviews",
+      "description": "Patient feedback, quality signals, and reputation-related summaries will be available here.",
+      "meta": {
+        "title": "Reviews — Practitioner",
+        "description": "View feedback and reviews from your patients."
+      }
+    },
+    "articles": {
+      "title": "Articles",
+      "description": "Educational resources, practitioner guidance, and curated content will be available here.",
+      "meta": {
+        "title": "Articles — Practitioner",
+        "description": "Explore articles and resources for practitioners."
+      }
+    },
+    "settings": {
+      "title": "Settings",
+      "description": "Account preferences, availability setup, and notification controls will be available here.",
+      "meta": {
+        "title": "Settings — Practitioner",
+        "description": "Manage your practitioner account settings."
+      }
+    }
+  },
+  "dashboard": {
+    "meta": {
+      "title": "Dashboard — Practitioner",
+      "description": "Your practitioner overview, application status, and quick navigation."
+    },
+    "page": {
+      "title": "Dashboard",
+      "subtitle": "See what needs your attention now and keep your workspace ready."
+    },
+    "greeting": {
+      "withName": "Welcome back, {name}",
+      "generic": "Welcome back"
+    },
+    "status": {
+      "heading": "Profile status",
+      "complete": "Profile complete",
+      "incomplete": "Profile incomplete",
+      "canSubmit": "Ready to apply",
+      "cannotSubmit": "Not ready to apply",
+      "completeNow": "Complete your profile"
+    },
+    "applicationStatus": {
+      "heading": "Application",
+      "noApplication": "No application submitted yet",
+      "getStarted": "Start your application",
+      "DRAFT": "Draft",
+      "SUBMITTED": "Submitted",
+      "UNDER_REVIEW": "Under review",
+      "APPROVED": "Approved",
+      "REJECTED": "Rejected",
+      "CHANGES_REQUESTED": "Changes requested",
+      "ARCHIVED": "Archived"
+    },
+    "quickLinks": {
+      "heading": "Quick access",
+      "profile": {
+        "title": "Profile",
+        "description": "Update your professional information and bio."
+      },
+      "specialties": {
+        "title": "Specialties",
+        "description": "Manage the specialties linked to your profile."
+      },
+      "credentials": {
+        "title": "Credentials",
+        "description": "Upload credential references and track their review status."
+      },
+      "application": {
+        "title": "Application",
+        "description": "Check your application status and submit when ready."
+      }
+    },
+    "workspace": {
+      "requests": {
+        "heading": "Pending requests",
+        "emptyNote": "No pending instant booking requests right now.",
+        "errorNote": "Could not load pending requests."
+      },
+      "sessions": {
+        "heading": "Upcoming sessions",
+        "viewAll": "View all sessions",
+        "emptyHeading": "No upcoming sessions",
+        "emptyNote": "Confirmed and upcoming sessions with patients will appear here.",
+        "notes": {
+          "CONFIRMED": "Scheduled and waiting for the join window to open.",
+          "UPCOMING": "Coming up soon. Review the session details if needed.",
+          "READY_TO_JOIN": "You can open the session room now.",
+          "IN_PROGRESS": "This session is already in progress.",
+          "PENDING_PAYMENT": "The session is waiting for patient payment.",
+          "PENDING_PRACTITIONER_RESPONSE": "This session still needs your response."
+        }
+      },
+      "links": {
+        "heading": "Quick access",
+        "primaryHeading": "Operational now",
+        "primaryNote": "These are the routes you are most likely to use during live work.",
+        "financeHeading": "Financial visibility",
+        "secondaryHeading": "Keep your workspace ready",
+        "sessions": "Sessions",
+        "availability": "Availability",
+        "support": "Support",
+        "careChat": "Care chat",
+        "wallet": "Wallet",
+        "walletNote": "Review your current balance and top-level finance summary.",
+        "ledger": "Ledger",
+        "ledgerNote": "Inspect recent financial entries without leaving the practitioner area.",
+        "settlements": "Settlements",
+        "settlementsNote": "Check settlement batches and their current visibility states.",
+        "profile": "Profile",
+        "careChatNote": "Review approved and pending care-chat requests without switching to a general chat flow.",
+        "profileNote": "Keep your profile accurate and patient-ready.",
+        "application": "Application",
+        "applicationNote": "Track your approval state and readiness.",
+        "credentials": "Credentials",
+        "credentialsNote": "Add credential references here and track whether they are pending, approved, rejected, or expired.",
+        "specialties": "Specialties",
+        "specialtiesNote": "Manage the specialties linked to your profile and keep one marked as primary.",
+        "limitedBadge": "Limited"
+      }
+    },
+    "runtime": {
+      "attention": {
+        "eyebrow": "Attention now",
+        "pendingRequests": {
+          "heading": "{count, plural, one {# booking request is waiting} other {# booking requests are waiting}}",
+          "note": "Respond quickly so patients do not lose their booking window.",
+          "cta": "Review requests"
+        },
+        "readySessions": {
+          "heading": "{count, plural, one {# session can be opened now} other {# sessions can be opened now}}",
+          "note": "Joinable sessions should stay within easy reach while they are live.",
+          "cta": "Go to sessions"
+        },
+        "pendingResponses": {
+          "heading": "{count, plural, one {# session still needs your response} other {# sessions still need your response}}",
+          "note": "Check the session details to confirm what should happen next.",
+          "cta": "Review sessions"
+        },
+        "clear": {
+          "heading": "No urgent runtime action right now",
+          "note": "Your immediate queue looks clear. Keep your availability and presence ready for new work.",
+          "cta": "Review availability"
+        }
+      },
+      "readiness": {
+        "heading": "Runtime readiness",
+        "onlineInstant": "You are online and open for instant booking right now.",
+        "online": "You are online. Review instant booking if you want patients to book you immediately.",
+        "away": "You are marked away, so check your status before upcoming work starts.",
+        "busy": "You are marked busy. Switch back when you are ready to take live work.",
+        "offline": "You are currently offline. Update your presence before opening instant availability.",
+        "metrics": {
+          "todaySessions": "Visible active sessions",
+          "joinableNow": "Joinable now",
+          "waitingOnPayment": "Waiting on payment"
+        }
+      }
+    },
+    "feedback": {
+      "loadError": "Could not load your profile. Please try again.",
+      "retry": "Try again"
+    }
+  },
+  "profile": {
+    "meta": {
+      "title": "Profile — Practitioner",
+      "description": "Manage your professional profile and personal information."
+    },
+    "page": {
+      "title": "Professional Profile",
+      "subtitle": "Keep your information accurate and up to date."
+    },
+    "sections": {
+      "professional": "Professional Information",
+      "personal": "Personal Details"
+    },
+    "avatar": {
+      "heading": "Profile photo",
+      "alt": "Practitioner profile photo",
+      "empty": "No photo",
+      "fieldLabel": "Photo URL",
+      "placeholder": "https://cdn.example.com/practitioner-avatar.jpg",
+      "hint": "Paste a direct image URL. You can update or remove it anytime.",
+      "actions": {
+        "save": "Save photo",
+        "saving": "Saving...",
+        "remove": "Remove photo",
+        "removing": "Removing..."
+      },
+      "validation": {
+        "required": "Enter a photo URL before saving.",
+        "invalidUrl": "Enter a valid URL."
+      },
+      "feedback": {
+        "updateSuccess": "Profile photo updated successfully.",
+        "updateError": "Could not update profile photo right now.",
+        "removeSuccess": "Profile photo removed successfully.",
+        "removeError": "Could not remove profile photo right now."
+      }
+    },
+    "fields": {
+      "displayName": {
+        "label": "Display name",
+        "placeholder": "Your full name as shown to patients"
+      },
+      "professionalTitle": {
+        "label": "Professional title",
+        "placeholder": "e.g. Clinical Psychologist, Nutritionist"
+      },
+      "bio": {
+        "label": "Bio",
+        "placeholder": "Tell patients about your background and approach"
+      },
+      "yearsOfExperience": {
+        "label": "Years of experience",
+        "placeholder": "e.g. 5"
+      },
+      "practitionerType": {
+        "label": "Practitioner type",
+        "placeholder": "Select type"
+      },
+      "countryCode": {
+        "label": "Country",
+        "placeholder": "e.g. SA, EG"
+      },
+      "timezone": {
+        "label": "Timezone",
+        "placeholder": "e.g. Asia/Riyadh"
+      }
+    },
+    "practitionerType": {
+      "PSYCHOLOGIST": "Psychologist",
+      "PSYCHIATRIST": "Psychiatrist",
+      "NUTRITIONIST": "Nutritionist",
+      "WEIGHT_LOSS_SPECIALIST": "Weight loss specialist",
+      "COUNSELOR": "Counselor",
+      "OTHER": "Other"
+    },
+    "validation": {
+      "displayNameMax": "Display name must be 80 characters or less",
+      "yearsMin": "Years of experience cannot be negative",
+      "yearsMax": "Years of experience seems too high"
+    },
+    "actions": {
+      "save": "Save changes",
+      "saving": "Saving..."
+    },
+    "feedback": {
+      "loadError": "Could not load your profile. Please try again.",
+      "retry": "Try again",
+      "success": "Profile updated successfully.",
+      "error": "Could not save changes. Please try again."
+    }
+  },
+  "credentials": {
+    "meta": {
+      "title": "Credentials — Practitioner",
+      "description": "View and manage your uploaded credentials."
+    },
+    "page": {
+      "title": "Credentials",
+      "subtitle": "Add credential references and track their current review state."
+    },
+    "emptyTitle": "No credentials added yet",
+    "empty": "Add your first credential reference so your professional record is easier to review.",
+    "uploadedOn": "Uploaded {date}",
+    "expiresOn": "expires {date}",
+    "noExpiry": "no expiry set",
+    "status": {
+      "PENDING": "Pending review",
+      "APPROVED": "Approved",
+      "REJECTED": "Rejected",
+      "EXPIRED": "Expired"
+    },
+    "type": {
+      "LICENSE": "License",
+      "DEGREE": "Degree",
+      "CERTIFICATION": "Certification",
+      "NATIONAL_ID": "National ID",
+      "PASSPORT": "Passport",
+      "MEMBERSHIP": "Membership",
+      "OTHER": "Other"
+    },
+    "management": {
+      "heading": "Credential references on your practitioner account",
+      "note": "Use this screen to add credential metadata that is already stored through your active file workflow.",
+      "scopeNote": "This surface supports adding new credential references and tracking review status. It does not manage file storage, replacement, or removal."
+    },
+    "current": {
+      "heading": "Current credentials"
+    },
+    "summary": {
+      "heading": "Credential summary",
+      "total": "Total credentials",
+      "pending": "Pending review",
+      "approved": "Approved",
+      "rejected": "Rejected",
+      "readyNote": "You already have credential records on file. Keep them current if your professional details change.",
+      "missingNote": "Your application readiness still needs at least one credential record."
+    },
+    "form": {
+      "heading": "Add a credential reference",
+      "typeLabel": "Credential type",
+      "fileUrlLabel": "File URL or storage reference",
+      "fileUrlPlaceholder": "https://storage.example.com/credential.pdf",
+      "fileUrlHint": "Enter the direct file URL or resolved storage reference used by your current file workflow.",
+      "expiresAtLabel": "Expiry date (optional)",
+      "expiresAtPlaceholder": "Select a date",
+      "scopeNote": "Adding a new reference creates another credential record for review.",
+      "duplicateNote": "The same credential type cannot be added twice with the same file reference.",
+      "validation": {
+        "fileUrlRequired": "Enter the file URL or storage reference before uploading."
+      }
+    },
+    "actions": {
+      "upload": "Upload credential reference",
+      "uploading": "Uploading...",
+      "openReference": "Open reference"
+    },
+    "feedback": {
+      "loadError": "Could not load credentials. Please try again.",
+      "loadErrorNote": "Your credential records could not be loaded right now.",
+      "retry": "Try again",
+      "uploadSuccess": "Your credential reference was added successfully.",
+      "uploadError": "Could not upload your credential reference. Please try again.",
+      "duplicateError": "This credential type already has the same file reference on your account."
+    }
+  },
+  "specialties": {
+    "meta": {
+      "title": "Specialties — Practitioner",
+      "description": "View and manage your linked specialties."
+    },
+    "page": {
+      "title": "Specialties",
+      "subtitle": "Review, update, and keep your linked specialties accurate."
+    },
+    "emptyTitle": "No specialties selected yet",
+    "empty": "Choose at least one specialty to keep your practitioner profile ready.",
+    "primary": "Primary",
+    "management": {
+      "heading": "Specialties on your practitioner profile",
+      "note": "Use this screen to update the specialties linked to your profile. Specialty records themselves are managed separately.",
+      "replaceHint": "Saving replaces your full specialties list and keeps one specialty marked as primary."
+    },
+    "current": {
+      "heading": "Current specialties"
+    },
+    "catalog": {
+      "heading": "Add another specialty",
+      "categoryLabel": "Primary category",
+      "categoryPlaceholder": "Select a category first",
+      "categoryEmptyTitle": "No specialties under this category",
+      "categoryEmptyNote": "Try another category to add a sub-specialty.",
+      "pickerLabel": "Available specialties",
+      "selectionNote": "You can add only specialties that are currently active on Fayed.",
+      "primaryNote": "One specialty always stays primary. If you remove the current primary, the first remaining specialty becomes primary.",
+      "noAvailableToAdd": "All available specialties are already selected.",
+      "emptyTitle": "No specialties are available right now",
+      "emptyNote": "There are no active specialties to add at the moment.",
+      "loadError": "Could not load available specialties",
+      "loadErrorNote": "Your current specialties are visible, but editing needs the active specialties list to load first."
+    },
+    "actions": {
+      "heading": "Save changes",
+      "add": "Add",
+      "remove": "Remove",
+      "makePrimary": "Make primary",
+      "primarySelected": "Primary specialty",
+      "save": "Save specialties",
+      "saving": "Saving...",
+      "reset": "Reset",
+      "unsavedChanges": "You have unsaved specialty changes.",
+      "noChanges": "No unsaved changes right now."
+    },
+    "validation": {
+      "minOne": "Choose at least one specialty before saving."
+    },
+    "feedback": {
+      "loadError": "Could not load specialties. Please try again.",
+      "loadErrorNote": "The specialties linked to your profile could not be loaded right now.",
+      "retry": "Try again",
+      "success": "Your specialties were updated successfully.",
+      "saveError": "Could not save your specialties. Please try again."
+    }
+  },
+  "availability": {
+    "meta": {
+      "title": "Availability — Practitioner",
+      "description": "Manage your weekly schedule and instant booking settings."
+    },
+    "page": {
+      "title": "Availability",
+      "subtitle": "Set your weekly schedule, manage exceptions, and control your presence."
+    },
+    "feedback": {
+      "loadError": "Could not load your availability. Please try again.",
+      "retry": "Try again"
+    },
+    "presence": {
+      "heading": "Online presence",
+      "description": "Control your current status and instant booking availability.",
+      "statusLabel": "Your status",
+      "ONLINE": "Online",
+      "AWAY": "Away",
+      "BUSY": "Busy",
+      "OFFLINE": "Offline",
+      "instantBooking": {
+        "label": "Instant booking",
+        "description": "Allow patients to book immediately without manual confirmation.",
+        "enabled": "Patients can book you instantly right now.",
+        "disabled": "Instant booking is currently off."
+      },
+      "saveError": "Could not save. Please try again.",
+      "feedback": {
+        "loadError": "Could not load presence data. Please try again.",
+        "retry": "Try again"
+      }
+    },
+    "schedule": {
+      "heading": "Weekly schedule",
+      "description": "Set the recurring hours you are available each week. Changes replace the full schedule.",
+      "timezoneLabel": "Timezone",
+      "noTimezone": "No timezone is set on your profile. Please update your timezone in Profile before setting your schedule.",
+      "noSlots": "No slots",
+      "addSlot": "Add slot",
+      "addConfirm": "Add",
+      "addCancel": "Cancel",
+      "removeSlot": "Remove slot",
+      "saveHint": "Saving will replace your entire weekly schedule.",
+      "save": "Save schedule",
+      "saving": "Saving...",
+      "saveSuccess": "Schedule saved.",
+      "saveError": "Could not save schedule. Please try again.",
+      "validation": {
+        "endAfterStart": "End time must be after start time.",
+        "overlap": "This slot overlaps with an existing one."
+      },
+      "days": {
+        "sunday": "Sunday",
+        "monday": "Monday",
+        "tuesday": "Tuesday",
+        "wednesday": "Wednesday",
+        "thursday": "Thursday",
+        "friday": "Friday",
+        "saturday": "Saturday"
+      }
+    },
+    "exceptions": {
+      "heading": "Schedule exceptions",
+      "description": "Block time off or add extra availability on specific dates.",
+      "empty": "No exceptions set.",
+      "add": "Add exception",
+      "delete": "Delete exception",
+      "deleteError": "Could not delete exception. Please try again.",
+      "createError": "Could not create exception. Please try again.",
+      "type": {
+        "BLOCK": "Blocked",
+        "OPEN_EXTRA": "Extra open"
+      },
+      "addForm": {
+        "heading": "New exception",
+        "typeLabel": "Type",
+        "startsAt": "Starts at (UTC)",
+        "endsAt": "Ends at (UTC)",
+        "reason": "Reason (optional)",
+        "reasonPlaceholder": "e.g. Holiday, conference",
+        "cancel": "Cancel",
+        "save": "Create",
+        "saving": "Creating..."
+      },
+      "validation": {
+        "datesRequired": "Start and end date are required.",
+        "endAfterStart": "End must be after start."
+      }
+    }
+  },
+  "application": {
+    "meta": {
+      "title": "Application — Practitioner",
+      "description": "Review your readiness and submit your practitioner application."
+    },
+    "page": {
+      "title": "Application",
+      "subtitle": "Review your readiness and track your application status."
+    },
+    "status": {
+      "heading": "Application status",
+      "noApplication": "No application submitted yet.",
+      "DRAFT": "Draft",
+      "SUBMITTED": "Submitted",
+      "UNDER_REVIEW": "Under review",
+      "APPROVED": "Approved",
+      "REJECTED": "Rejected",
+      "CHANGES_REQUESTED": "Changes requested",
+      "ARCHIVED": "Archived"
+    },
+    "statusMessage": {
+      "SUBMITTED": "Your application has been submitted and is awaiting review.",
+      "UNDER_REVIEW": "Your application is being reviewed by the Fayed team. You will be notified of any updates.",
+      "APPROVED": "Your application has been approved. You are now an active practitioner on Fayed.",
+      "ARCHIVED": "This application has been archived and is no longer active."
+    },
+    "readiness": {
+      "heading": "Readiness checks",
+      "allPassed": "All requirements met.",
+      "missing": "Missing requirements:"
+    },
+    "submit": {
+      "label": "Submit application",
+      "submitting": "Submitting...",
+      "notReady": "Complete all requirements before submitting.",
+      "confirmHint": "Once submitted, your application will be reviewed by the Fayed team."
+    },
+    "feedback": {
+      "loadError": "Could not load application status. Please try again.",
+      "retry": "Try again",
+      "submitSuccess": "Your application has been submitted successfully.",
+      "submitError": "Could not submit application. Please try again."
+    }
+  }
+}

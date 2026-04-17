@@ -1,0 +1,623 @@
+{
+  "meta": {
+    "listTitle": "مدفوعات المعالجين - الإدارة",
+    "listDescription": "ابحث عن معالج، راجع المستحقات، سجل الصرف، وارفع الإثبات عند الحاجة.",
+    "duesTitle": "مدفوعات المعالجين - الإدارة",
+    "duesDescription": "ابحث عن معالج، راجع المستحقات، سجل الصرف، وارفع الإثبات عند الحاجة.",
+    "batchesTitle": "دفعات التسوية - الإدارة",
+    "batchesDescription": "راجع دفعات التسوية التي تم إنشاؤها وحالاتها، وافتح أي دفعة لعرض تفاصيلها التاريخية.",
+    "payoutsTitle": "سجل عمليات الصرف - الإدارة",
+    "payoutsDescription": "راجع عمليات الصرف المسجلة عبر النظام.",
+    "detailTitle": "دفعة تسوية تاريخية - الإدارة",
+    "detailDescription": "راجع دفعة تسوية تاريخية والإجراءات القديمة المتبقية للتوافق فقط.",
+    "statementTitle": "كشف حساب المعالج - الإدارة",
+    "statementDescription": "راجع التسلسل المالي للمعالج وصدّره كملف PDF."
+  },
+  "statement": {
+    "metaTitle": "كشف حساب المعالج - الإدارة",
+    "metaDescription": "راجع التسلسل المالي للمعالج وصدّره كملف PDF.",
+    "printTitle": "كشف حساب المعالج",
+    "eyebrow": "كشف الحساب",
+    "title": "كشف حساب المعالج",
+    "note": "راجع حساب معالج واحد من بداية نشاطه، ثم صدّر الكشف كملف PDF عند الحاجة.",
+    "back": "العودة إلى التسويات",
+    "exportPdf": "تنزيل PDF",
+    "selectTitle": "اختيار المعالج",
+    "selectNote": "ابحث وافتح كشف حساب المعالج. النسخة المطبوعة تكتفي بمحتوى الكشف فقط.",
+    "searchLabel": "بحث عن معالج",
+    "searchPlaceholder": "الاسم أو معرف المعالج",
+    "searchHint": "اكتب للعثور على كشف حساب معالج.",
+    "noPractitioners": "لا توجد نتائج مطابقة.",
+    "noSelectionTitle": "لم يتم اختيار معالج",
+    "noSelectionNote": "ابحث وافتح معالجًا لمراجعة التسلسل المالي.",
+    "selected": "محدد",
+    "open": "فتح",
+    "noTitle": "بدون مسمى مهني",
+    "summaryLabel": "ملخص الكشف",
+    "coverage": "النطاق",
+    "fromStart": "من البداية",
+    "noRows": "لا توجد صفوف في هذا النطاق",
+    "metrics": {
+      "rows": "الصفوف",
+      "rowsValue": "{value, number}",
+      "rowsHint": "صفوف الأرباح والصرف الظاهرة في هذا العرض.",
+      "earned": "الإجمالي المكتسب",
+      "earnedHint": "الأرباح المسجلة في الكشف.",
+      "paid": "الإجمالي المصروف",
+      "paidHint": "عمليات الصرف المسجلة في الكشف.",
+      "net": "الصافي",
+      "netHint": "المكتسب ناقص المصروف."
+    },
+    "walletLabel": "لقطة الرصيد الحالية",
+    "wallet": {
+      "available": "المتاح",
+      "reserved": "المحجوز",
+      "pending": "المعلق",
+      "paidOut": "إجمالي المصروف"
+    },
+    "filters": {
+      "currency": "العملة",
+      "allCurrencies": "كل العملات",
+      "rowType": "نوع الصف",
+      "rowTypeOptions": {
+        "all": "كل الصفوف",
+        "earning": "الأرباح فقط",
+        "payout": "الصرف فقط"
+      },
+      "from": "من",
+      "to": "إلى"
+    },
+    "filterNote": "تؤثر الفلاتر على التسلسل وعلى ملف PDF القابل للطباعة.",
+    "clearFilters": "مسح الفلاتر",
+    "rowsCount": "{value, number} صف",
+    "multicurrencyValue": "عملات متعددة",
+    "multicurrencyHint": "اختر عملة واحدة لعرض الإجماليات المالية.",
+    "columns": {
+      "date": "التاريخ",
+      "type": "النوع",
+      "reference": "المرجع",
+      "notes": "ملاحظات",
+      "amount": "المبلغ"
+    },
+    "rowTypes": {
+      "earning": "ربح",
+      "payout": "صرف"
+    },
+    "noDescription": "بدون وصف",
+    "noReference": "بدون مرجع",
+    "noNotes": "لا توجد ملاحظات",
+    "processedBy": "تمت المعالجة بواسطة {name}",
+    "noRowsTitle": "لا توجد صفوف في الكشف",
+    "noRowsNote": "جرّب عملة مختلفة أو نطاق تاريخ آخر.",
+    "errorHeading": "الكشف غير متاح حاليا",
+    "errorNote": "تعذر تحميل كشف حساب المعالج.",
+    "retry": "حاول مرة أخرى"
+  },
+  "list": {
+    "eyebrow": "عمليات الصرف",
+    "title": "تسويات المعالجين",
+    "note": "ابحث عن معالج، راجع حسابه والمستحق عليه، ثم افتح مودال الصرف السريع لإتمام التسوية في خطوة واحدة.",
+    "totalLabel": "المعالجون",
+    "totalCount": "{value, number} إجمالي",
+    "visibleCount": "{value, number} معروض",
+    "count": "{value, number} معالج",
+    "countLabel": "المعالجون",
+    "countLoading": "جار تحميل المعالجين...",
+    "searchLabel": "بحث عن معالج",
+    "searchPlaceholder": "الاسم أو معرف المعالج",
+    "fastActionNote": "استخدم الفلاتر للتركيز على الحسابات المستحقة أو الأرصدة أو المعالجين الموثقين.",
+    "tableEyebrow": "القائمة الحالية",
+    "tableTitle": "المعالجون",
+    "activeFilters": "الفلاتر النشطة",
+    "columns": {
+      "practitioner": "المعالج",
+      "type": "النوع",
+      "country": "البلد",
+      "account": "الحساب",
+      "due": "المستحق",
+      "status": "الحالة",
+      "action": "الإجراء"
+    },
+    "filters": {
+      "currency": "العملة",
+      "allCurrencies": "كل العملات",
+      "finance": "الحالة المالية",
+      "financeOptions": {
+        "all": "كل المعالجين",
+        "withDue": "لديهم مستحق",
+        "withBalance": "لديهم رصيد",
+        "empty": "الحسابات الفارغة"
+      },
+      "verification": "التحقق",
+      "verificationOptions": {
+        "all": "كل الحالات",
+        "verified": "موثق فقط",
+        "unverified": "غير موثق"
+      },
+      "sortBy": "الترتيب",
+      "sortOptions": {
+        "dueDesc": "الأعلى مستحقا",
+        "balanceDesc": "الأعلى رصيدا",
+        "nameAsc": "الاسم من أ إلى ي"
+      }
+    },
+    "metrics": {
+      "visible": "المعروض",
+      "visibleValue": "{value, number}",
+      "visibleHint": "المعالجون المطابقون للفلاتر.",
+      "due": "لديهم مستحق",
+      "dueValue": "{value, number}",
+      "dueHint": "صفوف بها رصيد مستحق للصرف.",
+      "balance": "لديهم رصيد",
+      "balanceValue": "{value, number}",
+      "balanceHint": "صفوف بها رصيد متاح في الحساب.",
+      "verified": "موثقون",
+      "verifiedValue": "{value, number}",
+      "verifiedHint": "صفوف حالتها موثقة."
+    },
+    "noTitle": "بدون مسمى مهني",
+    "noCountry": "بدون بلد",
+    "verified": "موثق",
+    "unverified": "غير موثق",
+    "statementAction": "كشف الحساب",
+    "settleAction": "تسوية",
+    "loadingFinance": "جار تحميل الحساب...",
+    "financeError": "الحساب غير متاح",
+    "noBalance": "لا يوجد رصيد",
+    "noDue": "لا يوجد مستحق",
+    "emptyTitle": "لا توجد نتائج",
+    "emptyNote": "جرّب كلمة بحث مختلفة أو امسح الفلتر لعرض القائمة كاملة.",
+    "errorHeading": "قائمة المعالجين غير متاحة حاليا",
+    "errorNote": "تعذر تحميل المعالجين.",
+    "retry": "حاول مرة أخرى"
+  },
+  "payouts": {
+    "eyebrow": "سجل عمليات الصرف",
+    "title": "سجل عمليات الصرف",
+    "note": "يعرض كل عمليات الصرف المسجلة (جزئية أو كاملة) مع الإثبات إن وجد.",
+    "filters": {
+      "method": "طريقة الصرف",
+      "currency": "العملة",
+      "allMethods": "كل الطرق",
+      "allCurrencies": "كل العملات"
+    },
+    "table": {
+      "practitioner": "المعالج",
+      "amount": "المبلغ",
+      "method": "الطريقة",
+      "date": "التاريخ",
+      "reference": "المرجع",
+      "action": "الإجراء"
+    },
+    "actions": {
+      "viewProof": "عرض الإثبات",
+      "statement": "كشف الحساب"
+    },
+    "states": {
+      "errorTitle": "تعذر تحميل سجل الصرف",
+      "errorNote": "حاول مرة أخرى.",
+      "retry": "إعادة المحاولة",
+      "emptyTitle": "لا توجد عمليات صرف",
+      "emptyNote": "لم يتم تسجيل أي عمليات صرف بعد، أو أن الفلاتر الحالية لا تُظهر نتائج."
+    }
+  },
+  "workspace": {
+    "eyebrow": "عمليات الصرف",
+    "title": "مساحة صرف المعالجين",
+    "note": "هذه هي واجهة التسويات الأساسية حاليا. اختر معالجا، راجع ما له، سجل الصرف، وأرفق الإثبات عند الحاجة.",
+    "practitionerTitle": "المعالج أولا",
+    "practitionerNote": "ابحث عن المعالج وافتح المستحقات وسجل الصرف وتاريخه في مكان واحد.",
+    "historyTitle": "محور السجل",
+    "historyNote": "راجع سجل الصرف وافتح تفاصيل أي صرف عند الحاجة إلى إثبات أو سياق تشغيلي."
+  },
+  "scope": {
+    "heading": "المتاح حاليا",
+    "items": {
+      "list": "مراجعة دفعات التسوية مع إجمالي المبالغ وعدد البنود.",
+      "detail": "عرض تفاصيل الدفعة والملخص التشغيلي وبنود التسوية.",
+      "generate": "إنشاء دفعة تسوية جديدة لفترة وعملة محددتين فقط للإدارة.",
+      "marking": "تغيير حالة الدفعة إلى مدفوعة أو فاشلة فقط عندما يسمح الباك بذلك."
+    }
+  },
+  "boundaries": {
+    "heading": "خارج النطاق الحالي",
+    "items": {
+      "noPayouts": "هذه ليست منظومة صرف أو تكامل مع مزود دفع.",
+      "noLedger": "قيود دفتر الأستاذ غير معروضة هنا بعد.",
+      "noFinanceSuite": "هذه واجهة تشغيلية محدودة وليست جناحا محاسبيا كاملا."
+    }
+  },
+  "modal": {
+    "eyebrow": "مودال التسوية",
+    "title": "تسجيل تسوية معالج",
+    "description": "افتح المعالج من القائمة وسجل التسوية بسرعة.",
+    "descriptionWithName": "سجل تسوية للمعالج {name}.",
+    "selectedPractitioner": "المعالج المحدد",
+    "noTitle": "بدون مسمى مهني",
+    "verified": "موثق",
+    "dueTitle": "بنود الاستحقاق",
+    "dueNote": "اختر بند استحقاق واحد. يمكنك تسجيل مبلغ جزئي حتى حد المبلغ المستحق المتبقي.",
+    "currencyFilter": "عملة اختيارية",
+    "allCurrencies": "كل العملات",
+    "dueCount": "بنود الاستحقاق",
+    "noDueRows": "لا توجد بنود استحقاق متاحة لهذا المعالج.",
+    "formTitle": "تفاصيل الصرف",
+    "fields": {
+      "amountPaid": "المبلغ المدفوع",
+      "amountPaidPlaceholder": "أدخل المبلغ المدفوع",
+      "payoutMethod": "طريقة الصرف",
+      "payoutDate": "تاريخ الصرف",
+      "payoutDatePlaceholder": "2026-04-14T08:33",
+      "externalReference": "مرجع خارجي",
+      "externalReferencePlaceholder": "مرجع من المزود أو البنك",
+      "notes": "ملاحظات",
+      "notesPlaceholder": "أضف ملاحظة تشغيلية",
+      "proof": "ملف الإثبات"
+    },
+    "max": "الحد الأقصى",
+    "amountHint": "يمكنك تسجيل مبلغ جزئي حتى حد المبلغ المستحق المتبقي.",
+    "proofHint": "الأنواع المدعومة: JPG أو PNG أو WEBP أو PDF.",
+    "selectedDueLabel": "بند الاستحقاق المحدد",
+    "historyTitle": "آخر الصرفات",
+    "historyEmpty": "لا يوجد سجل صرف بعد.",
+    "emptyState": "اختر معالجًا لفتح مسار التسوية السريع.",
+    "successWithProof": "تم تسجيل التسوية ورفع المستند.",
+    "successWithoutProof": "تم تسجيل التسوية.",
+    "validation": {
+      "chooseDue": "اختر بند استحقاق قبل الحفظ.",
+      "amountMismatch": "يجب ألا يتجاوز مبلغ الصرف المبلغ المستحق المتبقي.",
+      "amountInvalid": "أدخل مبلغاً صحيحاً أكبر من صفر.",
+      "amountExceedsDue": "مبلغ الصرف أكبر من المبلغ المستحق المتبقي."
+    },
+    "submit": "حفظ التسوية",
+    "submitting": "جار الحفظ...",
+    "cancel": "إغلاق",
+    "loadingPractitioners": "جار تحميل المعالجين...",
+    "practitionerSearch": "بحث عن معالج",
+    "searchPlaceholder": "الاسم أو معرف المعالج",
+    "selected": "محدد",
+    "select": "اختيار",
+    "noPractitionerResults": "لا توجد نتائج مطابقة.",
+    "noReference": "بدون مرجع",
+    "noSelection": "اختر معالجًا لعرض الاستحقاقات وسجل الصرف.",
+    "methods": {
+      "MANUAL_BANK_TRANSFER": "تحويل بنكي يدوي",
+      "WALLET_TRANSFER": "تحويل إلى محفظة",
+      "CASH": "نقدا",
+      "OTHER": "أخرى"
+    }
+  },
+  "generate": {
+    "eyebrow": "عمليات التسوية",
+    "heading": "إنشاء دفعة تسوية",
+    "description": "أنشئ دفعة لفترة وعملة محددتين. لا يوجد اختيار يدوي للمعالجين لأن النظام يضيف البنود المؤهلة تلقائيا.",
+    "note": "إذا لم توجد بنود مؤهلة، فقد تُنشأ الدفعة وتفتح بدون بنود ليتم مراجعتها بوضوح.",
+    "helperTitle": "ماذا يفعل هذا المسار؟",
+    "helperItems": {
+      "defaultPath": "ينشئ البنود المؤهلة للفترة والعملة المحددتين.",
+      "noPractitionerPicker": "لا يوجد اختيار يدوي للمعالجين هنا.",
+      "backendDuplicateGuard": "يرفض الباك أي دفعة مكررة لنفس الفترة والعملة.",
+      "zeroItemsPossible": "قد تُنشأ الدفعة بدون بنود إذا لم توجد بنود مؤهلة."
+    },
+    "confirmationNote": "سيُحفظ وقت التنفيذ في السجل التشغيلي.",
+    "label": "للإدارة فقط",
+    "fields": {
+      "periodYear": "سنة الفترة",
+      "periodMonth": "شهر الفترة",
+      "currency": "العملة"
+    },
+    "placeholders": {
+      "periodYear": "2026",
+      "periodMonth": "4",
+      "currency": "USD"
+    },
+    "submit": "إنشاء الدفعة",
+    "submitting": "جار الإنشاء...",
+    "cancel": "إلغاء",
+    "helper": "إنشاء الدفعة يحجز أرباح دفتر الأستاذ المؤهلة للصرف وينشئ بنود التسوية.",
+    "validation": "أدخل سنة وشهرا ورمز عملة صالحا.",
+    "success": "تم إنشاء دفعة التسوية.",
+    "successEmpty": "تم إنشاء دفعة التسوية، لكن لم توجد بنود مؤهلة لهذه الفترة والعملة.",
+    "adminOnlyNote": "إنشاء دفعات التسوية متاح لمشغلي الإدارة فقط."
+  },
+  "filters": {
+    "allStatuses": "كل الحالات",
+    "status": "الحالة",
+    "currency": "العملة",
+    "currencyPlaceholder": "مثل USD",
+    "periodMonth": "شهر الفترة",
+    "periodMonthPlaceholder": "4",
+    "createdFrom": "من تاريخ",
+    "createdFromPlaceholder": "2026-04-01",
+    "createdTo": "إلى تاريخ",
+    "createdToPlaceholder": "2026-04-30",
+    "clear": "مسح الفلاتر"
+  },
+  "statuses": {
+    "DRAFT": "مسودة",
+    "GENERATED": "مولدة",
+    "FINALIZED": "منتهية",
+    "PROCESSING": "قيد المعالجة",
+    "COMPLETED": "مكتملة",
+    "FAILED": "فاشلة",
+    "CANCELLED": "ملغاة"
+  },
+  "itemStatuses": {
+    "DRAFT": "مسودة",
+    "READY": "جاهزة",
+    "PROCESSING": "قيد المعالجة",
+    "PAID": "مدفوعة",
+    "FAILED": "فاشلة",
+    "CANCELLED": "ملغاة"
+  },
+  "pagination": {
+    "summary": "من {from} إلى {to} من {total}",
+    "previous": "السابق",
+    "next": "التالي"
+  },
+  "states": {
+    "empty": {
+      "heading": "لا توجد دفعات تسوية بعد",
+      "note": "ستظهر هنا بمجرد إنشاء الدفعات."
+    },
+    "listError": {
+      "heading": "قائمة التسويات غير متاحة حاليا",
+      "note": "تعذر تحميل دفعات التسوية.",
+      "retry": "حاول مرة أخرى"
+    },
+    "detailError": {
+      "heading": "دفعة التسوية غير متاحة حاليا",
+      "note": "تعذر تحميل هذه الدفعة. حاول مرة أخرى أو عد إلى القائمة.",
+      "retry": "حاول مرة أخرى",
+      "back": "العودة إلى التسويات"
+    },
+    "notFound": {
+      "heading": "لم يتم العثور على دفعة التسوية",
+      "note": "هذه الدفعة غير متاحة ضمن نطاق الإدارة الحالي."
+    },
+    "itemsEmpty": {
+      "heading": "لا توجد بنود تسوية بعد",
+      "note": "هذه الدفعة لا تحتوي على بنود تسوية للمعالجين."
+    }
+  },
+  "detail": {
+    "back": "العودة إلى التسويات",
+    "eyebrow": "دفعة تسوية",
+    "title": "تفاصيل دفعة التسوية",
+    "note": "استخدم هذه الشاشة لمراجعة ملخص الدفعة وجاهزية الصرف والإجراءات التي يدعمها الباك.",
+    "workflow": {
+      "batchModeTitle": "وضع الدفعة",
+      "batchModeNote": "هذه دفعة إغلاق مجمعة تُنشأ من البنود المؤهلة لفترة وعملة محددتين.",
+      "autoIncludeTitle": "تضمين تلقائي",
+      "autoIncludeNote": "لا يتم اختيار المعالجين واحدا واحدا في هذا المسار.",
+      "exceptionTitle": "صرف معالج واحد",
+      "exceptionNote": "استخدم مسار الاستثناء المنفصل عندما تحتاج إلى صرف يدوي لمعالج واحد."
+    },
+    "sections": {
+      "batch": "ملخص الدفعة",
+      "summary": "الملخص التشغيلي",
+      "items": "بنود التسوية",
+      "actions": "إجراءات الإدارة",
+      "boundary": "حدود التشغيل"
+    },
+    "fields": {
+      "batchId": "معرف الدفعة",
+      "slug": "المعرف النصي",
+      "period": "الفترة",
+      "status": "الحالة",
+      "currency": "العملة",
+      "totalAmount": "إجمالي المبلغ",
+      "itemsCount": "عدد البنود",
+      "generatedAt": "تاريخ التوليد",
+      "finalizedAt": "تاريخ الإنهاء",
+      "createdAt": "تاريخ الإنشاء"
+    },
+    "summaryNote": "يعكس هذا الملخص بنود التسوية المرتبطة بالدفعة حاليا.",
+    "summaryFields": {
+      "settlementItemsCount": "إجمالي البنود",
+      "totalAmountNet": "إجمالي الصافي",
+      "draft": "بنود مسودة",
+      "ready": "بنود جاهزة",
+      "processing": "بنود قيد المعالجة",
+      "paid": "بنود مدفوعة",
+      "failed": "بنود فاشلة",
+      "cancelled": "بنود ملغاة"
+    },
+    "itemsNote": "كل بند يمثل سجل صرف لمعالج داخل هذه الدفعة.",
+    "emptyBatch": {
+      "heading": "هذه الدفعة لا تحتوي على بنود تسوية",
+      "note": "أنشأ النظام الدفعة، لكن لم تكن هناك بنود استحقاق مؤهلة لهذه الفترة والعملة، أو كانت مرتبطة بدفعة أخرى.",
+      "reasonsTitle": "أسباب محتملة",
+      "reasons": {
+        "periodCurrency": "الفترة أو العملة المحددة لا تحتوي على بنود مؤهلة.",
+        "assignedElsewhere": "البنود المتاحة كانت مرتبطة بدفعة أخرى مسبقا.",
+        "exceptionPath": "إذا كنت تحتاج معالجا واحدا فقط، فاستخدم مسار الصرف الاستثنائي."
+      },
+      "primaryAction": "العودة إلى التسويات",
+      "secondaryAction": "مراجعة فترة أخرى",
+      "exceptionAction": "فتح مسار الصرف الاستثنائي"
+    },
+    "itemTitle": "المعالج {id}",
+    "itemFields": {
+      "amountNet": "الصافي",
+      "amountGross": "الإجمالي",
+      "amountAdjustments": "التعديلات",
+      "createdAt": "تاريخ الإنشاء",
+      "paidAt": "تاريخ الصرف",
+      "failedAt": "تاريخ الفشل",
+      "payoutMethodSnapshot": "لقطة طريقة الصرف",
+      "externalPayoutRef": "مرجع الصرف: {value}",
+      "notes": "ملاحظات: {value}"
+    },
+    "actionsNote": "تظهر الإجراءات لمشغلي الإدارة فقط وتظل خاضعة لتدقيق الباك.",
+    "actionsEmptyBatchNote": "في الدفعة الفارغة، تعيينها كمدفوعة أو فاشلة يغير حالة الدفعة فقط ولا ينشئ بنودا جديدة.",
+    "actionMeaning": {
+      "markPaid": "تعيينها كمدفوعة ينهي الدفعة بعد اكتمال مراجعة الصرف.",
+      "markFailed": "تعيينها كفاشلة ينهي الدفعة كفاشلة ويبقي التسلسل التشغيلي واضحا."
+    },
+    "boundaryNote": "تركز هذه الواجهة على عرض التسويات والإجراءات الإدارية المدعومة فقط.",
+    "boundaryItems": {
+      "noPayouts": "تنفيذ الصرف والتكامل مع المزود خارج هذه الواجهة.",
+      "noAdjustments": "تعديل مبالغ البنود غير مدعوم هنا.",
+      "noAutoReconcile": "التسوية التلقائية أو تصدير المحاسبة ليست جزءا من هذا الأساس."
+    }
+  },
+  "legacy": {
+    "eyebrow": "مراجعة تاريخية للدفعات",
+    "heading": "دفعات التسوية القديمة",
+    "note": "تظل سجلات الدفعات متاحة للمراجعة التاريخية والتوافق فقط. لم تعد هي المسار الأساسي للتسويات.",
+    "openGeneration": "إنشاء دفعة قديمة",
+    "errorHeading": "مراجعة الدفعات القديمة غير متاحة حاليا",
+    "errorNote": "تعذر تحميل الدفعات القديمة.",
+    "retry": "حاول مرة أخرى",
+    "batchTitle": "دفعة {period}",
+    "itemsCount": "{value, number} بنود",
+    "openBatch": "فتح الدفعة القديمة",
+    "empty": "لا توجد دفعات قديمة."
+  },
+  "actions": {
+    "markPaidTitle": "تعيين الدفعة كمدفوعة",
+    "markPaid": "تعيين كمدفوعة",
+    "markPaidSubmitting": "جار التعيين كمدفوعة...",
+    "markPaidSuccess": "تم تعيين الدفعة كمدفوعة.",
+    "markFailedTitle": "تعيين الدفعة كفاشلة",
+    "markFailed": "تعيين كفاشلة",
+    "markFailedSubmitting": "جار التعيين كفاشلة...",
+    "markFailedSuccess": "تم تعيين الدفعة كفاشلة.",
+    "externalPayoutRef": "مرجع الصرف الخارجي (اختياري)",
+    "externalPayoutPlaceholder": "مرجع الصرف من المزود",
+    "payoutMethod": "طريقة الصرف",
+    "payoutMethods": {
+      "MANUAL_BANK_TRANSFER": "تحويل بنكي يدوي",
+      "WALLET_TRANSFER": "تحويل محفظة",
+      "CASH": "نقدا",
+      "OTHER": "أخرى / تلقائي"
+    },
+    "effectiveAt": "تاريخ التنفيذ",
+    "effectiveAtPlaceholder": "2026-04-14T08:33",
+    "notes": "ملاحظات (اختياري)",
+    "notesPlaceholder": "أضف ملاحظة تشغيلية",
+    "notAvailable": "غير متاح لهذه الحالة",
+    "adminOnly": "هذه الإجراءات متاحة لمشغلي الإدارة فقط."
+  },
+  "practitionerPayout": {
+    "eyebrow": "عمليات الصرف",
+    "heading": "مراجعة صرف المعالج",
+    "description": "ابحث عن المعالج أولا، ثم راجع البنود المستحقة، وسجل الصرف، وأرفق الإثبات عند توفره.",
+    "helperTitle": "كيف يعمل هذا المسار؟",
+    "helperNote": "هذا هو مسار صرف المعالج الأساسي. تبقى بيانات الدفعات التاريخية للتوافق فقط.",
+    "searchHeading": "بحث عن معالج",
+    "searchNote": "اختر معالجا واحدا لعرض البنود المستحقة وسجل الصرف وتفاصيل الصرف مع الإثبات.",
+    "practitionerSearch": "بحث عن معالج",
+    "searchPlaceholder": "اسم المعالج أو معرفه",
+    "loadingPractitioners": "جار تحميل المعالجين...",
+    "noPractitionerResults": "لا توجد نتائج مطابقة.",
+    "selected": "محدد",
+    "select": "اختر",
+    "selectedPractitioner": "المعالج المحدد",
+    "noTitle": "بدون مسمى مهني",
+    "verified": "موثق",
+    "dueHeading": "بنود الاستحقاق",
+    "dueRows": "بنود الاستحقاق",
+    "dueNote": "اختر بندا واحدا صالحا لتسجيل الصرف. يمكنك تسجيل مبلغ جزئي حتى حد المبلغ المستحق المتبقي.",
+    "loadingDues": "جار تحميل الاستحقاقات...",
+    "noDues": "لا توجد بنود استحقاق متاحة.",
+    "settlementRow": "بند تسوية {period}",
+    "choose": "اختيار",
+    "notEligible": "غير مؤهل",
+    "payoutHistory": "سجل الصرف",
+    "historyHeading": "سجل الصرف",
+    "loadingHistory": "جار تحميل السجل...",
+    "historyCount": "{value, number} سجل",
+    "noHistory": "لا توجد سجلات صرف بعد.",
+    "emptyState": "اختر معالجا لفتح مسار التسوية السريع.",
+    "noReference": "بدون مرجع",
+    "noSelection": "اختر معالجا لعرض الاستحقاقات وسجل الصرف.",
+    "recordHeading": "تسجيل الصرف",
+    "recordTitle": "تسجيل الصرف",
+    "recordNote": "أدخل بيانات الصرف بعد اختيار بند استحقاق واحد فقط.",
+    "selectedDue": "بند الاستحقاق المحدد",
+    "selectedPayout": "الصرف المحدد",
+    "recordSuccess": "تم تسجيل الصرف بنجاح.",
+    "proofSuccess": "تم رفع الإثبات بنجاح.",
+    "proofOpenError": "تعذر فتح ملف الإثبات حاليا.",
+    "proofAttached": "إثبات مرفق",
+    "proofMissing": "لا يوجد إثبات",
+    "proofHeading": "إثبات الصرف",
+    "proofNote": "ارفع صورة أو ملف PDF لإيصال هذا الصرف.",
+    "proofUpload": "رفع الإثبات",
+    "uploadProof": "رفع الإثبات",
+    "uploadingProof": "جار الرفع...",
+    "clearProof": "مسح الملف",
+    "proofFormats": "الأنواع المدعومة: JPG أو PNG أو WEBP أو PDF.",
+    "viewProof": "عرض الإثبات",
+    "detailHeading": "تفاصيل الصرف",
+    "detailNote": "افتح أي صرف من السجل لمراجعة التفاصيل وحالة الإثبات.",
+    "detailPlaceholder": "اختر صرفا من السجل لعرض تفاصيله هنا.",
+    "settlementSnapshot": "لقطة بند الاستحقاق",
+    "detailFields": {
+      "settlementId": "معرف التسوية",
+      "payoutDate": "تاريخ الصرف",
+      "operator": "سجل بواسطة",
+      "reference": "المرجع الخارجي",
+      "notes": "ملاحظات",
+      "settlementStatus": "حالة التسوية",
+      "settlementCurrency": "العملة",
+      "settlementAmount": "المبلغ",
+      "settlementCreatedAt": "تاريخ الإنشاء"
+    },
+    "validation": {
+      "chooseSettlement": "اختر بند تسوية قبل تسجيل الصرف.",
+      "amountMismatch": "يجب أن يطابق مبلغ الصرف قيمة بند الاستحقاق المحدد.",
+      "chooseProof": "اختر ملف إثبات قبل الرفع."
+    },
+    "methods": {
+      "MANUAL_BANK_TRANSFER": "تحويل بنكي يدوي",
+      "WALLET_TRANSFER": "تحويل محفظة",
+      "CASH": "نقدا",
+      "OTHER": "أخرى / تلقائي"
+    },
+    "fields": {
+      "amountPaid": "المبلغ المدفوع",
+      "amountPaidPlaceholder": "أدخل المبلغ المدفوع",
+      "payoutMethod": "طريقة الصرف",
+      "effectiveAt": "تاريخ التنفيذ",
+      "effectiveAtPlaceholder": "2026-04-14T08:33",
+      "externalPayoutRef": "مرجع الصرف الخارجي",
+      "externalPayoutRefPlaceholder": "مرجع الصرف من المزود",
+      "notes": "ملاحظات",
+      "notesPlaceholder": "أضف ملاحظة تشغيلية"
+    },
+    "sourceNote": "سيُسجل مصدر الصرف تلقائيا كاستثناء يدوي.",
+    "selectedSettlement": "بند التسوية المحدد",
+    "clearSelection": "مسح الاختيار",
+    "clearDue": "مسح الاستحقاق",
+    "submit": "تسجيل الصرف",
+    "submitting": "جار تسجيل الصرف...",
+    "previous": "السابق",
+    "next": "التالي",
+    "cancel": "إغلاق",
+    "summary": {
+      "practitioner": "المعالج",
+      "dueCount": "بنود الاستحقاق",
+      "historyCount": "سجل الصرف",
+      "dueAmount": "مبلغ الاستحقاق",
+      "countValue": "{value, number}",
+      "dueCountLabel": "{value, number} بنود",
+      "walletAvailable": "المحفظة المتاحة",
+      "walletPending": "المحفظة المعلقة",
+      "walletReserved": "المحفظة المحجوزة",
+      "lastDueAt": "آخر استحقاق"
+    },
+    "noDueSelected": "لم يتم اختيار بند استحقاق."
+  },
+  "errors": {
+    "batchExists": "توجد دفعة تسوية بالفعل لهذه الفترة والعملة.",
+    "batchNotFound": "تعذر العثور على دفعة التسوية.",
+    "invalidState": "دفعة التسوية هذه ليست في حالة تسمح بهذا الإجراء.",
+    "invalidFilters": "مرشحات القائمة غير صالحة.",
+    "forbiddenScope": "لا تملك صلاحية الوصول إلى نطاق التسويات هذا.",
+    "notFound": "بيانات التسوية غير متاحة ضمن النطاق الحالي.",
+    "generic": "تعذر إكمال هذا الإجراء حاليا."
+  }
+}

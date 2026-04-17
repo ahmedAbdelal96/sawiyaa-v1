@@ -1,0 +1,38 @@
+export const arPractitionersCatalog = {
+  success: {
+    profileFetched: 'تم جلب ملف الممارس بنجاح',
+    profileUpdated: 'تم تحديث ملف الممارس بنجاح',
+    avatarUpdated: 'تم تحديث صورة الممارس بنجاح',
+    avatarRemoved: 'تم حذف صورة الممارس بنجاح',
+    specialtiesFetched: 'تم جلب تخصصات الممارس بنجاح',
+    specialtiesUpdated: 'تم تحديث تخصصات الممارس بنجاح',
+    credentialUploaded: 'تم رفع بيانات مؤهل الممارس بنجاح',
+    credentialsFetched: 'تم جلب مؤهلات الممارس بنجاح',
+    applicationSubmitted: 'تم إرسال طلب الممارس بنجاح',
+    applicationStatusFetched: 'تم جلب حالة طلب الممارس بنجاح',
+    readinessFetched: 'تم جلب حالة جاهزية ملف الممارس بنجاح',
+    publicListFetched: 'تم جلب قائمة الممارسين العامة بنجاح',
+    publicDetailsFetched: 'تم جلب ملف الممارس العام بنجاح',
+  },
+  errors: {
+    userNotFound: 'تعذر العثور على مستخدم الممارس',
+    profileNotFound: 'تعذر العثور على ملف الممارس',
+    countryNotFound: 'رمز الدولة غير صالح أو غير نشط',
+    languageNotFound: 'رمز لغة واحد أو أكثر غير صالح أو غير نشط',
+    specialtyNotFound: 'معرف تخصص واحد أو أكثر غير صالح أو غير نشط',
+    invalidSpecialtyPayload:
+      'بيانات التخصصات غير صالحة أو تحتوي على تكرار',
+    invalidProfileState:
+      'ملف الممارس لا يحقق الحد الأدنى من متطلبات الجاهزية',
+    applicationNotEligible:
+      'لا يمكن إرسال طلب الممارس قبل استكمال متطلبات الجاهزية',
+    applicationAlreadySubmitted:
+      'طلب الممارس مُرسل بالفعل أو قيد المراجعة',
+    credentialAlreadyExists:
+      'ملف المؤهل مسجل مسبقًا لنفس النوع ومرجع الملف',
+    credentialNotFound: 'تعذر العثور على مؤهل الممارس',
+    profileAccessDenied: 'غير مسموح لك بالوصول إلى ملف هذا الممارس',
+    publicProfileNotFound: 'تعذر العثور على ملف الممارس العام',
+  },
+};
+

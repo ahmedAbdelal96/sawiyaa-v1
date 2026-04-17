@@ -1,0 +1,1104 @@
+{
+  "placeholder": {
+    "eyebrow": "Coming soon",
+    "backToDashboard": "Back to Dashboard",
+    "payments": {
+      "title": "Payments",
+      "description": "Payment operations, reconciliation flows, and finance tooling will be available here.",
+      "meta": {
+        "title": "Payments — Admin",
+        "description": "Manage payment operations and financial reconciliation."
+      }
+    },
+    "settings": {
+      "title": "Settings",
+      "description": "System configuration, permissions, preferences, and platform setup controls will be available here.",
+      "meta": {
+        "title": "Settings — Admin",
+        "description": "Configure platform settings and permissions."
+      }
+    },
+    "adminOperations": {
+      "title": "Admin Operations",
+      "description": "Operational tools, internal workflows, and platform management utilities will be available here.",
+      "meta": {
+        "title": "Admin Operations — Admin",
+        "description": "Access admin operational tools and workflows."
+      }
+    },
+    "articles": {
+      "title": "Articles",
+      "description": "Content management, article moderation, and publishing workflows will be available here.",
+      "meta": {
+        "title": "Articles — Admin",
+        "description": "Manage articles and content on the platform."
+      }
+    },
+    "chat": {
+      "title": "Chat",
+      "description": "Messaging oversight, support escalations, and conversation moderation will be available here.",
+      "meta": {
+        "title": "Chat — Admin",
+        "description": "Oversee chat and messaging on the platform."
+      }
+    },
+    "reviews": {
+      "title": "Reviews",
+      "description": "Review moderation, quality oversight, and feedback management will be available here.",
+      "meta": {
+        "title": "Reviews — Admin",
+        "description": "Manage and moderate user reviews."
+      }
+    },
+    "training": {
+      "title": "Training",
+      "description": "Training resources, onboarding materials, and certification management will be available here.",
+      "meta": {
+        "title": "Training — Admin",
+        "description": "Manage training programs and onboarding content."
+      }
+    }
+  },
+  "status": {
+    "DRAFT": "Draft",
+    "SUBMITTED": "Submitted",
+    "UNDER_REVIEW": "Under review",
+    "APPROVED": "Approved",
+    "REJECTED": "Rejected",
+    "CHANGES_REQUESTED": "Changes requested",
+    "ARCHIVED": "Archived"
+  },
+  "practitionerType": {
+    "PSYCHOLOGIST": "Psychologist",
+    "PSYCHIATRIST": "Psychiatrist",
+    "NUTRITIONIST": "Nutritionist",
+    "WEIGHT_LOSS_SPECIALIST": "Weight loss specialist",
+    "COUNSELOR": "Counselor",
+    "OTHER": "Other"
+  },
+  "workspace": {
+    "page": {
+      "title": "Admin Workspace",
+      "subtitle": "Start with the live queues and operational modules that are usable today.",
+      "honestyNote": "This workspace separates active admin work from areas that are still limited or placeholder-only."
+    },
+    "queues": {
+      "heading": "Active queues"
+    },
+    "live": {
+      "heading": "Operational now",
+      "note": "These are the admin areas you can rely on for real work today."
+    },
+    "limited": {
+      "heading": "Visible but still limited",
+      "note": "These routes exist, but they are not complete operational surfaces yet."
+    },
+    "placeholder": {
+      "heading": "Not ready yet",
+      "note": "Keep these secondary for now. They are still placeholder-only."
+    },
+    "readiness": {
+      "live": {
+        "label": "Live now",
+        "note": "Ready for active admin work.",
+        "action": "Open module"
+      },
+      "limited": {
+        "label": "Limited",
+        "note": "Part of the surface exists, but it is not fully operational yet.",
+        "action": "View current state"
+      },
+      "placeholder": {
+        "label": "Placeholder",
+        "note": "This route is still a placeholder and should not be treated as a live module.",
+        "action": "View placeholder"
+      }
+    },
+    "support": {
+      "heading": "Support queue",
+      "note": "Open tickets that need direct operational follow-up.",
+      "viewAll": "View all support tickets",
+      "count": "{value, number} open",
+      "emptyHeading": "No open support work right now",
+      "empty": "No open support tickets right now.",
+      "errorHeading": "Support queue is not available right now",
+      "errorNote": "Could not load support tickets.",
+      "retry": "Try again"
+    },
+    "applications": {
+      "heading": "Pending applications",
+      "note": "Submitted practitioner applications waiting for review.",
+      "viewAll": "View all applications",
+      "count": "{value, number} pending",
+      "emptyHeading": "No pending application work right now",
+      "empty": "No pending applications right now.",
+      "errorHeading": "Applications queue is not available right now",
+      "errorNote": "Could not load applications.",
+      "retry": "Try again"
+    },
+    "modules": {
+      "heading": "Modules",
+      "support": {
+        "title": "Support",
+        "description": "Manage tickets, reply to users, add internal notes, and update status."
+      },
+      "applications": {
+        "title": "Practitioner Applications",
+        "description": "Review and decide on incoming practitioner applications."
+      },
+      "specialties": {
+        "title": "Specialties",
+        "description": "Manage the active specialties catalog with create, edit, and deactivate actions inside the current contract."
+      },
+      "payments": {
+        "title": "Payments",
+        "description": "Look up a payment by ID, inspect refund state, and handle limited refund operations."
+      },
+      "settlements": {
+        "title": "Settlements",
+        "description": "Review settlement batches, inspect payout status, and complete admin-only settlement closeout actions within the current contract."
+      },
+      "careChat": {
+        "title": "Care Chat",
+        "description": "Review approval requests, decide whether care chat can open, and inspect approved conversations in a bounded admin flow."
+      },
+      "reviews": {
+        "title": "Reviews",
+        "description": "Review moderation and quality oversight."
+      },
+      "moderationReports": {
+        "title": "Moderation reports",
+        "description": "Inspect moderation reports, review current case status, and execute limited actions that the backend currently supports."
+      },
+      "articles": {
+        "title": "Articles",
+        "description": "Manage article visibility, status, and limited publish/archive actions within the current contract."
+      },
+      "chat": {
+        "title": "Chat",
+        "description": "Messaging oversight and conversation moderation."
+      },
+      "training": {
+        "title": "Training",
+        "description": "Training resources and onboarding materials."
+      }
+    }
+  },
+  "payments": {
+    "meta": {
+      "listTitle": "Payments Lookup — Admin",
+      "listDescription": "Look up a payment by ID and inspect the current operational payment snapshot.",
+      "detailTitle": "Payment Operations — Admin",
+      "detailDescription": "Inspect payment status, session context, refund activity, and recent provider events."
+    },
+    "lookup": {
+      "eyebrow": "Operational finance baseline",
+      "title": "Inspect a payment by ID",
+      "note": "This surface is intentionally visibility-first. It helps admin operations inspect a payment, understand refund state, and handle the limited refund actions the backend supports right now.",
+      "fieldLabel": "Payment ID",
+      "placeholder": "Paste a payment ID",
+      "submit": "Open payment",
+      "helper": "Use a real payment ID from support, payment callbacks, or internal operational context.",
+      "deepLinkHeading": "Direct links are supported",
+      "deepLinkNote": "If you already have a payment ID, you can open the detail surface directly from /admin/payments/{paymentId}.",
+      "deepLinkAction": "Open by ID"
+    },
+    "scope": {
+      "heading": "Available now",
+      "items": {
+        "lookup": "Look up one payment at a time by payment ID.",
+        "snapshot": "Inspect the payment summary, provider references, and linked session context.",
+        "refunds": "Review refund history and request or retry a refund only where the backend allows it.",
+        "events": "See the latest provider-facing payment events that were recorded."
+      }
+    },
+    "boundaries": {
+      "heading": "Outside current scope",
+      "items": {
+        "noList": "There is no global admin payments list in the current backend contract.",
+        "noSettlements": "Settlement operations are not part of this baseline.",
+        "noPayouts": "Payout workflows are not exposed here.",
+        "noFinanceSuite": "This is not a full finance suite or accounting workspace."
+      }
+    },
+    "detail": {
+      "back": "Back to payments lookup",
+      "eyebrow": "Payment operations",
+      "title": "Payment detail",
+      "note": "Use this screen to inspect the current payment state, linked session context, refund activity, and recent provider events. It stays within the current backend-supported finance baseline.",
+      "snapshotNote": "Use this operational summary to quickly tell whether this payment is visibility-only right now or whether a limited refund action may still be relevant.",
+      "visibilityNote": "This surface is operational visibility first. Editable finance controls stay limited to the refund actions the backend currently supports.",
+      "sessionNote": "Session context is shown only when the payment is linked to a session.",
+      "refundSummaryNote": "This summary reflects refund records already known to the backend for this payment.",
+      "refundsNote": "Refund actions are shown only where the current refund record is truly retryable."
+    },
+    "sections": {
+      "snapshot": "Operational snapshot",
+      "payment": "Payment summary",
+      "session": "Linked session",
+      "refundSummary": "Refund summary",
+      "refunds": "Refund activity",
+      "events": "Recent payment events"
+    },
+    "snapshotCards": {
+      "paymentState": {
+        "label": "Payment state",
+        "notes": {
+          "CREATED": "The payment record exists, but it has not become a completed payment yet.",
+          "PENDING": "The payment is still pending and may need more time or a later state change.",
+          "REQUIRES_ACTION": "The provider still expects a user-side action before the payment can complete.",
+          "AUTHORIZED": "Funds were authorized, but this does not automatically mean refund work is available.",
+          "CAPTURED": "The payment was captured successfully and is fully visible in the admin snapshot.",
+          "FAILED": "The payment did not complete successfully, so this screen is mostly visibility-only.",
+          "CANCELLED": "The payment was cancelled before completing, so this screen is mostly visibility-only.",
+          "EXPIRED": "The payment expired before completing, so this screen is mostly visibility-only.",
+          "REFUND_PENDING": "A refund-related state is already active for this payment.",
+          "PARTIALLY_REFUNDED": "At least one refund already succeeded, but the payment still has remaining history to inspect.",
+          "REFUNDED": "This payment has already been fully refunded."
+        }
+      },
+      "refundState": {
+        "label": "Refund activity",
+        "states": {
+          "refunded": {
+            "title": "Fully refunded",
+            "note": "Refund history is complete for this payment. Use the timeline below for visibility only."
+          },
+          "inFlight": {
+            "title": "Refund already in progress",
+            "note": "A requested or processing refund already exists. Monitor the existing refund activity before trying anything else."
+          },
+          "retryAvailable": {
+            "title": "Retryable refund history",
+            "note": "A failed refund record exists. Use the refund activity section below if the current record is truly retryable."
+          },
+          "historyPresent": {
+            "title": "Refund history present",
+            "note": "This payment already has refund records on file. Review the timeline before deciding whether another action is appropriate."
+          },
+          "noRefunds": {
+            "title": "No refund activity yet",
+            "note": "There are no refund records for this payment right now."
+          }
+        }
+      },
+      "controls": {
+        "label": "Action posture",
+        "states": {
+          "fullyRefunded": {
+            "title": "Visibility only",
+            "note": "A new refund request is not shown because this payment is already fully refunded."
+          },
+          "refundInFlight": {
+            "title": "Wait for current refund",
+            "note": "A new refund request is hidden while an existing refund is already in progress."
+          },
+          "requestAvailable": {
+            "title": "Limited refund controls",
+            "note": "The refund request form is available here, but server-side validation still decides whether the action is allowed."
+          }
+        }
+      }
+    },
+    "paymentFields": {
+      "id": "Payment ID",
+      "provider": "Provider",
+      "amountTotal": "Total amount",
+      "subtotal": "Subtotal",
+      "discount": "Discount",
+      "currency": "Currency",
+      "createdAt": "Created at",
+      "initiatedAt": "Initiated at",
+      "capturedAt": "Captured at",
+      "failedAt": "Failed at",
+      "expiredAt": "Expired at",
+      "providerPaymentId": "Provider payment ID",
+      "providerReference": "Provider reference"
+    },
+    "sessionFields": {
+      "id": "Session ID",
+      "status": "Session status",
+      "mode": "Session mode",
+      "provider": "Session provider",
+      "scheduledStartAt": "Scheduled start",
+      "scheduledEndAt": "Scheduled end",
+      "providerRoomId": "Provider room ID",
+      "providerSessionRef": "Provider session reference"
+    },
+    "sessionRuntime": {
+      "heading": "Runtime inspection",
+      "note": "Open the runtime inspection tool to check join readiness and provider linkage.",
+      "action": "Inspect runtime"
+    },
+    "refundSummaryFields": {
+      "totalCount": "Total refunds",
+      "requestedCount": "Requested",
+      "processingCount": "Processing",
+      "succeededCount": "Succeeded",
+      "failedCount": "Failed",
+      "cancelledCount": "Cancelled",
+      "totalRefundedAmount": "Total refunded",
+      "lastRefundAt": "Last refund update"
+    },
+    "refundForm": {
+      "heading": "Request a refund",
+      "note": "Use this only when the backend contract allows a refund for the current payment. Validation still happens server-side.",
+      "amountLabel": "Refund amount (optional)",
+      "amountPlaceholder": "Leave empty to let the backend decide the default refund amount",
+      "reasonLabel": "Reason (optional)",
+      "reasonPlaceholder": "Add a short operational reason for the refund request",
+      "submit": "Submit refund request",
+      "submitting": "Submitting refund request...",
+      "success": "Refund request submitted.",
+      "states": {
+        "fullyRefunded": {
+          "heading": "Refund request is not shown",
+          "note": "This payment is already fully refunded, so the current admin baseline stays visibility-only here."
+        },
+        "refundInFlight": {
+          "heading": "Refund request is temporarily hidden",
+          "note": "A refund is already requested or processing for this payment. Review the current refund activity below instead of sending another request now."
+        }
+      }
+    },
+    "refunds": {
+      "reasonLabel": "Reason",
+      "requestedAt": "Requested {date}",
+      "processedAt": "Processed {date}",
+      "failedAt": "Failed {date}",
+      "providerRefundRef": "Provider refund ref: {value}",
+      "retry": "Retry refund",
+      "retrying": "Retrying...",
+      "retrySuccess": "Retry request sent."
+    },
+    "states": {
+      "detailError": {
+        "heading": "Payment detail is not available right now",
+        "note": "Could not load this payment snapshot. Try again or return to the lookup screen.",
+        "retry": "Try again",
+        "back": "Back to lookup"
+      },
+      "notFound": {
+        "heading": "Payment was not found",
+        "note": "We could not find a payment with this ID in the current admin payment contract."
+      },
+      "noSession": {
+        "heading": "No linked session",
+        "note": "This payment is not currently linked to a session context in the admin snapshot."
+      },
+      "noRefunds": {
+        "heading": "No refund activity yet",
+        "note": "There are no refund records for this payment right now."
+      },
+      "noEvents": {
+        "heading": "No recent events",
+        "note": "No recent payment events are available for this payment right now."
+      }
+    },
+    "errors": {
+      "notRefundable": "This payment is not refundable in its current state.",
+      "refundInProgress": "A refund is already in progress for this payment.",
+      "alreadyRefunded": "This payment has already been fully refunded.",
+      "invalidRefundAmount": "Enter a valid refund amount.",
+      "refundAmountExceedsRemaining": "The refund amount is higher than the remaining refundable amount.",
+      "refundNotRetryable": "This refund cannot be retried right now.",
+      "refundNotFound": "The refund record was not found.",
+      "generic": "Could not complete this refund action right now."
+    },
+    "paymentStatuses": {
+      "CREATED": "Created",
+      "PENDING": "Pending",
+      "REQUIRES_ACTION": "Requires action",
+      "AUTHORIZED": "Authorized",
+      "CAPTURED": "Captured",
+      "FAILED": "Failed",
+      "CANCELLED": "Cancelled",
+      "EXPIRED": "Expired",
+      "REFUND_PENDING": "Refund pending",
+      "PARTIALLY_REFUNDED": "Partially refunded",
+      "REFUNDED": "Refunded"
+    },
+    "refundStatuses": {
+      "REQUESTED": "Requested",
+      "PROCESSING": "Processing",
+      "SUCCEEDED": "Succeeded",
+      "FAILED": "Failed",
+      "CANCELLED": "Cancelled"
+    },
+    "refundTypes": {
+      "FULL": "Full",
+      "PARTIAL": "Partial"
+    },
+    "purposes": {
+      "SESSION_BOOKING": "Session booking",
+      "SESSION_INSTANT_BOOKING": "Instant booking",
+      "SESSION_EXTENSION": "Session extension",
+      "COURSE_ENROLLMENT": "Course enrollment",
+      "MANUAL_INVOICE": "Manual invoice"
+    },
+    "providers": {
+      "STRIPE": "Stripe",
+      "PAYMOB": "Paymob"
+    },
+    "sessionStatuses": {
+      "DRAFT": "Draft",
+      "PENDING_PAYMENT": "Pending payment",
+      "PENDING_PRACTITIONER_RESPONSE": "Pending practitioner response",
+      "CONFIRMED": "Confirmed",
+      "UPCOMING": "Upcoming",
+      "READY_TO_JOIN": "Ready to join",
+      "IN_PROGRESS": "In progress",
+      "COMPLETED": "Completed",
+      "CANCELLED": "Cancelled",
+      "NO_SHOW": "No-show",
+      "EXPIRED": "Expired",
+      "REFUND_PENDING": "Refund pending",
+      "REFUNDED": "Refunded"
+    },
+    "sessionModes": {
+      "VIDEO": "Video",
+      "AUDIO": "Audio",
+      "CHAT": "Chat"
+    },
+    "sessionProviders": {
+      "NONE": "None",
+      "DAILY": "Daily",
+      "ZOOM": "Zoom"
+    }
+  },
+  "assessmentsAdmin": {
+    "meta": {
+      "listTitle": "Assessments Authoring - Admin",
+      "listDescription": "Manage assessment drafts, questions, options, and publishing lifecycle.",
+      "detailTitle": "Assessment Editor - Admin",
+      "detailDescription": "Edit one assessment definition with lifecycle-safe admin controls."
+    },
+    "list": {
+      "title": "Assessments",
+      "note": "Create drafts, review lifecycle state, and open the editor for structured authoring."
+    },
+    "table": {
+      "title": "Title",
+      "category": "Category",
+      "status": "Status",
+      "version": "Version",
+      "updatedAt": "Updated",
+      "createdAt": "Created",
+      "actions": "Actions"
+    },
+    "statuses": {
+      "DRAFT": "Draft",
+      "ACTIVE": "Active",
+      "INACTIVE": "Inactive"
+    },
+    "published": {
+      "active": "Published",
+      "inactive": "Not published"
+    },
+    "filters": {
+      "search": "Search",
+      "searchPlaceholder": "Search by title, slug, or category",
+      "status": "Status",
+      "allStatuses": "All statuses",
+      "publishState": "Publish state",
+      "allPublishStates": "All publish states",
+      "clear": "Clear filters"
+    },
+    "actions": {
+      "create": "Create draft",
+      "creating": "Creating...",
+      "open": "Open editor",
+      "backToList": "Back to assessments",
+      "publish": "Publish",
+      "unpublish": "Unpublish",
+      "forkDraft": "Fork draft",
+      "saveMetadata": "Save metadata",
+      "saveScoring": "Save scoring",
+      "addQuestion": "Add question",
+      "addOption": "Add option",
+      "edit": "Edit",
+      "delete": "Delete",
+      "save": "Save",
+      "cancel": "Cancel",
+      "previewScore": "Test score",
+      "saving": "Saving...",
+      "deleting": "Deleting...",
+      "showAdvancedFields": "Show advanced fields",
+      "hideAdvancedFields": "Hide advanced fields",
+      "previousStage": "Previous",
+      "nextStage": "Next"
+    },
+    "states": {
+      "error": {
+        "heading": "Assessment editor is unavailable",
+        "note": "Could not load this assessment right now.",
+        "retry": "Try again"
+      },
+      "empty": {
+        "heading": "No assessments yet",
+        "note": "Create the first assessment draft to start the authoring flow.",
+        "filtered": "No assessments match the current filters."
+      },
+      "noQuestions": "No questions were added yet."
+    },
+    "feedback": {
+      "validation": "Please complete the required fields before saving.",
+      "createSuccess": "Draft assessment created successfully.",
+      "metadataSaved": "Metadata updated successfully.",
+      "scoringSaved": "Scoring thresholds updated successfully.",
+      "questionCreated": "Question added successfully.",
+      "questionUpdated": "Question updated successfully.",
+      "questionDeleted": "Question deleted successfully.",
+      "optionCreated": "Option added successfully.",
+      "optionUpdated": "Option updated successfully.",
+      "optionDeleted": "Option deleted successfully.",
+      "published": "Assessment published successfully.",
+      "unpublished": "Assessment unpublished successfully.",
+      "forked": "New draft fork created successfully.",
+      "publishMissingOptions": "Cannot publish yet. Add options for these questions first: {questions}"
+    },
+    "editor": {
+      "readOnlyNotice": "This version is not a draft. Use Fork draft to create an editable next version.",
+      "updatedAt": "Last updated: {value}"
+    },
+    "form": {
+      "title": "Title",
+      "slug": "Slug",
+      "category": "Category",
+      "categoryPlaceholder": "Select a category",
+      "customCategoryOption": "Add new category",
+      "customCategoryLabel": "New category name",
+      "description": "Description",
+      "introText": "Intro text",
+      "outroText": "Outro text",
+      "estimatedDuration": "Estimated duration (minutes)",
+      "autoFromTitle": "Auto from title",
+      "autoFromPrompt": "Auto from question",
+      "autoFromOption": "Auto from option",
+      "slugAutoLine": "Slug will be generated automatically: {slug}",
+      "addDescription": "Add description",
+      "hideDescription": "Hide description"
+    },
+    "sections": {
+      "metadata": "Metadata",
+      "scoring": "Scoring thresholds",
+      "questions": "Questions and options",
+      "preview": "Test score before publish"
+    },
+    "scoring": {
+      "band": "Band",
+      "minInclusive": "Min score",
+      "maxInclusive": "Max score"
+    },
+    "bands": {
+      "LOW": "Low",
+      "MILD": "Mild",
+      "MODERATE": "Moderate",
+      "HIGH": "High"
+    },
+    "questions": {
+      "order": "Order",
+      "required": "Required",
+      "optional": "Optional",
+      "key": "Question key",
+      "prompt": "Question prompt",
+      "description": "Question description",
+      "autoKeyHint": "Question key will be generated automatically on save.",
+      "addDescription": "Add optional description",
+      "hideDescription": "Hide description"
+    },
+    "options": {
+      "heading": "Options",
+      "key": "Option key",
+      "label": "Option label",
+      "scoreValue": "Score value",
+      "autoKeyHint": "Option key will be generated automatically on save.",
+      "quickScores": "Quick scores"
+    },
+    "preview": {
+      "chooseOption": "Choose an option",
+      "scoreLine": "Score: {score} / {max}",
+      "bandLine": "Band: {band}",
+      "note": "This section is only for testing the scoring before publish. It does not create real patient submissions.",
+      "empty": "Add at least one question with options to preview the score.",
+      "missingOptions": "{count, number} question(s) are skipped in preview because they do not have valid option keys yet.",
+      "missingOptionsListLabel": "Questions that still need valid options:"
+    },
+    "workflow": {
+      "guideTitle": "How to build this assessment",
+      "steps": {
+        "setup": "Basic setup",
+        "questions": "Questions and options",
+        "scoring": "Scoring ranges",
+        "preview": "Preview and verify"
+      },
+      "setupHint": "Start with the core setup only. Advanced text fields are optional.",
+      "questionsHint": "Add each question, then add answer options with their score values.",
+      "scoringHint": "Set score ranges for each band so the final result maps correctly.",
+      "previewHint": "Try a sample answer path before publishing."
+    },
+    "publishChecklist": {
+      "title": "Publish readiness",
+      "metadata": "Core metadata is complete",
+      "questions": "At least one question was added",
+      "options": "Every question has options",
+      "scoring": "Scoring ranges are valid"
+    },
+    "questionModal": {
+      "createTitle": "Create question",
+      "editTitle": "Edit question"
+    },
+    "optionModal": {
+      "createTitle": "Create option",
+      "editTitle": "Edit option"
+    },
+    "deleteQuestionModal": {
+      "title": "Delete question",
+      "note": "This will delete the question and all of its options."
+    },
+    "deleteOptionModal": {
+      "title": "Delete option",
+      "note": "This option will be removed from this question."
+    },
+    "createModal": {
+      "title": "Create assessment draft",
+      "note": "Create a new draft and continue editing in the full editor."
+    },
+    "errors": {
+      "notFound": "Assessment definition was not found.",
+      "notDraft": "Only draft assessments can be edited.",
+      "forkRequiresPublishedActive": "Only active published assessments can be forked.",
+      "publishRequiresDraft": "Only draft assessments can be published.",
+      "unpublishRequiresActive": "Only active published assessments can be unpublished.",
+      "immutablePublished": "This published version is immutable. Use fork draft.",
+      "slugExists": "This slug already exists.",
+      "draftForkExists": "A draft fork for this version already exists.",
+      "canonicalSlugCollision": "Canonical slug is already occupied.",
+      "questionKeyExists": "Question key must be unique.",
+      "optionKeyExists": "Option key must be unique.",
+      "invalidQuestionOrder": "Question order is out of range.",
+      "invalidOptionOrder": "Option order is out of range.",
+      "questionNotFound": "Question was not found.",
+      "optionNotFound": "Option was not found.",
+      "invalidQuestionReorder": "Question reorder payload is invalid.",
+      "invalidOptionReorder": "Option reorder payload is invalid.",
+      "publishMetadataIncomplete": "Publish failed because metadata is incomplete.",
+      "publishNoQuestions": "Publish failed because no questions exist.",
+      "publishDuplicateQuestionKey": "Publish failed because question keys are duplicated.",
+      "publishDuplicateOptionKey": "Publish failed because option keys are duplicated.",
+      "publishDuplicateQuestionOrder": "Publish failed because question order is duplicated.",
+      "publishDuplicateOptionOrder": "Publish failed because option order is duplicated.",
+      "publishEmptyOptions": "Publish failed because a question has no options.",
+      "scoringDuplicateBand": "Scoring thresholds contain duplicate bands.",
+      "scoringInvalidRange": "One scoring threshold range is invalid.",
+      "scoringOverlappingRange": "Scoring threshold ranges overlap.",
+      "generic": "Could not complete this action right now."
+    }
+  },
+  "specialtiesAdmin": {
+    "meta": {
+      "title": "Specialties Catalog - Admin",
+      "description": "Manage the active specialties catalog with the limited admin controls the current backend supports."
+    },
+    "eyebrow": "Catalog baseline",
+    "title": "Manage active specialties",
+    "note": "This baseline lets admin create, edit, and deactivate practitioner specialties. It stays within the current contract and does not pretend to be a broader taxonomy suite.",
+    "scopeHeading": "Available now",
+    "scopeItems": {
+      "activeList": "Review the currently active specialties catalog.",
+      "create": "Create a new specialty with canonical slug, localized title, description, and sort order.",
+      "edit": "Update active specialty baseline fields.",
+      "deactivate": "Deactivate an active specialty when it should stop appearing in public reads and new practitioner linkage."
+    },
+    "boundaryHeading": "Outside current scope",
+    "boundaryItems": {
+      "noInactiveList": "There is no admin endpoint to list inactive specialties right now.",
+      "noReactivate": "Reactivating an inactive specialty is blocked by the current read surface because inactive records are not exposed back to admin.",
+      "noCategories": "Only category creation is available from this screen in the current contract. Full category management is still out of scope."
+    },
+    "list": {
+      "heading": "Active catalog",
+      "note": "This list reflects the public and shared active catalog because that is the current read contract available to admin too.",
+      "searchPlaceholder": "Search active specialties",
+      "noDescription": "No description saved yet."
+    },
+    "form": {
+      "createTitle": "Create a specialty",
+      "createNote": "New specialties created here become part of the active catalog baseline.",
+      "editTitle": "Edit specialty",
+      "editNote": "Edits apply to the active specialty you selected from the current catalog list.",
+      "slugPlaceholder": "for-example-anxiety-therapy",
+      "titlePlaceholder": "Localized title for the current language",
+      "titleSimplePlaceholder": "Specialty name",
+      "categoryPlaceholder": "Select a primary category",
+      "createCategoryOption": "Add new primary category",
+      "newCategoryTitle": "Primary category name",
+      "newCategoryTitlePlaceholder": "For example: Clinical Psychology",
+      "descriptionPlaceholder": "Optional short description for the current language"
+    },
+    "fields": {
+      "category": "Primary category",
+      "slug": "Canonical slug",
+      "title": "Title",
+      "description": "Description",
+      "sortOrder": "Sort order",
+      "createdAt": "Created",
+      "updatedAt": "Updated"
+    },
+    "badges": {
+      "active": "Active",
+      "inactive": "Inactive",
+      "sortOrder": "Order {value}"
+    },
+    "actions": {
+      "create": "Create specialty",
+      "createMain": "Add primary specialty",
+      "createSecondary": "Add sub-specialty",
+      "activate": "Activate",
+      "activateMain": "Activate primary specialty",
+      "creating": "Creating specialty...",
+      "edit": "Edit",
+      "update": "Save changes",
+      "updating": "Saving changes...",
+      "deactivate": "Deactivate",
+      "deactivateMain": "Deactivate primary specialty",
+      "deactivating": "Deactivating...",
+      "reset": "Reset",
+      "startNew": "New specialty"
+    },
+    "deactivateConfirm": {
+      "heading": "Deactivate this specialty?",
+      "note": "Deactivating hides it from public catalog reads and blocks new practitioner linkage, but existing practitioner links are not deleted automatically.",
+      "confirm": "Yes, deactivate it",
+      "cancel": "Keep it active"
+    },
+    "feedback": {
+      "validation": "Primary category and specialty name are required.",
+      "slugPattern": "Use lowercase letters, numbers, and hyphens only for the slug.",
+      "sortOrder": "Sort order must be a whole number that is zero or higher.",
+      "createSuccess": "The specialty was created.",
+      "createError": "Could not create this specialty right now.",
+      "createCategorySuccess": "Primary specialty was created.",
+      "createCategoryError": "Could not create the primary category right now.",
+      "updateSuccess": "The specialty was updated.",
+      "updateError": "Could not update this specialty right now.",
+      "updateCategorySuccess": "Primary specialty was updated.",
+      "updateCategoryError": "Could not update this primary specialty right now.",
+      "activateSuccess": "{title} was activated.",
+      "activateError": "Could not activate this specialty right now.",
+      "activateCategorySuccess": "{title} primary specialty was activated.",
+      "activateCategoryError": "Could not activate this primary specialty right now.",
+      "deactivateSuccess": "{title} was deactivated. Inactive specialties are outside the current admin read baseline.",
+      "deactivateError": "Could not deactivate this specialty right now.",
+      "deactivateCategorySuccess": "{title} primary specialty was deactivated.",
+      "deactivateCategoryError": "Could not deactivate this primary specialty right now."
+    },
+    "states": {
+      "loading": "Loading specialties...",
+      "empty": {
+        "heading": "No active specialties found",
+        "note": "Create a specialty to start the active catalog baseline.",
+        "filtered": "No active specialties matched this search."
+      },
+      "error": {
+        "heading": "Specialties catalog is not available right now",
+        "note": "Could not load the current active specialties catalog.",
+        "retry": "Try again"
+      }
+    },
+    "boundaryCard": {
+      "heading": "Important boundary",
+      "note": "Because the current admin read surface only exposes active specialties, this baseline can create, edit, and deactivate active records but cannot reopen inactive ones yet."
+    },
+    "structure": {
+      "viewFilter": "Catalog view filter",
+      "tableHeading": "Primary and sub-specialties",
+      "primaryCount": "Primary: {count}",
+      "secondaryCount": "Sub-specialties: {count}",
+      "expandRow": "Expand row",
+      "emptySecondaryInCategory": "No sub-specialties under this primary specialty yet.",
+      "filters": {
+        "all": "All",
+        "primaryOnly": "Primary only",
+        "secondaryOnly": "Sub-specialties only"
+      },
+      "types": {
+        "primary": "Primary specialty",
+        "secondary": "Sub-specialty"
+      },
+      "columns": {
+        "name": "Name",
+        "type": "Type",
+        "order": "Order",
+        "updated": "Updated",
+        "actions": "Actions"
+      }
+    },
+    "categoryForm": {
+      "createTitle": "Add primary specialty",
+      "createNote": "Create a primary specialty first, then add sub-specialties under it.",
+      "editTitle": "Edit primary specialty",
+      "editNote": "Update the primary specialty name and short description.",
+      "title": "Primary specialty name",
+      "titlePlaceholder": "For example: Clinical psychology",
+      "description": "Description",
+      "descriptionPlaceholder": "Optional short description"
+    }
+  },
+  "dashboard": {
+    "meta": {
+      "title": "Workspace — Admin",
+      "description": "Admin operational workspace with active queues and module access."
+    },
+    "page": {
+      "title": "Admin Workspace",
+      "subtitle": "Active queues and quick access to all operational modules."
+    },
+    "pendingApplications": {
+      "heading": "Pending applications",
+      "viewAll": "View all",
+      "empty": "No pending applications at this time.",
+      "columns": {
+        "name": "Name",
+        "type": "Type",
+        "specialty": "Specialty"
+      },
+      "noName": "Unnamed applicant",
+      "noSpecialty": "—"
+    },
+    "quickLinks": {
+      "heading": "Quick access",
+      "applications": {
+        "title": "Practitioner Applications",
+        "description": "Review and decide on incoming practitioner applications."
+      }
+    },
+    "feedback": {
+      "loadError": "Could not load pending applications. Please try again.",
+      "retry": "Try again"
+    }
+  },
+  "applications": {
+    "meta": {
+      "title": "Practitioner Applications — Admin",
+      "description": "Review, filter, and decide on practitioner applications."
+    },
+    "page": {
+      "title": "Practitioner Applications",
+      "subtitle": "Review incoming applications and manage the practitioner review queue."
+    },
+    "filters": {
+      "all": "All",
+      "search": "Search",
+      "searchPlaceholder": "Search by applicant name or specialty",
+      "SUBMITTED": "Submitted",
+      "UNDER_REVIEW": "Under review",
+      "APPROVED": "Approved",
+      "REJECTED": "Rejected",
+      "CHANGES_REQUESTED": "Changes requested",
+      "ARCHIVED": "Archived"
+    },
+    "table": {
+      "name": "Name",
+      "applicant": "Applicant",
+      "type": "Type",
+      "specialty": "Specialty",
+      "status": "Status",
+      "submittedAt": "Submitted",
+      "actions": "Actions",
+      "viewAction": "View",
+      "noName": "Unnamed",
+      "noSpecialty": "—",
+      "never": "—"
+    },
+    "empty": "No applications match the selected filter.",
+    "pagination": {
+      "previous": "Previous",
+      "next": "Next",
+      "summary": "{from}–{to} of {total}"
+    },
+    "feedback": {
+      "loadError": "Could not load applications. Please try again.",
+      "retry": "Try again"
+    },
+    "title": "Practitioner applications",
+    "directCreate": {
+      "heading": "Direct practitioner onboarding",
+      "note": "Create a practitioner account directly from admin without waiting for self-submitted application.",
+      "openAction": "Add practitioner",
+      "modalTitle": "Add practitioner directly",
+      "modalDescription": "This creates a practitioner account and marks the baseline application as approved.",
+      "fields": {
+        "email": "Email",
+        "password": "Temporary password",
+        "displayName": "Display name",
+        "practitionerType": "Practitioner type",
+        "professionalTitle": "Professional title",
+        "bio": "Professional bio",
+        "yearsOfExperience": "Years of experience",
+        "countryCode": "Country code",
+        "primarySpecialtyCategory": "Primary specialty category",
+        "specialties": "Specialties",
+        "credentialType": "Initial credential type",
+        "credentialFileUrl": "Credential file URL",
+        "credentialExpiresAt": "Credential expiry (optional)",
+        "note": "Admin note"
+      },
+      "validationRequired": "Email and password are required.",
+      "validationCategoryRequired": "Select a primary specialty category first.",
+      "validationSpecialtiesRequired": "Select at least one specialty from the selected category.",
+      "validationYears": "Years of experience must be zero or greater.",
+      "specialtiesEmptyForCategory": "No active specialties are available under this category yet.",
+      "cancel": "Cancel",
+      "submit": "Create practitioner",
+      "submitting": "Creating practitioner...",
+      "submitSuccess": "Practitioner was created successfully.",
+      "submitError": "Could not create practitioner right now.",
+      "credentialType": {
+        "LICENSE": "License",
+        "DEGREE": "Degree",
+        "CERTIFICATION": "Certification",
+        "NATIONAL_ID": "National ID",
+        "PASSPORT": "Passport",
+        "MEMBERSHIP": "Membership",
+        "OTHER": "Other"
+      }
+    }
+  },
+  "practitionersDirectory": {
+    "avatar": {
+      "openModal": "Edit profile photo",
+      "title": "Update practitioner photo",
+      "note": "This updates only the practitioner profile photo URL.",
+      "empty": "No photo",
+      "fieldLabel": "Photo URL",
+      "placeholder": "https://cdn.example.com/practitioner-avatar.jpg",
+      "hint": "Paste a direct image URL. Remove keeps the account and clears only the photo.",
+      "actions": {
+        "save": "Save photo",
+        "saving": "Saving...",
+        "remove": "Remove photo",
+        "removing": "Removing...",
+        "close": "Close"
+      },
+      "validation": {
+        "required": "Enter a photo URL before saving.",
+        "invalidUrl": "Enter a valid URL."
+      },
+      "feedback": {
+        "updateSuccess": "Practitioner photo updated successfully.",
+        "updateError": "Could not update practitioner photo right now.",
+        "removeSuccess": "Practitioner photo removed successfully.",
+        "removeError": "Could not remove practitioner photo right now."
+      }
+    }
+  },
+  "applicationDetails": {
+    "meta": {
+      "title": "Application Review — Admin",
+      "description": "Review applicant profile, credentials, and readiness. Approve or reject the application."
+    },
+    "page": {
+      "title": "Application Review",
+      "back": "Back to applications"
+    },
+    "sections": {
+      "applicant": "Applicant",
+      "profile": "Practitioner profile",
+      "credentials": "Credentials",
+      "application": "Application",
+      "readiness": "Readiness snapshot",
+      "decision": "Decision"
+    },
+    "applicant": {
+      "displayName": "Display name",
+      "email": "Email",
+      "emailVerified": "Verified",
+      "emailNotVerified": "Not verified",
+      "phone": "Phone",
+      "phoneVerified": "Verified",
+      "phoneNotVerified": "Not verified",
+      "country": "Country",
+      "accountStatus": "Account status",
+      "noValue": "—"
+    },
+    "profile": {
+      "type": "Type",
+      "profileStatus": "Profile status",
+      "title": "Professional title",
+      "bio": "Bio",
+      "years": "Years of experience",
+      "languages": "Languages",
+      "specialties": "Specialties",
+      "primary": "Primary",
+      "noSpecialties": "No specialties linked.",
+      "noValue": "—"
+    },
+    "credentials": {
+      "empty": "No credentials uploaded.",
+      "uploadedAt": "Uploaded {date}",
+      "expiresAt": "Expires {date}",
+      "type": {
+        "LICENSE": "License",
+        "DEGREE": "Degree",
+        "CERTIFICATION": "Certification",
+        "NATIONAL_ID": "National ID",
+        "PASSPORT": "Passport",
+        "MEMBERSHIP": "Membership",
+        "OTHER": "Other"
+      },
+      "status": {
+        "PENDING": "Pending review",
+        "APPROVED": "Approved",
+        "REJECTED": "Rejected",
+        "EXPIRED": "Expired"
+      }
+    },
+    "application": {
+      "status": "Status",
+      "submittedAt": "Submitted",
+      "reviewedAt": "Reviewed",
+      "reviewNotes": "Review notes",
+      "noNotes": "No review notes.",
+      "never": "—"
+    },
+    "readiness": {
+      "profileComplete": "Profile completed",
+      "specialties": "Required specialties",
+      "credentials": "Required credentials",
+      "canBeReviewed": "Can be reviewed",
+      "canBeApproved": "Can be approved",
+      "yes": "Yes",
+      "no": "No"
+    },
+    "decision": {
+      "heading": "Take a decision",
+      "notReviewable": "This application cannot be reviewed in its current state.",
+      "approve": {
+        "title": "Approve",
+        "noteLabel": "Note (optional)",
+        "notePlaceholder": "Add an optional note for the practitioner",
+        "submit": "Approve application",
+        "submitting": "Approving...",
+        "success": "Application approved successfully.",
+        "error": "Could not approve application. Please try again."
+      },
+      "reject": {
+        "title": "Reject",
+        "reasonLabel": "Reason",
+        "reasonPlaceholder": "Required — provide a clear reason for rejection",
+        "reasonRequired": "A reason is required to reject the application.",
+        "noteLabel": "Note (optional)",
+        "notePlaceholder": "Add further context or guidance for the practitioner",
+        "submit": "Reject application",
+        "submitting": "Rejecting...",
+        "success": "Application rejected.",
+        "error": "Could not reject application. Please try again."
+      }
+    },
+    "feedback": {
+      "loadError": "Could not load application details. Please try again.",
+      "retry": "Try again"
+    }
+  }
+}

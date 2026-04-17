@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+
+<html class="bg-background text-on-background" dir="rtl" lang="ar"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-secondary-fixed": "#001b3c",
+                        "on-tertiary-fixed": "#141c27",
+                        "surface-container-highest": "#d8e3fc",
+                        "on-error-container": "#93000a",
+                        "tertiary-fixed-dim": "#bfc7d5",
+                        "surface-container-lowest": "#ffffff",
+                        "on-tertiary-fixed-variant": "#3f4753",
+                        "secondary-container": "#bfd5ff",
+                        "surface-container-high": "#dfe8ff",
+                        "surface-container-low": "#f0f3ff",
+                        "surface": "#f9f9ff",
+                        "on-primary-fixed-variant": "#004689",
+                        "on-tertiary-container": "#fdfcff",
+                        "on-error": "#ffffff",
+                        "on-primary-container": "#fefcff",
+                        "inverse-on-surface": "#ecf0ff",
+                        "inverse-primary": "#a7c8ff",
+                        "on-secondary-fixed-variant": "#31476a",
+                        "primary-fixed": "#d5e3ff",
+                        "on-secondary": "#ffffff",
+                        "surface-variant": "#d8e3fc",
+                        "on-surface-variant": "#424751",
+                        "on-primary": "#ffffff",
+                        "tertiary": "#545d69",
+                        "surface-bright": "#f9f9ff",
+                        "surface-dim": "#cfdaf3",
+                        "error": "#ba1a1a",
+                        "secondary": "#495f83",
+                        "surface-container": "#e8eeff",
+                        "inverse-surface": "#263144",
+                        "on-secondary-container": "#465c80",
+                        "on-tertiary": "#ffffff",
+                        "surface-tint": "#125eae",
+                        "on-background": "#101c2e",
+                        "on-primary-fixed": "#001b3c",
+                        "secondary-fixed-dim": "#b1c7f1",
+                        "secondary-fixed": "#d6e3ff",
+                        "outline-variant": "#c2c6d3",
+                        "primary": "#0b5cac",
+                        "on-surface": "#101c2e",
+                        "tertiary-fixed": "#dbe3f2",
+                        "primary-container": "#3575c7",
+                        "outline": "#727783",
+                        "background": "#f9f9ff",
+                        "tertiary-container": "#6d7582",
+                        "primary-fixed-dim": "#a7c8ff",
+                        "error-container": "#ffdad6"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Manrope"],
+                        "body": ["Manrope"],
+                        "label": ["Manrope"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        ::-webkit-scrollbar {
+            width: 0px;
+            background: transparent;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="font-body selection:bg-primary-fixed selection:text-on-primary-fixed">
+<header class="fixed top-0 w-full z-50 bg-white/70 backdrop-blur-3xl shadow-[0_4px_20px_rgba(16,28,46,0.03)]">
+<div class="flex justify-between items-center px-6 py-4 max-w-screen-xl mx-auto">
+<div class="flex items-center gap-4">
+<button class="w-10 h-10 rounded-full flex items-center justify-center hover:bg-surface-container-low transition-colors">
+<span class="material-symbols-outlined text-on-surface">close</span>
+</button>
+<h1 class="text-2xl font-bold text-blue-900 tracking-tighter font-headline">Fayed</h1>
+</div>
+<button class="text-sm font-semibold text-primary hover:text-primary-container transition-colors tracking-tight">إعادة ضبط</button>
+</div>
+</header>
+<main class="pt-24 pb-32 px-6 max-w-screen-md mx-auto min-h-screen">
+<div class="space-y-12">
+<section>
+<div class="mb-6">
+<h2 class="text-xl font-bold text-on-surface tracking-tight">التخصص</h2>
+<p class="text-sm text-outline mt-1">اختر مجال الخبرة الذي تبحث عنه</p>
+</div>
+<div class="flex flex-wrap gap-3">
+<button class="px-6 py-3 rounded-full bg-primary text-on-primary text-sm font-medium transition-all">الكل</button>
+<button class="px-6 py-3 rounded-full bg-surface-container-high text-on-secondary-container text-sm font-medium hover:bg-surface-container-highest transition-all">علاج نفسي</button>
+<button class="px-6 py-3 rounded-full bg-surface-container-high text-on-secondary-container text-sm font-medium hover:bg-surface-container-highest transition-all">تطوير الذات</button>
+<button class="px-6 py-3 rounded-full bg-surface-container-high text-on-secondary-container text-sm font-medium hover:bg-surface-container-highest transition-all">علاقات أسرية</button>
+<button class="px-6 py-3 rounded-full bg-surface-container-high text-on-secondary-container text-sm font-medium hover:bg-surface-container-highest transition-all">صحة الطفل</button>
+</div>
+</section>
+<section>
+<div class="mb-6">
+<h2 class="text-xl font-bold text-on-surface tracking-tight">الجنس</h2>
+</div>
+<div class="grid grid-cols-2 gap-4">
+<button class="flex items-center justify-center gap-3 p-4 rounded-xl bg-white border border-outline-variant/15 hover:bg-surface-container-low transition-all">
+<span class="material-symbols-outlined text-primary">person</span>
+<span class="font-medium">ذكر</span>
+</button>
+<button class="flex items-center justify-center gap-3 p-4 rounded-xl bg-white border border-outline-variant/15 hover:bg-surface-container-low transition-all">
+<span class="material-symbols-outlined text-primary">person_3</span>
+<span class="font-medium">أنثى</span>
+</button>
+</div>
+</section>
+<section>
+<div class="mb-6">
+<h2 class="text-xl font-bold text-on-surface tracking-tight">اللغة</h2>
+</div>
+<div class="space-y-3">
+<label class="flex items-center justify-between p-4 rounded-xl bg-surface-container-low cursor-pointer">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary">language</span>
+<span class="font-medium">العربية</span>
+</div>
+<input checked="" class="w-5 h-5 rounded border-outline-variant text-primary focus:ring-primary" type="checkbox"/>
+</label>
+<label class="flex items-center justify-between p-4 rounded-xl bg-surface-container-low cursor-pointer">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary">translate</span>
+<span class="font-medium">English</span>
+</div>
+<input class="w-5 h-5 rounded border-outline-variant text-primary focus:ring-primary" type="checkbox"/>
+</label>
+</div>
+</section>
+<section>
+<div class="mb-6 flex justify-between items-end">
+<div>
+<h2 class="text-xl font-bold text-on-surface tracking-tight">السعر</h2>
+<p class="text-sm text-outline mt-1">لكل جلسة (45 دقيقة)</p>
+</div>
+<span class="text-primary font-bold text-lg">٢٥٠ - ٨٠٠ ر.س</span>
+</div>
+<div class="px-2">
+<div class="relative h-1 bg-surface-container-highest rounded-full w-full">
+<div class="absolute left-1/4 right-1/4 h-full bg-primary rounded-full"></div>
+<div class="absolute left-1/4 top-1/2 -translate-y-1/2 -translate-x-1/2 w-6 h-6 bg-white border-2 border-primary rounded-full shadow-lg cursor-pointer"></div>
+<div class="absolute right-1/4 top-1/2 -translate-y-1/2 translate-x-1/2 w-6 h-6 bg-white border-2 border-primary rounded-full shadow-lg cursor-pointer"></div>
+</div>
+<div class="flex justify-between mt-6 text-xs font-bold text-outline uppercase tracking-widest">
+<span>١٠٠ ر.س</span>
+<span>٢٠٠٠ ر.س</span>
+</div>
+</div>
+</section>
+<section>
+<div class="mb-6">
+<h2 class="text-xl font-bold text-on-surface tracking-tight">التوفر</h2>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+<button class="flex flex-col gap-1 p-4 rounded-xl bg-white border border-outline-variant/15 items-center text-center">
+<span class="text-sm font-bold text-on-surface">اليوم</span>
+<span class="text-xs text-outline">متاح الآن</span>
+</button>
+<button class="flex flex-col gap-1 p-4 rounded-xl bg-primary-fixed items-center text-center">
+<span class="text-sm font-bold text-on-primary-fixed">غداً</span>
+<span class="text-xs text-on-primary-fixed-variant">١٢ موعد متاح</span>
+</button>
+<button class="flex flex-col gap-1 p-4 rounded-xl bg-white border border-outline-variant/15 items-center text-center">
+<span class="text-sm font-bold text-on-surface">نهاية الأسبوع</span>
+<span class="text-xs text-outline">٨ مواعيد متاحة</span>
+</button>
+</div>
+</section>
+</div>
+</main>
+<footer class="fixed bottom-0 left-0 w-full z-50 bg-white/70 backdrop-blur-3xl px-6 pt-4 pb-10 shadow-[0_-12px_40px_rgba(16,28,46,0.06)] rounded-t-[2.5rem]">
+<div class="max-w-screen-md mx-auto">
+<button class="w-full py-4 rounded-xl bg-gradient-to-r from-primary to-primary-container text-on-primary font-bold text-lg shadow-xl shadow-primary/20 active:scale-[0.98] transition-all">
+                عرض النتائج (١٤٢)
+            </button>
+</div>
+</footer>
+<nav class="hidden md:flex fixed bottom-8 left-1/2 -translate-x-1/2 z-[60] bg-white/70 backdrop-blur-3xl rounded-full px-4 py-2 shadow-2xl items-center gap-1">
+<div class="flex items-center justify-center bg-blue-100/50 text-blue-700 rounded-full px-5 py-2.5 cursor-pointer">
+<span class="material-symbols-outlined text-[20px] mr-2">auto_awesome</span>
+<span class="text-[10px] font-medium uppercase tracking-widest">Journey</span>
+</div>
+<div class="flex items-center justify-center text-slate-400 px-5 py-2.5 cursor-pointer hover:text-blue-500 transition-all">
+<span class="material-symbols-outlined text-[20px] mr-2">search</span>
+<span class="text-[10px] font-medium uppercase tracking-widest">Explore</span>
+</div>
+<div class="flex items-center justify-center text-slate-400 px-5 py-2.5 cursor-pointer hover:text-blue-500 transition-all">
+<span class="material-symbols-outlined text-[20px] mr-2">event_available</span>
+<span class="text-[10px] font-medium uppercase tracking-widest">Sessions</span>
+</div>
+<div class="flex items-center justify-center text-slate-400 px-5 py-2.5 cursor-pointer hover:text-blue-500 transition-all">
+<span class="material-symbols-outlined text-[20px] mr-2">person</span>
+<span class="text-[10px] font-medium uppercase tracking-widest">Profile</span>
+</div>
+</nav>
+</body></html>

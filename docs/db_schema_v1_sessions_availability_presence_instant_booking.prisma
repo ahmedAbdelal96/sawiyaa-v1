@@ -1,0 +1,248 @@
+// DB Schema v1 — Sessions / Availability / Presence / Instant Booking
+// Intended to extend the first schema draft:
+// Identity/Auth + Profiles/Specialties
+//
+// Notes:
+// - Uses UUID ids
+// - All DateTime fields are UTC
+// - Some overlap validations should be enforced in service layer
+// - This file is a focused draft for the next module
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum AvailabilityWeekday {
+  SUNDAY
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+}
+
+enum SlotType {
+  REGULAR
+  FOLLOW_UP
+  BREAK
+}
+
+enum AvailabilityExceptionType {
+  FULL_DAY_BLOCK
+  PARTIAL_BLOCK
+  MANUAL_OVERRIDE
+}
+
+enum PresenceStatus {
+  OFFLINE
+  ONLINE
+  AWAY
+  BUSY
+}
+
+enum SessionFlowType {
+  SCHEDULED
+  INSTANT
+}
+
+enum SessionMode {
+  VIDEO
+  AUDIO
+  CHAT
+}
+
+enum SessionStatus {
+  DRAFT
+  PENDING_PAYMENT
+  PENDING_PRACTITIONER_RESPONSE
+  CONFIRMED
+  UPCOMING
+  READY_TO_JOIN
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+  EXPIRED
+  REFUND_PENDING
+  REFUNDED
+}
+
+enum SessionProvider {
+  NONE
+  DAILY
+  ZOOM
+}
+
+enum SessionEventType {
+  SESSION_CREATED
+  PAYMENT_PENDING
+  PAYMENT_CONFIRMED
+  PRACTITIONER_ACCEPTED
+  PRACTITIONER_REJECTED
+  SESSION_CONFIRMED
+  SESSION_READY_TO_JOIN
+  PATIENT_JOINED
+  PRACTITIONER_JOINED
+  SESSION_STARTED
+  SESSION_COMPLETED
+  CANCELLED_BY_PATIENT
+  CANCELLED_BY_PRACTITIONER
+  EXPIRED_UNPAID
+  NO_SHOW_PATIENT
+  NO_SHOW_PRACTITIONER
+  PROVIDER_ROOM_CREATED
+  PROVIDER_ROOM_ENDED
+}
+
+enum InstantBookingRequestStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  EXPIRED
+  CANCELLED
+  CONVERTED_TO_SESSION
+}
+
+// NOTE:
+// These referenced models are expected to already exist in the first schema:
+// model PatientProfile
+// model PractitionerProfile
+
+model AvailabilitySlot {
+  id                       String              @id @default(uuid()) @db.Uuid
+  practitionerId           String              @db.Uuid
+  weekday                  AvailabilityWeekday
+  startMinute              Int
+  endMinute                Int
+  sessionDurationMinutes   Int
+  slotType                 SlotType            @default(REGULAR)
+  isEnabled                Boolean             @default(true)
+  instantBookingEnabled    Boolean             @default(false)
+  createdAt                DateTime            @default(now())
+  updatedAt                DateTime            @updatedAt
+
+  practitioner             PractitionerProfile @relation(fields: [practitionerId], references: [id], onDelete: Cascade)
+
+  @@index([practitionerId, weekday])
+  @@index([practitionerId, isEnabled])
+  @@index([practitionerId, instantBookingEnabled])
+}
+
+model AvailabilityException {
+  id              String                    @id @default(uuid()) @db.Uuid
+  practitionerId  String                    @db.Uuid
+  exceptionDate   DateTime                  @db.Date
+  startAtUtc      DateTime?
+  endAtUtc        DateTime?
+  exceptionType   AvailabilityExceptionType
+  reason          String?
+  isBlocking      Boolean                   @default(true)
+  createdAt       DateTime                  @default(now())
+  updatedAt       DateTime                  @updatedAt
+
+  practitioner    PractitionerProfile       @relation(fields: [practitionerId], references: [id], onDelete: Cascade)
+
+  @@index([practitionerId, exceptionDate])
+  @@index([practitionerId, exceptionType])
+}
+
+model PractitionerPresence {
+  id                         String              @id @default(uuid()) @db.Uuid
+  practitionerId             String              @unique @db.Uuid
+  presenceStatus             PresenceStatus      @default(OFFLINE)
+  lastSeenAt                 DateTime?
+  heartbeatAt                DateTime?
+  manualStatusEnabled        Boolean             @default(true)
+  instantBookingLiveEnabled  Boolean             @default(false)
+  createdAt                  DateTime            @default(now())
+  updatedAt                  DateTime            @updatedAt
+
+  practitioner               PractitionerProfile @relation(fields: [practitionerId], references: [id], onDelete: Cascade)
+
+  @@index([presenceStatus])
+  @@index([instantBookingLiveEnabled])
+}
+
+model Session {
+  id                              String              @id @default(uuid()) @db.Uuid
+  patientId                       String              @db.Uuid
+  practitionerId                  String              @db.Uuid
+  flowType                        SessionFlowType
+  sessionMode                     SessionMode
+  durationMinutes                 Int
+  status                          SessionStatus       @default(DRAFT)
+
+  requestedStartAt                DateTime?
+  scheduledStartAt                DateTime?
+  scheduledEndAt                  DateTime?
+  joinOpenAt                      DateTime?
+  expiresAt                       DateTime?
+
+  timezoneSnapshot                String?
+  provider                        SessionProvider     @default(NONE)
+  providerRoomId                  String?
+  providerSessionRef              String?
+  notesInternal                   String?
+
+  createdAt                       DateTime            @default(now())
+  updatedAt                       DateTime            @updatedAt
+
+  patient                         PatientProfile      @relation(fields: [patientId], references: [id], onDelete: Restrict)
+  practitioner                    PractitionerProfile @relation(fields: [practitionerId], references: [id], onDelete: Restrict)
+  events                          SessionEvent[]
+  instantBookingRequest           InstantBookingRequest?
+
+  @@index([patientId, status])
+  @@index([practitionerId, status])
+  @@index([scheduledStartAt])
+  @@index([scheduledEndAt])
+  @@index([flowType, status])
+  @@index([provider, providerRoomId])
+}
+
+model SessionEvent {
+  id              String           @id @default(uuid()) @db.Uuid
+  sessionId       String           @db.Uuid
+  eventType       SessionEventType
+  actorUserId     String?          @db.Uuid
+  metadataJson    Json?
+  createdAt       DateTime         @default(now())
+
+  session         Session          @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId, createdAt])
+  @@index([eventType, createdAt])
+}
+
+model InstantBookingRequest {
+  id                         String                       @id @default(uuid()) @db.Uuid
+  patientId                  String                       @db.Uuid
+  practitionerId             String                       @db.Uuid
+  linkedSessionId            String?                      @unique @db.Uuid
+
+  requestedDurationMinutes   Int
+  preferredMode              SessionMode
+  status                     InstantBookingRequestStatus  @default(PENDING)
+
+  requestedAt                DateTime                     @default(now())
+  expiresAt                  DateTime
+  respondedAt                DateTime?
+
+  createdAt                  DateTime                     @default(now())
+  updatedAt                  DateTime                     @updatedAt
+
+  patient                    PatientProfile               @relation(fields: [patientId], references: [id], onDelete: Restrict)
+  practitioner               PractitionerProfile          @relation(fields: [practitionerId], references: [id], onDelete: Restrict)
+  linkedSession              Session?                     @relation(fields: [linkedSessionId], references: [id], onDelete: SetNull)
+
+  @@index([patientId, status])
+  @@index([practitionerId, status])
+  @@index([requestedAt])
+  @@index([expiresAt])
+}

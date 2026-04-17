@@ -1,0 +1,470 @@
+// DB Schema v1 — Payments / Wallet / Ledger / Commission / Coupons
+// Extends previous drafts:
+// - Identity/Auth + Profiles/Specialties
+// - Sessions/Availability/Presence/Instant Booking
+//
+// Notes:
+// - Keep financial truth in ledger
+// - Use Decimal for money
+// - Slugs are useful for public/admin entities, not for core internal money ops
+// - Snapshot fields included where important
+// - Some partial indexes / advanced constraints may be added via raw SQL migration later
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum PaymentPurpose {
+  SESSION_BOOKING
+  SESSION_INSTANT_BOOKING
+  SESSION_EXTENSION
+  COURSE_ENROLLMENT
+  MANUAL_INVOICE
+}
+
+enum PaymentProvider {
+  STRIPE
+  PAYMOB
+}
+
+enum PaymentStatus {
+  CREATED
+  PENDING
+  REQUIRES_ACTION
+  AUTHORIZED
+  CAPTURED
+  FAILED
+  CANCELLED
+  EXPIRED
+  REFUND_PENDING
+  PARTIALLY_REFUNDED
+  REFUNDED
+}
+
+enum PaymentEventType {
+  PAYMENT_CREATED
+  PROVIDER_CHECKOUT_CREATED
+  PROVIDER_WEBHOOK_RECEIVED
+  PAYMENT_AUTHORIZED
+  PAYMENT_CAPTURED
+  PAYMENT_FAILED
+  PAYMENT_CANCELLED
+  PAYMENT_EXPIRED
+  REFUND_REQUESTED
+  REFUND_PROCESSED
+}
+
+enum RefundType {
+  FULL
+  PARTIAL
+}
+
+enum RefundStatus {
+  REQUESTED
+  PROCESSING
+  SUCCEEDED
+  FAILED
+  CANCELLED
+}
+
+enum LedgerEntryType {
+  SESSION_GROSS
+  PLATFORM_COMMISSION
+  PRACTITIONER_EARNING
+  COUPON_PLATFORM_SHARE
+  COUPON_PRACTITIONER_SHARE
+  REFUND_PLATFORM_REVERSAL
+  REFUND_PRACTITIONER_REVERSAL
+  MANUAL_ADJUSTMENT
+  SETTLEMENT_PAYOUT
+  SETTLEMENT_REVERSAL
+}
+
+enum LedgerDirection {
+  CREDIT
+  DEBIT
+}
+
+enum WalletBalanceBucket {
+  AVAILABLE
+  PENDING
+  RESERVED
+}
+
+enum SettlementBatchStatus {
+  DRAFT
+  GENERATED
+  FINALIZED
+  PROCESSING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum PractitionerSettlementStatus {
+  DRAFT
+  READY
+  PROCESSING
+  PAID
+  FAILED
+  CANCELLED
+}
+
+enum CommissionRuleScope {
+  GLOBAL
+  COUNTRY_PAIR
+  SPECIALTY
+  SESSION_MODE
+  SESSION_FLOW
+  PRACTITIONER_SEGMENT
+}
+
+enum MarketType {
+  LOCAL
+  CROSS_BORDER
+  ANY
+}
+
+enum CouponScope {
+  PRACTITIONER_SESSIONS
+  PLATFORM_WIDE
+  SPECIALTY
+  CAMPAIGN
+}
+
+enum CouponStatus {
+  DRAFT
+  PENDING_REVIEW
+  APPROVED
+  REJECTED
+  ACTIVE
+  EXPIRED
+  DISABLED
+}
+
+enum DiscountType {
+  PERCENTAGE
+  FIXED_AMOUNT
+}
+
+// NOTE:
+// These referenced models are expected to exist already:
+// model Session
+// model PatientProfile
+// model PractitionerProfile
+// model Specialty
+
+model Payment {
+  id                              String            @id @default(uuid()) @db.Uuid
+  sessionId                       String?           @db.Uuid
+  patientId                       String            @db.Uuid
+  practitionerId                  String?           @db.Uuid
+
+  paymentPurpose                  PaymentPurpose
+  provider                        PaymentProvider
+  status                          PaymentStatus     @default(CREATED)
+
+  amountSubtotal                  Decimal           @db.Decimal(18, 2)
+  amountDiscount                  Decimal           @default(0) @db.Decimal(18, 2)
+  amountTotal                     Decimal           @db.Decimal(18, 2)
+  currencyCode                    String            @db.VarChar(3)
+
+  // Snapshots
+  commissionRuleId                String?           @db.Uuid
+  commissionPlatformRatePercent   Decimal?          @db.Decimal(5, 2)
+  commissionPractitionerRatePercent Decimal?        @db.Decimal(5, 2)
+  couponId                        String?           @db.Uuid
+  couponCodeSnapshot              String?           @db.VarChar(64)
+  couponDiscountSnapshot          Decimal?          @db.Decimal(18, 2)
+  couponPlatformShareSnapshot     Decimal?          @db.Decimal(5, 2)
+  couponPractitionerShareSnapshot Decimal?          @db.Decimal(5, 2)
+
+  providerPaymentRef              String?           @db.VarChar(191)
+  providerOrderRef                String?           @db.VarChar(191)
+  providerCustomerRef             String?           @db.VarChar(191)
+
+  initiatedAt                     DateTime          @default(now())
+  authorizedAt                    DateTime?
+  capturedAt                      DateTime?
+  failedAt                        DateTime?
+  cancelledAt                     DateTime?
+  expiredAt                       DateTime?
+
+  metadataJson                    Json?
+  createdAt                       DateTime          @default(now())
+  updatedAt                       DateTime          @updatedAt
+
+  session                         Session?          @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+  patient                         PatientProfile    @relation(fields: [patientId], references: [id], onDelete: Restrict)
+  practitioner                    PractitionerProfile? @relation(fields: [practitionerId], references: [id], onDelete: SetNull)
+  commissionRule                  CommissionRule?   @relation(fields: [commissionRuleId], references: [id], onDelete: SetNull)
+  coupon                          Coupon?           @relation(fields: [couponId], references: [id], onDelete: SetNull)
+
+  events                          PaymentEvent[]
+  refunds                         Refund[]
+  ledgerEntries                   LedgerEntry[]
+  couponRedemptions               CouponRedemption[]
+
+  @@index([sessionId])
+  @@index([patientId, status])
+  @@index([practitionerId, status])
+  @@index([provider, status, createdAt])
+  @@index([currencyCode, status])
+  @@unique([provider, providerPaymentRef], map: "uq_payment_provider_payment_ref")
+}
+
+model PaymentEvent {
+  id                String            @id @default(uuid()) @db.Uuid
+  paymentId         String            @db.Uuid
+  eventType         PaymentEventType
+  providerEventRef  String?           @db.VarChar(191)
+  payloadJson       Json?
+  createdAt         DateTime          @default(now())
+
+  payment           Payment           @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+
+  @@index([paymentId, createdAt])
+  @@index([eventType, createdAt])
+}
+
+model Refund {
+  id                    String          @id @default(uuid()) @db.Uuid
+  paymentId             String          @db.Uuid
+  sessionId             String?         @db.Uuid
+  refundType            RefundType
+  status                RefundStatus    @default(REQUESTED)
+  refundReason          String?         @db.VarChar(500)
+  amount                Decimal         @db.Decimal(18, 2)
+  currencyCode          String          @db.VarChar(3)
+  providerRefundRef     String?         @db.VarChar(191)
+  requestedAt           DateTime        @default(now())
+  processedAt           DateTime?
+  failedAt              DateTime?
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+
+  payment               Payment         @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+  session               Session?        @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+
+  @@index([paymentId, status])
+  @@index([sessionId, status])
+  @@index([requestedAt])
+}
+
+model LedgerEntry {
+  id                  String              @id @default(uuid()) @db.Uuid
+  practitionerId      String?             @db.Uuid
+  sessionId           String?             @db.Uuid
+  paymentId           String?             @db.Uuid
+  settlementId        String?             @db.Uuid
+
+  entryType           LedgerEntryType
+  direction           LedgerDirection
+  amount              Decimal             @db.Decimal(18, 2)
+  currencyCode        String              @db.VarChar(3)
+  balanceBucket       WalletBalanceBucket @default(PENDING)
+
+  referenceType       String?             @db.VarChar(100)
+  referenceId         String?             @db.VarChar(191)
+  description         String?             @db.VarChar(500)
+  effectiveAt         DateTime            @default(now())
+  metadataJson        Json?
+
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+
+  practitioner        PractitionerProfile? @relation(fields: [practitionerId], references: [id], onDelete: SetNull)
+  session             Session?            @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+  payment             Payment?            @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+  settlement          PractitionerSettlement? @relation(fields: [settlementId], references: [id], onDelete: SetNull)
+
+  @@index([practitionerId, effectiveAt])
+  @@index([practitionerId, balanceBucket, effectiveAt])
+  @@index([sessionId])
+  @@index([paymentId])
+  @@index([settlementId])
+  @@index([entryType, effectiveAt])
+  @@index([referenceType, referenceId])
+}
+
+model PractitionerWallet {
+  id                  String              @id @default(uuid()) @db.Uuid
+  practitionerId      String              @db.Uuid
+  currencyCode        String              @db.VarChar(3)
+
+  availableBalance    Decimal             @default(0) @db.Decimal(18, 2)
+  pendingBalance      Decimal             @default(0) @db.Decimal(18, 2)
+  reservedBalance     Decimal             @default(0) @db.Decimal(18, 2)
+
+  lifetimeEarned      Decimal             @default(0) @db.Decimal(18, 2)
+  lifetimePaidOut     Decimal             @default(0) @db.Decimal(18, 2)
+  lastLedgerEntryAt   DateTime?
+
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+
+  practitioner        PractitionerProfile @relation(fields: [practitionerId], references: [id], onDelete: Cascade)
+  settlements         PractitionerSettlement[]
+
+  @@unique([practitionerId, currencyCode])
+}
+
+model SettlementBatch {
+  id                  String                @id @default(uuid()) @db.Uuid
+  periodYear          Int
+  periodMonth         Int
+  currencyCode        String                @db.VarChar(3)
+  status              SettlementBatchStatus @default(DRAFT)
+  slug                String                @unique @db.VarChar(191)
+
+  generatedAt         DateTime?
+  finalizedAt         DateTime?
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
+
+  settlements         PractitionerSettlement[]
+
+  @@unique([periodYear, periodMonth, currencyCode])
+  @@index([status, periodYear, periodMonth])
+}
+
+model PractitionerSettlement {
+  id                    String                       @id @default(uuid()) @db.Uuid
+  batchId               String                       @db.Uuid
+  practitionerId        String                       @db.Uuid
+  walletId              String?                      @db.Uuid
+
+  amountGross           Decimal                      @db.Decimal(18, 2)
+  amountAdjustments     Decimal                      @default(0) @db.Decimal(18, 2)
+  amountNet             Decimal                      @db.Decimal(18, 2)
+  currencyCode          String                       @db.VarChar(3)
+
+  payoutMethodSnapshot  Json?
+  externalPayoutRef     String?                      @db.VarChar(191)
+  status                PractitionerSettlementStatus @default(DRAFT)
+
+  paidAt                DateTime?
+  failedAt              DateTime?
+  notes                 String?                      @db.VarChar(500)
+  createdAt             DateTime                     @default(now())
+  updatedAt             DateTime                     @updatedAt
+
+  batch                 SettlementBatch              @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  practitioner          PractitionerProfile          @relation(fields: [practitionerId], references: [id], onDelete: Restrict)
+  wallet                PractitionerWallet?          @relation(fields: [walletId], references: [id], onDelete: SetNull)
+  ledgerEntries         LedgerEntry[]
+
+  @@unique([batchId, practitionerId])
+  @@index([practitionerId, status])
+  @@index([paidAt])
+}
+
+model CommissionRule {
+  id                         String               @id @default(uuid()) @db.Uuid
+  slug                       String               @unique @db.VarChar(191)
+  ruleName                   String               @db.VarChar(191)
+  ruleScope                  CommissionRuleScope
+  marketType                 MarketType           @default(ANY)
+
+  practitionerCountryId      String?              @db.Uuid
+  patientCountryId           String?              @db.Uuid
+  sessionFlowType            SessionFlowType?
+  sessionMode                SessionMode?
+  specialtyId                String?              @db.Uuid
+
+  platformRatePercent        Decimal              @db.Decimal(5, 2)
+  practitionerRatePercent    Decimal              @db.Decimal(5, 2)
+
+  priority                   Int                  @default(0)
+  isDefault                  Boolean              @default(false)
+  isActive                   Boolean              @default(true)
+
+  startsAt                   DateTime?
+  endsAt                     DateTime?
+
+  createdAt                  DateTime             @default(now())
+  updatedAt                  DateTime             @updatedAt
+
+  specialty                  Specialty?           @relation(fields: [specialtyId], references: [id], onDelete: SetNull)
+  payments                   Payment[]
+
+  @@index([isActive, isDefault])
+  @@index([priority, startsAt, endsAt])
+  @@index([practitionerCountryId, patientCountryId])
+  @@index([sessionFlowType, sessionMode])
+  @@index([specialtyId])
+}
+
+model Coupon {
+  id                          String              @id @default(uuid()) @db.Uuid
+  code                        String              @unique @db.VarChar(64)
+  slug                        String              @unique @db.VarChar(191)
+
+  createdByUserId             String              @db.Uuid
+  ownerPractitionerId         String?             @db.Uuid
+  approvedByUserId            String?             @db.Uuid
+
+  couponScope                 CouponScope
+  status                      CouponStatus        @default(DRAFT)
+  discountType                DiscountType
+  discountValue               Decimal             @db.Decimal(18, 2)
+  maxDiscountAmount           Decimal?            @db.Decimal(18, 2)
+
+  platformSharePercent        Decimal             @db.Decimal(5, 2)
+  practitionerSharePercent    Decimal             @db.Decimal(5, 2)
+
+  usageLimitTotal             Int?
+  usageLimitPerPatient        Int?
+  currentUsageCount           Int                 @default(0)
+
+  requiresApproval            Boolean             @default(true)
+  approvedAt                  DateTime?
+  startsAt                    DateTime?
+  endsAt                      DateTime?
+  isActive                    Boolean             @default(false)
+
+  createdAt                   DateTime            @default(now())
+  updatedAt                   DateTime            @updatedAt
+
+  ownerPractitioner           PractitionerProfile? @relation(fields: [ownerPractitionerId], references: [id], onDelete: SetNull)
+  payments                    Payment[]
+  redemptions                 CouponRedemption[]
+
+  @@index([ownerPractitionerId, status])
+  @@index([status, startsAt, endsAt])
+  @@index([approvedByUserId])
+}
+
+model CouponRedemption {
+  id                          String              @id @default(uuid()) @db.Uuid
+  couponId                    String              @db.Uuid
+  sessionId                   String?             @db.Uuid
+  paymentId                   String?             @db.Uuid
+  patientId                   String              @db.Uuid
+  practitionerId              String?             @db.Uuid
+
+  currencyCode                String              @db.VarChar(3)
+  grossAmount                 Decimal             @db.Decimal(18, 2)
+  discountAmount              Decimal             @db.Decimal(18, 2)
+  platformDiscountShare       Decimal             @db.Decimal(18, 2)
+  practitionerDiscountShare   Decimal             @db.Decimal(18, 2)
+
+  redeemedAt                  DateTime            @default(now())
+  createdAt                   DateTime            @default(now())
+
+  coupon                      Coupon              @relation(fields: [couponId], references: [id], onDelete: Restrict)
+  session                     Session?            @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+  payment                     Payment?            @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+  patient                     PatientProfile      @relation(fields: [patientId], references: [id], onDelete: Restrict)
+  practitioner                PractitionerProfile? @relation(fields: [practitionerId], references: [id], onDelete: SetNull)
+
+  @@unique([couponId, sessionId], map: "uq_coupon_redemption_coupon_session")
+  @@index([patientId, redeemedAt])
+  @@index([practitionerId, redeemedAt])
+  @@index([paymentId])
+}

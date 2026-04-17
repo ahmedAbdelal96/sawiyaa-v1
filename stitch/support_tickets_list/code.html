@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+
+<html dir="rtl" lang="ar"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-variant": "#d8e3fc",
+                    "on-tertiary": "#ffffff",
+                    "secondary-fixed": "#d6e3ff",
+                    "background": "#f9f9ff",
+                    "inverse-surface": "#263144",
+                    "surface-dim": "#cfdaf3",
+                    "on-secondary-container": "#465c80",
+                    "outline-variant": "#c2c6d3",
+                    "on-primary-fixed": "#001b3c",
+                    "on-secondary-fixed-variant": "#31476a",
+                    "primary": "#0b5cac",
+                    "tertiary-fixed-dim": "#bfc7d5",
+                    "surface-bright": "#f9f9ff",
+                    "on-tertiary-container": "#fdfcff",
+                    "inverse-primary": "#a7c8ff",
+                    "tertiary-fixed": "#dbe3f2",
+                    "surface-container": "#e8eeff",
+                    "on-tertiary-fixed": "#141c27",
+                    "surface": "#f9f9ff",
+                    "primary-container": "#3575c7",
+                    "on-error-container": "#93000a",
+                    "tertiary-container": "#6d7582",
+                    "on-primary-container": "#fefcff",
+                    "on-background": "#101c2e",
+                    "outline": "#727783",
+                    "error": "#ba1a1a",
+                    "surface-container-lowest": "#ffffff",
+                    "secondary-fixed-dim": "#b1c7f1",
+                    "surface-container-highest": "#d8e3fc",
+                    "primary-fixed": "#d5e3ff",
+                    "secondary": "#495f83",
+                    "on-surface": "#101c2e",
+                    "surface-container-high": "#dfe8ff",
+                    "primary-fixed-dim": "#a7c8ff",
+                    "on-primary-fixed-variant": "#004689",
+                    "on-error": "#ffffff",
+                    "on-secondary": "#ffffff",
+                    "error-container": "#ffdad6",
+                    "inverse-on-surface": "#ecf0ff",
+                    "secondary-container": "#bfd5ff",
+                    "on-tertiary-fixed-variant": "#3f4753",
+                    "on-surface-variant": "#424751",
+                    "on-secondary-fixed": "#001b3c",
+                    "surface-tint": "#125eae",
+                    "tertiary": "#545d69",
+                    "surface-container-low": "#f0f3ff",
+                    "on-primary": "#ffffff"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "2xl": "1rem",
+                    "3xl": "1.5rem",
+                    "full": "9999px"
+            },
+            "fontFamily": {
+                    "headline": ["Manrope"],
+                    "body": ["Manrope"],
+                    "label": ["Manrope"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .tonal-transition-surface {
+            background: linear-gradient(180deg, rgba(249, 249, 255, 0.9) 0%, rgba(249, 249, 255, 0.7) 100%);
+        }
+        body {
+            font-family: 'Manrope', sans-serif;
+            background-color: #f9f9ff;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="text-on-surface antialiased">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-[#f9f9ff]/70 backdrop-blur-md">
+<div class="flex flex-row-reverse justify-between items-center w-full px-6 py-4 max-w-screen-xl mx-auto">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-secondary-container flex items-center justify-center overflow-hidden">
+<img alt="Profile" class="w-full h-full object-cover" data-alt="Close up portrait of a professional smiling woman in a bright office with soft natural lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCyhO7SDChnkvqQucDXIAsjvY7xsmw9bQIiOrvH2b33bYnq9g4YsGLfmDlGALJ4XnNqaJCoBdb5uLaz9se4a3fNd-RsF2KgbJEgM0v51OsNaso-p2mJIlPrA7W8A7l80-xOS3rIlKaYcv9MHAow8so-PZvHSX1PmqWUbhfF3FIxYPvL2jPYh-nxqic5ZMQdtmn3RtU1C4alBaoJgb6FeOcRgacYGBk37CxpziXtZVouNFtoanuOpY-XU-sQz6Ir5djHakast_EGfBQ"/>
+</div>
+<h1 class="font-manrope font-bold text-2xl tracking-tight text-right text-[#3f7dcf]">فاييد</h1>
+</div>
+<div class="flex items-center gap-4">
+<button class="p-2 rounded-full hover:bg-blue-50 transition-colors">
+<span class="material-symbols-outlined text-[#3f7dcf]" data-icon="notifications">notifications</span>
+</button>
+</div>
+</div>
+</header>
+<main class="pt-24 pb-32 px-6 max-w-screen-md mx-auto min-h-screen">
+<!-- Editorial Header -->
+<div class="mb-10 text-right">
+<h2 class="text-4xl font-extrabold text-on-surface tracking-tight mb-2">الدعم الفني</h2>
+<p class="text-on-surface-variant text-lg leading-relaxed">نحن هنا لنضمن لك تجربة هادئة ومريحة. تتبع تذاكر الدعم الخاصة بك هنا.</p>
+</div>
+<!-- Filter Chips (Semantic Pivot) -->
+<div class="flex flex-row-reverse gap-3 overflow-x-auto pb-6 no-scrollbar">
+<button class="px-6 py-2 rounded-full bg-primary text-on-primary whitespace-nowrap text-sm font-medium">الكل</button>
+<button class="px-6 py-2 rounded-full bg-surface-container-high text-on-surface-variant whitespace-nowrap text-sm font-medium hover:bg-surface-variant transition-colors">قيد التنفيذ</button>
+<button class="px-6 py-2 rounded-full bg-surface-container-high text-on-surface-variant whitespace-nowrap text-sm font-medium hover:bg-surface-variant transition-colors">مكتملة</button>
+<button class="px-6 py-2 rounded-full bg-surface-container-high text-on-surface-variant whitespace-nowrap text-sm font-medium hover:bg-surface-variant transition-colors">مفتوحة</button>
+</div>
+<!-- Support Tickets List (Asymmetric Layout) -->
+<div class="space-y-6">
+<!-- Ticket Item 1: Open -->
+<div class="group bg-surface-container-lowest p-6 rounded-3xl transition-all hover:translate-y-[-4px] flex flex-col gap-4 border-r-4 border-primary">
+<div class="flex flex-row-reverse justify-between items-start">
+<div class="text-right">
+<span class="text-xs font-bold text-primary tracking-widest uppercase mb-1 block">TKT-8842</span>
+<h3 class="text-xl font-bold text-on-surface">مشكلة في تسجيل الدخول التلقائي</h3>
+</div>
+<span class="px-4 py-1.5 rounded-full bg-primary-fixed text-on-primary-fixed-variant text-xs font-bold">مفتوحة</span>
+</div>
+<p class="text-on-surface-variant leading-relaxed text-right">أواجه صعوبة في البقاء متصلاً بالخدمة بعد إغلاق التطبيق في نظام iOS...</p>
+<div class="flex flex-row-reverse items-center justify-between mt-2 pt-4 border-t border-surface-container-low">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-sm text-outline" data-icon="schedule">schedule</span>
+<span class="text-xs text-on-secondary-container">منذ ساعتين</span>
+</div>
+<button class="flex items-center gap-1 text-primary font-bold text-sm">
+<span>عرض التفاصيل</span>
+<span class="material-symbols-outlined text-base" data-icon="arrow_back">arrow_back</span>
+</button>
+</div>
+</div>
+<!-- Ticket Item 2: In Progress -->
+<div class="group bg-surface-container-lowest p-6 rounded-3xl transition-all hover:translate-y-[-4px] flex flex-col gap-4 border-r-4 border-tertiary-container">
+<div class="flex flex-row-reverse justify-between items-start">
+<div class="text-right">
+<span class="text-xs font-bold text-tertiary-container tracking-widest uppercase mb-1 block">TKT-8711</span>
+<h3 class="text-xl font-bold text-on-surface">تحديث طريقة الدفع الشهرية</h3>
+</div>
+<span class="px-4 py-1.5 rounded-full bg-tertiary-fixed text-on-tertiary-fixed-variant text-xs font-bold">قيد التنفيذ</span>
+</div>
+<p class="text-on-surface-variant leading-relaxed text-right">أرغب في تغيير بطاقة الدفع المفعّلة للاشتراك السنوي الخاص بي.</p>
+<div class="flex flex-row-reverse items-center justify-between mt-2 pt-4 border-t border-surface-container-low">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-sm text-outline" data-icon="history">history</span>
+<span class="text-xs text-on-secondary-container">منذ يوم واحد</span>
+</div>
+<button class="flex items-center gap-1 text-primary font-bold text-sm">
+<span>عرض التفاصيل</span>
+<span class="material-symbols-outlined text-base" data-icon="arrow_back">arrow_back</span>
+</button>
+</div>
+</div>
+<!-- Ticket Item 3: Resolved -->
+<div class="group bg-surface-container-lowest p-6 rounded-3xl transition-all hover:translate-y-[-4px] flex flex-col gap-4 opacity-80 border-r-4 border-outline-variant">
+<div class="flex flex-row-reverse justify-between items-start">
+<div class="text-right">
+<span class="text-xs font-bold text-outline tracking-widest uppercase mb-1 block">TKT-8605</span>
+<h3 class="text-xl font-bold text-on-surface">استفسار عن جلسات التأمل</h3>
+</div>
+<span class="px-4 py-1.5 rounded-full bg-surface-variant text-on-surface-variant text-xs font-bold">مكتملة</span>
+</div>
+<p class="text-on-surface-variant leading-relaxed text-right">شكراً لكم، تم الإجابة على استفساري بخصوص المواعيد المتاحة.</p>
+<div class="flex flex-row-reverse items-center justify-between mt-2 pt-4 border-t border-surface-container-low">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-sm text-outline" data-icon="check_circle">check_circle</span>
+<span class="text-xs text-on-secondary-container">منذ ٣ أيام</span>
+</div>
+<button class="flex items-center gap-1 text-primary font-bold text-sm">
+<span>مراجعة المحادثة</span>
+<span class="material-symbols-outlined text-base" data-icon="arrow_back">arrow_back</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Create New Ticket Hero Section (Bento Style) -->
+<div class="mt-12 relative overflow-hidden bg-gradient-to-br from-primary to-primary-container p-8 rounded-3xl text-white shadow-xl">
+<div class="relative z-10 flex flex-col md:flex-row-reverse items-center justify-between gap-6">
+<div class="text-right flex-1">
+<h4 class="text-2xl font-bold mb-2">هل تحتاج لمساعدة إضافية؟</h4>
+<p class="text-primary-fixed/80 text-sm leading-relaxed">فريق الخبراء لدينا متاح على مدار الساعة لضمان راحتك. لا تتردد في طرح أي استفسار.</p>
+</div>
+<button class="bg-white text-primary px-8 py-4 rounded-2xl font-bold text-lg hover:scale-105 transition-transform flex items-center gap-3">
+<span class="material-symbols-outlined" data-icon="add_circle" style="font-variation-settings: 'FILL' 1;">add_circle</span>
+                    إنشاء تذكرة جديدة
+                </button>
+</div>
+<!-- Decorative blur background -->
+<div class="absolute -bottom-10 -left-10 w-40 h-40 bg-white/10 rounded-full blur-3xl"></div>
+<div class="absolute -top-10 -right-10 w-40 h-40 bg-white/10 rounded-full blur-3xl"></div>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full bg-white/70 backdrop-blur-md rounded-t-3xl z-50 shadow-[0_-12px_40px_rgba(16,28,46,0.06)]">
+<div class="flex flex-row-reverse justify-around items-center px-4 pb-6 pt-2">
+<a class="flex flex-col items-center justify-center text-[#101c2e]/60 px-4 py-2 hover:bg-blue-50/50 transition-colors" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="home">home</span>
+<span class="text-[11px] font-medium leading-none">الرئيسية</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#101c2e]/60 px-4 py-2 hover:bg-blue-50/50 transition-colors" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="event_note">event_note</span>
+<span class="text-[11px] font-medium leading-none">الجلسات</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#101c2e]/60 px-4 py-2 hover:bg-blue-50/50 transition-colors" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="chat_bubble">chat_bubble</span>
+<span class="text-[11px] font-medium leading-none">المحادثة</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#101c2e]/60 px-4 py-2 hover:bg-blue-50/50 transition-colors" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="payments">payments</span>
+<span class="text-[11px] font-medium leading-none">المدفوعات</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-[#d5e3ff] text-[#0b5cac] rounded-2xl px-4 py-2" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="person" style="font-variation-settings: 'FILL' 1;">person</span>
+<span class="text-[11px] font-medium leading-none">الحساب</span>
+</a>
+</div>
+</nav>
+</body></html>

@@ -1,0 +1,31 @@
+{
+  "fallback": {
+    "eyebrow": "Something went wrong",
+    "title": "We couldn't load this part of Fayed right now",
+    "description": "Please try again. If the issue continues, you can go back, return home, or contact support from your area when available.",
+    "retry": "Try again",
+    "back": "Go back",
+    "home": "Go home",
+    "support": "Contact support",
+    "reference": "Reference: {id}",
+    "unknownValue": "Unavailable",
+    "diagnostics": {
+      "title": "Development diagnostics",
+      "fields": {
+        "type": "Error type",
+        "status": "Status",
+        "message": "Message",
+        "path": "Request path",
+        "code": "Code",
+        "reference": "Reference"
+      }
+    }
+  },
+  "boundary": {
+    "title": "Something went wrong",
+    "description": "Please try again. If the problem continues, reload the page.",
+    "retry": "Try again",
+    "reload": "Reload page",
+    "genericMessage": "An unexpected error occurred."
+  }
+}

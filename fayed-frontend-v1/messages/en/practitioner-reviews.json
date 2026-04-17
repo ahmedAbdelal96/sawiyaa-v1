@@ -1,0 +1,66 @@
+{
+  "meta": {
+    "title": "Public trust view - Practitioner",
+    "description": "Review how your public rating and published feedback currently appear to patients."
+  },
+  "list": {
+    "eyebrow": "Public trust visibility",
+    "title": "Your public reviews view",
+    "note": "This page is read-only. It shows how your public trust profile appears now based on published patient feedback."
+  },
+  "summary": {
+    "averageRating": "Average rating",
+    "noRating": "No public rating yet",
+    "totalPublicReviews": "Public reviews",
+    "freshness": "Feedback freshness",
+    "latestPublishedAt": "Latest published review: {value}",
+    "noLatestPublishedAt": "No published review date yet"
+  },
+  "freshness": {
+    "NONE": "No timeline yet",
+    "RECENT": "Recent",
+    "STALE": "Not recent"
+  },
+  "reviews": {
+    "heading": "Published review snippets",
+    "note": "Only moderation-safe, publicly visible review snippets are shown.",
+    "count": "{value, number} {value, plural, one {review} other {reviews}}",
+    "rating": "Rating: {value}/5",
+    "publishedAt": "Published: {value}",
+    "noText": "No written text in this published review."
+  },
+  "pagination": {
+    "summary": "{from}-{to} of {total}",
+    "previous": "Previous",
+    "next": "Next"
+  },
+  "states": {
+    "profileError": {
+      "heading": "Your practitioner profile is not available right now",
+      "note": "We could not load your practitioner profile.",
+      "retry": "Try again"
+    },
+    "error": {
+      "heading": "Public reviews view is not available right now",
+      "note": "We could not load your public trust data.",
+      "retry": "Try again"
+    },
+    "empty": {
+      "heading": "No published reviews yet",
+      "note": "Public review snippets will appear here after eligible session feedback is published."
+    },
+    "notPublicYet": {
+      "heading": "Your profile is not publicly visible yet",
+      "note": "This view needs your public practitioner profile to be visible before public trust data can be shown.",
+      "action": "Go to profile settings"
+    }
+  },
+  "boundaries": {
+    "heading": "Scope boundary",
+    "items": {
+      "readOnly": "This screen is visibility-only.",
+      "noReplies": "Practitioner replies are not available in this baseline.",
+      "noModeration": "Moderation actions are not available on this page."
+    }
+  }
+}

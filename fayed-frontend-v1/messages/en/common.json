@@ -1,0 +1,50 @@
+{
+  "nav": {
+    "account": "Account menu",
+    "logout": "Sign out",
+    "profile": "Profile",
+    "settings": "Settings",
+    "user": "Fayed User"
+  },
+  "loading": {
+    "label": "Loading",
+    "message": "Loading..."
+  },
+  "themeToggle": {
+    "switchToLight": "Switch to light mode",
+    "switchToDark": "Switch to dark mode"
+  },
+  "emptyStates": {
+    "noData": {
+      "title": "No {entity} yet",
+      "description": "Add a new {entity} to see it here.",
+      "addAction": "Add {entity}"
+    },
+    "noResults": {
+      "title": "No results found",
+      "descriptionWithQuery": "We couldn't find anything that matches \"{query}\". Try a different search.",
+      "descriptionFallback": "Try a different search term or filter.",
+      "clearAction": "Clear search"
+    },
+    "bookings": {
+      "title": "No bookings yet",
+      "description": "Add a new booking to start building your schedule.",
+      "action": "Add booking"
+    },
+    "clients": {
+      "title": "No clients yet",
+      "description": "Add a new client to start managing your client base.",
+      "action": "Add client"
+    },
+    "services": {
+      "title": "No services yet",
+      "description": "Add your available services so bookings can be managed clearly.",
+      "action": "Add service"
+    },
+    "staff": {
+      "title": "No staff yet",
+      "description": "Add a team member to start coordinating responsibilities and bookings.",
+      "action": "Add staff member"
+    }
+  }
+}

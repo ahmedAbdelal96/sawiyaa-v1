@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+
+<html dir="rtl" lang="ar"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-variant": "#d8e3fc",
+                    "on-tertiary": "#ffffff",
+                    "secondary-fixed": "#d6e3ff",
+                    "background": "#f9f9ff",
+                    "inverse-surface": "#263144",
+                    "surface-dim": "#cfdaf3",
+                    "on-secondary-container": "#465c80",
+                    "outline-variant": "#c2c6d3",
+                    "on-primary-fixed": "#001b3c",
+                    "on-secondary-fixed-variant": "#31476a",
+                    "primary": "#0b5cac",
+                    "tertiary-fixed-dim": "#bfc7d5",
+                    "surface-bright": "#f9f9ff",
+                    "on-tertiary-container": "#fdfcff",
+                    "inverse-primary": "#a7c8ff",
+                    "tertiary-fixed": "#dbe3f2",
+                    "surface-container": "#e8eeff",
+                    "on-tertiary-fixed": "#141c27",
+                    "surface": "#f9f9ff",
+                    "primary-container": "#3575c7",
+                    "on-error-container": "#93000a",
+                    "tertiary-container": "#6d7582",
+                    "on-primary-container": "#fefcff",
+                    "on-background": "#101c2e",
+                    "outline": "#727783",
+                    "error": "#ba1a1a",
+                    "surface-container-lowest": "#ffffff",
+                    "secondary-fixed-dim": "#b1c7f1",
+                    "surface-container-highest": "#d8e3fc",
+                    "primary-fixed": "#d5e3ff",
+                    "secondary": "#495f83",
+                    "on-surface": "#101c2e",
+                    "surface-container-high": "#dfe8ff",
+                    "primary-fixed-dim": "#a7c8ff",
+                    "on-primary-fixed-variant": "#004689",
+                    "on-error": "#ffffff",
+                    "on-secondary": "#ffffff",
+                    "error-container": "#ffdad6",
+                    "inverse-on-surface": "#ecf0ff",
+                    "secondary-container": "#bfd5ff",
+                    "on-tertiary-fixed-variant": "#3f4753",
+                    "on-surface-variant": "#424751",
+                    "on-secondary-fixed": "#001b3c",
+                    "surface-tint": "#125eae",
+                    "tertiary": "#545d69",
+                    "surface-container-low": "#f0f3ff",
+                    "on-primary": "#ffffff"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "2xl": "1rem",
+                    "3xl": "1.5rem",
+                    "full": "9999px"
+            },
+            "fontFamily": {
+                    "headline": ["Manrope"],
+                    "body": ["Manrope"],
+                    "label": ["Manrope"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        @keyframes pulse-custom {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .animate-skeleton {
+            animation: pulse-custom 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background font-body antialiased">
+<!-- Top Navigation Bar -->
+<header class="bg-[#f9f9ff]/70 dark:bg-slate-950/70 backdrop-blur-md fixed top-0 w-full z-50 tonal-transition-surface">
+<div class="flex flex-row-reverse justify-between items-center w-full px-6 py-4 max-w-screen-xl mx-auto">
+<!-- Brand -->
+<div class="flex items-center gap-3">
+<h1 class="text-[#3f7dcf] font-bold text-2xl tracking-tight">فايد</h1>
+</div>
+<!-- Profile & Notifications -->
+<div class="flex flex-row-reverse items-center gap-4">
+<div class="w-10 h-10 rounded-full bg-surface-container-high animate-skeleton"></div>
+<div class="w-10 h-10 flex items-center justify-center text-[#3f7dcf]">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</div>
+</div>
+</div>
+</header>
+<main class="pt-24 pb-32 px-6 max-w-screen-xl mx-auto">
+<!-- Search & Filter Skeleton -->
+<section class="mb-10">
+<div class="flex flex-col gap-6">
+<!-- Headline Skeleton -->
+<div class="space-y-3">
+<h2 class="text-2xl font-bold font-headline text-on-surface">جاري البحث...</h2>
+<div class="h-4 w-64 bg-surface-container-high rounded-full animate-skeleton"></div>
+</div>
+<!-- Filter Chips Skeleton -->
+<div class="flex flex-row-reverse gap-3 overflow-hidden">
+<div class="h-10 w-24 bg-primary-container/20 rounded-full animate-skeleton"></div>
+<div class="h-10 w-32 bg-surface-container-high rounded-full animate-skeleton"></div>
+<div class="h-10 w-28 bg-surface-container-high rounded-full animate-skeleton"></div>
+<div class="h-10 w-36 bg-surface-container-high rounded-full animate-skeleton"></div>
+</div>
+</div>
+</section>
+<!-- Bento Grid Skeleton for Specialists -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+<!-- Skeleton Card 1 (Large Featured Style) -->
+<div class="md:col-span-2 bg-surface-container-lowest rounded-3xl p-6 shadow-[0_12px_40px_rgba(16,28,46,0.04)] flex flex-col md:flex-row-reverse gap-6">
+<div class="w-full md:w-1/3 aspect-square md:aspect-auto md:h-full bg-surface-container-high rounded-2xl animate-skeleton"></div>
+<div class="flex-1 space-y-4">
+<div class="flex justify-between items-start">
+<div class="space-y-2 w-full">
+<div class="h-6 w-1/2 bg-surface-container-high rounded-full animate-skeleton"></div>
+<div class="h-4 w-1/4 bg-surface-container-high rounded-full animate-skeleton"></div>
+</div>
+<div class="h-8 w-8 bg-surface-container-high rounded-full animate-skeleton"></div>
+</div>
+<div class="space-y-2">
+<div class="h-3 w-full bg-surface-container-low rounded-full animate-skeleton"></div>
+<div class="h-3 w-5/6 bg-surface-container-low rounded-full animate-skeleton"></div>
+<div class="h-3 w-4/6 bg-surface-container-low rounded-full animate-skeleton"></div>
+</div>
+<div class="flex gap-2 pt-4">
+<div class="h-10 flex-1 bg-primary-fixed rounded-xl animate-skeleton"></div>
+<div class="h-10 w-10 bg-surface-container-high rounded-xl animate-skeleton"></div>
+</div>
+</div>
+</div>
+<!-- Skeleton Card 2 (Standard Style) -->
+<div class="bg-surface-container-lowest rounded-3xl p-5 shadow-[0_12px_40px_rgba(16,28,46,0.04)] space-y-4">
+<div class="aspect-[4/3] w-full bg-surface-container-high rounded-2xl animate-skeleton"></div>
+<div class="space-y-2">
+<div class="h-5 w-2/3 bg-surface-container-high rounded-full animate-skeleton"></div>
+<div class="h-4 w-1/3 bg-surface-container-high rounded-full animate-skeleton"></div>
+</div>
+<div class="flex justify-between items-center pt-2">
+<div class="h-8 w-24 bg-primary-fixed rounded-lg animate-skeleton"></div>
+<div class="h-4 w-12 bg-surface-container-high rounded-full animate-skeleton"></div>
+</div>
+</div>
+<!-- Skeleton Card 3 (Standard Style) -->
+<div class="bg-surface-container-lowest rounded-3xl p-5 shadow-[0_12px_40px_rgba(16,28,46,0.04)] space-y-4">
+<div class="aspect-[4/3] w-full bg-surface-container-high rounded-2xl animate-skeleton"></div>
+<div class="space-y-2">
+<div class="h-5 w-2/3 bg-surface-container-high rounded-full animate-skeleton"></div>
+<div class="h-4 w-1/3 bg-surface-container-high rounded-full animate-skeleton"></div>
+</div>
+<div class="flex justify-between items-center pt-2">
+<div class="h-8 w-24 bg-primary-fixed rounded-lg animate-skeleton"></div>
+<div class="h-4 w-12 bg-surface-container-high rounded-full animate-skeleton"></div>
+</div>
+</div>
+<!-- Skeleton Card 4 (Horizontal Mini Style) -->
+<div class="bg-surface-container-lowest rounded-3xl p-4 shadow-[0_12px_40px_rgba(16,28,46,0.04)] flex flex-row-reverse gap-4">
+<div class="w-20 h-20 bg-surface-container-high rounded-xl animate-skeleton"></div>
+<div class="flex-1 space-y-2 justify-center flex flex-col">
+<div class="h-4 w-3/4 bg-surface-container-high rounded-full animate-skeleton"></div>
+<div class="h-3 w-1/2 bg-surface-container-low rounded-full animate-skeleton"></div>
+</div>
+</div>
+<!-- Skeleton Card 5 (Horizontal Mini Style) -->
+<div class="bg-surface-container-lowest rounded-3xl p-4 shadow-[0_12px_40px_rgba(16,28,46,0.04)] flex flex-row-reverse gap-4">
+<div class="w-20 h-20 bg-surface-container-high rounded-xl animate-skeleton"></div>
+<div class="flex-1 space-y-2 justify-center flex flex-col">
+<div class="h-4 w-3/4 bg-surface-container-high rounded-full animate-skeleton"></div>
+<div class="h-3 w-1/2 bg-surface-container-low rounded-full animate-skeleton"></div>
+</div>
+</div>
+</div>
+</main>
+<!-- Bottom Navigation Bar -->
+<nav class="fixed bottom-0 left-0 w-full flex flex-row-reverse justify-around items-center px-4 pb-6 pt-2 bg-white/70 dark:bg-slate-900/70 backdrop-blur-md rounded-t-[1.5rem] z-50 shadow-[0_-12px_40px_rgba(16,28,46,0.06)]">
+<!-- Home -->
+<div class="flex flex-col items-center justify-center text-[#101c2e]/60 dark:text-slate-400 px-4 py-2 hover:bg-blue-50/50 transition-colors">
+<span class="material-symbols-outlined" data-icon="home">home</span>
+<span class="text-[11px] font-medium leading-none mt-1">الرئيسية</span>
+</div>
+<!-- Sessions (Active Context: Searching for specialist) -->
+<div class="flex flex-col items-center justify-center bg-[#d5e3ff] dark:bg-blue-900/30 text-[#0b5cac] dark:text-blue-200 rounded-2xl px-4 py-2">
+<span class="material-symbols-outlined" data-icon="event_note">event_note</span>
+<span class="text-[11px] font-medium leading-none mt-1">الجلسات</span>
+</div>
+<!-- Chat -->
+<div class="flex flex-col items-center justify-center text-[#101c2e]/60 dark:text-slate-400 px-4 py-2 hover:bg-blue-50/50 transition-colors">
+<span class="material-symbols-outlined" data-icon="chat_bubble">chat_bubble</span>
+<span class="text-[11px] font-medium leading-none mt-1">المحادثة</span>
+</div>
+<!-- Payments -->
+<div class="flex flex-col items-center justify-center text-[#101c2e]/60 dark:text-slate-400 px-4 py-2 hover:bg-blue-50/50 transition-colors">
+<span class="material-symbols-outlined" data-icon="payments">payments</span>
+<span class="text-[11px] font-medium leading-none mt-1">المدفوعات</span>
+</div>
+<!-- Account -->
+<div class="flex flex-col items-center justify-center text-[#101c2e]/60 dark:text-slate-400 px-4 py-2 hover:bg-blue-50/50 transition-colors">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+<span class="text-[11px] font-medium leading-none mt-1">الحساب</span>
+</div>
+</nav>
+</body></html>

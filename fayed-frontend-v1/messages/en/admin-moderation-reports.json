@@ -1,0 +1,274 @@
+{
+  "meta": {
+    "list": {
+      "title": "Moderation reports — Admin",
+      "description": "Inspect moderation reports, case status, and the limited actions supported by the current backend contract."
+    },
+    "detail": {
+      "title": "Moderation report — Admin",
+      "description": "Review one moderation report, its status, and any available operational actions."
+    }
+  },
+  "list": {
+    "eyebrow": "Moderation intake baseline",
+    "title": "Moderation reports",
+    "note": "This baseline exposes the moderation report queue with the current status, target context, and the limited actions that the backend supports today.",
+    "count": "{value, number} reports",
+    "countLoading": "Loading…",
+    "itemTitle": "Report {id}",
+    "openAction": "Open report",
+    "fields": {
+      "reporter": "Reporter",
+      "createdAt": "Created",
+      "lastActionAt": "Last action"
+    },
+    "snapshot": {
+      "none": "No target snapshot is available.",
+      "summary": "{kind} · {count, number} fields"
+    }
+  },
+  "scope": {
+    "heading": "Available now",
+    "items": {
+      "list": "Review the moderation report queue with filters.",
+      "detail": "Inspect one report with its target snapshot.",
+      "actions": "Execute limited moderation actions where permitted."
+    }
+  },
+  "boundaries": {
+    "heading": "Outside current scope",
+    "items": {
+      "noCases": "There is no full moderation case management console yet.",
+      "noAutomations": "Automated resolution and escalation workflows are not exposed.",
+      "noBulk": "Bulk moderation actions are not supported."
+    }
+  },
+  "filters": {
+    "allStatuses": "All statuses",
+    "target": "Target",
+    "allTargets": "All targets",
+    "reporter": "Reporter role",
+    "allReporters": "All reporters",
+    "reason": "Reason",
+    "allReasons": "All reasons",
+    "query": "Search",
+    "queryPlaceholder": "Search within the moderation queue"
+  },
+  "statuses": {
+    "OPEN": "Open",
+    "UNDER_REVIEW": "Under review",
+    "READY_FOR_ENFORCEMENT": "Ready for enforcement",
+    "RESOLVED": "Resolved",
+    "DISMISSED": "Dismissed"
+  },
+  "targetTypes": {
+    "CARE_CHAT_CONVERSATION": "Care chat conversation",
+    "CARE_CHAT_MESSAGE": "Care chat message",
+    "GENERAL_CHAT_CONVERSATION": "General chat conversation",
+    "GENERAL_CHAT_MESSAGE": "General chat message",
+    "REVIEW": "Review",
+    "ARTICLE": "Article",
+    "SUPPORT_TICKET": "Support ticket",
+    "SUPPORT_MESSAGE": "Support message"
+  },
+  "reporterRoles": {
+    "PATIENT": "Patient",
+    "PRACTITIONER": "Practitioner",
+    "SUPPORT_AGENT": "Support agent",
+    "ADMIN": "Admin",
+    "CONTENT_REVIEWER": "Content reviewer"
+  },
+  "reasons": {
+    "ABUSE": "Abuse",
+    "HARASSMENT": "Harassment",
+    "SPAM": "Spam",
+    "SCAM": "Scam",
+    "INAPPROPRIATE_CONTENT": "Inappropriate content",
+    "PRIVACY_BREACH": "Privacy breach",
+    "OTHER": "Other"
+  },
+  "pagination": {
+    "summary": "{from}–{to} of {total}",
+    "previous": "Previous",
+    "next": "Next"
+  },
+  "states": {
+    "listError": {
+      "heading": "Moderation reports are not available right now",
+      "note": "Could not load the moderation queue.",
+      "retry": "Try again"
+    },
+    "empty": {
+      "heading": "No moderation reports right now",
+      "note": "There are no moderation reports in the current queue."
+    },
+    "detailError": {
+      "heading": "Moderation report is not available right now",
+      "note": "Could not load this moderation report. Try again or return to the queue.",
+      "retry": "Try again",
+      "back": "Back to reports"
+    },
+    "notFound": {
+      "heading": "Moderation report was not found",
+      "note": "We could not find this report in the current moderation scope."
+    }
+  },
+  "detail": {
+    "back": "Back to moderation reports",
+    "eyebrow": "Moderation report",
+    "title": "Report detail",
+    "note": "Use this view to inspect the report details, current status, and the limited moderation actions supported by the backend.",
+    "sections": {
+      "snapshotSummary": "Operational snapshot",
+      "case": "Report summary",
+      "reporter": "Reporter context",
+      "snapshot": "Target snapshot",
+      "actions": "Available actions",
+      "boundary": "Scope boundary"
+    },
+    "fields": {
+      "reportId": "Report ID",
+      "status": "Status",
+      "targetType": "Target type",
+      "targetId": "Target ID",
+      "reason": "Reported reason",
+      "createdAt": "Created at",
+      "lastActionAt": "Last action at",
+      "reporterRole": "Reporter role",
+      "reporterUserId": "Reporter user ID",
+      "noReporter": "—",
+      "note": "Reporter note",
+      "noNote": "No note provided"
+    },
+    "reporterNote": "Reporter identity is shown only when the backend has it on record.",
+    "snapshotSummaryNote": "Use this snapshot to quickly tell whether the report is still in active triage, whether target context is available, and whether this screen currently exposes limited actions or inspection only.",
+    "snapshotNote": "Target snapshots provide safe, read-only context for triage.",
+    "snapshot": {
+      "emptyHeading": "No target snapshot available",
+      "emptyNote": "This report does not include a target snapshot yet."
+    },
+    "snapshotCards": {
+      "caseState": {
+        "label": "Case state",
+        "states": {
+          "open": {
+            "title": "New report waiting for triage",
+            "note": "This report is still open. Review the current context before deciding whether it should move forward."
+          },
+          "review": {
+            "title": "Actively under review",
+            "note": "The case is already in review, so the current surface should support careful inspection and limited next actions only."
+          },
+          "enforcement": {
+            "title": "Ready for limited enforcement",
+            "note": "This report has reached the backend status where limited enforcement actions may be available for the current target."
+          },
+          "resolved": {
+            "title": "Closed as resolved",
+            "note": "This case is already resolved, so the operational posture here is mostly historical visibility."
+          },
+          "dismissed": {
+            "title": "Closed as dismissed",
+            "note": "This case was dismissed. Use this screen for inspection and traceability only."
+          }
+        }
+      },
+      "targetContext": {
+        "label": "Target context",
+        "states": {
+          "snapshotPresent": {
+            "title": "Target snapshot available",
+            "note": "A target snapshot is available for safe triage context on this report."
+          },
+          "snapshotMissing": {
+            "title": "Target snapshot is missing",
+            "note": "The backend did not include a target snapshot for this report, so action posture should stay cautious."
+          }
+        }
+      },
+      "actionPosture": {
+        "label": "Action posture",
+        "states": {
+          "limitedActions": {
+            "title": "Limited actions are available",
+            "note": "This report currently exposes only the moderation actions that the backend allows for this status, role, and target type."
+          },
+          "noActions": {
+            "title": "Inspection only right now",
+            "note": "No moderation actions are currently available for this report status."
+          },
+          "inspectionOnly": {
+            "title": "Inspection only for your role",
+            "note": "This surface remains visible, but no moderation actions are available to your current operator role here."
+          }
+        }
+      }
+    },
+    "actionsNote": "Actions are shown only when the backend allows them for this case status and target type.",
+    "boundaryNote": "This baseline keeps moderation actions narrow and contract-bound.",
+    "boundaryItems": {
+      "noCaseManagement": "No full case management workflow is exposed here yet.",
+      "noAutomation": "Automated enforcement and escalation flows are not exposed.",
+      "noBulk": "Bulk moderation actions are not supported."
+    }
+  },
+  "actions": {
+    "fields": {
+      "action": "Action",
+      "reason": "Reason",
+      "note": "Internal note"
+    },
+    "placeholders": {
+      "selectAction": "Select an action",
+      "reasonRequired": "Required — add a short reason",
+      "reasonOptional": "Optional — add a short reason",
+      "note": "Optional internal note"
+    },
+    "reasonRequiredNote": "A reason is required for this action by the backend contract.",
+    "submit": "Execute action",
+    "submitting": "Executing...",
+    "success": "Moderation action executed.",
+    "noActions": "No actions are available for this report status.",
+    "notAuthorized": "You do not have moderation permissions for this action set.",
+    "states": {
+      "noActions": {
+        "heading": "No action is available right now",
+        "note": "This report stays visible for inspection, but the current report status does not expose a moderation action."
+      },
+      "notAuthorized": {
+        "heading": "This view is inspection only for your role",
+        "note": "You can inspect the report details, but the current operator role does not have moderation controls here."
+      }
+    },
+    "validation": {
+      "select": "Select an action before submitting.",
+      "reasonRequired": "A reason is required for this action."
+    },
+    "options": {
+      "REVIEW_CASE": "Move to in review",
+      "PREPARE_ENFORCEMENT": "Prepare enforcement",
+      "MARK_RESOLVED": "Mark resolved",
+      "DISMISS_CASE": "Dismiss case",
+      "ENFORCE_CARE_CHAT_REVOKE": "Enforce care chat revoke",
+      "ENFORCE_CARE_CHAT_MESSAGE_HIDE": "Hide care chat message",
+      "ENFORCE_REVIEW_HIDE": "Hide review",
+      "ENFORCE_REVIEW_REJECT": "Reject review",
+      "ENFORCE_REVIEW_RESTORE": "Restore review",
+      "ENFORCE_ARTICLE_ARCHIVE": "Archive article",
+      "ENFORCE_SUPPORT_ESCALATE": "Escalate support ticket"
+    }
+  },
+  "errors": {
+    "invalidFilters": "Invalid moderation report filters.",
+    "forbiddenScope": "You do not have access to this moderation scope.",
+    "reportNotFound": "Moderation report was not found.",
+    "caseNotFound": "Moderation case was not found.",
+    "actionNotAllowed": "This action is not allowed for your role.",
+    "reasonRequired": "This action requires a reason.",
+    "invalidActionTarget": "This action is not valid for the selected target.",
+    "invalidTransition": "This action is not valid for the current report status.",
+    "raceCondition": "The report changed before the action completed. Refresh and try again.",
+    "enforcementTargetNotFound": "The enforcement target reference was not found.",
+    "generic": "Could not complete this moderation action right now."
+  }
+}

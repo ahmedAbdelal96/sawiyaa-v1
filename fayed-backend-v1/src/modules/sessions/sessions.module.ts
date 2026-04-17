@@ -1,0 +1,91 @@
+import { Module } from '@nestjs/common';
+import { JwtAccessAuthGuard } from '@common/guards/authentication/jwt-access-auth.guard';
+import { RolesGuard } from '@common/guards/authorization/roles.guard';
+import { AvailabilityModule } from '@modules/availability/availability.module';
+import { NotificationsModule } from '@modules/notifications/notifications.module';
+import { PublicPractitionerVisibilityPolicy } from '@modules/practitioners/policies/public-practitioner-visibility.policy';
+import { AdminSessionsOperationsController } from './controllers/admin-sessions-operations.controller';
+import { PatientSessionsController } from './controllers/patient-sessions.controller';
+import { PractitionerSessionsController } from './controllers/practitioner-sessions.controller';
+import { SessionAttendanceWebhooksController } from './controllers/session-attendance-webhooks.controller';
+import { SessionMapper } from './mappers/session.mapper';
+import { DailySessionVideoProviderAdapter } from './providers/daily-session-video-provider.adapter';
+import { SessionPatientRepository } from './repositories/session-patient.repository';
+import { SessionPractitionerRepository } from './repositories/session-practitioner.repository';
+import { SessionRepository } from './repositories/session.repository';
+import { ResolveSessionJoinReadinessService } from './services/resolve-session-join-readiness.service';
+import { ParseDailyAttendanceWebhookService } from './services/parse-daily-attendance-webhook.service';
+import { SessionVideoProviderRegistryService } from './services/session-video-provider-registry.service';
+import { ValidateSessionBookingRequestService } from './services/validate-session-booking-request.service';
+import { ValidateSessionConflictsService } from './services/validate-session-conflicts.service';
+import { ValidateSessionDurationService } from './services/validate-session-duration.service';
+import { ValidateSessionScheduleCompatibilityService } from './services/validate-session-schedule-compatibility.service';
+import { ValidateSessionStatusTransitionService } from './services/validate-session-status-transition.service';
+import { CancelSessionUseCase } from './use-cases/cancel-session.use-case';
+import { CreateScheduledSessionUseCase } from './use-cases/create-scheduled-session.use-case';
+import { ExpireUnpaidSessionUseCase } from './use-cases/expire-unpaid-session.use-case';
+import { GetMyPatientSessionsUseCase } from './use-cases/get-my-patient-sessions.use-case';
+import { GetMyPractitionerSessionsUseCase } from './use-cases/get-my-practitioner-sessions.use-case';
+import { GetAdminSessionAttendanceUseCase } from './use-cases/get-admin-session-attendance.use-case';
+import { GetAdminSessionsUseCase } from './use-cases/get-admin-sessions.use-case';
+import { GetSessionDetailsUseCase } from './use-cases/get-session-details.use-case';
+import { InspectAdminSessionRuntimeUseCase } from './use-cases/inspect-admin-session-runtime.use-case';
+import { HandleDailyAttendanceWebhookUseCase } from './use-cases/handle-daily-attendance-webhook.use-case';
+import { MarkSessionCompletedByPractitionerUseCase } from './use-cases/mark-session-completed-by-practitioner.use-case';
+import { MarkSessionNoShowByPractitionerUseCase } from './use-cases/mark-session-no-show-by-practitioner.use-case';
+import { PrepareSessionRuntimeUseCase } from './use-cases/prepare-session-runtime.use-case';
+import { ResolveSessionJoinContractUseCase } from './use-cases/resolve-session-join-contract.use-case';
+
+/**
+ * Sessions Module is the operational source of truth for scheduled consultations.
+ * It consumes availability and visibility policies without taking ownership of schedule, presence, payments, or video providers.
+ */
+@Module({
+  imports: [AvailabilityModule, NotificationsModule],
+  controllers: [
+    PatientSessionsController,
+    PractitionerSessionsController,
+    AdminSessionsOperationsController,
+    SessionAttendanceWebhooksController,
+  ],
+  providers: [
+    JwtAccessAuthGuard,
+    RolesGuard,
+    PublicPractitionerVisibilityPolicy,
+    SessionMapper,
+    SessionRepository,
+    SessionPatientRepository,
+    SessionPractitionerRepository,
+    ValidateSessionDurationService,
+    ValidateSessionBookingRequestService,
+    ValidateSessionStatusTransitionService,
+    ResolveSessionJoinReadinessService,
+    ParseDailyAttendanceWebhookService,
+    DailySessionVideoProviderAdapter,
+    SessionVideoProviderRegistryService,
+    ValidateSessionScheduleCompatibilityService,
+    ValidateSessionConflictsService,
+    CreateScheduledSessionUseCase,
+    GetMyPatientSessionsUseCase,
+    GetMyPractitionerSessionsUseCase,
+    GetAdminSessionsUseCase,
+    GetAdminSessionAttendanceUseCase,
+    GetSessionDetailsUseCase,
+    InspectAdminSessionRuntimeUseCase,
+    HandleDailyAttendanceWebhookUseCase,
+    MarkSessionCompletedByPractitionerUseCase,
+    MarkSessionNoShowByPractitionerUseCase,
+    PrepareSessionRuntimeUseCase,
+    ResolveSessionJoinContractUseCase,
+    CancelSessionUseCase,
+    ExpireUnpaidSessionUseCase,
+  ],
+  exports: [
+    SessionRepository,
+    ValidateSessionDurationService,
+    ValidateSessionConflictsService,
+    ValidateSessionStatusTransitionService,
+    ExpireUnpaidSessionUseCase,
+  ],
+})
+export class SessionsModule {}

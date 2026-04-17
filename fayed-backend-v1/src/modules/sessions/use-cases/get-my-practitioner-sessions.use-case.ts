@@ -1,0 +1,58 @@
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { SessionStatus } from '@prisma/client';
+import { SupportedLocale } from '@common/i18n/types/locale.types';
+import { ListSessionsDto } from '../dto/list-sessions.dto';
+import { SessionMapper } from '../mappers/session.mapper';
+import { SessionPractitionerRepository } from '../repositories/session-practitioner.repository';
+import { SessionRepository } from '../repositories/session.repository';
+
+/**
+ * Practitioner session listing is read-only and operational.
+ * It does not mutate presence or session lifecycle automatically in V1.
+ */
+@Injectable()
+export class GetMyPractitionerSessionsUseCase {
+  constructor(
+    private readonly sessionPractitionerRepository: SessionPractitionerRepository,
+    private readonly sessionRepository: SessionRepository,
+    private readonly sessionMapper: SessionMapper,
+  ) {}
+
+  async execute(input: {
+    userId: string;
+    locale: SupportedLocale;
+    query: ListSessionsDto;
+  }) {
+    const practitioner =
+      await this.sessionPractitionerRepository.findByUserId(input.userId);
+
+    if (!practitioner) {
+      throw new NotFoundException({
+        messageKey: 'sessions.errors.practitionerNotFound',
+        error: 'SESSION_PRACTITIONER_NOT_FOUND',
+      });
+    }
+
+    const page = input.query.page ?? 1;
+    const limit = input.query.limit ?? 20;
+    const skip = (page - 1) * limit;
+
+    const [sessions, totalItems] =
+      await this.sessionRepository.listPractitionerSessions({
+        practitionerId: practitioner.id,
+        status: input.query.status as SessionStatus | undefined,
+        skip,
+        take: limit,
+      });
+
+    return {
+      items: sessions.map((session) => this.sessionMapper.toListItem(session)),
+      pagination: {
+        page,
+        limit,
+        totalItems,
+        totalPages: Math.max(1, Math.ceil(totalItems / limit)),
+      },
+    };
+  }
+}
