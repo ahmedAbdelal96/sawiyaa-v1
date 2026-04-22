@@ -25,6 +25,18 @@ export const adminNavigation: NavigationConfig = [
         ],
       },
       {
+        key: "reports",
+        icon: <NavigationIcons.reports />,
+        subItems: [
+          { key: "reportsHome", path: "/reports" },
+          { key: "reportsSessions", path: "/reports/sessions" },
+          { key: "reportsPaymentsRevenue", path: "/reports/payments-revenue" },
+          { key: "reportsSupport", path: "/reports/support" },
+          { key: "reportsCareRequests", path: "/reports/care-requests" },
+          { key: "reportsPayouts", path: "/reports/payouts" },
+        ],
+      },
+      {
         key: "settlements",
         icon: <NavigationIcons.settlements />,
         subItems: [

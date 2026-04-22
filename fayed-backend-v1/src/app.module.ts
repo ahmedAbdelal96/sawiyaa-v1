@@ -49,6 +49,7 @@ import { SpecialtiesModule } from './modules/specialties/specialties.module';
 import { SupportModule } from './modules/support/support.module';
 import { TrainingModule } from './modules/training/training.module';
 import { UsersModule } from './modules/users/users.module';
+import { ReportsModule } from './modules/reports/reports.module';
 
 @Module({
   imports: [
@@ -99,6 +100,7 @@ import { UsersModule } from './modules/users/users.module';
     SupportModule,
     TrainingModule,
     UsersModule,
+    ReportsModule,
   ],
   providers: [AllExceptionsFilter],
 })

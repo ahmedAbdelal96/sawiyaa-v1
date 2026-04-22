@@ -250,6 +250,26 @@ export default function AdminAccountingReconciliationScreen() {
           </Button>
         </div>
 
+        <div className="mt-5 grid gap-3 xl:grid-cols-2">
+          <article className="rounded-[22px] border border-border-light bg-white px-5 py-4 text-sm text-text-secondary shadow-sm dark:border-white/8 dark:bg-white/[0.03]">
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
+              {t("reconciliation.help.purposeTitle")}
+            </p>
+            <p className="mt-2 leading-6">{t("reconciliation.help.purposeNote")}</p>
+          </article>
+          <article className="rounded-[22px] border border-border-light bg-white px-5 py-4 text-sm text-text-secondary shadow-sm dark:border-white/8 dark:bg-white/[0.03]">
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
+              {t("reconciliation.help.howTitle")}
+            </p>
+            <ol className="mt-2 space-y-1.5 leading-6">
+              <li>{t("reconciliation.help.steps.openRow")}</li>
+              <li>{t("reconciliation.help.steps.pickStatus")}</li>
+              <li>{t("reconciliation.help.steps.addNote")}</li>
+              <li>{t("reconciliation.help.steps.openJournal")}</li>
+            </ol>
+          </article>
+        </div>
+
         <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
           <label className="block">
             <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
@@ -382,10 +402,88 @@ export default function AdminAccountingReconciliationScreen() {
                 {t("reconciliation.review.title", { id: shortId(selectedItem.sourceId) })}
               </h2>
             </div>
-            <Button type="button" variant="ghost" size="sm" onClick={() => setSelectedItem(null)}>
-              {t("reconciliation.review.close")}
-            </Button>
+            <div className="flex flex-wrap items-center gap-2">
+              {selectedItem.journalEntryId ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => router.push(`/admin/finance/ledger/${selectedItem.journalEntryId}`)}
+                >
+                  {t("reconciliation.review.openJournal")}
+                </Button>
+              ) : null}
+              <Button type="button" variant="ghost" size="sm" onClick={() => setSelectedItem(null)}>
+                {t("reconciliation.review.close")}
+              </Button>
+            </div>
           </div>
+
+          <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+            <div className="rounded-[18px] border border-border-light bg-white px-4 py-3 text-sm dark:border-white/8 dark:bg-white/[0.03]">
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
+                {t("reconciliation.review.fields.source")}
+              </p>
+              <p className="mt-1 font-semibold text-text-primary dark:text-white/95">
+                {t(`common.sourceType.${selectedItem.sourceType}`)}
+              </p>
+              <p className="mt-1 font-mono text-xs text-text-muted">{selectedItem.sourceId}</p>
+            </div>
+            <div className="rounded-[18px] border border-border-light bg-white px-4 py-3 text-sm dark:border-white/8 dark:bg-white/[0.03]">
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
+                {t("reconciliation.review.fields.status")}
+              </p>
+              <div className="mt-2">
+                <StatusChip
+                  status={selectedItem.effectiveStatus}
+                  label={t(`reconciliation.status.${selectedItem.effectiveStatus.toLowerCase()}`)}
+                />
+              </div>
+            </div>
+            <div className="rounded-[18px] border border-border-light bg-white px-4 py-3 text-sm dark:border-white/8 dark:bg-white/[0.03]">
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
+                {t("reconciliation.review.fields.operationalAmount")}
+              </p>
+              <p className="mt-1 font-semibold text-text-primary dark:text-white/95">
+                {formatMoney(locale, selectedItem.operationalAmount, selectedItem.currencyCode)}
+              </p>
+              <p className="mt-1 text-xs text-text-muted">{selectedItem.currencyCode}</p>
+            </div>
+            <div className="rounded-[18px] border border-border-light bg-white px-4 py-3 text-sm dark:border-white/8 dark:bg-white/[0.03]">
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
+                {t("reconciliation.review.fields.journalAmount")}
+              </p>
+              <p className="mt-1 font-semibold text-text-primary dark:text-white/95">
+                {selectedItem.journalAmount
+                  ? formatMoney(locale, selectedItem.journalAmount, selectedItem.currencyCode)
+                  : t("reconciliation.common.notAvailable")}
+              </p>
+              <p className="mt-1 text-xs text-text-muted">
+                {t("reconciliation.review.fields.occurredAt")}: {formatDateTime(locale, selectedItem.occurredAt)}
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-3 rounded-[18px] border border-border-light bg-white px-4 py-3 text-sm dark:border-white/8 dark:bg-white/[0.03]">
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
+              {t("reconciliation.review.fields.anomalies")}
+            </p>
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {selectedItem.anomalies.length === 0 ? (
+                <span className="text-sm text-text-muted">{t("reconciliation.common.none")}</span>
+              ) : (
+                selectedItem.anomalies.map((anomaly) => (
+                  <span
+                    key={anomaly.code}
+                    className="rounded-full bg-rose-50 px-2.5 py-1 text-xs font-semibold text-rose-700 dark:bg-rose-500/10 dark:text-rose-300"
+                  >
+                    {t(`reconciliation.anomaly.${anomaly.code.toLowerCase()}`)}
+                  </span>
+                ))
+              )}
+            </div>
+          </div>
+
           <div className="mt-4 grid gap-3 md:grid-cols-[220px_1fr_auto]">
             <select
               value={reviewStatus}
@@ -428,17 +526,16 @@ export default function AdminAccountingReconciliationScreen() {
       ) : null}
 
       <article className="app-panel rounded-3xl p-5">
+        <p className="mb-3 text-sm text-text-secondary">
+          {t("reconciliation.table.tip")}
+        </p>
         <DataTable
           data={items}
           columns={columns}
           getRowId={(row) => `${row.sourceType}-${row.sourceId}`}
           loading={itemsQuery.isLoading || overviewQuery.isLoading}
           error={itemsQuery.isError ? t("reconciliation.states.error") : null}
-          onRowClick={(row) => {
-            if (row.journalEntryId) {
-              router.push(`/admin/finance/ledger/${row.journalEntryId}` as never);
-            }
-          }}
+          onRowClick={(row) => openReviewEditor(row)}
           rowActionsHeader={t("reconciliation.table.action")}
           rowActions={(row) => (
             <div className="flex flex-wrap items-center justify-end gap-2">

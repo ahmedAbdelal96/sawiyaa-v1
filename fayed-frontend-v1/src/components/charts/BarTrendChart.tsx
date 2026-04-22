@@ -61,7 +61,8 @@ export function BarTrendChart({
         hideOverlappingLabels: true,
         rotate: categories.length > maxVisibleLabels ? -35 : 0,
         formatter: (value, _timestamp, opts) => {
-          const pointIndex = opts?.dataPointIndex ?? 0;
+          // Apex passes the category index as `opts.i` for x-axis labels.
+          const pointIndex = (opts as any)?.i ?? 0;
           const isFirstOrLast =
             pointIndex === 0 || pointIndex === Math.max(categories.length - 1, 0);
           return isFirstOrLast || pointIndex % labelStep === 0 ? String(value) : "";

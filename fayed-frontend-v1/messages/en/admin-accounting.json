@@ -30,9 +30,20 @@
     "notAvailable": "Not available"
   },
   "reconciliation": {
-    "eyebrow": "Finance controls",
-    "title": "Reconciliation controls",
-    "note": "Verify operational truth against journal postings and resolve finance exceptions with explicit review decisions.",
+    "eyebrow": "Finance follow-up",
+    "title": "Finance operations follow-up",
+    "note": "Review key finance operations and record a clear decision: OK, needs proof, mismatch, or follow-up.",
+    "help": {
+      "purposeTitle": "What does this screen do?",
+      "purposeNote": "This screen helps non-accounting operators track finance operations and spot issues (amount mismatch, missing proof, missing details). Save a clear decision and note so the team stays aligned.",
+      "howTitle": "How do I use it?",
+      "steps": {
+        "openRow": "Open any row to review it (click the row).",
+        "pickStatus": "Pick a simple status (OK, mismatch, needs proof, etc.).",
+        "addNote": "Add a short note describing what is needed next.",
+        "openJournal": "Use “Open details” to inspect the recorded entry when available."
+      }
+    },
     "kpi": {
       "total": "Tracked records",
       "mismatch": "Mismatch",
@@ -42,45 +53,55 @@
     "filters": {
       "from": "From",
       "to": "To",
-      "sourceType": "Source type",
+      "sourceType": "Operation type",
       "status": "Status",
-      "anomaly": "Anomaly",
+      "anomaly": "Alert type",
       "currency": "Currency",
       "query": "Search",
       "queryPlaceholder": "Search by source, payment, refund, settlement, or note",
       "all": "All"
     },
     "table": {
-      "source": "Source",
+      "source": "Operation",
       "status": "Status",
-      "amount": "Operational vs journal",
-      "journalAmount": "Journal",
-      "anomalies": "Anomalies",
+      "amount": "Amount",
+      "journalAmount": "Recorded amount",
+      "anomalies": "Alerts",
       "occurredAt": "Occurred at",
-      "action": "Action"
+      "action": "Action",
+      "tip": "Tip: Click any row to open review. “Open details” appears only when detailed entry data exists."
     },
     "actions": {
       "review": "Review",
-      "journal": "Journal"
+      "journal": "Open details"
     },
     "review": {
       "eyebrow": "Operator review",
       "title": "Review item {id}",
+      "openJournal": "Open details",
       "notePlaceholder": "Add review note for this reconciliation decision",
       "save": "Save review",
-      "close": "Close"
+      "close": "Close",
+      "fields": {
+        "source": "Operation",
+        "status": "Current status",
+        "operationalAmount": "System amount",
+        "journalAmount": "Recorded amount",
+        "occurredAt": "Occurred",
+        "anomalies": "Alerts"
+      }
     },
     "common": {
       "none": "None",
       "notAvailable": "Not available"
     },
     "status": {
-      "pending_review": "Pending review",
-      "matched": "Matched",
+      "pending_review": "Needs review",
+      "matched": "OK",
       "mismatch": "Mismatch",
-      "missing_proof": "Missing proof",
-      "requires_adjustment": "Requires adjustment",
-      "resolved": "Resolved"
+      "missing_proof": "Needs proof",
+      "requires_adjustment": "Needs update",
+      "resolved": "Closed"
     },
     "anomaly": {
       "missing_journal_entry": "Missing journal entry",

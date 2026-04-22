@@ -1,0 +1,236 @@
+{
+  "meta": {
+    "home": {
+      "title": "Reports",
+      "description": "Operational and finance reports for admin users."
+    },
+    "sessions": {
+      "title": "Sessions report",
+      "description": "Session status and volume trends."
+    },
+    "paymentsRevenue": {
+      "title": "Payments & revenue report",
+      "description": "Finance truth sourced from accounting journals."
+    },
+    "support": {
+      "title": "Support report",
+      "description": "Support tickets volume, status, and handling speed."
+    },
+    "careRequests": {
+      "title": "Care requests report",
+      "description": "Practitioner message approval requests and outcomes."
+    },
+    "payouts": {
+      "title": "Payouts report",
+      "description": "Payout operations, proof coverage, and remaining dues."
+    }
+  },
+  "home": {
+    "title": "Reports",
+    "subtitle": "A dedicated reporting workspace. These screens are built with stable contracts so the data access layer can evolve later without breaking UX.",
+    "open": "Open report",
+    "disclaimer": {
+      "title": "About this module",
+      "note": "Reports use direct tables today. Later we can switch providers to database views/read models without changing the screens."
+    },
+    "cards": {
+      "sessions": { "title": "Sessions report", "note": "Volume and status trends." },
+      "paymentsRevenue": { "title": "Payments & revenue", "note": "Accounting-based finance truth." },
+      "support": { "title": "Support report", "note": "Tickets workload and closure speed." },
+      "careRequests": { "title": "Care requests", "note": "Approvals and pending aging." },
+      "payouts": { "title": "Payouts report", "note": "Paid amounts, fees, and missing proof." }
+    }
+  },
+  "filters": {
+    "from": "From",
+    "to": "To",
+    "currency": "Currency",
+    "currencyPlaceholder": "EGP",
+    "practitionerId": "Practitioner id",
+    "practitionerIdPlaceholder": "UUID"
+  },
+  "common": {
+    "na": "N/A",
+    "error": "Failed to load data.",
+    "yes": "Yes",
+    "no": "No"
+  },
+  "sessions": {
+    "title": "Sessions report",
+    "subtitle": "Operational view of sessions across a date range.",
+    "kpis": {
+      "total": "Total sessions",
+      "totalHint": "Count of sessions in range.",
+      "completed": "Completed",
+      "completedHint": "Sessions finished successfully.",
+      "cancelled": "Cancelled",
+      "cancelledHint": "Sessions cancelled by any party.",
+      "noShow": "No-show",
+      "noShowHint": "Sessions marked as no-show."
+    },
+    "charts": {
+      "trend": {
+        "title": "Sessions trend",
+        "note": "Daily total sessions in the selected range.",
+        "series": "Sessions"
+      }
+    },
+    "table": {
+      "title": "Sessions list",
+      "note": "A paginated list of sessions for drill-down.",
+      "sessionCode": "Code",
+      "status": "Status",
+      "scheduledStartAt": "Scheduled start",
+      "patientId": "Patient id",
+      "practitionerId": "Practitioner id"
+    }
+  },
+  "paymentsRevenue": {
+    "title": "Payments & revenue report",
+    "subtitle": "Finance truth sourced from the accounting layer (journal entries/lines).",
+    "kpis": {
+      "grossInflow": "Gross inflow",
+      "grossInflowHint": "Total collected from captured payments.",
+      "platformRevenue": "Platform revenue",
+      "platformRevenueHint": "Recognized platform revenue in the range.",
+      "practitionerPayable": "Practitioner payable (outstanding)",
+      "practitionerPayableHint": "Outstanding practitioner liability as of the end of the range.",
+      "refunds": "Refunds",
+      "refundsHint": "Refund amount processed in the range.",
+      "vat": "VAT",
+      "vatHint": "VAT payable movement in the range.",
+      "fees": "Fees",
+      "feesHint": "Gateway + transfer fees (net)."
+    },
+    "charts": {
+      "revenue": {
+        "title": "Revenue vs inflow",
+        "note": "Daily revenue and collected amounts.",
+        "series": "Revenue",
+        "comparison": "Inflow"
+      },
+      "refundsFees": {
+        "title": "Refunds vs fees",
+        "note": "Daily refunds and fees movement.",
+        "refunds": "Refunds",
+        "fees": "Fees"
+      }
+    },
+    "table": {
+      "title": "Journal-backed events",
+      "note": "Paginated accounting events for drill-down.",
+      "occurredAt": "Date",
+      "summary": "Summary",
+      "sourceId": "Reference",
+      "amount": "Amount",
+      "journalEntryId": "Journal entry id"
+    }
+  },
+  "support": {
+    "title": "Support report",
+    "subtitle": "Operational view of support tickets and handling speed.",
+    "kpis": {
+      "total": "Total tickets",
+      "totalHint": "Tickets created in range.",
+      "open": "Open tickets",
+      "openHint": "Tickets not closed yet.",
+      "overdue": "Overdue open",
+      "overdueHint": "Open tickets older than 7 days (heuristic).",
+      "resolved": "Resolved",
+      "resolvedHint": "Tickets marked as resolved.",
+      "closed": "Closed",
+      "closedHint": "Tickets marked as closed.",
+      "avgClose": "Avg close time",
+      "avgCloseHint": "Average hours to close (based on closed/resolved timestamps)."
+    },
+    "charts": {
+      "trend": {
+        "title": "Ticket trend",
+        "note": "Daily created vs closed/resolved tickets.",
+        "created": "Created",
+        "resolved": "Closed/Resolved"
+      }
+    },
+    "table": {
+      "title": "Tickets list",
+      "note": "A paginated list of tickets for drill-down.",
+      "subject": "Subject",
+      "status": "Status",
+      "priority": "Priority",
+      "createdAt": "Created",
+      "resolvedAt": "Closed/Resolved",
+      "publicRef": "Public ref"
+    }
+  },
+  "careRequests": {
+    "title": "Care requests report",
+    "subtitle": "Requests that require approval for practitioner messaging.",
+    "kpis": {
+      "total": "Total requests",
+      "totalHint": "Requests created in range.",
+      "pending": "Pending",
+      "pendingHint": "Still waiting for review.",
+      "approved": "Approved",
+      "approvedHint": "Approved requests.",
+      "rejected": "Rejected",
+      "rejectedHint": "Rejected requests.",
+      "acceptance": "Acceptance rate",
+      "acceptanceHint": "Approved / (approved + rejected).",
+      "pendingAging": "Pending 7+ days",
+      "pendingAgingHint": "Pending requests older than 7 days (as of end date)."
+    },
+    "charts": {
+      "trend": {
+        "title": "Requests trend",
+        "note": "Daily requested vs approved.",
+        "requested": "Requested",
+        "approved": "Approved"
+      }
+    },
+    "table": {
+      "title": "Requests list",
+      "note": "A paginated list of requests for drill-down.",
+      "status": "Status",
+      "requestedAt": "Requested",
+      "patientId": "Patient id",
+      "practitionerId": "Practitioner id",
+      "approvalRef": "Approval ref"
+    }
+  },
+  "payouts": {
+    "title": "Payouts report",
+    "subtitle": "Payout operations and remaining practitioner dues.",
+    "kpis": {
+      "paidAmount": "Paid amount",
+      "paidAmountHint": "Total payout amounts in range.",
+      "payoutCount": "Payout count",
+      "payoutCountHint": "Number of payouts in range.",
+      "missingProof": "Missing proof",
+      "missingProofHint": "Payouts without proof file in range.",
+      "transferFees": "Transfer fees",
+      "transferFeesHint": "Total transfer fees captured on payout records.",
+      "dueOutstanding": "Remaining dues",
+      "dueOutstandingHint": "Sum of remaining due amounts as of end date.",
+      "settlementsWithDue": "Settlements with due",
+      "settlementsWithDueHint": "Count of settlements that still have due."
+    },
+    "charts": {
+      "trend": {
+        "title": "Payout trend",
+        "note": "Daily payout amount movement.",
+        "series": "Payout amount"
+      }
+    },
+    "table": {
+      "title": "Payout operations",
+      "note": "A paginated list of payout operations for drill-down.",
+      "effectiveAt": "Effective date",
+      "practitionerId": "Practitioner id",
+      "amountPaid": "Amount",
+      "payoutMethod": "Method",
+      "proof": "Proof",
+      "externalRef": "External ref"
+    }
+  }
+}
+

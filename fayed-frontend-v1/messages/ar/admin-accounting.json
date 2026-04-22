@@ -30,9 +30,20 @@
     "notAvailable": "غير متاح"
   },
   "reconciliation": {
-    "eyebrow": "رقابة مالية",
-    "title": "الرقابة والمطابقة",
-    "note": "تحقق من تطابق الحقيقة التشغيلية مع القيود المحاسبية، وسجل قرارات المراجعة بشكل واضح لكل حالة.",
+    "eyebrow": "متابعة مالية",
+    "title": "متابعة العمليات المالية",
+    "note": "هنا تراجع العمليات المالية وتثبت قرارك: هل العملية سليمة ولا فيها مشكلة وتحتاج متابعة.",
+    "help": {
+      "purposeTitle": "ما فائدة هذه الصفحة؟",
+      "purposeNote": "هذه الصفحة تجمع أهم العمليات المالية وتوضح إذا كانت سليمة أو تحتاج متابعة. مثال: اختلاف مبلغ، نقص إثبات تحويل، أو مشكلة في تسجيل العملية. في النهاية تسجل قرارك وملاحظتك علشان الفريق يبقى على نفس الفهم.",
+      "howTitle": "كيف أراجع العملية؟",
+      "steps": {
+        "openRow": "اضغط على أي سطر لفتح شاشة المراجعة.",
+        "pickStatus": "اختر الحالة المناسبة (سليم، فيه اختلاف، يحتاج إثبات...).",
+        "addNote": "اكتب ملاحظة قصيرة: إيه المشكلة وإيه المطلوب يتعمل.",
+        "openJournal": "لو محتاج تفاصيل إضافية، افتح \"تفاصيل التسجيل\" (لو متاح)."
+      }
+    },
     "kpi": {
       "total": "إجمالي السجلات",
       "mismatch": "حالات عدم تطابق",
@@ -42,54 +53,64 @@
     "filters": {
       "from": "من",
       "to": "إلى",
-      "sourceType": "نوع المصدر",
+      "sourceType": "نوع العملية",
       "status": "الحالة",
-      "anomaly": "نوع الملاحظة",
+      "anomaly": "نوع التنبيه",
       "currency": "العملة",
       "query": "بحث",
       "queryPlaceholder": "ابحث بالمرجع أو الدفع أو الاسترجاع أو التسوية أو ملاحظة المراجعة",
       "all": "الكل"
     },
     "table": {
-      "source": "المصدر",
+      "source": "نوع العملية",
       "status": "الحالة",
-      "amount": "التشغيلي مقابل القيد",
-      "journalAmount": "القيد",
-      "anomalies": "الملاحظات",
-      "occurredAt": "وقت الحدث",
-      "action": "إجراء"
+      "amount": "المبلغ",
+      "journalAmount": "المبلغ المسجل",
+      "anomalies": "تنبيهات",
+      "occurredAt": "وقت العملية",
+      "action": "إجراء",
+      "tip": "تلميح: اضغط على أي سطر لفتح شاشة المراجعة. زر \"تفاصيل التسجيل\" يظهر فقط لو فيه تفاصيل متاحة."
     },
     "actions": {
       "review": "مراجعة",
-      "journal": "القيد"
+      "journal": "تفاصيل التسجيل"
     },
     "review": {
       "eyebrow": "مراجعة المشغل",
       "title": "مراجعة الحالة {id}",
+      "openJournal": "فتح تفاصيل التسجيل",
       "notePlaceholder": "أضف ملاحظة قرار المراجعة لهذه الحالة",
       "save": "حفظ المراجعة",
-      "close": "إغلاق"
+      "close": "إغلاق",
+      "fields": {
+        "source": "نوع العملية",
+        "status": "الحالة الحالية",
+        "operationalAmount": "المبلغ في النظام",
+        "journalAmount": "المبلغ المسجل",
+        "occurredAt": "وقت العملية",
+        "anomalies": "تنبيهات"
+      }
     },
     "common": {
       "none": "لا يوجد",
       "notAvailable": "غير متاح"
     },
     "status": {
-      "pending_review": "بانتظار المراجعة",
-      "matched": "متطابق",
-      "mismatch": "غير متطابق",
-      "missing_proof": "إثبات مفقود",
-      "requires_adjustment": "يتطلب تسوية",
-      "resolved": "تم الحل"
+      "pending_review": "يحتاج مراجعة",
+      "matched": "سليم",
+      "mismatch": "فيه اختلاف",
+      "missing_proof": "يحتاج إثبات",
+      "requires_adjustment": "يحتاج تعديل",
+      "resolved": "مغلق"
     },
     "anomaly": {
-      "missing_journal_entry": "قيد محاسبي مفقود",
-      "missing_payout_proof": "إثبات صرف مفقود",
+      "missing_journal_entry": "تفاصيل التسجيل غير متاحة",
+      "missing_payout_proof": "إثبات التحويل غير مرفوع",
       "amount_mismatch": "اختلاف في المبلغ",
-      "missing_vat_snapshot": "بيانات ضريبة القيمة المضافة ناقصة",
-      "missing_gateway_fee_snapshot": "بيانات رسوم البوابة ناقصة",
-      "missing_cancellation_context": "بيانات سياسة الإلغاء ناقصة",
-      "missing_transfer_fee_snapshot": "بيانات رسوم التحويل ناقصة"
+      "missing_vat_snapshot": "تفاصيل الضريبة ناقصة",
+      "missing_gateway_fee_snapshot": "تفاصيل رسوم الدفع ناقصة",
+      "missing_cancellation_context": "تفاصيل الإلغاء ناقصة",
+      "missing_transfer_fee_snapshot": "تفاصيل رسوم التحويل ناقصة"
     },
     "states": {
       "error": "تعذر تحميل شاشة الرقابة والمطابقة الآن.",
