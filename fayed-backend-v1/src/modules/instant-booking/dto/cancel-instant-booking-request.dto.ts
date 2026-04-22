@@ -3,7 +3,8 @@ import { IsOptional, IsString, MaxLength } from 'class-validator';
 
 export class CancelInstantBookingRequestDto {
   @ApiPropertyOptional({
-    description: 'Optional cancellation note stored for operational traceability baseline',
+    description:
+      'Optional cancellation note stored for operational traceability baseline',
   })
   @IsOptional()
   @IsString()

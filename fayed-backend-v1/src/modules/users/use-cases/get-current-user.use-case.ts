@@ -42,13 +42,17 @@ export class GetCurrentUserUseCase {
       });
     }
 
-    const avatarMeta = await this.userAvatarStorageService.resolveAvatarMetadata(
-      authenticatedUser.id,
-    );
+    const avatarMeta =
+      await this.userAvatarStorageService.resolveAvatarMetadata(
+        authenticatedUser.id,
+      );
     // Avatar binary is intentionally embedded as a data URL so the frontend can render it
     // without needing auth headers on <img> requests.
-    const avatarDataUrl =
-      avatarMeta?.avatarUrl ? await this.userAvatarStorageService.resolveAvatarDataUrl(authenticatedUser.id) : null;
+    const avatarDataUrl = avatarMeta?.avatarUrl
+      ? await this.userAvatarStorageService.resolveAvatarDataUrl(
+          authenticatedUser.id,
+        )
+      : null;
 
     return this.currentUserMapper.toReadModel({
       basics: this.currentUserMapper.toBasics(user),

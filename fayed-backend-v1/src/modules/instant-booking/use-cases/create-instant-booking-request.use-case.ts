@@ -65,11 +65,13 @@ export class CreateInstantBookingRequestUseCase {
     });
 
     const duplicatePending =
-      await this.instantBookingRequestRepository.findConflictingPendingRequests({
-        patientId: patient.id,
-        practitionerId: practitioner.id,
-        now: nowUtc,
-      });
+      await this.instantBookingRequestRepository.findConflictingPendingRequests(
+        {
+          patientId: patient.id,
+          practitionerId: practitioner.id,
+          now: nowUtc,
+        },
+      );
 
     if (duplicatePending.length > 0) {
       throw new ConflictException({

@@ -22,7 +22,9 @@ export class AuthSessionService {
   ) {}
 
   async create(input: CreateAuthSessionInput) {
-    const refreshTokenHash = await this.passwordHashService.hash(input.refreshToken);
+    const refreshTokenHash = await this.passwordHashService.hash(
+      input.refreshToken,
+    );
 
     return this.userSessionRepository.create({
       id: input.sessionId,
@@ -36,7 +38,9 @@ export class AuthSessionService {
   }
 
   async rotate(input: RefreshSessionInput) {
-    const refreshTokenHash = await this.passwordHashService.hash(input.refreshToken);
+    const refreshTokenHash = await this.passwordHashService.hash(
+      input.refreshToken,
+    );
 
     return this.userSessionRepository.updateRefreshSession(input.sessionId, {
       refreshTokenHash,

@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Patch,
@@ -36,16 +37,26 @@ import { CreateAdminPractitionerDto } from '../dto/create-admin-practitioner.dto
 import { ListPractitionerApplicationsDto } from '../dto/list-practitioner-applications.dto';
 import {
   PractitionerApplicationDecisionSuccessResponseDto,
+  PractitionerApplicationCredentialSuccessResponseDto,
+  PractitionerApplicationCredentialDeleteSuccessResponseDto,
   PractitionerApplicationDetailsSuccessResponseDto,
   PractitionerApplicationListSuccessResponseDto,
 } from '../dto/practitioner-application-list-item-response.dto';
 import { RejectPractitionerApplicationDto } from '../dto/reject-practitioner-application.dto';
+import { RequestPractitionerApplicationChangesDto } from '../dto/request-practitioner-application-changes.dto';
 import { UpdatePractitionerApplicationDraftDto } from '../dto/update-practitioner-application-draft.dto';
+import {
+  CreatePractitionerApplicationCredentialDto,
+  UpdatePractitionerApplicationCredentialDto,
+} from '../dto/upsert-practitioner-application-credential.dto';
 import { ApprovePractitionerApplicationUseCase } from '../use-cases/approve-practitioner-application.use-case';
 import { CreateAdminPractitionerUseCase } from '../use-cases/create-admin-practitioner.use-case';
 import { GetPractitionerApplicationDetailsUseCase } from '../use-cases/get-practitioner-application-details.use-case';
 import { ListPractitionerApplicationsUseCase } from '../use-cases/list-practitioner-applications.use-case';
 import { RejectPractitionerApplicationUseCase } from '../use-cases/reject-practitioner-application.use-case';
+import { RequestPractitionerApplicationChangesUseCase } from '../use-cases/request-practitioner-application-changes.use-case';
+import { UpsertPractitionerApplicationCredentialUseCase } from '../use-cases/upsert-practitioner-application-credential.use-case';
+import { DeletePractitionerApplicationCredentialUseCase } from '../use-cases/delete-practitioner-application-credential.use-case';
 import { UpdatePractitionerApplicationDraftUseCase } from '../use-cases/update-practitioner-application-draft.use-case';
 
 /**
@@ -63,8 +74,11 @@ export class PractitionerApplicationsAdminController {
     private readonly getPractitionerApplicationDetailsUseCase: GetPractitionerApplicationDetailsUseCase,
     private readonly approvePractitionerApplicationUseCase: ApprovePractitionerApplicationUseCase,
     private readonly rejectPractitionerApplicationUseCase: RejectPractitionerApplicationUseCase,
+    private readonly requestPractitionerApplicationChangesUseCase: RequestPractitionerApplicationChangesUseCase,
     private readonly createAdminPractitionerUseCase: CreateAdminPractitionerUseCase,
     private readonly updatePractitionerApplicationDraftUseCase: UpdatePractitionerApplicationDraftUseCase,
+    private readonly upsertPractitionerApplicationCredentialUseCase: UpsertPractitionerApplicationCredentialUseCase,
+    private readonly deletePractitionerApplicationCredentialUseCase: DeletePractitionerApplicationCredentialUseCase,
   ) {}
 
   /** Lists practitioner applications for admin queues with optional status/search filters. */
@@ -217,6 +231,131 @@ export class PractitionerApplicationsAdminController {
     });
   }
 
+  /** Adds one practitioner credential from admin review details scope. */
+  @Post(':id/credentials')
+  @ApiOperation({
+    summary: 'Add practitioner credential in application review',
+    description:
+      'Admin-only endpoint to append one practitioner credential metadata item while reviewing an application.',
+  })
+  @ApiParam({ name: 'id', description: 'Practitioner application id' })
+  @ApiBody({ type: CreatePractitionerApplicationCredentialDto })
+  @ApiResponse({
+    status: 201,
+    type: PractitionerApplicationCredentialSuccessResponseDto,
+  })
+  @ApiBadRequestResponse({
+    description: 'Payload is invalid for credential create',
+  })
+  @ApiConflictResponse({
+    description:
+      'Application is approved/archived and cannot accept credential edits',
+  })
+  @ApiUnauthorizedResponse({ description: 'Access token is required' })
+  @ApiForbiddenResponse({
+    description: 'Route requires active admin account',
+  })
+  @ApiNotFoundResponse({
+    description: 'Practitioner application was not found',
+  })
+  createCredential(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() body: CreatePractitionerApplicationCredentialDto,
+    @CurrentLocale() locale: SupportedLocale,
+    @CurrentUser() currentUser: AuthenticatedUser,
+  ) {
+    return this.upsertPractitionerApplicationCredentialUseCase.execute({
+      applicationId: id,
+      locale,
+      adminUserId: currentUser.id,
+      data: body,
+    });
+  }
+
+  /** Updates one practitioner credential from admin review details scope. */
+  @Patch(':id/credentials/:credentialId')
+  @ApiOperation({
+    summary: 'Update practitioner credential in application review',
+    description:
+      'Admin-only endpoint to amend credential metadata/review status/notes while reviewing an application.',
+  })
+  @ApiParam({ name: 'id', description: 'Practitioner application id' })
+  @ApiParam({ name: 'credentialId', description: 'Practitioner credential id' })
+  @ApiBody({ type: UpdatePractitionerApplicationCredentialDto })
+  @ApiResponse({
+    status: 200,
+    type: PractitionerApplicationCredentialSuccessResponseDto,
+  })
+  @ApiBadRequestResponse({
+    description: 'Payload is invalid for credential update',
+  })
+  @ApiConflictResponse({
+    description:
+      'Application is approved/archived and cannot accept credential edits',
+  })
+  @ApiUnauthorizedResponse({ description: 'Access token is required' })
+  @ApiForbiddenResponse({
+    description: 'Route requires active admin account',
+  })
+  @ApiNotFoundResponse({
+    description:
+      'Practitioner application or credential was not found for this application',
+  })
+  updateCredential(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Param('credentialId', new ParseUUIDPipe()) credentialId: string,
+    @Body() body: UpdatePractitionerApplicationCredentialDto,
+    @CurrentLocale() locale: SupportedLocale,
+    @CurrentUser() currentUser: AuthenticatedUser,
+  ) {
+    return this.upsertPractitionerApplicationCredentialUseCase.execute({
+      applicationId: id,
+      credentialId,
+      locale,
+      adminUserId: currentUser.id,
+      data: body,
+    });
+  }
+
+  /** Deletes one practitioner credential from admin review details scope. */
+  @Delete(':id/credentials/:credentialId')
+  @ApiOperation({
+    summary: 'Delete practitioner credential in application review',
+    description:
+      'Admin-only endpoint to remove one credential from practitioner application review scope.',
+  })
+  @ApiParam({ name: 'id', description: 'Practitioner application id' })
+  @ApiParam({ name: 'credentialId', description: 'Practitioner credential id' })
+  @ApiResponse({
+    status: 200,
+    type: PractitionerApplicationCredentialDeleteSuccessResponseDto,
+  })
+  @ApiConflictResponse({
+    description:
+      'Application is approved/archived and cannot accept credential edits',
+  })
+  @ApiUnauthorizedResponse({ description: 'Access token is required' })
+  @ApiForbiddenResponse({
+    description: 'Route requires active admin account',
+  })
+  @ApiNotFoundResponse({
+    description:
+      'Practitioner application or credential was not found for this application',
+  })
+  deleteCredential(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Param('credentialId', new ParseUUIDPipe()) credentialId: string,
+    @CurrentLocale() locale: SupportedLocale,
+    @CurrentUser() currentUser: AuthenticatedUser,
+  ) {
+    return this.deletePractitionerApplicationCredentialUseCase.execute({
+      applicationId: id,
+      credentialId,
+      locale,
+      adminUserId: currentUser.id,
+    });
+  }
+
   /** Approves a practitioner application when transition policy allows it. */
   @Post(':id/approve')
   @ApiOperation({
@@ -293,6 +432,48 @@ export class PractitionerApplicationsAdminController {
     @CurrentUser() currentUser: AuthenticatedUser,
   ) {
     return this.rejectPractitionerApplicationUseCase.execute({
+      id,
+      locale,
+      adminUserId: currentUser.id,
+      reason: body.reason,
+      note: body.note,
+    });
+  }
+
+  /** Requests changes for a practitioner application (editable again). */
+  @Post(':id/request-changes')
+  @ApiOperation({
+    summary: 'Request changes for practitioner application',
+    description:
+      'Admin-only decision endpoint. Marks the application as CHANGES_REQUESTED so the practitioner can edit and resubmit.',
+  })
+  @ApiParam({ name: 'id', description: 'Practitioner application id' })
+  @ApiBody({ type: RequestPractitionerApplicationChangesDto })
+  @ApiResponse({
+    status: 200,
+    type: PractitionerApplicationDecisionSuccessResponseDto,
+  })
+  @ApiBadRequestResponse({
+    description: 'Application is in a non-reviewable state or body is invalid',
+  })
+  @ApiConflictResponse({
+    description:
+      'Application is already approved/rejected or already changes requested',
+  })
+  @ApiUnauthorizedResponse({ description: 'Access token is required' })
+  @ApiForbiddenResponse({
+    description: 'Route requires active admin account',
+  })
+  @ApiNotFoundResponse({
+    description: 'Practitioner application was not found',
+  })
+  requestChanges(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() body: RequestPractitionerApplicationChangesDto,
+    @CurrentLocale() locale: SupportedLocale,
+    @CurrentUser() currentUser: AuthenticatedUser,
+  ) {
+    return this.requestPractitionerApplicationChangesUseCase.execute({
       id,
       locale,
       adminUserId: currentUser.id,

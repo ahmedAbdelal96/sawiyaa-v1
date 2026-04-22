@@ -7,6 +7,7 @@ export const adminNavigation: NavigationConfig = [
     items: [
       { key: "dashboard", icon: <NavigationIcons.dashboard />, path: "/dashboard" },
       { key: "sessions", icon: <NavigationIcons.calendar />, path: "/sessions" },
+      { key: "patients", icon: <NavigationIcons.users />, path: "/patients" },
       { key: "practitioners", icon: <NavigationIcons.practitioners />, path: "/practitioners" },
       {
         key: "practitionerApplications",
@@ -14,6 +15,15 @@ export const adminNavigation: NavigationConfig = [
         path: "/practitioner-applications",
       },
       { key: "payments", icon: <NavigationIcons.payments />, path: "/payments" },
+      {
+        key: "finance",
+        icon: <NavigationIcons.settlements />,
+        subItems: [
+          { key: "financeDashboard", path: "/finance/dashboard" },
+          { key: "financeLedger", path: "/finance/ledger" },
+          { key: "financeReconciliation", path: "/finance/reconciliation" }
+        ],
+      },
       {
         key: "settlements",
         icon: <NavigationIcons.settlements />,
@@ -31,6 +41,7 @@ export const adminNavigation: NavigationConfig = [
     items: [
       { key: "support", icon: <NavigationIcons.support />, path: "/support" },
       { key: "notifications", icon: <NavigationIcons.notifications />, path: "/notifications" },
+      { key: "auditLog", icon: <NavigationIcons.reports />, path: "/audit" },
       { key: "specialties", icon: <NavigationIcons.specialties />, path: "/specialties" },
       { key: "careChat", icon: <NavigationIcons.chat />, path: "/care-chat" },
       { key: "reviews", icon: <NavigationIcons.reports />, path: "/reviews" },

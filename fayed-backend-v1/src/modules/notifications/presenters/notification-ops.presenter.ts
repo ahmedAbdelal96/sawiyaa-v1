@@ -2,7 +2,11 @@ import { Injectable } from '@nestjs/common';
 
 @Injectable()
 export class NotificationOpsPresenter {
-  presentPagination(input: { page: number; limit: number; totalItems: number }) {
+  presentPagination(input: {
+    page: number;
+    limit: number;
+    totalItems: number;
+  }) {
     return {
       page: input.page,
       limit: input.limit,

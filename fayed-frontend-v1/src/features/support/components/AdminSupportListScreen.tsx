@@ -11,6 +11,7 @@ import ActionIconButton from "@/components/ui/action-icon-button/ActionIconButto
 import FilterClearButton from "@/components/ui/filters/FilterClearButton";
 import type { ColumnDef, SortConfig } from "@/components/ui/data-table";
 import { buildUpdatedSearchParams, parseEnumParam, parsePositiveIntParam } from "@/components/ui/data-table";
+import { DEFAULT_PAGE_LIMIT, DEFAULT_PAGE_SIZE_OPTIONS } from "@/constants/pagination";
 import { useAdminSupportTickets } from "../hooks/use-support";
 import type {
   AdminSupportListParams,
@@ -36,8 +37,8 @@ const PRIORITY_FILTERS: Array<SupportTicketPriority | "ALL"> = [
   "NORMAL",
   "LOW",
 ];
-const PAGE_LIMIT = 20;
-const PAGE_SIZE_OPTIONS = [5, 10, 20, 30, 40, 50];
+const PAGE_LIMIT = DEFAULT_PAGE_LIMIT;
+const PAGE_SIZE_OPTIONS = DEFAULT_PAGE_SIZE_OPTIONS;
 const SORTABLE_COLUMNS = ["createdAt", "lastMessageAt", "status", "priority", "subject"] as const;
 type SortableSupportColumn = (typeof SORTABLE_COLUMNS)[number];
 
@@ -146,9 +147,17 @@ export default function AdminSupportListScreen() {
       sortable: true,
       cell: (row) => (
         <div className="min-w-0">
-          <p className="truncate text-sm font-semibold text-text-primary dark:text-white/95">
-            {row.subject}
-          </p>
+          <div className="flex items-start justify-between gap-2">
+            <p className="truncate text-sm font-semibold text-text-primary dark:text-white/95">
+              {row.subject}
+            </p>
+            {row.hasUnread || row.unreadCount > 0 ? (
+              <span className="inline-flex shrink-0 items-center rounded-full bg-rose-500/10 px-2 py-1 text-[11px] font-semibold text-rose-700 dark:bg-rose-500/15 dark:text-rose-200">
+                <span className="me-1 inline-block h-2 w-2 rounded-full bg-rose-500" />
+                {row.unreadCount > 0 ? row.unreadCount : ""}
+              </span>
+            ) : null}
+          </div>
           <p className="mt-1 text-xs text-text-muted">
             {t(`categories.${row.category}` as Parameters<typeof t>[0])}
           </p>

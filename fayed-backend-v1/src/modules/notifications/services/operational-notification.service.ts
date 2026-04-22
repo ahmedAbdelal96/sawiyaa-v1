@@ -248,7 +248,9 @@ export class OperationalNotificationService {
     relatedEntityId: string;
     category: NotificationCategory;
   }): Promise<void> {
-    const recipient = await this.resolvePatientRecipient(input.patientProfileId);
+    const recipient = await this.resolvePatientRecipient(
+      input.patientProfileId,
+    );
     await this.sendBySlug({
       recipient,
       slug: input.slug,
@@ -279,8 +281,9 @@ export class OperationalNotificationService {
   private async resolvePractitionerRecipient(
     practitionerProfileId: string,
   ): Promise<Recipient | null> {
-    const record =
-      await this.repository.findPractitionerRecipient(practitionerProfileId);
+    const record = await this.repository.findPractitionerRecipient(
+      practitionerProfileId,
+    );
     const email = record?.user.emails[0];
     return record?.user
       ? {
@@ -292,7 +295,9 @@ export class OperationalNotificationService {
       : null;
   }
 
-  private async resolveUserRecipient(userId: string): Promise<Recipient | null> {
+  private async resolveUserRecipient(
+    userId: string,
+  ): Promise<Recipient | null> {
     const record = await this.repository.findUserRecipient(userId);
     const email = record?.emails[0];
     return record

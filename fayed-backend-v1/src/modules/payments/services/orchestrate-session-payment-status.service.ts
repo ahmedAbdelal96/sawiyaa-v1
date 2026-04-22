@@ -1,5 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import { PaymentEventType, PaymentStatus, SessionEventType, SessionStatus } from '@prisma/client';
+import {
+  PaymentEventType,
+  PaymentStatus,
+  SessionEventType,
+  SessionStatus,
+} from '@prisma/client';
 import { PrismaService } from '@common/prisma/prisma.service';
 import { OperationalNotificationService } from '@modules/notifications/services/operational-notification.service';
 import { ExpireUnpaidSessionUseCase } from '@modules/sessions/use-cases/expire-unpaid-session.use-case';
@@ -75,7 +80,9 @@ export class OrchestrateSessionPaymentStatusService {
     return this.expireUnpaidSessionUseCase.execute({ sessionId });
   }
 
-  createPaymentEventTypeForFailure(outcome: 'FAILED' | 'EXPIRED'): PaymentEventType {
+  createPaymentEventTypeForFailure(
+    outcome: 'FAILED' | 'EXPIRED',
+  ): PaymentEventType {
     return outcome === 'EXPIRED'
       ? PaymentEventType.PAYMENT_EXPIRED
       : PaymentEventType.PAYMENT_FAILED;
@@ -96,7 +103,11 @@ export class OrchestrateSessionPaymentStatusService {
   async markSessionRefundPending(sessionId: string) {
     const session = await this.sessionRepository.findById(sessionId);
 
-    if (!session || session.status === SessionStatus.REFUND_PENDING || session.status === SessionStatus.REFUNDED) {
+    if (
+      !session ||
+      session.status === SessionStatus.REFUND_PENDING ||
+      session.status === SessionStatus.REFUNDED
+    ) {
       return session;
     }
 

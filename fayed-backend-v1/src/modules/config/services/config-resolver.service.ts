@@ -97,7 +97,11 @@ export class ConfigResolverService {
   ): Promise<T | null> {
     const resolved = await this.resolveValue(key, options);
     assertJsonCompatibleConfigType(key, resolved.dataType);
-    assertResolvedJsonValueMatchesDataType(key, resolved.dataType, resolved.value);
+    assertResolvedJsonValueMatchesDataType(
+      key,
+      resolved.dataType,
+      resolved.value,
+    );
 
     return (resolved.value as T | null) ?? null;
   }

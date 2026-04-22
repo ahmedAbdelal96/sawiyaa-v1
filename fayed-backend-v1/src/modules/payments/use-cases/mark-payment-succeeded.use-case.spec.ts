@@ -6,11 +6,13 @@ describe('MarkPaymentSucceededUseCase', () => {
     const prisma = {
       $transaction: jest.fn().mockImplementation(async (fn) => fn({})),
       session: {
-        findUnique: jest.fn().mockResolvedValue(
-          input?.sessionStatus
-            ? { id: 'session_1', status: input.sessionStatus }
-            : null,
-        ),
+        findUnique: jest
+          .fn()
+          .mockResolvedValue(
+            input?.sessionStatus
+              ? { id: 'session_1', status: input.sessionStatus }
+              : null,
+          ),
       },
     };
     const paymentRepository = {
@@ -23,6 +25,7 @@ describe('MarkPaymentSucceededUseCase', () => {
         practitionerId: 'pr_1',
         couponId: null,
         currencyCode: 'USD',
+        amountFromWallet: { gt: () => false, toString: () => '0.00' },
         amountSubtotal: { toString: () => '100.00' },
         amountDiscount: { toString: () => '0.00' },
         couponPlatformShareSnapshot: null,
@@ -38,6 +41,7 @@ describe('MarkPaymentSucceededUseCase', () => {
         practitionerId: 'pr_1',
         couponId: null,
         currencyCode: 'USD',
+        amountFromWallet: { gt: () => false, toString: () => '0.00' },
         amountTotal: { toString: () => '100.00' },
         amountSubtotal: { toString: () => '100.00' },
         amountDiscount: { toString: () => '0.00' },
@@ -63,6 +67,9 @@ describe('MarkPaymentSucceededUseCase', () => {
     const postPaymentLedgerEntriesUseCase = {
       execute: jest.fn().mockResolvedValue({}),
     };
+    const customerWalletAccountingService = {
+      captureReservationForPayment: jest.fn().mockResolvedValue(null),
+    };
     const redeemCouponUseCase = {
       execute: jest.fn().mockResolvedValue({}),
     };
@@ -78,6 +85,7 @@ describe('MarkPaymentSucceededUseCase', () => {
       orchestrateTrainingEnrollmentPaymentStatusService as never,
       paymentMapper as never,
       postPaymentLedgerEntriesUseCase as never,
+      customerWalletAccountingService as never,
       redeemCouponUseCase as never,
       operationalNotificationService as never,
       logger as never,
@@ -100,9 +108,12 @@ describe('MarkPaymentSucceededUseCase', () => {
       payload: {},
     });
 
-    expect(setup.postPaymentLedgerEntriesUseCase.execute).toHaveBeenCalledTimes(1);
+    expect(setup.postPaymentLedgerEntriesUseCase.execute).toHaveBeenCalledTimes(
+      1,
+    );
     expect(
-      setup.orchestrateSessionPaymentStatusService.markSessionConfirmedFromPayment,
+      setup.orchestrateSessionPaymentStatusService
+        .markSessionConfirmedFromPayment,
     ).toHaveBeenCalledTimes(1);
     expect(
       setup.operationalNotificationService.notifyPaymentSucceeded,
@@ -119,7 +130,8 @@ describe('MarkPaymentSucceededUseCase', () => {
     });
 
     expect(
-      setup.orchestrateSessionPaymentStatusService.markSessionConfirmedFromPayment,
+      setup.orchestrateSessionPaymentStatusService
+        .markSessionConfirmedFromPayment,
     ).not.toHaveBeenCalled();
   });
 });

@@ -31,10 +31,8 @@ export const TRAINING_SLUG_REGEX = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 export const TRAINING_DEFAULT_TIMEZONE = 'Africa/Cairo';
 export const TRAINING_EXTERNAL_ROOM_PROVIDER_ZOOM = 'ZOOM';
 
-export const TRAINING_PUBLIC_SCHEDULE_VISIBLE_STATUSES: CourseScheduleStatus[] = [
-  CourseScheduleStatus.OPEN_FOR_ENROLLMENT,
-  CourseScheduleStatus.FULL,
-];
+export const TRAINING_PUBLIC_SCHEDULE_VISIBLE_STATUSES: CourseScheduleStatus[] =
+  [CourseScheduleStatus.OPEN_FOR_ENROLLMENT, CourseScheduleStatus.FULL];
 
 export const TRAINING_ENROLLMENT_OCCUPYING_STATUSES: EnrollmentStatus[] = [
   EnrollmentStatus.PENDING_PAYMENT,

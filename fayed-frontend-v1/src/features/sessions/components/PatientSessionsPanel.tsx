@@ -3,6 +3,7 @@
 import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { CalendarDays, Clock } from "lucide-react";
+import { DEFAULT_PAGE_LIMIT } from "@/constants/pagination";
 import { usePatientSessions } from "../hooks/use-sessions";
 import SessionStatusBadge from "./SessionStatusBadge";
 import type { SessionListItem } from "../types/sessions.types";
@@ -68,7 +69,7 @@ function SessionCard({ session }: { session: SessionListItem }) {
 
 export default function PatientSessionsPanel() {
   const t = useTranslations("sessions");
-  const { data, isLoading, isError, refetch } = usePatientSessions({ limit: 20 });
+  const { data, isLoading, isError, refetch } = usePatientSessions({ limit: DEFAULT_PAGE_LIMIT });
 
   if (isLoading) {
     return <ListStateSkeleton items={3} heightClass="h-20" />;

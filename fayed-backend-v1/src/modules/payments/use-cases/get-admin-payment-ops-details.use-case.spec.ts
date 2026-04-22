@@ -1,4 +1,9 @@
-import { PaymentProvider, PaymentStatus, RefundStatus, RefundType } from '@prisma/client';
+import {
+  PaymentProvider,
+  PaymentStatus,
+  RefundStatus,
+  RefundType,
+} from '@prisma/client';
 import { GetAdminPaymentOpsDetailsUseCase } from './get-admin-payment-ops-details.use-case';
 
 describe('GetAdminPaymentOpsDetailsUseCase', () => {
@@ -73,7 +78,9 @@ describe('GetAdminPaymentOpsDetailsUseCase', () => {
       }),
     };
     const paymentMapper = {
-      toAdminOpsViewModel: jest.fn().mockReturnValue({ payment: { id: 'payment_1' } }),
+      toAdminOpsViewModel: jest
+        .fn()
+        .mockReturnValue({ payment: { id: 'payment_1' } }),
     };
 
     const useCase = new GetAdminPaymentOpsDetailsUseCase(
@@ -98,4 +105,3 @@ describe('GetAdminPaymentOpsDetailsUseCase', () => {
     });
   });
 });
-

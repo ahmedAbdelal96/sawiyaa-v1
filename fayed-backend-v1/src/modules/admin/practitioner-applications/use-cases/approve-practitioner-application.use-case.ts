@@ -85,7 +85,9 @@ export class ApprovePractitionerApplicationUseCase {
         profile.yearsOfExperience > 0,
       hasLanguage: profile.languages.length > 0,
       hasRequiredSpecialties: specialtyLinks.length > 0,
-      hasRequiredCredentials: credentials.length > 0,
+      hasRequiredCredentials:
+        credentials.length > 0 &&
+        credentials.every((item) => item.reviewStatus === 'APPROVED'),
       hasPayoutDestination: Boolean(profile.payoutDestination),
       status: existing.status,
     });

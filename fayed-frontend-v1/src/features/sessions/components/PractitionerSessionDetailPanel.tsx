@@ -34,6 +34,7 @@ import {
   hasSessionRuntimeAccess,
   isJoinWindowOpen,
 } from "../lib/session-runtime";
+import { dispatchOpenSessionChatInShell } from "@/features/messages-shell/lib/messages-shell-events";
 import SessionStatusBadge from "./SessionStatusBadge";
 import type {
   SessionJoinItem,
@@ -207,6 +208,9 @@ export default function PractitionerSessionDetailPanel({ sessionId }: Props) {
       session.status === "IN_PROGRESS" ||
       runtimePrepared ||
       Boolean(joinResult));
+  const openInMessagesLabel = locale.startsWith("ar")
+    ? "فتح داخل الرسائل"
+    : "Open in messages";
 
   const liveFlowKey = !hasRuntimeAccess
     ? "unavailable"
@@ -516,6 +520,46 @@ export default function PractitionerSessionDetailPanel({ sessionId }: Props) {
           )}
           {(session.status === "IN_PROGRESS" || session.status === "COMPLETED") && (
             <p>{t("detail.liveFlow.notes.closeoutAfterSession")}</p>
+          )}
+        </div>
+      </div>
+
+      <div className="rounded-2xl border border-border-light bg-surface-primary p-5 dark:bg-white/5">
+        <h3 className="mb-2 text-sm font-semibold text-text-primary dark:text-white/90">
+          {t("detail.chatCard.heading")}
+        </h3>
+        {["READY_TO_JOIN", "IN_PROGRESS", "COMPLETED"].includes(session.status) ? (
+          <p className="text-sm text-text-secondary">{t("detail.chatCard.note")}</p>
+        ) : (
+          <p className="text-sm text-text-secondary">
+            {t("detail.chatCard.disabledNote")}
+          </p>
+        )}
+        <div className="mt-4 flex flex-wrap gap-3">
+          {["READY_TO_JOIN", "IN_PROGRESS", "COMPLETED"].includes(session.status) ? (
+            <>
+              <button
+                type="button"
+                onClick={() => dispatchOpenSessionChatInShell({ sessionId: session.id })}
+                className="inline-flex w-full items-center justify-center rounded-2xl bg-primary px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-primary-hover sm:w-auto"
+              >
+                {openInMessagesLabel}
+              </button>
+              <Link
+                href={`/practitioner/sessions/${session.id}/chat` as never}
+                className="inline-flex w-full items-center justify-center rounded-2xl border border-border-light px-5 py-2.5 text-sm font-medium text-text-primary transition hover:border-primary/30 hover:text-primary dark:text-white/90 dark:hover:text-primary-light sm:w-auto"
+              >
+                {t("detail.chatCard.open")}
+              </Link>
+            </>
+          ) : (
+            <button
+              type="button"
+              disabled
+              className="inline-flex w-full cursor-not-allowed items-center justify-center rounded-2xl border border-border-light px-5 py-2.5 text-sm font-medium text-text-muted opacity-70 sm:w-auto"
+            >
+              {t("detail.chatCard.open")}
+            </button>
           )}
         </div>
       </div>

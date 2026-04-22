@@ -8,7 +8,10 @@ import {
   SupportTicketStatus,
   SupportTicketType,
 } from '@prisma/client';
-import { PATIENT_JOURNEY_NEXT_STEP_VALUES, PatientJourneyNextStepType } from '../types/patient-journey.types';
+import {
+  PATIENT_JOURNEY_NEXT_STEP_VALUES,
+  PatientJourneyNextStepType,
+} from '../types/patient-journey.types';
 import {
   CareRecommendationActionDto,
   CareRecommendationEntityRefDto,

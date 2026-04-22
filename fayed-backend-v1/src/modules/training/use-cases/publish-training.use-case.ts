@@ -17,7 +17,9 @@ export class PublishTrainingUseCase {
   ) {}
 
   async execute(input: { courseId: string; query: TrainingLocaleQueryDto }) {
-    const existing = await this.trainingRepository.findCourseById(input.courseId);
+    const existing = await this.trainingRepository.findCourseById(
+      input.courseId,
+    );
     if (!existing) {
       throw new NotFoundException({
         messageKey: 'training.errors.notFound',
@@ -25,7 +27,9 @@ export class PublishTrainingUseCase {
       });
     }
 
-    this.validateTrainingStatusTransitionService.assertCanPublish(existing.status);
+    this.validateTrainingStatusTransitionService.assertCanPublish(
+      existing.status,
+    );
 
     const now = new Date();
     const data: Prisma.CourseUncheckedUpdateInput = {
@@ -38,7 +42,10 @@ export class PublishTrainingUseCase {
       data.visibility = CourseVisibility.PUBLIC;
     }
 
-    const updated = await this.trainingRepository.updateCourse(input.courseId, data);
+    const updated = await this.trainingRepository.updateCourse(
+      input.courseId,
+      data,
+    );
 
     this.logger.log(`Training published (id=${input.courseId})`);
 

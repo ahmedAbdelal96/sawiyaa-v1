@@ -5,7 +5,8 @@ export const enCareChatCatalog = {
     requestDetails: 'Care chat request details retrieved successfully',
     requestDecided: 'Care chat request decision applied successfully',
     requestRevoked: 'Care chat request revoked successfully',
-    conversationDetails: 'Care chat conversation details retrieved successfully',
+    conversationDetails:
+      'Care chat conversation details retrieved successfully',
     messageSent: 'Care chat message sent successfully',
   },
   errors: {

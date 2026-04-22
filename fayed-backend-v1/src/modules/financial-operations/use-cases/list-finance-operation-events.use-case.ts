@@ -17,8 +17,12 @@ export class ListFinanceOperationEventsUseCase {
   async execute(query: ListFinanceOperationEventsDto) {
     const page = query.page ?? 1;
     const limit = query.limit ?? 20;
-    const occurredFrom = query.occurredFrom ? new Date(query.occurredFrom) : undefined;
-    const occurredTo = query.occurredTo ? new Date(query.occurredTo) : undefined;
+    const occurredFrom = query.occurredFrom
+      ? new Date(query.occurredFrom)
+      : undefined;
+    const occurredTo = query.occurredTo
+      ? new Date(query.occurredTo)
+      : undefined;
 
     if (occurredFrom && occurredTo && occurredFrom > occurredTo) {
       throw new BadRequestException({
@@ -38,22 +42,24 @@ export class ListFinanceOperationEventsUseCase {
     }
 
     const [items, totalItems] =
-      await this.financialOperationsPaymentRepository.listFinanceOperationEvents({
-        operationType: query.operationType,
-        provider: query.provider,
-        paymentPurpose: query.paymentPurpose,
-        paymentStatus: query.paymentStatus,
-        refundStatus: query.refundStatus,
-        paymentId: query.paymentId,
-        refundId: query.refundId,
-        occurredFrom,
-        occurredTo,
-        query: query.query?.trim() || undefined,
-        sortBy: query.sortBy ?? FinanceOperationSortByDto.OCCURRED_AT,
-        sortOrder: query.sortOrder ?? FinanceOperationSortOrderDto.DESC,
-        page,
-        limit,
-      });
+      await this.financialOperationsPaymentRepository.listFinanceOperationEvents(
+        {
+          operationType: query.operationType,
+          provider: query.provider,
+          paymentPurpose: query.paymentPurpose,
+          paymentStatus: query.paymentStatus,
+          refundStatus: query.refundStatus,
+          paymentId: query.paymentId,
+          refundId: query.refundId,
+          occurredFrom,
+          occurredTo,
+          query: query.query?.trim() || undefined,
+          sortBy: query.sortBy ?? FinanceOperationSortByDto.OCCURRED_AT,
+          sortOrder: query.sortOrder ?? FinanceOperationSortOrderDto.DESC,
+          page,
+          limit,
+        },
+      );
 
     return {
       items: items.map((item) => ({

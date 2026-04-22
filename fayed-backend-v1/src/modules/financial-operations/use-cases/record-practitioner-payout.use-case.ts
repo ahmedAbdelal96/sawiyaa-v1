@@ -60,6 +60,8 @@ export class RecordPractitionerPayoutUseCase {
           payoutMethod: input.body.payoutMethod,
           payoutSource: SettlementPayoutSource.MANUAL_EXCEPTION,
           externalPayoutRef: input.body.externalReference ?? null,
+          transferFeeAmount: input.body.transferFeeAmount ?? null,
+          transferFeeTreatment: input.body.transferFeeTreatment,
           notes: input.body.notes ?? null,
           effectiveAt: input.body.payoutDate
             ? new Date(input.body.payoutDate)

@@ -1,11 +1,4 @@
-import {
-  Body,
-  Controller,
-  Get,
-  Param,
-  Post,
-  UseGuards,
-} from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
@@ -68,11 +61,13 @@ export class PatientInstantBookingController {
       'Payload is invalid, session mode is unsupported, or practitioner is not currently eligible for instant booking',
   })
   @ApiConflictResponse({
-    description: 'A duplicate pending instant booking request already exists for this patient and practitioner',
+    description:
+      'A duplicate pending instant booking request already exists for this patient and practitioner',
   })
   @ApiUnauthorizedResponse({ description: 'Access token is required' })
   @ApiForbiddenResponse({
-    description: 'Only active patient accounts may create instant booking requests',
+    description:
+      'Only active patient accounts may create instant booking requests',
   })
   @ApiNotFoundResponse({
     description: 'Patient profile or practitioner profile was not found',
@@ -147,7 +142,8 @@ export class PatientInstantBookingController {
   @ApiBody({ type: CancelInstantBookingRequestDto })
   @ApiResponse({ status: 200, type: InstantBookingItemSuccessResponseDto })
   @ApiConflictResponse({
-    description: 'The instant booking request is already cancelled or cannot transition from its current status',
+    description:
+      'The instant booking request is already cancelled or cannot transition from its current status',
   })
   @ApiUnauthorizedResponse({ description: 'Access token is required' })
   @ApiForbiddenResponse({

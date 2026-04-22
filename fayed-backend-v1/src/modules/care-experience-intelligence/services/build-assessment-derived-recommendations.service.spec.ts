@@ -79,4 +79,3 @@ describe('BuildAssessmentDerivedRecommendationsService', () => {
     expect(recommendations).toHaveLength(1);
   });
 });
-

@@ -24,7 +24,9 @@ export class ListCommissionRulesUseCase {
     });
 
     return {
-      items: items.map((item) => this.financialRulesMapper.toCommissionRule(item)),
+      items: items.map((item) =>
+        this.financialRulesMapper.toCommissionRule(item),
+      ),
     };
   }
 }

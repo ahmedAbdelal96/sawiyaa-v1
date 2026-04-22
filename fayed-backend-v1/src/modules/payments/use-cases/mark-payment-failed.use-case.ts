@@ -8,6 +8,7 @@ import {
 import { PrismaService } from '@common/prisma/prisma.service';
 import { AppLoggerService } from '@common/logging/app-logger.service';
 import { OperationalNotificationService } from '@modules/notifications/services/operational-notification.service';
+import { CustomerWalletAccountingService } from '@modules/customer-wallets/services/customer-wallet-accounting.service';
 import { PaymentMapper } from '../mappers/payment.mapper';
 import { PaymentRepository } from '../repositories/payment.repository';
 import { OrchestrateSessionPaymentStatusService } from '../services/orchestrate-session-payment-status.service';
@@ -23,6 +24,7 @@ export class MarkPaymentFailedUseCase {
     private readonly orchestrateSessionPaymentStatusService: OrchestrateSessionPaymentStatusService,
     private readonly orchestrateTrainingEnrollmentPaymentStatusService: OrchestrateTrainingEnrollmentPaymentStatusService,
     private readonly paymentMapper: PaymentMapper,
+    private readonly customerWalletAccountingService: CustomerWalletAccountingService,
     private readonly operationalNotificationService: OperationalNotificationService,
     private readonly logger: AppLoggerService,
   ) {}
@@ -69,9 +71,10 @@ export class MarkPaymentFailedUseCase {
       await this.paymentRepository.createEvent(
         {
           paymentId: payment.id,
-          eventType: this.orchestrateSessionPaymentStatusService.createPaymentEventTypeForFailure(
-            'FAILED',
-          ),
+          eventType:
+            this.orchestrateSessionPaymentStatusService.createPaymentEventTypeForFailure(
+              'FAILED',
+            ),
           providerEventRef: input.providerEventRef,
         },
         tx,
@@ -79,6 +82,14 @@ export class MarkPaymentFailedUseCase {
 
       return failed;
     });
+
+    if (updated.amountFromWallet.gt(0)) {
+      await this.customerWalletAccountingService.releaseReservationForPayment({
+        paymentId: updated.id,
+        currencyCode: updated.currencyCode,
+        releaseReason: 'PAYMENT_FAILED',
+      });
+    }
 
     this.logger.warn(
       {

@@ -43,7 +43,8 @@ class MatchingBudgetRangeDto {
 
 export class CreateMatchingSessionDto {
   @ApiPropertyOptional({
-    description: 'Primary concern in natural language to help matching rationale',
+    description:
+      'Primary concern in natural language to help matching rationale',
     example: 'Anxiety and overthinking',
   })
   @IsOptional()

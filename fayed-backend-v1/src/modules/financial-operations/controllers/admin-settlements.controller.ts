@@ -125,13 +125,20 @@ export class AdminSettlementsController {
     description:
       'Operational practitioner-centric settlements surface. Returns practitioners with currency-level wallet + due summaries, backend-driven filters, pagination, and truthful stats (not derived from a paginated slice).',
   })
-  @ApiResponse({ status: 200, type: SettlementDuesDirectoryListSuccessResponseDto })
-  @ApiBadRequestResponse({ description: 'Invalid filters or pagination values' })
+  @ApiResponse({
+    status: 200,
+    type: SettlementDuesDirectoryListSuccessResponseDto,
+  })
+  @ApiBadRequestResponse({
+    description: 'Invalid filters or pagination values',
+  })
   @ApiUnauthorizedResponse({ description: 'Access token is required' })
   @ApiForbiddenResponse({
     description: 'Admin or support active account is required',
   })
-  listPractitionerDuesDirectory(@Query() query: ListSettlementDuesDirectoryDto) {
+  listPractitionerDuesDirectory(
+    @Query() query: ListSettlementDuesDirectoryDto,
+  ) {
     return this.listSettlementDuesDirectoryUseCase.execute({ query });
   }
 
@@ -232,6 +239,8 @@ export class AdminSettlementsController {
       batchId: id,
       externalPayoutRef: body.externalPayoutRef,
       payoutMethod: body.payoutMethod,
+      transferFeeAmount: body.transferFeeAmount,
+      transferFeeTreatment: body.transferFeeTreatment,
       effectiveAt: body.effectiveAt,
       notes: body.notes,
       processedByUserId: currentUser.id,

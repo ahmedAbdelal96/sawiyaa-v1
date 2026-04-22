@@ -65,7 +65,9 @@ describe('UpdateTrainingScheduleUseCase', () => {
       endsAt: new Date('2026-04-03T10:00:00.000Z'),
       maxEnrollmentsOverride: 10,
     });
-    (trainingRepository.countEnrollmentsByScheduleIds as jest.Mock).mockResolvedValue({
+    (
+      trainingRepository.countEnrollmentsByScheduleIds as jest.Mock
+    ).mockResolvedValue({
       schedule_1: 8,
     });
 

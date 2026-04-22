@@ -1,6 +1,9 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { EnrollmentAttendanceStatus, EnrollmentStatus } from '@prisma/client';
-import { MarkTrainingEnrollmentAttendanceDto, TrainingAttendanceMarkStatus } from '../dto/mark-training-enrollment-attendance.dto';
+import {
+  MarkTrainingEnrollmentAttendanceDto,
+  TrainingAttendanceMarkStatus,
+} from '../dto/mark-training-enrollment-attendance.dto';
 import { TrainingPresenter } from '../presenters/training.presenter';
 import { TrainingRepository } from '../repositories/training.repository';
 import { ValidateTrainingEnrollmentAttendanceMutationService } from '../services/validate-training-enrollment-attendance-mutation.service';
@@ -35,7 +38,8 @@ export class MarkTrainingEnrollmentAttendanceUseCase {
       targetStatus: input.payload.status,
     });
 
-    const isAttended = input.payload.status === TrainingAttendanceMarkStatus.ATTENDED;
+    const isAttended =
+      input.payload.status === TrainingAttendanceMarkStatus.ATTENDED;
     await this.trainingRepository.updateEnrollment(enrollment.id, {
       attendanceStatus: isAttended
         ? EnrollmentAttendanceStatus.ATTENDED
@@ -57,7 +61,9 @@ export class MarkTrainingEnrollmentAttendanceUseCase {
     }
 
     return {
-      item: this.trainingPresenter.presentAdminScheduleEnrollmentItem(refreshed),
+      item: this.trainingPresenter.presentAdminScheduleEnrollmentItem(
+        refreshed,
+      ),
     };
   }
 }

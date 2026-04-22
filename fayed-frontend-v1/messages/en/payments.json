@@ -147,8 +147,45 @@
     },
     "provider": {
       "STRIPE": "Card",
-      "PAYMOB": "Paymob"
+      "PAYMOB": "Paymob",
+      "INTERNAL_WALLET": "Wallet"
+    },
+    "wallet": {
+      "summaryHeading": "Wallet Balance",
+      "availableLabel": "Available balance",
+      "reservedLabel": "Reserved balance",
+      "noWalletYet": "No wallet activity yet.",
+      "refundHint": "Refunded amounts are returned to this internal balance.",
+      "activityHeading": "Recent wallet activity",
+      "activityEmpty": "No wallet transactions yet.",
+      "walletUsedLabel": "Paid from wallet",
+      "gatewayUsedLabel": "Paid through gateway",
+      "entries": {
+        "type": {
+          "REFUND_CREDIT": "Refund credit",
+          "MANUAL_CREDIT": "Manual credit",
+          "MANUAL_DEBIT": "Manual debit",
+          "SESSION_PAYMENT_RESERVE": "Wallet amount reserved",
+          "SESSION_PAYMENT_CAPTURE": "Wallet payment captured",
+          "SESSION_PAYMENT_RELEASE": "Wallet reservation released",
+          "REVERSAL": "Reversal entry",
+          "ADJUSTMENT": "Adjustment"
+        }
+      }
     }
+  },
+  "walletCheckout": {
+    "heading": "How this payment will be split",
+    "totalLabel": "Session total",
+    "walletDeductionLabel": "Deducted from wallet",
+    "gatewayRemainderLabel": "Remaining for gateway",
+    "useWalletTitle": "Use wallet balance",
+    "useWalletNote": "Apply your available wallet balance before card checkout.",
+    "useWalletToggle": "Use wallet",
+    "balanceLoading": "Loading wallet balance...",
+    "currencyMismatch": "Your wallet currency does not match this session currency, so wallet balance cannot be used here.",
+    "gatewayChargeHint": "Amount that will be charged by the payment provider.",
+    "confirmWalletOnly": "Confirm payment from wallet"
   },
   "sessionState": {
     "heading": "Payment and booking",

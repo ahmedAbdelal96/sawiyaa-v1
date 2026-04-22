@@ -27,7 +27,9 @@ export class AvailabilityMapper {
     };
   }
 
-  toException(exception: AvailabilityException): AvailabilityExceptionViewModel {
+  toException(
+    exception: AvailabilityException,
+  ): AvailabilityExceptionViewModel {
     return {
       id: exception.id,
       type: exception.type,
@@ -47,7 +49,9 @@ export class AvailabilityMapper {
     return {
       timezone: input.timezone,
       weeklySlots: input.weeklySlots.map((slot) => this.toWeeklySlot(slot)),
-      exceptions: input.exceptions.map((exception) => this.toException(exception)),
+      exceptions: input.exceptions.map((exception) =>
+        this.toException(exception),
+      ),
     };
   }
 }

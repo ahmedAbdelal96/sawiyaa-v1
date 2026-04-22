@@ -4,7 +4,6 @@ import { type ReactNode, useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Link, useRouter } from "@/i18n/navigation";
 import {
-  ArrowLeft,
   ChevronDown,
   ChevronUp,
   Loader2,
@@ -15,6 +14,7 @@ import {
 import Button from "@/components/ui/button/Button";
 import { DestructiveConfirmModal } from "@/components/ui/modal";
 import { SurfaceCard } from "@/components/shared/SurfaceShell";
+import DirectionalArrowIcon from "@/components/ui/navigation/DirectionalArrowIcon";
 import {
   ADMIN_ASSESSMENT_BAND_ORDER,
   ADMIN_ASSESSMENT_STATUS_STYLES,
@@ -564,7 +564,7 @@ export default function AdminAssessmentEditorScreen({ assessmentId }: Props) {
               href="/admin/assessments"
               className="inline-flex items-center gap-2 text-sm text-text-secondary hover:text-primary"
             >
-              <ArrowLeft className="h-4 w-4 rtl:rotate-180" />
+              <DirectionalArrowIcon direction="back" className="h-4 w-4" />
               {t("assessmentsAdmin.actions.backToList")}
             </Link>
             <h1 className="mt-2 text-2xl font-semibold text-text-primary dark:text-white/95">

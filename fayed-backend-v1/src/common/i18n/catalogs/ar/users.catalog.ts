@@ -13,4 +13,3 @@ export const arUsersCatalog = {
     profileUpdated: 'تم تحديث البيانات بنجاح.',
   },
 };
-

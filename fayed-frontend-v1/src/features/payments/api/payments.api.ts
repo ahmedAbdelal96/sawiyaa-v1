@@ -2,7 +2,10 @@ import httpClient from "@/lib/api/http-client";
 import { extractData } from "@/lib/api/response";
 import type { ApiPayload } from "@/lib/api/contracts";
 import type {
+  CustomerWalletEntriesResponseData,
+  CustomerWalletSummaryResponseData,
   InitiateSessionPaymentInput,
+  ListCustomerWalletEntriesParams,
   ListPaymentsParams,
   PaymentItem,
   PaymentItemResponseData,
@@ -54,4 +57,36 @@ export async function getPatientPayment(paymentId: string): Promise<PaymentItem>
     `/patients/me/payments/${paymentId}`,
   );
   return extractData(response.data).item;
+}
+
+/**
+ * GET /patients/me/wallet
+ *
+ * Fetches the authenticated patient's wallet summary.
+ */
+export async function getPatientWalletSummary(
+  currencyCode?: string,
+): Promise<CustomerWalletSummaryResponseData> {
+  const response = await httpClient.get<ApiPayload<CustomerWalletSummaryResponseData>>(
+    "/patients/me/wallet",
+    {
+      params: currencyCode ? { currencyCode } : undefined,
+    },
+  );
+  return extractData(response.data);
+}
+
+/**
+ * GET /patients/me/wallet/entries
+ *
+ * Lists patient wallet ledger entries.
+ */
+export async function getPatientWalletEntries(
+  params?: ListCustomerWalletEntriesParams,
+): Promise<CustomerWalletEntriesResponseData> {
+  const response = await httpClient.get<ApiPayload<CustomerWalletEntriesResponseData>>(
+    "/patients/me/wallet/entries",
+    { params },
+  );
+  return extractData(response.data);
 }

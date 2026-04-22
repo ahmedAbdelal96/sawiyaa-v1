@@ -2,8 +2,7 @@ export const enInstantBookingCatalog = {
   errors: {
     patientNotFound: 'Patient profile was not found',
     practitionerNotFound: 'Practitioner profile was not found',
-    practitionerNotEligible:
-      'Practitioner is not eligible for instant booking',
+    practitionerNotEligible: 'Practitioner is not eligible for instant booking',
     practitionerNotOnline: 'Practitioner is not currently online',
     practitionerBusy: 'Practitioner is currently busy',
     practitionerNotAvailableNow:

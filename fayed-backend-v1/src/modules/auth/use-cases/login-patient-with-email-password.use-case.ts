@@ -29,7 +29,8 @@ export class LoginPatientWithEmailPasswordUseCase {
     deviceContext: AuthSessionDeviceContext;
   }) {
     const normalizedEmail = input.email.trim().toLowerCase();
-    const userEmail = await this.userEmailRepository.findByEmail(normalizedEmail);
+    const userEmail =
+      await this.userEmailRepository.findByEmail(normalizedEmail);
 
     if (!userEmail) {
       throw new UnauthorizedException({

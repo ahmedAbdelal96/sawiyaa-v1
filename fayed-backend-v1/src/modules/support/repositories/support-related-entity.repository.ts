@@ -65,7 +65,10 @@ export class SupportRelatedEntityRepository {
     });
   }
 
-  patientOwnsMatchingSession(matchingSessionId: string, patientProfileId: string) {
+  patientOwnsMatchingSession(
+    matchingSessionId: string,
+    patientProfileId: string,
+  ) {
     return this.prisma.matchingSession.count({
       where: {
         id: matchingSessionId,

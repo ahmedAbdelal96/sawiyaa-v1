@@ -15,6 +15,7 @@ export default async function AdminLayout({ children, params }: Props) {
       navigation={adminNavigation}
       basePathPrefix="/admin"
       layoutVariant="admin"
+      messagingRole="admin"
     >
       {children}
     </DashboardLayout>

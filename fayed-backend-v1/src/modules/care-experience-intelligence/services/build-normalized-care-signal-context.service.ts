@@ -27,11 +27,19 @@ export class BuildNormalizedCareSignalContextService {
     return this.buildFromSnapshot(snapshot);
   }
 
-  buildFromSnapshot(snapshot: RawCareSignalSnapshot): NormalizedCareSignalContext {
+  buildFromSnapshot(
+    snapshot: RawCareSignalSnapshot,
+  ): NormalizedCareSignalContext {
     const rulesApplied: string[] = [];
-    const hasPendingPayment = this.isPendingPaymentStatus(snapshot.pendingPaymentStatus);
-    const hasUpcomingSession = this.isUpcomingSessionStatus(snapshot.upcomingSessionStatus);
-    const hasCompletedAssessment = Boolean(snapshot.latestAssessmentCompletedAt);
+    const hasPendingPayment = this.isPendingPaymentStatus(
+      snapshot.pendingPaymentStatus,
+    );
+    const hasUpcomingSession = this.isUpcomingSessionStatus(
+      snapshot.upcomingSessionStatus,
+    );
+    const hasCompletedAssessment = Boolean(
+      snapshot.latestAssessmentCompletedAt,
+    );
 
     const assessmentInterpretation =
       this.interpretAssessmentCareIntentService.interpret({
@@ -54,13 +62,15 @@ export class BuildNormalizedCareSignalContextService {
       profile: {
         patientProfileId: snapshot.patientProfileId,
         userId: snapshot.userId,
-        countryCode: snapshot.patientCountryIsoCode?.trim().toUpperCase() ?? null,
+        countryCode:
+          snapshot.patientCountryIsoCode?.trim().toUpperCase() ?? null,
         timezone: snapshot.userTimezone?.trim() ?? null,
       },
       assessments: {
         hasCompletedAssessment,
         latestBand: snapshot.latestAssessmentBand,
-        latestCompletedAt: snapshot.latestAssessmentCompletedAt?.toISOString() ?? null,
+        latestCompletedAt:
+          snapshot.latestAssessmentCompletedAt?.toISOString() ?? null,
         interpretation: assessmentInterpretation,
       },
       sessions: {

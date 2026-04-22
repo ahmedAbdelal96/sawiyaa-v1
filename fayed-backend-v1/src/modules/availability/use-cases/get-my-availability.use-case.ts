@@ -23,9 +23,8 @@ export class GetMyAvailabilityUseCase {
   ) {}
 
   async execute(input: { userId: string; locale: SupportedLocale }) {
-    const practitioner = await this.availabilityPractitionerRepository.findByUserId(
-      input.userId,
-    );
+    const practitioner =
+      await this.availabilityPractitionerRepository.findByUserId(input.userId);
 
     if (!practitioner) {
       throw new NotFoundException({

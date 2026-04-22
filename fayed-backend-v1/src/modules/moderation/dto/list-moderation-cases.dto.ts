@@ -6,7 +6,14 @@ import {
   ModerationReporterRole,
 } from '@prisma/client';
 import { Type } from 'class-transformer';
-import { IsDateString, IsEnum, IsInt, IsOptional, IsString, Min } from 'class-validator';
+import {
+  IsDateString,
+  IsEnum,
+  IsInt,
+  IsOptional,
+  IsString,
+  Min,
+} from 'class-validator';
 
 export enum ModerationReportsSortByDto {
   CREATED_AT = 'CREATED_AT',
@@ -66,12 +73,18 @@ export class ListModerationCasesDto {
   @IsDateString()
   createdTo?: string;
 
-  @ApiPropertyOptional({ enum: ModerationReportsSortByDto, default: ModerationReportsSortByDto.CREATED_AT })
+  @ApiPropertyOptional({
+    enum: ModerationReportsSortByDto,
+    default: ModerationReportsSortByDto.CREATED_AT,
+  })
   @IsOptional()
   @IsEnum(ModerationReportsSortByDto)
   sortBy: ModerationReportsSortByDto = ModerationReportsSortByDto.CREATED_AT;
 
-  @ApiPropertyOptional({ enum: ModerationReportsSortOrderDto, default: ModerationReportsSortOrderDto.DESC })
+  @ApiPropertyOptional({
+    enum: ModerationReportsSortOrderDto,
+    default: ModerationReportsSortOrderDto.DESC,
+  })
   @IsOptional()
   @IsEnum(ModerationReportsSortOrderDto)
   sortOrder: ModerationReportsSortOrderDto = ModerationReportsSortOrderDto.DESC;

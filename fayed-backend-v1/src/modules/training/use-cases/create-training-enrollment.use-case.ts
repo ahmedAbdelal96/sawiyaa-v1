@@ -53,7 +53,9 @@ export class CreateTrainingEnrollmentUseCase {
       });
     }
 
-    const schedule = await this.trainingRepository.findScheduleById(input.scheduleId);
+    const schedule = await this.trainingRepository.findScheduleById(
+      input.scheduleId,
+    );
     if (!schedule || !schedule.course) {
       throw new NotFoundException({
         messageKey: 'training.errors.scheduleNotFound',
@@ -72,7 +74,9 @@ export class CreateTrainingEnrollmentUseCase {
     }
 
     const enrollmentCountsByScheduleId =
-      await this.trainingRepository.countEnrollmentsByScheduleIds([schedule.id]);
+      await this.trainingRepository.countEnrollmentsByScheduleIds([
+        schedule.id,
+      ]);
     const occupiedSeats = enrollmentCountsByScheduleId[schedule.id] ?? 0;
 
     const maxEnrollments =
@@ -96,12 +100,16 @@ export class CreateTrainingEnrollmentUseCase {
       });
     }
 
-    const existing = await this.trainingRepository.findEnrollmentByScheduleAndUser(
-      schedule.id,
-      input.userId,
-    );
+    const existing =
+      await this.trainingRepository.findEnrollmentByScheduleAndUser(
+        schedule.id,
+        input.userId,
+      );
 
-    if (existing && existing.enrollmentStatus !== EnrollmentStatus.PENDING_PAYMENT) {
+    if (
+      existing &&
+      existing.enrollmentStatus !== EnrollmentStatus.PENDING_PAYMENT
+    ) {
       throw new ConflictException({
         messageKey: 'training.errors.enrollmentAlreadyExists',
         error: 'TRAINING_ENROLLMENT_ALREADY_EXISTS',
@@ -133,10 +141,18 @@ export class CreateTrainingEnrollmentUseCase {
     ];
 
     if (existing?.paymentId) {
-      const previousPayment = await this.paymentRepository.findById(existing.paymentId);
-      if (previousPayment && activePaymentStatuses.includes(previousPayment.status)) {
+      const previousPayment = await this.paymentRepository.findById(
+        existing.paymentId,
+      );
+      if (
+        previousPayment &&
+        activePaymentStatuses.includes(previousPayment.status)
+      ) {
         return {
-          item: this.trainingPresenter.presentEnrollmentItem(existing, input.locale),
+          item: this.trainingPresenter.presentEnrollmentItem(
+            existing,
+            input.locale,
+          ),
         };
       }
     }
@@ -251,7 +267,10 @@ export class CreateTrainingEnrollmentUseCase {
     }
 
     return {
-      item: this.trainingPresenter.presentEnrollmentItem(refreshed, input.locale),
+      item: this.trainingPresenter.presentEnrollmentItem(
+        refreshed,
+        input.locale,
+      ),
     };
   }
 

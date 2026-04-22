@@ -43,7 +43,11 @@ export class ValidateSupportLinkedEntitiesService {
         input.relatedSessionId,
         input.patientProfileId,
       );
-      this.assertOwner(owns, 'support.errors.invalidRelatedSession', 'SUPPORT_INVALID_RELATED_SESSION');
+      this.assertOwner(
+        owns,
+        'support.errors.invalidRelatedSession',
+        'SUPPORT_INVALID_RELATED_SESSION',
+      );
     }
 
     if (input.relatedPaymentId) {
@@ -51,7 +55,11 @@ export class ValidateSupportLinkedEntitiesService {
         input.relatedPaymentId,
         input.patientProfileId,
       );
-      this.assertOwner(owns, 'support.errors.invalidRelatedPayment', 'SUPPORT_INVALID_RELATED_PAYMENT');
+      this.assertOwner(
+        owns,
+        'support.errors.invalidRelatedPayment',
+        'SUPPORT_INVALID_RELATED_PAYMENT',
+      );
     }
 
     if (input.relatedInstantBookingRequestId) {
@@ -119,7 +127,11 @@ export class ValidateSupportLinkedEntitiesService {
           input.relatedSessionId,
           input.practitionerProfileId,
         );
-      this.assertOwner(owns, 'support.errors.invalidRelatedSession', 'SUPPORT_INVALID_RELATED_SESSION');
+      this.assertOwner(
+        owns,
+        'support.errors.invalidRelatedSession',
+        'SUPPORT_INVALID_RELATED_SESSION',
+      );
     }
 
     if (input.relatedPaymentId) {
@@ -128,7 +140,11 @@ export class ValidateSupportLinkedEntitiesService {
           input.relatedPaymentId,
           input.practitionerProfileId,
         );
-      this.assertOwner(owns, 'support.errors.invalidRelatedPayment', 'SUPPORT_INVALID_RELATED_PAYMENT');
+      this.assertOwner(
+        owns,
+        'support.errors.invalidRelatedPayment',
+        'SUPPORT_INVALID_RELATED_PAYMENT',
+      );
     }
 
     if (input.relatedInstantBookingRequestId) {

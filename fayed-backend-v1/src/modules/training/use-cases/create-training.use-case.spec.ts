@@ -14,7 +14,10 @@ describe('CreateTrainingUseCase', () => {
     presentAdminTrainingItem: jest.fn(),
   } as unknown as TrainingPresenter;
 
-  const useCase = new CreateTrainingUseCase(trainingRepository, trainingPresenter);
+  const useCase = new CreateTrainingUseCase(
+    trainingRepository,
+    trainingPresenter,
+  );
 
   beforeEach(() => {
     jest.clearAllMocks();

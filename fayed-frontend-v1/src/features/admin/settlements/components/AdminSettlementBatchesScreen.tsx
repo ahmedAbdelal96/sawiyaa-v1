@@ -26,6 +26,7 @@ type CurrencyFilter = "all" | string;
 export default function AdminSettlementBatchesScreen() {
   const t = useTranslations("admin-settlements");
   const tNav = useTranslations("navigation");
+  const tAccounting = useTranslations("admin-accounting");
   const locale = useLocale();
   const router = useRouter();
 
@@ -143,13 +144,27 @@ export default function AdminSettlementBatchesScreen() {
         title={tNav("main.settlements")}
         description={t("workspace.note")}
         actions={
-          <Button
-            variant="primary"
-            startIcon={<BadgeDollarSign className="h-4 w-4" />}
-            onClick={() => setIsGenerateOpen(true)}
-          >
-            {t("generate.label")}
-          </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              variant="outline"
+              onClick={() => router.push(`/${locale}/admin/finance/dashboard`)}
+            >
+              {tAccounting("dashboard.title")}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => router.push(`/${locale}/admin/finance/ledger`)}
+            >
+              {tAccounting("dashboard.actions.openLedger")}
+            </Button>
+            <Button
+              variant="primary"
+              startIcon={<BadgeDollarSign className="h-4 w-4" />}
+              onClick={() => setIsGenerateOpen(true)}
+            >
+              {t("generate.label")}
+            </Button>
+          </div>
         }
         summaryCards={
           <AdminSummaryCard
@@ -331,4 +346,3 @@ export default function AdminSettlementBatchesScreen() {
     </>
   );
 }
-

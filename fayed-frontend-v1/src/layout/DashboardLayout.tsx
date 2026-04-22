@@ -6,6 +6,7 @@ import { NavigationConfig } from "@/config/navigation";
 import AppHeader from "@/layout/AppHeader";
 import Backdrop from "@/layout/Backdrop";
 import DynamicSidebar from "@/layout/DynamicSidebar";
+import UnifiedMessagesLauncher from "@/features/messages-shell/components/UnifiedMessagesLauncher";
 import { useSidebar } from "@/stores";
 
 interface DashboardLayoutProps {
@@ -13,6 +14,7 @@ interface DashboardLayoutProps {
   navigation: NavigationConfig;
   basePathPrefix?: string; // e.g., "/admin" or ""
   layoutVariant?: "admin" | "practitioner";
+  messagingRole?: "admin" | "practitioner";
 }
 
 /**
@@ -26,6 +28,7 @@ export default function DashboardLayout({
   navigation,
   basePathPrefix = "",
   layoutVariant = "admin",
+  messagingRole,
 }: DashboardLayoutProps) {
   const { isExpanded, isHovered, isMobileOpen } = useSidebar();
   const locale = useLocale();
@@ -54,10 +57,14 @@ export default function DashboardLayout({
       <div
         className={`min-w-0 transition-all duration-300 ease-in-out ${mainContentLayout}`}
       >
-        <AppHeader />
+        <AppHeader messagingRole={messagingRole} />
 
         <div className={`${shellMaxClass} mx-auto w-full min-w-0 p-4 md:p-6`}>{children}</div>
       </div>
+
+      {messagingRole ? (
+        <UnifiedMessagesLauncher role={messagingRole} showFloatingTrigger={false} />
+      ) : null}
     </div>
   );
 }

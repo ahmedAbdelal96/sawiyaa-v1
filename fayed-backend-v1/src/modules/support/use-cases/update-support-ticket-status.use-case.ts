@@ -23,7 +23,9 @@ export class UpdateSupportTicketStatusUseCase {
     ticketId: string;
     payload: UpdateSupportTicketStatusDto;
   }) {
-    const ticket = await this.supportTicketRepository.findByIdForAdmin(input.ticketId);
+    const ticket = await this.supportTicketRepository.findByIdForAdmin(
+      input.ticketId,
+    );
     if (!ticket) {
       throw new NotFoundException({
         messageKey: 'support.errors.ticketNotFound',
@@ -36,7 +38,9 @@ export class UpdateSupportTicketStatusUseCase {
       nextStatus: input.payload.status,
     });
 
-    const actorRole = this.resolveSupportAdminActorRoleService.resolve(input.roles);
+    const actorRole = this.resolveSupportAdminActorRoleService.resolve(
+      input.roles,
+    );
     const updated = await this.supportTicketRepository.updateStatus({
       ticketId: input.ticketId,
       status: input.payload.status,

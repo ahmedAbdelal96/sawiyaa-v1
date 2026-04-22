@@ -5,7 +5,10 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { AuthenticatedUser } from '@common/interfaces/authenticated-user.interface';
-import { GENERAL_CHAT_ALLOWED_CONVERSATION_STATUS, GENERAL_CHAT_ERROR_CODES } from '../types/general-chat.types';
+import {
+  GENERAL_CHAT_ALLOWED_CONVERSATION_STATUS,
+  GENERAL_CHAT_ERROR_CODES,
+} from '../types/general-chat.types';
 import { SendGeneralChatMessageDto } from '../dto/send-general-chat-message.dto';
 import { GeneralChatRepository } from '../repositories/general-chat.repository';
 import { ValidateGeneralChatMessagePayloadService } from '../services/validate-general-chat-message-payload.service';
@@ -59,15 +62,14 @@ export class SendGeneralChatMessageUseCase {
     );
 
     const now = new Date();
-    const persisted = await this.generalChatRepository.appendMessageInGeneralConversation(
-      {
+    const persisted =
+      await this.generalChatRepository.appendMessageInGeneralConversation({
         conversationId: input.conversationId,
         senderUserId: input.authenticatedUser.id,
         contentText: normalized.contentText,
         attachments: normalized.attachments,
         sentAt: now,
-      },
-    );
+      });
 
     return {
       item: {
@@ -75,8 +77,11 @@ export class SendGeneralChatMessageUseCase {
         conversationId: persisted.message.conversationId,
         senderUserId: persisted.message.senderUserId,
         messageType: persisted.message.messageType,
+        status: persisted.message.status,
         contentText: persisted.message.contentText,
         sentAt: persisted.message.sentAt.toISOString(),
+        deliveredAt: persisted.message.deliveredAt?.toISOString() ?? null,
+        readAt: persisted.message.readAt?.toISOString() ?? null,
         attachments: persisted.attachments.map((attachment) => ({
           fileId: this.extractFileId(attachment.storageProvider),
           fileUrl: attachment.fileUrl,
@@ -102,4 +107,3 @@ export class SendGeneralChatMessageUseCase {
     return storageProvider;
   }
 }
-

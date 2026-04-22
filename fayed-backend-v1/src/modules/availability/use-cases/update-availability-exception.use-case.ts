@@ -38,9 +38,8 @@ export class UpdateAvailabilityExceptionUseCase {
     endsAtUtc?: Date;
     reason?: string | null;
   }) {
-    const practitioner = await this.availabilityPractitionerRepository.findByUserId(
-      input.userId,
-    );
+    const practitioner =
+      await this.availabilityPractitionerRepository.findByUserId(input.userId);
 
     if (!practitioner) {
       throw new NotFoundException({
@@ -69,17 +68,20 @@ export class UpdateAvailabilityExceptionUseCase {
       endsAtUtc,
     );
 
-    const updateResult = await this.availabilityExceptionRepository.updateException(
-      practitioner.id,
-      input.exceptionId,
-      {
-        type: input.type ?? existing.type,
-        startsAtUtc,
-        endsAtUtc,
-        reason:
-          input.reason === undefined ? existing.reason : input.reason?.trim() || null,
-      },
-    );
+    const updateResult =
+      await this.availabilityExceptionRepository.updateException(
+        practitioner.id,
+        input.exceptionId,
+        {
+          type: input.type ?? existing.type,
+          startsAtUtc,
+          endsAtUtc,
+          reason:
+            input.reason === undefined
+              ? existing.reason
+              : input.reason?.trim() || null,
+        },
+      );
 
     if (updateResult.count === 0) {
       throw new BadRequestException({

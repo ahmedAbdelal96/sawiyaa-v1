@@ -17,7 +17,9 @@ export class GetPatientPaymentUseCase {
     locale: SupportedLocale;
     paymentId: string;
   }) {
-    const patient = await this.paymentPatientRepository.findByUserId(input.userId);
+    const patient = await this.paymentPatientRepository.findByUserId(
+      input.userId,
+    );
 
     if (!patient) {
       throw new NotFoundException({

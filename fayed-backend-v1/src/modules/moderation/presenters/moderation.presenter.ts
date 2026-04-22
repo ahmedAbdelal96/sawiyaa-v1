@@ -8,6 +8,7 @@ import {
 import {
   ModerationCaseDetail,
   ModerationQueueCase,
+  ModerationReporterSnapshot,
   ModerationTargetSnapshot,
 } from '../types/moderation.types';
 
@@ -52,6 +53,7 @@ export class ModerationPresenter {
       ...this.presentQueueItem(input),
       reporterUserId: input.reportedByUserId,
       note: input.note,
+      reporter: this.presentReporterSnapshot(input.reporter),
     };
   }
 
@@ -149,6 +151,7 @@ export class ModerationPresenter {
           kind: input.kind,
           context: {
             conversationId: input.conversationId,
+            supportTicketId: input.supportTicketId,
             sentAt: input.sentAt.toISOString(),
             preview: input.preview,
           },
@@ -175,6 +178,21 @@ export class ModerationPresenter {
       reason: input.reason,
       note: input.note,
       createdAt: input.createdAt.toISOString(),
+    };
+  }
+
+  private presentReporterSnapshot(input: ModerationReporterSnapshot | null) {
+    if (!input) {
+      return null;
+    }
+
+    return {
+      userId: input.userId,
+      displayName: input.displayName,
+      email: input.email,
+      phone: input.phone,
+      patientProfileId: input.patientProfileId,
+      practitionerProfileId: input.practitionerProfileId,
     };
   }
 }

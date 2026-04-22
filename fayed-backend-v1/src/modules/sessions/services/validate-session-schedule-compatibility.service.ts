@@ -20,7 +20,9 @@ export class ValidateSessionScheduleCompatibilityService {
     requestedEndAtUtc: Date;
   }): Promise<{ timezone: string }> {
     const [weeklySlots, exceptions] = await Promise.all([
-      this.availabilitySlotRepository.listActiveByPractitioner(input.practitionerId),
+      this.availabilitySlotRepository.listActiveByPractitioner(
+        input.practitionerId,
+      ),
       this.availabilityExceptionRepository.listActiveForRange(
         input.practitionerId,
         input.requestedStartAtUtc,

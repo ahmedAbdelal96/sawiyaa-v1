@@ -10,6 +10,10 @@
     "wallet": "Wallet",
     "ledger": "Ledger",
     "payments": "Payments",
+    "finance": "Finance",
+    "financeDashboard": "Finance dashboard",
+    "financeLedger": "Ledger explorer",
+    "financeReconciliation": "Reconciliation controls",
     "settlements": "Settlements",
     "settlementsBatches": "Settlement batches",
     "settlementsDues": "Practitioner dues",
@@ -21,7 +25,7 @@
     "title": "Operational core"
   },
   "practitionerWorkspace": {
-    "title": "Care coordination"
+    "title": "Messages"
   },
   "practitionerFinance": {
     "title": "Finance"
@@ -33,9 +37,10 @@
     "title": "Workspace",
     "articles": "Articles",
     "notifications": "Notifications",
+    "auditLog": "Audit log",
     "specialties": "Specialties",
     "support": "Support",
-    "careChat": "Care chat",
+    "careChat": "Practitioner messages",
     "chat": "Chat",
     "reviews": "Reviews",
     "moderationReports": "Moderation reports",

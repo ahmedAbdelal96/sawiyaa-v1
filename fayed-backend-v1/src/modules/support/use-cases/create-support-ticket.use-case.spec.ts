@@ -8,7 +8,9 @@ import { CreateSupportTicketUseCase } from './create-support-ticket.use-case';
 describe('CreateSupportTicketUseCase', () => {
   it('creates patient ticket with deterministic contract', async () => {
     const actorRepository = {
-      findPatientProfileByUserId: jest.fn().mockResolvedValue({ id: 'patient-1' }),
+      findPatientProfileByUserId: jest
+        .fn()
+        .mockResolvedValue({ id: 'patient-1' }),
       findPractitionerProfileByUserId: jest.fn(),
     } as unknown as SupportActorRepository;
 

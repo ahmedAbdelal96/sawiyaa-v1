@@ -47,11 +47,11 @@ describe('DecideCareChatRequestUseCase', () => {
       async (runner: (tx: { tx: true }) => Promise<unknown>) =>
         runner({ tx: true }),
     );
-    (conversationRepository.createApprovedConversation as jest.Mock).mockResolvedValue(
-      {
-        id: 'conversation-1',
-      },
-    );
+    (
+      conversationRepository.createApprovedConversation as jest.Mock
+    ).mockResolvedValue({
+      id: 'conversation-1',
+    });
     (requestRepository.updateRequest as jest.Mock).mockResolvedValue({
       id: 'request-1',
       status: ChatApprovalStatus.APPROVED,
@@ -75,7 +75,9 @@ describe('DecideCareChatRequestUseCase', () => {
       payload: { decision: 'APPROVE' },
     });
 
-    expect(conversationRepository.createApprovedConversation).toHaveBeenCalled();
+    expect(
+      conversationRepository.createApprovedConversation,
+    ).toHaveBeenCalled();
   });
 
   it('does not create conversation when decision is reject', async () => {
@@ -111,6 +113,8 @@ describe('DecideCareChatRequestUseCase', () => {
       payload: { decision: 'REJECT' },
     });
 
-    expect(conversationRepository.createApprovedConversation).not.toHaveBeenCalled();
+    expect(
+      conversationRepository.createApprovedConversation,
+    ).not.toHaveBeenCalled();
   });
 });

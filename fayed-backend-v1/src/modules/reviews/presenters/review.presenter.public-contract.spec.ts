@@ -55,7 +55,10 @@ describe('ReviewPresenter public contract', () => {
       hasEnoughPublicReviews: true,
       volumeLevel: 'ESTABLISHED',
       freshness: 'RECENT',
-      rationaleCodes: ['ESTABLISHED_PUBLIC_REVIEW_VOLUME', 'RECENT_PUBLIC_FEEDBACK'],
+      rationaleCodes: [
+        'ESTABLISHED_PUBLIC_REVIEW_VOLUME',
+        'RECENT_PUBLIC_FEEDBACK',
+      ],
     });
 
     expect(summary).toEqual({
@@ -67,7 +70,10 @@ describe('ReviewPresenter public contract', () => {
       hasEnoughPublicReviews: true,
       volumeLevel: 'ESTABLISHED',
       freshness: 'RECENT',
-      rationaleCodes: ['ESTABLISHED_PUBLIC_REVIEW_VOLUME', 'RECENT_PUBLIC_FEEDBACK'],
+      rationaleCodes: [
+        'ESTABLISHED_PUBLIC_REVIEW_VOLUME',
+        'RECENT_PUBLIC_FEEDBACK',
+      ],
     });
   });
 });

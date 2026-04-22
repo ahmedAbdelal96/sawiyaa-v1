@@ -43,7 +43,9 @@ describe('CreateSessionReviewUseCase', () => {
   });
 
   it('prevents duplicate review per session', async () => {
-    (reviewActorRepository.findPatientProfileByUserId as jest.Mock).mockResolvedValue({
+    (
+      reviewActorRepository.findPatientProfileByUserId as jest.Mock
+    ).mockResolvedValue({
       id: 'patient-1',
     });
     (reviewRepository.findBySessionId as jest.Mock).mockResolvedValue({
@@ -61,7 +63,9 @@ describe('CreateSessionReviewUseCase', () => {
   });
 
   it('creates pending moderation review when eligible', async () => {
-    (reviewActorRepository.findPatientProfileByUserId as jest.Mock).mockResolvedValue({
+    (
+      reviewActorRepository.findPatientProfileByUserId as jest.Mock
+    ).mockResolvedValue({
       id: 'patient-1',
     });
     (reviewRepository.findBySessionId as jest.Mock).mockResolvedValue(null);
@@ -88,9 +92,8 @@ describe('CreateSessionReviewUseCase', () => {
       },
     });
     (reviewRepository.withTransaction as jest.Mock).mockImplementation(
-      async (
-        runner: (tx: { mock: true }) => Promise<unknown>,
-      ) => runner({ mock: true }),
+      async (runner: (tx: { mock: true }) => Promise<unknown>) =>
+        runner({ mock: true }),
     );
     (reviewPresenter.presentPatientReviewItem as jest.Mock).mockReturnValue({
       id: 'review-1',

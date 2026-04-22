@@ -2,6 +2,7 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
   IsDateString,
+  IsIn,
   IsEnum,
   IsInt,
   IsOptional,
@@ -9,8 +10,8 @@ import {
   IsUUID,
   Max,
   MaxLength,
-  Min,
   Matches,
+  Min,
 } from 'class-validator';
 import { SettlementPayoutMethod } from '@prisma/client';
 
@@ -107,4 +108,23 @@ export class RecordPractitionerPayoutDto {
   @IsString()
   @MaxLength(500)
   notes?: string;
+
+  @ApiPropertyOptional({
+    example: '12.50',
+    description:
+      'Optional payout transfer fee applied as platform expense for this payout record.',
+  })
+  @IsOptional()
+  @IsString()
+  @Matches(/^\d+(\.\d{1,2})?$/)
+  transferFeeAmount?: string;
+
+  @ApiPropertyOptional({
+    enum: ['PLATFORM_EXPENSE', 'DEDUCT_FROM_PRACTITIONER'],
+    description:
+      'Optional transfer fee treatment. Defaults to PLATFORM_EXPENSE.',
+  })
+  @IsOptional()
+  @IsIn(['PLATFORM_EXPENSE', 'DEDUCT_FROM_PRACTITIONER'])
+  transferFeeTreatment?: 'PLATFORM_EXPENSE' | 'DEDUCT_FROM_PRACTITIONER';
 }

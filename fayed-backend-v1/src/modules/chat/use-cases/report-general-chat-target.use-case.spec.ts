@@ -28,12 +28,12 @@ describe('ReportGeneralChatTargetUseCase', () => {
   });
 
   it('reports accessible general chat conversation by participant', async () => {
-    (generalChatRepository.findConversationByIdInGeneralScope as jest.Mock).mockResolvedValue(
-      {
-        id: 'conv_1',
-        participants: [{ userId: 'user_1' }],
-      },
-    );
+    (
+      generalChatRepository.findConversationByIdInGeneralScope as jest.Mock
+    ).mockResolvedValue({
+      id: 'conv_1',
+      participants: [{ userId: 'user_1' }],
+    });
     (createModerationReportUseCase.execute as jest.Mock).mockResolvedValue({
       item: {
         id: 'report_1',
@@ -65,12 +65,12 @@ describe('ReportGeneralChatTargetUseCase', () => {
   });
 
   it('rejects conversation report for non-participant', async () => {
-    (generalChatRepository.findConversationByIdInGeneralScope as jest.Mock).mockResolvedValue(
-      {
-        id: 'conv_1',
-        participants: [{ userId: 'other_user' }],
-      },
-    );
+    (
+      generalChatRepository.findConversationByIdInGeneralScope as jest.Mock
+    ).mockResolvedValue({
+      id: 'conv_1',
+      participants: [{ userId: 'other_user' }],
+    });
 
     await expect(
       useCase.reportConversation({
@@ -82,9 +82,9 @@ describe('ReportGeneralChatTargetUseCase', () => {
   });
 
   it('rejects report when message is inaccessible or missing', async () => {
-    (generalChatRepository.findAccessibleMessageInConversationScope as jest.Mock).mockResolvedValue(
-      null,
-    );
+    (
+      generalChatRepository.findAccessibleMessageInConversationScope as jest.Mock
+    ).mockResolvedValue(null);
 
     await expect(
       useCase.reportMessage({
@@ -97,12 +97,12 @@ describe('ReportGeneralChatTargetUseCase', () => {
   });
 
   it('reports accessible general chat message', async () => {
-    (generalChatRepository.findAccessibleMessageInConversationScope as jest.Mock).mockResolvedValue(
-      {
-        id: 'msg_1',
-        conversationId: 'conv_1',
-      },
-    );
+    (
+      generalChatRepository.findAccessibleMessageInConversationScope as jest.Mock
+    ).mockResolvedValue({
+      id: 'msg_1',
+      conversationId: 'conv_1',
+    });
     (createModerationReportUseCase.execute as jest.Mock).mockResolvedValue({
       item: {
         id: 'report_2',

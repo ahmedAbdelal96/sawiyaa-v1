@@ -23,7 +23,9 @@ export class DecideCareChatRequestUseCase {
     requestId: string;
     payload: DecideCareChatRequestDto;
   }) {
-    const request = await this.careChatRequestRepository.findById(input.requestId);
+    const request = await this.careChatRequestRepository.findById(
+      input.requestId,
+    );
     if (!request) {
       throw new NotFoundException({
         messageKey: 'careChat.errors.requestNotFound',
@@ -51,61 +53,63 @@ export class DecideCareChatRequestUseCase {
       decision: input.payload.decision,
     });
 
-    const updated = await this.careChatRequestRepository.withTransaction(async (tx) => {
-      if (input.payload.decision === 'REJECT') {
-        return this.careChatRequestRepository.updateRequest(
-          request.id,
+    const updated = await this.careChatRequestRepository.withTransaction(
+      async (tx) => {
+        if (input.payload.decision === 'REJECT') {
+          return this.careChatRequestRepository.updateRequest(
+            request.id,
+            {
+              status: ChatApprovalStatus.REJECTED,
+              reviewedByUserId: input.userId,
+              reviewedAt: now,
+              rejectedAt: now,
+              internalReviewNote: input.payload.note?.trim() || null,
+            },
+            tx,
+          );
+        }
+
+        const expiresAt = input.payload.expiresAt
+          ? new Date(input.payload.expiresAt)
+          : (request.expiresAt ?? this.defaultApprovalExpiry(now));
+
+        const conversation =
+          await this.careChatConversationRepository.createApprovedConversation({
+            patientId: request.patientId,
+            patientUserId: request.patient.userId,
+            practitionerId: request.practitionerId,
+            practitionerUserId: request.practitioner.userId,
+            requestId: request.id,
+            sessionId: request.relatedSessionId,
+            expiresAt,
+            tx,
+          });
+
+        await this.careChatRequestRepository.createApprovalNoticeMessage(
           {
-            status: ChatApprovalStatus.REJECTED,
-            reviewedByUserId: input.userId,
-            reviewedAt: now,
-            rejectedAt: now,
-            internalReviewNote: input.payload.note?.trim() || null,
+            conversationId: conversation.id,
+            actorRole: 'ADMIN',
+            message:
+              'Care chat request has been approved. This conversation is available while active.',
           },
           tx,
         );
-      }
 
-      const expiresAt = input.payload.expiresAt
-        ? new Date(input.payload.expiresAt)
-        : request.expiresAt ?? this.defaultApprovalExpiry(now);
-
-      const conversation =
-        await this.careChatConversationRepository.createApprovedConversation({
-          patientId: request.patientId,
-          patientUserId: request.patient.userId,
-          practitionerId: request.practitionerId,
-          practitionerUserId: request.practitioner.userId,
-          requestId: request.id,
-          sessionId: request.relatedSessionId,
-          expiresAt,
+        return this.careChatRequestRepository.updateRequest(
+          request.id,
+          {
+            status: ChatApprovalStatus.APPROVED,
+            reviewedByUserId: input.userId,
+            reviewedAt: now,
+            approvedAt: now,
+            internalReviewNote: input.payload.note?.trim() || null,
+            expiresAt,
+            linkedConversationId: conversation.id,
+          },
           tx,
-        });
-
-      await this.careChatRequestRepository.createApprovalNoticeMessage(
-        {
-          conversationId: conversation.id,
-          actorRole: 'ADMIN',
-          message:
-            'Care chat request has been approved. This conversation is available while active.',
-        },
-        tx,
-      );
-
-      return this.careChatRequestRepository.updateRequest(
-        request.id,
-        {
-          status: ChatApprovalStatus.APPROVED,
-          reviewedByUserId: input.userId,
-          reviewedAt: now,
-          approvedAt: now,
-          internalReviewNote: input.payload.note?.trim() || null,
-          expiresAt,
-          linkedConversationId: conversation.id,
-        },
-        tx,
-      );
-    });
+        );
+      },
+    );
 
     this.logger.log(
       `Care chat request decided (request=${request.id}, decision=${input.payload.decision}, reviewer=${input.userId})`,

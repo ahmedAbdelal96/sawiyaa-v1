@@ -8,7 +8,11 @@ export class ArticlePresenter {
     private readonly buildPublicArticleTrustMetadataService: BuildPublicArticleTrustMetadataService,
   ) {}
 
-  presentPagination(input: { page: number; limit: number; totalItems: number }) {
+  presentPagination(input: {
+    page: number;
+    limit: number;
+    totalItems: number;
+  }) {
     return {
       page: input.page,
       limit: input.limit,

@@ -33,7 +33,9 @@ export class GetPatientInstantBookingRequestUseCase {
       patientId: patient.id,
     });
 
-    const request = await this.instantBookingRequestRepository.findById(input.requestId);
+    const request = await this.instantBookingRequestRepository.findById(
+      input.requestId,
+    );
 
     if (!request || request.patient.id !== patient.id) {
       throw new NotFoundException({

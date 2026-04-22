@@ -386,7 +386,9 @@ export class TrainingRepository {
         ...(input.fullDescription !== undefined
           ? { fullDescription: input.fullDescription }
           : {}),
-        ...(input.metaTitle !== undefined ? { metaTitle: input.metaTitle } : {}),
+        ...(input.metaTitle !== undefined
+          ? { metaTitle: input.metaTitle }
+          : {}),
         ...(input.metaDescription !== undefined
           ? { metaDescription: input.metaDescription }
           : {}),

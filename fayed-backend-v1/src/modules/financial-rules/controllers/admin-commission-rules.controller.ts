@@ -42,7 +42,9 @@ export class AdminCommissionRulesController {
   })
   @ApiBody({ type: CreateCommissionRuleDto })
   @ApiResponse({ status: 201, type: CommissionRuleItemSuccessResponseDto })
-  @ApiBadRequestResponse({ description: 'Rule dates or percentage split are invalid' })
+  @ApiBadRequestResponse({
+    description: 'Rule dates or percentage split are invalid',
+  })
   @ApiConflictResponse({ description: 'Commission rule slug already exists' })
   @ApiUnauthorizedResponse({ description: 'Access token is required' })
   @ApiForbiddenResponse({ description: 'Admin active account is required' })

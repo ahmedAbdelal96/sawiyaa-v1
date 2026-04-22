@@ -139,30 +139,36 @@ export class ListSettlementDuesDirectoryUseCase {
       country: { select: { isoCode: true } },
     } as const;
 
-    const [rows, totalItems, statsVisible, statsDue, statsBalance, statsVerified] =
-      await Promise.all([
-        this.prisma.practitionerProfile.findMany({
-          where: listWhere,
-          select: practitionerSelect,
-          orderBy,
-          skip,
-          take: limit,
-        }),
-        this.prisma.practitionerProfile.count({ where: listWhere }),
-        this.prisma.practitionerProfile.count({ where: baseWhere }),
-        this.prisma.practitionerProfile.count({
-          where: { ...baseWhere, ...dueWhere },
-        }),
-        this.prisma.practitionerProfile.count({
-          where: { ...baseWhere, ...balanceWhere },
-        }),
-        this.prisma.practitionerProfile.count({
-          where: {
-            ...baseWhere,
-            status: PractitionerStatus.APPROVED,
-          },
-        }),
-      ]);
+    const [
+      rows,
+      totalItems,
+      statsVisible,
+      statsDue,
+      statsBalance,
+      statsVerified,
+    ] = await Promise.all([
+      this.prisma.practitionerProfile.findMany({
+        where: listWhere,
+        select: practitionerSelect,
+        orderBy,
+        skip,
+        take: limit,
+      }),
+      this.prisma.practitionerProfile.count({ where: listWhere }),
+      this.prisma.practitionerProfile.count({ where: baseWhere }),
+      this.prisma.practitionerProfile.count({
+        where: { ...baseWhere, ...dueWhere },
+      }),
+      this.prisma.practitionerProfile.count({
+        where: { ...baseWhere, ...balanceWhere },
+      }),
+      this.prisma.practitionerProfile.count({
+        where: {
+          ...baseWhere,
+          status: PractitionerStatus.APPROVED,
+        },
+      }),
+    ]);
 
     const practitionerIds = rows.map((row) => row.id);
 
@@ -171,34 +177,45 @@ export class ListSettlementDuesDirectoryUseCase {
         practitionerIds,
         currencyCode,
       }),
-      this.walletRepository.listByPractitionerIds({ practitionerIds, currencyCode }),
+      this.walletRepository.listByPractitionerIds({
+        practitionerIds,
+        currencyCode,
+      }),
     ]);
 
     const walletByKey = new Map(
-      wallets.map((wallet) => [`${wallet.practitionerId}:${wallet.currencyCode}`, wallet]),
+      wallets.map((wallet) => [
+        `${wallet.practitionerId}:${wallet.currencyCode}`,
+        wallet,
+      ]),
     );
 
     const dueByKey = new Map(
-      dueGroups.map((group) => [`${group.practitionerId}:${group.currencyCode}`, group]),
+      dueGroups.map((group) => [
+        `${group.practitionerId}:${group.currencyCode}`,
+        group,
+      ]),
     );
 
     const currencyByPractitioner = new Map<string, Set<string>>();
     for (const wallet of wallets) {
-      const set = currencyByPractitioner.get(wallet.practitionerId) ?? new Set<string>();
+      const set =
+        currencyByPractitioner.get(wallet.practitionerId) ?? new Set<string>();
       set.add(wallet.currencyCode);
       currencyByPractitioner.set(wallet.practitionerId, set);
     }
     for (const group of dueGroups) {
-      const set = currencyByPractitioner.get(group.practitionerId) ?? new Set<string>();
+      const set =
+        currencyByPractitioner.get(group.practitionerId) ?? new Set<string>();
       set.add(group.currencyCode);
       currencyByPractitioner.set(group.practitionerId, set);
     }
 
     return {
       items: rows.map((row) => {
-        const currencies = Array.from(currencyByPractitioner.get(row.id) ?? []).sort((a, b) =>
-          a.localeCompare(b),
-        );
+        const currencies = Array.from(
+          currencyByPractitioner.get(row.id) ?? [],
+        ).sort((a, b) => a.localeCompare(b));
 
         return {
           practitioner: {
@@ -213,9 +230,9 @@ export class ListSettlementDuesDirectoryUseCase {
           summaries: currencies.map((currency) => {
             const wallet = walletByKey.get(`${row.id}:${currency}`);
             const group = dueByKey.get(`${row.id}:${currency}`);
-            const dueAmount = new Prisma.Decimal(group?._sum.amountNet ?? 0).sub(
-              new Prisma.Decimal(group?._sum.amountPaidTotal ?? 0),
-            );
+            const dueAmount = new Prisma.Decimal(
+              group?._sum.amountNet ?? 0,
+            ).sub(new Prisma.Decimal(group?._sum.amountPaidTotal ?? 0));
 
             return this.mapper.toPractitionerPayoutDueSummary({
               currency,

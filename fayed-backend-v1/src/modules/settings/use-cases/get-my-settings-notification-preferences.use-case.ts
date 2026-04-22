@@ -25,7 +25,9 @@ export class GetMySettingsNotificationPreferencesUseCase {
 
     const [availableTypes, rows] = await Promise.all([
       this.settingsRepository.listAvailableNotificationTypes(),
-      this.settingsRepository.listUserNotificationPreferences(authenticatedUser.id),
+      this.settingsRepository.listUserNotificationPreferences(
+        authenticatedUser.id,
+      ),
     ]);
 
     return {

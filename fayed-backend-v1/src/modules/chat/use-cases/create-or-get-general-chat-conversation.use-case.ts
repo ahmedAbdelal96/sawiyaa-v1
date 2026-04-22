@@ -74,13 +74,12 @@ export class CreateOrGetGeneralChatConversationUseCase {
     });
 
     if (input.dto.linkedSessionId) {
-      const linkedSession = await this.generalChatActorRepository.findSessionPairLink(
-        {
+      const linkedSession =
+        await this.generalChatActorRepository.findSessionPairLink({
           sessionId: input.dto.linkedSessionId,
           patientProfileId: participantPair.patientProfileId,
           practitionerProfileId: participantPair.practitionerProfileId,
-        },
-      );
+        });
 
       if (!linkedSession) {
         throw new ForbiddenException({
@@ -100,7 +99,10 @@ export class CreateOrGetGeneralChatConversationUseCase {
       await this.generalChatRepository.findByConversationRef(conversationRef);
 
     if (existing) {
-      this.assertGeneralConversationBoundary(existing, input.authenticatedUser.id);
+      this.assertGeneralConversationBoundary(
+        existing,
+        input.authenticatedUser.id,
+      );
       return {
         item: this.toReadItem(existing, false),
       };
@@ -125,7 +127,9 @@ export class CreateOrGetGeneralChatConversationUseCase {
         error.code === 'P2002'
       ) {
         const converged =
-          await this.generalChatRepository.findByConversationRef(conversationRef);
+          await this.generalChatRepository.findByConversationRef(
+            conversationRef,
+          );
         if (converged) {
           this.assertGeneralConversationBoundary(
             converged,
@@ -149,10 +153,7 @@ export class CreateOrGetGeneralChatConversationUseCase {
     targetProfileId: string;
     targetUserId: string;
   }) {
-    if (
-      input.actorRole === 'PATIENT' &&
-      input.targetRole === 'PRACTITIONER'
-    ) {
+    if (input.actorRole === 'PATIENT' && input.targetRole === 'PRACTITIONER') {
       return {
         patientProfileId: input.actorProfileId,
         patientUserId: input.actorUserId,
@@ -161,10 +162,7 @@ export class CreateOrGetGeneralChatConversationUseCase {
       };
     }
 
-    if (
-      input.actorRole === 'PRACTITIONER' &&
-      input.targetRole === 'PATIENT'
-    ) {
+    if (input.actorRole === 'PRACTITIONER' && input.targetRole === 'PATIENT') {
       return {
         patientProfileId: input.targetProfileId,
         patientUserId: input.targetUserId,
@@ -184,7 +182,9 @@ export class CreateOrGetGeneralChatConversationUseCase {
     practitionerProfileId: string;
     linkedSessionId: string | null;
   }) {
-    const scope = input.linkedSessionId ? `session:${input.linkedSessionId}` : 'global';
+    const scope = input.linkedSessionId
+      ? `session:${input.linkedSessionId}`
+      : 'global';
     const raw = `general-chat|patient:${input.patientProfileId}|practitioner:${input.practitionerProfileId}|${scope}`;
     const digest = createHash('sha256').update(raw).digest('hex').slice(0, 40);
 

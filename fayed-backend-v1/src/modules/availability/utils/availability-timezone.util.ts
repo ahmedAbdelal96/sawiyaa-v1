@@ -118,7 +118,10 @@ export function zonedDateTimeToUtc(
     0,
   );
 
-  const firstOffset = getTimeZoneOffsetMilliseconds(new Date(utcGuess), timeZone);
+  const firstOffset = getTimeZoneOffsetMilliseconds(
+    new Date(utcGuess),
+    timeZone,
+  );
   let resolved = new Date(utcGuess - firstOffset);
   const secondOffset = getTimeZoneOffsetMilliseconds(resolved, timeZone);
 

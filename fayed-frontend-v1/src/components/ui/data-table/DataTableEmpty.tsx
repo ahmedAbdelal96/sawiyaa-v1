@@ -59,7 +59,7 @@ export function DataTableEmpty({
         {action && (
           <button
             onClick={action.onClick}
-            className="rounded-2xl bg-primary px-4 py-2 text-white shadow-[0_12px_24px_-14px_rgba(63,125,207,0.42)] transition hover:bg-primary-hover"
+            className="rounded-2xl bg-primary px-4 py-2 text-white shadow-[0_12px_24px_-14px_rgba(68,161,148,0.42)] transition hover:bg-primary-hover"
           >
             {action.label}
           </button>

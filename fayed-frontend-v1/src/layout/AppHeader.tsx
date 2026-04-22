@@ -5,10 +5,15 @@ import { LanguageSwitcher } from "@/components/shared/LanguageSwitcher";
 import BrandMark from "@/components/shared/BrandMark";
 import NotificationDropdown from "@/components/header/NotificationDropdown";
 import UserDropdown from "@/components/header/UserDropdown";
+import MessagesHeaderButton from "@/features/messages-shell/components/MessagesHeaderButton";
 import { useSidebar } from "@/stores";
 import React, { useState } from "react";
 
-const AppHeader: React.FC = () => {
+type AppHeaderProps = {
+  messagingRole?: "admin" | "practitioner" | "patient";
+};
+
+const AppHeader: React.FC<AppHeaderProps> = ({ messagingRole }) => {
   const [isApplicationMenuOpen, setApplicationMenuOpen] = useState(false);
   const { isMobileOpen, toggleSidebar, toggleMobileSidebar } = useSidebar();
 
@@ -61,6 +66,7 @@ const AppHeader: React.FC = () => {
           <div className="flex items-center gap-2 2xsm:gap-3">
             <LanguageSwitcher />
             <ThemeToggleButton />
+            {messagingRole ? <MessagesHeaderButton role={messagingRole} /> : null}
             <NotificationDropdown />
           </div>
           <UserDropdown />

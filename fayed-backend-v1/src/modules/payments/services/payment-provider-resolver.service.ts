@@ -111,7 +111,8 @@ export class PaymentProviderResolverService {
     if (
       input.currencyCode === 'USD' &&
       input.operatingCountryIsoCode &&
-      input.operatingCountryIsoCode !== PaymentProviderResolverService.EGYPT_ISO_CODE
+      input.operatingCountryIsoCode !==
+        PaymentProviderResolverService.EGYPT_ISO_CODE
     ) {
       return PaymentProvider.STRIPE;
     }

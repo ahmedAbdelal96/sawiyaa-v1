@@ -2,9 +2,7 @@ import { z } from 'zod';
 
 const baseEnvSchema = z.object({
   // App
-  APP_ENV: z
-    .enum(['development', 'test', 'staging', 'production'])
-    .optional(),
+  APP_ENV: z.enum(['development', 'test', 'staging', 'production']).optional(),
   NODE_ENV: z
     .enum(['development', 'production', 'test'])
     .default('development'),
@@ -104,6 +102,10 @@ const baseEnvSchema = z.object({
   PAYMENT_SUCCESS_URL: z.string().url().optional(),
   PAYMENT_FAILED_URL: z.string().url().optional(),
   PAYMENT_PENDING_URL: z.string().url().optional(),
+  FINANCE_VAT_ENABLED: z.enum(['true', 'false']).default('false'),
+  FINANCE_VAT_RATE_PERCENT: z.string().default('0'),
+  FINANCE_GATEWAY_FEE_RATE_PERCENT: z.string().default('0'),
+  FINANCE_GATEWAY_FEE_FIXED_AMOUNT: z.string().default('0'),
 
   // Sessions
   SESSION_PAYMENT_RESERVATION_MINUTES: z.coerce
@@ -125,7 +127,8 @@ export const envSchema = baseEnvSchema.superRefine((env, ctx) => {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ['APP_BASE_URL'],
-        message: 'APP_BASE_URL is required when any payment provider is enabled',
+        message:
+          'APP_BASE_URL is required when any payment provider is enabled',
       });
     }
 
@@ -211,8 +214,7 @@ export const envSchema = baseEnvSchema.superRefine((env, ctx) => {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ['PAYMOB_BASE_URL'],
-        message:
-          'PAYMOB_BASE_URL is required when PAYMENT_PAYMOB_ENABLED=true',
+        message: 'PAYMOB_BASE_URL is required when PAYMENT_PAYMOB_ENABLED=true',
       });
     }
 

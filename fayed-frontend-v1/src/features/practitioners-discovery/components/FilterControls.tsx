@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, useTransition } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
 import { usePathname, useRouter } from "@/i18n/navigation";
 import { useSearchParams } from "next/navigation";
@@ -34,6 +34,16 @@ function FilterSelect({
   options: Array<{ value: string; label: string }>;
   compact?: boolean;
 }) {
+  const uniqueOptions = useMemo(() => {
+    const seen = new Set<string>();
+    return options.filter((option) => {
+      const key = option.value;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }, [options]);
+
   return (
     <div className="relative">
       <select
@@ -41,8 +51,8 @@ function FilterSelect({
         onChange={(event) => onChange(event.target.value)}
         className={`w-full cursor-pointer appearance-none rounded-xl border border-border-light bg-surface ps-3 pe-8 text-sm text-text-primary ${compact ? "h-11" : "h-12"}`}
       >
-        {options.map((option) => (
-          <option key={option.value || "empty"} value={option.value}>
+        {uniqueOptions.map((option, index) => (
+          <option key={`${option.value || "empty"}:${index}`} value={option.value}>
             {option.label}
           </option>
         ))}

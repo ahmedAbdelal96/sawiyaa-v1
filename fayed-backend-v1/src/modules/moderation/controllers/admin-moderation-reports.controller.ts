@@ -53,12 +53,15 @@ export class AdminModerationReportsController {
 
   @Get()
   @ApiOperation({
-    summary: 'List moderation report cases for reviewer queue (contract baseline)',
+    summary:
+      'List moderation report cases for reviewer queue (contract baseline)',
     description:
       'Slice 1 freezes ownership/filters/pagination semantics. Deterministic triage read depth is expanded in the next rollout slice without contract churn.',
   })
   @ApiResponse({ status: 200, type: ModerationQueueSuccessResponseDto })
-  @ApiBadRequestResponse({ description: 'Invalid moderation reports filter semantics' })
+  @ApiBadRequestResponse({
+    description: 'Invalid moderation reports filter semantics',
+  })
   @ApiUnauthorizedResponse({ description: 'Access token is required' })
   @ApiForbiddenResponse({
     description: 'Only admin/support/content-reviewer roles can access',
@@ -71,15 +74,21 @@ export class AdminModerationReportsController {
   }
 
   @Get(':id')
-  @ApiOperation({ summary: 'Get one moderation case detail for reviewer context' })
+  @ApiOperation({
+    summary: 'Get one moderation case detail for reviewer context',
+  })
   @ApiParam({ name: 'id', description: 'Moderation report id' })
   @ApiResponse({ status: 200, type: ModerationCaseDetailSuccessResponseDto })
-  @ApiBadRequestResponse({ description: 'Moderation report id must be a valid UUID' })
+  @ApiBadRequestResponse({
+    description: 'Moderation report id must be a valid UUID',
+  })
   @ApiUnauthorizedResponse({ description: 'Access token is required' })
   @ApiForbiddenResponse({
     description: 'Only admin/support/content-reviewer roles can access',
   })
-  @ApiNotFoundResponse({ description: 'Moderation report was not found in scope' })
+  @ApiNotFoundResponse({
+    description: 'Moderation report was not found in scope',
+  })
   getById(@Param('id', new ParseUUIDPipe()) reportId: string) {
     return this.getModerationCaseUseCase.execute({ reportId }).then((data) => ({
       success: true as const,
@@ -89,7 +98,10 @@ export class AdminModerationReportsController {
 
   @Patch(':id/actions')
   @ApiOperation({ summary: 'Execute moderation action on one case' })
-  @ApiResponse({ status: 200, type: ModerationActionExecutionSuccessResponseDto })
+  @ApiResponse({
+    status: 200,
+    type: ModerationActionExecutionSuccessResponseDto,
+  })
   @ApiUnauthorizedResponse({ description: 'Access token is required' })
   @ApiForbiddenResponse({
     description: 'Only admin/support/content-reviewer roles can access',

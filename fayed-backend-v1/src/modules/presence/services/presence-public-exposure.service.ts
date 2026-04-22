@@ -1,5 +1,9 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { PractitionerPresence, PractitionerStatus, UserStatus } from '@prisma/client';
+import {
+  PractitionerPresence,
+  PractitionerStatus,
+  UserStatus,
+} from '@prisma/client';
 import { PublicPractitionerVisibilityPolicy } from '@modules/practitioners/policies/public-practitioner-visibility.policy';
 
 type PublicPractitionerSeed = {

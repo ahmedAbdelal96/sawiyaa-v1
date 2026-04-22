@@ -63,4 +63,3 @@ export class SendGeneralChatMessageDto {
   @Type(() => GeneralChatAttachmentRefDto)
   attachments?: GeneralChatAttachmentRefDto[];
 }
-

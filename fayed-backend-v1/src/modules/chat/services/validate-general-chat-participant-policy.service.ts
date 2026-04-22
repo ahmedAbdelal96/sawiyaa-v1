@@ -1,4 +1,8 @@
-import { BadRequestException, ForbiddenException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+} from '@nestjs/common';
 import { AppRole } from '@common/enums/app-role.enum';
 import { GeneralChatTargetRoleDto } from '../dto/create-general-chat-conversation.dto';
 import {
@@ -67,8 +71,10 @@ export class ValidateGeneralChatParticipantPolicyService {
     );
 
     const pairAllowed =
-      (input.actorRole === 'PATIENT' && targetParticipantRole === 'PRACTITIONER') ||
-      (input.actorRole === 'PRACTITIONER' && targetParticipantRole === 'PATIENT');
+      (input.actorRole === 'PATIENT' &&
+        targetParticipantRole === 'PRACTITIONER') ||
+      (input.actorRole === 'PRACTITIONER' &&
+        targetParticipantRole === 'PATIENT');
 
     if (!actorAllowed || !targetAllowed || !pairAllowed) {
       throw new ForbiddenException({

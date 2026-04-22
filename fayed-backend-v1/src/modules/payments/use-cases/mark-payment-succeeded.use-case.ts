@@ -10,6 +10,7 @@ import { AppLoggerService } from '@common/logging/app-logger.service';
 import { PostPaymentLedgerEntriesUseCase } from '@modules/financial-operations/use-cases/post-payment-ledger-entries.use-case';
 import { RedeemCouponUseCase } from '@modules/financial-rules/use-cases/redeem-coupon.use-case';
 import { OperationalNotificationService } from '@modules/notifications/services/operational-notification.service';
+import { CustomerWalletAccountingService } from '@modules/customer-wallets/services/customer-wallet-accounting.service';
 import { PaymentMapper } from '../mappers/payment.mapper';
 import { PaymentRepository } from '../repositories/payment.repository';
 import { OrchestrateSessionPaymentStatusService } from '../services/orchestrate-session-payment-status.service';
@@ -26,6 +27,7 @@ export class MarkPaymentSucceededUseCase {
     private readonly orchestrateTrainingEnrollmentPaymentStatusService: OrchestrateTrainingEnrollmentPaymentStatusService,
     private readonly paymentMapper: PaymentMapper,
     private readonly postPaymentLedgerEntriesUseCase: PostPaymentLedgerEntriesUseCase,
+    private readonly customerWalletAccountingService: CustomerWalletAccountingService,
     private readonly redeemCouponUseCase: RedeemCouponUseCase,
     private readonly operationalNotificationService: OperationalNotificationService,
     private readonly logger: AppLoggerService,
@@ -81,6 +83,13 @@ export class MarkPaymentSucceededUseCase {
 
       return captured;
     });
+
+    if (updated.amountFromWallet.gt(0)) {
+      await this.customerWalletAccountingService.captureReservationForPayment({
+        paymentId: updated.id,
+        currencyCode: updated.currencyCode,
+      });
+    }
 
     await this.redeemCouponUseCase.execute({
       couponId: updated.couponId,

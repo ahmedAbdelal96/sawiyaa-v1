@@ -32,10 +32,21 @@ export type SupportMessageSenderRole =
   | "ADMIN"
   | "SYSTEM";
 
+export type SupportMessageStatus =
+  | "SENT"
+  | "DELIVERED"
+  | "READ"
+  | "FAILED"
+  | "DELETED";
+
 export interface SupportMessage {
   id: string;
+  senderUserId: string | null;
   senderRole: SupportMessageSenderRole;
   message: string;
+  status: SupportMessageStatus;
+  deliveredAt: string | null;
+  readAt: string | null;
   createdAt: string;
 }
 
@@ -55,9 +66,12 @@ export interface SupportTicketSummary {
   resolvedAt: string | null;
   closedAt: string | null;
   createdAt: string;
+  unreadCount: number;
+  hasUnread: boolean;
 }
 
 export interface SupportTicketDetails extends SupportTicketSummary {
+  conversationId: string;
   description: string | null;
   messages: SupportMessage[];
 }
@@ -104,8 +118,14 @@ export interface AddSupportMessageRequest {
 
 // Admin-only types
 
+export interface SupportInternalNote {
+  id: string;
+  note: string;
+  createdAt: string;
+}
+
 export interface AdminSupportTicketDetails extends SupportTicketDetails {
-  internalNotes: SupportMessage[];
+  internalNotes: SupportInternalNote[];
 }
 
 export interface AdminSupportTicketResponse {
@@ -122,4 +142,13 @@ export interface UpdateSupportTicketStatusRequest {
 
 export interface AssignSupportTicketRequest {
   assignedAdminUserId?: string | null;
+}
+
+export interface CreateAdminSupportTicketForReporterRequest {
+  reporterUserId: string;
+  reporterRole: "PATIENT" | "PRACTITIONER";
+  category?: SupportTicketCategory;
+  subject?: string;
+  description?: string;
+  priority?: SupportTicketPriority;
 }

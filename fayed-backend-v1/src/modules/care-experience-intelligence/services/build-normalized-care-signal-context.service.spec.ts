@@ -41,7 +41,9 @@ describe('BuildNormalizedCareSignalContextService', () => {
 
     expect(result.profile.countryCode).toBe('EG');
     expect(result.continuity.stage).toBe('UPCOMING_SESSION');
-    expect(result.continuity.rulesApplied).toContain('UPCOMING_SESSION_HAS_PRIORITY');
+    expect(result.continuity.rulesApplied).toContain(
+      'UPCOMING_SESSION_HAS_PRIORITY',
+    );
     expect(result.assessments.interpretation.careIntentLevel).toBe('BOOK_SOON');
     expect(result.assessments.interpretation.actionCategory).toBe(
       'CONTINUE_CURRENT_PLAN',
@@ -66,8 +68,12 @@ describe('BuildNormalizedCareSignalContextService', () => {
     });
 
     expect(result.continuity.stage).toBe('PAYMENT_BLOCKED');
-    expect(result.continuity.rulesApplied[0]).toBe('PENDING_PAYMENT_BLOCKS_CONTINUITY');
-    expect(result.assessments.interpretation.actionCategory).toBe('COMPLETE_PAYMENT');
+    expect(result.continuity.rulesApplied[0]).toBe(
+      'PENDING_PAYMENT_BLOCKS_CONTINUITY',
+    );
+    expect(result.assessments.interpretation.actionCategory).toBe(
+      'COMPLETE_PAYMENT',
+    );
   });
 
   it('builds same context for repeated identical snapshot input', () => {

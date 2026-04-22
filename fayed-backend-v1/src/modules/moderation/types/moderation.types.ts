@@ -48,7 +48,10 @@ export const MODERATION_REPORTS_ERROR_CODES = {
 } as const;
 
 export const MODERATION_REPORTS_ROUTE_SCOPE = {
-  adminOperatorReadable: ['/admin/moderation/reports', '/admin/moderation/reports/:id'],
+  adminOperatorReadable: [
+    '/admin/moderation/reports',
+    '/admin/moderation/reports/:id',
+  ],
   adminOperatorActionable: ['/admin/moderation/reports/:id/actions'],
   publicIntake: ['/moderation/reports'],
 } as const;
@@ -104,6 +107,7 @@ export type ModerationTargetSnapshot =
   | {
       kind: 'SUPPORT_MESSAGE';
       conversationId: string;
+      supportTicketId: string;
       sentAt: Date;
       preview: string | null;
     };
@@ -123,6 +127,16 @@ export type ModerationQueueCase = {
 export type ModerationCaseDetail = ModerationQueueCase & {
   note: string | null;
   reportedByUserId: string | null;
+  reporter: ModerationReporterSnapshot | null;
+};
+
+export type ModerationReporterSnapshot = {
+  userId: string;
+  displayName: string | null;
+  email: string | null;
+  phone: string | null;
+  patientProfileId: string | null;
+  practitionerProfileId: string | null;
 };
 
 export type ModerationRoleActionMatrix = Record<

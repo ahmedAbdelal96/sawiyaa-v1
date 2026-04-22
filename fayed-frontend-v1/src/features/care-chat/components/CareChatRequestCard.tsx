@@ -39,6 +39,14 @@ export default function CareChatRequestCard({ item, href, viewer }: Props) {
                 {t("common.linkedConversation")}
               </span>
             ) : null}
+            {item.hasUnread || item.unreadCount > 0 ? (
+              <span
+                className="inline-flex items-center rounded-full bg-rose-500/10 px-2 py-1 text-[11px] font-semibold text-rose-700 dark:bg-rose-500/15 dark:text-rose-200"
+              >
+                <span className="me-1 inline-block h-2 w-2 rounded-full bg-rose-500" />
+                {item.unreadCount > 0 ? item.unreadCount : ""}
+              </span>
+            ) : null}
           </div>
 
           <h3 className="mt-3 text-sm font-semibold text-text-primary dark:text-white/95">

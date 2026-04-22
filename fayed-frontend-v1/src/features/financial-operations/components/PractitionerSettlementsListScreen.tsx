@@ -5,6 +5,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { Layers } from "lucide-react";
 import { ListStateSkeleton, StateCard } from "@/components/shared/ContentStates";
 import FilterClearButton from "@/components/ui/filters/FilterClearButton";
+import { DEFAULT_PAGE_LIMIT } from "@/constants/pagination";
 import { getPractitionerSettlementsErrorKey } from "../lib/financial-operations-errors";
 import { usePractitionerSettlements } from "../hooks/use-financial-operations";
 import type {
@@ -25,7 +26,7 @@ const STATUS_FILTERS: Array<PractitionerSettlementStatus | "ALL"> = [
 
 const STATUS_STYLES: Record<PractitionerSettlementStatus, string> = {
   DRAFT: "bg-slate-100 text-slate-700 dark:bg-white/10 dark:text-white/70",
-  READY: "bg-indigo-100 text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-300",
+  READY: "bg-primary-light text-text-brand dark:bg-primary/15 dark:text-primary-light",
   PROCESSING: "bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300",
   PAID: "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300",
   FAILED: "bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300",
@@ -149,7 +150,7 @@ export default function PractitionerSettlementsListScreen() {
   const [page, setPage] = useState(1);
 
   const params = useMemo<PractitionerSettlementListParams>(() => {
-    const next: PractitionerSettlementListParams = { page, limit: 20 };
+    const next: PractitionerSettlementListParams = { page, limit: DEFAULT_PAGE_LIMIT };
     if (statusFilter !== "ALL") next.status = statusFilter;
     return next;
   }, [page, statusFilter]);

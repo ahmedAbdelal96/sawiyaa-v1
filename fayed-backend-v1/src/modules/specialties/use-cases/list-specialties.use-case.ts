@@ -16,10 +16,7 @@ export class ListSpecialtiesUseCase {
     private readonly specialtyMapper: SpecialtyMapper,
   ) {}
 
-  async execute(input: {
-    locale: SupportedLocale;
-    q?: string;
-  }) {
+  async execute(input: { locale: SupportedLocale; q?: string }) {
     const specialties = await this.specialtyRepository.listActive(
       input.locale,
       input.q,
@@ -36,4 +33,3 @@ export class ListSpecialtiesUseCase {
     };
   }
 }
-

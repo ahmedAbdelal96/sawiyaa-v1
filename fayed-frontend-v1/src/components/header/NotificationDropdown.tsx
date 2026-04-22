@@ -11,6 +11,7 @@ import { formatAdminNotificationDateTime } from "@/features/admin/notifications/
 
 export default function NotificationDropdown() {
   const locale = useLocale();
+  const isRtl = locale.startsWith("ar");
   const pathname = usePathname();
   const t = useTranslations("admin-notifications");
   const [isOpen, setIsOpen] = useState(false);
@@ -57,7 +58,10 @@ export default function NotificationDropdown() {
       <Dropdown
         isOpen={isOpen}
         onClose={() => setIsOpen(false)}
-        className="absolute -right-[240px] mt-[17px] flex w-[340px] flex-col rounded-2xl border border-border-light bg-surface-secondary p-4 shadow-theme-lg dark:border-border-light dark:bg-surface-secondary lg:right-0"
+        closeOnOutsideClick={false}
+        className={`absolute mt-[17px] flex w-[min(340px,calc(100vw-1rem))] flex-col rounded-2xl border border-border-light bg-surface-secondary p-4 shadow-theme-lg dark:border-border-light dark:bg-surface-secondary ${
+          isRtl ? "left-0 origin-top-left" : "right-0 origin-top-right"
+        }`}
       >
         <div className="border-b border-border-light pb-3 dark:border-border-light">
           <div className="flex items-center justify-between gap-3">

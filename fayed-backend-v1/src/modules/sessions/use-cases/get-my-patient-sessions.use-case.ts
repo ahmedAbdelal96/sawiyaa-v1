@@ -23,7 +23,9 @@ export class GetMyPatientSessionsUseCase {
     locale: SupportedLocale;
     query: ListSessionsDto;
   }) {
-    const patient = await this.sessionPatientRepository.findByUserId(input.userId);
+    const patient = await this.sessionPatientRepository.findByUserId(
+      input.userId,
+    );
 
     if (!patient) {
       throw new NotFoundException({
@@ -36,12 +38,13 @@ export class GetMyPatientSessionsUseCase {
     const limit = input.query.limit ?? 20;
     const skip = (page - 1) * limit;
 
-    const [sessions, totalItems] = await this.sessionRepository.listPatientSessions({
-      patientId: patient.id,
-      status: input.query.status as SessionStatus | undefined,
-      skip,
-      take: limit,
-    });
+    const [sessions, totalItems] =
+      await this.sessionRepository.listPatientSessions({
+        patientId: patient.id,
+        status: input.query.status,
+        skip,
+        take: limit,
+      });
 
     return {
       items: sessions.map((session) => this.sessionMapper.toListItem(session)),

@@ -1,7 +1,21 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { PaymentProvider, PaymentPurpose, PaymentStatus, RefundStatus } from '@prisma/client';
+import {
+  PaymentProvider,
+  PaymentPurpose,
+  PaymentStatus,
+  RefundStatus,
+} from '@prisma/client';
 import { Type } from 'class-transformer';
-import { IsDateString, IsEnum, IsInt, IsOptional, IsString, IsUUID, Max, Min } from 'class-validator';
+import {
+  IsDateString,
+  IsEnum,
+  IsInt,
+  IsOptional,
+  IsString,
+  IsUUID,
+  Max,
+  Min,
+} from 'class-validator';
 
 export enum FinanceOperationTypeDto {
   PAYMENT = 'PAYMENT',
@@ -79,12 +93,18 @@ export class ListFinanceOperationEventsDto {
   @IsDateString()
   occurredTo?: string;
 
-  @ApiPropertyOptional({ enum: FinanceOperationSortByDto, default: FinanceOperationSortByDto.OCCURRED_AT })
+  @ApiPropertyOptional({
+    enum: FinanceOperationSortByDto,
+    default: FinanceOperationSortByDto.OCCURRED_AT,
+  })
   @IsOptional()
   @IsEnum(FinanceOperationSortByDto)
   sortBy?: FinanceOperationSortByDto = FinanceOperationSortByDto.OCCURRED_AT;
 
-  @ApiPropertyOptional({ enum: FinanceOperationSortOrderDto, default: FinanceOperationSortOrderDto.DESC })
+  @ApiPropertyOptional({
+    enum: FinanceOperationSortOrderDto,
+    default: FinanceOperationSortOrderDto.DESC,
+  })
   @IsOptional()
   @IsEnum(FinanceOperationSortOrderDto)
   sortOrder?: FinanceOperationSortOrderDto = FinanceOperationSortOrderDto.DESC;

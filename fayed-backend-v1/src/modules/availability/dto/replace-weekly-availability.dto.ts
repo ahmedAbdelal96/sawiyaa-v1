@@ -29,7 +29,8 @@ export class WeeklyAvailabilitySlotInputDto {
   @ApiProperty({
     minimum: 0,
     maximum: 1439,
-    description: 'Start minute in practitioner timezone, counted from local midnight',
+    description:
+      'Start minute in practitioner timezone, counted from local midnight',
   })
   @IsInt()
   @Min(0)
@@ -39,7 +40,8 @@ export class WeeklyAvailabilitySlotInputDto {
   @ApiProperty({
     minimum: 1,
     maximum: 1440,
-    description: 'End minute in practitioner timezone, counted from local midnight',
+    description:
+      'End minute in practitioner timezone, counted from local midnight',
   })
   @IsInt()
   @Min(1)
@@ -50,7 +52,8 @@ export class WeeklyAvailabilitySlotInputDto {
 export class ReplaceWeeklyAvailabilityDto {
   @ApiProperty({
     example: 'Africa/Cairo',
-    description: 'IANA timezone that defines how recurring weekly slots are interpreted',
+    description:
+      'IANA timezone that defines how recurring weekly slots are interpreted',
   })
   @IsString()
   @MaxLength(50)
@@ -59,7 +62,8 @@ export class ReplaceWeeklyAvailabilityDto {
   @ApiProperty({
     type: WeeklyAvailabilitySlotInputDto,
     isArray: true,
-    description: 'Complete recurring weekly schedule that will replace existing active slots',
+    description:
+      'Complete recurring weekly schedule that will replace existing active slots',
   })
   @IsArray()
   @ArrayMaxSize(100)

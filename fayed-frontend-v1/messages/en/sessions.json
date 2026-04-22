@@ -2,7 +2,8 @@
   "meta": {
     "listTitle": "My Sessions",
     "listDescription": "View and manage your consultation sessions.",
-    "detailTitle": "Session Details"
+    "detailTitle": "Session Details",
+    "chatTitle": "Session chat"
   },
   "list": {
     "heading": "My Sessions",
@@ -52,6 +53,63 @@
   "detail": {
     "backToSessions": "Back to sessions",
     "heading": "Session Details",
+    "chatCard": {
+      "heading": "Chat",
+      "note": "Open a chat with your practitioner for this session.",
+      "disabledNote": "Chat becomes available when the session is ready to join or live.",
+      "open": "Open chat"
+    },
+    "chat": {
+      "eyebrow": "Session chat",
+      "back": "Back to sessions",
+      "fallbackName": "Practitioner",
+      "title": "Chat with {name}",
+      "note": "Send messages and share files related to this session.",
+      "thread": {
+        "heading": "Conversation",
+        "refreshing": "Refreshing",
+        "attachment": "File"
+      },
+      "compose": {
+        "label": "Message",
+        "placeholder": "Write a message..."
+      },
+      "actions": {
+        "attach": "Attach",
+        "send": "Send",
+        "removeAttachment": "Remove attachment",
+        "close": "Close chat",
+        "closing": "Closing..."
+      },
+      "states": {
+        "notAvailable": {
+          "heading": "Chat is not available yet",
+          "note": "This chat opens when the session is ready to join or live.",
+          "back": "Back"
+        },
+        "sessionError": {
+          "heading": "Could not load the session",
+          "note": "Please try again.",
+          "retry": "Try again"
+        },
+        "openError": {
+          "heading": "Could not open chat",
+          "note": "Please try again.",
+          "retry": "Try again"
+        },
+        "messagesError": {
+          "heading": "Could not load messages",
+          "note": "Please try again.",
+          "retry": "Try again"
+        },
+        "empty": {
+          "heading": "No messages yet",
+          "note": "Start the conversation when you are ready."
+        },
+        "sendError": "Could not send this message right now.",
+        "uploadError": "Could not upload this file right now."
+      }
+    },
     "currentStateHeading": "Current session state",
     "with": "with",
     "duration": "{n} min",
@@ -181,9 +239,45 @@
     "cancelAction": "Cancel session",
     "cancelConfirm": {
       "heading": "Cancel this session?",
-      "note": "This action cannot be undone. Your slot will be released.",
+      "note": "This action cannot be undone. Cancellation and refund outcome are evaluated by the active cancellation policy.",
+      "policyHeading": "Cancellation and refund policy",
+      "policyNote": "If cancellation is allowed for this session window, any eligible refund is returned to your wallet according to policy. If cancellation is not allowed, the request will be rejected.",
+      "previewHeading": "Financial outcome before confirmation",
+      "previewLoading": "Calculating exact cancellation outcome...",
+      "previewLoadFailed": "Could not load the cancellation financial preview right now.",
+      "cannotProceed": "Cancellation cannot proceed in the current policy/payment state.",
+      "yes": "Yes",
+      "no": "No",
+      "fields": {
+        "refundPercent": "Refund percentage",
+        "refundDestination": "Refund destination",
+        "reservationReleaseAmount": "Reserved wallet amount to release",
+        "refundAmount": "Refund amount",
+        "walletCreditAmount": "Wallet credit amount",
+        "noRefund": "No refund applies"
+      },
+      "destinations": {
+        "CUSTOMER_WALLET": "Customer wallet",
+        "ORIGINAL_METHOD": "Original payment method"
+      },
+      "outcomes": {
+        "NO_PAYMENT": "No payment record is linked to this session, so no financial amount will move.",
+        "POLICY_BLOCKED": "Cancellation is not allowed by the active cancellation policy for this time window.",
+        "RESERVATION_RELEASE": "The reserved wallet amount will be released back to your available wallet balance.",
+        "REFUND_TO_WALLET": "An exact refund amount will be credited to your wallet after cancellation.",
+        "NO_REFUND": "Cancellation is allowed, but no refund amount is due under the current policy.",
+        "UNSUPPORTED_REFUND_DESTINATION": "This cancellation policy currently points to an unsupported refund destination.",
+        "PAYMENT_STATE_NOT_REFUNDABLE": "Cancellation is allowed, but this payment state does not create a new refund amount."
+      },
+      "reasonLabel": "Cancellation note (optional)",
+      "reasonPlaceholder": "Write a short note for this cancellation",
       "confirm": "Yes, cancel it",
       "back": "Keep session"
+    },
+    "cancelResult": {
+      "success": "Session cancelled successfully. Any eligible refund will be credited to your wallet based on policy.",
+      "notAllowedByPolicy": "This session cannot be cancelled under the current cancellation policy window.",
+      "failed": "Could not cancel this session right now. Please try again."
     },
     "cancelError": "Could not cancel this session. Please try again.",
     "bookNewSlot": "Book a new slot"
@@ -192,7 +286,8 @@
     "meta": {
       "listTitle": "My Sessions",
       "listDescription": "View your scheduled consultation sessions.",
-      "detailTitle": "Session Details"
+      "detailTitle": "Session Details",
+      "chatTitle": "Session chat"
     },
     "list": {
       "heading": "My Sessions",
@@ -220,6 +315,12 @@
     "detail": {
       "backToSessions": "Back to sessions",
       "heading": "Session Details",
+      "chatCard": {
+        "heading": "Chat",
+        "note": "Open a chat with your patient for this session.",
+        "disabledNote": "Chat becomes available when the session is ready to join or live.",
+        "open": "Open chat"
+      },
       "currentStateHeading": "Current session state",
       "with": "with",
       "noSchedule": "Not scheduled yet",

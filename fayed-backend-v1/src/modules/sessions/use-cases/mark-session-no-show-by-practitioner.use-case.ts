@@ -26,8 +26,9 @@ export class MarkSessionNoShowByPractitionerUseCase {
     locale: SupportedLocale;
     sessionId: string;
   }) {
-    const practitioner =
-      await this.sessionPractitionerRepository.findByUserId(input.userId);
+    const practitioner = await this.sessionPractitionerRepository.findByUserId(
+      input.userId,
+    );
 
     if (!practitioner) {
       throw new NotFoundException({

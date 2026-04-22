@@ -864,7 +864,7 @@
         "specialty": "التخصص"
       },
       "noName": "مقدّم طلب بدون اسم",
-      "noSpecialty": "â€”"
+      "noSpecialty": "—"
     },
     "quickLinks": {
       "heading": "وصول سريع",
@@ -1005,7 +1005,9 @@
     "sections": {
       "applicant": "مقدّم الطلب",
       "profile": "الملف المهني",
+      "profileEdit": "تعديل قبل القرار",
       "credentials": "المؤهلات",
+      "payout": "وجهة الاستلام",
       "application": "الطلب",
       "readiness": "لمحة عن الجاهزية",
       "decision": "القرار"
@@ -1020,22 +1022,44 @@
       "phoneNotVerified": "غير مُتحقَّق منه",
       "country": "البلد",
       "accountStatus": "حالة الحساب",
-      "noValue": "â€”"
+      "noValue": "—"
     },
     "profile": {
       "type": "النوع",
+      "gender": "النوع الاجتماعي",
+      "genderOptions": {
+        "MALE": "ذكر",
+        "FEMALE": "أنثى"
+      },
       "profileStatus": "حالة الملف",
       "title": "اللقب المهني",
       "bio": "النبذة التعريفية",
       "years": "سنوات الخبرة",
       "languages": "اللغات",
+      "primarySpecialtyCategory": "التخصص الرئيسي",
+      "subSpecialties": "التخصصات الفرعية",
       "specialties": "التخصصات",
       "primary": "رئيسي",
       "noSpecialties": "لا توجد تخصصات مرتبطة.",
-      "noValue": "â€”"
+      "noValue": "—"
     },
     "credentials": {
       "empty": "لم تُرفع أي مؤهلات.",
+      "addHeading": "إضافة مؤهل جديد",
+      "credentialType": "نوع المؤهل",
+      "reviewStatus": "حالة المراجعة",
+      "fileUrl": "رابط الملف",
+      "fileUrlPlaceholder": "https://...",
+      "expiresAtOptional": "تاريخ الانتهاء (اختياري)",
+      "reviewNotes": "ملاحظات المراجعة",
+      "reviewNotesPlaceholder": "ملاحظة مراجعة (اختياري)",
+      "addSubmit": "إضافة المؤهل",
+      "addSubmitting": "جارٍ الإضافة...",
+      "deleteConfirm": "هل تريد حذف هذا المؤهل من الطلب؟",
+      "addError": "تعذرت إضافة المؤهل. تحقق من الحقول المطلوبة.",
+      "updateError": "تعذر تحديث المؤهل.",
+      "deleteSuccess": "تم حذف المؤهل.",
+      "deleteError": "تعذر حذف المؤهل.",
       "uploadedAt": "تاريخ الرفع: {date}",
       "expiresAt": "تنتهي صلاحيته: {date}",
       "type": {
@@ -1058,18 +1082,45 @@
       "status": "الحالة",
       "submittedAt": "تاريخ التقديم",
       "reviewedAt": "تاريخ المراجعة",
+      "reviewedByUserId": "تمت المراجعة بواسطة",
+      "reviewDecisionReason": "سبب القرار",
       "reviewNotes": "ملاحظات المراجعة",
       "noNotes": "لا توجد ملاحظات مراجعة.",
-      "never": "â€”"
+      "never": "—"
     },
     "readiness": {
       "profileComplete": "الملف الشخصي مكتمل",
       "specialties": "التخصصات المطلوبة",
-      "credentials": "المؤهلات المطلوبة",
+      "credentials": "المؤهلات معتمدة",
+      "payoutDestination": "وجهة الاستلام مكتملة",
       "canBeReviewed": "قابل للمراجعة",
       "canBeApproved": "قابل للقبول",
+      "canRequestChanges": "يمكن طلب تعديل",
       "yes": "نعم",
       "no": "لا"
+    },
+    "payout": {
+      "method": "طريقة الاستلام",
+      "methodOptions": {
+        "BANK_ACCOUNT": "حساب بنكي",
+        "IBAN": "IBAN",
+        "WALLET": "محفظة",
+        "OTHER": "أخرى"
+      },
+      "accountHolderName": "اسم صاحب الحساب",
+      "bankName": "اسم البنك",
+      "bankAccountNumber": "رقم الحساب البنكي",
+      "walletProvider": "مزود المحفظة",
+      "walletIdentifier": "معرّف المحفظة",
+      "otherDetails": "تفاصيل أخرى"
+    },
+    "edit": {
+      "save": {
+        "submit": "حفظ التعديلات",
+        "submitting": "جارٍ الحفظ...",
+        "success": "تم حفظ التعديلات بنجاح.",
+        "error": "تعذر حفظ التعديلات. تحقق من الحقول المطلوبة أولاً."
+      }
     },
     "decision": {
       "heading": "اتخاذ قرار",
@@ -1082,6 +1133,18 @@
         "submitting": "جارٍ القبول...",
         "success": "تم قبول الطلب بنجاح.",
         "error": "تعذّر قبول الطلب. يرجى المحاولة مرة أخرى."
+      },
+      "requestChanges": {
+        "title": "طلب تعديل",
+        "reasonLabel": "السبب",
+        "reasonPlaceholder": "مطلوب — ما الذي يجب على الممارس تعديله؟",
+        "reasonRequired": "يجب تقديم سبب لطلب التعديل.",
+        "noteLabel": "ملاحظة (اختياري)",
+        "notePlaceholder": "أضف إرشادات اختيارية للممارس",
+        "submit": "إرسال طلب التعديل",
+        "submitting": "جارٍ إرسال الطلب...",
+        "success": "تم طلب التعديل بنجاح.",
+        "error": "تعذّر طلب التعديل. يرجى المحاولة مرة أخرى."
       },
       "reject": {
         "title": "رفض",

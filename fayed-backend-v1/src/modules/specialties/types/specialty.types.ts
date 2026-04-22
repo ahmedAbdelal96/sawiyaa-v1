@@ -22,4 +22,3 @@ export interface SpecialtyViewModel {
   createdAt: Date;
   updatedAt: Date;
 }
-

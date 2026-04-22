@@ -24,7 +24,10 @@ export class ExtractPaymentLedgerBreakdownService {
         ? (metadata.financialBreakdown as Record<string, unknown>)
         : null;
 
-    const practitionerShareAmount = this.readMoney(financialBreakdown, 'practitionerShareAmount');
+    const practitionerShareAmount = this.readMoney(
+      financialBreakdown,
+      'practitionerShareAmount',
+    );
     const platformCommissionAmount = this.readMoney(
       financialBreakdown,
       'platformCommissionAmount',

@@ -60,7 +60,9 @@ export class PatientCareChatController {
   @ApiBody({ type: CreateCareChatRequestDto })
   @ApiResponse({ status: 201, type: CareChatRequestItemSuccessResponseDto })
   @ApiUnauthorizedResponse({ description: 'Access token is required' })
-  @ApiForbiddenResponse({ description: 'Only active patient accounts are allowed' })
+  @ApiForbiddenResponse({
+    description: 'Only active patient accounts are allowed',
+  })
   createRequest(
     @CurrentUser() currentUser: AuthenticatedUser,
     @Body() body: CreateCareChatRequestDto,

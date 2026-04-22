@@ -26,6 +26,7 @@ import { RolesGuard } from '@common/guards/authorization/roles.guard';
 import { AuthenticatedUser } from '@common/interfaces/authenticated-user.interface';
 import { AddSupportMessageDto } from '../dto/add-support-message.dto';
 import { AssignSupportTicketDto } from '../dto/assign-support-ticket.dto';
+import { CreateAdminSupportTicketForReporterDto } from '../dto/create-admin-support-ticket-for-reporter.dto';
 import { ListSupportTicketsDto } from '../dto/list-support-tickets.dto';
 import {
   AdminSupportTicketItemSuccessResponseDto,
@@ -35,6 +36,7 @@ import { UpdateSupportTicketStatusDto } from '../dto/update-support-ticket-statu
 import { AddAdminSupportMessageUseCase } from '../use-cases/add-admin-support-message.use-case';
 import { AddAdminSupportNoteUseCase } from '../use-cases/add-admin-support-note.use-case';
 import { AssignSupportTicketUseCase } from '../use-cases/assign-support-ticket.use-case';
+import { CreateAdminSupportTicketForReporterUseCase } from '../use-cases/create-admin-support-ticket-for-reporter.use-case';
 import { GetAdminSupportTicketUseCase } from '../use-cases/get-admin-support-ticket.use-case';
 import { ListAdminSupportTicketsUseCase } from '../use-cases/list-admin-support-tickets.use-case';
 import { UpdateSupportTicketStatusUseCase } from '../use-cases/update-support-ticket-status.use-case';
@@ -51,12 +53,31 @@ export class AdminSupportController {
     private readonly getAdminSupportTicketUseCase: GetAdminSupportTicketUseCase,
     private readonly addAdminSupportMessageUseCase: AddAdminSupportMessageUseCase,
     private readonly addAdminSupportNoteUseCase: AddAdminSupportNoteUseCase,
+    private readonly createAdminSupportTicketForReporterUseCase: CreateAdminSupportTicketForReporterUseCase,
     private readonly updateSupportTicketStatusUseCase: UpdateSupportTicketStatusUseCase,
     private readonly assignSupportTicketUseCase: AssignSupportTicketUseCase,
   ) {}
 
+  @Post('create-for-reporter')
+  @HttpCode(200)
+  @ApiOperation({
+    summary:
+      'Create a support outreach ticket for a moderation reporter when no direct support thread exists',
+  })
+  @ApiBody({ type: CreateAdminSupportTicketForReporterDto })
+  @ApiResponse({ status: 200, type: AdminSupportTicketItemSuccessResponseDto })
+  createForReporter(@Body() body: CreateAdminSupportTicketForReporterDto) {
+    return this.createAdminSupportTicketForReporterUseCase
+      .execute({
+        payload: body,
+      })
+      .then((data) => ({ success: true as const, data }));
+  }
+
   @Get()
-  @ApiOperation({ summary: 'List support tickets for admin/support operations' })
+  @ApiOperation({
+    summary: 'List support tickets for admin/support operations',
+  })
   @ApiResponse({ status: 200, type: SupportTicketListSuccessResponseDto })
   list(
     @CurrentUser() currentUser: AuthenticatedUser,
@@ -83,7 +104,9 @@ export class AdminSupportController {
 
   @Post(':id/messages')
   @HttpCode(200)
-  @ApiOperation({ summary: 'Add admin/support message to support ticket thread' })
+  @ApiOperation({
+    summary: 'Add admin/support message to support ticket thread',
+  })
   @ApiBody({ type: AddSupportMessageDto })
   @ApiResponse({ status: 200, type: AdminSupportTicketItemSuccessResponseDto })
   addMessage(

@@ -249,6 +249,16 @@ enum SessionEventType {
   PROVIDER_ROOM_ENDED
 }
 
+enum SessionCancellationBookingType {
+  STANDARD
+  INSTANT
+}
+
+enum SessionCancellationRefundMode {
+  NONE
+  PERCENTAGE
+}
+
 enum SessionAttendanceEventType {
   JOINED
   LEFT
@@ -280,6 +290,7 @@ enum PaymentPurpose {
 enum PaymentProvider {
   STRIPE
   PAYMOB
+  INTERNAL_WALLET
 }
 
 enum PaymentStatus {
@@ -322,6 +333,11 @@ enum RefundStatus {
   CANCELLED
 }
 
+enum RefundDestination {
+  ORIGINAL_METHOD
+  CUSTOMER_WALLET
+}
+
 enum LedgerEntryType {
   SESSION_GROSS
   PLATFORM_COMMISSION
@@ -340,10 +356,66 @@ enum LedgerDirection {
   DEBIT
 }
 
+enum LedgerAccountType {
+  ASSET
+  LIABILITY
+  EQUITY
+  REVENUE
+  EXPENSE
+}
+
+enum LedgerAccountScope {
+  PLATFORM
+  PRACTITIONER
+  PATIENT
+  SYSTEM
+}
+
+enum JournalEntrySourceType {
+  PAYMENT_CAPTURED
+  REFUND_SUCCEEDED
+  PRACTITIONER_PAYOUT
+}
+
+enum JournalEntryStatus {
+  POSTED
+}
+
+enum ReconciliationReviewStatus {
+  PENDING_REVIEW
+  MATCHED
+  MISMATCH
+  MISSING_PROOF
+  REQUIRES_ADJUSTMENT
+  RESOLVED
+}
+
 enum WalletBalanceBucket {
   AVAILABLE
   PENDING
   RESERVED
+}
+
+enum CustomerWalletEntryType {
+  REFUND_CREDIT
+  MANUAL_CREDIT
+  MANUAL_DEBIT
+  SESSION_PAYMENT_RESERVE
+  SESSION_PAYMENT_CAPTURE
+  SESSION_PAYMENT_RELEASE
+  REVERSAL
+  ADJUSTMENT
+}
+
+enum CustomerWalletEntryDirection {
+  CREDIT
+  DEBIT
+}
+
+enum CustomerWalletReservationStatus {
+  ACTIVE
+  CAPTURED
+  RELEASED
 }
 
 enum SettlementBatchStatus {
@@ -375,6 +447,11 @@ enum SettlementPayoutMethod {
 enum SettlementPayoutSource {
   BATCH_CLOSEOUT
   MANUAL_EXCEPTION
+}
+
+enum PayoutTransferFeeTreatment {
+  PLATFORM_EXPENSE
+  DEDUCT_FROM_PRACTITIONER
 }
 
 enum CommissionRuleScope {
@@ -665,6 +742,14 @@ enum NotificationStatus {
   SUPPRESSED
 }
 
+enum AuditEventSource {
+  SYSTEM
+  IN_APP
+  EMAIL
+  SMS
+  PUSH
+}
+
 enum DeliveryAttemptStatus {
   PENDING
   SENT
@@ -859,6 +944,7 @@ model User {
 
   authoredArticles            Article[]                      @relation("ArticleAuthorUser")
   configChanges               ConfigChangeLog[]              @relation("ConfigChangeByUser")
+  auditEvents                 AuditEvent[]                   @relation("AuditEventActorUser")
   notificationPreferences     NotificationPreference[]
   notifications               Notification[]
   notificationDevices         NotificationDevice[]
@@ -866,6 +952,8 @@ model User {
   trainingInstructors         TrainingInstructor[]
   enrollments                 Enrollment[]
   settlementPayouts           PractitionerSettlementPayout[]
+  financeReconciliationReviews FinanceReconciliationReview[]
+  sessionCancellationRecords  SessionCancellationRecord[]    @relation("SessionCancellationRecordCancelledByUser")
 }
 
 model UserEmail {
@@ -1029,8 +1117,11 @@ model PatientProfile {
   sessions               Session[]
   instantBookingRequests InstantBookingRequest[]
   payments               Payment[]
-  conversations          Conversation[]          @relation("ConversationPatient")
-  supportTickets         SupportTicket[]         @relation("SupportTicketPatient")
+  wallets                CustomerWallet[]
+  walletEntries          CustomerWalletEntry[]
+  walletReservations     CustomerWalletReservation[]
+  conversations          Conversation[]              @relation("ConversationPatient")
+  supportTickets         SupportTicket[]             @relation("SupportTicketPatient")
   chatApprovalRequests   ChatApprovalRequest[]
   couponRedemptions      CouponRedemption[]
   sessionReviews         SessionReview[]
@@ -1503,12 +1594,14 @@ model Session {
   instantBookingRequest InstantBookingRequest?
   payments              Payment[]
   refunds               Refund[]
+  customerWalletEntries CustomerWalletEntry[]
   conversations         Conversation[]
   chatApprovalRequests  ChatApprovalRequest[]
   reviews               SessionReview[]
   ledgerEntries         LedgerEntry[]
   couponRedemptions     CouponRedemption[]
   attendanceEvents      SessionAttendanceEvent[]
+  cancellationRecord    SessionCancellationRecord?
 
   @@index([patientId, status])
   @@index([practitionerId, status])
@@ -1516,6 +1609,72 @@ model Session {
   @@index([scheduledEndAt])
   @@index([flowType, status])
   @@index([provider, providerRoomId])
+}
+
+model SessionCancellationPolicy {
+  id                       String                        @id @default(uuid()) @db.Uuid
+  bookingType              SessionCancellationBookingType @unique
+  displayName              String                        @db.VarChar(191)
+  isActive                 Boolean                       @default(true)
+  defaultRefundDestination RefundDestination             @default(CUSTOMER_WALLET)
+  version                  Int                           @default(1)
+  createdAt                DateTime                      @default(now())
+  updatedAt                DateTime                      @updatedAt
+
+  rules               SessionCancellationPolicyRule[]
+  cancellationRecords SessionCancellationRecord[]
+}
+
+model SessionCancellationPolicyRule {
+  id                     String                       @id @default(uuid()) @db.Uuid
+  policyId               String                       @db.Uuid
+  code                   String                       @db.VarChar(100)
+  displayName            String                       @db.VarChar(191)
+  priority               Int                          @default(100)
+  minHoursBeforeStart    Int?
+  maxHoursBeforeStart    Int?
+  isCancellationAllowed  Boolean                      @default(true)
+  refundMode             SessionCancellationRefundMode @default(NONE)
+  refundPercent          Decimal?                     @db.Decimal(5, 2)
+  isActive               Boolean                      @default(true)
+  createdAt              DateTime                     @default(now())
+  updatedAt              DateTime                     @updatedAt
+
+  policy SessionCancellationPolicy @relation(fields: [policyId], references: [id], onDelete: Cascade)
+  cancellationRecords SessionCancellationRecord[]
+
+  @@unique([policyId, code])
+  @@index([policyId, isActive, priority])
+}
+
+model SessionCancellationRecord {
+  id                         String                        @id @default(uuid()) @db.Uuid
+  sessionId                  String                        @unique @db.Uuid
+  cancelledByUserId          String?                       @db.Uuid
+  policyId                   String?                       @db.Uuid
+  policyRuleId               String?                       @db.Uuid
+  policyVersion              Int?
+  bookingType                SessionCancellationBookingType
+  evaluatedAt                DateTime                      @default(now())
+  cancellationAllowed        Boolean
+  refundMode                 SessionCancellationRefundMode @default(NONE)
+  refundPercent              Decimal?                      @db.Decimal(5, 2)
+  refundAmount               Decimal                       @default(0) @db.Decimal(18, 2)
+  refundDestination          RefundDestination?
+  cancelledPaymentId         String?                       @db.Uuid
+  generatedRefundId          String?                       @db.Uuid
+  policySnapshotJson         Json?
+  financialActionsSnapshotJson Json?
+  createdAt                  DateTime                      @default(now())
+  updatedAt                  DateTime                      @updatedAt
+
+  session         Session                        @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  cancelledByUser User?                          @relation("SessionCancellationRecordCancelledByUser", fields: [cancelledByUserId], references: [id], onDelete: SetNull)
+  policy          SessionCancellationPolicy?     @relation(fields: [policyId], references: [id], onDelete: SetNull)
+  policyRule      SessionCancellationPolicyRule? @relation(fields: [policyRuleId], references: [id], onDelete: SetNull)
+
+  @@index([policyId, evaluatedAt])
+  @@index([bookingType, evaluatedAt])
 }
 
 model SessionAttendanceEvent {
@@ -1598,10 +1757,12 @@ model Payment {
   provider       PaymentProvider
   status         PaymentStatus   @default(CREATED)
 
-  amountSubtotal Decimal @db.Decimal(18, 2)
-  amountDiscount Decimal @default(0) @db.Decimal(18, 2)
-  amountTotal    Decimal @db.Decimal(18, 2)
-  currencyCode   String  @db.VarChar(3)
+  amountSubtotal    Decimal @db.Decimal(18, 2)
+  amountDiscount    Decimal @default(0) @db.Decimal(18, 2)
+  amountTotal       Decimal @db.Decimal(18, 2)
+  amountFromWallet  Decimal @default(0) @db.Decimal(18, 2)
+  amountFromGateway Decimal @default(0) @db.Decimal(18, 2)
+  currencyCode      String  @db.VarChar(3)
 
   commissionRuleId                  String?  @db.Uuid
   commissionPlatformRatePercent     Decimal? @db.Decimal(5, 2)
@@ -1611,6 +1772,11 @@ model Payment {
   couponDiscountSnapshot            Decimal? @db.Decimal(18, 2)
   couponPlatformShareSnapshot       Decimal? @db.Decimal(5, 2)
   couponPractitionerShareSnapshot   Decimal? @db.Decimal(5, 2)
+  vatRatePercentSnapshot            Decimal? @db.Decimal(5, 2)
+  vatAmountSnapshot                 Decimal? @db.Decimal(18, 2)
+  gatewayFeeRatePercentSnapshot     Decimal? @db.Decimal(5, 2)
+  gatewayFeeFixedAmountSnapshot     Decimal? @db.Decimal(18, 2)
+  gatewayFeeAmountSnapshot          Decimal? @db.Decimal(18, 2)
 
   providerPaymentRef  String? @db.VarChar(191)
   providerOrderRef    String? @db.VarChar(191)
@@ -1635,6 +1801,8 @@ model Payment {
 
   events            PaymentEvent[]
   refunds           Refund[]
+  walletEntries     CustomerWalletEntry[]
+  walletReservation CustomerWalletReservation?
   ledgerEntries     LedgerEntry[]
   couponRedemptions CouponRedemption[]
   enrollments       Enrollment[]
@@ -1662,27 +1830,112 @@ model PaymentEvent {
 }
 
 model Refund {
-  id                String       @id @default(uuid()) @db.Uuid
-  paymentId         String       @db.Uuid
-  sessionId         String?      @db.Uuid
-  refundType        RefundType
-  status            RefundStatus @default(REQUESTED)
-  refundReason      String?      @db.VarChar(500)
-  amount            Decimal      @db.Decimal(18, 2)
-  currencyCode      String       @db.VarChar(3)
-  providerRefundRef String?      @db.VarChar(191)
-  requestedAt       DateTime     @default(now())
-  processedAt       DateTime?
-  failedAt          DateTime?
-  createdAt         DateTime     @default(now())
-  updatedAt         DateTime     @updatedAt
+  id                       String            @id @default(uuid()) @db.Uuid
+  paymentId                String            @db.Uuid
+  sessionId                String?           @db.Uuid
+  refundType               RefundType
+  status                   RefundStatus      @default(REQUESTED)
+  destination              RefundDestination @default(ORIGINAL_METHOD)
+  refundReason             String?           @db.VarChar(500)
+  amount                   Decimal           @db.Decimal(18, 2)
+  currencyCode             String            @db.VarChar(3)
+  providerRefundRef        String?           @db.VarChar(191)
+  requestedAt              DateTime          @default(now())
+  processedAt              DateTime?
+  failedAt                 DateTime?
+  customerWalletCreditedAt DateTime?
+  metadataJson             Json?
+  createdAt                DateTime          @default(now())
+  updatedAt                DateTime          @updatedAt
 
-  payment Payment  @relation(fields: [paymentId], references: [id], onDelete: Restrict)
-  session Session? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+  payment       Payment               @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+  session       Session?              @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+  walletEntries CustomerWalletEntry[]
 
   @@index([paymentId, status])
   @@index([sessionId, status])
+  @@index([destination, status])
   @@index([requestedAt])
+}
+
+model CustomerWallet {
+  id           String @id @default(uuid()) @db.Uuid
+  patientId    String @db.Uuid
+  currencyCode String @db.VarChar(3)
+
+  availableBalance Decimal   @default(0) @db.Decimal(18, 2)
+  reservedBalance  Decimal   @default(0) @db.Decimal(18, 2)
+  lifetimeCredited Decimal   @default(0) @db.Decimal(18, 2)
+  lifetimeDebited  Decimal   @default(0) @db.Decimal(18, 2)
+  lastEntryAt      DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  patient      PatientProfile              @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  entries      CustomerWalletEntry[]
+  reservations CustomerWalletReservation[]
+
+  @@unique([patientId, currencyCode])
+}
+
+model CustomerWalletEntry {
+  id        String  @id @default(uuid()) @db.Uuid
+  walletId  String  @db.Uuid
+  patientId String  @db.Uuid
+  paymentId String? @db.Uuid
+  refundId  String? @db.Uuid
+  sessionId String? @db.Uuid
+
+  entryType     CustomerWalletEntryType
+  direction     CustomerWalletEntryDirection
+  amount        Decimal                      @db.Decimal(18, 2)
+  currencyCode  String                       @db.VarChar(3)
+  description   String?                      @db.VarChar(500)
+  referenceType String?                      @db.VarChar(100)
+  referenceId   String?                      @db.VarChar(191)
+  metadataJson  Json?
+  effectiveAt   DateTime                     @default(now())
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  patient       PatientProfile @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  walletAccount CustomerWallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  payment       Payment?       @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+  refund        Refund?        @relation(fields: [refundId], references: [id], onDelete: SetNull)
+  session       Session?       @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+
+  @@index([patientId, effectiveAt])
+  @@index([walletId, effectiveAt])
+  @@index([paymentId])
+  @@index([refundId])
+  @@index([sessionId])
+  @@index([entryType, effectiveAt])
+  @@index([referenceType, referenceId])
+}
+
+model CustomerWalletReservation {
+  id        String @id @default(uuid()) @db.Uuid
+  walletId  String @db.Uuid
+  patientId String @db.Uuid
+  paymentId String @unique @db.Uuid
+
+  status       CustomerWalletReservationStatus @default(ACTIVE)
+  amount       Decimal                         @db.Decimal(18, 2)
+  currencyCode String                          @db.VarChar(3)
+  expiresAt    DateTime?
+  capturedAt   DateTime?
+  releasedAt   DateTime?
+  createdAt    DateTime                        @default(now())
+  updatedAt    DateTime                        @updatedAt
+
+  wallet  CustomerWallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  patient PatientProfile @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  payment Payment        @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+
+  @@index([patientId, status, createdAt])
+  @@index([walletId, status, createdAt])
 }
 
 model LedgerEntry {
@@ -1719,6 +1972,91 @@ model LedgerEntry {
   @@index([settlementId])
   @@index([entryType, effectiveAt])
   @@index([referenceType, referenceId])
+}
+
+model LedgerAccount {
+  id             String           @id @default(uuid()) @db.Uuid
+  code           String           @db.VarChar(128)
+  name           String           @db.VarChar(191)
+  accountType    LedgerAccountType
+  scope          LedgerAccountScope @default(PLATFORM)
+  currencyCode   String           @db.VarChar(3)
+  practitionerId String?          @db.Uuid
+  patientId      String?          @db.Uuid
+  isSystem       Boolean          @default(true)
+  isActive       Boolean          @default(true)
+  metadataJson   Json?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  journalLines JournalLine[]
+
+  @@unique([code, currencyCode], map: "uq_ledger_account_code_currency")
+  @@index([scope, accountType, isActive])
+  @@index([practitionerId, currencyCode, isActive])
+  @@index([patientId, currencyCode, isActive])
+}
+
+model JournalEntry {
+  id            String               @id @default(uuid()) @db.Uuid
+  sourceType    JournalEntrySourceType
+  sourceId      String               @db.VarChar(191)
+  occurredAt    DateTime
+  currencyCode  String               @db.VarChar(3)
+  status        JournalEntryStatus   @default(POSTED)
+  description   String?              @db.VarChar(500)
+  metadataJson  Json?
+  correlationId String?              @db.VarChar(191)
+  requestId     String?              @db.VarChar(191)
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+
+  lines JournalLine[]
+
+  @@unique([sourceType, sourceId], map: "uq_journal_entry_source")
+  @@index([occurredAt])
+  @@index([currencyCode, occurredAt])
+}
+
+model JournalLine {
+  id              String          @id @default(uuid()) @db.Uuid
+  journalEntryId  String          @db.Uuid
+  ledgerAccountId String          @db.Uuid
+  direction       LedgerDirection
+  amount          Decimal         @db.Decimal(18, 2)
+  memo            String?         @db.VarChar(500)
+  referenceType   String?         @db.VarChar(100)
+  referenceId     String?         @db.VarChar(191)
+  metadataJson    Json?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  journalEntry  JournalEntry @relation(fields: [journalEntryId], references: [id], onDelete: Cascade)
+  ledgerAccount LedgerAccount @relation(fields: [ledgerAccountId], references: [id], onDelete: Restrict)
+
+  @@index([journalEntryId])
+  @@index([ledgerAccountId])
+  @@index([referenceType, referenceId])
+}
+
+model FinanceReconciliationReview {
+  id String @id @default(uuid()) @db.Uuid
+
+  sourceType JournalEntrySourceType
+  sourceId   String                    @db.VarChar(191)
+  status     ReconciliationReviewStatus @default(PENDING_REVIEW)
+  note       String?                   @db.VarChar(1000)
+
+  reviewedByUserId String?   @db.Uuid
+  reviewedAt       DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  reviewedByUser User? @relation(fields: [reviewedByUserId], references: [id], onDelete: SetNull)
+
+  @@unique([sourceType, sourceId], map: "uq_finance_reconciliation_source")
+  @@index([status, updatedAt])
+  @@index([reviewedByUserId, reviewedAt])
 }
 
 model PractitionerWallet {
@@ -1806,6 +2144,8 @@ model PractitionerSettlementPayout {
   payoutMethod         SettlementPayoutMethod
   payoutSource         SettlementPayoutSource
   payoutMethodSnapshot Json?
+  transferFeeAmount    Decimal?               @db.Decimal(18, 2)
+  transferFeeTreatment PayoutTransferFeeTreatment @default(PLATFORM_EXPENSE)
   externalPayoutRef    String?                @db.VarChar(191)
   notes                String?                @db.VarChar(500)
   effectiveAt          DateTime
@@ -2628,6 +2968,44 @@ model Notification {
   @@index([relatedEntityType, relatedEntityId])
   @@index([readAt])
   @@index([failedAt])
+}
+
+model AuditEvent {
+  id String @id @default(uuid()) @db.Uuid
+
+  typeSlug    String               @db.VarChar(191)
+  eventFamily String               @db.VarChar(100)
+  category    NotificationCategory @default(SYSTEM)
+  status      NotificationStatus   @default(SENT)
+  source      AuditEventSource     @default(SYSTEM)
+
+  actorUserId String? @db.Uuid
+
+  targetEntityType String? @db.VarChar(100)
+  targetEntityId   String? @db.VarChar(191)
+
+  titleSnapshot    String? @db.VarChar(300)
+  subjectSnapshot  String? @db.VarChar(300)
+  bodySnapshot     String?
+  suppressedReason String? @db.VarChar(500)
+  metadataJson     Json?
+
+  notificationId String? @unique @db.Uuid
+
+  occurredAt DateTime @default(now())
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  actorUser User? @relation("AuditEventActorUser", fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([typeSlug, occurredAt])
+  @@index([eventFamily, occurredAt])
+  @@index([category, occurredAt])
+  @@index([status, occurredAt])
+  @@index([source, occurredAt])
+  @@index([actorUserId, occurredAt])
+  @@index([targetEntityType, targetEntityId])
+  @@index([occurredAt, createdAt])
 }
 
 model NotificationDeliveryAttempt {

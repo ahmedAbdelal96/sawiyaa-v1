@@ -21,7 +21,7 @@ export default async function PatientPaymentsPage({ params }: Props) {
   const t = await getTranslations({ locale, namespace: "payments" });
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-8">
+    <div className="mx-auto max-w-4xl px-4 py-8">
       <h1 className="mb-6 text-xl font-bold text-text-primary dark:text-white/95">
         {t("history.heading")}
       </h1>

@@ -6,20 +6,23 @@ import { MoneyMathService } from './money-math.service';
 export class CalculateCouponDiscountService {
   constructor(private readonly moneyMathService: MoneyMathService) {}
 
-  calculate(input: {
-    grossAmount: string;
-    coupon: Coupon;
-  }) {
+  calculate(input: { grossAmount: string; coupon: Coupon }) {
     const grossAmount = this.moneyMathService.toDecimal(input.grossAmount);
     const rawDiscount =
       input.coupon.discountType === DiscountType.PERCENTAGE
-        ? this.moneyMathService.percentOf(grossAmount, input.coupon.discountValue)
+        ? this.moneyMathService.percentOf(
+            grossAmount,
+            input.coupon.discountValue,
+          )
         : this.moneyMathService.roundMoney(input.coupon.discountValue);
 
     const cappedDiscount = input.coupon.maxDiscountAmount
       ? this.moneyMathService.min(rawDiscount, input.coupon.maxDiscountAmount)
       : rawDiscount;
-    const effectiveDiscount = this.moneyMathService.min(cappedDiscount, grossAmount);
+    const effectiveDiscount = this.moneyMathService.min(
+      cappedDiscount,
+      grossAmount,
+    );
 
     return {
       discountAmount: effectiveDiscount.toFixed(2),

@@ -49,9 +49,13 @@ export class PatientSessionFinancialRulesController {
   @ApiParam({ name: 'id', description: 'Session id' })
   @ApiBody({ type: ValidateCouponDto })
   @ApiResponse({ status: 200, type: CouponItemSuccessResponseDto })
-  @ApiBadRequestResponse({ description: 'Coupon is invalid, inactive, expired, or not applicable' })
+  @ApiBadRequestResponse({
+    description: 'Coupon is invalid, inactive, expired, or not applicable',
+  })
   @ApiUnauthorizedResponse({ description: 'Access token is required' })
-  @ApiForbiddenResponse({ description: 'Only active patient accounts may access this route' })
+  @ApiForbiddenResponse({
+    description: 'Only active patient accounts may access this route',
+  })
   @ApiNotFoundResponse({ description: 'Session or coupon was not found' })
   validateCoupon(
     @CurrentUser() currentUser: AuthenticatedUser,
@@ -74,9 +78,13 @@ export class PatientSessionFinancialRulesController {
   @ApiParam({ name: 'id', description: 'Session id' })
   @ApiBody({ type: CalculateSessionFinancialBreakdownDto })
   @ApiResponse({ status: 200, type: FinancialBreakdownItemSuccessResponseDto })
-  @ApiBadRequestResponse({ description: 'Pricing, commission rules, or coupon resolution failed' })
+  @ApiBadRequestResponse({
+    description: 'Pricing, commission rules, or coupon resolution failed',
+  })
   @ApiUnauthorizedResponse({ description: 'Access token is required' })
-  @ApiForbiddenResponse({ description: 'Only active patient accounts may access this route' })
+  @ApiForbiddenResponse({
+    description: 'Only active patient accounts may access this route',
+  })
   @ApiNotFoundResponse({ description: 'Patient-owned session was not found' })
   calculateBreakdown(
     @CurrentUser() currentUser: AuthenticatedUser,

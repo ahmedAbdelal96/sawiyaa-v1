@@ -21,7 +21,9 @@ export class ListPublicArticlesUseCase {
 
     return {
       items: rows
-        .map((item) => this.articlePresenter.presentPublicArticleItem(item, query.locale))
+        .map((item) =>
+          this.articlePresenter.presentPublicArticleItem(item, query.locale),
+        )
         .filter((item): item is NonNullable<typeof item> => Boolean(item)),
       pagination: this.articlePresenter.presentPagination({
         page: query.page,

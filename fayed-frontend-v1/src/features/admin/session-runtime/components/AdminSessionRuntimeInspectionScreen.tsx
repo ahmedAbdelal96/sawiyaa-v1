@@ -3,8 +3,9 @@
 import { useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
-import { Activity, ArrowRight, MonitorPlay, Radar } from "lucide-react";
+import { Activity, MonitorPlay, Radar } from "lucide-react";
 import { ListStateSkeleton, StateCard } from "@/components/shared/ContentStates";
+import DirectionalArrowIcon from "@/components/ui/navigation/DirectionalArrowIcon";
 import { getAdminSessionRuntimeErrorKey } from "../lib/admin-session-runtime-errors";
 import { useAdminSessionRuntimeInspection } from "../hooks/use-admin-session-runtime";
 import AdminSessionAttendanceSection from "./AdminSessionAttendanceSection";
@@ -16,8 +17,8 @@ import type {
 
 const STATUS_STYLES: Partial<Record<AdminSessionStatus, string>> = {
   PENDING_PAYMENT: "bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400",
-  CONFIRMED: "bg-sky-100 text-sky-700 dark:bg-sky-500/15 dark:text-sky-400",
-  UPCOMING: "bg-sky-100 text-sky-700 dark:bg-sky-500/15 dark:text-sky-400",
+  CONFIRMED: "bg-primary-light text-text-brand dark:bg-primary/15 dark:text-primary-light",
+  UPCOMING: "bg-primary-light text-text-brand dark:bg-primary/15 dark:text-primary-light",
   READY_TO_JOIN: "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400",
   IN_PROGRESS: "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400",
   COMPLETED: "bg-slate-100 text-slate-700 dark:bg-white/10 dark:text-white/70",
@@ -215,7 +216,7 @@ export default function AdminSessionRuntimeInspectionScreen({
             href="/admin/payments"
             className="inline-flex items-center gap-2 rounded-full border border-border-light px-4 py-2 text-xs font-semibold text-text-secondary transition hover:border-primary/30 hover:text-primary"
           >
-            <ArrowRight className="h-3.5 w-3.5 rtl:rotate-180" />
+            <DirectionalArrowIcon direction="back" className="h-3.5 w-3.5" />
             {t("lookup.backToPayments")}
           </Link>
         </div>

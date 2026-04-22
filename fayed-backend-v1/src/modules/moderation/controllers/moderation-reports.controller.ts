@@ -45,4 +45,3 @@ export class ModerationReportsController {
       .then((data) => ({ success: true as const, data }));
   }
 }
-

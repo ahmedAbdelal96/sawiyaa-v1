@@ -47,9 +47,8 @@ export class GetPublicPractitionerDetailsUseCase {
       });
     }
 
-    const approvedCredentials = await this.publicReadRepository.countApprovedCredentials(
-      profile.id,
-    );
+    const approvedCredentials =
+      await this.publicReadRepository.countApprovedCredentials(profile.id);
     const averageRatingRaw = profile.ratingSummary?.averageRating;
 
     return {

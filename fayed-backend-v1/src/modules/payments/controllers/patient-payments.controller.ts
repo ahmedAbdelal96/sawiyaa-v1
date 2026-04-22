@@ -67,11 +67,13 @@ export class PatientPaymentsController {
       'Session is not payable, routing context is invalid/unsupported, or pricing is unavailable',
   })
   @ApiConflictResponse({
-    description: 'A successful payment already exists or the payment session has already expired',
+    description:
+      'A successful payment already exists or the payment session has already expired',
   })
   @ApiUnauthorizedResponse({ description: 'Access token is required' })
   @ApiForbiddenResponse({
-    description: 'Only active patient accounts may initiate payments for their own sessions',
+    description:
+      'Only active patient accounts may initiate payments for their own sessions',
   })
   @ApiNotFoundResponse({
     description: 'Patient profile or patient-owned session was not found',
@@ -87,6 +89,7 @@ export class PatientPaymentsController {
       locale,
       sessionId,
       couponCode: body.couponCode ?? null,
+      useWalletBalance: body.useWalletBalance ?? false,
     });
   }
 

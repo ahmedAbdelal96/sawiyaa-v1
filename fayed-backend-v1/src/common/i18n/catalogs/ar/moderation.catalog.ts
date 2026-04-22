@@ -6,7 +6,8 @@ export const arModerationCatalog = {
     duplicateRecentReport: 'تم إرسال بلاغ مشابه مؤخرًا',
     caseNotFound: 'لم يتم العثور على حالة الإشراف',
     actionNotAllowedForRole: 'الدور الحالي غير مخول لتنفيذ إجراء الإشراف',
-    invalidActionTargetCombination: 'إجراء الإشراف غير صالح لهذا النوع من الأهداف',
+    invalidActionTargetCombination:
+      'إجراء الإشراف غير صالح لهذا النوع من الأهداف',
     actionReasonRequired: 'هذا الإجراء يتطلب سببًا واضحًا',
     invalidCaseTransition: 'إجراء الإشراف غير صالح لحالة البلاغ الحالية',
     caseTransitionRaceCondition:

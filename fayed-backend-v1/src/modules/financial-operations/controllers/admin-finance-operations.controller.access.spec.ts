@@ -7,13 +7,17 @@ import { AdminFinanceOperationsController } from './admin-finance-operations.con
 
 describe('AdminFinanceOperationsController access contract', () => {
   it('exposes finance operation event reads to admin/support operator roles', () => {
-    const classRoles = Reflect.getMetadata(ROLES_KEY, AdminFinanceOperationsController);
+    const classRoles = Reflect.getMetadata(
+      ROLES_KEY,
+      AdminFinanceOperationsController,
+    );
     expect(classRoles).toEqual([AppRole.ADMIN, AppRole.SUPPORT_AGENT]);
   });
 
   it('enforces auth/role guards at controller level', () => {
     const classGuards =
-      Reflect.getMetadata(GUARDS_METADATA, AdminFinanceOperationsController) ?? [];
+      Reflect.getMetadata(GUARDS_METADATA, AdminFinanceOperationsController) ??
+      [];
 
     expect(classGuards).toContain(JwtAccessAuthGuard);
     expect(classGuards).toContain(RolesGuard);

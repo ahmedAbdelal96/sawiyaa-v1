@@ -93,10 +93,14 @@ export class NotificationEmailService {
       return;
     }
 
-    const provider = this.configService.get<string>('notification.mail.provider');
+    const provider = this.configService.get<string>(
+      'notification.mail.provider',
+    );
     const host = this.configService.get<string>('notification.mail.smtp.host');
     const port = this.configService.get<number>('notification.mail.smtp.port');
-    const secure = this.configService.get<boolean>('notification.mail.smtp.secure');
+    const secure = this.configService.get<boolean>(
+      'notification.mail.smtp.secure',
+    );
     const redirectTarget = this.configService.get<string>(
       'notification.mail.devOtpEmailRedirect',
     );
@@ -150,11 +154,15 @@ export class NotificationEmailService {
     }
 
     const purposeLabel = input.isOtp ? 'OTP' : 'notification';
-    const provider = this.configService.get<string>('notification.mail.provider');
+    const provider = this.configService.get<string>(
+      'notification.mail.provider',
+    );
     const from = this.configService.get<string>('notification.mail.from');
     const host = this.configService.get<string>('notification.mail.smtp.host');
     const port = this.configService.get<number>('notification.mail.smtp.port');
-    const secure = this.configService.get<boolean>('notification.mail.smtp.secure');
+    const secure = this.configService.get<boolean>(
+      'notification.mail.smtp.secure',
+    );
     const user = this.configService.get<string>('notification.mail.smtp.user');
     const pass = this.configService.get<string>('notification.mail.smtp.pass');
 

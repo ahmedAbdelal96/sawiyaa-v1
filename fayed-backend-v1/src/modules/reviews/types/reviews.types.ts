@@ -1,7 +1,4 @@
-import {
-  ReviewModerationAction,
-  SessionReviewStatus,
-} from '@prisma/client';
+import { ReviewModerationAction, SessionReviewStatus } from '@prisma/client';
 
 export const REVIEW_COUNTABLE_STATUSES: SessionReviewStatus[] = [
   SessionReviewStatus.PENDING_MODERATION,
@@ -10,7 +7,8 @@ export const REVIEW_COUNTABLE_STATUSES: SessionReviewStatus[] = [
   SessionReviewStatus.HIDDEN,
 ];
 
-export const REVIEW_PUBLIC_STATUS: SessionReviewStatus = SessionReviewStatus.PUBLISHED;
+export const REVIEW_PUBLIC_STATUS: SessionReviewStatus =
+  SessionReviewStatus.PUBLISHED;
 
 export const REVIEW_SUBMIT_INITIAL_STATUS: SessionReviewStatus =
   SessionReviewStatus.PENDING_MODERATION;

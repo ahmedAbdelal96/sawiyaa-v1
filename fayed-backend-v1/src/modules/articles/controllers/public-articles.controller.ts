@@ -1,9 +1,5 @@
 import { Controller, Get, Param, Query } from '@nestjs/common';
-import {
-  ApiOperation,
-  ApiResponse,
-  ApiTags,
-} from '@nestjs/swagger';
+import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { ListPublicArticlesDto } from '../dto/list-public-articles.dto';
 import { ListPublicArticleCategoriesDto } from '../dto/list-public-article-categories.dto';
 import {
@@ -37,7 +33,9 @@ export class PublicArticlesController {
   }
 
   @Get('articles/:slug')
-  @ApiOperation({ summary: 'Get published public article by locale-specific slug' })
+  @ApiOperation({
+    summary: 'Get published public article by locale-specific slug',
+  })
   @ApiResponse({ status: 200, type: PublicArticleItemSuccessResponseDto })
   getBySlug(@Param('slug') slug: string, @Query() query: GetPublicArticleDto) {
     return this.getPublicArticleBySlugUseCase
@@ -50,7 +48,10 @@ export class PublicArticlesController {
 
   @Get('article-categories')
   @ApiOperation({ summary: 'List active article categories' })
-  @ApiResponse({ status: 200, type: PublicArticleCategoryListSuccessResponseDto })
+  @ApiResponse({
+    status: 200,
+    type: PublicArticleCategoryListSuccessResponseDto,
+  })
   listCategories(@Query() query: ListPublicArticleCategoriesDto) {
     return this.listPublicArticleCategoriesUseCase
       .execute(query)

@@ -1,6 +1,6 @@
 # Fayed Master System Gap Plan
 
-Updated: 2026-04-16 (practitioner onboarding backend refinement + operational list truth)
+Updated: 2026-04-19 (messaging realtime Phase G typing indicators)
 
 ## 1) Executive Truth
 
@@ -143,6 +143,7 @@ These are visible as placeholders/guided stubs and must not be counted as produc
 - 2026-04-15 execution truth change (finance rules + payouts): revenue share is now explicitly managed as default local vs cross-border commission rules, and practitioner payouts now support partial payout recording against a due row (with remaining due tracked on the settlement row). Historical payment allocation remains snapshot-based and is not recomputed retroactively.
 - 2026-04-15 maintenance note (operational list truth fix): `/admin/settlements/dues` no longer applies finance filters or summary metrics client-side on a paginated practitioner slice. A dedicated backend directory contract now returns filtered items + pagination + truthful stats for the full filtered dataset, preventing stale-page “empty” bugs and pagination-driven stat drift.
 - 2026-04-14 follow-up note (frontend alignment needed): `/admin/settlements` and `/admin/settlements/:id` still need to be aligned to the new practitioner-centric backend contract surface so the UI no longer frames settlements as a batch-first product model.
+- 2026-04-19 execution truth change (messaging realtime Phase G): typing indicators are now implemented as ephemeral websocket events across Session Chat, Support, and Practitioner/Care lanes in the unified shell (and session full-page thread), with throttled `typing:start` emission, idle `typing:stop`, and client-side stale-state expiry. No typing state is persisted in DB, and presence/last-seen remains deferred.
 
 ### 6.2 Worth tracking as backend/system debt (not frontend rollout)
 
@@ -386,3 +387,100 @@ Not reopened:
   - Trigger: operations required admin reviewers to correct/normalize practitioner data from one review screen before approval.
   - Delivered scope: new backend contract `PATCH /api/v1/admin/practitioner-applications/:id` updates applicant/profile/specialty/payout onboarding fields and refreshes `submissionSnapshot`; frontend admin application details now exposes an editable form block (display name, practitioner type/gender, profile fields, country/languages, specialty category/sub-specialties, payout destination) with save-before-approve workflow.
   - Explicitly not delivered: credential file replacement/edit flows from admin details screen; credential review visibility remains intact and decision actions remain approve/reject.
+- 2026-04-18: Backend financial foundation expanded: `customer wallet / refund credit / wallet-backed payment split`.
+  - Trigger: product frontier reopened to establish trustworthy internal customer credit flow for refunds and repeat booking continuity.
+  - Delivered scope: schema-level customer wallet domain (`CustomerWallet`, `CustomerWalletEntry`, `CustomerWalletReservation`), payment split fields (`amountFromWallet`, `amountFromGateway`), refund destination + wallet credit audit fields, patient/admin wallet read contracts, wallet reserve/capture/release accounting service, wallet-aware session payment initiation (full wallet or partial wallet + gateway), and refund-to-wallet posting path with ledger-compatible state transitions.
+  - Transaction safety note: wallet accounting service now supports optional shared Prisma transaction context to avoid nested-transaction drift during payment initiation.
+  - Explicitly not delivered: frontend wallet UX, full external customer withdrawal/payout suite, accounting analytics dashboards, or policy expansion beyond current bounded refund/payment flows.
+- 2026-04-18: Frontend integration completed: `customer wallet inside patient journey (profile + payments + checkout)`.
+  - Trigger: wallet backend contracts were verified and product direction required integrated UX instead of a standalone wallet product screen.
+  - Delivered scope: patient payments feature now consumes wallet summary + wallet entries contracts, shows split payment truth (`wallet` vs `gateway`) in payment history cards, and exposes recent wallet activity with clear entry labels; patient profile now includes compact wallet summary; session pay flow now supports `useWalletBalance` with transparent full/partial split preview and wallet-only confirmation path.
+  - Localization note: English/Arabic payment and profile copy extended for wallet semantics with UTF-8-safe Arabic strings.
+  - Explicitly not delivered: standalone wallet dashboard as primary UX, analytics/reporting charts, or backend policy expansion beyond current verified contracts.
+- 2026-04-18: Backend foundation added: `session cancellation policy engine + financial cancellation integration`.
+  - Trigger: session cancellation previously changed lifecycle state only and did not evaluate typed policy or apply consistent payment/wallet/refund outcomes.
+  - Delivered scope: typed cancellation policy domain models (`SessionCancellationPolicy`, `SessionCancellationPolicyRule`, `SessionCancellationRecord`) with booking-type scoping, versioned policy snapshots at cancellation time, rule-window validation (including overlap rejection), admin contracts to read/update policies, policy evaluation in patient cancel flow, and financial side effects aligned to cancellation outcome:
+  - Pre-capture payment cancellation path: releases wallet reservation (if any) and marks payment `CANCELLED`.
+  - Captured-payment cancellation path: computes policy-based refund due, posts wallet refund credit, and updates payment status to `PARTIALLY_REFUNDED` or `REFUNDED`.
+  - Explicitly not delivered: provider-origin refund execution for `ORIGINAL_METHOD` destination (current bounded phase enforces wallet destination for policy-driven cancellation refunds).
+- 2026-04-18: Frontend implementation advanced: `session cancellation policy admin UI + patient cancellation trust messaging`.
+  - Trigger: backend policy engine/contracts existed, but frontend still lacked policy configuration surface and clear patient cancellation outcome messaging.
+  - Delivered scope: added admin cancellation policy editor route (`/admin/sessions/cancellation-policies`) consuming typed contracts (`GET/PATCH /admin/sessions/cancellation-policies`), with booking-type blocks, rule-level editing, and frontend validation aligned to backend rule constraints; sessions list now links directly to the policy editor.
+  - Patient flow update: session cancel confirmation now includes policy-aware explanatory copy, optional cancellation note capture, and clearer post-action outcomes including policy-blocked cancellation feedback (`SESSION_CANCELLATION_NOT_ALLOWED_BY_POLICY`) and wallet-refund expectation messaging.
+  - Explicitly not delivered: exact pre-confirm refund quote endpoint for patient flow. Current backend does not expose patient-facing cancellation evaluation preview (refund mode/percent/amount) before cancellation execution.
+- 2026-04-18: Bounded follow-up completed: `financial cancellation preview before confirmation`.
+  - Trigger: patient cancellation flow still lacked a contract-backed exact financial quote before final confirmation.
+  - Delivered scope: added patient cancellation preview contract `GET /api/v1/patients/me/sessions/:id/cancel-preview` returning policy evaluation + exact financial outcome (`canCancelNow`, policy allowance, refund percent/destination, reservation release amount, refund amount, wallet credit amount, outcome type, blocking reason when applicable); patient session detail cancel modal now fetches this preview before confirm and displays exact refund/release/no-refund outcome transparently.
+  - Explicitly not delivered: provider card-refund UX expansion or broader cancellation-system redesign beyond preview truth.
+- 2026-04-18: Frontend UX restructuring completed: `admin cancellation policy list-first flow`.
+  - Trigger: policy editor screen had high visual density and weak first-time usability; admins struggled to know where to start and which action to take.
+  - Delivered scope: `/admin/sessions/cancellation-policies` now follows a list-first operational pattern (summary cards + DataTable) with explicit row actions (`View`, `Edit`, `Delete`) and modal-based focused editing; rule editing remains contract-safe with existing backend update endpoint and frontend validation guardrails.
+
+- 2026-04-19: Admin operations surfaced: `patients directory + patient 360 details page`.
+  - Trigger: back-office needed a single place to review a customer's full operational footprint (account + wallet + sessions + payments + assessments) without jumping across unrelated screens.
+  - Delivered scope:
+  - Added admin patients directory list (`/admin/patients`) with backend-driven filters/search + truthful totals and onboarding stats.
+  - Added patient 360 page (`/admin/patients/:patientId`) with clear tabs: overview, wallet (summary + entries), sessions, payments, assessments. Each tab uses backend pagination and does not compute totals from page slices.
+  - Backend contracts added to support the 360 page:
+  - `GET /api/v1/admin/patients/:patientId/payments` (paginated) and `GET /api/v1/admin/patients/:patientId/assessments` (paginated).
+  - Localization note: Arabic/English namespace `admin-patients` was repaired to UTF-8-safe Arabic and extended with patient 360 copy.
+  - Explicitly not delivered: admin write actions on patient records (suspend/reactivate), cross-linking into payment/session/assessment detail screens, or operator tooling beyond read surfaces.
+  - Localization note: English/Arabic policy copy refreshed for clearer action labels and money/policy semantics; UTF-8 Arabic integrity preserved.
+  - Explicitly not delivered: true backend create/delete policy endpoints. Current backend contract remains `GET + PATCH by bookingType`; “Delete” action is implemented as safe policy deactivation (soft delete behavior).
+- 2026-04-19: Phase 1 frontend refinement delivered: `unified messaging launcher shell`.
+  - Trigger: messaging capabilities existed across three domains (session chat, practitioner care-chat, support) but user experience was fragmented and discoverability was weak.
+  - Delivered scope:
+  - Added a reusable floating launcher and docked panel shell available from patient, practitioner, and admin protected layouts.
+  - Added lane switcher with product-facing naming only: `محادثة الجلسة`, `رسائل المعالج`, `الدعم`.
+  - Integrated existing backend contracts without API changes:
+  - Session lane uses existing session lists and routes to existing session chat pages for patient/practitioner.
+  - Practitioner lane uses existing care-chat request lists/routes.
+  - Support lane uses existing support list/routes.
+  - Added bounded unread-like badge based on current available contracts (attention signals), without inventing unified unread backend endpoints.
+  - Explicitly not delivered: full session auto-open orchestration, websocket/live typing/read receipts, backend unread aggregation endpoint, or standalone route rewrites.
+- 2026-04-19: Phase 2 frontend refinement delivered: `session chat orchestration + priority inside unified messaging shell`.
+  - Trigger: after Phase 1 launcher rollout, Session Chat was still available but underexposed versus real session lifecycle urgency.
+  - Delivered scope:
+  - Session lane now applies lifecycle-aware priority (`IN_PROGRESS` > `READY_TO_JOIN` > `COMPLETED`) and surfaces priority status inside lane rows.
+  - Unified launcher now performs bounded orchestration:
+  - Soft-prioritizes Session lane whenever a relevant session exists.
+  - Auto-expands for active in-progress sessions (single-session dismiss-aware behavior), while preserving minimize/restore and avoiding aggressive popups.
+  - Added in-shell Session thread panel (header + context + bubble list + composer + loading/error/empty states) that reuses existing general chat contracts (`open session conversation`, `list messages`, `send message`) without backend changes.
+  - Added explicit deep-link action from patient/practitioner session detail surfaces to open the exact session conversation directly inside the unified shell.
+  - Explicitly not delivered: websocket architecture, typing/read receipts, support/practitioner lane redesign, unread aggregation API, or automatic policy-based session-chat closure orchestration.
+- 2026-04-19: Phase 3 frontend continuity polish delivered: `session continuity + local read refinement inside unified messaging shell`.
+  - Trigger: after Phase 2, Session Chat priority existed but continuity across reopen/navigation and badge trust still felt inconsistent.
+  - Delivered scope:
+  - Added an explicit active-session strip in shell header with one-click resume to the highest-priority session conversation.
+  - Added bounded continuity persistence in local storage for lane + selected session + local session-read markers, so reopening/navigating restores context predictably.
+  - Added local-only session read refinement for badge trust: when user opens/reads a session thread in-shell, session attention badge is reduced locally for the same session status, while support/practitioner lane counts remain contract-driven.
+  - Preserved all existing backend contracts and fallback routes.
+  - Explicitly not delivered: websocket unread sync, backend read receipts, unread aggregation endpoint, or redesign of support/practitioner messaging lanes.
+- 2026-04-19: Phase D messaging rollout delivered: `support lane realtime (optimistic + delivered + read)`.
+  - Trigger: Session Chat already reached realtime lifecycle truth (`SENDING/SENT/DELIVERED/READ`), while Support lane remained REST/poll-first and required manual refresh behavior.
+  - Delivered scope:
+  - Reused the same websocket direction/namespace and auth model, adding Support-scoped events (`chat:support:join/leave/send/markRead` + `chat:support:newMessage/delivered/read`) in the existing chat gateway.
+  - Support shell thread now supports optimistic local send (`SENDING`) with socket ack promotion, reconnect-safe join, and fallback REST refresh behavior.
+  - Delivered/read semantics now run on Support conversation messages using the existing conversation/message data model (no fake unread endpoint and no architecture fork).
+  - Extended Support message contract surfaces to expose delivery/read fields and conversation linkage needed for shell realtime continuity.
+  - Explicitly not delivered: typing indicators, presence, practitioner/care lane realtime rollout, global unread aggregation, or messaging shell architecture redesign.
+- 2026-04-19: Phase E messaging rollout delivered: `care chat lane realtime (optimistic + delivered + read)`.
+  - Trigger: Session Chat and Support were already realtime, while Practitioner/Care lane still required manual refresh for new messages and status progression.
+  - Delivered scope:
+  - Reused the same websocket direction and auth context by extending the existing chat gateway with Care events (`chat:care:join/leave/send/markRead` + `chat:care:newMessage/delivered/read`).
+  - Preserved Care approval lifecycle truth: realtime operates only when a real linked conversation exists; pending/no-conversation requests keep their existing blocked UX path.
+  - Added optimistic Care send in-shell (`SENDING`) with socket ack reconciliation, reconnect-safe room join, and fallback REST refresh when socket path is unavailable.
+  - Added delivered/read persistence and events for Care messages using conversation-level last-read cursor strategy compatible with existing Session/Support realtime model.
+  - Extended Care message contract shape to include sender identity + message status fields (`status`, `deliveredAt`, `readAt`) so sender UI can render `SENDING/SENT/DELIVERED/READ` honestly.
+  - Explicitly not delivered: typing indicators, presence, global unread aggregation endpoint, or broader messaging shell redesign.
+- 2026-04-19: Phase F messaging refinement delivered: `unified unread/badge truth across shell lanes`.
+  - Trigger: launcher and lane badges still mixed real unread data with local/heuristic attention rules, especially across Support/Care versus Session.
+  - Delivered scope:
+  - Added backend unread summary contract `GET /api/v1/chat/conversations/unread-summary` returning lane-level unread counts (`session`, `support`, `practitioner`) and global totals.
+  - Reused existing read-cursor/message-status lifecycle truth (`SENT/DELIVERED` as unread, `READ` as consumed) without adding a second architecture.
+  - Added repository-level unread aggregations for each lane scope:
+  - Session: participant-scoped general session conversations.
+  - Support: actor-scoped support conversations (participant-scoped for user roles, assignment/participant scoped for admin-like roles).
+  - Practitioner/Care: participant-scoped approved care conversations.
+  - Messaging shell badge/tab counts now consume this contract as primary truth, with bounded fallback only when summary fetch is unavailable.
+  - Explicitly not delivered: typing indicators, presence, websocket unread aggregation push model, or shell architecture redesign.

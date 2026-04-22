@@ -15,13 +15,19 @@ export class PaymentMapper {
   toViewModel(payment: PaymentWithRefunds): PaymentViewModel {
     const metadata = (payment.metadataJson ?? {}) as Record<string, unknown>;
     const refundedAt =
-      payment.refunds?.find((refund) => refund.processedAt)?.processedAt ?? null;
+      payment.refunds?.find((refund) => refund.processedAt)?.processedAt ??
+      null;
 
     return {
       id: payment.id,
       sessionId: payment.sessionId ?? null,
       provider: payment.provider,
       status: payment.status,
+      amountSubtotal: payment.amountSubtotal.toString(),
+      amountDiscount: payment.amountDiscount.toString(),
+      amountTotal: payment.amountTotal.toString(),
+      amountFromWallet: payment.amountFromWallet.toString(),
+      amountFromGateway: payment.amountFromGateway.toString(),
       amount: payment.amountTotal.toString(),
       currency: payment.currencyCode,
       providerPaymentId: payment.providerPaymentRef ?? null,
@@ -29,7 +35,9 @@ export class PaymentMapper {
       checkoutUrl:
         typeof metadata.checkoutUrl === 'string' ? metadata.checkoutUrl : null,
       clientSecret:
-        typeof metadata.clientSecret === 'string' ? metadata.clientSecret : null,
+        typeof metadata.clientSecret === 'string'
+          ? metadata.clientSecret
+          : null,
       paidAt: payment.capturedAt?.toISOString() ?? null,
       failedAt: payment.failedAt?.toISOString() ?? null,
       expiredAt: payment.expiredAt?.toISOString() ?? null,
@@ -44,6 +52,7 @@ export class PaymentMapper {
       paymentId: refund.paymentId,
       sessionId: refund.sessionId ?? null,
       refundType: refund.refundType,
+      destination: refund.destination,
       status: refund.status,
       amount: refund.amount.toString(),
       currency: refund.currencyCode,
@@ -52,6 +61,8 @@ export class PaymentMapper {
       requestedAt: refund.requestedAt.toISOString(),
       processedAt: refund.processedAt?.toISOString() ?? null,
       failedAt: refund.failedAt?.toISOString() ?? null,
+      customerWalletCreditedAt:
+        refund.customerWalletCreditedAt?.toISOString() ?? null,
       createdAt: refund.createdAt.toISOString(),
     };
   }
@@ -64,6 +75,8 @@ export class PaymentMapper {
     amountSubtotal: Payment['amountSubtotal'];
     amountDiscount: Payment['amountDiscount'];
     amountTotal: Payment['amountTotal'];
+    amountFromWallet: Payment['amountFromWallet'];
+    amountFromGateway: Payment['amountFromGateway'];
     currencyCode: string;
     providerPaymentRef: string | null;
     providerOrderRef: string | null;
@@ -90,7 +103,9 @@ export class PaymentMapper {
       createdAt: Date;
     }>;
   }): AdminPaymentOpsViewModel {
-    const refunds = payment.refunds.map((refund) => this.toRefundViewModel(refund));
+    const refunds = payment.refunds.map((refund) =>
+      this.toRefundViewModel(refund),
+    );
     const totalRefundedAmount = payment.refunds
       .filter((refund) => refund.status === RefundStatus.SUCCEEDED)
       .reduce((sum, refund) => sum + Number(refund.amount.toString()), 0);
@@ -104,6 +119,8 @@ export class PaymentMapper {
         amountSubtotal: payment.amountSubtotal.toString(),
         amountDiscount: payment.amountDiscount.toString(),
         amountTotal: payment.amountTotal.toString(),
+        amountFromWallet: payment.amountFromWallet.toString(),
+        amountFromGateway: payment.amountFromGateway.toString(),
         currency: payment.currencyCode,
         providerPaymentId: payment.providerPaymentRef ?? null,
         providerReference: payment.providerOrderRef ?? null,
@@ -118,8 +135,10 @@ export class PaymentMapper {
             id: payment.session.id,
             status: payment.session.status,
             sessionMode: payment.session.sessionMode,
-            scheduledStartAt: payment.session.scheduledStartAt?.toISOString() ?? null,
-            scheduledEndAt: payment.session.scheduledEndAt?.toISOString() ?? null,
+            scheduledStartAt:
+              payment.session.scheduledStartAt?.toISOString() ?? null,
+            scheduledEndAt:
+              payment.session.scheduledEndAt?.toISOString() ?? null,
             provider: payment.session.provider,
             providerRoomId: payment.session.providerRoomId,
             providerSessionRef: payment.session.providerSessionRef,
@@ -127,11 +146,21 @@ export class PaymentMapper {
         : null,
       refundSummary: {
         totalCount: payment.refunds.length,
-        requestedCount: payment.refunds.filter((item) => item.status === RefundStatus.REQUESTED).length,
-        processingCount: payment.refunds.filter((item) => item.status === RefundStatus.PROCESSING).length,
-        succeededCount: payment.refunds.filter((item) => item.status === RefundStatus.SUCCEEDED).length,
-        failedCount: payment.refunds.filter((item) => item.status === RefundStatus.FAILED).length,
-        cancelledCount: payment.refunds.filter((item) => item.status === RefundStatus.CANCELLED).length,
+        requestedCount: payment.refunds.filter(
+          (item) => item.status === RefundStatus.REQUESTED,
+        ).length,
+        processingCount: payment.refunds.filter(
+          (item) => item.status === RefundStatus.PROCESSING,
+        ).length,
+        succeededCount: payment.refunds.filter(
+          (item) => item.status === RefundStatus.SUCCEEDED,
+        ).length,
+        failedCount: payment.refunds.filter(
+          (item) => item.status === RefundStatus.FAILED,
+        ).length,
+        cancelledCount: payment.refunds.filter(
+          (item) => item.status === RefundStatus.CANCELLED,
+        ).length,
         totalRefundedAmount: totalRefundedAmount.toFixed(2),
         lastRefundAt: payment.refunds[0]?.requestedAt?.toISOString() ?? null,
       },

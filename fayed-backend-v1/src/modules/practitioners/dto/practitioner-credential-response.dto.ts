@@ -39,4 +39,3 @@ export class PractitionerCredentialUploadSuccessResponseDto {
   @ApiProperty({ type: PractitionerCredentialResponseDto })
   credential!: PractitionerCredentialResponseDto;
 }
-

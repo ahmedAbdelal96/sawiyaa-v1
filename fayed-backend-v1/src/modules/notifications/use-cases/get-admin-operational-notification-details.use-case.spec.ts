@@ -21,20 +21,36 @@ describe('GetAdminOperationalNotificationDetailsUseCase', () => {
   });
 
   it('returns details when notification exists', async () => {
-    (repository.findOperationalNotificationById as jest.Mock).mockResolvedValue({
-      id: 'n1',
-    });
+    (repository.findOperationalNotificationById as jest.Mock).mockResolvedValue(
+      {
+        id: 'n1',
+      },
+    );
 
     const result = await useCase.execute({ notificationId: 'n1' });
 
     expect(result).toEqual({ item: { id: 'n1' } });
+    expect(repository.findOperationalNotificationById).toHaveBeenCalledWith(
+      'n1',
+      [
+        'payments.payment-succeeded',
+        'payments.refund-succeeded',
+        'sessions.session-confirmed',
+        'sessions.session-confirmed-practitioner',
+        'training.schedule-reminder',
+        'training.enrollment-confirmed',
+      ],
+      ['auth.'],
+    );
   });
 
   it('throws not found when notification is missing', async () => {
-    (repository.findOperationalNotificationById as jest.Mock).mockResolvedValue(null);
-
-    await expect(useCase.execute({ notificationId: 'missing' })).rejects.toThrow(
-      NotFoundException,
+    (repository.findOperationalNotificationById as jest.Mock).mockResolvedValue(
+      null,
     );
+
+    await expect(
+      useCase.execute({ notificationId: 'missing' }),
+    ).rejects.toThrow(NotFoundException);
   });
 });

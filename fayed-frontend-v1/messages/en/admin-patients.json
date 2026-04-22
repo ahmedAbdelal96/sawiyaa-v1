@@ -1,0 +1,151 @@
+{
+  "description": "Operational view of patient accounts.",
+  "cards": {
+    "total": "Total patients",
+    "totalHint": "Based on current filters",
+    "completed": "Onboarding completed",
+    "completedHint": "Profile completed",
+    "incomplete": "Incomplete",
+    "incompleteHint": "Needs completion"
+  },
+  "filters": {
+    "search": "Search",
+    "searchPlaceholder": "Name, email, phone",
+    "status": "Status",
+    "statusAll": "All",
+    "statusActive": "Active",
+    "statusPending": "Pending",
+    "statusSuspended": "Suspended",
+    "statusInactive": "Inactive",
+    "onboarding": "Onboarding",
+    "onboardingAll": "All",
+    "onboardingCompleted": "Completed",
+    "onboardingIncomplete": "Incomplete"
+  },
+  "table": {
+    "name": "Patient",
+    "unknownName": "Unknown",
+    "country": "Country",
+    "onboarding": "Onboarding",
+    "status": "Status",
+    "createdAt": "Created",
+    "actions": "Actions"
+  },
+  "states": {
+    "loading": "Loading...",
+    "error": "Failed to load patients.",
+    "emptyTitle": "No results",
+    "emptyDescription": "Try adjusting filters or search.",
+    "completed": "Completed",
+    "incomplete": "Incomplete",
+    "walletError": "Failed to load wallet summary.",
+    "walletEmpty": "0 balance",
+    "walletEntriesError": "Failed to load wallet activity.",
+    "walletEntriesEmpty": "No wallet entries yet."
+  },
+  "actions": {
+    "retry": "Retry",
+    "view": "View details",
+    "close": "Close",
+    "prev": "Previous",
+    "next": "Next"
+  },
+  "details": {
+    "title": "Patient details",
+    "subtitle": "Review profile and wallet summary.",
+    "eyebrow": "Patients",
+    "unknownName": "Patient",
+    "section": {
+      "profile": "Profile",
+      "wallet": "Wallet",
+      "walletActivity": "Wallet activity"
+    }
+  },
+  "fields": {
+    "userId": "User ID",
+    "createdAt": "Created at",
+    "email": "Email",
+    "phone": "Phone"
+  },
+  "wallet": {
+    "available": "Available balance",
+    "reserved": "Reserved balance",
+    "page": "Page {page} of {total}"
+  },
+  "patient360": {
+    "eyebrow": "Patients",
+    "title": "Patient 360",
+    "subtitle": "Full view of the patient's account, wallet, sessions, payments, and assessments.",
+    "back": "Back to patients",
+    "tabs": {
+      "overview": "Overview",
+      "wallet": "Wallet",
+      "sessions": "Sessions",
+      "payments": "Payments",
+      "assessments": "Assessments"
+    },
+    "states": {
+      "notFound": "Patient not found.",
+      "loadError": "Failed to load patient details."
+    },
+    "overview": {
+      "walletAvailable": "Wallet balance",
+      "walletSectionTitle": "Wallet summary",
+      "sessionsCount": "Sessions",
+      "paymentsCount": "Payments",
+      "assessmentsCount": "Assessments",
+      "recentSessionsTitle": "Recent sessions",
+      "recentPaymentsTitle": "Recent payments",
+      "viewAll": "View all"
+    },
+    "profile": {
+      "sectionTitle": "Profile",
+      "country": "Country",
+      "gender": "Gender",
+      "dob": "Date of birth",
+      "onboarding": "Onboarding"
+    },
+    "wallet": {
+      "noWalletTitle": "Wallet",
+      "noWalletHint": "No wallet summary is available yet.",
+      "entryType": "Entry type",
+      "direction": "Direction",
+      "amount": "Amount",
+      "effectiveAt": "Date",
+      "entriesEmptyTitle": "No wallet activity",
+      "entriesEmptyDescription": "No wallet entries yet."
+    },
+    "sessions": {
+      "code": "Code",
+      "status": "Status",
+      "start": "Start",
+      "practitioner": "Practitioner",
+      "mode": "Mode",
+      "loadError": "Failed to load sessions.",
+      "emptyTitle": "No sessions",
+      "emptyDescription": "This patient has no sessions yet."
+    },
+    "payments": {
+      "status": "Status",
+      "total": "Total",
+      "split": "Split",
+      "fromWallet": "Wallet",
+      "fromGateway": "Gateway",
+      "provider": "Provider",
+      "createdAt": "Created",
+      "loadError": "Failed to load payments.",
+      "emptyTitle": "No payments",
+      "emptyDescription": "This patient has no payments yet."
+    },
+    "assessments": {
+      "title": "Assessment",
+      "status": "Status",
+      "result": "Result",
+      "completedAt": "Completed",
+      "createdAt": "Created",
+      "loadError": "Failed to load assessments history.",
+      "emptyTitle": "No assessments",
+      "emptyDescription": "This patient has no assessment submissions yet."
+    }
+  }
+}

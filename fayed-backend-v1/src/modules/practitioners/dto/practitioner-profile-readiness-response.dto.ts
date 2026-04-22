@@ -53,4 +53,3 @@ export class PractitionerProfileReadinessSuccessResponseDto {
   @ApiProperty({ type: PractitionerProfileReadinessResponseDto })
   readiness!: PractitionerProfileReadinessResponseDto;
 }
-

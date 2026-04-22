@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+
+<html dir="rtl" lang="ar"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Clinical Sanctuary - Select Time</title>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Google Fonts: Manrope (Headline) & Inter (Body) -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Manrope:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container-low": "#f1f4f9",
+                        "surface-container": "#eceef3",
+                        "primary-container": "#3575c7",
+                        "on-secondary-container": "#51617e",
+                        "primary-fixed-dim": "#a7c8ff",
+                        "on-secondary-fixed-variant": "#374762",
+                        "on-tertiary-fixed-variant": "#683d00",
+                        "surface-bright": "#f7f9fe",
+                        "on-primary-fixed": "#001b3c",
+                        "tertiary-fixed": "#ffdcbc",
+                        "tertiary-container": "#a86500",
+                        "on-primary-fixed-variant": "#004689",
+                        "inverse-primary": "#a7c8ff",
+                        "secondary": "#4f5f7b",
+                        "tertiary-fixed-dim": "#ffb86b",
+                        "secondary-fixed": "#d6e3ff",
+                        "primary-fixed": "#d5e3ff",
+                        "on-surface": "#181c20",
+                        "on-primary-container": "#fefcff",
+                        "on-secondary-fixed": "#0a1c34",
+                        "surface-container-high": "#e6e8ed",
+                        "surface-tint": "#125eae",
+                        "on-tertiary": "#ffffff",
+                        "on-error-container": "#93000a",
+                        "inverse-on-surface": "#eff1f6",
+                        "outline": "#727783",
+                        "on-background": "#181c20",
+                        "on-tertiary-container": "#fffbff",
+                        "on-error": "#ffffff",
+                        "secondary-container": "#cdddff",
+                        "on-primary": "#ffffff",
+                        "surface-dim": "#d8dadf",
+                        "primary": "#0b5cac",
+                        "outline-variant": "#c2c6d3",
+                        "on-surface-variant": "#424751",
+                        "secondary-fixed-dim": "#b7c7e8",
+                        "inverse-surface": "#2d3135",
+                        "on-tertiary-fixed": "#2c1700",
+                        "error-container": "#ffdad6",
+                        "background": "#f7f9fe",
+                        "tertiary": "#854f00",
+                        "surface-container-lowest": "#ffffff",
+                        "surface": "#f7f9fe",
+                        "error": "#ba1a1a",
+                        "surface-container-highest": "#e0e2e7",
+                        "surface-variant": "#e0e2e7",
+                        "on-secondary": "#ffffff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {},
+                    "fontFamily": {
+                        "headline": ["Manrope", "sans-serif"],
+                        "body": ["Inter", "sans-serif"],
+                        "label": ["Inter", "sans-serif"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        /* Hide scrollbar for horizontal scrolling elements */
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface text-on-surface font-body min-h-screen relative pb-32">
+<!-- Transactional TopAppBar (Custom Minimal) -->
+<header class="flex items-center justify-between px-6 h-16 sticky top-0 bg-surface/90 backdrop-blur-md z-40">
+<!-- RTL Back Arrow (arrow_forward faces right) -->
+<button class="p-2 -ms-2 text-on-surface-variant hover:bg-surface-container-high rounded-full transition-colors active:scale-95">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">arrow_forward</span>
+</button>
+<h1 class="font-headline font-extrabold text-xl tracking-tight text-on-surface">اختر الموعد</h1>
+<div class="w-10"></div> <!-- Spacer for optical centering -->
+</header>
+<main class="pt-2">
+<!-- Context: Therapist Info Card -->
+<div class="px-6 mb-8">
+<div class="bg-surface-container-lowest rounded-xl p-4 flex items-center gap-4 shadow-[0_8px_30px_0px_rgba(24,28,32,0.04)]">
+<img alt="صورة المعالج" class="w-14 h-14 rounded-full object-cover" data-alt="Professional warm headshot of a female clinical therapist in a soft-lit consulting room" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAjLavlEHU7TcigSh_brHx7PwCOO-isYYk9znOwrYUZkaw_84d6aN-mwK3XQj_JDZhEj_zuspuVj1IVpNRuo6U7CjDO5ds1WPkbJm8iynScxT1ODyyx-vTp8D-lD2jACyGqEkqT4i9Qps1rNJoFKYzwy9uBuvtGiYYVBB5ZchmjfOE6rkIS2CGjO017UbBc-44YUVd4TMlGF42C_NPQObeYAoaYqYQrHiazQqQVGSj7EeZ6PmdYaabTtn_KvwYCKgHLHm9KSoK5ggXB"/>
+<div>
+<h2 class="font-headline font-bold text-lg text-on-surface">د. نورة السالم</h2>
+<p class="text-sm text-on-surface-variant font-body mt-0.5">أخصائية العلاج المعرفي السلوكي</p>
+</div>
+</div>
+</div>
+<!-- Date Selector (Week View) -->
+<section class="mb-8">
+<div class="px-6 mb-4 flex justify-between items-center">
+<h3 class="font-headline font-bold text-lg text-on-surface">نوفمبر 2023</h3>
+<div class="flex gap-1" dir="ltr"> <!-- Keep arrows logical -->
+<button class="p-1.5 rounded-full hover:bg-surface-container-high text-on-surface-variant transition-colors">
+<span class="material-symbols-outlined text-xl">chevron_left</span>
+</button>
+<button class="p-1.5 rounded-full hover:bg-surface-container-high text-on-surface-variant transition-colors">
+<span class="material-symbols-outlined text-xl">chevron_right</span>
+</button>
+</div>
+</div>
+<div class="flex gap-3 overflow-x-auto px-6 pb-4 snap-x hide-scrollbar">
+<!-- Inactive Days -->
+<button class="flex-shrink-0 w-[4.5rem] h-[5.5rem] rounded-xl bg-surface-container-lowest flex flex-col items-center justify-center gap-1 shadow-[0_4px_20px_0px_rgba(24,28,32,0.03)] snap-start hover:bg-surface-container-low transition-colors">
+<span class="text-xs text-on-surface-variant font-medium">السبت</span>
+<span class="text-xl font-bold font-headline text-on-surface">11</span>
+</button>
+<button class="flex-shrink-0 w-[4.5rem] h-[5.5rem] rounded-xl bg-surface-container-lowest flex flex-col items-center justify-center gap-1 shadow-[0_4px_20px_0px_rgba(24,28,32,0.03)] snap-start hover:bg-surface-container-low transition-colors">
+<span class="text-xs text-on-surface-variant font-medium">الأحد</span>
+<span class="text-xl font-bold font-headline text-on-surface">12</span>
+</button>
+<!-- Active Day -->
+<button class="flex-shrink-0 w-[4.5rem] h-[5.5rem] rounded-xl bg-gradient-to-br from-primary to-primary-container flex flex-col items-center justify-center gap-1 shadow-[0_8px_20px_0px_rgba(11,92,172,0.2)] snap-start relative overflow-hidden">
+<span class="text-xs text-on-primary font-medium opacity-90">الإثنين</span>
+<span class="text-xl font-extrabold font-headline text-on-primary">13</span>
+<!-- Pulse indicator variant for active state -->
+<div class="absolute bottom-0 start-0 w-full h-1 bg-surface-container-lowest/30"></div>
+</button>
+<!-- Inactive Days -->
+<button class="flex-shrink-0 w-[4.5rem] h-[5.5rem] rounded-xl bg-surface-container-lowest flex flex-col items-center justify-center gap-1 shadow-[0_4px_20px_0px_rgba(24,28,32,0.03)] snap-start hover:bg-surface-container-low transition-colors">
+<span class="text-xs text-on-surface-variant font-medium">الثلاثاء</span>
+<span class="text-xl font-bold font-headline text-on-surface">14</span>
+</button>
+<button class="flex-shrink-0 w-[4.5rem] h-[5.5rem] rounded-xl bg-surface-container-lowest flex flex-col items-center justify-center gap-1 shadow-[0_4px_20px_0px_rgba(24,28,32,0.03)] snap-start hover:bg-surface-container-low transition-colors">
+<span class="text-xs text-on-surface-variant font-medium">الأربعاء</span>
+<span class="text-xl font-bold font-headline text-on-surface">15</span>
+</button>
+</div>
+</section>
+<!-- Time Slots Grid -->
+<section class="px-6">
+<!-- Morning Group -->
+<div class="mb-8">
+<h4 class="font-body font-semibold text-sm text-on-surface-variant mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-[20px]">light_mode</span> فترة الصباح
+                </h4>
+<div class="grid grid-cols-3 gap-3">
+<button class="py-3.5 rounded-lg bg-surface-container-lowest text-on-surface font-semibold text-sm shadow-[0_2px_10px_0px_rgba(24,28,32,0.02)] hover:bg-surface-container-low transition-colors">09:00 ص</button>
+<button class="py-3.5 rounded-lg bg-surface-container-lowest text-on-surface font-semibold text-sm shadow-[0_2px_10px_0px_rgba(24,28,32,0.02)] hover:bg-surface-container-low transition-colors">10:00 ص</button>
+<button class="py-3.5 rounded-lg bg-surface-container-lowest text-on-surface font-semibold text-sm shadow-[0_2px_10px_0px_rgba(24,28,32,0.02)] hover:bg-surface-container-low transition-colors">11:30 ص</button>
+</div>
+</div>
+<!-- Afternoon Group -->
+<div class="mb-8">
+<h4 class="font-body font-semibold text-sm text-on-surface-variant mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-[20px]">wb_sunny</span> فترة الظهيرة
+                </h4>
+<div class="grid grid-cols-3 gap-3">
+<button class="py-3.5 rounded-lg bg-surface-container-lowest text-on-surface font-semibold text-sm shadow-[0_2px_10px_0px_rgba(24,28,32,0.02)] hover:bg-surface-container-low transition-colors">12:30 م</button>
+<!-- Selected Time Slot -->
+<button class="py-3.5 rounded-lg bg-primary-fixed-dim text-on-primary-fixed-variant font-bold text-sm shadow-[0_4px_15px_0px_rgba(11,92,172,0.1)] ring-2 ring-primary relative overflow-hidden">
+                        02:00 م
+                        <!-- Subtle clinical accent -->
+<div class="absolute top-0 start-0 w-1 h-full bg-primary"></div>
+</button>
+<button class="py-3.5 rounded-lg bg-surface-container-lowest text-on-surface font-semibold text-sm shadow-[0_2px_10px_0px_rgba(24,28,32,0.02)] hover:bg-surface-container-low transition-colors">03:30 م</button>
+</div>
+</div>
+<!-- Evening Group -->
+<div class="mb-4">
+<h4 class="font-body font-semibold text-sm text-on-surface-variant mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-[20px]">dark_mode</span> فترة المساء
+                </h4>
+<div class="grid grid-cols-3 gap-3">
+<button class="py-3.5 rounded-lg bg-surface-container-lowest text-on-surface font-semibold text-sm shadow-[0_2px_10px_0px_rgba(24,28,32,0.02)] hover:bg-surface-container-low transition-colors">05:00 م</button>
+<button class="py-3.5 rounded-lg bg-surface-container-lowest text-on-surface font-semibold text-sm shadow-[0_2px_10px_0px_rgba(24,28,32,0.02)] hover:bg-surface-container-low transition-colors">06:30 م</button>
+<button class="py-3.5 rounded-lg bg-surface-container-lowest text-on-surface font-semibold text-sm shadow-[0_2px_10px_0px_rgba(24,28,32,0.02)] hover:bg-surface-container-low transition-colors opacity-50 cursor-not-allowed">08:00 م</button>
+</div>
+</div>
+</section>
+</main>
+<!-- Glassmorphism Bottom Action Bar -->
+<div class="fixed bottom-0 w-full px-6 py-5 bg-surface-container-low/85 backdrop-blur-[24px] z-50 rounded-t-3xl border-t-0 shadow-[0_-8px_40px_rgba(24,28,32,0.05)]">
+<div class="flex items-center justify-between mb-4 px-2">
+<span class="text-sm font-medium text-on-surface-variant">الموعد المحدد</span>
+<span class="text-sm font-bold text-primary font-headline">الإثنين، 13 نوفمبر • 02:00 م</span>
+</div>
+<button class="w-full py-4 rounded-xl bg-gradient-to-br from-primary to-primary-container text-on-primary font-bold text-lg shadow-[0_4px_20px_0px_rgba(11,92,172,0.25)] active:scale-[0.98] transition-transform duration-200">
+            متابعة
+        </button>
+</div>
+</body></html>

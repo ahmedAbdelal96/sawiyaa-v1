@@ -30,14 +30,19 @@ export class RedeemCouponService {
     couponPlatformSharePercent: string | null;
     couponPractitionerSharePercent: string | null;
   }) {
-    if (!input.couponId || !input.sessionId || this.isZero(input.discountAmount)) {
+    if (
+      !input.couponId ||
+      !input.sessionId ||
+      this.isZero(input.discountAmount)
+    ) {
       return null;
     }
 
-    const existing = await this.couponRedemptionRepository.findByCouponAndSession(
-      input.couponId,
-      input.sessionId,
-    );
+    const existing =
+      await this.couponRedemptionRepository.findByCouponAndSession(
+        input.couponId,
+        input.sessionId,
+      );
 
     if (existing) {
       return existing;
@@ -47,7 +52,10 @@ export class RedeemCouponService {
       .percentOf(input.discountAmount, input.couponPlatformSharePercent ?? '0')
       .toFixed(2);
     const practitionerDiscountShare = this.moneyMathService
-      .percentOf(input.discountAmount, input.couponPractitionerSharePercent ?? '0')
+      .percentOf(
+        input.discountAmount,
+        input.couponPractitionerSharePercent ?? '0',
+      )
       .toFixed(2);
 
     return this.prisma.$transaction(async (tx) => {

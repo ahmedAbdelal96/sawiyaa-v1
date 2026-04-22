@@ -13,7 +13,9 @@ import { SUPPORTED_LOCALES, SupportedLocale } from '../types/locale.types';
 export class LocaleResolverService {
   constructor(private readonly configService: ConfigService) {}
 
-  resolveLocale(headers: Record<string, string | string[] | undefined>): SupportedLocale {
+  resolveLocale(
+    headers: Record<string, string | string[] | undefined>,
+  ): SupportedLocale {
     const headerValue = Array.isArray(headers['x-lang'])
       ? headers['x-lang'][0]
       : headers['x-lang'];

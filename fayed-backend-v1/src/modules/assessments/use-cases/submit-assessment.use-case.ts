@@ -34,7 +34,9 @@ export class SubmitAssessmentUseCase {
     slug: string;
     payload: SubmitAssessmentDto;
   }) {
-    const patientProfile = await this.assessmentPatientRepository.findByUserId(input.userId);
+    const patientProfile = await this.assessmentPatientRepository.findByUserId(
+      input.userId,
+    );
     if (!patientProfile) {
       throw new NotFoundException({
         messageKey: 'assessments.errors.patientProfileNotFound',
@@ -54,7 +56,10 @@ export class SubmitAssessmentUseCase {
     }
 
     const questionMap = new Map(
-      definition.questions.map((question) => [question.key.toLowerCase(), question]),
+      definition.questions.map((question) => [
+        question.key.toLowerCase(),
+        question,
+      ]),
     );
     const requiredQuestionKeys = definition.questions
       .filter((question) => question.isRequired)
@@ -108,7 +113,7 @@ export class SubmitAssessmentUseCase {
     const band = this.mapAssessmentResultBandService.map({
       totalScore,
       maxScore,
-      scoringConfigJson: definition.scoringConfigJson as Prisma.JsonValue | null,
+      scoringConfigJson: definition.scoringConfigJson,
     });
     const summary = this.buildAssessmentResultSummaryService.build({
       assessmentTitle: definition.title,

@@ -1,11 +1,4 @@
-import {
-  Body,
-  Controller,
-  Get,
-  Param,
-  Post,
-  UseGuards,
-} from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
@@ -89,7 +82,8 @@ export class PractitionerInstantBookingController {
       'Practitioner is no longer online/eligible for instant booking or availability no longer fits the immediate request',
   })
   @ApiConflictResponse({
-    description: 'Request is expired, already finalized, or a session conflict emerged before acceptance',
+    description:
+      'Request is expired, already finalized, or a session conflict emerged before acceptance',
   })
   @ApiUnauthorizedResponse({ description: 'Access token is required' })
   @ApiForbiddenResponse({
@@ -119,7 +113,8 @@ export class PractitionerInstantBookingController {
   @ApiBody({ type: RejectInstantBookingRequestDto })
   @ApiResponse({ status: 200, type: InstantBookingItemSuccessResponseDto })
   @ApiConflictResponse({
-    description: 'Request is expired, already finalized, or cannot transition to REJECTED',
+    description:
+      'Request is expired, already finalized, or cannot transition to REJECTED',
   })
   @ApiUnauthorizedResponse({ description: 'Access token is required' })
   @ApiForbiddenResponse({

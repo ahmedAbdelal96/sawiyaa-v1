@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+
+<html dir="rtl" lang="ar"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Patient Home Screen</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&amp;family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-tint": "#125eae",
+                        "outline": "#727783",
+                        "on-tertiary-container": "#fffbff",
+                        "surface-container": "#eceef3",
+                        "tertiary-container": "#a86500",
+                        "on-error-container": "#93000a",
+                        "inverse-on-surface": "#eff1f6",
+                        "surface-container-highest": "#e0e2e7",
+                        "primary-fixed-dim": "#a7c8ff",
+                        "tertiary-fixed": "#ffdcbc",
+                        "surface-container-lowest": "#ffffff",
+                        "on-surface": "#181c20",
+                        "inverse-primary": "#a7c8ff",
+                        "on-tertiary": "#ffffff",
+                        "secondary-fixed-dim": "#b7c7e8",
+                        "primary-fixed": "#d5e3ff",
+                        "error": "#ba1a1a",
+                        "secondary-container": "#cdddff",
+                        "error-container": "#ffdad6",
+                        "on-primary-fixed-variant": "#004689",
+                        "on-error": "#ffffff",
+                        "on-secondary": "#ffffff",
+                        "on-background": "#181c20",
+                        "on-secondary-container": "#51617e",
+                        "on-tertiary-fixed-variant": "#683d00",
+                        "surface-variant": "#e0e2e7",
+                        "primary": "#0b5cac",
+                        "background": "#f7f9fe",
+                        "surface-container-high": "#e6e8ed",
+                        "secondary": "#4f5f7b",
+                        "inverse-surface": "#2d3135",
+                        "on-primary": "#ffffff",
+                        "surface": "#f7f9fe",
+                        "on-surface-variant": "#424751",
+                        "on-primary-fixed": "#001b3c",
+                        "outline-variant": "#c2c6d3",
+                        "surface-container-low": "#f1f4f9",
+                        "on-tertiary-fixed": "#2c1700",
+                        "secondary-fixed": "#d6e3ff",
+                        "surface-bright": "#f7f9fe",
+                        "on-primary-container": "#fefcff",
+                        "on-secondary-fixed-variant": "#374762",
+                        "on-secondary-fixed": "#0a1c34",
+                        "tertiary-fixed-dim": "#ffb86b",
+                        "primary-container": "#3575c7",
+                        "tertiary": "#854f00",
+                        "surface-dim": "#d8dadf"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {},
+                    "fontFamily": {
+                        "headline": ["IBM Plex Sans Arabic", "sans-serif"],
+                        "body": ["IBM Plex Sans Arabic", "sans-serif"],
+                        "label": ["IBM Plex Sans Arabic", "sans-serif"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'IBM Plex Sans Arabic', sans-serif;
+            background-color: theme('colors.background');
+            color: theme('colors.on-surface');
+        }
+        .pb-safe { padding-bottom: env(safe-area-inset-bottom, 20px); }
+        .pt-safe { padding-top: env(safe-area-inset-top, 20px); }
+        .ambient-shadow {
+            box-shadow: 0 4px 20px 0px rgba(24,28,32,0.1);
+        }
+        .ghost-border {
+            border: 1px solid rgba(194, 198, 211, 0.2);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-surface antialiased min-h-screen pb-24">
+<!-- TopAppBar -->
+<header class="fixed top-0 left-0 w-full flex justify-between items-center px-6 h-16 z-50 bg-[#e6e8ed]/85 backdrop-blur-[24px] dark:bg-slate-900/85 docked full-width top-0 shadow-[0_4px_20px_0px_rgba(24,28,32,0.1)]">
+<div class="flex items-center gap-4">
+<img alt="User Avatar" class="w-10 h-10 rounded-full object-cover ghost-border" data-alt="Close up portrait of a young arab man smiling warmly, professional yet approachable, soft lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuASRHXREp5OxYwjluZgpm8-o3Kb-6F3KrGze7OK21LgLKbLJUDoyOgYBVx-IhRmcfMUNVakiTHG-dQ03Ebl8ldLcKPWGduBRo_vHBAECEZv7btz2EyTZ_Is5DTc2Eivzf8FBRUcXUBrwr-6S7ops-jkL4EI1hEagc25lfYheMm_fifyuuzUunByDAclSOyt05Ri-w5F-kQvv1EyMgwKGMQ6P0_y9ute4XxQ6HP3zFNgJsp_CFRNsGth-MvaOws2Gpb4JnIOUXhH1Qyb"/>
+<div>
+<p class="font-label text-[11px] font-medium tracking-[0.05em] uppercase text-on-surface-variant">مرحباً بعودتك</p>
+<h1 class="font-headline tracking-[-0.02em] font-bold text-[#181c20] dark:text-slate-100 text-lg">أحمد محمد</h1>
+</div>
+</div>
+<button class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-[#f1f4f9] dark:hover:bg-slate-800 transition-colors active:scale-95 text-[#181c20] dark:text-slate-400 relative">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+<span class="absolute top-2 right-2 w-2 h-2 bg-error rounded-full"></span>
+</button>
+</header>
+<main class="pt-24 px-4 max-w-3xl mx-auto space-y-6">
+<!-- Next Session Card (Bento/Glass) -->
+<section class="bg-surface-container-lowest rounded-xl p-5 ambient-shadow relative overflow-hidden">
+<div class="absolute top-0 right-0 w-1 h-full bg-surface-tint"></div>
+<div class="flex justify-between items-start mb-4">
+<div>
+<h2 class="font-body font-semibold text-lg text-on-surface">الجلسة القادمة</h2>
+<p class="font-body text-sm text-on-surface-variant mt-1">اليوم، ٤:٣٠ مساءً (٤٥ دقيقة)</p>
+</div>
+<span class="bg-primary-fixed text-on-primary-fixed-variant px-3 py-1 rounded-full text-xs font-medium font-label">مؤكد</span>
+</div>
+<div class="flex items-center gap-4 bg-surface-container-low rounded-lg p-3 mb-4 ghost-border">
+<img alt="Doctor" class="w-12 h-12 rounded-lg object-cover" data-alt="Portrait of a female arab doctor wearing a hijab and stethoscope, reassuring smile, clinical setting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCnsqcZwaIV4s695aYGJbPRyvrtTdPpGqPdtWokAlMa-Yu9ZYAng8IOZum36d6ASTCpB32-PcAs-1FrBclc1Wr-tDSoqB4myH0EhzdHhRB5KBG9tEwUqAoTD1RQBjkgfXQYOmvQXOxmNwMvN-9h8sQI4JOGF_xNsuAxTkrPy4MKXDN2XVMxi43FnFbclsVnNSggfjxUuS8l4t4Ytyfrez0NjbeZQeLMFqDzKi8Kwlcfi5_nDB6PGiTTeYEh_4JswtpqtS4G_igvPDpv"/>
+<div>
+<h3 class="font-body font-semibold text-on-surface">د. سارة خالد</h3>
+<p class="font-body text-sm text-on-surface-variant">علاج سلوكي معرفي</p>
+</div>
+</div>
+<button class="w-full bg-gradient-to-br from-primary to-primary-container text-on-primary font-body font-semibold py-3 rounded-lg flex items-center justify-center gap-2 active:scale-[0.98] transition-transform shadow-md">
+<span class="material-symbols-outlined text-lg" data-icon="videocam">videocam</span>
+                انضم الآن
+            </button>
+</section>
+<!-- Wallet Widget -->
+<section class="grid grid-cols-2 gap-4">
+<div class="bg-surface-container-lowest rounded-xl p-4 ambient-shadow flex flex-col justify-between h-28">
+<div class="flex items-center justify-between">
+<h2 class="font-body font-medium text-sm text-on-surface-variant">الرصيد الحالي</h2>
+<span class="material-symbols-outlined text-primary" data-icon="account_balance_wallet">account_balance_wallet</span>
+</div>
+<div class="flex items-end justify-between">
+<span class="font-headline font-bold text-2xl text-on-surface">٢٥٠ <span class="text-sm font-normal text-on-surface-variant">ج.م</span></span>
+</div>
+</div>
+<button class="bg-surface-container-high hover:bg-surface-variant transition-colors rounded-xl p-4 flex flex-col items-center justify-center gap-2 ghost-border active:scale-95">
+<span class="material-symbols-outlined text-on-primary-fixed-variant text-3xl" data-icon="add_circle">add_circle</span>
+<span class="font-label font-medium text-on-surface text-sm">شحن الرصيد</span>
+</button>
+</section>
+<!-- Quick Actions Grid -->
+<section class="grid grid-cols-4 gap-3">
+<button class="flex flex-col items-center gap-2 bg-surface-container-lowest rounded-xl p-3 ambient-shadow active:scale-95 transition-transform">
+<div class="w-12 h-12 bg-secondary-fixed rounded-full flex items-center justify-center text-on-secondary-fixed">
+<span class="material-symbols-outlined" data-icon="calendar_add_on">calendar_add_on</span>
+</div>
+<span class="font-label text-xs font-medium text-center text-on-surface text-balance">حجز جلسة</span>
+</button>
+<button class="flex flex-col items-center gap-2 bg-surface-container-lowest rounded-xl p-3 ambient-shadow active:scale-95 transition-transform">
+<div class="w-12 h-12 bg-primary-fixed rounded-full flex items-center justify-center text-on-primary-fixed">
+<span class="material-symbols-outlined" data-icon="search">search</span>
+</div>
+<span class="font-label text-xs font-medium text-center text-on-surface text-balance">ابحث عن معالج</span>
+</button>
+<button class="flex flex-col items-center gap-2 bg-surface-container-lowest rounded-xl p-3 ambient-shadow active:scale-95 transition-transform">
+<div class="w-12 h-12 bg-tertiary-fixed rounded-full flex items-center justify-center text-on-tertiary-fixed">
+<span class="material-symbols-outlined" data-icon="assignment">assignment</span>
+</div>
+<span class="font-label text-xs font-medium text-center text-on-surface text-balance">التقييمات</span>
+</button>
+<button class="flex flex-col items-center gap-2 bg-surface-container-lowest rounded-xl p-3 ambient-shadow active:scale-95 transition-transform">
+<div class="w-12 h-12 bg-surface-container-high rounded-full flex items-center justify-center text-on-surface-variant">
+<span class="material-symbols-outlined" data-icon="support_agent">support_agent</span>
+</div>
+<span class="font-label text-xs font-medium text-center text-on-surface text-balance">الدعم</span>
+</button>
+</section>
+<!-- Upcoming Flow (Horizontal Scroll) -->
+<section>
+<div class="flex justify-between items-center mb-3">
+<h2 class="font-body font-semibold text-lg text-on-surface">مواعيد قادمة</h2>
+<button class="text-primary text-sm font-body font-medium hover:underline">عرض الكل</button>
+</div>
+<div class="flex overflow-x-auto gap-4 pb-4 -mx-4 px-4 snap-x">
+<div class="min-w-[280px] bg-surface-container-lowest rounded-xl p-4 ambient-shadow snap-start shrink-0">
+<div class="flex items-center gap-3 mb-3">
+<div class="bg-surface-container w-10 h-10 rounded-lg flex flex-col items-center justify-center">
+<span class="text-xs text-on-surface-variant font-label">أكتوبر</span>
+<span class="text-sm font-bold text-on-surface font-headline">١٥</span>
+</div>
+<div>
+<h3 class="font-body font-semibold text-on-surface text-sm">متابعة شهرية</h3>
+<p class="text-xs text-on-surface-variant font-body">د. عمر فاروق • حضوري</p>
+</div>
+</div>
+<div class="flex gap-2">
+<button class="flex-1 bg-surface-container-high text-on-surface-variant text-xs font-medium py-2 rounded-lg hover:bg-surface-variant transition-colors ghost-border">تعديل</button>
+<button class="flex-1 bg-surface-container-high text-on-surface-variant text-xs font-medium py-2 rounded-lg hover:bg-surface-variant transition-colors ghost-border">التفاصيل</button>
+</div>
+</div>
+<div class="min-w-[280px] bg-surface-container-lowest rounded-xl p-4 ambient-shadow snap-start shrink-0">
+<div class="flex items-center gap-3 mb-3">
+<div class="bg-surface-container w-10 h-10 rounded-lg flex flex-col items-center justify-center">
+<span class="text-xs text-on-surface-variant font-label">نوفمبر</span>
+<span class="text-sm font-bold text-on-surface font-headline">٠٢</span>
+</div>
+<div>
+<h3 class="font-body font-semibold text-on-surface text-sm">استشارة أسرة</h3>
+<p class="text-xs text-on-surface-variant font-body">د. هدى منصور • عن بعد</p>
+</div>
+</div>
+<div class="flex gap-2">
+<button class="flex-1 bg-surface-container-high text-on-surface-variant text-xs font-medium py-2 rounded-lg hover:bg-surface-variant transition-colors ghost-border">تعديل</button>
+<button class="flex-1 bg-surface-container-high text-on-surface-variant text-xs font-medium py-2 rounded-lg hover:bg-surface-variant transition-colors ghost-border">التفاصيل</button>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-safe pt-2 h-20 bg-[#f1f4f9]/85 backdrop-blur-[24px] dark:bg-slate-900/85 docked full-width bottom-0 rounded-t-none shadow-[0_-4px_20px_0px_rgba(24,28,32,0.05)] md:hidden">
+<a class="flex flex-col items-center justify-center text-[#0b5cac] dark:text-blue-300 bg-[#ffffff] dark:bg-slate-800 rounded-2xl px-3 py-1.5 shadow-sm active:scale-90 transition-transform duration-150 group" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="home" style="font-variation-settings: 'FILL' 1;">home</span>
+<span class="font-inter text-[11px] font-medium tracking-[0.05em] uppercase">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#c2c6d3] dark:text-slate-500 px-3 py-1.5 hover:text-[#0b5cac] dark:hover:text-blue-400 active:scale-90 transition-transform duration-150 group" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="search">search</span>
+<span class="font-inter text-[11px] font-medium tracking-[0.05em] uppercase">Discover</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#c2c6d3] dark:text-slate-500 px-3 py-1.5 hover:text-[#0b5cac] dark:hover:text-blue-400 active:scale-90 transition-transform duration-150 group" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="calendar_today">calendar_today</span>
+<span class="font-inter text-[11px] font-medium tracking-[0.05em] uppercase">Sessions</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#c2c6d3] dark:text-slate-500 px-3 py-1.5 hover:text-[#0b5cac] dark:hover:text-blue-400 active:scale-90 transition-transform duration-150 group" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="account_balance_wallet">account_balance_wallet</span>
+<span class="font-inter text-[11px] font-medium tracking-[0.05em] uppercase">Wallet</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#c2c6d3] dark:text-slate-500 px-3 py-1.5 hover:text-[#0b5cac] dark:hover:text-blue-400 active:scale-90 transition-transform duration-150 group" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="person">person</span>
+<span class="font-inter text-[11px] font-medium tracking-[0.05em] uppercase">Profile</span>
+</a>
+</nav>
+</body></html>

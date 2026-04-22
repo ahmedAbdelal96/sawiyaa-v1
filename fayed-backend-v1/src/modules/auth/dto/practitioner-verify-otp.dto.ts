@@ -7,7 +7,9 @@ export class PractitionerVerifyOtpDto {
   @IsNotEmpty()
   challengeId!: string;
 
-  @ApiProperty({ description: 'Numeric OTP code sent to the verified practitioner channel' })
+  @ApiProperty({
+    description: 'Numeric OTP code sent to the verified practitioner channel',
+  })
   @IsString()
   @Length(4, 8)
   code!: string;

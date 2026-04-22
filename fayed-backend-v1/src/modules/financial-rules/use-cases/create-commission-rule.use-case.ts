@@ -1,5 +1,14 @@
-import { BadRequestException, ConflictException, Injectable } from '@nestjs/common';
-import { CommissionRuleScope, MarketType, SessionFlowType, SessionMode } from '@prisma/client';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+} from '@nestjs/common';
+import {
+  CommissionRuleScope,
+  MarketType,
+  SessionFlowType,
+  SessionMode,
+} from '@prisma/client';
 import { FinancialRulesMapper } from '../mappers/financial-rules.mapper';
 import { CommissionRuleRepository } from '../repositories/commission-rule.repository';
 import { ValidateCommissionRuleDefinitionService } from '../services/validate-commission-rule-definition.service';

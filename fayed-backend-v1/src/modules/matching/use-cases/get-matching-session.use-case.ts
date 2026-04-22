@@ -16,7 +16,9 @@ export class GetMatchingSessionUseCase {
   ) {}
 
   async execute(input: { userId: string; sessionId: string }) {
-    const patientProfile = await this.matchingPatientRepository.findByUserId(input.userId);
+    const patientProfile = await this.matchingPatientRepository.findByUserId(
+      input.userId,
+    );
     if (!patientProfile) {
       throw new NotFoundException({
         messageKey: 'matching.errors.patientProfileNotFound',
@@ -24,10 +26,11 @@ export class GetMatchingSessionUseCase {
       });
     }
 
-    const session = await this.matchingSessionRepository.findOwnedCompletedSession(
-      input.sessionId,
-      patientProfile.id,
-    );
+    const session =
+      await this.matchingSessionRepository.findOwnedCompletedSession(
+        input.sessionId,
+        patientProfile.id,
+      );
     if (!session) {
       throw new NotFoundException({
         messageKey: 'matching.errors.matchingSessionNotFound',
@@ -51,4 +54,3 @@ export class GetMatchingSessionUseCase {
     });
   }
 }
-

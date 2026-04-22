@@ -26,16 +26,31 @@ async function bootstrap(): Promise<void> {
   const apiPrefix = 'api/v1';
   app.setGlobalPrefix(apiPrefix);
 
-  const rawOrigins =
-    process.env.CORS_ORIGINS ??
-    'http://localhost:3000,http://127.0.0.1:3000,http://localhost:8081,http://127.0.0.1:8081';
-  const allowedOrigins = rawOrigins
+  const defaultOrigins = [
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
+    'http://localhost:19007',
+    'http://127.0.0.1:19007',
+    'http://localhost:8081',
+    'http://127.0.0.1:8081',
+    'http://localhost:8082',
+    'http://127.0.0.1:8082',
+    'http://localhost:8083',
+    'http://127.0.0.1:8083',
+  ];
+  const envOrigins = (process.env.CORS_ORIGINS ?? '')
     .split(',')
     .map((origin) => origin.trim())
     .filter(Boolean);
+  const allowedOrigins = Array.from(
+    new Set([...defaultOrigins, ...envOrigins]),
+  );
+  const allowAnyOriginForDev =
+    allowedOrigins.includes('*') &&
+    (process.env.NODE_ENV ?? 'development') !== 'production';
 
   app.enableCors({
-    origin: allowedOrigins,
+    origin: allowAnyOriginForDev ? true : allowedOrigins,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: [
       'Content-Type',
@@ -90,7 +105,7 @@ async function bootstrap(): Promise<void> {
 
 bootstrap().catch((error) => {
   // Fallback console only for bootstrap failures before DI is available.
-  // eslint-disable-next-line no-console
+
   console.error('Fatal error during bootstrap', error);
   process.exit(1);
 });

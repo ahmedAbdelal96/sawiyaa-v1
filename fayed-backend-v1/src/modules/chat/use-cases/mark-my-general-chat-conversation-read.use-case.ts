@@ -1,4 +1,8 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { AuthenticatedUser } from '@common/interfaces/authenticated-user.interface';
 import { MarkGeneralChatConversationReadDto } from '../dto/mark-general-chat-conversation-read.dto';
 import { GeneralChatRepository } from '../repositories/general-chat.repository';
@@ -35,27 +39,78 @@ export class MarkMyGeneralChatConversationReadUseCase {
       });
     }
 
-    void input.dto;
-
-    const latestMessage = conversation.messages[0] ?? null;
-    const nextLastReadMessageId = latestMessage?.id ?? null;
-    const shouldAdvanceReadCursor =
-      nextLastReadMessageId !== null &&
-      participant.lastReadMessageId !== nextLastReadMessageId;
+    const requestedLastReadMessageId = input.dto.lastReadMessageId ?? null;
+    const fallbackLatestMessage = conversation.messages[0] ?? null;
+    const nextLastReadMessageId =
+      requestedLastReadMessageId ?? fallbackLatestMessage?.id ?? null;
 
     let effectiveLastReadMessageId = participant.lastReadMessageId;
     let effectiveLastReadAt = participant.lastReadAt;
 
-    if (shouldAdvanceReadCursor) {
-      const now = new Date();
-      await this.generalChatRepository.markConversationReadCursor({
-        conversationId: input.conversationId,
-        userId: input.authenticatedUser.id,
-        lastReadMessageId: nextLastReadMessageId,
-        lastReadAt: now,
-      });
-      effectiveLastReadMessageId = nextLastReadMessageId;
-      effectiveLastReadAt = now;
+    if (
+      nextLastReadMessageId &&
+      participant.lastReadMessageId !== nextLastReadMessageId
+    ) {
+      const readTarget =
+        await this.generalChatRepository.findAccessibleMessageInConversationScope(
+          {
+            conversationId: input.conversationId,
+            messageId: nextLastReadMessageId,
+            userId: input.authenticatedUser.id,
+          },
+        );
+
+      if (!readTarget) {
+        throw new NotFoundException({
+          messageKey: 'chat.errors.messageNotFound',
+          errorCode: GENERAL_CHAT_ERROR_CODES.messageNotFound,
+        });
+      }
+
+      // Read cursor only advances on incoming messages.
+      if (readTarget.senderUserId !== input.authenticatedUser.id) {
+        let canAdvanceReadCursor = true;
+
+        if (participant.lastReadMessageId) {
+          const currentReadCursor =
+            await this.generalChatRepository.findAccessibleMessageInConversationScope(
+              {
+                conversationId: input.conversationId,
+                messageId: participant.lastReadMessageId,
+                userId: input.authenticatedUser.id,
+              },
+            );
+
+          if (currentReadCursor) {
+            canAdvanceReadCursor =
+              readTarget.sentAt.getTime() >
+                currentReadCursor.sentAt.getTime() ||
+              (readTarget.sentAt.getTime() ===
+                currentReadCursor.sentAt.getTime() &&
+                readTarget.id !== currentReadCursor.id);
+          }
+        }
+
+        if (canAdvanceReadCursor) {
+          const now = new Date();
+          await this.generalChatRepository.markConversationReadCursor({
+            conversationId: input.conversationId,
+            userId: input.authenticatedUser.id,
+            lastReadMessageId: nextLastReadMessageId,
+            lastReadAt: now,
+          });
+          await this.generalChatRepository.markConversationMessagesReadForRecipient(
+            {
+              conversationId: input.conversationId,
+              recipientUserId: input.authenticatedUser.id,
+              lastReadMessageSentAt: readTarget.sentAt,
+              readAt: now,
+            },
+          );
+          effectiveLastReadMessageId = nextLastReadMessageId;
+          effectiveLastReadAt = now;
+        }
+      }
     }
 
     const unreadCount =
@@ -69,7 +124,9 @@ export class MarkMyGeneralChatConversationReadUseCase {
       item: {
         conversationId: input.conversationId,
         lastReadMessageId: effectiveLastReadMessageId,
-        lastReadAt: effectiveLastReadAt ? effectiveLastReadAt.toISOString() : null,
+        lastReadAt: effectiveLastReadAt
+          ? effectiveLastReadAt.toISOString()
+          : null,
         unreadCount,
         hasUnread: unreadCount > 0,
       },

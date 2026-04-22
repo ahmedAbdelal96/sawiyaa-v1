@@ -25,16 +25,16 @@ const STAT_TONE_CLASSES: Record<
 > = {
   neutral: {
     shell:
-      "border-[#d9e2f0] bg-[#f7f9ff] text-text-primary shadow-[0_18px_40px_-30px_rgba(34,52,56,0.14)]",
+      "border-border-light bg-white text-text-primary shadow-[0_18px_40px_-30px_rgba(34,52,56,0.14)]",
     label: "text-text-muted/90",
     value: "text-text-primary",
     hint: "text-text-secondary",
-    accent: "bg-[#e7edff]",
-    iconShell: "bg-white text-[#5f73d2] shadow-[0_10px_22px_-14px_rgba(95,115,210,0.2)]",
+    accent: "bg-primary-light/70",
+    iconShell: "bg-primary-light text-text-brand shadow-[0_10px_22px_-14px_rgba(68,161,148,0.2)]",
   },
   brand: {
     shell:
-      "border-[#5e3fc1] bg-[#5e3fc1] text-white shadow-[0_22px_48px_-28px_rgba(94,63,193,0.5)]",
+      "border-primary/35 bg-primary text-white shadow-[0_22px_48px_-28px_rgba(68,161,148,0.46)]",
     label: "text-white/74",
     value: "text-white",
     hint: "text-white/70",
@@ -43,16 +43,16 @@ const STAT_TONE_CLASSES: Record<
   },
   primary: {
     shell:
-      "border-[#2d89e9] bg-[#2d89e9] text-white shadow-[0_22px_48px_-28px_rgba(45,137,233,0.44)]",
-    label: "text-white/74",
-    value: "text-white",
-    hint: "text-white/70",
-    accent: "bg-white/12",
-    iconShell: "bg-white/14 text-white",
+      "border-primary/28 bg-primary-light text-text-brand shadow-[0_22px_48px_-28px_rgba(68,161,148,0.28)]",
+    label: "text-text-brand/80",
+    value: "text-text-brand",
+    hint: "text-text-secondary",
+    accent: "bg-white/55",
+    iconShell: "bg-white text-text-brand",
   },
   success: {
     shell:
-      "border-[#27a67a] bg-[#27a67a] text-white shadow-[0_22px_48px_-28px_rgba(39,166,122,0.38)]",
+      "border-success-500 bg-success-500 text-white shadow-[0_22px_48px_-28px_rgba(18,183,106,0.36)]",
     label: "text-white/74",
     value: "text-white",
     hint: "text-white/70",
@@ -61,12 +61,12 @@ const STAT_TONE_CLASSES: Record<
   },
   warning: {
     shell:
-      "border-[#efd18a] bg-[#fff8e7] text-[#223043] shadow-[0_20px_42px_-28px_rgba(239,209,138,0.3)]",
-    label: "text-[#6f5b25]/90",
-    value: "text-[#182132]",
-    hint: "text-[#6f5b25]/74",
-    accent: "bg-[#f6cd59]/40",
-    iconShell: "bg-[#fff0be] text-[#8a6508]",
+      "border-warning-200 bg-warning-50 text-text-primary shadow-[0_20px_42px_-28px_rgba(247,144,9,0.24)]",
+    label: "text-warning-700/90",
+    value: "text-text-primary",
+    hint: "text-warning-700/74",
+    accent: "bg-warning-300/35",
+    iconShell: "bg-warning-100 text-warning-700",
   },
 };
 
@@ -164,7 +164,7 @@ export function SurfaceActionLink({
     "inline-flex items-center justify-center rounded-2xl px-5 py-3 text-sm font-semibold transition";
   const variantClasses =
     variant === "primary"
-      ? "bg-primary text-white shadow-[0_12px_24px_-16px_rgba(63,125,207,0.34)] hover:bg-primary-hover"
+      ? "bg-primary text-white shadow-[0_12px_24px_-16px_rgba(68,161,148,0.34)] hover:bg-primary-hover"
       : "border border-border-light bg-white text-text-primary shadow-[0_10px_20px_-16px_rgba(34,52,56,0.08)] hover:border-primary/30 hover:bg-brand-25 dark:bg-surface-secondary dark:text-text-primary dark:hover:bg-surface-tertiary";
 
   return (

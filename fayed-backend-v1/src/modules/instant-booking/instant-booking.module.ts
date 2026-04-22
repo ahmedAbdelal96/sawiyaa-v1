@@ -53,6 +53,9 @@ import { RejectInstantBookingRequestUseCase } from './use-cases/reject-instant-b
     RejectInstantBookingRequestUseCase,
     ExpireInstantBookingRequestUseCase,
   ],
-  exports: [ExpireInstantBookingRequestUseCase, InstantBookingRequestRepository],
+  exports: [
+    ExpireInstantBookingRequestUseCase,
+    InstantBookingRequestRepository,
+  ],
 })
 export class InstantBookingModule {}

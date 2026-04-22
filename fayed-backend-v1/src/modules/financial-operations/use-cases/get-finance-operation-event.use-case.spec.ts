@@ -20,7 +20,9 @@ describe('GetFinanceOperationEventUseCase', () => {
   });
 
   it('returns repository-backed event detail payload', async () => {
-    (paymentRepository.findFinanceOperationEventById as jest.Mock).mockResolvedValue({
+    (
+      paymentRepository.findFinanceOperationEventById as jest.Mock
+    ).mockResolvedValue({
       id: 'refund_1',
       operationType: 'REFUND',
       paymentId: 'payment_1',
@@ -52,10 +54,12 @@ describe('GetFinanceOperationEventUseCase', () => {
   });
 
   it('returns scoped not-found when event id is missing', async () => {
-    (paymentRepository.findFinanceOperationEventById as jest.Mock).mockResolvedValue(
-      null,
-    );
+    (
+      paymentRepository.findFinanceOperationEventById as jest.Mock
+    ).mockResolvedValue(null);
 
-    await expect(useCase.execute('event_1')).rejects.toBeInstanceOf(NotFoundException);
+    await expect(useCase.execute('event_1')).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
   });
 });

@@ -28,7 +28,9 @@ export class AssignSupportTicketUseCase {
     ticketId: string;
     payload: AssignSupportTicketDto;
   }) {
-    const ticket = await this.supportTicketRepository.findByIdForAdmin(input.ticketId);
+    const ticket = await this.supportTicketRepository.findByIdForAdmin(
+      input.ticketId,
+    );
     if (!ticket) {
       throw new NotFoundException({
         messageKey: 'support.errors.ticketNotFound',
@@ -37,9 +39,10 @@ export class AssignSupportTicketUseCase {
     }
 
     if (input.payload.assignedAdminUserId) {
-      const assignableCount = await this.supportActorRepository.isSupportAssignableUser(
-        input.payload.assignedAdminUserId,
-      );
+      const assignableCount =
+        await this.supportActorRepository.isSupportAssignableUser(
+          input.payload.assignedAdminUserId,
+        );
       if (assignableCount === 0) {
         throw new BadRequestException({
           messageKey: 'support.errors.invalidAssignedUser',
@@ -48,7 +51,9 @@ export class AssignSupportTicketUseCase {
       }
     }
 
-    const actorRole = this.resolveSupportAdminActorRoleService.resolve(input.roles);
+    const actorRole = this.resolveSupportAdminActorRoleService.resolve(
+      input.roles,
+    );
     const updated = await this.supportTicketRepository.assignTicket({
       ticketId: input.ticketId,
       assignedToUserId: input.payload.assignedAdminUserId ?? null,

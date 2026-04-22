@@ -41,7 +41,10 @@ export class SetMyPresenceStatusUseCase {
     );
 
     return {
-      message: this.i18nService.t('presence.success.statusUpdated', input.locale),
+      message: this.i18nService.t(
+        'presence.success.statusUpdated',
+        input.locale,
+      ),
       presence: this.presenceMapper.toViewModel(presence),
     };
   }

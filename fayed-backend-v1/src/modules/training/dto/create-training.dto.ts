@@ -1,9 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import {
-  ContentLocale,
-  CourseType,
-  CourseVisibility,
-} from '@prisma/client';
+import { ContentLocale, CourseType, CourseVisibility } from '@prisma/client';
 import {
   IsEnum,
   IsOptional,
@@ -44,7 +40,10 @@ export class CreateTrainingDto {
   @IsEnum(CourseType)
   courseType!: CourseType;
 
-  @ApiPropertyOptional({ enum: CourseVisibility, default: CourseVisibility.PUBLIC })
+  @ApiPropertyOptional({
+    enum: CourseVisibility,
+    default: CourseVisibility.PUBLIC,
+  })
   @IsOptional()
   @IsEnum(CourseVisibility)
   visibility?: CourseVisibility;

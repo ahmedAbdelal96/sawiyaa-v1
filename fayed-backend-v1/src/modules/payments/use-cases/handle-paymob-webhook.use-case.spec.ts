@@ -30,8 +30,12 @@ describe('HandlePaymobWebhookUseCase', () => {
     };
 
     const paymentRepository = {
-      findEventByProviderEventRef: jest.fn().mockResolvedValue(input?.duplicate ?? null),
-      findByProviderReference: jest.fn().mockResolvedValue(input?.payment ?? null),
+      findEventByProviderEventRef: jest
+        .fn()
+        .mockResolvedValue(input?.duplicate ?? null),
+      findByProviderReference: jest
+        .fn()
+        .mockResolvedValue(input?.payment ?? null),
       createEvent: jest.fn().mockResolvedValue({}),
     };
 

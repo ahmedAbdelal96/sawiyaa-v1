@@ -21,11 +21,14 @@ import { PractitionerPayoutDestinationValidationService } from '@modules/practit
 import { PractitionerSpecialtyIntegrityService } from '@modules/practitioners/services/practitioner-specialty-integrity.service';
 import { ApprovePractitionerApplicationUseCase } from './use-cases/approve-practitioner-application.use-case';
 import { CreateAdminPractitionerUseCase } from './use-cases/create-admin-practitioner.use-case';
+import { DeletePractitionerApplicationCredentialUseCase } from './use-cases/delete-practitioner-application-credential.use-case';
 import { GetPractitionerApplicationDetailsUseCase } from './use-cases/get-practitioner-application-details.use-case';
 import { ListAdminPractitionersDirectoryUseCase } from './use-cases/list-admin-practitioners-directory.use-case';
 import { ListPractitionerApplicationsUseCase } from './use-cases/list-practitioner-applications.use-case';
 import { RemoveAdminPractitionerAvatarUseCase } from './use-cases/remove-admin-practitioner-avatar.use-case';
 import { RejectPractitionerApplicationUseCase } from './use-cases/reject-practitioner-application.use-case';
+import { RequestPractitionerApplicationChangesUseCase } from './use-cases/request-practitioner-application-changes.use-case';
+import { UpsertPractitionerApplicationCredentialUseCase } from './use-cases/upsert-practitioner-application-credential.use-case';
 import { UpdateAdminPractitionerAvatarUseCase } from './use-cases/update-admin-practitioner-avatar.use-case';
 import { UpdatePractitionerApplicationDraftUseCase } from './use-cases/update-practitioner-application-draft.use-case';
 
@@ -64,8 +67,11 @@ import { UpdatePractitionerApplicationDraftUseCase } from './use-cases/update-pr
     GetPractitionerApplicationDetailsUseCase,
     CreateAdminPractitionerUseCase,
     UpdatePractitionerApplicationDraftUseCase,
+    UpsertPractitionerApplicationCredentialUseCase,
+    DeletePractitionerApplicationCredentialUseCase,
     ApprovePractitionerApplicationUseCase,
     RejectPractitionerApplicationUseCase,
+    RequestPractitionerApplicationChangesUseCase,
   ],
 })
 export class PractitionerApplicationsAdminModule {}

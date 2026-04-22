@@ -68,4 +68,3 @@ describe('ResolveTrainingJoinAccessService', () => {
     expect(result.blockedReason).toBe('JOIN_ACCESS_NOT_CONFIGURED');
   });
 });
-

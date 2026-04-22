@@ -24,7 +24,10 @@ export class GetPublicArticleBySlugUseCase {
     }
 
     return {
-      item: this.articlePresenter.presentPublicArticleDetails(article, input.locale),
+      item: this.articlePresenter.presentPublicArticleDetails(
+        article,
+        input.locale,
+      ),
     };
   }
 }

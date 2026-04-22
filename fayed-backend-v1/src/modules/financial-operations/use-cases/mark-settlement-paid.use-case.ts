@@ -10,6 +10,8 @@ import { SettlementRepository } from '../repositories/settlement.repository';
 import { ValidateSettlementStatusTransitionService } from '../services/validate-settlement-status-transition.service';
 import { RecordSettlementPayoutService } from '../services/record-settlement-payout.service';
 
+type TransferFeeTreatment = 'PLATFORM_EXPENSE' | 'DEDUCT_FROM_PRACTITIONER';
+
 @Injectable()
 export class MarkSettlementPaidUseCase {
   constructor(
@@ -24,6 +26,8 @@ export class MarkSettlementPaidUseCase {
     batchId: string;
     externalPayoutRef?: string;
     payoutMethod?: SettlementPayoutMethod;
+    transferFeeAmount?: string;
+    transferFeeTreatment?: TransferFeeTreatment;
     effectiveAt?: string;
     notes?: string;
     processedByUserId?: string | null;
@@ -52,7 +56,8 @@ export class MarkSettlementPaidUseCase {
       async (tx) => {
         for (const settlement of batch.settlements) {
           if (settlement.status !== 'PAID') {
-            const paidSoFar = settlement.amountPaidTotal ?? new Prisma.Decimal(0);
+            const paidSoFar =
+              settlement.amountPaidTotal ?? new Prisma.Decimal(0);
             const remaining = settlement.amountNet.sub(paidSoFar);
             if (remaining.lte(0)) {
               continue;
@@ -65,6 +70,8 @@ export class MarkSettlementPaidUseCase {
                   input.payoutMethod ?? SettlementPayoutMethod.OTHER,
                 payoutSource: SettlementPayoutSource.BATCH_CLOSEOUT,
                 externalPayoutRef: input.externalPayoutRef ?? null,
+                transferFeeAmount: input.transferFeeAmount ?? null,
+                transferFeeTreatment: input.transferFeeTreatment,
                 notes: input.notes ?? settlement.notes ?? null,
                 effectiveAt: payoutEffectiveAt,
                 processedByUserId: input.processedByUserId ?? null,

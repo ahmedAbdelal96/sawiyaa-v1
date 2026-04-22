@@ -20,6 +20,21 @@ export type SessionStatus =
 
 export type SessionMode = "VIDEO";
 export type SessionProvider = "NONE" | "DAILY";
+export type SessionCancellationBookingType = "STANDARD" | "INSTANT";
+export type SessionCancellationRefundMode = "NONE" | "PERCENTAGE";
+export type RefundDestination = "CUSTOMER_WALLET" | "ORIGINAL_METHOD";
+export type PaymentStatus =
+  | "CREATED"
+  | "PENDING"
+  | "REQUIRES_ACTION"
+  | "AUTHORIZED"
+  | "CAPTURED"
+  | "FAILED"
+  | "CANCELLED"
+  | "EXPIRED"
+  | "REFUND_PENDING"
+  | "PARTIALLY_REFUNDED"
+  | "REFUNDED";
 
 export type SessionJoinBlockedReason =
   | "SESSION_NOT_JOINABLE_STATUS"
@@ -136,4 +151,42 @@ export type SessionRuntimeItem = {
 
 export type SessionRuntimeResponseData = {
   item: SessionRuntimeItem;
+};
+
+export type SessionCancellationPreviewOutcomeType =
+  | "NO_PAYMENT"
+  | "POLICY_BLOCKED"
+  | "RESERVATION_RELEASE"
+  | "REFUND_TO_WALLET"
+  | "NO_REFUND"
+  | "UNSUPPORTED_REFUND_DESTINATION"
+  | "PAYMENT_STATE_NOT_REFUNDABLE";
+
+export type SessionCancellationPreviewItem = {
+  sessionId: string;
+  bookingType: SessionCancellationBookingType;
+  canCancelNow: boolean;
+  cancellationAllowedByPolicy: boolean;
+  blockingReasonCode: string | null;
+  sessionStartAt: string;
+  hoursBeforeStart: number;
+  matchedRuleCode: string;
+  matchedRuleDisplayName: string;
+  refundMode: SessionCancellationRefundMode;
+  refundPercent: string | null;
+  refundDestination: RefundDestination | null;
+  paymentStatus: PaymentStatus | null;
+  paymentAmountTotal: string;
+  paymentAmountFromWallet: string;
+  paymentAmountFromGateway: string;
+  alreadyRefundedAmount: string;
+  reservationReleaseAmount: string;
+  refundAmount: string;
+  walletCreditAmount: string;
+  gatewayRefundAmount: string;
+  outcomeType: SessionCancellationPreviewOutcomeType;
+};
+
+export type SessionCancellationPreviewResponseData = {
+  item: SessionCancellationPreviewItem;
 };

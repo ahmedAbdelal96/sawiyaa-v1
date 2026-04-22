@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { JwtAccessAuthGuard } from '@common/guards/authentication/jwt-access-auth.guard';
 import { RolesGuard } from '@common/guards/authorization/roles.guard';
 import { AssessmentsAuthoringAdminModule } from './admin-authoring/assessments-authoring-admin.module';
+import { AdminPatientAssessmentsController } from './controllers/admin-patient-assessments.controller';
 import { AssessmentSubmissionsController } from './controllers/assessment-submissions.controller';
 import { PatientAssessmentsController } from './controllers/patient-assessments.controller';
 import { PublicAssessmentsController } from './controllers/public-assessments.controller';
@@ -16,6 +17,7 @@ import { MapAssessmentResultBandService } from './services/map-assessment-result
 import { ScoreAssessmentSubmissionService } from './services/score-assessment-submission.service';
 import { ValidateAssessmentSubmissionService } from './services/validate-assessment-submission.service';
 import { GetAssessmentDefinitionUseCase } from './use-cases/get-assessment-definition.use-case';
+import { GetAdminPatientAssessmentsHistoryUseCase } from './use-cases/get-admin-patient-assessments-history.use-case';
 import { GetMyAssessmentSubmissionUseCase } from './use-cases/get-my-assessment-submission.use-case';
 import { GetMyAssessmentsHistoryUseCase } from './use-cases/get-my-assessments-history.use-case';
 import { ListActiveAssessmentsUseCase } from './use-cases/list-active-assessments.use-case';
@@ -27,6 +29,7 @@ import { SubmitAssessmentUseCase } from './use-cases/submit-assessment.use-case'
     PublicAssessmentsController,
     AssessmentSubmissionsController,
     PatientAssessmentsController,
+    AdminPatientAssessmentsController,
   ],
   providers: [
     JwtAccessAuthGuard,
@@ -46,6 +49,7 @@ import { SubmitAssessmentUseCase } from './use-cases/submit-assessment.use-case'
     SubmitAssessmentUseCase,
     GetMyAssessmentsHistoryUseCase,
     GetMyAssessmentSubmissionUseCase,
+    GetAdminPatientAssessmentsHistoryUseCase,
   ],
 })
 export class AssessmentsModule {}

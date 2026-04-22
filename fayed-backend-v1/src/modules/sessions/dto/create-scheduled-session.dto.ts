@@ -1,12 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { SessionMode } from '@prisma/client';
-import {
-  IsEnum,
-  IsIn,
-  IsISO8601,
-  IsString,
-  MaxLength,
-} from 'class-validator';
+import { IsEnum, IsIn, IsISO8601, IsString, MaxLength } from 'class-validator';
 
 /**
  * Scheduled session creation stays intentionally minimal in V1.

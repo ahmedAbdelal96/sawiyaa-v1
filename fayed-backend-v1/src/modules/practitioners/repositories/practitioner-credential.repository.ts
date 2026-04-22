@@ -1,9 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import {
-  CredentialReviewStatus,
-  CredentialType,
-  Prisma,
-} from '@prisma/client';
+import { CredentialReviewStatus, CredentialType, Prisma } from '@prisma/client';
 import { PrismaService } from '@common/prisma/prisma.service';
 
 type DbClient = PrismaService | Prisma.TransactionClient;

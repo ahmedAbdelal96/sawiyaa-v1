@@ -51,8 +51,12 @@ export class PractitionerFinancialOperationsController {
   })
   @ApiResponse({ status: 200, type: WalletItemSuccessResponseDto })
   @ApiUnauthorizedResponse({ description: 'Access token is required' })
-  @ApiForbiddenResponse({ description: 'Only active practitioner accounts may access this route' })
-  @ApiNotFoundResponse({ description: 'Practitioner profile was not found in scope' })
+  @ApiForbiddenResponse({
+    description: 'Only active practitioner accounts may access this route',
+  })
+  @ApiNotFoundResponse({
+    description: 'Practitioner profile was not found in scope',
+  })
   wallet(@CurrentUser() currentUser: AuthenticatedUser) {
     return this.getPractitionerWalletUseCase.execute({
       userId: currentUser.id,
@@ -68,8 +72,12 @@ export class PractitionerFinancialOperationsController {
   @ApiResponse({ status: 200, type: LedgerListSuccessResponseDto })
   @ApiBadRequestResponse({ description: 'Invalid ledger filter semantics' })
   @ApiUnauthorizedResponse({ description: 'Access token is required' })
-  @ApiForbiddenResponse({ description: 'Only active practitioner accounts may access this route' })
-  @ApiNotFoundResponse({ description: 'Practitioner profile was not found in scope' })
+  @ApiForbiddenResponse({
+    description: 'Only active practitioner accounts may access this route',
+  })
+  @ApiNotFoundResponse({
+    description: 'Practitioner profile was not found in scope',
+  })
   ledger(
     @CurrentUser() currentUser: AuthenticatedUser,
     @Query() query: ListPractitionerLedgerDto,
@@ -86,11 +94,20 @@ export class PractitionerFinancialOperationsController {
     description:
       'Returns practitioner payout records generated from settlement batches. This endpoint is read-only in this phase.',
   })
-  @ApiResponse({ status: 200, type: PractitionerSettlementListSuccessResponseDto })
-  @ApiBadRequestResponse({ description: 'Invalid settlements filter semantics' })
+  @ApiResponse({
+    status: 200,
+    type: PractitionerSettlementListSuccessResponseDto,
+  })
+  @ApiBadRequestResponse({
+    description: 'Invalid settlements filter semantics',
+  })
   @ApiUnauthorizedResponse({ description: 'Access token is required' })
-  @ApiForbiddenResponse({ description: 'Only active practitioner accounts may access this route' })
-  @ApiNotFoundResponse({ description: 'Practitioner profile was not found in scope' })
+  @ApiForbiddenResponse({
+    description: 'Only active practitioner accounts may access this route',
+  })
+  @ApiNotFoundResponse({
+    description: 'Practitioner profile was not found in scope',
+  })
   settlements(
     @CurrentUser() currentUser: AuthenticatedUser,
     @Query() query: ListPractitionerSettlementsDto,

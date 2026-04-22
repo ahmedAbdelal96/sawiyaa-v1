@@ -43,6 +43,13 @@ export class FinancialSessionRepository {
         },
       },
     },
+    payments: {
+      select: {
+        amountSubtotal: true,
+      },
+      orderBy: [{ createdAt: 'desc' }],
+      take: 1,
+    },
   });
 
   findPatientOwnedSession(sessionId: string, userId: string) {

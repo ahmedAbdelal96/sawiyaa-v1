@@ -1,0 +1,1090 @@
+{
+  "welcome": "مرحباً بك في فايد",
+  "home": "الرئيسية",
+  "assessments": {
+    "tab": "التقييمات",
+    "card": {
+      "duration": "{{value}} دقائق",
+      "questionCount": "{{value}} أسئلة"
+    },
+    "list": {
+      "loading": "جاري تحميل التقييمات...",
+      "errorTitle": "تعذر تحميل التقييمات",
+      "errorSubtitle": "تعذر تحميل قائمة التقييمات الحالية أو السجل السابق للإجابات.",
+      "heroTitle": "التقييمات السريرية",
+      "heroSubtitle": "أدوات قياس معتمدة لمراقبة تقدمك النفسي وتوفير بيانات أدق لفريق الرعاية الخاص بك.",
+      "remainingCount": "متبقي",
+      "inProgressCount": "قيد الإجراء",
+      "filters": {
+        "all": "الكل",
+        "current": "المطلوبة حالياً",
+        "history": "السجل السابق"
+      },
+      "emptyTitle": "لا توجد تقييمات متاحة",
+      "emptySubtitle": "لا توجد تقييمات منشورة ومتاحة لحسابك حالياً.",
+      "descriptionFallback": "لا توجد تفاصيل وصفية متاحة لهذا التقييم حالياً.",
+      "status": {
+        "completed": "مكتمل",
+        "inProgress": "قيد الإجراء",
+        "notStarted": "لم يبدأ"
+      },
+      "actions": {
+        "start": "بدء التقييم",
+        "continue": "متابعة",
+        "viewResult": "عرض النتائج"
+      },
+      "completedAt": "أُنجز في {{date}}"
+    },
+    "detail": {
+      "loading": "جاري تحميل تفاصيل التقييم...",
+      "errorTitle": "تعذر تحميل التقييم",
+      "errorSubtitle": "تفاصيل التقييم غير متاحة حالياً.",
+      "duration": "{{value}} دقائق",
+      "questionCount": "{{value}} أسئلة",
+      "fallbackIntro": "يساعد هذا التقييم فريق الرعاية على فهم الأعراض الحديثة لديك باستخدام استبيان منظم.",
+      "privacyTitle": "سرية تامة",
+      "privacyBody": "جميع إجاباتك مشفرة ومحمية. يتم مشاركتها فقط مع المعالج المختص بك.",
+      "supportTitle": "بيئة داعمة",
+      "supportBody": "لا توجد إجابات صحيحة أو خاطئة. أجب بصدق حتى تحصل على الرعاية الأنسب.",
+      "start": "البدء بالتقييم"
+    },
+    "question": {
+      "loading": "جاري تحميل الأسئلة...",
+      "errorTitle": "تعذر تحميل أسئلة التقييم",
+      "errorSubtitle": "تدفق الأسئلة غير متاح حالياً.",
+      "unsupportedTitle": "صيغة تقييم غير مدعومة",
+      "unsupportedSubtitle": "هذا المسار في الموبايل يدعم حالياً فقط أسئلة الاختيار الواحد كما ينشرها عقد الباك إند الحالي.",
+      "stepText": "الخطوة {{current}} من {{total}}",
+      "subtitleFallback": "يرجى اختيار الإجابة التي تعكس شعورك العام بشكل أفضل.",
+      "requiredError": "يرجى اختيار إجابة واحدة قبل المتابعة.",
+      "previous": "السابق",
+      "next": "التالي",
+      "submit": "إرسال التقييم"
+    },
+    "result": {
+      "levelLabel": "المستوى",
+      "loading": "جاري تحميل نتيجة التقييم...",
+      "errorTitle": "تعذر تحميل النتيجة",
+      "errorSubtitle": "تعذر تحميل نتيجة هذا الإرسال المحفوظ حالياً.",
+      "unavailableTitle": "النتيجة غير متاحة",
+      "unavailableSubtitle": "هذا الإرسال لا يعرض حالياً نتيجة مكتملة ضمن العقد الحالي.",
+      "title": "نتائج التقييم الخاص بك",
+      "subtitle": "شكراً لإكمال التقييم. قمنا بإعداد هذا الملخص لمساعدتك في فهم حالتك الحالية وتوجيهك نحو الخطوات التالية المناسبة.",
+      "meaningTitle": "ماذا يعني هذا؟",
+      "notice": "هذا التقييم أداة توجيهية وليس تشخيصاً طبياً. إذا كانت هذه المشاعر صعبة في التعامل، فالدعم متاح لك.",
+      "nextStepsTitle": "الخطوات التالية الموصى بها",
+      "actionTherapistTitle": "تحدث مع معالج",
+      "actionTherapistBody": "احجز جلسة استشارية مع أحد المتخصصين لدينا لمناقشة الأعراض والحصول على إرشادات مخصصة.",
+      "actionTherapistCta": "البحث عن معالج",
+      "actionExerciseTitle": "تمارين الاسترخاء",
+      "actionExerciseBody": "اكتشف مجموعة من تقنيات التنفس والاسترخاء المصممة للمساعدة في خفض القلق اليومي.",
+      "actionExerciseCta": "عرض التمارين",
+      "actionLibraryTitle": "مكتبة المعرفة",
+      "actionLibraryBody": "اقرأ مواد موثوقة حول التعامل مع القلق وتحسين جودة الصحة النفسية.",
+      "actionLibraryCta": "تصفح المقالات",
+      "saveTitle": "هل ترغب في حفظ هذه النتائج؟",
+      "saveBody": "يمكنك العودة إلى هذه النتيجة لاحقاً ومشاركتها مع فريق الرعاية من سجل ملفك الشخصي.",
+      "downloadPdf": "تحميل كملف PDF",
+      "saveProfile": "حفظ في ملفي الشخصي",
+      "bands": {
+        "LOW": "منخفض",
+        "MILD": "خفيف",
+        "MODERATE": "متوسط",
+        "HIGH": "مرتفع"
+      }
+    }
+  },
+  "sessions": "الجلسات",
+  "profile": "الملف الشخصي",
+  "profileScreen": {
+    "fallbackName": "مريض",
+    "fallbackEmail": "البريد الإلكتروني غير متاح",
+    "none": "غير محدد",
+    "logout": "تسجيل الخروج",
+    "wallet": {
+      "title": "رصيد المحفظة",
+      "subtitle": "تفاصيل المحفظة متاحة حالياً فقط داخل مسارات الدفع المرتبطة بالجلسات",
+      "unavailableAmount": "--"
+    },
+    "support": {
+      "title": "الدعم",
+      "subtitle": "مركز الدعم غير متاح بعد في نسخة الموبايل الحالية"
+    },
+    "details": {
+      "title": "المعلومات الشخصية",
+      "subtitle": "تحديث بيانات الملف الشخصي",
+      "modalTitle": "تعديل المعلومات الشخصية",
+      "saveFailedBody": "تعذر تحديث بيانات الملف الشخصي حالياً.",
+      "invalidCountryTitle": "رمز الدولة غير صالح",
+      "invalidCountryBody": "يجب أن يتكون رمز الدولة من حرفين أو ثلاثة أحرف.",
+      "fields": {
+        "displayName": "الاسم الظاهر",
+        "countryCode": "رمز الدولة",
+        "timezone": "المنطقة الزمنية"
+      }
+    },
+    "language": {
+      "title": "اللغة",
+      "subtitle": "اختيار لغة التطبيق",
+      "modalTitle": "لغة التطبيق",
+      "saveFailedBody": "تعذر تحديث إعدادات اللغة حالياً.",
+      "restartTitle": "إعادة تشغيل مطلوبة",
+      "restartBody": "تم تغيير اللغة بنجاح. أعد تشغيل التطبيق لتطبيق اتجاه الواجهة بالكامل.",
+      "currentTimezone": "المنطقة الزمنية: {{timezone}}",
+      "options": {
+        "ar": "العربية",
+        "en": "الإنجليزية"
+      }
+    },
+    "notifications": {
+      "title": "الإشعارات",
+      "subtitle": "تذكيرات الجلسات وتنبيهات الحساب",
+      "unavailableSubtitle": "تفضيلات الإشعارات غير متاحة لهذا الحساب حالياً",
+      "modalTitle": "تفضيلات الإشعارات",
+      "saveFailedBody": "تعذر تحديث تفضيلات الإشعارات حالياً."
+    },
+    "common": {
+      "loading": "جاري مزامنة إعدادات الملف الشخصي...",
+      "syncWarning": "تعذر مزامنة بعض إعدادات الملف الشخصي. ما زال تسجيل الخروج متاحاً.",
+      "saveFailedTitle": "تعذر حفظ التعديلات",
+      "cancel": "إلغاء",
+      "save": "حفظ",
+      "apply": "تطبيق"
+    }
+  },
+  "auth": {
+    "common": {
+      "pleaseWait": "يرجى الانتظار...",
+      "backToEntry": "الرجوع لاختيار مسار الدخول",
+      "backToPatientSignIn": "الرجوع لتسجيل دخول المريض",
+      "backToPractitionerSignIn": "الرجوع لتسجيل دخول المعالج"
+    },
+    "fields": {
+      "displayName": "الاسم الظاهر",
+      "email": "البريد الإلكتروني",
+      "otpEmail": "بريد استلام رمز التحقق",
+      "password": "كلمة المرور",
+      "newPassword": "كلمة المرور الجديدة",
+      "otpCode": "رمز التحقق",
+      "resetCode": "رمز الاستعادة",
+      "professionalTitle": "المسمى المهني",
+      "countryCode": "رمز الدولة",
+      "yearsOfExperience": "سنوات الخبرة",
+      "bio": "نبذة مهنية"
+    },
+    "placeholders": {
+      "displayName": "كيف تريد أن يظهر اسمك؟",
+      "email": "name@example.com",
+      "otpEmail": "اختياري إذا كان رمز التحقق سيصل لبريد آخر",
+      "password": "أدخل كلمة المرور",
+      "newPassword": "اختر كلمة مرور أقوى",
+      "otpCode": "أدخل رمز التحقق",
+      "resetCode": "أدخل رمز الاستعادة",
+      "professionalTitle": "أخصائي نفسي، أخصائي تغذية، ...",
+      "countryCode": "EG",
+      "yearsOfExperience": "5",
+      "bio": "نبذة قصيرة تعكس الثقة والخبرة"
+    },
+    "validation": {
+      "email": "أدخل بريداً إلكترونياً صحيحاً.",
+      "passwordHint": "استخدم نفس قواعد كلمة المرور المطبقة في الباك إند."
+    },
+    "entry": {
+      "eyebrow": "دخول التطبيق",
+      "title": "تنفس بعمق.",
+      "subtitle": "نحن هنا.",
+      "patientTitle": "دخول المريض",
+      "patientBody": "تسجيل بالبريد وكلمة المرور مع دعم Google عندما تكون مفاتيح المنصة مضبوطة على التطبيق.",
+      "practitionerTitle": "دخول المعالج",
+      "practitionerBody": "البيانات الأساسية تنشئ تحدي OTP، ثم تأكيد الرمز يكمل إنشاء الجلسة الفعلية."
+    },
+    "patientSignIn": {
+      "eyebrow": "دخول المريض",
+      "title": "اكمل رحلة الرعاية الخاصة بك",
+      "subtitle": "هذه الشاشة تستخدم عقد دخول المريض الحقيقي من الباك إند وتطابق مسار الويب الفعلي.",
+      "submit": "تسجيل الدخول كمريض",
+      "googleButton": "المتابعة باستخدام Google",
+      "googleHelper": "تسجيل Google يرسل رمز الهوية الأصلي إلى مسار Google الخاص بالمريض في الباك إند.",
+      "googleUnavailable": "دخول Google يحتاج ضبط client IDs الخاصة بالمنصة داخل بيئة الموبايل قبل تشغيله.",
+      "forgotPassword": "نسيت كلمة المرور؟",
+      "noForgotPasswordYet": "استعادة كلمة مرور المريض غير متاحة حالياً ضمن عقد الباك إند الحالي.",
+      "noAccount": "ليس لديك حساب مريض؟",
+      "createAccount": "أنشئ حساباً"
+    },
+    "practitionerSignIn": {
+      "eyebrow": "دخول المعالج",
+      "title": "ادخل إلى مساحة عملك كمعالج",
+      "subtitle": "البيانات الأساسية تنشئ تحدي OTP، وتأكيد OTP فقط هو الذي يصدر التوكنز الفعلية.",
+      "submit": "المتابعة إلى OTP",
+      "verifyOtp": "تأكيد OTP",
+      "changeCredentials": "استخدام بيانات أخرى",
+      "forgotPassword": "نسيت كلمة المرور؟",
+      "otpTitle": "مطلوب تأكيد OTP",
+      "otpHint": "أرسلنا الرمز عبر {{channel}} إلى {{target}}.",
+      "challengeExpires": "تنتهي صلاحية التحدي في {{expiresAt}}.",
+      "noAccount": "ليس لديك حساب معالج؟",
+      "createAccount": "سجل الآن"
+    },
+    "patientSignUp": {
+      "eyebrow": "تسجيل المريض",
+      "title": "أنشئ حساب المريض",
+      "subtitle": "تسجيل المريض يعيد جلسة مصادقة حقيقية، لذلك ستدخل التطبيق مباشرة بعد نجاح العملية.",
+      "submit": "إنشاء حساب مريض",
+      "haveAccount": "لديك حساب مريض بالفعل؟",
+      "goToSignIn": "تسجيل الدخول"
+    },
+    "patientForgotPassword": {
+      "title": "استرجاع وصول المريض",
+      "subtitle": "استعادة كلمة المرور لحسابات المرضى غير منشورة بعد ضمن عقد الباك إند الحالي.",
+      "contractBlocked": "هذه الشاشة للعرض فقط حالياً حتى يضيف الباك إند عقداً رسمياً لاستعادة/تعيين كلمة مرور المريض.",
+      "backToSignIn": "العودة إلى تسجيل دخول المريض"
+    },
+    "practitionerSignUp": {
+      "eyebrow": "تسجيل المعالج",
+      "title": "ابدأ انضمامك كمعالج",
+      "subtitle": "هذه الشاشة ترسل حمولة التسجيل الحقيقية للمعالج، بما فيها فئة التخصص والتخصصات المختارة.",
+      "otpEmailHelper": "اختياري. إذا تركته فارغاً سيعود النظام لقناة OTP الأساسية الموثقة.",
+      "practitionerTypeTitle": "نوع المعالج",
+      "categoryTitle": "فئة التخصص الرئيسية",
+      "specialtiesTitle": "التخصصات",
+      "selectCategoryFirst": "اختر فئة أولاً حتى تظهر التخصصات المطابقة.",
+      "submit": "إرسال تسجيل المعالج",
+      "haveAccount": "هل سجلت من قبل؟",
+      "goToSignIn": "اذهب لتسجيل الدخول"
+    },
+    "practitionerForgotPassword": {
+      "eyebrow": "استعادة كلمة مرور المعالج",
+      "title": "استرجع وصولك كمعالج",
+      "subtitle": "اطلب رمز الاستعادة أولاً، ثم استخدم البريد نفسه والرمز لتعيين كلمة مرور جديدة.",
+      "sendCode": "إرسال رمز الاستعادة",
+      "resetPassword": "تعيين كلمة المرور"
+    },
+    "practitionerTypes": {
+      "PSYCHOLOGIST": "أخصائي نفسي",
+      "PSYCHIATRIST": "طبيب نفسي",
+      "NUTRITIONIST": "أخصائي تغذية",
+      "WEIGHT_LOSS_SPECIALIST": "أخصائي خسارة وزن",
+      "COUNSELOR": "مرشد / مستشار",
+      "OTHER": "أخرى"
+    }
+  },
+  "matching": {
+    "intro": {
+      "title": "ساعدنا نرشح لك المعالج الأنسب",
+      "subtitle": "أجب على أسئلة قصيرة وسنقترح عليك معالجين مناسبين لحالتك.",
+      "start": "ابدأ المطابقة",
+      "alreadyAccount": "تجاوز وتصفح كل المعالجين"
+    },
+    "question": {
+      "loading": "جاري تحميل خيارات المطابقة...",
+      "loadError": "تعذر تحميل التخصصات حالياً.",
+      "submitErrorTitle": "تعذر إنشاء جلسة المطابقة",
+      "progress": "تقدم المطابقة",
+      "submitting": "جاري البحث عن أفضل الترشيحات...",
+      "title": "احك لنا ما يهمك",
+      "subtitle": "إجاباتك تساعدنا في ترتيب المعالجين الأنسب لك.",
+      "next": "عرض الترشيحات",
+      "gender": {
+        "title": "تفضيل جنس المعالج",
+        "any": "لا يوجد تفضيل",
+        "anyHint": "اعرض كل المعالجين المناسبين",
+        "female": "أنثى",
+        "male": "ذكر"
+      },
+      "language": {
+        "title": "لغة الجلسة المفضلة",
+        "ar": "العربية",
+        "en": "الإنجليزية",
+        "fr": "الفرنسية"
+      },
+      "specialty": {
+        "title": "التخصص المفضل"
+      },
+      "mode": {
+        "title": "طريقة الجلسة",
+        "video": "مكالمة فيديو",
+        "audio": "مكالمة صوتية"
+      },
+      "urgency": {
+        "title": "متى تحتاج الدعم؟",
+        "flexible": "مرن",
+        "earliest": "أقرب موعد متاح",
+        "now": "متاح الآن"
+      },
+      "concern": {
+        "title": "السبب الرئيسي",
+        "placeholder": "اكتب وصفاً مختصراً لنساعدك بترشيحات أدق..."
+      }
+    },
+    "results": {
+      "header": "الترشيحات",
+      "loading": "جاري تحميل الترشيحات...",
+      "title": "هذه أفضل الترشيحات لك",
+      "subtitle": "مرتبة بناءً على تفضيلاتك ودرجة المطابقة.",
+      "emptyTitle": "لا توجد ترشيحات حالياً",
+      "emptySubtitle": "جرّب تعديل التفضيلات ثم أرسل مرة أخرى.",
+      "score": "مطابقة {{score}}%",
+      "professionalFallback": "مختص صحة نفسية",
+      "viewProfile": "عرض الملف",
+      "bookNow": "احجز الآن",
+      "viewAllTherapists": "عرض كل المعالجين"
+    }
+  },
+  "discovery": {
+    "list": {
+      "header": "اكتشف المعالجين",
+      "searchPlaceholder": "ابحث باسم المعالج أو التخصص",
+      "loading": "جاري تحميل المعالجين...",
+      "emptyTitle": "لا يوجد معالجون مطابقون",
+      "emptySubtitle": "جرّب تعديل البحث أو الفلاتر.",
+      "clearSearch": "مسح البحث",
+      "resultsCount": "تم العثور على {{count}} معالج",
+      "professionalFallback": "معالج مرخص",
+      "newBadge": "جديد",
+      "experience": "{{years}} سنوات خبرة",
+      "priceLabel": "يبدأ من",
+      "priceValue": "{{value}} جنيه",
+      "priceUnavailable": "السعر غير متاح",
+      "viewProfile": "عرض الملف"
+    },
+    "filters": {
+      "header": "الفلاتر",
+      "gender": "الجنس",
+      "any": "الكل",
+      "female": "أنثى",
+      "male": "ذكر",
+      "availability": "التوفر",
+      "onlineNow": "متصل الآن",
+      "availableToday": "متاح اليوم",
+      "availableThisWeek": "متاح هذا الأسبوع",
+      "billing": "الدفع والعروض",
+      "acceptsCoupon": "يقبل كوبون",
+      "acceptsPackage": "يقبل باقة",
+      "ratingAndPrice": "التقييم وسعر الجلسة",
+      "minRating": "أقل تقييم",
+      "minRatingPlaceholder": "من 1 إلى 5",
+      "minPrice": "أقل سعر",
+      "minPricePlaceholder": "مثال: 200",
+      "maxPrice": "أعلى سعر",
+      "maxPricePlaceholder": "مثال: 1200",
+      "sorting": "الترتيب",
+      "sortNone": "الافتراضي",
+      "sortRecommended": "موصى به",
+      "sortRatingDesc": "الأعلى تقييماً",
+      "sortExperienceDesc": "الأكثر خبرة",
+      "booleanYes": "نعم",
+      "booleanNo": "لا",
+      "apply": "تطبيق الفلاتر",
+      "clear": "إعادة ضبط الفلاتر"
+    },
+    "profile": {
+      "professionalFallback": "معالج مرخص",
+      "countryFallback": "الدولة غير محددة",
+      "reviews": "{{count}} مراجعة",
+      "yearsExp": "سنوات خبرة",
+      "about": "نبذة",
+      "specialties": "التخصصات",
+      "credentials": "الاعتمادات",
+      "verifiedProfessional": "مختص موثق",
+      "credentialCount": "{{count}} اعتماد موثق",
+      "languages": "اللغات",
+      "languagesFallback": "لا توجد تفاصيل لغات حالياً",
+      "availability": "التوفر",
+      "availabilityNotice": "واجهة الملف العام لا تعرض جدول التوفر المباشر حالياً.",
+      "bookSession": "حجز جلسة"
+    }
+  },
+  "patientSessionsFlow": {
+    "common": {
+      "loading": "جاري التحميل...",
+      "loadError": "تعذر تحميل البيانات حالياً.",
+      "retry": "إعادة المحاولة",
+      "unknown": "غير معروف",
+      "practitioner": "المعالج",
+      "practitionerFallback": "معالج مرخص",
+      "professionalFallback": "مختص صحة نفسية",
+      "dateAndTime": "التاريخ والوقت",
+      "duration": "المدة",
+      "status": "الحالة",
+      "notAvailable": "غير متاح",
+      "videoSession": "جلسة فيديو"
+    },
+    "statuses": {
+      "DRAFT": "مسودة",
+      "PENDING_PAYMENT": "بانتظار الدفع",
+      "PENDING_PRACTITIONER_RESPONSE": "بانتظار رد المعالج",
+      "CONFIRMED": "مؤكدة",
+      "UPCOMING": "قادمة",
+      "READY_TO_JOIN": "جاهزة للانضمام",
+      "IN_PROGRESS": "قيد التنفيذ",
+      "COMPLETED": "مكتملة",
+      "CANCELLED": "ملغاة",
+      "NO_SHOW": "عدم حضور",
+      "EXPIRED": "منتهية",
+      "REFUND_PENDING": "استرداد قيد المعالجة",
+      "REFUNDED": "تم الاسترداد"
+    },
+    "selectTime": {
+      "title": "اختر موعد الجلسة",
+      "morning": "الفترة الصباحية",
+      "afternoon": "فترة الظهيرة",
+      "evening": "الفترة المسائية",
+      "noSlots": "لا توجد مواعيد متاحة خلال هذا الأسبوع. جرّب أسبوعاً آخر.",
+      "selectedSlot": "الموعد المحدد",
+      "noSelectedSlot": "لم يتم اختيار موعد",
+      "continue": "متابعة",
+      "timezoneHint": "جميع الأوقات المعروضة حسب التوقيت {{timezone}}."
+    },
+    "confirmation": {
+      "title": "تأكيد الحجز",
+      "heading": "مراجعة تفاصيل الجلسة",
+      "subtitle": "يرجى التأكد من صحة المعلومات أدناه قبل المتابعة.",
+      "sessionDetails": "تفاصيل الجلسة",
+      "selectDuration": "مدة الجلسة",
+      "duration30": "30 دقيقة",
+      "duration60": "60 دقيقة",
+      "durationValue": "{{minutes}} دقيقة",
+      "paymentSummary": "ملخص الدفع",
+      "sessionDuration": "المدة",
+      "statusLabel": "الحالة",
+      "pendingPayment": "بانتظار الدفع",
+      "honestPaymentNotice": "الدفع مشفر وآمن 100%. لن يتم خصم المبلغ إلا بعد تأكيد الموعد من قبل المعالج.",
+      "cancellationPolicy": "سياسة الإلغاء",
+      "policyHint": "يمكنك إلغاء أو إعادة جدولة الموعد مجاناً قبل 24 ساعة من موعد الجلسة.",
+      "confirmCta": "تأكيد الحجز",
+      "confirming": "جاري التأكيد..."
+    },
+    "success": {
+      "title": "تم الحجز بنجاح",
+      "subtitle": "تم تسجيل الحجز بنجاح.",
+      "pendingTitle": "تم إنشاء الحجز",
+      "pendingSubtitle": "أكمل الدفع لتفعيل الجلسة وتأكيد الموعد.",
+      "confirmedTitle": "تم تأكيد الحجز",
+      "confirmedSubtitle": "موعدك مؤكد الآن وسنرسل لك تذكيراً قبل الجلسة.",
+      "pendingPaymentHint": "تم إنشاء حجزك بنجاح. يرجى إتمام الدفع لتفعيل الجلسة.",
+      "confirmedHint": "حجزك مؤكد وجلستك نشطة الآن.",
+      "durationValue": "{{minutes}} دقيقة",
+      "goToSessions": "الانتقال للجلسات",
+      "goHome": "العودة للرئيسية"
+    },
+    "list": {
+      "subtitle": "تابع الجلسات القادمة والسابقة في مكان واحد.",
+      "upcoming": "القادمة",
+      "past": "السابقة",
+      "noUpcoming": "لا توجد جلسات قادمة",
+      "noPast": "لا توجد جلسات سابقة",
+      "emptyTitle": "لا توجد جلسات بعد",
+      "emptyDescription": "بعد أول حجز ناجح ستظهر الجلسات هنا.",
+      "findTherapist": "ابحث عن معالج",
+      "durationValue": "{{minutes}} دقيقة"
+    },
+    "detail": {
+      "title": "تفاصيل الجلسة",
+      "dateLabel": "التاريخ",
+      "timeLabel": "الوقت",
+      "durationValue": "{{minutes}} دقيقة",
+      "expiresAt": "تنتهي في",
+      "preparationTitle": "قبل الجلسة",
+      "preparationHint": "تأكد من جاهزية الإنترنت والميكروفون والكاميرا قبل الانضمام.",
+      "join": "الانضمام للجلسة",
+      "joining": "جاري الانضمام...",
+      "joinBlocked": "لا يمكن الانضمام الآن: {{reason}}",
+      "joinBlockedReasons": {
+        "SESSION_NOT_JOINABLE_STATUS": "حالة الجلسة لا تسمح بالانضمام الآن.",
+        "SESSION_NOT_VIDEO_MODE": "الانضمام هنا متاح فقط لجلسات الفيديو.",
+        "SESSION_TIME_WINDOW_NOT_OPEN": "نافذة الانضمام لم تبدأ بعد.",
+        "SESSION_RUNTIME_NOT_PREPARED": "غرفة الجلسة ما زالت قيد التجهيز."
+      },
+      "payNow": "الدفع الآن",
+      "viewCancellation": "عرض معاينة الإلغاء"
+    },
+    "cancelPreview": {
+      "title": "إلغاء الجلسة",
+      "heading": "راجع الإلغاء",
+      "subtitle": "يرجى مراجعة التفاصيل التالية قبل تأكيد الإلغاء.",
+      "policySummary": "سياسة الإلغاء",
+      "sessionStart": "موعد الجلسة",
+      "matchedRule": "شروط الإلغاء",
+      "hoursBefore": "الوقت المتبقي",
+      "hoursValue": "{{value}} ساعة",
+      "cannotCancelNow": "لا يمكن إلغاء هذه الجلسة في الوقت الحالي.",
+      "cannotCancelDetail": "{{detail}}",
+      "refundSummary": "ملخص الاسترداد",
+      "totalPaid": "إجمالي المدفوع",
+      "refundAmount": "مبلغ الاسترداد",
+      "walletCredit": "رصيد المحفظة",
+      "gatewayRefund": "استرداد بوابة الدفع",
+      "reasonLabel": "سبب الإلغاء (اختياري)",
+      "reasonPlaceholder": "اكتب سبب الإلغاء",
+      "confirmCta": "تأكيد الإلغاء",
+      "cancelling": "جاري الإلغاء...",
+      "keepSession": "الاحتفاظ بالجلسة",
+      "blockingReasons": {
+        "SESSION_CANCELLATION_NOT_ALLOWED_BY_POLICY": "لا يسمح النظام بإلغاء هذه الجلسة وفق سياسة الحجز المطبقة.",
+        "SESSION_ALREADY_CANCELLED": "تم إلغاء هذه الجلسة مسبقاً.",
+        "SESSION_COMPLETED": "لا يمكن إلغاء جلسة مكتملة.",
+        "SESSION_EXPIRED": "انتهت صلاحية هذه الجلسة.",
+        "SESSION_IN_PROGRESS": "لا يمكن إلغاء جلسة جارية.",
+        "UNKNOWN": "لا يمكن إتمام عملية الإلغاء في الوقت الحالي."
+      },
+      "matchedRuleCodes": {
+        "STANDARD_FREE_CANCEL": "إلغاء مجاني",
+        "STANDARD_PARTIAL_REFUND": "استرداد جزئي",
+        "STANDARD_LATE_NO_CANCEL": "لا يسمح بالإلغاء المتأخر",
+        "STANDARD_NO_REFUND": "بدون استرداد",
+        "INSTANT_FREE_CANCEL": "إلغاء مجاني - حجز فوري",
+        "INSTANT_NO_CANCEL": "لا يسمح بإلغاء الحجوزات الفورية",
+        "UNKNOWN": "سياسة غير محددة"
+      }
+    }
+  },
+  "commonNotFound": {
+    "title": "الصفحة غير موجودة",
+    "body": "هذه الصفحة غير متاحة حالياً.",
+    "goToSessions": "الانتقال إلى الجلسات"
+  },
+  "patientPaymentsFlow": {
+    "tab": "المحفظة",
+    "wallet": {
+      "title": "المحفظة والمدفوعات",
+      "subtitle": "إدارة رصيدك وسجل معاملاتك بأمان",
+      "balanceLabel": "الرصيد الحالي",
+      "availableHint": "متاح للجلسات السريرية",
+      "reservedLabel": "محجوز",
+      "addFundsLabel": "إضافة رصيد",
+      "addFundsUnavailable": "إضافة الرصيد اليدوية غير متاحة حالياً من التطبيق",
+      "paymentMethodsTitle": "طرق الدفع",
+      "paymentMethodsUnavailable": "إدارة طرق الدفع غير متاحة حالياً",
+      "recentTitle": "آخر المعاملات",
+      "viewAll": "عرض الكل",
+      "activityEmpty": "لا توجد معاملات في المحفظة بعد",
+      "refundHint": "تُضاف المبالغ المستردة تلقائياً إلى محفظتك بعد معالجة الطلب.",
+      "secureHint": "مدفوعاتك مشفرة ومحمية",
+      "loading": "جاري تحميل بيانات المحفظة...",
+      "errorTitle": "تعذر تحميل بيانات المحفظة",
+      "errorNote": "يرجى التحقق من اتصالك والمحاولة مجدداً.",
+      "retry": "إعادة المحاولة",
+      "noWallet": "لا توجد محفظة مرتبطة بهذا الحساب بعد"
+    },
+    "payments": {
+      "sectionTitle": "سجل المدفوعات",
+      "emptyTitle": "لا توجد مدفوعات بعد",
+      "emptyNote": "ستظهر مدفوعاتك للجلسات هنا بعد تأكيد أول جلسة.",
+      "emptyAction": "عرض الجلسات",
+      "errorTitle": "تعذر تحميل المدفوعات",
+      "errorNote": "يرجى المحاولة مجدداً.",
+      "retry": "إعادة المحاولة"
+    },
+    "paymentCard": {
+      "provider": {
+        "STRIPE": "بطاقة ائتمانية",
+        "PAYMOB": "بطاقة / شبكة",
+        "INTERNAL_WALLET": "محفظة داخلية"
+      },
+      "status": {
+        "CREATED": "منشأ",
+        "PENDING": "قيد المعالجة",
+        "REQUIRES_ACTION": "يتطلب إجراء",
+        "AUTHORIZED": "مصرح",
+        "CAPTURED": "مكتمل",
+        "FAILED": "فشل",
+        "CANCELLED": "ملغى",
+        "EXPIRED": "منتهي الصلاحية",
+        "REFUND_PENDING": "استرداد قيد المعالجة",
+        "PARTIALLY_REFUNDED": "مسترد جزئياً",
+        "REFUNDED": "مسترد"
+      },
+      "dateLabels": {
+        "paidOn": "دُفع في",
+        "refundedOn": "استُرد في",
+        "failedOn": "فشل في",
+        "expiredOn": "انتهت صلاحيته في",
+        "initiatedOn": "بدأ في"
+      },
+      "walletUsed": "من المحفظة",
+      "gatewayUsed": "عبر بوابة الدفع",
+      "payNow": "ادفع الآن",
+      "retryPayment": "إعادة الدفع",
+      "viewSession": "عرض الجلسة",
+      "statusNotes": {
+        "CREATED": "في انتظار بدء عملية الدفع.",
+        "PENDING": "جارٍ معالجة الدفع.",
+        "REQUIRES_ACTION": "يتطلب تأكيداً إضافياً لإتمام العملية.",
+        "AUTHORIZED": "الدفع مصرح ولم يُسجَّل بعد.",
+        "CAPTURED": "الدفع مكتمل ومسجل بنجاح.",
+        "FAILED": "فشلت عملية الدفع. يمكنك المحاولة مجدداً.",
+        "CANCELLED": "تم إلغاء عملية الدفع.",
+        "EXPIRED": "انتهت صلاحية هذه العملية.",
+        "REFUND_PENDING": "طلب الاسترداد قيد المعالجة.",
+        "PARTIALLY_REFUNDED": "تم استرداد جزء من المبلغ.",
+        "REFUNDED": "تم استرداد المبلغ كاملاً."
+      }
+    },
+    "transactions": {
+      "title": "سجل المحفظة",
+      "filters": {
+        "all": "الكل",
+        "payments": "المدفوعات",
+        "credits": "الإيداعات",
+        "refunds": "المستردة"
+      },
+      "loading": "جاري تحميل المعاملات...",
+      "errorTitle": "تعذر تحميل المعاملات",
+      "retry": "إعادة المحاولة",
+      "emptyTitle": "لا توجد معاملات",
+      "emptyNote": "لا توجد معاملات في المحفظة بعد.",
+      "today": "اليوم",
+      "entryTypes": {
+        "REFUND_CREDIT": "استرداد مبلغ",
+        "MANUAL_CREDIT": "إضافة رصيد",
+        "MANUAL_DEBIT": "خصم يدوي",
+        "SESSION_PAYMENT_RESERVE": "حجز دفع جلسة",
+        "SESSION_PAYMENT_CAPTURE": "دفع جلسة",
+        "SESSION_PAYMENT_RELEASE": "إلغاء حجز دفع",
+        "REVERSAL": "عكس معاملة",
+        "ADJUSTMENT": "تسوية رصيد"
+      },
+      "completed": "مكتمل",
+      "pending": "قيد المعالجة",
+      "walletScopeNote": "الرصيد أعلاه خاص بمحفظتك داخل التطبيق فقط.",
+      "walletOnlyNote": "المدفوعات عبر بوابة الدفع (بطاقة / مدى) لا تظهر هنا — راجع صفحة سجل المدفوعات للاطلاع عليها."
+    },
+    "checkout": {
+      "title": "ملخص الدفع",
+      "loadingSession": "جاري تحميل تفاصيل الجلسة...",
+      "loadingBreakdown": "جاري حساب التكلفة...",
+      "errorTitle": "تعذر تحميل تفاصيل الدفع",
+      "errorNote": "يرجى المحاولة مجدداً.",
+      "retry": "إعادة المحاولة",
+      "sessionExpired": "انتهت صلاحية الدفع لهذه الجلسة",
+      "sessionNotPayable": "هذه الجلسة غير قابلة للدفع في الوقت الحالي",
+      "backToSession": "العودة إلى الجلسة",
+      "practitionerCard": {
+        "sessionType": "استشارة نفسية - عن بُعد"
+      },
+      "breakdown": {
+        "title": "تفاصيل التكلفة",
+        "sessionFee": "تكلفة الجلسة",
+        "discount": "خصم الكوبون",
+        "walletDeduction": "رصيد المحفظة المستخدم",
+        "total": "المجموع الكلي المستحق"
+      },
+      "walletToggle": {
+        "label": "استخدام رصيد المحفظة",
+        "available": "الرصيد المتاح: {{amount}}",
+        "noBalance": "لا يوجد رصيد في المحفظة"
+      },
+      "coupon": {
+        "label": "كود الخصم",
+        "placeholder": "أدخل كود الخصم",
+        "apply": "تطبيق",
+        "remove": "إزالة",
+        "applied": "الكوبون {{code}} مطبق"
+      },
+      "paymentMethod": {
+        "title": "طريقة الدفع",
+        "gateway": "البطاقة الائتمانية / مدى",
+        "gatewayHint": "الدفع الآمن عبر الشبكة",
+        "wallet": "محفظة التطبيق"
+      },
+      "trustBadges": {
+        "secure": "دفع آمن 100%",
+        "moh": "معتمد من وزارة الصحة"
+      },
+      "confirmButton": "تأكيد ودفع",
+      "processing": "جارٍ المعالجة...",
+      "redirecting": "جارٍ التحويل إلى بوابة الدفع...",
+      "paymentState": "حالة الدفع",
+      "state": {
+        "walletPart": "المدفوع من المحفظة",
+        "gatewayPart": "المتبقي عبر بوابة الدفع",
+        "walletOnly": "سيتم إتمام الدفع بالكامل من رصيد المحفظة."
+      },
+      "gatewayNotice": "سيتم فتح صفحة الدفع في المتصفح لإتمام العملية بأمان.",
+      "openGateway": "فتح بوابة الدفع",
+      "stripeNotice": "بوابة الدفع المباشر سيتم تفعيلها بعد تثبيت حزمة Stripe للموبايل.",
+      "paymentSuccess": "تمت عملية الدفع بنجاح",
+      "paymentError": "تعذرت عملية الدفع",
+      "pricingUnavailableNote": "لا تتوفر تسعيرة لهذه الجلسة حالياً. يرجى التواصل مع الدعم أو المحاولة لاحقاً.",
+      "pricingUnavailableShort": "التسعيرة غير متاحة"
+    }
+  },
+  "support": {
+    "title": "مركز الدعم",
+    "tabs": {
+      "active": "النشطة",
+      "resolved": "المغلقة"
+    },
+    "statuses": {
+      "OPEN": "مفتوحة",
+      "IN_PROGRESS": "قيد المعالجة",
+      "WAITING_FOR_USER": "بانتظار ردك",
+      "ESCALATED": "تم التصعيد",
+      "RESOLVED": "تم الحل",
+      "CLOSED": "مغلقة"
+    },
+    "categories": {
+      "BOOKING": "الحجز",
+      "PAYMENT": "الدفع",
+      "SESSION": "الجلسة",
+      "TECHNICAL": "تقني",
+      "ACCOUNT": "الحساب",
+      "MATCHING": "التوافق",
+      "GENERAL": "عام",
+      "CONTENT": "المحتوى",
+      "CHAT": "المحادثة",
+      "OTHER": "أخرى"
+    },
+    "empty": {
+      "title": "لا توجد تذاكر",
+      "activeSubtitle": "ليس لديك أي طلبات دعم نشطة حالياً.",
+      "resolvedSubtitle": "لا توجد تذاكر مغلقة أو محلولة بعد."
+    },
+    "newTicket": "فتح طلب دعم جديد",
+    "new": {
+      "title": "طلب دعم جديد",
+      "categoryLabel": "نوع المشكلة",
+      "subjectLabel": "الموضوع",
+      "subjectPlaceholder": "صف مشكلتك باختصار",
+      "descriptionLabel": "التفاصيل",
+      "descriptionPlaceholder": "اشرح مشكلتك بالتفصيل حتى يتمكن فريق الدعم من مساعدتك",
+      "subjectRequired": "يرجى كتابة موضوع لا يقل عن 4 أحرف.",
+      "descriptionRequired": "يرجى كتابة وصف لا يقل عن 10 أحرف.",
+      "submit": "إرسال الطلب"
+    },
+    "detail": {
+      "title": "تفاصيل الطلب",
+      "noMessages": "لا توجد رسائل بعد. ابدأ المحادثة مع فريق الدعم.",
+      "replyPlaceholder": "اكتب ردك هنا...",
+      "closedNotice": "هذه التذكرة مغلقة ولا يمكن إضافة ردود عليها."
+    }
+  },
+  "careChat": {
+    "title": "الدردشة المهنية",
+    "tabs": {
+      "active": "النشطة",
+      "history": "السابقة"
+    },
+    "requestStatus": {
+      "PENDING": "بانتظار الموافقة",
+      "APPROVED": "موافق عليها",
+      "REJECTED": "مرفوضة",
+      "EXPIRED": "منتهية الصلاحية",
+      "CANCELLED": "ملغاة",
+      "REVOKED": "تم إلغاؤها"
+    },
+    "activityState": {
+      "ACTIVE": "نشطة",
+      "EXPIRED": "منتهية",
+      "REVOKED": "تم إلغاؤها",
+      "CLOSED": "مغلقة"
+    },
+    "inactiveNotice": {
+      "EXPIRED": "انتهت صلاحية هذه المحادثة.",
+      "REVOKED": "تم إلغاء صلاحية الوصول لهذه المحادثة.",
+      "CLOSED": "هذه المحادثة مغلقة.",
+      "default": "هذه المحادثة لم تعد نشطة."
+    },
+    "unknownPractitioner": "مختص",
+    "expiresOn": "تنتهي في {{date}}",
+    "newRequest": "طلب دردشة مع مختص",
+    "empty": {
+      "title": "لا توجد طلبات",
+      "activeSubtitle": "ليس لديك أي طلبات دردشة نشطة مع مختص حالياً.",
+      "historySubtitle": "لا توجد طلبات سابقة."
+    },
+    "new": {
+      "title": "طلب دردشة مع مختص",
+      "approvalNote": "ستُراجع طلبك من قِبل الفريق وسيتم إخطارك عند الموافقة.",
+      "practitionerSlugLabel": "المعرف المختصر للمختص",
+      "practitionerSlugPlaceholder": "مثال: dr-ahmed-ali",
+      "practitionerSlugHint": "يمكنك الحصول على المعرف من صفحة الملف الشخصي للمختص.",
+      "reasonLabel": "سبب الطلب",
+      "reasonPlaceholder": "اذكر سبب رغبتك في التواصل مع هذا المختص...",
+      "optional": "اختياري",
+      "slugRequired": "يرجى إدخال المعرف المختصر للمختص.",
+      "submit": "إرسال الطلب"
+    },
+    "requestDetail": {
+      "title": "تفاصيل الطلب",
+      "reason": "سبب الطلب",
+      "expiresAt": "تاريخ انتهاء الصلاحية",
+      "pendingNotice": "طلبك قيد المراجعة. سيتم إخطارك فور اتخاذ قرار.",
+      "rejectedNotice": "للأسف تم رفض طلب الدردشة. يمكنك فتح طلب دعم إذا كنت بحاجة للمساعدة.",
+      "openConversation": "فتح المحادثة"
+    },
+    "conversation": {
+      "empty": "لا توجد رسائل بعد. ابدأ المحادثة مع مختصك.",
+      "inputPlaceholder": "اكتب رسالتك هنا..."
+    }
+  },
+  "home": {
+    "tabLabel": "الرئيسية",
+    "journey": {
+      "pendingPayment": "دفع معلق",
+      "completePaymentTitle": "أكمل الدفع",
+      "completePaymentSubtitle": "لديك دفع معلق لجلسة.",
+      "payNow": "الدفع الآن"
+    },
+    "quickActions": {
+      "title": "الإجراءات السريعة",
+      "findTherapist": "ابحث عن مختص",
+      "assessments": "التقييمات",
+      "support": "الدعم",
+      "careChat": "دردشة مهنية"
+    },
+    "nextSession": {
+      "badge": "مؤكدة",
+      "title": "جلستك القادمة",
+      "subtitle": "انضم عند موعد الجلسة",
+      "defaultDoctor": "د. المختص المعيّن",
+      "defaultSpecialty": "علم النفس السريري",
+      "joinNow": "الانضمام الآن"
+    }
+  },
+  "common": {
+    "enabled": "مفعّل",
+    "disabled": "غير مفعّل"
+  },
+  "practitioner": {
+    "tab": {
+      "dashboard": "الرئيسية",
+      "sessions": "الجلسات",
+      "availability": "التوفر"
+    },
+    "common": {
+      "loadError": "تعذر تحميل بيانات مساحة عمل المعالج حالياً.",
+      "notAvailable": "غير متاح"
+    },
+    "profileStatus": {
+      "DRAFT": "مسودة",
+      "PENDING_REVIEW": "بانتظار المراجعة",
+      "APPROVED": "معتمد",
+      "REJECTED": "مرفوض",
+      "SUSPENDED": "موقوف",
+      "INACTIVE": "غير نشط"
+    },
+    "presence": {
+      "status": {
+        "ONLINE": "متصل",
+        "AWAY": "بعيد مؤقتاً",
+        "BUSY": "مشغول",
+        "OFFLINE": "غير متصل"
+      }
+    },
+    "sessionStatus": {
+      "DRAFT": "مسودة",
+      "PENDING_PAYMENT": "بانتظار الدفع",
+      "PENDING_PRACTITIONER_RESPONSE": "بانتظار رد المعالج",
+      "CONFIRMED": "مؤكدة",
+      "UPCOMING": "قادمة",
+      "READY_TO_JOIN": "جاهزة للانضمام",
+      "IN_PROGRESS": "جارية الآن",
+      "COMPLETED": "مكتملة",
+      "CANCELLED": "ملغاة",
+      "NO_SHOW": "عدم حضور",
+      "EXPIRED": "منتهية",
+      "REFUND_PENDING": "استرداد معلق",
+      "REFUNDED": "تم الاسترداد"
+    },
+    "weekday": {
+      "SUNDAY": "الأحد",
+      "MONDAY": "الاثنين",
+      "TUESDAY": "الثلاثاء",
+      "WEDNESDAY": "الأربعاء",
+      "THURSDAY": "الخميس",
+      "FRIDAY": "الجمعة",
+      "SATURDAY": "السبت"
+    },
+    "home": {
+      "title": "مساحة المعالج",
+      "fallbackName": "المعالج",
+      "fallbackTitle": "حساب مهني",
+      "nextSessions": "الجلسات القادمة",
+      "viewAll": "عرض الكل",
+      "noSessions": "لا توجد جلسات قادمة ضمن الحالات النشطة حالياً.",
+      "quickAccess": "وصول سريع",
+      "metrics": {
+        "presence": "الحضور",
+        "instantBooking": "الحجز الفوري",
+        "specialties": "التخصصات",
+        "credentials": "الاعتمادات"
+      },
+      "approvalNotice": {
+        "title": "الوصول الكامل غير متاح بعد",
+        "body": "هذا الحساب لم يصل بعد إلى حالة الاعتماد الكامل كما في الويب. تظهر هنا الحالة الحقيقية للحساب بدون فتح مسارات onboarding غير المنفذة بعد على الموبايل."
+      }
+    },
+    "sessions": {
+      "title": "جلسات المعالج",
+      "unknownPatient": "مريض غير معروف",
+      "noSchedule": "لم يتم تحديد موعد بعد",
+      "duration": "{{minutes}} دقيقة",
+      "emptyTitle": "لا توجد جلسات",
+      "emptyBody": "لا توجد جلسات مطابقة للفلتر الحالي.",
+      "filters": {
+        "all": "الكل",
+        "upcoming": "القادمة",
+        "ready": "جاهزة للانضمام",
+        "live": "الجارية",
+        "completed": "المكتملة"
+      }
+    },
+    "sessionDetail": {
+      "title": "تفاصيل الجلسة",
+      "summary": "الملخص",
+      "heroSubtitle": "رمز الجلسة: {{sessionCode}}",
+      "heroMode": "نوع الجلسة: {{mode}}",
+      "sessionAt": "الموعد: {{datetime}}",
+      "currentState": "الوضع الحالي",
+      "nextStepLabel": "الخطوة التالية",
+      "actionsTitle": "ما الذي يمكنك فعله الآن؟",
+      "sessionFacts": "معلومات سريعة",
+      "sessionType": "نوع الموعد",
+      "mode": "نوع الجلسة",
+      "duration": "المدة",
+      "flowType": "نوع التدفق",
+      "timezone": "المنطقة الزمنية",
+      "timezoneValue": "بتوقيت {{city}}",
+      "runtime": "إعداد الجلسة المباشرة",
+      "runtimeBody": "هذه الشاشة تستخدم نفس عقود التحضير والانضمام الخاصة بالمعالج في الباك إند. لا يتم فتح رابط الغرفة إلا إذا سمح العقد بذلك فعلياً.",
+      "prepare": "تجهيز غرفة الجلسة",
+      "preparing": "جارٍ تجهيز الغرفة...",
+      "prepareReady": "تم تحضير الجلسة بنجاح.",
+      "preparePending": "تم إرسال طلب التحضير، لكن الجلسة ليست جاهزة بعد.",
+      "join": "الانضمام",
+      "checkJoin": "التحقق من إمكانية الدخول",
+      "checkingJoin": "جارٍ التحقق من إمكانية الدخول...",
+      "openRoom": "فتح غرفة الجلسة",
+      "openRoomReady": "يمكنك الآن فتح غرفة الجلسة.",
+      "joining": "جارٍ فتح الجلسة...",
+      "joinBlocked": "تعذر الانضمام الآن: {{reason}}",
+      "prepareError": "تعذر تجهيز الغرفة حالياً. حاول مرة أخرى عندما تقترب الجلسة من وقتها المناسب.",
+      "joinError": "تعذر التحقق من إمكانية الدخول حالياً. حاول مرة أخرى بعد لحظات.",
+      "openRoomError": "تعذر فتح غرفة الجلسة من هذا الجهاز حالياً.",
+      "closeoutError": "تعذر تحديث حالة الجلسة حالياً. حاول مرة أخرى.",
+      "noImmediateAction": "لا يوجد إجراء مطلوب الآن في هذه الجلسة.",
+      "blocked": {
+        "SESSION_NOT_JOINABLE_STATUS": "حالة الجلسة الحالية لا تسمح بالانضمام.",
+        "SESSION_NOT_VIDEO_MODE": "هذه الجلسة ليست من نوع الفيديو.",
+        "SESSION_TIME_WINDOW_NOT_OPEN": "نافذة الانضمام لم تُفتح بعد.",
+        "SESSION_RUNTIME_NOT_PREPARED": "بيئة الجلسة لم تُحضّر بعد."
+      },
+      "closeout": "إقفال الجلسة",
+      "markCompleted": "تأكيد انتهاء الجلسة",
+      "completing": "جارٍ الإكمال...",
+      "markNoShow": "تسجيل عدم حضور",
+      "markingNoShow": "جارٍ التحديث...",
+      "completedFeedback": "تم تحديث الجلسة إلى مكتملة.",
+      "noShowFeedback": "تم تحديث الجلسة إلى عدم حضور.",
+      "flowTypeValue": {
+        "SCHEDULED": "موعد محجوز مسبقاً",
+        "INSTANT": "جلسة فورية",
+        "DEFAULT": "جلسة رعاية"
+      },
+      "stateNote": {
+        "PENDING_PAYMENT": "هذه الجلسة ما زالت بانتظار استكمال الدفع، لذلك لا يوجد إجراء مباشر منك الآن.",
+        "PENDING_PRACTITIONER_RESPONSE": "هذه الجلسة بانتظار تأكيدك أو انتقالها للحالة التالية داخل النظام.",
+        "UPCOMING": "الموعد قادم، لكن وقت الدخول لم يبدأ بعد. راجع الوقت واستعد قبل اقتراب الجلسة.",
+        "UPCOMING_NEEDS_PREPARE": "الموعد قادم، وأفضل خطوة الآن هي تجهيز غرفة الجلسة قبل فتح نافذة الدخول.",
+        "READY_TO_JOIN_NOW": "هذه الجلسة جاهزة الآن، ويمكنك فتح غرفة الجلسة مباشرة.",
+        "READY_TO_JOIN_PREPARE": "الجلسة قريبة من وقتها، لكن الغرفة تحتاج إلى تجهيز قبل محاولة الدخول.",
+        "READY_TO_JOIN_CHECK": "هذه الجلسة قريبة من وقتها. تحقق من إمكانية الدخول الآن لمعرفة ما إذا كانت النافذة مفتوحة.",
+        "IN_PROGRESS": "الجلسة جارية الآن. تحقق من إمكانية الدخول إذا كنت تريد متابعة الجلسة مباشرة.",
+        "IN_PROGRESS_OPEN": "الجلسة جارية الآن ويمكنك فتح غرفة الجلسة مباشرة.",
+        "COMPLETED": "انتهت هذه الجلسة بالفعل. لا توجد إجراءات مباشرة متاحة الآن سوى مراجعة التفاصيل.",
+        "NO_SHOW": "تم تسجيل هذه الجلسة كعدم حضور، لذلك لا توجد إجراءات مباشرة أخرى الآن.",
+        "CANCELLED": "تم إلغاء هذه الجلسة، لذلك لا يمكن فتح الغرفة أو تنفيذ إجراءات مباشرة عليها.",
+        "EXPIRED": "انتهت صلاحية هذه الجلسة قبل اكتمالها، لذلك لا توجد إجراءات مباشرة الآن.",
+        "REFUND_PENDING": "هذه الجلسة في مرحلة استرداد معلقة، لذلك لا توجد إجراءات مباشرة الآن.",
+        "REFUNDED": "تمت معالجة الاسترداد لهذه الجلسة، لذلك لا توجد إجراءات مباشرة الآن.",
+        "DEFAULT": "هذه الجلسة لا تتيح إجراءً مباشراً حالياً من هذه الشاشة."
+      },
+      "nextStep": {
+        "waitForPayment": "انتظر استكمال الدفع قبل أي خطوة تشغيلية.",
+        "waitForConfirmation": "راجع الحالة لاحقاً عندما تنتقل الجلسة إلى موعد مؤكد.",
+        "waitForWindow": "راجع هذه الشاشة عند اقتراب الموعد لمعرفة ما إذا كانت نافذة الدخول فتحت.",
+        "prepareRoom": "جهز غرفة الجلسة أولاً، ثم تحقق من إمكانية الدخول.",
+        "checkJoin": "تحقق من إمكانية الدخول الآن لمعرفة ما إذا كانت الجلسة جاهزة للفتح.",
+        "openRoom": "افتح غرفة الجلسة وابدأ المتابعة مع المريض.",
+        "reviewOnly": "راجع التفاصيل فقط. لا توجد خطوة تشغيلية أخرى الآن."
+      },
+      "actionSummary": {
+        "openRoom": "يمكنك فتح غرفة الجلسة الآن دون خطوات إضافية.",
+        "prepareRoom": "الخطوة التالية الواضحة الآن هي تجهيز غرفة الجلسة.",
+        "checkJoin": "تحقق من إمكانية الدخول لمعرفة ما إذا كانت نافذة الجلسة مفتوحة الآن.",
+        "closeout": "يمكنك تحديث نتيجة الجلسة إذا انتهت أو إذا لم يحضر المريض.",
+        "none": "هذه الشاشة تعرض الحقيقة الحالية للجلسة، لكن لا يوجد إجراء تشغيلي مطلوب الآن."
+      },
+      "closeoutSummary": {
+        "COMPLETED": "تم إنهاء هذه الجلسة بالفعل ولا تحتاج إلى إقفال إضافي.",
+        "NO_SHOW": "تم تسجيل عدم الحضور بالفعل ولا تحتاج إلى تحديث إضافي.",
+        "CLOSED": "هذه الجلسة أغلقت فعلياً، لذلك لا توجد إجراءات إقفال إضافية.",
+        "NOT_READY": "إجراءات الإقفال تظهر فقط عندما تصبح الجلسة في حالة تسمح بذلك."
+      },
+      "modeValue": {
+        "VIDEO": "فيديو",
+        "AUDIO": "صوت",
+        "CHAT": "دردشة"
+      }
+    },
+    "availability": {
+      "title": "التوفر والحضور",
+      "presenceTitle": "الحالة المباشرة",
+      "presenceBody": "هذه الحالة مستقلة عن جدول المواعيد الأسبوعي، وتطابق سطح presence الحقيقي في الباك إند.",
+      "currentStatus": "حالتك الحالية",
+      "instantBooking": "الحجز الفوري",
+      "instantBookingBody": "يشغّل أو يوقف readiness الخاصة بالحجز الفوري بدون تغيير الجدول الأسبوعي.",
+      "instantBookingEnabled": "الحجز الفوري مفتوح الآن للحالات التي يسمح بها النظام.",
+      "instantBookingDisabled": "الحجز الفوري متوقف الآن، ولن تظهر لك الحالات الفورية الجديدة.",
+      "scheduleTitle": "الجدول الأسبوعي",
+      "scheduleBody": "أدر أوقات عملك الأسبوعية هنا بشكل واضح وبسيط. التغييرات لا تُحفظ حتى تضغط حفظ الجدول.",
+      "timezone": "المنطقة الزمنية الحالية: {{timezone}}",
+      "timezoneLabel": "المنطقة الزمنية التي يعمل بها الجدول",
+      "emptySchedule": "لا توجد فترات أسبوعية نشطة حالياً.",
+      "noSlots": "لا توجد فترات بعد",
+      "slotCount": "{{count}} فترة",
+      "slotRange": "من {{start}} إلى {{end}}",
+      "addSlot": "إضافة فترة",
+      "editSlot": "تعديل",
+      "removeSlot": "حذف",
+      "startTime": "وقت البداية",
+      "endTime": "وقت النهاية",
+      "timeHint": "اكتب الوقت بصيغة 09:00",
+      "confirmSlot": "تأكيد الفترة",
+      "saveSchedule": "حفظ الجدول",
+      "resetChanges": "التراجع عن التعديلات",
+      "saveHint": "يمكنك ترتيب الفترات كما تريد، ثم حفظ الجدول دفعة واحدة.",
+      "saveSuccess": "تم حفظ الجدول الأسبوعي بنجاح.",
+      "saveError": "تعذر حفظ الجدول الأسبوعي حالياً.",
+      "saving": "جارٍ الحفظ...",
+      "exceptionsTitle": "الاستثناءات القادمة",
+      "exceptionsBody": "أضف استثناءات مؤقتة عندما تريد غلق وقت محدد أو فتح وقت إضافي خارج الجدول الأسبوعي.",
+      "emptyExceptions": "لا توجد استثناءات نشطة حالياً.",
+      "addException": "إضافة استثناء",
+      "saveException": "حفظ الاستثناء",
+      "removeException": "حذف الاستثناء",
+      "exceptionStartsAt": "بداية الاستثناء",
+      "exceptionEndsAt": "نهاية الاستثناء",
+      "exceptionTimeHint": "اكتب التاريخ والوقت بصيغة 2026-04-25T14:00",
+      "exceptionReason": "ملاحظة مختصرة",
+      "exceptionReasonPlaceholder": "مثال: إجازة شخصية أو فتح وقت إضافي",
+      "exceptionRange": "من {{start}} إلى {{end}}",
+      "exceptionSaveSuccess": "تم حفظ الاستثناء بنجاح.",
+      "exceptionSaveError": "تعذر حفظ الاستثناء حالياً.",
+      "exceptionDeleteSuccess": "تم حذف الاستثناء بنجاح.",
+      "exceptionDeleteError": "تعذر حذف الاستثناء حالياً.",
+      "validation": {
+        "invalidTime": "أدخل الوقت بصيغة صحيحة مثل 09:00.",
+        "endAfterStart": "يجب أن يكون وقت النهاية بعد وقت البداية.",
+        "overlap": "هذه الفترة تتداخل مع فترة أخرى في اليوم نفسه.",
+        "exceptionDatesRequired": "أدخل وقت البداية ووقت النهاية للاستثناء.",
+        "invalidDateTime": "أدخل التاريخ والوقت بصيغة صحيحة مثل 2026-04-25T14:00."
+      },
+      "exceptionType": {
+        "BLOCK": "حظر مؤقت",
+        "OPEN_EXTRA": "فتح إضافي"
+      }
+    }
+  }
+}

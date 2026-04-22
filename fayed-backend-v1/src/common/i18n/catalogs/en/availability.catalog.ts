@@ -9,10 +9,8 @@ export const enAvailabilityCatalog = {
   errors: {
     practitionerNotFound: 'Practitioner profile was not found',
     invalidTimezone: 'Timezone is invalid',
-    invalidWeeklySlotRange:
-      'Weekly availability slot range is invalid',
-    invalidGranularity:
-      'Weekly availability must use 15-minute granularity',
+    invalidWeeklySlotRange: 'Weekly availability slot range is invalid',
+    invalidGranularity: 'Weekly availability must use 15-minute granularity',
     overlappingWeeklySlots:
       'Weekly availability contains overlapping slots on the same day',
     invalidExceptionRange: 'Availability exception range is invalid',

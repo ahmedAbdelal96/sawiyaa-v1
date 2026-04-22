@@ -14,11 +14,12 @@ export class ValidateSessionConflictsService {
     scheduledStartAtUtc: Date;
     scheduledEndAtUtc: Date;
   }): Promise<void> {
-    const conflicts = await this.sessionRepository.listSessionsInRangeForPractitioner(
-      input.practitionerId,
-      input.scheduledEndAtUtc,
-      input.scheduledStartAtUtc,
-    );
+    const conflicts =
+      await this.sessionRepository.listSessionsInRangeForPractitioner(
+        input.practitionerId,
+        input.scheduledEndAtUtc,
+        input.scheduledStartAtUtc,
+      );
 
     if (conflicts.length > 0) {
       throw new ConflictException({
@@ -33,11 +34,12 @@ export class ValidateSessionConflictsService {
     scheduledStartAtUtc: Date;
     scheduledEndAtUtc: Date;
   }): Promise<void> {
-    const conflicts = await this.sessionRepository.listSessionsInRangeForPatient(
-      input.patientId,
-      input.scheduledEndAtUtc,
-      input.scheduledStartAtUtc,
-    );
+    const conflicts =
+      await this.sessionRepository.listSessionsInRangeForPatient(
+        input.patientId,
+        input.scheduledEndAtUtc,
+        input.scheduledStartAtUtc,
+      );
 
     if (conflicts.length > 0) {
       throw new ConflictException({

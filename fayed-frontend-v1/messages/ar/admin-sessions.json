@@ -60,6 +60,7 @@
     "CHAT": "دردشة"
   },
   "table": {
+    "actions": "الإجراءات",
     "headers": {
       "status": "الحالة",
       "scheduledStart": "موعد البداية",
@@ -112,6 +113,132 @@
       "heading": "تعذّر تحميل الجلسات",
       "note": "حاول مرة أخرى بعد قليل.",
       "retry": "إعادة المحاولة"
+    }
+  },
+  "policy": {
+    "meta": {
+      "title": "سياسة إلغاء الجلسات - الإدارة",
+      "description": "إدارة قواعد سياسة الإلغاء حسب نوع الحجز."
+    },
+    "title": "سياسة الإلغاء",
+    "description": "إدارة سياسات الإلغاء عبر قائمة واضحة ومودال مخصص للعرض والتعديل.",
+    "list": {
+      "description": "راجع كل سياسة في جدول واحد، ثم افتح التفاصيل للتعديل بسرعة ووضوح."
+    },
+    "summary": {
+      "totalPolicies": "إجمالي السياسات",
+      "activePolicies": "السياسات المفعلة",
+      "totalRules": "إجمالي القواعد"
+    },
+    "bookingTypes": {
+      "STANDARD": "سياسة الحجز العادي",
+      "INSTANT": "سياسة الحجز الفوري"
+    },
+    "fields": {
+      "policyTitleFallback": "سياسة بدون اسم",
+      "policyName": "اسم السياسة",
+      "policyActive": "السياسة مفعلة",
+      "refundDestination": "وجهة الاسترداد الافتراضية",
+      "ruleCode": "كود القاعدة",
+      "ruleName": "اسم القاعدة",
+      "priority": "الأولوية",
+      "ruleActive": "القاعدة مفعلة",
+      "minHours": "أقل عدد ساعات قبل الجلسة",
+      "maxHours": "أقصى عدد ساعات قبل الجلسة",
+      "allowCancellation": "السماح بالإلغاء",
+      "refundMode": "آلية الاسترداد",
+      "refundPercent": "نسبة الاسترداد"
+    },
+    "refundModes": {
+      "NONE": "بدون استرداد",
+      "PERCENTAGE": "استرداد بنسبة"
+    },
+    "refundDestinations": {
+      "CUSTOMER_WALLET": "محفظة العميل",
+      "ORIGINAL_METHOD": "وسيلة الدفع الأصلية (غير مدعومة حالياً)"
+    },
+    "actions": {
+      "openEditor": "سياسة الإلغاء",
+      "createPolicy": "إنشاء/تهيئة سياسة",
+      "viewPolicy": "عرض",
+      "editPolicy": "تعديل",
+      "deactivatePolicy": "حذف",
+      "save": "حفظ السياسة",
+      "saving": "جارٍ الحفظ...",
+      "cancel": "إلغاء",
+      "close": "إغلاق",
+      "addRule": "إضافة قاعدة جديدة",
+      "editRule": "تعديل",
+      "closeEdit": "إغلاق",
+      "removeRule": "حذف"
+    },
+    "states": {
+      "loading": "جارٍ تحميل سياسات الإلغاء...",
+      "loadFailed": "تعذّر تحميل سياسات الإلغاء.",
+      "updateFailed": "تعذّر حفظ هذه السياسة حالياً.",
+      "saved": "تم تحديث السياسة بنجاح.",
+      "empty": "لا توجد سياسات إلغاء متاحة.",
+      "emptyRules": "لا توجد قواعد داخل هذه السياسة حتى الآن."
+    },
+    "note": {
+      "walletOnly": "الحقيقة الحالية في الباك إند: استرداد الإلغاء يُعاد إلى محفظة العميل."
+    },
+    "validation": {
+      "policyDisplayNameRequired": "اسم السياسة مطلوب.",
+      "rulesRequired": "يجب إضافة قاعدة واحدة على الأقل.",
+      "ruleCodeRequired": "كود القاعدة مطلوب.",
+      "ruleDisplayNameRequired": "اسم القاعدة مطلوب للقاعدة {code}.",
+      "duplicateCode": "كود قاعدة مكرر: {code}.",
+      "invalidWindow": "نافذة الوقت غير صحيحة في القاعدة {code}.",
+      "invalidRefundMode": "لا يمكن استخدام آلية الاسترداد هذه للقاعدة {code} عند منع الإلغاء.",
+      "invalidRefundPercent": "نسبة الاسترداد غير صحيحة في القاعدة {code}.",
+      "refundPercentRequired": "نسبة الاسترداد مطلوبة للقاعدة {code}.",
+      "overlap": "يوجد تداخل بين القاعدتين {first} و {second}."
+    },
+    "quickGuide": "ابدأ من الجدول، افتح السياسة المطلوبة، وعدّل فقط الحقول التي تحتاجها.",
+    "table": {
+      "actions": "الإجراءات",
+      "headers": {
+        "bookingType": "نوع الحجز",
+        "policyName": "اسم السياسة",
+        "rules": "القواعد",
+        "status": "الحالة",
+        "refundDestination": "وجهة الاسترداد",
+        "version": "الإصدار"
+      },
+      "values": {
+        "active": "مفعلة",
+        "inactive": "غير مفعلة"
+      }
+    },
+    "modal": {
+      "createTitle": "إنشاء/تهيئة سياسة الإلغاء",
+      "createDescription": "اضبط بيانات السياسة والقواعد لنوع الحجز المحدد.",
+      "viewTitle": "تفاصيل السياسة",
+      "viewDescription": "عرض تفاصيل السياسة ونتائج القواعد.",
+      "editTitle": "تعديل سياسة الإلغاء",
+      "editDescription": "حدّث بيانات السياسة والقواعد ثم احفظ."
+    },
+    "deactivate": {
+      "title": "حذف هذه السياسة؟",
+      "description": "سيتم تعطيل السياسة وكل قواعدها. يمكنك تعديلها وإعادة تفعيلها لاحقًا.",
+      "confirm": "حذف السياسة"
+    },
+    "rulesSection": {
+      "title": "قواعد السياسة",
+      "note": "استخدم قاعدة واضحة لكل نافذة زمنية لتجنّب التداخل والالتباس."
+    },
+    "ruleSummary": {
+      "untitled": "سياسة بدون اسم",
+      "noCode": "كود القاعدة",
+      "allow": "السماح بالإلغاء",
+      "block": "الإلغاء غير مسموح",
+      "noRefund": "بدون استرداد",
+      "percentRefund": "استرداد بنسبة {value}%",
+      "anyTime": "أي نافذة زمنية",
+      "fromHours": "من {value} ساعة قبل الجلسة",
+      "untilHours": "حتى {value} ساعة قبل الجلسة",
+      "betweenHours": "بين {min} و {max} ساعة قبل الجلسة"
     }
   }
 }

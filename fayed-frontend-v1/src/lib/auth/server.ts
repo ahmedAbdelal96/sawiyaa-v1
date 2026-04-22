@@ -200,7 +200,12 @@ function resolveRoleRefreshEndpoint(role: string | null): string | null {
     return ROLE_AUTH_ENDPOINTS.PRACTITIONER.refresh;
   }
 
-  if (role === "ADMIN" || role === "SUPER_ADMIN") {
+  if (
+    role === "ADMIN" ||
+    role === "SUPER_ADMIN" ||
+    role === "SUPPORT_AGENT" ||
+    role === "CONTENT_REVIEWER"
+  ) {
     return ROLE_AUTH_ENDPOINTS.ADMIN.refresh;
   }
 
@@ -218,7 +223,12 @@ export async function getLogoutEndpointForCurrentRole(): Promise<string | null> 
     return ROLE_AUTH_ENDPOINTS.PRACTITIONER.logout;
   }
 
-  if (role === "ADMIN" || role === "SUPER_ADMIN") {
+  if (
+    role === "ADMIN" ||
+    role === "SUPER_ADMIN" ||
+    role === "SUPPORT_AGENT" ||
+    role === "CONTENT_REVIEWER"
+  ) {
     return ROLE_AUTH_ENDPOINTS.ADMIN.logout;
   }
 

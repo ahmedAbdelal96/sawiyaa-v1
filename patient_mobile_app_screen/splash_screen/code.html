@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Serene - Mental Health App Splash Screen</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-error": "#fff7f6",
+                    "tertiary-container": "#dacafb",
+                    "outline-variant": "#abb3bc",
+                    "on-primary-fixed": "#000002",
+                    "surface-tint": "#135faf",
+                    "on-background": "#2c333a",
+                    "outline": "#747b84",
+                    "on-tertiary-fixed": "#3a2e55",
+                    "inverse-on-surface": "#9a9da2",
+                    "primary": "#135faf",
+                    "secondary-fixed": "#d9e3f8",
+                    "on-secondary-fixed-variant": "#525c6e",
+                    "primary-dim": "#00539f",
+                    "on-primary-fixed-variant": "#002e5d",
+                    "tertiary": "#655882",
+                    "on-secondary": "#f8f8ff",
+                    "primary-fixed": "#6aa4f9",
+                    "surface-container": "#e9eef6",
+                    "surface-container-high": "#e3e9f1",
+                    "secondary-fixed-dim": "#cbd5ea",
+                    "error": "#a83836",
+                    "on-primary-container": "#00254d",
+                    "on-surface-variant": "#586068",
+                    "on-tertiary-fixed-variant": "#574a73",
+                    "tertiary-fixed-dim": "#ccbcec",
+                    "on-secondary-fixed": "#364051",
+                    "secondary": "#565f72",
+                    "on-error-container": "#6e0a12",
+                    "on-tertiary": "#fdf7ff",
+                    "background": "#f7f9fe",
+                    "surface-container-highest": "#dce3ed",
+                    "surface-container-lowest": "#ffffff",
+                    "primary-fixed-dim": "#5c97eb",
+                    "secondary-container": "#d9e3f8",
+                    "error-container": "#fa746f",
+                    "inverse-surface": "#0b0f12",
+                    "on-tertiary-container": "#4d4169",
+                    "error-dim": "#67040d",
+                    "surface-container-low": "#f0f4fa",
+                    "secondary-dim": "#4a5365",
+                    "surface-variant": "#dce3ed",
+                    "primary-container": "#6aa4f9",
+                    "tertiary-fixed": "#dacafb",
+                    "tertiary-dim": "#594c76",
+                    "on-secondary-container": "#485264",
+                    "on-primary": "#f8f8ff",
+                    "inverse-primary": "#6aa4f9",
+                    "surface-dim": "#d3dbe4",
+                    "on-surface": "#2c333a",
+                    "surface-bright": "#f7f9fe",
+                    "surface": "#f7f9fe"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {},
+            "fontFamily": {
+                    "headline": [
+                            "Manrope"
+                    ],
+                    "body": [
+                            "Inter"
+                    ],
+                    "label": [
+                            "Inter"
+                    ]
+            }
+    },
+        },
+      }
+    </script>
+<style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        h1, h2, h3, h4, h5, h6, .font-headline {
+            font-family: 'Manrope', sans-serif;
+        }
+        .bg-gradient-soft {
+            background: linear-gradient(135deg, #f7f9fe 0%, #e9eef6 100%);
+        }
+        .btn-gradient {
+            background: linear-gradient(135deg, #135faf 0%, #6aa4f9 100%);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-gradient-soft min-h-screen flex flex-col justify-between items-center px-6 py-12 relative overflow-hidden">
+<!-- Abstract Background Element for 'Breathable Canvas' feel -->
+<div class="absolute top-0 left-0 w-full h-full opacity-30 pointer-events-none" style="background: radial-gradient(circle at 50% -20%, #d9e3f8 0%, transparent 60%);"></div>
+<div class="absolute bottom-0 right-0 w-full h-full opacity-30 pointer-events-none" style="background: radial-gradient(circle at 120% 120%, #dacafb 0%, transparent 50%);"></div>
+<!-- Top Spacer to push content down slightly -->
+<div class="flex-grow flex flex-col items-center justify-center w-full z-10">
+<!-- Abstract Brand Logo -->
+<div class="mb-12 relative flex items-center justify-center">
+<!-- Gentle pulse ring behind logo -->
+<div class="absolute w-32 h-32 bg-primary-container rounded-full opacity-20 blur-xl"></div>
+<!-- Main Logo Form -->
+<div class="w-24 h-24 bg-surface-container-lowest rounded-full flex items-center justify-center shadow-[0_8px_32px_rgba(19,95,175,0.08)] relative z-10">
+<span class="material-symbols-outlined text-primary text-5xl" style="font-variation-settings: 'FILL' 1, 'wght' 200;">
+                    water_drop
+               </span>
+</div>
+</div>
+<!-- Greeting Copy -->
+<div class="text-center max-w-sm space-y-4">
+<h1 class="font-headline text-3xl font-bold tracking-tight text-on-surface">
+                Breathe deeply.
+            </h1>
+<p class="font-body text-lg text-on-surface-variant font-medium">
+                We're here.
+            </p>
+</div>
+</div>
+<!-- Bottom Actions -->
+<div class="w-full max-w-md pb-8 z-10 space-y-4">
+<button class="w-full h-14 rounded-full btn-gradient text-on-primary font-headline font-bold text-lg shadow-[0_8px_32px_rgba(19,95,175,0.2)] hover:scale-[1.02] transition-transform duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] flex items-center justify-center group">
+            Get Started
+            <span class="material-symbols-outlined ml-2 opacity-80 group-hover:translate-x-1 transition-transform duration-300">
+                arrow_forward
+            </span>
+</button>
+<div class="text-center">
+<a class="font-body text-sm text-primary font-medium hover:text-primary-dim transition-colors px-4 py-2" href="#">
+                Log in to your account
+            </a>
+</div>
+</div>
+</body></html>

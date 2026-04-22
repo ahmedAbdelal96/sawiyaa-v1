@@ -23,14 +23,14 @@ describe('NotificationDomainValidityGuardService', () => {
   });
 
   it('allows valid training reminder notifications', async () => {
-    (repository.findTrainingEnrollmentDeliveryGuardState as jest.Mock).mockResolvedValue(
-      {
-        enrollmentStatus: EnrollmentStatus.ACTIVE,
-        courseSchedule: {
-          status: CourseScheduleStatus.OPEN_FOR_ENROLLMENT,
-        },
+    (
+      repository.findTrainingEnrollmentDeliveryGuardState as jest.Mock
+    ).mockResolvedValue({
+      enrollmentStatus: EnrollmentStatus.ACTIVE,
+      courseSchedule: {
+        status: CourseScheduleStatus.OPEN_FOR_ENROLLMENT,
       },
-    );
+    });
 
     const result = await service.evaluate({
       id: 'n1',

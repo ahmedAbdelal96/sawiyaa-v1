@@ -71,8 +71,8 @@ describe('MarkSessionNoShowByPractitionerUseCase', () => {
       SessionStatus.UPCOMING,
       SessionStatus.NO_SHOW,
     );
-    expect((sessionRepository.createEvent as jest.Mock).mock.calls[0][0].eventType).toBe(
-      SessionEventType.NO_SHOW_PATIENT,
-    );
+    expect(
+      (sessionRepository.createEvent as jest.Mock).mock.calls[0][0].eventType,
+    ).toBe(SessionEventType.NO_SHOW_PATIENT);
   });
 });

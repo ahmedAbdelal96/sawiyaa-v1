@@ -7,7 +7,10 @@ import { AdminModerationReportsController } from './admin-moderation-reports.con
 
 describe('AdminModerationReportsController access contract', () => {
   it('requires moderation reviewer roles only', () => {
-    const roles = Reflect.getMetadata(ROLES_KEY, AdminModerationReportsController);
+    const roles = Reflect.getMetadata(
+      ROLES_KEY,
+      AdminModerationReportsController,
+    );
     expect(roles).toEqual([
       AppRole.ADMIN,
       AppRole.SUPPORT_AGENT,
@@ -17,7 +20,8 @@ describe('AdminModerationReportsController access contract', () => {
 
   it('enforces auth and role guards', () => {
     const guards =
-      Reflect.getMetadata(GUARDS_METADATA, AdminModerationReportsController) ?? [];
+      Reflect.getMetadata(GUARDS_METADATA, AdminModerationReportsController) ??
+      [];
 
     expect(guards).toContain(JwtAccessAuthGuard);
     expect(guards).toContain(RolesGuard);

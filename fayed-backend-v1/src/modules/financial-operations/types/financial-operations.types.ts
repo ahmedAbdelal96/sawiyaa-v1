@@ -21,12 +21,9 @@ export const FINANCIAL_OPS_ERROR_CODES = {
     'FINANCIAL_OPERATIONS_INVALID_SETTLEMENT_PAYOUT_STATE',
   payoutAmountInvalid: 'FINANCIAL_OPERATIONS_PAYOUT_AMOUNT_INVALID',
   payoutAmountExceedsDue: 'FINANCIAL_OPERATIONS_PAYOUT_AMOUNT_EXCEEDS_DUE',
-  payoutProofFileRequired:
-    'FINANCIAL_OPERATIONS_PAYOUT_PROOF_FILE_REQUIRED',
-  payoutProofInvalidType:
-    'FINANCIAL_OPERATIONS_PAYOUT_PROOF_INVALID_TYPE',
-  payoutProofFileTooLarge:
-    'FINANCIAL_OPERATIONS_PAYOUT_PROOF_FILE_TOO_LARGE',
+  payoutProofFileRequired: 'FINANCIAL_OPERATIONS_PAYOUT_PROOF_FILE_REQUIRED',
+  payoutProofInvalidType: 'FINANCIAL_OPERATIONS_PAYOUT_PROOF_INVALID_TYPE',
+  payoutProofFileTooLarge: 'FINANCIAL_OPERATIONS_PAYOUT_PROOF_FILE_TOO_LARGE',
   payoutProofNotFound: 'FINANCIAL_OPERATIONS_PAYOUT_PROOF_NOT_FOUND',
 } as const;
 
@@ -197,9 +194,10 @@ export type AdminPayoutHistoryViewModel = PractitionerPayoutHistoryViewModel & {
   practitionerSlug: string | null;
 };
 
-export type PractitionerPayoutDetailViewModel = PractitionerPayoutHistoryViewModel & {
-  settlement: PractitionerPayoutDueViewModel;
-};
+export type PractitionerPayoutDetailViewModel =
+  PractitionerPayoutHistoryViewModel & {
+    settlement: PractitionerPayoutDueViewModel;
+  };
 
 export type PractitionerStatementRowTypeViewModel = 'EARNING' | 'PAYOUT';
 

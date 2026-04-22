@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Serene - Home Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-error": "#fff7f6",
+                        "tertiary-container": "#dacafb",
+                        "outline-variant": "#abb3bc",
+                        "on-primary-fixed": "#000002",
+                        "surface-tint": "#135faf",
+                        "on-background": "#2c333a",
+                        "outline": "#747b84",
+                        "on-tertiary-fixed": "#3a2e55",
+                        "inverse-on-surface": "#9a9da2",
+                        "primary": "#135faf",
+                        "secondary-fixed": "#d9e3f8",
+                        "on-secondary-fixed-variant": "#525c6e",
+                        "primary-dim": "#00539f",
+                        "on-primary-fixed-variant": "#002e5d",
+                        "tertiary": "#655882",
+                        "on-secondary": "#f8f8ff",
+                        "primary-fixed": "#6aa4f9",
+                        "surface-container": "#e9eef6",
+                        "surface-container-high": "#e3e9f1",
+                        "secondary-fixed-dim": "#cbd5ea",
+                        "error": "#a83836",
+                        "on-primary-container": "#00254d",
+                        "on-surface-variant": "#586068",
+                        "on-tertiary-fixed-variant": "#574a73",
+                        "tertiary-fixed-dim": "#ccbcec",
+                        "on-secondary-fixed": "#364051",
+                        "secondary": "#565f72",
+                        "on-error-container": "#6e0a12",
+                        "on-tertiary": "#fdf7ff",
+                        "background": "#f7f9fe",
+                        "surface-container-highest": "#dce3ed",
+                        "surface-container-lowest": "#ffffff",
+                        "primary-fixed-dim": "#5c97eb",
+                        "secondary-container": "#d9e3f8",
+                        "error-container": "#fa746f",
+                        "inverse-surface": "#0b0f12",
+                        "on-tertiary-container": "#4d4169",
+                        "error-dim": "#67040d",
+                        "surface-container-low": "#f0f4fa",
+                        "secondary-dim": "#4a5365",
+                        "surface-variant": "#dce3ed",
+                        "primary-container": "#6aa4f9",
+                        "tertiary-fixed": "#dacafb",
+                        "tertiary-dim": "#594c76",
+                        "on-secondary-container": "#485264",
+                        "on-primary": "#f8f8ff",
+                        "inverse-primary": "#6aa4f9",
+                        "surface-dim": "#d3dbe4",
+                        "on-surface": "#2c333a",
+                        "surface-bright": "#f7f9fe",
+                        "surface": "#f7f9fe"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "2xl": "1.5rem",
+                        "3xl": "2rem",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Manrope", "sans-serif"],
+                        "body": ["Inter", "sans-serif"],
+                        "label": ["Inter", "sans-serif"]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; background-color: #f7f9fe; }
+        h1, h2, h3, h4, h5, h6, .font-headline { font-family: 'Manrope', sans-serif; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .material-symbols-outlined.fill-icon { font-variation-settings: 'FILL' 1; }
+        
+        /* Ambient Tonal Layering */
+        .ambient-shadow { box-shadow: 0 16px 32px rgba(44, 51, 58, 0.05); }
+        .ambient-shadow-lg { box-shadow: 0 24px 48px rgba(44, 51, 58, 0.08); }
+        
+        /* Glassmorphism */
+        .glass-panel { background: rgba(247, 249, 254, 0.7); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); }
+        
+        /* Hide scrollbar for carousel */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface text-on-surface antialiased min-h-screen flex flex-col pb-24 md:pb-0">
+<!-- TopAppBar -->
+<header class="bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl docked full-width top-0 sticky no-border tonal-shift-via-opacity shadow-sm dark:shadow-none flex justify-between items-center px-6 py-4 w-full z-50">
+<div class="flex items-center gap-3">
+<button class="text-slate-500 dark:text-slate-400 hover:bg-slate-100/50 dark:hover:bg-slate-800/50 transition-colors active:scale-95 duration-300 w-10 h-10 flex items-center justify-center rounded-full">
+<span class="material-symbols-outlined text-blue-600 dark:text-blue-400">arrow_back</span>
+</button>
+<h1 class="font-['Manrope'] font-bold tracking-tight text-lg text-blue-600 dark:text-blue-400 font-['Manrope'] font-extrabold">Serene</h1>
+</div>
+<div class="flex items-center gap-4">
+<button class="relative text-slate-500 dark:text-slate-400 hover:bg-slate-100/50 dark:hover:bg-slate-800/50 transition-colors active:scale-95 duration-300 w-10 h-10 flex items-center justify-center rounded-full">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-2 right-2 w-2 h-2 bg-error rounded-full"></span>
+</button>
+<div class="w-10 h-10 rounded-full overflow-hidden border-2 border-surface-container-highest">
+<img alt="User Profile" class="w-full h-full object-cover" data-alt="Close up portrait of a young woman with soft natural lighting and a gentle smile, feeling approachable and calm" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBYj8jIvHiGT1MkX4TMq05ijOIvKvZCWTJyeWF3xNmoPZ2ZShaWWIHAGnpsn3wL_6CmxC8o5Xgnr4tMA24O6RF4Kc4eR3O3gNhCfkzltHiREyP8TVCE8CDRY-rSqiFUb2TdKgDNCxqMwDnV7J98skJGgbdLmOxQm9mwxs4WyiuVTqTTwkwx2DxS68yxzizA1KhAZqSqjlzl18y0W3afN6to5sK3jhdnCGRYQgZpp2TnRyrqAZiirjPCWsTTfIwRU5dRAvVnD0uxlsB_"/>
+</div>
+</div>
+</header>
+<main class="flex-grow w-full max-w-5xl mx-auto px-6 py-8 md:py-12 space-y-12">
+<!-- Greeting Section -->
+<section class="space-y-2">
+<h2 class="font-headline text-3xl md:text-4xl font-bold tracking-tight text-on-surface">Good morning, Alex</h2>
+<p class="text-on-surface-variant text-lg">Take a deep breath. Today is a new day.</p>
+</section>
+<!-- Your Next Session Card (Bento/Glassmorphism) -->
+<section aria-label="Next Session">
+<div class="bg-surface-container-lowest rounded-[2rem] p-6 md:p-8 ambient-shadow-lg flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative overflow-hidden">
+<!-- Decorative background elements -->
+<div class="absolute -top-24 -right-24 w-64 h-64 bg-primary-container rounded-full opacity-20 blur-3xl pointer-events-none"></div>
+<div class="absolute -bottom-24 -left-24 w-64 h-64 bg-tertiary-container rounded-full opacity-20 blur-3xl pointer-events-none"></div>
+<div class="flex items-center gap-6 relative z-10 w-full md:w-auto">
+<div class="w-20 h-20 md:w-24 md:h-24 rounded-[1.5rem] overflow-hidden shrink-0">
+<img alt="Dr. Sarah Jenkins" class="w-full h-full object-cover" data-alt="Professional portrait of a female therapist with a warm, empathetic expression in a bright, modern office setting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDEAdYQI2Une9yxT9snJWuRPHxZ8-9qjo8O6hrYlkghA6tfiuCs8bMfoaQjZfxOB3IL3_1EhW9os41R3TKy31YDy6dYQtPR22RrfUEEEUsBwg5v7KNqMj25N9GESNx9ztRYmk1eQs01PORxn7wff8OeTQNfbm3KBXs3YFAxGB9-8gwGbxyAPUL0k47JEJAUpALVeADKOTRo33qC6asvPflJR5umea1VJR7HTMyVziphthQ64RKwWNWkZ8bnXxcmlHI11qBYVyDRF2Qs"/>
+</div>
+<div>
+<span class="inline-flex items-center gap-1 text-sm font-medium text-tertiary bg-surface-container-high px-3 py-1 rounded-full mb-2">
+<span class="material-symbols-outlined text-[16px]">schedule</span> Today, 2:00 PM
+                        </span>
+<h3 class="font-headline text-xl font-bold text-on-surface">Session with Dr. Jenkins</h3>
+<p class="text-on-surface-variant text-sm mt-1">Video Call • 45 mins</p>
+</div>
+</div>
+<button class="w-full md:w-auto bg-gradient-to-r from-primary to-primary-container text-on-primary font-medium py-4 px-8 rounded-full hover:scale-[1.02] active:scale-[0.98] transition-transform duration-300 shadow-md relative z-10 flex items-center justify-center gap-2">
+<span class="material-symbols-outlined">videocam</span>
+                    Join Session
+                </button>
+</div>
+</section>
+<!-- Your Progress (Horizontal Carousel) -->
+<section aria-label="Your Progress" class="space-y-6">
+<h3 class="font-headline text-2xl font-semibold text-on-surface tracking-tight">Your Progress</h3>
+<div class="flex overflow-x-auto gap-6 pb-6 pt-2 no-scrollbar -mx-6 px-6 snap-x snap-mandatory">
+<!-- Mood Trend Card -->
+<div class="snap-center shrink-0 w-[280px] bg-surface-container-low rounded-3xl p-6 ambient-shadow relative overflow-hidden group hover:bg-surface-container-high transition-colors duration-400">
+<div class="flex justify-between items-start mb-8">
+<div class="w-12 h-12 bg-tertiary-container text-on-tertiary-container rounded-2xl flex items-center justify-center">
+<span class="material-symbols-outlined fill-icon text-2xl">mood</span>
+</div>
+<span class="text-xs font-medium text-on-surface-variant bg-surface-container-highest px-2 py-1 rounded-full">This Week</span>
+</div>
+<div class="space-y-1">
+<p class="text-on-surface-variant text-sm font-medium">Average Mood</p>
+<p class="font-headline text-2xl font-bold text-on-surface">Calm &amp; Focused</p>
+</div>
+</div>
+<!-- Assessments Card -->
+<div class="snap-center shrink-0 w-[280px] bg-surface-container-low rounded-3xl p-6 ambient-shadow relative overflow-hidden group hover:bg-surface-container-high transition-colors duration-400">
+<div class="flex justify-between items-start mb-8">
+<div class="w-12 h-12 bg-secondary-container text-on-secondary-container rounded-2xl flex items-center justify-center">
+<span class="material-symbols-outlined fill-icon text-2xl">assignment_turned_in</span>
+</div>
+<span class="text-xs font-medium text-on-surface-variant bg-surface-container-highest px-2 py-1 rounded-full">Pending</span>
+</div>
+<div class="space-y-1">
+<p class="text-on-surface-variant text-sm font-medium">Weekly Check-in</p>
+<p class="font-headline text-lg font-bold text-primary flex items-center gap-1 cursor-pointer">Start Now <span class="material-symbols-outlined text-sm">arrow_forward</span></p>
+</div>
+</div>
+<!-- Sleep Card -->
+<div class="snap-center shrink-0 w-[280px] bg-surface-container-low rounded-3xl p-6 ambient-shadow relative overflow-hidden group hover:bg-surface-container-high transition-colors duration-400">
+<div class="flex justify-between items-start mb-8">
+<div class="w-12 h-12 bg-primary-container text-on-primary-container rounded-2xl flex items-center justify-center">
+<span class="material-symbols-outlined fill-icon text-2xl">bedtime</span>
+</div>
+<span class="text-xs font-medium text-on-surface-variant bg-surface-container-highest px-2 py-1 rounded-full">Avg. Sleep</span>
+</div>
+<div class="space-y-1">
+<p class="text-on-surface-variant text-sm font-medium">Last 7 Days</p>
+<p class="font-headline text-2xl font-bold text-on-surface">7h 15m</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Quick Actions (Grid) -->
+<section aria-label="Quick Actions" class="space-y-6">
+<h3 class="font-headline text-2xl font-semibold text-on-surface tracking-tight">Quick Actions</h3>
+<div class="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
+<!-- Action 1 -->
+<button class="bg-surface-container-lowest rounded-2xl p-5 md:p-6 flex flex-col items-center justify-center gap-4 hover:bg-surface-container-low transition-colors duration-300 ambient-shadow active:scale-95 group">
+<div class="w-14 h-14 bg-primary-container rounded-full flex items-center justify-center text-primary group-hover:scale-110 transition-transform duration-300">
+<span class="material-symbols-outlined text-2xl">forum</span>
+</div>
+<span class="font-medium text-on-surface text-sm md:text-base">Talk to Support</span>
+</button>
+<!-- Action 2 -->
+<button class="bg-surface-container-lowest rounded-2xl p-5 md:p-6 flex flex-col items-center justify-center gap-4 hover:bg-surface-container-low transition-colors duration-300 ambient-shadow active:scale-95 group">
+<div class="w-14 h-14 bg-secondary-container rounded-full flex items-center justify-center text-secondary group-hover:scale-110 transition-transform duration-300">
+<span class="material-symbols-outlined text-2xl">wallet</span>
+</div>
+<span class="font-medium text-on-surface text-sm md:text-base">Explore Wallet</span>
+</button>
+<!-- Action 3 -->
+<button class="bg-surface-container-lowest rounded-2xl p-5 md:p-6 flex flex-col items-center justify-center gap-4 hover:bg-surface-container-low transition-colors duration-300 ambient-shadow active:scale-95 group col-span-2 md:col-span-1">
+<div class="w-14 h-14 bg-tertiary-container rounded-full flex items-center justify-center text-tertiary group-hover:scale-110 transition-transform duration-300">
+<span class="material-symbols-outlined text-2xl">edit_note</span>
+</div>
+<span class="font-medium text-on-surface text-sm md:text-base">Daily Check-in</span>
+</button>
+</div>
+</section>
+</main>
+<!-- BottomNavBar -->
+<nav class="md:hidden bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl fixed bottom-0 w-full rounded-t-[32px] tonal-layering-no-borders shadow-[0_-8px_30px_rgb(0,0,0,0.04)] dark:shadow-none fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-8 pt-4">
+<!-- Active Tab: Home -->
+<a class="flex flex-col items-center justify-center bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-200 rounded-2xl px-5 py-2 hover:text-blue-500 dark:hover:text-blue-300 transition-all animate-pulse-slow active:scale-90 duration-500" href="#">
+<span class="material-symbols-outlined fill-icon">home_max</span>
+<span class="font-['Inter'] text-[11px] font-medium tracking-wide uppercase mt-1">Home</span>
+</a>
+<!-- Inactive Tabs -->
+<a class="flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 px-5 py-2 hover:text-blue-500 dark:hover:text-blue-300 transition-all active:scale-90 duration-500" href="#">
+<span class="material-symbols-outlined">explore</span>
+<span class="font-['Inter'] text-[11px] font-medium tracking-wide uppercase mt-1">Discovery</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 px-5 py-2 hover:text-blue-500 dark:hover:text-blue-300 transition-all active:scale-90 duration-500" href="#">
+<span class="material-symbols-outlined">event_note</span>
+<span class="font-['Inter'] text-[11px] font-medium tracking-wide uppercase mt-1">Sessions</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 px-5 py-2 hover:text-blue-500 dark:hover:text-blue-300 transition-all active:scale-90 duration-500" href="#">
+<span class="material-symbols-outlined">person</span>
+<span class="font-['Inter'] text-[11px] font-medium tracking-wide uppercase mt-1">Profile</span>
+</a>
+</nav>
+</body></html>

@@ -3,10 +3,14 @@ import { UserAvatarStorageService } from '../services/user-avatar-storage.servic
 
 @Injectable()
 export class GetCurrentUserAvatarFileUseCase {
-  constructor(private readonly userAvatarStorageService: UserAvatarStorageService) {}
+  constructor(
+    private readonly userAvatarStorageService: UserAvatarStorageService,
+  ) {}
 
   async execute(input: { userId: string }) {
-    const stored = await this.userAvatarStorageService.getAvatarFile(input.userId);
+    const stored = await this.userAvatarStorageService.getAvatarFile(
+      input.userId,
+    );
     if (!stored) {
       throw new NotFoundException({
         messageKey: 'users.errors.avatarNotFound',
@@ -17,4 +21,3 @@ export class GetCurrentUserAvatarFileUseCase {
     return stored;
   }
 }
-

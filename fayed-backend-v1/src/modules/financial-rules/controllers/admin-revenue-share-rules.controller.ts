@@ -59,4 +59,3 @@ export class AdminRevenueShareRulesController {
     return this.updateRevenueShareRulesUseCase.execute(body);
   }
 }
-

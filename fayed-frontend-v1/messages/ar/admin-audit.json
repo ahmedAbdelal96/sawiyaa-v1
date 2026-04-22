@@ -1,0 +1,94 @@
+{
+  "audit": {
+    "meta": {
+      "listTitle": "سجل التدقيق الإداري",
+      "listDescription": "سجل تشغيلي قابل للتتبع مع فلاتر وبحث بشكل منظم.",
+      "detailTitle": "تفاصيل حدث التدقيق",
+      "detailDescription": "عرض تفصيلي لسياق حدث تدقيق واحد."
+    },
+    "list": {
+      "title": "سجل التدقيق",
+      "description": "متابعة الأحداث الأمنية والتشغيلية والمعلوماتية على مستوى المنصة.",
+      "summaryLabel": "أحداث التدقيق",
+      "openAction": "فتح التفاصيل",
+      "columns": {
+        "action": "الإجراء",
+        "actor": "الفاعل",
+        "target": "الهدف",
+        "category": "الفئة",
+        "severity": "الشدة",
+        "source": "المصدر",
+        "occurredAt": "الوقت"
+      }
+    },
+    "filters": {
+      "all": "الكل",
+      "actorRole": "دور الفاعل",
+      "category": "الفئة",
+      "severity": "الشدة",
+      "source": "المصدر",
+      "dateFrom": "من تاريخ",
+      "dateTo": "إلى تاريخ",
+      "eventFamily": "عائلة الحدث",
+      "eventFamilyPlaceholder": "auth / payments / sessions",
+      "targetEntityType": "نوع الهدف",
+      "targetEntityTypePlaceholder": "PAYMENT / SESSION / REFUND",
+      "search": "بحث",
+      "searchPlaceholder": "ابحث في الإجراء أو الفاعل أو الهدف..."
+    },
+    "detail": {
+      "back": "العودة إلى سجل التدقيق",
+      "eyebrow": "التدقيق الإداري",
+      "title": "تفاصيل حدث التدقيق"
+    },
+    "sections": {
+      "event": "سياق الحدث",
+      "actorTarget": "الفاعل والهدف",
+      "snapshots": "اللقطات",
+      "timestamps": "الطوابع الزمنية"
+    },
+    "fields": {
+      "action": "الإجراء",
+      "eventFamily": "عائلة الحدث",
+      "status": "الحالة",
+      "category": "الفئة",
+      "severity": "الشدة",
+      "source": "المصدر",
+      "occurredAt": "وقت الحدث",
+      "actorUserId": "معرّف المستخدم",
+      "actorName": "اسم الفاعل",
+      "actorRole": "دور الفاعل",
+      "targetType": "نوع الهدف",
+      "targetId": "معرّف الهدف",
+      "titleSnapshot": "لقطة العنوان",
+      "subjectSnapshot": "لقطة الموضوع",
+      "bodySnapshot": "لقطة المحتوى",
+      "suppressedReason": "سبب الحجب",
+      "createdAt": "تاريخ الإنشاء",
+      "updatedAt": "آخر تحديث"
+    },
+    "states": {
+      "empty": {
+        "heading": "لا توجد أحداث تدقيق",
+        "note": "لا توجد نتائج تطابق الفلاتر الحالية."
+      },
+      "listError": {
+        "heading": "تعذّر تحميل سجل التدقيق",
+        "note": "حدث خطأ أثناء تحميل أحداث التدقيق.",
+        "retry": "أعد المحاولة"
+      },
+      "detailError": {
+        "heading": "تعذّر تحميل تفاصيل الحدث",
+        "note": "تعذّر تحميل بيانات هذا الحدث حالياً.",
+        "retry": "أعد المحاولة"
+      },
+      "notFound": {
+        "heading": "الحدث غير متاح",
+        "note": "قد يكون الحدث غير موجود أو لم يعد متاحاً."
+      }
+    },
+    "fallback": {
+      "noValue": "-"
+    }
+  }
+}

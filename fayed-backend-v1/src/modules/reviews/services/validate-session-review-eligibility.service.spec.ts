@@ -35,7 +35,10 @@ describe('ValidateSessionReviewEligibilityService', () => {
     ).mockResolvedValue(1);
 
     await expect(
-      service.assertEligible({ sessionId: 'session-1', patientId: 'patient-1' }),
+      service.assertEligible({
+        sessionId: 'session-1',
+        patientId: 'patient-1',
+      }),
     ).resolves.toEqual(session);
   });
 
@@ -53,7 +56,10 @@ describe('ValidateSessionReviewEligibilityService', () => {
     );
 
     await expect(
-      service.assertEligible({ sessionId: 'session-1', patientId: 'patient-1' }),
+      service.assertEligible({
+        sessionId: 'session-1',
+        patientId: 'patient-1',
+      }),
     ).rejects.toMatchObject({
       response: { error: 'REVIEW_SESSION_NOT_COMPLETED' },
     });
@@ -73,7 +79,10 @@ describe('ValidateSessionReviewEligibilityService', () => {
     );
 
     await expect(
-      service.assertEligible({ sessionId: 'session-1', patientId: 'patient-1' }),
+      service.assertEligible({
+        sessionId: 'session-1',
+        patientId: 'patient-1',
+      }),
     ).rejects.toMatchObject({
       response: { error: 'REVIEW_SESSION_NOT_COMPLETED' },
     });
@@ -96,7 +105,10 @@ describe('ValidateSessionReviewEligibilityService', () => {
     ).mockResolvedValue(0);
 
     await expect(
-      service.assertEligible({ sessionId: 'session-1', patientId: 'patient-1' }),
+      service.assertEligible({
+        sessionId: 'session-1',
+        patientId: 'patient-1',
+      }),
     ).rejects.toMatchObject({
       response: { error: 'REVIEW_SESSION_NOT_PAID' },
     });

@@ -1,6 +1,9 @@
 import { BadRequestException } from '@nestjs/common';
 import { ConfigScopeType } from '@prisma/client';
-import { ConfigScopeInput, ConfigScopeMatch } from '../types/config-scope.types';
+import {
+  ConfigScopeInput,
+  ConfigScopeMatch,
+} from '../types/config-scope.types';
 
 function getScopeKey(scope: ConfigScopeMatch): string {
   return `${scope.scopeType}:${scope.scopeRefId ?? 'global'}`;

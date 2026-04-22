@@ -7,7 +7,9 @@ describe('ValidateArticleStatusTransitionService', () => {
 
   it('allows publish from draft and already-published', () => {
     expect(() => service.assertCanPublish(ArticleStatus.DRAFT)).not.toThrow();
-    expect(() => service.assertCanPublish(ArticleStatus.PUBLISHED)).not.toThrow();
+    expect(() =>
+      service.assertCanPublish(ArticleStatus.PUBLISHED),
+    ).not.toThrow();
   });
 
   it('rejects publish from archived', () => {
@@ -18,7 +20,9 @@ describe('ValidateArticleStatusTransitionService', () => {
 
   it('allows archive from draft/published and rejects unsupported transitions', () => {
     expect(() => service.assertCanArchive(ArticleStatus.DRAFT)).not.toThrow();
-    expect(() => service.assertCanArchive(ArticleStatus.PUBLISHED)).not.toThrow();
+    expect(() =>
+      service.assertCanArchive(ArticleStatus.PUBLISHED),
+    ).not.toThrow();
     expect(() => service.assertCanArchive(ArticleStatus.APPROVED)).toThrow(
       BadRequestException,
     );

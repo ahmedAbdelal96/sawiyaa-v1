@@ -34,9 +34,11 @@ export class CreateSupportTicketUseCase {
       practitionerProfileId: actor.practitionerProfileId,
       relatedSessionId: input.payload.relatedSessionId,
       relatedPaymentId: input.payload.relatedPaymentId,
-      relatedInstantBookingRequestId: input.payload.relatedInstantBookingRequestId,
+      relatedInstantBookingRequestId:
+        input.payload.relatedInstantBookingRequestId,
       relatedMatchingSessionId: input.payload.relatedMatchingSessionId,
-      relatedAssessmentSubmissionId: input.payload.relatedAssessmentSubmissionId,
+      relatedAssessmentSubmissionId:
+        input.payload.relatedAssessmentSubmissionId,
     });
 
     const created = await this.supportTicketRepository.createTicket({
@@ -54,9 +56,11 @@ export class CreateSupportTicketUseCase {
       priority: input.payload.priority ?? SupportTicketPriority.NORMAL,
       relatedSessionId: input.payload.relatedSessionId,
       relatedPaymentId: input.payload.relatedPaymentId,
-      relatedInstantBookingRequestId: input.payload.relatedInstantBookingRequestId,
+      relatedInstantBookingRequestId:
+        input.payload.relatedInstantBookingRequestId,
       relatedMatchingSessionId: input.payload.relatedMatchingSessionId,
-      relatedAssessmentSubmissionId: input.payload.relatedAssessmentSubmissionId,
+      relatedAssessmentSubmissionId:
+        input.payload.relatedAssessmentSubmissionId,
     });
 
     this.logger.log(
@@ -70,7 +74,8 @@ export class CreateSupportTicketUseCase {
 
   private async resolveActor(actorKind: SupportActorKind, userId: string) {
     if (actorKind === 'PATIENT') {
-      const patient = await this.supportActorRepository.findPatientProfileByUserId(userId);
+      const patient =
+        await this.supportActorRepository.findPatientProfileByUserId(userId);
       if (!patient) {
         throw new NotFoundException({
           messageKey: 'support.errors.patientProfileNotFound',

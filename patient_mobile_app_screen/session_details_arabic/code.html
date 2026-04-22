@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+
+<html dir="rtl" lang="ar"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>تفاصيل الجلسة - Sanctuary</title>
+<!-- Google Fonts: Manrope & Inter -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Manrope:wght@400;600;700;800&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "surface-container-highest": "#e0e2e7",
+                      "primary-fixed": "#d5e3ff",
+                      "on-primary-container": "#fefcff",
+                      "surface-container-lowest": "#ffffff",
+                      "surface-container-low": "#f1f4f9",
+                      "on-tertiary-fixed-variant": "#683d00",
+                      "on-secondary-fixed": "#0a1c34",
+                      "on-secondary-container": "#51617e",
+                      "error-container": "#ffdad6",
+                      "on-error": "#ffffff",
+                      "inverse-surface": "#2d3135",
+                      "tertiary-container": "#a86500",
+                      "surface-container": "#eceef3",
+                      "outline": "#727783",
+                      "surface-bright": "#f7f9fe",
+                      "primary-container": "#3575c7",
+                      "on-surface-variant": "#424751",
+                      "on-secondary-fixed-variant": "#374762",
+                      "surface-variant": "#e0e2e7",
+                      "secondary-container": "#cdddff",
+                      "outline-variant": "#c2c6d3",
+                      "secondary": "#4f5f7b",
+                      "secondary-fixed": "#d6e3ff",
+                      "surface-container-high": "#e6e8ed",
+                      "tertiary-fixed-dim": "#ffb86b",
+                      "tertiary-fixed": "#ffdcbc",
+                      "inverse-on-surface": "#eff1f6",
+                      "primary": "#0b5cac",
+                      "on-primary": "#ffffff",
+                      "inverse-primary": "#a7c8ff",
+                      "on-background": "#181c20",
+                      "surface-tint": "#125eae",
+                      "surface-dim": "#d8dadf",
+                      "on-secondary": "#ffffff",
+                      "on-primary-fixed-variant": "#004689",
+                      "surface": "#f7f9fe",
+                      "on-error-container": "#93000a",
+                      "on-tertiary": "#ffffff",
+                      "error": "#ba1a1a",
+                      "on-primary-fixed": "#001b3c",
+                      "primary-fixed-dim": "#a7c8ff",
+                      "on-surface": "#181c20",
+                      "on-tertiary-container": "#fffbff",
+                      "on-tertiary-fixed": "#2c1700",
+                      "secondary-fixed-dim": "#b7c7e8",
+                      "tertiary": "#854f00",
+                      "background": "#f7f9fe"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {},
+              "fontFamily": {
+                      "headline": [
+                              "Manrope", "sans-serif"
+                      ],
+                      "body": [
+                              "Inter", "sans-serif"
+                      ],
+                      "label": [
+                              "Inter", "sans-serif"
+                      ]
+              }
+      },
+          },
+        }
+    </script>
+<style>
+        body {
+            background-color: theme('colors.surface');
+            color: theme('colors.on-surface');
+        }
+        .ambient-shadow {
+            box-shadow: 0 8px 30px rgba(24, 28, 32, 0.08);
+        }
+        .ghost-border {
+            border: 1px solid rgba(194, 198, 211, 0.2);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="font-body antialiased min-h-screen pb-24 selection:bg-primary-container selection:text-on-primary-container">
+<!-- TopAppBar (From JSON) -->
+<nav class="bg-slate-200/85 dark:bg-slate-800/85 backdrop-blur-2xl docked w-full top-0 sticky shadow-[0_4px_20px_rgba(24,28,32,0.05)] flex items-center justify-between w-full h-16 px-6 z-50">
+<button class="text-blue-800 dark:text-blue-300 hover:bg-slate-300/50 dark:hover:bg-slate-700/50 transition-colors w-10 h-10 flex items-center justify-center rounded-full active:scale-95 duration-150">
+<!-- Mirrored for RTL -->
+<span class="material-symbols-outlined transform scale-x-[-1]" data-icon="arrow_back">arrow_back</span>
+</button>
+<span class="text-xl font-bold font-manrope text-slate-900 dark:text-slate-100 tracking-tight text-lg">Sanctuary</span>
+<div class="w-10"></div> <!-- Spacer for center alignment -->
+</nav>
+<!-- Main Content Canvas -->
+<main class="max-w-2xl mx-auto p-4 md:p-8 mt-4 space-y-6">
+<!-- Header Section -->
+<header class="flex flex-col gap-2 mb-8">
+<div class="flex items-center gap-3">
+<span class="bg-secondary-container text-on-secondary-container font-label text-xs font-medium px-3 py-1 rounded-full uppercase tracking-wider">
+                    جلسة قادمة
+                </span>
+</div>
+<h1 class="font-headline text-3xl md:text-4xl font-extrabold text-on-surface tracking-tight mt-2">
+                تفاصيل الجلسة
+            </h1>
+</header>
+<!-- The "Pulse Indicator" Therapist Card -->
+<article class="relative bg-surface-container-lowest rounded-2xl overflow-hidden ambient-shadow p-6 flex flex-col sm:flex-row items-start sm:items-center gap-6">
+<!-- Pulse Bar (RTL inline-start is right edge) -->
+<div class="absolute right-0 top-0 bottom-0 w-1 bg-surface-tint"></div>
+<img alt="صورة الطبيبة المعالجة" class="w-20 h-20 rounded-full object-cover shadow-[0_4px_12px_rgba(24,28,32,0.1)]" data-alt="Professional headshot of a female doctor in a bright, modern clinical office, soft natural lighting, warm and empathetic expression" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCLzfsUaI1T1ErTD0BcF1B8vVwRwy0nV5-op_M-CqDQpSAOTg1MuHvVBe8Ukjozx-gIYg6iYJaYCGFOhzs3I6LhFQ9mzCmYLyWhv0p_wYspLGgJtL2FbEwSgbylmsIi4eWOyN2_wSOfW44f7wIOsU6bcZLFQ4nQ7ja-h16S33_WAg6kk0h0I972xw7JUxhSKSdBmVdviLy9xDxAmGDsvmL-jZ6YsA67Eaq53kB_d5-l2Vt5r8kAQuNz9zW78pKzyfJ8LQ8ChoWZPPYS"/>
+<div class="flex-1">
+<h2 class="font-headline text-xl font-bold text-on-surface mb-1">د. ليلى عبد الرحمن</h2>
+<p class="text-on-surface-variant text-sm flex items-center gap-2 mb-3">
+<span class="material-symbols-outlined text-[18px]">psychology</span>
+                    أخصائية نفسية إكلينيكية
+                </p>
+<div class="flex items-center gap-4 text-sm font-medium">
+<span class="flex items-center gap-1.5 text-secondary">
+<span class="material-symbols-outlined text-[16px]">videocam</span>
+                        جلسة فيديو
+                    </span>
+<span class="flex items-center gap-1.5 text-secondary">
+<span class="material-symbols-outlined text-[16px]">timer</span>
+                        ٥٠ دقيقة
+                    </span>
+</div>
+</div>
+</article>
+<!-- Appointment Timing (Bento Style Sub-cards) -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<div class="bg-surface-container-low rounded-xl p-5 flex items-start gap-4 ghost-border">
+<div class="w-10 h-10 rounded-full bg-surface-container-lowest flex items-center justify-center text-primary shadow-sm shrink-0">
+<span class="material-symbols-outlined" data-icon="calendar_today">calendar_today</span>
+</div>
+<div>
+<h3 class="font-label text-xs font-medium text-on-surface-variant uppercase tracking-wider mb-1">التاريخ</h3>
+<p class="font-headline font-bold text-lg text-on-surface">الاثنين، ١٥ نوفمبر</p>
+</div>
+</div>
+<div class="bg-surface-container-low rounded-xl p-5 flex items-start gap-4 ghost-border">
+<div class="w-10 h-10 rounded-full bg-surface-container-lowest flex items-center justify-center text-primary shadow-sm shrink-0">
+<span class="material-symbols-outlined" data-icon="schedule">schedule</span>
+</div>
+<div>
+<h3 class="font-label text-xs font-medium text-on-surface-variant uppercase tracking-wider mb-1">الوقت</h3>
+<p class="font-headline font-bold text-lg text-on-surface flex items-center gap-2">
+                        ١٠:٠٠ ص 
+                        <span class="text-outline text-sm font-normal">إلى</span>
+                        ١٠:٥٠ ص
+                    </p>
+</div>
+</div>
+</div>
+<!-- Primary Action CTA -->
+<div class="mt-8">
+<button class="w-full bg-gradient-to-br from-primary to-primary-container text-on-primary font-headline font-bold text-lg py-4 px-6 rounded-xl shadow-[0_8px_20px_rgba(11,92,172,0.25)] hover:shadow-[0_12px_25px_rgba(11,92,172,0.35)] transition-all duration-200 flex items-center justify-center gap-3">
+<span class="material-symbols-outlined" data-icon="videocam">videocam</span>
+                الانضمام للجلسة
+            </button>
+<p class="text-center text-xs text-on-surface-variant mt-3 font-medium">
+                سيكون الرابط متاحاً قبل ٥ دقائق من بدء الجلسة
+            </p>
+</div>
+<!-- Preparation Notes Section -->
+<section class="mt-10">
+<h3 class="font-headline text-lg font-bold text-on-surface mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">edit_note</span>
+                ملاحظات التحضير
+            </h3>
+<div class="bg-surface-container-low rounded-xl p-6 ghost-border space-y-4">
+<p class="text-on-surface leading-relaxed text-sm">
+                    يرجى التأكد من تواجدك في مكان هادئ ومريح وخاص قبل بدء الجلسة. تأكد من جودة اتصال الإنترنت وعمل الكاميرا والميكروفون.
+                </p>
+<div class="bg-surface-container-lowest rounded-lg p-4 shadow-sm border border-outline-variant/20 flex items-start gap-3">
+<span class="material-symbols-outlined text-tertiary shrink-0 mt-0.5">info</span>
+<p class="text-sm text-on-surface-variant">
+                        يمكنك مراجعة أهداف الجلسة السابقة وتدوين أي نقاط تود مناقشتها اليوم.
+                    </p>
+</div>
+</div>
+</section>
+<!-- Footer / Administrative -->
+<footer class="mt-12 border-t border-outline-variant/20 pt-6 text-center">
+<a class="inline-flex items-center gap-2 text-on-surface-variant hover:text-primary transition-colors text-sm font-medium" href="#">
+<span class="material-symbols-outlined text-[18px]">policy</span>
+                الاطلاع على سياسة الإلغاء
+            </a>
+</footer>
+</main>
+</body></html>

@@ -24,7 +24,9 @@ import { ListAdminPayoutsUseCase } from '../use-cases/list-admin-payouts.use-cas
 @Roles(AppRole.ADMIN, AppRole.SUPPORT_AGENT)
 @Controller('admin/payouts')
 export class AdminPayoutsController {
-  constructor(private readonly listAdminPayoutsUseCase: ListAdminPayoutsUseCase) {}
+  constructor(
+    private readonly listAdminPayoutsUseCase: ListAdminPayoutsUseCase,
+  ) {}
 
   @Get()
   @ApiOperation({
@@ -41,4 +43,3 @@ export class AdminPayoutsController {
     return this.listAdminPayoutsUseCase.execute({ query });
   }
 }
-

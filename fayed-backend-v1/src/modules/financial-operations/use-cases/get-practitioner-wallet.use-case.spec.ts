@@ -48,8 +48,8 @@ describe('GetPractitionerWalletUseCase', () => {
   it('rejects when practitioner profile is missing in self-scope resolution', async () => {
     (practitionerRepository.findByUserId as jest.Mock).mockResolvedValue(null);
 
-    await expect(useCase.execute({ userId: 'user_missing' })).rejects.toBeInstanceOf(
-      NotFoundException,
-    );
+    await expect(
+      useCase.execute({ userId: 'user_missing' }),
+    ).rejects.toBeInstanceOf(NotFoundException);
   });
 });

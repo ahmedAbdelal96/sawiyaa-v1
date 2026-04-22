@@ -17,7 +17,11 @@ import {
 
 @Injectable()
 export class TrainingPresenter {
-  presentPagination(input: { page: number; limit: number; totalItems: number }) {
+  presentPagination(input: {
+    page: number;
+    limit: number;
+    totalItems: number;
+  }) {
     return {
       page: input.page,
       limit: input.limit,
@@ -58,7 +62,8 @@ export class TrainingPresenter {
       scheduleCode: input.schedule.scheduleCode,
       status: input.schedule.status,
       enrollmentOpenAt: input.schedule.enrollmentOpenAt?.toISOString() ?? null,
-      enrollmentCloseAt: input.schedule.enrollmentCloseAt?.toISOString() ?? null,
+      enrollmentCloseAt:
+        input.schedule.enrollmentCloseAt?.toISOString() ?? null,
       startsAt: input.schedule.startsAt?.toISOString() ?? null,
       endsAt: input.schedule.endsAt?.toISOString() ?? null,
       timezone: input.schedule.timezone ?? null,
@@ -292,8 +297,10 @@ export class TrainingPresenter {
       enrollment.course.translations ?? [],
       locale,
     );
-    const paymentMetadata = (enrollment.payment?.metadataJson ??
-      {}) as Record<string, unknown>;
+    const paymentMetadata = (enrollment.payment?.metadataJson ?? {}) as Record<
+      string,
+      unknown
+    >;
 
     return {
       id: enrollment.id,
@@ -384,7 +391,7 @@ export class TrainingPresenter {
       canJoin: input.canJoin,
       blockedReason: input.blockedReason,
       provider: input.provider ?? null,
-      joinUrl: input.canJoin ? input.joinUrl ?? null : null,
+      joinUrl: input.canJoin ? (input.joinUrl ?? null) : null,
       startsAt: input.startsAt?.toISOString() ?? null,
       endsAt: input.endsAt?.toISOString() ?? null,
     };

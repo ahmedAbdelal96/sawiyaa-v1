@@ -72,9 +72,9 @@ describe('MarkSessionCompletedByPractitionerUseCase', () => {
       SessionStatus.IN_PROGRESS,
       SessionStatus.COMPLETED,
     );
-    expect((sessionRepository.createEvent as jest.Mock).mock.calls[0][0].eventType).toBe(
-      SessionEventType.SESSION_COMPLETED,
-    );
+    expect(
+      (sessionRepository.createEvent as jest.Mock).mock.calls[0][0].eventType,
+    ).toBe(SessionEventType.SESSION_COMPLETED);
   });
 
   it('rejects non-owned session mutation', async () => {

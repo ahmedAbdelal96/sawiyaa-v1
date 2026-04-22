@@ -44,7 +44,9 @@ describe('NotificationSchedulerCoreService', () => {
   });
 
   it('prevents duplicate claim when race loses on same notification', async () => {
-    (repository.listDueNotificationIds as jest.Mock).mockResolvedValue([{ id: 'n1' }]);
+    (repository.listDueNotificationIds as jest.Mock).mockResolvedValue([
+      { id: 'n1' },
+    ]);
     (repository.claimNotificationForExecution as jest.Mock).mockResolvedValue({
       count: 0,
     });

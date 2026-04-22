@@ -24,7 +24,10 @@ export class CreateTrainingScheduleUseCase {
     private readonly buildTrainingScheduleSnapshotsService: BuildTrainingScheduleSnapshotsService,
   ) {}
 
-  async execute(input: { courseId: string; payload: CreateTrainingScheduleDto }) {
+  async execute(input: {
+    courseId: string;
+    payload: CreateTrainingScheduleDto;
+  }) {
     const course = await this.trainingRepository.findCourseById(input.courseId);
     if (!course) {
       throw new NotFoundException({
@@ -56,22 +59,28 @@ export class CreateTrainingScheduleUseCase {
     });
 
     try {
-      const created = await this.trainingRepository.createSchedule(input.courseId, {
-        scheduleCode:
-          input.payload.scheduleCode?.trim() ||
-          `sch-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`,
-        status,
-        enrollmentOpenAt,
-        enrollmentCloseAt,
-        startsAt,
-        endsAt,
-        timezone: input.payload.timezone?.trim() || TRAINING_DEFAULT_TIMEZONE,
-        maxEnrollmentsOverride: input.payload.maxEnrollmentsOverride ?? null,
-        waitlistEnabled: input.payload.waitlistEnabled ?? false,
-        externalRoomProvider: input.payload.externalRoomProvider?.trim() || null,
-        externalRoomJoinUrl: input.payload.externalRoomJoinUrl?.trim() || null,
-        externalRoomHostUrl: input.payload.externalRoomHostUrl?.trim() || null,
-      });
+      const created = await this.trainingRepository.createSchedule(
+        input.courseId,
+        {
+          scheduleCode:
+            input.payload.scheduleCode?.trim() ||
+            `sch-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`,
+          status,
+          enrollmentOpenAt,
+          enrollmentCloseAt,
+          startsAt,
+          endsAt,
+          timezone: input.payload.timezone?.trim() || TRAINING_DEFAULT_TIMEZONE,
+          maxEnrollmentsOverride: input.payload.maxEnrollmentsOverride ?? null,
+          waitlistEnabled: input.payload.waitlistEnabled ?? false,
+          externalRoomProvider:
+            input.payload.externalRoomProvider?.trim() || null,
+          externalRoomJoinUrl:
+            input.payload.externalRoomJoinUrl?.trim() || null,
+          externalRoomHostUrl:
+            input.payload.externalRoomHostUrl?.trim() || null,
+        },
+      );
 
       this.logger.log(
         `Training schedule created (courseId=${input.courseId}, scheduleId=${created.id})`,

@@ -184,8 +184,7 @@ export class PractitionerSessionsController {
   })
   @ApiNotFoundResponse({ description: 'Session was not found' })
   @ApiConflictResponse({
-    description:
-      'Current lifecycle status cannot transition to COMPLETED',
+    description: 'Current lifecycle status cannot transition to COMPLETED',
   })
   markCompleted(
     @CurrentUser() currentUser: AuthenticatedUser,

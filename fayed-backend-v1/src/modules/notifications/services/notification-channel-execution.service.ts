@@ -22,9 +22,13 @@ export type ChannelExecutionResult = {
 
 @Injectable()
 export class NotificationChannelExecutionService {
-  constructor(private readonly notificationEmailService: NotificationEmailService) {}
+  constructor(
+    private readonly notificationEmailService: NotificationEmailService,
+  ) {}
 
-  async execute(notification: QueuedNotification): Promise<ChannelExecutionResult> {
+  async execute(
+    notification: QueuedNotification,
+  ): Promise<ChannelExecutionResult> {
     if (notification.channel === NotificationChannel.IN_APP) {
       return {
         success: true,

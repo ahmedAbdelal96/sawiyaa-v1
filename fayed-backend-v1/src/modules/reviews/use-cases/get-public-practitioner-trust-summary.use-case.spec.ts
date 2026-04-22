@@ -21,7 +21,9 @@ describe('GetPublicPractitionerTrustSummaryUseCase', () => {
   });
 
   it('throws when practitioner is not publicly visible', async () => {
-    (reviewRepository.findPublicPractitionerBySlug as jest.Mock).mockResolvedValue(null);
+    (
+      reviewRepository.findPublicPractitionerBySlug as jest.Mock
+    ).mockResolvedValue(null);
 
     await expect(
       useCase.execute({
@@ -31,14 +33,18 @@ describe('GetPublicPractitionerTrustSummaryUseCase', () => {
   });
 
   it('returns deterministic moderation-safe trust summary contract', async () => {
-    (reviewRepository.findPublicPractitionerBySlug as jest.Mock).mockResolvedValue({
+    (
+      reviewRepository.findPublicPractitionerBySlug as jest.Mock
+    ).mockResolvedValue({
       id: 'pr_1',
       publicSlug: 'dr-one',
       user: {
         displayName: 'Dr One',
       },
     });
-    (reviewRepository.aggregatePublicVisibleReviews as jest.Mock).mockResolvedValue({
+    (
+      reviewRepository.aggregatePublicVisibleReviews as jest.Mock
+    ).mockResolvedValue({
       _count: { id: 4 },
       _avg: { ratingValue: 4.25 },
       _max: { publishedAt: new Date('2026-03-15T00:00:00.000Z') },
@@ -69,4 +75,3 @@ describe('GetPublicPractitionerTrustSummaryUseCase', () => {
     });
   });
 });
-

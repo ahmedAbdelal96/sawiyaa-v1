@@ -2,6 +2,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import {
   PaymentProvider,
   PaymentStatus,
+  RefundDestination,
   RefundStatus,
   RefundType,
   SessionMode,
@@ -24,6 +25,21 @@ export class PaymentItemDto {
 
   @ApiProperty()
   amount!: string;
+
+  @ApiProperty()
+  amountSubtotal!: string;
+
+  @ApiProperty()
+  amountDiscount!: string;
+
+  @ApiProperty()
+  amountTotal!: string;
+
+  @ApiProperty()
+  amountFromWallet!: string;
+
+  @ApiProperty()
+  amountFromGateway!: string;
 
   @ApiProperty()
   currency!: string;
@@ -125,6 +141,9 @@ export class AdminPaymentOpsRefundItemDto {
   @ApiProperty({ enum: RefundType })
   refundType!: RefundType;
 
+  @ApiProperty({ enum: RefundDestination })
+  destination!: RefundDestination;
+
   @ApiProperty({ enum: RefundStatus })
   status!: RefundStatus;
 
@@ -148,6 +167,9 @@ export class AdminPaymentOpsRefundItemDto {
 
   @ApiProperty({ nullable: true })
   failedAt!: string | null;
+
+  @ApiProperty({ nullable: true })
+  customerWalletCreditedAt!: string | null;
 
   @ApiProperty()
   createdAt!: string;
@@ -200,6 +222,12 @@ export class AdminPaymentOpsSummaryDto {
 
   @ApiProperty()
   amountTotal!: string;
+
+  @ApiProperty()
+  amountFromWallet!: string;
+
+  @ApiProperty()
+  amountFromGateway!: string;
 
   @ApiProperty()
   currency!: string;

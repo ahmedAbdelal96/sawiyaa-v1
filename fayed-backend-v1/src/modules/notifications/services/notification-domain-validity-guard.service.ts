@@ -36,11 +36,12 @@ export class NotificationDomainValidityGuardService {
     SessionStatus.EXPIRED,
     SessionStatus.REFUNDED,
   ]);
-  private readonly invalidTrainingScheduleStatuses = new Set<CourseScheduleStatus>([
-    CourseScheduleStatus.CANCELLED,
-    CourseScheduleStatus.COMPLETED,
-    CourseScheduleStatus.ARCHIVED,
-  ]);
+  private readonly invalidTrainingScheduleStatuses =
+    new Set<CourseScheduleStatus>([
+      CourseScheduleStatus.CANCELLED,
+      CourseScheduleStatus.COMPLETED,
+      CourseScheduleStatus.ARCHIVED,
+    ]);
   private readonly paymentSuccessStatuses = new Set<PaymentStatus>([
     PaymentStatus.CAPTURED,
     PaymentStatus.AUTHORIZED,
@@ -96,7 +97,8 @@ export class NotificationDomainValidityGuardService {
   }
 
   private async evaluateSession(sessionId: string): Promise<GuardDecision> {
-    const session = await this.repository.findSessionDeliveryGuardState(sessionId);
+    const session =
+      await this.repository.findSessionDeliveryGuardState(sessionId);
     if (!session) {
       return { valid: false, reason: 'SESSION_NOT_FOUND' };
     }
@@ -112,7 +114,9 @@ export class NotificationDomainValidityGuardService {
     enrollmentId: string,
   ): Promise<GuardDecision> {
     const enrollment =
-      await this.repository.findTrainingEnrollmentDeliveryGuardState(enrollmentId);
+      await this.repository.findTrainingEnrollmentDeliveryGuardState(
+        enrollmentId,
+      );
     if (!enrollment) {
       return { valid: false, reason: 'TRAINING_ENROLLMENT_NOT_FOUND' };
     }
@@ -124,7 +128,9 @@ export class NotificationDomainValidityGuardService {
       };
     }
 
-    if (this.invalidTrainingScheduleStatuses.has(enrollment.courseSchedule.status)) {
+    if (
+      this.invalidTrainingScheduleStatuses.has(enrollment.courseSchedule.status)
+    ) {
       return {
         valid: false,
         reason: `TRAINING_SCHEDULE_STATUS_${enrollment.courseSchedule.status}`,
@@ -138,7 +144,8 @@ export class NotificationDomainValidityGuardService {
     paymentId: string,
     slug: string,
   ): Promise<GuardDecision> {
-    const payment = await this.repository.findPaymentDeliveryGuardState(paymentId);
+    const payment =
+      await this.repository.findPaymentDeliveryGuardState(paymentId);
     if (!payment) {
       return { valid: false, reason: 'PAYMENT_NOT_FOUND' };
     }
@@ -166,7 +173,10 @@ export class NotificationDomainValidityGuardService {
     return { valid: true };
   }
 
-  private async evaluateRefund(refundId: string, slug: string): Promise<GuardDecision> {
+  private async evaluateRefund(
+    refundId: string,
+    slug: string,
+  ): Promise<GuardDecision> {
     const refund = await this.repository.findRefundDeliveryGuardState(refundId);
     if (!refund) {
       return { valid: false, reason: 'REFUND_NOT_FOUND' };

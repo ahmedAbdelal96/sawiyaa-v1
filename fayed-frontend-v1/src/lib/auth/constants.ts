@@ -20,7 +20,7 @@ export const DEFAULT_LOGIN_REDIRECT = "/admin/dashboard";
 export const LOGIN_PAGE = "/signin";
 
 export const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:7000/api/v1";
+  process.env.NEXT_PUBLIC_API_URL || "/api/v1";
 
 export const AUTH_ENDPOINTS = {
   login: `${API_BASE_URL}/auth/login`,

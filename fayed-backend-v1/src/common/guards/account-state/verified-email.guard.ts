@@ -13,7 +13,10 @@ export class VerifiedEmailGuard implements CanActivate {
     const user = getAuthenticatedUser(request);
 
     if (user.isEmailVerified !== true) {
-      forbid('A verified email is required for this route', 'VERIFIED_EMAIL_REQUIRED');
+      forbid(
+        'A verified email is required for this route',
+        'VERIFIED_EMAIL_REQUIRED',
+      );
     }
 
     return true;

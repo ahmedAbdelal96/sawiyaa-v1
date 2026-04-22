@@ -31,7 +31,9 @@ import { SubmitAssessmentUseCase } from '../use-cases/submit-assessment.use-case
 @Roles(AppRole.PATIENT)
 @Controller('assessments')
 export class AssessmentSubmissionsController {
-  constructor(private readonly submitAssessmentUseCase: SubmitAssessmentUseCase) {}
+  constructor(
+    private readonly submitAssessmentUseCase: SubmitAssessmentUseCase,
+  ) {}
 
   @Post(':slug/submissions')
   @ApiOperation({
@@ -40,7 +42,10 @@ export class AssessmentSubmissionsController {
       'Validates required answers, calculates deterministic result, persists submission snapshots, and returns a non-diagnostic result payload.',
   })
   @ApiBody({ type: SubmitAssessmentDto })
-  @ApiResponse({ status: 201, type: AssessmentSubmissionResultSuccessResponseDto })
+  @ApiResponse({
+    status: 201,
+    type: AssessmentSubmissionResultSuccessResponseDto,
+  })
   @ApiBadRequestResponse({
     description:
       'Malformed answers, required questions missing, duplicate question answers, or option mismatch',

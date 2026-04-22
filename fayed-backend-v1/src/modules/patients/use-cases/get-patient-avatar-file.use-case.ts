@@ -10,7 +10,9 @@ export class GetPatientAvatarFileUseCase {
   ) {}
 
   async execute(input: { userId: string }) {
-    const profile = await this.patientProfileRepository.findByUserId(input.userId);
+    const profile = await this.patientProfileRepository.findByUserId(
+      input.userId,
+    );
     if (!profile) {
       throw new NotFoundException({
         messageKey: 'patients.errors.profileNotFound',
@@ -18,7 +20,9 @@ export class GetPatientAvatarFileUseCase {
       });
     }
 
-    const stored = await this.patientAvatarStorageService.getAvatarFile(profile.id);
+    const stored = await this.patientAvatarStorageService.getAvatarFile(
+      profile.id,
+    );
     if (!stored) {
       throw new NotFoundException({
         messageKey: 'patients.errors.avatarNotFound',
@@ -29,4 +33,3 @@ export class GetPatientAvatarFileUseCase {
     return stored;
   }
 }
-

@@ -10,10 +10,14 @@
     "wallet": "المحفظة",
     "ledger": "دفتر الحسابات",
     "payments": "المدفوعات",
+    "finance": "المالية",
+    "financeDashboard": "لوحة المالية",
+    "financeLedger": "مستكشف القيود",
+    "financeReconciliation": "المطابقة والرقابة",
     "settlements": "التسويات",
     "settlementsBatches": "دفعات التسوية",
     "settlementsDues": "مستحقات المعالجين",
-    "settlementsPayouts": "سجل عمليات الصرف",
+    "settlementsPayouts": "عمليات الصرف",
     "assessments": "الاختبارات",
     "availability": "التوفر"
   },
@@ -21,7 +25,7 @@
     "title": "العمل الأساسي"
   },
   "practitionerWorkspace": {
-    "title": "تنسيق الرعاية"
+    "title": "الرسائل"
   },
   "practitionerFinance": {
     "title": "الماليات"
@@ -35,11 +39,12 @@
     "notifications": "الإشعارات",
     "specialties": "التخصصات",
     "support": "الدعم",
-    "careChat": "محادثة الرعاية",
+    "careChat": "رسائل المعالج",
     "chat": "الدردشة",
     "reviews": "المراجعات",
     "moderationReports": "بلاغات الإشراف",
-    "training": "التدريب"
+    "training": "التدريب",
+    "auditLog": "سجل التدقيق"
   },
   "settings": {
     "title": "الإعدادات",

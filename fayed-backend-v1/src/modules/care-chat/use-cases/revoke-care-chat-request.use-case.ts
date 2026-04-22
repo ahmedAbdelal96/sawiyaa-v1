@@ -22,7 +22,9 @@ export class RevokeCareChatRequestUseCase {
     requestId: string;
     payload: RevokeCareChatRequestDto;
   }) {
-    const request = await this.careChatRequestRepository.findById(input.requestId);
+    const request = await this.careChatRequestRepository.findById(
+      input.requestId,
+    );
     if (!request) {
       throw new NotFoundException({
         messageKey: 'careChat.errors.requestNotFound',
@@ -35,38 +37,40 @@ export class RevokeCareChatRequestUseCase {
     );
 
     const now = new Date();
-    const updated = await this.careChatRequestRepository.withTransaction(async (tx) => {
-      if (request.linkedConversationId) {
-        await this.careChatConversationRepository.updateConversationStatus(
-          request.linkedConversationId,
+    const updated = await this.careChatRequestRepository.withTransaction(
+      async (tx) => {
+        if (request.linkedConversationId) {
+          await this.careChatConversationRepository.updateConversationStatus(
+            request.linkedConversationId,
+            {
+              status: ConversationStatus.SUSPENDED,
+              closedAt: now,
+            },
+            tx,
+          );
+        }
+
+        await this.careChatRequestRepository.createModerationAction({
+          requestId: request.id,
+          conversationId: request.linkedConversationId,
+          actedByUserId: input.userId,
+          actionNote: input.payload.note?.trim() || null,
+          tx,
+        });
+
+        return this.careChatRequestRepository.updateRequest(
+          request.id,
           {
-            status: ConversationStatus.SUSPENDED,
-            closedAt: now,
+            status: ChatApprovalStatus.REVOKED,
+            revokedAt: now,
+            reviewedByUserId: input.userId,
+            reviewedAt: now,
+            internalReviewNote: input.payload.note?.trim() || null,
           },
           tx,
         );
-      }
-
-      await this.careChatRequestRepository.createModerationAction({
-        requestId: request.id,
-        conversationId: request.linkedConversationId,
-        actedByUserId: input.userId,
-        actionNote: input.payload.note?.trim() || null,
-        tx,
-      });
-
-      return this.careChatRequestRepository.updateRequest(
-        request.id,
-        {
-          status: ChatApprovalStatus.REVOKED,
-          revokedAt: now,
-          reviewedByUserId: input.userId,
-          reviewedAt: now,
-          internalReviewNote: input.payload.note?.trim() || null,
-        },
-        tx,
-      );
-    });
+      },
+    );
 
     this.logger.warn(
       `Care chat request revoked (request=${request.id}, reviewer=${input.userId})`,

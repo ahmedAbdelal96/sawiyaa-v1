@@ -1,9 +1,10 @@
 "use client";
 
 import { useLocale, useTranslations } from "next-intl";
-import { ArrowRight, MessageSquareText } from "lucide-react";
+import { MessageSquareText } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { ListStateSkeleton, StateCard } from "@/components/shared/ContentStates";
+import DirectionalArrowIcon from "@/components/ui/navigation/DirectionalArrowIcon";
 import { toAppError } from "@/lib/api/errors";
 import { usePatientCareChatRequest } from "../hooks/use-care-chat";
 import { CareChatRequestStatusChip } from "./CareChatStatusChip";
@@ -59,7 +60,7 @@ export default function PatientCareChatRequestScreen({ requestId }: Props) {
           href="/patient/care-chat"
           className="mb-3 inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline"
         >
-          <ArrowRight className="h-4 w-4 rtl:rotate-180" />
+          <DirectionalArrowIcon direction="back" className="h-4 w-4" />
           {t("common.actions.backToRequests")}
         </Link>
         <div className="flex flex-wrap items-start justify-between gap-4">

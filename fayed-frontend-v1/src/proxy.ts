@@ -161,7 +161,7 @@ export default async function middleware(request: NextRequest): Promise<NextResp
     routeArea === "admin";
 
   if (isProtectedArea && !isAuthenticated) {
-    const callbackUrl = `${pathname}${search || ""}`;
+    const callbackUrl = `${canonicalPath}${search || ""}`;
     const loginUrl = new URL(localizedPath(locale, LOGIN_PAGE), request.url);
     loginUrl.searchParams.set("callbackUrl", callbackUrl);
     return NextResponse.redirect(loginUrl);

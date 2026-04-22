@@ -5,7 +5,10 @@ import { SessionVideoProviderAdapter } from '../providers/session-video-provider
 
 @Injectable()
 export class SessionVideoProviderRegistryService {
-  private readonly adapters = new Map<SessionProvider, SessionVideoProviderAdapter>();
+  private readonly adapters = new Map<
+    SessionProvider,
+    SessionVideoProviderAdapter
+  >();
 
   constructor(dailyAdapter: DailySessionVideoProviderAdapter) {
     this.adapters.set(dailyAdapter.provider, dailyAdapter);

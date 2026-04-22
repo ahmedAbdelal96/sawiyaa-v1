@@ -17,7 +17,11 @@ export class CommissionRuleRepository {
   listRules(where: Prisma.CommissionRuleWhereInput) {
     return this.prisma.commissionRule.findMany({
       where,
-      orderBy: [{ priority: 'desc' }, { isDefault: 'asc' }, { createdAt: 'asc' }],
+      orderBy: [
+        { priority: 'desc' },
+        { isDefault: 'asc' },
+        { createdAt: 'asc' },
+      ],
     });
   }
 
@@ -28,7 +32,11 @@ export class CommissionRuleRepository {
         OR: [{ startsAt: null }, { startsAt: { lte: at } }],
         AND: [{ OR: [{ endsAt: null }, { endsAt: { gte: at } }] }],
       },
-      orderBy: [{ priority: 'desc' }, { isDefault: 'asc' }, { createdAt: 'asc' }],
+      orderBy: [
+        { priority: 'desc' },
+        { isDefault: 'asc' },
+        { createdAt: 'asc' },
+      ],
     });
   }
 

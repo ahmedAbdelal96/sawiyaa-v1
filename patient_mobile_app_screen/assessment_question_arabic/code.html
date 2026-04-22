@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+
+<html dir="rtl" lang="ar"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Assessment - Clinical Sanctuary</title>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Manrope:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Design System Tailwind Config -->
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "secondary": "#4f5f7b",
+                    "primary": "#0b5cac",
+                    "tertiary-container": "#a86500",
+                    "secondary-fixed": "#d6e3ff",
+                    "inverse-on-surface": "#eff1f6",
+                    "error-container": "#ffdad6",
+                    "error": "#ba1a1a",
+                    "primary-container": "#3575c7",
+                    "on-secondary-container": "#51617e",
+                    "on-tertiary-fixed-variant": "#683d00",
+                    "tertiary": "#854f00",
+                    "surface-container-lowest": "#ffffff",
+                    "on-primary-container": "#fefcff",
+                    "on-primary": "#ffffff",
+                    "inverse-surface": "#2d3135",
+                    "on-tertiary": "#ffffff",
+                    "surface-variant": "#e0e2e7",
+                    "on-primary-fixed": "#001b3c",
+                    "primary-fixed": "#d5e3ff",
+                    "on-tertiary-container": "#fffbff",
+                    "tertiary-fixed": "#ffdcbc",
+                    "surface": "#f7f9fe",
+                    "on-surface": "#181c20",
+                    "on-primary-fixed-variant": "#004689",
+                    "on-secondary-fixed": "#0a1c34",
+                    "on-background": "#181c20",
+                    "surface-dim": "#d8dadf",
+                    "secondary-container": "#cdddff",
+                    "surface-bright": "#f7f9fe",
+                    "surface-container-low": "#f1f4f9",
+                    "surface-container-high": "#e6e8ed",
+                    "outline-variant": "#c2c6d3",
+                    "surface-container-highest": "#e0e2e7",
+                    "on-error": "#ffffff",
+                    "background": "#f7f9fe",
+                    "secondary-fixed-dim": "#b7c7e8",
+                    "inverse-primary": "#a7c8ff",
+                    "on-secondary": "#ffffff",
+                    "surface-container": "#eceef3",
+                    "tertiary-fixed-dim": "#ffb86b",
+                    "on-error-container": "#93000a",
+                    "on-tertiary-fixed": "#2c1700",
+                    "primary-fixed-dim": "#a7c8ff",
+                    "outline": "#727783",
+                    "surface-tint": "#125eae",
+                    "on-surface-variant": "#424751",
+                    "on-secondary-fixed-variant": "#374762"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {},
+            "fontFamily": {
+                    "headline": [
+                            "Manrope"
+                    ],
+                    "body": [
+                            "Inter"
+                    ],
+                    "label": [
+                            "Inter"
+                    ]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface text-on-surface font-body antialiased min-h-screen flex flex-col selection:bg-primary-fixed selection:text-on-primary-fixed">
+<!-- Top App Bar (Task-Focused / Minimal) -->
+<header class="sticky top-0 w-full z-40 bg-surface">
+<div class="flex items-center justify-between px-6 py-4 max-w-3xl mx-auto w-full">
+<!-- Close/Exit Action (Logical End) -->
+<button aria-label="حفظ وخروج" class="flex items-center justify-center w-11 h-11 rounded-full hover:bg-surface-container-high transition-colors text-on-surface-variant" type="button">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">close</span>
+</button>
+<!-- Progress Text -->
+<div class="font-label text-sm font-medium tracking-wide text-on-surface-variant">
+                الخطوة 3 من 10
+            </div>
+<!-- Spacer for symmetry in flex-between, or back button if needed at top. We place 'back' at bottom per prompt, so just a placeholder here -->
+<div class="w-11"></div>
+</div>
+<!-- Subtle Progress Bar (Pulse Indicator aesthetic) -->
+<div class="w-full h-1 bg-surface-variant/50">
+<!-- 30% progress -->
+<div aria-valuemax="100" aria-valuemin="0" aria-valuenow="30" class="h-full bg-primary w-[30%] transition-all duration-500 ease-out rounded-e-full" role="progressbar"></div>
+</div>
+</header>
+<!-- Main Canvas -->
+<main class="flex-grow flex flex-col items-center w-full px-6 pt-12 pb-40">
+<div class="w-full max-w-2xl relative">
+<!-- Intentional Asymmetry: The "Pulse Indicator" accent on the start edge of the content area -->
+<div class="absolute -start-4 top-2 bottom-0 w-1 bg-surface-tint rounded-full opacity-20 hidden md:block"></div>
+<!-- Question Header -->
+<div class="mb-10">
+<h1 class="font-headline text-3xl md:text-4xl font-bold text-on-surface tracking-tight leading-tight mb-4">
+                    كيف تقيم مستوى التوتر لديك خلال الأيام السبعة الماضية؟
+                </h1>
+<p class="font-body text-on-surface-variant text-base md:text-lg leading-[1.6]">
+                    يرجى اختيار الإجابة التي تعكس شعورك العام بشكل أفضل. لا توجد إجابات صحيحة أو خاطئة.
+                </p>
+</div>
+<!-- Answer Options (Radio Cards) -->
+<div aria-labelledby="question-title" class="flex flex-col gap-4" role="radiogroup">
+<!-- Option 1: Unselected (Ghost Border State) -->
+<label class="group relative flex items-center p-5 rounded-xl bg-surface-container-low border border-outline-variant/20 cursor-pointer transition-all duration-200 hover:bg-surface-container-highest">
+<input class="sr-only peer" name="stress_level" type="radio" value="low"/>
+<!-- Custom Radio Icon -->
+<span class="material-symbols-outlined text-outline group-hover:text-on-surface-variant me-4 transition-colors peer-checked:hidden">
+                        radio_button_unchecked
+                    </span>
+<!-- Icon for specific emotion (Optional but adds low cognitive load) -->
+<span class="material-symbols-outlined text-secondary me-4 bg-surface rounded-full p-2" style="font-variation-settings: 'FILL' 0;">
+                        sentiment_satisfied
+                    </span>
+<div class="flex-grow">
+<span class="font-body text-lg font-medium text-on-surface block mb-1">منخفض جداً</span>
+<span class="font-body text-sm text-on-surface-variant block">أشعر بالهدوء والسيطرة على مجريات الأمور.</span>
+</div>
+</label>
+<!-- Option 2: SELECTED STATE (Primary Interation Layer + Bottom Border + Ambient Shadow) -->
+<label class="group relative flex items-center p-5 rounded-xl bg-surface-container-lowest border-b-2 border-b-primary shadow-[0_8px_30px_rgba(24,28,32,0.06)] cursor-pointer transition-all duration-200">
+<input checked="" class="sr-only peer" name="stress_level" type="radio" value="moderate"/>
+<!-- Custom Radio Icon (Checked) -->
+<span class="material-symbols-outlined text-primary me-4 transition-colors" style="font-variation-settings: 'FILL' 1;">
+                        radio_button_checked
+                    </span>
+<span class="material-symbols-outlined text-primary me-4 bg-primary-fixed rounded-full p-2" style="font-variation-settings: 'FILL' 1;">
+                        sentiment_neutral
+                    </span>
+<div class="flex-grow">
+<span class="font-body text-lg font-bold text-on-surface block mb-1">متوسط</span>
+<span class="font-body text-sm text-on-surface-variant block">بعض التوتر العابر ولكن يمكنني إدارته والتعامل معه.</span>
+</div>
+</label>
+<!-- Option 3: Unselected -->
+<label class="group relative flex items-center p-5 rounded-xl bg-surface-container-low border border-outline-variant/20 cursor-pointer transition-all duration-200 hover:bg-surface-container-highest">
+<input class="sr-only peer" name="stress_level" type="radio" value="high"/>
+<span class="material-symbols-outlined text-outline group-hover:text-on-surface-variant me-4 transition-colors peer-checked:hidden">
+                        radio_button_unchecked
+                    </span>
+<span class="material-symbols-outlined text-secondary me-4 bg-surface rounded-full p-2" style="font-variation-settings: 'FILL' 0;">
+                        sentiment_dissatisfied
+                    </span>
+<div class="flex-grow">
+<span class="font-body text-lg font-medium text-on-surface block mb-1">مرتفع</span>
+<span class="font-body text-sm text-on-surface-variant block">التوتر يؤثر على يومي بشكل ملحوظ ويصعب تجاهله.</span>
+</div>
+</label>
+<!-- Option 4: Unselected -->
+<label class="group relative flex items-center p-5 rounded-xl bg-surface-container-low border border-outline-variant/20 cursor-pointer transition-all duration-200 hover:bg-surface-container-highest">
+<input class="sr-only peer" name="stress_level" type="radio" value="severe"/>
+<span class="material-symbols-outlined text-outline group-hover:text-on-surface-variant me-4 transition-colors peer-checked:hidden">
+                        radio_button_unchecked
+                    </span>
+<span class="material-symbols-outlined text-secondary me-4 bg-surface rounded-full p-2" style="font-variation-settings: 'FILL' 0;">
+                        mood_bad
+                    </span>
+<div class="flex-grow">
+<span class="font-body text-lg font-medium text-on-surface block mb-1">شديد</span>
+<span class="font-body text-sm text-on-surface-variant block">أشعر بالإرهاق التام وصعوبة كبيرة في التأقلم.</span>
+</div>
+</label>
+</div>
+</div>
+</main>
+<!-- Bottom Action Bar (Floating Glassmorphism per Design System) -->
+<div class="fixed bottom-0 left-0 right-0 z-50 bg-surface-container-low/85 backdrop-blur-[24px] border-t border-outline-variant/20">
+<div class="flex items-center justify-between px-6 py-4 max-w-3xl mx-auto w-full">
+<!-- Tertiary Action (Back) -->
+<button class="font-label text-sm font-bold text-primary px-4 py-3 hover:bg-surface-container-high rounded-lg transition-colors flex items-center gap-2" type="button">
+<span class="material-symbols-outlined text-lg rtl:rotate-180">arrow_forward</span>
+                السابق
+            </button>
+<!-- Primary Action (Next - Gradient & Pill shaped) -->
+<button class="font-label text-sm font-bold text-on-primary bg-gradient-to-br from-primary to-primary-container shadow-md hover:shadow-lg rounded-xl px-8 py-3.5 transition-all active:scale-95 flex items-center gap-2" type="button">
+                التالي
+                <span class="material-symbols-outlined text-lg rtl:rotate-180">arrow_back</span>
+</button>
+</div>
+</div>
+</body></html>

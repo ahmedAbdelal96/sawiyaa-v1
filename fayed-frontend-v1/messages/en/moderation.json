@@ -1,0 +1,29 @@
+{
+  "title": "Report",
+  "hint": "Send a report to the moderation team to review content.",
+  "fields": {
+    "reason": "Reason",
+    "note": "Additional details (optional)"
+  },
+  "placeholders": {
+    "note": "Write a short note to help the team understand."
+  },
+  "actions": {
+    "submit": "Send report",
+    "cancel": "Cancel"
+  },
+  "toast": {
+    "sent": "Report sent.",
+    "error": "Failed to send report."
+  },
+  "reasons": {
+    "ABUSE": "Abuse",
+    "HARASSMENT": "Harassment",
+    "SPAM": "Spam",
+    "SCAM": "Scam",
+    "INAPPROPRIATE_CONTENT": "Inappropriate content",
+    "PRIVACY_BREACH": "Privacy breach",
+    "OTHER": "Other"
+  }
+}
+

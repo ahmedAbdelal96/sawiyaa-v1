@@ -1,4 +1,9 @@
-import { CouponScope, CouponStatus, DiscountType, Prisma } from '@prisma/client';
+import {
+  CouponScope,
+  CouponStatus,
+  DiscountType,
+  Prisma,
+} from '@prisma/client';
 import { CalculateCouponDiscountService } from './calculate-coupon-discount.service';
 import { MoneyMathService } from './money-math.service';
 

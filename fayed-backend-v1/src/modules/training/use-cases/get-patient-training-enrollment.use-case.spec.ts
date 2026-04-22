@@ -20,7 +20,9 @@ describe('GetPatientTrainingEnrollmentUseCase', () => {
   });
 
   it('enforces ownership by user id', async () => {
-    (trainingRepository.findEnrollmentByIdForUser as jest.Mock).mockResolvedValue(null);
+    (
+      trainingRepository.findEnrollmentByIdForUser as jest.Mock
+    ).mockResolvedValue(null);
 
     await expect(
       useCase.execute({

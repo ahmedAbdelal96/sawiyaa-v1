@@ -26,12 +26,13 @@ export class ListPatientTrainingEnrollmentsUseCase {
       });
     }
 
-    const [items, totalItems] = await this.trainingRepository.listEnrollmentsByUser({
-      userId: input.userId,
-      status: input.query.status,
-      skip: (input.query.page - 1) * input.query.limit,
-      take: input.query.limit,
-    });
+    const [items, totalItems] =
+      await this.trainingRepository.listEnrollmentsByUser({
+        userId: input.userId,
+        status: input.query.status,
+        skip: (input.query.page - 1) * input.query.limit,
+        take: input.query.limit,
+      });
 
     return {
       items: items.map((item) =>

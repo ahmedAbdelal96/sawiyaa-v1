@@ -97,7 +97,12 @@ import { VerificationModule } from '../verification/verification.module';
     RefreshAdminTokenUseCase,
     LogoutAdminUseCase,
   ],
-  exports: [JwtAccessAuthGuard, JwtRefreshAuthGuard, GetCurrentAuthUserUseCase],
+  exports: [
+    JwtAccessAuthGuard,
+    JwtRefreshAuthGuard,
+    GetCurrentAuthUserUseCase,
+    AuthRequestContextService,
+  ],
 })
 export class AuthModule implements NestModule {
   configure(consumer: MiddlewareConsumer): void {

@@ -36,7 +36,9 @@ describe('GeneralChatRepository (message append)', () => {
   const prisma = {
     $transaction: jest
       .fn()
-      .mockImplementation((callback: (tx: typeof tx) => unknown) => callback(tx)),
+      .mockImplementation((callback: (tx: typeof tx) => unknown) =>
+        callback(tx),
+      ),
   } as unknown as PrismaService;
 
   const repository = new GeneralChatRepository(prisma);
@@ -80,4 +82,3 @@ describe('GeneralChatRepository (message append)', () => {
     );
   });
 });
-

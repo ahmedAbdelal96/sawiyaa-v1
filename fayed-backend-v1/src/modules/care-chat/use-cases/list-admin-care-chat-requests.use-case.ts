@@ -11,14 +11,17 @@ export class ListAdminCareChatRequestsUseCase {
   ) {}
 
   async execute(input: { query: ListCareChatRequestsDto }) {
-    const [rows, totalItems] = await this.careChatRequestRepository.listForAdmin({
-      page: input.query.page,
-      limit: input.query.limit,
-      status: input.query.status,
-    });
+    const [rows, totalItems] =
+      await this.careChatRequestRepository.listForAdmin({
+        page: input.query.page,
+        limit: input.query.limit,
+        status: input.query.status,
+      });
 
     return this.careChatPresenter.presentRequestList({
-      items: rows.map((row) => this.careChatPresenter.presentAdminRequestItem(row)),
+      items: rows.map((row) =>
+        this.careChatPresenter.presentAdminRequestItem(row),
+      ),
       page: input.query.page,
       limit: input.query.limit,
       totalItems,

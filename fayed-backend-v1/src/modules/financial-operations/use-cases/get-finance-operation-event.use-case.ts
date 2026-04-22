@@ -10,7 +10,9 @@ export class GetFinanceOperationEventUseCase {
 
   async execute(eventId: string) {
     const event =
-      await this.financialOperationsPaymentRepository.findFinanceOperationEventById(eventId);
+      await this.financialOperationsPaymentRepository.findFinanceOperationEventById(
+        eventId,
+      );
 
     if (!event) {
       throw new NotFoundException({
@@ -28,5 +30,4 @@ export class GetFinanceOperationEventUseCase {
       },
     };
   }
-
 }

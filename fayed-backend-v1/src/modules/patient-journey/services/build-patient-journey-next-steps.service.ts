@@ -34,8 +34,11 @@ export class BuildPatientJourneyNextStepsService {
       input.hasPendingPayment || input.continuityStage === 'PAYMENT_BLOCKED';
     const isUpcomingContinuity =
       input.hasUpcomingSession || input.continuityStage === 'UPCOMING_SESSION';
-    const isActiveCare = input.hasActiveTrainingEnrollment || input.continuityStage === 'ACTIVE_CARE';
-    const isReturning = input.hasPastSessions || input.continuityStage === 'RETURNING';
+    const isActiveCare =
+      input.hasActiveTrainingEnrollment ||
+      input.continuityStage === 'ACTIVE_CARE';
+    const isReturning =
+      input.hasPastSessions || input.continuityStage === 'RETURNING';
 
     if (isPaymentBlocked) {
       nextSteps.push({
@@ -70,7 +73,8 @@ export class BuildPatientJourneyNextStepsService {
         label: 'Join your upcoming session',
         priority: 90,
         reasonCode: 'UPCOMING_SESSION_JOINABLE',
-        reasonText: 'Your upcoming session is joinable based on current status.',
+        reasonText:
+          'Your upcoming session is joinable based on current status.',
         action: {
           type: 'OPEN_UPCOMING_SESSION',
           targetType: 'SESSION',
@@ -87,7 +91,8 @@ export class BuildPatientJourneyNextStepsService {
         label: 'View your open support ticket',
         priority: 80,
         reasonCode: 'SUPPORT_TICKET_OPEN',
-        reasonText: 'You already have an open support ticket that needs follow-up.',
+        reasonText:
+          'You already have an open support ticket that needs follow-up.',
         action: {
           type: 'OPEN_SUPPORT_TICKET',
           targetType: 'SUPPORT_TICKET',
@@ -104,7 +109,8 @@ export class BuildPatientJourneyNextStepsService {
         label: 'Take a quick self-assessment',
         priority: 50,
         reasonCode: 'ASSESSMENT_MISSING',
-        reasonText: 'Assessment results help produce more accurate recommendations.',
+        reasonText:
+          'Assessment results help produce more accurate recommendations.',
         action: {
           type: 'OPEN_ASSESSMENTS',
           targetType: 'ASSESSMENT',
@@ -115,7 +121,12 @@ export class BuildPatientJourneyNextStepsService {
       });
     }
 
-    if (!input.hasRecentMatching && !isUpcomingContinuity && !isActiveCare && !isPaymentBlocked) {
+    if (
+      !input.hasRecentMatching &&
+      !isUpcomingContinuity &&
+      !isActiveCare &&
+      !isPaymentBlocked
+    ) {
       nextSteps.push({
         type: 'START_GUIDED_MATCHING',
         label: 'Start guided matching to find a suitable practitioner',
@@ -132,7 +143,10 @@ export class BuildPatientJourneyNextStepsService {
       });
     }
 
-    if (!isUpcomingContinuity && (isReturning || isActiveCare || input.hasRecentMatching)) {
+    if (
+      !isUpcomingContinuity &&
+      (isReturning || isActiveCare || input.hasRecentMatching)
+    ) {
       nextSteps.push({
         type: 'BOOK_NEXT_SESSION',
         label: isActiveCare
@@ -156,7 +170,8 @@ export class BuildPatientJourneyNextStepsService {
     }
 
     for (const recommendation of input.assessmentRecommendations ?? []) {
-      const mapped = this.mapAssessmentRecommendationToJourneyStep(recommendation);
+      const mapped =
+        this.mapAssessmentRecommendationToJourneyStep(recommendation);
       if (mapped) {
         nextSteps.push(mapped);
       }
@@ -165,7 +180,8 @@ export class BuildPatientJourneyNextStepsService {
     const prioritized = this.recommendationPrecedenceService.apply(nextSteps);
     const deduplicated = this.deduplicate(prioritized);
     const conflictResolved = this.resolveConflicts(deduplicated);
-    const suggestedNextAction = conflictResolved[0]?.type ?? 'START_GUIDED_MATCHING';
+    const suggestedNextAction =
+      conflictResolved[0]?.type ?? 'START_GUIDED_MATCHING';
 
     if (conflictResolved.length === 0) {
       return {
@@ -240,8 +256,12 @@ export class BuildPatientJourneyNextStepsService {
       return input;
     }
 
-    const hasCompletePayment = input.some((item) => item.type === 'COMPLETE_PAYMENT');
-    const hasJoinUpcoming = input.some((item) => item.type === 'JOIN_UPCOMING_SESSION');
+    const hasCompletePayment = input.some(
+      (item) => item.type === 'COMPLETE_PAYMENT',
+    );
+    const hasJoinUpcoming = input.some(
+      (item) => item.type === 'JOIN_UPCOMING_SESSION',
+    );
     const hasBookNext = input.some((item) => item.type === 'BOOK_NEXT_SESSION');
 
     return input.filter((item) => {
@@ -258,7 +278,9 @@ export class BuildPatientJourneyNextStepsService {
       }
 
       if (hasBookNext) {
-        return item.type === 'BOOK_NEXT_SESSION' || item.type === 'TAKE_ASSESSMENT';
+        return (
+          item.type === 'BOOK_NEXT_SESSION' || item.type === 'TAKE_ASSESSMENT'
+        );
       }
 
       return true;

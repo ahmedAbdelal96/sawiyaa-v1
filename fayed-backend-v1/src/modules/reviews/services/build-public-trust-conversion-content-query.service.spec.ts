@@ -24,6 +24,8 @@ describe('BuildPublicTrustConversionContentQueryService', () => {
       hasEnoughPublicReviews: true,
     });
 
-    expect(plan.reasonCodes).toContain('TRUST_BLOCK_ESTABLISHED_CONFIDENCE_CONTENT');
+    expect(plan.reasonCodes).toContain(
+      'TRUST_BLOCK_ESTABLISHED_CONFIDENCE_CONTENT',
+    );
   });
 });

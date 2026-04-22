@@ -12,10 +12,7 @@ export class NotificationSchedulerCoreService {
     private readonly notificationLifecycleService: NotificationLifecycleService,
   ) {}
 
-  async claimDueNotifications(input: {
-    now?: Date;
-    limit?: number;
-  }): Promise<{
+  async claimDueNotifications(input: { now?: Date; limit?: number }): Promise<{
     scannedCount: number;
     claimedCount: number;
     claimedNotificationIds: string[];
@@ -23,7 +20,10 @@ export class NotificationSchedulerCoreService {
     const now = input.now ?? new Date();
     const limit = Math.max(1, input.limit ?? 50);
 
-    const dueRows = await this.repository.listDueNotificationIds({ now, limit });
+    const dueRows = await this.repository.listDueNotificationIds({
+      now,
+      limit,
+    });
     const claimedNotificationIds: string[] = [];
 
     for (const row of dueRows) {

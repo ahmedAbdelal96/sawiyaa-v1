@@ -44,7 +44,8 @@ export const enTrainingCatalog = {
   },
   notifications: {
     enrollmentConfirmedTitle: 'Training enrollment confirmed',
-    enrollmentConfirmedBody: 'Your training enrollment is confirmed for {sessionAt}.',
+    enrollmentConfirmedBody:
+      'Your training enrollment is confirmed for {sessionAt}.',
     scheduleReminderTitle: 'Training starts soon',
     scheduleReminderBody: 'Reminder: your training starts at {sessionAt}.',
   },

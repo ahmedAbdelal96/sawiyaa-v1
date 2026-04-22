@@ -210,6 +210,31 @@ export async function getAdminPractitionerStatement(
   return extractData(response.data);
 }
 
+export async function downloadAdminPractitionerStatementCsv(
+  practitionerId: string,
+  params?: {
+    currencyCode?: string;
+    rowType?: "ALL" | "EARNING" | "PAYOUT";
+    effectiveFrom?: string;
+    effectiveTo?: string;
+  },
+) {
+  const response = await httpClient.get(
+    `/admin/practitioners/${practitionerId}/statement/export.csv`,
+    {
+      params,
+      responseType: "blob",
+    },
+  );
+
+  const fileNameHeader = response.headers?.["content-disposition"];
+  return {
+    blob: response.data as Blob,
+    fileNameHeader:
+      typeof fileNameHeader === "string" ? fileNameHeader : undefined,
+  };
+}
+
 export async function recordAdminPractitionerPayout(
   practitionerId: string,
   data: RecordPractitionerPayoutRequest,

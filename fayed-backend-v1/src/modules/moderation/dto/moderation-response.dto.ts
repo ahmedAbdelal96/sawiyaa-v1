@@ -93,6 +93,28 @@ export class ModerationCaseDetailDto extends ModerationQueueItemDto {
 
   @ApiProperty({ nullable: true })
   note!: string | null;
+
+  @ApiProperty({
+    nullable: true,
+    additionalProperties: false,
+    description: 'Reporter user snapshot for back-office follow-up.',
+    example: {
+      userId: 'uuid',
+      displayName: 'User Name',
+      email: 'user@example.com',
+      phone: '+2010xxxxxxx',
+      patientProfileId: 'uuid',
+      practitionerProfileId: null,
+    },
+  })
+  reporter!: {
+    userId: string;
+    displayName: string | null;
+    email: string | null;
+    phone: string | null;
+    patientProfileId: string | null;
+    practitionerProfileId: string | null;
+  } | null;
 }
 
 export class ModerationPaginationDto {

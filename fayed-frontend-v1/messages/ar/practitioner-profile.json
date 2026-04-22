@@ -34,7 +34,8 @@
   },
   "cta": {
     "sessionDuration": "جلسات لمدة 50 دقيقة",
-    "sessionOnline": "جلسة أونلاين"
+    "sessionOnline": "جلسة أونلاين",
+    "messagePractitioner": "رسائل المعالج"
   },
   "badges": {
     "verified": "معتمد من فايد",

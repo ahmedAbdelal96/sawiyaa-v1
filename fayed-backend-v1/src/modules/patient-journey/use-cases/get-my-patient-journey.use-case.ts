@@ -20,7 +20,9 @@ export class GetMyPatientJourneyUseCase {
   ) {}
 
   async execute(input: { userId: string }) {
-    const patient = await this.patientJourneyPatientRepository.findByUserId(input.userId);
+    const patient = await this.patientJourneyPatientRepository.findByUserId(
+      input.userId,
+    );
 
     if (!patient) {
       throw new NotFoundException({
@@ -50,16 +52,24 @@ export class GetMyPatientJourneyUseCase {
       this.patientJourneyReadRepository.findLatestAssessment(patient.id),
       this.patientJourneyReadRepository.findLatestMatchingSession(patient.id),
       this.patientJourneyReadRepository.findLatestOpenSupportTicket(patient.id),
-      this.patientJourneyReadRepository.listRecentPastSessions(patient.id, nowUtc, 5),
+      this.patientJourneyReadRepository.listRecentPastSessions(
+        patient.id,
+        nowUtc,
+        5,
+      ),
       this.patientJourneyReadRepository.listRecentAssessments(patient.id, 5),
-      this.patientJourneyReadRepository.listRecentMatchingSessions(patient.id, 5),
+      this.patientJourneyReadRepository.listRecentMatchingSessions(
+        patient.id,
+        5,
+      ),
       this.patientJourneyReadRepository.listRecentPayments(patient.id, 5),
     ]);
 
-    const pendingPayment = await this.patientJourneyReadRepository.findPendingPayment(
-      patient.id,
-      upcomingSession?.id,
-    );
+    const pendingPayment =
+      await this.patientJourneyReadRepository.findPendingPayment(
+        patient.id,
+        upcomingSession?.id,
+      );
 
     const normalizedSignalContext =
       await this.buildNormalizedCareSignalContextService.buildFromRepository({
@@ -77,20 +87,23 @@ export class GetMyPatientJourneyUseCase {
       hasPendingPayment: normalizedSignalContext.payments.hasPendingPayment,
       hasUpcomingSession: normalizedSignalContext.sessions.hasUpcomingSession,
       upcomingSessionStatus:
-        normalizedSignalContext.sessions.upcomingStatus ?? upcomingSession?.status,
+        normalizedSignalContext.sessions.upcomingStatus ??
+        upcomingSession?.status,
       hasOpenSupportTicket: normalizedSignalContext.support.hasOpenTicket,
       hasRecentMatching: normalizedSignalContext.matching.hasRecentSession,
-      hasAnyAssessment: normalizedSignalContext.assessments.hasCompletedAssessment,
+      hasAnyAssessment:
+        normalizedSignalContext.assessments.hasCompletedAssessment,
       hasPastSessions: normalizedSignalContext.sessions.hasPastSession,
       hasActiveTrainingEnrollment:
         normalizedSignalContext.training.hasActiveEnrollment,
       continuityStage: normalizedSignalContext.continuity.stage,
       assessmentRecommendations,
     });
-    const linkedContent = await this.buildPatientJourneyLinkedContentService.build({
-      normalizedContext: normalizedSignalContext,
-      suggestedNextAction: nextSteps.suggestedNextAction,
-    });
+    const linkedContent =
+      await this.buildPatientJourneyLinkedContentService.build({
+        normalizedContext: normalizedSignalContext,
+        suggestedNextAction: nextSteps.suggestedNextAction,
+      });
 
     return {
       item: this.patientJourneyMapper.toViewModel({

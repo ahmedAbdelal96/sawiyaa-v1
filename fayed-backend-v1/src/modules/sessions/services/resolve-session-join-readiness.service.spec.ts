@@ -2,7 +2,9 @@ import { SessionMode, SessionProvider, SessionStatus } from '@prisma/client';
 import { ResolveSessionJoinReadinessService } from './resolve-session-join-readiness.service';
 
 describe('ResolveSessionJoinReadinessService', () => {
-  const service = new ResolveSessionJoinReadinessService();
+  const service = new ResolveSessionJoinReadinessService({
+    get: () => undefined,
+  } as never);
   const now = new Date('2026-04-02T10:00:00.000Z');
   const start = new Date('2026-04-02T10:10:00.000Z');
   const end = new Date('2026-04-02T10:40:00.000Z');

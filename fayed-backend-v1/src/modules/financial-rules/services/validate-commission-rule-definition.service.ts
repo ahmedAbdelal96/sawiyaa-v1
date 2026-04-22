@@ -15,7 +15,9 @@ export class ValidateCommissionRuleDefinitionService {
     platformRatePercent: Prisma.Decimal | string;
     practitionerRatePercent: Prisma.Decimal | string;
   }) {
-    const platformRate = this.moneyMathService.toDecimal(input.platformRatePercent);
+    const platformRate = this.moneyMathService.toDecimal(
+      input.platformRatePercent,
+    );
     const practitionerRate = this.moneyMathService.toDecimal(
       input.practitionerRatePercent,
     );

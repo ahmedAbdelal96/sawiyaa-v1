@@ -29,7 +29,8 @@ export class BuildTrainingScheduleSnapshotsService {
     now?: Date;
   }) {
     return input.schedules.map((schedule) => {
-      const enrolledSeats = input.enrollmentCountsByScheduleId[schedule.id] ?? 0;
+      const enrolledSeats =
+        input.enrollmentCountsByScheduleId[schedule.id] ?? 0;
       const maxEnrollments =
         schedule.maxEnrollmentsOverride ?? input.defaultCapacity ?? null;
 

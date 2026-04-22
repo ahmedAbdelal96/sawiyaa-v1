@@ -11,4 +11,3 @@ export class MarkTrainingEnrollmentAttendanceDto {
   @IsEnum(TrainingAttendanceMarkStatus)
   status!: TrainingAttendanceMarkStatus;
 }
-

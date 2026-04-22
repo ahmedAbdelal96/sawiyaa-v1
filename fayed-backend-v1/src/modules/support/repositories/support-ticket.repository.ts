@@ -9,8 +9,10 @@ import {
   SupportTicketPriority,
   SupportTicketStatus,
   SupportTicketType,
+  Prisma,
 } from '@prisma/client';
 import { PrismaService } from '@common/prisma/prisma.service';
+import { AppRole } from '@common/enums/app-role.enum';
 import { SupportActorKind } from '../types/support.types';
 
 @Injectable()
@@ -32,8 +34,10 @@ export class SupportTicketRepository {
     relatedInstantBookingRequestId?: string;
     relatedMatchingSessionId?: string;
     relatedAssessmentSubmissionId?: string;
+    seedInitialMessage?: boolean;
   }) {
     return this.prisma.$transaction(async (tx) => {
+      const seedInitialMessage = input.seedInitialMessage ?? true;
       const conversation = await tx.conversation.create({
         data: {
           conversationType: ConversationType.SUPPORT,
@@ -62,6 +66,7 @@ export class SupportTicketRepository {
           priority: input.priority,
           subject: input.subject,
           description: input.description,
+          lastMessageAt: seedInitialMessage ? new Date() : null,
           relatedSessionId: input.relatedSessionId ?? null,
           relatedPaymentId: input.relatedPaymentId ?? null,
           relatedInstantBookingRequestId:
@@ -69,7 +74,6 @@ export class SupportTicketRepository {
           relatedMatchingSessionId: input.relatedMatchingSessionId ?? null,
           relatedAssessmentSubmissionId:
             input.relatedAssessmentSubmissionId ?? null,
-          lastMessageAt: new Date(),
         },
       });
 
@@ -80,16 +84,18 @@ export class SupportTicketRepository {
         },
       });
 
-      await tx.message.create({
-        data: {
-          conversationId: conversation.id,
-          senderUserId: input.openedByUserId,
-          messageType: MessageType.TEXT,
-          status: MessageStatus.SENT,
-          visibility: MessageVisibility.NORMAL,
-          contentText: input.description,
-        },
-      });
+      if (seedInitialMessage) {
+        await tx.message.create({
+          data: {
+            conversationId: conversation.id,
+            senderUserId: input.openedByUserId,
+            messageType: MessageType.TEXT,
+            status: MessageStatus.SENT,
+            visibility: MessageVisibility.NORMAL,
+            contentText: input.description,
+          },
+        });
+      }
 
       await tx.supportTicketEvent.create({
         data: {
@@ -261,6 +267,222 @@ export class SupportTicketRepository {
     });
   }
 
+  findByIdWithConversationMeta(ticketId: string) {
+    return this.prisma.supportTicket.findUnique({
+      where: { id: ticketId },
+      select: {
+        id: true,
+        patientId: true,
+        practitionerId: true,
+        conversationId: true,
+        conversation: {
+          select: {
+            id: true,
+            participants: {
+              where: { isActive: true },
+              select: {
+                userId: true,
+                participantRole: true,
+              },
+            },
+          },
+        },
+      },
+    });
+  }
+
+  async canUserAccessSupportTicket(input: {
+    ticketId: string;
+    userId: string;
+    roles: AppRole[];
+  }) {
+    const ticket = await this.findByIdWithConversationMeta(input.ticketId);
+    if (!ticket) {
+      return null;
+    }
+
+    const isAdminLike =
+      input.roles.includes(AppRole.ADMIN) ||
+      input.roles.includes(AppRole.SUPPORT_AGENT);
+
+    if (isAdminLike) {
+      return ticket;
+    }
+
+    const isParticipant = ticket.conversation.participants.some(
+      (participant) => participant.userId === input.userId,
+    );
+
+    return isParticipant ? ticket : null;
+  }
+
+  findSupportMessageInConversation(input: {
+    conversationId: string;
+    messageId: string;
+  }) {
+    return this.prisma.message.findFirst({
+      where: {
+        id: input.messageId,
+        conversationId: input.conversationId,
+        deletedAt: null,
+        visibility: MessageVisibility.NORMAL,
+      },
+      select: {
+        id: true,
+        senderUserId: true,
+        sentAt: true,
+      },
+    });
+  }
+
+  async markSupportMessageDelivered(input: {
+    conversationId: string;
+    messageId: string;
+    deliveredAt: Date;
+  }) {
+    const message = await this.prisma.message.findFirst({
+      where: {
+        id: input.messageId,
+        conversationId: input.conversationId,
+      },
+      select: {
+        id: true,
+        status: true,
+      },
+    });
+
+    if (!message || message.status !== MessageStatus.SENT) {
+      return null;
+    }
+
+    return this.prisma.message.update({
+      where: { id: input.messageId },
+      data: {
+        status: MessageStatus.DELIVERED,
+        deliveredAt: input.deliveredAt,
+      },
+      select: {
+        id: true,
+        conversationId: true,
+        deliveredAt: true,
+      },
+    });
+  }
+
+  async markSupportMessagesDeliveredForRecipient(input: {
+    conversationId: string;
+    recipientUserId: string;
+    deliveredAt: Date;
+  }) {
+    const pending = await this.prisma.message.findMany({
+      where: {
+        conversationId: input.conversationId,
+        senderUserId: {
+          not: input.recipientUserId,
+        },
+        status: MessageStatus.SENT,
+        deletedAt: null,
+        visibility: MessageVisibility.NORMAL,
+      },
+      select: {
+        id: true,
+      },
+      orderBy: [{ sentAt: 'asc' }, { id: 'asc' }],
+    });
+
+    if (pending.length === 0) {
+      return [];
+    }
+
+    await this.prisma.message.updateMany({
+      where: {
+        id: {
+          in: pending.map((item) => item.id),
+        },
+      },
+      data: {
+        status: MessageStatus.DELIVERED,
+        deliveredAt: input.deliveredAt,
+      },
+    });
+
+    return pending.map((item) => ({
+      messageId: item.id,
+      conversationId: input.conversationId,
+      deliveredAt: input.deliveredAt,
+    }));
+  }
+
+  async markSupportMessagesReadForRecipient(input: {
+    conversationId: string;
+    recipientUserId: string;
+    lastReadMessageSentAt: Date;
+    readAt: Date;
+  }) {
+    const pending = await this.prisma.message.findMany({
+      where: {
+        conversationId: input.conversationId,
+        senderUserId: {
+          not: input.recipientUserId,
+        },
+        status: {
+          in: [MessageStatus.SENT, MessageStatus.DELIVERED],
+        },
+        deletedAt: null,
+        visibility: MessageVisibility.NORMAL,
+        sentAt: {
+          lte: input.lastReadMessageSentAt,
+        },
+      },
+      select: {
+        id: true,
+      },
+      orderBy: [{ sentAt: 'asc' }, { id: 'asc' }],
+    });
+
+    if (pending.length === 0) {
+      return [];
+    }
+
+    await this.prisma.message.updateMany({
+      where: {
+        id: {
+          in: pending.map((item) => item.id),
+        },
+      },
+      data: {
+        status: MessageStatus.READ,
+        deliveredAt: input.readAt,
+        readAt: input.readAt,
+      },
+    });
+
+    return pending.map((item) => ({
+      messageId: item.id,
+      conversationId: input.conversationId,
+      readAt: input.readAt,
+    }));
+  }
+
+  markSupportConversationReadCursor(input: {
+    conversationId: string;
+    userId: string;
+    lastReadMessageId: string;
+    lastReadAt: Date;
+  }) {
+    return this.prisma.conversationParticipant.updateMany({
+      where: {
+        conversationId: input.conversationId,
+        userId: input.userId,
+        isActive: true,
+      },
+      data: {
+        lastReadMessageId: input.lastReadMessageId,
+        lastReadAt: input.lastReadAt,
+      },
+    });
+  }
+
   async addInternalNote(input: {
     ticketId: string;
     actorUserId: string;
@@ -319,11 +541,11 @@ export class SupportTicketRepository {
           status: input.status,
           resolvedAt:
             input.status === SupportTicketStatus.RESOLVED
-              ? previous.resolvedAt ?? now
+              ? (previous.resolvedAt ?? now)
               : previous.resolvedAt,
           closedAt:
             input.status === SupportTicketStatus.CLOSED
-              ? previous.closedAt ?? now
+              ? (previous.closedAt ?? now)
               : previous.closedAt,
         },
       });
@@ -383,6 +605,106 @@ export class SupportTicketRepository {
     });
   }
 
+  async countUnreadForUser(input: { userId: string; adminLike: boolean }) {
+    const accessScope = input.adminLike
+      ? {
+          OR: [
+            {
+              supportTicket: {
+                is: {
+                  assignedToUserId: input.userId,
+                },
+              },
+            },
+            {
+              participants: {
+                some: {
+                  userId: input.userId,
+                  isActive: true,
+                },
+              },
+            },
+          ],
+        }
+      : {
+          participants: {
+            some: {
+              userId: input.userId,
+              isActive: true,
+            },
+          },
+        };
+
+    const unreadWhere: Prisma.MessageWhereInput = {
+      senderUserId: {
+        not: input.userId,
+      },
+      status: {
+        in: [MessageStatus.SENT, MessageStatus.DELIVERED],
+      },
+      deletedAt: null,
+      visibility: MessageVisibility.NORMAL,
+      conversation: {
+        conversationType: ConversationType.SUPPORT,
+        ...accessScope,
+      },
+    };
+
+    const [unreadMessages, unreadConversationRows] =
+      await this.prisma.$transaction([
+        this.prisma.message.count({
+          where: unreadWhere,
+        }),
+        this.prisma.message.findMany({
+          where: unreadWhere,
+          select: {
+            conversationId: true,
+          },
+          distinct: ['conversationId'],
+        }),
+      ]);
+
+    return {
+      unreadMessages,
+      unreadConversations: unreadConversationRows.length,
+    };
+  }
+
+  async countUnreadByConversationIdsForUser(input: {
+    userId: string;
+    conversationIds: string[];
+  }) {
+    const uniqueConversationIds = Array.from(
+      new Set(input.conversationIds),
+    ).filter(Boolean);
+    if (uniqueConversationIds.length === 0) {
+      return new Map<string, number>();
+    }
+
+    const rows = await this.prisma.message.groupBy({
+      by: ['conversationId'],
+      where: {
+        conversationId: { in: uniqueConversationIds },
+        senderUserId: {
+          not: input.userId,
+        },
+        status: {
+          in: [MessageStatus.SENT, MessageStatus.DELIVERED],
+        },
+        deletedAt: null,
+        visibility: MessageVisibility.NORMAL,
+        conversation: {
+          conversationType: ConversationType.SUPPORT,
+        },
+      },
+      _count: {
+        _all: true,
+      },
+    });
+
+    return new Map(rows.map((row) => [row.conversationId, row._count._all]));
+  }
+
   private detailsInclude() {
     return {
       conversation: {
@@ -406,7 +728,10 @@ export class SupportTicketRepository {
               id: true,
               senderUserId: true,
               contentText: true,
+              status: true,
               sentAt: true,
+              deliveredAt: true,
+              readAt: true,
             },
           },
           internalNotes: {

@@ -17,10 +17,7 @@ export class ListPractitionerCredentialsUseCase {
     private readonly practitionerCredentialMapper: PractitionerCredentialMapper,
   ) {}
 
-  async execute(input: {
-    userId: string;
-    locale: SupportedLocale;
-  }) {
+  async execute(input: { userId: string; locale: SupportedLocale }) {
     const profile = await this.practitionerProfileRepository.findByUserId(
       input.userId,
     );
@@ -33,7 +30,9 @@ export class ListPractitionerCredentialsUseCase {
     }
 
     const credentials =
-      await this.practitionerCredentialRepository.listByPractitionerId(profile.id);
+      await this.practitionerCredentialRepository.listByPractitionerId(
+        profile.id,
+      );
 
     return {
       message: this.i18nService.t(
@@ -46,4 +45,3 @@ export class ListPractitionerCredentialsUseCase {
     };
   }
 }
-

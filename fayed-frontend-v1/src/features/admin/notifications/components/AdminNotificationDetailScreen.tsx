@@ -2,10 +2,11 @@
 
 import { useTranslations, useLocale } from "next-intl";
 import { Link } from "@/i18n/navigation";
-import { ArrowRight, BellRing } from "lucide-react";
+import { BellRing } from "lucide-react";
 import { isAppError } from "@/lib/api/errors";
 import { ListStateSkeleton, StateCard } from "@/components/shared/ContentStates";
 import ActionIconLink from "@/components/ui/action-icon-button/ActionIconLink";
+import DirectionalArrowIcon from "@/components/ui/navigation/DirectionalArrowIcon";
 import { useAdminNotificationDetails } from "../hooks/use-admin-notifications";
 import {
   getAdminNotificationStatusTone,
@@ -154,7 +155,7 @@ export default function AdminNotificationDetailScreen({
           href="/admin/notifications"
           intent="view"
           label={t("notifications.detail.back")}
-          icon={<ArrowRight className="h-4 w-4 rtl:rotate-180" />}
+          icon={<DirectionalArrowIcon direction="back" className="h-4 w-4" />}
         />
         <p className="mb-2 mt-4 text-xs font-semibold uppercase tracking-[0.18em] text-primary">
           {t("notifications.detail.eyebrow")}

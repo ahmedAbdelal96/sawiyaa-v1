@@ -13,8 +13,7 @@ export const arFinancialOperationsCatalog = {
     invalidSettlementState: 'حالة دفعة التسويات غير صالحة لهذا الإجراء.',
     settlementPayoutAlreadyRecorded:
       'تم تسجيل عملية الصرف لهذه التسوية بالفعل.',
-    invalidSettlementPayoutState:
-      'حالة التسوية غير صالحة لتسجيل عملية الصرف.',
+    invalidSettlementPayoutState: 'حالة التسوية غير صالحة لتسجيل عملية الصرف.',
     invalidPayoutAmount: 'المبلغ المدفوع غير صالح.',
     payoutAmountExceedsDue: 'المبلغ المدفوع أكبر من المبلغ المستحق المتبقي.',
     partialPayoutNotSupported: 'الصرف الجزئي غير مدعوم في هذا المسار.',
@@ -27,4 +26,3 @@ export const arFinancialOperationsCatalog = {
       'لم يتم العثور على المورد المطلوب ضمن النطاق المسموح.',
   },
 } as const;
-

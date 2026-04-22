@@ -21,7 +21,9 @@ export class ListAdminReviewsUseCase {
     });
 
     return this.reviewPresenter.presentReviewList({
-      items: rows.map((row) => this.reviewPresenter.presentAdminReviewItem(row)),
+      items: rows.map((row) =>
+        this.reviewPresenter.presentAdminReviewItem(row),
+      ),
       page: input.query.page,
       limit: input.query.limit,
       totalItems,

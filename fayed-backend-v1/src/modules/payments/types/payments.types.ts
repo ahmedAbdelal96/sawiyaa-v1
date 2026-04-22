@@ -1,10 +1,21 @@
-import { PaymentProvider, PaymentStatus, RefundStatus, RefundType } from '@prisma/client';
+import {
+  PaymentProvider,
+  PaymentStatus,
+  RefundDestination,
+  RefundStatus,
+  RefundType,
+} from '@prisma/client';
 
 export interface PaymentViewModel {
   id: string;
   sessionId: string | null;
   provider: PaymentProvider;
   status: PaymentStatus;
+  amountSubtotal: string;
+  amountDiscount: string;
+  amountTotal: string;
+  amountFromWallet: string;
+  amountFromGateway: string;
   amount: string;
   currency: string;
   providerPaymentId: string | null;
@@ -23,6 +34,7 @@ export interface RefundViewModel {
   paymentId: string;
   sessionId: string | null;
   refundType: RefundType;
+  destination: RefundDestination;
   status: RefundStatus;
   amount: string;
   currency: string;
@@ -31,6 +43,7 @@ export interface RefundViewModel {
   requestedAt: string;
   processedAt: string | null;
   failedAt: string | null;
+  customerWalletCreditedAt: string | null;
   createdAt: string;
 }
 
@@ -43,6 +56,8 @@ export interface AdminPaymentOpsViewModel {
     amountSubtotal: string;
     amountDiscount: string;
     amountTotal: string;
+    amountFromWallet: string;
+    amountFromGateway: string;
     currency: string;
     providerPaymentId: string | null;
     providerReference: string | null;

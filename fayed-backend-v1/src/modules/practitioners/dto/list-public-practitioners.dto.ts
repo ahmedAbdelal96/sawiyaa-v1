@@ -52,7 +52,8 @@ const toBoolean = (value: unknown): boolean | undefined => {
  */
 export class ListPublicPractitionersDto {
   @ApiPropertyOptional({
-    description: 'Search in display name, professional title, bio, and specialty title',
+    description:
+      'Search in display name, professional title, bio, and specialty title',
   })
   @Transform(({ value, obj }) => value ?? obj?.q)
   @IsOptional()
@@ -104,7 +105,8 @@ export class ListPublicPractitionersDto {
 
   @ApiPropertyOptional({
     enum: PublicPractitionerSessionDuration,
-    description: 'Session duration in minutes used for fee filtering (30 or 60)',
+    description:
+      'Session duration in minutes used for fee filtering (30 or 60)',
   })
   @IsOptional()
   @Type(() => Number)

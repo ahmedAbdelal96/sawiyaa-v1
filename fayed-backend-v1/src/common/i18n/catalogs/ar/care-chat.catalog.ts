@@ -15,7 +15,8 @@ export const arCareChatCatalog = {
     requestNotFound: 'لم يتم العثور على طلب موافقة محادثة الرعاية',
     conversationNotFound: 'لم يتم العثور على محادثة الرعاية',
     invalidLinkedSession: 'الجلسة المرتبطة غير صالحة لهذا المريض/المعالج',
-    activeRequestAlreadyExists: 'يوجد طلب محادثة رعاية نشط بالفعل لهذا المريض والمعالج',
+    activeRequestAlreadyExists:
+      'يوجد طلب محادثة رعاية نشط بالفعل لهذا المريض والمعالج',
     requestExpired: 'انتهت صلاحية طلب موافقة محادثة الرعاية',
     invalidApprovalDecisionTransition: 'انتقال قرار الموافقة غير صالح',
     invalidRevokeTransition: 'انتقال سحب الموافقة غير صالح',

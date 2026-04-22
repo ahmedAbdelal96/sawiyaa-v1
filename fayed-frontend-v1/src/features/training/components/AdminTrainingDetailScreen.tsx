@@ -8,6 +8,7 @@ import { ListStateSkeleton, StateCard } from "@/components/shared/ContentStates"
 import { SurfaceCard, SurfaceStatCard } from "@/components/shared/SurfaceShell";
 import ActionIconButton from "@/components/ui/action-icon-button/ActionIconButton";
 import ActionIconLink from "@/components/ui/action-icon-button/ActionIconLink";
+import DirectionalArrowIcon from "@/components/ui/navigation/DirectionalArrowIcon";
 import Button from "@/components/ui/button/Button";
 import { DestructiveConfirmModal } from "@/components/ui/modal";
 import { useAuthState } from "@/stores/auth-store";
@@ -701,7 +702,7 @@ export default function AdminTrainingDetailScreen({ trainingId }: Props) {
           href="/admin/training"
           intent="view"
           label={t("admin.detail.back")}
-          icon={<ArrowRight className="h-4 w-4 rtl:rotate-180" />}
+          icon={<DirectionalArrowIcon direction="back" className="h-4 w-4" />}
           className="mb-3"
         />
 

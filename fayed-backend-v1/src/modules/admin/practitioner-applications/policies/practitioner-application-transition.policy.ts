@@ -1,4 +1,8 @@
-import { BadRequestException, ConflictException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+} from '@nestjs/common';
 import { PractitionerApplicationStatus } from '@prisma/client';
 
 /**
@@ -16,6 +20,7 @@ export class PractitionerApplicationTransitionPolicy {
     canBeReviewed: boolean;
     canBeApproved: boolean;
     canBeRejected: boolean;
+    canRequestChanges: boolean;
   } {
     const reviewable = this.decisionAllowedStatuses.includes(status);
 
@@ -23,6 +28,7 @@ export class PractitionerApplicationTransitionPolicy {
       canBeReviewed: reviewable,
       canBeApproved: reviewable,
       canBeRejected: reviewable,
+      canRequestChanges: reviewable,
     };
   }
 
@@ -66,6 +72,40 @@ export class PractitionerApplicationTransitionPolicy {
         messageKey:
           'admin.practitionerApplications.errors.applicationAlreadyApproved',
         error: 'PRACTITIONER_APPLICATION_ALREADY_APPROVED',
+      });
+    }
+
+    if (!this.decisionAllowedStatuses.includes(status)) {
+      throw new BadRequestException({
+        messageKey:
+          'admin.practitionerApplications.errors.applicationNotReviewable',
+        error: 'PRACTITIONER_APPLICATION_NOT_REVIEWABLE',
+      });
+    }
+  }
+
+  assertCanRequestChanges(status: PractitionerApplicationStatus): void {
+    if (status === PractitionerApplicationStatus.APPROVED) {
+      throw new ConflictException({
+        messageKey:
+          'admin.practitionerApplications.errors.applicationAlreadyApproved',
+        error: 'PRACTITIONER_APPLICATION_ALREADY_APPROVED',
+      });
+    }
+
+    if (status === PractitionerApplicationStatus.REJECTED) {
+      throw new ConflictException({
+        messageKey:
+          'admin.practitionerApplications.errors.applicationAlreadyRejected',
+        error: 'PRACTITIONER_APPLICATION_ALREADY_REJECTED',
+      });
+    }
+
+    if (status === PractitionerApplicationStatus.CHANGES_REQUESTED) {
+      throw new ConflictException({
+        messageKey:
+          'admin.practitionerApplications.errors.applicationNotReviewable',
+        error: 'PRACTITIONER_APPLICATION_ALREADY_CHANGES_REQUESTED',
       });
     }
 

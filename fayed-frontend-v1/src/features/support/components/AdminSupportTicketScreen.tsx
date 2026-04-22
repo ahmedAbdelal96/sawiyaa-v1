@@ -1,9 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
-import { ArrowRight, Loader2, Lock, MessageSquare, SendHorizonal, StickyNote } from "lucide-react";
+import { Loader2, Lock, StickyNote } from "lucide-react";
+import { useCurrentUser } from "@/features/users/hooks/use-users";
+import FullHeightMessagesPage from "@/components/messages/FullHeightMessagesPage";
+import DirectionalArrowIcon from "@/components/ui/navigation/DirectionalArrowIcon";
+import SupportThreadPanel, { type SupportThreadMessageVM } from "./shared/SupportThreadPanel";
 import {
   useAddAdminInternalNote,
   useAddAdminSupportMessage,
@@ -11,6 +15,10 @@ import {
   useAssignAdminSupportTicket,
   useUpdateAdminSupportTicketStatus,
 } from "../hooks/use-support";
+import {
+  useSupportChatRealtime,
+  type SupportRealtimeMessage,
+} from "@/features/support/hooks/use-support-chat-realtime";
 import type {
   SupportMessageSenderRole,
   SupportTicketPriority,
@@ -41,59 +49,27 @@ function formatDateTime(iso: string | null, locale: string) {
   });
 }
 
-function MessageBubble({
+function InternalNoteBubble({
   senderRole,
   message,
   createdAt,
-  namespace,
+  locale,
 }: {
   senderRole: SupportMessageSenderRole;
   message: string;
   createdAt: string;
-  namespace: "thread" | "internalNotes";
+  locale: string;
 }) {
   const t = useTranslations("support.admin");
-  const locale = useLocale();
   const numLocale = locale === "ar" ? "ar-SA" : "en-US";
-  const fromAdmin = senderRole === "ADMIN" || senderRole === "SUPPORT_AGENT";
-
-  if (namespace === "internalNotes") {
-    return (
-      <div className="rounded-[20px] border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-500/25 dark:bg-amber-500/10">
-        <p className="text-xs font-semibold text-amber-700 dark:text-amber-400">
-          {t(`thread.senderRoles.${senderRole}` as Parameters<typeof t>[0])}
-        </p>
-        <p className="mt-2 text-sm leading-6 text-text-primary dark:text-white/90">{message}</p>
-        <p className="mt-2 text-[11px] text-text-muted">
-          {formatDateTime(createdAt, numLocale)}
-        </p>
-      </div>
-    );
-  }
 
   return (
-    <div className={`flex ${fromAdmin ? "justify-end" : "justify-start"}`}>
-      <div
-        className={`max-w-[90%] rounded-[24px] px-4 py-3 sm:max-w-[78%] ${
-          fromAdmin
-            ? "bg-primary text-white"
-            : "app-panel-soft text-text-primary dark:text-white/90"
-        }`}
-      >
-        <p className={`text-xs font-semibold ${fromAdmin ? "text-white/80" : "text-primary"}`}>
-          {t(`thread.senderRoles.${senderRole}` as Parameters<typeof t>[0])}
-        </p>
-        <p
-          className={`mt-2 text-sm leading-6 ${
-            fromAdmin ? "text-white" : "text-text-primary dark:text-white/90"
-          }`}
-        >
-          {message}
-        </p>
-        <p className={`mt-2 text-[11px] ${fromAdmin ? "text-white/75" : "text-text-muted"}`}>
-          {formatDateTime(createdAt, numLocale)}
-        </p>
-      </div>
+    <div className="rounded-[20px] border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-500/25 dark:bg-amber-500/10">
+      <p className="text-xs font-semibold text-amber-700 dark:text-amber-400">
+        {t(`thread.senderRoles.${senderRole}` as Parameters<typeof t>[0])}
+      </p>
+      <p className="mt-2 text-sm leading-6 text-text-primary dark:text-white/90">{message}</p>
+      <p className="mt-2 text-[11px] text-text-muted">{formatDateTime(createdAt, numLocale)}</p>
     </div>
   );
 }
@@ -315,23 +291,64 @@ export default function AdminSupportTicketScreen({ ticketId }: Props) {
   const numLocale = locale === "ar" ? "ar-SA" : "en-US";
 
   const ticket = useAdminSupportTicket(ticketId);
+  const meQuery = useCurrentUser(true);
   const reply = useAddAdminSupportMessage(ticketId);
   const note = useAddAdminInternalNote(ticketId);
 
   const [replyText, setReplyText] = useState("");
   const [noteText, setNoteText] = useState("");
+  const [isSending, setIsSending] = useState(false);
   const [replyFeedback, setReplyFeedback] = useState<"success" | "error" | null>(null);
   const [noteFeedback, setNoteFeedback] = useState<"success" | "error" | null>(null);
 
-  const handleReply = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  const ticketItem = ticket.data?.item ?? null;
+  const currentUserRole: SupportMessageSenderRole =
+    meQuery.data?.roles?.hasSupportAgentRole && !meQuery.data?.roles?.hasAdminRole
+      ? "SUPPORT_AGENT"
+      : "ADMIN";
+
+  const realtimeThread = useSupportChatRealtime({
+    ticketId,
+    serverMessages: ticketItem?.messages ?? [],
+    currentUserId: meQuery.data?.userId ?? null,
+    currentUserRole,
+    refetchTicket: () => ticket.refetch(),
+    sendViaRest: (payload) => reply.mutateAsync(payload),
+  });
+
+  const messages = useMemo<SupportRealtimeMessage[]>(
+    () => realtimeThread.messages,
+    [realtimeThread.messages],
+  );
+
+  const threadMessages = useMemo<SupportThreadMessageVM[]>(() => {
+    const myId = meQuery.data?.userId ?? null;
+    return messages.map((msg) => {
+      const mine = myId ? msg.senderUserId === myId : msg.senderRole === currentUserRole;
+      return {
+        id: msg.id,
+        mine,
+        message: msg.message,
+        createdAt: msg.createdAt,
+        localStatus: mine ? msg.localStatus : undefined,
+      };
+    });
+  }, [messages, meQuery.data?.userId, currentUserRole]);
+
+  const handleReply = async () => {
+    const clean = replyText.trim();
+    if (!clean) return;
     setReplyFeedback(null);
     try {
-      await reply.mutateAsync({ message: replyText.trim() });
+      setIsSending(true);
+      realtimeThread.reportTypingActivity(false);
+      await realtimeThread.sendMessage(clean);
       setReplyText("");
       setReplyFeedback("success");
     } catch {
       setReplyFeedback("error");
+    } finally {
+      setIsSending(false);
     }
   };
 
@@ -388,14 +405,16 @@ export default function AdminSupportTicketScreen({ ticketId }: Props) {
   const isClosed = item.status === "CLOSED";
 
   return (
-    <div className="space-y-5">
+    <FullHeightMessagesPage
+      className="w-full min-w-0 flex flex-col gap-4 sm:gap-5"
+    >
       {/* Header */}
       <section className="app-panel rounded-[28px] p-5 sm:p-6">
         <Link
           href="/admin/support"
           className="mb-3 inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline"
         >
-          <ArrowRight className="h-4 w-4 rtl:rotate-180" />
+          <DirectionalArrowIcon direction="back" className="h-4 w-4" />
           {t("detail.back")}
         </Link>
 
@@ -445,47 +464,43 @@ export default function AdminSupportTicketScreen({ ticketId }: Props) {
       </section>
 
       {/* Two-column body */}
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)]">
-        {/* Left: thread + internal notes + reply + note forms */}
-        <div className="space-y-5">
+      <div className="custom-scrollbar flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto lg:flex-row lg:items-stretch lg:overflow-hidden">
+        {/* Left: thread + reply */}
+        <div className="flex min-h-0 flex-col gap-5 lg:flex-1 lg:overflow-hidden">
           {/* Message thread */}
-          <section className="app-panel rounded-[28px] p-5 sm:p-6">
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2">
-                <MessageSquare className="h-4 w-4 text-primary" />
-                <h2 className="text-base font-semibold text-text-primary dark:text-white/95">
-                  {t("thread.heading")}
-                </h2>
-              </div>
-              <span className="app-chip rounded-full px-3 py-1 text-xs font-medium">
-                {t("thread.count", { value: item.messages.length })}
-              </span>
-            </div>
-            <p className="mt-1 text-xs text-text-secondary">{t("thread.note")}</p>
+          <SupportThreadPanel
+            locale={locale}
+            title={t("thread.heading")}
+            note={t("thread.note")}
+            countLabel={t("thread.count", { value: threadMessages.length })}
+            messages={threadMessages}
+            isPeerTyping={realtimeThread.isPeerTyping}
+            emptyHeading={t("thread.empty.heading")}
+            emptyNote={t("thread.empty.note")}
+            composer={
+              isClosed
+                ? null
+                : {
+                    placeholder: t("reply.placeholder"),
+                    helperNote:
+                      replyFeedback === "success" ? t("reply.success") : t("reply.note"),
+                    errorNote: replyFeedback === "error" ? t("reply.error") : null,
+                    value: replyText,
+                    onChange: (next) => {
+                      setReplyText(next);
+                      realtimeThread.reportTypingActivity(next.trim().length > 0);
+                    },
+                    onSubmit: handleReply,
+                    isSubmitting: isSending || reply.isPending,
+                    disabled: reply.isPending,
+                    submitLabel: t("reply.submit"),
+                  }
+            }
+          />
+        </div>
 
-            {item.messages.length > 0 ? (
-              <div className="mt-5 space-y-3">
-                {item.messages.map((msg) => (
-                  <MessageBubble
-                    key={msg.id}
-                    senderRole={msg.senderRole}
-                    message={msg.message}
-                    createdAt={msg.createdAt}
-                    namespace="thread"
-                  />
-                ))}
-              </div>
-            ) : (
-              <div className="app-panel-soft mt-4 rounded-[20px] p-4">
-                <p className="text-sm font-semibold text-text-primary dark:text-white/95">
-                  {t("thread.empty.heading")}
-                </p>
-                <p className="mt-1 text-sm text-text-secondary">{t("thread.empty.note")}</p>
-              </div>
-            )}
-          </section>
-
-          {/* Internal notes */}
+        {/* Right: internal notes + operations */}
+        <div className="flex flex-col gap-5 lg:min-h-0 lg:w-[360px] lg:shrink-0 lg:overflow-y-auto lg:pe-1 xl:w-[420px]">
           <section className="rounded-[28px] border border-amber-200 bg-amber-50/60 p-5 dark:border-amber-500/20 dark:bg-amber-500/5 sm:p-6">
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-2">
@@ -505,12 +520,12 @@ export default function AdminSupportTicketScreen({ ticketId }: Props) {
             {item.internalNotes.length > 0 ? (
               <div className="mt-4 space-y-3">
                 {item.internalNotes.map((n) => (
-                  <MessageBubble
+                  <InternalNoteBubble
                     key={n.id}
-                    senderRole={n.senderRole}
-                    message={n.message}
+                    senderRole="SUPPORT_AGENT"
+                    message={n.note}
                     createdAt={n.createdAt}
-                    namespace="internalNotes"
+                    locale={locale}
                   />
                 ))}
               </div>
@@ -519,58 +534,6 @@ export default function AdminSupportTicketScreen({ ticketId }: Props) {
             )}
           </section>
 
-          {/* Reply form */}
-          {!isClosed && (
-            <section className="app-panel rounded-[28px] p-5 sm:p-6">
-              <div className="flex items-center gap-2">
-                <SendHorizonal className="h-4 w-4 text-primary" />
-                <h2 className="text-base font-semibold text-text-primary dark:text-white/95">
-                  {t("reply.heading")}
-                </h2>
-              </div>
-              <p className="mt-1 text-xs text-text-secondary">{t("reply.note")}</p>
-
-              <form className="mt-4 space-y-3" onSubmit={handleReply}>
-                <textarea
-                  rows={4}
-                  maxLength={4000}
-                  value={replyText}
-                  onChange={(e) => setReplyText(e.target.value)}
-                  placeholder={t("reply.placeholder")}
-                  className="w-full rounded-[20px] border border-border-light bg-white px-4 py-3 text-sm leading-6 text-text-primary outline-none placeholder:text-text-muted focus:border-primary/35 dark:bg-white/5 dark:text-white"
-                />
-
-                {replyFeedback === "success" && (
-                  <p className="text-xs text-emerald-600 dark:text-emerald-400">
-                    {t("reply.success")}
-                  </p>
-                )}
-                {replyFeedback === "error" && (
-                  <p className="text-xs text-rose-600 dark:text-rose-400">{t("reply.error")}</p>
-                )}
-
-                <button
-                  type="submit"
-                  disabled={reply.isPending || replyText.trim().length === 0}
-                  className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {reply.isPending ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      {t("reply.submitting")}
-                    </>
-                  ) : (
-                    <>
-                      <SendHorizonal className="h-4 w-4" />
-                      {t("reply.submit")}
-                    </>
-                  )}
-                </button>
-              </form>
-            </section>
-          )}
-
-          {/* Internal note form */}
           {!isClosed && (
             <section className="rounded-[28px] border border-amber-200 bg-amber-50/60 p-5 dark:border-amber-500/20 dark:bg-amber-500/5 sm:p-6">
               <div className="flex items-center gap-2">
@@ -620,13 +583,10 @@ export default function AdminSupportTicketScreen({ ticketId }: Props) {
               </form>
             </section>
           )}
-        </div>
 
-        {/* Right: operations panel */}
-        <div className="lg:sticky lg:top-6 lg:self-start">
           <OperationsPanel ticketId={ticketId} />
         </div>
       </div>
-    </div>
+    </FullHeightMessagesPage>
   );
 }

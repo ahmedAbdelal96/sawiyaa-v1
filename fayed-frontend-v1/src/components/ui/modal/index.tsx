@@ -44,6 +44,7 @@ interface ModalProps {
   closeOnOutsideClick?: boolean;
   initialFocusRef?: React.RefObject<HTMLElement | null>;
   ariaLabel?: string;
+  backdropClassName?: string;
 }
 
 interface ModalSectionProps {
@@ -102,6 +103,7 @@ interface DrawerProps extends Omit<ModalProps, "children" | "className" | "size"
   children: React.ReactNode;
   className?: string;
   showHandle?: boolean;
+  inset?: boolean;
 }
 
 const SIZE_CLASSES: Record<ModalSize, string> = {
@@ -158,8 +160,11 @@ function useOverlayLifecycle({
     if (!isOpen) return;
 
     previousActiveElementRef.current = document.activeElement as HTMLElement | null;
-    const previousOverflow = document.body.style.overflow;
+    // Lock both documentElement and body to prevent background scrolling across browsers.
+    const previousBodyOverflow = document.body.style.overflow;
+    const previousHtmlOverflow = document.documentElement.style.overflow;
     document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
 
     const panel = containerRef.current;
     const focusTarget = initialFocusRef?.current;
@@ -193,7 +198,8 @@ function useOverlayLifecycle({
     document.addEventListener("keydown", handleTab);
 
     return () => {
-      document.body.style.overflow = previousOverflow;
+      document.body.style.overflow = previousBodyOverflow;
+      document.documentElement.style.overflow = previousHtmlOverflow;
       document.removeEventListener("keydown", handleTab);
       previousActiveElementRef.current?.focus?.();
     };
@@ -202,13 +208,20 @@ function useOverlayLifecycle({
   return mounted;
 }
 
-function OverlayBackdrop({ onClick }: { onClick?: () => void }) {
+function OverlayBackdrop({
+  onClick,
+  className,
+}: {
+  onClick?: () => void;
+  className?: string;
+}) {
   return (
-    <button
-      type="button"
-      aria-label="Close overlay"
-      className="absolute inset-0 h-full w-full bg-[rgba(25,52,57,0.18)] backdrop-blur-[10px]"
+    <div
+      aria-hidden="true"
+      className={`absolute inset-0 h-full w-full bg-[rgba(25,52,57,0.18)] backdrop-blur-[10px] ${className ?? ""}`}
+      // Click handling is done on the overlay wrapper so the backdrop can't be "covered" by layout containers.
       onClick={onClick}
+      onPointerDown={onClick}
     />
   );
 }
@@ -241,6 +254,7 @@ export function Modal({
   closeOnOutsideClick = true,
   initialFocusRef,
   ariaLabel,
+  backdropClassName,
 }: ModalProps) {
   const panelRef = useRef<HTMLDivElement>(null);
   const mounted = useOverlayLifecycle({
@@ -267,10 +281,17 @@ export function Modal({
   return createPortal(
     <div className="fixed inset-0 z-[99999]">
       {!isFullscreen ? (
-        <OverlayBackdrop onClick={closeOnOutsideClick ? onClose : undefined} />
+        <OverlayBackdrop
+          onClick={closeOnOutsideClick ? onClose : undefined}
+          className={backdropClassName}
+        />
       ) : null}
 
-      <div className="relative flex min-h-full items-center justify-center overflow-y-auto p-4 sm:p-6">
+      <div
+        className="relative flex min-h-full items-center justify-center overflow-y-auto p-4 sm:p-6"
+        onClick={closeOnOutsideClick ? onClose : undefined}
+        onPointerDown={closeOnOutsideClick ? onClose : undefined}
+      >
         <ModalContext.Provider value={contextValue}>
           <div
             ref={panelRef}
@@ -282,6 +303,7 @@ export function Modal({
             tabIndex={-1}
             className={`${contentClasses} ${className ?? ""}`}
             onClick={(event) => event.stopPropagation()}
+            onPointerDown={(event) => event.stopPropagation()}
           >
             {showCloseButton && <OverlayCloseButton onClose={onClose} />}
             {children}
@@ -436,7 +458,7 @@ export function NoticeDialog({
 }: NoticeDialogProps) {
   const toneClass =
     tone === "primary"
-      ? "border-primary/15 bg-primary-light text-text-brand shadow-[0_14px_28px_-24px_rgba(63,125,207,0.28)] dark:border-primary/20 dark:bg-primary/10 dark:text-primary-light"
+      ? "border-primary/15 bg-primary-light text-text-brand shadow-[0_14px_28px_-24px_rgba(68,161,148,0.28)] dark:border-primary/20 dark:bg-primary/10 dark:text-primary-light"
       : tone === "warning"
         ? "border-warning-200 bg-warning-50 text-warning-800 shadow-[0_14px_28px_-24px_rgba(245,158,11,0.24)] dark:border-warning-500/20 dark:bg-warning-500/10 dark:text-warning-300"
         : "border-border-light bg-surface-secondary text-text-secondary shadow-[0_14px_28px_-24px_rgba(25,52,57,0.12)] dark:bg-surface-tertiary";
@@ -477,6 +499,8 @@ export function Drawer({
   initialFocusRef,
   ariaLabel,
   showHandle = true,
+  inset = true,
+  backdropClassName,
 }: DrawerProps) {
   const panelRef = useRef<HTMLDivElement>(null);
   const mounted = useOverlayLifecycle({
@@ -496,22 +520,40 @@ export function Drawer({
 
   if (!mounted || !isOpen) return null;
 
-  const layoutClass =
-    side === "bottom"
-      ? "items-end justify-center p-0 sm:p-4"
-      : side === "left"
-        ? "items-stretch justify-start p-0 sm:p-4"
-        : "items-stretch justify-end p-0 sm:p-4";
+  const layoutClass = (() => {
+    if (side === "bottom") return inset ? "items-end justify-center p-0 sm:p-4" : "items-end justify-center p-0";
+    if (side === "left") return inset ? "items-stretch justify-start p-0 sm:p-4" : "items-stretch justify-start p-0";
+    return inset ? "items-stretch justify-end p-0 sm:p-4" : "items-stretch justify-end p-0";
+  })();
 
-  const panelClass =
-    side === "bottom"
-      ? `${panelShellClassName("max-h-[88vh] w-full rounded-b-none sm:max-w-2xl sm:rounded-[32px]")} ${className ?? ""}`
-      : `${panelShellClassName("h-full w-full max-w-xl rounded-none sm:h-[calc(100vh-2rem)] sm:rounded-[32px]")} ${className ?? ""}`;
+  const panelClass = (() => {
+    if (side === "bottom") {
+      return `${panelShellClassName(
+        inset
+          ? "max-h-[88vh] w-full rounded-b-none sm:max-w-2xl sm:rounded-[32px]"
+          : "max-h-[88vh] w-full rounded-b-none",
+      )} ${className ?? ""}`;
+    }
+
+    // Side drawers: edge-to-edge on mobile app surfaces when inset=false.
+    if (!inset) {
+      return `relative h-[100dvh] w-full max-w-xl overflow-hidden rounded-none bg-white shadow-2xl dark:bg-surface-secondary ${className ?? ""}`;
+    }
+
+    return `${panelShellClassName("h-full w-full max-w-xl rounded-none sm:h-[calc(100vh-2rem)] sm:rounded-[32px]")} ${className ?? ""}`;
+  })();
 
   return createPortal(
     <div className="fixed inset-0 z-[99999]">
-      <OverlayBackdrop onClick={closeOnOutsideClick ? onClose : undefined} />
-      <div className={`relative flex min-h-full ${layoutClass}`}>
+      <OverlayBackdrop
+        onClick={closeOnOutsideClick ? onClose : undefined}
+        className={backdropClassName}
+      />
+      <div
+        className={`relative flex min-h-full ${layoutClass}`}
+        onClick={closeOnOutsideClick ? onClose : undefined}
+        onPointerDown={closeOnOutsideClick ? onClose : undefined}
+      >
         <ModalContext.Provider value={contextValue}>
           <div
             ref={panelRef}
@@ -523,6 +565,7 @@ export function Drawer({
             tabIndex={-1}
             className={panelClass}
             onClick={(event) => event.stopPropagation()}
+            onPointerDown={(event) => event.stopPropagation()}
           >
             {showCloseButton ? <OverlayCloseButton onClose={onClose} /> : null}
             {showHandle && side === "bottom" ? (

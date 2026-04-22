@@ -19,10 +19,11 @@ export class ValidateCouponUseCase {
     sessionId: string;
     couponCode: string;
   }) {
-    const session = await this.financialSessionRepository.findPatientOwnedSession(
-      input.sessionId,
-      input.userId,
-    );
+    const session =
+      await this.financialSessionRepository.findPatientOwnedSession(
+        input.sessionId,
+        input.userId,
+      );
 
     if (!session) {
       throw new NotFoundException({
@@ -34,17 +35,18 @@ export class ValidateCouponUseCase {
     const coupon = await this.couponRepository.findByCode(
       normalizeCouponCode(input.couponCode),
     );
-    const validated = await this.validateCouponEligibilityService.validateForSession({
-      coupon,
-      session: {
-        id: session.id,
-        flowType: session.flowType,
-        sessionMode: session.sessionMode,
-        durationMinutes: session.durationMinutes,
-        practitioner: session.practitioner,
-        patient: session.patient,
-      },
-    });
+    const validated =
+      await this.validateCouponEligibilityService.validateForSession({
+        coupon,
+        session: {
+          id: session.id,
+          flowType: session.flowType,
+          sessionMode: session.sessionMode,
+          durationMinutes: session.durationMinutes,
+          practitioner: session.practitioner,
+          patient: session.patient,
+        },
+      });
 
     return {
       item: this.financialRulesMapper.toCoupon(validated),

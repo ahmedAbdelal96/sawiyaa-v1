@@ -29,10 +29,9 @@ describe('ListPractitionerSettlementsUseCase', () => {
     (practitionerRepository.findByUserId as jest.Mock).mockResolvedValue({
       id: 'pract_1',
     });
-    (settlementRepository.listPractitionerSettlements as jest.Mock).mockResolvedValue([
-      [],
-      0,
-    ]);
+    (
+      settlementRepository.listPractitionerSettlements as jest.Mock
+    ).mockResolvedValue([[], 0]);
 
     const result = await useCase.execute({
       userId: 'user_1',
@@ -55,10 +54,9 @@ describe('ListPractitionerSettlementsUseCase', () => {
     (practitionerRepository.findByUserId as jest.Mock).mockResolvedValue({
       id: 'pract_1',
     });
-    (settlementRepository.listPractitionerSettlements as jest.Mock).mockResolvedValue([
-      [{ id: 'set_1' }],
-      1,
-    ]);
+    (
+      settlementRepository.listPractitionerSettlements as jest.Mock
+    ).mockResolvedValue([[{ id: 'set_1' }], 1]);
 
     await useCase.execute({
       userId: 'user_1',
@@ -69,7 +67,9 @@ describe('ListPractitionerSettlementsUseCase', () => {
       },
     });
 
-    expect(settlementRepository.listPractitionerSettlements).toHaveBeenCalledWith(
+    expect(
+      settlementRepository.listPractitionerSettlements,
+    ).toHaveBeenCalledWith(
       expect.objectContaining({
         practitionerId: 'pract_1',
         currencyCode: 'EGP',

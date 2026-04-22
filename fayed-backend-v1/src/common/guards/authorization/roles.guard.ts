@@ -29,7 +29,10 @@ export class RolesGuard implements CanActivate {
     const hasRole = requiredRoles.some((role) => user.roles.includes(role));
 
     if (!hasRole) {
-      forbid('You do not have the required role for this route', 'ROLE_REQUIRED');
+      forbid(
+        'You do not have the required role for this route',
+        'ROLE_REQUIRED',
+      );
     }
 
     return true;

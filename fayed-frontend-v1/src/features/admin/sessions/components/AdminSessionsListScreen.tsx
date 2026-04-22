@@ -365,6 +365,14 @@ export default function AdminSessionsListScreen() {
   return (
     <AdminOperationalListShell
       title={t("header.title")}
+      actions={
+        <Link
+          href="/admin/sessions/cancellation-policies"
+          className="inline-flex items-center justify-center rounded-2xl border border-border-light bg-white px-4 py-2 text-sm font-semibold text-text-primary transition hover:border-primary/30 hover:bg-brand-25 dark:bg-surface-secondary dark:text-white/95 dark:hover:bg-white/10"
+        >
+          {t("policy.actions.openEditor")}
+        </Link>
+      }
       summaryCards={
         <>
           <AdminSummaryCard

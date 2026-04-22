@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsOptional, IsString, MaxLength } from 'class-validator';
+import { Type } from 'class-transformer';
+import { IsBoolean, IsOptional, IsString, MaxLength } from 'class-validator';
 
 export class InitiateSessionPaymentDto {
   @ApiProperty({
@@ -12,4 +13,15 @@ export class InitiateSessionPaymentDto {
   @IsString()
   @MaxLength(64)
   couponCode?: string;
+
+  @ApiProperty({
+    required: false,
+    example: true,
+    description:
+      'When true, available customer wallet balance is reserved/applied before gateway checkout.',
+  })
+  @IsOptional()
+  @Type(() => Boolean)
+  @IsBoolean()
+  useWalletBalance?: boolean;
 }

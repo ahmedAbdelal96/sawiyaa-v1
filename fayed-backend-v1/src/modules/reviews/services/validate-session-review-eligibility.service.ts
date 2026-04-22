@@ -13,10 +13,11 @@ export class ValidateSessionReviewEligibilityService {
   ) {}
 
   async assertEligible(input: { sessionId: string; patientId: string }) {
-    const session = await this.reviewSessionRepository.findOwnedSessionForReview(
-      input.sessionId,
-      input.patientId,
-    );
+    const session =
+      await this.reviewSessionRepository.findOwnedSessionForReview(
+        input.sessionId,
+        input.patientId,
+      );
 
     if (!session) {
       throw new NotFoundException({

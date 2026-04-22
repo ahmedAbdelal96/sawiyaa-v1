@@ -1,773 +1,539 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { useLocale, useTranslations } from "next-intl";
-import { Link } from "@/i18n/navigation";
+import { useMemo } from "react";
+import { useLocale } from "next-intl";
 import {
-  AlertTriangle,
-  Calendar,
-  CalendarDays,
-  CheckCircle2,
-  Clock,
-  FileText,
-  Loader2,
-  MessageSquareText,
-  Radio,
-  ShieldCheck,
-  Zap,
+  Activity,
+  CalendarClock,
+  Clock3,
+  WalletCards,
 } from "lucide-react";
-import { usePractitionerProfile } from "../hooks/use-practitioners";
+import { Link } from "@/i18n/navigation";
+import { ListStateSkeleton, StateCard } from "@/components/shared/ContentStates";
 import {
-  useAcceptInstantBookingRequest,
-  usePractitionerPendingBookingRequests,
-  useRejectInstantBookingRequest,
-} from "@/features/instant-booking/hooks/use-instant-booking";
+  AreaTrendChart,
+  BarTrendChart,
+} from "@/components/charts";
+import {
+  DashboardChartCard,
+  DashboardKpiCard,
+  DashboardQueueCard,
+  DashboardSectionHeader,
+} from "@/components/dashboard";
+import { usePractitionerProfile } from "../hooks/use-practitioners";
 import { usePractitionerSessions } from "@/features/sessions/hooks/use-sessions";
-import PresencePanel from "@/features/presence/components/PresencePanel";
-import { useMyPresence } from "@/features/presence/hooks/use-presence";
-import SessionStatusBadge from "@/features/sessions/components/SessionStatusBadge";
-import { Skeleton } from "@/components/shared/LoadingStates";
-import { DestructiveConfirmModal } from "@/components/ui/modal";
-import type { InstantBookingRequest } from "@/features/instant-booking/types/instant-booking.types";
-import type { SessionListItem, SessionStatus } from "@/features/sessions/types/sessions.types";
-import type { PractitionerApplicationStatus } from "../types/practitioners.types";
-import type { PresenceStatus } from "@/features/presence/types/presence.types";
+import { usePractitionerSettlements, usePractitionerWallet } from "@/features/financial-operations/hooks/use-financial-operations";
+import type { SessionListItem } from "@/features/sessions/types/sessions.types";
 
-const ACTIVE_STATUSES: SessionStatus[] = [
-  "PENDING_PRACTITIONER_RESPONSE",
-  "PENDING_PAYMENT",
-  "CONFIRMED",
-  "UPCOMING",
-  "READY_TO_JOIN",
-  "IN_PROGRESS",
-];
-
-type AttentionCard = {
-  heading: string;
-  note: string;
-  href: string;
-  cta: string;
-  Icon: typeof Zap;
-  toneClass: string;
+type LocaleCopy = {
+  pageTitle: string;
+  pageSubtitle: string;
+  pageNote: string;
+  common: {
+    loading: string;
+    noData: string;
+    unknown: string;
+    viewAll: string;
+    updatedLabel: string;
+  };
+  kpi: {
+    sessionsToday: string;
+    joinableNow: string;
+    walletAvailable: string;
+    lastSettlement: string;
+    sessionsTodayHelper: string;
+    joinableNowHelper: string;
+    walletHelper: string;
+    lastSettlementHelper: string;
+  };
+  charts: {
+    heading: string;
+    subtitle: string;
+    sessionsTitle: string;
+    sessionsSubtitle: string;
+    sessionsSeries: string;
+    sessionsAverageSeries: string;
+    settlementsTitle: string;
+    settlementsSubtitle: string;
+    settlementsSeries: string;
+  };
+  activity: {
+    heading: string;
+    subtitle: string;
+    upcomingSessionsTitle: string;
+    upcomingSessionsSubtitle: string;
+    upcomingSessionsEmpty: string;
+    quickActionsTitle: string;
+    quickActionsSubtitle: string;
+  };
+  delta: {
+    upFromYesterday: string;
+    downFromYesterday: string;
+    unchanged: string;
+  };
+  actions: {
+    sessions: string;
+    wallet: string;
+    settlements: string;
+  };
+  pendingBalanceLabel: string;
 };
 
-type WorkspaceSecondaryLink = {
-  href: string;
-  Icon: typeof Calendar;
-  labelKey:
-    | "dashboard.workspace.links.profile"
-    | "dashboard.workspace.links.application"
-    | "dashboard.workspace.links.credentials"
-    | "dashboard.workspace.links.specialties";
-  noteKey:
-    | "dashboard.workspace.links.profileNote"
-    | "dashboard.workspace.links.applicationNote"
-    | "dashboard.workspace.links.credentialsNote"
-    | "dashboard.workspace.links.specialtiesNote";
-  badgeKey?: "dashboard.workspace.links.limitedBadge";
+const COPY: Record<"en" | "ar", LocaleCopy> = {
+  en: {
+    pageTitle: "Practitioner Operations Dashboard",
+    pageSubtitle:
+      "A focused snapshot of your sessions and financial movement.",
+    pageNote:
+      "Powered by your live practitioner contracts to keep this screen accurate and actionable.",
+    common: {
+      loading: "Loading...",
+      noData: "No data available",
+      unknown: "Unknown",
+      viewAll: "View all",
+      updatedLabel: "Updated",
+    },
+    kpi: {
+      sessionsToday: "Sessions today",
+      joinableNow: "Joinable sessions now",
+      walletAvailable: "Available wallet balance",
+      lastSettlement: "Latest settlement",
+      sessionsTodayHelper: "Sessions scheduled for today.",
+      joinableNowHelper: "Sessions currently ready to join or in progress.",
+      walletHelper: "Current available amount in your wallet.",
+      lastSettlementHelper: "Most recent settlement amount recorded.",
+    },
+    charts: {
+      heading: "Trends",
+      subtitle: "A compact view of sessions and settlements over time.",
+      sessionsTitle: "Sessions trend (last 14 days)",
+      sessionsSubtitle: "Daily sessions versus rolling 3-day average.",
+      sessionsSeries: "Sessions",
+      sessionsAverageSeries: "3-day average",
+      settlementsTitle: "Settlement trend",
+      settlementsSubtitle: "Latest settlement batches by time.",
+      settlementsSeries: "Settlements",
+    },
+    activity: {
+      heading: "Upcoming sessions",
+      subtitle: "Your next scheduled sessions.",
+      upcomingSessionsTitle: "Next sessions",
+      upcomingSessionsSubtitle: "Sorted by date, earliest first.",
+      upcomingSessionsEmpty: "No upcoming sessions right now.",
+      quickActionsTitle: "Quick actions",
+      quickActionsSubtitle: "Fast shortcuts to your key workflows.",
+    },
+    delta: {
+      upFromYesterday: "{value}% up vs yesterday",
+      downFromYesterday: "{value}% down vs yesterday",
+      unchanged: "No change vs yesterday",
+    },
+    actions: {
+      sessions: "Sessions",
+      wallet: "Wallet",
+      settlements: "Settlements",
+    },
+    pendingBalanceLabel: "Pending balance",
+  },
+  ar: {
+    pageTitle: "لوحة المعالج",
+    pageSubtitle: "ملخص سريع لأهم أرقام الجلسات والتسويات.",
+    pageNote: "تعتمد هذه الصفحة على بياناتك الفعلية لتقديم أرقام دقيقة ومباشرة.",
+    common: {
+      loading: "جاري التحميل...",
+      noData: "لا توجد بيانات متاحة",
+      unknown: "غير معروف",
+      viewAll: "عرض الكل",
+      updatedLabel: "آخر تحديث",
+    },
+    kpi: {
+      sessionsToday: "جلسات اليوم",
+      joinableNow: "جلسات جاهزة الآن",
+      walletAvailable: "الرصيد المتاح بالمحفظة",
+      lastSettlement: "آخر تسوية",
+      sessionsTodayHelper: "عدد الجلسات المقررة اليوم.",
+      joinableNowHelper: "جلسات جاهزة للدخول الآن أو قيد التنفيذ.",
+      walletHelper: "المبلغ المتاح حاليًا في محفظتك.",
+      lastSettlementHelper: "قيمة آخر تسوية مسجلة.",
+    },
+    charts: {
+      heading: "الاتجاهات",
+      subtitle: "اتجاه الجلسات والتسويات خلال الفترات الأخيرة.",
+      sessionsTitle: "اتجاه الجلسات (آخر 14 يومًا)",
+      sessionsSubtitle: "الجلسات اليومية مقارنة بمتوسط متحرك 3 أيام.",
+      sessionsSeries: "الجلسات",
+      sessionsAverageSeries: "متوسط 3 أيام",
+      settlementsTitle: "اتجاه التسويات",
+      settlementsSubtitle: "آخر دفعات التسوية عبر الفترات.",
+      settlementsSeries: "التسويات",
+    },
+    activity: {
+      heading: "الجلسات القادمة",
+      subtitle: "أقرب الجلسات المجدولة لديك.",
+      upcomingSessionsTitle: "الجلسات القادمة",
+      upcomingSessionsSubtitle: "مرتبة حسب التاريخ (الأقرب أولًا).",
+      upcomingSessionsEmpty: "لا توجد جلسات قادمة حاليًا.",
+      quickActionsTitle: "اختصارات سريعة",
+      quickActionsSubtitle: "وصول سريع لأهم المسارات.",
+    },
+    delta: {
+      upFromYesterday: "ارتفاع {value}% مقارنة بالأمس",
+      downFromYesterday: "انخفاض {value}% مقارنة بالأمس",
+      unchanged: "بدون تغيير مقارنة بالأمس",
+    },
+    actions: {
+      sessions: "الجلسات",
+      wallet: "المحفظة",
+      settlements: "التسويات",
+    },
+    pendingBalanceLabel: "الرصيد المعلق",
+  },
 };
 
-type WorkspaceFinanceLink = {
-  href: string;
-  Icon: typeof Calendar;
-  labelKey:
-    | "dashboard.workspace.links.wallet"
-    | "dashboard.workspace.links.ledger"
-    | "dashboard.workspace.links.settlements";
-  noteKey:
-    | "dashboard.workspace.links.walletNote"
-    | "dashboard.workspace.links.ledgerNote"
-    | "dashboard.workspace.links.settlementsNote";
-};
+const INDIGO = "#2F2FE4";
+const ORANGE = "#FF9013";
+const SKY = "#72B7FF";
 
-function formatScheduledAt(isoString: string | null, numLocale: string): string {
-  if (!isoString) return "";
-  return new Date(isoString).toLocaleString(numLocale, {
-    weekday: "short",
+function normalizeLocale(locale: string) {
+  return locale === "ar" ? "ar-EG" : "en-US";
+}
+
+function formatNumber(locale: string, value: number) {
+  return new Intl.NumberFormat(normalizeLocale(locale)).format(value);
+}
+
+function formatMoney(locale: string, value: string | number, currency = "EGP") {
+  const numeric = typeof value === "string" ? Number(value) : value;
+  if (Number.isNaN(numeric)) {
+    return `${value} ${currency}`;
+  }
+  return new Intl.NumberFormat(normalizeLocale(locale), {
+    style: "currency",
+    currency,
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  }).format(numeric);
+}
+
+function formatDateTime(locale: string, iso: string | null) {
+  if (!iso) return "-";
+  return new Date(iso).toLocaleString(locale === "ar" ? "ar-SA" : "en-US", {
     month: "short",
     day: "numeric",
     hour: "numeric",
     minute: "2-digit",
-    hour12: !numLocale.startsWith("ar"),
+    hour12: locale !== "ar",
   });
 }
 
-function formatExpiry(isoString: string, numLocale: string): string {
-  return new Date(isoString).toLocaleString(numLocale, {
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: !numLocale.startsWith("ar"),
+function formatShortDate(locale: string, iso: string | null) {
+  if (!iso) return "-";
+  return new Date(iso).toLocaleDateString(locale === "ar" ? "ar-SA" : "en-US", {
+    month: "short",
+    day: "numeric",
   });
 }
 
-function getSessionNoteKey(status: SessionStatus) {
-  switch (status) {
-    case "READY_TO_JOIN":
-      return "dashboard.workspace.sessions.notes.READY_TO_JOIN";
-    case "IN_PROGRESS":
-      return "dashboard.workspace.sessions.notes.IN_PROGRESS";
-    case "PENDING_PAYMENT":
-      return "dashboard.workspace.sessions.notes.PENDING_PAYMENT";
-    case "PENDING_PRACTITIONER_RESPONSE":
-      return "dashboard.workspace.sessions.notes.PENDING_PRACTITIONER_RESPONSE";
-    case "UPCOMING":
-      return "dashboard.workspace.sessions.notes.UPCOMING";
-    case "CONFIRMED":
-    default:
-      return "dashboard.workspace.sessions.notes.CONFIRMED";
-  }
-}
-
-function getPresenceSummaryKey(
-  status: PresenceStatus | null,
-  isInstantBookingEnabled: boolean | null,
-) {
-  if (status === "ONLINE" && isInstantBookingEnabled) {
-    return "dashboard.runtime.readiness.onlineInstant";
-  }
-  if (status === "ONLINE") {
-    return "dashboard.runtime.readiness.online";
-  }
-  if (status === "AWAY") {
-    return "dashboard.runtime.readiness.away";
-  }
-  if (status === "BUSY") {
-    return "dashboard.runtime.readiness.busy";
-  }
-  return "dashboard.runtime.readiness.offline";
-}
-
-function WorkspaceRequestCard({ request }: { request: InstantBookingRequest }) {
-  const t = useTranslations("sessions.practitioner.instantBooking");
-  const locale = useLocale();
-  const numLocale = locale === "ar" ? "ar-SA" : "en-US";
-
-  const acceptMutation = useAcceptInstantBookingRequest();
-  const rejectMutation = useRejectInstantBookingRequest();
-  const [confirmingReject, setConfirmingReject] = useState(false);
-  const [acceptedSessionId, setAcceptedSessionId] = useState<string | null>(null);
-
-  const handleAccept = async () => {
-    try {
-      const result = await acceptMutation.mutateAsync(request.id);
-      setAcceptedSessionId(result.createdSessionId);
-    } catch {
-      // Mutation error is shown inline.
-    }
-  };
-
-  const handleReject = async () => {
-    try {
-      await rejectMutation.mutateAsync({ requestId: request.id });
-      setConfirmingReject(false);
-    } catch {
-      // Mutation error is shown inline.
-    }
-  };
-
-  if (acceptedSessionId) {
-    return (
-      <div className="rounded-xl border border-green-200 bg-green-50 p-4 dark:border-green-800/40 dark:bg-green-900/10">
-        <p className="mb-2 text-sm text-green-700 dark:text-green-400">
-          {t("acceptedNote")}
-        </p>
-        <Link
-          href={`/practitioner/sessions/${acceptedSessionId}` as never}
-          className="inline-flex items-center rounded-xl bg-primary px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary/90"
-        >
-          {t("viewSession")}
-        </Link>
-      </div>
-    );
+function buildLast14DaysSeries(locale: string, sessions: SessionListItem[]) {
+  const now = new Date();
+  const dayStarts: Date[] = [];
+  for (let i = 13; i >= 0; i -= 1) {
+    const day = new Date(now);
+    day.setDate(now.getDate() - i);
+    day.setHours(0, 0, 0, 0);
+    dayStarts.push(day);
   }
 
-  const isBusy = acceptMutation.isPending || rejectMutation.isPending;
-
-  return (
-    <div className="rounded-xl border border-border-light bg-white p-4 dark:border-white/10 dark:bg-white/5">
-      <div className="mb-3">
-        <p className="text-sm font-semibold text-text-primary dark:text-white/90">
-          {t("requestFrom")} {request.patient?.displayName ?? "-"}
-        </p>
-        <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-text-secondary">
-          <span>{t("duration", { n: request.requestedDurationMinutes })}</span>
-          <span aria-hidden>&middot;</span>
-          <span className="flex items-center gap-1">
-            <Clock size={11} />
-            {t("expiresAt")} {formatExpiry(request.expiresAt, numLocale)}
-          </span>
-        </div>
-      </div>
-
-      {acceptMutation.isError && (
-        <p className="mb-2 text-xs text-red-500">{t("acceptError")}</p>
-      )}
-      {rejectMutation.isError && (
-        <p className="mb-2 text-xs text-red-500">{t("rejectError")}</p>
-      )}
-
-      <div className="flex flex-wrap gap-2">
-        <button
-          type="button"
-          onClick={handleAccept}
-          disabled={isBusy}
-          className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-primary/90 disabled:opacity-60"
-        >
-          {acceptMutation.isPending ? (
-            <>
-              <Loader2 size={11} className="animate-spin" />
-              {t("accepting")}
-            </>
-          ) : (
-            t("accept")
-          )}
-        </button>
-        <button
-          type="button"
-          onClick={() => setConfirmingReject(true)}
-          disabled={isBusy}
-          className="inline-flex items-center rounded-xl border border-border-light px-3 py-1.5 text-xs text-text-secondary transition hover:bg-surface-tertiary dark:hover:bg-white/5 disabled:opacity-60"
-        >
-          {t("reject")}
-        </button>
-      </div>
-
-      <DestructiveConfirmModal
-        isOpen={confirmingReject}
-        onClose={() => {
-          setConfirmingReject(false);
-          rejectMutation.reset();
-        }}
-        size="sm"
-        title={t("rejectConfirm.heading")}
-        description={t("rejectConfirm.note")}
-        confirmLabel={
-          rejectMutation.isPending ? (
-            <>
-              <Loader2 size={11} className="animate-spin" />
-              {t("rejecting")}
-            </>
-          ) : (
-            t("rejectConfirm.confirm")
-          )
-        }
-        cancelLabel={t("rejectConfirm.back")}
-        onConfirm={handleReject}
-        loading={isBusy}
-      >
-        <div className="rounded-2xl border border-warning-200 bg-warning-50 px-4 py-4 text-sm text-warning-800 dark:border-warning-500/20 dark:bg-warning-500/10 dark:text-warning-300">
-          <p className="font-medium">{request.patient?.displayName ?? "-"}</p>
-          <p className="mt-1 text-xs opacity-80">
-            {t("duration", { n: request.requestedDurationMinutes })}
-          </p>
-        </div>
-      </DestructiveConfirmModal>
-    </div>
+  const labels = dayStarts.map((day) =>
+    day.toLocaleDateString(locale === "ar" ? "ar-SA" : "en-US", {
+      month: "short",
+      day: "numeric",
+    }),
   );
+
+  const values = dayStarts.map((day) => {
+    const dayEnd = new Date(day);
+    dayEnd.setHours(23, 59, 59, 999);
+    return sessions.filter((session) => {
+      if (!session.scheduledStartAt) return false;
+      const scheduled = new Date(session.scheduledStartAt);
+      return scheduled >= day && scheduled <= dayEnd;
+    }).length;
+  });
+
+  const movingAverage = values.map((_, index) => {
+    const from = Math.max(0, index - 2);
+    const segment = values.slice(from, index + 1);
+    const avg = segment.reduce((sum, value) => sum + value, 0) / segment.length;
+    return Number(avg.toFixed(2));
+  });
+
+  return { labels, values, movingAverage };
 }
 
-function WorkspaceSessionRow({ session }: { session: SessionListItem }) {
-  const t = useTranslations("sessions");
-  const areaT = useTranslations("practitioner-area");
-  const locale = useLocale();
-  const numLocale = locale === "ar" ? "ar-SA" : "en-US";
+function calculateTodayDelta(currentValues: number[]) {
+  if (currentValues.length < 2) {
+    return { deltaValue: 0, tone: "neutral" as const };
+  }
 
-  return (
-    <Link
-      href={`/practitioner/sessions/${session.id}` as never}
-      className="flex items-center justify-between gap-3 px-4 py-3.5 transition hover:bg-surface-tertiary/40 dark:hover:bg-white/5"
-    >
-      <div className="min-w-0">
-        <p className="truncate text-sm font-medium text-text-primary dark:text-white/90">
-          {t("card.with")} {session.patient?.displayName ?? "-"}
-        </p>
-        {session.scheduledStartAt ? (
-          <p className="mt-0.5 flex items-center gap-1 text-xs text-text-muted">
-            <CalendarDays size={11} />
-            {formatScheduledAt(session.scheduledStartAt, numLocale)}
-          </p>
-        ) : (
-          <p className="mt-0.5 text-xs text-text-muted">{t("card.noSchedule")}</p>
-        )}
-        <p className="mt-1 text-xs text-text-secondary">
-          {areaT(getSessionNoteKey(session.status))}
-        </p>
-      </div>
-      <SessionStatusBadge status={session.status} />
-    </Link>
-  );
+  const today = currentValues[currentValues.length - 1];
+  const yesterday = currentValues[currentValues.length - 2];
+  if (yesterday === 0) {
+    if (today === 0) {
+      return { deltaValue: 0, tone: "neutral" as const };
+    }
+    return { deltaValue: 100, tone: "up" as const };
+  }
+
+  const raw = ((today - yesterday) / yesterday) * 100;
+  if (Math.abs(raw) < 0.1) {
+    return { deltaValue: 0, tone: "neutral" as const };
+  }
+  return { deltaValue: Math.abs(Number(raw.toFixed(1))), tone: raw > 0 ? ("up" as const) : ("down" as const) };
+}
+
+function safeText(value: string | null | undefined, fallback: string) {
+  const trimmed = value?.trim();
+  return trimmed && trimmed.length > 0 ? trimmed : fallback;
 }
 
 export default function PractitionerDashboard() {
-  const t = useTranslations("practitioner-area");
+  const locale = useLocale();
+  const copy = COPY[locale === "ar" ? "ar" : "en"];
 
-  const {
-    data: profileData,
-    isLoading: profileLoading,
-    isError: profileError,
-    refetch: refetchProfile,
-  } = usePractitionerProfile();
-
-  const {
-    data: requests,
-    isLoading: requestsLoading,
-    isError: requestsError,
-  } = usePractitionerPendingBookingRequests();
-
-  const { data: presenceData } = useMyPresence();
-
-  const { data: sessionsData, isLoading: sessionsLoading } = usePractitionerSessions({
-    limit: 10,
+  const profileQuery = usePractitionerProfile();
+  const sessionsQuery = usePractitionerSessions({ page: 1, limit: 50 });
+  const readySessionsQuery = usePractitionerSessions({
+    page: 1,
+    limit: 1,
+    status: "READY_TO_JOIN",
   });
+  const inProgressSessionsQuery = usePractitionerSessions({
+    page: 1,
+    limit: 1,
+    status: "IN_PROGRESS",
+  });
+  const walletQuery = usePractitionerWallet();
+  const settlementsQuery = usePractitionerSettlements({ page: 1, limit: 8 });
 
-  const profile = profileData?.profile;
-  const greeting = profile?.displayName
-    ? t("dashboard.greeting.withName", { name: profile.displayName })
-    : t("dashboard.greeting.generic");
+  const isLoadingCore =
+    profileQuery.isLoading ||
+    sessionsQuery.isLoading ||
+    readySessionsQuery.isLoading ||
+    inProgressSessionsQuery.isLoading ||
+    walletQuery.isLoading ||
+    settlementsQuery.isLoading;
 
-  const appStatus = profile?.applicationStatusSummary?.status as
-    | PractitionerApplicationStatus
-    | undefined;
+  const profile = profileQuery.data?.profile;
+  const greetingName = safeText(profile?.displayName ?? null, copy.common.unknown);
 
-  const pendingRequests = requests ?? [];
+  const sessions = sessionsQuery.data?.items ?? [];
+  const trend = buildLast14DaysSeries(locale, sessions);
+  const sessionsDelta = calculateTodayDelta(trend.values);
+  const sessionsToday = trend.values.at(-1) ?? 0;
+  const sessionsLast14DaysTotal = trend.values.reduce((sum, value) => sum + value, 0);
 
-  const upcomingSessions = (sessionsData?.items ?? [])
-    .filter((session) => ACTIVE_STATUSES.includes(session.status))
-    .slice(0, 4);
+  const readyNowCount =
+    (readySessionsQuery.data?.pagination.totalItems ?? 0) +
+    (inProgressSessionsQuery.data?.pagination.totalItems ?? 0);
 
-  const readySessions = useMemo(
-    () =>
-      upcomingSessions.filter(
-        (session) => session.status === "READY_TO_JOIN" || session.status === "IN_PROGRESS",
-      ),
-    [upcomingSessions],
+  const wallet = walletQuery.data;
+  const availableBalance = wallet?.availableBalance ?? "0";
+  const pendingBalance = wallet?.pendingBalance ?? "0";
+
+  const settlements = [...(settlementsQuery.data?.items ?? [])].sort(
+    (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
   );
-
-  const paymentBlockedSessions = useMemo(
-    () => upcomingSessions.filter((session) => session.status === "PENDING_PAYMENT"),
-    [upcomingSessions],
+  const settlementCategories = settlements.map((item) =>
+    formatShortDate(locale, item.createdAt),
   );
+  const settlementValues = settlements.map((item) => Number(item.amountNet) || 0);
+  const settlementCurrency = settlements[0]?.currency ?? wallet?.currency ?? "EGP";
+  const latestSettlementAmount = settlementValues.at(-1) ?? 0;
 
-  const requiresResponseSessions = useMemo(
-    () =>
-      upcomingSessions.filter(
-        (session) => session.status === "PENDING_PRACTITIONER_RESPONSE",
-      ),
-    [upcomingSessions],
-  );
+  const now = Date.now();
+  const upcomingSessions = [...sessions]
+    .filter((session) => {
+      if (!session.scheduledStartAt) return false;
+      return new Date(session.scheduledStartAt).getTime() >= now;
+    })
+    .sort((a, b) => {
+      const aValue = a.scheduledStartAt ? new Date(a.scheduledStartAt).getTime() : 0;
+      const bValue = b.scheduledStartAt ? new Date(b.scheduledStartAt).getTime() : 0;
+      return aValue - bValue;
+    })
+    .slice(0, 6);
 
-  const attentionCard: AttentionCard =
-    pendingRequests.length > 0
-        ? {
-            heading: t("dashboard.runtime.attention.pendingRequests.heading", {
-              count: pendingRequests.length,
-            }),
-            note: t("dashboard.runtime.attention.pendingRequests.note"),
-            href: "/practitioner/dashboard#pending-requests",
-            cta: t("dashboard.runtime.attention.pendingRequests.cta"),
-            Icon: Zap,
-            toneClass:
-            "border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-700/30 dark:bg-amber-900/10 dark:text-amber-200",
-        }
-      : readySessions.length > 0
-        ? {
-            heading: t("dashboard.runtime.attention.readySessions.heading", {
-              count: readySessions.length,
-            }),
-            note: t("dashboard.runtime.attention.readySessions.note"),
-            href: "/practitioner/sessions",
-            cta: t("dashboard.runtime.attention.readySessions.cta"),
-            Icon: Radio,
-            toneClass:
-              "border-primary/20 bg-primary-light text-text-primary dark:border-primary/20 dark:bg-primary/10 dark:text-white/90",
-          }
-        : requiresResponseSessions.length > 0
-          ? {
-              heading: t("dashboard.runtime.attention.pendingResponses.heading", {
-                count: requiresResponseSessions.length,
-              }),
-              note: t("dashboard.runtime.attention.pendingResponses.note"),
-              href: "/practitioner/sessions",
-              cta: t("dashboard.runtime.attention.pendingResponses.cta"),
-              Icon: AlertTriangle,
-              toneClass:
-                "border-accent/25 bg-accent/10 text-text-primary dark:border-accent/30 dark:bg-accent/10 dark:text-white/90",
-            }
-          : {
-              heading: t("dashboard.runtime.attention.clear.heading"),
-              note: t("dashboard.runtime.attention.clear.note"),
-              href: "/practitioner/availability",
-              cta: t("dashboard.runtime.attention.clear.cta"),
-              Icon: CheckCircle2,
-              toneClass:
-                "border-green-200 bg-green-50 text-green-900 dark:border-green-700/30 dark:bg-green-900/10 dark:text-green-200",
-            };
+  const sessionDeltaText =
+    sessionsDelta.tone === "neutral"
+      ? copy.delta.unchanged
+      : sessionsDelta.tone === "up"
+        ? copy.delta.upFromYesterday.replace("{value}", formatNumber(locale, sessionsDelta.deltaValue))
+        : copy.delta.downFromYesterday.replace("{value}", formatNumber(locale, sessionsDelta.deltaValue));
 
-  const presence = presenceData?.presence;
-  const readinessSummaryKey = getPresenceSummaryKey(
-    presence?.status ?? null,
-    presence?.isInstantBookingEnabled ?? null,
-  );
+  if (isLoadingCore) {
+    return <ListStateSkeleton items={8} heightClass="h-28" />;
+  }
+
+  if (profileQuery.isError) {
+    return (
+      <StateCard
+        icon={<Activity className="h-5 w-5 text-primary" />}
+        title={copy.common.noData}
+        note={copy.pageNote}
+        action={{ label: copy.common.viewAll, onClick: () => profileQuery.refetch() }}
+        className="rounded-[28px]"
+      />
+    );
+  }
 
   return (
     <div className="space-y-6">
-      {profileLoading ? (
-        <Skeleton className="h-8 w-52 rounded-xl" />
-      ) : profileError || !profile ? (
-        <div className="rounded-xl border border-border-light bg-white p-5 dark:bg-white/5">
-          <p className="mb-3 text-sm text-text-secondary">
-            {t("dashboard.feedback.loadError")}
-          </p>
-          <button
-            type="button"
-            onClick={() => refetchProfile()}
-            className="text-sm font-medium text-primary hover:underline"
-          >
-            {t("dashboard.feedback.retry")}
-          </button>
-        </div>
-      ) : (
-        <div className="space-y-1">
-          <p className="text-2xl font-semibold text-text-primary dark:text-white/95">
-            {greeting}
-          </p>
-          <p className="text-sm text-text-secondary">
-            {t("dashboard.page.subtitle")}
-          </p>
-        </div>
-      )}
-
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1.25fr)_minmax(0,0.75fr)]">
-        <section className={`rounded-2xl border p-5 ${attentionCard.toneClass}`}>
-          <div className="flex items-start gap-3">
-            <div className="rounded-2xl bg-white/70 p-2.5 dark:bg-white/10">
-              <attentionCard.Icon size={18} className="shrink-0" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-xs font-semibold uppercase tracking-wide opacity-80">
-                {t("dashboard.runtime.attention.eyebrow")}
-              </p>
-              <h2 className="mt-1 text-base font-semibold">{attentionCard.heading}</h2>
-              <p className="mt-1 text-sm opacity-90">{attentionCard.note}</p>
-              <Link
-                href={attentionCard.href as never}
-                className="mt-3 inline-flex text-sm font-semibold hover:underline"
-              >
-                {attentionCard.cta}
-              </Link>
-            </div>
-          </div>
-        </section>
-
-        <section className="rounded-2xl border border-border-light bg-surface-primary p-5 dark:bg-white/5">
-          <div className="mb-3 flex items-center gap-2">
-            <Radio size={15} className="text-primary dark:text-primary-light" />
-            <h2 className="text-sm font-semibold text-text-primary dark:text-white/90">
-              {t("dashboard.runtime.readiness.heading")}
-            </h2>
-          </div>
-          <p className="text-sm text-text-secondary">{t(readinessSummaryKey)}</p>
-          <dl className="mt-4 space-y-2 text-xs text-text-secondary">
-            <div className="flex items-center justify-between gap-3">
-              <dt>{t("dashboard.runtime.readiness.metrics.todaySessions")}</dt>
-              <dd className="font-semibold text-text-primary dark:text-white/90">
-                {upcomingSessions.length}
-              </dd>
-            </div>
-            <div className="flex items-center justify-between gap-3">
-              <dt>{t("dashboard.runtime.readiness.metrics.joinableNow")}</dt>
-              <dd className="font-semibold text-text-primary dark:text-white/90">
-                {readySessions.length}
-              </dd>
-            </div>
-            <div className="flex items-center justify-between gap-3">
-              <dt>{t("dashboard.runtime.readiness.metrics.waitingOnPayment")}</dt>
-              <dd className="font-semibold text-text-primary dark:text-white/90">
-                {paymentBlockedSessions.length}
-              </dd>
-            </div>
-          </dl>
-        </section>
-      </div>
-
-      <div className="grid gap-6 lg:grid-cols-8">
-        <div className="space-y-6 lg:col-span-5">
-          <section>
-            <div id="pending-requests" className="scroll-mt-24" />
-            <div className="mb-3 flex items-center gap-2">
-              <Zap size={15} className="shrink-0 text-amber-500" />
-              <h2 className="text-sm font-semibold text-text-primary dark:text-white/90">
-                {t("dashboard.workspace.requests.heading")}
-              </h2>
-              {pendingRequests.length > 0 && (
-                <span className="inline-flex min-w-[18px] items-center justify-center rounded-full bg-amber-500 px-1.5 py-0.5 text-[11px] font-bold leading-none text-white">
-                  {pendingRequests.length}
-                </span>
-              )}
-            </div>
-
-            {requestsLoading ? (
-              <Skeleton className="h-24 rounded-xl" />
-            ) : requestsError ? (
-              <div className="rounded-xl border border-border-light bg-white px-4 py-4 dark:bg-white/5">
-                <p className="text-sm text-text-secondary">
-                  {t("dashboard.workspace.requests.errorNote")}
-                </p>
-              </div>
-            ) : pendingRequests.length === 0 ? (
-              <div className="rounded-xl border border-border-light bg-white px-4 py-4 dark:bg-white/5">
-                <p className="text-sm text-text-secondary">
-                  {t("dashboard.workspace.requests.emptyNote")}
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {pendingRequests.map((request) => (
-                  <WorkspaceRequestCard key={request.id} request={request} />
-                ))}
-              </div>
-            )}
-          </section>
-
-          <section>
-            <div id="upcoming-sessions" className="scroll-mt-24" />
-            <div className="mb-3 flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
-                <CalendarDays
-                  size={15}
-                  className="shrink-0 text-primary dark:text-primary-light"
-                />
-                <h2 className="text-sm font-semibold text-text-primary dark:text-white/90">
-                  {t("dashboard.workspace.sessions.heading")}
-                </h2>
-              </div>
-              <Link
-                href="/practitioner/sessions"
-                className="text-xs font-medium text-primary hover:underline dark:text-primary-light"
-              >
-                {t("dashboard.workspace.sessions.viewAll")}
-              </Link>
-            </div>
-
-            {sessionsLoading ? (
-              <div className="space-y-2">
-                {[1, 2, 3].map((index) => (
-                  <Skeleton key={index} className="h-[74px] rounded-xl" />
-                ))}
-              </div>
-            ) : upcomingSessions.length === 0 ? (
-              <div className="rounded-xl border border-border-light bg-white p-6 text-center dark:bg-white/5">
-                <CalendarDays size={28} className="mx-auto mb-2 text-text-muted" />
-                <p className="text-sm font-medium text-text-primary dark:text-white/90">
-                  {t("dashboard.workspace.sessions.emptyHeading")}
-                </p>
-                <p className="mt-1 text-xs text-text-secondary">
-                  {t("dashboard.workspace.sessions.emptyNote")}
-                </p>
-              </div>
-            ) : (
-              <div className="overflow-hidden rounded-xl border border-border-light bg-white dark:bg-white/5">
-                <div className="divide-y divide-border-light dark:divide-white/10">
-                  {upcomingSessions.map((session) => (
-                    <WorkspaceSessionRow key={session.id} session={session} />
-                  ))}
-                </div>
-              </div>
-            )}
-          </section>
-        </div>
-
-        <div className="space-y-5 lg:col-span-3">
-          <PresencePanel />
-
-          {!profileLoading && profile && (
-            <div className="space-y-2">
-              {!profile.isProfileCompleted && (
-                <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3.5 dark:border-amber-700/30 dark:bg-amber-900/10">
-                  <p className="text-xs font-semibold text-amber-800 dark:text-amber-300">
-                    {t("dashboard.status.incomplete")}
-                  </p>
-                  <p className="mt-0.5 text-xs text-amber-700/80 dark:text-amber-400/80">
-                    {t("dashboard.status.cannotSubmit")}
-                  </p>
-                  <Link
-                    href="/practitioner/profile"
-                    className="mt-2 inline-flex text-xs font-medium text-amber-700 hover:underline dark:text-amber-400"
-                  >
-                    {t("dashboard.status.completeNow")} &rarr;
-                  </Link>
-                </div>
-              )}
-
-              <div className="rounded-xl border border-border-light bg-white px-4 py-3.5 dark:bg-white/5">
-                <p className="text-[11px] font-semibold uppercase tracking-wide text-text-muted">
-                  {t("dashboard.applicationStatus.heading")}
-                </p>
-                <p className="mt-1 text-sm font-medium text-text-primary dark:text-white/90">
-                  {appStatus
-                    ? t(`dashboard.applicationStatus.${appStatus}`)
-                    : t("dashboard.applicationStatus.noApplication")}
-                </p>
-                {!appStatus && profile.canSubmitApplication && (
-                  <Link
-                    href="/practitioner/application"
-                    className="mt-1.5 inline-flex text-xs font-medium text-primary hover:underline"
-                  >
-                    {t("dashboard.applicationStatus.getStarted")} &rarr;
-                  </Link>
-                )}
-              </div>
-            </div>
-          )}
-
-          <section>
-            <h2 className="mb-2.5 text-sm font-semibold text-text-primary dark:text-white/90">
-              {t("dashboard.workspace.links.primaryHeading")}
-            </h2>
-            <div className="grid grid-cols-2 gap-2">
-              {(
-                [
-                  {
-                    href: "/practitioner/sessions",
-                    Icon: Calendar,
-                    labelKey: "dashboard.workspace.links.sessions",
-                  },
-                  {
-                    href: "/practitioner/availability",
-                    Icon: Clock,
-                    labelKey: "dashboard.workspace.links.availability",
-                  },
-                  {
-                    href: "/practitioner/support",
-                    Icon: MessageSquareText,
-                    labelKey: "dashboard.workspace.links.support",
-                  },
-                  {
-                    href: "/practitioner/care-chat",
-                    Icon: MessageSquareText,
-                    labelKey: "dashboard.workspace.links.careChat",
-                  },
-                ] as const
-              ).map(({ href, Icon, labelKey }) => (
-                <Link
-                  key={href}
-                  href={href as never}
-                  className="flex items-center gap-2 rounded-xl border border-border-light bg-white px-3 py-2.5 text-xs font-medium text-text-secondary transition hover:border-primary/30 hover:text-primary dark:bg-white/5 dark:hover:bg-primary/10 dark:hover:text-primary-light"
-                >
-                  <Icon size={13} className="shrink-0" />
-                  {t(labelKey as Parameters<typeof t>[0])}
-                </Link>
-              ))}
-            </div>
-            <p className="mt-2 text-xs text-text-muted">
-              {t("dashboard.workspace.links.primaryNote")}
+      <section className="app-panel rounded-[32px] p-6 sm:p-7">
+        <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-primary">
+          {copy.pageTitle}
+        </p>
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight text-text-primary dark:text-white/95 sm:text-3xl">
+              {profile ? `${greetingName}` : copy.pageTitle}
+            </h1>
+            <p className="mt-3 max-w-3xl text-sm leading-6 text-text-secondary sm:text-base">
+              {copy.pageSubtitle}
             </p>
-          </section>
-
-          <section>
-            <h2 className="mb-2.5 text-sm font-semibold text-text-primary dark:text-white/90">
-              {t("dashboard.workspace.links.financeHeading")}
-            </h2>
-            <div className="space-y-2">
-              {([
-                {
-                  href: "/practitioner/wallet",
-                  Icon: FileText,
-                  labelKey: "dashboard.workspace.links.wallet",
-                  noteKey: "dashboard.workspace.links.walletNote",
-                },
-                {
-                  href: "/practitioner/ledger",
-                  Icon: CalendarDays,
-                  labelKey: "dashboard.workspace.links.ledger",
-                  noteKey: "dashboard.workspace.links.ledgerNote",
-                },
-                {
-                  href: "/practitioner/settlements",
-                  Icon: ShieldCheck,
-                  labelKey: "dashboard.workspace.links.settlements",
-                  noteKey: "dashboard.workspace.links.settlementsNote",
-                },
-              ] as WorkspaceFinanceLink[]).map(({ href, Icon, labelKey, noteKey }) => (
-                <Link
-                  key={href}
-                  href={href as never}
-                  className="flex items-start justify-between gap-3 rounded-xl border border-border-light bg-white px-3 py-3 transition hover:border-primary/20 hover:bg-surface-tertiary/30 dark:bg-white/5 dark:hover:bg-white/10"
-                >
-                  <div className="flex min-w-0 items-start gap-2.5">
-                    <Icon size={14} className="mt-0.5 shrink-0 text-text-muted" />
-                    <div className="min-w-0">
-                      <p className="text-xs font-semibold text-text-primary dark:text-white/90">
-                        {t(labelKey as Parameters<typeof t>[0])}
-                      </p>
-                      <p className="mt-0.5 text-xs text-text-secondary">
-                        {t(noteKey as Parameters<typeof t>[0])}
-                      </p>
-                    </div>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </section>
-
-          <section>
-            <h2 className="mb-2.5 text-sm font-semibold text-text-primary dark:text-white/90">
-              {t("dashboard.workspace.links.secondaryHeading")}
-            </h2>
-            <div className="space-y-2">
-              {([
-                {
-                  href: "/practitioner/profile",
-                  Icon: FileText,
-                  labelKey: "dashboard.workspace.links.profile",
-                  noteKey: "dashboard.workspace.links.profileNote",
-                },
-                {
-                  href: "/practitioner/application",
-                  Icon: ShieldCheck,
-                  labelKey: "dashboard.workspace.links.application",
-                  noteKey: "dashboard.workspace.links.applicationNote",
-                },
-                {
-                  href: "/practitioner/credentials",
-                  Icon: ShieldCheck,
-                  labelKey: "dashboard.workspace.links.credentials",
-                  noteKey: "dashboard.workspace.links.credentialsNote",
-                },
-                {
-                  href: "/practitioner/specialties",
-                  Icon: CalendarDays,
-                  labelKey: "dashboard.workspace.links.specialties",
-                  noteKey: "dashboard.workspace.links.specialtiesNote",
-                },
-              ] as WorkspaceSecondaryLink[]).map(({ href, Icon, labelKey, noteKey, badgeKey }) => (
-                <Link
-                  key={href}
-                  href={href as never}
-                  className="flex items-start justify-between gap-3 rounded-xl border border-border-light bg-white px-3 py-3 transition hover:border-primary/20 hover:bg-surface-tertiary/30 dark:bg-white/5 dark:hover:bg-white/10"
-                >
-                  <div className="flex min-w-0 items-start gap-2.5">
-                    <Icon size={14} className="mt-0.5 shrink-0 text-text-muted" />
-                    <div className="min-w-0">
-                      <p className="text-xs font-semibold text-text-primary dark:text-white/90">
-                        {t(labelKey as Parameters<typeof t>[0])}
-                      </p>
-                      <p className="mt-0.5 text-xs text-text-secondary">
-                        {t(noteKey as Parameters<typeof t>[0])}
-                      </p>
-                    </div>
-                  </div>
-                  {badgeKey ? (
-                    <span className="shrink-0 rounded-full border border-border-light px-2 py-0.5 text-[11px] font-medium text-text-muted dark:border-white/10">
-                      {t(badgeKey as Parameters<typeof t>[0])}
-                    </span>
-                  ) : null}
-                </Link>
-              ))}
-            </div>
-          </section>
+          </div>
+          <span className="app-chip rounded-full px-3 py-1 text-xs font-medium">
+            {copy.common.updatedLabel}: {formatDateTime(locale, new Date().toISOString())}
+          </span>
         </div>
-      </div>
+      </section>
+
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <DashboardKpiCard
+          label={copy.kpi.sessionsToday}
+          value={formatNumber(locale, sessionsToday)}
+          helper={copy.kpi.sessionsTodayHelper}
+          deltaText={sessionDeltaText}
+          deltaTone={sessionsDelta.tone}
+          accentTone="indigo"
+          icon={<CalendarClock className="h-4 w-4" />}
+        />
+        <DashboardKpiCard
+          label={copy.kpi.joinableNow}
+          value={formatNumber(locale, readyNowCount)}
+          helper={copy.kpi.joinableNowHelper}
+          accentTone="sky"
+          icon={<Activity className="h-4 w-4" />}
+        />
+        <DashboardKpiCard
+          label={copy.kpi.walletAvailable}
+          value={formatMoney(locale, availableBalance, wallet?.currency ?? "EGP")}
+          helper={copy.kpi.walletHelper}
+          accentTone="teal"
+          icon={<WalletCards className="h-4 w-4" />}
+        />
+        <DashboardKpiCard
+          label={copy.kpi.lastSettlement}
+          value={formatMoney(locale, latestSettlementAmount, settlementCurrency)}
+          helper={copy.kpi.lastSettlementHelper}
+          accentTone="orange"
+          icon={<Clock3 className="h-4 w-4" />}
+        />
+      </section>
+
+      <section className="space-y-4">
+        <DashboardSectionHeader title={copy.charts.heading} subtitle={copy.charts.subtitle} />
+        <DashboardChartCard
+          title={copy.charts.sessionsTitle}
+          subtitle={`${copy.charts.sessionsSubtitle} · ${formatNumber(locale, sessionsLast14DaysTotal)} ${copy.charts.sessionsSeries}`}
+          actionLabel={copy.common.viewAll}
+          actionHref="/practitioner/sessions"
+        >
+          <AreaTrendChart
+            locale={locale}
+            categories={trend.labels}
+            seriesName={copy.charts.sessionsSeries}
+            values={trend.values}
+            comparisonSeriesName={copy.charts.sessionsAverageSeries}
+            comparisonValues={trend.movingAverage}
+            color={INDIGO}
+            comparisonColor={ORANGE}
+            height={290}
+          />
+        </DashboardChartCard>
+
+        <DashboardChartCard
+          title={copy.charts.settlementsTitle}
+          subtitle={copy.charts.settlementsSubtitle}
+          actionLabel={copy.common.viewAll}
+          actionHref="/practitioner/settlements"
+        >
+          <BarTrendChart
+            locale={locale}
+            categories={
+              settlementCategories.length > 0 ? settlementCategories : [copy.common.noData]
+            }
+            seriesName={copy.charts.settlementsSeries}
+            values={settlementValues.length > 0 ? settlementValues : [0]}
+            currencyCode={settlementCurrency}
+            colors={[INDIGO, ORANGE, SKY, INDIGO, ORANGE, SKY, INDIGO, ORANGE]}
+            distributed
+            height={300}
+          />
+        </DashboardChartCard>
+      </section>
+
+      <section className="space-y-4">
+        <DashboardSectionHeader title={copy.activity.heading} subtitle={copy.activity.subtitle} />
+        <div className="grid gap-4 xl:grid-cols-3">
+          <div className="xl:col-span-2">
+            <DashboardQueueCard
+              title={copy.activity.upcomingSessionsTitle}
+              subtitle={copy.activity.upcomingSessionsSubtitle}
+              actionLabel={copy.common.viewAll}
+              actionHref="/practitioner/sessions"
+              emptyText={copy.activity.upcomingSessionsEmpty}
+              items={upcomingSessions.map((session) => ({
+                id: session.id,
+                title: safeText(session.patient?.displayName, copy.common.unknown),
+                subtitle: `${formatDateTime(locale, session.scheduledStartAt)} · ${session.status}`,
+                href: `/practitioner/sessions/${session.id}`,
+                badge: (
+                  <span className="rounded-full bg-surface-tertiary px-2 py-0.5 text-[11px] font-semibold text-text-secondary dark:bg-white/10 dark:text-white/80">
+                    {session.durationMinutes}m
+                  </span>
+                ),
+              }))}
+            />
+          </div>
+
+          <article className="app-panel rounded-3xl p-5">
+            <DashboardSectionHeader
+              title={copy.activity.quickActionsTitle}
+              subtitle={copy.activity.quickActionsSubtitle}
+            />
+            <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
+              {[
+                { href: "/practitioner/sessions", label: copy.actions.sessions, icon: <CalendarClock className="h-4 w-4" /> },
+                { href: "/practitioner/wallet", label: copy.actions.wallet, icon: <WalletCards className="h-4 w-4" /> },
+                { href: "/practitioner/settlements", label: copy.actions.settlements, icon: <Clock3 className="h-4 w-4" /> },
+              ].map((action) => (
+                <Link
+                  key={action.href}
+                  href={action.href as never}
+                  className="inline-flex items-center gap-2 rounded-xl border border-border-light bg-surface px-3 py-2.5 text-sm font-medium text-text-secondary transition hover:border-primary/30 hover:bg-primary-light hover:text-text-brand dark:border-white/10 dark:bg-white/[0.03] dark:text-white/85 dark:hover:bg-primary/10 dark:hover:text-primary-light"
+                >
+                  {action.icon}
+                  {action.label}
+                </Link>
+              ))}
+            </div>
+            <div className="mt-4 rounded-2xl border border-border-light bg-surface-tertiary/50 p-3 text-xs text-text-muted dark:border-white/10 dark:bg-white/[0.04]">
+              {copy.pendingBalanceLabel}: {formatMoney(locale, pendingBalance, wallet?.currency ?? "EGP")}
+            </div>
+          </article>
+        </div>
+      </section>
     </div>
   );
 }

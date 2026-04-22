@@ -96,4 +96,3 @@ describe('GetMatchingSessionUseCase', () => {
     ).rejects.toBeInstanceOf(ForbiddenException);
   });
 });
-

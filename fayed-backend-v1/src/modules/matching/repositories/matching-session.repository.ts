@@ -1,5 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { MatchingAnswerKey, MatchingSessionStatus, Prisma } from '@prisma/client';
+import {
+  MatchingAnswerKey,
+  MatchingSessionStatus,
+  Prisma,
+} from '@prisma/client';
 import { PrismaService } from '@common/prisma/prisma.service';
 import { MatchingAnswerPayload } from '../types/matching.types';
 
@@ -34,7 +38,8 @@ export class MatchingSessionRepository {
             practitionerProfileId: recommendation.practitionerProfileId,
             score: recommendation.score,
             rank: recommendation.rank,
-            rationaleJson: recommendation.rationaleJson as Prisma.InputJsonValue,
+            rationaleJson:
+              recommendation.rationaleJson as Prisma.InputJsonValue,
           })),
         },
       },
@@ -168,4 +173,3 @@ export class MatchingSessionRepository {
     );
   }
 }
-

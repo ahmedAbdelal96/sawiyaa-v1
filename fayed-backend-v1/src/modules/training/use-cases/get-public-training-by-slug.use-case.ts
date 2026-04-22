@@ -24,9 +24,8 @@ export class GetPublicTrainingBySlugUseCase {
       });
     }
 
-    const publicSchedules = await this.trainingRepository.listPublicCourseSchedules(
-      course.id,
-    );
+    const publicSchedules =
+      await this.trainingRepository.listPublicCourseSchedules(course.id);
     const enrollmentCountsByScheduleId =
       await this.trainingRepository.countEnrollmentsByScheduleIds(
         publicSchedules.map((schedule) => schedule.id),
@@ -37,7 +36,11 @@ export class GetPublicTrainingBySlugUseCase {
       enrollmentCountsByScheduleId,
     });
 
-    const item = this.trainingPresenter.presentPublicTrainingDetails(course, input.locale, scheduleItems);
+    const item = this.trainingPresenter.presentPublicTrainingDetails(
+      course,
+      input.locale,
+      scheduleItems,
+    );
     if (!item) {
       throw new NotFoundException({
         messageKey: 'training.errors.notFound',

@@ -60,6 +60,7 @@
     "CHAT": "Chat"
   },
   "table": {
+    "actions": "Actions",
     "headers": {
       "status": "Status",
       "scheduledStart": "Scheduled start",
@@ -112,6 +113,132 @@
       "heading": "Could not load sessions",
       "note": "Try again in a moment.",
       "retry": "Retry"
+    }
+  },
+  "policy": {
+    "meta": {
+      "title": "Session cancellation policy - Admin",
+      "description": "Manage typed cancellation policy rules by booking type."
+    },
+    "title": "Cancellation policy",
+    "description": "Manage cancellation policies with a clear table and focused modals for review and updates.",
+    "list": {
+      "description": "View each booking policy in one list, then open details to update only what you need."
+    },
+    "summary": {
+      "totalPolicies": "Total policies",
+      "activePolicies": "Active policies",
+      "totalRules": "Total rules"
+    },
+    "bookingTypes": {
+      "STANDARD": "Standard booking policy",
+      "INSTANT": "Instant booking policy"
+    },
+    "fields": {
+      "policyTitleFallback": "Untitled policy",
+      "policyName": "Policy display name",
+      "policyActive": "Policy is active",
+      "refundDestination": "Default refund destination",
+      "ruleCode": "Rule code",
+      "ruleName": "Rule name",
+      "priority": "Priority",
+      "ruleActive": "Rule is active",
+      "minHours": "Min hours before start",
+      "maxHours": "Max hours before start",
+      "allowCancellation": "Cancellation allowed",
+      "refundMode": "Refund mode",
+      "refundPercent": "Refund percent"
+    },
+    "refundModes": {
+      "NONE": "No refund",
+      "PERCENTAGE": "Percentage refund"
+    },
+    "refundDestinations": {
+      "CUSTOMER_WALLET": "Customer wallet",
+      "ORIGINAL_METHOD": "Original method (not supported yet)"
+    },
+    "actions": {
+      "openEditor": "Cancellation policy",
+      "createPolicy": "Create / configure policy",
+      "viewPolicy": "View",
+      "editPolicy": "Edit",
+      "deactivatePolicy": "Delete",
+      "save": "Save policy",
+      "saving": "Saving...",
+      "cancel": "Cancel",
+      "close": "Close",
+      "addRule": "Add new rule",
+      "editRule": "Edit",
+      "closeEdit": "Close",
+      "removeRule": "Remove"
+    },
+    "states": {
+      "loading": "Loading cancellation policies...",
+      "loadFailed": "Could not load cancellation policies.",
+      "updateFailed": "Could not save this policy right now.",
+      "saved": "Policy updated successfully.",
+      "empty": "No cancellation policies are available.",
+      "emptyRules": "No rules found for this policy yet."
+    },
+    "note": {
+      "walletOnly": "Current backend truth: cancellation policy refunds are configured to return to customer wallet."
+    },
+    "validation": {
+      "policyDisplayNameRequired": "Policy display name is required.",
+      "rulesRequired": "At least one rule is required.",
+      "ruleCodeRequired": "Rule code is required.",
+      "ruleDisplayNameRequired": "Rule name is required for {code}.",
+      "duplicateCode": "Duplicate rule code: {code}.",
+      "invalidWindow": "Invalid time window for rule {code}.",
+      "invalidRefundMode": "Rule {code} cannot use this refund mode when cancellation is not allowed.",
+      "invalidRefundPercent": "Rule {code} has an invalid refund percent.",
+      "refundPercentRequired": "Rule {code} requires a refund percent.",
+      "overlap": "Active rule windows overlap: {first} and {second}."
+    },
+    "quickGuide": "Start from the table, open the right policy, and update only the needed fields.",
+    "table": {
+      "actions": "Actions",
+      "headers": {
+        "bookingType": "Booking type",
+        "policyName": "Policy name",
+        "rules": "Rules",
+        "status": "Status",
+        "refundDestination": "Refund destination",
+        "version": "Version"
+      },
+      "values": {
+        "active": "Active",
+        "inactive": "Inactive"
+      }
+    },
+    "modal": {
+      "createTitle": "Create / configure cancellation policy",
+      "createDescription": "Set up policy details and rules for the selected booking type.",
+      "viewTitle": "Policy details",
+      "viewDescription": "Read policy details and rule outcomes.",
+      "editTitle": "Edit cancellation policy",
+      "editDescription": "Update policy details and rules, then save."
+    },
+    "deactivate": {
+      "title": "Delete this policy?",
+      "description": "This action deactivates the policy and all its rules. You can edit and reactivate it later.",
+      "confirm": "Delete policy"
+    },
+    "rulesSection": {
+      "title": "Policy rules",
+      "note": "Use one clear rule per time window to avoid overlap and confusion."
+    },
+    "ruleSummary": {
+      "untitled": "Untitled rule",
+      "noCode": "No code",
+      "allow": "Cancellation allowed",
+      "block": "Cancellation blocked",
+      "noRefund": "No refund",
+      "percentRefund": "{value}% refund",
+      "anyTime": "Any time window",
+      "fromHours": "From {value}h before session",
+      "untilHours": "Until {value}h before session",
+      "betweenHours": "Between {min}h and {max}h before session"
     }
   }
 }

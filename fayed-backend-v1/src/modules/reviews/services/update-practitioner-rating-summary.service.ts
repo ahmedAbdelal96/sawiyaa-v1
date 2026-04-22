@@ -1,7 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { ReviewRepository } from '../repositories/review.repository';
-import { REVIEW_COUNTABLE_STATUSES, REVIEW_PUBLIC_STATUS } from '../types/reviews.types';
+import {
+  REVIEW_COUNTABLE_STATUSES,
+  REVIEW_PUBLIC_STATUS,
+} from '../types/reviews.types';
 
 @Injectable()
 export class UpdatePractitionerRatingSummaryService {
@@ -11,29 +14,33 @@ export class UpdatePractitionerRatingSummaryService {
     practitionerId: string;
     tx?: Prisma.TransactionClient;
   }) {
-    const [totalSubmittedReviews, totalPublishedReviews, averageAggregate, histogram] =
-      await Promise.all([
-        this.reviewRepository.countByPractitionerAndStatuses(
-          input.practitionerId,
-          REVIEW_COUNTABLE_STATUSES,
-          input.tx,
-        ),
-        this.reviewRepository.countByPractitionerAndStatus(
-          input.practitionerId,
-          REVIEW_PUBLIC_STATUS,
-          input.tx,
-        ),
-        this.reviewRepository.aggregateAverageRating(
-          input.practitionerId,
-          REVIEW_COUNTABLE_STATUSES,
-          input.tx,
-        ),
-        this.reviewRepository.groupRatingHistogram(
-          input.practitionerId,
-          REVIEW_COUNTABLE_STATUSES,
-          input.tx,
-        ),
-      ]);
+    const [
+      totalSubmittedReviews,
+      totalPublishedReviews,
+      averageAggregate,
+      histogram,
+    ] = await Promise.all([
+      this.reviewRepository.countByPractitionerAndStatuses(
+        input.practitionerId,
+        REVIEW_COUNTABLE_STATUSES,
+        input.tx,
+      ),
+      this.reviewRepository.countByPractitionerAndStatus(
+        input.practitionerId,
+        REVIEW_PUBLIC_STATUS,
+        input.tx,
+      ),
+      this.reviewRepository.aggregateAverageRating(
+        input.practitionerId,
+        REVIEW_COUNTABLE_STATUSES,
+        input.tx,
+      ),
+      this.reviewRepository.groupRatingHistogram(
+        input.practitionerId,
+        REVIEW_COUNTABLE_STATUSES,
+        input.tx,
+      ),
+    ]);
 
     const histogramMap = new Map<number, number>();
     for (const item of histogram) {

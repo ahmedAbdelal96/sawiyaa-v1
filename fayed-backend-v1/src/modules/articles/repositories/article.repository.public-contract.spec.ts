@@ -1,4 +1,8 @@
-import { ArticleStatus, ArticleVisibility, ContentLocale } from '@prisma/client';
+import {
+  ArticleStatus,
+  ArticleVisibility,
+  ContentLocale,
+} from '@prisma/client';
 import { PrismaService } from '@common/prisma/prisma.service';
 import { ArticleRepository } from './article.repository';
 
@@ -35,7 +39,11 @@ describe('ArticleRepository public contract', () => {
             in: [ArticleVisibility.PUBLIC],
           },
         }),
-        orderBy: [{ publishedAt: 'desc' }, { createdAt: 'desc' }, { id: 'asc' }],
+        orderBy: [
+          { publishedAt: 'desc' },
+          { createdAt: 'desc' },
+          { id: 'asc' },
+        ],
       }),
     );
   });

@@ -18,4 +18,3 @@ export class UpdateRevenueShareRulesDto {
   @IsNumberString()
   crossBorderPractitionerRatePercent!: string;
 }
-

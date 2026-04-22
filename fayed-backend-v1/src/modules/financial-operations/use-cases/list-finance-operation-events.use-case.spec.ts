@@ -15,7 +15,9 @@ describe('ListFinanceOperationEventsUseCase', () => {
   });
 
   it('returns deterministic repository-backed event list payload', async () => {
-    (paymentRepository.listFinanceOperationEvents as jest.Mock).mockResolvedValue([
+    (
+      paymentRepository.listFinanceOperationEvents as jest.Mock
+    ).mockResolvedValue([
       [
         {
           id: 'event_1',

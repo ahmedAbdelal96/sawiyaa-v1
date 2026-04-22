@@ -32,6 +32,9 @@ export type SessionFinancialContext = {
     id: string;
     countryId: string | null;
   };
+  payments?: Array<{
+    amountSubtotal: { toString(): string } | string;
+  }>;
 };
 
 export type ResolvedCommissionRuleViewModel = {

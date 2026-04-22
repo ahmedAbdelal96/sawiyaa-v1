@@ -43,9 +43,11 @@ export class PublicAssessmentsController {
   @ApiResponse({ status: 200, type: AssessmentDefinitionSuccessResponseDto })
   @ApiNotFoundResponse({ description: 'Assessment definition was not found' })
   details(@Param('slug') slug: string) {
-    return this.getAssessmentDefinitionUseCase.execute({ slug }).then((data) => ({
-      success: true as const,
-      data,
-    }));
+    return this.getAssessmentDefinitionUseCase
+      .execute({ slug })
+      .then((data) => ({
+        success: true as const,
+        data,
+      }));
   }
 }

@@ -14,4 +14,3 @@ export class ListSpecialtiesDto {
   @MaxLength(100)
   q?: string;
 }
-

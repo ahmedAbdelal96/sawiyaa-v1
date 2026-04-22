@@ -31,11 +31,12 @@ export class ModerateReviewUseCase {
     }
 
     const now = new Date();
-    const next = this.validateReviewModerationTransitionService.resolveNextState({
-      currentStatus: review.reviewStatus,
-      action: input.payload.action,
-      now,
-    });
+    const next =
+      this.validateReviewModerationTransitionService.resolveNextState({
+        currentStatus: review.reviewStatus,
+        action: input.payload.action,
+        now,
+      });
 
     const updated = await this.reviewRepository.withTransaction(async (tx) => {
       const row = await this.reviewRepository.updateReview(

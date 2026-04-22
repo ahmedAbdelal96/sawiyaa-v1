@@ -91,16 +91,16 @@ describe('ExecuteModerationSurfaceEnforcementService', () => {
       practitionerId: 'pr_1',
       reviewStatus: 'PUBLISHED',
     });
-    (validateReviewModerationTransitionService.resolveNextState as jest.Mock).mockReturnValue(
-      {
-        status: 'HIDDEN',
-        publishedAt: null,
-        hiddenAt: new Date('2026-03-31T22:00:00.000Z'),
-        archivedAt: null,
-      },
-    );
-    (reviewRepository.withTransaction as jest.Mock).mockImplementation(async (r) =>
-      r({}),
+    (
+      validateReviewModerationTransitionService.resolveNextState as jest.Mock
+    ).mockReturnValue({
+      status: 'HIDDEN',
+      publishedAt: null,
+      hiddenAt: new Date('2026-03-31T22:00:00.000Z'),
+      archivedAt: null,
+    });
+    (reviewRepository.withTransaction as jest.Mock).mockImplementation(
+      async (r) => r({}),
     );
 
     await service.execute({
@@ -120,7 +120,9 @@ describe('ExecuteModerationSurfaceEnforcementService', () => {
       }),
       expect.anything(),
     );
-    expect(updatePractitionerRatingSummaryService.execute).toHaveBeenCalledTimes(1);
+    expect(
+      updatePractitionerRatingSummaryService.execute,
+    ).toHaveBeenCalledTimes(1);
   });
 
   it('enforces support escalation for support message targets', async () => {
@@ -145,12 +147,12 @@ describe('ExecuteModerationSurfaceEnforcementService', () => {
       note: 'urgent',
     });
 
-    expect(validateSupportTicketStatusTransitionService.assertValid).toHaveBeenCalledWith(
-      {
-        currentStatus: SupportTicketStatus.OPEN,
-        nextStatus: SupportTicketStatus.ESCALATED,
-      },
-    );
+    expect(
+      validateSupportTicketStatusTransitionService.assertValid,
+    ).toHaveBeenCalledWith({
+      currentStatus: SupportTicketStatus.OPEN,
+      nextStatus: SupportTicketStatus.ESCALATED,
+    });
     expect(supportTicketRepository.updateStatus).toHaveBeenCalledWith(
       expect.objectContaining({
         ticketId: 'ticket_1',

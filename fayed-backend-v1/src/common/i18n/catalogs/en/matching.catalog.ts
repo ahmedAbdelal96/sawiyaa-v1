@@ -11,4 +11,3 @@ export const enMatchingCatalog = {
       'Guest matching session access is not supported in this version',
   },
 };
-

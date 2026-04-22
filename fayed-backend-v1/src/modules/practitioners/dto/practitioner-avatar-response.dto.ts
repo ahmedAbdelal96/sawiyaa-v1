@@ -15,4 +15,3 @@ export class PractitionerAvatarSuccessResponseDto {
   @ApiProperty({ type: PractitionerAvatarResponseDto })
   avatar!: PractitionerAvatarResponseDto;
 }
-

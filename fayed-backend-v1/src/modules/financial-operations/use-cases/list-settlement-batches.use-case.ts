@@ -14,7 +14,9 @@ export class ListSettlementBatchesUseCase {
   async execute(query: ListSettlementBatchesDto) {
     const page = query.page ?? 1;
     const limit = query.limit ?? 20;
-    const createdFrom = query.createdFrom ? new Date(query.createdFrom) : undefined;
+    const createdFrom = query.createdFrom
+      ? new Date(query.createdFrom)
+      : undefined;
     const createdTo = query.createdTo ? new Date(query.createdTo) : undefined;
 
     if (createdFrom && createdTo && createdFrom > createdTo) {
@@ -24,19 +26,22 @@ export class ListSettlementBatchesUseCase {
       });
     }
 
-    const [items, totalItems] = await this.settlementRepository.listSettlementBatches({
-      currencyCode: query.currencyCode?.trim().toUpperCase(),
-      status: query.status,
-      periodYear: query.periodYear,
-      periodMonth: query.periodMonth,
-      createdFrom,
-      createdTo,
-      skip: (page - 1) * limit,
-      take: limit,
-    });
+    const [items, totalItems] =
+      await this.settlementRepository.listSettlementBatches({
+        currencyCode: query.currencyCode?.trim().toUpperCase(),
+        status: query.status,
+        periodYear: query.periodYear,
+        periodMonth: query.periodMonth,
+        createdFrom,
+        createdTo,
+        skip: (page - 1) * limit,
+        take: limit,
+      });
 
     return {
-      items: items.map((item) => this.financialOperationsMapper.toSettlementBatchListItem(item)),
+      items: items.map((item) =>
+        this.financialOperationsMapper.toSettlementBatchListItem(item),
+      ),
       pagination: {
         page,
         limit,

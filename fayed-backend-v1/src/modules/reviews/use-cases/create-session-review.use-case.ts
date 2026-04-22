@@ -41,7 +41,9 @@ export class CreateSessionReviewUseCase {
       });
     }
 
-    const existing = await this.reviewRepository.findBySessionId(input.sessionId);
+    const existing = await this.reviewRepository.findBySessionId(
+      input.sessionId,
+    );
     if (existing) {
       throw new ConflictException({
         messageKey: 'reviews.errors.reviewAlreadyExists',
@@ -49,35 +51,38 @@ export class CreateSessionReviewUseCase {
       });
     }
 
-    const session = await this.validateSessionReviewEligibilityService.assertEligible({
-      sessionId: input.sessionId,
-      patientId: patient.id,
-    });
+    const session =
+      await this.validateSessionReviewEligibilityService.assertEligible({
+        sessionId: input.sessionId,
+        patientId: patient.id,
+      });
 
     const now = new Date();
     try {
-      const created = await this.reviewRepository.withTransaction(async (tx) => {
-        const row = await this.reviewRepository.createReview(
-          {
-            sessionId: session.id,
-            patientId: patient.id,
+      const created = await this.reviewRepository.withTransaction(
+        async (tx) => {
+          const row = await this.reviewRepository.createReview(
+            {
+              sessionId: session.id,
+              patientId: patient.id,
+              practitionerId: session.practitionerId,
+              ratingValue: input.payload.overallRating,
+              reviewTitle: input.payload.title?.trim() || null,
+              reviewText: input.payload.textReview?.trim() || null,
+              reviewStatus: REVIEW_SUBMIT_INITIAL_STATUS,
+              submittedAt: now,
+            },
+            tx,
+          );
+
+          await this.updatePractitionerRatingSummaryService.execute({
             practitionerId: session.practitionerId,
-            ratingValue: input.payload.overallRating,
-            reviewTitle: input.payload.title?.trim() || null,
-            reviewText: input.payload.textReview?.trim() || null,
-            reviewStatus: REVIEW_SUBMIT_INITIAL_STATUS,
-            submittedAt: now,
-          },
-          tx,
-        );
+            tx,
+          });
 
-        await this.updatePractitionerRatingSummaryService.execute({
-          practitionerId: session.practitionerId,
-          tx,
-        });
-
-        return row;
-      });
+          return row;
+        },
+      );
 
       this.logger.log(
         `Session review submitted (review=${created.id}, session=${input.sessionId}, status=${SessionReviewStatus.PENDING_MODERATION})`,

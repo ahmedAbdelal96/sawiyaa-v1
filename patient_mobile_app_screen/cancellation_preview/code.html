@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Cancel Session - Refund Preview</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-tint": "#125eae",
+                        "outline": "#727783",
+                        "on-tertiary-container": "#fffbff",
+                        "surface-container": "#eceef3",
+                        "tertiary-container": "#a86500",
+                        "on-error-container": "#93000a",
+                        "inverse-on-surface": "#eff1f6",
+                        "surface-container-highest": "#e0e2e7",
+                        "primary-fixed-dim": "#a7c8ff",
+                        "tertiary-fixed": "#ffdcbc",
+                        "surface-container-lowest": "#ffffff",
+                        "on-surface": "#181c20",
+                        "inverse-primary": "#a7c8ff",
+                        "on-tertiary": "#ffffff",
+                        "secondary-fixed-dim": "#b7c7e8",
+                        "primary-fixed": "#d5e3ff",
+                        "error": "#ba1a1a",
+                        "secondary-container": "#cdddff",
+                        "error-container": "#ffdad6",
+                        "on-primary-fixed-variant": "#004689",
+                        "on-error": "#ffffff",
+                        "on-secondary": "#ffffff",
+                        "on-background": "#181c20",
+                        "on-secondary-container": "#51617e",
+                        "on-tertiary-fixed-variant": "#683d00",
+                        "surface-variant": "#e0e2e7",
+                        "primary": "#0b5cac",
+                        "background": "#f7f9fe",
+                        "surface-container-high": "#e6e8ed",
+                        "secondary": "#4f5f7b",
+                        "inverse-surface": "#2d3135",
+                        "on-primary": "#ffffff",
+                        "surface": "#f7f9fe",
+                        "on-surface-variant": "#424751",
+                        "on-primary-fixed": "#001b3c",
+                        "outline-variant": "#c2c6d3",
+                        "surface-container-low": "#f1f4f9",
+                        "on-tertiary-fixed": "#2c1700",
+                        "secondary-fixed": "#d6e3ff",
+                        "surface-bright": "#f7f9fe",
+                        "on-primary-container": "#fefcff",
+                        "on-secondary-fixed-variant": "#374762",
+                        "on-secondary-fixed": "#0a1c34",
+                        "tertiary-fixed-dim": "#ffb86b",
+                        "primary-container": "#3575c7",
+                        "tertiary": "#854f00",
+                        "surface-dim": "#d8dadf"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {},
+                    "fontFamily": {
+                        "headline": ["Manrope"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            background-color: theme('colors.surface');
+            color: theme('colors.on-surface');
+            font-family: theme('fontFamily.body');
+            -webkit-font-smoothing: antialiased;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="min-h-screen flex flex-col pt-16 pb-24 md:pb-8">
+<!-- TopAppBar -->
+<header class="fixed top-0 left-0 w-full flex justify-between items-center px-6 h-16 bg-[#e6e8ed]/85 backdrop-blur-[24px] dark:bg-slate-900/85 docked full-width z-50 shadow-[0_4px_20px_0px_rgba(24,28,32,0.1)] tonal stacking without borders">
+<button class="text-[#181c20] dark:text-slate-400 hover:bg-[#f1f4f9] dark:hover:bg-slate-800 transition-colors active:scale-95 transition-all duration-200 rounded-full p-2 -ml-2 flex items-center justify-center">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<h1 class="font-manrope tracking-[-0.02em] font-bold text-[#181c20] dark:text-slate-100 text-lg">Cancel Session</h1>
+<div class="w-10"></div> <!-- Placeholder for balance -->
+</header>
+<!-- Main Content -->
+<main class="flex-1 max-w-md mx-auto w-full px-4 pt-6 space-y-6">
+<!-- Context / Intro -->
+<div class="text-center">
+<h2 class="font-headline font-bold text-2xl text-on-surface mb-2">Review Cancellation</h2>
+<p class="font-body text-on-surface-variant text-sm">Please review the details below before confirming your cancellation.</p>
+</div>
+<!-- Session Info Card -->
+<section class="bg-surface-container-lowest rounded-xl p-5 shadow-[0_4px_20px_0px_rgba(24,28,32,0.05)] border border-outline-variant/20 relative overflow-hidden">
+<div class="absolute top-0 left-0 h-full w-1 bg-surface-tint"></div>
+<div class="flex items-start gap-4">
+<img alt="Profile photo of Dr. Sarah Jenkins" class="w-12 h-12 rounded-full object-cover border-2 border-surface" data-alt="Professional headshot of a female doctor in a clinical setting, warm lighting, approachable expression" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDuIQa7ut9soL5jOE27ka1OUar8ZlvtoJlTRnvTthTf55vjZPpbFfhITN0T9mxJGlORIrmydmInBsID2vBSyBuG7RmGbXL9BkuieAtIrKJTTEAxfunfBe4qCx52w-s-Q1CznY4p2QiC-IU2PEFkX1HdISiVDgVoSMO1q4uWpHYT7kVM1ZAp8f1Zr3rkV5Zf5eE0rgbkRAC_ZkWp2latU4bTDmGrF3ZplSZF-9bY3qsHrHzUIx2IJfpQhrldvb-pPJ4HBOGIy7lDmHqz"/>
+<div class="flex-1">
+<h3 class="font-body font-semibold text-on-surface">Dr. Sarah Jenkins</h3>
+<p class="font-body text-sm text-on-surface-variant mb-3">Clinical Psychologist</p>
+<div class="flex flex-col gap-2 bg-surface-container-low rounded-lg p-3">
+<div class="flex items-center gap-2 text-sm text-on-surface">
+<span class="material-symbols-outlined text-[18px] text-surface-tint">calendar_today</span>
+<span>Thursday, October 26</span>
+</div>
+<div class="flex items-center gap-2 text-sm text-on-surface">
+<span class="material-symbols-outlined text-[18px] text-surface-tint">schedule</span>
+<span>10:00 AM - 11:00 AM</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Cancellation Policy -->
+<section class="bg-surface-container-low rounded-xl p-4 border border-outline-variant/20 flex gap-3">
+<span class="material-symbols-outlined text-tertiary">info</span>
+<div>
+<h4 class="font-body font-semibold text-on-surface text-sm mb-1">Cancellation Policy</h4>
+<p class="font-body text-xs text-on-surface-variant leading-relaxed">
+                    Cancellations made less than 24 hours before the session are subject to a nominal fee to compensate the provider's reserved time.
+                </p>
+</div>
+</section>
+<!-- Refund Preview -->
+<section class="bg-surface-container-lowest rounded-xl p-5 shadow-[0_4px_20px_0px_rgba(24,28,32,0.05)] border border-outline-variant/20">
+<h4 class="font-body font-semibold text-on-surface mb-4">Refund Summary</h4>
+<div class="space-y-3 font-body text-sm">
+<div class="flex justify-between text-on-surface-variant">
+<span>Session Cost</span>
+<span>$50.00</span>
+</div>
+<div class="flex justify-between text-tertiary font-medium">
+<span>Cancellation Fee</span>
+<span>-$5.00</span>
+</div>
+<hr class="border-outline-variant/20 my-2"/>
+<div class="flex justify-between items-center text-on-surface font-semibold text-base pt-1">
+<span>Refund to Wallet</span>
+<span class="text-primary text-lg">$45.00</span>
+</div>
+</div>
+</section>
+</main>
+<!-- Bottom Actions -->
+<div class="fixed bottom-0 left-0 w-full bg-surface-container-lowest/90 backdrop-blur-xl border-t border-outline-variant/20 p-4 pb-safe flex flex-col gap-3 z-40 shadow-[0_-8px_30px_0px_rgba(24,28,32,0.05)]">
+<div class="max-w-md mx-auto w-full flex flex-col gap-3">
+<button class="w-full bg-error text-on-error font-body font-semibold py-3.5 px-4 rounded-xl active:scale-95 transition-transform flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-[20px]">cancel</span>
+                Confirm Cancellation
+            </button>
+<button class="w-full bg-transparent text-primary font-body font-semibold py-3.5 px-4 rounded-xl active:scale-95 transition-transform">
+                Keep Session
+            </button>
+</div>
+</div>
+</body></html>

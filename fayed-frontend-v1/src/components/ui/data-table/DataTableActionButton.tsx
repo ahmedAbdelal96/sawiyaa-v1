@@ -25,8 +25,8 @@ export default function DataTableActionButton({
 
   const intentClasses =
     intent === "primary"
-      ? "bg-[#4d81da] text-white shadow-[0_16px_32px_-24px_rgba(77,129,218,0.44)] hover:bg-[#4477cf] disabled:bg-[#4d81da]/60"
-      : "border border-[#dbe5f4] bg-white text-text-primary shadow-[0_12px_28px_-22px_rgba(34,52,56,0.12)] hover:border-primary/30 hover:bg-[#f8fbff] dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:hover:bg-white/[0.07]";
+      ? "bg-primary text-white shadow-[0_16px_32px_-24px_rgba(68,161,148,0.44)] hover:bg-primary-hover disabled:bg-primary/60"
+      : "border border-border-light bg-white text-text-primary shadow-[0_12px_28px_-22px_rgba(34,52,56,0.12)] hover:border-primary/30 hover:bg-surface-tertiary dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:hover:bg-white/[0.07]";
 
   return (
     <button

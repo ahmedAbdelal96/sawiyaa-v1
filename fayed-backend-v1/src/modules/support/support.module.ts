@@ -16,6 +16,7 @@ import { AddAdminSupportMessageUseCase } from './use-cases/add-admin-support-mes
 import { AddAdminSupportNoteUseCase } from './use-cases/add-admin-support-note.use-case';
 import { AddMySupportMessageUseCase } from './use-cases/add-my-support-message.use-case';
 import { AssignSupportTicketUseCase } from './use-cases/assign-support-ticket.use-case';
+import { CreateAdminSupportTicketForReporterUseCase } from './use-cases/create-admin-support-ticket-for-reporter.use-case';
 import { CreateSupportTicketUseCase } from './use-cases/create-support-ticket.use-case';
 import { GetAdminSupportTicketUseCase } from './use-cases/get-admin-support-ticket.use-case';
 import { GetMySupportTicketUseCase } from './use-cases/get-my-support-ticket.use-case';
@@ -48,8 +49,14 @@ import { UpdateSupportTicketStatusUseCase } from './use-cases/update-support-tic
     GetAdminSupportTicketUseCase,
     AddAdminSupportMessageUseCase,
     AddAdminSupportNoteUseCase,
+    CreateAdminSupportTicketForReporterUseCase,
     UpdateSupportTicketStatusUseCase,
     AssignSupportTicketUseCase,
+  ],
+  exports: [
+    SupportTicketRepository,
+    AddMySupportMessageUseCase,
+    AddAdminSupportMessageUseCase,
   ],
 })
 export class SupportModule {}

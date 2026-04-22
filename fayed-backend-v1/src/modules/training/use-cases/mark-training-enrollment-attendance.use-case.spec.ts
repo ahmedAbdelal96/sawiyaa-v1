@@ -33,9 +33,9 @@ describe('MarkTrainingEnrollmentAttendanceUseCase', () => {
   });
 
   it('rejects unknown enrollment', async () => {
-    (trainingRepository.findEnrollmentByIdForAdmin as jest.Mock).mockResolvedValue(
-      null,
-    );
+    (
+      trainingRepository.findEnrollmentByIdForAdmin as jest.Mock
+    ).mockResolvedValue(null);
 
     await expect(
       useCase.execute({
@@ -72,12 +72,12 @@ describe('MarkTrainingEnrollmentAttendanceUseCase', () => {
           endsAt: new Date('2026-05-01T11:00:00.000Z'),
         },
       });
-    (trainingPresenter.presentAdminScheduleEnrollmentItem as jest.Mock).mockReturnValue(
-      {
-        id: 'en_1',
-        attendanceStatus: EnrollmentAttendanceStatus.ATTENDED,
-      },
-    );
+    (
+      trainingPresenter.presentAdminScheduleEnrollmentItem as jest.Mock
+    ).mockReturnValue({
+      id: 'en_1',
+      attendanceStatus: EnrollmentAttendanceStatus.ATTENDED,
+    });
 
     const result = await useCase.execute({
       courseId: 'course_1',
@@ -99,7 +99,9 @@ describe('MarkTrainingEnrollmentAttendanceUseCase', () => {
   });
 
   it('propagates invalid mutation validation failures', async () => {
-    (trainingRepository.findEnrollmentByIdForAdmin as jest.Mock).mockResolvedValue({
+    (
+      trainingRepository.findEnrollmentByIdForAdmin as jest.Mock
+    ).mockResolvedValue({
       id: 'en_1',
       courseId: 'course_1',
       enrollmentStatus: EnrollmentStatus.CANCELLED,

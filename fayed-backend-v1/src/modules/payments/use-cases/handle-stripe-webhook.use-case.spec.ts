@@ -33,7 +33,9 @@ describe('HandleStripeWebhookUseCase', () => {
       findEventByProviderEventRef: jest
         .fn()
         .mockResolvedValue(input?.duplicate ?? null),
-      findByProviderReference: jest.fn().mockResolvedValue(input?.payment ?? null),
+      findByProviderReference: jest
+        .fn()
+        .mockResolvedValue(input?.payment ?? null),
       createEvent: jest.fn().mockResolvedValue({}),
     };
 

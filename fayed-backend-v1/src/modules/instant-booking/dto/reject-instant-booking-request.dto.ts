@@ -3,7 +3,8 @@ import { IsOptional, IsString, MaxLength } from 'class-validator';
 
 export class RejectInstantBookingRequestDto {
   @ApiPropertyOptional({
-    description: 'Optional rejection reason stored for operational traceability baseline',
+    description:
+      'Optional rejection reason stored for operational traceability baseline',
   })
   @IsOptional()
   @IsString()

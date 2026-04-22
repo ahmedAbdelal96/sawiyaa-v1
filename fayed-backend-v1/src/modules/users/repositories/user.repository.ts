@@ -52,7 +52,8 @@ export class UserRepository {
     return this.prisma.user.update({
       where: { id: input.userId },
       data: {
-        displayName: input.displayName === undefined ? undefined : input.displayName,
+        displayName:
+          input.displayName === undefined ? undefined : input.displayName,
       },
       select: {
         id: true,

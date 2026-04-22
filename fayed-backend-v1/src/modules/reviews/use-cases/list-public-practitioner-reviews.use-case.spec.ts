@@ -26,7 +26,9 @@ describe('ListPublicPractitionerReviewsUseCase', () => {
   });
 
   it('throws not found when practitioner is not public-visible', async () => {
-    (reviewRepository.findPublicPractitionerBySlug as jest.Mock).mockResolvedValue(null);
+    (
+      reviewRepository.findPublicPractitionerBySlug as jest.Mock
+    ).mockResolvedValue(null);
 
     await expect(
       useCase.execute({
@@ -37,7 +39,9 @@ describe('ListPublicPractitionerReviewsUseCase', () => {
   });
 
   it('returns stable public contract shape and deterministic item ordering from repository output', async () => {
-    (reviewRepository.findPublicPractitionerBySlug as jest.Mock).mockResolvedValue({
+    (
+      reviewRepository.findPublicPractitionerBySlug as jest.Mock
+    ).mockResolvedValue({
       id: 'pr_1',
       publicSlug: 'dr-one',
       ratingSummary: {
@@ -47,7 +51,9 @@ describe('ListPublicPractitionerReviewsUseCase', () => {
       },
     });
 
-    (reviewRepository.listPublicPublishedReviews as jest.Mock).mockResolvedValue([
+    (
+      reviewRepository.listPublicPublishedReviews as jest.Mock
+    ).mockResolvedValue([
       [
         {
           id: 'review_older',
@@ -66,7 +72,9 @@ describe('ListPublicPractitionerReviewsUseCase', () => {
       ],
       2,
     ]);
-    (reviewRepository.aggregatePublicVisibleReviews as jest.Mock).mockResolvedValue({
+    (
+      reviewRepository.aggregatePublicVisibleReviews as jest.Mock
+    ).mockResolvedValue({
       _count: { id: 2 },
       _avg: { ratingValue: 4.5 },
       _max: { publishedAt: new Date('2026-03-06T00:00:00.000Z') },

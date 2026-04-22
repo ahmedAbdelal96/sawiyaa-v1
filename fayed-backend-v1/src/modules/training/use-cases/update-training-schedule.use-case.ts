@@ -36,7 +36,9 @@ export class UpdateTrainingScheduleUseCase {
       });
     }
 
-    const schedule = await this.trainingRepository.findScheduleById(input.scheduleId);
+    const schedule = await this.trainingRepository.findScheduleById(
+      input.scheduleId,
+    );
     if (!schedule || schedule.courseId !== input.courseId) {
       throw new NotFoundException({
         messageKey: 'training.errors.scheduleNotFound',
@@ -63,7 +65,9 @@ export class UpdateTrainingScheduleUseCase {
         ? new Date(input.payload.startsAt)
         : schedule.startsAt;
     const endsAt =
-      input.payload.endsAt !== undefined ? new Date(input.payload.endsAt) : schedule.endsAt;
+      input.payload.endsAt !== undefined
+        ? new Date(input.payload.endsAt)
+        : schedule.endsAt;
     const maxEnrollmentsOverride =
       input.payload.maxEnrollmentsOverride !== undefined
         ? input.payload.maxEnrollmentsOverride
@@ -78,17 +82,18 @@ export class UpdateTrainingScheduleUseCase {
       status: nextStatus,
       externalRoomProvider:
         input.payload.externalRoomProvider !== undefined
-          ? input.payload.externalRoomProvider?.trim() ?? null
+          ? (input.payload.externalRoomProvider?.trim() ?? null)
           : schedule.externalRoomProvider,
       externalRoomJoinUrl:
         input.payload.externalRoomJoinUrl !== undefined
-          ? input.payload.externalRoomJoinUrl?.trim() ?? null
+          ? (input.payload.externalRoomJoinUrl?.trim() ?? null)
           : schedule.externalRoomJoinUrl,
     });
 
-    const occupiedMap = await this.trainingRepository.countEnrollmentsByScheduleIds([
-      input.scheduleId,
-    ]);
+    const occupiedMap =
+      await this.trainingRepository.countEnrollmentsByScheduleIds([
+        input.scheduleId,
+      ]);
     const occupiedSeats = occupiedMap[input.scheduleId] ?? 0;
     const maxSeats = maxEnrollmentsOverride ?? course.maxEnrollments ?? null;
     if (maxSeats !== null && maxSeats < occupiedSeats) {
@@ -99,36 +104,52 @@ export class UpdateTrainingScheduleUseCase {
     }
 
     try {
-      const updated = await this.trainingRepository.updateSchedule(input.scheduleId, {
-        ...(input.payload.scheduleCode !== undefined
-          ? { scheduleCode: input.payload.scheduleCode?.trim() || undefined }
-          : {}),
-        ...(input.payload.status !== undefined ? { status: input.payload.status } : {}),
-        ...(input.payload.enrollmentOpenAt !== undefined ? { enrollmentOpenAt } : {}),
-        ...(input.payload.enrollmentCloseAt !== undefined
-          ? { enrollmentCloseAt }
-          : {}),
-        ...(input.payload.startsAt !== undefined ? { startsAt } : {}),
-        ...(input.payload.endsAt !== undefined ? { endsAt } : {}),
-        ...(input.payload.timezone !== undefined
-          ? { timezone: input.payload.timezone?.trim() || null }
-          : {}),
-        ...(input.payload.maxEnrollmentsOverride !== undefined
-          ? { maxEnrollmentsOverride }
-          : {}),
-        ...(input.payload.waitlistEnabled !== undefined
-          ? { waitlistEnabled: input.payload.waitlistEnabled }
-          : {}),
-        ...(input.payload.externalRoomProvider !== undefined
-          ? { externalRoomProvider: input.payload.externalRoomProvider?.trim() || null }
-          : {}),
-        ...(input.payload.externalRoomJoinUrl !== undefined
-          ? { externalRoomJoinUrl: input.payload.externalRoomJoinUrl?.trim() || null }
-          : {}),
-        ...(input.payload.externalRoomHostUrl !== undefined
-          ? { externalRoomHostUrl: input.payload.externalRoomHostUrl?.trim() || null }
-          : {}),
-      });
+      const updated = await this.trainingRepository.updateSchedule(
+        input.scheduleId,
+        {
+          ...(input.payload.scheduleCode !== undefined
+            ? { scheduleCode: input.payload.scheduleCode?.trim() || undefined }
+            : {}),
+          ...(input.payload.status !== undefined
+            ? { status: input.payload.status }
+            : {}),
+          ...(input.payload.enrollmentOpenAt !== undefined
+            ? { enrollmentOpenAt }
+            : {}),
+          ...(input.payload.enrollmentCloseAt !== undefined
+            ? { enrollmentCloseAt }
+            : {}),
+          ...(input.payload.startsAt !== undefined ? { startsAt } : {}),
+          ...(input.payload.endsAt !== undefined ? { endsAt } : {}),
+          ...(input.payload.timezone !== undefined
+            ? { timezone: input.payload.timezone?.trim() || null }
+            : {}),
+          ...(input.payload.maxEnrollmentsOverride !== undefined
+            ? { maxEnrollmentsOverride }
+            : {}),
+          ...(input.payload.waitlistEnabled !== undefined
+            ? { waitlistEnabled: input.payload.waitlistEnabled }
+            : {}),
+          ...(input.payload.externalRoomProvider !== undefined
+            ? {
+                externalRoomProvider:
+                  input.payload.externalRoomProvider?.trim() || null,
+              }
+            : {}),
+          ...(input.payload.externalRoomJoinUrl !== undefined
+            ? {
+                externalRoomJoinUrl:
+                  input.payload.externalRoomJoinUrl?.trim() || null,
+              }
+            : {}),
+          ...(input.payload.externalRoomHostUrl !== undefined
+            ? {
+                externalRoomHostUrl:
+                  input.payload.externalRoomHostUrl?.trim() || null,
+              }
+            : {}),
+        },
+      );
 
       this.logger.log(
         `Training schedule updated (courseId=${input.courseId}, scheduleId=${input.scheduleId})`,

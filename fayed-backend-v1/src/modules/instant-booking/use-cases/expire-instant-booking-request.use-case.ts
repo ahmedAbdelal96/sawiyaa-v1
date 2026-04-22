@@ -13,7 +13,9 @@ export class ExpireInstantBookingRequestUseCase {
   ) {}
 
   async execute(input: { requestId: string }) {
-    const request = await this.instantBookingRequestRepository.findById(input.requestId);
+    const request = await this.instantBookingRequestRepository.findById(
+      input.requestId,
+    );
 
     if (!request) {
       throw new NotFoundException({
@@ -31,7 +33,9 @@ export class ExpireInstantBookingRequestUseCase {
       requestId: request.id,
     });
 
-    const expired = await this.instantBookingRequestRepository.findById(request.id);
+    const expired = await this.instantBookingRequestRepository.findById(
+      request.id,
+    );
 
     if (!expired) {
       throw new NotFoundException({

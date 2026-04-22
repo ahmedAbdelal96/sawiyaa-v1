@@ -1,4 +1,7 @@
-import { BadRequestException, ServiceUnavailableException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import { MarketType, PaymentProvider } from '@prisma/client';
 import { PaymentProviderCapabilitiesService } from './payment-provider-capabilities.service';
 import { PaymentProviderResolverService } from './payment-provider-resolver.service';

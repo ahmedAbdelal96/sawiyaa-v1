@@ -1,5 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import { PaymentEventType, PaymentProvider, PaymentStatus, Prisma } from '@prisma/client';
+import {
+  PaymentEventType,
+  PaymentProvider,
+  PaymentStatus,
+  Prisma,
+} from '@prisma/client';
 import { AppLoggerService } from '@common/logging/app-logger.service';
 import { PaymentRepository } from '../repositories/payment.repository';
 import { PaymentProviderRegistryService } from '../services/payment-provider-registry.service';
@@ -23,7 +28,9 @@ export class HandlePaymobWebhookUseCase {
     headers: Record<string, string | string[] | undefined>;
     query?: Record<string, unknown>;
   }) {
-    const adapter = this.paymentProviderRegistryService.get(PaymentProvider.PAYMOB);
+    const adapter = this.paymentProviderRegistryService.get(
+      PaymentProvider.PAYMOB,
+    );
     const webhook = adapter.parseAndVerifyWebhook(input);
 
     if (!webhook.handled) {

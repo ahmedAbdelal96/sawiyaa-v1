@@ -113,6 +113,7 @@ export interface AdminReadinessSnapshot {
   hasPayoutDestination: boolean;
   canBeReviewed: boolean;
   canBeApproved: boolean;
+  canRequestChanges: boolean;
 }
 
 export interface PractitionerApplicationDetails {
@@ -162,6 +163,11 @@ export interface RejectPractitionerApplicationRequest {
   note?: string;
 }
 
+export interface RequestPractitionerApplicationChangesRequest {
+  reason: string;
+  note?: string;
+}
+
 export interface UpdatePractitionerApplicationDraftRequest {
   displayName?: string;
   practitionerType?: PractitionerType;
@@ -173,6 +179,32 @@ export interface UpdatePractitionerApplicationDraftRequest {
   languageCodes?: string[];
   specialtySelection?: PractitionerSpecialtySelectionInput;
   payoutDestination?: PractitionerPayoutDestinationInput | null;
+}
+
+export interface CreateAdminPractitionerApplicationCredentialRequest {
+  credentialType: CredentialType;
+  fileUrl: string;
+  reviewStatus?: CredentialReviewStatus;
+  reviewNotes?: string | null;
+  expiresAt?: string | null;
+}
+
+export interface UpdateAdminPractitionerApplicationCredentialRequest {
+  credentialType?: CredentialType;
+  fileUrl?: string;
+  reviewStatus?: CredentialReviewStatus;
+  reviewNotes?: string | null;
+  expiresAt?: string | null;
+}
+
+export interface PractitionerApplicationCredentialResponse {
+  message: string;
+  credential: AdminPractitionerCredential;
+}
+
+export interface PractitionerApplicationCredentialDeleteResponse {
+  message: string;
+  deletedCredentialId: string;
 }
 
 export interface CreateAdminPractitionerRequest {

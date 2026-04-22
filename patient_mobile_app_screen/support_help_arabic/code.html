@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+
+<html class="light" dir="rtl" lang="ar"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>الدعم والمساعدة - Clinical Sanctuary</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&amp;family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "surface-container-low": "#f1f4f9",
+                      "surface-container": "#eceef3",
+                      "primary-container": "#3575c7",
+                      "on-secondary-container": "#51617e",
+                      "primary-fixed-dim": "#a7c8ff",
+                      "on-secondary-fixed-variant": "#374762",
+                      "on-tertiary-fixed-variant": "#683d00",
+                      "surface-bright": "#f7f9fe",
+                      "on-primary-fixed": "#001b3c",
+                      "tertiary-fixed": "#ffdcbc",
+                      "tertiary-container": "#a86500",
+                      "on-primary-fixed-variant": "#004689",
+                      "inverse-primary": "#a7c8ff",
+                      "secondary": "#4f5f7b",
+                      "tertiary-fixed-dim": "#ffb86b",
+                      "secondary-fixed": "#d6e3ff",
+                      "primary-fixed": "#d5e3ff",
+                      "on-surface": "#181c20",
+                      "on-primary-container": "#fefcff",
+                      "on-secondary-fixed": "#0a1c34",
+                      "surface-container-high": "#e6e8ed",
+                      "surface-tint": "#125eae",
+                      "on-tertiary": "#ffffff",
+                      "on-error-container": "#93000a",
+                      "inverse-on-surface": "#eff1f6",
+                      "outline": "#727783",
+                      "on-background": "#181c20",
+                      "on-tertiary-container": "#fffbff",
+                      "on-error": "#ffffff",
+                      "secondary-container": "#cdddff",
+                      "on-primary": "#ffffff",
+                      "surface-dim": "#d8dadf",
+                      "primary": "#0b5cac",
+                      "outline-variant": "#c2c6d3",
+                      "on-surface-variant": "#424751",
+                      "secondary-fixed-dim": "#b7c7e8",
+                      "inverse-surface": "#2d3135",
+                      "on-tertiary-fixed": "#2c1700",
+                      "error-container": "#ffdad6",
+                      "background": "#f7f9fe",
+                      "tertiary": "#854f00",
+                      "surface-container-lowest": "#ffffff",
+                      "surface": "#f7f9fe",
+                      "error": "#ba1a1a",
+                      "surface-container-highest": "#e0e2e7",
+                      "surface-variant": "#e0e2e7",
+                      "on-secondary": "#ffffff"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {},
+              "fontFamily": {
+                      "headline": [
+                              "IBM Plex Sans Arabic", "Manrope", "sans-serif"
+                      ],
+                      "body": [
+                              "IBM Plex Sans Arabic", "Inter", "sans-serif"
+                      ],
+                      "label": [
+                              "IBM Plex Sans Arabic", "Inter", "sans-serif"
+                      ]
+              }
+      },
+          },
+        }
+    </script>
+<style>
+        body {
+            background-color: theme('colors.surface');
+            color: theme('colors.on-surface');
+            font-family: theme('fontFamily.body');
+        }
+        h1, h2, h3, h4, h5, h6 {
+            font-family: theme('fontFamily.headline');
+        }
+        /* Ghost Border for inputs */
+        .ghost-border {
+            border: 1px solid rgba(194, 198, 211, 0.2); /* outline-variant at 20% */
+        }
+        /* Ambient Shadow */
+        .ambient-shadow {
+            box-shadow: 0 4px 20px 0px rgba(24, 28, 32, 0.05); /* slightly adjusted from design system suggestion for subtlety */
+        }
+        .ambient-shadow-elevated {
+            box-shadow: 0 8px 40px 0px rgba(24, 28, 32, 0.08);
+        }
+        /* Gradient CTA */
+        .gradient-cta {
+            background: linear-gradient(135deg, theme('colors.primary') 0%, theme('colors.primary-container') 100%);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="antialiased pb-24 md:pb-0 pt-16">
+<!-- TopAppBar -->
+<header class="bg-[#e6e8ed]/85 dark:bg-slate-900/85 backdrop-blur-[24px] fixed top-0 w-full z-50 shadow-none border-none shadow-[0_4px_20px_0px_rgba(24,28,32,0.05)] flex justify-between items-center px-6 h-16 w-full">
+<div class="flex items-center gap-4">
+<button class="text-[#181c20] hover:bg-white/40 dark:hover:bg-slate-800/40 transition-colors p-2 rounded-full flex items-center justify-center active:scale-98 transition-transform duration-200">
+<span class="material-symbols-outlined" style="transform: scaleX(-1);">arrow_back</span>
+</button>
+<h1 class="font-['Manrope'] tracking-tight font-bold text-[#181c20] dark:text-white text-xl">الدعم والمساعدة</h1>
+</div>
+<div class="flex items-center">
+<button class="text-[#181c20] hover:bg-white/40 dark:hover:bg-slate-800/40 transition-colors p-2 rounded-full flex items-center justify-center active:scale-98 transition-transform duration-200">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+</div>
+</header>
+<main class="max-w-4xl mx-auto px-4 md:px-8 py-8 space-y-12">
+<!-- Search Section -->
+<section class="space-y-6">
+<div class="text-center space-y-2">
+<h2 class="text-3xl font-bold tracking-tight text-on-surface">كيف يمكننا مساعدتك اليوم؟</h2>
+<p class="text-on-surface-variant text-lg">ابحث في مركز المساعدة عن الإجابات أو تواصل معنا مباشرة.</p>
+</div>
+<div class="relative max-w-2xl mx-auto">
+<div class="absolute inset-y-0 start-0 flex items-center ps-4 pointer-events-none">
+<span class="material-symbols-outlined text-outline">search</span>
+</div>
+<input class="block w-full p-4 ps-12 text-lg bg-surface-container-lowest ghost-border rounded-xl focus:ring-primary focus:border-primary transition-all ambient-shadow placeholder:text-outline-variant text-on-surface" placeholder="ابحث عن مقالات، أسئلة، أو مواضيع..." type="text"/>
+</div>
+</section>
+<!-- Quick Categories (Bento Style) -->
+<section>
+<h3 class="text-xl font-bold mb-6 text-on-surface">مواضيع شائعة</h3>
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+<a class="bg-surface-container-lowest p-6 rounded-xl ambient-shadow hover:bg-surface-container-low transition-colors flex flex-col items-center text-center gap-3" href="#">
+<div class="w-12 h-12 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center">
+<span class="material-symbols-outlined">account_circle</span>
+</div>
+<span class="font-semibold text-on-surface">الحساب والملف الشخصي</span>
+</a>
+<a class="bg-surface-container-lowest p-6 rounded-xl ambient-shadow hover:bg-surface-container-low transition-colors flex flex-col items-center text-center gap-3" href="#">
+<div class="w-12 h-12 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center">
+<span class="material-symbols-outlined">calendar_month</span>
+</div>
+<span class="font-semibold text-on-surface">المواعيد والجلسات</span>
+</a>
+<a class="bg-surface-container-lowest p-6 rounded-xl ambient-shadow hover:bg-surface-container-low transition-colors flex flex-col items-center text-center gap-3 relative" href="#">
+<!-- Pulse Indicator for urgent/important topics -->
+<div class="absolute start-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-surface-tint rounded-e-full"></div>
+<div class="w-12 h-12 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center">
+<span class="material-symbols-outlined">security</span>
+</div>
+<span class="font-semibold text-on-surface">الخصوصية والأمان</span>
+</a>
+<a class="bg-surface-container-lowest p-6 rounded-xl ambient-shadow hover:bg-surface-container-low transition-colors flex flex-col items-center text-center gap-3" href="#">
+<div class="w-12 h-12 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center">
+<span class="material-symbols-outlined">payments</span>
+</div>
+<span class="font-semibold text-on-surface">المدفوعات والفواتير</span>
+</a>
+</div>
+</section>
+<!-- FAQs -->
+<section>
+<h3 class="text-xl font-bold mb-6 text-on-surface">الأسئلة الشائعة</h3>
+<div class="space-y-4">
+<!-- FAQ Item 1 -->
+<div class="bg-surface-container-lowest rounded-xl ambient-shadow p-6">
+<details class="group">
+<summary class="flex justify-between items-center font-semibold cursor-pointer list-none text-lg text-on-surface">
+                            كيف يمكنني تغيير موعد الجلسة؟
+                            <span class="transition group-open:rotate-180 material-symbols-outlined text-primary">keyboard_arrow_down</span>
+</summary>
+<div class="text-on-surface-variant mt-4 leading-relaxed text-base">
+                            لتغيير موعد جلستك، يرجى الانتقال إلى قسم "المواعيد" في ملفك الشخصي، واختيار الجلسة التي ترغب في تعديلها، ثم الضغط على "إعادة جدولة". يرجى ملاحظة أنه يجب إجراء التغييرات قبل 24 ساعة على الأقل من موعد الجلسة لتجنب رسوم الإلغاء.
+                        </div>
+</details>
+</div>
+<!-- FAQ Item 2 -->
+<div class="bg-surface-container-lowest rounded-xl ambient-shadow p-6">
+<details class="group">
+<summary class="flex justify-between items-center font-semibold cursor-pointer list-none text-lg text-on-surface">
+                            هل معلوماتي الشخصية آمنة ومحاطة بالسرية؟
+                            <span class="transition group-open:rotate-180 material-symbols-outlined text-primary">keyboard_arrow_down</span>
+</summary>
+<div class="text-on-surface-variant mt-4 leading-relaxed text-base">
+                            نعم، نحن نأخذ خصوصيتك على محمل الجد. جميع البيانات والمراسلات داخل المنصة مشفرة ومحمية وفقاً لأعلى المعايير الطبية للسرية.
+                        </div>
+</details>
+</div>
+</div>
+</section>
+<!-- Contact CTA -->
+<section class="bg-surface-container-low rounded-xl p-8 ambient-shadow-elevated relative overflow-hidden">
+<!-- Decorative background element -->
+<div class="absolute top-0 end-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/4"></div>
+<div class="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
+<div class="space-y-3 text-center md:text-start">
+<h3 class="text-2xl font-bold text-on-surface">لم تجد ما تبحث عنه؟</h3>
+<p class="text-on-surface-variant text-lg">فريق الدعم المختص لدينا متواجد لمساعدتك في أي استفسار.</p>
+</div>
+<div class="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
+<button class="gradient-cta text-on-primary px-8 py-4 rounded-xl font-bold flex items-center justify-center gap-2 ambient-shadow hover:opacity-95 transition-opacity">
+<span class="material-symbols-outlined" data-weight="fill">chat</span>
+                        تواصل عبر المحادثة
+                    </button>
+<button class="bg-surface-container-high text-on-primary-fixed-variant px-8 py-4 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-surface-container transition-colors">
+<span class="material-symbols-outlined">mail</span>
+                        إرسال بريد إلكتروني
+                    </button>
+</div>
+</div>
+</section>
+</main>
+</body></html>

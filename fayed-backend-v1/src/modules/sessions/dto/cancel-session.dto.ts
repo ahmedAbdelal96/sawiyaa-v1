@@ -3,7 +3,8 @@ import { IsOptional, IsString, MaxLength } from 'class-validator';
 
 export class CancelSessionDto {
   @ApiPropertyOptional({
-    description: 'Optional patient-facing cancellation note stored for audit baseline',
+    description:
+      'Optional patient-facing cancellation note stored for audit baseline',
   })
   @IsOptional()
   @IsString()

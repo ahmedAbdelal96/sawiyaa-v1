@@ -3,6 +3,7 @@
 import { useTranslations } from "next-intl";
 import { useSearchParams } from "next/navigation";
 import { Link } from "@/i18n/navigation";
+import { normalizeCallbackPath } from "@/lib/auth/callback-url";
 import {
   ChevronLeftIcon,
   GridIcon,
@@ -50,7 +51,7 @@ function buildAuthHref(basePath: string, params: Record<string, string | null>) 
 export default function AuthEntryChooser() {
   const t = useTranslations("auth");
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get("callbackUrl");
+  const callbackUrl = normalizeCallbackPath(searchParams.get("callbackUrl"));
 
   return (
     <div className="flex w-full flex-1 flex-col lg:w-1/2">

@@ -13,7 +13,10 @@ export default registerAs('auth', () => ({
   },
   otp: {
     codeLength: parseInt(process.env.AUTH_OTP_CODE_LENGTH ?? '6', 10),
-    loginTtlMinutes: parseInt(process.env.AUTH_LOGIN_OTP_TTL_MINUTES ?? '10', 10),
+    loginTtlMinutes: parseInt(
+      process.env.AUTH_LOGIN_OTP_TTL_MINUTES ?? '10',
+      10,
+    ),
     resetPasswordTtlMinutes: parseInt(
       process.env.AUTH_RESET_PASSWORD_TTL_MINUTES ?? '15',
       10,

@@ -12,4 +12,3 @@ export class UpsertAdminPractitionerAvatarDto {
   })
   avatarUrl!: string;
 }
-

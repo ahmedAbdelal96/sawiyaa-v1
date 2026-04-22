@@ -1,5 +1,11 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsArray, IsNotEmpty, IsString, Matches, ValidateNested } from 'class-validator';
+import {
+  IsArray,
+  IsNotEmpty,
+  IsString,
+  Matches,
+  ValidateNested,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
 class SubmitAssessmentAnswerDto {
@@ -26,7 +32,8 @@ export class SubmitAssessmentDto {
   @ApiProperty({
     type: SubmitAssessmentAnswerDto,
     isArray: true,
-    description: 'Completed single-choice answer set for the selected assessment',
+    description:
+      'Completed single-choice answer set for the selected assessment',
   })
   @IsArray()
   @ValidateNested({ each: true })

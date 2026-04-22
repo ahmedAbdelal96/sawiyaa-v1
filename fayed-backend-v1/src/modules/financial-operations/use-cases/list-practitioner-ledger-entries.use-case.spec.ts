@@ -29,10 +29,9 @@ describe('ListPractitionerLedgerEntriesUseCase', () => {
     (practitionerRepository.findByUserId as jest.Mock).mockResolvedValue({
       id: 'pract_1',
     });
-    (ledgerRepository.listPractitionerLedgerEntries as jest.Mock).mockResolvedValue([
-      [{ id: 'entry_1' }],
-      1,
-    ]);
+    (
+      ledgerRepository.listPractitionerLedgerEntries as jest.Mock
+    ).mockResolvedValue([[{ id: 'entry_1' }], 1]);
 
     const result = await useCase.execute({
       userId: 'user_1',

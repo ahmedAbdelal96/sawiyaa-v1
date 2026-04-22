@@ -31,7 +31,8 @@ export class CalculateSessionFinancialBreakdownService {
     couponCode?: string | null;
   }): Promise<PaymentFinancialResolution> {
     const grossAmount = this.resolveGrossAmount(input.session);
-    const currencyCode = input.session.practitioner.country?.currencyCode?.trim();
+    const currencyCode =
+      input.session.practitioner.country?.currencyCode?.trim();
 
     if (!currencyCode) {
       throw new BadRequestException({
@@ -40,9 +41,8 @@ export class CalculateSessionFinancialBreakdownService {
       });
     }
 
-    const commission = await this.resolveCommissionRuleService.resolveForSession(
-      input.session,
-    );
+    const commission =
+      await this.resolveCommissionRuleService.resolveForSession(input.session);
 
     const couponCode = input.couponCode?.trim()
       ? normalizeCouponCode(input.couponCode)
@@ -129,20 +129,25 @@ export class CalculateSessionFinancialBreakdownService {
   }
 
   private resolveGrossAmount(session: SessionFinancialContext) {
-    const amount =
+    const amountFromPractitioner =
       session.durationMinutes === 30
         ? session.practitioner.sessionPrice30
         : session.durationMinutes === 60
           ? session.practitioner.sessionPrice60
           : null;
 
-    if (!amount) {
-      throw new BadRequestException({
-        messageKey: 'financialRules.errors.pricingUnavailable',
-        error: 'FINANCIAL_RULE_PRICING_UNAVAILABLE',
-      });
+    if (amountFromPractitioner) {
+      return this.moneyMathService.toDecimal(amountFromPractitioner).toFixed(2);
     }
 
-    return this.moneyMathService.toDecimal(amount).toFixed(2);
+    const latestPaymentAmount = session.payments?.[0]?.amountSubtotal ?? null;
+    if (latestPaymentAmount) {
+      return this.moneyMathService.toDecimal(latestPaymentAmount).toFixed(2);
+    }
+
+    throw new BadRequestException({
+      messageKey: 'financialRules.errors.pricingUnavailable',
+      error: 'FINANCIAL_RULE_PRICING_UNAVAILABLE',
+    });
   }
 }

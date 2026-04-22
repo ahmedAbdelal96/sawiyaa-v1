@@ -22,7 +22,10 @@ export class PublicPractitionerReviewsController {
   @ApiOperation({
     summary: 'List published public review snippets for one practitioner',
   })
-  @ApiResponse({ status: 200, type: PublicPractitionerReviewsSuccessResponseDto })
+  @ApiResponse({
+    status: 200,
+    type: PublicPractitionerReviewsSuccessResponseDto,
+  })
   @ApiNotFoundResponse({
     description: 'Practitioner slug not found or not publicly visible',
   })

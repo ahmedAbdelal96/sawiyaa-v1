@@ -1,9 +1,9 @@
 /**
  * Frontend types for the payments feature.
- * Derived directly from backend payment DTOs and view models.
+ * Derived directly from backend payment DTOs and wallet contracts.
  */
 
-export type PaymentProvider = "STRIPE" | "PAYMOB";
+export type PaymentProvider = "STRIPE" | "PAYMOB" | "INTERNAL_WALLET";
 
 export type PaymentStatus =
   | "CREATED"
@@ -29,6 +29,11 @@ export type PaymentItem = {
   provider: PaymentProvider;
   status: PaymentStatus;
   amount: string;
+  amountSubtotal: string;
+  amountDiscount: string;
+  amountTotal: string;
+  amountFromWallet: string;
+  amountFromGateway: string;
   currency: string;
   providerPaymentId: string | null;
   providerReference: string | null;
@@ -57,6 +62,7 @@ export type PaymentItemResponseData = {
 /** Request body for POST /patients/me/sessions/:id/payments/initiate */
 export type InitiateSessionPaymentInput = {
   couponCode?: string;
+  useWalletBalance?: boolean;
 };
 
 export type PaymentsPagination = {
@@ -74,6 +80,68 @@ export type PaymentsListResponseData = {
 
 export type ListPaymentsParams = {
   status?: PaymentStatus;
+  page?: number;
+  limit?: number;
+};
+
+export type CustomerWalletEntryType =
+  | "REFUND_CREDIT"
+  | "MANUAL_CREDIT"
+  | "MANUAL_DEBIT"
+  | "SESSION_PAYMENT_RESERVE"
+  | "SESSION_PAYMENT_CAPTURE"
+  | "SESSION_PAYMENT_RELEASE"
+  | "REVERSAL"
+  | "ADJUSTMENT";
+
+export type CustomerWalletEntryDirection = "CREDIT" | "DEBIT";
+
+export type CustomerWalletSummaryItem = {
+  id: string;
+  currencyCode: string;
+  availableBalance: string;
+  reservedBalance: string;
+  lifetimeCredited: string;
+  lifetimeDebited: string;
+  lastEntryAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type CustomerWalletSummaryResponseData = {
+  item: CustomerWalletSummaryItem | null;
+};
+
+export type CustomerWalletEntryItem = {
+  id: string;
+  entryType: CustomerWalletEntryType;
+  direction: CustomerWalletEntryDirection;
+  amount: string;
+  currencyCode: string;
+  description: string | null;
+  paymentId: string | null;
+  refundId: string | null;
+  sessionId: string | null;
+  referenceType: string | null;
+  referenceId: string | null;
+  effectiveAt: string;
+  createdAt: string;
+};
+
+export type CustomerWalletEntriesPagination = {
+  page: number;
+  limit: number;
+  totalItems: number;
+  totalPages: number;
+};
+
+export type CustomerWalletEntriesResponseData = {
+  items: CustomerWalletEntryItem[];
+  pagination: CustomerWalletEntriesPagination;
+};
+
+export type ListCustomerWalletEntriesParams = {
+  currencyCode?: string;
   page?: number;
   limit?: number;
 };

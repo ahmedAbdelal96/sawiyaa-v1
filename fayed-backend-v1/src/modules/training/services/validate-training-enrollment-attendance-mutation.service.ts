@@ -19,7 +19,8 @@ export class ValidateTrainingEnrollmentAttendanceMutationService {
       input.enrollmentStatus === EnrollmentStatus.REFUNDED
     ) {
       throw new BadRequestException({
-        messageKey: 'training.errors.attendanceMutationNotAllowedForEnrollmentState',
+        messageKey:
+          'training.errors.attendanceMutationNotAllowedForEnrollmentState',
         error: 'TRAINING_ATTENDANCE_MUTATION_NOT_ALLOWED_FOR_ENROLLMENT_STATE',
       });
     }
@@ -29,7 +30,8 @@ export class ValidateTrainingEnrollmentAttendanceMutationService {
       input.scheduleStatus === CourseScheduleStatus.ARCHIVED
     ) {
       throw new BadRequestException({
-        messageKey: 'training.errors.attendanceMutationNotAllowedForScheduleState',
+        messageKey:
+          'training.errors.attendanceMutationNotAllowedForScheduleState',
         error: 'TRAINING_ATTENDANCE_MUTATION_NOT_ALLOWED_FOR_SCHEDULE_STATE',
       });
     }
@@ -56,4 +58,3 @@ export class ValidateTrainingEnrollmentAttendanceMutationService {
     }
   }
 }
-

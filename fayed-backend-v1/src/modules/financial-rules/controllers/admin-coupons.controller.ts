@@ -37,7 +37,8 @@ export class AdminCouponsController {
   @ApiBody({ type: CreateCouponDto })
   @ApiResponse({ status: 201, type: CouponItemSuccessResponseDto })
   @ApiBadRequestResponse({
-    description: 'Coupon configuration, scope, share split, or date range is invalid',
+    description:
+      'Coupon configuration, scope, share split, or date range is invalid',
   })
   @ApiConflictResponse({ description: 'Coupon code already exists' })
   @ApiUnauthorizedResponse({ description: 'Access token is required' })

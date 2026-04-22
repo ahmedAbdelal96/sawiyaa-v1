@@ -55,4 +55,3 @@ export class ListAdminPayoutsDto {
   @IsDateString()
   createdTo?: string;
 }
-

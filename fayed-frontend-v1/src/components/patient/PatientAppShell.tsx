@@ -4,21 +4,35 @@ import LanguageToggle from "@/components/public/LanguageToggle";
 import ThemeToggle from "@/components/public/ThemeToggle";
 import BrandMark from "@/components/shared/BrandMark";
 import UserDropdown from "@/components/header/UserDropdown";
+import ActionIconButton from "@/components/ui/action-icon-button/ActionIconButton";
+import { Drawer } from "@/components/ui/modal";
 import { Link, usePathname } from "@/i18n/navigation";
+import { useAuthState } from "@/stores/auth-store";
+import { useAuthActions } from "@/stores/auth-store";
+import { useCurrentUser } from "@/features/users/hooks/use-users";
+import { usePatientProfile } from "@/features/patients/hooks/use-patients";
+import UnifiedMessagesLauncher from "@/features/messages-shell/components/UnifiedMessagesLauncher";
+import MessagesHeaderButton from "@/features/messages-shell/components/MessagesHeaderButton";
 import {
   BookOpen,
   Calendar,
   CreditCard,
   GraduationCap,
   HeartHandshake,
+  LogOut,
   Home,
   LifeBuoy,
+  Menu,
+  Settings,
   Sparkles,
   Stethoscope,
   User,
+  X,
 } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import type { ReactNode } from "react";
+import { useState } from "react";
+import { useRouter } from "@/i18n/navigation";
 
 type PatientAppShellProps = {
   children: ReactNode;
@@ -28,14 +42,32 @@ type PatientNavItem = {
   key: string;
   href: string;
   icon: ReactNode;
-  mobileOnly?: boolean;
 };
 
 export default function PatientAppShell({ children }: PatientAppShellProps) {
   const pathname = usePathname();
+  const locale = useLocale();
   const tNav = useTranslations("navigation");
   const tArea = useTranslations("patient-area");
   const tJourney = useTranslations("patient-journey");
+  const tCommon = useTranslations("common.nav");
+  const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
+  const { user } = useAuthState();
+  const { logout } = useAuthActions();
+  const router = useRouter();
+  const currentUserQuery = useCurrentUser(Boolean(user));
+  const patientProfileQuery = usePatientProfile(user?.role === "PATIENT" && Boolean(user));
+
+  const displayName =
+    currentUserQuery.data?.displayName?.trim() ||
+    `${user?.firstName ?? ""} ${user?.lastName ?? ""}`.trim() ||
+    user?.email ||
+    "User";
+  const userEmail = user?.email || "";
+  const patientAvatar = patientProfileQuery.data?.profile.avatarDataUrl ?? null;
+  const apiAvatar = currentUserQuery.data?.avatarDataUrl ?? null;
+  const effectiveAvatar = patientAvatar ?? apiAvatar ?? user?.avatar ?? null;
+  const userInitial = displayName.charAt(0).toUpperCase();
 
   // This shell is the active source of truth for patient navigation rendering.
   // Keep it aligned with src/config/navigation/patient.tsx until navigation ownership is unified.
@@ -44,6 +76,11 @@ export default function PatientAppShell({ children }: PatientAppShellProps) {
       key: "home",
       href: "/patient",
       icon: <Home className="h-4 w-4" />,
+    },
+    {
+      key: "practitioners",
+      href: "/patient/practitioners",
+      icon: <Stethoscope className="h-4 w-4" />,
     },
     {
       key: "matching",
@@ -62,12 +99,7 @@ export default function PatientAppShell({ children }: PatientAppShellProps) {
     },
   ];
 
-  const utilityItems: PatientNavItem[] = [
-    {
-      key: "practitioners",
-      href: "/patient/practitioners",
-      icon: <Stethoscope className="h-4 w-4" />,
-    },
+  const userQuickLinks: PatientNavItem[] = [
     {
       key: "articles",
       href: "/patient/articles",
@@ -88,21 +120,22 @@ export default function PatientAppShell({ children }: PatientAppShellProps) {
       href: "/patient/payments",
       icon: <CreditCard className="h-4 w-4" />,
     },
+  ];
+
+  const drawerItems: PatientNavItem[] = [
+    ...topItems,
+    ...userQuickLinks,
     {
       key: "profile",
       href: "/patient/profile",
       icon: <User className="h-4 w-4" />,
     },
   ];
-
-  const mobileItems: PatientNavItem[] = [
-    ...topItems,
-    {
-      key: "support",
-      href: "/patient/support",
-      icon: <LifeBuoy className="h-4 w-4" />,
-      mobileOnly: true,
-    },
+  const drawerPrimaryItems = topItems;
+  const drawerSecondaryItems: PatientNavItem[] = [
+    ...userQuickLinks,
+    { key: "settings", href: "/patient/settings", icon: <Settings className="h-4 w-4" /> },
+    { key: "profile", href: "/patient/profile", icon: <User className="h-4 w-4" /> },
   ];
 
   const isActive = (href: string) =>
@@ -119,16 +152,24 @@ export default function PatientAppShell({ children }: PatientAppShellProps) {
     if (key === "training") return tNav("workspace.training");
     if (key === "payments") return tNav("main.payments");
     if (key === "profile") return tNav("settings.profile");
+    if (key === "settings") return tCommon("settings");
     return tNav(`main.${key}`);
   };
 
   return (
     <div className="min-h-screen bg-background dark:bg-background">
       <header className="sticky top-0 z-40 border-b border-border-light/70 bg-surface-secondary/92 backdrop-blur-xl dark:border-border-light dark:bg-surface-secondary/92">
-        <div className="app-max-shell-patient mx-auto flex w-full items-center justify-between gap-4 px-4 py-4 sm:px-6">
+        <div className="app-max-shell-patient mx-auto flex w-full items-center justify-between gap-3 px-4 py-3 sm:px-6">
           <div className="flex min-w-0 items-center gap-3">
+            <div className="md:hidden">
+              <ActionIconButton
+                label={tNav("patientShell.areaTitle")}
+                icon={<Menu className="h-4 w-4" />}
+                onClick={() => setIsMobileNavOpen((open) => !open)}
+              />
+            </div>
             <BrandMark compact href="/patient" />
-            <div className="min-w-0">
+            <div className="min-w-0 md:max-w-[260px]">
               <p className="truncate text-sm font-semibold text-text-primary dark:text-white">
                 {tArea("shell.title")}
               </p>
@@ -138,15 +179,7 @@ export default function PatientAppShell({ children }: PatientAppShellProps) {
             </div>
           </div>
 
-          <div className="flex items-center gap-1">
-            <LanguageToggle />
-            <ThemeToggle />
-            <UserDropdown compact />
-          </div>
-        </div>
-
-        <div className="app-max-shell-patient mx-auto hidden w-full flex-col items-start gap-3 px-6 pb-4 md:flex xl:flex-row xl:items-center xl:justify-between">
-          <nav className="flex w-full flex-wrap items-center gap-2 xl:w-auto">
+          <nav className="mx-4 hidden flex-1 items-center justify-center gap-2 md:flex">
             {topItems.map((item) => (
               <ShellLink
                 key={item.key}
@@ -158,42 +191,169 @@ export default function PatientAppShell({ children }: PatientAppShellProps) {
             ))}
           </nav>
 
-          <nav className="flex w-full flex-wrap items-center gap-2 xl:w-auto xl:justify-end">
-            {utilityItems.map((item) => (
-              <ShellLink
-                key={item.key}
-                href={item.href}
-                active={isActive(item.href)}
-                icon={item.icon}
-                label={getLabel(item.key)}
-                subtle
-              />
-            ))}
-          </nav>
+          <div className="flex items-center gap-1">
+            <LanguageToggle />
+            <ThemeToggle />
+            <MessagesHeaderButton role="patient" />
+            <UserDropdown
+              compact
+              quickLinks={userQuickLinks.map((item) => ({
+                key: item.key,
+                href: item.href,
+                label: getLabel(item.key),
+                icon: item.icon,
+              }))}
+            />
+          </div>
         </div>
       </header>
 
-      <main className="app-max-shell-patient mx-auto w-full px-4 pb-24 pt-6 sm:px-6 sm:pt-8">{children}</main>
+      <main className="app-max-shell-patient mx-auto w-full px-4 pb-10 pt-6 sm:px-6 sm:pt-8">
+        {children}
+      </main>
 
-      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border-light/70 bg-surface-secondary/92 px-2 py-2 backdrop-blur-xl dark:border-border-light dark:bg-surface-secondary/92 md:hidden">
-        <div className="mx-auto grid max-w-xl grid-cols-5 gap-1">
-          {mobileItems.map((item) => (
-            <Link
-              key={item.key}
-              href={item.href}
-              className={`flex flex-col items-center justify-center rounded-2xl px-2 py-2 text-[11px] font-medium transition ${
-                isActive(item.href)
-                  ? "bg-primary-light text-primary dark:bg-primary/15 dark:text-primary-light"
-                  : "text-text-secondary hover:bg-surface-tertiary dark:text-white/70 dark:hover:bg-white/5 dark:hover:text-white"
-              }`}
+      <Drawer
+        isOpen={isMobileNavOpen}
+        onClose={() => setIsMobileNavOpen(false)}
+        side={locale === "ar" ? "right" : "left"}
+        ariaLabel={tNav("patientShell.areaTitle")}
+        className={`w-[320px] sm:w-[340px] ${locale === "ar" ? "rounded-l-[28px]" : "rounded-r-[28px]"}`}
+        showCloseButton={false}
+        inset={false}
+        showHandle={false}
+        backdropClassName="bg-black/55 backdrop-blur-0"
+      >
+        <div className="flex h-full flex-col bg-white dark:bg-surface-secondary">
+          <div className="relative overflow-hidden">
+            <div className="h-[150px] bg-gradient-to-br from-surface-tertiary via-surface-secondary to-primary-light dark:from-surface-tertiary dark:via-surface-secondary dark:to-primary/15">
+              <div className="absolute inset-0 opacity-60 [background:radial-gradient(circle_at_30%_20%,rgba(68,161,148,0.22),transparent_45%),radial-gradient(circle_at_70%_30%,rgba(143,198,191,0.18),transparent_55%)]" />
+              <div className="absolute inset-0 opacity-25 [background:radial-gradient(circle_at_1px_1px,rgba(255,255,255,0.25)_1px,transparent_0)] [background-size:18px_18px]" />
+            </div>
+
+            <div className="absolute start-3 top-3">
+              <button
+                type="button"
+                title={locale === "ar" ? "إغلاق" : "Close"}
+                aria-label={locale === "ar" ? "إغلاق" : "Close"}
+                className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-border-light/80 bg-white/80 text-text-primary shadow-sm backdrop-blur-sm transition hover:bg-white dark:border-white/20 dark:bg-surface-secondary/70 dark:text-white dark:hover:bg-surface-secondary"
+                onClick={() => setIsMobileNavOpen(false)}
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="absolute bottom-4 start-4 end-4 flex items-center gap-3">
+              {effectiveAvatar ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={effectiveAvatar}
+                  alt={displayName}
+                  className="h-14 w-14 rounded-full object-cover ring-2 ring-white/35"
+                />
+              ) : (
+                <span className="flex h-14 w-14 items-center justify-center rounded-full bg-white/12 text-lg font-semibold text-white ring-2 ring-white/25">
+                  {userInitial}
+                </span>
+              )}
+
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold text-text-primary dark:text-white">{displayName}</p>
+                {userEmail ? (
+                  <p className="truncate text-xs text-text-secondary dark:text-white/70">{userEmail}</p>
+                ) : null}
+              </div>
+            </div>
+          </div>
+
+          <div className="app-drawer-scroll flex-1 overflow-y-auto px-3 py-3">
+            <nav className="space-y-1">
+              {drawerPrimaryItems.map((item) => (
+                <DrawerItem
+                  key={`${item.key}-${item.href}`}
+                  href={item.href}
+                  icon={item.icon}
+                  label={getLabel(item.key)}
+                  active={isActive(item.href)}
+                  onNavigate={() => setIsMobileNavOpen(false)}
+                />
+              ))}
+            </nav>
+
+            <div className="my-4 border-t border-border-light/70 dark:border-white/10" />
+
+            <nav className="space-y-1">
+              {drawerSecondaryItems.map((item) => (
+                <DrawerItem
+                  key={`${item.key}-${item.href}`}
+                  href={item.href}
+                  icon={item.icon}
+                  label={getLabel(item.key)}
+                  active={isActive(item.href)}
+                  onNavigate={() => setIsMobileNavOpen(false)}
+                />
+              ))}
+            </nav>
+          </div>
+
+          <div className="border-t border-border-light/70 p-3 dark:border-white/10">
+            <button
+              type="button"
+              className="flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-sm font-semibold text-text-secondary transition hover:bg-surface-tertiary hover:text-text-primary dark:text-white/80 dark:hover:bg-white/5 dark:hover:text-white"
+              onClick={async () => {
+                setIsMobileNavOpen(false);
+                await logout();
+                router.push("/signin");
+                router.refresh();
+              }}
             >
-              {item.icon}
-              <span className="mt-1 truncate">{getLabel(item.key)}</span>
-            </Link>
-          ))}
+              <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-surface-secondary text-text-primary ring-1 ring-inset ring-border-light/70 dark:bg-white/6 dark:text-white/90 dark:ring-white/10">
+                <LogOut className="h-4 w-4" />
+              </span>
+              <span className="min-w-0 flex-1 truncate">{tCommon("logout")}</span>
+            </button>
+          </div>
         </div>
-      </nav>
+      </Drawer>
+
+      <UnifiedMessagesLauncher role="patient" showFloatingTrigger={false} />
     </div>
+  );
+}
+
+function DrawerItem({
+  href,
+  icon,
+  label,
+  active,
+  onNavigate,
+}: {
+  href: string;
+  icon: ReactNode;
+  label: string;
+  active: boolean;
+  onNavigate: () => void;
+}) {
+  return (
+    <Link
+      href={href}
+      onClick={onNavigate}
+      className={`flex items-center gap-3 rounded-2xl px-3 py-3 text-sm font-semibold transition ${
+        active
+          ? "bg-primary/10 text-primary dark:bg-white/10 dark:text-white"
+          : "text-text-secondary hover:bg-surface-tertiary hover:text-text-primary dark:text-white/90 dark:hover:bg-white/6 dark:hover:text-white"
+      }`}
+    >
+      <span
+        className={`inline-flex h-10 w-10 items-center justify-center rounded-2xl ring-1 ring-inset ${
+          active
+            ? "bg-white text-primary ring-primary/20 dark:bg-white/14 dark:text-white dark:ring-white/16"
+            : "bg-surface-secondary text-text-primary ring-border-light/70 dark:bg-white/6 dark:text-white/90 dark:ring-white/10"
+        }`}
+      >
+        {icon}
+      </span>
+      <span className="min-w-0 flex-1 truncate">{label}</span>
+    </Link>
   );
 }
 
@@ -202,19 +362,16 @@ type ShellLinkProps = {
   active: boolean;
   icon: ReactNode;
   label: string;
-  subtle?: boolean;
 };
 
-function ShellLink({ href, active, icon, label, subtle = false }: ShellLinkProps) {
+function ShellLink({ href, active, icon, label }: ShellLinkProps) {
   return (
     <Link
       href={href}
       className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition ${
         active
           ? "bg-primary-light text-primary shadow-sm dark:bg-primary/15 dark:text-primary-light"
-          : subtle
-            ? "text-text-secondary hover:bg-white/70 hover:text-text-primary dark:text-white/65 dark:hover:bg-white/5 dark:hover:text-white"
-            : "bg-surface-secondary text-text-secondary hover:bg-surface-tertiary hover:text-text-primary dark:bg-surface-secondary dark:text-text-secondary dark:hover:bg-surface-tertiary dark:hover:text-text-primary"
+          : "bg-surface-secondary text-text-secondary hover:bg-surface-tertiary hover:text-text-primary dark:bg-surface-secondary dark:text-text-secondary dark:hover:bg-surface-tertiary dark:hover:text-text-primary"
       }`}
     >
       {icon}

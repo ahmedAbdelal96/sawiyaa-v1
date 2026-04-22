@@ -1,4 +1,8 @@
-import { BadRequestException, ForbiddenException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+} from '@nestjs/common';
 import { AppRole } from '@common/enums/app-role.enum';
 import {
   ModerationCaseActionType,
@@ -66,7 +70,10 @@ export class ValidateModerationActionTransitionService {
     return { nextStatus };
   }
 
-  private validateAuthority(actorRoles: AppRole[], action: ModerationCaseActionType) {
+  private validateAuthority(
+    actorRoles: AppRole[],
+    action: ModerationCaseActionType,
+  ) {
     const allowed = actorRoles.some((role) => {
       if (
         role !== AppRole.ADMIN &&
@@ -91,40 +98,41 @@ export class ValidateModerationActionTransitionService {
     action: ModerationCaseActionType,
     targetType: ModerationReportTargetType,
   ) {
-    const matrix: Partial<Record<ModerationCaseActionType, ModerationReportTargetType[]>> =
-      {
-        [ModerationCaseActionType.PREPARE_ENFORCEMENT]: [
-          ModerationReportTargetType.CARE_CHAT_CONVERSATION,
-          ModerationReportTargetType.CARE_CHAT_MESSAGE,
-          ModerationReportTargetType.REVIEW,
-          ModerationReportTargetType.ARTICLE,
-          ModerationReportTargetType.SUPPORT_TICKET,
-          ModerationReportTargetType.SUPPORT_MESSAGE,
-        ],
-        [ModerationCaseActionType.ENFORCE_CARE_CHAT_REVOKE]: [
-          ModerationReportTargetType.CARE_CHAT_CONVERSATION,
-          ModerationReportTargetType.CARE_CHAT_MESSAGE,
-        ],
-        [ModerationCaseActionType.ENFORCE_CARE_CHAT_MESSAGE_HIDE]: [
-          ModerationReportTargetType.CARE_CHAT_MESSAGE,
-        ],
-        [ModerationCaseActionType.ENFORCE_REVIEW_HIDE]: [
-          ModerationReportTargetType.REVIEW,
-        ],
-        [ModerationCaseActionType.ENFORCE_REVIEW_REJECT]: [
-          ModerationReportTargetType.REVIEW,
-        ],
-        [ModerationCaseActionType.ENFORCE_REVIEW_RESTORE]: [
-          ModerationReportTargetType.REVIEW,
-        ],
-        [ModerationCaseActionType.ENFORCE_ARTICLE_ARCHIVE]: [
-          ModerationReportTargetType.ARTICLE,
-        ],
-        [ModerationCaseActionType.ENFORCE_SUPPORT_ESCALATE]: [
-          ModerationReportTargetType.SUPPORT_TICKET,
-          ModerationReportTargetType.SUPPORT_MESSAGE,
-        ],
-      };
+    const matrix: Partial<
+      Record<ModerationCaseActionType, ModerationReportTargetType[]>
+    > = {
+      [ModerationCaseActionType.PREPARE_ENFORCEMENT]: [
+        ModerationReportTargetType.CARE_CHAT_CONVERSATION,
+        ModerationReportTargetType.CARE_CHAT_MESSAGE,
+        ModerationReportTargetType.REVIEW,
+        ModerationReportTargetType.ARTICLE,
+        ModerationReportTargetType.SUPPORT_TICKET,
+        ModerationReportTargetType.SUPPORT_MESSAGE,
+      ],
+      [ModerationCaseActionType.ENFORCE_CARE_CHAT_REVOKE]: [
+        ModerationReportTargetType.CARE_CHAT_CONVERSATION,
+        ModerationReportTargetType.CARE_CHAT_MESSAGE,
+      ],
+      [ModerationCaseActionType.ENFORCE_CARE_CHAT_MESSAGE_HIDE]: [
+        ModerationReportTargetType.CARE_CHAT_MESSAGE,
+      ],
+      [ModerationCaseActionType.ENFORCE_REVIEW_HIDE]: [
+        ModerationReportTargetType.REVIEW,
+      ],
+      [ModerationCaseActionType.ENFORCE_REVIEW_REJECT]: [
+        ModerationReportTargetType.REVIEW,
+      ],
+      [ModerationCaseActionType.ENFORCE_REVIEW_RESTORE]: [
+        ModerationReportTargetType.REVIEW,
+      ],
+      [ModerationCaseActionType.ENFORCE_ARTICLE_ARCHIVE]: [
+        ModerationReportTargetType.ARTICLE,
+      ],
+      [ModerationCaseActionType.ENFORCE_SUPPORT_ESCALATE]: [
+        ModerationReportTargetType.SUPPORT_TICKET,
+        ModerationReportTargetType.SUPPORT_MESSAGE,
+      ],
+    };
 
     const supported = matrix[action];
     if (supported && !supported.includes(targetType)) {
@@ -135,7 +143,10 @@ export class ValidateModerationActionTransitionService {
     }
   }
 
-  private validateReason(action: ModerationCaseActionType, reason: string | null) {
+  private validateReason(
+    action: ModerationCaseActionType,
+    reason: string | null,
+  ) {
     const reasonRequiredActions: ModerationCaseActionType[] = [
       ModerationCaseActionType.PREPARE_ENFORCEMENT,
       ModerationCaseActionType.DISMISS_CASE,

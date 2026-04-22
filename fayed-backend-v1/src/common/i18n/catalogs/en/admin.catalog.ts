@@ -8,6 +8,7 @@ export const enAdminCatalog = {
         'Practitioner was created directly from admin successfully',
       applicationApproved: 'Practitioner application approved successfully',
       applicationRejected: 'Practitioner application rejected successfully',
+      changesRequested: 'Changes were requested successfully',
       practitionerAvatarUpdated: 'Practitioner avatar updated successfully',
       practitionerAvatarRemoved: 'Practitioner avatar removed successfully',
     },
@@ -37,6 +38,10 @@ export const enAdminCatalog = {
       rejectedTitle: 'Your practitioner application was rejected',
       rejectedBody:
         'Your practitioner application was rejected. Reason: {{reason}}',
+      changesRequestedTitle:
+        'Changes were requested for your practitioner application',
+      changesRequestedBody:
+        'Please update your application and resubmit. Reason: {{reason}}',
     },
   },
 };

@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { RefundStatus, RefundType } from '@prisma/client';
+import { RefundDestination, RefundStatus, RefundType } from '@prisma/client';
 
 export class RefundItemDto {
   @ApiProperty()
@@ -13,6 +13,9 @@ export class RefundItemDto {
 
   @ApiProperty({ enum: RefundType })
   refundType!: RefundType;
+
+  @ApiProperty({ enum: RefundDestination })
+  destination!: RefundDestination;
 
   @ApiProperty({ enum: RefundStatus })
   status!: RefundStatus;
@@ -37,6 +40,9 @@ export class RefundItemDto {
 
   @ApiProperty({ nullable: true })
   failedAt!: string | null;
+
+  @ApiProperty({ nullable: true })
+  customerWalletCreditedAt!: string | null;
 
   @ApiProperty()
   createdAt!: string;

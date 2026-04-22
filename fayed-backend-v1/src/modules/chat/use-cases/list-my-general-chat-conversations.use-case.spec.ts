@@ -7,14 +7,18 @@ describe('ListMyGeneralChatConversationsUseCase', () => {
     countUnreadMessagesForParticipant: jest.fn(),
   } as unknown as GeneralChatRepository;
 
-  const useCase = new ListMyGeneralChatConversationsUseCase(generalChatRepository);
+  const useCase = new ListMyGeneralChatConversationsUseCase(
+    generalChatRepository,
+  );
 
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
   it('returns participant-scoped list with deterministic pagination contract', async () => {
-    (generalChatRepository.listOwnedConversations as jest.Mock).mockResolvedValue([
+    (
+      generalChatRepository.listOwnedConversations as jest.Mock
+    ).mockResolvedValue([
       [
         {
           id: 'conv_2',
@@ -32,9 +36,9 @@ describe('ListMyGeneralChatConversationsUseCase', () => {
       ],
       1,
     ]);
-    (generalChatRepository.countUnreadMessagesForParticipant as jest.Mock).mockResolvedValue(
-      0,
-    );
+    (
+      generalChatRepository.countUnreadMessagesForParticipant as jest.Mock
+    ).mockResolvedValue(0);
 
     const result = await useCase.execute({
       authenticatedUser: { id: 'user_patient', roles: [] },
@@ -71,7 +75,9 @@ describe('ListMyGeneralChatConversationsUseCase', () => {
   });
 
   it('uses latest message timestamp for latest activity when message exists', async () => {
-    (generalChatRepository.listOwnedConversations as jest.Mock).mockResolvedValue([
+    (
+      generalChatRepository.listOwnedConversations as jest.Mock
+    ).mockResolvedValue([
       [
         {
           id: 'conv_1',
@@ -97,9 +103,9 @@ describe('ListMyGeneralChatConversationsUseCase', () => {
       ],
       1,
     ]);
-    (generalChatRepository.countUnreadMessagesForParticipant as jest.Mock).mockResolvedValue(
-      2,
-    );
+    (
+      generalChatRepository.countUnreadMessagesForParticipant as jest.Mock
+    ).mockResolvedValue(2);
 
     const result = await useCase.execute({
       authenticatedUser: { id: 'user_patient', roles: [] },

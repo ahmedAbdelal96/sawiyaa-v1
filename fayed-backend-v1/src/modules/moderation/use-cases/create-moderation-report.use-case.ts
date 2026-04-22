@@ -36,12 +36,13 @@ export class CreateModerationReportUseCase {
       input.currentUser,
     );
 
-    const accessibleTarget = await this.moderationRepository.findAccessibleTarget({
-      targetType: input.payload.targetType,
-      targetId: input.payload.targetId,
-      userId: input.currentUser.id,
-      reporterRole,
-    });
+    const accessibleTarget =
+      await this.moderationRepository.findAccessibleTarget({
+        targetType: input.payload.targetType,
+        targetId: input.payload.targetId,
+        userId: input.currentUser.id,
+        reporterRole,
+      });
     if (!accessibleTarget) {
       throw new NotFoundException({
         messageKey: 'moderation.errors.targetNotFoundOrNotAccessible',
@@ -90,4 +91,3 @@ export class CreateModerationReportUseCase {
     };
   }
 }
-

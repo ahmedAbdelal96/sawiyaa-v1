@@ -18,4 +18,3 @@ export class ListGeneralChatConversationsDto {
   @Max(50)
   limit: number = 20;
 }
-

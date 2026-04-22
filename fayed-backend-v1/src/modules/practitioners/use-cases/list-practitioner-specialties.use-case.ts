@@ -16,10 +16,7 @@ export class ListPractitionerSpecialtiesUseCase {
     private readonly specialtyRepository: SpecialtyRepository,
   ) {}
 
-  async execute(input: {
-    userId: string;
-    locale: SupportedLocale;
-  }) {
+  async execute(input: { userId: string; locale: SupportedLocale }) {
     const profile = await this.practitionerProfileRepository.findByUserId(
       input.userId,
     );
@@ -45,8 +42,9 @@ export class ListPractitionerSpecialtiesUseCase {
         specialtyId: link.specialtyId,
         slug: link.specialty.slug,
         title:
-          link.specialty.translations.find((item) => item.locale === input.locale)
-            ?.title ??
+          link.specialty.translations.find(
+            (item) => item.locale === input.locale,
+          )?.title ??
           link.specialty.translations.find((item) => item.locale === 'en')
             ?.title ??
           null,
@@ -55,4 +53,3 @@ export class ListPractitionerSpecialtiesUseCase {
     };
   }
 }
-

@@ -68,7 +68,10 @@ export class PractitionerAuthController {
     summary: 'Register a practitioner account with email and password',
   })
   @ApiBody({ type: PractitionerRegisterDto })
-  @ApiResponse({ status: 201, type: PractitionerRegistrationEnvelopeResponseDto })
+  @ApiResponse({
+    status: 201,
+    type: PractitionerRegistrationEnvelopeResponseDto,
+  })
   @ApiBadRequestResponse({ description: 'Validation failed' })
   @ApiForbiddenResponse({
     description: 'Registration is not allowed for this account state',

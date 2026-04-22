@@ -14,7 +14,9 @@ export class ListPractitionerPendingInstantBookingRequestsUseCase {
 
   async execute(input: { userId: string; locale: SupportedLocale }) {
     const practitioner =
-      await this.instantBookingPractitionerRepository.findByUserId(input.userId);
+      await this.instantBookingPractitionerRepository.findByUserId(
+        input.userId,
+      );
 
     if (!practitioner) {
       throw new NotFoundException({
@@ -35,7 +37,9 @@ export class ListPractitionerPendingInstantBookingRequestsUseCase {
       );
 
     return {
-      items: requests.map((request) => this.instantBookingMapper.toViewModel(request)),
+      items: requests.map((request) =>
+        this.instantBookingMapper.toViewModel(request),
+      ),
     };
   }
 }

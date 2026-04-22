@@ -49,5 +49,6 @@ import { SendCareChatMessageUseCase } from './use-cases/send-care-chat-message.u
     GetCareChatConversationUseCase,
     SendCareChatMessageUseCase,
   ],
+  exports: [CareChatConversationRepository, SendCareChatMessageUseCase],
 })
 export class CareChatModule {}

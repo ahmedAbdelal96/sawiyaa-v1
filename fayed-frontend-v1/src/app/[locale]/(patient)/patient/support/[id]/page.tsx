@@ -21,7 +21,7 @@ export default async function PatientSupportTicketPage({ params }: Props) {
   setRequestLocale(locale);
 
   return (
-    <div className="px-4 py-8">
+    <div className="px-4">
       <PatientSupportTicketScreen ticketId={id} />
     </div>
   );

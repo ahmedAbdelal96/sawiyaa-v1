@@ -15,8 +15,10 @@ import {
 import { ListStateSkeleton, StateCard } from "@/components/shared/ContentStates";
 import Button from "@/components/ui/button/Button";
 import { DestructiveConfirmModal } from "@/components/ui/modal";
+import { toAppError } from "@/lib/api/errors";
 import {
   useCancelPatientSession,
+  usePreviewPatientSessionCancellation,
   usePreparePatientSessionRuntime,
   usePatientSession,
   useResolvePatientSessionJoinContract,
@@ -31,6 +33,7 @@ import {
   hasSessionRuntimeAccess,
   isJoinWindowOpen,
 } from "../lib/session-runtime";
+import { dispatchOpenSessionChatInShell } from "@/features/messages-shell/lib/messages-shell-events";
 import SessionStatusBadge from "./SessionStatusBadge";
 import type {
   SessionJoinItem,
@@ -61,6 +64,13 @@ function formatDatetime(isoString: string | null, numLocale: string): string {
   });
 }
 
+function formatMoney(value: string, numLocale: string): string {
+  return new Intl.NumberFormat(numLocale, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(Number(value || "0"));
+}
+
 type Props = {
   sessionId: string;
 };
@@ -68,16 +78,21 @@ type Props = {
 export default function PatientSessionDetailPanel({ sessionId }: Props) {
   const t = useTranslations("sessions");
   const tPayments = useTranslations("payments");
-  const tCareChat = useTranslations("care-chat");
   const locale = useLocale();
   const numLocale = locale === "ar" ? "ar-SA" : "en-US";
 
   const { data: session, isLoading, isError } = usePatientSession(sessionId);
   const cancelMutation = useCancelPatientSession();
+  const previewCancellationMutation = usePreviewPatientSessionCancellation();
   const prepareMutation = usePreparePatientSessionRuntime();
   const joinMutation = useResolvePatientSessionJoinContract();
 
   const [confirmingCancel, setConfirmingCancel] = useState(false);
+  const [cancellationReasonDraft, setCancellationReasonDraft] = useState("");
+  const [cancelFeedbackKey, setCancelFeedbackKey] = useState<
+    "SUCCESS" | "NOT_ALLOWED" | "FAILED" | null
+  >(null);
+  const [cancelPreviewError, setCancelPreviewError] = useState(false);
   const [joinResult, setJoinResult] = useState<SessionJoinItem | null>(null);
   const [prepareResult, setPrepareResult] = useState<SessionRuntimeItem | null>(null);
 
@@ -146,6 +161,10 @@ export default function PatientSessionDetailPanel({ sessionId }: Props) {
       session.status === "IN_PROGRESS" ||
       runtimePrepared ||
       Boolean(joinResult));
+  const cancellationPreview = previewCancellationMutation.data;
+  const openInMessagesLabel = locale.startsWith("ar")
+    ? "فتح داخل الرسائل"
+    : "Open in messages";
 
   const liveFlowKey = !hasRuntimeAccess
     ? "unavailable"
@@ -161,10 +180,20 @@ export default function PatientSessionDetailPanel({ sessionId }: Props) {
 
   const handleCancel = async () => {
     try {
-      await cancelMutation.mutateAsync({ sessionId: session.id });
+      await cancelMutation.mutateAsync({
+        sessionId: session.id,
+        reason: cancellationReasonDraft.trim() || undefined,
+      });
+      setCancelFeedbackKey("SUCCESS");
+      setCancellationReasonDraft("");
       setConfirmingCancel(false);
-    } catch {
-      // Error is rendered inline below.
+    } catch (error) {
+      const appError = toAppError(error);
+      if (appError.code === "SESSION_CANCELLATION_NOT_ALLOWED_BY_POLICY") {
+        setCancelFeedbackKey("NOT_ALLOWED");
+      } else {
+        setCancelFeedbackKey("FAILED");
+      }
     }
   };
 
@@ -184,6 +213,17 @@ export default function PatientSessionDetailPanel({ sessionId }: Props) {
     } catch {
       setJoinResult(null);
     }
+  };
+
+  const openCancelModal = () => {
+    setConfirmingCancel(true);
+    previewCancellationMutation.reset();
+    setCancelPreviewError(false);
+    previewCancellationMutation.mutate(session.id, {
+      onError: () => {
+        setCancelPreviewError(true);
+      },
+    });
   };
 
   return (
@@ -475,35 +515,63 @@ export default function PatientSessionDetailPanel({ sessionId }: Props) {
 
       <div className="rounded-2xl border border-border-light bg-surface-primary p-5 dark:bg-white/5">
         <h3 className="mb-2 text-sm font-semibold text-text-primary dark:text-white/90">
-          {tCareChat("patient.home.eyebrow")}
+          {t("detail.chatCard.heading")}
         </h3>
-        <p className="text-sm text-text-secondary">
-          {tCareChat("common.boundaries.items.approvalOnly")}
-        </p>
-        <p className="mt-2 text-sm text-text-secondary">
-          {tCareChat("common.boundaries.items.noGeneralChat")}
-        </p>
+        {["READY_TO_JOIN", "IN_PROGRESS", "COMPLETED"].includes(session.status) ? (
+          <p className="text-sm text-text-secondary">{t("detail.chatCard.note")}</p>
+        ) : (
+          <p className="text-sm text-text-secondary">
+            {t("detail.chatCard.disabledNote")}
+          </p>
+        )}
         <div className="mt-4 flex flex-wrap gap-3">
-          <Link
-            href={
-              `/patient/care-chat?practitionerSlug=${encodeURIComponent(session.practitioner.slug)}&relatedSessionId=${encodeURIComponent(session.id)}` as never
-            }
-            className="inline-flex w-full items-center justify-center rounded-2xl border border-border-light px-5 py-2.5 text-sm font-medium text-text-primary transition hover:border-primary/30 hover:text-primary dark:text-white/90 dark:hover:text-primary-light sm:w-auto"
-          >
-            {tCareChat("patient.create.submit")}
-          </Link>
-          <Link
-            href="/patient/support"
-            className="inline-flex w-full items-center justify-center rounded-2xl px-5 py-2.5 text-sm font-medium text-primary hover:underline sm:w-auto"
-          >
-            {tCareChat("common.boundaries.supportCta")}
-          </Link>
+          {["READY_TO_JOIN", "IN_PROGRESS", "COMPLETED"].includes(session.status) ? (
+            <>
+              <button
+                type="button"
+                onClick={() => dispatchOpenSessionChatInShell({ sessionId: session.id })}
+                className="inline-flex w-full items-center justify-center rounded-2xl bg-primary px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-primary-hover sm:w-auto"
+              >
+                {openInMessagesLabel}
+              </button>
+              <Link
+                href={`/patient/sessions/${session.id}/chat` as never}
+                className="inline-flex w-full items-center justify-center rounded-2xl border border-border-light px-5 py-2.5 text-sm font-medium text-text-primary transition hover:border-primary/30 hover:text-primary dark:text-white/90 dark:hover:text-primary-light sm:w-auto"
+              >
+                {t("detail.chatCard.open")}
+              </Link>
+            </>
+          ) : (
+            <button
+              type="button"
+              disabled
+              className="inline-flex w-full cursor-not-allowed items-center justify-center rounded-2xl border border-border-light px-5 py-2.5 text-sm font-medium text-text-muted opacity-70 sm:w-auto"
+            >
+              {t("detail.chatCard.open")}
+            </button>
+          )}
         </div>
       </div>
 
+      {cancelFeedbackKey === "SUCCESS" ? (
+        <div className="rounded-2xl border border-success-200 bg-success-50 px-4 py-3 text-sm text-success-700 dark:border-success-500/30 dark:bg-success-500/10 dark:text-success-300">
+          {t("detail.cancelResult.success")}
+        </div>
+      ) : null}
+      {cancelFeedbackKey === "NOT_ALLOWED" ? (
+        <div className="rounded-2xl border border-warning-200 bg-warning-50 px-4 py-3 text-sm text-warning-800 dark:border-warning-500/30 dark:bg-warning-500/10 dark:text-warning-300">
+          {t("detail.cancelResult.notAllowedByPolicy")}
+        </div>
+      ) : null}
+      {cancelFeedbackKey === "FAILED" ? (
+        <div className="rounded-2xl border border-danger-200 bg-danger-50 px-4 py-3 text-sm text-danger-700 dark:border-danger-500/30 dark:bg-danger-500/10 dark:text-danger-300">
+          {t("detail.cancelResult.failed")}
+        </div>
+      ) : null}
+
       {isCancellable && (
         <div className="rounded-2xl border border-border-light bg-surface-primary p-5 dark:bg-white/5">
-          <Button variant="outline" size="sm" onClick={() => setConfirmingCancel(true)}>
+          <Button variant="outline" size="sm" onClick={openCancelModal}>
             {t("detail.cancelAction")}
           </Button>
           {cancelMutation.isError && (
@@ -528,6 +596,9 @@ export default function PatientSessionDetailPanel({ sessionId }: Props) {
         onClose={() => {
           setConfirmingCancel(false);
           cancelMutation.reset();
+          previewCancellationMutation.reset();
+          setCancelPreviewError(false);
+          setCancellationReasonDraft("");
         }}
         size="sm"
         title={t("detail.cancelConfirm.heading")}
@@ -543,8 +614,13 @@ export default function PatientSessionDetailPanel({ sessionId }: Props) {
           )
         }
         cancelLabel={t("detail.cancelConfirm.back")}
-        onConfirm={handleCancel}
-        loading={cancelMutation.isPending}
+        onConfirm={() => {
+          if (!cancellationPreview?.canCancelNow) {
+            return;
+          }
+          void handleCancel();
+        }}
+        loading={cancelMutation.isPending || previewCancellationMutation.isPending}
       >
         <div className="rounded-2xl border border-warning-200 bg-warning-50 px-4 py-4 text-sm text-warning-800 dark:border-warning-500/20 dark:bg-warning-500/10 dark:text-warning-300">
           <p className="font-medium">
@@ -555,6 +631,105 @@ export default function PatientSessionDetailPanel({ sessionId }: Props) {
               ? formatDatetime(session.scheduledStartAt, numLocale)
               : t("detail.notScheduled")}
           </p>
+        </div>
+        <div className="mt-3 rounded-2xl border border-border-light bg-surface-secondary px-4 py-3 text-sm text-text-secondary dark:bg-white/5">
+          <p className="font-medium text-text-primary dark:text-white/90">
+            {t("detail.cancelConfirm.policyHeading")}
+          </p>
+          <p className="mt-1">{t("detail.cancelConfirm.policyNote")}</p>
+        </div>
+        <div className="mt-3 rounded-2xl border border-border-light bg-surface-secondary px-4 py-3 text-sm text-text-secondary dark:bg-white/5">
+          <p className="font-medium text-text-primary dark:text-white/90">
+            {t("detail.cancelConfirm.previewHeading")}
+          </p>
+          {previewCancellationMutation.isPending ? (
+            <p className="mt-2 inline-flex items-center gap-2 text-sm">
+              <Loader2 size={14} className="animate-spin" />
+              {t("detail.cancelConfirm.previewLoading")}
+            </p>
+          ) : cancelPreviewError || !cancellationPreview ? (
+            <p className="mt-2 text-sm text-danger-700 dark:text-danger-300">
+              {t("detail.cancelConfirm.previewLoadFailed")}
+            </p>
+          ) : (
+            <div className="mt-2 space-y-2">
+              <p className="text-sm text-text-primary dark:text-white/90">
+                {t(
+                  `detail.cancelConfirm.outcomes.${cancellationPreview.outcomeType}` as Parameters<
+                    typeof t
+                  >[0],
+                )}
+              </p>
+              <div className="grid gap-2 text-xs sm:grid-cols-2">
+                <div className="rounded-xl border border-border-light bg-surface-primary px-3 py-2 dark:bg-white/5">
+                  <p className="text-text-muted">{t("detail.cancelConfirm.fields.refundPercent")}</p>
+                  <p className="mt-1 font-semibold text-text-primary dark:text-white/90">
+                    {cancellationPreview.refundPercent
+                      ? `${cancellationPreview.refundPercent}%`
+                      : "-"}
+                  </p>
+                </div>
+                <div className="rounded-xl border border-border-light bg-surface-primary px-3 py-2 dark:bg-white/5">
+                  <p className="text-text-muted">{t("detail.cancelConfirm.fields.refundDestination")}</p>
+                  <p className="mt-1 font-semibold text-text-primary dark:text-white/90">
+                    {cancellationPreview.refundDestination
+                      ? t(
+                          `detail.cancelConfirm.destinations.${cancellationPreview.refundDestination}` as Parameters<
+                            typeof t
+                          >[0],
+                        )
+                      : "-"}
+                  </p>
+                </div>
+                <div className="rounded-xl border border-border-light bg-surface-primary px-3 py-2 dark:bg-white/5">
+                  <p className="text-text-muted">
+                    {t("detail.cancelConfirm.fields.reservationReleaseAmount")}
+                  </p>
+                  <p className="mt-1 font-semibold text-text-primary dark:text-white/90">
+                    {formatMoney(cancellationPreview.reservationReleaseAmount, numLocale)}
+                  </p>
+                </div>
+                <div className="rounded-xl border border-border-light bg-surface-primary px-3 py-2 dark:bg-white/5">
+                  <p className="text-text-muted">{t("detail.cancelConfirm.fields.refundAmount")}</p>
+                  <p className="mt-1 font-semibold text-text-primary dark:text-white/90">
+                    {formatMoney(cancellationPreview.refundAmount, numLocale)}
+                  </p>
+                </div>
+                <div className="rounded-xl border border-border-light bg-surface-primary px-3 py-2 dark:bg-white/5">
+                  <p className="text-text-muted">{t("detail.cancelConfirm.fields.walletCreditAmount")}</p>
+                  <p className="mt-1 font-semibold text-text-primary dark:text-white/90">
+                    {formatMoney(cancellationPreview.walletCreditAmount, numLocale)}
+                  </p>
+                </div>
+                <div className="rounded-xl border border-border-light bg-surface-primary px-3 py-2 dark:bg-white/5">
+                  <p className="text-text-muted">{t("detail.cancelConfirm.fields.noRefund")}</p>
+                  <p className="mt-1 font-semibold text-text-primary dark:text-white/90">
+                    {cancellationPreview.outcomeType === "NO_REFUND"
+                      ? t("detail.cancelConfirm.yes")
+                      : t("detail.cancelConfirm.no")}
+                  </p>
+                </div>
+              </div>
+              {!cancellationPreview.canCancelNow ? (
+                <p className="text-xs text-warning-800 dark:text-warning-300">
+                  {t("detail.cancelConfirm.cannotProceed")}
+                </p>
+              ) : null}
+            </div>
+          )}
+        </div>
+        <div className="mt-3">
+          <label className="block text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
+            {t("detail.cancelConfirm.reasonLabel")}
+          </label>
+          <textarea
+            value={cancellationReasonDraft}
+            onChange={(event) => setCancellationReasonDraft(event.target.value)}
+            maxLength={500}
+            rows={3}
+            className="app-control mt-2 w-full resize-none px-3 py-2.5"
+            placeholder={t("detail.cancelConfirm.reasonPlaceholder")}
+          />
         </div>
       </DestructiveConfirmModal>
     </div>

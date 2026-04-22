@@ -2,6 +2,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import {
   ConversationParticipantRole,
   MessageType,
+  MessageStatus,
   ModerationCaseStatus,
   ModerationReportReason,
   ModerationReportTargetType,
@@ -70,8 +71,7 @@ export class GeneralChatConversationListItemDto {
   lastReadAt!: string | null;
 }
 
-export class GeneralChatConversationDetailItemDto
-  extends GeneralChatConversationListItemDto {
+export class GeneralChatConversationDetailItemDto extends GeneralChatConversationListItemDto {
   @ApiProperty()
   hasMessages!: boolean;
 }
@@ -133,11 +133,20 @@ export class GeneralChatMessageItemDto {
   @ApiProperty({ enum: MessageType })
   messageType!: MessageType;
 
+  @ApiProperty({ enum: MessageStatus })
+  status!: MessageStatus;
+
   @ApiProperty({ nullable: true })
   contentText!: string | null;
 
   @ApiProperty()
   sentAt!: string;
+
+  @ApiProperty({ nullable: true })
+  deliveredAt!: string | null;
+
+  @ApiProperty({ nullable: true })
+  readAt!: string | null;
 
   @ApiProperty({ type: GeneralChatMessageAttachmentDto, isArray: true })
   attachments!: GeneralChatMessageAttachmentDto[];
@@ -149,6 +158,14 @@ export class GeneralChatMessageItemDto {
 export class GeneralChatMessageDataDto {
   @ApiProperty({ type: GeneralChatMessageItemDto })
   item!: GeneralChatMessageItemDto;
+}
+
+export class GeneralChatMessageListDataDto {
+  @ApiProperty({ type: GeneralChatMessageItemDto, isArray: true })
+  items!: GeneralChatMessageItemDto[];
+
+  @ApiProperty({ type: GeneralChatPaginationDto })
+  pagination!: GeneralChatPaginationDto;
 }
 
 export class GeneralChatConversationReadStateItemDto {
@@ -197,6 +214,14 @@ export class GeneralChatMessageSuccessResponseDto {
   data!: GeneralChatMessageDataDto;
 }
 
+export class GeneralChatMessageListSuccessResponseDto {
+  @ApiProperty({ example: true })
+  success!: true;
+
+  @ApiProperty({ type: GeneralChatMessageListDataDto })
+  data!: GeneralChatMessageListDataDto;
+}
+
 export class GeneralChatConversationReadStateSuccessResponseDto {
   @ApiProperty({ example: true })
   success!: true;
@@ -236,4 +261,42 @@ export class GeneralChatModerationReportSuccessResponseDto {
 
   @ApiProperty({ type: GeneralChatModerationReportDataDto })
   data!: GeneralChatModerationReportDataDto;
+}
+
+export class UnifiedMessagingUnreadLaneDto {
+  @ApiProperty()
+  unreadMessages!: number;
+
+  @ApiProperty()
+  unreadConversations!: number;
+}
+
+export class UnifiedMessagingUnreadSummaryItemDto {
+  @ApiProperty({ type: UnifiedMessagingUnreadLaneDto })
+  session!: UnifiedMessagingUnreadLaneDto;
+
+  @ApiProperty({ type: UnifiedMessagingUnreadLaneDto })
+  support!: UnifiedMessagingUnreadLaneDto;
+
+  @ApiProperty({ type: UnifiedMessagingUnreadLaneDto })
+  practitioner!: UnifiedMessagingUnreadLaneDto;
+
+  @ApiProperty()
+  totalUnreadMessages!: number;
+
+  @ApiProperty()
+  totalUnreadConversations!: number;
+}
+
+export class UnifiedMessagingUnreadSummaryDataDto {
+  @ApiProperty({ type: UnifiedMessagingUnreadSummaryItemDto })
+  item!: UnifiedMessagingUnreadSummaryItemDto;
+}
+
+export class UnifiedMessagingUnreadSummarySuccessResponseDto {
+  @ApiProperty({ example: true })
+  success!: true;
+
+  @ApiProperty({ type: UnifiedMessagingUnreadSummaryDataDto })
+  data!: UnifiedMessagingUnreadSummaryDataDto;
 }

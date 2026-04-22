@@ -2,10 +2,11 @@
 
 import { useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import { ArrowRight, Loader2, MessageSquareText } from "lucide-react";
+import { Loader2, MessageSquareText } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { ListStateSkeleton, StateCard } from "@/components/shared/ContentStates";
 import { SurfaceCard } from "@/components/shared/SurfaceShell";
+import DirectionalArrowIcon from "@/components/ui/navigation/DirectionalArrowIcon";
 import { toAppError } from "@/lib/api/errors";
 import {
   useAdminCareChatRequest,
@@ -75,7 +76,7 @@ export default function AdminCareChatRequestScreen({ requestId }: Props) {
           href="/admin/care-chat"
           className="mb-3 inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline"
         >
-          <ArrowRight className="h-4 w-4 rtl:rotate-180" />
+          <DirectionalArrowIcon direction="back" className="h-4 w-4" />
           {t("common.actions.backToRequests")}
         </Link>
         <div className="flex flex-wrap items-start justify-between gap-4">

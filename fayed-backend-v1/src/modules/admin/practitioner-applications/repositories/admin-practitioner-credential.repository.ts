@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { CredentialReviewStatus, CredentialType, Prisma } from '@prisma/client';
 import { PrismaService } from '@common/prisma/prisma.service';
 
 type DbClient = PrismaService | Prisma.TransactionClient;
@@ -30,6 +30,109 @@ export class AdminPractitionerCredentialRepository {
         reviewNotes: true,
         expiresAt: true,
         createdAt: true,
+      },
+    });
+  }
+
+  findById(id: string, tx?: Prisma.TransactionClient) {
+    return this.getDb(tx).practitionerCredential.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        practitionerId: true,
+        credentialType: true,
+        fileUrl: true,
+        reviewStatus: true,
+        reviewedAt: true,
+        reviewedByUserId: true,
+        reviewNotes: true,
+        expiresAt: true,
+        createdAt: true,
+      },
+    });
+  }
+
+  create(
+    data: {
+      practitionerId: string;
+      credentialType: CredentialType;
+      fileUrl: string;
+      reviewStatus?: CredentialReviewStatus;
+      reviewedAt?: Date | null;
+      reviewedByUserId?: string | null;
+      reviewNotes?: string | null;
+      expiresAt?: Date | null;
+    },
+    tx?: Prisma.TransactionClient,
+  ) {
+    return this.getDb(tx).practitionerCredential.create({
+      data: {
+        practitionerId: data.practitionerId,
+        credentialType: data.credentialType,
+        fileUrl: data.fileUrl,
+        reviewStatus: data.reviewStatus,
+        reviewedAt: data.reviewedAt ?? null,
+        reviewedByUserId: data.reviewedByUserId ?? null,
+        reviewNotes: data.reviewNotes ?? null,
+        expiresAt: data.expiresAt ?? null,
+      },
+      select: {
+        id: true,
+        credentialType: true,
+        fileUrl: true,
+        reviewStatus: true,
+        reviewedAt: true,
+        reviewedByUserId: true,
+        reviewNotes: true,
+        expiresAt: true,
+        createdAt: true,
+      },
+    });
+  }
+
+  update(
+    id: string,
+    data: {
+      credentialType?: CredentialType;
+      fileUrl?: string;
+      reviewStatus?: CredentialReviewStatus;
+      reviewedAt?: Date | null;
+      reviewedByUserId?: string | null;
+      reviewNotes?: string | null;
+      expiresAt?: Date | null;
+    },
+    tx?: Prisma.TransactionClient,
+  ) {
+    return this.getDb(tx).practitionerCredential.update({
+      where: { id },
+      data: {
+        credentialType: data.credentialType,
+        fileUrl: data.fileUrl,
+        reviewStatus: data.reviewStatus,
+        reviewedAt: data.reviewedAt,
+        reviewedByUserId: data.reviewedByUserId,
+        reviewNotes: data.reviewNotes,
+        expiresAt: data.expiresAt,
+      },
+      select: {
+        id: true,
+        credentialType: true,
+        fileUrl: true,
+        reviewStatus: true,
+        reviewedAt: true,
+        reviewedByUserId: true,
+        reviewNotes: true,
+        expiresAt: true,
+        createdAt: true,
+      },
+    });
+  }
+
+  delete(id: string, tx?: Prisma.TransactionClient) {
+    return this.getDb(tx).practitionerCredential.delete({
+      where: { id },
+      select: {
+        id: true,
       },
     });
   }

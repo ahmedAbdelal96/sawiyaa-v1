@@ -54,6 +54,7 @@ export default function PractitionerShell({ children }: PractitionerShellProps) 
         navigation={navigation}
         basePathPrefix="/practitioner"
         layoutVariant="practitioner"
+        messagingRole="practitioner"
       >
         <div className="rounded-2xl border border-border-light bg-surface-primary p-6 dark:bg-white/5">
           <p className="text-sm text-text-secondary">
@@ -69,6 +70,7 @@ export default function PractitionerShell({ children }: PractitionerShellProps) 
       navigation={navigation}
       basePathPrefix="/practitioner"
       layoutVariant="practitioner"
+      messagingRole="practitioner"
     >
       {children}
     </DashboardLayout>

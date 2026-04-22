@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+
+<html dir="rtl" lang="ar"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Clinical Sanctuary - Assessments</title>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Manrope:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Design System Configuration -->
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "secondary": "#4f5f7b",
+                        "primary": "#0b5cac",
+                        "tertiary-container": "#a86500",
+                        "secondary-fixed": "#d6e3ff",
+                        "inverse-on-surface": "#eff1f6",
+                        "error-container": "#ffdad6",
+                        "error": "#ba1a1a",
+                        "primary-container": "#3575c7",
+                        "on-secondary-container": "#51617e",
+                        "on-tertiary-fixed-variant": "#683d00",
+                        "tertiary": "#854f00",
+                        "surface-container-lowest": "#ffffff",
+                        "on-primary-container": "#fefcff",
+                        "on-primary": "#ffffff",
+                        "inverse-surface": "#2d3135",
+                        "on-tertiary": "#ffffff",
+                        "surface-variant": "#e0e2e7",
+                        "on-primary-fixed": "#001b3c",
+                        "primary-fixed": "#d5e3ff",
+                        "on-tertiary-container": "#fffbff",
+                        "tertiary-fixed": "#ffdcbc",
+                        "surface": "#f7f9fe",
+                        "on-surface": "#181c20",
+                        "on-primary-fixed-variant": "#004689",
+                        "on-secondary-fixed": "#0a1c34",
+                        "on-background": "#181c20",
+                        "surface-dim": "#d8dadf",
+                        "secondary-container": "#cdddff",
+                        "surface-bright": "#f7f9fe",
+                        "surface-container-low": "#f1f4f9",
+                        "surface-container-high": "#e6e8ed",
+                        "outline-variant": "#c2c6d3",
+                        "surface-container-highest": "#e0e2e7",
+                        "on-error": "#ffffff",
+                        "background": "#f7f9fe",
+                        "secondary-fixed-dim": "#b7c7e8",
+                        "inverse-primary": "#a7c8ff",
+                        "on-secondary": "#ffffff",
+                        "surface-container": "#eceef3",
+                        "tertiary-fixed-dim": "#ffb86b",
+                        "on-error-container": "#93000a",
+                        "on-tertiary-fixed": "#2c1700",
+                        "primary-fixed-dim": "#a7c8ff",
+                        "outline": "#727783",
+                        "surface-tint": "#125eae",
+                        "on-surface-variant": "#424751",
+                        "on-secondary-fixed-variant": "#374762"
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    fontFamily: {
+                        "headline": ["Manrope", "sans-serif"],
+                        "body": ["Inter", "sans-serif"],
+                        "label": ["Inter", "sans-serif"]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-family: 'Material Symbols Outlined';
+            font-weight: normal;
+            font-style: normal;
+            font-size: 24px;
+            line-height: 1;
+            letter-spacing: normal;
+            text-transform: none;
+            display: inline-block;
+            white-space: nowrap;
+            word-wrap: normal;
+            direction: ltr;
+            -webkit-font-smoothing: antialiased;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface text-on-surface font-body min-h-screen selection:bg-primary-container selection:text-on-primary-container pb-24 md:pb-8">
+<!-- TopAppBar -->
+<header class="sticky top-0 w-full z-50 bg-[#f7f9fe]/85 dark:bg-slate-900/85 backdrop-blur-xl border-b border-[#c2c6d3]/20 shadow-[0_4px_20px_rgba(24,28,32,0.05)] flex items-center justify-between px-6 py-4 rtl:flex-row-reverse">
+<div class="flex items-center gap-4 rtl:flex-row-reverse">
+<!-- Leading Avatar -->
+<div class="w-10 h-10 rounded-full overflow-hidden bg-surface-container-high ring-2 ring-primary/10">
+<img alt="User Profile" class="w-full h-full object-cover" data-alt="Close up professional portrait of a calm adult in a softly lit clinical setting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDMx2CD0cpwQjaNvSsYzC10b7tkC6f6RoCXtFjdUkhrjTDMXWmmyCp_knjrq6xx4lTqKI_ARm-23rVeRrPLkWvwiyJKDXiYw3D1obIaEQWbMj-kT6VQP7l2zMXZohXTnGdyeybwOHX5UTaVMV75hZfZLy18DwJfLI91ulYeTvEcPpN_SgzahNateNuHkOEcn7FhRsHyJ97a_cxDuJAqrYPuywGwQ8rwtLCoUPPOzwLqsjdIj-vpqmRLde2RU-FjgnqoE3jbLxq8sxK2"/>
+</div>
+<!-- Headline -->
+<h1 class="text-xl font-bold text-[#181c20] dark:text-slate-100 tracking-tighter font-['Manrope']">Clinical Sanctuary</h1>
+</div>
+<!-- Trailing Icon -->
+<button class="w-10 h-10 flex items-center justify-center rounded-full text-[#0b5cac] dark:text-[#3f7dcf] hover:bg-[#f1f4f9] dark:hover:bg-slate-800 transition-colors active:scale-95 duration-200 ease-in-out">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">notifications</span>
+</button>
+</header>
+<!-- Main Canvas -->
+<main class="max-w-4xl mx-auto px-4 sm:px-6 py-8">
+<!-- Asymmetric Editorial Header -->
+<div class="relative bg-surface-container-low rounded-[1.5rem] p-6 sm:p-8 mb-10 overflow-hidden isolate">
+<!-- Decorative Background Element -->
+<div class="absolute top-0 start-0 w-full h-full bg-gradient-to-br from-primary/5 to-transparent -z-10 rounded-[1.5rem]"></div>
+<div class="absolute -top-24 -end-24 w-64 h-64 bg-primary-fixed/30 rounded-full blur-3xl -z-10"></div>
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-6">
+<div class="space-y-3 max-w-xl">
+<h2 class="text-3xl sm:text-4xl font-headline font-extrabold text-on-surface tracking-tight leading-tight">التقييمات السريرية</h2>
+<p class="text-on-surface-variant font-body leading-relaxed text-base sm:text-lg">
+                        أدوات قياس معتمدة لمراقبة تقدمك النفسي وتوفير بيانات دقيقة لفريق الرعاية الخاص بك.
+                    </p>
+</div>
+<div class="flex gap-4 items-center">
+<div class="flex flex-col text-center bg-surface-container-lowest px-4 py-3 rounded-xl ring-1 ring-outline-variant/20 shadow-sm">
+<span class="text-2xl font-headline font-bold text-primary">2</span>
+<span class="text-xs font-label text-on-surface-variant uppercase tracking-wider">متبقي</span>
+</div>
+<div class="flex flex-col text-center bg-surface-container-lowest px-4 py-3 rounded-xl ring-1 ring-outline-variant/20 shadow-sm">
+<span class="text-2xl font-headline font-bold text-tertiary">1</span>
+<span class="text-xs font-label text-on-surface-variant uppercase tracking-wider">قيد الإجراء</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Filter/Tabs (Stylistic) -->
+<div class="flex items-center gap-3 mb-6 overflow-x-auto pb-2 scrollbar-hide">
+<button class="whitespace-nowrap px-4 py-2 rounded-full bg-surface-container-lowest ring-1 ring-outline-variant/20 text-on-surface-variant text-sm font-label font-medium hover:bg-surface-container-low transition-colors">
+                الكل
+            </button>
+<button class="whitespace-nowrap px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-label font-medium ring-1 ring-primary/20">
+                المطلوبة حالياً
+            </button>
+<button class="whitespace-nowrap px-4 py-2 rounded-full bg-surface-container-lowest ring-1 ring-outline-variant/20 text-on-surface-variant text-sm font-label font-medium hover:bg-surface-container-low transition-colors">
+                السجل السابق
+            </button>
+</div>
+<!-- Assessment List (Bento-ish Stack with Pulse Indicators) -->
+<div class="space-y-4">
+<!-- Card 1: In Progress (Tertiary Focus) -->
+<article class="relative bg-surface-container-lowest rounded-xl p-5 ring-1 ring-outline-variant/20 shadow-[0_4px_20px_rgba(24,28,32,0.03)] transition-all hover:shadow-[0_8px_30px_rgba(24,28,32,0.06)] group overflow-hidden">
+<!-- Pulse Indicator -->
+<div class="absolute top-0 bottom-0 start-0 w-1.5 bg-tertiary"></div>
+<div class="flex flex-col sm:flex-row sm:items-center gap-5 ms-3">
+<div class="flex-1 space-y-2.5">
+<div class="flex justify-between items-start sm:hidden mb-2">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-tertiary-fixed text-on-tertiary-fixed-variant text-xs font-label font-semibold tracking-wide">
+<span class="material-symbols-outlined text-[14px]">pending</span>
+                                قيد الإجراء
+                            </span>
+</div>
+<h3 class="text-xl font-headline font-bold text-on-surface" dir="ltr" style="text-align: right;">PHQ-9</h3>
+<p class="text-sm text-on-surface-variant font-body leading-relaxed max-w-2xl">
+                            استبيان صحة المريض. يُستخدم لفحص وتشخيص ومراقبة وقياس شدة الاكتئاب.
+                        </p>
+<div class="flex items-center gap-5 pt-1">
+<div class="flex items-center gap-1.5 text-xs font-label font-medium text-on-surface-variant">
+<span class="material-symbols-outlined text-[16px] text-outline">schedule</span>
+<span>5 دقائق</span>
+</div>
+<div class="flex items-center gap-1.5 text-xs font-label font-medium text-on-surface-variant">
+<span class="material-symbols-outlined text-[16px] text-outline">format_list_bulleted</span>
+<span>9 أسئلة</span>
+</div>
+</div>
+</div>
+<div class="hidden sm:flex flex-col items-end gap-3 min-w-[140px]">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-tertiary-container/10 text-tertiary text-xs font-label font-semibold tracking-wide">
+<span class="material-symbols-outlined text-[16px]">pending</span>
+                            قيد الإجراء
+                        </span>
+<button class="w-full px-5 py-2.5 rounded-lg bg-gradient-to-br from-tertiary to-tertiary-container text-on-tertiary font-label font-medium text-sm hover:opacity-90 transition-opacity active:scale-95 shadow-sm text-center">
+                            متابعة
+                        </button>
+</div>
+<div class="sm:hidden w-full mt-2">
+<button class="w-full px-4 py-2.5 rounded-lg bg-gradient-to-br from-tertiary to-tertiary-container text-on-tertiary font-label font-medium text-sm hover:opacity-90 transition-opacity active:scale-95 shadow-sm text-center">
+                            متابعة (Resume)
+                        </button>
+</div>
+</div>
+</article>
+<!-- Card 2: Not Started (Primary Action Needed) -->
+<article class="relative bg-surface-container-lowest rounded-xl p-5 ring-1 ring-outline-variant/20 shadow-[0_4px_20px_rgba(24,28,32,0.03)] transition-all hover:shadow-[0_8px_30px_rgba(24,28,32,0.06)] group overflow-hidden">
+<!-- Pulse Indicator -->
+<div class="absolute top-0 bottom-0 start-0 w-1.5 bg-outline-variant/50"></div>
+<div class="flex flex-col sm:flex-row sm:items-center gap-5 ms-3">
+<div class="flex-1 space-y-2.5">
+<div class="flex justify-between items-start sm:hidden mb-2">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-surface-variant text-on-surface-variant text-xs font-label font-semibold tracking-wide">
+<span class="material-symbols-outlined text-[14px]">radio_button_unchecked</span>
+                                لم يبدأ
+                            </span>
+</div>
+<h3 class="text-xl font-headline font-bold text-on-surface" dir="ltr" style="text-align: right;">GAD-7</h3>
+<p class="text-sm text-on-surface-variant font-body leading-relaxed max-w-2xl">
+                            مقياس اضطراب القلق العام. أداة فحص أولية موثوقة لقياس شدة أعراض القلق.
+                        </p>
+<div class="flex items-center gap-5 pt-1">
+<div class="flex items-center gap-1.5 text-xs font-label font-medium text-on-surface-variant">
+<span class="material-symbols-outlined text-[16px] text-outline">schedule</span>
+<span>3 دقائق</span>
+</div>
+<div class="flex items-center gap-1.5 text-xs font-label font-medium text-on-surface-variant">
+<span class="material-symbols-outlined text-[16px] text-outline">format_list_bulleted</span>
+<span>7 أسئلة</span>
+</div>
+</div>
+</div>
+<div class="hidden sm:flex flex-col items-end gap-3 min-w-[140px]">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-surface-container text-on-surface-variant text-xs font-label font-semibold tracking-wide">
+<span class="material-symbols-outlined text-[16px]">radio_button_unchecked</span>
+                            لم يبدأ
+                        </span>
+<button class="w-full px-5 py-2.5 rounded-lg bg-gradient-to-br from-primary to-primary-container text-on-primary font-label font-medium text-sm hover:opacity-90 transition-opacity active:scale-95 shadow-sm text-center">
+                            بدء التقييم
+                        </button>
+</div>
+<div class="sm:hidden w-full mt-2">
+<button class="w-full px-4 py-2.5 rounded-lg bg-gradient-to-br from-primary to-primary-container text-on-primary font-label font-medium text-sm hover:opacity-90 transition-opacity active:scale-95 shadow-sm text-center">
+                            بدء التقييم
+                        </button>
+</div>
+</div>
+</article>
+<!-- Card 3: Completed (Trust/Primary Focus) -->
+<article class="relative bg-surface-container-lowest rounded-xl p-5 ring-1 ring-outline-variant/20 shadow-[0_4px_20px_rgba(24,28,32,0.03)] transition-all hover:shadow-[0_8px_30px_rgba(24,28,32,0.06)] opacity-85 hover:opacity-100 group overflow-hidden">
+<!-- Pulse Indicator -->
+<div class="absolute top-0 bottom-0 start-0 w-1.5 bg-primary"></div>
+<div class="flex flex-col sm:flex-row sm:items-center gap-5 ms-3">
+<div class="flex-1 space-y-2.5">
+<div class="flex justify-between items-start sm:hidden mb-2">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-primary-fixed/30 text-primary text-xs font-label font-semibold tracking-wide">
+<span class="material-symbols-outlined text-[14px]">check_circle</span>
+                                مكتمل
+                            </span>
+</div>
+<h3 class="text-xl font-headline font-bold text-on-surface" dir="ltr" style="text-align: right;">PCL-5</h3>
+<p class="text-sm text-on-surface-variant font-body leading-relaxed max-w-2xl">
+                            قائمة تدقيق أعراض اضطراب ما بعد الصدمة. لتقييم الأعراض المرتبطة بأحداث الحياة الضاغطة.
+                        </p>
+<div class="flex items-center gap-5 pt-1">
+<div class="flex items-center gap-1.5 text-xs font-label font-medium text-on-surface-variant">
+<span class="material-symbols-outlined text-[16px] text-outline">event_available</span>
+<span>أُنجز في ١٢ أكتوبر</span>
+</div>
+</div>
+</div>
+<div class="hidden sm:flex flex-col items-end gap-3 min-w-[140px]">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-primary-fixed/20 text-on-primary-fixed-variant text-xs font-label font-semibold tracking-wide">
+<span class="material-symbols-outlined text-[16px]">check_circle</span>
+                            مكتمل
+                        </span>
+<button class="w-full px-5 py-2.5 rounded-lg bg-surface-container-high text-on-primary-fixed-variant font-label font-medium text-sm hover:bg-surface-variant transition-colors active:scale-95 text-center">
+                            عرض النتائج
+                        </button>
+</div>
+<div class="sm:hidden w-full mt-2">
+<button class="w-full px-4 py-2.5 rounded-lg bg-surface-container-high text-on-primary-fixed-variant font-label font-medium text-sm hover:bg-surface-variant transition-colors active:scale-95 text-center">
+                            عرض النتائج
+                        </button>
+</div>
+</div>
+</article>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="md:hidden fixed bottom-0 w-full z-50 rounded-t-3xl bg-[#ffffff]/85 dark:bg-slate-900/85 backdrop-blur-2xl border-t border-[#c2c6d3]/10 shadow-[0_-8px_40px_rgba(24,28,32,0.08)] flex justify-around items-center px-4 py-3 rtl:flex-row-reverse">
+<!-- Home -->
+<a class="flex flex-col items-center justify-center text-[#c2c6d3] dark:text-slate-500 gap-1 hover:text-[#0b5cac] transition-all active:scale-90 w-16" href="#">
+<span class="material-symbols-outlined text-[24px]" style="font-variation-settings: 'FILL' 0;">home</span>
+<span class="text-[11px] font-medium font-['Inter'] tracking-wide uppercase">Home</span>
+</a>
+<!-- Assessments (ACTIVE) -->
+<a class="flex flex-col items-center justify-center text-[#0b5cac] dark:text-[#3f7dcf] font-bold gap-1 after:content-[''] after:w-1 after:h-1 after:bg-[#0b5cac] after:rounded-full hover:text-[#0b5cac] transition-all active:scale-90 w-16" href="#">
+<span class="material-symbols-outlined text-[24px]" style="font-variation-settings: 'FILL' 1;">assignment</span>
+<span class="text-[11px] font-medium font-['Inter'] tracking-wide uppercase">Assessments</span>
+</a>
+<!-- Therapists -->
+<a class="flex flex-col items-center justify-center text-[#c2c6d3] dark:text-slate-500 gap-1 hover:text-[#0b5cac] transition-all active:scale-90 w-16" href="#">
+<span class="material-symbols-outlined text-[24px]" style="font-variation-settings: 'FILL' 0;">medical_services</span>
+<span class="text-[11px] font-medium font-['Inter'] tracking-wide uppercase">Therapists</span>
+</a>
+<!-- Profile -->
+<a class="flex flex-col items-center justify-center text-[#c2c6d3] dark:text-slate-500 gap-1 hover:text-[#0b5cac] transition-all active:scale-90 w-16" href="#">
+<span class="material-symbols-outlined text-[24px]" style="font-variation-settings: 'FILL' 0;">person</span>
+<span class="text-[11px] font-medium font-['Inter'] tracking-wide uppercase">Profile</span>
+</a>
+</nav>
+</body></html>

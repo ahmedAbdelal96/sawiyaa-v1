@@ -43,7 +43,8 @@ export class BuildAvailabilityWindowsService {
     const extraOpenWindows = input.exceptions
       .filter(
         (exception) =>
-          exception.isActive && exception.type === AvailabilityExceptionType.OPEN_EXTRA,
+          exception.isActive &&
+          exception.type === AvailabilityExceptionType.OPEN_EXTRA,
       )
       .map((exception) => ({
         startsAt: exception.startsAtUtc,
@@ -53,7 +54,8 @@ export class BuildAvailabilityWindowsService {
     const blockWindows = input.exceptions
       .filter(
         (exception) =>
-          exception.isActive && exception.type === AvailabilityExceptionType.BLOCK,
+          exception.isActive &&
+          exception.type === AvailabilityExceptionType.BLOCK,
       )
       .map((exception) => ({
         startsAt: exception.startsAtUtc,

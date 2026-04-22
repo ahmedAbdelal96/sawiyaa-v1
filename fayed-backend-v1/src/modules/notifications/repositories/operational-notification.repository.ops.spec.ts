@@ -7,11 +7,13 @@ describe('OperationalNotificationRepository ops surfaces', () => {
     notification: {
       findMany: jest.fn(),
       count: jest.fn(),
-      findUnique: jest.fn(),
+      findFirst: jest.fn(),
     },
     $transaction: jest
       .fn()
-      .mockImplementation((calls: unknown[]) => Promise.all(calls as Promise<unknown>[])),
+      .mockImplementation((calls: unknown[]) =>
+        Promise.all(calls as Promise<unknown>[]),
+      ),
   } as unknown as PrismaService;
 
   const repository = new OperationalNotificationRepository(prisma);
@@ -26,6 +28,8 @@ describe('OperationalNotificationRepository ops surfaces', () => {
 
     await repository.listOperationalNotifications({
       statuses: [NotificationStatus.FAILED],
+      excludedTypeSlugs: ['payments.payment-succeeded'],
+      excludedTypePrefixes: ['auth.'],
       page: 2,
       limit: 10,
     });
@@ -34,6 +38,12 @@ describe('OperationalNotificationRepository ops surfaces', () => {
       expect.objectContaining({
         where: expect.objectContaining({
           status: { in: [NotificationStatus.FAILED] },
+          notificationType: expect.objectContaining({
+            NOT: expect.arrayContaining([
+              { slug: 'payments.payment-succeeded' },
+              { slug: { startsWith: 'auth.' } },
+            ]),
+          }),
         }),
         skip: 10,
         take: 10,
@@ -49,11 +59,13 @@ describe('OperationalNotificationRepository ops surfaces', () => {
   });
 
   it('loads operational notification detail with attempts history', async () => {
-    (prisma.notification.findUnique as jest.Mock).mockResolvedValue({ id: 'n1' });
+    (prisma.notification.findFirst as jest.Mock).mockResolvedValue({
+      id: 'n1',
+    });
 
     await repository.findOperationalNotificationById('n1');
 
-    expect(prisma.notification.findUnique).toHaveBeenCalledWith(
+    expect(prisma.notification.findFirst).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { id: 'n1' },
         select: expect.objectContaining({

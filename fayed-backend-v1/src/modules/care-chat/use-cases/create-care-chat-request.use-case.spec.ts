@@ -36,18 +36,22 @@ describe('CreateCareChatRequestUseCase', () => {
   });
 
   it('prevents duplicate active requests for the same patient/practitioner pair', async () => {
-    (actorRepository.findPatientProfileByUserId as jest.Mock).mockResolvedValue({
-      id: 'patient-1',
-    });
-    (actorRepository.findEligiblePractitionerBySlug as jest.Mock).mockResolvedValue({
-      id: 'practitioner-1',
-    });
-    (requestRepository.findExistingActiveBetweenActors as jest.Mock).mockResolvedValue(
+    (actorRepository.findPatientProfileByUserId as jest.Mock).mockResolvedValue(
       {
-        id: 'request-1',
-        status: 'PENDING',
+        id: 'patient-1',
       },
     );
+    (
+      actorRepository.findEligiblePractitionerBySlug as jest.Mock
+    ).mockResolvedValue({
+      id: 'practitioner-1',
+    });
+    (
+      requestRepository.findExistingActiveBetweenActors as jest.Mock
+    ).mockResolvedValue({
+      id: 'request-1',
+      status: 'PENDING',
+    });
 
     await expect(
       useCase.execute({

@@ -44,3 +44,13 @@
 
 # Local backups (do not commit)
 git-subrepos-backup/
+
+# Backend runtime storage (can contain user uploads / sensitive data)
+fayed-backend-v1/storage/**
+!fayed-backend-v1/storage/.gitkeep
+!fayed-backend-v1/storage/**/.gitkeep
+
+# Local screenshot exports (optional artifacts)
+WhatsApp Image *.jpg
+WhatsApp Image *.jpeg
+patient_mobile_app_screen/whatsapp_image_*

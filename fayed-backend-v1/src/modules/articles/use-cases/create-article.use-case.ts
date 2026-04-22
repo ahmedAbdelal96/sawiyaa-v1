@@ -63,7 +63,10 @@ export class CreateArticleUseCase {
       );
 
       return {
-        item: this.articlePresenter.presentAdminArticleItem(created, payload.locale),
+        item: this.articlePresenter.presentAdminArticleItem(
+          created,
+          payload.locale,
+        ),
       };
     } catch (error) {
       if (

@@ -49,4 +49,3 @@ describe('ValidateGeneralChatParticipantPolicyService', () => {
     ).toThrow(ForbiddenException);
   });
 });
-

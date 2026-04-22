@@ -145,4 +145,29 @@ export class AdminPractitionerApplicationRepository {
       },
     });
   }
+
+  /**
+   * Updates only the application submission snapshot.
+   * Use this for admin amendments that should NOT stamp review audit fields.
+   */
+  updateSubmissionSnapshot(
+    id: string,
+    submissionSnapshot: Prisma.InputJsonValue,
+    tx?: Prisma.TransactionClient,
+  ) {
+    return this.getDb(tx).practitionerApplication.update({
+      where: { id },
+      data: {
+        submissionSnapshot,
+      },
+      include: {
+        practitioner: {
+          select: {
+            id: true,
+            userId: true,
+          },
+        },
+      },
+    });
+  }
 }

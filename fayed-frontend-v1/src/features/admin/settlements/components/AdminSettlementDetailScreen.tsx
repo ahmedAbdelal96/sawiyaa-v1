@@ -4,7 +4,6 @@ import { useMemo, useState, type FormEvent, type ReactNode } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import {
-  ArrowRight,
   BadgeDollarSign,
   CircleOff,
   Coins,
@@ -13,6 +12,7 @@ import {
 import { ListStateSkeleton, StateCard } from "@/components/shared/ContentStates";
 import { SurfaceCard } from "@/components/shared/SurfaceShell";
 import ActionIconLink from "@/components/ui/action-icon-button/ActionIconLink";
+import DirectionalArrowIcon from "@/components/ui/navigation/DirectionalArrowIcon";
 import Button from "@/components/ui/button/Button";
 import DateTimeField from "@/components/form/input/DateTimeField";
 import { useAuthState } from "@/stores/auth-store";
@@ -319,7 +319,7 @@ export default function AdminSettlementDetailScreen({ batchId }: Props) {
           href="/admin/settlements/dues"
           intent="view"
           label={t("detail.back")}
-          icon={<ArrowRight className="h-4 w-4 rtl:rotate-180" />}
+          icon={<DirectionalArrowIcon direction="back" className="h-4 w-4" />}
           className="mb-3"
         />
 

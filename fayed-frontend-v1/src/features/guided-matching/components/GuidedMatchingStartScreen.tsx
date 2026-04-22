@@ -118,14 +118,14 @@ function ChoiceCard({
     { selected: string; icon: string; iconText: string }
   > = {
     blue: {
-      selected: "border-blue-300 bg-blue-50/70",
-      icon: "bg-blue-100",
-      iconText: "text-blue-600",
+      selected: "border-primary/35 bg-primary-light",
+      icon: "bg-primary-light",
+      iconText: "text-text-brand",
     },
     cyan: {
-      selected: "border-cyan-300 bg-cyan-50/70",
-      icon: "bg-cyan-100",
-      iconText: "text-cyan-600",
+      selected: "border-primary/30 bg-primary-light/85",
+      icon: "bg-accent",
+      iconText: "text-text-brand",
     },
     teal: {
       selected: "border-teal-300 bg-teal-50/70",
@@ -476,9 +476,9 @@ export default function GuidedMatchingStartScreen({ specialties }: GuidedMatchin
             <span
               className={`mx-auto inline-flex h-20 w-20 items-center justify-center rounded-full ${
                 currentStepIconTone[currentStep] === "cyan"
-                  ? "bg-cyan-100 text-cyan-600"
+                  ? "bg-accent text-text-brand"
                   : currentStepIconTone[currentStep] === "blue"
-                    ? "bg-blue-100 text-blue-600"
+                    ? "bg-primary-light text-text-brand"
                     : currentStepIconTone[currentStep] === "teal"
                       ? "bg-teal-100 text-teal-600"
                       : currentStepIconTone[currentStep] === "rose"

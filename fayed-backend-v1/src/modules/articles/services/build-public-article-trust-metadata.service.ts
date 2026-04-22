@@ -47,7 +47,9 @@ export class BuildPublicArticleTrustMetadataService {
       return PublicArticleFreshnessBandDto.UNPUBLISHED;
     }
 
-    const ageDays = Math.floor((now.getTime() - publishedAt.getTime()) / DAY_IN_MS);
+    const ageDays = Math.floor(
+      (now.getTime() - publishedAt.getTime()) / DAY_IN_MS,
+    );
     if (ageDays <= NEW_CONTENT_DAYS_THRESHOLD) {
       return PublicArticleFreshnessBandDto.NEW;
     }

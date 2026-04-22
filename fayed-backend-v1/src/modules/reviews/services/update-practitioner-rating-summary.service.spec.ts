@@ -21,9 +21,9 @@ describe('UpdatePractitionerRatingSummaryService', () => {
     (
       reviewRepository.countByPractitionerAndStatuses as jest.Mock
     ).mockResolvedValue(8);
-    (reviewRepository.countByPractitionerAndStatus as jest.Mock).mockResolvedValue(
-      3,
-    );
+    (
+      reviewRepository.countByPractitionerAndStatus as jest.Mock
+    ).mockResolvedValue(3);
     (reviewRepository.aggregateAverageRating as jest.Mock).mockResolvedValue({
       _avg: { ratingValue: 4.125 },
       _max: { submittedAt: new Date('2026-03-29T10:00:00.000Z') },
@@ -35,7 +35,9 @@ describe('UpdatePractitionerRatingSummaryService', () => {
 
     await service.execute({ practitionerId: 'practitioner-1' });
 
-    expect(reviewRepository.upsertPractitionerRatingSummary).toHaveBeenCalledWith(
+    expect(
+      reviewRepository.upsertPractitionerRatingSummary,
+    ).toHaveBeenCalledWith(
       'practitioner-1',
       expect.objectContaining({
         totalReviews: 8,

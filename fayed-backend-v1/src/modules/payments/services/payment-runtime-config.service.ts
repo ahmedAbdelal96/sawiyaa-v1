@@ -1,4 +1,8 @@
-import { Inject, Injectable, ServiceUnavailableException } from '@nestjs/common';
+import {
+  Inject,
+  Injectable,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import { ConfigType } from '@nestjs/config';
 import { PaymentProvider } from '@prisma/client';
 import paymentConfig from '@config/payment.config';
@@ -21,6 +25,13 @@ type PaymobRuntimeConfig = {
   integrationIdCard: string | null;
   integrationIdWallet: string | null;
   iframeId: string | null;
+};
+
+type PaymentAccountingRuntimeConfig = {
+  vatEnabled: boolean;
+  vatRatePercent: string;
+  gatewayFeeRatePercent: string;
+  gatewayFeeFixedAmount: string;
 };
 
 @Injectable()
@@ -48,9 +59,22 @@ export class PaymentRuntimeConfigService {
       apiKey: this.toNullable(this.paymentCfg.paymob.apiKey),
       hmacSecret: this.toNullable(this.paymentCfg.paymob.hmacSecret),
       baseUrl: this.toNullable(this.paymentCfg.paymob.baseUrl),
-      integrationIdCard: this.toNullable(this.paymentCfg.paymob.integrationIdCard),
-      integrationIdWallet: this.toNullable(this.paymentCfg.paymob.integrationIdWallet),
+      integrationIdCard: this.toNullable(
+        this.paymentCfg.paymob.integrationIdCard,
+      ),
+      integrationIdWallet: this.toNullable(
+        this.paymentCfg.paymob.integrationIdWallet,
+      ),
       iframeId: this.toNullable(this.paymentCfg.paymob.iframeId),
+    };
+  }
+
+  getAccountingConfig(): PaymentAccountingRuntimeConfig {
+    return {
+      vatEnabled: this.paymentCfg.accounting.vatEnabled,
+      vatRatePercent: this.paymentCfg.accounting.vatRatePercent,
+      gatewayFeeRatePercent: this.paymentCfg.accounting.gatewayFeeRatePercent,
+      gatewayFeeFixedAmount: this.paymentCfg.accounting.gatewayFeeFixedAmount,
     };
   }
 

@@ -55,22 +55,32 @@ export class AdminCareChatController {
   ) {}
 
   @Get('requests')
-  @ApiOperation({ summary: 'List care chat approval requests for admin/support' })
-  @ApiResponse({ status: 200, type: AdminCareChatRequestListSuccessResponseDto })
+  @ApiOperation({
+    summary: 'List care chat approval requests for admin/support',
+  })
+  @ApiResponse({
+    status: 200,
+    type: AdminCareChatRequestListSuccessResponseDto,
+  })
   @ApiUnauthorizedResponse({ description: 'Access token is required' })
   @ApiForbiddenResponse({
     description: 'Only admin/support roles can access this route',
   })
   listRequests(@Query() query: ListCareChatRequestsDto) {
-    return this.listAdminCareChatRequestsUseCase.execute({ query }).then((data) => ({
-      success: true as const,
-      data,
-    }));
+    return this.listAdminCareChatRequestsUseCase
+      .execute({ query })
+      .then((data) => ({
+        success: true as const,
+        data,
+      }));
   }
 
   @Get('requests/:id')
   @ApiOperation({ summary: 'Get one care chat approval request details' })
-  @ApiResponse({ status: 200, type: AdminCareChatRequestItemSuccessResponseDto })
+  @ApiResponse({
+    status: 200,
+    type: AdminCareChatRequestItemSuccessResponseDto,
+  })
   getRequestById(@Param('id') requestId: string) {
     return this.getAdminCareChatRequestUseCase
       .execute({ requestId })
@@ -98,7 +108,10 @@ export class AdminCareChatController {
   @Patch('requests/:id/revoke')
   @ApiOperation({ summary: 'Revoke previously approved care chat request' })
   @ApiBody({ type: RevokeCareChatRequestDto })
-  @ApiResponse({ status: 200, type: AdminCareChatRequestItemSuccessResponseDto })
+  @ApiResponse({
+    status: 200,
+    type: AdminCareChatRequestItemSuccessResponseDto,
+  })
   revokeRequest(
     @CurrentUser() currentUser: AuthenticatedUser,
     @Param('id') requestId: string,
@@ -114,7 +127,9 @@ export class AdminCareChatController {
   }
 
   @Get('conversations/:id')
-  @ApiOperation({ summary: 'Get care chat conversation details for admin/support' })
+  @ApiOperation({
+    summary: 'Get care chat conversation details for admin/support',
+  })
   @ApiResponse({ status: 200, type: CareChatConversationSuccessResponseDto })
   getConversationById(
     @CurrentUser() currentUser: AuthenticatedUser,

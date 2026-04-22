@@ -1,5 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { NotificationChannel, NotificationStatus, Prisma } from '@prisma/client';
+import {
+  NotificationChannel,
+  NotificationStatus,
+  Prisma,
+} from '@prisma/client';
 import { I18nService } from '@common/i18n/services/i18n.service';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
 import { AdminNotificationRepository } from '../repositories/admin-notification.repository';
@@ -63,6 +67,31 @@ export class AdminPractitionerApplicationNotificationService {
     }
   }
 
+  async sendChangesRequested(input: {
+    userId: string;
+    applicationId: string;
+    locale: SupportedLocale;
+    reason: string;
+  }): Promise<void> {
+    try {
+      await this.queue({
+        slug: 'admin.practitioner-application-changes-requested',
+        userId: input.userId,
+        locale: input.locale,
+        titleKey:
+          'admin.practitionerApplications.notifications.changesRequestedTitle',
+        bodyKey:
+          'admin.practitionerApplications.notifications.changesRequestedBody',
+        bodyParams: { reason: input.reason },
+        relatedEntityId: input.applicationId,
+      });
+    } catch (error) {
+      this.logger.warn(
+        `Best-effort notification failed for changes-requested application "${input.applicationId}": ${(error as Error).message}`,
+      );
+    }
+  }
+
   private async queue(input: {
     slug: string;
     userId: string;
@@ -72,9 +101,8 @@ export class AdminPractitionerApplicationNotificationService {
     bodyParams?: Record<string, string>;
     relatedEntityId: string;
   }): Promise<void> {
-    const notificationType = await this.adminNotificationRepository.findTypeBySlug(
-      input.slug,
-    );
+    const notificationType =
+      await this.adminNotificationRepository.findTypeBySlug(input.slug);
 
     if (!notificationType) {
       this.logger.warn(

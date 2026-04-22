@@ -5,7 +5,11 @@ import { useLocale, useTranslations } from "next-intl";
 import {
   useAdminPractitionerApplicationDetails,
   useApprovePractitionerApplication,
+  useCreateAdminPractitionerApplicationCredential,
+  useDeleteAdminPractitionerApplicationCredential,
   useRejectPractitionerApplication,
+  useRequestPractitionerApplicationChanges,
+  useUpdateAdminPractitionerApplicationCredential,
   useUpdatePractitionerApplicationDraft,
 } from "../hooks/use-practitioner-applications";
 import type { PractitionerApplicationDetailsResponse } from "../types/practitioner-applications.types";
@@ -28,7 +32,7 @@ import type {
 
 const statusColour: Record<PractitionerApplicationStatus, string> = {
   DRAFT: "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300",
-  SUBMITTED: "bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400",
+  SUBMITTED: "bg-primary-light text-text-brand dark:bg-primary/20 dark:text-primary-light",
   UNDER_REVIEW: "bg-yellow-50 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-400",
   APPROVED: "bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400",
   REJECTED: "bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400",
@@ -59,6 +63,23 @@ const PAYOUT_METHODS: PractitionerPayoutMethodType[] = [
   "OTHER",
 ];
 
+const CREDENTIAL_TYPES: CredentialType[] = [
+  "LICENSE",
+  "DEGREE",
+  "CERTIFICATION",
+  "NATIONAL_ID",
+  "PASSPORT",
+  "MEMBERSHIP",
+  "OTHER",
+];
+
+const CREDENTIAL_REVIEW_STATUSES: CredentialReviewStatus[] = [
+  "PENDING",
+  "APPROVED",
+  "REJECTED",
+  "EXPIRED",
+];
+
 type EditableDraftForm = {
   displayName: string;
   practitionerType: PractitionerType;
@@ -78,6 +99,14 @@ type EditableDraftForm = {
   walletProvider: string;
   walletIdentifier: string;
   otherDetails: string;
+};
+
+type EditableCredentialForm = {
+  credentialType: CredentialType;
+  fileUrl: string;
+  reviewStatus: CredentialReviewStatus;
+  reviewNotes: string;
+  expiresAt: string;
 };
 
 type Props = { applicationId: string };
@@ -130,14 +159,40 @@ function createInitialDraftForm(details: PractitionerApplicationDetailsResponse[
   };
 }
 
+function createInitialCredentialForm(
+  credential: PractitionerApplicationDetailsResponse["details"]["credentials"][number]
+): EditableCredentialForm {
+  return {
+    credentialType: credential.credentialType,
+    fileUrl: credential.fileUrl,
+    reviewStatus: credential.reviewStatus,
+    reviewNotes: credential.reviewNotes ?? "",
+    expiresAt: credential.expiresAt ? credential.expiresAt.slice(0, 10) : "",
+  };
+}
+
 export default function AdminApplicationDetails({ applicationId }: Props) {
   const t = useTranslations("admin-area");
   const locale = useLocale();
   const { data, isLoading, isError, refetch } = useAdminPractitionerApplicationDetails(applicationId);
   const { mutate: approve, isPending: isApproving } = useApprovePractitionerApplication();
   const { mutate: reject, isPending: isRejecting } = useRejectPractitionerApplication();
+  const { mutate: requestChanges, isPending: isRequestingChanges } =
+    useRequestPractitionerApplicationChanges();
   const { mutate: updateDraft, isPending: isUpdatingDraft } =
     useUpdatePractitionerApplicationDraft();
+  const {
+    mutate: createCredential,
+    isPending: isCreatingCredential,
+  } = useCreateAdminPractitionerApplicationCredential();
+  const {
+    mutate: updateCredential,
+    isPending: isUpdatingCredential,
+  } = useUpdateAdminPractitionerApplicationCredential();
+  const {
+    mutate: deleteCredential,
+    isPending: isDeletingCredential,
+  } = useDeleteAdminPractitionerApplicationCredential();
   const specialtyCategoriesQuery = useSpecialtyCategories(true);
   const specialtiesQuery = useSpecialties(undefined, true);
 
@@ -147,8 +202,34 @@ export default function AdminApplicationDetails({ applicationId }: Props) {
   const [rejectNote, setRejectNote] = useState("");
   const [rejectReasonError, setRejectReasonError] = useState(false);
   const [rejectResult, setRejectResult] = useState<"success" | "error" | null>(null);
+
+  const [requestChangesReason, setRequestChangesReason] = useState("");
+  const [requestChangesNote, setRequestChangesNote] = useState("");
+  const [requestChangesReasonError, setRequestChangesReasonError] = useState(false);
+  const [requestChangesResult, setRequestChangesResult] = useState<
+    "success" | "error" | null
+  >(null);
   const [draftSavedResult, setDraftSavedResult] = useState<"success" | "error" | null>(null);
   const [form, setForm] = useState<EditableDraftForm | null>(null);
+  const [editableCredentials, setEditableCredentials] = useState<
+    Record<string, EditableCredentialForm>
+  >({});
+  const [credentialResultById, setCredentialResultById] = useState<
+    Record<string, "success" | "error">
+  >({});
+  const [credentialDeleteResultById, setCredentialDeleteResultById] = useState<
+    Record<string, "success" | "error">
+  >({});
+  const [newCredentialResult, setNewCredentialResult] = useState<
+    "success" | "error" | null
+  >(null);
+  const [newCredentialForm, setNewCredentialForm] = useState<EditableCredentialForm>({
+    credentialType: "OTHER",
+    fileUrl: "",
+    reviewStatus: "PENDING",
+    reviewNotes: "",
+    expiresAt: "",
+  });
 
   if (isLoading) {
     return (
@@ -222,6 +303,158 @@ export default function AdminApplicationDetails({ applicationId }: Props) {
   };
 
   const selectedPayoutMethod = effectiveForm.payoutMethodType;
+
+  const getEditableCredential = (
+    credential: PractitionerApplicationDetailsResponse["details"]["credentials"][number]
+  ): EditableCredentialForm =>
+    editableCredentials[credential.credentialId] ??
+    createInitialCredentialForm(credential);
+
+  const updateCredentialForm = (
+    credentialId: string,
+    patch: Partial<EditableCredentialForm>,
+    base?: EditableCredentialForm
+  ) => {
+    setCredentialResultById((prev) => {
+      if (!(credentialId in prev)) {
+        return prev;
+      }
+      const next = { ...prev };
+      delete next[credentialId];
+      return next;
+    });
+    setCredentialDeleteResultById((prev) => {
+      if (!(credentialId in prev)) {
+        return prev;
+      }
+      const next = { ...prev };
+      delete next[credentialId];
+      return next;
+    });
+    setEditableCredentials((prev) => ({
+      ...prev,
+      [credentialId]: {
+        ...(base ?? prev[credentialId]),
+        ...patch,
+      },
+    }));
+  };
+
+  const handleSaveCredential = (
+    credential: PractitionerApplicationDetailsResponse["details"]["credentials"][number]
+  ) => {
+    const current = getEditableCredential(credential);
+    if (!current.fileUrl.trim()) {
+      setCredentialResultById((prev) => ({
+        ...prev,
+        [credential.credentialId]: "error",
+      }));
+      return;
+    }
+
+    updateCredential(
+      {
+        id: applicationId,
+        credentialId: credential.credentialId,
+        data: {
+          credentialType: current.credentialType,
+          fileUrl: current.fileUrl.trim(),
+          reviewStatus: current.reviewStatus,
+          reviewNotes: current.reviewNotes.trim() || null,
+          expiresAt: current.expiresAt.trim() || null,
+        },
+      },
+      {
+        onSuccess: async () => {
+          setCredentialResultById((prev) => ({
+            ...prev,
+            [credential.credentialId]: "success",
+          }));
+          await refetch();
+        },
+        onError: () => {
+          setCredentialResultById((prev) => ({
+            ...prev,
+            [credential.credentialId]: "error",
+          }));
+        },
+      }
+    );
+  };
+
+  const handleCreateCredential = () => {
+    if (!newCredentialForm.fileUrl.trim()) {
+      setNewCredentialResult("error");
+      return;
+    }
+
+    createCredential(
+      {
+        id: applicationId,
+        data: {
+          credentialType: newCredentialForm.credentialType,
+          fileUrl: newCredentialForm.fileUrl.trim(),
+          reviewStatus: newCredentialForm.reviewStatus,
+          reviewNotes: newCredentialForm.reviewNotes.trim() || null,
+          expiresAt: newCredentialForm.expiresAt.trim() || null,
+        },
+      },
+      {
+        onSuccess: async () => {
+          setNewCredentialResult("success");
+          setNewCredentialForm({
+            credentialType: "OTHER",
+            fileUrl: "",
+            reviewStatus: "PENDING",
+            reviewNotes: "",
+            expiresAt: "",
+          });
+          await refetch();
+        },
+        onError: () => {
+          setNewCredentialResult("error");
+        },
+      }
+    );
+  };
+
+  const handleDeleteCredential = (
+    credential: PractitionerApplicationDetailsResponse["details"]["credentials"][number]
+  ) => {
+    const confirmed = window.confirm(
+      t("applicationDetails.credentials.deleteConfirm")
+    );
+    if (!confirmed) {
+      return;
+    }
+
+    deleteCredential(
+      {
+        id: applicationId,
+        credentialId: credential.credentialId,
+      },
+      {
+        onSuccess: async () => {
+          setCredentialDeleteResultById((prev) => ({
+            ...prev,
+            [credential.credentialId]: "success",
+          }));
+          setEditableCredentials((prev) => {
+            const next = { ...prev };
+            delete next[credential.credentialId];
+            return next;
+          });
+          await refetch();
+        },
+        onError: () => {
+          setCredentialDeleteResultById((prev) => ({
+            ...prev,
+            [credential.credentialId]: "error",
+          }));
+        },
+      }
+    );
+  };
 
   const handleSaveDraft = () => {
     const trimmedDisplayName = effectiveForm.displayName.trim();
@@ -327,9 +560,31 @@ export default function AdminApplicationDetails({ applicationId }: Props) {
     );
   };
 
+  const handleRequestChanges = () => {
+    if (!requestChangesReason.trim()) {
+      setRequestChangesReasonError(true);
+      return;
+    }
+    setRequestChangesReasonError(false);
+    setRequestChangesResult(null);
+    requestChanges(
+      {
+        id: applicationId,
+        data: {
+          reason: requestChangesReason.trim(),
+          note: requestChangesNote || undefined,
+        },
+      },
+      {
+        onSuccess: () => setRequestChangesResult("success"),
+        onError: () => setRequestChangesResult("error"),
+      }
+    );
+  };
+
   return (
     <div className="space-y-4">
-      <Section heading={t("applicationDetails.sections.profile") + " - Edit Before Decision"}>
+      <Section heading={t("applicationDetails.sections.profileEdit")}>
         <div className="grid gap-6 lg:grid-cols-2">
           <div className="space-y-3">
             <div>
@@ -355,12 +610,18 @@ export default function AdminApplicationDetails({ applicationId }: Props) {
               />
             </div>
             <div>
-              <Label>Gender</Label>
+              <Label>{t("applicationDetails.profile.gender")}</Label>
               <Select
                 key={`edit-practitioner-gender-${effectiveForm.practitionerGender || "none"}`}
                 options={[
-                  { value: "MALE", label: "Male" },
-                  { value: "FEMALE", label: "Female" },
+                  {
+                    value: "MALE",
+                    label: t("applicationDetails.profile.genderOptions.MALE"),
+                  },
+                  {
+                    value: "FEMALE",
+                    label: t("applicationDetails.profile.genderOptions.FEMALE"),
+                  },
                 ]}
                 defaultValue={effectiveForm.practitionerGender}
                 onChange={(value) =>
@@ -416,7 +677,9 @@ export default function AdminApplicationDetails({ applicationId }: Props) {
 
           <div className="space-y-3">
             <div>
-              <Label>Primary specialty category</Label>
+              <Label>
+                {t("applicationDetails.profile.primarySpecialtyCategory")}
+              </Label>
               <Select
                 key={`edit-category-${effectiveForm.primarySpecialtyCategoryId || "none"}`}
                 options={categoryOptions}
@@ -430,7 +693,7 @@ export default function AdminApplicationDetails({ applicationId }: Props) {
               />
             </div>
             <div>
-              <Label>Sub-specialties</Label>
+              <Label>{t("applicationDetails.profile.subSpecialties")}</Label>
               <MultiSelect
                 key={`edit-specialties-${effectiveForm.primarySpecialtyCategoryId || "none"}`}
                 label=""
@@ -444,12 +707,12 @@ export default function AdminApplicationDetails({ applicationId }: Props) {
               />
             </div>
             <div>
-              <Label>Payout method</Label>
+              <Label>{t("applicationDetails.payout.method")}</Label>
               <Select
                 key={`edit-payout-${selectedPayoutMethod || "none"}`}
                 options={PAYOUT_METHODS.map((method) => ({
                   value: method,
-                  label: method,
+                  label: t(`applicationDetails.payout.methodOptions.${method}`),
                 }))}
                 defaultValue={selectedPayoutMethod}
                 onChange={(value) =>
@@ -462,7 +725,7 @@ export default function AdminApplicationDetails({ applicationId }: Props) {
             {selectedPayoutMethod ? (
               <div className="grid gap-3 rounded-xl border border-gray-100 p-4 dark:border-gray-800">
                 <div>
-                  <Label>Account holder name</Label>
+                  <Label>{t("applicationDetails.payout.accountHolderName")}</Label>
                   <InputField
                     type="text"
                     value={effectiveForm.accountHolderName}
@@ -474,7 +737,7 @@ export default function AdminApplicationDetails({ applicationId }: Props) {
                 {selectedPayoutMethod === "BANK_ACCOUNT" ? (
                   <>
                     <div>
-                      <Label>Bank name</Label>
+                      <Label>{t("applicationDetails.payout.bankName")}</Label>
                       <InputField
                         type="text"
                         value={effectiveForm.bankName}
@@ -482,7 +745,9 @@ export default function AdminApplicationDetails({ applicationId }: Props) {
                       />
                     </div>
                     <div>
-                      <Label>Bank account number</Label>
+                      <Label>
+                        {t("applicationDetails.payout.bankAccountNumber")}
+                      </Label>
                       <InputField
                         type="text"
                         value={effectiveForm.bankAccountNumber}
@@ -506,7 +771,7 @@ export default function AdminApplicationDetails({ applicationId }: Props) {
                 {selectedPayoutMethod === "WALLET" ? (
                   <>
                     <div>
-                      <Label>Wallet provider</Label>
+                      <Label>{t("applicationDetails.payout.walletProvider")}</Label>
                       <InputField
                         type="text"
                         value={effectiveForm.walletProvider}
@@ -516,7 +781,9 @@ export default function AdminApplicationDetails({ applicationId }: Props) {
                       />
                     </div>
                     <div>
-                      <Label>Wallet identifier</Label>
+                      <Label>
+                        {t("applicationDetails.payout.walletIdentifier")}
+                      </Label>
                       <InputField
                         type="text"
                         value={effectiveForm.walletIdentifier}
@@ -529,7 +796,7 @@ export default function AdminApplicationDetails({ applicationId }: Props) {
                 ) : null}
                 {selectedPayoutMethod === "OTHER" ? (
                   <div>
-                    <Label>Other payout details</Label>
+                    <Label>{t("applicationDetails.payout.otherDetails")}</Label>
                     <TextArea
                       rows={3}
                       value={effectiveForm.otherDetails}
@@ -548,16 +815,18 @@ export default function AdminApplicationDetails({ applicationId }: Props) {
             disabled={isUpdatingDraft}
             className="inline-flex items-center rounded-xl bg-primary px-4 py-2 text-sm font-medium text-white transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {isUpdatingDraft ? "Saving..." : "Save application edits"}
+            {isUpdatingDraft
+              ? t("applicationDetails.edit.save.submitting")
+              : t("applicationDetails.edit.save.submit")}
           </button>
           {draftSavedResult === "success" ? (
             <span className="text-sm font-medium text-success-600 dark:text-success-400">
-              Changes saved successfully.
+              {t("applicationDetails.edit.save.success")}
             </span>
           ) : null}
           {draftSavedResult === "error" ? (
             <span className="text-sm font-medium text-error-500">
-              Could not save edits. Check required fields first.
+              {t("applicationDetails.edit.save.error")}
             </span>
           ) : null}
         </div>
@@ -602,51 +871,317 @@ export default function AdminApplicationDetails({ applicationId }: Props) {
       </Section>
 
       <Section heading={t("applicationDetails.sections.credentials")}>
-        {credentials.length === 0 ? (
-          <p className="text-sm text-gray-500 dark:text-gray-400">{t("applicationDetails.credentials.empty")}</p>
-        ) : (
-          <div className="space-y-3">
-            {credentials.map((cred) => (
-              <div
-                key={cred.credentialId}
-                className="flex items-start justify-between gap-4 rounded-xl border border-gray-100 p-3 dark:border-gray-800"
-              >
-                <div className="min-w-0">
-                  <p className="text-sm font-medium text-gray-800 dark:text-white">
-                    {t(`applicationDetails.credentials.type.${cred.credentialType as CredentialType}`)}
-                  </p>
-                  <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
-                    {t("applicationDetails.credentials.uploadedAt", {
-                      date: new Date(cred.uploadedAt).toLocaleDateString(locale),
-                    })}
-                  </p>
-                  <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
-                    Reviewed by: {cred.reviewedByUserId ?? "-"}
-                  </p>
-                </div>
-                <span
-                  className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                    credStatusColour[cred.reviewStatus]
-                  }`}
-                >
-                  {t(`applicationDetails.credentials.status.${cred.reviewStatus as CredentialReviewStatus}`)}
-                </span>
+        <div className="space-y-4">
+          <div className="rounded-xl border border-dashed border-gray-300 p-4 dark:border-gray-700">
+            <p className="mb-3 text-sm font-semibold text-gray-800 dark:text-white">
+              {t("applicationDetails.credentials.addHeading")}
+            </p>
+            <div className="grid gap-3 md:grid-cols-2">
+              <div>
+                <Label>{t("applicationDetails.credentials.credentialType")}</Label>
+                <Select
+                  key={`new-credential-type-${newCredentialForm.credentialType}`}
+                  options={CREDENTIAL_TYPES.map((type) => ({
+                    value: type,
+                    label: t(`applicationDetails.credentials.type.${type}`),
+                  }))}
+                  defaultValue={newCredentialForm.credentialType}
+                  onChange={(value) =>
+                    setNewCredentialForm((prev) => ({
+                      ...prev,
+                      credentialType: value as CredentialType,
+                    }))
+                  }
+                />
               </div>
-            ))}
+              <div>
+                <Label>{t("applicationDetails.credentials.reviewStatus")}</Label>
+                <Select
+                  key={`new-credential-status-${newCredentialForm.reviewStatus}`}
+                  options={CREDENTIAL_REVIEW_STATUSES.map((status) => ({
+                    value: status,
+                    label: t(`applicationDetails.credentials.status.${status}`),
+                  }))}
+                  defaultValue={newCredentialForm.reviewStatus}
+                  onChange={(value) =>
+                    setNewCredentialForm((prev) => ({
+                      ...prev,
+                      reviewStatus: value as CredentialReviewStatus,
+                    }))
+                  }
+                />
+              </div>
+              <div className="md:col-span-2">
+                <Label>{t("applicationDetails.credentials.fileUrl")}</Label>
+                <InputField
+                  type="url"
+                  value={newCredentialForm.fileUrl}
+                  onChange={(e) =>
+                    setNewCredentialForm((prev) => ({
+                      ...prev,
+                      fileUrl: e.target.value,
+                    }))
+                  }
+                  placeholder={t("applicationDetails.credentials.fileUrlPlaceholder")}
+                />
+              </div>
+              <div>
+                <Label>{t("applicationDetails.credentials.expiresAtOptional")}</Label>
+                <InputField
+                  type="date"
+                  value={newCredentialForm.expiresAt}
+                  onChange={(e) =>
+                    setNewCredentialForm((prev) => ({
+                      ...prev,
+                      expiresAt: e.target.value,
+                    }))
+                  }
+                />
+              </div>
+              <div>
+                <Label>{t("applicationDetails.credentials.reviewNotes")}</Label>
+                <InputField
+                  type="text"
+                  value={newCredentialForm.reviewNotes}
+                  onChange={(e) =>
+                    setNewCredentialForm((prev) => ({
+                      ...prev,
+                      reviewNotes: e.target.value,
+                    }))
+                  }
+                  placeholder={t("applicationDetails.credentials.reviewNotesPlaceholder")}
+                />
+              </div>
+            </div>
+            <div className="mt-3 flex items-center gap-3">
+              <button
+                type="button"
+                onClick={handleCreateCredential}
+                disabled={isCreatingCredential}
+                className="inline-flex items-center rounded-xl bg-primary px-4 py-2 text-sm font-medium text-white transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {isCreatingCredential
+                  ? t("applicationDetails.credentials.addSubmitting")
+                  : t("applicationDetails.credentials.addSubmit")}
+              </button>
+              {newCredentialResult === "success" ? (
+                <span className="text-sm font-medium text-success-600 dark:text-success-400">
+                  Credential added.
+                </span>
+              ) : null}
+              {newCredentialResult === "error" ? (
+                <span className="text-sm font-medium text-error-500">
+                  {t("applicationDetails.credentials.addError")}
+                </span>
+              ) : null}
+            </div>
           </div>
-        )}
+
+          {credentials.length === 0 ? (
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              {t("applicationDetails.credentials.empty")}
+            </p>
+          ) : (
+            <div className="space-y-3">
+              {credentials.map((cred) => {
+                const editable = getEditableCredential(cred);
+                const statusResult = credentialResultById[cred.credentialId];
+                const deleteStatusResult =
+                  credentialDeleteResultById[cred.credentialId];
+                return (
+                  <div
+                    key={cred.credentialId}
+                    className="rounded-xl border border-gray-100 p-4 dark:border-gray-800"
+                  >
+                    <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                      <p className="text-sm font-medium text-gray-800 dark:text-white">
+                        {t(
+                          `applicationDetails.credentials.type.${cred.credentialType as CredentialType}`
+                        )}
+                      </p>
+                      <span
+                        className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                          credStatusColour[cred.reviewStatus]
+                        }`}
+                      >
+                        {t(
+                          `applicationDetails.credentials.status.${cred.reviewStatus as CredentialReviewStatus}`
+                        )}
+                      </span>
+                    </div>
+                    <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">
+                      {t("applicationDetails.credentials.uploadedAt", {
+                        date: new Date(cred.uploadedAt).toLocaleDateString(locale),
+                      })}{" "}
+                      • Reviewed by: {cred.reviewedByUserId ?? "-"}
+                    </p>
+                    <div className="grid gap-3 md:grid-cols-2">
+                      <div>
+                        <Label>Credential type</Label>
+                        <Select
+                          key={`credential-type-${cred.credentialId}-${editable.credentialType}`}
+                          options={CREDENTIAL_TYPES.map((type) => ({
+                            value: type,
+                            label: t(`applicationDetails.credentials.type.${type}`),
+                          }))}
+                          defaultValue={editable.credentialType}
+                          onChange={(value) =>
+                            updateCredentialForm(
+                              cred.credentialId,
+                              { credentialType: value as CredentialType },
+                              editable
+                            )
+                          }
+                        />
+                      </div>
+                      <div>
+                        <Label>Review status</Label>
+                        <Select
+                          key={`credential-status-${cred.credentialId}-${editable.reviewStatus}`}
+                          options={CREDENTIAL_REVIEW_STATUSES.map((status) => ({
+                            value: status,
+                            label: t(`applicationDetails.credentials.status.${status}`),
+                          }))}
+                          defaultValue={editable.reviewStatus}
+                          onChange={(value) =>
+                            updateCredentialForm(
+                              cred.credentialId,
+                              { reviewStatus: value as CredentialReviewStatus },
+                              editable
+                            )
+                          }
+                        />
+                      </div>
+                      <div className="md:col-span-2">
+                        <Label>File URL</Label>
+                        <InputField
+                          type="url"
+                          value={editable.fileUrl}
+                          onChange={(e) =>
+                            updateCredentialForm(
+                              cred.credentialId,
+                              { fileUrl: e.target.value },
+                              editable
+                            )
+                          }
+                        />
+                      </div>
+                      <div>
+                        <Label>Expires at</Label>
+                        <InputField
+                          type="date"
+                          value={editable.expiresAt}
+                          onChange={(e) =>
+                            updateCredentialForm(
+                              cred.credentialId,
+                              { expiresAt: e.target.value },
+                              editable
+                            )
+                          }
+                        />
+                      </div>
+                      <div>
+                        <Label>Review notes</Label>
+                        <InputField
+                          type="text"
+                          value={editable.reviewNotes}
+                          onChange={(e) =>
+                            updateCredentialForm(
+                              cred.credentialId,
+                              { reviewNotes: e.target.value },
+                              editable
+                            )
+                          }
+                          placeholder="Optional review note"
+                        />
+                      </div>
+                    </div>
+                    <div className="mt-3 flex items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() => handleSaveCredential(cred)}
+                        disabled={isUpdatingCredential}
+                        className="inline-flex items-center rounded-xl bg-primary px-4 py-2 text-sm font-medium text-white transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {isUpdatingCredential ? "Saving..." : "Save credential"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteCredential(cred)}
+                        disabled={isDeletingCredential}
+                        className="inline-flex items-center rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-sm font-medium text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-red-900/40 dark:bg-red-900/20 dark:text-red-300 dark:hover:bg-red-900/30"
+                      >
+                        {isDeletingCredential ? "Deleting..." : "Delete credential"}
+                      </button>
+                      {statusResult === "success" ? (
+                        <span className="text-sm font-medium text-success-600 dark:text-success-400">
+                          Credential updated.
+                        </span>
+                      ) : null}
+                      {statusResult === "error" ? (
+                        <span className="text-sm font-medium text-error-500">
+                          {t("applicationDetails.credentials.updateError")}
+                        </span>
+                      ) : null}
+                      {deleteStatusResult === "success" ? (
+                        <span className="text-sm font-medium text-success-600 dark:text-success-400">
+                          {t("applicationDetails.credentials.deleteSuccess")}
+                        </span>
+                      ) : null}
+                      {deleteStatusResult === "error" ? (
+                        <span className="text-sm font-medium text-error-500">
+                          {t("applicationDetails.credentials.deleteError")}
+                        </span>
+                      ) : null}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
       </Section>
 
-      <Section heading="Payout destination">
+      <Section heading={t("applicationDetails.sections.payout")}>
         <dl className="space-y-3">
-          <Field label="Method" value={(payoutDestination?.methodType as PractitionerPayoutMethodType | null) ?? "-"} />
-          <Field label="Account holder" value={<PayoutValue value={payoutDestination?.accountHolderName ?? null} />} />
-          <Field label="Bank name" value={<PayoutValue value={payoutDestination?.bankName ?? null} />} />
-          <Field label="Bank account" value={<PayoutValue value={payoutDestination?.bankAccountNumber ?? null} />} />
-          <Field label="IBAN" value={<PayoutValue value={payoutDestination?.iban ?? null} />} />
-          <Field label="Wallet provider" value={<PayoutValue value={payoutDestination?.walletProvider ?? null} />} />
-          <Field label="Wallet identifier" value={<PayoutValue value={payoutDestination?.walletIdentifier ?? null} />} />
-          <Field label="Other details" value={<PayoutValue value={payoutDestination?.otherDetails ?? null} />} />
+          <Field
+            label={t("applicationDetails.payout.method")}
+            value={
+              payoutDestination?.methodType
+                ? t(
+                    `applicationDetails.payout.methodOptions.${payoutDestination.methodType as PractitionerPayoutMethodType}`
+                  )
+                : "-"
+            }
+          />
+          <Field
+            label={t("applicationDetails.payout.accountHolderName")}
+            value={<PayoutValue value={payoutDestination?.accountHolderName ?? null} />}
+          />
+          <Field
+            label={t("applicationDetails.payout.bankName")}
+            value={<PayoutValue value={payoutDestination?.bankName ?? null} />}
+          />
+          <Field
+            label={t("applicationDetails.payout.bankAccountNumber")}
+            value={<PayoutValue value={payoutDestination?.bankAccountNumber ?? null} />}
+          />
+          <Field
+            label="IBAN"
+            value={<PayoutValue value={payoutDestination?.iban ?? null} />}
+          />
+          <Field
+            label={t("applicationDetails.payout.walletProvider")}
+            value={<PayoutValue value={payoutDestination?.walletProvider ?? null} />}
+          />
+          <Field
+            label={t("applicationDetails.payout.walletIdentifier")}
+            value={<PayoutValue value={payoutDestination?.walletIdentifier ?? null} />}
+          />
+          <Field
+            label={t("applicationDetails.payout.otherDetails")}
+            value={<PayoutValue value={payoutDestination?.otherDetails ?? null} />}
+          />
         </dl>
       </Section>
 
@@ -668,8 +1203,14 @@ export default function AdminApplicationDetails({ applicationId }: Props) {
             label={t("applicationDetails.application.reviewedAt")}
             value={application.reviewedAt ? new Date(application.reviewedAt).toLocaleDateString(locale) : "-"}
           />
-          <Field label="Reviewed by user" value={application.reviewedByUserId ?? "-"} />
-          <Field label="Decision reason" value={application.reviewDecisionReason ?? "-"} />
+          <Field
+            label={t("applicationDetails.application.reviewedByUserId")}
+            value={application.reviewedByUserId ?? "-"}
+          />
+          <Field
+            label={t("applicationDetails.application.reviewDecisionReason")}
+            value={application.reviewDecisionReason ?? "-"}
+          />
           <Field
             label={t("applicationDetails.application.reviewNotes")}
             value={application.reviewNotes ?? t("applicationDetails.application.noNotes")}
@@ -684,15 +1225,21 @@ export default function AdminApplicationDetails({ applicationId }: Props) {
               ["profileComplete", readinessSnapshot.isProfileCompleted],
               ["specialties", readinessSnapshot.hasRequiredSpecialties],
               ["credentials", readinessSnapshot.hasRequiredCredentials],
+              ["payoutDestination", readinessSnapshot.hasPayoutDestination],
               ["canBeReviewed", readinessSnapshot.canBeReviewed],
               ["canBeApproved", readinessSnapshot.canBeApproved],
+              ["canRequestChanges", readinessSnapshot.canRequestChanges],
             ] as [string, boolean][]
           ).map(([key, value]) => (
             <div key={key} className="flex items-center justify-between rounded-xl border border-gray-100 px-3 py-2 dark:border-gray-800">
               <dt className="text-xs font-medium text-gray-500 dark:text-gray-400">
                 {t(`applicationDetails.readiness.${key}`)}
               </dt>
-              <dd className="text-sm font-semibold">{value ? "YES" : "NO"}</dd>
+              <dd className="text-sm font-semibold">
+                {value
+                  ? t("applicationDetails.readiness.yes")
+                  : t("applicationDetails.readiness.no")}
+              </dd>
             </div>
           ))}
         </dl>
@@ -703,14 +1250,18 @@ export default function AdminApplicationDetails({ applicationId }: Props) {
           <p className="text-sm text-gray-500 dark:text-gray-400">
             {t("applicationDetails.decision.notReviewable")}
           </p>
-        ) : approveResult === "success" || rejectResult === "success" ? (
+        ) : approveResult === "success" ||
+          rejectResult === "success" ||
+          requestChangesResult === "success" ? (
           <p className="text-sm font-medium text-success-600 dark:text-success-400">
             {approveResult === "success"
               ? t("applicationDetails.decision.approve.success")
-              : t("applicationDetails.decision.reject.success")}
+              : rejectResult === "success"
+                ? t("applicationDetails.decision.reject.success")
+                : t("applicationDetails.decision.requestChanges.success")}
           </p>
         ) : (
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
             <div className="space-y-3">
               <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">
                 {t("applicationDetails.decision.approve.title")}
@@ -730,6 +1281,59 @@ export default function AdminApplicationDetails({ applicationId }: Props) {
               >
                 {isApproving ? t("applicationDetails.decision.approve.submitting") : t("applicationDetails.decision.approve.submit")}
               </button>
+            </div>
+
+            <div className="space-y-3">
+              <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                {t("applicationDetails.decision.requestChanges.title")}
+              </p>
+              <input
+                type="text"
+                value={requestChangesReason}
+                onChange={(e) => {
+                  setRequestChangesReason(e.target.value);
+                  if (requestChangesReasonError) setRequestChangesReasonError(false);
+                }}
+                placeholder={t(
+                  "applicationDetails.decision.requestChanges.reasonPlaceholder"
+                )}
+                className={`w-full rounded-xl border px-3 py-2 text-sm text-gray-800 dark:bg-gray-800 dark:text-white ${
+                  requestChangesReasonError
+                    ? "border-red-400"
+                    : "border-gray-200 dark:border-gray-700"
+                }`}
+              />
+              {requestChangesReasonError ? (
+                <p className="text-xs text-error-500">
+                  {t(
+                    "applicationDetails.decision.requestChanges.reasonRequired"
+                  )}
+                </p>
+              ) : null}
+              <textarea
+                rows={3}
+                value={requestChangesNote}
+                onChange={(e) => setRequestChangesNote(e.target.value)}
+                placeholder={t(
+                  "applicationDetails.decision.requestChanges.notePlaceholder"
+                )}
+                className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+              />
+              <button
+                type="button"
+                disabled={!readinessSnapshot.canRequestChanges || isRequestingChanges}
+                onClick={handleRequestChanges}
+                className="inline-flex items-center gap-2 rounded-xl bg-orange-600 px-5 py-2 text-sm font-medium text-white transition hover:bg-orange-700 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {isRequestingChanges
+                  ? t("applicationDetails.decision.requestChanges.submitting")
+                  : t("applicationDetails.decision.requestChanges.submit")}
+              </button>
+              {requestChangesResult === "error" ? (
+                <p className="text-xs text-error-500">
+                  {t("applicationDetails.decision.requestChanges.error")}
+                </p>
+              ) : null}
             </div>
 
             <div className="space-y-3">

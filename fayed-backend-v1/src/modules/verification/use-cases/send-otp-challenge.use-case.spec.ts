@@ -41,6 +41,8 @@ describe('SendOtpChallengeUseCase', () => {
       }),
     ).rejects.toBeInstanceOf(ServiceUnavailableException);
 
-    expect(otpChallengeRepository.invalidate).toHaveBeenCalledWith('challenge-1');
+    expect(otpChallengeRepository.invalidate).toHaveBeenCalledWith(
+      'challenge-1',
+    );
   });
 });

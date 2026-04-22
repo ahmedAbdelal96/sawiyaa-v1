@@ -60,7 +60,9 @@ export class VerifyOtpChallengeUseCase {
       );
       if (updated.attemptCount >= updated.maxAttempts) {
         await this.otpChallengeRepository.invalidate(updated.id);
-        this.logger.warn(`OTP invalidated after max attempts (${input.purpose})`);
+        this.logger.warn(
+          `OTP invalidated after max attempts (${input.purpose})`,
+        );
       }
       throw new ForbiddenException({
         messageKey: 'auth.errors.otpCodeInvalid',

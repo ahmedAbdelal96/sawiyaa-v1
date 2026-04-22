@@ -333,7 +333,9 @@ export class FinancialOperationsMapper {
     };
   }
 
-  toAdminPayoutHistory(payout: SettlementPayoutWithRelations): AdminPayoutHistoryViewModel {
+  toAdminPayoutHistory(
+    payout: SettlementPayoutWithRelations,
+  ): AdminPayoutHistoryViewModel {
     return {
       ...this.toPractitionerPayoutHistory(payout),
       practitionerDisplayName: payout.practitioner?.user?.displayName ?? null,

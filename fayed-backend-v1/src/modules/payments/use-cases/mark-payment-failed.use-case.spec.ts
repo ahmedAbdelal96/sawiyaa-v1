@@ -12,6 +12,8 @@ describe('MarkPaymentFailedUseCase', () => {
         provider: PaymentProvider.STRIPE,
         status: PaymentStatus.PENDING,
         patientId: 'patient_1',
+        currencyCode: 'USD',
+        amountFromWallet: { gt: () => false, toString: () => '0.00' },
       }),
       createEvent: jest.fn().mockResolvedValue({}),
       updateStatus: jest.fn().mockResolvedValue({
@@ -19,6 +21,8 @@ describe('MarkPaymentFailedUseCase', () => {
         provider: PaymentProvider.STRIPE,
         status: PaymentStatus.FAILED,
         patientId: 'patient_1',
+        currencyCode: 'USD',
+        amountFromWallet: { gt: () => false, toString: () => '0.00' },
       }),
     };
     const validatePaymentStatusTransitionService = {
@@ -38,6 +42,9 @@ describe('MarkPaymentFailedUseCase', () => {
     const operationalNotificationService = {
       notifyPaymentFailed: jest.fn().mockResolvedValue(undefined),
     };
+    const customerWalletAccountingService = {
+      releaseReservationForPayment: jest.fn().mockResolvedValue(null),
+    };
     const logger = {
       warn: jest.fn(),
     };
@@ -49,6 +56,7 @@ describe('MarkPaymentFailedUseCase', () => {
       orchestrateSessionPaymentStatusService as never,
       orchestrateTrainingEnrollmentPaymentStatusService as never,
       paymentMapper as never,
+      customerWalletAccountingService as never,
       operationalNotificationService as never,
       logger as never,
     );
@@ -65,6 +73,8 @@ describe('MarkPaymentFailedUseCase', () => {
       payload: {},
     });
 
-    expect(setup.operationalNotificationService.notifyPaymentFailed).toHaveBeenCalledTimes(1);
+    expect(
+      setup.operationalNotificationService.notifyPaymentFailed,
+    ).toHaveBeenCalledTimes(1);
   });
 });

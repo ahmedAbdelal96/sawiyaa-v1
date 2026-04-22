@@ -17,4 +17,3 @@ export const enSettingsCatalog = {
       'Duplicate notification preference entries are not allowed',
   },
 };
-

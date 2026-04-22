@@ -11,6 +11,15 @@
     "title": "Profile Details",
     "subtitle": "Review your information, then edit only when needed."
   },
+  "wallet": {
+    "title": "Wallet Summary",
+    "hint": "Refunded session amounts are returned here.",
+    "availableLabel": "Available balance",
+    "reservedLabel": "Reserved balance",
+    "loading": "Loading balance...",
+    "noWallet": "No wallet yet",
+    "notAvailable": "-"
+  },
   "editModal": {
     "title": "Edit Profile",
     "description": "Update your details, then save."

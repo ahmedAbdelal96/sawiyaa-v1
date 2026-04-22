@@ -27,6 +27,8 @@ import type {
   RevokeCareChatRequestInput,
   SendCareChatMessageInput,
 } from "../types/care-chat.types";
+import { useSessionRole } from "@/lib/auth/use-session-role";
+import { isAdminRole } from "@/lib/auth/roles";
 
 export function usePatientCareChatRequests(params: CareChatListParams = {}) {
   return useQuery({
@@ -122,18 +124,21 @@ export function useSendPractitionerCareChatMessage(conversationId: string) {
 }
 
 export function useAdminCareChatRequests(params: CareChatListParams = {}) {
+  const role = useSessionRole();
   return useQuery({
     queryKey: adminCareChatQueryKeys.requestsList(params),
     queryFn: () => getAdminCareChatRequests(params),
+    enabled: isAdminRole(role),
     staleTime: 15_000,
   });
 }
 
 export function useAdminCareChatRequest(requestId: string | null) {
+  const role = useSessionRole();
   return useQuery({
     queryKey: adminCareChatQueryKeys.request(requestId ?? ""),
     queryFn: () => getAdminCareChatRequest(requestId!),
-    enabled: Boolean(requestId),
+    enabled: isAdminRole(role) && Boolean(requestId),
     staleTime: 15_000,
   });
 }
@@ -173,10 +178,11 @@ export function useRevokeAdminCareChatRequest(requestId: string) {
 }
 
 export function useAdminCareChatConversation(conversationId: string | null) {
+  const role = useSessionRole();
   return useQuery({
     queryKey: adminCareChatQueryKeys.conversation(conversationId ?? ""),
     queryFn: () => getAdminCareChatConversation(conversationId!),
-    enabled: Boolean(conversationId),
+    enabled: isAdminRole(role) && Boolean(conversationId),
     staleTime: 15_000,
   });
 }

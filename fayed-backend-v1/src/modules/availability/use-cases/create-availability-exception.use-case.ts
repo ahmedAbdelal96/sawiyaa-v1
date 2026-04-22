@@ -33,9 +33,8 @@ export class CreateAvailabilityExceptionUseCase {
     endsAtUtc: Date;
     reason?: string;
   }) {
-    const practitioner = await this.availabilityPractitionerRepository.findByUserId(
-      input.userId,
-    );
+    const practitioner =
+      await this.availabilityPractitionerRepository.findByUserId(input.userId);
 
     if (!practitioner) {
       throw new NotFoundException({
@@ -49,12 +48,15 @@ export class CreateAvailabilityExceptionUseCase {
       input.endsAtUtc,
     );
 
-    await this.availabilityExceptionRepository.createException(practitioner.id, {
-      type: input.type,
-      startsAtUtc: input.startsAtUtc,
-      endsAtUtc: input.endsAtUtc,
-      reason: input.reason?.trim() || null,
-    });
+    await this.availabilityExceptionRepository.createException(
+      practitioner.id,
+      {
+        type: input.type,
+        startsAtUtc: input.startsAtUtc,
+        endsAtUtc: input.endsAtUtc,
+        reason: input.reason?.trim() || null,
+      },
+    );
 
     const [weeklySlots, exceptions] = await Promise.all([
       this.availabilitySlotRepository.listActiveByPractitioner(practitioner.id),

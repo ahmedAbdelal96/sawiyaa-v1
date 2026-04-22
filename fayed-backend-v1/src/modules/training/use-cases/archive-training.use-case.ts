@@ -17,7 +17,9 @@ export class ArchiveTrainingUseCase {
   ) {}
 
   async execute(input: { courseId: string; query: TrainingLocaleQueryDto }) {
-    const existing = await this.trainingRepository.findCourseById(input.courseId);
+    const existing = await this.trainingRepository.findCourseById(
+      input.courseId,
+    );
     if (!existing) {
       throw new NotFoundException({
         messageKey: 'training.errors.notFound',
@@ -25,7 +27,9 @@ export class ArchiveTrainingUseCase {
       });
     }
 
-    this.validateTrainingStatusTransitionService.assertCanArchive(existing.status);
+    this.validateTrainingStatusTransitionService.assertCanArchive(
+      existing.status,
+    );
 
     const now = new Date();
     const updated = await this.trainingRepository.updateCourse(input.courseId, {

@@ -26,7 +26,10 @@ export class CreateSupportTicketDto {
   @MaxLength(2000)
   description!: string;
 
-  @ApiPropertyOptional({ enum: SupportTicketPriority, default: SupportTicketPriority.NORMAL })
+  @ApiPropertyOptional({
+    enum: SupportTicketPriority,
+    default: SupportTicketPriority.NORMAL,
+  })
   @IsOptional()
   @IsEnum(SupportTicketPriority)
   priority?: SupportTicketPriority;

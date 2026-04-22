@@ -55,7 +55,8 @@ export class UpdateSpecialtyCategoryUseCase {
       let candidate = baseSlug;
       let suffix = 2;
       while (true) {
-        const found = await this.specialtyCategoryRepository.findBySlug(candidate);
+        const found =
+          await this.specialtyCategoryRepository.findBySlug(candidate);
         if (!found || found.id === existing.id) break;
         candidate = `${baseSlug}-${suffix}`;
         suffix += 1;
@@ -86,4 +87,3 @@ export class UpdateSpecialtyCategoryUseCase {
     };
   }
 }
-

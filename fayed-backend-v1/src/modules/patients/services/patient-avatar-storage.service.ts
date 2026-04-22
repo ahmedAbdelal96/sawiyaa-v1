@@ -85,9 +85,7 @@ export class PatientAvatarStorageService {
     };
   }
 
-  async resolveAvatarDataUrl(
-    patientProfileId: string,
-  ): Promise<string | null> {
+  async resolveAvatarDataUrl(patientProfileId: string): Promise<string | null> {
     const stored = await this.findStoredAvatar(patientProfileId);
     if (!stored) {
       return null;

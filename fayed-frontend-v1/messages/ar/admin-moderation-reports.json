@@ -118,6 +118,9 @@
     "eyebrow": "بلاغ إشراف",
     "title": "تفاصيل البلاغ",
     "note": "استخدم هذه الصفحة لمراجعة البلاغ وحالته وأي إجراءات إشرافية متاحة ضمن عقد الباك.",
+    "actions": {
+      "openSupportChat": "مراسلة عبر الدعم"
+    },
     "sections": {
       "snapshotSummary": "الملخص التشغيلي",
       "case": "ملخص البلاغ",
@@ -136,6 +139,9 @@
       "lastActionAt": "آخر إجراء",
       "reporterRole": "دور المُبلّغ",
       "reporterUserId": "معرّف المُبلّغ",
+      "reporterName": "الاسم",
+      "reporterEmail": "البريد الإلكتروني",
+      "reporterPhone": "الهاتف",
       "noReporter": "—",
       "note": "ملاحظة المُبلّغ",
       "noNote": "لا توجد ملاحظة"

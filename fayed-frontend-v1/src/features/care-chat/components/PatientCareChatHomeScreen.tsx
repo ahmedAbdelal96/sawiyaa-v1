@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { Link, useRouter } from "@/i18n/navigation";
 import { ListStateSkeleton, StateCard } from "@/components/shared/ContentStates";
 import FilterClearButton from "@/components/ui/filters/FilterClearButton";
+import { DEFAULT_PAGE_LIMIT } from "@/constants/pagination";
 import { getCareChatErrorKey } from "../lib/care-chat-ui";
 import {
   useCreatePatientCareChatRequest,
@@ -46,7 +47,7 @@ export default function PatientCareChatHomeScreen({ prefill }: Props) {
   const params = useMemo(
     () => ({
       page: 1,
-      limit: 20,
+      limit: DEFAULT_PAGE_LIMIT,
       status: statusFilter === "ALL" ? undefined : statusFilter,
     }),
     [statusFilter],

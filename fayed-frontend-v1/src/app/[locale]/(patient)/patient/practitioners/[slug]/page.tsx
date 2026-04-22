@@ -177,6 +177,7 @@ export default async function PatientPractitionerProfilePage({ params }: Props) 
           languageLabels={languageLabels}
           backHref="/patient/practitioners"
           showBookingCta
+          messageHref={`/patient/care-chat?practitionerSlug=${slug}`}
         />
 
         <ProfileBookingPanel profile={profile} presence={presence} />

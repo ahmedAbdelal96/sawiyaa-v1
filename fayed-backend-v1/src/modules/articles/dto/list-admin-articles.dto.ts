@@ -2,7 +2,10 @@ import { ApiPropertyOptional } from '@nestjs/swagger';
 import { ArticleStatus, ContentLocale } from '@prisma/client';
 import { Type } from 'class-transformer';
 import { IsEnum, IsInt, IsOptional, IsString, Min } from 'class-validator';
-import { ARTICLE_ADMIN_DEFAULT_LIMIT, ARTICLE_DEFAULT_PAGE } from '../types/articles.types';
+import {
+  ARTICLE_ADMIN_DEFAULT_LIMIT,
+  ARTICLE_DEFAULT_PAGE,
+} from '../types/articles.types';
 
 export class ListAdminArticlesDto {
   @ApiPropertyOptional({ default: ARTICLE_DEFAULT_PAGE, minimum: 1 })

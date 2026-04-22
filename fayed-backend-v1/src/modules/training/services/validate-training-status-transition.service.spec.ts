@@ -7,7 +7,9 @@ describe('ValidateTrainingStatusTransitionService', () => {
 
   it('allows publish from draft or already published', () => {
     expect(() => service.assertCanPublish(CourseStatus.DRAFT)).not.toThrow();
-    expect(() => service.assertCanPublish(CourseStatus.PUBLISHED)).not.toThrow();
+    expect(() =>
+      service.assertCanPublish(CourseStatus.PUBLISHED),
+    ).not.toThrow();
   });
 
   it('rejects publish from archived', () => {
@@ -18,7 +20,9 @@ describe('ValidateTrainingStatusTransitionService', () => {
 
   it('allows archive from draft/published', () => {
     expect(() => service.assertCanArchive(CourseStatus.DRAFT)).not.toThrow();
-    expect(() => service.assertCanArchive(CourseStatus.PUBLISHED)).not.toThrow();
+    expect(() =>
+      service.assertCanArchive(CourseStatus.PUBLISHED),
+    ).not.toThrow();
   });
 
   it('rejects archive from disabled', () => {

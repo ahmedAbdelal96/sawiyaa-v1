@@ -28,10 +28,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
     let status = HttpStatus.INTERNAL_SERVER_ERROR;
     let messageKey = 'common.errors.internalServerError';
     let errorCode = 'INTERNAL_SERVER_ERROR';
-    let message = this.i18nService.t(
-      messageKey,
-      request.locale,
-    );
+    let message = this.i18nService.t(messageKey, request.locale);
     let errors: unknown[] = [];
 
     if (exception instanceof HttpException) {
@@ -54,8 +51,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
               ? res.error
               : null;
         const messageParams =
-          typeof res.messageParams === 'object' &&
-          res.messageParams !== null
+          typeof res.messageParams === 'object' && res.messageParams !== null
             ? (res.messageParams as Record<string, string | number>)
             : undefined;
 

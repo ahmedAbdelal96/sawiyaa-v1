@@ -1,4 +1,8 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InstantBookingRequestStatus } from '@prisma/client';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
 import { InstantBookingMapper } from '../mappers/instant-booking.mapper';
@@ -37,7 +41,9 @@ export class CancelInstantBookingRequestUseCase {
       patientId: patient.id,
     });
 
-    const request = await this.instantBookingRequestRepository.findById(input.requestId);
+    const request = await this.instantBookingRequestRepository.findById(
+      input.requestId,
+    );
 
     if (!request || request.patient.id !== patient.id) {
       throw new NotFoundException({

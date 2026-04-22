@@ -1,6 +1,9 @@
 import { SessionMode } from '@prisma/client';
 import { NormalizeMatchingInputService } from './normalize-matching-input.service';
-import { MatchingUrgencyPreference, PractitionerGenderPreference } from '../types/matching.types';
+import {
+  MatchingUrgencyPreference,
+  PractitionerGenderPreference,
+} from '../types/matching.types';
 
 describe('NormalizeMatchingInputService', () => {
   const service = new NormalizeMatchingInputService();

@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+
+<html dir="rtl" lang="ar"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Matching Results - Sanctuary</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&amp;family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container-highest": "#e0e2e7",
+                        "primary-fixed": "#d5e3ff",
+                        "on-primary-container": "#fefcff",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-container-low": "#f1f4f9",
+                        "on-tertiary-fixed-variant": "#683d00",
+                        "on-secondary-fixed": "#0a1c34",
+                        "on-secondary-container": "#51617e",
+                        "error-container": "#ffdad6",
+                        "on-error": "#ffffff",
+                        "inverse-surface": "#2d3135",
+                        "tertiary-container": "#a86500",
+                        "surface-container": "#eceef3",
+                        "outline": "#727783",
+                        "surface-bright": "#f7f9fe",
+                        "primary-container": "#3575c7",
+                        "on-surface-variant": "#424751",
+                        "on-secondary-fixed-variant": "#374762",
+                        "surface-variant": "#e0e2e7",
+                        "secondary-container": "#cdddff",
+                        "outline-variant": "#c2c6d3",
+                        "secondary": "#4f5f7b",
+                        "secondary-fixed": "#d6e3ff",
+                        "surface-container-high": "#e6e8ed",
+                        "tertiary-fixed-dim": "#ffb86b",
+                        "tertiary-fixed": "#ffdcbc",
+                        "inverse-on-surface": "#eff1f6",
+                        "primary": "#0b5cac",
+                        "on-primary": "#ffffff",
+                        "inverse-primary": "#a7c8ff",
+                        "on-background": "#181c20",
+                        "surface-tint": "#125eae",
+                        "surface-dim": "#d8dadf",
+                        "on-secondary": "#ffffff",
+                        "on-primary-fixed-variant": "#004689",
+                        "surface": "#f7f9fe",
+                        "on-error-container": "#93000a",
+                        "on-tertiary": "#ffffff",
+                        "error": "#ba1a1a",
+                        "on-primary-fixed": "#001b3c",
+                        "primary-fixed-dim": "#a7c8ff",
+                        "on-surface": "#181c20",
+                        "on-tertiary-container": "#fffbff",
+                        "on-tertiary-fixed": "#2c1700",
+                        "secondary-fixed-dim": "#b7c7e8",
+                        "tertiary": "#854f00",
+                        "background": "#f7f9fe"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {},
+                    "fontFamily": {
+                        "headline": ["IBM Plex Sans Arabic", "Manrope", "sans-serif"],
+                        "body": ["IBM Plex Sans Arabic", "Inter", "sans-serif"],
+                        "label": ["IBM Plex Sans Arabic", "Inter", "sans-serif"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'IBM Plex Sans Arabic', sans-serif; }
+        .glass-panel {
+            background-color: rgba(241, 244, 249, 0.85); /* surface-container-low */
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+        }
+        .btn-gradient {
+            background: linear-gradient(135deg, #0b5cac 0%, #3575c7 100%);
+        }
+        .ambient-shadow {
+            box-shadow: 0 4px 20px rgba(24, 28, 32, 0.05);
+        }
+        .ghost-border {
+            border: 1px solid rgba(194, 198, 211, 0.2);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface text-on-surface antialiased pb-24 md:pb-0 md:pt-16">
+<!-- TopAppBar -->
+<header class="bg-slate-200/85 dark:bg-slate-800/85 backdrop-blur-2xl docked w-full top-0 sticky shadow-[0_4px_20px_rgba(24,28,32,0.05)] z-40 hidden md:block">
+<div class="flex items-center justify-between w-full h-16 px-6">
+<div class="flex items-center gap-4">
+<button aria-label="Back" class="text-blue-800 dark:text-blue-300 hover:bg-slate-300/50 dark:hover:bg-slate-700/50 transition-colors rounded-full p-2">
+<span class="material-symbols-outlined transform rotate-180">arrow_back</span>
+</button>
+<h1 class="font-headline tracking-tight font-bold text-lg text-slate-900 dark:text-slate-100">Sanctuary</h1>
+</div>
+<nav class="flex gap-6">
+<!-- Nav items hidden on this specific task view to focus on canvas as per rules, TopAppBar structure maintained for desktop frame -->
+</nav>
+</div>
+</header>
+<!-- Mobile Top Header (Specific to this flow, overriding TopAppBar content slightly for context) -->
+<header class="md:hidden sticky top-0 z-30 glass-panel px-6 py-4 flex items-center justify-between shadow-[0_4px_20px_rgba(24,28,32,0.05)]">
+<button aria-label="Go back" class="p-2 -mr-2 text-on-surface-variant">
+<span class="material-symbols-outlined transform rotate-180">arrow_back</span>
+</button>
+<h1 class="font-headline font-bold text-lg text-on-surface tracking-tight">Sanctuary</h1>
+<div class="w-10"></div> <!-- Spacer -->
+</header>
+<main class="max-w-3xl mx-auto px-4 sm:px-6 py-8">
+<!-- Success Header -->
+<section class="text-center mb-10">
+<div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary-fixed mb-4">
+<span class="material-symbols-outlined text-primary text-3xl" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</div>
+<h2 class="font-headline font-bold text-2xl md:text-3xl text-on-surface mb-2">لقد وجدنا لك المعالجين المناسبين</h2>
+<p class="font-body text-on-surface-variant text-base md:text-lg">بناءً على إجاباتك، هؤلاء هم الخبراء الأنسب لحالتك.</p>
+</section>
+<!-- Therapists List (Bento-ish/Stacked Layers) -->
+<div class="space-y-6">
+<!-- Card 1: Top Match -->
+<article class="bg-surface-container-lowest rounded-xl ambient-shadow overflow-hidden relative ghost-border">
+<!-- Pulse Indicator (Top Match Highlight) -->
+<div class="absolute top-0 right-0 bottom-0 w-1 bg-surface-tint"></div>
+<div class="p-5 sm:p-6 flex flex-col sm:flex-row gap-5">
+<div class="flex-shrink-0 relative">
+<img alt="صورة د. أمل حسن" class="w-20 h-20 sm:w-24 sm:h-24 rounded-full object-cover border-2 border-surface-container-low" data-alt="professional portrait of a middle eastern female therapist wearing a blazer, warm smile, soft lighting, solid light grey background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBOv6Bz0hYRPrzUgDLNyx-E5MroR6eUL0dUNFojtGcL9cRTBP7P6odTqhO6YPFQiQoLenbyCfAUjDkl9d97oaD7jd5GFmEL_-QxV1aPiEqwsHSCMnN0EpWnu-zrXADJlTV3izAoSbzT-3_duvXfUuAzEdskuTFfpQ02Zbwr8crjKEh0r3ujg3IY3-8EhWMhtQ8aGxiTktCF6MjBoZu0l9RgfVrDngks9QhJCCEVArZub7TMV9Pa1w9wGZ_NEaod1NlmD9EELa9I8kIi"/>
+<div class="absolute -bottom-2 -right-2 bg-primary-container text-on-primary-container font-label text-[10px] sm:text-xs font-medium px-2 py-1 rounded-lg border-2 border-surface-container-lowest flex items-center gap-1 shadow-sm">
+<span class="material-symbols-outlined text-[14px]" style="font-variation-settings: 'FILL' 1;">star</span>
+<span>98% توافق</span>
+</div>
+</div>
+<div class="flex-grow">
+<div class="flex justify-between items-start mb-1">
+<div>
+<h3 class="font-headline font-bold text-lg sm:text-xl text-on-surface">د. أمل حسن</h3>
+<p class="font-body text-sm text-secondary">أخصائية نفسية إكلينيكية</p>
+</div>
+</div>
+<div class="mt-3 bg-surface-container-low rounded-lg p-3 inline-block">
+<p class="font-body text-xs sm:text-sm text-on-surface-variant flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-sm">psychology</span>
+<span class="font-medium text-on-surface">لماذا يناسبك؟</span> متخصصة في القلق والعلاج السلوكي المعرفي (CBT).
+                            </p>
+</div>
+<div class="mt-5 flex items-center gap-3">
+<button class="btn-gradient text-on-primary font-body font-medium text-sm px-5 py-2.5 rounded-lg w-full sm:w-auto text-center transition-transform hover:scale-[0.98]">احجز الآن</button>
+<button class="bg-surface-container-high text-on-primary-fixed-variant font-body font-medium text-sm px-5 py-2.5 rounded-lg w-full sm:w-auto text-center hover:bg-surface-variant transition-colors">عرض الملف</button>
+</div>
+</div>
+</div>
+</article>
+<!-- Card 2 -->
+<article class="bg-surface-container-lowest rounded-xl ambient-shadow overflow-hidden relative ghost-border">
+<div class="p-5 sm:p-6 flex flex-col sm:flex-row gap-5">
+<div class="flex-shrink-0 relative">
+<img alt="صورة د. خالد عمر" class="w-20 h-20 sm:w-24 sm:h-24 rounded-full object-cover border-2 border-surface-container-low" data-alt="professional portrait of a middle eastern male therapist with short beard wearing a light blue shirt, calm expression, bright soft studio lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBaZ7ZnfYhRKnVTysZKiO8bXjP0Pr70VL7um_FgpWdiEnjATzCGUA-Ih9OGkm4JNVFJEMG-8AmG9mMv8nxaqRTUTVBLfyiYegpQO2epDCtWBeFNC1ErRtezNsQ-JyS3rkWlrUHwf1OJ6ES_ITIS9xW2iE7Bv1LYxZY2xifvt9BWfLq6jyhdOzo8rxsl2xA-beuHoPa_vW4Cy33lP0o0nlATs-SXFz3xwqH9nGiYTSBJSvdeSLlilq3Z1nRk2T4iAOcIw4lTv7oyRZdy"/>
+<div class="absolute -bottom-2 -right-2 bg-surface-container-high text-on-surface-variant font-label text-[10px] sm:text-xs font-medium px-2 py-1 rounded-lg border-2 border-surface-container-lowest flex items-center gap-1">
+<span>92% توافق</span>
+</div>
+</div>
+<div class="flex-grow">
+<div class="flex justify-between items-start mb-1">
+<div>
+<h3 class="font-headline font-bold text-lg sm:text-xl text-on-surface">د. خالد عمر</h3>
+<p class="font-body text-sm text-secondary">معالج نفسي معتمد</p>
+</div>
+</div>
+<div class="mt-3 bg-surface-container-low rounded-lg p-3 inline-block">
+<p class="font-body text-xs sm:text-sm text-on-surface-variant flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-sm">spa</span>
+<span class="font-medium text-on-surface">نقطة القوة:</span> خبرة واسعة في إدارة التوتر واليقظة الذهنية.
+                            </p>
+</div>
+<div class="mt-5 flex items-center gap-3">
+<button class="btn-gradient text-on-primary font-body font-medium text-sm px-5 py-2.5 rounded-lg w-full sm:w-auto text-center transition-transform hover:scale-[0.98]">احجز الآن</button>
+<button class="bg-surface-container-high text-on-primary-fixed-variant font-body font-medium text-sm px-5 py-2.5 rounded-lg w-full sm:w-auto text-center hover:bg-surface-variant transition-colors">عرض الملف</button>
+</div>
+</div>
+</div>
+</article>
+<!-- Card 3 -->
+<article class="bg-surface-container-lowest rounded-xl ambient-shadow overflow-hidden relative ghost-border">
+<div class="p-5 sm:p-6 flex flex-col sm:flex-row gap-5">
+<div class="flex-shrink-0 relative">
+<img alt="صورة د. سارة عبد الرحمن" class="w-20 h-20 sm:w-24 sm:h-24 rounded-full object-cover border-2 border-surface-container-low" data-alt="professional headshot of an arab female therapist wearing a modest blouse, gentle smile, neutral calm background, warm lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCFV7Dnzg6Elw4Z9UnDXRc4rZ1Dlt-WrmdfmZUgw8PhqXdAbfnaW6kBmac5-Bxfyc_73Bjk-LZPg32Eummw_6zkSUXe4Gst5MHBF9Sj-GC0S1gP3pYKNJTc_xAXTym6J8__1WpntQCo_DV9Q16_BScrqidU40XRz2DpljMOVzTqu05dpNqCNlUZB4PUu1tdFac2etjI_lo4SE15RqkAV2pyfzkGOJm2D29WTJZJOJa1FcVFcmRWJ4ZR-j4wDSvdDt-4bwhFbCyMhE6x"/>
+<div class="absolute -bottom-2 -right-2 bg-surface-container-high text-on-surface-variant font-label text-[10px] sm:text-xs font-medium px-2 py-1 rounded-lg border-2 border-surface-container-lowest flex items-center gap-1">
+<span>89% توافق</span>
+</div>
+</div>
+<div class="flex-grow">
+<div class="flex justify-between items-start mb-1">
+<div>
+<h3 class="font-headline font-bold text-lg sm:text-xl text-on-surface">د. سارة عبد الرحمن</h3>
+<p class="font-body text-sm text-secondary">أخصائية استشارات أسرية</p>
+</div>
+</div>
+<div class="mt-3 bg-surface-container-low rounded-lg p-3 inline-block">
+<p class="font-body text-xs sm:text-sm text-on-surface-variant flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-sm">forum</span>
+<span class="font-medium text-on-surface">أسلوب العلاج:</span> تركز على تحسين التواصل والعلاقات الشخصية.
+                            </p>
+</div>
+<div class="mt-5 flex items-center gap-3">
+<button class="btn-gradient text-on-primary font-body font-medium text-sm px-5 py-2.5 rounded-lg w-full sm:w-auto text-center transition-transform hover:scale-[0.98]">احجز الآن</button>
+<button class="bg-surface-container-high text-on-primary-fixed-variant font-body font-medium text-sm px-5 py-2.5 rounded-lg w-full sm:w-auto text-center hover:bg-surface-variant transition-colors">عرض الملف</button>
+</div>
+</div>
+</div>
+</article>
+</div>
+<div class="mt-8 text-center">
+<button class="text-primary font-body font-bold text-sm bg-transparent hover:bg-surface-container-low px-4 py-2 rounded-lg transition-colors">إعادة التقييم</button>
+</div>
+</main>
+<!-- BottomNavBar (Suppressed intentionally as this is a linear transactional result view before booking) -->
+<!-- Navigation shell excluded based on UX Goal rules: focused journey / dead end relative to global nav -->
+</body></html>

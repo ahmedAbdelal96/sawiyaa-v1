@@ -1,6 +1,13 @@
 import { registerAs } from '@nestjs/config';
 
-const LOG_LEVELS = ['error', 'warn', 'info', 'http', 'debug', 'verbose'] as const;
+const LOG_LEVELS = [
+  'error',
+  'warn',
+  'info',
+  'http',
+  'debug',
+  'verbose',
+] as const;
 type LogLevel = (typeof LOG_LEVELS)[number];
 
 function isLogLevel(value: string | undefined): value is LogLevel {

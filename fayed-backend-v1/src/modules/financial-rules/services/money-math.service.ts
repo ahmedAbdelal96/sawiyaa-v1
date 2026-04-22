@@ -8,7 +8,9 @@ export class MoneyMathService {
   toDecimal(value: DecimalLike): Prisma.Decimal {
     return value instanceof Prisma.Decimal
       ? value
-      : new Prisma.Decimal(typeof value === 'object' ? value.toString() : value);
+      : new Prisma.Decimal(
+          typeof value === 'object' ? value.toString() : value,
+        );
   }
 
   roundMoney(value: DecimalLike): Prisma.Decimal {
@@ -30,10 +32,16 @@ export class MoneyMathService {
   }
 
   min(a: DecimalLike, b: DecimalLike): Prisma.Decimal {
-    return Prisma.Decimal.min(this.toDecimal(a), this.toDecimal(b)).toDecimalPlaces(2);
+    return Prisma.Decimal.min(
+      this.toDecimal(a),
+      this.toDecimal(b),
+    ).toDecimalPlaces(2);
   }
 
   max(a: DecimalLike, b: DecimalLike): Prisma.Decimal {
-    return Prisma.Decimal.max(this.toDecimal(a), this.toDecimal(b)).toDecimalPlaces(2);
+    return Prisma.Decimal.max(
+      this.toDecimal(a),
+      this.toDecimal(b),
+    ).toDecimalPlaces(2);
   }
 }

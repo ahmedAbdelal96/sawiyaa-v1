@@ -29,7 +29,7 @@ const Button: React.FC<ButtonProps> = ({
   // Variant Classes - Using semantic theme classes
   const variantClasses = {
     primary:
-      "bg-primary text-white shadow-[0_12px_24px_-16px_rgba(63,125,207,0.34)] hover:bg-primary-hover hover:shadow-[0_14px_28px_-18px_rgba(63,125,207,0.4)] disabled:opacity-50",
+      "bg-primary text-white shadow-[0_12px_24px_-16px_rgba(68,161,148,0.34)] hover:bg-primary-hover hover:shadow-[0_14px_28px_-18px_rgba(68,161,148,0.4)] disabled:opacity-50",
     outline:
       "border border-border-light bg-white text-text-primary shadow-[0_10px_20px_-16px_rgba(34,52,56,0.08)] hover:border-primary/30 hover:bg-brand-25 dark:bg-surface-secondary dark:text-text-primary dark:hover:bg-surface-tertiary",
     secondary:

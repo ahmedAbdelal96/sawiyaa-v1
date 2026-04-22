@@ -53,16 +53,14 @@ export class ArticleRepository {
   updateCategory(
     id: string,
     data: Prisma.ArticleCategoryUncheckedUpdateInput,
-    translation?:
-      | {
-          locale: ContentLocale;
-          title?: string;
-          slug?: string;
-          description?: string | null;
-          metaTitle?: string | null;
-          metaDescription?: string | null;
-        }
-      | undefined,
+    translation?: {
+      locale: ContentLocale;
+      title?: string;
+      slug?: string;
+      description?: string | null;
+      metaTitle?: string | null;
+      metaDescription?: string | null;
+    },
   ) {
     return this.prisma.articleCategory.update({
       where: { id },
@@ -191,7 +189,9 @@ export class ArticleRepository {
         ...(input.contentMarkdown !== undefined
           ? { contentMarkdown: input.contentMarkdown }
           : {}),
-        ...(input.metaTitle !== undefined ? { metaTitle: input.metaTitle } : {}),
+        ...(input.metaTitle !== undefined
+          ? { metaTitle: input.metaTitle }
+          : {}),
         ...(input.metaDescription !== undefined
           ? { metaDescription: input.metaDescription }
           : {}),
@@ -209,7 +209,10 @@ export class ArticleRepository {
     });
   }
 
-  setPrimaryCategoryAssignment(input: { articleId: string; categoryId: string }) {
+  setPrimaryCategoryAssignment(input: {
+    articleId: string;
+    categoryId: string;
+  }) {
     return this.prisma.$transaction(async (tx) => {
       await tx.articleCategoryAssignment.updateMany({
         where: {
@@ -358,7 +361,11 @@ export class ArticleRepository {
         where,
         skip,
         take: input.limit,
-        orderBy: [{ publishedAt: 'desc' }, { createdAt: 'desc' }, { id: 'asc' }],
+        orderBy: [
+          { publishedAt: 'desc' },
+          { createdAt: 'desc' },
+          { id: 'asc' },
+        ],
         include: this.articleInclude(input.locale),
       }),
       this.prisma.article.count({ where }),

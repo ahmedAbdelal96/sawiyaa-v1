@@ -12,9 +12,8 @@ export class GetPublicPractitionerTrustSummaryUseCase {
   ) {}
 
   async execute(input: { slug: string }) {
-    const practitioner = await this.reviewRepository.findPublicPractitionerBySlug(
-      input.slug,
-    );
+    const practitioner =
+      await this.reviewRepository.findPublicPractitionerBySlug(input.slug);
     if (!practitioner) {
       throw new NotFoundException({
         messageKey: 'reviews.errors.publicPractitionerNotFound',
@@ -29,7 +28,8 @@ export class GetPublicPractitionerTrustSummaryUseCase {
     const summary = this.buildPractitionerCredibilitySummaryService.build({
       totalPublicReviews: aggregate._count.id ?? 0,
       averagePublicRating:
-        aggregate._avg.ratingValue === null || aggregate._avg.ratingValue === undefined
+        aggregate._avg.ratingValue === null ||
+        aggregate._avg.ratingValue === undefined
           ? null
           : Number(aggregate._avg.ratingValue),
       latestPublishedAt: aggregate._max.publishedAt ?? null,
@@ -55,4 +55,3 @@ export class GetPublicPractitionerTrustSummaryUseCase {
     };
   }
 }
-

@@ -3,7 +3,9 @@ import { MatchingAnswerKey } from '@prisma/client';
 import { MatchingPresenter } from './matching.presenter';
 
 describe('MatchingPresenter', () => {
-  const presenter = new MatchingPresenter(new RecommendationPrecedenceService());
+  const presenter = new MatchingPresenter(
+    new RecommendationPrecedenceService(),
+  );
 
   it('emits shared recommendation contract with explainability fields', () => {
     const result = presenter.presentSession({

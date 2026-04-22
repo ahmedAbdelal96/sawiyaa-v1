@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { SessionMode, SessionProvider, SessionStatus } from '@prisma/client';
 import { SessionJoinBlockedReason } from '../types/session-video.types';
 
@@ -11,9 +12,19 @@ export class ResolveSessionJoinReadinessService {
     SessionStatus.IN_PROGRESS,
   ]);
 
-  private readonly prepareLeadMinutes = 24 * 60;
-  private readonly joinLeadMinutes = 15;
-  private readonly joinLagMinutes = 120;
+  private readonly prepareLeadMinutes: number;
+  private readonly joinLeadMinutes: number;
+  private readonly joinLagMinutes: number;
+
+  constructor(private readonly configService: ConfigService) {
+    this.prepareLeadMinutes =
+      this.configService.get<number>('session.runtimePrepareLeadMinutes') ??
+      24 * 60;
+    this.joinLeadMinutes =
+      this.configService.get<number>('session.joinLeadMinutes') ?? 15;
+    this.joinLagMinutes =
+      this.configService.get<number>('session.joinLagMinutes') ?? 120;
+  }
 
   resolve(input: {
     status: SessionStatus;

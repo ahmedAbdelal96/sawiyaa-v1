@@ -67,6 +67,14 @@ export interface ModerationQueueItem {
 export interface ModerationCaseDetail extends ModerationQueueItem {
   reporterUserId: string | null;
   note: string | null;
+  reporter: {
+    userId: string;
+    displayName: string | null;
+    email: string | null;
+    phone: string | null;
+    patientProfileId: string | null;
+    practitionerProfileId: string | null;
+  } | null;
 }
 
 export interface ModerationPagination {

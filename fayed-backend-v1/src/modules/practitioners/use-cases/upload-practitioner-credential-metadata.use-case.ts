@@ -26,7 +26,9 @@ export class UploadPractitionerCredentialMetadataUseCase {
     fileUrl: string;
     expiresAt?: Date | null;
   }) {
-    const profile = await this.createPractitionerProfileUseCase.execute(input.userId);
+    const profile = await this.createPractitionerProfileUseCase.execute(
+      input.userId,
+    );
 
     const existing =
       await this.practitionerCredentialRepository.findExistingByTypeAndFileUrl({

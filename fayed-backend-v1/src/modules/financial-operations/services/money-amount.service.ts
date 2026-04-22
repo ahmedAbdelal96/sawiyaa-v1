@@ -11,7 +11,10 @@ export class MoneyAmountService {
     return this.toDecimal(value).toDecimalPlaces(2).toFixed(2);
   }
 
-  signedAmount(direction: 'CREDIT' | 'DEBIT', amount: Prisma.Decimal | string | number) {
+  signedAmount(
+    direction: 'CREDIT' | 'DEBIT',
+    amount: Prisma.Decimal | string | number,
+  ) {
     const decimal = this.toDecimal(amount);
     return direction === 'CREDIT' ? decimal : decimal.negated();
   }

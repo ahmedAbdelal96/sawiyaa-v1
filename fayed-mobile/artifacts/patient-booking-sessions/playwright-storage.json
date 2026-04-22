@@ -1,0 +1,24 @@
+{
+    "cookies":  [
+
+                ],
+    "origins":  [
+                    {
+                        "localStorage":  [
+                                             {
+                                                 "value":  "{\"tokens\":{\"accessToken\":\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMTExMTExMS0xMTExLTQxMTEtODExMS0xMTExMTExMTExMTQiLCJzZXNzaW9uSWQiOiI1MjIyMWVlYS00YTRiLTRmYWItYmRjYi04YTZhYTkzZjAyMDUiLCJyb2xlIjoiUEFUSUVOVCIsInRva2VuVmVyc2lvbiI6MCwidG9rZW5UeXBlIjoiYWNjZXNzIiwiaWF0IjoxNzc2NzgwMDMyLCJleHAiOjE3NzY4NjY0MzIsImlzcyI6ImZheWVkLWJhY2tlbmQtdjEifQ.A15QLCL7-dEtTiwYzc8XST7qFrj9el9e2ui3YWmM70Q\",\"refreshToken\":\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMTExMTExMS0xMTExLTQxMTEtODExMS0xMTExMTExMTExMTQiLCJzZXNzaW9uSWQiOiI1MjIyMWVlYS00YTRiLTRmYWItYmRjYi04YTZhYTkzZjAyMDUiLCJyb2xlIjoiUEFUSUVOVCIsInRva2VuVmVyc2lvbiI6MCwidG9rZW5UeXBlIjoicmVmcmVzaCIsImlhdCI6MTc3Njc4MDAzMiwiZXhwIjoxNzc3Mzg0ODMyLCJpc3MiOiJmYXllZC1iYWNrZW5kLXYxIn0.PWGfXQkGqR0OkWnfitS1_oeZGAigjpILGH8B_DClP30\",\"accessTokenExpiresAt\":\"2026-04-22T14:00:32.249Z\",\"refreshTokenExpiresAt\":\"2026-04-28T14:00:32.249Z\"},\"user\":{\"id\":\"11111111-1111-4111-8111-111111111114\",\"displayName\":\"أحمد محمود\",\"status\":\"ACTIVE\",\"roles\":[\"PATIENT\"],\"primaryEmail\":\"ahmed.patient@hesba.local\",\"isEmailVerified\":true,\"primaryPhone\":\"+201000000001\",\"isPhoneVerified\":true,\"practitionerProfileId\":null,\"practitionerStatus\":null},\"role\":\"patient\"}",
+                                                 "name":  "fayed.mobile.auth.session.v1"
+                                             },
+                                             {
+                                                 "value":  "agent-smoke-device",
+                                                 "name":  "fayed.mobile.device.id.v1"
+                                             },
+                                             {
+                                                 "value":  "ar",
+                                                 "name":  "fayed.app.language"
+                                             }
+                                         ],
+                        "origin":  "http://localhost:8081"
+                    }
+                ]
+}

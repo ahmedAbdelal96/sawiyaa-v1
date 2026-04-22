@@ -16,7 +16,10 @@ export class ConfigInternalGuard implements CanActivate {
   constructor(private readonly configService: ConfigService) {}
 
   canActivate(context: ExecutionContext): boolean {
-    const isHttpEnabled = this.configService.get<string>('http.enabled', 'false');
+    const isHttpEnabled = this.configService.get<string>(
+      'http.enabled',
+      'false',
+    );
 
     if (isHttpEnabled !== 'true') {
       throw new NotFoundException();
@@ -26,7 +29,8 @@ export class ConfigInternalGuard implements CanActivate {
 
     if (!expectedToken) {
       throw new ForbiddenException({
-        message: 'Config endpoint is disabled until an internal token is configured',
+        message:
+          'Config endpoint is disabled until an internal token is configured',
         error: 'CONFIG_ENDPOINT_TOKEN_MISSING',
       });
     }

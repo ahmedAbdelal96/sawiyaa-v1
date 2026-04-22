@@ -123,7 +123,9 @@ export class LoggingInterceptor implements NestInterceptor {
     );
   }
 
-  private buildBaseMeta(request: AuthenticatedRequest): Record<string, unknown> {
+  private buildBaseMeta(
+    request: AuthenticatedRequest,
+  ): Record<string, unknown> {
     const expressRequest = request as Request;
     return sanitizeForLogging({
       requestId: request.requestId,

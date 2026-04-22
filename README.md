@@ -117,6 +117,40 @@ Keep API base URLs aligned across frontend/mobile to the backend host and port.
 - CORS/local auth issues: verify frontend origin is included in backend `CORS_ORIGINS`.
 - Port collisions: ensure backend and frontend are not sharing conflicting ports.
 
+## LAN Development (Open Dev From Another Device)
+
+If you want to open the dev frontend/backend from another device on the same network (phone/laptop):
+
+1) Find your machine IP (example output will differ):
+
+```powershell
+ipconfig | Select-String -Pattern 'IPv4 Address'
+```
+
+2) Run the backend (default `PORT=7000` from `fayed-backend-v1/.env`):
+
+```powershell
+cd D:\Web\full-projects\fayed\fayed-backend-v1
+npm run start:dev
+```
+
+3) Run the frontend bound to your LAN interface:
+
+```powershell
+cd D:\Web\full-projects\fayed\fayed-frontend-v1
+npm run dev:lan
+```
+
+4) From the other device, open:
+
+- Frontend: `http://<YOUR_PC_IP>:3000`
+- Backend (optional): `http://<YOUR_PC_IP>:7000/api/docs`
+
+Notes:
+
+- Frontend API calls use `NEXT_PUBLIC_API_URL=/api/v1` and Next.js proxies to the backend via `API_PROXY_TARGET`.
+- If Windows Firewall blocks access, allow inbound TCP for ports `3000` and `7000`.
+
 ## License / Internal Use
 
 Unless explicitly stated otherwise in sub-project metadata, treat this repository as internal project code.

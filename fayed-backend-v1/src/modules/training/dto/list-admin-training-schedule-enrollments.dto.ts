@@ -22,4 +22,3 @@ export class ListAdminTrainingScheduleEnrollmentsDto {
   @IsEnum(EnrollmentStatus)
   status?: EnrollmentStatus;
 }
-

@@ -21,6 +21,7 @@ import {
   usePatientRegister,
   usePractitionerRegister,
 } from "@/features/auth/hooks/use-auth";
+import { normalizeCallbackPath } from "@/lib/auth/callback-url";
 
 export const SIGN_UP_MODES = ["patient", "practitioner"] as const;
 export type SignUpMode = (typeof SIGN_UP_MODES)[number];
@@ -35,10 +36,6 @@ const signUpSchema = z.object({
 });
 
 type SignUpFormData = z.infer<typeof signUpSchema>;
-
-function isSafeCallbackUrl(value: string | null): value is string {
-  return Boolean(value && value.startsWith("/"));
-}
 
 function buildAuthHref(basePath: string, params: Record<string, string | null>) {
   const search = new URLSearchParams();
@@ -58,6 +55,7 @@ export default function SignUpForm({ mode }: SignUpFormProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl");
+  const normalizedCallbackUrl = normalizeCallbackPath(callbackUrl);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -111,7 +109,7 @@ export default function SignUpForm({ mode }: SignUpFormProps) {
     try {
       if (mode === "patient") {
         await patientRegister.mutateAsync(data);
-        router.replace(isSafeCallbackUrl(callbackUrl) ? callbackUrl : "/practitioners");
+        router.replace(normalizedCallbackUrl ?? "/practitioners");
         router.refresh();
         return;
       }
@@ -148,7 +146,7 @@ export default function SignUpForm({ mode }: SignUpFormProps) {
 
   const descriptionKey =
     mode === "practitioner" ? "signUpDescriptionPractitioner" : "signUpDescriptionPatient";
-  const signInHref = buildAuthHref(`/signin/${mode}`, { callbackUrl });
+  const signInHref = buildAuthHref(`/signin/${mode}`, { callbackUrl: normalizedCallbackUrl });
 
   return (
     <div className="flex w-full flex-1 flex-col justify-center lg:w-1/2">

@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiForbiddenResponse,
@@ -17,11 +25,23 @@ import {
 } from '../dto/create-general-chat-conversation.dto';
 import { MarkGeneralChatConversationReadDto } from '../dto/mark-general-chat-conversation-read.dto';
 import { ReportGeneralChatTargetDto } from '../dto/report-general-chat-target.dto';
-import { GeneralChatConversationDetailSuccessResponseDto, GeneralChatConversationListSuccessResponseDto, GeneralChatConversationReadStateSuccessResponseDto, GeneralChatMessageSuccessResponseDto, GeneralChatModerationReportSuccessResponseDto } from '../dto/general-chat-response.dto';
+import {
+  GeneralChatConversationDetailSuccessResponseDto,
+  GeneralChatConversationListSuccessResponseDto,
+  GeneralChatConversationReadStateSuccessResponseDto,
+  GeneralChatMessageSuccessResponseDto,
+  GeneralChatMessageListSuccessResponseDto,
+  GeneralChatModerationReportSuccessResponseDto,
+  UnifiedMessagingUnreadSummarySuccessResponseDto,
+} from '../dto/general-chat-response.dto';
 import { ListGeneralChatConversationsDto } from '../dto/list-general-chat-conversations.dto';
+import { ListGeneralChatMessagesDto } from '../dto/list-general-chat-messages.dto';
 import { SendGeneralChatMessageDto } from '../dto/send-general-chat-message.dto';
+import { CloseGeneralChatConversationUseCase } from '../use-cases/close-general-chat-conversation.use-case';
 import { GetMyGeneralChatConversationDetailUseCase } from '../use-cases/get-my-general-chat-conversation-detail.use-case';
+import { GetMyUnifiedMessagingUnreadSummaryUseCase } from '../use-cases/get-my-unified-messaging-unread-summary.use-case';
 import { ListMyGeneralChatConversationsUseCase } from '../use-cases/list-my-general-chat-conversations.use-case';
+import { ListMyGeneralChatMessagesUseCase } from '../use-cases/list-my-general-chat-messages.use-case';
 import { MarkMyGeneralChatConversationReadUseCase } from '../use-cases/mark-my-general-chat-conversation-read.use-case';
 import { ReportGeneralChatTargetUseCase } from '../use-cases/report-general-chat-target.use-case';
 import { CreateOrGetGeneralChatConversationUseCase } from '../use-cases/create-or-get-general-chat-conversation.use-case';
@@ -36,9 +56,12 @@ export class GeneralChatConversationsController {
     private readonly createOrGetGeneralChatConversationUseCase: CreateOrGetGeneralChatConversationUseCase,
     private readonly listMyGeneralChatConversationsUseCase: ListMyGeneralChatConversationsUseCase,
     private readonly getMyGeneralChatConversationDetailUseCase: GetMyGeneralChatConversationDetailUseCase,
+    private readonly getMyUnifiedMessagingUnreadSummaryUseCase: GetMyUnifiedMessagingUnreadSummaryUseCase,
+    private readonly listMyGeneralChatMessagesUseCase: ListMyGeneralChatMessagesUseCase,
     private readonly sendGeneralChatMessageUseCase: SendGeneralChatMessageUseCase,
     private readonly markMyGeneralChatConversationReadUseCase: MarkMyGeneralChatConversationReadUseCase,
     private readonly reportGeneralChatTargetUseCase: ReportGeneralChatTargetUseCase,
+    private readonly closeGeneralChatConversationUseCase: CloseGeneralChatConversationUseCase,
   ) {}
 
   @Get()
@@ -47,10 +70,14 @@ export class GeneralChatConversationsController {
     description:
       'Returns participant-scoped general chat conversations only, ordered deterministically for frontend list rendering.',
   })
-  @ApiResponse({ status: 200, type: GeneralChatConversationListSuccessResponseDto })
+  @ApiResponse({
+    status: 200,
+    type: GeneralChatConversationListSuccessResponseDto,
+  })
   @ApiUnauthorizedResponse({ description: 'Access token is required' })
   @ApiForbiddenResponse({
-    description: 'The authenticated session is not allowed to access this route',
+    description:
+      'The authenticated session is not allowed to access this route',
   })
   listMyConversations(
     @CurrentUser() authenticatedUser: AuthenticatedUser,
@@ -62,13 +89,33 @@ export class GeneralChatConversationsController {
     });
   }
 
+  @Get('unread-summary')
+  @ApiOperation({
+    summary: 'Get unified unread summary across messaging lanes',
+    description:
+      'Returns role-scoped unread counts for session chat, support, and practitioner-care lanes using persisted message/read status truth.',
+  })
+  @ApiResponse({
+    status: 200,
+    type: UnifiedMessagingUnreadSummarySuccessResponseDto,
+  })
+  @ApiUnauthorizedResponse({ description: 'Access token is required' })
+  unifiedUnreadSummary(@CurrentUser() authenticatedUser: AuthenticatedUser) {
+    return this.getMyUnifiedMessagingUnreadSummaryUseCase.execute({
+      authenticatedUser,
+    });
+  }
+
   @Get(':id')
   @ApiOperation({
     summary: 'Get my general chat conversation detail',
     description:
       'Returns one participant-scoped general chat conversation detail with safe latest-message projection and empty-state behavior when no messages exist.',
   })
-  @ApiResponse({ status: 200, type: GeneralChatConversationDetailSuccessResponseDto })
+  @ApiResponse({
+    status: 200,
+    type: GeneralChatConversationDetailSuccessResponseDto,
+  })
   @ApiUnauthorizedResponse({ description: 'Access token is required' })
   @ApiForbiddenResponse({
     description: 'Only conversation participants can read conversation detail',
@@ -80,6 +127,29 @@ export class GeneralChatConversationsController {
     return this.getMyGeneralChatConversationDetailUseCase.execute({
       authenticatedUser,
       conversationId,
+    });
+  }
+
+  @Get(':id/messages')
+  @ApiOperation({
+    summary: 'List messages in my owned general chat conversation',
+    description:
+      'Returns paginated message history for one owned General Chat conversation, including attachment references.',
+  })
+  @ApiResponse({ status: 200, type: GeneralChatMessageListSuccessResponseDto })
+  @ApiUnauthorizedResponse({ description: 'Access token is required' })
+  @ApiForbiddenResponse({
+    description: 'Only conversation participants can read message history',
+  })
+  listMessages(
+    @CurrentUser() authenticatedUser: AuthenticatedUser,
+    @Param('id') conversationId: string,
+    @Query() query: ListGeneralChatMessagesDto,
+  ) {
+    return this.listMyGeneralChatMessagesUseCase.execute({
+      authenticatedUser,
+      conversationId,
+      query,
     });
   }
 
@@ -125,6 +195,27 @@ export class GeneralChatConversationsController {
       authenticatedUser,
       conversationId,
       dto,
+    });
+  }
+
+  @Post(':id/close')
+  @ApiOperation({
+    summary: 'Close a general chat conversation',
+    description:
+      'Product rule: patient cannot close; practitioner or admin can. Closing blocks further sends.',
+  })
+  @ApiResponse({ status: 201 })
+  @ApiUnauthorizedResponse({ description: 'Access token is required' })
+  @ApiForbiddenResponse({
+    description: 'Only practitioner participant or admin can close',
+  })
+  close(
+    @CurrentUser() authenticatedUser: AuthenticatedUser,
+    @Param('id') conversationId: string,
+  ) {
+    return this.closeGeneralChatConversationUseCase.execute({
+      authenticatedUser,
+      conversationId,
     });
   }
 

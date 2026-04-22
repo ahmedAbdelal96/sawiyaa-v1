@@ -18,7 +18,9 @@ export class ResolveCommissionRuleService {
   ) {}
 
   async resolveForSession(session: SessionFinancialContext) {
-    const candidates = await this.commissionRuleRepository.listActiveRules(new Date());
+    const candidates = await this.commissionRuleRepository.listActiveRules(
+      new Date(),
+    );
     const primarySpecialtyId =
       session.practitioner.specialties.find((specialty) => specialty.isPrimary)
         ?.specialtyId ??
@@ -112,7 +114,10 @@ export class ResolveCommissionRuleService {
       specialtyId: string | null;
     },
   ) {
-    if (rule.marketType !== MarketType.ANY && rule.marketType !== context.marketType) {
+    if (
+      rule.marketType !== MarketType.ANY &&
+      rule.marketType !== context.marketType
+    ) {
       return false;
     }
 
@@ -123,11 +128,17 @@ export class ResolveCommissionRuleService {
       return false;
     }
 
-    if (rule.patientCountryId && rule.patientCountryId !== context.patientCountryId) {
+    if (
+      rule.patientCountryId &&
+      rule.patientCountryId !== context.patientCountryId
+    ) {
       return false;
     }
 
-    if (rule.sessionFlowType && rule.sessionFlowType !== context.sessionFlowType) {
+    if (
+      rule.sessionFlowType &&
+      rule.sessionFlowType !== context.sessionFlowType
+    ) {
       return false;
     }
 

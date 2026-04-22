@@ -16,16 +16,17 @@ export class CreatePractitionerProfileUseCase {
   ) {}
 
   async execute(userId: string, tx?: Prisma.TransactionClient) {
-    const existingProfile = await this.practitionerProfileRepository.findByUserId(
-      userId,
-      tx,
-    );
+    const existingProfile =
+      await this.practitionerProfileRepository.findByUserId(userId, tx);
 
     if (existingProfile) {
       return existingProfile;
     }
 
-    const user = await this.practitionerUserRepository.findProfileSeed(userId, tx);
+    const user = await this.practitionerUserRepository.findProfileSeed(
+      userId,
+      tx,
+    );
 
     if (!user) {
       throw new NotFoundException({
@@ -43,4 +44,3 @@ export class CreatePractitionerProfileUseCase {
     );
   }
 }
-

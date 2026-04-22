@@ -30,6 +30,7 @@ export class PractitionerApplicationReviewPolicy {
     hasPayoutDestination: boolean;
     canBeReviewed: boolean;
     canBeApproved: boolean;
+    canRequestChanges: boolean;
   } {
     const profileCompleted =
       input.hasDisplayName &&
@@ -53,6 +54,7 @@ export class PractitionerApplicationReviewPolicy {
       hasPayoutDestination: input.hasPayoutDestination,
       canBeReviewed: transitionSnapshot.canBeReviewed,
       canBeApproved: transitionSnapshot.canBeApproved && profileCompleted,
+      canRequestChanges: transitionSnapshot.canRequestChanges,
     };
   }
 }

@@ -3,7 +3,11 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { SessionEventType, SessionProvider, SessionStatus } from '@prisma/client';
+import {
+  SessionEventType,
+  SessionProvider,
+  SessionStatus,
+} from '@prisma/client';
 import { PrismaService } from '@common/prisma/prisma.service';
 import { ValidateSessionStatusTransitionService } from '../services/validate-session-status-transition.service';
 import { SessionPatientRepository } from '../repositories/session-patient.repository';
@@ -98,7 +102,9 @@ export class ResolveSessionJoinContractUseCase {
       };
     }
 
-    const adapter = this.sessionVideoProviderRegistryService.get(SessionProvider.DAILY);
+    const adapter = this.sessionVideoProviderRegistryService.get(
+      SessionProvider.DAILY,
+    );
     const join = await adapter.createJoinToken({
       roomName: effectiveSession.providerRoomId!,
       userId: input.userId,
@@ -137,7 +143,9 @@ export class ResolveSessionJoinContractUseCase {
         );
       });
 
-      effectiveSession = (await this.sessionRepository.findById(input.sessionId))!;
+      effectiveSession = (await this.sessionRepository.findById(
+        input.sessionId,
+      ))!;
     }
 
     return {
@@ -164,7 +172,9 @@ export class ResolveSessionJoinContractUseCase {
     }
 
     if (input.actorType === 'PATIENT') {
-      const patient = await this.sessionPatientRepository.findByUserId(input.userId);
+      const patient = await this.sessionPatientRepository.findByUserId(
+        input.userId,
+      );
       if (!patient) {
         throw new NotFoundException({
           messageKey: 'sessions.errors.patientNotFound',
@@ -180,8 +190,9 @@ export class ResolveSessionJoinContractUseCase {
       return;
     }
 
-    const practitioner =
-      await this.sessionPractitionerRepository.findByUserId(input.userId);
+    const practitioner = await this.sessionPractitionerRepository.findByUserId(
+      input.userId,
+    );
     if (!practitioner) {
       throw new NotFoundException({
         messageKey: 'sessions.errors.practitionerNotFound',

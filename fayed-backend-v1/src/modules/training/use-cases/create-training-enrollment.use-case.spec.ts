@@ -64,11 +64,15 @@ describe('CreateTrainingEnrollmentUseCase', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    (prisma.$transaction as jest.Mock).mockImplementation(async (fn: any) => fn({}));
+    (prisma.$transaction as jest.Mock).mockImplementation(async (fn: any) =>
+      fn({}),
+    );
   });
 
   it('rejects when schedule is not enrollable', async () => {
-    (trainingRepository.findPatientProfileByUserId as jest.Mock).mockResolvedValue({
+    (
+      trainingRepository.findPatientProfileByUserId as jest.Mock
+    ).mockResolvedValue({
       id: 'patient_1',
       country: { isoCode: 'EGY' },
       user: { emails: [{ email: 'p@x.com' }] },
@@ -87,15 +91,17 @@ describe('CreateTrainingEnrollmentUseCase', () => {
         maxEnrollments: 20,
       },
     });
-    (trainingRepository.countEnrollmentsByScheduleIds as jest.Mock).mockResolvedValue({
+    (
+      trainingRepository.countEnrollmentsByScheduleIds as jest.Mock
+    ).mockResolvedValue({
       schedule_1: 0,
     });
-    (resolveTrainingScheduleEnrollmentAvailabilityService.resolve as jest.Mock).mockReturnValue(
-      {
-        isEnrollmentOpen: false,
-        reason: 'WINDOW_CLOSED',
-      },
-    );
+    (
+      resolveTrainingScheduleEnrollmentAvailabilityService.resolve as jest.Mock
+    ).mockReturnValue({
+      isEnrollmentOpen: false,
+      reason: 'WINDOW_CLOSED',
+    });
 
     await expect(
       useCase.execute({
@@ -108,7 +114,9 @@ describe('CreateTrainingEnrollmentUseCase', () => {
   });
 
   it('rejects duplicate non-pending enrollment', async () => {
-    (trainingRepository.findPatientProfileByUserId as jest.Mock).mockResolvedValue({
+    (
+      trainingRepository.findPatientProfileByUserId as jest.Mock
+    ).mockResolvedValue({
       id: 'patient_1',
       country: { isoCode: 'EGY' },
       user: { emails: [{ email: 'p@x.com' }] },
@@ -130,16 +138,20 @@ describe('CreateTrainingEnrollmentUseCase', () => {
         maxEnrollments: 20,
       },
     });
-    (trainingRepository.countEnrollmentsByScheduleIds as jest.Mock).mockResolvedValue({
+    (
+      trainingRepository.countEnrollmentsByScheduleIds as jest.Mock
+    ).mockResolvedValue({
       schedule_1: 0,
     });
-    (resolveTrainingScheduleEnrollmentAvailabilityService.resolve as jest.Mock).mockReturnValue(
-      {
-        isEnrollmentOpen: true,
-        reason: 'OPEN',
-      },
-    );
-    (trainingRepository.findEnrollmentByScheduleAndUser as jest.Mock).mockResolvedValue({
+    (
+      resolveTrainingScheduleEnrollmentAvailabilityService.resolve as jest.Mock
+    ).mockReturnValue({
+      isEnrollmentOpen: true,
+      reason: 'OPEN',
+    });
+    (
+      trainingRepository.findEnrollmentByScheduleAndUser as jest.Mock
+    ).mockResolvedValue({
       id: 'enr_1',
       enrollmentStatus: 'ACTIVE',
     });
@@ -155,7 +167,9 @@ describe('CreateTrainingEnrollmentUseCase', () => {
   });
 
   it('creates pending enrollment and initiates payment on success path', async () => {
-    (trainingRepository.findPatientProfileByUserId as jest.Mock).mockResolvedValue({
+    (
+      trainingRepository.findPatientProfileByUserId as jest.Mock
+    ).mockResolvedValue({
       id: 'patient_1',
       country: { isoCode: 'EGY' },
       user: { emails: [{ email: 'p@x.com' }] },
@@ -177,24 +191,26 @@ describe('CreateTrainingEnrollmentUseCase', () => {
         maxEnrollments: 20,
       },
     });
-    (trainingRepository.countEnrollmentsByScheduleIds as jest.Mock).mockResolvedValue({
+    (
+      trainingRepository.countEnrollmentsByScheduleIds as jest.Mock
+    ).mockResolvedValue({
       schedule_1: 0,
     });
-    (resolveTrainingScheduleEnrollmentAvailabilityService.resolve as jest.Mock).mockReturnValue(
-      {
-        isEnrollmentOpen: true,
-        reason: 'OPEN',
-      },
-    );
-    (trainingRepository.findEnrollmentByScheduleAndUser as jest.Mock).mockResolvedValue(
-      null,
-    );
+    (
+      resolveTrainingScheduleEnrollmentAvailabilityService.resolve as jest.Mock
+    ).mockReturnValue({
+      isEnrollmentOpen: true,
+      reason: 'OPEN',
+    });
+    (
+      trainingRepository.findEnrollmentByScheduleAndUser as jest.Mock
+    ).mockResolvedValue(null);
     (trainingRepository.createEnrollment as jest.Mock).mockResolvedValue({
       id: 'enr_1',
     });
-    (paymentProviderResolverService.resolveProvider as jest.Mock).mockReturnValue(
-      PaymentProvider.PAYMOB,
-    );
+    (
+      paymentProviderResolverService.resolveProvider as jest.Mock
+    ).mockReturnValue(PaymentProvider.PAYMOB);
     (paymentRepository.createPayment as jest.Mock).mockResolvedValue({
       id: 'pay_1',
       status: PaymentStatus.CREATED,
@@ -205,12 +221,16 @@ describe('CreateTrainingEnrollmentUseCase', () => {
         status: PaymentStatus.PENDING,
       }),
     };
-    (paymentProviderRegistryService.get as jest.Mock).mockReturnValue(providerAdapter);
+    (paymentProviderRegistryService.get as jest.Mock).mockReturnValue(
+      providerAdapter,
+    );
     (paymentRepository.updateStatus as jest.Mock).mockResolvedValue({
       id: 'pay_1',
       status: PaymentStatus.PENDING,
     });
-    (trainingRepository.findEnrollmentByIdForUser as jest.Mock).mockResolvedValue({
+    (
+      trainingRepository.findEnrollmentByIdForUser as jest.Mock
+    ).mockResolvedValue({
       id: 'enr_1',
       courseId: 'course_1',
       courseScheduleId: 'schedule_1',

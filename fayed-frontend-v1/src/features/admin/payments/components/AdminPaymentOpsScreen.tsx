@@ -7,6 +7,7 @@ import { Link } from "@/i18n/navigation";
 import { ArrowRight, BadgeDollarSign, Clock3, Receipt, RefreshCcw, RotateCcw, Wallet, Radar } from "lucide-react";
 import { ListStateSkeleton, StateCard } from "@/components/shared/ContentStates";
 import ActionIconLink from "@/components/ui/action-icon-button/ActionIconLink";
+import DirectionalArrowIcon from "@/components/ui/navigation/DirectionalArrowIcon";
 import Button from "@/components/ui/button/Button";
 import { toAppError } from "@/lib/api/errors";
 import { getAdminPaymentErrorKey, ADMIN_PAYMENT_STATUS_STYLES, ADMIN_REFUND_STATUS_STYLES } from "../lib/admin-payment-status";
@@ -740,7 +741,7 @@ export default function AdminPaymentOpsScreen({ paymentId }: Props) {
           href="/admin/payments"
           intent="view"
           label={locale.startsWith("ar") ? "العودة إلى مراجعة المدفوعات" : "Back to payments review"}
-          icon={<ArrowRight className="h-4 w-4 rtl:rotate-180" />}
+          icon={<DirectionalArrowIcon direction="back" className="h-4 w-4" />}
           className="mb-3"
         />
 

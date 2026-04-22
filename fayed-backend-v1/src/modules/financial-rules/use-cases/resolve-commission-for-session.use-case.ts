@@ -10,10 +10,11 @@ export class ResolveCommissionForSessionUseCase {
   ) {}
 
   async execute(input: { sessionId: string; userId: string }) {
-    const session = await this.financialSessionRepository.findPatientOwnedSession(
-      input.sessionId,
-      input.userId,
-    );
+    const session =
+      await this.financialSessionRepository.findPatientOwnedSession(
+        input.sessionId,
+        input.userId,
+      );
 
     if (!session) {
       throw new NotFoundException({

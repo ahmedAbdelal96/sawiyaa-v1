@@ -10,7 +10,9 @@ export class GetAdminSupportTicketUseCase {
   ) {}
 
   async execute(input: { ticketId: string }) {
-    const ticket = await this.supportTicketRepository.findByIdForAdmin(input.ticketId);
+    const ticket = await this.supportTicketRepository.findByIdForAdmin(
+      input.ticketId,
+    );
     if (!ticket) {
       throw new NotFoundException({
         messageKey: 'support.errors.ticketNotFound',

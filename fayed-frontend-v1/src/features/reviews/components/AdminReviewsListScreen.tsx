@@ -10,6 +10,7 @@ import ActionIconButton from "@/components/ui/action-icon-button/ActionIconButto
 import FilterClearButton from "@/components/ui/filters/FilterClearButton";
 import type { ColumnDef, SortConfig } from "@/components/ui/data-table";
 import { buildUpdatedSearchParams, parseEnumParam, parsePositiveIntParam } from "@/components/ui/data-table";
+import { DEFAULT_PAGE_LIMIT, DEFAULT_PAGE_SIZE_OPTIONS } from "@/constants/pagination";
 import { useAdminReviews } from "../hooks/use-reviews";
 import type { AdminReviewItem, ListAdminReviewsParams, SessionReviewStatus } from "../types/reviews.types";
 
@@ -60,8 +61,8 @@ const STATUS_BADGE: Partial<Record<SessionReviewStatus, string>> = {
   SUBMITTED: "bg-primary-light text-text-brand",
 };
 
-const PAGE_LIMIT = 20;
-const PAGE_SIZE_OPTIONS = [5, 10, 20, 30, 40, 50];
+const PAGE_LIMIT = DEFAULT_PAGE_LIMIT;
+const PAGE_SIZE_OPTIONS = DEFAULT_PAGE_SIZE_OPTIONS;
 const SORTABLE_COLUMNS = ["submittedAt", "overallRating", "status"] as const;
 type SortableReviewsColumn = (typeof SORTABLE_COLUMNS)[number];
 

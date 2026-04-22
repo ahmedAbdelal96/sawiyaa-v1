@@ -51,9 +51,10 @@ export class AddMySupportMessageUseCase {
     ticketId: string;
   }) {
     if (input.actorKind === 'PATIENT') {
-      const patient = await this.supportActorRepository.findPatientProfileByUserId(
-        input.userId,
-      );
+      const patient =
+        await this.supportActorRepository.findPatientProfileByUserId(
+          input.userId,
+        );
       if (!patient) {
         throw new NotFoundException({
           messageKey: 'support.errors.patientProfileNotFound',
@@ -82,7 +83,9 @@ export class AddMySupportMessageUseCase {
     }
 
     const practitioner =
-      await this.supportActorRepository.findPractitionerProfileByUserId(input.userId);
+      await this.supportActorRepository.findPractitionerProfileByUserId(
+        input.userId,
+      );
     if (!practitioner) {
       throw new NotFoundException({
         messageKey: 'support.errors.practitionerProfileNotFound',

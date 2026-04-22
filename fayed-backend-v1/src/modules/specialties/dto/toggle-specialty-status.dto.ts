@@ -6,4 +6,3 @@ export class ToggleSpecialtyStatusDto {
   @IsBoolean()
   isActive!: boolean;
 }
-

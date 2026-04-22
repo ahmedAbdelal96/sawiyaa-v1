@@ -20,7 +20,9 @@ export class ListAdminArticleCategoriesUseCase {
 
     return {
       items: rows
-        .map((item) => this.articlePresenter.presentCategory(item, query.locale))
+        .map((item) =>
+          this.articlePresenter.presentCategory(item, query.locale),
+        )
         .filter((item): item is NonNullable<typeof item> => Boolean(item)),
       pagination: this.articlePresenter.presentPagination({
         page: query.page,

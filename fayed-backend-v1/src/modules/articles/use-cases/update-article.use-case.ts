@@ -22,7 +22,9 @@ export class UpdateArticleUseCase {
   ) {}
 
   async execute(input: { articleId: string; payload: UpdateArticleDto }) {
-    const existing = await this.articleRepository.findArticleById(input.articleId);
+    const existing = await this.articleRepository.findArticleById(
+      input.articleId,
+    );
     if (!existing) {
       throw new NotFoundException({
         messageKey: 'articles.errors.articleNotFound',
@@ -42,7 +44,9 @@ export class UpdateArticleUseCase {
       }
     }
 
-    const hasTranslationFieldPatch = this.hasTranslationFieldPatch(input.payload);
+    const hasTranslationFieldPatch = this.hasTranslationFieldPatch(
+      input.payload,
+    );
     if (hasTranslationFieldPatch && !input.payload.locale) {
       throw new BadRequestException({
         messageKey: 'articles.errors.localeRequiredForTranslationUpdate',
@@ -66,7 +70,10 @@ export class UpdateArticleUseCase {
             ? { coverImageUrl: input.payload.coverImageUrl?.trim() || null }
             : {}),
           ...(input.payload.featuredImageAlt !== undefined
-            ? { featuredImageAlt: input.payload.featuredImageAlt?.trim() || null }
+            ? {
+                featuredImageAlt:
+                  input.payload.featuredImageAlt?.trim() || null,
+              }
             : {}),
         });
       }
@@ -155,11 +162,19 @@ export class UpdateArticleUseCase {
       return payloadLocale;
     }
 
-    if (article.translations.some((translation) => translation.locale === ARTICLE_DEFAULT_LOCALE)) {
+    if (
+      article.translations.some(
+        (translation) => translation.locale === ARTICLE_DEFAULT_LOCALE,
+      )
+    ) {
       return ARTICLE_DEFAULT_LOCALE;
     }
 
-    if (article.translations.some((translation) => translation.locale === ContentLocale.en)) {
+    if (
+      article.translations.some(
+        (translation) => translation.locale === ContentLocale.en,
+      )
+    ) {
       return ContentLocale.en;
     }
 

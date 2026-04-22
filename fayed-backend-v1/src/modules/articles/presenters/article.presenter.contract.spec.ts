@@ -46,7 +46,10 @@ describe('ArticlePresenter contract separation', () => {
   };
 
   it('keeps public payload curated without admin-only fields', () => {
-    const publicItem = presenter.presentPublicArticleDetails(article, ContentLocale.ar);
+    const publicItem = presenter.presentPublicArticleDetails(
+      article,
+      ContentLocale.ar,
+    );
     expect(publicItem).toBeTruthy();
     expect(publicItem).not.toHaveProperty('status');
     expect(publicItem).not.toHaveProperty('authorUserId');
@@ -56,7 +59,10 @@ describe('ArticlePresenter contract separation', () => {
   });
 
   it('keeps admin payload with management fields', () => {
-    const adminItem = presenter.presentAdminArticleItem(article, ContentLocale.ar);
+    const adminItem = presenter.presentAdminArticleItem(
+      article,
+      ContentLocale.ar,
+    );
     expect(adminItem).toBeTruthy();
     expect(adminItem).toHaveProperty('status', ArticleStatus.PUBLISHED);
     expect(adminItem).toHaveProperty('authorUserId', 'admin_1');

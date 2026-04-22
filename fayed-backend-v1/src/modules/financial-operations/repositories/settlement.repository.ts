@@ -239,13 +239,18 @@ export class SettlementRepository {
     tx?: Prisma.TransactionClient,
   ) {
     if (input.practitionerIds.length === 0) {
-      return Promise.resolve([] as Array<{
-        practitionerId: string;
-        currencyCode: string;
-        _count: { id: number };
-        _sum: { amountNet: Prisma.Decimal | null; amountPaidTotal: Prisma.Decimal | null };
-        _max: { createdAt: Date | null };
-      }>);
+      return Promise.resolve(
+        [] as Array<{
+          practitionerId: string;
+          currencyCode: string;
+          _count: { id: number };
+          _sum: {
+            amountNet: Prisma.Decimal | null;
+            amountPaidTotal: Prisma.Decimal | null;
+          };
+          _max: { createdAt: Date | null };
+        }>,
+      );
     }
 
     const where: Prisma.PractitionerSettlementWhereInput = {

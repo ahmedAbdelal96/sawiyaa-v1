@@ -193,11 +193,12 @@ export class ExecuteModerationSurfaceEnforcementService {
     }
 
     const now = new Date();
-    const next = this.validateReviewModerationTransitionService.resolveNextState({
-      currentStatus: review.reviewStatus,
-      action,
-      now,
-    });
+    const next =
+      this.validateReviewModerationTransitionService.resolveNextState({
+        currentStatus: review.reviewStatus,
+        action,
+        now,
+      });
 
     await this.reviewRepository.withTransaction(async (tx) => {
       await this.reviewRepository.updateReview(
@@ -239,7 +240,9 @@ export class ExecuteModerationSurfaceEnforcementService {
       });
     }
 
-    const article = await this.articleRepository.findArticleById(input.targetId);
+    const article = await this.articleRepository.findArticleById(
+      input.targetId,
+    );
     if (!article) {
       throw new NotFoundException({
         messageKey: 'moderation.errors.enforcementTargetReferenceNotFound',
@@ -247,7 +250,9 @@ export class ExecuteModerationSurfaceEnforcementService {
       });
     }
 
-    this.validateArticleStatusTransitionService.assertCanArchive(article.status);
+    this.validateArticleStatusTransitionService.assertCanArchive(
+      article.status,
+    );
     await this.articleRepository.updateArticle(article.id, {
       status: ArticleStatus.ARCHIVED,
       archivedAt: new Date(),
@@ -264,7 +269,8 @@ export class ExecuteModerationSurfaceEnforcementService {
       input.targetType,
       input.targetId,
     );
-    const ticket = await this.supportTicketRepository.findByIdForAdmin(ticketId);
+    const ticket =
+      await this.supportTicketRepository.findByIdForAdmin(ticketId);
     if (!ticket) {
       throw new NotFoundException({
         messageKey: 'moderation.errors.enforcementTargetReferenceNotFound',

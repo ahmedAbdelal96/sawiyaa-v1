@@ -13,7 +13,9 @@ export class RemovePatientAvatarUseCase {
   ) {}
 
   async execute(input: { userId: string; locale: SupportedLocale }) {
-    const profile = await this.patientProfileRepository.findByUserId(input.userId);
+    const profile = await this.patientProfileRepository.findByUserId(
+      input.userId,
+    );
 
     if (!profile) {
       throw new NotFoundException({
@@ -25,7 +27,10 @@ export class RemovePatientAvatarUseCase {
     await this.patientAvatarStorageService.deleteAvatar(profile.id);
 
     return {
-      message: this.i18nService.t('patients.success.avatarRemoved', input.locale),
+      message: this.i18nService.t(
+        'patients.success.avatarRemoved',
+        input.locale,
+      ),
       avatar: {
         patientProfileId: profile.id,
         avatarUrl: null,
@@ -33,4 +38,3 @@ export class RemovePatientAvatarUseCase {
     };
   }
 }
-

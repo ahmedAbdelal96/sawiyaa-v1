@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Find Therapist / Discovery</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-error": "#fff7f6",
+                        "tertiary-container": "#dacafb",
+                        "outline-variant": "#abb3bc",
+                        "on-primary-fixed": "#000002",
+                        "surface-tint": "#135faf",
+                        "on-background": "#2c333a",
+                        "outline": "#747b84",
+                        "on-tertiary-fixed": "#3a2e55",
+                        "inverse-on-surface": "#9a9da2",
+                        "primary": "#135faf",
+                        "secondary-fixed": "#d9e3f8",
+                        "on-secondary-fixed-variant": "#525c6e",
+                        "primary-dim": "#00539f",
+                        "on-primary-fixed-variant": "#002e5d",
+                        "tertiary": "#655882",
+                        "on-secondary": "#f8f8ff",
+                        "primary-fixed": "#6aa4f9",
+                        "surface-container": "#e9eef6",
+                        "surface-container-high": "#e3e9f1",
+                        "secondary-fixed-dim": "#cbd5ea",
+                        "error": "#a83836",
+                        "on-primary-container": "#00254d",
+                        "on-surface-variant": "#586068",
+                        "on-tertiary-fixed-variant": "#574a73",
+                        "tertiary-fixed-dim": "#ccbcec",
+                        "on-secondary-fixed": "#364051",
+                        "secondary": "#565f72",
+                        "on-error-container": "#6e0a12",
+                        "on-tertiary": "#fdf7ff",
+                        "background": "#f7f9fe",
+                        "surface-container-highest": "#dce3ed",
+                        "surface-container-lowest": "#ffffff",
+                        "primary-fixed-dim": "#5c97eb",
+                        "secondary-container": "#d9e3f8",
+                        "error-container": "#fa746f",
+                        "inverse-surface": "#0b0f12",
+                        "on-tertiary-container": "#4d4169",
+                        "error-dim": "#67040d",
+                        "surface-container-low": "#f0f4fa",
+                        "secondary-dim": "#4a5365",
+                        "surface-variant": "#dce3ed",
+                        "primary-container": "#6aa4f9",
+                        "tertiary-fixed": "#dacafb",
+                        "tertiary-dim": "#594c76",
+                        "on-secondary-container": "#485264",
+                        "on-primary": "#f8f8ff",
+                        "inverse-primary": "#6aa4f9",
+                        "surface-dim": "#d3dbe4",
+                        "on-surface": "#2c333a",
+                        "surface-bright": "#f7f9fe",
+                        "surface": "#f7f9fe"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Manrope", "sans-serif"],
+                        "body": ["Inter", "sans-serif"],
+                        "label": ["Inter", "sans-serif"]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+        h1, h2, h3, h4, h5, h6 { font-family: 'Manrope', sans-serif; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .material-symbols-outlined.fill {
+            font-variation-settings: 'FILL' 1;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface text-on-surface min-h-screen pb-24 md:pb-0">
+<!-- TopAppBar from JSON -->
+<header class="bg-white/70 backdrop-blur-xl docked full-width top-0 sticky shadow-sm no-border tonal-shift-via-opacity z-50">
+<div class="flex justify-between items-center px-6 py-4 w-full z-50">
+<button class="text-blue-600 hover:bg-slate-100/50 transition-colors active:scale-95 duration-300 p-2 rounded-full flex items-center justify-center">
+<span aria-hidden="true" class="material-symbols-outlined">arrow_back</span>
+</button>
+<h1 class="font-['Manrope'] font-extrabold text-blue-600 tracking-tight text-lg flex-1 text-center pr-10">Serene</h1>
+</div>
+</header>
+<main class="max-w-3xl mx-auto px-4 md:px-6 pt-6 pb-20">
+<!-- Header Section -->
+<div class="mb-8 mt-2">
+<h2 class="font-headline text-3xl md:text-4xl font-bold tracking-tight text-on-surface mb-2">Find your perfect match</h2>
+<p class="font-body text-on-surface-variant text-base md:text-lg">Discover therapists specialized in your needs.</p>
+</div>
+<!-- Search Bar -->
+<div class="relative mb-6">
+<div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-outline">search</span>
+</div>
+<input class="w-full bg-surface-container-low text-on-surface placeholder-outline-variant rounded-[24px] py-4 pl-12 pr-4 border-0 focus:ring-1 focus:ring-primary/20 focus:bg-surface-container-lowest transition-colors shadow-[0_4px_24px_rgba(0,0,0,0.02)]" placeholder="Search by name, specialty, or condition..." type="text"/>
+</div>
+<!-- Filter Chips -->
+<div class="flex overflow-x-auto gap-3 pb-4 mb-6 scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0">
+<button class="flex items-center gap-2 bg-surface-container-highest text-on-surface px-4 py-2 rounded-full whitespace-nowrap text-sm font-medium hover:bg-surface-container transition-colors">
+                Topic <span class="material-symbols-outlined text-[18px]">keyboard_arrow_down</span>
+</button>
+<button class="flex items-center gap-2 bg-surface-container-lowest border border-outline-variant/15 text-on-surface px-4 py-2 rounded-full whitespace-nowrap text-sm font-medium hover:bg-surface-container-low transition-colors">
+                Price <span class="material-symbols-outlined text-[18px]">keyboard_arrow_down</span>
+</button>
+<button class="flex items-center gap-2 bg-surface-container-lowest border border-outline-variant/15 text-on-surface px-4 py-2 rounded-full whitespace-nowrap text-sm font-medium hover:bg-surface-container-low transition-colors">
+                Gender <span class="material-symbols-outlined text-[18px]">keyboard_arrow_down</span>
+</button>
+<button class="flex items-center gap-2 bg-surface-container-lowest border border-outline-variant/15 text-on-surface px-4 py-2 rounded-full whitespace-nowrap text-sm font-medium hover:bg-surface-container-low transition-colors">
+                Availability <span class="material-symbols-outlined text-[18px]">keyboard_arrow_down</span>
+</button>
+</div>
+<!-- Therapist List -->
+<div class="space-y-6">
+<!-- Therapist Card 1 -->
+<article class="bg-surface-container-lowest rounded-[24px] p-6 shadow-[0_8px_32px_rgba(0,0,0,0.03)] hover:shadow-[0_12px_48px_rgba(0,0,0,0.05)] transition-shadow duration-300">
+<div class="flex flex-col sm:flex-row gap-5">
+<div class="flex-shrink-0">
+<img alt="Therapist profile picture" class="w-20 h-20 sm:w-24 sm:h-24 rounded-full object-cover border-4 border-surface-container-low" data-alt="professional headshot of a mature woman with warm smile, softly lit modern office background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBwxsSBilvglYdWlnd-e3N1iURccJUnVm5E1-mR6DwOtdXVGO3ydjg__aAj_F-QZqBuWLVmHbVuncmk3QWbJm6viXAFsYAnoxBztaw2PcWlIvOW-bb2EFP_ZqxeWEhY6MXpP_WO7xFTnzYOFPy30xSisy3YzyCiUufT63Gvo2EzJp_TkHZLil84sxKbXrnnSoemtt1TzlBx7k3hP740FplEjICd7WURM1Ilk1m4aAd_4BQactg3twGVaCyIC6wMplmDEaD-wQnJvGIs"/>
+</div>
+<div class="flex-1">
+<div class="flex justify-between items-start mb-2">
+<div>
+<h3 class="font-headline text-xl font-bold text-on-surface">Dr. Sarah Jenkins</h3>
+<p class="font-body text-sm text-on-surface-variant mt-0.5">Clinical Psychologist, PhD</p>
+</div>
+<div class="flex items-center gap-1 text-sm font-medium text-on-surface">
+<span class="material-symbols-outlined text-primary text-[18px] fill">star</span>
+                                4.9 <span class="text-outline-variant">(120)</span>
+</div>
+</div>
+<p class="font-body text-sm text-on-surface-variant line-clamp-2 mb-4">
+                            Specializing in anxiety, depression, and life transitions. I provide a safe, non-judgmental space to explore your thoughts and feelings.
+                        </p>
+<div class="flex flex-wrap gap-2 mb-5">
+<span class="bg-surface-container-low text-on-surface-variant text-xs font-medium px-3 py-1 rounded-full">Anxiety</span>
+<span class="bg-surface-container-low text-on-surface-variant text-xs font-medium px-3 py-1 rounded-full">Depression</span>
+<span class="bg-surface-container-low text-on-surface-variant text-xs font-medium px-3 py-1 rounded-full">Stress</span>
+</div>
+<div class="flex flex-col sm:flex-row gap-3 items-center">
+<div class="flex items-center gap-2 text-sm text-on-surface-variant flex-1 w-full sm:w-auto">
+<span class="material-symbols-outlined text-[18px]">calendar_month</span>
+                                Next available: Tomorrow
+                            </div>
+<button class="w-full sm:w-auto bg-gradient-to-r from-primary to-primary-container text-on-primary font-medium rounded-full py-3 px-6 hover:scale-[1.02] active:scale-[0.98] transition-transform duration-300">
+                                View Profile
+                            </button>
+</div>
+</div>
+</div>
+</article>
+<!-- Therapist Card 2 -->
+<article class="bg-surface-container-lowest rounded-[24px] p-6 shadow-[0_8px_32px_rgba(0,0,0,0.03)] hover:shadow-[0_12px_48px_rgba(0,0,0,0.05)] transition-shadow duration-300">
+<div class="flex flex-col sm:flex-row gap-5">
+<div class="flex-shrink-0">
+<img alt="Therapist profile picture" class="w-20 h-20 sm:w-24 sm:h-24 rounded-full object-cover border-4 border-surface-container-low" data-alt="professional headshot of a male doctor with glasses and subtle smile, bright airy background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCx0eRITXaS2A1icGZ7P4t-e6a9Y6IkJU1lb7YS70KwEPwuf8TORJXdZiIb7gSHNVxPxuibsyU030Mid4wkHiNcH6ry110IS7SDSYlYCX46GsTAoimjnfiXKvpOBVc6MsJFmuBsYAKc984t6wjV9pXjldqzYG9TF0fK8doZQNV3wfWcY-AE0rvWFUp9w6rGRqFvOkYXMPZoM942RZNCPBO9m6MhgF18AUoysNcCfyP3-JajyHnxKwCP6Xc7QlgCrhObSfVam570-2-z"/>
+</div>
+<div class="flex-1">
+<div class="flex justify-between items-start mb-2">
+<div>
+<h3 class="font-headline text-xl font-bold text-on-surface">Dr. Marcus Chen</h3>
+<p class="font-body text-sm text-on-surface-variant mt-0.5">Licensed Therapist, LCSW</p>
+</div>
+<div class="flex items-center gap-1 text-sm font-medium text-on-surface">
+<span class="material-symbols-outlined text-primary text-[18px] fill">star</span>
+                                4.8 <span class="text-outline-variant">(85)</span>
+</div>
+</div>
+<p class="font-body text-sm text-on-surface-variant line-clamp-2 mb-4">
+                            Focused on relationship dynamics and trauma recovery. My approach is holistic and client-centered, fostering resilience.
+                        </p>
+<div class="flex flex-wrap gap-2 mb-5">
+<span class="bg-surface-container-low text-on-surface-variant text-xs font-medium px-3 py-1 rounded-full">Trauma</span>
+<span class="bg-surface-container-low text-on-surface-variant text-xs font-medium px-3 py-1 rounded-full">Relationships</span>
+<span class="bg-surface-container-low text-on-surface-variant text-xs font-medium px-3 py-1 rounded-full">PTSD</span>
+</div>
+<div class="flex flex-col sm:flex-row gap-3 items-center">
+<div class="flex items-center gap-2 text-sm text-on-surface-variant flex-1 w-full sm:w-auto">
+<span class="material-symbols-outlined text-[18px]">calendar_month</span>
+                                Next available: Thursday
+                            </div>
+<button class="w-full sm:w-auto bg-gradient-to-r from-primary to-primary-container text-on-primary font-medium rounded-full py-3 px-6 hover:scale-[1.02] active:scale-[0.98] transition-transform duration-300">
+                                View Profile
+                            </button>
+</div>
+</div>
+</div>
+</article>
+<!-- Therapist Card 3 -->
+<article class="bg-surface-container-lowest rounded-[24px] p-6 shadow-[0_8px_32px_rgba(0,0,0,0.03)] hover:shadow-[0_12px_48px_rgba(0,0,0,0.05)] transition-shadow duration-300">
+<div class="flex flex-col sm:flex-row gap-5">
+<div class="flex-shrink-0 relative">
+<img alt="Therapist profile picture" class="w-20 h-20 sm:w-24 sm:h-24 rounded-full object-cover border-4 border-surface-container-low" data-alt="headshot of a young woman with natural light, soft and empathetic expression, serene background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCD5o2KM3VfykiTfDYkkwH2KgbzCT_vyB9qYd4_Cj-WuGrDV-unTGGtacYW4Kr70QbkUCYPKcHdvvvXWhOOvSStfNUaMEwGKVHzXTYxxq93F5pA4vpfY_ZKPvKE_KSm1X0EF-5KEGhna0bXHtGdmz2lp-2kDkee_h0-NctVSmXXAPglRfKugFy6t0nO4GwLG94yzUsQy9-ZcDcrN1AvX7qI1ckuH4sfilPL2vAW9l1YC5pBfQtKzq-7V11cd8IXc1MTvWwJosVGYm2s"/>
+<div class="absolute bottom-0 right-0 w-4 h-4 bg-tertiary-container border-2 border-surface-container-lowest rounded-full"></div>
+</div>
+<div class="flex-1">
+<div class="flex justify-between items-start mb-2">
+<div>
+<h3 class="font-headline text-xl font-bold text-on-surface">Elena Rodriguez</h3>
+<p class="font-body text-sm text-on-surface-variant mt-0.5">Counselor, MA, LMHC</p>
+</div>
+<div class="flex items-center gap-1 text-sm font-medium text-on-surface">
+<span class="material-symbols-outlined text-primary text-[18px] fill">star</span>
+                                5.0 <span class="text-outline-variant">(42)</span>
+</div>
+</div>
+<p class="font-body text-sm text-on-surface-variant line-clamp-2 mb-4">
+                            Passionate about mindfulness and self-compassion. I help individuals navigate burnout and achieve work-life balance.
+                        </p>
+<div class="flex flex-wrap gap-2 mb-5">
+<span class="bg-surface-container-low text-on-surface-variant text-xs font-medium px-3 py-1 rounded-full">Burnout</span>
+<span class="bg-surface-container-low text-on-surface-variant text-xs font-medium px-3 py-1 rounded-full">Mindfulness</span>
+<span class="bg-surface-container-low text-on-surface-variant text-xs font-medium px-3 py-1 rounded-full">Career</span>
+</div>
+<div class="flex flex-col sm:flex-row gap-3 items-center">
+<div class="flex items-center gap-2 text-sm text-on-surface-variant flex-1 w-full sm:w-auto">
+<span class="material-symbols-outlined text-[18px] text-tertiary">chat_bubble</span>
+                                Online now
+                            </div>
+<button class="w-full sm:w-auto bg-gradient-to-r from-primary to-primary-container text-on-primary font-medium rounded-full py-3 px-6 hover:scale-[1.02] active:scale-[0.98] transition-transform duration-300">
+                                View Profile
+                            </button>
+</div>
+</div>
+</div>
+</article>
+</div>
+<div class="mt-8 text-center pb-8">
+<button class="text-primary font-medium hover:bg-surface-container-high px-6 py-3 rounded-full transition-colors">
+                Load more therapists
+            </button>
+</div>
+</main>
+<!-- BottomNavBar from JSON -->
+<nav class="md:hidden bg-white/70 backdrop-blur-xl fixed bottom-0 w-full rounded-t-[32px] tonal-layering-no-borders shadow-[0_-8px_30px_rgb(0,0,0,0.04)] z-50 flex justify-around items-center px-4 pb-8 pt-4">
+<button class="flex flex-col items-center justify-center text-slate-400 px-5 py-2 hover:text-blue-500 transition-all">
+<span aria-hidden="true" class="material-symbols-outlined mb-1">home_max</span>
+<span class="font-['Inter'] text-[11px] font-medium tracking-wide uppercase">Home</span>
+</button>
+<button class="flex flex-col items-center justify-center bg-blue-50 text-blue-700 rounded-2xl px-5 py-2 animate-pulse-slow active:scale-90 duration-500">
+<span aria-hidden="true" class="material-symbols-outlined mb-1 fill" style="font-variation-settings: 'FILL' 1;">explore</span>
+<span class="font-['Inter'] text-[11px] font-medium tracking-wide uppercase">Discovery</span>
+</button>
+<button class="flex flex-col items-center justify-center text-slate-400 px-5 py-2 hover:text-blue-500 transition-all">
+<span aria-hidden="true" class="material-symbols-outlined mb-1">event_note</span>
+<span class="font-['Inter'] text-[11px] font-medium tracking-wide uppercase">Sessions</span>
+</button>
+<button class="flex flex-col items-center justify-center text-slate-400 px-5 py-2 hover:text-blue-500 transition-all">
+<span aria-hidden="true" class="material-symbols-outlined mb-1">person</span>
+<span class="font-['Inter'] text-[11px] font-medium tracking-wide uppercase">Profile</span>
+</button>
+</nav>
+</body></html>

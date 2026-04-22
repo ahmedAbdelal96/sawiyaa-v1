@@ -23,12 +23,16 @@ export class SendCareChatMessageUseCase {
     conversationId: string;
     payload: SendCareChatMessageDto;
   }) {
-    const profileId = await this.resolveProfileId(input.actorType, input.userId);
-    const conversation = await this.careChatConversationRepository.findByIdForActor({
-      conversationId: input.conversationId,
-      actorType: input.actorType,
-      profileId,
-    });
+    const profileId = await this.resolveProfileId(
+      input.actorType,
+      input.userId,
+    );
+    const conversation =
+      await this.careChatConversationRepository.findByIdForActor({
+        conversationId: input.conversationId,
+        actorType: input.actorType,
+        profileId,
+      });
     if (!conversation) {
       throw new NotFoundException({
         messageKey: 'careChat.errors.conversationNotFound',
@@ -47,7 +51,8 @@ export class SendCareChatMessageUseCase {
     this.validateCareChatSendMessageService.assertCanSend({
       conversationStatus: conversation.status,
       approvalStatus: conversation.chatApprovalRequest.status,
-      expiresAt: conversation.expiresAt ?? conversation.chatApprovalRequest.expiresAt,
+      expiresAt:
+        conversation.expiresAt ?? conversation.chatApprovalRequest.expiresAt,
       now,
     });
 
@@ -84,9 +89,8 @@ export class SendCareChatMessageUseCase {
     userId: string,
   ) {
     if (actorType === 'PATIENT') {
-      const patient = await this.careChatActorRepository.findPatientProfileByUserId(
-        userId,
-      );
+      const patient =
+        await this.careChatActorRepository.findPatientProfileByUserId(userId);
       if (!patient) {
         throw new NotFoundException({
           messageKey: 'careChat.errors.patientProfileNotFound',
@@ -97,7 +101,9 @@ export class SendCareChatMessageUseCase {
     }
 
     const practitioner =
-      await this.careChatActorRepository.findPractitionerProfileByUserId(userId);
+      await this.careChatActorRepository.findPractitionerProfileByUserId(
+        userId,
+      );
     if (!practitioner) {
       throw new NotFoundException({
         messageKey: 'careChat.errors.practitionerProfileNotFound',

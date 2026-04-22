@@ -29,7 +29,8 @@ export class LoginAdminUseCase {
     deviceContext: AuthSessionDeviceContext;
   }) {
     const normalizedEmail = input.email.trim().toLowerCase();
-    const userEmail = await this.userEmailRepository.findByEmail(normalizedEmail);
+    const userEmail =
+      await this.userEmailRepository.findByEmail(normalizedEmail);
 
     if (!userEmail) {
       throw new UnauthorizedException({
@@ -39,9 +40,11 @@ export class LoginAdminUseCase {
     }
 
     const adminRole =
-      userEmail.user.roles.find((role) => role.role === UserRoleType.SUPER_ADMIN)
+      userEmail.user.roles.find(
+        (role) => role.role === UserRoleType.SUPER_ADMIN,
+      )?.role ??
+      userEmail.user.roles.find((role) => role.role === UserRoleType.ADMIN)
         ?.role ??
-      userEmail.user.roles.find((role) => role.role === UserRoleType.ADMIN)?.role ??
       null;
 
     if (!adminRole) {

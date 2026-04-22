@@ -177,6 +177,15 @@ export default function AdminPayoutOperationsScreen() {
           rowActionsHeader={t("payouts.table.action")}
           rowActions={(row) => (
             <div className="flex flex-wrap items-center justify-end gap-2">
+              <DataTableActionButton
+                intent="outline"
+                onClick={() =>
+                  router.push(
+                    `/${locale}/admin/finance/reconciliation?sourceType=PRACTITIONER_PAYOUT&query=${row.id}`,
+                  )
+                }
+                label={t("payouts.actions.reconciliation")}
+              />
               {row.proof ? (
                 <DataTableActionButton
                   intent="outline"

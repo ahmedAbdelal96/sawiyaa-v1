@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { FileText } from "lucide-react";
 import { ListStateSkeleton, StateCard } from "@/components/shared/ContentStates";
+import { DEFAULT_PAGE_LIMIT } from "@/constants/pagination";
 import {
   getPractitionerLedgerErrorKey,
 } from "../lib/financial-operations-errors";
@@ -78,7 +79,7 @@ export default function PractitionerLedgerListScreen() {
   const [page, setPage] = useState(1);
 
   const params = useMemo<PractitionerLedgerListParams>(
-    () => ({ page, limit: 20 }),
+    () => ({ page, limit: DEFAULT_PAGE_LIMIT }),
     [page],
   );
 

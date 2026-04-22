@@ -27,9 +27,9 @@ describe('ResolvePatientTrainingJoinAccessUseCase', () => {
   });
 
   it('rejects unknown enrollment or wrong owner', async () => {
-    (trainingRepository.findEnrollmentByIdForUser as jest.Mock).mockResolvedValue(
-      null,
-    );
+    (
+      trainingRepository.findEnrollmentByIdForUser as jest.Mock
+    ).mockResolvedValue(null);
 
     await expect(
       useCase.execute({
@@ -41,7 +41,9 @@ describe('ResolvePatientTrainingJoinAccessUseCase', () => {
   });
 
   it('returns patient-safe join contract without host URL leakage', async () => {
-    (trainingRepository.findEnrollmentByIdForUser as jest.Mock).mockResolvedValue({
+    (
+      trainingRepository.findEnrollmentByIdForUser as jest.Mock
+    ).mockResolvedValue({
       id: 'en_1',
       courseId: 'course_1',
       courseScheduleId: 'schedule_1',
@@ -88,4 +90,3 @@ describe('ResolvePatientTrainingJoinAccessUseCase', () => {
     );
   });
 });
-

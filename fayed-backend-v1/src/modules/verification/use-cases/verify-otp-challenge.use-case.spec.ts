@@ -50,13 +50,11 @@ describe('VerifyOtpChallengeUseCase', () => {
       attemptCount: 0,
       maxAttempts: 5,
     });
-    otpChallengeRepository.incrementAttemptCount = jest
-      .fn()
-      .mockResolvedValue({
-        id: 'challenge-1',
-        attemptCount: 1,
-        maxAttempts: 5,
-      });
+    otpChallengeRepository.incrementAttemptCount = jest.fn().mockResolvedValue({
+      id: 'challenge-1',
+      attemptCount: 1,
+      maxAttempts: 5,
+    });
 
     await expect(
       useCase.execute({
@@ -140,6 +138,8 @@ describe('VerifyOtpChallengeUseCase', () => {
       }),
     ).rejects.toBeInstanceOf(ForbiddenException);
 
-    expect(otpChallengeRepository.invalidate).toHaveBeenCalledWith('challenge-1');
+    expect(otpChallengeRepository.invalidate).toHaveBeenCalledWith(
+      'challenge-1',
+    );
   });
 });

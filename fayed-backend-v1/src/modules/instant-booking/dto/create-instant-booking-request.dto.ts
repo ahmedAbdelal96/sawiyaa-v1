@@ -1,11 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { SessionMode } from '@prisma/client';
-import {
-  IsIn,
-  IsOptional,
-  IsString,
-  MaxLength,
-} from 'class-validator';
+import { IsIn, IsOptional, IsString, MaxLength } from 'class-validator';
 
 /**
  * Instant booking create payload stays intentionally small.
@@ -14,7 +9,8 @@ import {
 export class CreateInstantBookingRequestDto {
   @ApiProperty({
     example: 'dr-example',
-    description: 'Public practitioner slug used by patient instant-booking surfaces',
+    description:
+      'Public practitioner slug used by patient instant-booking surfaces',
   })
   @IsString()
   @MaxLength(191)

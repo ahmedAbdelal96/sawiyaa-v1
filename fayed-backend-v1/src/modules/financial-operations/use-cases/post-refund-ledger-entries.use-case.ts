@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import {
   LedgerDirection,
   LedgerEntryType,
@@ -11,6 +15,7 @@ import { LedgerRepository } from '../repositories/ledger.repository';
 import { ExtractPaymentLedgerBreakdownService } from '../services/extract-payment-ledger-breakdown.service';
 import { MoneyAmountService } from '../services/money-amount.service';
 import { RefreshPractitionerWalletService } from '../services/refresh-practitioner-wallet.service';
+import { AccountingJournalPostingService } from '../services/accounting-journal-posting.service';
 
 @Injectable()
 export class PostRefundLedgerEntriesUseCase {
@@ -21,6 +26,7 @@ export class PostRefundLedgerEntriesUseCase {
     private readonly extractPaymentLedgerBreakdownService: ExtractPaymentLedgerBreakdownService,
     private readonly refreshPractitionerWalletService: RefreshPractitionerWalletService,
     private readonly moneyAmountService: MoneyAmountService,
+    private readonly accountingJournalPostingService: AccountingJournalPostingService,
   ) {}
 
   async execute(input: { refundId: string }) {
@@ -51,8 +57,12 @@ export class PostRefundLedgerEntriesUseCase {
       };
     }
 
-    const breakdown = this.extractPaymentLedgerBreakdownService.extract(refund.payment);
-    const paymentTotal = this.moneyAmountService.toDecimal(refund.payment.amountTotal);
+    const breakdown = this.extractPaymentLedgerBreakdownService.extract(
+      refund.payment,
+    );
+    const paymentTotal = this.moneyAmountService.toDecimal(
+      refund.payment.amountTotal,
+    );
     const refundAmount = this.moneyAmountService.toDecimal(refund.amount);
     const ratio = refundAmount.div(paymentTotal);
     const practitionerRefundAmount = this.moneyAmountService
@@ -113,6 +123,23 @@ export class PostRefundLedgerEntriesUseCase {
           tx,
         );
       }
+    });
+
+    await this.accountingJournalPostingService.postRefundSucceeded({
+      refund: {
+        id: refund.id,
+        paymentId: refund.payment.id,
+        practitionerId: refund.payment.practitionerId,
+        amount: refund.amount,
+        currencyCode: refund.currencyCode,
+        processedAt: refund.processedAt,
+        destination: refund.destination,
+        metadataJson: refund.metadataJson ?? null,
+      },
+      split: {
+        practitionerRefundAmount: practitionerRefundAmount.toFixed(2),
+        platformRefundAmount: platformRefundAmount.toFixed(2),
+      },
     });
 
     return {

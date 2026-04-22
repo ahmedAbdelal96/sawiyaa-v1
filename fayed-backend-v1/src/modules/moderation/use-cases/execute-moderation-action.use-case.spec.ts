@@ -58,7 +58,9 @@ describe('ExecuteModerationActionUseCase', () => {
       createdAt: new Date('2026-03-31T20:00:00.000Z'),
       targetSnapshot: null,
     });
-    (validateModerationActionTransitionService.validate as jest.Mock).mockReturnValue({
+    (
+      validateModerationActionTransitionService.validate as jest.Mock
+    ).mockReturnValue({
       nextStatus: ModerationCaseStatus.UNDER_REVIEW,
     });
     (moderationRepository.executeCaseAction as jest.Mock).mockResolvedValue({
@@ -141,7 +143,9 @@ describe('ExecuteModerationActionUseCase', () => {
       createdAt: new Date('2026-03-31T20:00:00.000Z'),
       targetSnapshot: null,
     });
-    (validateModerationActionTransitionService.validate as jest.Mock).mockReturnValue({
+    (
+      validateModerationActionTransitionService.validate as jest.Mock
+    ).mockReturnValue({
       nextStatus: ModerationCaseStatus.RESOLVED,
     });
     (moderationRepository.executeCaseAction as jest.Mock).mockResolvedValue({
@@ -194,9 +198,9 @@ describe('ExecuteModerationActionUseCase', () => {
       },
     });
 
-    expect(executeModerationSurfaceEnforcementService.execute).toHaveBeenCalledTimes(
-      1,
-    );
+    expect(
+      executeModerationSurfaceEnforcementService.execute,
+    ).toHaveBeenCalledTimes(1);
     expect(moderationRepository.executeCaseAction).toHaveBeenCalledTimes(1);
   });
 });

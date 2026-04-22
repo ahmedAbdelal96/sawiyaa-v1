@@ -1,4 +1,8 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { AuthenticatedUser } from '@common/interfaces/authenticated-user.interface';
 import { GeneralChatRepository } from '../repositories/general-chat.repository';
 import { GENERAL_CHAT_ERROR_CODES } from '../types/general-chat.types';

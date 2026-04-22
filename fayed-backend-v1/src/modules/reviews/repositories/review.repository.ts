@@ -171,7 +171,11 @@ export class ReviewRepository {
         where,
         skip,
         take: input.limit,
-        orderBy: [{ publishedAt: 'desc' }, { submittedAt: 'desc' }, { id: 'asc' }],
+        orderBy: [
+          { publishedAt: 'desc' },
+          { submittedAt: 'desc' },
+          { id: 'asc' },
+        ],
         select: {
           id: true,
           ratingValue: true,

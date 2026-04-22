@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { usePatientGoogleAuth } from "@/features/auth/hooks/use-auth";
+import { normalizeCallbackPath } from "@/lib/auth/callback-url";
 
 declare global {
   interface Window {
@@ -37,10 +38,6 @@ type Props = {
 
 const GOOGLE_SCRIPT_ID = "fayed-google-identity-script";
 
-function isSafeCallbackUrl(value: string | null | undefined): value is string {
-  return Boolean(value && value.startsWith("/"));
-}
-
 export default function PatientGoogleAuthButton({
   callbackUrl,
   defaultRedirect,
@@ -55,7 +52,7 @@ export default function PatientGoogleAuthButton({
   const googleAuthMutation = usePatientGoogleAuth();
 
   const redirectTarget = useMemo(() => {
-    return isSafeCallbackUrl(callbackUrl) ? callbackUrl : defaultRedirect;
+    return normalizeCallbackPath(callbackUrl) ?? defaultRedirect;
   }, [callbackUrl, defaultRedirect]);
 
   useEffect(() => {

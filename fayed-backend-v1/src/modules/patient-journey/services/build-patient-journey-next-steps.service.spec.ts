@@ -159,6 +159,8 @@ describe('BuildPatientJourneyNextStepsService', () => {
       ],
     });
 
-    expect(result.nextSteps.map((item) => item.type)).toEqual(['COMPLETE_PAYMENT']);
+    expect(result.nextSteps.map((item) => item.type)).toEqual([
+      'COMPLETE_PAYMENT',
+    ]);
   });
 });

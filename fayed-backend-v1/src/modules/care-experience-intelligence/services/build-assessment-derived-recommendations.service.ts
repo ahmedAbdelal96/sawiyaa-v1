@@ -180,10 +180,13 @@ export class BuildAssessmentDerivedRecommendationsService {
     if (interpretation.reasonCodes.includes('PENDING_PAYMENT_ACTION_BLOCK')) {
       return 'PENDING_PAYMENT_ACTION_BLOCK';
     }
-    if (interpretation.reasonCodes.includes('UPCOMING_SESSION_CONTINUITY_OVERRIDE')) {
+    if (
+      interpretation.reasonCodes.includes(
+        'UPCOMING_SESSION_CONTINUITY_OVERRIDE',
+      )
+    ) {
       return 'UPCOMING_SESSION_CONTINUITY_OVERRIDE';
     }
     return interpretation.reasonCodes[0] ?? 'ASSESSMENT_INTERPRETATION';
   }
 }
-

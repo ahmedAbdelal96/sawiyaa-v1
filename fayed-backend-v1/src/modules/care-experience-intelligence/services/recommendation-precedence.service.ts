@@ -21,7 +21,10 @@ type RecommendationItem = {
 
 @Injectable()
 export class RecommendationPrecedenceService {
-  private readonly typeFallbackPriority: Record<CareRecommendationType, number> = {
+  private readonly typeFallbackPriority: Record<
+    CareRecommendationType,
+    number
+  > = {
     COMPLETE_PAYMENT: 100,
     JOIN_UPCOMING_SESSION: 90,
     VIEW_SUPPORT_TICKET: 80,

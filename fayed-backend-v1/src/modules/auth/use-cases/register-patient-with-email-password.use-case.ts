@@ -30,7 +30,8 @@ export class RegisterPatientWithEmailPasswordUseCase {
     deviceContext: AuthSessionDeviceContext;
   }) {
     const normalizedEmail = input.email.trim().toLowerCase();
-    const existingEmail = await this.userEmailRepository.findByEmail(normalizedEmail);
+    const existingEmail =
+      await this.userEmailRepository.findByEmail(normalizedEmail);
 
     if (existingEmail) {
       throw new ConflictException({

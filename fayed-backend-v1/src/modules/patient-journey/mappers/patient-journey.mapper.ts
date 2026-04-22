@@ -16,46 +16,40 @@ import {
 @Injectable()
 export class PatientJourneyMapper {
   toViewModel(input: {
-    upcomingSession:
-      | {
-          id: string;
-          status: SessionStatus;
-          scheduledStartAt: Date | null;
-          scheduledEndAt: Date | null;
-          practitioner: {
-            publicSlug: string;
-            user: {
-              displayName: string | null;
-            };
-          };
-        }
-      | null;
-    pendingPayment:
-      | {
-          id: string;
-          status: PaymentStatus;
-          amountTotal: { toString(): string };
-          currencyCode: string;
-          sessionId: string | null;
-          createdAt: Date;
-        }
-      | null;
-    pendingInstantBookingRequest:
-      | {
-          id: string;
-          status: InstantBookingRequestStatus;
-          requestedAt: Date;
-          expiresAt: Date;
-          requestedDurationMinutes: number;
-          preferredMode: SessionMode;
-          practitioner: {
-            publicSlug: string;
-            user: {
-              displayName: string | null;
-            };
-          };
-        }
-      | null;
+    upcomingSession: {
+      id: string;
+      status: SessionStatus;
+      scheduledStartAt: Date | null;
+      scheduledEndAt: Date | null;
+      practitioner: {
+        publicSlug: string;
+        user: {
+          displayName: string | null;
+        };
+      };
+    } | null;
+    pendingPayment: {
+      id: string;
+      status: PaymentStatus;
+      amountTotal: { toString(): string };
+      currencyCode: string;
+      sessionId: string | null;
+      createdAt: Date;
+    } | null;
+    pendingInstantBookingRequest: {
+      id: string;
+      status: InstantBookingRequestStatus;
+      requestedAt: Date;
+      expiresAt: Date;
+      requestedDurationMinutes: number;
+      preferredMode: SessionMode;
+      practitioner: {
+        publicSlug: string;
+        user: {
+          displayName: string | null;
+        };
+      };
+    } | null;
     recentPastSessions: Array<{
       id: string;
       status: SessionStatus;
@@ -97,14 +91,12 @@ export class PatientJourneyMapper {
       createdAt: Date;
       sessionId: string | null;
     }>;
-    latestOpenSupportTicket:
-      | {
-          id: string;
-          ticketType: SupportTicketType;
-          status: SupportTicketStatus;
-          updatedAt: Date;
-        }
-      | null;
+    latestOpenSupportTicket: {
+      id: string;
+      ticketType: SupportTicketType;
+      status: SupportTicketStatus;
+      updatedAt: Date;
+    } | null;
     lastAssessmentTakenAt: Date | null;
     lastMatchingAt: Date | null;
     suggestedNextAction: PatientJourneyViewModel['summary']['suggestedNextAction'];
@@ -114,10 +106,12 @@ export class PatientJourneyMapper {
     return {
       summary: {
         hasUpcomingSession: Boolean(input.upcomingSession),
-        nextSessionAt: input.upcomingSession?.scheduledStartAt?.toISOString() ?? null,
+        nextSessionAt:
+          input.upcomingSession?.scheduledStartAt?.toISOString() ?? null,
         hasPendingPayment: Boolean(input.pendingPayment),
         hasOpenSupportTicket: Boolean(input.latestOpenSupportTicket),
-        lastAssessmentTakenAt: input.lastAssessmentTakenAt?.toISOString() ?? null,
+        lastAssessmentTakenAt:
+          input.lastAssessmentTakenAt?.toISOString() ?? null,
         lastMatchingAt: input.lastMatchingAt?.toISOString() ?? null,
         suggestedNextAction: input.suggestedNextAction,
       },
@@ -132,7 +126,8 @@ export class PatientJourneyMapper {
                 input.upcomingSession.scheduledEndAt?.toISOString() ?? null,
               practitioner: {
                 slug: input.upcomingSession.practitioner.publicSlug,
-                displayName: input.upcomingSession.practitioner.user.displayName ?? null,
+                displayName:
+                  input.upcomingSession.practitioner.user.displayName ?? null,
               },
             }
           : null,
@@ -150,15 +145,19 @@ export class PatientJourneyMapper {
           ? {
               id: input.pendingInstantBookingRequest.id,
               status: input.pendingInstantBookingRequest.status,
-              requestedAt: input.pendingInstantBookingRequest.requestedAt.toISOString(),
-              expiresAt: input.pendingInstantBookingRequest.expiresAt.toISOString(),
-              durationMinutes: input.pendingInstantBookingRequest.requestedDurationMinutes,
+              requestedAt:
+                input.pendingInstantBookingRequest.requestedAt.toISOString(),
+              expiresAt:
+                input.pendingInstantBookingRequest.expiresAt.toISOString(),
+              durationMinutes:
+                input.pendingInstantBookingRequest.requestedDurationMinutes,
               sessionMode: input.pendingInstantBookingRequest.preferredMode,
               practitioner: {
-                slug: input.pendingInstantBookingRequest.practitioner.publicSlug,
+                slug: input.pendingInstantBookingRequest.practitioner
+                  .publicSlug,
                 displayName:
-                  input.pendingInstantBookingRequest.practitioner.user.displayName ??
-                  null,
+                  input.pendingInstantBookingRequest.practitioner.user
+                    .displayName ?? null,
               },
             }
           : null,
@@ -189,7 +188,8 @@ export class PatientJourneyMapper {
             completedAt: matching.completedAt?.toISOString() ?? null,
             topRecommendation: recommendation
               ? {
-                  practitionerSlug: recommendation.practitionerProfile.publicSlug,
+                  practitionerSlug:
+                    recommendation.practitionerProfile.publicSlug,
                   practitionerDisplayName:
                     recommendation.practitionerProfile.user.displayName ?? null,
                   score: recommendation.score,

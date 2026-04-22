@@ -114,6 +114,9 @@
     }
   },
   "detail": {
+    "actions": {
+      "openSupportChat": "Open support conversation"
+    },
     "back": "Back to moderation reports",
     "eyebrow": "Moderation report",
     "title": "Report detail",
@@ -136,6 +139,9 @@
       "lastActionAt": "Last action at",
       "reporterRole": "Reporter role",
       "reporterUserId": "Reporter user ID",
+      "reporterName": "Name",
+      "reporterEmail": "Email",
+      "reporterPhone": "Phone",
       "noReporter": "—",
       "note": "Reporter note",
       "noNote": "No note provided"

@@ -1,4 +1,8 @@
-import { ArticleStatus, ArticleVisibility, ContentLocale } from '@prisma/client';
+import {
+  ArticleStatus,
+  ArticleVisibility,
+  ContentLocale,
+} from '@prisma/client';
 
 export const ARTICLE_DEFAULT_PAGE = 1;
 export const ARTICLE_DEFAULT_LIMIT = 12;

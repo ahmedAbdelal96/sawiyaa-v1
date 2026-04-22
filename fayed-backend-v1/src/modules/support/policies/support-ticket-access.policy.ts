@@ -6,7 +6,10 @@ export class SupportTicketAccessPolicy {
     ticketPatientId: string | null;
     requesterPatientId: string;
   }) {
-    if (!input.ticketPatientId || input.ticketPatientId !== input.requesterPatientId) {
+    if (
+      !input.ticketPatientId ||
+      input.ticketPatientId !== input.requesterPatientId
+    ) {
       throw new ForbiddenException({
         messageKey: 'support.errors.ticketForbidden',
         error: 'SUPPORT_TICKET_FORBIDDEN',

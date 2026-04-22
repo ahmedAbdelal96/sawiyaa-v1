@@ -15,7 +15,8 @@ import {
 export class CreateAvailabilityExceptionDto {
   @ApiProperty({
     enum: AvailabilityExceptionType,
-    description: 'BLOCK removes availability, OPEN_EXTRA adds extra temporary availability',
+    description:
+      'BLOCK removes availability, OPEN_EXTRA adds extra temporary availability',
   })
   @IsEnum(AvailabilityExceptionType)
   type!: AvailabilityExceptionType;
@@ -36,7 +37,8 @@ export class CreateAvailabilityExceptionDto {
 
   @ApiPropertyOptional({
     example: 'personal',
-    description: 'Optional practitioner-facing note. This is never exposed on public read APIs.',
+    description:
+      'Optional practitioner-facing note. This is never exposed on public read APIs.',
   })
   @IsOptional()
   @IsString()

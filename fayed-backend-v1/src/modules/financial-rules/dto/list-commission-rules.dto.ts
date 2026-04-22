@@ -5,12 +5,7 @@ import {
   SessionFlowType,
   SessionMode,
 } from '@prisma/client';
-import {
-  IsBooleanString,
-  IsEnum,
-  IsOptional,
-  IsUUID,
-} from 'class-validator';
+import { IsBooleanString, IsEnum, IsOptional, IsUUID } from 'class-validator';
 
 export class ListCommissionRulesDto {
   @ApiPropertyOptional({ enum: CommissionRuleScope })

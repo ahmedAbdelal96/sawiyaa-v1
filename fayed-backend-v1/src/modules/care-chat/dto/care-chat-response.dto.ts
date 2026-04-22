@@ -3,6 +3,7 @@ import {
   ChatApprovalStatus,
   ConversationParticipantRole,
   ConversationStatus,
+  MessageStatus,
 } from '@prisma/client';
 import {
   CARE_CHAT_ACTIVITY_STATE_VALUES,
@@ -58,6 +59,12 @@ export class CareChatRequestItemDto {
 
   @ApiProperty({ type: CareChatParticipantSummaryDto })
   practitioner!: CareChatParticipantSummaryDto;
+
+  @ApiProperty()
+  unreadCount!: number;
+
+  @ApiProperty()
+  hasUnread!: boolean;
 }
 
 export class AdminCareChatRequestItemDto extends CareChatRequestItemDto {
@@ -69,11 +76,20 @@ export class CareChatMessageDto {
   @ApiProperty()
   id!: string;
 
+  @ApiProperty({ nullable: true })
+  senderUserId!: string | null;
+
   @ApiProperty({ enum: ConversationParticipantRole })
   senderRole!: ConversationParticipantRole;
 
   @ApiProperty()
   message!: string;
+
+  @ApiProperty({ enum: MessageStatus })
+  status!: MessageStatus;
+
+  @ApiProperty({ nullable: true })
+  deliveredAt!: string | null;
 
   @ApiProperty()
   createdAt!: string;

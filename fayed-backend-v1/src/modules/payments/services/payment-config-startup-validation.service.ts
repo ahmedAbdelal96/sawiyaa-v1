@@ -10,7 +10,8 @@ export class PaymentConfigStartupValidationService implements OnModuleInit {
 
   onModuleInit(): void {
     const issues: string[] = [];
-    const isDevelopment = this.paymentRuntimeConfigService.isDevelopmentEnvironment();
+    const isDevelopment =
+      this.paymentRuntimeConfigService.isDevelopmentEnvironment();
     const stripe = this.paymentRuntimeConfigService.getStripeConfig();
     const paymob = this.paymentRuntimeConfigService.getPaymobConfig();
 
@@ -23,7 +24,9 @@ export class PaymentConfigStartupValidationService implements OnModuleInit {
           PaymentProvider.STRIPE,
         );
       } catch {
-        issues.push('Stripe is enabled but required Stripe checkout/webhook env is missing.');
+        issues.push(
+          'Stripe is enabled but required Stripe checkout/webhook env is missing.',
+        );
       }
     }
 
@@ -36,7 +39,9 @@ export class PaymentConfigStartupValidationService implements OnModuleInit {
           PaymentProvider.PAYMOB,
         );
       } catch {
-        issues.push('Paymob is enabled but required Paymob checkout/webhook env is missing.');
+        issues.push(
+          'Paymob is enabled but required Paymob checkout/webhook env is missing.',
+        );
       }
     }
 

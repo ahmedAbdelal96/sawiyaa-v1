@@ -34,7 +34,10 @@ export class UpdateSpecialtyUseCase {
     sortOrder?: number;
     isActive?: boolean;
   }) {
-    const existing = await this.specialtyRepository.findById(input.id, input.locale);
+    const existing = await this.specialtyRepository.findById(
+      input.id,
+      input.locale,
+    );
 
     if (!existing) {
       throw new NotFoundException({
@@ -47,9 +50,8 @@ export class UpdateSpecialtyUseCase {
       input.slug !== undefined ? normalizeSpecialtySlug(input.slug) : undefined;
 
     if (normalizedSlug && normalizedSlug !== existing.slug) {
-      const slugOwner = await this.specialtyRepository.findByCanonicalSlug(
-        normalizedSlug,
-      );
+      const slugOwner =
+        await this.specialtyRepository.findByCanonicalSlug(normalizedSlug);
       if (slugOwner && slugOwner.id !== input.id) {
         throw new ConflictException({
           messageKey: 'specialties.errors.specialtySlugAlreadyExists',
@@ -106,7 +108,7 @@ export class UpdateSpecialtyUseCase {
               updateDescription:
                 input.description === undefined
                   ? undefined
-                  : input.description?.trim() ?? null,
+                  : (input.description?.trim() ?? null),
               translationSlug: normalizedSlug ?? existing.slug,
             }
           : undefined,

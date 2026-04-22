@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "expo-auth-session": "^55.0.14",
+    "expo-web-browser": "^55.0.14"
+  }
+}

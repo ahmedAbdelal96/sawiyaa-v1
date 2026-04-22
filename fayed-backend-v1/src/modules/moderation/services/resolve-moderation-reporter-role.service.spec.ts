@@ -23,4 +23,3 @@ describe('ResolveModerationReporterRoleService', () => {
     ).toThrow(ForbiddenException);
   });
 });
-

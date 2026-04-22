@@ -31,9 +31,8 @@ export class DeleteAvailabilityExceptionUseCase {
     locale: SupportedLocale;
     exceptionId: string;
   }) {
-    const practitioner = await this.availabilityPractitionerRepository.findByUserId(
-      input.userId,
-    );
+    const practitioner =
+      await this.availabilityPractitionerRepository.findByUserId(input.userId);
 
     if (!practitioner) {
       throw new NotFoundException({
@@ -55,13 +54,14 @@ export class DeleteAvailabilityExceptionUseCase {
       });
     }
 
-    const updateResult = await this.availabilityExceptionRepository.updateException(
-      practitioner.id,
-      input.exceptionId,
-      {
-        isActive: false,
-      },
-    );
+    const updateResult =
+      await this.availabilityExceptionRepository.updateException(
+        practitioner.id,
+        input.exceptionId,
+        {
+          isActive: false,
+        },
+      );
 
     if (updateResult.count === 0) {
       throw new BadRequestException({

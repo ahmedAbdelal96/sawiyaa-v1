@@ -61,7 +61,9 @@ export class BuildPractitionerCredibilitySummaryService {
     };
   }
 
-  private resolveVolumeLevel(totalPublicReviews: number): PractitionerCredibilityVolumeLevel {
+  private resolveVolumeLevel(
+    totalPublicReviews: number,
+  ): PractitionerCredibilityVolumeLevel {
     if (totalPublicReviews <= 0) {
       return 'NONE';
     }
@@ -93,4 +95,3 @@ export class BuildPractitionerCredibilitySummaryService {
       : 'STALE';
   }
 }
-

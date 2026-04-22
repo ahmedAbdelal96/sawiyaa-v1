@@ -71,4 +71,3 @@ export class GeneralChatConversationSuccessResponseDto {
   @Type(() => GeneralChatConversationDataDto)
   data!: GeneralChatConversationDataDto;
 }
-

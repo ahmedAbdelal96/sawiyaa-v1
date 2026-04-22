@@ -12,7 +12,8 @@ export const enSpecialtiesCatalog = {
   errors: {
     specialtyNotFound: 'Specialty was not found',
     specialtyCategoryNotFound: 'Specialty category was not found',
-    specialtyCategorySlugAlreadyExists: 'Specialty category slug already exists',
+    specialtyCategorySlugAlreadyExists:
+      'Specialty category slug already exists',
     specialtySlugAlreadyExists: 'Specialty slug already exists',
     invalidSpecialtyState: 'Specialty state is invalid for this operation',
     specialtyAlreadyInactive: 'Specialty is already inactive',

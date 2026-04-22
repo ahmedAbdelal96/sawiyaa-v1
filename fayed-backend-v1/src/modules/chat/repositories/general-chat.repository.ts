@@ -10,39 +10,40 @@ import {
 } from '@prisma/client';
 import { PrismaService } from '@common/prisma/prisma.service';
 
-const generalConversationReadSelect = Prisma.validator<Prisma.ConversationSelect>()({
-  id: true,
-  conversationRef: true,
-  status: true,
-  sessionId: true,
-  createdAt: true,
-  updatedAt: true,
-  participants: {
-    where: { isActive: true },
-    select: {
-      userId: true,
-      participantRole: true,
-      lastReadMessageId: true,
-      lastReadAt: true,
+const generalConversationReadSelect =
+  Prisma.validator<Prisma.ConversationSelect>()({
+    id: true,
+    conversationRef: true,
+    status: true,
+    sessionId: true,
+    createdAt: true,
+    updatedAt: true,
+    participants: {
+      where: { isActive: true },
+      select: {
+        userId: true,
+        participantRole: true,
+        lastReadMessageId: true,
+        lastReadAt: true,
+      },
+      orderBy: [{ participantRole: 'asc' }, { userId: 'asc' }],
     },
-    orderBy: [{ participantRole: 'asc' }, { userId: 'asc' }],
-  },
-  messages: {
-    where: {
-      deletedAt: null,
-      visibility: MessageVisibility.NORMAL,
+    messages: {
+      where: {
+        deletedAt: null,
+        visibility: MessageVisibility.NORMAL,
+      },
+      orderBy: [{ sentAt: 'desc' }, { id: 'asc' }],
+      take: 1,
+      select: {
+        id: true,
+        senderUserId: true,
+        messageType: true,
+        contentText: true,
+        sentAt: true,
+      },
     },
-    orderBy: [{ sentAt: 'desc' }, { id: 'asc' }],
-    take: 1,
-    select: {
-      id: true,
-      senderUserId: true,
-      messageType: true,
-      contentText: true,
-      sentAt: true,
-    },
-  },
-});
+  });
 
 @Injectable()
 export class GeneralChatRepository {
@@ -82,7 +83,11 @@ export class GeneralChatRepository {
     });
   }
 
-  listOwnedConversations(input: { userId: string; page: number; limit: number }) {
+  listOwnedConversations(input: {
+    userId: string;
+    page: number;
+    limit: number;
+  }) {
     const skip = (input.page - 1) * input.limit;
     const where = {
       ...this.generalBoundaryWhere(),
@@ -140,6 +145,8 @@ export class GeneralChatRepository {
       select: {
         id: true,
         conversationId: true,
+        senderUserId: true,
+        sentAt: true,
       },
     });
   }
@@ -266,13 +273,145 @@ export class GeneralChatRepository {
           conversationId: message.conversationId,
           senderUserId: message.senderUserId,
           messageType: message.messageType,
+          status: message.status,
           contentText: message.contentText,
           sentAt: message.sentAt,
+          deliveredAt: message.deliveredAt,
+          readAt: message.readAt,
         },
         attachments: persistedAttachments,
         conversationLatestActivityAt: updatedConversation.updatedAt,
       };
     });
+  }
+
+  async markMessageDelivered(input: {
+    conversationId: string;
+    messageId: string;
+    deliveredAt: Date;
+  }) {
+    const message = await this.prisma.message.findFirst({
+      where: {
+        id: input.messageId,
+        conversationId: input.conversationId,
+      },
+      select: {
+        id: true,
+        status: true,
+      },
+    });
+
+    if (!message || message.status !== MessageStatus.SENT) {
+      return null;
+    }
+
+    return this.prisma.message.update({
+      where: { id: input.messageId },
+      data: {
+        status: MessageStatus.DELIVERED,
+        deliveredAt: input.deliveredAt,
+      },
+      select: {
+        id: true,
+        conversationId: true,
+        deliveredAt: true,
+      },
+    });
+  }
+
+  async markConversationMessagesDeliveredForRecipient(input: {
+    conversationId: string;
+    recipientUserId: string;
+    deliveredAt: Date;
+  }) {
+    const pending = await this.prisma.message.findMany({
+      where: {
+        conversationId: input.conversationId,
+        senderUserId: {
+          not: input.recipientUserId,
+        },
+        status: MessageStatus.SENT,
+        deletedAt: null,
+        visibility: MessageVisibility.NORMAL,
+      },
+      select: {
+        id: true,
+      },
+      orderBy: [{ sentAt: 'asc' }, { id: 'asc' }],
+    });
+
+    if (pending.length === 0) {
+      return [];
+    }
+
+    await this.prisma.message.updateMany({
+      where: {
+        id: {
+          in: pending.map((item) => item.id),
+        },
+      },
+      data: {
+        status: MessageStatus.DELIVERED,
+        deliveredAt: input.deliveredAt,
+      },
+    });
+
+    return pending.map((item) => ({
+      messageId: item.id,
+      conversationId: input.conversationId,
+      deliveredAt: input.deliveredAt,
+    }));
+  }
+
+  async markConversationMessagesReadForRecipient(input: {
+    conversationId: string;
+    recipientUserId: string;
+    lastReadMessageSentAt: Date;
+    readAt: Date;
+  }) {
+    const pending = await this.prisma.message.findMany({
+      where: {
+        conversationId: input.conversationId,
+        senderUserId: {
+          not: input.recipientUserId,
+        },
+        status: {
+          in: [MessageStatus.SENT, MessageStatus.DELIVERED],
+        },
+        deletedAt: null,
+        visibility: MessageVisibility.NORMAL,
+        sentAt: {
+          lte: input.lastReadMessageSentAt,
+        },
+      },
+      select: {
+        id: true,
+      },
+      orderBy: [{ sentAt: 'asc' }, { id: 'asc' }],
+    });
+
+    if (pending.length === 0) {
+      return [];
+    }
+
+    await this.prisma.message.updateMany({
+      where: {
+        id: {
+          in: pending.map((item) => item.id),
+        },
+      },
+      data: {
+        status: MessageStatus.READ,
+        deliveredAt: input.readAt,
+        readAt: input.readAt,
+      },
+    });
+
+    return pending.map((item) => ({
+      messageId: item.id,
+      conversationId: input.conversationId,
+      readAt: input.readAt,
+    }));
   }
 
   markConversationReadCursor(input: {
@@ -310,5 +449,64 @@ export class GeneralChatRepository {
         ...(input.lastReadAt ? { sentAt: { gt: input.lastReadAt } } : {}),
       },
     });
+  }
+
+  updateConversationStatus(input: {
+    conversationId: string;
+    status: ConversationStatus;
+  }) {
+    return this.prisma.conversation.update({
+      where: { id: input.conversationId },
+      data: { status: input.status },
+      select: {
+        id: true,
+        status: true,
+        updatedAt: true,
+      },
+    });
+  }
+
+  async countSessionUnreadForUser(input: { userId: string }) {
+    const unreadWhere: Prisma.MessageWhereInput = {
+      senderUserId: {
+        not: input.userId,
+      },
+      status: {
+        in: [MessageStatus.SENT, MessageStatus.DELIVERED],
+      },
+      deletedAt: null,
+      visibility: MessageVisibility.NORMAL,
+      conversation: {
+        ...this.generalBoundaryWhere(),
+        sessionId: {
+          not: null,
+        },
+        participants: {
+          some: {
+            userId: input.userId,
+            isActive: true,
+          },
+        },
+      },
+    };
+
+    const [unreadMessages, unreadConversationRows] =
+      await this.prisma.$transaction([
+        this.prisma.message.count({
+          where: unreadWhere,
+        }),
+        this.prisma.message.findMany({
+          where: unreadWhere,
+          select: {
+            conversationId: true,
+          },
+          distinct: ['conversationId'],
+        }),
+      ]);
+
+    return {
+      unreadMessages,
+      unreadConversations: unreadConversationRows.length,
+    };
   }
 }

@@ -66,10 +66,14 @@ describe('NotificationDeliveryAttemptEngineService', () => {
     (repository.markQueuedNotificationSent as jest.Mock).mockResolvedValue({
       count: 1,
     });
-    (repository.rescheduleQueuedNotificationForRetry as jest.Mock).mockResolvedValue({
+    (
+      repository.rescheduleQueuedNotificationForRetry as jest.Mock
+    ).mockResolvedValue({
       count: 1,
     });
-    (repository.markQueuedNotificationSuppressed as jest.Mock).mockResolvedValue({
+    (
+      repository.markQueuedNotificationSuppressed as jest.Mock
+    ).mockResolvedValue({
       count: 1,
     });
     (repository.markQueuedNotificationFailed as jest.Mock).mockResolvedValue({
@@ -87,9 +91,9 @@ describe('NotificationDeliveryAttemptEngineService', () => {
   });
 
   it('creates attempt and marks notification sent for in-app success', async () => {
-    (repository.findQueuedNotificationForExecution as jest.Mock).mockResolvedValue(
-      queuedBase,
-    );
+    (
+      repository.findQueuedNotificationForExecution as jest.Mock
+    ).mockResolvedValue(queuedBase);
     (channelExecutionService.execute as jest.Mock).mockResolvedValue({
       success: true,
       provider: 'IN_APP',
@@ -120,7 +124,9 @@ describe('NotificationDeliveryAttemptEngineService', () => {
   });
 
   it('executes email channel and persists successful attempt outcome', async () => {
-    (repository.findQueuedNotificationForExecution as jest.Mock).mockResolvedValue({
+    (
+      repository.findQueuedNotificationForExecution as jest.Mock
+    ).mockResolvedValue({
       ...queuedBase,
       id: 'n2',
       channel: NotificationChannel.EMAIL,
@@ -152,7 +158,9 @@ describe('NotificationDeliveryAttemptEngineService', () => {
   });
 
   it('maps failed channel execution to failed attempt + failed notification', async () => {
-    (repository.findQueuedNotificationForExecution as jest.Mock).mockResolvedValue({
+    (
+      repository.findQueuedNotificationForExecution as jest.Mock
+    ).mockResolvedValue({
       ...queuedBase,
       id: 'n3',
       channel: NotificationChannel.EMAIL,
@@ -183,7 +191,9 @@ describe('NotificationDeliveryAttemptEngineService', () => {
   });
 
   it('reschedules retryable failure with bounded retry state transition', async () => {
-    (repository.findQueuedNotificationForExecution as jest.Mock).mockResolvedValue({
+    (
+      repository.findQueuedNotificationForExecution as jest.Mock
+    ).mockResolvedValue({
       ...queuedBase,
       id: 'n5',
       channel: NotificationChannel.EMAIL,
@@ -201,7 +211,9 @@ describe('NotificationDeliveryAttemptEngineService', () => {
       reasonCode: 'MAIL_SEND_FAILED',
       nextRetryAt: new Date('2026-05-01T08:05:00.000Z'),
     });
-    (repository.rescheduleQueuedNotificationForRetry as jest.Mock).mockResolvedValue({
+    (
+      repository.rescheduleQueuedNotificationForRetry as jest.Mock
+    ).mockResolvedValue({
       count: 1,
     });
 
@@ -210,7 +222,9 @@ describe('NotificationDeliveryAttemptEngineService', () => {
       now: new Date('2026-05-01T08:00:00.000Z'),
     });
 
-    expect(repository.rescheduleQueuedNotificationForRetry).toHaveBeenCalledWith({
+    expect(
+      repository.rescheduleQueuedNotificationForRetry,
+    ).toHaveBeenCalledWith({
       notificationId: 'n5',
       retryAt: new Date('2026-05-01T08:05:00.000Z'),
     });
@@ -225,9 +239,9 @@ describe('NotificationDeliveryAttemptEngineService', () => {
   });
 
   it('skips execution when notification is not queued or missing', async () => {
-    (repository.findQueuedNotificationForExecution as jest.Mock).mockResolvedValue(
-      null,
-    );
+    (
+      repository.findQueuedNotificationForExecution as jest.Mock
+    ).mockResolvedValue(null);
 
     const result = await service.executeClaimedNotification({
       notificationId: 'missing',
@@ -244,7 +258,9 @@ describe('NotificationDeliveryAttemptEngineService', () => {
   });
 
   it('suppresses invalid notification without creating attempt or sending', async () => {
-    (repository.findQueuedNotificationForExecution as jest.Mock).mockResolvedValue({
+    (
+      repository.findQueuedNotificationForExecution as jest.Mock
+    ).mockResolvedValue({
       ...queuedBase,
       id: 'n6',
     });

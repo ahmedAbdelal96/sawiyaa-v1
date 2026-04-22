@@ -10,7 +10,8 @@ export const CARE_RECOMMENDATION_TYPE_VALUES = [
   'PRACTITIONER_MATCH',
 ] as const;
 
-export type CareRecommendationType = (typeof CARE_RECOMMENDATION_TYPE_VALUES)[number];
+export type CareRecommendationType =
+  (typeof CARE_RECOMMENDATION_TYPE_VALUES)[number];
 
 export class CareRecommendationActionDto {
   @ApiProperty()

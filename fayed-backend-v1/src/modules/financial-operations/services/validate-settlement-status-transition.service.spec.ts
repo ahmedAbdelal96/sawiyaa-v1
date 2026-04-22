@@ -4,10 +4,14 @@ describe('ValidateSettlementStatusTransitionService', () => {
   const service = new ValidateSettlementStatusTransitionService();
 
   it('allows generated to completed', () => {
-    expect(() => service.assertCanTransition('GENERATED', 'COMPLETED')).not.toThrow();
+    expect(() =>
+      service.assertCanTransition('GENERATED', 'COMPLETED'),
+    ).not.toThrow();
   });
 
   it('rejects completed to generated', () => {
-    expect(() => service.assertCanTransition('COMPLETED', 'GENERATED')).toThrow();
+    expect(() =>
+      service.assertCanTransition('COMPLETED', 'GENERATED'),
+    ).toThrow();
   });
 });

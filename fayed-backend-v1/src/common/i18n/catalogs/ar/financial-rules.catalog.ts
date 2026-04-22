@@ -10,8 +10,7 @@ export const arFinancialRulesCatalog = {
     sessionNotFound: 'لم يتم العثور على الجلسة.',
     pricingUnavailable: 'السعر غير متاح لهذه الجلسة.',
     currencyUnavailable: 'العملة غير متاحة لهذه الجلسة.',
-    commissionRuleNotFound:
-      'لا توجد قاعدة عمولة نشطة تطابق سياق هذه الجلسة.',
+    commissionRuleNotFound: 'لا توجد قاعدة عمولة نشطة تطابق سياق هذه الجلسة.',
     commissionRuleSlugExists: 'معرف قاعدة العمولة مستخدم بالفعل.',
     invalidCommissionSplit:
       'يجب أن يساوي مجموع نسبة المنصة ونسبة المعالج 100%.',

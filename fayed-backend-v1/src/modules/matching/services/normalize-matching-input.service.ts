@@ -1,5 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { MatchingAnswerKey, PractitionerType, SessionMode } from '@prisma/client';
+import {
+  MatchingAnswerKey,
+  PractitionerType,
+  SessionMode,
+} from '@prisma/client';
 import {
   MatchingAnswerPayload,
   MatchingUrgencyPreference,
@@ -26,7 +30,8 @@ export class NormalizeMatchingInputService {
   } {
     const normalized: NormalizedMatchingInput = {
       primaryConcern: input.primaryConcern?.trim() || null,
-      preferredSpecialtySlug: input.preferredSpecialtySlug?.trim().toLowerCase() || null,
+      preferredSpecialtySlug:
+        input.preferredSpecialtySlug?.trim().toLowerCase() || null,
       preferredLanguage: input.preferredLanguage?.trim().toLowerCase() || null,
       preferredPractitionerGender:
         input.preferredPractitionerGender ?? PractitionerGenderPreference.ANY,
@@ -97,7 +102,7 @@ export class NormalizeMatchingInputService {
       },
       {
         key: MatchingAnswerKey.PREFERRED_PROVIDER_TYPE,
-        valueJson: normalized.preferredProviderType as PractitionerType | null,
+        valueJson: normalized.preferredProviderType,
       },
       {
         key: MatchingAnswerKey.PREFER_INSTANT_BOOKING,

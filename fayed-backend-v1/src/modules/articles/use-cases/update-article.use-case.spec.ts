@@ -44,7 +44,9 @@ describe('UpdateArticleUseCase', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    (articleRepository.findArticleById as jest.Mock).mockResolvedValue(existingArticle);
+    (articleRepository.findArticleById as jest.Mock).mockResolvedValue(
+      existingArticle,
+    );
     (articlePresenter.presentAdminArticleItem as jest.Mock).mockReturnValue({
       id: 'article_1',
       locale: ContentLocale.ar,

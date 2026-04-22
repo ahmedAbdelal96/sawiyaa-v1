@@ -67,7 +67,9 @@ export class AppLoggerService implements LoggerService {
     context?: string,
   ): void {
     const payload =
-      typeof message === 'string' ? ({ message } as Record<string, unknown>) : sanitizeForLogging(message);
+      typeof message === 'string'
+        ? ({ message } as Record<string, unknown>)
+        : sanitizeForLogging(message);
 
     if (payload && typeof payload === 'object' && 'message' in payload) {
       const objectPayload = payload as Record<string, unknown>;

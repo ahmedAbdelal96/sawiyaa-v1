@@ -27,7 +27,9 @@ describe('ListPatientTrainingEnrollmentsUseCase', () => {
   });
 
   it('requires patient profile context', async () => {
-    (trainingRepository.findPatientProfileByUserId as jest.Mock).mockResolvedValue(null);
+    (
+      trainingRepository.findPatientProfileByUserId as jest.Mock
+    ).mockResolvedValue(null);
 
     await expect(
       useCase.execute({

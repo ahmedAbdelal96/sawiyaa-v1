@@ -6,9 +6,11 @@ import { FinancialOperationsModule } from '@modules/financial-operations/financi
 import { FinancialRulesModule } from '@modules/financial-rules/financial-rules.module';
 import { NotificationsModule } from '@modules/notifications/notifications.module';
 import { SessionsModule } from '@modules/sessions/sessions.module';
+import { CustomerWalletsModule } from '@modules/customer-wallets/customer-wallets.module';
 import { PatientPaymentsController } from './controllers/patient-payments.controller';
 import { PaymentWebhooksController } from './controllers/payment-webhooks.controller';
 import { AdminPaymentRefundsController } from './controllers/admin-payment-refunds.controller';
+import { AdminPatientPaymentsController } from './controllers/admin-patient-payments.controller';
 import { PaymentMapper } from './mappers/payment.mapper';
 import { PaymobPaymentProviderAdapter } from './providers/paymob-payment-provider.adapter';
 import { StripePaymentProviderAdapter } from './providers/stripe-payment-provider.adapter';
@@ -31,6 +33,7 @@ import { GetPatientPaymentUseCase } from './use-cases/get-patient-payment.use-ca
 import { HandlePaymobWebhookUseCase } from './use-cases/handle-paymob-webhook.use-case';
 import { HandleStripeWebhookUseCase } from './use-cases/handle-stripe-webhook.use-case';
 import { InitiateSessionPaymentUseCase } from './use-cases/initiate-session-payment.use-case';
+import { ListAdminPatientPaymentsUseCase } from './use-cases/list-admin-patient-payments.use-case';
 import { ListPaymentRefundsUseCase } from './use-cases/list-payment-refunds.use-case';
 import { ListPatientPaymentsUseCase } from './use-cases/list-patient-payments.use-case';
 import { MarkPaymentFailedUseCase } from './use-cases/mark-payment-failed.use-case';
@@ -49,11 +52,13 @@ import { RetryPaymentRefundUseCase } from './use-cases/retry-payment-refund.use-
     FinancialRulesModule,
     FinancialOperationsModule,
     NotificationsModule,
+    CustomerWalletsModule,
   ],
   controllers: [
     PatientPaymentsController,
     PaymentWebhooksController,
     AdminPaymentRefundsController,
+    AdminPatientPaymentsController,
   ],
   providers: [
     JwtAccessAuthGuard,
@@ -79,6 +84,7 @@ import { RetryPaymentRefundUseCase } from './use-cases/retry-payment-refund.use-
     GetAdminPaymentOpsDetailsUseCase,
     GetPatientPaymentUseCase,
     ListPatientPaymentsUseCase,
+    ListAdminPatientPaymentsUseCase,
     HandleStripeWebhookUseCase,
     HandlePaymobWebhookUseCase,
     MarkPaymentSucceededUseCase,

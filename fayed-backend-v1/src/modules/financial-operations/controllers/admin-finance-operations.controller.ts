@@ -1,4 +1,11 @@
-import { Controller, Get, Param, ParseUUIDPipe, Query, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Param,
+  ParseUUIDPipe,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
@@ -42,9 +49,13 @@ export class AdminFinanceOperationsController {
     description:
       'Returns normalized, repository-backed payment/refund operation events for operational finance debugging workflows.',
   })
-  @ApiResponse({ status: 200, type: FinanceOperationEventListSuccessResponseDto })
+  @ApiResponse({
+    status: 200,
+    type: FinanceOperationEventListSuccessResponseDto,
+  })
   @ApiBadRequestResponse({
-    description: 'Invalid filter semantics for finance operations event inspection',
+    description:
+      'Invalid filter semantics for finance operations event inspection',
   })
   @ApiUnauthorizedResponse({ description: 'Access token is required' })
   @ApiForbiddenResponse({
@@ -61,13 +72,18 @@ export class AdminFinanceOperationsController {
       'Returns one normalized event detail row with safe operational metadata and linked finance references.',
   })
   @ApiParam({ name: 'id', description: 'Finance operation event id' })
-  @ApiResponse({ status: 200, type: FinanceOperationEventItemSuccessResponseDto })
+  @ApiResponse({
+    status: 200,
+    type: FinanceOperationEventItemSuccessResponseDto,
+  })
   @ApiBadRequestResponse({ description: 'Event id must be a valid UUID' })
   @ApiUnauthorizedResponse({ description: 'Access token is required' })
   @ApiForbiddenResponse({
     description: 'Admin or support active account is required',
   })
-  @ApiNotFoundResponse({ description: 'Finance operation event was not found in scope' })
+  @ApiNotFoundResponse({
+    description: 'Finance operation event was not found in scope',
+  })
   eventDetail(@Param('id', new ParseUUIDPipe()) id: string) {
     return this.getFinanceOperationEventUseCase.execute(id);
   }

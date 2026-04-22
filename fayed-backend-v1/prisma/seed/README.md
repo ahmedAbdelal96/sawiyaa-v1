@@ -22,6 +22,9 @@ This folder keeps seed logic modular and easy to maintain.
 - `notifications.seed.ts`
 - `config.seed.ts`
 - `regional-bulk.seed.ts`
+- `settlements-lab.seed.ts`
+- `accounting.seed.ts`
+- `audit-events.seed.ts`
 
 ## Usage
 

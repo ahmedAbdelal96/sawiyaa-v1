@@ -69,7 +69,8 @@ export class RecordPractitionerSettlementPayoutUseCase {
         const remaining = settlement.amountNet.sub(paidSoFar);
         if (remaining.lte(0)) {
           throw new NotFoundException({
-            messageKey: 'financialOperations.errors.settlementPayoutAlreadyRecorded',
+            messageKey:
+              'financialOperations.errors.settlementPayoutAlreadyRecorded',
             error: FINANCIAL_OPS_ERROR_CODES.settlementPayoutAlreadyRecorded,
           });
         }
@@ -81,6 +82,8 @@ export class RecordPractitionerSettlementPayoutUseCase {
             payoutMethod: input.body.payoutMethod,
             payoutSource: SettlementPayoutSource.MANUAL_EXCEPTION,
             externalPayoutRef: input.body.externalPayoutRef ?? null,
+            transferFeeAmount: input.body.transferFeeAmount ?? null,
+            transferFeeTreatment: input.body.transferFeeTreatment,
             notes: input.body.notes ?? null,
             effectiveAt,
             processedByUserId: input.operatorUserId,

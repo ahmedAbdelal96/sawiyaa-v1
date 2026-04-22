@@ -31,6 +31,7 @@ import { CurrentLocale } from '@common/i18n/decorators/current-locale.decorator'
 import { SupportedLocale } from '@common/i18n/types/locale.types';
 import { AuthenticatedUser } from '@common/interfaces/authenticated-user.interface';
 import { CancelSessionDto } from '../dto/cancel-session.dto';
+import { SessionCancellationPreviewSuccessResponseDto } from '../dto/session-cancellation-preview.dto';
 import { CreateScheduledSessionDto } from '../dto/create-scheduled-session.dto';
 import { ListSessionsDto } from '../dto/list-sessions.dto';
 import {
@@ -47,6 +48,7 @@ import { CancelSessionUseCase } from '../use-cases/cancel-session.use-case';
 import { CreateScheduledSessionUseCase } from '../use-cases/create-scheduled-session.use-case';
 import { GetMyPatientSessionsUseCase } from '../use-cases/get-my-patient-sessions.use-case';
 import { GetSessionDetailsUseCase } from '../use-cases/get-session-details.use-case';
+import { PreviewSessionCancellationUseCase } from '../use-cases/preview-session-cancellation.use-case';
 
 /**
  * Patient sessions controller owns only the authenticated patient's scheduled consultation flows.
@@ -63,6 +65,7 @@ export class PatientSessionsController {
     private readonly createScheduledSessionUseCase: CreateScheduledSessionUseCase,
     private readonly getMyPatientSessionsUseCase: GetMyPatientSessionsUseCase,
     private readonly getSessionDetailsUseCase: GetSessionDetailsUseCase,
+    private readonly previewSessionCancellationUseCase: PreviewSessionCancellationUseCase,
     private readonly cancelSessionUseCase: CancelSessionUseCase,
     private readonly prepareSessionRuntimeUseCase: PrepareSessionRuntimeUseCase,
     private readonly resolveSessionJoinContractUseCase: ResolveSessionJoinContractUseCase,
@@ -139,7 +142,8 @@ export class PatientSessionsController {
   @ApiResponse({ status: 200, type: SessionItemSuccessResponseDto })
   @ApiUnauthorizedResponse({ description: 'Access token is required' })
   @ApiForbiddenResponse({
-    description: 'The requested session does not belong to the authenticated patient',
+    description:
+      'The requested session does not belong to the authenticated patient',
   })
   @ApiNotFoundResponse({ description: 'Session was not found' })
   details(
@@ -165,7 +169,8 @@ export class PatientSessionsController {
   @ApiResponse({ status: 201, type: SessionRuntimeItemSuccessResponseDto })
   @ApiUnauthorizedResponse({ description: 'Access token is required' })
   @ApiForbiddenResponse({
-    description: 'Only active patient accounts may prepare their own session runtime',
+    description:
+      'Only active patient accounts may prepare their own session runtime',
   })
   @ApiNotFoundResponse({ description: 'Session was not found' })
   prepareRuntime(
@@ -189,7 +194,8 @@ export class PatientSessionsController {
   @ApiResponse({ status: 200, type: SessionJoinItemSuccessResponseDto })
   @ApiUnauthorizedResponse({ description: 'Access token is required' })
   @ApiForbiddenResponse({
-    description: 'Only active patient accounts may access their own session join contract',
+    description:
+      'Only active patient accounts may access their own session join contract',
   })
   @ApiNotFoundResponse({ description: 'Session was not found' })
   resolveJoin(
@@ -207,7 +213,7 @@ export class PatientSessionsController {
   @ApiOperation({
     summary: 'Cancel a patient-owned session',
     description:
-      'Cancels a scheduled session only when the lifecycle state still allows cancellation. Payment/refund handling remains outside Sessions V1.',
+      'Cancels a session only when lifecycle and active cancellation policy allow it. Cancellation outcome applies configured financial policy (wallet release/refund) safely.',
   })
   @ApiParam({ name: 'id', description: 'Session id' })
   @ApiBody({ type: CancelSessionDto })
@@ -232,6 +238,39 @@ export class PatientSessionsController {
       locale,
       sessionId,
       reason: body.reason,
+    });
+  }
+
+  @Get(':id/cancel-preview')
+  @ApiOperation({
+    summary: 'Preview patient session cancellation outcome',
+    description:
+      'Returns a policy-backed financial preview before confirmation, including allowed/not-allowed state and exact wallet/refund/release amounts.',
+  })
+  @ApiParam({ name: 'id', description: 'Session id' })
+  @ApiResponse({
+    status: 200,
+    type: SessionCancellationPreviewSuccessResponseDto,
+  })
+  @ApiUnauthorizedResponse({ description: 'Access token is required' })
+  @ApiForbiddenResponse({
+    description:
+      'Only active patient accounts may preview cancellation on their own sessions',
+  })
+  @ApiNotFoundResponse({ description: 'Session was not found' })
+  @ApiConflictResponse({
+    description:
+      'Cancellation policy cannot be evaluated because policy/rule/session schedule is missing',
+  })
+  previewCancellation(
+    @CurrentUser() currentUser: AuthenticatedUser,
+    @CurrentLocale() locale: SupportedLocale,
+    @Param('id') sessionId: string,
+  ) {
+    return this.previewSessionCancellationUseCase.execute({
+      userId: currentUser.id,
+      locale,
+      sessionId,
     });
   }
 }

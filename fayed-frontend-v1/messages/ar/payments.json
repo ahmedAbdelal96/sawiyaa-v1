@@ -147,8 +147,45 @@
     },
     "provider": {
       "STRIPE": "بطاقة",
-      "PAYMOB": "باي موب"
+      "PAYMOB": "باي موب",
+      "INTERNAL_WALLET": "المحفظة"
+    },
+    "wallet": {
+      "summaryHeading": "رصيد المحفظة",
+      "availableLabel": "الرصيد المتاح",
+      "reservedLabel": "الرصيد المحجوز",
+      "noWalletYet": "لا توجد حركة على المحفظة حتى الآن.",
+      "refundHint": "أي مبلغ مسترد يضاف إلى هذا الرصيد الداخلي.",
+      "activityHeading": "آخر حركات المحفظة",
+      "activityEmpty": "لا توجد حركات للمحفظة حتى الآن.",
+      "walletUsedLabel": "المخصوم من المحفظة",
+      "gatewayUsedLabel": "المدفوع عبر بوابة الدفع",
+      "entries": {
+        "type": {
+          "REFUND_CREDIT": "إضافة استرداد",
+          "MANUAL_CREDIT": "إضافة يدوية",
+          "MANUAL_DEBIT": "خصم يدوي",
+          "SESSION_PAYMENT_RESERVE": "حجز مبلغ للجلسة",
+          "SESSION_PAYMENT_CAPTURE": "خصم نهائي للجلسة",
+          "SESSION_PAYMENT_RELEASE": "فك حجز المبلغ",
+          "REVERSAL": "قيد عكسي",
+          "ADJUSTMENT": "تسوية"
+        }
+      }
     }
+  },
+  "walletCheckout": {
+    "heading": "طريقة تقسيم الدفع",
+    "totalLabel": "إجمالي الجلسة",
+    "walletDeductionLabel": "المخصوم من المحفظة",
+    "gatewayRemainderLabel": "المتبقي لبوابة الدفع",
+    "useWalletTitle": "استخدام رصيد المحفظة",
+    "useWalletNote": "استخدم الرصيد المتاح في المحفظة قبل الدفع بالبطاقة.",
+    "useWalletToggle": "استخدام المحفظة",
+    "balanceLoading": "جارٍ تحميل رصيد المحفظة...",
+    "currencyMismatch": "عملة المحفظة لا تطابق عملة هذه الجلسة، لذلك لا يمكن استخدام الرصيد هنا.",
+    "gatewayChargeHint": "هذا هو المبلغ الذي سيخصم عبر مزود الدفع.",
+    "confirmWalletOnly": "تأكيد الدفع من المحفظة"
   },
   "sessionState": {
     "heading": "الدفع والحجز",

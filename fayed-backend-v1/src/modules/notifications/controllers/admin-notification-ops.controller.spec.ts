@@ -10,14 +10,20 @@ describe('AdminNotificationOpsController', () => {
     execute: jest.fn().mockResolvedValue({ item: { id: 'n1' } }),
   } as never;
 
-  const controller = new AdminNotificationOpsController(listUseCase, detailUseCase);
+  const controller = new AdminNotificationOpsController(
+    listUseCase,
+    detailUseCase,
+  );
 
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
   it('exposes admin/support role metadata for ops routes', () => {
-    const roles = Reflect.getMetadata(ROLES_KEY, AdminNotificationOpsController);
+    const roles = Reflect.getMetadata(
+      ROLES_KEY,
+      AdminNotificationOpsController,
+    );
     expect(roles).toEqual([AppRole.ADMIN, AppRole.SUPPORT_AGENT]);
   });
 

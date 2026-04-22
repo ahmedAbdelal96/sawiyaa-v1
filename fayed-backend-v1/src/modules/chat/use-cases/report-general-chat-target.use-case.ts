@@ -1,4 +1,8 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { ModerationReportTargetType } from '@prisma/client';
 import { AuthenticatedUser } from '@common/interfaces/authenticated-user.interface';
 import { CreateModerationReportUseCase } from '@modules/moderation/use-cases/create-moderation-report.use-case';
@@ -68,11 +72,13 @@ export class ReportGeneralChatTargetUseCase {
     dto: ReportGeneralChatTargetDto;
   }) {
     const message =
-      await this.generalChatRepository.findAccessibleMessageInConversationScope({
-        conversationId: input.conversationId,
-        messageId: input.messageId,
-        userId: input.authenticatedUser.id,
-      });
+      await this.generalChatRepository.findAccessibleMessageInConversationScope(
+        {
+          conversationId: input.conversationId,
+          messageId: input.messageId,
+          userId: input.authenticatedUser.id,
+        },
+      );
 
     if (!message) {
       throw new NotFoundException({

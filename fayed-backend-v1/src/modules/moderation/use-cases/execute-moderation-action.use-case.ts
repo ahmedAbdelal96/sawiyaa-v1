@@ -28,7 +28,9 @@ export class ExecuteModerationActionUseCase {
     reportId: string;
     payload: ExecuteModerationActionDto;
   }) {
-    const existing = await this.moderationRepository.findCaseById(input.reportId);
+    const existing = await this.moderationRepository.findCaseById(
+      input.reportId,
+    );
     if (!existing) {
       throw new NotFoundException({
         messageKey: 'moderation.errors.caseNotFound',
@@ -110,6 +112,7 @@ export class ExecuteModerationActionUseCase {
         reportedByRole: updated.reportedByRole,
         createdAt: updated.createdAt,
         lastActionAt: latestAction.createdAt,
+        reporter: null,
         targetSnapshot: updated.targetSnapshot,
       }),
       actionExecution: {

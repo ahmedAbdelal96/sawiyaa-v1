@@ -7,6 +7,7 @@ interface DropdownProps {
   onClose: () => void;
   children: React.ReactNode;
   className?: string;
+  closeOnOutsideClick?: boolean;
 }
 
 export const Dropdown: React.FC<DropdownProps> = ({
@@ -14,10 +15,13 @@ export const Dropdown: React.FC<DropdownProps> = ({
   onClose,
   children,
   className = "",
+  closeOnOutsideClick = true,
 }) => {
   const dropdownRef = useRef<HTMLDivElement>(null);
 
  useEffect(() => {
+  if (!closeOnOutsideClick) return;
+
   const handleClickOutside = (event: MouseEvent) => {
     if (
       dropdownRef.current &&
@@ -32,7 +36,7 @@ export const Dropdown: React.FC<DropdownProps> = ({
   return () => {
     document.removeEventListener("mousedown", handleClickOutside);
   };
-}, [onClose]);
+}, [closeOnOutsideClick, onClose]);
 
 
   if (!isOpen) return null;

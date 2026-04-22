@@ -1,6 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import {
   ConversationParticipantRole,
+  MessageStatus,
   SupportTicketPriority,
   SupportTicketStatus,
   SupportTicketType,
@@ -10,11 +11,23 @@ export class SupportMessageDto {
   @ApiProperty()
   id!: string;
 
+  @ApiProperty({ nullable: true })
+  senderUserId!: string | null;
+
   @ApiProperty({ enum: ConversationParticipantRole })
   senderRole!: ConversationParticipantRole;
 
   @ApiProperty()
   message!: string;
+
+  @ApiProperty({ enum: MessageStatus })
+  status!: MessageStatus;
+
+  @ApiProperty({ nullable: true })
+  deliveredAt!: string | null;
+
+  @ApiProperty({ nullable: true })
+  readAt!: string | null;
 
   @ApiProperty()
   createdAt!: string;
@@ -76,9 +89,18 @@ export class SupportTicketItemDto {
 
   @ApiProperty()
   createdAt!: string;
+
+  @ApiProperty()
+  unreadCount!: number;
+
+  @ApiProperty()
+  hasUnread!: boolean;
 }
 
 export class SupportTicketDetailsDto extends SupportTicketItemDto {
+  @ApiProperty()
+  conversationId!: string;
+
   @ApiProperty({ nullable: true })
   description!: string | null;
 

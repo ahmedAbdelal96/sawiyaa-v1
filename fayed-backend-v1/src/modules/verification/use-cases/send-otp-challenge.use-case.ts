@@ -1,4 +1,8 @@
-import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import { OtpChannel, OtpPurpose } from '@prisma/client';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
 import { OtpChallengeRepository } from '../repositories/otp-challenge.repository';

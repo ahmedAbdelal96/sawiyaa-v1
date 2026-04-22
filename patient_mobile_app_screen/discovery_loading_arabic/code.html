@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+
+<html class="light" dir="rtl" lang="ar"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>اكتشف المعالجين</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-error-container": "#93000a",
+                        "background": "#f7f9fe",
+                        "on-tertiary": "#ffffff",
+                        "on-secondary-container": "#51617e",
+                        "on-primary": "#ffffff",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-bright": "#f7f9fe",
+                        "primary-fixed-dim": "#a7c8ff",
+                        "inverse-primary": "#a7c8ff",
+                        "surface-container-high": "#e6e8ed",
+                        "inverse-on-surface": "#eff1f6",
+                        "tertiary-container": "#a86500",
+                        "primary-container": "#3575c7",
+                        "error-container": "#ffdad6",
+                        "surface-container": "#eceef3",
+                        "secondary-fixed": "#d6e3ff",
+                        "on-error": "#ffffff",
+                        "on-primary-fixed": "#001b3c",
+                        "tertiary-fixed": "#ffdcbc",
+                        "on-surface": "#181c20",
+                        "surface-tint": "#125eae",
+                        "outline-variant": "#c2c6d3",
+                        "on-secondary-fixed-variant": "#374762",
+                        "outline": "#727783",
+                        "secondary-container": "#cdddff",
+                        "on-background": "#181c20",
+                        "tertiary": "#854f00",
+                        "error": "#ba1a1a",
+                        "on-tertiary-fixed-variant": "#683d00",
+                        "on-primary-fixed-variant": "#004689",
+                        "primary-fixed": "#d5e3ff",
+                        "on-secondary-fixed": "#0a1c34",
+                        "surface-container-highest": "#e0e2e7",
+                        "on-secondary": "#ffffff",
+                        "on-tertiary-fixed": "#2c1700",
+                        "on-tertiary-container": "#fffbff",
+                        "surface-dim": "#d8dadf",
+                        "tertiary-fixed-dim": "#ffb86b",
+                        "surface-container-low": "#f1f4f9",
+                        "on-primary-container": "#fefcff",
+                        "surface-variant": "#e0e2e7",
+                        "primary": "#0b5cac",
+                        "secondary-fixed-dim": "#b7c7e8",
+                        "secondary": "#4f5f7b",
+                        "on-surface-variant": "#424751",
+                        "inverse-surface": "#2d3135",
+                        "surface": "#f7f9fe"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {},
+                    "fontFamily": {
+                        "headline": ["Manrope"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .skeleton-pulse {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: .5;
+            }
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-surface font-body antialiased selection:bg-primary selection:text-on-primary">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-[#f1f4f9]/85 dark:bg-slate-900/85 backdrop-blur-xl border-b border-[#c2c6d3]/20 shadow-[0_8px_30px_rgb(24,28,32,0.04)] transition-all duration-300">
+<div class="flex items-center justify-between px-6 h-16 w-full rtl">
+<button aria-label="Go back" class="text-slate-500 hover:bg-slate-100/50 dark:hover:bg-slate-800/50 p-2 rounded-full transition-all duration-300 active:scale-95">
+<span class="material-symbols-outlined text-2xl" data-icon="arrow_forward">arrow_forward</span>
+</button>
+<h1 class="font-headline font-bold tracking-tight text-on-surface text-xl">اكتشف المعالجين</h1>
+<div class="w-10"></div> <!-- Spacer for centering -->
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="pt-24 pb-32 px-4 md:px-8 max-w-4xl mx-auto space-y-8">
+<!-- Search and Filters Section -->
+<section class="space-y-4">
+<div class="relative">
+<span class="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-outline" data-icon="search">search</span>
+<input class="w-full bg-surface-container-low border border-outline-variant/20 rounded-xl py-4 pr-12 pl-4 text-on-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all placeholder:text-on-surface-variant font-body" placeholder="ابحث عن تخصص، اسم، أو مركز..." type="text"/>
+</div>
+<div class="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+<button class="whitespace-nowrap px-4 py-2 rounded-full bg-primary-container text-on-primary-container font-label text-sm tracking-wide font-medium">الكل</button>
+<button class="whitespace-nowrap px-4 py-2 rounded-full bg-surface-container-high text-on-surface-variant font-label text-sm tracking-wide font-medium border border-outline-variant/20">قلق وتوتر</button>
+<button class="whitespace-nowrap px-4 py-2 rounded-full bg-surface-container-high text-on-surface-variant font-label text-sm tracking-wide font-medium border border-outline-variant/20">علاقات أسرية</button>
+<button class="whitespace-nowrap px-4 py-2 rounded-full bg-surface-container-high text-on-surface-variant font-label text-sm tracking-wide font-medium border border-outline-variant/20">اكتئاب</button>
+</div>
+</section>
+<!-- Skeleton Loading State -->
+<section class="space-y-4">
+<!-- Skeleton Card 1 -->
+<div class="bg-surface-container-lowest rounded-xl p-5 shadow-[0_4px_20px_rgb(24,28,32,0.05)] border border-outline-variant/20 relative overflow-hidden flex gap-4">
+<div class="w-1 bg-surface-variant absolute top-0 bottom-0 right-0 skeleton-pulse"></div>
+<div class="w-20 h-20 rounded-full bg-surface-variant shrink-0 skeleton-pulse"></div>
+<div class="flex-1 space-y-3 py-1">
+<div class="h-5 bg-surface-variant rounded-md w-1/2 skeleton-pulse"></div>
+<div class="h-4 bg-surface-variant rounded-md w-3/4 skeleton-pulse"></div>
+<div class="flex gap-2 pt-2">
+<div class="h-6 w-16 bg-surface-variant rounded-full skeleton-pulse"></div>
+<div class="h-6 w-16 bg-surface-variant rounded-full skeleton-pulse"></div>
+</div>
+</div>
+</div>
+<!-- Skeleton Card 2 -->
+<div class="bg-surface-container-lowest rounded-xl p-5 shadow-[0_4px_20px_rgb(24,28,32,0.05)] border border-outline-variant/20 relative overflow-hidden flex gap-4">
+<div class="w-1 bg-surface-variant absolute top-0 bottom-0 right-0 skeleton-pulse"></div>
+<div class="w-20 h-20 rounded-full bg-surface-variant shrink-0 skeleton-pulse"></div>
+<div class="flex-1 space-y-3 py-1">
+<div class="h-5 bg-surface-variant rounded-md w-2/3 skeleton-pulse"></div>
+<div class="h-4 bg-surface-variant rounded-md w-1/2 skeleton-pulse"></div>
+<div class="flex gap-2 pt-2">
+<div class="h-6 w-20 bg-surface-variant rounded-full skeleton-pulse"></div>
+<div class="h-6 w-12 bg-surface-variant rounded-full skeleton-pulse"></div>
+</div>
+</div>
+</div>
+<!-- Skeleton Card 3 -->
+<div class="bg-surface-container-lowest rounded-xl p-5 shadow-[0_4px_20px_rgb(24,28,32,0.05)] border border-outline-variant/20 relative overflow-hidden flex gap-4">
+<div class="w-1 bg-surface-variant absolute top-0 bottom-0 right-0 skeleton-pulse"></div>
+<div class="w-20 h-20 rounded-full bg-surface-variant shrink-0 skeleton-pulse"></div>
+<div class="flex-1 space-y-3 py-1">
+<div class="h-5 bg-surface-variant rounded-md w-1/2 skeleton-pulse"></div>
+<div class="h-4 bg-surface-variant rounded-md w-5/6 skeleton-pulse"></div>
+<div class="flex gap-2 pt-2">
+<div class="h-6 w-16 bg-surface-variant rounded-full skeleton-pulse"></div>
+<div class="h-6 w-24 bg-surface-variant rounded-full skeleton-pulse"></div>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 w-full z-50 rounded-t-3xl border-t border-[#c2c6d3]/20 bg-[#f1f4f9]/85 dark:bg-slate-900/85 backdrop-blur-xl shadow-[0_-8px_30px_rgb(24,28,32,0.06)] md:hidden">
+<div class="flex justify-around items-center px-4 pb-6 pt-3 rtl">
+<a class="flex flex-col items-center justify-center text-slate-500 dark:text-slate-400 p-2 hover:text-[#0b5cac] dark:hover:text-[#3575c7] transition-transform duration-500 cubic-bezier(0.34,1.56,0.64,1)" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="home">home</span>
+<span class="font-['Inter'] text-[10px] font-medium tracking-wide uppercase">الرئيسية</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-gradient-to-br from-[#0b5cac] to-[#3575c7] text-white rounded-2xl px-3 py-2 scale-110 shadow-lg transition-transform duration-500 cubic-bezier(0.34,1.56,0.64,1)" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="search" style="font-variation-settings: 'FILL' 1;">search</span>
+<span class="font-['Inter'] text-[10px] font-medium tracking-wide uppercase">اكتشف</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-500 dark:text-slate-400 p-2 hover:text-[#0b5cac] dark:hover:text-[#3575c7] transition-transform duration-500 cubic-bezier(0.34,1.56,0.64,1)" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="assignment_turned_in">assignment_turned_in</span>
+<span class="font-['Inter'] text-[10px] font-medium tracking-wide uppercase">التقييمات</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-500 dark:text-slate-400 p-2 hover:text-[#0b5cac] dark:hover:text-[#3575c7] transition-transform duration-500 cubic-bezier(0.34,1.56,0.64,1)" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="psychology">psychology</span>
+<span class="font-['Inter'] text-[10px] font-medium tracking-wide uppercase">المطابقة</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-500 dark:text-slate-400 p-2 hover:text-[#0b5cac] dark:hover:text-[#3575c7] transition-transform duration-500 cubic-bezier(0.34,1.56,0.64,1)" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="person">person</span>
+<span class="font-['Inter'] text-[10px] font-medium tracking-wide uppercase">الملف الشخصي</span>
+</a>
+</div>
+</nav>
+</body></html>

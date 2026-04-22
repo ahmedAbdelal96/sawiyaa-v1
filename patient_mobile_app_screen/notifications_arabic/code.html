@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+
+<html dir="rtl" lang="ar"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Clinical Sanctuary - التنبيهات</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&amp;family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container-low": "#f1f4f9",
+                        "surface-container": "#eceef3",
+                        "primary-container": "#3575c7",
+                        "on-secondary-container": "#51617e",
+                        "primary-fixed-dim": "#a7c8ff",
+                        "on-secondary-fixed-variant": "#374762",
+                        "on-tertiary-fixed-variant": "#683d00",
+                        "surface-bright": "#f7f9fe",
+                        "on-primary-fixed": "#001b3c",
+                        "tertiary-fixed": "#ffdcbc",
+                        "tertiary-container": "#a86500",
+                        "on-primary-fixed-variant": "#004689",
+                        "inverse-primary": "#a7c8ff",
+                        "secondary": "#4f5f7b",
+                        "tertiary-fixed-dim": "#ffb86b",
+                        "secondary-fixed": "#d6e3ff",
+                        "primary-fixed": "#d5e3ff",
+                        "on-surface": "#181c20",
+                        "on-primary-container": "#fefcff",
+                        "on-secondary-fixed": "#0a1c34",
+                        "surface-container-high": "#e6e8ed",
+                        "surface-tint": "#125eae",
+                        "on-tertiary": "#ffffff",
+                        "on-error-container": "#93000a",
+                        "inverse-on-surface": "#eff1f6",
+                        "outline": "#727783",
+                        "on-background": "#181c20",
+                        "on-tertiary-container": "#fffbff",
+                        "on-error": "#ffffff",
+                        "secondary-container": "#cdddff",
+                        "on-primary": "#ffffff",
+                        "surface-dim": "#d8dadf",
+                        "primary": "#0b5cac",
+                        "outline-variant": "#c2c6d3",
+                        "on-surface-variant": "#424751",
+                        "secondary-fixed-dim": "#b7c7e8",
+                        "inverse-surface": "#2d3135",
+                        "on-tertiary-fixed": "#2c1700",
+                        "error-container": "#ffdad6",
+                        "background": "#f7f9fe",
+                        "tertiary": "#854f00",
+                        "surface-container-lowest": "#ffffff",
+                        "surface": "#f7f9fe",
+                        "error": "#ba1a1a",
+                        "surface-container-highest": "#e0e2e7",
+                        "surface-variant": "#e0e2e7",
+                        "on-secondary": "#ffffff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "fontFamily": {
+                        "headline": ["IBM Plex Sans Arabic", "Manrope", "sans-serif"],
+                        "body": ["IBM Plex Sans Arabic", "Inter", "sans-serif"],
+                        "label": ["IBM Plex Sans Arabic", "Inter", "sans-serif"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            background-color: theme('colors.background');
+            color: theme('colors.on-surface');
+            font-family: theme('fontFamily.body');
+        }
+        .ambient-shadow {
+            box-shadow: 0 4px 20px 0 rgba(24, 28, 32, 0.05);
+        }
+        .ambient-shadow-high {
+            box-shadow: 0 8px 30px 0 rgba(24, 28, 32, 0.08);
+        }
+        .ghost-border {
+            border: 1px solid rgba(194, 198, 211, 0.2);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="antialiased min-h-screen pb-24 md:pb-0 pt-16 md:pt-20">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-[#e6e8ed]/85 dark:bg-slate-900/85 backdrop-blur-[24px] shadow-none border-none flex justify-between items-center px-6 h-16 shadow-[0_4px_20px_0px_rgba(24,28,32,0.05)]">
+<div class="flex items-center gap-4">
+<!-- Leading Avatar -->
+<button aria-label="User Profile" class="hover:bg-white/40 dark:hover:bg-slate-800/40 transition-colors active:scale-98 transition-transform duration-200 rounded-full p-1">
+<img alt="User Profile Photo" class="w-8 h-8 rounded-full object-cover" data-alt="Close-up portrait of a professional woman with a warm, reassuring smile in a bright clinical setting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCE_3w6KFdcfCn5pP2Cd2aAQhA5v88xIBhBFyG56BrT6ag4XGbRRHi61ZYjwVGnbK0DE0REtbw_eHkaBS3mzZs1ZyQX8BM8a7vwIhtoonsoolZkFlTkHQTsSkJB93Izo3_r1h3FSrvO0VTijUypAXK1aZy8FllpV2VwCDMpe5uo0iXmpMQY3BpaTK6B_OV2V02QvyF2PK8Ed1KDdjCH0edhj4EsjXV1g7BJyEHtpY4nCvNr7EGIGETSzu-gD8onuml8gAtgjajervtG"/>
+</button>
+<h1 class="font-headline tracking-tight font-bold text-[#181c20] dark:text-white text-xl font-extrabold tracking-tighter">Clinical Sanctuary</h1>
+</div>
+<!-- Trailing Icon -->
+<button aria-label="Notifications" class="hover:bg-white/40 dark:hover:bg-slate-800/40 transition-colors active:scale-98 transition-transform duration-200 p-2 rounded-full relative">
+<span class="material-symbols-outlined text-[#0b5cac] font-bold" data-icon="notifications">notifications</span>
+<span class="absolute top-2 end-2 w-2 h-2 bg-error rounded-full"></span>
+</button>
+</header>
+<!-- Main Content -->
+<main class="max-w-3xl mx-auto px-4 md:px-6 py-8">
+<!-- Page Header -->
+<div class="mb-8">
+<h2 class="font-headline text-3xl font-bold text-on-surface mb-2 tracking-tight">التنبيهات</h2>
+<p class="font-body text-on-surface-variant text-base">آخر التحديثات والمواعيد الخاصة بك.</p>
+</div>
+<!-- Notification List -->
+<div class="flex flex-col gap-4">
+<!-- Notification Item: Session Reminder (New) -->
+<div class="bg-surface-container-lowest rounded-xl p-5 ambient-shadow relative overflow-hidden flex gap-4 items-start ghost-border transition-all hover:bg-surface-bright cursor-pointer">
+<!-- Pulse Indicator (New) -->
+<div class="absolute top-0 bottom-0 start-0 w-1 bg-primary rounded-e-full"></div>
+<div class="flex-shrink-0 w-12 h-12 bg-primary-container/10 rounded-full flex items-center justify-center text-primary">
+<span class="material-symbols-outlined" data-icon="event_upcoming" style="font-variation-settings: 'FILL' 1;">event_upcoming</span>
+</div>
+<div class="flex-grow">
+<div class="flex justify-between items-start mb-1">
+<h3 class="font-headline font-bold text-on-surface text-lg">تذكير بالجلسة</h3>
+<span class="font-label text-xs text-primary font-medium tracking-wide">الآن</span>
+</div>
+<p class="font-body text-on-surface-variant text-sm mb-2 leading-relaxed">جلستك القادمة مع د. سارة ستبدأ خلال 15 دقيقة. يرجى الاستعداد والانضمام للرابط.</p>
+<div class="flex gap-3">
+<button class="bg-primary text-on-primary font-body font-medium text-sm px-4 py-2 rounded-lg hover:opacity-90 transition-opacity">انضمام للجلسة</button>
+</div>
+</div>
+</div>
+<!-- Notification Item: Payment Successful -->
+<div class="bg-surface-container-lowest rounded-xl p-5 ambient-shadow flex gap-4 items-start ghost-border transition-all hover:bg-surface-bright cursor-pointer">
+<div class="flex-shrink-0 w-12 h-12 bg-secondary-container/30 rounded-full flex items-center justify-center text-secondary">
+<span class="material-symbols-outlined" data-icon="check_circle" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</div>
+<div class="flex-grow">
+<div class="flex justify-between items-start mb-1">
+<h3 class="font-headline font-semibold text-on-surface text-lg">تم الدفع بنجاح</h3>
+<span class="font-label text-xs text-on-surface-variant font-medium tracking-wide">منذ ساعتين</span>
+</div>
+<p class="font-body text-on-surface-variant text-sm leading-relaxed">تم تأكيد استلام دفعتك للجلسة الأخيرة. يمكنك عرض الفاتورة في سجل المعاملات.</p>
+</div>
+</div>
+<!-- Notification Item: New Assessment Available -->
+<div class="bg-surface-container-lowest rounded-xl p-5 ambient-shadow flex gap-4 items-start ghost-border transition-all hover:bg-surface-bright cursor-pointer">
+<div class="flex-shrink-0 w-12 h-12 bg-tertiary-container/10 rounded-full flex items-center justify-center text-tertiary">
+<span class="material-symbols-outlined" data-icon="assignment" style="font-variation-settings: 'FILL' 1;">assignment</span>
+</div>
+<div class="flex-grow">
+<div class="flex justify-between items-start mb-1">
+<h3 class="font-headline font-semibold text-on-surface text-lg">تقييم جديد متاح</h3>
+<span class="font-label text-xs text-on-surface-variant font-medium tracking-wide">أمس</span>
+</div>
+<p class="font-body text-on-surface-variant text-sm leading-relaxed">لقد أضاف معالجك استبيانًا جديدًا للمتابعة الأسبوعية. يرجى إكماله قبل الجلسة القادمة.</p>
+</div>
+</div>
+<!-- Notification Item: General Alert (Read) -->
+<div class="bg-surface-container-low rounded-xl p-5 flex gap-4 items-start ghost-border transition-all hover:bg-surface-bright cursor-pointer opacity-70">
+<div class="flex-shrink-0 w-12 h-12 bg-surface-variant rounded-full flex items-center justify-center text-on-surface-variant">
+<span class="material-symbols-outlined" data-icon="info">info</span>
+</div>
+<div class="flex-grow">
+<div class="flex justify-between items-start mb-1">
+<h3 class="font-headline font-medium text-on-surface text-lg">تحديث في سياسة الخصوصية</h3>
+<span class="font-label text-xs text-on-surface-variant font-medium tracking-wide">منذ 3 أيام</span>
+</div>
+<p class="font-body text-on-surface-variant text-sm leading-relaxed">لقد قمنا بتحديث سياسة الخصوصية الخاصة بنا لتوفير حماية أفضل لبياناتك السريرية.</p>
+</div>
+</div>
+</div>
+</main>
+<!-- BottomNavBar (Mobile Only) -->
+<!-- Displaying Profile as active since Notifications is often a sub-section of Profile or a global action, but intent-wise, it's a global utility. Suppressing BottomNav is an option, but instructions say TopAppBar/BottomNavBar are anchors. Let's keep it with none explicitly 'active' if it's a standalone destination, or maybe 'Profile' as it's user-specific. Given exact match priority, "Notifications" doesn't match the labels. We'll leave them inactive as it's a focused task view, but the prompt says to render bottom nav bar. I will hide it per "The Destination Rule" if it's considered a sub-page with a "Close/Back" action. But the prompt just says "Design a Notifications screen". I'll include the bottom nav and highlight "Profile" as a fallback, or suppress it. Let's suppress it for a cleaner focused canvas per "Task-Focused: Any sub-page... implies a temporary departure". -->
+<!-- Hidden BottomNav to comply with "Automatic Suppression" rule for Task-Focused pages (Notifications is a temporary view from the global nav) -->
+<nav class="hidden md:hidden fixed bottom-0 w-full rounded-t-3xl z-50 bg-[#e6e8ed]/85 dark:bg-slate-900/85 backdrop-blur-[24px] border-none shadow-[0_-8px_40px_rgba(24,28,32,0.08)] flex justify-around items-center px-4 pb-6 pt-3">
+<!-- Labels: Home, Assessments, Therapists, Profile -->
+</nav>
+</body></html>

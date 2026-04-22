@@ -92,4 +92,3 @@ export class BuildSettingsNotificationPreferencesStateService {
     return `${typeId}::${channel}`;
   }
 }
-

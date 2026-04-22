@@ -18,13 +18,16 @@ export class I18nService {
     locale?: SupportedLocale,
     params?: Record<string, string | number>,
   ): string {
-    const resolvedLocale = locale ?? this.localeResolverService.getDefaultLocale();
+    const resolvedLocale =
+      locale ?? this.localeResolverService.getDefaultLocale();
     const localizedValue =
       this.lookupKey(key, resolvedLocale) ??
       this.lookupKey(key, this.localeResolverService.getDefaultLocale());
 
     if (typeof localizedValue !== 'string') {
-      this.logger.warn(`Missing translation key "${key}" for locale "${resolvedLocale}"`);
+      this.logger.warn(
+        `Missing translation key "${key}" for locale "${resolvedLocale}"`,
+      );
       return key;
     }
 
@@ -50,7 +53,10 @@ export class I18nService {
     }
 
     return Object.entries(params).reduce((result, [key, value]) => {
-      return result.replace(new RegExp(`{{\\s*${key}\\s*}}`, 'g'), String(value));
+      return result.replace(
+        new RegExp(`{{\\s*${key}\\s*}}`, 'g'),
+        String(value),
+      );
     }, template);
   }
 }

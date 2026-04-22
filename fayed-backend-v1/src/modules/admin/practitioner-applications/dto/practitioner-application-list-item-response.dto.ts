@@ -253,6 +253,9 @@ export class AdminReadinessSnapshotResponseDto {
 
   @ApiProperty()
   canBeApproved!: boolean;
+
+  @ApiProperty()
+  canRequestChanges!: boolean;
 }
 
 export class PractitionerApplicationDetailsResponseDto {
@@ -318,4 +321,20 @@ export class PractitionerApplicationDecisionSuccessResponseDto {
 
   @ApiProperty({ type: PractitionerApplicationDecisionResponseDto })
   application!: PractitionerApplicationDecisionResponseDto;
+}
+
+export class PractitionerApplicationCredentialSuccessResponseDto {
+  @ApiProperty()
+  message!: string;
+
+  @ApiProperty({ type: AdminPractitionerCredentialResponseDto })
+  credential!: AdminPractitionerCredentialResponseDto;
+}
+
+export class PractitionerApplicationCredentialDeleteSuccessResponseDto {
+  @ApiProperty()
+  message!: string;
+
+  @ApiProperty()
+  deletedCredentialId!: string;
 }

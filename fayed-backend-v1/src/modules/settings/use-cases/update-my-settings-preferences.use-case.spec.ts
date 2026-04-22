@@ -24,7 +24,9 @@ describe('UpdateMySettingsPreferencesUseCase', () => {
   });
 
   it('throws when settings owner is not found', async () => {
-    (settingsRepository.findUserPreferences as jest.Mock).mockResolvedValue(null);
+    (settingsRepository.findUserPreferences as jest.Mock).mockResolvedValue(
+      null,
+    );
 
     await expect(
       useCase.execute({
@@ -113,4 +115,3 @@ describe('UpdateMySettingsPreferencesUseCase', () => {
     ).rejects.toBeInstanceOf(BadRequestException);
   });
 });
-

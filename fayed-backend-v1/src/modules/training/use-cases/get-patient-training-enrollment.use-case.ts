@@ -27,7 +27,10 @@ export class GetPatientTrainingEnrollmentUseCase {
     }
 
     return {
-      item: this.trainingPresenter.presentEnrollmentItem(enrollment, input.locale),
+      item: this.trainingPresenter.presentEnrollmentItem(
+        enrollment,
+        input.locale,
+      ),
     };
   }
 }

@@ -20,9 +20,13 @@ export class PublicPractitionerTrustBlockController {
 
   @Get()
   @ApiOperation({
-    summary: 'Get shared trust/conversion block for public practitioner surface',
+    summary:
+      'Get shared trust/conversion block for public practitioner surface',
   })
-  @ApiResponse({ status: 200, type: PublicPractitionerTrustBlockSuccessResponseDto })
+  @ApiResponse({
+    status: 200,
+    type: PublicPractitionerTrustBlockSuccessResponseDto,
+  })
   @ApiNotFoundResponse({
     description: 'Practitioner slug not found or not publicly visible',
   })

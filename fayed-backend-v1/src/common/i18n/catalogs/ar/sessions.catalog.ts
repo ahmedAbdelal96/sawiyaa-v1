@@ -1,17 +1,15 @@
 export const arSessionsCatalog = {
   notifications: {
-    sessionConfirmedTitle: 'Session confirmed',
+    sessionConfirmedTitle: 'تم تأكيد الجلسة',
     sessionConfirmedBody:
-      'Your session is confirmed for {{sessionAt}}. You can prepare to join from your sessions screen.',
-    sessionConfirmedPractitionerTitle: 'New confirmed session',
-    sessionConfirmedPractitionerBody:
-      'A session has been confirmed for {{sessionAt}}.',
-    sessionCancelledTitle: 'Session cancelled',
-    sessionCancelledBody:
-      'Your session scheduled at {{sessionAt}} was cancelled.',
-    sessionCancelledPractitionerTitle: 'Session cancelled by patient',
+      'تم تأكيد جلستك في {{sessionAt}}. يمكنك التحضير للانضمام من صفحة الجلسات.',
+    sessionConfirmedPractitionerTitle: 'جلسة جديدة مؤكدة',
+    sessionConfirmedPractitionerBody: 'تم تأكيد جلسة بتاريخ {{sessionAt}}.',
+    sessionCancelledTitle: 'تم إلغاء الجلسة',
+    sessionCancelledBody: 'تم إلغاء جلستك المجدولة في {{sessionAt}}.',
+    sessionCancelledPractitionerTitle: 'تم إلغاء الجلسة بواسطة المريض',
     sessionCancelledPractitionerBody:
-      'A patient cancelled a session scheduled at {{sessionAt}}.',
+      'قام المريض بإلغاء جلسة مجدولة في {{sessionAt}}.',
   },
   errors: {
     patientNotFound: 'لم يتم العثور على ملف المريض',
@@ -25,10 +23,32 @@ export const arSessionsCatalog = {
     unavailableTimeWindow: 'الفترة المطلوبة لا تتوافق مع توفر المعالج',
     practitionerTimeConflict: 'المعالج لديه جلسة متعارضة في هذا التوقيت',
     patientTimeConflict: 'المريض لديه جلسة متعارضة في هذا التوقيت',
-    invalidStatusTransition:
-      'الانتقال من حالة {{from}} إلى {{to}} غير صالح',
+    invalidStatusTransition: 'الانتقال من حالة {{from}} إلى {{to}} غير صالح',
     sessionAlreadyCancelled: 'تم إلغاء الجلسة بالفعل',
-    sessionNotPendingPayment:
-      'يمكن فقط إنهاء صلاحية الجلسات المعلقة للدفع',
+    sessionNotPendingPayment: 'يمكن فقط إنهاء صلاحية الجلسات المعلقة للدفع',
+    cancellationPolicyMissing:
+      'لا توجد سياسة إلغاء مفعلة لهذا النوع من الحجوزات {{bookingType}}',
+    cancellationPolicyNoMatchingRule:
+      'لا توجد قاعدة إلغاء نشطة مطابقة لوقت الإلغاء الحالي',
+    cancellationNotAllowedByPolicy:
+      'الإلغاء غير مسموح به وفقًا لسياسة الإلغاء الحالية',
+    cancellationPolicyMissingSessionSchedule:
+      'موعد الجلسة غير متاح لتقييم سياسة الإلغاء',
+    cancellationPolicyMustHaveRules:
+      'سياسة الإلغاء يجب أن تحتوي على قاعدة واحدة على الأقل',
+    cancellationPolicyDuplicateRuleCode:
+      'سياسة الإلغاء تحتوي على رمز قاعدة مكرر {{code}}',
+    cancellationPolicyInvalidRuleWindow:
+      'نافذة التوقيت غير صالحة لقاعدة الإلغاء {{code}}',
+    cancellationPolicyInvalidRefundMode:
+      'نمط الاسترجاع غير صالح لقاعدة الإلغاء {{code}}',
+    cancellationPolicyInvalidRefundPercent:
+      'نسبة الاسترجاع غير صالحة لقاعدة الإلغاء {{code}}',
+    cancellationPolicyRefundPercentRequired:
+      'قاعدة الإلغاء {{code}} تحتاج نسبة استرجاع',
+    cancellationPolicyOverlappingRules:
+      'تداخل غير صالح بين القاعدتين {{firstRuleCode}} و {{secondRuleCode}}',
+    cancellationOriginalMethodRefundNotSupported:
+      'استرجاع الإلغاء إلى وسيلة الدفع الأصلية غير مدعوم في هذه المرحلة',
   },
 };

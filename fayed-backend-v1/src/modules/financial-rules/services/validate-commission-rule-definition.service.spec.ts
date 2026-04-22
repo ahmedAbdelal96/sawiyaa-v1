@@ -2,7 +2,9 @@ import { ValidateCommissionRuleDefinitionService } from './validate-commission-r
 import { MoneyMathService } from './money-math.service';
 
 describe('ValidateCommissionRuleDefinitionService', () => {
-  const service = new ValidateCommissionRuleDefinitionService(new MoneyMathService());
+  const service = new ValidateCommissionRuleDefinitionService(
+    new MoneyMathService(),
+  );
 
   it('accepts valid 100 percent splits', () => {
     expect(() =>

@@ -36,7 +36,10 @@ export class GetMyPresenceUseCase {
       );
 
     return {
-      message: this.i18nService.t('presence.success.presenceFetched', input.locale),
+      message: this.i18nService.t(
+        'presence.success.presenceFetched',
+        input.locale,
+      ),
       presence: this.presenceMapper.toViewModel(presence),
     };
   }

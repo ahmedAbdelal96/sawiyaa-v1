@@ -1,7 +1,18 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { NotificationCategory, NotificationChannel, NotificationStatus } from '@prisma/client';
+import {
+  NotificationCategory,
+  NotificationChannel,
+  NotificationStatus,
+} from '@prisma/client';
 import { Type } from 'class-transformer';
-import { IsDateString, IsEnum, IsInt, IsOptional, Max, Min } from 'class-validator';
+import {
+  IsDateString,
+  IsEnum,
+  IsInt,
+  IsOptional,
+  Max,
+  Min,
+} from 'class-validator';
 
 export class ListAdminNotificationsDto {
   @ApiPropertyOptional({ enum: NotificationStatus })
@@ -19,12 +30,17 @@ export class ListAdminNotificationsDto {
   @IsEnum(NotificationCategory)
   category?: NotificationCategory;
 
-  @ApiPropertyOptional({ description: 'ISO date; include notifications scheduled on/after this date' })
+  @ApiPropertyOptional({
+    description: 'ISO date; include notifications scheduled on/after this date',
+  })
   @IsOptional()
   @IsDateString()
   scheduledFrom?: string;
 
-  @ApiPropertyOptional({ description: 'ISO date; include notifications scheduled on/before this date' })
+  @ApiPropertyOptional({
+    description:
+      'ISO date; include notifications scheduled on/before this date',
+  })
   @IsOptional()
   @IsDateString()
   scheduledTo?: string;

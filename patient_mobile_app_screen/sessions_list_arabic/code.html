@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+
+<html dir="rtl" lang="ar"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>جلساتي - Sanctuary</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container-highest": "#e0e2e7",
+                        "primary-fixed": "#d5e3ff",
+                        "on-primary-container": "#fefcff",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-container-low": "#f1f4f9",
+                        "on-tertiary-fixed-variant": "#683d00",
+                        "on-secondary-fixed": "#0a1c34",
+                        "on-secondary-container": "#51617e",
+                        "error-container": "#ffdad6",
+                        "on-error": "#ffffff",
+                        "inverse-surface": "#2d3135",
+                        "tertiary-container": "#a86500",
+                        "surface-container": "#eceef3",
+                        "outline": "#727783",
+                        "surface-bright": "#f7f9fe",
+                        "primary-container": "#3575c7",
+                        "on-surface-variant": "#424751",
+                        "on-secondary-fixed-variant": "#374762",
+                        "surface-variant": "#e0e2e7",
+                        "secondary-container": "#cdddff",
+                        "outline-variant": "#c2c6d3",
+                        "secondary": "#4f5f7b",
+                        "secondary-fixed": "#d6e3ff",
+                        "surface-container-high": "#e6e8ed",
+                        "tertiary-fixed-dim": "#ffb86b",
+                        "tertiary-fixed": "#ffdcbc",
+                        "inverse-on-surface": "#eff1f6",
+                        "primary": "#0b5cac",
+                        "on-primary": "#ffffff",
+                        "inverse-primary": "#a7c8ff",
+                        "on-background": "#181c20",
+                        "surface-tint": "#125eae",
+                        "surface-dim": "#d8dadf",
+                        "on-secondary": "#ffffff",
+                        "on-primary-fixed-variant": "#004689",
+                        "surface": "#f7f9fe",
+                        "on-error-container": "#93000a",
+                        "on-tertiary": "#ffffff",
+                        "error": "#ba1a1a",
+                        "on-primary-fixed": "#001b3c",
+                        "primary-fixed-dim": "#a7c8ff",
+                        "on-surface": "#181c20",
+                        "on-tertiary-container": "#fffbff",
+                        "on-tertiary-fixed": "#2c1700",
+                        "secondary-fixed-dim": "#b7c7e8",
+                        "tertiary": "#854f00",
+                        "background": "#f7f9fe"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {},
+                    "fontFamily": {
+                        "headline": ["Manrope", "sans-serif"],
+                        "body": ["Inter", "sans-serif"],
+                        "label": ["Inter", "sans-serif"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            background-color: theme('colors.surface');
+            color: theme('colors.on-surface');
+            font-family: theme('fontFamily.body');
+            -webkit-font-smoothing: antialiased;
+        }
+        
+        .ambient-shadow {
+            box-shadow: 0 4px 20px rgba(24, 28, 32, 0.05);
+        }
+        
+        .glass-panel {
+            background-color: rgba(241, 244, 249, 0.85);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+        }
+        
+        .ghost-border {
+            border: 1px solid rgba(194, 198, 211, 0.2);
+        }
+        
+        .pulse-indicator {
+            position: relative;
+        }
+        .pulse-indicator::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            right: 0;
+            width: 4px;
+            background-color: theme('colors.surface-tint');
+            border-radius: 0 theme('borderRadius.DEFAULT') theme('borderRadius.DEFAULT') 0;
+        }
+        
+        /* Hide scrollbar for clean look but allow scrolling */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="min-h-screen flex flex-col pb-24 md:pb-0">
+<!-- TopAppBar -->
+<header class="docked w-full top-0 sticky bg-slate-200/85 dark:bg-slate-800/85 backdrop-blur-2xl shadow-[0_4px_20px_rgba(24,28,32,0.05)] z-40">
+<div class="flex items-center justify-between w-full h-16 px-6">
+<button aria-label="Go back" class="text-blue-800 dark:text-blue-300 hover:bg-slate-300/50 dark:hover:bg-slate-700/50 transition-colors rounded-full p-2">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<h1 class="font-manrope tracking-tight font-bold text-lg text-slate-900 dark:text-slate-100">Sanctuary</h1>
+<div class="w-10"></div> <!-- Spacer for centering -->
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-1 w-full max-w-3xl mx-auto px-4 sm:px-6 py-6 md:py-8 flex flex-col gap-6">
+<!-- Page Title & Segmented Control -->
+<div class="flex flex-col gap-6">
+<h2 class="font-headline text-2xl font-bold tracking-tight text-on-surface">الجلسات</h2>
+<!-- Custom Segmented Control (Tabs) -->
+<div class="flex p-1 bg-surface-container-low rounded-xl ghost-border">
+<button aria-selected="true" class="flex-1 py-2.5 text-sm font-label font-medium bg-surface-container-lowest text-primary rounded-lg shadow-sm">
+                    القادمة
+                </button>
+<button aria-selected="false" class="flex-1 py-2.5 text-sm font-label font-medium text-on-surface-variant hover:text-on-surface transition-colors rounded-lg">
+                    السابقة
+                </button>
+</div>
+</div>
+<!-- Upcoming Sessions List (Active) -->
+<div class="flex flex-col gap-4">
+<!-- Date Header -->
+<h3 class="font-label text-sm font-medium text-on-surface-variant tracking-wide mt-2">غداً، 12 أكتوبر</h3>
+<!-- Card 1: Upcoming Session (Pulse Indicator Active) -->
+<article class="bg-surface-container-lowest rounded-xl p-5 ambient-shadow pulse-indicator flex flex-col gap-5">
+<!-- Header Info -->
+<div class="flex justify-between items-start">
+<div class="flex gap-4 items-center">
+<img alt="Dr. Sarah" class="w-14 h-14 rounded-full object-cover ghost-border" data-alt="Professional headshot of a female doctor with warm smile in bright clinical setting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAXebXQq30BM7U1VNdS4yjGz1uyUaflCciBraPs9Mq_jYr2Q6zpBdrfCgFpK-xRFQJ-GuwdkVsSz7xEe9j5AcwvtAd5yrdkwDFrPsgd2dcMfbCeHoDosOcUkdRHhVFgYUFRqjL1ABoBvQUhqfLtiY7LfkFO-Xd4BFgCv4fb8cEHp5yNhkkyjgkxeWAIWyS77wlaDTgQT_GsCyHKsu0GMubFYwkPbfD_s2oW5QJMPxKd2pTgjGrD1HSNBnvoiUDft_4PSV3PxhicHP7y"/>
+<div>
+<h4 class="font-headline font-bold text-on-surface">د. سارة أحمد</h4>
+<p class="font-body text-sm text-on-surface-variant mt-0.5">علاج سلوكي معرفي</p>
+</div>
+</div>
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-secondary-container text-on-secondary-container font-label text-xs">
+<span class="material-symbols-outlined text-[14px]">videocam</span>
+                        مكالمة فيديو
+                    </span>
+</div>
+<!-- Time & Details -->
+<div class="flex items-center gap-6 bg-surface-container-low rounded-lg p-3 ghost-border">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary text-[20px]">schedule</span>
+<span class="font-body text-sm font-medium text-on-surface">10:00 - 10:45 ص</span>
+</div>
+<div class="h-4 w-px bg-outline-variant opacity-30"></div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-tertiary text-[20px]">pending_actions</span>
+<span class="font-body text-sm font-medium text-tertiary">تأكيد الحضور مطلوب</span>
+</div>
+</div>
+<!-- Actions -->
+<div class="flex gap-3 mt-2">
+<button class="flex-1 bg-gradient-to-br from-primary to-primary-container text-on-primary font-body font-medium text-sm py-2.5 rounded-md hover:opacity-90 transition-opacity flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-[18px]">meeting_room</span>
+                        دخول الجلسة
+                    </button>
+<button class="flex-1 bg-surface-container-high text-on-primary-fixed-variant font-body font-medium text-sm py-2.5 rounded-md hover:bg-surface-variant transition-colors">
+                        إدارة الموعد
+                    </button>
+</div>
+</article>
+<!-- Date Header -->
+<h3 class="font-label text-sm font-medium text-on-surface-variant tracking-wide mt-4">الخميس، 15 أكتوبر</h3>
+<!-- Card 2: Upcoming Session -->
+<article class="bg-surface-container-lowest rounded-xl p-5 ambient-shadow flex flex-col gap-5">
+<div class="flex justify-between items-start">
+<div class="flex gap-4 items-center">
+<div class="w-14 h-14 rounded-full bg-surface-container-high flex items-center justify-center text-on-surface-variant font-headline font-bold text-xl ghost-border">
+                            ك
+                        </div>
+<div>
+<h4 class="font-headline font-bold text-on-surface">د. كريم محمود</h4>
+<p class="font-body text-sm text-on-surface-variant mt-0.5">استشارة نفسية</p>
+</div>
+</div>
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-surface-container-high text-on-surface-variant font-label text-xs">
+<span class="material-symbols-outlined text-[14px]">location_on</span>
+                        في العيادة
+                    </span>
+</div>
+<div class="flex items-center gap-6 bg-surface-container-low rounded-lg p-3 ghost-border">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary text-[20px]">schedule</span>
+<span class="font-body text-sm font-medium text-on-surface">02:30 - 03:15 م</span>
+</div>
+<div class="h-4 w-px bg-outline-variant opacity-30"></div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[20px]">check_circle</span>
+<span class="font-body text-sm font-medium text-primary">تم التأكيد</span>
+</div>
+</div>
+<div class="flex gap-3 mt-2">
+<button class="flex-1 bg-surface-container-high text-on-primary-fixed-variant font-body font-medium text-sm py-2.5 rounded-md hover:bg-surface-variant transition-colors">
+                        عرض التفاصيل
+                    </button>
+</div>
+</article>
+</div>
+</main>
+<!-- BottomNavBar (Mobile Only) -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-safe pt-2 bg-slate-100/85 dark:bg-slate-900/85 backdrop-blur-2xl shadow-[0_-4px_30px_rgba(24,28,32,0.08)] rounded-t-2xl md:hidden">
+<a class="flex flex-col items-center justify-center text-blue-800 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/30 rounded-2xl px-5 py-2 scale-90 transition-transform duration-200" href="#">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 1;">calendar_today</span>
+<span class="font-inter text-[11px] font-medium tracking-wide uppercase">Sessions</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-500 dark:text-slate-400 px-5 py-2 hover:text-blue-700 dark:hover:text-blue-200" href="#">
+<span class="material-symbols-outlined mb-1">person_search</span>
+<span class="font-inter text-[11px] font-medium tracking-wide uppercase">Matching</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-500 dark:text-slate-400 px-5 py-2 hover:text-blue-700 dark:hover:text-blue-200" href="#">
+<span class="material-symbols-outlined mb-1">account_balance_wallet</span>
+<span class="font-inter text-[11px] font-medium tracking-wide uppercase">Wallet</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-500 dark:text-slate-400 px-5 py-2 hover:text-blue-700 dark:hover:text-blue-200" href="#">
+<span class="material-symbols-outlined mb-1">person</span>
+<span class="font-inter text-[11px] font-medium tracking-wide uppercase">Profile</span>
+</a>
+</nav>
+</body></html>

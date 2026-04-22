@@ -28,12 +28,15 @@ export class ListPatientInstantBookingRequestsUseCase {
       patientId: patient.id,
     });
 
-    const requests = await this.instantBookingRequestRepository.listPatientRequests(
-      patient.id,
-    );
+    const requests =
+      await this.instantBookingRequestRepository.listPatientRequests(
+        patient.id,
+      );
 
     return {
-      items: requests.map((request) => this.instantBookingMapper.toViewModel(request)),
+      items: requests.map((request) =>
+        this.instantBookingMapper.toViewModel(request),
+      ),
     };
   }
 }

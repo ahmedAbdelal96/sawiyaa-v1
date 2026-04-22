@@ -22,7 +22,8 @@ export const enPaymentsCatalog = {
     sessionNotPayable: 'Session is not currently payable',
     sessionPaymentExpired: 'Session payment window has expired',
     paymentNotFound: 'Payment was not found',
-    paymentAlreadyCompleted: 'A successful payment already exists for this session',
+    paymentAlreadyCompleted:
+      'A successful payment already exists for this session',
     activePaymentAlreadyExists:
       'An active payment attempt already exists for this session',
     pricingUnavailable: 'Session pricing is unavailable',
@@ -30,8 +31,7 @@ export const enPaymentsCatalog = {
     invalidStatusTransition:
       'Payment status transition from {{from}} to {{to}} is invalid',
     providerNotFound: 'Payment provider {{provider}} was not found',
-    providerNotConfigured:
-      'Payment provider {{provider}} is not configured',
+    providerNotConfigured: 'Payment provider {{provider}} is not configured',
     providerUnavailable:
       'Payment provider {{provider}} is currently unavailable',
     providerWebhookNotConfigured:

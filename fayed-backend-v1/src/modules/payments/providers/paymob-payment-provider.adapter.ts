@@ -64,7 +64,9 @@ type PaymobRefundResponse = {
 export class PaymobPaymentProviderAdapter implements PaymentProviderAdapter {
   readonly provider = PaymentProvider.PAYMOB;
 
-  constructor(private readonly paymentRuntimeConfigService: PaymentRuntimeConfigService) {}
+  constructor(
+    private readonly paymentRuntimeConfigService: PaymentRuntimeConfigService,
+  ) {}
 
   async initiateSessionPayment(input: {
     paymentId: string;
@@ -74,7 +76,9 @@ export class PaymobPaymentProviderAdapter implements PaymentProviderAdapter {
     sessionId: string;
     patientEmail?: string | null;
   }): Promise<PaymentProviderInitiationResult> {
-    this.paymentRuntimeConfigService.assertCheckoutConfigured(PaymentProvider.PAYMOB);
+    this.paymentRuntimeConfigService.assertCheckoutConfigured(
+      PaymentProvider.PAYMOB,
+    );
     const paymobConfig = this.paymentRuntimeConfigService.getPaymobConfig();
     const paymobBaseUrl = paymobConfig.baseUrl!;
     const paymobIframeId = paymobConfig.iframeId!;
@@ -110,7 +114,9 @@ export class PaymobPaymentProviderAdapter implements PaymentProviderAdapter {
     headers: Record<string, string | string[] | undefined>;
     query?: Record<string, unknown>;
   }): PaymentWebhookResult {
-    this.paymentRuntimeConfigService.assertWebhookConfigured(PaymentProvider.PAYMOB);
+    this.paymentRuntimeConfigService.assertWebhookConfigured(
+      PaymentProvider.PAYMOB,
+    );
 
     const receivedHmac = this.resolveHmacSignature({
       headers: input.headers,
@@ -166,7 +172,9 @@ export class PaymobPaymentProviderAdapter implements PaymentProviderAdapter {
     currency: string;
     reason?: string | null;
   }): Promise<PaymentProviderRefundResult> {
-    this.paymentRuntimeConfigService.assertCheckoutConfigured(PaymentProvider.PAYMOB);
+    this.paymentRuntimeConfigService.assertCheckoutConfigured(
+      PaymentProvider.PAYMOB,
+    );
     const paymobConfig = this.paymentRuntimeConfigService.getPaymobConfig();
     const paymobBaseUrl = paymobConfig.baseUrl!;
 
@@ -183,17 +191,20 @@ export class PaymobPaymentProviderAdapter implements PaymentProviderAdapter {
 
     const authToken = await this.createAuthToken();
 
-    const response = await fetch(`${paymobBaseUrl}/acceptance/void_refund/refund`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
+    const response = await fetch(
+      `${paymobBaseUrl}/acceptance/void_refund/refund`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          auth_token: authToken,
+          transaction_id: transactionId,
+          amount_cents: String(input.amountMinor),
+        }),
       },
-      body: JSON.stringify({
-        auth_token: authToken,
-        transaction_id: transactionId,
-        amount_cents: String(input.amountMinor),
-      }),
-    });
+    );
 
     if (!response.ok) {
       return {
@@ -329,7 +340,9 @@ export class PaymobPaymentProviderAdapter implements PaymentProviderAdapter {
     return token;
   }
 
-  private buildBillingData(patientEmail: string | null): Record<string, string> {
+  private buildBillingData(
+    patientEmail: string | null,
+  ): Record<string, string> {
     return {
       apartment: 'NA',
       email: patientEmail?.trim() || 'no-email@fayed.local',
@@ -382,7 +395,8 @@ export class PaymobPaymentProviderAdapter implements PaymentProviderAdapter {
   }
 
   private buildWebhookHmac(event: PaymobWebhookEvent): string {
-    const hmacSecret = this.paymentRuntimeConfigService.getPaymobConfig().hmacSecret;
+    const hmacSecret =
+      this.paymentRuntimeConfigService.getPaymobConfig().hmacSecret;
 
     if (!hmacSecret) {
       throw new ServiceUnavailableException({
@@ -477,5 +491,4 @@ export class PaymobPaymentProviderAdapter implements PaymentProviderAdapter {
       },
     });
   }
-
 }

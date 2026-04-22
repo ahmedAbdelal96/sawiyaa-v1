@@ -1,0 +1,236 @@
+{
+  "meta": {
+    "dashboard": {
+      "title": "Finance dashboard - Admin",
+      "description": "Executive finance snapshot sourced from accounting journal entries."
+    },
+    "ledger": {
+      "title": "Ledger explorer - Admin",
+      "description": "Inspect accounting journal lines with filters and pagination."
+    },
+    "journal": {
+      "title": "Journal entry detail - Admin",
+      "description": "Review one accounting journal entry with expanded debit and credit lines."
+    },
+    "reconciliation": {
+      "title": "Reconciliation controls - Admin",
+      "description": "Operational reconciliation controls across captured payments, refunds, and practitioner payouts."
+    }
+  },
+  "common": {
+    "sourceType": {
+      "PAYMENT_CAPTURED": "Payment captured",
+      "REFUND_SUCCEEDED": "Refund succeeded",
+      "PRACTITIONER_PAYOUT": "Practitioner payout"
+    },
+    "direction": {
+      "DEBIT": "Debit",
+      "CREDIT": "Credit"
+    },
+    "notAvailable": "Not available"
+  },
+  "reconciliation": {
+    "eyebrow": "Finance controls",
+    "title": "Reconciliation controls",
+    "note": "Verify operational truth against journal postings and resolve finance exceptions with explicit review decisions.",
+    "kpi": {
+      "total": "Tracked records",
+      "mismatch": "Mismatch",
+      "missingProof": "Missing proof",
+      "resolved": "Resolved"
+    },
+    "filters": {
+      "from": "From",
+      "to": "To",
+      "sourceType": "Source type",
+      "status": "Status",
+      "anomaly": "Anomaly",
+      "currency": "Currency",
+      "query": "Search",
+      "queryPlaceholder": "Search by source, payment, refund, settlement, or note",
+      "all": "All"
+    },
+    "table": {
+      "source": "Source",
+      "status": "Status",
+      "amount": "Operational vs journal",
+      "journalAmount": "Journal",
+      "anomalies": "Anomalies",
+      "occurredAt": "Occurred at",
+      "action": "Action"
+    },
+    "actions": {
+      "review": "Review",
+      "journal": "Journal"
+    },
+    "review": {
+      "eyebrow": "Operator review",
+      "title": "Review item {id}",
+      "notePlaceholder": "Add review note for this reconciliation decision",
+      "save": "Save review",
+      "close": "Close"
+    },
+    "common": {
+      "none": "None",
+      "notAvailable": "Not available"
+    },
+    "status": {
+      "pending_review": "Pending review",
+      "matched": "Matched",
+      "mismatch": "Mismatch",
+      "missing_proof": "Missing proof",
+      "requires_adjustment": "Requires adjustment",
+      "resolved": "Resolved"
+    },
+    "anomaly": {
+      "missing_journal_entry": "Missing journal entry",
+      "missing_payout_proof": "Missing payout proof",
+      "amount_mismatch": "Amount mismatch",
+      "missing_vat_snapshot": "Missing VAT snapshot",
+      "missing_gateway_fee_snapshot": "Missing gateway fee snapshot",
+      "missing_cancellation_context": "Missing cancellation context",
+      "missing_transfer_fee_snapshot": "Missing transfer fee snapshot"
+    },
+    "states": {
+      "error": "Could not load reconciliation controls right now.",
+      "emptyTitle": "No reconciliation items",
+      "emptyNote": "No records matched your reconciliation filters."
+    }
+  },
+  "dashboard": {
+    "eyebrow": "Accounting truth",
+    "title": "Finance dashboard",
+    "note": "This dashboard reads from General Ledger journals for admin finance visibility.",
+    "actions": {
+      "openLedger": "Open ledger explorer",
+      "openOps": "Open operations events",
+      "openReconciliation": "Open reconciliation",
+      "exportCsv": "Export CSV",
+      "exporting": "Exporting..."
+    },
+    "filters": {
+      "from": "From",
+      "to": "To",
+      "currency": "Currency",
+      "currencyPlaceholder": "All currencies",
+      "recentLimit": "Recent events"
+    },
+    "kpis": {
+      "grossInflow": "Gross inflow",
+      "grossInflowHint": "Captured collections in selected range",
+      "platformRevenue": "Platform revenue",
+      "platformRevenueHint": "Net platform revenue from journals",
+      "practitionerPayable": "Practitioner payable",
+      "practitionerPayableHint": "Outstanding liability to practitioners",
+      "refunds": "Refund total",
+      "refundsHint": "Succeeded refunds in selected range",
+      "vat": "VAT total",
+      "vatHint": "VAT payable movement",
+      "fees": "Fees total",
+      "feesHint": "Gateway and transfer fees impact"
+    },
+    "charts": {
+      "revenue": {
+        "title": "Revenue vs payable increments",
+        "note": "Daily accounting movement from posted journals.",
+        "series": "Platform revenue",
+        "comparison": "Payable increments"
+      },
+      "refundsAndFees": {
+        "title": "Refunds and fees trend",
+        "note": "Daily pressure from refunds and fee costs.",
+        "refunds": "Refunds",
+        "fees": "Fees"
+      },
+      "payablesAndPayouts": {
+        "title": "Net payable buildup",
+        "note": "Payable increments net of payout movement.",
+        "series": "Net payable movement"
+      }
+    },
+    "recent": {
+      "title": "Recent finance events",
+      "note": "Latest posted accounting events.",
+      "columns": {
+        "summary": "Summary",
+        "sourceType": "Source",
+        "amount": "Amount",
+        "occurredAt": "Occurred",
+        "sourceId": "Source ID: {value}"
+      }
+    },
+    "states": {
+      "error": "Could not load accounting dashboard right now.",
+      "emptyTitle": "No accounting events found",
+      "emptyNote": "No journal entries matched the selected filters."
+    }
+  },
+  "ledger": {
+    "eyebrow": "Operator view",
+    "title": "Ledger explorer",
+    "note": "Filter journal lines by account, source, practitioner, time range, and references.",
+    "count": "{value, number} lines",
+    "countLoading": "Loading...",
+    "filters": {
+      "all": "All",
+      "query": "Search",
+      "queryPlaceholder": "Search by memo, source, account code, or reference",
+      "account": "Ledger account",
+      "sourceType": "Source type",
+      "practitionerId": "Practitioner ID",
+      "practitionerPlaceholder": "Filter by practitioner UUID",
+      "currency": "Currency",
+      "currencyPlaceholder": "EGP / USD",
+      "from": "From",
+      "to": "To",
+      "journalEntryId": "Journal entry ID",
+      "journalEntryPlaceholder": "Filter by journal entry UUID"
+    },
+    "actions": {
+      "exportCsv": "Export CSV",
+      "exporting": "Exporting..."
+    },
+    "columns": {
+      "occurredAt": "Occurred",
+      "entryId": "Entry: {value}",
+      "account": "Account",
+      "source": "Source",
+      "direction": "Direction",
+      "amount": "Amount",
+      "reference": "Reference"
+    },
+    "states": {
+      "error": "Could not load ledger explorer right now.",
+      "emptyTitle": "No journal lines found",
+      "emptyNote": "Try broadening filters or changing date range."
+    }
+  },
+  "journal": {
+    "eyebrow": "Journal drill-down",
+    "title": "Journal entry detail",
+    "note": "Posted entry with expanded journal lines and balanced movement.",
+    "back": "Back to ledger explorer",
+    "fields": {
+      "entryId": "Entry ID",
+      "source": "Source type",
+      "occurredAt": "Occurred at",
+      "currency": "Currency",
+      "debitTotal": "Debit total",
+      "creditTotal": "Credit total"
+    },
+    "table": {
+      "account": "Account",
+      "direction": "Direction",
+      "amount": "Amount",
+      "reference": "Reference",
+      "memo": "Memo"
+    },
+    "states": {
+      "loadingTitle": "Loading journal entry",
+      "loadingNote": "Fetching accounting lines and references.",
+      "errorTitle": "Journal entry is not available",
+      "errorNote": "The requested entry was not found or cannot be loaded now.",
+      "back": "Back to ledger explorer"
+    }
+  }
+}

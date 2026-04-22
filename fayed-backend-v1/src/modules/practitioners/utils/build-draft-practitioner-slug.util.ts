@@ -14,4 +14,3 @@ export function buildDraftPractitionerSlug(seed: string): string {
   const suffix = randomUUID().replace(/-/g, '').slice(0, 6);
   return `${normalized || 'practitioner'}-${suffix}`;
 }
-

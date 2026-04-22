@@ -163,7 +163,9 @@ export class SpecialtiesAdminController {
   @ApiUnauthorizedResponse({ description: 'Access token is required' })
   @ApiForbiddenResponse({ description: 'Admin active account is required' })
   @ApiNotFoundResponse({ description: 'Specialty category not found' })
-  @ApiConflictResponse({ description: 'Specialty category slug already exists' })
+  @ApiConflictResponse({
+    description: 'Specialty category slug already exists',
+  })
   updateCategory(
     @Param('id', new ParseUUIDPipe()) id: string,
     @Body() body: UpdateSpecialtyCategoryDto,
@@ -222,7 +224,9 @@ export class SpecialtiesAdminController {
   })
   @ApiBody({ type: UpdateSpecialtyDto })
   @ApiResponse({ status: 200, type: SpecialtySuccessResponseDto })
-  @ApiBadRequestResponse({ description: 'Validation failed or specialty state is invalid' })
+  @ApiBadRequestResponse({
+    description: 'Validation failed or specialty state is invalid',
+  })
   @ApiUnauthorizedResponse({ description: 'Access token is required' })
   @ApiForbiddenResponse({ description: 'Admin active account is required' })
   @ApiNotFoundResponse({ description: 'Specialty not found' })

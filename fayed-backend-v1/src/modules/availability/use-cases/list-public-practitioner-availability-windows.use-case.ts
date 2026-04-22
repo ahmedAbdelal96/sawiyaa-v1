@@ -49,7 +49,9 @@ export class ListPublicPractitionerAvailabilityWindowsUseCase {
     }
 
     const practitioner =
-      await this.availabilityPractitionerRepository.findByPublicSlug(input.slug);
+      await this.availabilityPractitionerRepository.findByPublicSlug(
+        input.slug,
+      );
 
     if (!practitioner) {
       throw new NotFoundException({

@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  Logger,
-  NestMiddleware,
-} from '@nestjs/common';
+import { Injectable, Logger, NestMiddleware } from '@nestjs/common';
 import { NextFunction, Response } from 'express';
 import { AuthenticatedRequest } from '@common/interfaces/authenticated-request.interface';
 import { AuthRequestContextService } from './auth-request-context.service';
@@ -55,7 +51,9 @@ export class AuthRequestContextMiddleware implements NestMiddleware {
       }
     }
 
-    this.logger.debug('Incoming auth token could not be hydrated into request.user');
+    this.logger.debug(
+      'Incoming auth token could not be hydrated into request.user',
+    );
     next();
   }
 }

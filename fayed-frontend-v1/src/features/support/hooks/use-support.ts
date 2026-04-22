@@ -6,6 +6,7 @@ import {
   addPatientSupportMessage,
   addPractitionerSupportMessage,
   assignAdminSupportTicket,
+  createAdminSupportTicketForReporter,
   createPatientSupportTicket,
   createPractitionerSupportTicket,
   getAdminSupportTicket,
@@ -25,10 +26,13 @@ import type {
   AddSupportMessageRequest,
   AdminSupportListParams,
   AssignSupportTicketRequest,
+  CreateAdminSupportTicketForReporterRequest,
   CreateSupportTicketRequest,
   SupportTicketsListParams,
   UpdateSupportTicketStatusRequest,
 } from "../types/support.types";
+import { useSessionRole } from "@/lib/auth/use-session-role";
+import { isAdminRole } from "@/lib/auth/roles";
 
 export function usePatientSupportTickets(params: SupportTicketsListParams = {}) {
   return useQuery({
@@ -125,18 +129,21 @@ export function useAddPractitionerSupportMessage(ticketId: string) {
 // Admin support hooks
 
 export function useAdminSupportTickets(params: AdminSupportListParams = {}) {
+  const role = useSessionRole();
   return useQuery({
     queryKey: adminSupportQueryKeys.ticketsList(params),
     queryFn: () => getAdminSupportTickets(params),
+    enabled: isAdminRole(role),
     staleTime: 60_000,
   });
 }
 
 export function useAdminSupportTicket(ticketId: string | null) {
+  const role = useSessionRole();
   return useQuery({
     queryKey: adminSupportQueryKeys.ticket(ticketId ?? ""),
     queryFn: () => getAdminSupportTicket(ticketId!),
-    enabled: Boolean(ticketId),
+    enabled: isAdminRole(role) && Boolean(ticketId),
     staleTime: 30_000,
   });
 }
@@ -188,6 +195,19 @@ export function useAssignAdminSupportTicket(ticketId: string) {
       assignAdminSupportTicket(ticketId, payload),
     onSuccess: (data) => {
       queryClient.setQueryData(adminSupportQueryKeys.ticket(ticketId), data);
+      queryClient.invalidateQueries({ queryKey: adminSupportQueryKeys.tickets() });
+    },
+  });
+}
+
+export function useCreateAdminSupportTicketForReporter() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (payload: CreateAdminSupportTicketForReporterRequest) =>
+      createAdminSupportTicketForReporter(payload),
+    onSuccess: (data) => {
+      queryClient.setQueryData(adminSupportQueryKeys.ticket(data.item.id), data);
       queryClient.invalidateQueries({ queryKey: adminSupportQueryKeys.tickets() });
     },
   });

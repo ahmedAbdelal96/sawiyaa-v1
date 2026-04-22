@@ -10,7 +10,8 @@ export class GetSettlementBatchDetailsUseCase {
   ) {}
 
   async execute(batchId: string) {
-    const batch = await this.settlementRepository.getSettlementBatchDetails(batchId);
+    const batch =
+      await this.settlementRepository.getSettlementBatchDetails(batchId);
 
     if (!batch) {
       throw new NotFoundException({

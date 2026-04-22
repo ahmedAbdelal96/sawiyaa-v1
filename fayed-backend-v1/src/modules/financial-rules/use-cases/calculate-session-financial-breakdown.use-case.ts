@@ -16,10 +16,11 @@ export class CalculateSessionFinancialBreakdownUseCase {
     sessionId: string;
     couponCode?: string | null;
   }) {
-    const session = await this.financialSessionRepository.findPatientOwnedSession(
-      input.sessionId,
-      input.userId,
-    );
+    const session =
+      await this.financialSessionRepository.findPatientOwnedSession(
+        input.sessionId,
+        input.userId,
+      );
 
     if (!session) {
       throw new NotFoundException({
@@ -28,17 +29,18 @@ export class CalculateSessionFinancialBreakdownUseCase {
       });
     }
 
-    const resolution = await this.calculateSessionFinancialBreakdownService.calculate({
-      session: {
-        id: session.id,
-        flowType: session.flowType,
-        sessionMode: session.sessionMode,
-        durationMinutes: session.durationMinutes,
-        practitioner: session.practitioner,
-        patient: session.patient,
-      },
-      couponCode: input.couponCode ?? null,
-    });
+    const resolution =
+      await this.calculateSessionFinancialBreakdownService.calculate({
+        session: {
+          id: session.id,
+          flowType: session.flowType,
+          sessionMode: session.sessionMode,
+          durationMinutes: session.durationMinutes,
+          practitioner: session.practitioner,
+          patient: session.patient,
+        },
+        couponCode: input.couponCode ?? null,
+      });
 
     return {
       item: this.financialRulesMapper.toBreakdown(resolution.breakdown),

@@ -21,14 +21,18 @@ describe('GetMyPatientJourneyUseCase', () => {
       {} as PatientJourneyReadRepository,
       {} as BuildNormalizedCareSignalContextService,
       {} as BuildAssessmentDerivedRecommendationsService,
-      new BuildPatientJourneyNextStepsService(new RecommendationPrecedenceService()),
-      { build: jest.fn().mockResolvedValue([]) } as unknown as BuildPatientJourneyLinkedContentService,
+      new BuildPatientJourneyNextStepsService(
+        new RecommendationPrecedenceService(),
+      ),
+      {
+        build: jest.fn().mockResolvedValue([]),
+      } as unknown as BuildPatientJourneyLinkedContentService,
       new PatientJourneyMapper(),
     );
 
-    await expect(useCase.execute({ userId: 'missing-user' })).rejects.toBeInstanceOf(
-      NotFoundException,
-    );
+    await expect(
+      useCase.execute({ userId: 'missing-user' }),
+    ).rejects.toBeInstanceOf(NotFoundException);
   });
 
   it('returns curated journey payload for owned patient data', async () => {
@@ -59,7 +63,12 @@ describe('GetMyPatientJourneyUseCase', () => {
     } as unknown as PatientJourneyReadRepository;
     const normalizedContextBuilder = {
       buildFromRepository: jest.fn().mockResolvedValue({
-        profile: { patientProfileId: 'patient-1', userId: 'user-1', countryCode: 'EG', timezone: 'Africa/Cairo' },
+        profile: {
+          patientProfileId: 'patient-1',
+          userId: 'user-1',
+          countryCode: 'EG',
+          timezone: 'Africa/Cairo',
+        },
         assessments: {
           hasCompletedAssessment: false,
           latestBand: null,
@@ -74,12 +83,19 @@ describe('GetMyPatientJourneyUseCase', () => {
             isActionBlockedByPayment: false,
           },
         },
-        sessions: { hasUpcomingSession: true, upcomingStatus: SessionStatus.UPCOMING, hasPastSession: false },
+        sessions: {
+          hasUpcomingSession: true,
+          upcomingStatus: SessionStatus.UPCOMING,
+          hasPastSession: false,
+        },
         payments: { hasPendingPayment: false, pendingStatus: null },
         matching: { hasRecentSession: false },
         training: { hasActiveEnrollment: false },
         support: { hasOpenTicket: false, latestOpenTicketStatus: null },
-        continuity: { stage: 'UPCOMING_SESSION', rulesApplied: ['UPCOMING_SESSION_HAS_PRIORITY'] },
+        continuity: {
+          stage: 'UPCOMING_SESSION',
+          rulesApplied: ['UPCOMING_SESSION_HAS_PRIORITY'],
+        },
       }),
     } as unknown as BuildNormalizedCareSignalContextService;
     const assessmentRecommendationsBuilder = {
@@ -94,7 +110,9 @@ describe('GetMyPatientJourneyUseCase', () => {
       readRepository,
       normalizedContextBuilder,
       assessmentRecommendationsBuilder,
-      new BuildPatientJourneyNextStepsService(new RecommendationPrecedenceService()),
+      new BuildPatientJourneyNextStepsService(
+        new RecommendationPrecedenceService(),
+      ),
       linkedContentBuilder,
       new PatientJourneyMapper(),
     );
@@ -102,7 +120,9 @@ describe('GetMyPatientJourneyUseCase', () => {
     const result = await useCase.execute({ userId: 'user-1' });
 
     expect(result.item.summary.hasUpcomingSession).toBe(true);
-    expect(result.item.summary.suggestedNextAction).toBe('JOIN_UPCOMING_SESSION');
+    expect(result.item.summary.suggestedNextAction).toBe(
+      'JOIN_UPCOMING_SESSION',
+    );
     expect(result.item.upcoming.session?.id).toBe('session-1');
     expect(normalizedContextBuilder.buildFromRepository).toHaveBeenCalledWith({
       patientProfileId: 'patient-1',

@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import {
   LedgerDirection,
   LedgerEntryType,
@@ -10,6 +14,7 @@ import { FinancialOperationsPaymentRepository } from '../repositories/financial-
 import { LedgerRepository } from '../repositories/ledger.repository';
 import { ExtractPaymentLedgerBreakdownService } from '../services/extract-payment-ledger-breakdown.service';
 import { RefreshPractitionerWalletService } from '../services/refresh-practitioner-wallet.service';
+import { AccountingJournalPostingService } from '../services/accounting-journal-posting.service';
 
 /**
  * Ledger posting is the canonical handoff from payment collection into internal
@@ -24,6 +29,7 @@ export class PostPaymentLedgerEntriesUseCase {
     private readonly ledgerRepository: LedgerRepository,
     private readonly extractPaymentLedgerBreakdownService: ExtractPaymentLedgerBreakdownService,
     private readonly refreshPractitionerWalletService: RefreshPractitionerWalletService,
+    private readonly accountingJournalPostingService: AccountingJournalPostingService,
   ) {}
 
   async execute(input: { paymentId: string }) {
@@ -54,7 +60,8 @@ export class PostPaymentLedgerEntriesUseCase {
       };
     }
 
-    const breakdown = this.extractPaymentLedgerBreakdownService.extract(payment);
+    const breakdown =
+      this.extractPaymentLedgerBreakdownService.extract(payment);
 
     await this.prisma.$transaction(async (tx) => {
       await this.ledgerRepository.createManyLedgerEntries(
@@ -98,8 +105,16 @@ export class PostPaymentLedgerEntriesUseCase {
       );
 
       if (payment.practitionerId) {
-        await this.refreshPractitionerWalletService.refresh(payment.practitionerId, tx);
+        await this.refreshPractitionerWalletService.refresh(
+          payment.practitionerId,
+          tx,
+        );
       }
+    });
+
+    await this.accountingJournalPostingService.postPaymentCaptured({
+      payment,
+      breakdown,
     });
 
     return {

@@ -94,7 +94,9 @@ export class PractitionerCareChatController {
   }
 
   @Get('conversations/:id')
-  @ApiOperation({ summary: 'Get one practitioner-owned care chat conversation' })
+  @ApiOperation({
+    summary: 'Get one practitioner-owned care chat conversation',
+  })
   @ApiResponse({ status: 200, type: CareChatConversationSuccessResponseDto })
   getConversationById(
     @CurrentUser() currentUser: AuthenticatedUser,

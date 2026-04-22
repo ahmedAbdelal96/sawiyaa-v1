@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { FinancialOperationsMapper } from '../mappers/financial-operations.mapper';
 import { FinancialOperationsPractitionerRepository } from '../repositories/financial-operations-practitioner.repository';
 import { LedgerRepository } from '../repositories/ledger.repository';
@@ -14,7 +18,9 @@ export class ListPractitionerLedgerEntriesUseCase {
   ) {}
 
   async execute(input: { userId: string; query: ListPractitionerLedgerDto }) {
-    const practitioner = await this.practitionerRepository.findByUserId(input.userId);
+    const practitioner = await this.practitionerRepository.findByUserId(
+      input.userId,
+    );
 
     if (!practitioner) {
       throw new NotFoundException({
@@ -39,22 +45,25 @@ export class ListPractitionerLedgerEntriesUseCase {
       });
     }
 
-    const [items, totalItems] = await this.ledgerRepository.listPractitionerLedgerEntries({
-      practitionerId: practitioner.id,
-      entryType: input.query.entryType,
-      balanceBucket: input.query.balanceBucket,
-      currencyCode: input.query.currencyCode?.trim().toUpperCase(),
-      referenceType: input.query.referenceType?.trim() || undefined,
-      paymentId: input.query.paymentId,
-      settlementId: input.query.settlementId,
-      effectiveFrom,
-      effectiveTo,
-      skip: (page - 1) * limit,
-      take: limit,
-    });
+    const [items, totalItems] =
+      await this.ledgerRepository.listPractitionerLedgerEntries({
+        practitionerId: practitioner.id,
+        entryType: input.query.entryType,
+        balanceBucket: input.query.balanceBucket,
+        currencyCode: input.query.currencyCode?.trim().toUpperCase(),
+        referenceType: input.query.referenceType?.trim() || undefined,
+        paymentId: input.query.paymentId,
+        settlementId: input.query.settlementId,
+        effectiveFrom,
+        effectiveTo,
+        skip: (page - 1) * limit,
+        take: limit,
+      });
 
     return {
-      items: items.map((item) => this.financialOperationsMapper.toLedgerEntry(item)),
+      items: items.map((item) =>
+        this.financialOperationsMapper.toLedgerEntry(item),
+      ),
       pagination: {
         page,
         limit,

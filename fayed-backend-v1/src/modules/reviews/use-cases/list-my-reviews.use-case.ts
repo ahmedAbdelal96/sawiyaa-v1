@@ -31,7 +31,9 @@ export class ListMyReviewsUseCase {
     });
 
     return this.reviewPresenter.presentReviewList({
-      items: rows.map((row) => this.reviewPresenter.presentPatientReviewItem(row)),
+      items: rows.map((row) =>
+        this.reviewPresenter.presentPatientReviewItem(row),
+      ),
       page: input.query.page,
       limit: input.query.limit,
       totalItems,

@@ -26,7 +26,7 @@ const SESSION_STATUS_CLASS: Partial<Record<SessionStatus, string>> = {
   PENDING_PAYMENT:
     "text-amber-700 bg-amber-50 dark:text-amber-400 dark:bg-amber-900/20",
   PENDING_PRACTITIONER_RESPONSE:
-    "text-blue-700 bg-blue-50 dark:text-blue-400 dark:bg-blue-900/20",
+    "text-text-brand bg-primary-light dark:text-primary-light dark:bg-primary/20",
   CONFIRMED:
     "text-green-700 bg-green-50 dark:text-green-400 dark:bg-green-900/20",
   UPCOMING:

@@ -92,7 +92,10 @@ export class CurrentUserController {
     description:
       'Returns account status, verification flags, and whether the current practitioner session is an OTP-verified practitioner session.',
   })
-  @ApiResponse({ status: 200, type: CurrentUserSecurityStateEnvelopeResponseDto })
+  @ApiResponse({
+    status: 200,
+    type: CurrentUserSecurityStateEnvelopeResponseDto,
+  })
   @ApiUnauthorizedResponse({ description: 'Access token is required' })
   @ApiForbiddenResponse({
     description:

@@ -27,7 +27,8 @@ export class PractitionerApplicationEligibilityPolicy {
     }
 
     if (
-      input.latestApplicationStatus === PractitionerApplicationStatus.SUBMITTED ||
+      input.latestApplicationStatus ===
+        PractitionerApplicationStatus.SUBMITTED ||
       input.latestApplicationStatus ===
         PractitionerApplicationStatus.UNDER_REVIEW
     ) {
@@ -52,4 +53,3 @@ export class PractitionerApplicationEligibilityPolicy {
     };
   }
 }
-

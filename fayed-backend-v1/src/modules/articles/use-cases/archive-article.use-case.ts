@@ -16,7 +16,9 @@ export class ArchiveArticleUseCase {
   ) {}
 
   async execute(input: { articleId: string; locale?: ContentLocale }) {
-    const existing = await this.articleRepository.findArticleById(input.articleId);
+    const existing = await this.articleRepository.findArticleById(
+      input.articleId,
+    );
     if (!existing) {
       throw new NotFoundException({
         messageKey: 'articles.errors.articleNotFound',
@@ -24,19 +26,26 @@ export class ArchiveArticleUseCase {
       });
     }
 
-    this.validateArticleStatusTransitionService.assertCanArchive(existing.status);
+    this.validateArticleStatusTransitionService.assertCanArchive(
+      existing.status,
+    );
 
-    const updated = await this.articleRepository.updateArticle(input.articleId, {
-      status: ArticleStatus.ARCHIVED,
-      archivedAt: new Date(),
-    });
+    const updated = await this.articleRepository.updateArticle(
+      input.articleId,
+      {
+        status: ArticleStatus.ARCHIVED,
+        archivedAt: new Date(),
+      },
+    );
 
     this.logger.log(`Article archived (id=${input.articleId})`);
 
     return {
       item: this.articlePresenter.presentAdminArticleItem(
         updated,
-        input.locale ?? existing.translations[0]?.locale ?? ARTICLE_DEFAULT_LOCALE,
+        input.locale ??
+          existing.translations[0]?.locale ??
+          ARTICLE_DEFAULT_LOCALE,
       ),
     };
   }

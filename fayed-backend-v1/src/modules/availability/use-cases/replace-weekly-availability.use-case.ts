@@ -35,9 +35,8 @@ export class ReplaceWeeklyAvailabilityUseCase {
       endMinuteOfDay: number;
     }>;
   }) {
-    const practitioner = await this.availabilityPractitionerRepository.findByUserId(
-      input.userId,
-    );
+    const practitioner =
+      await this.availabilityPractitionerRepository.findByUserId(input.userId);
 
     if (!practitioner) {
       throw new NotFoundException({
@@ -49,15 +48,16 @@ export class ReplaceWeeklyAvailabilityUseCase {
     this.resolvePractitionerTimezoneService.assertValid(input.timezone);
     this.validateAvailabilityOverlapService.validateWeeklySlots(input.slots);
 
-    const weeklySlots = await this.availabilitySlotRepository.replaceWeeklySlots(
-      practitioner.id,
-      input.timezone,
-      input.slots.map((slot) => ({
-        weekday: WEEKDAY_INDEX_TO_ENUM[slot.dayOfWeek],
-        startMinuteOfDay: slot.startMinuteOfDay,
-        endMinuteOfDay: slot.endMinuteOfDay,
-      })),
-    );
+    const weeklySlots =
+      await this.availabilitySlotRepository.replaceWeeklySlots(
+        practitioner.id,
+        input.timezone,
+        input.slots.map((slot) => ({
+          weekday: WEEKDAY_INDEX_TO_ENUM[slot.dayOfWeek],
+          startMinuteOfDay: slot.startMinuteOfDay,
+          endMinuteOfDay: slot.endMinuteOfDay,
+        })),
+      );
 
     const exceptions =
       await this.availabilityExceptionRepository.listUpcomingActiveByPractitioner(

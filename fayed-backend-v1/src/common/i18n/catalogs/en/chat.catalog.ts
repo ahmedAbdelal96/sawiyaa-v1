@@ -17,7 +17,8 @@ export const enChatCatalog = {
     conversationNotFound: 'General chat conversation was not found',
     conversationAccessDenied:
       'You do not have access to this general chat conversation',
-    conversationNotSendable: 'Conversation state does not allow sending messages',
+    conversationNotSendable:
+      'Conversation state does not allow sending messages',
     messageNotFound: 'General chat message was not found',
     messageContentRequired: 'Message content is required',
     attachmentRefInvalid: 'Attachment reference payload is invalid',

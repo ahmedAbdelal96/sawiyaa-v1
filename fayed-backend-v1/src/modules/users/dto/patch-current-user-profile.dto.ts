@@ -14,4 +14,3 @@ export class PatchCurrentUserProfileDto {
   @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
   displayName?: string;
 }
-

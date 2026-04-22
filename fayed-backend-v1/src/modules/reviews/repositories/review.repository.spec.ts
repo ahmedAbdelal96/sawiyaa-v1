@@ -51,7 +51,11 @@ describe('ReviewRepository', () => {
 
     expect(prisma.sessionReview.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        orderBy: [{ publishedAt: 'desc' }, { submittedAt: 'desc' }, { id: 'asc' }],
+        orderBy: [
+          { publishedAt: 'desc' },
+          { submittedAt: 'desc' },
+          { id: 'asc' },
+        ],
       }),
     );
   });

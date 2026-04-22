@@ -32,39 +32,39 @@
       "SYSTEM": "System"
     },
     "viewerHeadings": {
-      "patient": "Care chat with {name}",
-      "practitioner": "Care-chat request from {name}",
-      "admin": "Approval request from {name}"
+      "patient": "Practitioner messages with {name}",
+      "practitioner": "Message request from {name}",
+      "admin": "Message request from {name}"
     },
     "scopeEyebrows": {
-      "patient": "Care chat",
-      "practitioner": "Care chat",
-      "admin": "Care-chat approval"
+      "patient": "Practitioner messages",
+      "practitioner": "Practitioner messages",
+      "admin": "Message approvals"
     },
     "conversationTitles": {
-      "patient": "Care chat with {name}",
-      "practitioner": "Care chat with {name}",
+      "patient": "Practitioner messages with {name}",
+      "practitioner": "Practitioner messages with {name}",
       "admin": "Read-only conversation"
     },
     "requestStateNotes": {
-      "pending": "Your request is waiting for review before care chat can open.",
-      "approved": "Care chat was approved. You can use the linked conversation while it stays active.",
+      "pending": "Your message request is waiting for review before the conversation opens.",
+      "approved": "Your message request was approved. You can use the conversation while it stays active.",
       "rejected": "This request was not approved. Use support if you still need help.",
-      "expired": "This request expired before care chat could stay available.",
-      "cancelled": "This request was cancelled and care chat is not available from it anymore.",
-      "revoked": "Care-chat access was revoked for this request."
+      "expired": "This request expired before messaging could stay available.",
+      "cancelled": "This request was cancelled and messaging is not available from it anymore.",
+      "revoked": "Messaging access was revoked for this request."
     },
     "conversationStateNotes": {
-      "open": "This approved care chat is active right now.",
+      "open": "This conversation is active right now.",
       "pending": "This conversation exists but is not fully active yet.",
-      "closed": "This care chat has been closed.",
-      "expired": "This care chat expired and no longer accepts new messages.",
-      "suspended": "This care chat is temporarily limited."
+      "closed": "This conversation has been closed.",
+      "expired": "This conversation expired and no longer accepts new messages.",
+      "suspended": "This conversation is temporarily limited."
     },
     "actions": {
       "reviewRequest": "Review request",
       "openConversation": "Open conversation",
-      "backToRequests": "Back to care-chat requests",
+      "backToRequests": "Back to message requests",
       "goBack": "Go back"
     },
     "states": {
@@ -87,11 +87,11 @@
     },
     "thread": {
       "heading": "Conversation",
-      "note": "This chat stays limited to the approved care-chat flow.",
+      "note": "This conversation stays limited to the approved messaging flow.",
       "count": "{value, number} messages",
       "empty": {
         "heading": "No messages yet",
-        "note": "Messages will appear here once the approved care chat starts."
+        "note": "Messages will appear here once the conversation is active."
       }
     },
     "compose": {
@@ -106,7 +106,7 @@
       "heading": "What this flow includes",
       "supportCta": "Go to support instead",
       "items": {
-        "approvalOnly": "Care chat only opens after approval in the backend-supported workflow.",
+        "approvalOnly": "Messaging opens only after approval in the current workflow.",
         "noGeneralChat": "This is not a general chat product or open-ended messaging space.",
         "sessionContext": "When relevant, the request can stay tied to a real session context."
       }
@@ -145,135 +145,135 @@
       "conversationDescription": "Continue an approved care-chat conversation with clear boundaries."
     },
     "home": {
-      "eyebrow": "Care support",
-      "title": "Request care chat when it is approved for your care needs",
-      "note": "Use this flow when you need bounded care follow-up with a practitioner. It stays approval-based and separate from general support or general chat."
+      "eyebrow": "Practitioner messages",
+      "title": "Request messaging with a practitioner when it is the right next step",
+      "note": "Submit a request when you need follow-up messaging with a practitioner. Messaging opens after approval."
     },
     "create": {
-      "heading": "Start a care-chat request",
-      "note": "Submit a request only when you have a real practitioner context for this care need.",
+      "heading": "Start a message request",
+      "note": "Choose the practitioner and send a short note. Messaging opens after approval.",
       "fields": {
-        "practitionerSlug": "Practitioner slug",
-        "relatedSessionId": "Related session ID",
-        "reason": "Why do you need care chat?"
+        "practitionerSlug": "Practitioner",
+        "relatedSessionId": "Session (optional)",
+        "reason": "Note (optional)"
       },
       "placeholders": {
-        "practitionerSlug": "Enter the practitioner slug",
+        "practitionerSlug": "Choose the practitioner",
         "relatedSessionId": "Optional session ID",
-        "reason": "Add a short reason for this request"
+        "reason": "Write a short note"
       },
-      "helper": "If this request is tied to a real session, add the session ID so the approval flow keeps the right care context.",
-      "submit": "Submit care-chat request",
+      "helper": "If this request is tied to a session, add the session ID (optional).",
+      "submit": "Submit request",
       "submitting": "Submitting request..."
     },
     "list": {
-      "heading": "Your care-chat requests",
+      "heading": "Your message requests",
       "note": "Track approval state and continue only the conversations that were truly approved.",
       "count": "{value, number} requests",
       "countLoading": "Loading requests",
       "states": {
         "error": {
-          "heading": "Your care-chat requests are not available right now",
-          "note": "Could not load your care-chat requests right now.",
+          "heading": "Your message requests are not available right now",
+          "note": "Could not load your message requests right now.",
           "retry": "Try again"
         },
         "empty": {
-          "heading": "No care-chat requests yet",
-          "note": "Start with a real practitioner or session context when care chat is the right next step.",
+          "heading": "No message requests yet",
+          "note": "Start with a real practitioner or a session context when messaging is the right next step.",
           "cta": "Review your sessions"
         }
       }
     },
     "detail": {
       "eyebrow": "Request status",
-      "title": "Care-chat request with {name}",
+      "title": "Message request with {name}",
       "requestHeading": "Request details",
       "requestedAtLabel": "Requested at",
       "reviewedAtLabel": "Reviewed at",
       "expiresAtLabel": "Expires at",
       "reasonLabel": "Reason",
       "conversationHeading": "Approved conversation",
-      "conversationNote": "This request now has an approved care-chat conversation. Use it while the conversation remains active.",
+      "conversationNote": "This request now has an approved conversation. Use it while the conversation remains active.",
       "openConversation": "Open conversation"
     }
   },
   "practitioner": {
     "meta": {
-      "listTitle": "Care Chat - Practitioner",
-      "listDescription": "Review patient care-chat requests and continue approved care conversations.",
-      "detailTitle": "Care-Chat Request - Practitioner",
+      "listTitle": "Practitioner Messages - Practitioner",
+      "listDescription": "Review message requests and continue approved conversations.",
+      "detailTitle": "Message Request - Practitioner",
       "detailDescription": "Review the request state and open the linked approved conversation when available.",
-      "conversationTitle": "Care Chat Conversation - Practitioner",
-      "conversationDescription": "Continue approved care-chat conversations with clear workflow boundaries."
+      "conversationTitle": "Practitioner Messages - Practitioner",
+      "conversationDescription": "Continue approved conversations with clear workflow boundaries."
     },
     "home": {
-      "eyebrow": "Care follow-up",
-      "title": "See approved and pending care-chat requests",
-      "note": "This area shows only the approval-based care-chat flow. It is not a general messaging workspace."
+      "eyebrow": "Practitioner messages",
+      "title": "Review approved and pending message requests",
+      "note": "This area shows only the approval-based messaging flow. It is not a general messaging inbox."
     },
     "list": {
-      "heading": "Care-chat requests",
+      "heading": "Message requests",
       "note": "Review which patient requests are still pending, approved, or no longer available.",
       "count": "{value, number} requests",
       "countLoading": "Loading requests",
       "states": {
         "error": {
-          "heading": "Care-chat requests are not available right now",
-          "note": "Could not load care-chat requests right now.",
+          "heading": "Message requests are not available right now",
+          "note": "Could not load message requests right now.",
           "retry": "Try again"
         },
         "empty": {
-          "heading": "No care-chat requests right now",
-          "note": "Approved and pending care-chat requests will appear here when they exist.",
+          "heading": "No message requests right now",
+          "note": "Approved and pending message requests will appear here when they exist.",
           "cta": "Review sessions"
         }
       }
     },
     "detail": {
       "eyebrow": "Request detail",
-      "title": "Care-chat request from {name}",
+      "title": "Message request from {name}",
       "requestHeading": "Request details",
       "requestedAtLabel": "Requested at",
       "reviewedAtLabel": "Reviewed at",
       "expiresAtLabel": "Expires at",
       "reasonLabel": "Reason",
       "conversationHeading": "Approved conversation",
-      "conversationNote": "Open the linked conversation only while the approved care-chat flow stays active.",
+      "conversationNote": "Open the linked conversation only while the approved messaging flow stays active.",
       "openConversation": "Open conversation"
     }
   },
   "admin": {
     "meta": {
-      "listTitle": "Care-Chat Approvals - Admin",
-      "listDescription": "Review approval-based care-chat requests and manage the current bounded workflow.",
-      "detailTitle": "Care-Chat Approval Detail - Admin",
-      "detailDescription": "Approve, reject, or revoke care-chat requests within the current backend-supported workflow.",
-      "conversationTitle": "Care-Chat Conversation - Admin",
-      "conversationDescription": "Read the approved care-chat conversation in a bounded, read-only admin view."
+      "listTitle": "Message Approvals - Admin",
+      "listDescription": "Review message requests and manage the current bounded workflow.",
+      "detailTitle": "Message Approval Detail - Admin",
+      "detailDescription": "Approve, reject, or revoke message requests within the current workflow.",
+      "conversationTitle": "Conversation - Admin",
+      "conversationDescription": "Read the approved conversation in a bounded, read-only admin view."
     },
     "list": {
       "eyebrow": "Approval workflow",
-      "title": "Care-chat approvals",
-      "note": "Review patient-to-practitioner care-chat requests without turning this into a general chat product.",
+      "title": "Message approvals",
+      "note": "Review patient-to-practitioner message requests without turning this into a general chat product.",
       "requestsHeading": "Requests queue",
       "requestsNote": "Focus on what is pending first, then inspect already decided requests when needed.",
       "count": "{value, number} requests",
       "countLoading": "Loading requests",
       "states": {
         "error": {
-          "heading": "Care-chat approvals are not available right now",
-          "note": "Could not load the care-chat approval queue right now.",
+          "heading": "Message approvals are not available right now",
+          "note": "Could not load the approval queue right now.",
           "retry": "Try again"
         },
         "empty": {
-          "heading": "No care-chat approval work right now",
+          "heading": "No approval work right now",
           "note": "There are no requests in this queue right now."
         }
       }
     },
     "detail": {
       "eyebrow": "Approval detail",
-      "title": "Care-chat request for {patient} with {practitioner}",
+      "title": "Message request for {patient} with {practitioner}",
       "requestHeading": "Request context",
       "patientLabel": "Patient",
       "practitionerLabel": "Practitioner",
@@ -288,22 +288,22 @@
     },
     "actions": {
       "approve": {
-        "heading": "Approve care chat",
-        "note": "Approve this request only when the bounded care-chat flow is valid for the current care context.",
+        "heading": "Approve messaging",
+        "note": "Approve this request only when messaging is the right next step in the current context.",
         "notePlaceholder": "Optional internal note for the approval decision",
         "submit": "Approve request",
         "submitting": "Approving..."
       },
       "reject": {
         "heading": "Do not approve",
-        "note": "Reject this request when care chat should not open from the current context.",
+        "note": "Reject this request when messaging should not open from the current context.",
         "notePlaceholder": "Optional internal note for the rejection decision",
         "submit": "Reject request",
         "submitting": "Rejecting..."
       },
       "revoke": {
-        "heading": "Revoke care-chat access",
-        "note": "Revoke only when an approved care-chat flow should no longer remain active.",
+        "heading": "Revoke access",
+        "note": "Revoke only when this approved messaging flow should no longer remain active.",
         "notePlaceholder": "Optional internal note for this revoke action",
         "submit": "Revoke access",
         "submitting": "Revoking..."
@@ -314,7 +314,7 @@
       }
     },
     "conversation": {
-      "readOnlyNote": "This is a read-only admin view of the approved care-chat conversation."
+      "readOnlyNote": "This is a read-only admin view of the approved conversation."
     }
   }
 }

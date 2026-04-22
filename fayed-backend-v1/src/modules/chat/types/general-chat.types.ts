@@ -1,4 +1,7 @@
-import { ConversationParticipantRole, ConversationStatus } from '@prisma/client';
+import {
+  ConversationParticipantRole,
+  ConversationStatus,
+} from '@prisma/client';
 
 export const GENERAL_CHAT_ALLOWED_PARTICIPANT_ROLES = [
   ConversationParticipantRole.PATIENT,

@@ -11,12 +11,14 @@ export class ListPublicTrainingsUseCase {
   ) {}
 
   async execute(query: ListPublicTrainingsDto) {
-    const [items, totalItems] = await this.trainingRepository.listPublicCourses({
-      page: query.page,
-      limit: query.limit,
-      locale: query.locale,
-      q: query.q?.trim() || undefined,
-    });
+    const [items, totalItems] = await this.trainingRepository.listPublicCourses(
+      {
+        page: query.page,
+        limit: query.limit,
+        locale: query.locale,
+        q: query.q?.trim() || undefined,
+      },
+    );
 
     return {
       items: items

@@ -12,10 +12,12 @@ export class ListPublicPractitionerReviewsUseCase {
     private readonly reviewPresenter: ReviewPresenter,
   ) {}
 
-  async execute(input: { slug: string; query: ListPublicPractitionerReviewsDto }) {
-    const practitioner = await this.reviewRepository.findPublicPractitionerBySlug(
-      input.slug,
-    );
+  async execute(input: {
+    slug: string;
+    query: ListPublicPractitionerReviewsDto;
+  }) {
+    const practitioner =
+      await this.reviewRepository.findPublicPractitionerBySlug(input.slug);
     if (!practitioner) {
       throw new NotFoundException({
         messageKey: 'reviews.errors.publicPractitionerNotFound',
@@ -23,11 +25,12 @@ export class ListPublicPractitionerReviewsUseCase {
       });
     }
 
-    const [rows, totalItems] = await this.reviewRepository.listPublicPublishedReviews({
-      practitionerId: practitioner.id,
-      page: input.query.page,
-      limit: input.query.limit,
-    });
+    const [rows, totalItems] =
+      await this.reviewRepository.listPublicPublishedReviews({
+        practitionerId: practitioner.id,
+        page: input.query.page,
+        limit: input.query.limit,
+      });
 
     const aggregate = await this.reviewRepository.aggregatePublicVisibleReviews(
       practitioner.id,
@@ -35,7 +38,8 @@ export class ListPublicPractitionerReviewsUseCase {
     const summary = this.buildPractitionerCredibilitySummaryService.build({
       totalPublicReviews: aggregate._count.id ?? 0,
       averagePublicRating:
-        aggregate._avg.ratingValue === null || aggregate._avg.ratingValue === undefined
+        aggregate._avg.ratingValue === null ||
+        aggregate._avg.ratingValue === undefined
           ? null
           : Number(aggregate._avg.ratingValue),
       latestPublishedAt: aggregate._max.publishedAt ?? null,
@@ -54,7 +58,9 @@ export class ListPublicPractitionerReviewsUseCase {
         rationaleCodes: summary.rationaleCodes,
       }),
       ...this.reviewPresenter.presentReviewList({
-        items: rows.map((row) => this.reviewPresenter.presentPublicReviewItem(row)),
+        items: rows.map((row) =>
+          this.reviewPresenter.presentPublicReviewItem(row),
+        ),
         page: input.query.page,
         limit: input.query.limit,
         totalItems,

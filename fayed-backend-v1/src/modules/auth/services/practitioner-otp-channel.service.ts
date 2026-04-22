@@ -20,11 +20,13 @@ export class PractitionerOtpChannelService {
       (email) => !email.isPrimary && email.isVerified,
     );
     const verifiedPrimaryEmail =
-      contactState.emails.find((email) => email.isPrimary && email.isVerified) ??
-      contactState.emails.find((email) => email.isVerified);
+      contactState.emails.find(
+        (email) => email.isPrimary && email.isVerified,
+      ) ?? contactState.emails.find((email) => email.isVerified);
     const verifiedPrimaryPhone =
-      contactState.phones.find((phone) => phone.isPrimary && phone.isVerified) ??
-      contactState.phones.find((phone) => phone.isVerified);
+      contactState.phones.find(
+        (phone) => phone.isPrimary && phone.isVerified,
+      ) ?? contactState.phones.find((phone) => phone.isVerified);
 
     const channelOrder = [
       settings?.preferredChannel,

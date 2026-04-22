@@ -1,4 +1,12 @@
-import { Body, Controller, Get, HttpCode, Param, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  Param,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
@@ -20,10 +28,11 @@ import { AppRole } from '@common/enums/app-role.enum';
 import { JwtAccessAuthGuard } from '@common/guards/authentication/jwt-access-auth.guard';
 import { RolesGuard } from '@common/guards/authorization/roles.guard';
 import { AuthenticatedUser } from '@common/interfaces/authenticated-user.interface';
+import { AdminPaymentOpsSuccessResponseDto } from '../dto/payment-response.dto';
 import {
-  AdminPaymentOpsSuccessResponseDto,
-} from '../dto/payment-response.dto';
-import { RefundListSuccessResponseDto, RefundItemSuccessResponseDto } from '../dto/refund-response.dto';
+  RefundListSuccessResponseDto,
+  RefundItemSuccessResponseDto,
+} from '../dto/refund-response.dto';
 import { RequestRefundDto } from '../dto/request-refund.dto';
 import { GetAdminPaymentOpsDetailsUseCase } from '../use-cases/get-admin-payment-ops-details.use-case';
 import { ListPaymentRefundsUseCase } from '../use-cases/list-payment-refunds.use-case';
@@ -90,7 +99,8 @@ export class AdminPaymentRefundsController {
     description: 'Refund amount is invalid or payment is not refundable',
   })
   @ApiConflictResponse({
-    description: 'Another refund is already in progress or payment is fully refunded',
+    description:
+      'Another refund is already in progress or payment is fully refunded',
   })
   @ApiUnauthorizedResponse({ description: 'Access token is required' })
   @ApiForbiddenResponse({
@@ -107,6 +117,7 @@ export class AdminPaymentRefundsController {
       actorUserId: currentUser.id,
       amount: body.amount !== undefined ? body.amount.toFixed(2) : null,
       reason: body.reason ?? null,
+      destination: body.destination,
     });
   }
 

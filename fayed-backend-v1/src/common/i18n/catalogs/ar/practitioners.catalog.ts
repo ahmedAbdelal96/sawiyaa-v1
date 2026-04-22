@@ -20,19 +20,14 @@ export const arPractitionersCatalog = {
     countryNotFound: 'رمز الدولة غير صالح أو غير نشط',
     languageNotFound: 'رمز لغة واحد أو أكثر غير صالح أو غير نشط',
     specialtyNotFound: 'معرف تخصص واحد أو أكثر غير صالح أو غير نشط',
-    invalidSpecialtyPayload:
-      'بيانات التخصصات غير صالحة أو تحتوي على تكرار',
-    invalidProfileState:
-      'ملف الممارس لا يحقق الحد الأدنى من متطلبات الجاهزية',
+    invalidSpecialtyPayload: 'بيانات التخصصات غير صالحة أو تحتوي على تكرار',
+    invalidProfileState: 'ملف الممارس لا يحقق الحد الأدنى من متطلبات الجاهزية',
     applicationNotEligible:
       'لا يمكن إرسال طلب الممارس قبل استكمال متطلبات الجاهزية',
-    applicationAlreadySubmitted:
-      'طلب الممارس مُرسل بالفعل أو قيد المراجعة',
-    credentialAlreadyExists:
-      'ملف المؤهل مسجل مسبقًا لنفس النوع ومرجع الملف',
+    applicationAlreadySubmitted: 'طلب الممارس مُرسل بالفعل أو قيد المراجعة',
+    credentialAlreadyExists: 'ملف المؤهل مسجل مسبقًا لنفس النوع ومرجع الملف',
     credentialNotFound: 'تعذر العثور على مؤهل الممارس',
     profileAccessDenied: 'غير مسموح لك بالوصول إلى ملف هذا الممارس',
     publicProfileNotFound: 'تعذر العثور على ملف الممارس العام',
   },
 };
-

@@ -47,7 +47,10 @@ export class UserAvatarStorageService {
 
     await this.removeAvatarFiles(filePrefix);
 
-    const nextAbsolutePath = path.join(this.baseDir, `${filePrefix}${extension}`);
+    const nextAbsolutePath = path.join(
+      this.baseDir,
+      `${filePrefix}${extension}`,
+    );
     await fs.writeFile(nextAbsolutePath, params.fileBuffer);
     const stat = await fs.stat(nextAbsolutePath);
 
@@ -122,7 +125,9 @@ export class UserAvatarStorageService {
     return removed;
   }
 
-  private async findStoredAvatar(userId: string): Promise<StoredUserAvatar | null> {
+  private async findStoredAvatar(
+    userId: string,
+  ): Promise<StoredUserAvatar | null> {
     const filePrefix = this.getFilePrefix(userId);
     const files = await this.readDirectorySafe(this.baseDir);
     if (files.length === 0) return null;
@@ -168,4 +173,3 @@ export class UserAvatarStorageService {
     return `/api/v1/users/me/avatar?v=${version}`;
   }
 }
-

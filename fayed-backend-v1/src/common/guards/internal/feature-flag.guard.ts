@@ -25,7 +25,9 @@ export class FeatureFlagGuard implements CanActivate {
 
     const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
     const availableFlags = request.user?.featureFlags ?? [];
-    const isAllowed = requiredFlags.every((flag) => availableFlags.includes(flag));
+    const isAllowed = requiredFlags.every((flag) =>
+      availableFlags.includes(flag),
+    );
 
     if (!isAllowed) {
       forbid('Required feature flags are not enabled', 'FEATURE_FLAG_REQUIRED');

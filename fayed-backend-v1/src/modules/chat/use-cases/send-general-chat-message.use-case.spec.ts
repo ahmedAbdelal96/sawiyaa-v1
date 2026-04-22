@@ -1,4 +1,8 @@
-import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 import { GeneralChatRepository } from '../repositories/general-chat.repository';
 import { ValidateGeneralChatMessagePayloadService } from '../services/validate-general-chat-message-payload.service';
 import { SendGeneralChatMessageUseCase } from './send-general-chat-message.use-case';
@@ -19,14 +23,16 @@ describe('SendGeneralChatMessageUseCase', () => {
   });
 
   it('sends successfully for active participant and returns persisted message', async () => {
-    (generalChatRepository.findConversationByIdInGeneralScope as jest.Mock).mockResolvedValue(
-      {
-        id: 'conv_1',
-        status: 'OPEN',
-        participants: [{ userId: 'user_1' }],
-      },
-    );
-    (generalChatRepository.appendMessageInGeneralConversation as jest.Mock).mockResolvedValue({
+    (
+      generalChatRepository.findConversationByIdInGeneralScope as jest.Mock
+    ).mockResolvedValue({
+      id: 'conv_1',
+      status: 'OPEN',
+      participants: [{ userId: 'user_1' }],
+    });
+    (
+      generalChatRepository.appendMessageInGeneralConversation as jest.Mock
+    ).mockResolvedValue({
       message: {
         id: 'msg_1',
         conversationId: 'conv_1',
@@ -62,15 +68,19 @@ describe('SendGeneralChatMessageUseCase', () => {
       },
     });
 
-    expect(generalChatRepository.appendMessageInGeneralConversation).toHaveBeenCalled();
+    expect(
+      generalChatRepository.appendMessageInGeneralConversation,
+    ).toHaveBeenCalled();
     expect(result.item.messageId).toBe('msg_1');
-    expect(result.item.conversationLatestActivityAt).toBe('2026-04-01T12:00:00.000Z');
+    expect(result.item.conversationLatestActivityAt).toBe(
+      '2026-04-01T12:00:00.000Z',
+    );
   });
 
   it('rejects when conversation is not found', async () => {
-    (generalChatRepository.findConversationByIdInGeneralScope as jest.Mock).mockResolvedValue(
-      null,
-    );
+    (
+      generalChatRepository.findConversationByIdInGeneralScope as jest.Mock
+    ).mockResolvedValue(null);
 
     await expect(
       useCase.execute({
@@ -82,13 +92,13 @@ describe('SendGeneralChatMessageUseCase', () => {
   });
 
   it('rejects non-participant sender', async () => {
-    (generalChatRepository.findConversationByIdInGeneralScope as jest.Mock).mockResolvedValue(
-      {
-        id: 'conv_1',
-        status: 'OPEN',
-        participants: [{ userId: 'user_other' }],
-      },
-    );
+    (
+      generalChatRepository.findConversationByIdInGeneralScope as jest.Mock
+    ).mockResolvedValue({
+      id: 'conv_1',
+      status: 'OPEN',
+      participants: [{ userId: 'user_other' }],
+    });
 
     await expect(
       useCase.execute({
@@ -100,13 +110,13 @@ describe('SendGeneralChatMessageUseCase', () => {
   });
 
   it('rejects invalid/empty message content', async () => {
-    (generalChatRepository.findConversationByIdInGeneralScope as jest.Mock).mockResolvedValue(
-      {
-        id: 'conv_1',
-        status: 'OPEN',
-        participants: [{ userId: 'user_1' }],
-      },
-    );
+    (
+      generalChatRepository.findConversationByIdInGeneralScope as jest.Mock
+    ).mockResolvedValue({
+      id: 'conv_1',
+      status: 'OPEN',
+      participants: [{ userId: 'user_1' }],
+    });
 
     await expect(
       useCase.execute({
@@ -118,13 +128,13 @@ describe('SendGeneralChatMessageUseCase', () => {
   });
 
   it('rejects send when conversation status is terminal', async () => {
-    (generalChatRepository.findConversationByIdInGeneralScope as jest.Mock).mockResolvedValue(
-      {
-        id: 'conv_1',
-        status: 'CLOSED',
-        participants: [{ userId: 'user_1' }],
-      },
-    );
+    (
+      generalChatRepository.findConversationByIdInGeneralScope as jest.Mock
+    ).mockResolvedValue({
+      id: 'conv_1',
+      status: 'CLOSED',
+      participants: [{ userId: 'user_1' }],
+    });
 
     await expect(
       useCase.execute({
@@ -135,4 +145,3 @@ describe('SendGeneralChatMessageUseCase', () => {
     ).rejects.toBeInstanceOf(BadRequestException);
   });
 });
-

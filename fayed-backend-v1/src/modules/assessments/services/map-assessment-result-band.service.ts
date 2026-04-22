@@ -1,6 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { AssessmentResultBand, Prisma } from '@prisma/client';
-import { AssessmentBandThreshold, AssessmentScoringConfig } from '../types/assessment.types';
+import {
+  AssessmentBandThreshold,
+  AssessmentScoringConfig,
+} from '../types/assessment.types';
 
 @Injectable()
 export class MapAssessmentResultBandService {
@@ -42,7 +45,11 @@ export class MapAssessmentResultBandService {
   private readCustomThresholds(
     scoringConfigJson: Prisma.JsonValue | null,
   ): AssessmentBandThreshold[] {
-    if (!scoringConfigJson || typeof scoringConfigJson !== 'object' || Array.isArray(scoringConfigJson)) {
+    if (
+      !scoringConfigJson ||
+      typeof scoringConfigJson !== 'object' ||
+      Array.isArray(scoringConfigJson)
+    ) {
       return [];
     }
 

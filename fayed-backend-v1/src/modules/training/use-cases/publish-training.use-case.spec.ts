@@ -46,11 +46,11 @@ describe('PublishTrainingUseCase', () => {
       status: CourseStatus.ARCHIVED,
       visibility: 'PUBLIC',
     });
-    (validateTrainingStatusTransitionService.assertCanPublish as jest.Mock).mockImplementation(
-      () => {
-        throw new BadRequestException();
-      },
-    );
+    (
+      validateTrainingStatusTransitionService.assertCanPublish as jest.Mock
+    ).mockImplementation(() => {
+      throw new BadRequestException();
+    });
 
     await expect(
       useCase.execute({

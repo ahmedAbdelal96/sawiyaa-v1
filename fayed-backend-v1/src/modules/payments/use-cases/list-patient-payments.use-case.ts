@@ -18,7 +18,9 @@ export class ListPatientPaymentsUseCase {
     locale: SupportedLocale;
     query: ListPatientPaymentsDto;
   }) {
-    const patient = await this.paymentPatientRepository.findByUserId(input.userId);
+    const patient = await this.paymentPatientRepository.findByUserId(
+      input.userId,
+    );
 
     if (!patient) {
       throw new NotFoundException({
@@ -31,12 +33,13 @@ export class ListPatientPaymentsUseCase {
     const limit = input.query.limit ?? 20;
     const skip = (page - 1) * limit;
 
-    const [payments, totalItems] = await this.paymentRepository.listPatientPayments({
-      patientId: patient.id,
-      status: input.query.status,
-      skip,
-      take: limit,
-    });
+    const [payments, totalItems] =
+      await this.paymentRepository.listPatientPayments({
+        patientId: patient.id,
+        status: input.query.status,
+        skip,
+        take: limit,
+      });
 
     return {
       items: payments.map((payment) => this.paymentMapper.toViewModel(payment)),

@@ -16,23 +16,25 @@ export const arTrainingCatalog = {
     invalidCapacity: 'السعة يجب أن تكون أكبر من صفر',
     cannotOpenPastSchedule: 'لا يمكن فتح التسجيل لجدول بدأ بالفعل',
     invalidScheduleStatusTransition: 'انتقال حالة الجدول غير صالح',
-    capacityBelowCurrentEnrollments: 'لا يمكن أن تكون السعة أقل من عدد المسجلين الحالي',
+    capacityBelowCurrentEnrollments:
+      'لا يمكن أن تكون السعة أقل من عدد المسجلين الحالي',
     patientNotFound: 'لم يتم العثور على ملف المريض',
     enrollmentNotFound: 'لم يتم العثور على التسجيل',
     enrollmentAlreadyExists: 'يوجد تسجيل مسبق لهذا الجدول',
     courseNotEnrollable: 'الدورة غير متاحة للتسجيل حالياً',
     scheduleNotEnrollable: 'الجدول غير مفتوح للتسجيل حالياً',
     missingSchedulePricing: 'تسعير الجدول أو الدورة غير مكتمل للدفع',
-    unsupportedEnrollmentCurrency: 'عملة التسجيل غير مدعومة بسياسة التوجيه الحالية',
+    unsupportedEnrollmentCurrency:
+      'عملة التسجيل غير مدعومة بسياسة التوجيه الحالية',
     invalidExternalRoomProvider: 'مزود غرفة الانضمام غير صالح',
     externalJoinUrlRequired: 'رابط الانضمام الخارجي مطلوب عند تحديد المزود',
-    externalRoomProviderRequired: 'مزود الغرفة الخارجية مطلوب عند تحديد رابط الانضمام',
+    externalRoomProviderRequired:
+      'مزود الغرفة الخارجية مطلوب عند تحديد رابط الانضمام',
     attendanceMutationNotAllowedForEnrollmentState:
       'لا يمكن تسجيل الحضور في حالة التسجيل الحالية',
     attendanceMutationNotAllowedForScheduleState:
       'لا يمكن تسجيل الحضور في حالة الجدول الحالية',
-    attendanceCannotBeMarkedBeforeStart:
-      'لا يمكن تسجيل الحضور قبل بدء الموعد',
+    attendanceCannotBeMarkedBeforeStart: 'لا يمكن تسجيل الحضور قبل بدء الموعد',
   },
   notifications: {
     enrollmentConfirmedTitle: 'تم تأكيد تسجيل التدريب',

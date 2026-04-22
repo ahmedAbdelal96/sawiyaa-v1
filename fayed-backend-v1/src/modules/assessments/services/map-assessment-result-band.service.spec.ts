@@ -46,7 +46,11 @@ describe('MapAssessmentResultBandService', () => {
       scoringConfigJson: {
         thresholds: [
           { band: AssessmentResultBand.LOW, minInclusive: 0, maxInclusive: 3 },
-          { band: AssessmentResultBand.MODERATE, minInclusive: 4, maxInclusive: 10 },
+          {
+            band: AssessmentResultBand.MODERATE,
+            minInclusive: 4,
+            maxInclusive: 10,
+          },
         ],
       },
     });

@@ -7,13 +7,19 @@ import { PractitionerFinancialOperationsController } from './practitioner-financ
 
 describe('PractitionerFinancialOperationsController access contract', () => {
   it('is practitioner self-scope only', () => {
-    const roles = Reflect.getMetadata(ROLES_KEY, PractitionerFinancialOperationsController);
+    const roles = Reflect.getMetadata(
+      ROLES_KEY,
+      PractitionerFinancialOperationsController,
+    );
     expect(roles).toEqual([AppRole.PRACTITIONER]);
   });
 
   it('enforces auth and role guards', () => {
     const guards =
-      Reflect.getMetadata(GUARDS_METADATA, PractitionerFinancialOperationsController) ?? [];
+      Reflect.getMetadata(
+        GUARDS_METADATA,
+        PractitionerFinancialOperationsController,
+      ) ?? [];
 
     expect(guards).toContain(JwtAccessAuthGuard);
     expect(guards).toContain(RolesGuard);

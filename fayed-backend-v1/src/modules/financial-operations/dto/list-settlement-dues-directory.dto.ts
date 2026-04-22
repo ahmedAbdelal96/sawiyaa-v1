@@ -1,13 +1,6 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import {
-  IsEnum,
-  IsInt,
-  IsOptional,
-  IsString,
-  Max,
-  Min,
-} from 'class-validator';
+import { IsEnum, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
 
 export enum SettlementDuesFinanceFilterDto {
   ALL = 'all',
@@ -29,27 +22,41 @@ export enum SettlementDuesSortByDto {
 }
 
 export class ListSettlementDuesDirectoryDto {
-  @ApiPropertyOptional({ description: 'Search by practitioner slug or display name' })
+  @ApiPropertyOptional({
+    description: 'Search by practitioner slug or display name',
+  })
   @IsOptional()
   @IsString()
   search?: string;
 
-  @ApiPropertyOptional({ description: 'Currency code filter (3-letter ISO)', example: 'EGP' })
+  @ApiPropertyOptional({
+    description: 'Currency code filter (3-letter ISO)',
+    example: 'EGP',
+  })
   @IsOptional()
   @IsString()
   currencyCode?: string;
 
-  @ApiPropertyOptional({ enum: SettlementDuesFinanceFilterDto, default: SettlementDuesFinanceFilterDto.ALL })
+  @ApiPropertyOptional({
+    enum: SettlementDuesFinanceFilterDto,
+    default: SettlementDuesFinanceFilterDto.ALL,
+  })
   @IsOptional()
   @IsEnum(SettlementDuesFinanceFilterDto)
   finance?: SettlementDuesFinanceFilterDto;
 
-  @ApiPropertyOptional({ enum: SettlementDuesVerificationFilterDto, default: SettlementDuesVerificationFilterDto.ALL })
+  @ApiPropertyOptional({
+    enum: SettlementDuesVerificationFilterDto,
+    default: SettlementDuesVerificationFilterDto.ALL,
+  })
   @IsOptional()
   @IsEnum(SettlementDuesVerificationFilterDto)
   verification?: SettlementDuesVerificationFilterDto;
 
-  @ApiPropertyOptional({ enum: SettlementDuesSortByDto, default: SettlementDuesSortByDto.DUE_DESC })
+  @ApiPropertyOptional({
+    enum: SettlementDuesSortByDto,
+    default: SettlementDuesSortByDto.DUE_DESC,
+  })
   @IsOptional()
   @IsEnum(SettlementDuesSortByDto)
   sortBy?: SettlementDuesSortByDto;
@@ -69,4 +76,3 @@ export class ListSettlementDuesDirectoryDto {
   @Max(50)
   limit?: number;
 }
-

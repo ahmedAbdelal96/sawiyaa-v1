@@ -28,10 +28,14 @@ describe('GetMyReviewUseCase', () => {
   });
 
   it('blocks access when review does not belong to patient', async () => {
-    (reviewActorRepository.findPatientProfileByUserId as jest.Mock).mockResolvedValue({
+    (
+      reviewActorRepository.findPatientProfileByUserId as jest.Mock
+    ).mockResolvedValue({
       id: 'patient-1',
     });
-    (reviewRepository.findPatientReviewById as jest.Mock).mockResolvedValue(null);
+    (reviewRepository.findPatientReviewById as jest.Mock).mockResolvedValue(
+      null,
+    );
 
     await expect(
       useCase.execute({

@@ -32,10 +32,12 @@ import { ChatModule } from './modules/chat/chat.module';
 import { ConfigModule } from './modules/config/config.module';
 import { FinancialRulesModule } from './modules/financial-rules/financial-rules.module';
 import { FinancialOperationsModule } from './modules/financial-operations/financial-operations.module';
+import { CustomerWalletsModule } from './modules/customer-wallets/customer-wallets.module';
 import { InstantBookingModule } from './modules/instant-booking/instant-booking.module';
 import { MatchingModule } from './modules/matching/matching.module';
 import { ModerationModule } from './modules/moderation/moderation.module';
 import { PatientsModule } from './modules/patients/patients.module';
+import { PatientsAdminModule } from './modules/patients/admin/patients-admin.module';
 import { PatientJourneyModule } from './modules/patient-journey/patient-journey.module';
 import { PaymentsModule } from './modules/payments/payments.module';
 import { PresenceModule } from './modules/presence/presence.module';
@@ -80,10 +82,12 @@ import { UsersModule } from './modules/users/users.module';
     ChatModule,
     FinancialOperationsModule,
     FinancialRulesModule,
+    CustomerWalletsModule,
     MatchingModule,
     ModerationModule,
     PatientJourneyModule,
     PatientsModule,
+    PatientsAdminModule,
     InstantBookingModule,
     PaymentsModule,
     PresenceModule,
@@ -100,9 +104,11 @@ import { UsersModule } from './modules/users/users.module';
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer): void {
-    consumer.apply(RequestContextMiddleware, LocaleContextMiddleware).forRoutes({
-      path: '*path',
-      method: RequestMethod.ALL,
-    });
+    consumer
+      .apply(RequestContextMiddleware, LocaleContextMiddleware)
+      .forRoutes({
+        path: '*path',
+        method: RequestMethod.ALL,
+      });
   }
 }

@@ -11,7 +11,10 @@ export class PasswordHashService {
   constructor(private readonly configService: ConfigService) {}
 
   async hash(value: string): Promise<string> {
-    const saltRounds = this.configService.get<number>('auth.password.saltRounds', 12);
+    const saltRounds = this.configService.get<number>(
+      'auth.password.saltRounds',
+      12,
+    );
     return bcrypt.hash(value, saltRounds);
   }
 

@@ -1,0 +1,151 @@
+{
+  "description": "عرض تشغيلي لحسابات المرضى.",
+  "cards": {
+    "total": "إجمالي المرضى",
+    "totalHint": "حسب الفلاتر الحالية",
+    "completed": "الملف مكتمل",
+    "completedHint": "تم استكمال بيانات الملف",
+    "incomplete": "غير مكتمل",
+    "incompleteHint": "يحتاج استكمال البيانات"
+  },
+  "filters": {
+    "search": "بحث",
+    "searchPlaceholder": "اسم، بريد إلكتروني، رقم هاتف",
+    "status": "الحالة",
+    "statusAll": "الكل",
+    "statusActive": "نشط",
+    "statusPending": "قيد المراجعة",
+    "statusSuspended": "موقوف",
+    "statusInactive": "غير نشط",
+    "onboarding": "اكتمال الملف",
+    "onboardingAll": "الكل",
+    "onboardingCompleted": "مكتمل",
+    "onboardingIncomplete": "غير مكتمل"
+  },
+  "table": {
+    "name": "المريض",
+    "unknownName": "بدون اسم",
+    "country": "الدولة",
+    "onboarding": "الملف",
+    "status": "الحالة",
+    "createdAt": "تاريخ الإنشاء",
+    "actions": "إجراءات"
+  },
+  "states": {
+    "loading": "جارٍ التحميل...",
+    "error": "تعذر تحميل بيانات المرضى.",
+    "emptyTitle": "لا توجد نتائج",
+    "emptyDescription": "جرّب تعديل الفلاتر أو البحث.",
+    "completed": "مكتمل",
+    "incomplete": "غير مكتمل",
+    "walletError": "تعذر تحميل ملخص المحفظة.",
+    "walletEmpty": "الرصيد 0",
+    "walletEntriesError": "تعذر تحميل نشاط المحفظة.",
+    "walletEntriesEmpty": "لا توجد عمليات على المحفظة حتى الآن."
+  },
+  "actions": {
+    "retry": "إعادة المحاولة",
+    "view": "عرض التفاصيل",
+    "close": "إغلاق",
+    "prev": "السابق",
+    "next": "التالي"
+  },
+  "details": {
+    "title": "تفاصيل المريض",
+    "subtitle": "مراجعة بيانات المريض وملخص المحفظة.",
+    "eyebrow": "المرضى",
+    "unknownName": "مريض",
+    "section": {
+      "profile": "البيانات الأساسية",
+      "wallet": "المحفظة",
+      "walletActivity": "نشاط المحفظة"
+    }
+  },
+  "fields": {
+    "userId": "معرّف المستخدم",
+    "createdAt": "تاريخ الإنشاء",
+    "email": "البريد الإلكتروني",
+    "phone": "رقم الهاتف"
+  },
+  "wallet": {
+    "available": "الرصيد المتاح",
+    "reserved": "الرصيد المحجوز",
+    "page": "صفحة {page} من {total}"
+  },
+  "patient360": {
+    "eyebrow": "المرضى",
+    "title": "ملف المريض",
+    "subtitle": "عرض كامل لحساب المريض: المحفظة، الجلسات، المدفوعات، والاختبارات.",
+    "back": "العودة لقائمة المرضى",
+    "tabs": {
+      "overview": "نظرة عامة",
+      "wallet": "المحفظة",
+      "sessions": "الجلسات",
+      "payments": "المدفوعات",
+      "assessments": "الاختبارات"
+    },
+    "states": {
+      "notFound": "لم يتم العثور على المريض.",
+      "loadError": "تعذر تحميل تفاصيل المريض."
+    },
+    "overview": {
+      "walletAvailable": "رصيد المحفظة",
+      "sessionsCount": "عدد الجلسات",
+      "paymentsCount": "عدد المدفوعات",
+      "assessmentsCount": "عدد الاختبارات",
+      "walletSectionTitle": "ملخص المحفظة",
+      "recentSessionsTitle": "آخر الجلسات",
+      "recentPaymentsTitle": "آخر المدفوعات",
+      "viewAll": "عرض الكل"
+    },
+    "profile": {
+      "sectionTitle": "بيانات المريض",
+      "country": "الدولة",
+      "gender": "النوع",
+      "dob": "تاريخ الميلاد",
+      "onboarding": "اكتمال الملف"
+    },
+    "wallet": {
+      "noWalletTitle": "المحفظة",
+      "noWalletHint": "سيتم إنشاء محفظة تلقائيًا عند الحاجة. الرصيد قد يكون 0.",
+      "entryType": "نوع العملية",
+      "direction": "الاتجاه",
+      "amount": "المبلغ",
+      "effectiveAt": "التاريخ",
+      "entriesEmptyTitle": "لا يوجد نشاط",
+      "entriesEmptyDescription": "لا توجد عمليات على المحفظة حتى الآن."
+    },
+    "sessions": {
+      "code": "الكود",
+      "status": "الحالة",
+      "start": "البدء",
+      "practitioner": "المعالج",
+      "mode": "النوع",
+      "loadError": "تعذر تحميل الجلسات.",
+      "emptyTitle": "لا توجد جلسات",
+      "emptyDescription": "لا توجد جلسات لهذا المريض حتى الآن."
+    },
+    "payments": {
+      "status": "الحالة",
+      "total": "الإجمالي",
+      "split": "التقسيم",
+      "fromWallet": "المحفظة",
+      "fromGateway": "بوابة الدفع",
+      "provider": "المزوّد",
+      "createdAt": "تاريخ الإنشاء",
+      "loadError": "تعذر تحميل المدفوعات.",
+      "emptyTitle": "لا توجد مدفوعات",
+      "emptyDescription": "لا توجد مدفوعات لهذا المريض حتى الآن."
+    },
+    "assessments": {
+      "title": "الاختبار",
+      "status": "الحالة",
+      "result": "النتيجة",
+      "completedAt": "تاريخ الإكمال",
+      "createdAt": "تاريخ الإنشاء",
+      "loadError": "تعذر تحميل سجل الاختبارات.",
+      "emptyTitle": "لا توجد اختبارات",
+      "emptyDescription": "لا توجد محاولات اختبارات لهذا المريض حتى الآن."
+    }
+  }
+}

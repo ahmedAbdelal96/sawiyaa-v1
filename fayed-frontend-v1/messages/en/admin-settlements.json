@@ -22,6 +22,8 @@
     "note": "Review one practitioner from the start of their activity, then export the filtered statement as PDF when needed.",
     "back": "Back to settlements",
     "exportPdf": "Export PDF",
+    "exportCsv": "Export CSV package",
+    "exportCsvLoading": "Exporting...",
     "selectTitle": "Choose practitioner",
     "selectNote": "Search and open a practitioner statement. The printed version keeps only the statement content.",
     "searchLabel": "Search practitioner",
@@ -191,7 +193,8 @@
     },
     "actions": {
       "viewProof": "View proof",
-      "statement": "Statement"
+      "statement": "Statement",
+      "reconciliation": "Reconciliation"
     },
     "states": {
       "errorTitle": "Failed to load payout history",

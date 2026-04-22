@@ -15,7 +15,9 @@ export class ListAdminSpecialtyCategoriesUseCase {
   ) {}
 
   async execute(input: { locale: SupportedLocale; q?: string }) {
-    const categories = await this.specialtyCategoryRepository.listForAdmin(input.q);
+    const categories = await this.specialtyCategoryRepository.listForAdmin(
+      input.q,
+    );
 
     return {
       message: this.i18nService.t(
@@ -26,4 +28,3 @@ export class ListAdminSpecialtyCategoriesUseCase {
     };
   }
 }
-

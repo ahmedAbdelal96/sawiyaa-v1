@@ -27,7 +27,10 @@ export class RegisterPatientWithGoogleUseCase {
     private readonly issueAuthTokensUseCase: IssueAuthTokensUseCase,
   ) {}
 
-  async execute(input: { idToken: string; deviceContext: AuthSessionDeviceContext }) {
+  async execute(input: {
+    idToken: string;
+    deviceContext: AuthSessionDeviceContext;
+  }) {
     const googleIdentity = await this.googleIdentityService.verifyIdToken(
       input.idToken,
     );
@@ -67,7 +70,12 @@ export class RegisterPatientWithGoogleUseCase {
       googleIdentity.email,
     );
 
-    if (existingEmail && !existingEmail.user.roles.some((role) => role.role === UserRoleType.PATIENT)) {
+    if (
+      existingEmail &&
+      !existingEmail.user.roles.some(
+        (role) => role.role === UserRoleType.PATIENT,
+      )
+    ) {
       throw new ConflictException({
         messageKey: 'auth.errors.emailLinkedToAnotherFlow',
         error: 'EMAIL_ALREADY_LINKED_TO_ANOTHER_FLOW',
@@ -110,7 +118,11 @@ export class RegisterPatientWithGoogleUseCase {
         tx,
       );
 
-      await this.userRepository.ensureRole(createdUser.id, UserRoleType.PATIENT, tx);
+      await this.userRepository.ensureRole(
+        createdUser.id,
+        UserRoleType.PATIENT,
+        tx,
+      );
       await this.userRepository.createPatientProfileIfMissing(
         createdUser.id,
         googleIdentity.displayName,

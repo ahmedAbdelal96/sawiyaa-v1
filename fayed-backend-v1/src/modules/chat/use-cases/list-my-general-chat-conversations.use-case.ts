@@ -11,13 +11,12 @@ export class ListMyGeneralChatConversationsUseCase {
     authenticatedUser: AuthenticatedUser;
     query: ListGeneralChatConversationsDto;
   }) {
-    const [rows, totalItems] = await this.generalChatRepository.listOwnedConversations(
-      {
+    const [rows, totalItems] =
+      await this.generalChatRepository.listOwnedConversations({
         userId: input.authenticatedUser.id,
         page: input.query.page,
         limit: input.query.limit,
-      },
-    );
+      });
 
     const items = await Promise.all(
       rows.map(async (row) => {
@@ -70,7 +69,8 @@ export class ListMyGeneralChatConversationsUseCase {
         page: input.query.page,
         limit: input.query.limit,
         totalItems,
-        totalPages: totalItems === 0 ? 0 : Math.ceil(totalItems / input.query.limit),
+        totalPages:
+          totalItems === 0 ? 0 : Math.ceil(totalItems / input.query.limit),
       },
     };
   }

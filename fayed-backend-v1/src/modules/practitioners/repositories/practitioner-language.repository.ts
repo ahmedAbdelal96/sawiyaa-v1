@@ -16,10 +16,7 @@ export class PractitionerLanguageRepository {
     return tx ?? this.prisma;
   }
 
-  countByPractitionerId(
-    practitionerId: string,
-    tx?: Prisma.TransactionClient,
-  ) {
+  countByPractitionerId(practitionerId: string, tx?: Prisma.TransactionClient) {
     return this.getDb(tx).practitionerProfileLanguage.count({
       where: { practitionerId },
     });

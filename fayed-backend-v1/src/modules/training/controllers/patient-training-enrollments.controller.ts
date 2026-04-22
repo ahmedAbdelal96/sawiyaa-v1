@@ -55,7 +55,10 @@ export class PatientTrainingEnrollmentsController {
     summary: 'Create patient enrollment intent for a training schedule',
   })
   @ApiBody({ type: CreateTrainingEnrollmentDto })
-  @ApiResponse({ status: 201, type: PatientTrainingEnrollmentItemSuccessResponseDto })
+  @ApiResponse({
+    status: 201,
+    type: PatientTrainingEnrollmentItemSuccessResponseDto,
+  })
   create(
     @CurrentUser() currentUser: AuthenticatedUser,
     @CurrentLocale() locale: SupportedLocale,
@@ -74,7 +77,10 @@ export class PatientTrainingEnrollmentsController {
 
   @Get('enrollments')
   @ApiOperation({ summary: 'List patient-owned training enrollments' })
-  @ApiResponse({ status: 200, type: PatientTrainingEnrollmentListSuccessResponseDto })
+  @ApiResponse({
+    status: 200,
+    type: PatientTrainingEnrollmentListSuccessResponseDto,
+  })
   list(
     @CurrentUser() currentUser: AuthenticatedUser,
     @CurrentLocale() locale: SupportedLocale,
@@ -91,7 +97,10 @@ export class PatientTrainingEnrollmentsController {
 
   @Get('enrollments/:id')
   @ApiOperation({ summary: 'Get patient-owned training enrollment details' })
-  @ApiResponse({ status: 200, type: PatientTrainingEnrollmentItemSuccessResponseDto })
+  @ApiResponse({
+    status: 200,
+    type: PatientTrainingEnrollmentItemSuccessResponseDto,
+  })
   get(
     @CurrentUser() currentUser: AuthenticatedUser,
     @CurrentLocale() locale: SupportedLocale,
@@ -108,7 +117,10 @@ export class PatientTrainingEnrollmentsController {
 
   @Get('enrollments/:id/join-access')
   @ApiOperation({ summary: 'Resolve patient training join access contract' })
-  @ApiResponse({ status: 200, type: PatientTrainingJoinAccessItemSuccessResponseDto })
+  @ApiResponse({
+    status: 200,
+    type: PatientTrainingJoinAccessItemSuccessResponseDto,
+  })
   resolveJoinAccess(
     @CurrentUser() currentUser: AuthenticatedUser,
     @CurrentLocale() locale: SupportedLocale,

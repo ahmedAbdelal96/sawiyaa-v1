@@ -9,9 +9,16 @@ import { useRouter } from "@/i18n/navigation";
 import { LogOut, User } from "lucide-react";
 import { usePatientProfile } from "@/features/patients/hooks/use-patients";
 import { useCurrentUser } from "@/features/users/hooks/use-users";
+import type { ReactNode } from "react";
 
 type UserDropdownProps = {
   compact?: boolean;
+  quickLinks?: Array<{
+    key: string;
+    href: string;
+    label: string;
+    icon?: ReactNode;
+  }>;
 };
 
 function getProfileHref(role?: string | null) {
@@ -22,7 +29,7 @@ function getProfileHref(role?: string | null) {
   return null;
 }
 
-export default function UserDropdown({ compact = false }: UserDropdownProps) {
+export default function UserDropdown({ compact = false, quickLinks = [] }: UserDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const { user, tenant, isLoading } = useAuthState();
   const patientProfileQuery = usePatientProfile(user?.role === "PATIENT" && Boolean(user));
@@ -116,8 +123,30 @@ export default function UserDropdown({ compact = false }: UserDropdownProps) {
           )}
         </div>
 
-        {profileHref ? (
+        {quickLinks.length > 0 ? (
           <ul className="flex flex-col gap-1 border-t border-border-light pt-3 dark:border-border-light">
+            {quickLinks.map((link) => (
+              <li key={link.key}>
+                <DropdownItem
+                  tag="a"
+                  href={link.href}
+                  onItemClick={() => setIsOpen(false)}
+                  className="flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-text-primary hover:bg-primary-light dark:text-text-primary dark:hover:bg-surface-tertiary"
+                >
+                  {link.icon ?? null}
+                  {link.label}
+                </DropdownItem>
+              </li>
+            ))}
+          </ul>
+        ) : null}
+
+        {profileHref ? (
+          <ul
+            className={`flex flex-col gap-1 border-t border-border-light pt-3 dark:border-border-light ${
+              quickLinks.length > 0 ? "mt-3" : ""
+            }`}
+          >
             <li>
               <DropdownItem
                 tag="a"

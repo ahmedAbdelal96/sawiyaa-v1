@@ -1,5 +1,10 @@
 import { ConflictException } from '@nestjs/common';
-import { PaymentProvider, PaymentStatus, Prisma } from '@prisma/client';
+import {
+  PaymentProvider,
+  PaymentStatus,
+  Prisma,
+  RefundDestination,
+} from '@prisma/client';
 import { RequestPaymentRefundUseCase } from './request-payment-refund.use-case';
 
 describe('RequestPaymentRefundUseCase', () => {
@@ -17,8 +22,10 @@ describe('RequestPaymentRefundUseCase', () => {
         providerOrderRef: null,
         status: overrides?.paymentStatus ?? PaymentStatus.CAPTURED,
         amountTotal: new Prisma.Decimal('500.00'),
+        amountFromWallet: new Prisma.Decimal('0.00'),
         currencyCode: 'USD',
         sessionId: 'session_1',
+        patientId: 'patient_1',
       }),
       findActiveRefundByPaymentId: jest
         .fn()
@@ -34,6 +41,7 @@ describe('RequestPaymentRefundUseCase', () => {
         sessionId: 'session_1',
         refundType: 'PARTIAL',
         status: 'REQUESTED',
+        destination: RefundDestination.CUSTOMER_WALLET,
         refundReason: 'reason',
         amount: new Prisma.Decimal('100.00'),
         currencyCode: 'USD',
@@ -51,6 +59,7 @@ describe('RequestPaymentRefundUseCase', () => {
         sessionId: 'session_1',
         refundType: 'PARTIAL',
         status: 'SUCCEEDED',
+        destination: RefundDestination.CUSTOMER_WALLET,
         refundReason: 'reason',
         amount: new Prisma.Decimal('100.00'),
         currencyCode: 'USD',
@@ -61,7 +70,9 @@ describe('RequestPaymentRefundUseCase', () => {
         createdAt: new Date(),
       }),
       findRefundById: jest.fn().mockResolvedValue(null),
-      findLatestProviderWebhookEventByPaymentId: jest.fn().mockResolvedValue(null),
+      findLatestProviderWebhookEventByPaymentId: jest
+        .fn()
+        .mockResolvedValue(null),
     };
 
     const paymentProviderRegistryService = {
@@ -98,6 +109,9 @@ describe('RequestPaymentRefundUseCase', () => {
       markSessionRefundPending: jest.fn().mockResolvedValue({}),
       markSessionRefunded: jest.fn().mockResolvedValue({}),
     };
+    const customerWalletAccountingService = {
+      creditRefundToWallet: jest.fn().mockResolvedValue({}),
+    };
     const operationalNotificationService = {
       notifyRefundRequested: jest.fn().mockResolvedValue(undefined),
       notifyRefundSucceeded: jest.fn().mockResolvedValue(undefined),
@@ -120,6 +134,7 @@ describe('RequestPaymentRefundUseCase', () => {
       validatePaymentStatusTransitionService as never,
       validateRefundEligibilityService as never,
       postRefundLedgerEntriesUseCase as never,
+      customerWalletAccountingService as never,
       orchestrateSessionPaymentStatusService as never,
       operationalNotificationService as never,
       paymentMapper as never,
@@ -148,11 +163,18 @@ describe('RequestPaymentRefundUseCase', () => {
       actorUserId: 'admin_1',
       amount: '100.00',
       reason: 'reason',
+      destination: RefundDestination.ORIGINAL_METHOD,
     });
 
-    expect(setup.postRefundLedgerEntriesUseCase.execute).toHaveBeenCalledTimes(1);
-    expect(setup.operationalNotificationService.notifyRefundRequested).toHaveBeenCalledTimes(1);
-    expect(setup.operationalNotificationService.notifyRefundSucceeded).toHaveBeenCalledTimes(1);
+    expect(setup.postRefundLedgerEntriesUseCase.execute).toHaveBeenCalledTimes(
+      1,
+    );
+    expect(
+      setup.operationalNotificationService.notifyRefundRequested,
+    ).toHaveBeenCalledTimes(1);
+    expect(
+      setup.operationalNotificationService.notifyRefundSucceeded,
+    ).toHaveBeenCalledTimes(1);
     expect(
       setup.orchestrateSessionPaymentStatusService.markSessionRefundPending,
     ).toHaveBeenCalled();
@@ -168,10 +190,13 @@ describe('RequestPaymentRefundUseCase', () => {
       actorUserId: 'admin_1',
       amount: '100.00',
       reason: 'reason',
+      destination: RefundDestination.ORIGINAL_METHOD,
     });
 
     expect(setup.postRefundLedgerEntriesUseCase.execute).not.toHaveBeenCalled();
-    expect(setup.operationalNotificationService.notifyRefundFailed).toHaveBeenCalledTimes(1);
+    expect(
+      setup.operationalNotificationService.notifyRefundFailed,
+    ).toHaveBeenCalledTimes(1);
   });
 
   it('rejects duplicate refund attempt while another one is active', async () => {
@@ -185,6 +210,7 @@ describe('RequestPaymentRefundUseCase', () => {
         actorUserId: 'admin_1',
         amount: '100.00',
         reason: 'reason',
+        destination: RefundDestination.ORIGINAL_METHOD,
       }),
     ).rejects.toThrow(ConflictException);
   });

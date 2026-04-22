@@ -104,7 +104,9 @@ export class PrepareSessionRuntimeUseCase {
       });
     }
 
-    const adapter = this.sessionVideoProviderRegistryService.get(SessionProvider.DAILY);
+    const adapter = this.sessionVideoProviderRegistryService.get(
+      SessionProvider.DAILY,
+    );
     const room = await adapter.createRoom({
       sessionId: session.id,
       startsAt: session.scheduledStartAt,
@@ -143,7 +145,9 @@ export class PrepareSessionRuntimeUseCase {
         provider: updated.provider,
         roomName: updated.providerRoomId,
         roomUrl: updated.providerSessionRef,
-        isPrepared: Boolean(updated.providerRoomId && updated.providerSessionRef),
+        isPrepared: Boolean(
+          updated.providerRoomId && updated.providerSessionRef,
+        ),
       },
     };
   }
@@ -158,7 +162,9 @@ export class PrepareSessionRuntimeUseCase {
     }
 
     if (input.actorType === 'PATIENT') {
-      const patient = await this.sessionPatientRepository.findByUserId(input.userId);
+      const patient = await this.sessionPatientRepository.findByUserId(
+        input.userId,
+      );
       if (!patient) {
         throw new NotFoundException({
           messageKey: 'sessions.errors.patientNotFound',
@@ -175,8 +181,9 @@ export class PrepareSessionRuntimeUseCase {
       return;
     }
 
-    const practitioner =
-      await this.sessionPractitionerRepository.findByUserId(input.userId);
+    const practitioner = await this.sessionPractitionerRepository.findByUserId(
+      input.userId,
+    );
     if (!practitioner) {
       throw new NotFoundException({
         messageKey: 'sessions.errors.practitionerNotFound',

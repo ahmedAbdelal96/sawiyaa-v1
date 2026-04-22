@@ -166,7 +166,10 @@ export class BuildPatientJourneyLinkedContentService {
         break;
     }
 
-    if (stage === 'ACTIVE_CARE' || input.normalizedContext.training.hasActiveEnrollment) {
+    if (
+      stage === 'ACTIVE_CARE' ||
+      input.normalizedContext.training.hasActiveEnrollment
+    ) {
       rules.push({
         key: 'active-care',
         priority: 65,

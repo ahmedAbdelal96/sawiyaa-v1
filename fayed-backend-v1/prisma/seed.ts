@@ -1,6 +1,8 @@
 import { PrismaClient } from '@prisma/client';
 import { adminSeedModule } from './seed/modules/admin.seed';
+import { accountingSeedModule } from './seed/modules/accounting.seed';
 import { assessmentsSeedModule } from './seed/modules/assessments.seed';
+import { auditEventsSeedModule } from './seed/modules/audit-events.seed';
 import { authSeedModule } from './seed/modules/auth.seed';
 import { configSeedModule } from './seed/modules/config.seed';
 import { notificationsSeedModule } from './seed/modules/notifications.seed';
@@ -32,6 +34,8 @@ const seedModules: SeedModule[] = [
   configSeedModule,
   regionalBulkSeedModule,
   settlementsLabSeedModule,
+  accountingSeedModule,
+  auditEventsSeedModule,
 ];
 
 async function main(): Promise<void> {

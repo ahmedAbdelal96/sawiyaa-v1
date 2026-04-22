@@ -49,8 +49,8 @@ const STATUS_BADGE: Partial<Record<SessionReviewStatus, string>> = {
   REJECTED: "bg-rose-50 text-rose-700 dark:bg-rose-500/15 dark:text-rose-400",
   HIDDEN: "bg-slate-100 text-slate-600 dark:bg-white/10 dark:text-white/60",
   ARCHIVED: "bg-zinc-100 text-zinc-500 dark:bg-white/8 dark:text-white/40",
-  DRAFT: "bg-sky-50 text-sky-700 dark:bg-sky-500/15 dark:text-sky-400",
-  SUBMITTED: "bg-sky-50 text-sky-700 dark:bg-sky-500/15 dark:text-sky-400",
+  DRAFT: "bg-primary-light text-text-brand dark:bg-primary/15 dark:text-primary-light",
+  SUBMITTED: "bg-primary-light text-text-brand dark:bg-primary/15 dark:text-primary-light",
 };
 
 // ---------------------------------------------------------------------------

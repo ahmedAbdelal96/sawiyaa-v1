@@ -17,11 +17,17 @@ describe('ListAdminOperationalNotificationsUseCase', () => {
     }),
   } as unknown as NotificationOpsPresenter;
 
-  const useCase = new ListAdminOperationalNotificationsUseCase(repository, presenter);
+  const useCase = new ListAdminOperationalNotificationsUseCase(
+    repository,
+    presenter,
+  );
 
   beforeEach(() => {
     jest.clearAllMocks();
-    (repository.listOperationalNotifications as jest.Mock).mockResolvedValue([[], 0]);
+    (repository.listOperationalNotifications as jest.Mock).mockResolvedValue([
+      [],
+      0,
+    ]);
   });
 
   it('uses default operational statuses when status filter is omitted', async () => {
@@ -29,6 +35,15 @@ describe('ListAdminOperationalNotificationsUseCase', () => {
 
     expect(repository.listOperationalNotifications).toHaveBeenCalledWith(
       expect.objectContaining({
+        excludedTypeSlugs: [
+          'payments.payment-succeeded',
+          'payments.refund-succeeded',
+          'sessions.session-confirmed',
+          'sessions.session-confirmed-practitioner',
+          'training.schedule-reminder',
+          'training.enrollment-confirmed',
+        ],
+        excludedTypePrefixes: ['auth.'],
         statuses: [
           NotificationStatus.PENDING,
           NotificationStatus.QUEUED,
@@ -50,6 +65,15 @@ describe('ListAdminOperationalNotificationsUseCase', () => {
 
     expect(repository.listOperationalNotifications).toHaveBeenCalledWith(
       expect.objectContaining({
+        excludedTypeSlugs: [
+          'payments.payment-succeeded',
+          'payments.refund-succeeded',
+          'sessions.session-confirmed',
+          'sessions.session-confirmed-practitioner',
+          'training.schedule-reminder',
+          'training.enrollment-confirmed',
+        ],
+        excludedTypePrefixes: ['auth.'],
         statuses: [NotificationStatus.FAILED],
         page: 2,
         limit: 10,

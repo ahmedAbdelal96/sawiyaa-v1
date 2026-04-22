@@ -107,11 +107,13 @@ export class ListPublicPractitionersUseCase {
           practitionerType: profile.practitionerType,
           practitionerGender: profile.practitionerGender ?? null,
           sessionPrice30:
-            profile.sessionPrice30 === null || profile.sessionPrice30 === undefined
+            profile.sessionPrice30 === null ||
+            profile.sessionPrice30 === undefined
               ? null
               : Number(profile.sessionPrice30),
           sessionPrice60:
-            profile.sessionPrice60 === null || profile.sessionPrice60 === undefined
+            profile.sessionPrice60 === null ||
+            profile.sessionPrice60 === undefined
               ? null
               : Number(profile.sessionPrice60),
           isOnlineNow: profile.presence?.status === 'ONLINE',

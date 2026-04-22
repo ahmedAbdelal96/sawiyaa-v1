@@ -51,7 +51,8 @@ export class NotificationRetryPolicyService {
     }
 
     const isRetryable =
-      this.retryableErrorCodes.has(errorCode) || errorCode === 'DELIVERY_FAILED';
+      this.retryableErrorCodes.has(errorCode) ||
+      errorCode === 'DELIVERY_FAILED';
     if (!isRetryable) {
       return {
         kind: 'TERMINAL',
@@ -61,7 +62,8 @@ export class NotificationRetryPolicyService {
     }
 
     const retryDelayMinutes =
-      this.baseBackoffMinutes * Math.pow(2, Math.max(0, input.attemptNumber - 1));
+      this.baseBackoffMinutes *
+      Math.pow(2, Math.max(0, input.attemptNumber - 1));
     return {
       kind: 'RETRY',
       maxAttempts: this.maxAttempts,

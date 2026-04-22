@@ -55,7 +55,8 @@ export class AdminReviewsController {
   @ApiResponse({ status: 200, type: AdminReviewListSuccessResponseDto })
   @ApiUnauthorizedResponse({ description: 'Access token is required' })
   @ApiForbiddenResponse({
-    description: 'Only admin/content reviewer roles can access moderation routes',
+    description:
+      'Only admin/content reviewer roles can access moderation routes',
   })
   list(@Query() query: ListAdminReviewsDto) {
     return this.listAdminReviewsUseCase.execute({ query }).then((data) => ({

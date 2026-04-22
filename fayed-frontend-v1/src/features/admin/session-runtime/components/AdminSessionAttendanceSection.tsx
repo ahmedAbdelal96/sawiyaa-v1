@@ -39,7 +39,7 @@ function SummaryLine({
 
 function participantToneClass(role: AdminSessionAttendanceParticipantRole) {
   if (role === "PATIENT") {
-    return "bg-sky-100 text-sky-700 dark:bg-sky-500/15 dark:text-sky-400";
+    return "bg-primary-light text-text-brand dark:bg-primary/15 dark:text-primary-light";
   }
   if (role === "PRACTITIONER") {
     return "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400";

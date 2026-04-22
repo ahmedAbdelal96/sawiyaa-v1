@@ -24,7 +24,9 @@ describe('GetMyCareChatRequestUseCase', () => {
   );
 
   it('enforces practitioner ownership when reading request details', async () => {
-    (actorRepository.findPractitionerProfileByUserId as jest.Mock).mockResolvedValue({
+    (
+      actorRepository.findPractitionerProfileByUserId as jest.Mock
+    ).mockResolvedValue({
       id: 'practitioner-1',
     });
     (requestRepository.findByIdForActor as jest.Mock).mockResolvedValue(null);

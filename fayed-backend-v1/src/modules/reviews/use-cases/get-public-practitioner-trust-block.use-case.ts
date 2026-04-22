@@ -14,10 +14,14 @@ export class GetPublicPractitionerTrustBlockUseCase {
     private readonly buildPublicTrustConversionContentQueryService: BuildPublicTrustConversionContentQueryService,
   ) {}
 
-  async execute(input: { slug: string; query: GetPublicPractitionerTrustBlockDto }) {
-    const trustSummary = await this.getPublicPractitionerTrustSummaryUseCase.execute({
-      slug: input.slug,
-    });
+  async execute(input: {
+    slug: string;
+    query: GetPublicPractitionerTrustBlockDto;
+  }) {
+    const trustSummary =
+      await this.getPublicPractitionerTrustSummaryUseCase.execute({
+        slug: input.slug,
+      });
     const reviews = await this.listPublicPractitionerReviewsUseCase.execute({
       slug: input.slug,
       query: {

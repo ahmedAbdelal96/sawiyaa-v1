@@ -50,16 +50,20 @@ describe('CreateModerationReportUseCase', () => {
     (moderationRepository.findAccessibleTarget as jest.Mock).mockResolvedValue({
       id: 'target_1',
     });
-    (moderationRepository.findRecentDuplicate as jest.Mock).mockResolvedValue(null);
-    (moderationRepository.createReportWithAudit as jest.Mock).mockResolvedValue({
-      id: 'report_1',
-      targetType: ModerationReportTargetType.REVIEW,
-      targetId: 'review_1',
-      reason: ModerationReportReason.ABUSE,
-      note: 'unsafe',
-      status: ModerationCaseStatus.OPEN,
-      createdAt: new Date('2026-03-31T17:00:00.000Z'),
-    });
+    (moderationRepository.findRecentDuplicate as jest.Mock).mockResolvedValue(
+      null,
+    );
+    (moderationRepository.createReportWithAudit as jest.Mock).mockResolvedValue(
+      {
+        id: 'report_1',
+        targetType: ModerationReportTargetType.REVIEW,
+        targetId: 'review_1',
+        reason: ModerationReportReason.ABUSE,
+        note: 'unsafe',
+        status: ModerationCaseStatus.OPEN,
+        createdAt: new Date('2026-03-31T17:00:00.000Z'),
+      },
+    );
     (moderationPresenter.presentReportItem as jest.Mock).mockReturnValue({
       id: 'report_1',
     });
@@ -101,7 +105,9 @@ describe('CreateModerationReportUseCase', () => {
     (resolveModerationReporterRoleService.resolve as jest.Mock).mockReturnValue(
       ModerationReporterRole.PRACTITIONER,
     );
-    (moderationRepository.findAccessibleTarget as jest.Mock).mockResolvedValue(null);
+    (moderationRepository.findAccessibleTarget as jest.Mock).mockResolvedValue(
+      null,
+    );
 
     await expect(
       useCase.execute({
@@ -144,4 +150,3 @@ describe('CreateModerationReportUseCase', () => {
     ).rejects.toBeInstanceOf(ConflictException);
   });
 });
-

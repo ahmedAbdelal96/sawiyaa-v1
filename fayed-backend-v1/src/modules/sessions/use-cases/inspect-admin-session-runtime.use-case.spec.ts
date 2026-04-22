@@ -36,7 +36,9 @@ describe('InspectAdminSessionRuntimeUseCase', () => {
     const setup = buildUseCase();
     const result = await setup.useCase.execute({ sessionId: 'session_1' });
 
-    expect(setup.resolveSessionJoinReadinessService.resolve).toHaveBeenCalledTimes(1);
+    expect(
+      setup.resolveSessionJoinReadinessService.resolve,
+    ).toHaveBeenCalledTimes(1);
     expect(result.item).toEqual(
       expect.objectContaining({
         id: 'session_1',
@@ -47,4 +49,3 @@ describe('InspectAdminSessionRuntimeUseCase', () => {
     );
   });
 });
-

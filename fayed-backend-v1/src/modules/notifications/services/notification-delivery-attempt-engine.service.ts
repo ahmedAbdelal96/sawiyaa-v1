@@ -13,7 +13,9 @@ type ExecutionOutcome = 'SENT' | 'FAILED' | 'SKIPPED';
 
 @Injectable()
 export class NotificationDeliveryAttemptEngineService {
-  private readonly logger = new Logger(NotificationDeliveryAttemptEngineService.name);
+  private readonly logger = new Logger(
+    NotificationDeliveryAttemptEngineService.name,
+  );
 
   constructor(
     private readonly repository: OperationalNotificationRepository,
@@ -23,11 +25,15 @@ export class NotificationDeliveryAttemptEngineService {
     private readonly domainValidityGuardService: NotificationDomainValidityGuardService,
   ) {}
 
-  async executeClaimedNotification(input: { notificationId: string; now?: Date }) {
+  async executeClaimedNotification(input: {
+    notificationId: string;
+    now?: Date;
+  }) {
     const now = input.now ?? new Date();
-    const notification = await this.repository.findQueuedNotificationForExecution(
-      input.notificationId,
-    );
+    const notification =
+      await this.repository.findQueuedNotificationForExecution(
+        input.notificationId,
+      );
 
     if (!notification) {
       return this.buildResult(input.notificationId, 'SKIPPED', false, {
@@ -35,14 +41,19 @@ export class NotificationDeliveryAttemptEngineService {
       });
     }
 
-    this.lifecycleService.assertCanExecuteClaimedNotification(notification.status);
+    this.lifecycleService.assertCanExecuteClaimedNotification(
+      notification.status,
+    );
 
-    const domainValidity = await this.domainValidityGuardService.evaluate(notification);
+    const domainValidity =
+      await this.domainValidityGuardService.evaluate(notification);
     if (!domainValidity.valid) {
-      const suppressed = await this.repository.markQueuedNotificationSuppressed({
-        notificationId: notification.id,
-        reason: domainValidity.reason,
-      });
+      const suppressed = await this.repository.markQueuedNotificationSuppressed(
+        {
+          notificationId: notification.id,
+          reason: domainValidity.reason,
+        },
+      );
 
       if (suppressed.count <= 0) {
         return this.buildResult(notification.id, 'SKIPPED', false, {
@@ -92,7 +103,9 @@ export class NotificationDeliveryAttemptEngineService {
         });
       }
 
-      this.logger.log(`Notification ${notification.id} delivered via ${execution.provider}`);
+      this.logger.log(
+        `Notification ${notification.id} delivered via ${execution.provider}`,
+      );
       return this.buildResult(notification.id, 'SENT', true, {
         attemptId: attempt.id,
       });
@@ -148,8 +161,10 @@ export class NotificationDeliveryAttemptEngineService {
     return {
       total: results.length,
       sentCount: results.filter((result) => result.outcome === 'SENT').length,
-      failedCount: results.filter((result) => result.outcome === 'FAILED').length,
-      skippedCount: results.filter((result) => result.outcome === 'SKIPPED').length,
+      failedCount: results.filter((result) => result.outcome === 'FAILED')
+        .length,
+      skippedCount: results.filter((result) => result.outcome === 'SKIPPED')
+        .length,
       results,
     };
   }
@@ -167,7 +182,9 @@ export class NotificationDeliveryAttemptEngineService {
       now: input.now,
     });
     const reason =
-      input.execution.errorCode ?? input.execution.errorMessage ?? 'DELIVERY_FAILED';
+      input.execution.errorCode ??
+      input.execution.errorMessage ??
+      'DELIVERY_FAILED';
 
     await this.repository.updateDeliveryAttempt(input.attemptId, {
       status: DeliveryAttemptStatus.FAILED,
@@ -175,7 +192,9 @@ export class NotificationDeliveryAttemptEngineService {
       errorCode: reason,
       errorMessage: (input.execution.errorMessage ?? reason).slice(0, 1000),
       responsePayload: {
-        ...(input.execution.responsePayload as Record<string, unknown> | undefined),
+        ...(input.execution.responsePayload as
+          | Record<string, unknown>
+          | undefined),
         retryDecision:
           retryDecision.kind === 'RETRY'
             ? {
@@ -193,10 +212,11 @@ export class NotificationDeliveryAttemptEngineService {
     });
 
     if (retryDecision.kind === 'RETRY') {
-      const requeued = await this.repository.rescheduleQueuedNotificationForRetry({
-        notificationId: input.notificationId,
-        retryAt: retryDecision.nextRetryAt,
-      });
+      const requeued =
+        await this.repository.rescheduleQueuedNotificationForRetry({
+          notificationId: input.notificationId,
+          retryAt: retryDecision.nextRetryAt,
+        });
       if (requeued.count > 0) {
         return { outcome: 'SKIPPED', reason: 'RETRY_SCHEDULED' };
       }

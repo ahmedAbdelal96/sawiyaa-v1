@@ -263,30 +263,29 @@ export class SpecialtyRepository {
         categoryId: input.categoryId,
         sortOrder: input.sortOrder,
         isActive: input.isActive,
-        translations:
-          input.translation
-            ? {
-                upsert: {
-                  where: {
-                    specialtyId_locale: {
-                      specialtyId: id,
-                      locale: input.locale,
-                    },
-                  },
-                  create: {
+        translations: input.translation
+          ? {
+              upsert: {
+                where: {
+                  specialtyId_locale: {
+                    specialtyId: id,
                     locale: input.locale,
-                    title: input.translation.createTitle,
-                    description: input.translation.updateDescription ?? null,
-                    slug: input.translation.translationSlug ?? input.slug ?? '',
-                  },
-                  update: {
-                    title: input.translation.updateTitle,
-                    description: input.translation.updateDescription,
-                    slug: input.translation.translationSlug,
                   },
                 },
-              }
-            : undefined,
+                create: {
+                  locale: input.locale,
+                  title: input.translation.createTitle,
+                  description: input.translation.updateDescription ?? null,
+                  slug: input.translation.translationSlug ?? input.slug ?? '',
+                },
+                update: {
+                  title: input.translation.updateTitle,
+                  description: input.translation.updateDescription,
+                  slug: input.translation.translationSlug,
+                },
+              },
+            }
+          : undefined,
       },
       include: {
         category: {

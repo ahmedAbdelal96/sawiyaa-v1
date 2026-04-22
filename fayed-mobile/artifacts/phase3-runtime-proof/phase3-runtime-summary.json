@@ -1,0 +1,45 @@
+{
+  "backend": "online",
+  "web": "http://localhost:19007",
+  "patient": "ahmed.patient@hesba.local",
+  "practitionerSlugs": {
+    "pending": "bulk-practitioner-53",
+    "approved": "bulk-practitioner-34",
+    "rejected": "bulk-practitioner-16"
+  },
+  "screenshots": [
+    "01-home-journey-summary.png",
+    "02-support-list.png",
+    "03-support-new.png",
+    "04-support-detail-no-messages.png",
+    "05-support-detail-thread-closed.png",
+    "06-care-chat-list.png",
+    "07-care-chat-new-request.png",
+    "08-care-chat-request-detail-pending.png",
+    "09-care-chat-history-rejected.png",
+    "10-care-chat-approved-conversation.png",
+    "11-support-empty-state.png"
+  ],
+  "actions": [
+    "Created two patient support tickets via POST /patients/me/support/tickets",
+    "Added patient/admin support messages and closed one ticket via admin contract",
+    "Reused existing pending care-chat request and created approved/rejected requests via POST /patients/me/care-chat/requests",
+    "Approved one care-chat request and rejected one via PATCH /admin/care-chat/requests/:id/decision",
+    "Sent a patient message inside the approved care-chat conversation"
+  ],
+  "blocked": [],
+  "states": {
+    "secondPatientSupportCount": 0,
+    "secondPatientCareRequestCount": 0,
+    "careChat": {
+      "pending": "PENDING",
+      "approved": "APPROVED",
+      "rejected": "REJECTED",
+      "approvedConversationId": "31abded5-7183-4c90-9013-d17df5541352"
+    },
+    "support": {
+      "noMessageTicketStatus": "OPEN",
+      "closedThreadTicketStatus": "CLOSED"
+    }
+  }
+}

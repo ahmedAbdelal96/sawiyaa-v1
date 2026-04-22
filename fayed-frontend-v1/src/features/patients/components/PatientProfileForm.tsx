@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Camera, Loader2, PencilLine, Trash2, Upload } from "lucide-react";
+import { Camera, Loader2, PencilLine, Trash2, Upload, Wallet } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import {
   usePatientProfile,
@@ -12,6 +12,7 @@ import {
   useUpdatePatientProfile,
   useUploadPatientAvatar,
 } from "../hooks/use-patients";
+import { usePatientWalletSummary } from "@/features/payments/hooks/use-payments";
 import type { UpdatePatientProfileRequest } from "../types/patients.types";
 import Button from "@/components/ui/button/Button";
 import { FormModal } from "@/components/ui/modal";
@@ -78,6 +79,17 @@ function formatDateValue(value: string | null | undefined, locale: string): stri
   }
 }
 
+function formatMoney(value: string, currencyCode: string, locale: string): string {
+  const numberLocale = locale.startsWith("ar") ? "ar-EG" : "en-US";
+  return new Intl.NumberFormat(numberLocale, {
+    style: "currency",
+    currency: currencyCode.toUpperCase(),
+    minimumFractionDigits: 0,
+  }).format(Number(value));
+}
+
+const DEFAULT_WALLET_CURRENCY = "SAR";
+
 export default function PatientProfileForm() {
   const t = useTranslations("patient-profile");
   const locale = useLocale();
@@ -92,7 +104,10 @@ export default function PatientProfileForm() {
   const { mutate, isPending, isError: isMutateError } = useUpdatePatientProfile();
   const uploadAvatar = useUploadPatientAvatar();
   const removeAvatar = useRemovePatientAvatar();
+  const { data: walletSummaryData, isLoading: walletSummaryLoading } = usePatientWalletSummary();
   const profile = data?.profile;
+  const walletSummary = walletSummaryData?.item ?? null;
+  const walletCurrencyCode = walletSummary?.currencyCode ?? DEFAULT_WALLET_CURRENCY;
 
   const avatarPreviewUrl = useMemo(
     () => (selectedAvatarFile ? URL.createObjectURL(selectedAvatarFile) : null),
@@ -443,7 +458,34 @@ export default function PatientProfileForm() {
         ) : null}
       </section>
 
-      
+      <section className="rounded-2xl border border-border-light bg-white p-5 sm:p-6">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <Wallet className="h-4 w-4 text-primary" />
+            <h2 className="text-base font-semibold text-text-primary">{t("wallet.title")}</h2>
+          </div>
+          <p className="text-xs text-text-muted">{t("wallet.hint")}</p>
+        </div>
+
+        <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div className="rounded-xl border border-border-light bg-surface-secondary p-3">
+            <p className="text-xs text-text-muted">{t("wallet.availableLabel")}</p>
+            <p className="mt-1 text-base font-semibold text-text-primary">
+              {walletSummaryLoading
+                ? t("wallet.loading")
+                : formatMoney(walletSummary?.availableBalance ?? "0", walletCurrencyCode, locale)}
+            </p>
+          </div>
+          <div className="rounded-xl border border-border-light bg-surface-secondary p-3">
+            <p className="text-xs text-text-muted">{t("wallet.reservedLabel")}</p>
+            <p className="mt-1 text-base font-semibold text-text-primary">
+              {walletSummaryLoading
+                ? t("wallet.loading")
+                : formatMoney(walletSummary?.reservedBalance ?? "0", walletCurrencyCode, locale)}
+            </p>
+          </div>
+        </div>
+      </section>
 
       <FormModal
         isOpen={isEditModalOpen}

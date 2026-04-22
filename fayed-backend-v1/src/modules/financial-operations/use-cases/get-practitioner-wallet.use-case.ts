@@ -12,7 +12,9 @@ export class GetPractitionerWalletUseCase {
   ) {}
 
   async execute(input: { userId: string }) {
-    const practitioner = await this.practitionerRepository.findByUserId(input.userId);
+    const practitioner = await this.practitionerRepository.findByUserId(
+      input.userId,
+    );
 
     if (!practitioner) {
       throw new NotFoundException({
@@ -21,7 +23,9 @@ export class GetPractitionerWalletUseCase {
       });
     }
 
-    const wallets = await this.walletRepository.findByPractitionerId(practitioner.id);
+    const wallets = await this.walletRepository.findByPractitionerId(
+      practitioner.id,
+    );
     const primary = wallets[0];
 
     return {

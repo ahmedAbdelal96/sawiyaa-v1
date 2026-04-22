@@ -1,4 +1,8 @@
-import { BadRequestException, ConflictException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+} from '@nestjs/common';
 import { CouponScope, CouponStatus, DiscountType } from '@prisma/client';
 import { FinancialRulesMapper } from '../mappers/financial-rules.mapper';
 import { CouponRepository } from '../repositories/coupon.repository';

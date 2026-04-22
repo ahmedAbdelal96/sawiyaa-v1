@@ -18,6 +18,7 @@ import {
   usePractitionerVerifyOtp,
 } from "@/features/auth/hooks/use-auth";
 import { getDefaultRouteByRole, resolveRole } from "@/config/route-access";
+import { normalizeCallbackPath } from "@/lib/auth/callback-url";
 
 export const SIGN_IN_MODES = ["patient", "practitioner", "admin"] as const;
 export type SignInMode = (typeof SIGN_IN_MODES)[number];
@@ -42,10 +43,6 @@ type PractitionerChallengeState = {
   maskedTarget: string;
   expiresAt: string;
 };
-
-function isSafeCallbackUrl(value: string | null): value is string {
-  return Boolean(value && value.startsWith("/"));
-}
 
 function buildAuthHref(basePath: string, params: Record<string, string | null>) {
   const search = new URLSearchParams();
@@ -114,6 +111,7 @@ export default function SignInForm({ mode }: SignInFormProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl");
+  const normalizedCallbackUrl = normalizeCallbackPath(callbackUrl);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [challenge, setChallenge] = useState<PractitionerChallengeState | null>(null);
@@ -146,8 +144,7 @@ export default function SignInForm({ mode }: SignInFormProps) {
 
   const redirectAfterAuth = (roles: string[]) => {
     const resolvedRole = resolveRole(roles[0]) ?? "PATIENT";
-    const target =
-      isSafeCallbackUrl(callbackUrl) ? callbackUrl : getDefaultRouteByRole(resolvedRole);
+    const target = normalizedCallbackUrl ?? getDefaultRouteByRole(resolvedRole);
 
     router.replace(target);
     router.refresh();
@@ -213,11 +210,11 @@ export default function SignInForm({ mode }: SignInFormProps) {
         : "signInDescriptionPatient";
   const signUpHref =
     mode === "patient"
-      ? buildAuthHref("/signup/patient", { callbackUrl })
+      ? buildAuthHref("/signup/patient", { callbackUrl: normalizedCallbackUrl })
       : mode === "practitioner"
-        ? buildAuthHref("/signup/practitioner", { callbackUrl })
+        ? buildAuthHref("/signup/practitioner", { callbackUrl: normalizedCallbackUrl })
         : null;
-  const chooserHref = buildAuthHref("/signin", { callbackUrl });
+  const chooserHref = buildAuthHref("/signin", { callbackUrl: normalizedCallbackUrl });
   const shouldShowTestCredentials = process.env.NODE_ENV !== "production";
   const testCredentials = TEST_CREDENTIALS_BY_MODE[mode];
   const quickAccountsByMode: Record<

@@ -16,12 +16,14 @@ export const enSessionsCatalog = {
   errors: {
     patientNotFound: 'Patient profile was not found',
     practitionerNotFound: 'Practitioner profile was not found',
-    practitionerNotBookable: 'Practitioner is not available for scheduled booking',
+    practitionerNotBookable:
+      'Practitioner is not available for scheduled booking',
     sessionNotFound: 'Session was not found',
     sessionAccessDenied: 'You do not have access to this session',
     invalidDuration: 'Session duration must be 30 or 60 minutes',
     invalidScheduledStartAt: 'Scheduled start datetime is invalid',
-    scheduledStartMustBeFuture: 'Scheduled start datetime must be in the future',
+    scheduledStartMustBeFuture:
+      'Scheduled start datetime must be in the future',
     unavailableTimeWindow:
       'Requested time window does not fit practitioner availability',
     practitionerTimeConflict:
@@ -33,5 +35,29 @@ export const enSessionsCatalog = {
     sessionAlreadyCancelled: 'Session is already cancelled',
     sessionNotPendingPayment:
       'Only pending-payment sessions can be expired as unpaid',
+    cancellationPolicyMissing:
+      'Cancellation policy is not configured for booking type {{bookingType}}',
+    cancellationPolicyNoMatchingRule:
+      'No active cancellation rule matches the current cancellation window',
+    cancellationNotAllowedByPolicy:
+      'Cancellation is not allowed by active policy',
+    cancellationPolicyMissingSessionSchedule:
+      'Session schedule is missing for cancellation policy evaluation',
+    cancellationPolicyMustHaveRules:
+      'Cancellation policy must include at least one rule',
+    cancellationPolicyDuplicateRuleCode:
+      'Cancellation policy contains duplicate rule code {{code}}',
+    cancellationPolicyInvalidRuleWindow:
+      'Cancellation policy rule window is invalid for rule {{code}}',
+    cancellationPolicyInvalidRefundMode:
+      'Cancellation policy rule {{code}} has invalid refund mode for its allowance state',
+    cancellationPolicyInvalidRefundPercent:
+      'Cancellation policy rule {{code}} has invalid refund percentage',
+    cancellationPolicyRefundPercentRequired:
+      'Cancellation policy rule {{code}} requires a refund percentage',
+    cancellationPolicyOverlappingRules:
+      'Cancellation policy contains overlapping rules: {{firstRuleCode}} and {{secondRuleCode}}',
+    cancellationOriginalMethodRefundNotSupported:
+      'Original-method cancellation refunds are not supported in this phase',
   },
 };

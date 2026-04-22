@@ -1,6 +1,8 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
+import { RefundDestination } from '@prisma/client';
 import {
+  IsEnum,
   IsNumber,
   IsOptional,
   IsPositive,
@@ -25,4 +27,14 @@ export class RequestRefundDto {
   @IsString()
   @MaxLength(500)
   reason?: string;
+
+  @ApiPropertyOptional({
+    enum: RefundDestination,
+    description:
+      'Refund destination. CUSTOMER_WALLET credits the internal wallet. ORIGINAL_METHOD uses provider refund path.',
+    default: RefundDestination.CUSTOMER_WALLET,
+  })
+  @IsOptional()
+  @IsEnum(RefundDestination)
+  destination?: RefundDestination;
 }

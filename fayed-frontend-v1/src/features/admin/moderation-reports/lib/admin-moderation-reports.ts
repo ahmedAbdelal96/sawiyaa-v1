@@ -9,7 +9,7 @@ export const ADMIN_MODERATION_STATUS_STYLES: Record<ModerationCaseStatus, string
   OPEN: "bg-slate-100 text-slate-700 dark:bg-white/10 dark:text-white/70",
   UNDER_REVIEW: "bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400",
   READY_FOR_ENFORCEMENT:
-    "bg-indigo-100 text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-400",
+    "bg-primary-light text-text-brand dark:bg-primary/15 dark:text-primary-light",
   RESOLVED: "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400",
   DISMISSED: "bg-zinc-100 text-zinc-700 dark:bg-white/8 dark:text-white/60",
 };

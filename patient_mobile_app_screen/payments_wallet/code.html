@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Wallet &amp; Payments</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "surface-tint": "#125eae",
+                      "outline": "#727783",
+                      "on-tertiary-container": "#fffbff",
+                      "surface-container": "#eceef3",
+                      "tertiary-container": "#a86500",
+                      "on-error-container": "#93000a",
+                      "inverse-on-surface": "#eff1f6",
+                      "surface-container-highest": "#e0e2e7",
+                      "primary-fixed-dim": "#a7c8ff",
+                      "tertiary-fixed": "#ffdcbc",
+                      "surface-container-lowest": "#ffffff",
+                      "on-surface": "#181c20",
+                      "inverse-primary": "#a7c8ff",
+                      "on-tertiary": "#ffffff",
+                      "secondary-fixed-dim": "#b7c7e8",
+                      "primary-fixed": "#d5e3ff",
+                      "error": "#ba1a1a",
+                      "secondary-container": "#cdddff",
+                      "error-container": "#ffdad6",
+                      "on-primary-fixed-variant": "#004689",
+                      "on-error": "#ffffff",
+                      "on-secondary": "#ffffff",
+                      "on-background": "#181c20",
+                      "on-secondary-container": "#51617e",
+                      "on-tertiary-fixed-variant": "#683d00",
+                      "surface-variant": "#e0e2e7",
+                      "primary": "#0b5cac",
+                      "background": "#f7f9fe",
+                      "surface-container-high": "#e6e8ed",
+                      "secondary": "#4f5f7b",
+                      "inverse-surface": "#2d3135",
+                      "on-primary": "#ffffff",
+                      "surface": "#f7f9fe",
+                      "on-surface-variant": "#424751",
+                      "on-primary-fixed": "#001b3c",
+                      "outline-variant": "#c2c6d3",
+                      "surface-container-low": "#f1f4f9",
+                      "on-tertiary-fixed": "#2c1700",
+                      "secondary-fixed": "#d6e3ff",
+                      "surface-bright": "#f7f9fe",
+                      "on-primary-container": "#fefcff",
+                      "on-secondary-fixed-variant": "#374762",
+                      "on-secondary-fixed": "#0a1c34",
+                      "tertiary-fixed-dim": "#ffb86b",
+                      "primary-container": "#3575c7",
+                      "tertiary": "#854f00",
+                      "surface-dim": "#d8dadf"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {},
+              "fontFamily": {
+                      "headline": [
+                              "Manrope"
+                      ],
+                      "body": [
+                              "Inter"
+                      ],
+                      "label": [
+                              "Inter"
+                      ]
+              }
+      },
+          },
+        }
+      </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface text-on-surface font-body antialiased min-h-screen flex flex-col pt-16 pb-24 md:pb-0">
+<!-- TopAppBar Component -->
+<header class="fixed top-0 left-0 w-full flex justify-between items-center px-6 h-16 z-50 bg-[#e6e8ed]/85 backdrop-blur-[24px] dark:bg-slate-900/85 shadow-[0_4px_20px_0px_rgba(24,28,32,0.1)] docked full-width top-0 z-50">
+<button aria-label="Go Back" class="flex items-center justify-center w-10 h-10 rounded-full hover:bg-[#f1f4f9] dark:hover:bg-slate-800 transition-colors active:scale-95 transition-all duration-200">
+<span class="material-symbols-outlined text-[#181c20] dark:text-slate-400 text-2xl">arrow_back</span>
+</button>
+<h1 class="font-manrope tracking-[-0.02em] font-bold text-[#181c20] dark:text-slate-100 text-lg absolute left-1/2 transform -translate-x-1/2">Sanctuary</h1>
+<!-- Web Navigation Cluster (Hidden on Mobile) -->
+<nav class="hidden md:flex space-x-6">
+<a class="font-body text-[13px] font-medium tracking-[0.02em] text-[#181c20] dark:text-slate-400 hover:text-[#0b5cac] dark:hover:text-blue-400 transition-colors" href="#">Home</a>
+<a class="font-body text-[13px] font-medium tracking-[0.02em] text-[#181c20] dark:text-slate-400 hover:text-[#0b5cac] dark:hover:text-blue-400 transition-colors" href="#">Discover</a>
+<a class="font-body text-[13px] font-medium tracking-[0.02em] text-[#181c20] dark:text-slate-400 hover:text-[#0b5cac] dark:hover:text-blue-400 transition-colors" href="#">Sessions</a>
+<a class="font-body text-[13px] font-bold tracking-[0.02em] text-[#0b5cac] dark:text-blue-400 active:scale-95 transition-all duration-200" href="#">Wallet</a>
+</nav>
+<div class="flex items-center justify-center w-9 h-9 rounded-full bg-surface-container overflow-hidden ring-2 ring-transparent hover:ring-primary-container transition-all cursor-pointer">
+<span class="font-headline font-bold text-on-surface-variant text-sm">UP</span>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-grow w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+<div class="flex justify-between items-end mb-6">
+<div>
+<h2 class="font-headline font-bold text-3xl tracking-[-0.02em] text-on-surface mb-1">Wallet &amp; Payments</h2>
+<p class="font-body text-on-surface-variant">Manage your clinical funds and transaction history securely.</p>
+</div>
+<div class="hidden sm:flex items-center space-x-2 text-surface-tint bg-primary-fixed-dim/20 px-3 py-1.5 rounded-full border border-primary-fixed-dim/30">
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">lock</span>
+<span class="font-label text-xs font-medium tracking-wide uppercase">Secure &amp; Encrypted</span>
+</div>
+</div>
+<!-- Bento Grid Layout -->
+<div class="grid grid-cols-1 md:grid-cols-12 gap-6">
+<!-- Balance Card (Primary Emphasis) -->
+<section class="md:col-span-8 bg-surface-container-lowest rounded-xl p-8 relative overflow-hidden shadow-[0_8px_30px_0px_rgba(24,28,32,0.08)]">
+<!-- Decorative subtle gradient blob -->
+<div class="absolute -top-24 -right-24 w-64 h-64 bg-primary-container/10 rounded-full blur-3xl pointer-events-none"></div>
+<div class="relative z-10">
+<h3 class="font-body font-semibold text-on-surface-variant mb-2 flex items-center">
+<span class="material-symbols-outlined mr-2 text-primary" style="font-variation-settings: 'FILL' 1;">account_balance_wallet</span>
+                        Current Balance
+                    </h3>
+<div class="flex flex-col sm:flex-row sm:items-end justify-between gap-6 mt-4">
+<div>
+<div class="flex items-start">
+<span class="font-headline font-bold text-3xl text-on-surface mt-1 mr-1">$</span>
+<span class="font-headline font-extrabold text-6xl tracking-[-0.04em] text-on-surface">450.00</span>
+</div>
+<p class="font-body text-sm text-outline mt-2">Available for clinical sessions</p>
+</div>
+<button class="bg-gradient-to-br from-primary to-primary-container text-on-primary font-body font-medium px-6 py-3 rounded-lg hover:shadow-[0_4px_12px_rgba(11,92,172,0.3)] transition-all active:scale-95 flex items-center justify-center">
+<span class="material-symbols-outlined mr-2 text-lg">add</span>
+                            Add Funds
+                        </button>
+</div>
+</div>
+</section>
+<!-- Payment Methods -->
+<section class="md:col-span-4 bg-surface-container-low rounded-xl p-6 shadow-[0_4px_20px_0px_rgba(24,28,32,0.04)]">
+<div class="flex justify-between items-center mb-6">
+<h3 class="font-body font-bold text-on-surface text-lg">Payment Methods</h3>
+<button aria-label="Add new payment method" class="text-primary hover:text-primary-container transition-colors">
+<span class="material-symbols-outlined">add_circle</span>
+</button>
+</div>
+<div class="space-y-4">
+<!-- Card 1 -->
+<div class="bg-surface-container-lowest rounded-lg p-4 flex items-center justify-between border border-outline-variant/20 cursor-pointer hover:border-primary/40 transition-colors">
+<div class="flex items-center space-x-3">
+<div class="w-10 h-6 bg-surface-container-highest rounded border border-outline-variant/30 flex items-center justify-center">
+<span class="font-headline font-bold text-[10px] text-on-surface-variant">VISA</span>
+</div>
+<div>
+<p class="font-body font-medium text-on-surface text-sm">•••• 4242</p>
+<p class="font-label text-[10px] text-outline uppercase tracking-wider">Default</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-outline-variant text-sm">more_vert</span>
+</div>
+<!-- Card 2 -->
+<div class="bg-surface-container-lowest rounded-lg p-4 flex items-center justify-between border border-outline-variant/20 cursor-pointer hover:border-primary/40 transition-colors">
+<div class="flex items-center space-x-3">
+<div class="w-10 h-6 bg-surface-container-highest rounded border border-outline-variant/30 flex items-center justify-center">
+<span class="font-headline font-bold text-[10px] text-on-surface-variant">MC</span>
+</div>
+<div>
+<p class="font-body font-medium text-on-surface text-sm">•••• 8891</p>
+<p class="font-label text-[10px] text-outline uppercase tracking-wider">Expires 09/25</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-outline-variant text-sm">more_vert</span>
+</div>
+</div>
+</section>
+<!-- Transaction History -->
+<section class="md:col-span-12 bg-surface-container-lowest rounded-xl p-6 shadow-[0_4px_20px_0px_rgba(24,28,32,0.05)] mt-4">
+<div class="flex justify-between items-center mb-6">
+<h3 class="font-body font-bold text-on-surface text-lg">Recent Transactions</h3>
+<button class="font-body text-sm font-medium text-primary hover:text-primary-container transition-colors">View All</button>
+</div>
+<div class="space-y-6">
+<!-- Transaction 1 -->
+<div class="flex items-center justify-between">
+<div class="flex items-start space-x-4">
+<div class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center flex-shrink-0">
+<span class="material-symbols-outlined text-on-surface-variant text-lg">psychology</span>
+</div>
+<div>
+<p class="font-body font-medium text-on-surface">Payment for Session with Dr. X</p>
+<p class="font-body text-sm text-outline mt-0.5">Oct 24, 2023 • Clinical Consultation</p>
+</div>
+</div>
+<div class="text-right">
+<p class="font-headline font-bold text-on-surface">-$150.00</p>
+<p class="font-label text-[10px] text-primary uppercase tracking-wider mt-1">Settled</p>
+</div>
+</div>
+<!-- Transaction 2 (Refund) -->
+<div class="flex items-center justify-between">
+<div class="flex items-start space-x-4">
+<div class="w-10 h-10 rounded-full bg-primary-fixed/50 flex items-center justify-center flex-shrink-0">
+<span class="material-symbols-outlined text-primary text-lg">arrow_downward</span>
+</div>
+<div>
+<p class="font-body font-medium text-on-surface">Refund for Cancelled Session</p>
+<p class="font-body text-sm text-outline mt-0.5">Oct 20, 2023 • Dr. Y</p>
+</div>
+</div>
+<div class="text-right">
+<p class="font-headline font-bold text-primary">+$75.00</p>
+<p class="font-label text-[10px] text-primary uppercase tracking-wider mt-1">Settled</p>
+</div>
+</div>
+<!-- Transaction 3 (Pending) -->
+<div class="flex items-center justify-between">
+<div class="flex items-start space-x-4">
+<div class="w-10 h-10 rounded-full bg-tertiary-fixed/30 flex items-center justify-center flex-shrink-0">
+<span class="material-symbols-outlined text-tertiary text-lg">schedule</span>
+</div>
+<div>
+<p class="font-body font-medium text-on-surface">Funds Added</p>
+<p class="font-body text-sm text-outline mt-0.5">Oct 18, 2023 • Bank Transfer</p>
+</div>
+</div>
+<div class="text-right">
+<p class="font-headline font-bold text-tertiary">+$200.00</p>
+<p class="font-label text-[10px] text-tertiary uppercase tracking-wider mt-1">Pending</p>
+</div>
+</div>
+</div>
+</section>
+</div>
+<!-- Mobile Security Badge (Visible only on small screens) -->
+<div class="sm:hidden flex justify-center mt-6">
+<div class="flex items-center space-x-2 text-surface-tint bg-primary-fixed-dim/20 px-4 py-2 rounded-full border border-primary-fixed-dim/30">
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">lock</span>
+<span class="font-label text-xs font-medium tracking-wide uppercase">Secure &amp; Encrypted</span>
+</div>
+</div>
+</main>
+<!-- BottomNavBar Component (Mobile Only) -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-safe pt-2 h-20 bg-[#f1f4f9]/85 backdrop-blur-[24px] dark:bg-slate-900/85 shadow-[0_-4px_20px_0px_rgba(24,28,32,0.05)] docked full-width bottom-0 rounded-t-none">
+<a class="flex flex-col items-center justify-center text-[#c2c6d3] dark:text-slate-500 px-3 py-1.5 hover:text-[#0b5cac] dark:hover:text-blue-400 active:scale-90 transition-transform duration-150" href="#">
+<span class="material-symbols-outlined mb-1">home</span>
+<span class="font-inter text-[11px] font-medium tracking-[0.05em] uppercase text-[#181c20] dark:text-white">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#c2c6d3] dark:text-slate-500 px-3 py-1.5 hover:text-[#0b5cac] dark:hover:text-blue-400 active:scale-90 transition-transform duration-150" href="#">
+<span class="material-symbols-outlined mb-1">search</span>
+<span class="font-inter text-[11px] font-medium tracking-[0.05em] uppercase text-[#181c20] dark:text-white">Discover</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#c2c6d3] dark:text-slate-500 px-3 py-1.5 hover:text-[#0b5cac] dark:hover:text-blue-400 active:scale-90 transition-transform duration-150" href="#">
+<span class="material-symbols-outlined mb-1">calendar_today</span>
+<span class="font-inter text-[11px] font-medium tracking-[0.05em] uppercase text-[#181c20] dark:text-white">Sessions</span>
+</a>
+<!-- Active Tab: Wallet -->
+<a class="flex flex-col items-center justify-center text-[#0b5cac] dark:text-blue-300 bg-[#ffffff] dark:bg-slate-800 rounded-2xl px-3 py-1.5 shadow-sm active:scale-90 transition-transform duration-150" href="#">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 1;">account_balance_wallet</span>
+<span class="font-inter text-[11px] font-medium tracking-[0.05em] uppercase text-[#181c20] dark:text-white">Wallet</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#c2c6d3] dark:text-slate-500 px-3 py-1.5 hover:text-[#0b5cac] dark:hover:text-blue-400 active:scale-90 transition-transform duration-150" href="#">
+<span class="material-symbols-outlined mb-1">person</span>
+<span class="font-inter text-[11px] font-medium tracking-[0.05em] uppercase text-[#181c20] dark:text-white">Profile</span>
+</a>
+</nav>
+</body></html>

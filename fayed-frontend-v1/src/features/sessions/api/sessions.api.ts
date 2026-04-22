@@ -7,6 +7,7 @@ import type {
   ListSessionsParams,
   SessionJoinResponseData,
   SessionItem,
+  SessionCancellationPreviewResponseData,
   SessionRuntimeResponseData,
   SessionsListResponseData,
 } from "../types/sessions.types";
@@ -69,6 +70,20 @@ export async function cancelPatientSession(
   const response = await httpClient.post<ApiPayload<CreateSessionResponseData>>(
     `/patients/me/sessions/${sessionId}/cancel`,
     reason ? { reason } : {},
+  );
+  return extractData(response.data).item;
+}
+
+/**
+ * Returns a contract-backed cancellation financial preview before confirmation.
+ *
+ * GET /patients/me/sessions/:sessionId/cancel-preview
+ */
+export async function previewPatientSessionCancellation(
+  sessionId: string,
+) {
+  const response = await httpClient.get<ApiPayload<SessionCancellationPreviewResponseData>>(
+    `/patients/me/sessions/${sessionId}/cancel-preview`,
   );
   return extractData(response.data).item;
 }

@@ -24,7 +24,9 @@ describe('UpdateMySettingsNotificationPreferencesUseCase', () => {
   });
 
   it('throws when settings owner is not found', async () => {
-    (settingsRepository.findUserPreferences as jest.Mock).mockResolvedValue(null);
+    (settingsRepository.findUserPreferences as jest.Mock).mockResolvedValue(
+      null,
+    );
 
     await expect(
       useCase.execute({
@@ -45,8 +47,16 @@ describe('UpdateMySettingsNotificationPreferencesUseCase', () => {
         authenticatedUser: { id: 'user_1', roles: [] },
         dto: {
           items: [
-            { typeSlug: 'payments.payment-succeeded', channel: 'EMAIL', enabled: true },
-            { typeSlug: 'payments.payment-succeeded', channel: 'EMAIL', enabled: false },
+            {
+              typeSlug: 'payments.payment-succeeded',
+              channel: 'EMAIL',
+              enabled: true,
+            },
+            {
+              typeSlug: 'payments.payment-succeeded',
+              channel: 'EMAIL',
+              enabled: false,
+            },
           ],
         },
       }),
@@ -58,7 +68,9 @@ describe('UpdateMySettingsNotificationPreferencesUseCase', () => {
       defaultLocale: 'ar',
       timezone: 'Africa/Cairo',
     });
-    (settingsRepository.findNotificationTypesBySlugs as jest.Mock).mockResolvedValue([]);
+    (
+      settingsRepository.findNotificationTypesBySlugs as jest.Mock
+    ).mockResolvedValue([]);
 
     await expect(
       useCase.execute({
@@ -77,7 +89,9 @@ describe('UpdateMySettingsNotificationPreferencesUseCase', () => {
       defaultLocale: 'ar',
       timezone: 'Africa/Cairo',
     });
-    (settingsRepository.findNotificationTypesBySlugs as jest.Mock).mockResolvedValue([
+    (
+      settingsRepository.findNotificationTypesBySlugs as jest.Mock
+    ).mockResolvedValue([
       {
         id: 'type_1',
         slug: 'sessions.session-confirmed',
@@ -92,7 +106,11 @@ describe('UpdateMySettingsNotificationPreferencesUseCase', () => {
         authenticatedUser: { id: 'user_3', roles: [] },
         dto: {
           items: [
-            { typeSlug: 'sessions.session-confirmed', channel: 'EMAIL', enabled: true },
+            {
+              typeSlug: 'sessions.session-confirmed',
+              channel: 'EMAIL',
+              enabled: true,
+            },
           ],
         },
       }),
@@ -104,7 +122,9 @@ describe('UpdateMySettingsNotificationPreferencesUseCase', () => {
       defaultLocale: 'ar',
       timezone: 'Africa/Cairo',
     });
-    (settingsRepository.findNotificationTypesBySlugs as jest.Mock).mockResolvedValue([
+    (
+      settingsRepository.findNotificationTypesBySlugs as jest.Mock
+    ).mockResolvedValue([
       {
         id: 'type_1',
         slug: 'payments.payment-succeeded',
@@ -113,8 +133,12 @@ describe('UpdateMySettingsNotificationPreferencesUseCase', () => {
         supportsInApp: true,
       },
     ]);
-    (settingsRepository.upsertUserNotificationPreferences as jest.Mock).mockResolvedValue([]);
-    (settingsRepository.listAvailableNotificationTypes as jest.Mock).mockResolvedValue([
+    (
+      settingsRepository.upsertUserNotificationPreferences as jest.Mock
+    ).mockResolvedValue([]);
+    (
+      settingsRepository.listAvailableNotificationTypes as jest.Mock
+    ).mockResolvedValue([
       {
         id: 'type_1',
         slug: 'payments.payment-succeeded',
@@ -123,7 +147,9 @@ describe('UpdateMySettingsNotificationPreferencesUseCase', () => {
         supportsInApp: true,
       },
     ]);
-    (settingsRepository.listUserNotificationPreferences as jest.Mock).mockResolvedValue([
+    (
+      settingsRepository.listUserNotificationPreferences as jest.Mock
+    ).mockResolvedValue([
       {
         notificationTypeId: 'type_1',
         channel: 'IN_APP',
@@ -136,12 +162,18 @@ describe('UpdateMySettingsNotificationPreferencesUseCase', () => {
       authenticatedUser: { id: 'user_4', roles: [] },
       dto: {
         items: [
-          { typeSlug: 'payments.payment-succeeded', channel: 'IN_APP', enabled: false },
+          {
+            typeSlug: 'payments.payment-succeeded',
+            channel: 'IN_APP',
+            enabled: false,
+          },
         ],
       },
     });
 
-    expect(settingsRepository.upsertUserNotificationPreferences).toHaveBeenCalledWith({
+    expect(
+      settingsRepository.upsertUserNotificationPreferences,
+    ).toHaveBeenCalledWith({
       userId: 'user_4',
       items: [
         {
@@ -173,4 +205,3 @@ describe('UpdateMySettingsNotificationPreferencesUseCase', () => {
     });
   });
 });
-

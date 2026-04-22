@@ -23,7 +23,9 @@ export class ListAdminTrainingScheduleEnrollmentsUseCase {
       });
     }
 
-    const schedule = await this.trainingRepository.findScheduleById(input.scheduleId);
+    const schedule = await this.trainingRepository.findScheduleById(
+      input.scheduleId,
+    );
     if (!schedule || schedule.courseId !== input.courseId) {
       throw new NotFoundException({
         messageKey: 'training.errors.scheduleNotFound',
@@ -53,4 +55,3 @@ export class ListAdminTrainingScheduleEnrollmentsUseCase {
     };
   }
 }
-

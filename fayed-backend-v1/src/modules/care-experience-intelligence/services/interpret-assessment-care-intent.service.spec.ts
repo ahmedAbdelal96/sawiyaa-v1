@@ -66,4 +66,3 @@ describe('InterpretAssessmentCareIntentService', () => {
     expect(service.interpret(input)).toEqual(service.interpret(input));
   });
 });
-

@@ -23,11 +23,12 @@ describe('ListSettlementBatchesUseCase', () => {
   });
 
   it('returns deterministic pagination contract for settlement list', async () => {
-    (settlementRepository.listSettlementBatches as jest.Mock).mockResolvedValue([
-      [{ id: 'batch_1' }],
-      1,
-    ]);
-    (financialOperationsMapper.toSettlementBatchListItem as jest.Mock).mockReturnValue({
+    (settlementRepository.listSettlementBatches as jest.Mock).mockResolvedValue(
+      [[{ id: 'batch_1' }], 1],
+    );
+    (
+      financialOperationsMapper.toSettlementBatchListItem as jest.Mock
+    ).mockReturnValue({
       id: 'batch_1',
       slug: 'set_2026_03_egp',
       status: 'GENERATED',

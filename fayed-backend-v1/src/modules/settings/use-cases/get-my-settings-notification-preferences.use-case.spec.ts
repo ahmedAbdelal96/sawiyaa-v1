@@ -20,7 +20,9 @@ describe('GetMySettingsNotificationPreferencesUseCase', () => {
   });
 
   it('throws when settings owner is not found', async () => {
-    (settingsRepository.findUserPreferences as jest.Mock).mockResolvedValue(null);
+    (settingsRepository.findUserPreferences as jest.Mock).mockResolvedValue(
+      null,
+    );
 
     await expect(
       useCase.execute({
@@ -35,7 +37,9 @@ describe('GetMySettingsNotificationPreferencesUseCase', () => {
       defaultLocale: 'ar',
       timezone: 'Africa/Cairo',
     });
-    (settingsRepository.listAvailableNotificationTypes as jest.Mock).mockResolvedValue([
+    (
+      settingsRepository.listAvailableNotificationTypes as jest.Mock
+    ).mockResolvedValue([
       {
         id: 'type_1',
         slug: 'payments.payment-succeeded',
@@ -51,7 +55,9 @@ describe('GetMySettingsNotificationPreferencesUseCase', () => {
         supportsInApp: true,
       },
     ]);
-    (settingsRepository.listUserNotificationPreferences as jest.Mock).mockResolvedValue([]);
+    (
+      settingsRepository.listUserNotificationPreferences as jest.Mock
+    ).mockResolvedValue([]);
 
     const result = await useCase.execute({
       id: 'user_1',
@@ -89,7 +95,9 @@ describe('GetMySettingsNotificationPreferencesUseCase', () => {
       defaultLocale: 'ar',
       timezone: 'Africa/Cairo',
     });
-    (settingsRepository.listAvailableNotificationTypes as jest.Mock).mockResolvedValue([
+    (
+      settingsRepository.listAvailableNotificationTypes as jest.Mock
+    ).mockResolvedValue([
       {
         id: 'type_1',
         slug: 'payments.payment-succeeded',
@@ -98,7 +106,9 @@ describe('GetMySettingsNotificationPreferencesUseCase', () => {
         supportsInApp: true,
       },
     ]);
-    (settingsRepository.listUserNotificationPreferences as jest.Mock).mockResolvedValue([
+    (
+      settingsRepository.listUserNotificationPreferences as jest.Mock
+    ).mockResolvedValue([
       {
         notificationTypeId: 'type_1',
         channel: 'EMAIL',
@@ -133,4 +143,3 @@ describe('GetMySettingsNotificationPreferencesUseCase', () => {
     });
   });
 });
-

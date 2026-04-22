@@ -1,4 +1,8 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
 import { SessionMapper } from '../mappers/session.mapper';
 import { SessionPatientRepository } from '../repositories/session-patient.repository';
@@ -34,7 +38,9 @@ export class GetSessionDetailsUseCase {
     }
 
     if (input.actorType === 'PATIENT') {
-      const patient = await this.sessionPatientRepository.findByUserId(input.userId);
+      const patient = await this.sessionPatientRepository.findByUserId(
+        input.userId,
+      );
 
       if (!patient) {
         throw new NotFoundException({

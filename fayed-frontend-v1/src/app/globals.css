@@ -7,33 +7,32 @@
    Calm Sage / Minimal Neutral UI
    ============================================ */
 :root {
-  --primary: #3f7dcf;
-  --primary-hover: #356fbc;
-  --primary-active: #2f61a6;
-  --primary-light: #edf3fd;
-  --primary-light-hover: #e4edfc;
+  --primary: #44a194;
+  --primary-hover: #3d9286;
+  --primary-active: #357f74;
+  --primary-light: #e8f4f2;
+  --primary-light-hover: #d9eeea;
 
-  --secondary: #9eb4dd;
-  --secondary-hover: #8da6d3;
+  --secondary: #8fc6bf;
+  --secondary-hover: #7fbab2;
 
-  --accent: #dfe7f6;
-  --accent-hover: #d4deef;
+  --accent: #e4f2f0;
+  --accent-hover: #d8ece8;
 
-  /* Calm gray background with subtle blue-gray depth */
-  --background: #f4f6fb;
+  --background: #edf1f5;
   --surface: #ffffff;
   --surface-secondary: #ffffff;
-  --surface-tertiary: #eef3fb;
+  --surface-tertiary: #f7f9fb;
 
-  --text-primary: #1f2a3d;
-  --text-secondary: #4d5d79;
-  --text-muted: #6d7c96;
-  --text-brand: #3f7dcf;
+  --text-primary: #1f2a2d;
+  --text-secondary: #56656b;
+  --text-muted: #7a8891;
+  --text-brand: #357f74;
 
-  --border-light: #d9e2f0;
-  --border-strong: #c5d2e6;
-  --border-focus: #3f7dcf;
-  --ring-focus: rgba(63, 125, 207, 0.18);
+  --border-light: #d9e0e6;
+  --border-strong: #c5ced6;
+  --border-focus: #44a194;
+  --ring-focus: rgba(68, 161, 148, 0.18);
 
   /* Role-aware layout width tokens */
   --layout-shell-max-admin: 90rem;
@@ -61,32 +60,32 @@ html:not(.dark) .bg-white {
    SEMANTIC THEME COLORS - Dark Mode
    ============================================ */
 .dark {
-  --primary: #79a9e8;
-  --primary-hover: #8ab5ec;
-  --primary-active: #9bbff0;
-  --primary-light: rgba(121, 169, 232, 0.14);
-  --primary-light-hover: rgba(121, 169, 232, 0.2);
+  --primary: #63c9bc;
+  --primary-hover: #74d1c5;
+  --primary-active: #86d9ce;
+  --primary-light: rgba(99, 201, 188, 0.16);
+  --primary-light-hover: rgba(99, 201, 188, 0.24);
 
-  --secondary: #8ca7d3;
-  --secondary-hover: #9cb5dd;
+  --secondary: #7cb8b1;
+  --secondary-hover: #8ac5bd;
 
-  --accent: #25334a;
-  --accent-hover: #2e3d56;
+  --accent: #183432;
+  --accent-hover: #1d403d;
 
-  --background: #0f1726;
-  --surface: #0f1726;
-  --surface-secondary: #151f32;
-  --surface-tertiary: #1b2740;
+  --background: #0f1717;
+  --surface: #0f1717;
+  --surface-secondary: #15201f;
+  --surface-tertiary: #1a2827;
 
-  --text-primary: rgba(244, 247, 255, 0.96);
-  --text-secondary: rgba(220, 229, 245, 0.76);
-  --text-muted: rgba(194, 206, 229, 0.58);
-  --text-brand: #a8c9f1;
+  --text-primary: rgba(242, 247, 246, 0.96);
+  --text-secondary: rgba(212, 223, 221, 0.76);
+  --text-muted: rgba(181, 194, 192, 0.58);
+  --text-brand: #8edfd5;
 
-  --border-light: rgba(173, 191, 224, 0.16);
-  --border-strong: rgba(173, 191, 224, 0.28);
-  --border-focus: #79a9e8;
-  --ring-focus: rgba(121, 169, 232, 0.24);
+  --border-light: rgba(143, 198, 191, 0.16);
+  --border-strong: rgba(143, 198, 191, 0.28);
+  --border-focus: #63c9bc;
+  --ring-focus: rgba(99, 201, 188, 0.24);
 }
 
 @theme {
@@ -154,45 +153,32 @@ html:not(.dark) .bg-white {
   --shadow-ring-focus: 0px 0px 0px 4px var(--ring-focus);
   --shadow-focus-ring: 0px 0px 0px 4px var(--ring-focus);
 
-  --color-brand-25: #f7faff;
-  --color-brand-50: #edf3fd;
-  --color-brand-100: #dbe8fb;
-  --color-brand-200: #bdd5f7;
-  --color-brand-300: #94baf0;
-  --color-brand-400: #6f9fe7;
-  --color-brand-500: #3f7dcf;
-  --color-brand-600: #356fbc;
-  --color-brand-700: #2f61a6;
-  --color-brand-800: #28528d;
-  --color-brand-900: #224472;
-  --color-brand-950: #182d4b;
+  --color-brand-25: #f4fbfa;
+  --color-brand-50: #eaf7f5;
+  --color-brand-100: #d7efeb;
+  --color-brand-200: #b7dfd8;
+  --color-brand-300: #8fc9c0;
+  --color-brand-400: #68b4aa;
+  --color-brand-500: #44a194;
+  --color-brand-600: #3d9286;
+  --color-brand-700: #357f74;
+  --color-brand-800: #2f6c63;
+  --color-brand-900: #295953;
+  --color-brand-950: #173332;
 
-  --color-blue-light-25: #f8faff;
-  --color-blue-light-50: #eff4fd;
-  --color-blue-light-100: #dde8fb;
-  --color-blue-light-200: #c4d8f7;
-  --color-blue-light-300: #a2c0f0;
-  --color-blue-light-400: #7fa6e7;
-  --color-blue-light-500: #5c8cdd;
-  --color-blue-light-600: #4a75c2;
-  --color-blue-light-700: #3d619f;
-  --color-blue-light-800: #334d7d;
-  --color-blue-light-900: #2a3f65;
-  --color-blue-light-950: #192643;
-
-  --color-gray-25: #fcfdff;
-  --color-gray-50: #f7f9fd;
-  --color-gray-100: #edf1f8;
-  --color-gray-200: #dde4f0;
-  --color-gray-300: #c6d0e2;
-  --color-gray-400: #98a6bf;
-  --color-gray-500: #7b88a3;
-  --color-gray-600: #626f89;
-  --color-gray-700: #4b5870;
-  --color-gray-800: #364256;
-  --color-gray-900: #242d3d;
-  --color-gray-950: #131a25;
-  --color-gray-dark: #1a2432;
+  --color-gray-25: #fcfcfd;
+  --color-gray-50: #f8fafb;
+  --color-gray-100: #edf1f5;
+  --color-gray-200: #d9e0e6;
+  --color-gray-300: #c5ced6;
+  --color-gray-400: #98a3ad;
+  --color-gray-500: #7c8791;
+  --color-gray-600: #626d77;
+  --color-gray-700: #4e5963;
+  --color-gray-800: #39434d;
+  --color-gray-900: #27313a;
+  --color-gray-950: #151b22;
+  --color-gray-dark: #1d252d;
 
   --color-orange-25: #fffbf7;
   --color-orange-50: #fff5ee;
@@ -245,9 +231,6 @@ html:not(.dark) .bg-white {
   --color-warning-800: #93370d;
   --color-warning-900: #7a2e0e;
   --color-warning-950: #4e1d09;
-
-  --color-theme-pink-500: #ee46bc;
-  --color-theme-purple-500: #7a5af8;
 
   --shadow-theme-md:
     0px 4px 8px -2px rgba(16, 24, 40, 0.08),
@@ -317,12 +300,12 @@ html:not(.dark) .bg-white {
 }
 
 ::selection {
-  background: rgba(63, 125, 207, 0.18);
+  background: rgba(68, 161, 148, 0.18);
   color: var(--text-primary);
 }
 
 .dark ::selection {
-  background: rgba(121, 169, 232, 0.28);
+  background: rgba(99, 201, 188, 0.28);
   color: var(--text-primary);
 }
 
@@ -412,7 +395,7 @@ html:not(.dark) .bg-white {
 
 @utility app-panel-soft {
   border: 1px solid color-mix(in srgb, var(--border-light) 96%, white);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.99) 0%, rgba(251, 253, 255, 0.98) 100%);
+  background: #ffffff;
   box-shadow:
     0 12px 24px -22px rgba(34, 52, 56, 0.1),
     0 2px 4px -2px rgba(34, 52, 56, 0.05);
@@ -439,16 +422,16 @@ html:not(.dark) .bg-white {
 }
 
 @utility app-chip {
-  border: 1px solid rgba(63, 125, 207, 0.12);
-  background: rgba(248, 250, 254, 0.98);
+  border: 1px solid rgba(68, 161, 148, 0.12);
+  background: rgba(255, 255, 255, 0.98);
   color: color-mix(in srgb, var(--text-primary) 84%, var(--primary));
   box-shadow:
-    0 8px 18px -16px rgba(63, 125, 207, 0.24),
+    0 8px 18px -16px rgba(68, 161, 148, 0.18),
     inset 0 1px 0 rgba(255, 255, 255, 0.7);
 }
 
 .dark .app-chip {
-  border-color: rgba(121, 169, 232, 0.2);
+  border-color: rgba(99, 201, 188, 0.24);
   background: rgba(255, 255, 255, 0.06);
 }
 
@@ -460,7 +443,7 @@ html:not(.dark) .bg-white {
 }
 
 .dark .glass-header {
-  background: rgba(15, 23, 38, 0.88);
+  background: rgba(15, 23, 23, 0.88);
   border-bottom-color: var(--border-light);
 }
 
@@ -489,21 +472,21 @@ html:not(.dark) .bg-white {
 }
 
 @utility app-page-hero {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(247, 249, 253, 0.98) 100%);
+  background: #ffffff;
   border-bottom: 1px solid var(--border-light);
 }
 
 .dark .app-page-hero {
-  background: linear-gradient(180deg, rgba(15, 23, 38, 0.98) 0%, rgba(12, 18, 31, 0.98) 100%);
+  background: linear-gradient(180deg, rgba(15, 23, 23, 0.98) 0%, rgba(11, 18, 18, 0.98) 100%);
   border-bottom-color: var(--border-light);
 }
 
 @utility app-control {
-  @apply rounded-xl border border-border-light bg-surface-secondary text-sm text-text-primary shadow-theme-xs transition-colors outline-hidden placeholder:text-text-muted focus:border-border-focus focus:ring-3 focus:ring-primary/10 dark:border-border-light dark:bg-surface-secondary dark:text-text-primary;
+  @apply rounded-xl border border-border-light bg-surface-secondary px-3.5 py-2.5 text-sm text-text-primary shadow-theme-xs transition-colors outline-hidden placeholder:text-text-muted focus:border-border-focus focus:ring-3 focus:ring-primary/10 dark:border-border-light dark:bg-surface-secondary dark:text-text-primary;
 }
 
 @utility app-control-subtle {
-  @apply rounded-2xl border border-border-light bg-surface-secondary text-sm text-text-primary transition-colors outline-hidden placeholder:text-text-muted focus:border-border-focus focus:ring-3 focus:ring-primary/10 dark:border-border-light dark:bg-surface-secondary dark:text-text-primary;
+  @apply rounded-2xl border border-border-light bg-surface-secondary px-3.5 py-2.5 text-sm text-text-primary transition-colors outline-hidden placeholder:text-text-muted focus:border-border-focus focus:ring-3 focus:ring-primary/10 dark:border-border-light dark:bg-surface-secondary dark:text-text-primary;
 }
 
 @utility app-avatar-shell {
@@ -511,7 +494,7 @@ html:not(.dark) .bg-white {
 }
 
 @utility app-empty-icon {
-  @apply flex h-20 w-20 items-center justify-center rounded-[22px] border border-primary/10 bg-white text-primary shadow-[0_16px_28px_-22px_rgba(63,125,207,0.18)] ring-1 ring-inset ring-primary/10 dark:border-primary/20 dark:bg-white/6 dark:text-primary-light dark:ring-primary/20;
+  @apply flex h-20 w-20 items-center justify-center rounded-[22px] border border-primary/10 bg-white text-primary shadow-[0_16px_28px_-22px_rgba(68,161,148,0.18)] ring-1 ring-inset ring-primary/10 dark:border-primary/20 dark:bg-white/6 dark:text-primary-light dark:ring-primary/20;
 }
 
 @utility no-scrollbar {
@@ -540,14 +523,35 @@ html:not(.dark) .bg-white {
   background-color: var(--border-strong);
 }
 
-@layer utilities {
-  input[type="date"]::-webkit-inner-spin-button,
-  input[type="time"]::-webkit-inner-spin-button,
-  input[type="date"]::-webkit-calendar-picker-indicator,
-  input[type="time"]::-webkit-calendar-picker-indicator {
-    display: none;
-    -webkit-appearance: none;
-  }
+/* Drawer scrollbar: softer than default, visible in dark mode. */
+.app-drawer-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(25, 52, 57, 0.28) transparent;
+}
+
+.dark .app-drawer-scroll {
+  scrollbar-color: rgba(255, 255, 255, 0.32) transparent;
+}
+
+.app-drawer-scroll::-webkit-scrollbar {
+  width: 10px;
+}
+
+.app-drawer-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.app-drawer-scroll::-webkit-scrollbar-thumb {
+  background: rgba(25, 52, 57, 0.22);
+  border-radius: 999px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+
+.dark .app-drawer-scroll::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.32);
+  border: 3px solid transparent;
+  background-clip: content-box;
 }
 
 .flatpickr-wrapper {
@@ -660,7 +664,7 @@ span.flatpickr-weekday,
 }
 
 .flatpickr-day.inRange {
-  box-shadow: -5px 0 0 #f3f5f4, 5px 0 0 #f3f5f4 !important;
+  box-shadow: -5px 0 0 #eef2f6, 5px 0 0 #eef2f6 !important;
   @apply dark:!shadow-datepicker;
 }
 

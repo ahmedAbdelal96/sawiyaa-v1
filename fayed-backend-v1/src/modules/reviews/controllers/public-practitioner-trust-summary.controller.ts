@@ -21,7 +21,10 @@ export class PublicPractitionerTrustSummaryController {
   @ApiOperation({
     summary: 'Get moderation-safe practitioner credibility summary',
   })
-  @ApiResponse({ status: 200, type: PublicPractitionerTrustSummarySuccessResponseDto })
+  @ApiResponse({
+    status: 200,
+    type: PublicPractitionerTrustSummarySuccessResponseDto,
+  })
   @ApiNotFoundResponse({
     description: 'Practitioner slug not found or not publicly visible',
   })
@@ -34,4 +37,3 @@ export class PublicPractitionerTrustSummaryController {
       }));
   }
 }
-

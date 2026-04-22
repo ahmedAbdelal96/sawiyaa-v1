@@ -2,9 +2,10 @@
 
 import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
-import { AlertCircle, ArrowRight } from "lucide-react";
+import { AlertCircle } from "lucide-react";
 import { ListStateSkeleton, StateCard } from "@/components/shared/ContentStates";
 import ActionIconLink from "@/components/ui/action-icon-button/ActionIconLink";
+import DirectionalArrowIcon from "@/components/ui/navigation/DirectionalArrowIcon";
 import { useAdminFinanceOperationEvent } from "../hooks/use-admin-finance-operations";
 import { getAdminFinanceOperationsErrorKey } from "../lib/admin-finance-operations-errors";
 import type { FinanceOperationEventItem } from "../types/admin-finance-operations.types";
@@ -136,7 +137,7 @@ export default function AdminFinanceOperationDetailScreen({ eventId }: Props) {
           href="/admin/admin-operations"
           intent="view"
           label={t("detail.back")}
-          icon={<ArrowRight className="h-4 w-4 rtl:rotate-180" />}
+          icon={<DirectionalArrowIcon direction="back" className="h-4 w-4" />}
           className="mb-3"
         />
 

@@ -34,7 +34,8 @@
   },
   "cta": {
     "sessionDuration": "50-minute sessions",
-    "sessionOnline": "Online session"
+    "sessionOnline": "Online session",
+    "messagePractitioner": "Practitioner messages"
   },
   "badges": {
     "verified": "Verified by Fayed",

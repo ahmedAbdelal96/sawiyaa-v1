@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { FinancialOperationsMapper } from '../mappers/financial-operations.mapper';
 import { FinancialOperationsPractitionerRepository } from '../repositories/financial-operations-practitioner.repository';
 import { SettlementRepository } from '../repositories/settlement.repository';
@@ -13,8 +17,13 @@ export class ListPractitionerSettlementsUseCase {
     private readonly financialOperationsMapper: FinancialOperationsMapper,
   ) {}
 
-  async execute(input: { userId: string; query: ListPractitionerSettlementsDto }) {
-    const practitioner = await this.practitionerRepository.findByUserId(input.userId);
+  async execute(input: {
+    userId: string;
+    query: ListPractitionerSettlementsDto;
+  }) {
+    const practitioner = await this.practitionerRepository.findByUserId(
+      input.userId,
+    );
 
     if (!practitioner) {
       throw new NotFoundException({
@@ -39,18 +48,21 @@ export class ListPractitionerSettlementsUseCase {
       });
     }
 
-    const [items, totalItems] = await this.settlementRepository.listPractitionerSettlements({
-      practitionerId: practitioner.id,
-      status: input.query.status,
-      currencyCode: input.query.currencyCode?.trim().toUpperCase(),
-      createdFrom,
-      createdTo,
-      skip: (page - 1) * limit,
-      take: limit,
-    });
+    const [items, totalItems] =
+      await this.settlementRepository.listPractitionerSettlements({
+        practitionerId: practitioner.id,
+        status: input.query.status,
+        currencyCode: input.query.currencyCode?.trim().toUpperCase(),
+        createdFrom,
+        createdTo,
+        skip: (page - 1) * limit,
+        take: limit,
+      });
 
     return {
-      items: items.map((item) => this.financialOperationsMapper.toPractitionerSettlement(item)),
+      items: items.map((item) =>
+        this.financialOperationsMapper.toPractitionerSettlement(item),
+      ),
       pagination: {
         page,
         limit,

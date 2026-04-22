@@ -18,6 +18,7 @@ import { SettlementPayoutRepository } from '../repositories/settlement-payout.re
 import { SettlementRepository } from '../repositories/settlement.repository';
 import { RefreshPractitionerWalletService } from './refresh-practitioner-wallet.service';
 import { FINANCIAL_OPS_ERROR_CODES } from '../types/financial-operations.types';
+import { AccountingJournalPostingService } from './accounting-journal-posting.service';
 
 type SettlementWithBatch = PractitionerSettlement & {
   batch: {
@@ -30,6 +31,8 @@ type SettlementWithBatch = PractitionerSettlement & {
   };
 };
 
+type TransferFeeTreatment = 'PLATFORM_EXPENSE' | 'DEDUCT_FROM_PRACTITIONER';
+
 @Injectable()
 export class RecordSettlementPayoutService {
   constructor(
@@ -39,6 +42,7 @@ export class RecordSettlementPayoutService {
     private readonly ledgerRepository: LedgerRepository,
     private readonly refreshPractitionerWalletService: RefreshPractitionerWalletService,
     private readonly financialOperationsMapper: FinancialOperationsMapper,
+    private readonly accountingJournalPostingService: AccountingJournalPostingService,
   ) {}
 
   async execute(
@@ -48,6 +52,8 @@ export class RecordSettlementPayoutService {
       payoutMethod: SettlementPayoutMethod;
       payoutSource: SettlementPayoutSource;
       externalPayoutRef?: string | null;
+      transferFeeAmount?: Prisma.Decimal | string | null;
+      transferFeeTreatment?: TransferFeeTreatment;
       notes?: string | null;
       effectiveAt?: Date;
       processedByUserId?: string | null;
@@ -75,25 +81,33 @@ export class RecordSettlementPayoutService {
     const effectiveAt = input.effectiveAt ?? new Date();
     const resolvedNotes = input.notes ?? input.settlement.notes ?? null;
     const amountPaid = new Prisma.Decimal(input.amountPaid).toDecimalPlaces(2);
-    const paidSoFar =
-      input.settlement.amountPaidTotal ?? new Prisma.Decimal(0);
+    const transferFeeAmount = new Prisma.Decimal(
+      input.transferFeeAmount ?? 0,
+    ).toDecimalPlaces(2);
+    const transferFeeTreatment =
+      input.transferFeeTreatment ?? 'PLATFORM_EXPENSE';
+    const paidSoFar = input.settlement.amountPaidTotal ?? new Prisma.Decimal(0);
     const remainingBefore = input.settlement.amountNet.sub(paidSoFar);
+    const settlementAppliedAmount =
+      transferFeeTreatment === 'DEDUCT_FROM_PRACTITIONER'
+        ? amountPaid.add(transferFeeAmount).toDecimalPlaces(2)
+        : amountPaid;
 
-    if (amountPaid.lte(0)) {
+    if (settlementAppliedAmount.lte(0)) {
       throw new BadRequestException({
         messageKey: 'financialOperations.errors.invalidPayoutAmount',
         error: FINANCIAL_OPS_ERROR_CODES.payoutAmountInvalid,
       });
     }
 
-    if (amountPaid.gt(remainingBefore)) {
+    if (settlementAppliedAmount.gt(remainingBefore)) {
       throw new BadRequestException({
         messageKey: 'financialOperations.errors.payoutAmountExceedsDue',
         error: FINANCIAL_OPS_ERROR_CODES.payoutAmountExceedsDue,
       });
     }
 
-    const paidTotalNext = paidSoFar.add(amountPaid);
+    const paidTotalNext = paidSoFar.add(settlementAppliedAmount);
     const isFullyPaid = paidTotalNext.equals(input.settlement.amountNet);
 
     const payoutMethodSnapshot = {
@@ -104,6 +118,9 @@ export class RecordSettlementPayoutService {
       effectiveAt: effectiveAt.toISOString(),
       processedByUserId: input.processedByUserId ?? null,
       amountPaid: amountPaid.toFixed(2),
+      settlementAppliedAmount: settlementAppliedAmount.toFixed(2),
+      transferFeeAmount: transferFeeAmount.toFixed(2),
+      transferFeeTreatment,
     };
 
     let payoutRecord: Awaited<
@@ -122,6 +139,8 @@ export class RecordSettlementPayoutService {
             payoutMethod: input.payoutMethod,
             payoutSource: input.payoutSource,
             payoutMethodSnapshot,
+            transferFeeAmount,
+            transferFeeTreatment,
             externalPayoutRef: input.externalPayoutRef ?? null,
             notes: resolvedNotes,
             effectiveAt,
@@ -164,7 +183,7 @@ export class RecordSettlementPayoutService {
         settlementId: input.settlement.id,
         entryType: LedgerEntryType.SETTLEMENT_PAYOUT,
         direction: LedgerDirection.DEBIT,
-        amount: amountPaid,
+        amount: settlementAppliedAmount,
         currencyCode: input.settlement.currencyCode,
         balanceBucket: 'RESERVED',
         referenceType: 'settlement',
@@ -178,6 +197,22 @@ export class RecordSettlementPayoutService {
       input.settlement.practitionerId,
       tx,
     );
+
+    await this.accountingJournalPostingService.postPractitionerPayout({
+        payout: {
+          payoutId: payoutRecord.id,
+          settlementId: input.settlement.id,
+          practitionerId: input.settlement.practitionerId,
+          amountPaid,
+          settlementAppliedAmount,
+          currencyCode: input.settlement.currencyCode,
+          effectiveAt,
+          payoutMethodSnapshot: payoutMethodSnapshot as Prisma.JsonValue,
+          transferFeeAmount,
+          transferFeeTreatment,
+        },
+        tx,
+      });
 
     return {
       payoutRecord:

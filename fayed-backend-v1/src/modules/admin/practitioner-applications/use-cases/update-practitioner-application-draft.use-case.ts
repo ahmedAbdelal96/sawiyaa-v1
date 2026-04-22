@@ -184,11 +184,15 @@ export class UpdatePractitionerApplicationDraftUseCase {
           profileUpdateData.yearsOfExperience = input.data.yearsOfExperience;
         }
         if (resolvedCountryId !== undefined) {
-          profileUpdateData.countryId = resolvedCountryId;
+          profileUpdateData.country =
+            resolvedCountryId === null
+              ? { disconnect: true }
+              : { connect: { id: resolvedCountryId } };
         }
         if (hasSpecialtySelection && specialtySelection) {
-          profileUpdateData.primarySpecialtyCategoryId =
-            specialtySelection.primarySpecialtyCategoryId;
+          profileUpdateData.primarySpecialtyCategory = {
+            connect: { id: specialtySelection.primarySpecialtyCategoryId },
+          };
         }
 
         if (Object.keys(profileUpdateData).length > 0) {
@@ -393,17 +397,9 @@ export class UpdatePractitionerApplicationDraftUseCase {
           });
 
         const updatedApplication =
-          await this.applicationRepository.updateDecision(
+          await this.applicationRepository.updateSubmissionSnapshot(
             application.id,
-            {
-              status: application.status,
-              reviewedAt: application.reviewedAt ?? now,
-              reviewedByUserId:
-                application.reviewedByUserId ?? input.adminUserId,
-              reviewDecisionReason: application.reviewDecisionReason,
-              reviewNotes: application.reviewNotes,
-              submissionSnapshot,
-            },
+            submissionSnapshot,
             tx,
           );
 

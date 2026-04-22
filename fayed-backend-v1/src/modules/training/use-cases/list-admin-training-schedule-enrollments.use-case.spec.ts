@@ -48,14 +48,14 @@ describe('ListAdminTrainingScheduleEnrollmentsUseCase', () => {
       id: 'schedule_1',
       courseId: 'course_1',
     });
-    (trainingRepository.listEnrollmentsByScheduleForAdmin as jest.Mock).mockResolvedValue(
-      [[{ id: 'en_1' }], 1],
-    );
-    (trainingPresenter.presentAdminScheduleEnrollmentItem as jest.Mock).mockReturnValue(
-      {
-        id: 'en_1',
-      },
-    );
+    (
+      trainingRepository.listEnrollmentsByScheduleForAdmin as jest.Mock
+    ).mockResolvedValue([[{ id: 'en_1' }], 1]);
+    (
+      trainingPresenter.presentAdminScheduleEnrollmentItem as jest.Mock
+    ).mockReturnValue({
+      id: 'en_1',
+    });
 
     const result = await useCase.execute({
       courseId: 'course_1',
@@ -67,4 +67,3 @@ describe('ListAdminTrainingScheduleEnrollmentsUseCase', () => {
     expect(result.pagination.totalItems).toBe(0);
   });
 });
-

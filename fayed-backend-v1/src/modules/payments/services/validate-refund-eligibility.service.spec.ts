@@ -15,15 +15,15 @@ describe('ValidateRefundEligibilityService', () => {
   });
 
   it('rejects terminal non-refundable status', () => {
-    expect(() =>
-      service.assertPaymentRefundable(PaymentStatus.FAILED),
-    ).toThrow(BadRequestException);
+    expect(() => service.assertPaymentRefundable(PaymentStatus.FAILED)).toThrow(
+      BadRequestException,
+    );
   });
 
   it('rejects duplicate active refund', () => {
-    expect(() =>
-      service.assertNoActiveRefund({ id: 'refund_1' }),
-    ).toThrow(ConflictException);
+    expect(() => service.assertNoActiveRefund({ id: 'refund_1' })).toThrow(
+      ConflictException,
+    );
   });
 
   it('resolves full refund amount when amount is omitted', () => {

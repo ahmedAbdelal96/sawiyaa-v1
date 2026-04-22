@@ -1,7 +1,4 @@
-import {
-  ForbiddenException,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { ForbiddenException, UnauthorizedException } from '@nestjs/common';
 import { AuthenticatedRequest } from '../interfaces/authenticated-request.interface';
 import { AuthenticatedUser } from '../interfaces/authenticated-user.interface';
 

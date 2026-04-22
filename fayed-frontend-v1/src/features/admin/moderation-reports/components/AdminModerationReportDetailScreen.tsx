@@ -1,15 +1,20 @@
 "use client";
 
 import { useMemo, useState, type FormEvent, type ReactNode } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useLocale, useTranslations } from "next-intl";
-import { Link } from "@/i18n/navigation";
-import { ArrowRight, ShieldCheck, ShieldX } from "lucide-react";
+import { Link, useRouter } from "@/i18n/navigation";
+import { Mail, Phone, ShieldCheck, ShieldX, UserRound } from "lucide-react";
 import { ListStateSkeleton, StateCard } from "@/components/shared/ContentStates";
 import { SurfaceCard, SurfaceStatCard } from "@/components/shared/SurfaceShell";
 import ActionIconLink from "@/components/ui/action-icon-button/ActionIconLink";
+import DirectionalArrowIcon from "@/components/ui/navigation/DirectionalArrowIcon";
 import Button from "@/components/ui/button/Button";
 import { useAuthState } from "@/stores/auth-store";
 import { toAppError } from "@/lib/api/errors";
+import { listAdminPatients } from "@/features/admin/patients/api/admin-patients.api";
+import { getAdminSupportTicket } from "@/features/support/api/support.api";
+import { useCreateAdminSupportTicketForReporter } from "@/features/support/hooks/use-support";
 import {
   ADMIN_MODERATION_STATUS_STYLES,
   doesActionRequireReason,
@@ -38,7 +43,7 @@ const OPERATOR_ROLES = new Set([
 ]);
 
 function formatDateTime(value: string | null, locale: string) {
-  if (!value) return "—";
+  if (!value) return "-";
   return new Date(value).toLocaleString(locale === "ar" ? "ar-SA" : "en-US", {
     year: "numeric",
     month: "short",
@@ -58,16 +63,16 @@ function formatSnapshotLabel(key: string) {
 }
 
 function formatSnapshotValue(value: unknown) {
-  if (value === null || value === undefined) return "—";
-  if (typeof value === "string") return value || "—";
-  if (typeof value === "number") return Number.isNaN(value) ? "—" : String(value);
+  if (value === null || value === undefined) return "-";
+  if (typeof value === "string") return value || "-";
+  if (typeof value === "number") return Number.isNaN(value) ? "-" : String(value);
   if (typeof value === "boolean") return value ? "true" : "false";
-  if (Array.isArray(value)) return value.length ? value.join(", ") : "—";
+  if (Array.isArray(value)) return value.length ? value.join(", ") : "-";
   if (typeof value === "object") {
     try {
       return JSON.stringify(value);
     } catch {
-      return "—";
+      return "-";
     }
   }
   return String(value);
@@ -110,6 +115,165 @@ function SummaryCard({
       <div className="mt-4">{children}</div>
     </SurfaceCard>
   );
+}
+
+function ReporterQuickActions({
+  displayName,
+  email,
+  phone,
+  patientProfileId,
+  practitionerProfileId,
+}: {
+  displayName: string | null;
+  email: string | null;
+  phone: string | null;
+  patientProfileId: string | null;
+  practitionerProfileId: string | null;
+}) {
+  const primaryHref = patientProfileId
+    ? `/admin/patients/${patientProfileId}`
+    : practitionerProfileId
+      ? `/admin/practitioners/${practitionerProfileId}`
+      : null;
+
+  const actionClassName =
+    "inline-flex items-center gap-2 rounded-2xl border border-border-light bg-white px-4 py-2 text-sm font-semibold text-text-primary shadow-[0_10px_20px_-16px_rgba(34,52,56,0.08)] transition hover:border-primary/30 hover:bg-brand-25 dark:border-white/8 dark:bg-white/5 dark:text-white/90 dark:hover:bg-white/8";
+
+  return (
+    <div className="mt-3 flex flex-wrap gap-2 items-center">
+      {primaryHref ? (
+        <Link href={primaryHref as never} className={actionClassName}>
+          <UserRound className="h-4 w-4 text-primary" />
+          {displayName || "Profile"}
+        </Link>
+      ) : null}
+
+      {email ? (
+        <a href={`mailto:${email}`} className={actionClassName}>
+          <Mail className="h-4 w-4 text-primary" />
+          {email}
+        </a>
+      ) : null}
+
+      {phone ? (
+        <a href={`tel:${phone}`} className={actionClassName}>
+          <Phone className="h-4 w-4 text-primary" />
+          {phone}
+        </a>
+      ) : null}
+    </div>
+  );
+}
+
+function TargetQuickActions({
+  onOpenSupport,
+  isOpeningSupport,
+  t,
+}: {
+  onOpenSupport: () => Promise<void>;
+  isOpeningSupport: boolean;
+  t: ReturnType<typeof useTranslations>;
+}) {
+  return (
+    <div className="mt-3">
+      <button
+        type="button"
+        onClick={() => {
+          void onOpenSupport();
+        }}
+        disabled={isOpeningSupport}
+        className="inline-flex items-center gap-2 rounded-2xl bg-primary px-4 py-2 text-sm font-semibold text-white shadow-[0_12px_22px_-16px_rgba(68,161,148,0.38)] transition hover:bg-primary-hover"
+      >
+        {isOpeningSupport ? t("actions.submitting") : t("detail.actions.openSupportChat")}
+      </button>
+    </div>
+  );
+}
+
+function resolveSupportHref(item: ModerationCaseDetail | undefined) {
+  if (!item) return "/admin/support";
+
+  if (item.targetType === "SUPPORT_TICKET") {
+    return `/admin/support/${item.targetId}`;
+  }
+
+  if (item.targetType === "SUPPORT_MESSAGE") {
+    const ticketId = item.targetSnapshot?.context?.supportTicketId;
+    if (typeof ticketId === "string" && ticketId.trim().length > 0) {
+      return `/admin/support/${ticketId}`;
+    }
+  }
+
+  if (item.reporterUserId) {
+    return `/admin/support?reporterUserId=${encodeURIComponent(item.reporterUserId)}`;
+  }
+
+  return "/admin/support";
+}
+
+function resolveDirectSupportTicketId(item: ModerationCaseDetail | undefined) {
+  if (!item) return null;
+  if (item.targetType === "SUPPORT_TICKET") return item.targetId;
+
+  if (item.targetType === "SUPPORT_MESSAGE") {
+    const ticketId = item.targetSnapshot?.context?.supportTicketId;
+    if (typeof ticketId === "string" && ticketId.trim().length > 0) {
+      return ticketId;
+    }
+  }
+
+  return null;
+}
+
+function useResolvedReporter(item: ModerationCaseDetail | undefined) {
+  const backendReporter = item?.reporter ?? null;
+  const hasBackendIdentity =
+    Boolean(backendReporter?.displayName) ||
+    Boolean(backendReporter?.email) ||
+    Boolean(backendReporter?.phone) ||
+    Boolean(backendReporter?.patientProfileId) ||
+    Boolean(backendReporter?.practitionerProfileId);
+  const shouldFallback =
+    Boolean(item) &&
+    (!backendReporter || !hasBackendIdentity) &&
+    item?.reporterRole === "PATIENT" &&
+    Boolean(item?.reporterUserId);
+
+  const fallbackQuery = useQuery({
+    queryKey: ["adminModeration", "reporterFallbackPatient", item?.reporterUserId ?? ""],
+    enabled: shouldFallback,
+    queryFn: async () => {
+      const reporterUserId = item?.reporterUserId;
+      if (!reporterUserId) return null;
+      const data = await listAdminPatients({
+        search: reporterUserId,
+        page: 1,
+        limit: 10,
+      });
+      const match = data.items.find((candidate) => candidate.userId === reporterUserId);
+      if (!match) return null;
+
+      return {
+        userId: match.userId,
+        displayName: match.displayName,
+        email: match.primaryEmail,
+        phone: match.primaryPhone,
+        patientProfileId: match.id,
+        practitionerProfileId: null,
+      } satisfies NonNullable<ModerationCaseDetail["reporter"]>;
+    },
+    staleTime: 60_000,
+    gcTime: 10 * 60_000,
+  });
+
+  return {
+    reporter: hasBackendIdentity ? backendReporter : fallbackQuery.data ?? backendReporter ?? null,
+    isLoadingFallback: shouldFallback && fallbackQuery.isFetching,
+    fallbackError: fallbackQuery.error ? toAppError(fallbackQuery.error) : null,
+    shouldFallback,
+    hasBackendIdentity,
+    backendReporter,
+  };
 }
 
 function OperationalCard({
@@ -259,8 +423,10 @@ function OperationalSnapshot({
 export default function AdminModerationReportDetailScreen({ reportId }: Props) {
   const t = useTranslations("admin-moderation-reports");
   const locale = useLocale();
+  const router = useRouter();
   const { user } = useAuthState();
   const canOperate = user?.role ? OPERATOR_ROLES.has(user.role) : false;
+  const createOutreachTicket = useCreateAdminSupportTicketForReporter();
 
   const reportQuery = useAdminModerationReportDetail(reportId);
   const executeAction = useExecuteAdminModerationAction();
@@ -273,11 +439,52 @@ export default function AdminModerationReportDetailScreen({ reportId }: Props) {
   );
 
   const item = reportQuery.data?.item;
+  const resolvedReporter = useResolvedReporter(item);
+
+  const supportHref = useMemo(() => resolveSupportHref(item), [item]);
+  const directSupportTicketId = useMemo(() => resolveDirectSupportTicketId(item), [item]);
 
   const availableActions = useMemo(() => {
     if (!item) return [];
     return getAllowedActions(item, user?.role ?? null);
   }, [item, user?.role]);
+
+  const handleOpenSupport = async () => {
+    if (!item) return;
+
+    if (directSupportTicketId) {
+      try {
+        await getAdminSupportTicket(directSupportTicketId);
+        router.push(`/admin/support/${directSupportTicketId}` as never);
+        return;
+      } catch {
+        // If the referenced ticket is missing or inaccessible, fallback to creating a fresh outreach thread.
+      }
+    }
+
+    if (
+      item.reporterUserId &&
+      (item.reporterRole === "PATIENT" || item.reporterRole === "PRACTITIONER")
+    ) {
+      try {
+        const created = await createOutreachTicket.mutateAsync({
+          reporterUserId: item.reporterUserId,
+          reporterRole: item.reporterRole,
+          category: "GENERAL",
+          subject: "متابعة من فريق الدعم بخصوص البلاغ",
+          description: "مرحبًا، نحتاج بعض التفاصيل الإضافية لمتابعة البلاغ وحل المشكلة بأسرع وقت.",
+          priority: "NORMAL",
+        });
+        router.push(`/admin/support/${created.item.id}` as never);
+        return;
+      } catch {
+        router.push("/admin/support" as never);
+        return;
+      }
+    }
+
+    router.push("/admin/support" as never);
+  };
 
   const reasonRequired = selectedAction ? doesActionRequireReason(selectedAction) : false;
 
@@ -388,7 +595,7 @@ export default function AdminModerationReportDetailScreen({ reportId }: Props) {
           href="/admin/moderation/reports"
           intent="view"
           label={t("detail.back")}
-          icon={<ArrowRight className="h-4 w-4 rtl:rotate-180" />}
+          icon={<DirectionalArrowIcon direction="back" className="h-4 w-4" />}
           className="mb-3"
         />
 
@@ -468,14 +675,50 @@ export default function AdminModerationReportDetailScreen({ reportId }: Props) {
               />
               <DetailRow
                 label={t("detail.fields.reporterUserId")}
-                value={item.reporterUserId ?? t("detail.fields.noReporter")}
+                value={
+                  resolvedReporter.reporter?.userId ??
+                  item.reporterUserId ??
+                  t("detail.fields.noReporter")
+                }
                 mono
+              />
+              <DetailRow
+                label={t("detail.fields.reporterName")}
+                value={resolvedReporter.reporter?.displayName ?? "-"}
+              />
+              <DetailRow
+                label={t("detail.fields.reporterEmail")}
+                value={resolvedReporter.reporter?.email ?? "-"}
+              />
+              <DetailRow
+                label={t("detail.fields.reporterPhone")}
+                value={resolvedReporter.reporter?.phone ?? "-"}
               />
               <DetailRow
                 label={t("detail.fields.note")}
                 value={item.note ?? t("detail.fields.noNote")}
               />
             </div>
+
+            {resolvedReporter.isLoadingFallback ? (
+              <p className="mt-3 text-xs text-text-muted">{t("list.countLoading")}</p>
+            ) : null}
+
+            {resolvedReporter.reporter ? (
+              <ReporterQuickActions
+                displayName={resolvedReporter.reporter.displayName}
+                email={resolvedReporter.reporter.email}
+                phone={resolvedReporter.reporter.phone}
+                patientProfileId={resolvedReporter.reporter.patientProfileId}
+                practitionerProfileId={resolvedReporter.reporter.practitionerProfileId}
+              />
+            ) : null}
+
+            <TargetQuickActions
+              onOpenSupport={handleOpenSupport}
+              isOpeningSupport={createOutreachTicket.isPending}
+              t={t}
+            />
           </SummaryCard>
 
           <SummaryCard title={t("detail.sections.snapshot")}>

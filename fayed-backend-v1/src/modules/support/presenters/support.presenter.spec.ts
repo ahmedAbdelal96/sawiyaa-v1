@@ -39,7 +39,9 @@ describe('SupportPresenter', () => {
       },
     });
 
-    expect((result as { internalNotes?: unknown }).internalNotes).toBeUndefined();
+    expect(
+      (result as { internalNotes?: unknown }).internalNotes,
+    ).toBeUndefined();
     expect(result.messages).toHaveLength(1);
   });
 });

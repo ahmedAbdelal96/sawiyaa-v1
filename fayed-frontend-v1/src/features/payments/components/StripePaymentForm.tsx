@@ -105,7 +105,7 @@ export default function StripePaymentForm({
           theme: "stripe",
           variables: {
             borderRadius: "14px",
-            colorPrimary: "#6366f1",
+            colorPrimary: "#44A194",
           },
         },
       }}

@@ -1,0 +1,236 @@
+{
+  "meta": {
+    "dashboard": {
+      "title": "لوحة المالية - الإدارة",
+      "description": "ملخص مالي تنفيذي مبني على قيود دفتر الأستاذ العام."
+    },
+    "ledger": {
+      "title": "مستكشف القيود - الإدارة",
+      "description": "استعراض قيود اليومية المحاسبية مع فلاتر وصفحات."
+    },
+    "journal": {
+      "title": "تفاصيل القيد المحاسبي - الإدارة",
+      "description": "عرض قيد محاسبي واحد مع تفاصيل الحركات المدينة والدائنة."
+    },
+    "reconciliation": {
+      "title": "الرقابة والمطابقة - الإدارة",
+      "description": "رقابة تشغيلية لمطابقة المدفوعات والاسترجاعات والصرف مع القيود المحاسبية."
+    }
+  },
+  "common": {
+    "sourceType": {
+      "PAYMENT_CAPTURED": "تحصيل دفعة",
+      "REFUND_SUCCEEDED": "استرجاع ناجح",
+      "PRACTITIONER_PAYOUT": "صرف مستحق معالج"
+    },
+    "direction": {
+      "DEBIT": "مدين",
+      "CREDIT": "دائن"
+    },
+    "notAvailable": "غير متاح"
+  },
+  "reconciliation": {
+    "eyebrow": "رقابة مالية",
+    "title": "الرقابة والمطابقة",
+    "note": "تحقق من تطابق الحقيقة التشغيلية مع القيود المحاسبية، وسجل قرارات المراجعة بشكل واضح لكل حالة.",
+    "kpi": {
+      "total": "إجمالي السجلات",
+      "mismatch": "حالات عدم تطابق",
+      "missingProof": "إثباتات مفقودة",
+      "resolved": "حالات محلولة"
+    },
+    "filters": {
+      "from": "من",
+      "to": "إلى",
+      "sourceType": "نوع المصدر",
+      "status": "الحالة",
+      "anomaly": "نوع الملاحظة",
+      "currency": "العملة",
+      "query": "بحث",
+      "queryPlaceholder": "ابحث بالمرجع أو الدفع أو الاسترجاع أو التسوية أو ملاحظة المراجعة",
+      "all": "الكل"
+    },
+    "table": {
+      "source": "المصدر",
+      "status": "الحالة",
+      "amount": "التشغيلي مقابل القيد",
+      "journalAmount": "القيد",
+      "anomalies": "الملاحظات",
+      "occurredAt": "وقت الحدث",
+      "action": "إجراء"
+    },
+    "actions": {
+      "review": "مراجعة",
+      "journal": "القيد"
+    },
+    "review": {
+      "eyebrow": "مراجعة المشغل",
+      "title": "مراجعة الحالة {id}",
+      "notePlaceholder": "أضف ملاحظة قرار المراجعة لهذه الحالة",
+      "save": "حفظ المراجعة",
+      "close": "إغلاق"
+    },
+    "common": {
+      "none": "لا يوجد",
+      "notAvailable": "غير متاح"
+    },
+    "status": {
+      "pending_review": "بانتظار المراجعة",
+      "matched": "متطابق",
+      "mismatch": "غير متطابق",
+      "missing_proof": "إثبات مفقود",
+      "requires_adjustment": "يتطلب تسوية",
+      "resolved": "تم الحل"
+    },
+    "anomaly": {
+      "missing_journal_entry": "قيد محاسبي مفقود",
+      "missing_payout_proof": "إثبات صرف مفقود",
+      "amount_mismatch": "اختلاف في المبلغ",
+      "missing_vat_snapshot": "بيانات ضريبة القيمة المضافة ناقصة",
+      "missing_gateway_fee_snapshot": "بيانات رسوم البوابة ناقصة",
+      "missing_cancellation_context": "بيانات سياسة الإلغاء ناقصة",
+      "missing_transfer_fee_snapshot": "بيانات رسوم التحويل ناقصة"
+    },
+    "states": {
+      "error": "تعذر تحميل شاشة الرقابة والمطابقة الآن.",
+      "emptyTitle": "لا توجد حالات مطابقة",
+      "emptyNote": "لا توجد سجلات مطابقة للفلاتر الحالية."
+    }
+  },
+  "dashboard": {
+    "eyebrow": "الحقيقة المحاسبية",
+    "title": "لوحة المالية",
+    "note": "هذه اللوحة تقرأ من قيود دفتر الأستاذ العام لتقديم صورة مالية دقيقة للإدارة.",
+    "actions": {
+      "openLedger": "فتح مستكشف القيود",
+      "openOps": "فتح أحداث العمليات",
+      "openReconciliation": "فتح الرقابة والمطابقة",
+      "exportCsv": "تصدير CSV",
+      "exporting": "جارِ التصدير..."
+    },
+    "filters": {
+      "from": "من",
+      "to": "إلى",
+      "currency": "العملة",
+      "currencyPlaceholder": "كل العملات",
+      "recentLimit": "عدد الأحداث الحديثة"
+    },
+    "kpis": {
+      "grossInflow": "إجمالي التدفق الداخل",
+      "grossInflowHint": "المبالغ المحصلة خلال الفترة المحددة",
+      "platformRevenue": "إيراد المنصة",
+      "platformRevenueHint": "صافي إيراد المنصة من القيود المحاسبية",
+      "practitionerPayable": "المستحق للمعالجين",
+      "practitionerPayableHint": "الالتزام القائم غير المسدد للمعالجين",
+      "refunds": "إجمالي الاسترجاعات",
+      "refundsHint": "الاسترجاعات الناجحة خلال الفترة المحددة",
+      "vat": "إجمالي ضريبة القيمة المضافة",
+      "vatHint": "حركة ضريبة القيمة المضافة المستحقة",
+      "fees": "إجمالي الرسوم",
+      "feesHint": "أثر رسوم بوابة الدفع ورسوم التحويل"
+    },
+    "charts": {
+      "revenue": {
+        "title": "اتجاه الإيراد مقابل زيادة المستحقات",
+        "note": "حركة يومية مبنية على القيود المرحّلة.",
+        "series": "إيراد المنصة",
+        "comparison": "زيادة المستحقات"
+      },
+      "refundsAndFees": {
+        "title": "اتجاه الاسترجاعات والرسوم",
+        "note": "أثر الاسترجاعات والتكلفة التشغيلية للرسوم يوميًا.",
+        "refunds": "الاسترجاعات",
+        "fees": "الرسوم"
+      },
+      "payablesAndPayouts": {
+        "title": "صافي تراكم المستحقات",
+        "note": "زيادة المستحقات بعد خصم حركة الصرف.",
+        "series": "صافي حركة المستحقات"
+      }
+    },
+    "recent": {
+      "title": "أحدث الأحداث المالية",
+      "note": "آخر الأحداث المحاسبية المرحّلة.",
+      "columns": {
+        "summary": "الملخص",
+        "sourceType": "المصدر",
+        "amount": "المبلغ",
+        "occurredAt": "وقت الحدث",
+        "sourceId": "مرجع المصدر: {value}"
+      }
+    },
+    "states": {
+      "error": "تعذر تحميل لوحة المالية الآن.",
+      "emptyTitle": "لا توجد أحداث محاسبية",
+      "emptyNote": "لا توجد قيود مطابقة للفلاتر الحالية."
+    }
+  },
+  "ledger": {
+    "eyebrow": "واجهة المشغل",
+    "title": "مستكشف القيود",
+    "note": "تصفية قيود اليومية حسب الحساب والمصدر والمعالج والفترة الزمنية والمرجع.",
+    "count": "{value, number} حركة",
+    "countLoading": "جاري التحميل...",
+    "filters": {
+      "all": "الكل",
+      "query": "بحث",
+      "queryPlaceholder": "ابحث بالملاحظة أو المصدر أو كود الحساب أو المرجع",
+      "account": "الحساب المحاسبي",
+      "sourceType": "نوع المصدر",
+      "practitionerId": "معرف المعالج",
+      "practitionerPlaceholder": "تصفية بمعرف المعالج",
+      "currency": "العملة",
+      "currencyPlaceholder": "EGP / USD",
+      "from": "من",
+      "to": "إلى",
+      "journalEntryId": "معرف القيد",
+      "journalEntryPlaceholder": "تصفية بمعرف قيد يومية"
+    },
+    "actions": {
+      "exportCsv": "تصدير CSV",
+      "exporting": "جارِ التصدير..."
+    },
+    "columns": {
+      "occurredAt": "تاريخ الحدث",
+      "entryId": "القيد: {value}",
+      "account": "الحساب",
+      "source": "المصدر",
+      "direction": "الاتجاه",
+      "amount": "المبلغ",
+      "reference": "المرجع"
+    },
+    "states": {
+      "error": "تعذر تحميل مستكشف القيود الآن.",
+      "emptyTitle": "لا توجد قيود مطابقة",
+      "emptyNote": "جرّب توسيع الفلاتر أو تعديل نطاق التاريخ."
+    }
+  },
+  "journal": {
+    "eyebrow": "تفاصيل القيد",
+    "title": "تفاصيل قيد اليومية",
+    "note": "قيد مرحّل مع سطور محاسبية كاملة وحركة متوازنة.",
+    "back": "العودة إلى مستكشف القيود",
+    "fields": {
+      "entryId": "معرف القيد",
+      "source": "نوع المصدر",
+      "occurredAt": "تاريخ الحدث",
+      "currency": "العملة",
+      "debitTotal": "إجمالي المدين",
+      "creditTotal": "إجمالي الدائن"
+    },
+    "table": {
+      "account": "الحساب",
+      "direction": "الاتجاه",
+      "amount": "المبلغ",
+      "reference": "المرجع",
+      "memo": "الملاحظة"
+    },
+    "states": {
+      "loadingTitle": "جاري تحميل القيد",
+      "loadingNote": "يتم الآن جلب سطور القيد والمراجع.",
+      "errorTitle": "القيد غير متاح",
+      "errorNote": "القيد المطلوب غير موجود أو يتعذر تحميله الآن.",
+      "back": "العودة إلى مستكشف القيود"
+    }
+  }
+}

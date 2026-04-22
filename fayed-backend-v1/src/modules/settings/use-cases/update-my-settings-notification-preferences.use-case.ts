@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { NotificationChannel } from '@prisma/client';
 import { AuthenticatedUser } from '@common/interfaces/authenticated-user.interface';
 import { SETTINGS_ERROR_CODES } from '../types/settings.types';
@@ -35,15 +39,19 @@ export class UpdateMySettingsNotificationPreferencesUseCase {
 
     const normalizedItems =
       this.validateSettingsContractInputService.assertValidNotificationPreferenceItems(
-        input.dto.items as PutMyNotificationPreferenceItemDto[],
+        input.dto.items,
       );
 
-    const availableTypes = await this.settingsRepository.findNotificationTypesBySlugs(
-      [...new Set(normalizedItems.map((item) => item.typeSlug))],
-    );
+    const availableTypes =
+      await this.settingsRepository.findNotificationTypesBySlugs([
+        ...new Set(normalizedItems.map((item) => item.typeSlug)),
+      ]);
     const typeBySlug = new Map(availableTypes.map((type) => [type.slug, type]));
 
-    if (typeBySlug.size !== new Set(normalizedItems.map((item) => item.typeSlug)).size) {
+    if (
+      typeBySlug.size !==
+      new Set(normalizedItems.map((item) => item.typeSlug)).size
+    ) {
       throw new BadRequestException({
         messageKey: 'settings.errors.invalidNotificationType',
         errorCode: SETTINGS_ERROR_CODES.invalidNotificationType,

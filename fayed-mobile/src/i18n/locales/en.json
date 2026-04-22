@@ -1,0 +1,1090 @@
+{
+  "welcome": "Welcome to Fayed",
+  "home": "Home",
+  "assessments": {
+    "tab": "Assessments",
+    "card": {
+      "duration": "{{value}} min",
+      "questionCount": "{{value}} questions"
+    },
+    "list": {
+      "loading": "Loading assessments...",
+      "errorTitle": "Could not load assessments",
+      "errorSubtitle": "The current assessment catalog or your previous submissions could not be loaded.",
+      "heroTitle": "Clinical assessments",
+      "heroSubtitle": "Validated screening tools to monitor your mental health and provide clearer inputs to your care team.",
+      "remainingCount": "Remaining",
+      "inProgressCount": "In progress",
+      "filters": {
+        "all": "All",
+        "current": "Required now",
+        "history": "Previous history"
+      },
+      "emptyTitle": "No assessments available",
+      "emptySubtitle": "There are no published assessments available for your account right now.",
+      "descriptionFallback": "No assessment description is available yet.",
+      "status": {
+        "completed": "Completed",
+        "inProgress": "In progress",
+        "notStarted": "Not started"
+      },
+      "actions": {
+        "start": "Start assessment",
+        "continue": "Continue",
+        "viewResult": "View result"
+      },
+      "completedAt": "Completed {{date}}"
+    },
+    "detail": {
+      "loading": "Loading assessment details...",
+      "errorTitle": "Could not load assessment",
+      "errorSubtitle": "Assessment definition details are unavailable right now.",
+      "duration": "{{value}} min",
+      "questionCount": "{{value}} questions",
+      "fallbackIntro": "This assessment helps your care team understand your recent symptoms using a structured questionnaire.",
+      "privacyTitle": "Complete privacy",
+      "privacyBody": "All of your answers are encrypted and protected. They are only shared with your assigned clinician.",
+      "supportTitle": "Supportive environment",
+      "supportBody": "There are no right or wrong answers. Answer honestly so you receive the most suitable care.",
+      "start": "Start assessment"
+    },
+    "question": {
+      "loading": "Loading questions...",
+      "errorTitle": "Could not load assessment questions",
+      "errorSubtitle": "The question flow is unavailable right now.",
+      "unsupportedTitle": "Unsupported assessment format",
+      "unsupportedSubtitle": "This mobile flow currently supports only single-choice questions from the published backend contract.",
+      "stepText": "Step {{current}} of {{total}}",
+      "subtitleFallback": "Choose the answer that best reflects how you have been feeling recently.",
+      "requiredError": "Please choose one answer before continuing.",
+      "previous": "Previous",
+      "next": "Next",
+      "submit": "Submit assessment"
+    },
+    "result": {
+      "levelLabel": "Level",
+      "loading": "Loading your assessment result...",
+      "errorTitle": "Could not load result",
+      "errorSubtitle": "Your saved submission result is unavailable right now.",
+      "unavailableTitle": "Result is not available",
+      "unavailableSubtitle": "This submission does not currently expose a completed result payload.",
+      "title": "Your assessment result",
+      "subtitle": "Thank you for completing the assessment. We prepared this summary to help you understand your current state and the next appropriate steps.",
+      "meaningTitle": "What does this mean?",
+      "notice": "This assessment is a guidance tool and not a medical diagnosis. If these feelings are difficult to manage, support is available.",
+      "nextStepsTitle": "Recommended next steps",
+      "actionTherapistTitle": "Talk to a therapist",
+      "actionTherapistBody": "Book a consultation with one of our specialists to discuss your symptoms and receive tailored support.",
+      "actionTherapistCta": "Find a therapist",
+      "actionExerciseTitle": "Relaxation exercises",
+      "actionExerciseBody": "Explore breathing and grounding exercises designed to reduce day-to-day anxiety.",
+      "actionExerciseCta": "View exercises",
+      "actionLibraryTitle": "Knowledge library",
+      "actionLibraryBody": "Read trusted articles about managing anxiety and improving daily wellbeing.",
+      "actionLibraryCta": "Browse articles",
+      "saveTitle": "Do you want to keep this result?",
+      "saveBody": "You can return to this result later and share it with your care team from your profile history.",
+      "downloadPdf": "Download PDF",
+      "saveProfile": "Save to my profile",
+      "bands": {
+        "LOW": "Low",
+        "MILD": "Mild",
+        "MODERATE": "Moderate",
+        "HIGH": "High"
+      }
+    }
+  },
+  "sessions": "Sessions",
+  "profile": "Profile",
+  "profileScreen": {
+    "fallbackName": "Patient",
+    "fallbackEmail": "Email not available",
+    "none": "Not set",
+    "logout": "Log Out",
+    "wallet": {
+      "title": "Wallet balance",
+      "subtitle": "Wallet details are currently available in payment-related flows only",
+      "unavailableAmount": "--"
+    },
+    "support": {
+      "title": "Support",
+      "subtitle": "Support center is not available in this mobile build yet"
+    },
+    "details": {
+      "title": "Personal details",
+      "subtitle": "Update your profile details",
+      "modalTitle": "Edit personal details",
+      "saveFailedBody": "Could not update your profile details right now.",
+      "invalidCountryTitle": "Invalid country code",
+      "invalidCountryBody": "Country code must be 2 or 3 letters.",
+      "fields": {
+        "displayName": "Display name",
+        "countryCode": "Country code",
+        "timezone": "Timezone"
+      }
+    },
+    "language": {
+      "title": "Language",
+      "subtitle": "Choose app language",
+      "modalTitle": "App language",
+      "saveFailedBody": "Could not update language settings right now.",
+      "restartTitle": "Restart required",
+      "restartBody": "Language changed successfully. Restart the app to apply layout direction changes everywhere.",
+      "currentTimezone": "Timezone: {{timezone}}",
+      "options": {
+        "ar": "Arabic",
+        "en": "English"
+      }
+    },
+    "notifications": {
+      "title": "Notifications",
+      "subtitle": "Session reminders and account alerts",
+      "unavailableSubtitle": "Notification preferences are not available for this account yet",
+      "modalTitle": "Notification preferences",
+      "saveFailedBody": "Could not update notification preferences right now."
+    },
+    "common": {
+      "loading": "Syncing profile settings...",
+      "syncWarning": "Some profile settings could not be synced. You can still use logout.",
+      "saveFailedTitle": "Could not save changes",
+      "cancel": "Cancel",
+      "save": "Save",
+      "apply": "Apply"
+    }
+  },
+  "auth": {
+    "common": {
+      "pleaseWait": "Please wait...",
+      "backToEntry": "Choose a different access path",
+      "backToPatientSignIn": "Back to patient sign in",
+      "backToPractitionerSignIn": "Back to practitioner sign in"
+    },
+    "fields": {
+      "displayName": "Display name",
+      "email": "Email address",
+      "otpEmail": "OTP delivery email",
+      "password": "Password",
+      "newPassword": "New password",
+      "otpCode": "Verification code",
+      "resetCode": "Reset code",
+      "professionalTitle": "Professional title",
+      "countryCode": "Country code",
+      "yearsOfExperience": "Years of experience",
+      "bio": "Professional bio"
+    },
+    "placeholders": {
+      "displayName": "How should we address you?",
+      "email": "name@example.com",
+      "otpEmail": "Optional if OTP should go elsewhere",
+      "password": "Enter your password",
+      "newPassword": "Choose a stronger password",
+      "otpCode": "Enter the OTP code",
+      "resetCode": "Enter the reset code",
+      "professionalTitle": "Clinical psychologist, nutritionist, ...",
+      "countryCode": "EG",
+      "yearsOfExperience": "5",
+      "bio": "A short, trust-building profile summary"
+    },
+    "validation": {
+      "email": "Enter a valid email address.",
+      "passwordHint": "Use the same credential rules enforced by the backend."
+    },
+    "entry": {
+      "eyebrow": "Mobile access",
+      "title": "Breathe deeply.",
+      "subtitle": "We're here.",
+      "patientTitle": "Patient access",
+      "patientBody": "Email/password sign in with optional Google sign in when native client IDs are configured.",
+      "practitionerTitle": "Practitioner access",
+      "practitionerBody": "Email/password starts the session, then OTP verification completes the sign in."
+    },
+    "patientSignIn": {
+      "eyebrow": "Patient sign in",
+      "title": "Continue your care journey",
+      "subtitle": "This screen uses the real patient auth contract from the backend and mirrors the patient path used on web.",
+      "submit": "Sign in as patient",
+      "googleButton": "Continue with Google",
+      "googleHelper": "Google sign in sends the native ID token to the backend patient Google endpoint.",
+      "googleUnavailable": "Google sign in needs platform client IDs in the mobile environment before it can run.",
+      "forgotPassword": "Forgot your password?",
+      "noForgotPasswordYet": "Patient forgot-password is not exposed by the current backend contract.",
+      "noAccount": "Need a patient account?",
+      "createAccount": "Create one"
+    },
+    "practitionerSignIn": {
+      "eyebrow": "Practitioner sign in",
+      "title": "Access your practitioner workspace",
+      "subtitle": "Credentials create the OTP challenge. OTP verification issues the real session tokens.",
+      "submit": "Continue to OTP",
+      "verifyOtp": "Verify OTP",
+      "changeCredentials": "Use different credentials",
+      "forgotPassword": "Forgot your password?",
+      "otpTitle": "OTP verification required",
+      "otpHint": "We sent a code through {{channel}} to {{target}}.",
+      "challengeExpires": "Challenge expires at {{expiresAt}}.",
+      "noAccount": "Need a practitioner account?",
+      "createAccount": "Register now"
+    },
+    "patientSignUp": {
+      "eyebrow": "Patient registration",
+      "title": "Create your patient account",
+      "subtitle": "Patient registration returns a real authenticated session, so you can enter the app immediately after success.",
+      "submit": "Create patient account",
+      "haveAccount": "Already have a patient account?",
+      "goToSignIn": "Sign in"
+    },
+    "patientForgotPassword": {
+      "title": "Recover patient access",
+      "subtitle": "Password reset for patient accounts is not published in the backend contract yet.",
+      "contractBlocked": "This screen is intentionally read-only until backend exposes a patient forgot/reset password contract.",
+      "backToSignIn": "Back to patient sign in"
+    },
+    "practitionerSignUp": {
+      "eyebrow": "Practitioner registration",
+      "title": "Start your practitioner onboarding",
+      "subtitle": "This mobile screen sends the real practitioner registration payload, including specialty category and specialty selection.",
+      "otpEmailHelper": "Optional. If empty, OTP falls back to the main verified channel.",
+      "practitionerTypeTitle": "Practitioner type",
+      "categoryTitle": "Primary specialty category",
+      "specialtiesTitle": "Specialties",
+      "selectCategoryFirst": "Choose a category to load matching specialties.",
+      "submit": "Submit practitioner registration",
+      "haveAccount": "Already registered?",
+      "goToSignIn": "Go to sign in"
+    },
+    "practitionerForgotPassword": {
+      "eyebrow": "Practitioner password reset",
+      "title": "Recover practitioner access",
+      "subtitle": "Request the reset code first, then use the same verified email and code to set a new password.",
+      "sendCode": "Send reset code",
+      "resetPassword": "Reset password"
+    },
+    "practitionerTypes": {
+      "PSYCHOLOGIST": "Psychologist",
+      "PSYCHIATRIST": "Psychiatrist",
+      "NUTRITIONIST": "Nutritionist",
+      "WEIGHT_LOSS_SPECIALIST": "Weight loss specialist",
+      "COUNSELOR": "Counselor",
+      "OTHER": "Other"
+    }
+  },
+  "matching": {
+    "intro": {
+      "title": "Find the right therapist for you",
+      "subtitle": "Answer a few focused questions and we will recommend professionals that fit your needs.",
+      "start": "Start matching",
+      "alreadyAccount": "Skip and browse all therapists"
+    },
+    "question": {
+      "loading": "Loading matching preferences...",
+      "loadError": "Could not load specialties right now.",
+      "submitErrorTitle": "Could not create matching session",
+      "progress": "Matching progress",
+      "submitting": "Finding your best matches...",
+      "title": "Tell us what matters most",
+      "subtitle": "Your answers help us rank therapists for your case.",
+      "next": "See my matches",
+      "gender": {
+        "title": "Preferred therapist gender",
+        "any": "No preference",
+        "anyHint": "Show all suitable therapists",
+        "female": "Female",
+        "male": "Male"
+      },
+      "language": {
+        "title": "Preferred session language",
+        "ar": "Arabic",
+        "en": "English",
+        "fr": "French"
+      },
+      "specialty": {
+        "title": "Preferred specialty"
+      },
+      "mode": {
+        "title": "Session mode",
+        "video": "Video call",
+        "audio": "Audio call"
+      },
+      "urgency": {
+        "title": "How soon do you need support?",
+        "flexible": "Flexible",
+        "earliest": "Earliest available",
+        "now": "Available now"
+      },
+      "concern": {
+        "title": "Primary concern",
+        "placeholder": "Share a short summary so we can improve your recommendations..."
+      }
+    },
+    "results": {
+      "header": "Your matches",
+      "loading": "Loading recommendations...",
+      "title": "Here are your best-fit therapists",
+      "subtitle": "Ranked based on your preferences and matching score.",
+      "emptyTitle": "No recommendations yet",
+      "emptySubtitle": "Try changing your preferences and submit again.",
+      "score": "{{score}}% match",
+      "professionalFallback": "Mental health professional",
+      "viewProfile": "View profile",
+      "bookNow": "Book now",
+      "viewAllTherapists": "View all therapists"
+    }
+  },
+  "discovery": {
+    "list": {
+      "header": "Discover therapists",
+      "searchPlaceholder": "Search by therapist name or specialty",
+      "loading": "Loading therapists...",
+      "emptyTitle": "No therapists found",
+      "emptySubtitle": "Try adjusting your search or filters.",
+      "clearSearch": "Clear search",
+      "resultsCount": "{{count}} therapists found",
+      "professionalFallback": "Licensed therapist",
+      "newBadge": "New",
+      "experience": "{{years}} yrs exp",
+      "priceLabel": "Starting from",
+      "priceValue": "EGP {{value}}",
+      "priceUnavailable": "Price unavailable",
+      "viewProfile": "View profile"
+    },
+    "filters": {
+      "header": "Filters",
+      "gender": "Gender",
+      "any": "Any",
+      "female": "Female",
+      "male": "Male",
+      "availability": "Availability",
+      "onlineNow": "Online now",
+      "availableToday": "Available today",
+      "availableThisWeek": "Available this week",
+      "billing": "Billing and offers",
+      "acceptsCoupon": "Accepts coupon",
+      "acceptsPackage": "Accepts package",
+      "ratingAndPrice": "Rating and session fee",
+      "minRating": "Minimum rating",
+      "minRatingPlaceholder": "1 - 5",
+      "minPrice": "Minimum fee",
+      "minPricePlaceholder": "e.g. 200",
+      "maxPrice": "Maximum fee",
+      "maxPricePlaceholder": "e.g. 1200",
+      "sorting": "Sort by",
+      "sortNone": "Default",
+      "sortRecommended": "Recommended",
+      "sortRatingDesc": "Highest rating",
+      "sortExperienceDesc": "Most experience",
+      "booleanYes": "Yes",
+      "booleanNo": "No",
+      "apply": "Apply filters",
+      "clear": "Reset filters"
+    },
+    "profile": {
+      "professionalFallback": "Licensed therapist",
+      "countryFallback": "Country not specified",
+      "reviews": "{{count}} reviews",
+      "yearsExp": "Years exp",
+      "about": "About",
+      "specialties": "Specialties",
+      "credentials": "Credentials",
+      "verifiedProfessional": "Verified professional",
+      "credentialCount": "{{count}} verified credentials",
+      "languages": "Languages",
+      "languagesFallback": "No language details provided",
+      "availability": "Availability",
+      "availabilityNotice": "Live availability is not exposed by this profile endpoint yet.",
+      "bookSession": "Book session"
+    }
+  },
+  "patientSessionsFlow": {
+    "common": {
+      "loading": "Loading...",
+      "loadError": "Could not load data right now.",
+      "retry": "Retry",
+      "unknown": "Unknown",
+      "practitioner": "Practitioner",
+      "practitionerFallback": "Licensed therapist",
+      "professionalFallback": "Mental health professional",
+      "dateAndTime": "Date and time",
+      "duration": "Duration",
+      "status": "Status",
+      "notAvailable": "Not available",
+      "videoSession": "Video consultation"
+    },
+    "statuses": {
+      "DRAFT": "Draft",
+      "PENDING_PAYMENT": "Pending payment",
+      "PENDING_PRACTITIONER_RESPONSE": "Awaiting practitioner response",
+      "CONFIRMED": "Confirmed",
+      "UPCOMING": "Upcoming",
+      "READY_TO_JOIN": "Ready to join",
+      "IN_PROGRESS": "In progress",
+      "COMPLETED": "Completed",
+      "CANCELLED": "Cancelled",
+      "NO_SHOW": "No show",
+      "EXPIRED": "Expired",
+      "REFUND_PENDING": "Refund pending",
+      "REFUNDED": "Refunded"
+    },
+    "selectTime": {
+      "title": "Choose session time",
+      "morning": "Morning",
+      "afternoon": "Afternoon",
+      "evening": "Evening",
+      "noSlots": "No available slots in this week. Try another week.",
+      "selectedSlot": "Selected slot",
+      "noSelectedSlot": "No time selected",
+      "continue": "Continue",
+      "timezoneHint": "All times are shown in {{timezone}} timezone."
+    },
+    "confirmation": {
+      "title": "Booking confirmation",
+      "heading": "Review session details",
+      "subtitle": "Please verify the information below before proceeding.",
+      "sessionDetails": "Session details",
+      "selectDuration": "Session duration",
+      "duration30": "30 minutes",
+      "duration60": "60 minutes",
+      "durationValue": "{{minutes}} minutes",
+      "paymentSummary": "Payment summary",
+      "sessionDuration": "Duration",
+      "statusLabel": "Status",
+      "pendingPayment": "Pending payment",
+      "honestPaymentNotice": "Payment is 100% secure. Charges are only applied after the practitioner confirms the appointment.",
+      "cancellationPolicy": "Cancellation policy",
+      "policyHint": "You can cancel or reschedule free of charge up to 24 hours before the session.",
+      "confirmCta": "Confirm booking",
+      "confirming": "Confirming..."
+    },
+    "success": {
+      "title": "Booking completed",
+      "subtitle": "Your booking has been recorded successfully.",
+      "pendingTitle": "Booking created",
+      "pendingSubtitle": "Complete payment to activate and confirm this session.",
+      "confirmedTitle": "Booking confirmed",
+      "confirmedSubtitle": "Your appointment is confirmed and a reminder will be sent before the session.",
+      "pendingPaymentHint": "Your booking is created. Please complete payment to activate the session.",
+      "confirmedHint": "Your booking is confirmed and the session is active.",
+      "durationValue": "{{minutes}} minutes",
+      "goToSessions": "Go to sessions",
+      "goHome": "Back to home"
+    },
+    "list": {
+      "subtitle": "Track your upcoming and past sessions in one place.",
+      "upcoming": "Upcoming",
+      "past": "Past",
+      "noUpcoming": "No upcoming sessions",
+      "noPast": "No past sessions",
+      "emptyTitle": "No sessions yet",
+      "emptyDescription": "Once you complete your first booking, sessions will appear here.",
+      "findTherapist": "Find a therapist",
+      "durationValue": "{{minutes}} min"
+    },
+    "detail": {
+      "title": "Session details",
+      "dateLabel": "Date",
+      "timeLabel": "Time",
+      "durationValue": "{{minutes}} minutes",
+      "expiresAt": "Expires at",
+      "preparationTitle": "Before session",
+      "preparationHint": "Make sure your internet connection, microphone, and camera are ready before joining.",
+      "join": "Join session",
+      "joining": "Joining...",
+      "joinBlocked": "Cannot join now: {{reason}}",
+      "joinBlockedReasons": {
+        "SESSION_NOT_JOINABLE_STATUS": "This session status is not joinable yet.",
+        "SESSION_NOT_VIDEO_MODE": "Only video sessions can be joined here.",
+        "SESSION_TIME_WINDOW_NOT_OPEN": "Joining window is not open yet.",
+        "SESSION_RUNTIME_NOT_PREPARED": "Session room is still being prepared."
+      },
+      "payNow": "Pay now",
+      "viewCancellation": "View cancellation preview"
+    },
+    "cancelPreview": {
+      "title": "Cancel session",
+      "heading": "Review cancellation",
+      "subtitle": "Please review the details below before confirming your cancellation.",
+      "policySummary": "Cancellation policy",
+      "sessionStart": "Session date",
+      "matchedRule": "Cancellation terms",
+      "hoursBefore": "Time until session",
+      "hoursValue": "{{value}} hours",
+      "cannotCancelNow": "This session cannot be cancelled right now.",
+      "cannotCancelDetail": "{{detail}}",
+      "refundSummary": "Refund summary",
+      "totalPaid": "Total paid",
+      "refundAmount": "Refund amount",
+      "walletCredit": "Wallet credit",
+      "gatewayRefund": "Gateway refund",
+      "reasonLabel": "Cancellation reason (optional)",
+      "reasonPlaceholder": "Share a reason for cancellation",
+      "confirmCta": "Confirm cancellation",
+      "cancelling": "Cancelling...",
+      "keepSession": "Keep session",
+      "blockingReasons": {
+        "SESSION_CANCELLATION_NOT_ALLOWED_BY_POLICY": "Cancellation is not permitted under the booking policy that applies to this session.",
+        "SESSION_ALREADY_CANCELLED": "This session has already been cancelled.",
+        "SESSION_COMPLETED": "A completed session cannot be cancelled.",
+        "SESSION_EXPIRED": "This session has expired.",
+        "SESSION_IN_PROGRESS": "A session that is in progress cannot be cancelled.",
+        "UNKNOWN": "Cancellation is not available at this time."
+      },
+      "matchedRuleCodes": {
+        "STANDARD_FREE_CANCEL": "Free cancellation",
+        "STANDARD_PARTIAL_REFUND": "Partial refund",
+        "STANDARD_LATE_NO_CANCEL": "Late cancellation — not permitted",
+        "STANDARD_NO_REFUND": "No refund",
+        "INSTANT_FREE_CANCEL": "Free cancellation — instant booking",
+        "INSTANT_NO_CANCEL": "Cancellation not permitted for instant bookings",
+        "UNKNOWN": "Policy not specified"
+      }
+    }
+  },
+  "commonNotFound": {
+    "title": "Page not found",
+    "body": "This page is currently unavailable.",
+    "goToSessions": "Go to sessions"
+  },
+  "patientPaymentsFlow": {
+    "tab": "Wallet",
+    "wallet": {
+      "title": "Wallet & Payments",
+      "subtitle": "Manage your clinical funds and transaction history securely",
+      "balanceLabel": "Current Balance",
+      "availableHint": "Available for clinical sessions",
+      "reservedLabel": "Reserved",
+      "addFundsLabel": "Add Funds",
+      "addFundsUnavailable": "Manual top-up is not available from the app yet",
+      "paymentMethodsTitle": "Payment Methods",
+      "paymentMethodsUnavailable": "Payment method management is not available yet",
+      "recentTitle": "Recent Transactions",
+      "viewAll": "View All",
+      "activityEmpty": "No wallet transactions yet",
+      "refundHint": "Refunds are automatically added to your wallet after processing.",
+      "secureHint": "Your payments are encrypted and secure",
+      "loading": "Loading wallet data...",
+      "errorTitle": "Could not load wallet data",
+      "errorNote": "Please check your connection and try again.",
+      "retry": "Retry",
+      "noWallet": "No wallet has been linked to this account yet"
+    },
+    "payments": {
+      "sectionTitle": "Payment History",
+      "emptyTitle": "No payments yet",
+      "emptyNote": "Your session payments will appear here after your first confirmed session.",
+      "emptyAction": "View sessions",
+      "errorTitle": "Could not load payments",
+      "errorNote": "Please try again.",
+      "retry": "Retry"
+    },
+    "paymentCard": {
+      "provider": {
+        "STRIPE": "Credit card",
+        "PAYMOB": "Card / network",
+        "INTERNAL_WALLET": "Internal wallet"
+      },
+      "status": {
+        "CREATED": "Created",
+        "PENDING": "Processing",
+        "REQUIRES_ACTION": "Requires action",
+        "AUTHORIZED": "Authorized",
+        "CAPTURED": "Completed",
+        "FAILED": "Failed",
+        "CANCELLED": "Cancelled",
+        "EXPIRED": "Expired",
+        "REFUND_PENDING": "Refund processing",
+        "PARTIALLY_REFUNDED": "Partially refunded",
+        "REFUNDED": "Refunded"
+      },
+      "dateLabels": {
+        "paidOn": "Paid on",
+        "refundedOn": "Refunded on",
+        "failedOn": "Failed on",
+        "expiredOn": "Expired on",
+        "initiatedOn": "Initiated on"
+      },
+      "walletUsed": "From wallet",
+      "gatewayUsed": "Via payment gateway",
+      "payNow": "Pay now",
+      "retryPayment": "Retry payment",
+      "viewSession": "View session",
+      "statusNotes": {
+        "CREATED": "Waiting for payment to begin.",
+        "PENDING": "Payment is being processed.",
+        "REQUIRES_ACTION": "Additional confirmation required to complete.",
+        "AUTHORIZED": "Payment authorized, pending capture.",
+        "CAPTURED": "Payment completed successfully.",
+        "FAILED": "Payment failed. You can try again.",
+        "CANCELLED": "Payment was cancelled.",
+        "EXPIRED": "This payment attempt has expired.",
+        "REFUND_PENDING": "Refund request is being processed.",
+        "PARTIALLY_REFUNDED": "Part of the amount has been refunded.",
+        "REFUNDED": "The full amount has been refunded."
+      }
+    },
+    "transactions": {
+      "title": "Wallet History",
+      "filters": {
+        "all": "All",
+        "payments": "Payments",
+        "credits": "Credits",
+        "refunds": "Refunded"
+      },
+      "loading": "Loading transactions...",
+      "errorTitle": "Could not load transactions",
+      "retry": "Retry",
+      "emptyTitle": "No transactions",
+      "emptyNote": "No wallet transactions yet.",
+      "today": "Today",
+      "entryTypes": {
+        "REFUND_CREDIT": "Refund credit",
+        "MANUAL_CREDIT": "Added funds",
+        "MANUAL_DEBIT": "Manual debit",
+        "SESSION_PAYMENT_RESERVE": "Session payment hold",
+        "SESSION_PAYMENT_CAPTURE": "Session payment",
+        "SESSION_PAYMENT_RELEASE": "Payment hold released",
+        "REVERSAL": "Transaction reversal",
+        "ADJUSTMENT": "Balance adjustment"
+      },
+      "completed": "Completed",
+      "pending": "Processing",
+      "walletScopeNote": "This balance is your in-app wallet only.",
+      "walletOnlyNote": "Payments via card / Mada gateway are not shown here — check the Payments screen for a full transaction history."
+    },
+    "checkout": {
+      "title": "Payment Summary",
+      "loadingSession": "Loading session details...",
+      "loadingBreakdown": "Calculating cost...",
+      "errorTitle": "Could not load payment details",
+      "errorNote": "Please try again.",
+      "retry": "Retry",
+      "sessionExpired": "The payment window for this session has expired",
+      "sessionNotPayable": "This session is not payable at this time",
+      "backToSession": "Back to session",
+      "practitionerCard": {
+        "sessionType": "Mental health consultation - Remote"
+      },
+      "breakdown": {
+        "title": "Cost details",
+        "sessionFee": "Session fee",
+        "discount": "Coupon discount",
+        "walletDeduction": "Wallet balance used",
+        "total": "Total amount due"
+      },
+      "walletToggle": {
+        "label": "Use wallet balance",
+        "available": "Available balance: {{amount}}",
+        "noBalance": "No wallet balance"
+      },
+      "coupon": {
+        "label": "Discount code",
+        "placeholder": "Enter coupon code",
+        "apply": "Apply",
+        "remove": "Remove",
+        "applied": "Coupon {{code}} applied"
+      },
+      "paymentMethod": {
+        "title": "Payment method",
+        "gateway": "Credit / Debit card",
+        "gatewayHint": "Secure online payment",
+        "wallet": "App wallet"
+      },
+      "trustBadges": {
+        "secure": "100% secure payment",
+        "moh": "Ministry of Health approved"
+      },
+      "confirmButton": "Confirm & Pay",
+      "processing": "Processing...",
+      "redirecting": "Redirecting to payment gateway...",
+      "paymentState": "Payment state",
+      "state": {
+        "walletPart": "Paid from wallet",
+        "gatewayPart": "Remaining via gateway",
+        "walletOnly": "The payment will be fully covered by your wallet balance."
+      },
+      "gatewayNotice": "Payment page will open in your browser to complete securely.",
+      "openGateway": "Open payment gateway",
+      "stripeNotice": "Direct card payment will be enabled after the Stripe mobile SDK is installed.",
+      "paymentSuccess": "Payment completed successfully",
+      "paymentError": "Payment could not be completed",
+      "pricingUnavailableNote": "No pricing is configured for this session yet. Please contact support or try again later.",
+      "pricingUnavailableShort": "Pricing unavailable"
+    }
+  },
+  "support": {
+    "title": "Support Center",
+    "tabs": {
+      "active": "Active",
+      "resolved": "Resolved"
+    },
+    "statuses": {
+      "OPEN": "Open",
+      "IN_PROGRESS": "In Progress",
+      "WAITING_FOR_USER": "Waiting for You",
+      "ESCALATED": "Escalated",
+      "RESOLVED": "Resolved",
+      "CLOSED": "Closed"
+    },
+    "categories": {
+      "BOOKING": "Booking",
+      "PAYMENT": "Payment",
+      "SESSION": "Session",
+      "TECHNICAL": "Technical",
+      "ACCOUNT": "Account",
+      "MATCHING": "Matching",
+      "GENERAL": "General",
+      "CONTENT": "Content",
+      "CHAT": "Chat",
+      "OTHER": "Other"
+    },
+    "empty": {
+      "title": "No tickets",
+      "activeSubtitle": "You have no active support requests at the moment.",
+      "resolvedSubtitle": "No resolved or closed tickets yet."
+    },
+    "newTicket": "Open a support request",
+    "new": {
+      "title": "New Support Request",
+      "categoryLabel": "Issue type",
+      "subjectLabel": "Subject",
+      "subjectPlaceholder": "Briefly describe your issue",
+      "descriptionLabel": "Details",
+      "descriptionPlaceholder": "Describe your issue in detail so our support team can help you better",
+      "subjectRequired": "Please enter a subject with at least 4 characters.",
+      "descriptionRequired": "Please enter a description with at least 10 characters.",
+      "submit": "Submit Request"
+    },
+    "detail": {
+      "title": "Ticket Details",
+      "noMessages": "No messages yet. Start the conversation with our support team.",
+      "replyPlaceholder": "Write your reply here...",
+      "closedNotice": "This ticket is closed and no longer accepts replies."
+    }
+  },
+  "careChat": {
+    "title": "Professional Chat",
+    "tabs": {
+      "active": "Active",
+      "history": "History"
+    },
+    "requestStatus": {
+      "PENDING": "Pending Approval",
+      "APPROVED": "Approved",
+      "REJECTED": "Rejected",
+      "EXPIRED": "Expired",
+      "CANCELLED": "Cancelled",
+      "REVOKED": "Revoked"
+    },
+    "activityState": {
+      "ACTIVE": "Active",
+      "EXPIRED": "Expired",
+      "REVOKED": "Revoked",
+      "CLOSED": "Closed"
+    },
+    "inactiveNotice": {
+      "EXPIRED": "This conversation has expired.",
+      "REVOKED": "Access to this conversation has been revoked.",
+      "CLOSED": "This conversation is closed.",
+      "default": "This conversation is no longer active."
+    },
+    "unknownPractitioner": "Practitioner",
+    "expiresOn": "Expires on {{date}}",
+    "newRequest": "Request a chat with a practitioner",
+    "empty": {
+      "title": "No requests",
+      "activeSubtitle": "You have no active chat requests with a practitioner.",
+      "historySubtitle": "No previous requests."
+    },
+    "new": {
+      "title": "Request Professional Chat",
+      "approvalNote": "Your request will be reviewed by our team. You will be notified once a decision is made.",
+      "practitionerSlugLabel": "Practitioner identifier",
+      "practitionerSlugPlaceholder": "e.g. dr-ahmed-ali",
+      "practitionerSlugHint": "You can find the identifier on the practitioner's profile page.",
+      "reasonLabel": "Reason for request",
+      "reasonPlaceholder": "Briefly explain why you'd like to connect with this practitioner...",
+      "optional": "optional",
+      "slugRequired": "Please enter the practitioner identifier.",
+      "submit": "Submit Request"
+    },
+    "requestDetail": {
+      "title": "Request Details",
+      "reason": "Reason",
+      "expiresAt": "Expiry date",
+      "pendingNotice": "Your request is under review. You will be notified once a decision is made.",
+      "rejectedNotice": "Unfortunately, your chat request was rejected. You can open a support ticket if you need assistance.",
+      "openConversation": "Open Conversation"
+    },
+    "conversation": {
+      "empty": "No messages yet. Start the conversation with your practitioner.",
+      "inputPlaceholder": "Write your message here..."
+    }
+  },
+  "home": {
+    "tabLabel": "Home",
+    "journey": {
+      "pendingPayment": "Pending Payment",
+      "completePaymentTitle": "Complete Payment",
+      "completePaymentSubtitle": "You have a pending payment for a session.",
+      "payNow": "Pay Now"
+    },
+    "quickActions": {
+      "title": "Quick Actions",
+      "findTherapist": "Find therapist",
+      "assessments": "Assessments",
+      "support": "Support",
+      "careChat": "Care Chat"
+    },
+    "nextSession": {
+      "badge": "Confirmed",
+      "title": "Your next session",
+      "subtitle": "Join when your appointment starts",
+      "defaultDoctor": "Dr. Assigned Therapist",
+      "defaultSpecialty": "Clinical Psychology",
+      "joinNow": "Join now"
+    }
+  },
+  "common": {
+    "enabled": "Enabled",
+    "disabled": "Disabled"
+  },
+  "practitioner": {
+    "tab": {
+      "dashboard": "Dashboard",
+      "sessions": "Sessions",
+      "availability": "Availability"
+    },
+    "common": {
+      "loadError": "Could not load the practitioner workspace right now.",
+      "notAvailable": "Not available"
+    },
+    "profileStatus": {
+      "DRAFT": "Draft",
+      "PENDING_REVIEW": "Pending review",
+      "APPROVED": "Approved",
+      "REJECTED": "Rejected",
+      "SUSPENDED": "Suspended",
+      "INACTIVE": "Inactive"
+    },
+    "presence": {
+      "status": {
+        "ONLINE": "Online",
+        "AWAY": "Away",
+        "BUSY": "Busy",
+        "OFFLINE": "Offline"
+      }
+    },
+    "sessionStatus": {
+      "DRAFT": "Draft",
+      "PENDING_PAYMENT": "Pending payment",
+      "PENDING_PRACTITIONER_RESPONSE": "Awaiting practitioner response",
+      "CONFIRMED": "Confirmed",
+      "UPCOMING": "Upcoming",
+      "READY_TO_JOIN": "Ready to join",
+      "IN_PROGRESS": "In progress",
+      "COMPLETED": "Completed",
+      "CANCELLED": "Cancelled",
+      "NO_SHOW": "No show",
+      "EXPIRED": "Expired",
+      "REFUND_PENDING": "Refund pending",
+      "REFUNDED": "Refunded"
+    },
+    "weekday": {
+      "SUNDAY": "Sunday",
+      "MONDAY": "Monday",
+      "TUESDAY": "Tuesday",
+      "WEDNESDAY": "Wednesday",
+      "THURSDAY": "Thursday",
+      "FRIDAY": "Friday",
+      "SATURDAY": "Saturday"
+    },
+    "home": {
+      "title": "Practitioner workspace",
+      "fallbackName": "Practitioner",
+      "fallbackTitle": "Professional account",
+      "nextSessions": "Next sessions",
+      "viewAll": "View all",
+      "noSessions": "There are no upcoming sessions in active states right now.",
+      "quickAccess": "Quick access",
+      "metrics": {
+        "presence": "Presence",
+        "instantBooking": "Instant booking",
+        "specialties": "Specialties",
+        "credentials": "Credentials"
+      },
+      "approvalNotice": {
+        "title": "Full workspace access is not available yet",
+        "body": "This account has not reached the fully approved web state yet. Mobile shows the real account state here without inventing onboarding routes that are not implemented yet."
+      }
+    },
+    "sessions": {
+      "title": "Practitioner sessions",
+      "unknownPatient": "Unknown patient",
+      "noSchedule": "No schedule has been assigned yet",
+      "duration": "{{minutes}} min",
+      "emptyTitle": "No sessions",
+      "emptyBody": "There are no sessions matching the current filter.",
+      "filters": {
+        "all": "All",
+        "upcoming": "Upcoming",
+        "ready": "Ready",
+        "live": "Live",
+        "completed": "Completed"
+      }
+    },
+    "sessionDetail": {
+      "title": "Session details",
+      "summary": "Summary",
+      "heroSubtitle": "Session code: {{sessionCode}}",
+      "heroMode": "Session mode: {{mode}}",
+      "sessionAt": "Time: {{datetime}}",
+      "currentState": "Current state",
+      "nextStepLabel": "Next step",
+      "actionsTitle": "What you can do now",
+      "sessionFacts": "Quick facts",
+      "sessionType": "Appointment type",
+      "mode": "Session mode",
+      "duration": "Duration",
+      "flowType": "Flow type",
+      "timezone": "Timezone",
+      "timezoneValue": "Using {{city}} time",
+      "runtime": "Live session runtime",
+      "runtimeBody": "This screen uses the real practitioner prepare and join contracts from the backend. A room link only opens if the contract explicitly allows it.",
+      "prepare": "Prepare session room",
+      "preparing": "Preparing room...",
+      "prepareReady": "The session runtime is prepared.",
+      "preparePending": "Prepare request was sent, but the runtime is not ready yet.",
+      "join": "Join",
+      "checkJoin": "Check if you can join",
+      "checkingJoin": "Checking join access...",
+      "openRoom": "Open session room",
+      "openRoomReady": "The session room is ready to open.",
+      "joining": "Opening session...",
+      "joinBlocked": "Cannot join right now: {{reason}}",
+      "prepareError": "The room cannot be prepared right now. Try again closer to the session time.",
+      "joinError": "Join availability could not be checked right now. Try again in a moment.",
+      "openRoomError": "The session room could not be opened from this device right now.",
+      "closeoutError": "The session status could not be updated right now. Try again.",
+      "noImmediateAction": "There is no immediate action required for this session right now.",
+      "blocked": {
+        "SESSION_NOT_JOINABLE_STATUS": "The current session status does not allow joining.",
+        "SESSION_NOT_VIDEO_MODE": "This session is not in video mode.",
+        "SESSION_TIME_WINDOW_NOT_OPEN": "The join window is not open yet.",
+        "SESSION_RUNTIME_NOT_PREPARED": "The session runtime is not prepared yet."
+      },
+      "closeout": "Closeout",
+      "markCompleted": "Confirm session ended",
+      "completing": "Completing...",
+      "markNoShow": "Record no-show",
+      "markingNoShow": "Updating...",
+      "completedFeedback": "The session was marked as completed.",
+      "noShowFeedback": "The session was marked as no show.",
+      "flowTypeValue": {
+        "SCHEDULED": "Scheduled appointment",
+        "INSTANT": "Instant session",
+        "DEFAULT": "Care session"
+      },
+      "stateNote": {
+        "PENDING_PAYMENT": "This session is still waiting for payment, so there is no direct action for you right now.",
+        "PENDING_PRACTITIONER_RESPONSE": "This session is waiting for your confirmation or for the system to move it to the next state.",
+        "UPCOMING": "The appointment is coming up, but the join window is not open yet. Review the time and get ready before it starts.",
+        "UPCOMING_NEEDS_PREPARE": "The appointment is coming up, and the clearest next step is to prepare the session room before checking access.",
+        "READY_TO_JOIN_NOW": "This session is ready now, and you can open the room directly.",
+        "READY_TO_JOIN_PREPARE": "The session is near its time, but the room still needs preparation before you try to join.",
+        "READY_TO_JOIN_CHECK": "This session is near its time. Check join access now to confirm whether the room can be opened.",
+        "IN_PROGRESS": "The session is live now. Check join access if you need to continue the session immediately.",
+        "IN_PROGRESS_OPEN": "The session is live now and the room can be opened directly.",
+        "COMPLETED": "This session has already finished. There is no direct action now besides reviewing the details.",
+        "NO_SHOW": "This session has already been recorded as a no-show, so there is no further direct action now.",
+        "CANCELLED": "This session was cancelled, so the room cannot be opened and there are no live actions left.",
+        "EXPIRED": "This session expired before completion, so there are no direct actions now.",
+        "REFUND_PENDING": "This session is in a pending refund state, so there are no direct actions now.",
+        "REFUNDED": "The refund for this session has already been processed, so there are no direct actions now.",
+        "DEFAULT": "This session does not expose a direct action from this screen right now."
+      },
+      "nextStep": {
+        "waitForPayment": "Wait for payment to finish before any operational step.",
+        "waitForConfirmation": "Check back when the session moves into a confirmed appointment state.",
+        "waitForWindow": "Come back near the appointment time to see whether the join window has opened.",
+        "prepareRoom": "Prepare the room first, then check whether joining is available.",
+        "checkJoin": "Check join access now to see whether the session can be opened.",
+        "openRoom": "Open the room and continue with the patient.",
+        "reviewOnly": "Review the details only. There is no further operational step right now."
+      },
+      "actionSummary": {
+        "openRoom": "You can open the session room now without any extra step.",
+        "prepareRoom": "The clearest next action right now is to prepare the session room.",
+        "checkJoin": "Check join access to confirm whether the room can be opened right now.",
+        "closeout": "You can update the session outcome if it has ended or if the patient did not attend.",
+        "none": "This screen reflects the current backend truth, but there is no operational action required right now."
+      },
+      "closeoutSummary": {
+        "COMPLETED": "This session is already completed and does not need another closeout update.",
+        "NO_SHOW": "This session is already marked as no-show and does not need another update.",
+        "CLOSED": "This session is already effectively closed, so there is no further closeout action.",
+        "NOT_READY": "Closeout actions only appear when the session reaches a state that allows them."
+      },
+      "modeValue": {
+        "VIDEO": "Video",
+        "AUDIO": "Audio",
+        "CHAT": "Chat"
+      }
+    },
+    "availability": {
+      "title": "Availability and presence",
+      "presenceTitle": "Live presence",
+      "presenceBody": "This status is separate from the weekly schedule and mirrors the real backend presence surface.",
+      "currentStatus": "Your current status",
+      "instantBooking": "Instant booking",
+      "instantBookingBody": "Turns instant-booking readiness on or off without changing the weekly schedule.",
+      "instantBookingEnabled": "Instant booking is currently on for cases the system allows.",
+      "instantBookingDisabled": "Instant booking is currently off, so new instant requests will not reach you.",
+      "scheduleTitle": "Weekly schedule",
+      "scheduleBody": "Manage your weekly working hours here in a simple way. Changes are not saved until you tap save schedule.",
+      "timezone": "Current timezone: {{timezone}}",
+      "timezoneLabel": "Timezone used for this schedule",
+      "emptySchedule": "There are no active weekly slots right now.",
+      "noSlots": "No slots yet",
+      "slotCount": "{{count}} slot",
+      "slotRange": "{{start}} to {{end}}",
+      "addSlot": "Add slot",
+      "editSlot": "Edit",
+      "removeSlot": "Remove",
+      "startTime": "Start time",
+      "endTime": "End time",
+      "timeHint": "Enter time like 09:00",
+      "confirmSlot": "Confirm slot",
+      "saveSchedule": "Save schedule",
+      "resetChanges": "Reset changes",
+      "saveHint": "You can arrange all weekly slots first, then save the schedule in one step.",
+      "saveSuccess": "The weekly schedule was saved successfully.",
+      "saveError": "The weekly schedule could not be saved right now.",
+      "saving": "Saving...",
+      "exceptionsTitle": "Upcoming exceptions",
+      "exceptionsBody": "Add temporary overrides when you need to block a specific window or open extra time outside the weekly schedule.",
+      "emptyExceptions": "There are no active exceptions right now.",
+      "addException": "Add exception",
+      "saveException": "Save exception",
+      "removeException": "Remove exception",
+      "exceptionStartsAt": "Exception starts at",
+      "exceptionEndsAt": "Exception ends at",
+      "exceptionTimeHint": "Enter date/time like 2026-04-25T14:00",
+      "exceptionReason": "Short note",
+      "exceptionReasonPlaceholder": "Example: personal leave or extra opening",
+      "exceptionRange": "{{start}} to {{end}}",
+      "exceptionSaveSuccess": "The exception was saved successfully.",
+      "exceptionSaveError": "The exception could not be saved right now.",
+      "exceptionDeleteSuccess": "The exception was removed successfully.",
+      "exceptionDeleteError": "The exception could not be removed right now.",
+      "validation": {
+        "invalidTime": "Enter time in a valid format like 09:00.",
+        "endAfterStart": "The end time must be after the start time.",
+        "overlap": "This slot overlaps with another slot on the same day.",
+        "exceptionDatesRequired": "Enter both the exception start and end time.",
+        "invalidDateTime": "Enter date/time in a valid format like 2026-04-25T14:00."
+      },
+      "exceptionType": {
+        "BLOCK": "Temporary block",
+        "OPEN_EXTRA": "Extra opening"
+      }
+    }
+  }
+}

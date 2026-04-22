@@ -63,7 +63,10 @@ export class AdminPractitionersController {
   @ApiQuery({ name: 'sort', required: false })
   @ApiQuery({ name: 'page', required: false })
   @ApiQuery({ name: 'limit', required: false })
-  @ApiResponse({ status: 200, description: 'Practitioners fetched successfully' })
+  @ApiResponse({
+    status: 200,
+    description: 'Practitioners fetched successfully',
+  })
   @ApiBadRequestResponse({ description: 'Invalid filter or pagination values' })
   @ApiUnauthorizedResponse({ description: 'Access token is required' })
   @ApiForbiddenResponse({ description: 'Route requires active admin account' })

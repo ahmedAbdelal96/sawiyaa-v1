@@ -2,7 +2,7 @@
  * API configuration used by the active Fayed frontend foundation.
  */
 export const API_CONFIG = {
-  baseURL: process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:7000/api/v1",
+  baseURL: process.env.NEXT_PUBLIC_API_URL || "/api/v1",
   timeout: 30000,
   headers: {
     "Content-Type": "application/json",

@@ -1,5 +1,9 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { ArticleStatus, ArticleVisibility, ContentLocale } from '@prisma/client';
+import {
+  ArticleStatus,
+  ArticleVisibility,
+  ContentLocale,
+} from '@prisma/client';
 import { ArticlePresenter } from '../presenters/article.presenter';
 import { ArticleRepository } from '../repositories/article.repository';
 import { ValidateArticleStatusTransitionService } from '../services/validate-article-status-transition.service';
@@ -16,7 +20,9 @@ export class PublishArticleUseCase {
   ) {}
 
   async execute(input: { articleId: string; locale?: ContentLocale }) {
-    const existing = await this.articleRepository.findArticleById(input.articleId);
+    const existing = await this.articleRepository.findArticleById(
+      input.articleId,
+    );
     if (!existing) {
       throw new NotFoundException({
         messageKey: 'articles.errors.articleNotFound',
@@ -24,22 +30,29 @@ export class PublishArticleUseCase {
       });
     }
 
-    this.validateArticleStatusTransitionService.assertCanPublish(existing.status);
+    this.validateArticleStatusTransitionService.assertCanPublish(
+      existing.status,
+    );
 
     const now = new Date();
-    const updated = await this.articleRepository.updateArticle(input.articleId, {
-      status: ArticleStatus.PUBLISHED,
-      visibility: ArticleVisibility.PUBLIC,
-      publishedAt: now,
-      archivedAt: null,
-    });
+    const updated = await this.articleRepository.updateArticle(
+      input.articleId,
+      {
+        status: ArticleStatus.PUBLISHED,
+        visibility: ArticleVisibility.PUBLIC,
+        publishedAt: now,
+        archivedAt: null,
+      },
+    );
 
     this.logger.log(`Article published (id=${input.articleId})`);
 
     return {
       item: this.articlePresenter.presentAdminArticleItem(
         updated,
-        input.locale ?? existing.translations[0]?.locale ?? ARTICLE_DEFAULT_LOCALE,
+        input.locale ??
+          existing.translations[0]?.locale ??
+          ARTICLE_DEFAULT_LOCALE,
       ),
     };
   }

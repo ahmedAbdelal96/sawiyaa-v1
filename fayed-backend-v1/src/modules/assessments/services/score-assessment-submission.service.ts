@@ -6,7 +6,9 @@ export class ScoreAssessmentSubmissionService {
     return answers.reduce((sum, answer) => sum + answer.scoreValue, 0);
   }
 
-  calculateMaxScore(questions: Array<{ options: Array<{ scoreValue: number }> }>): number {
+  calculateMaxScore(
+    questions: Array<{ options: Array<{ scoreValue: number }> }>,
+  ): number {
     return questions.reduce((sum, question) => {
       const maxOptionScore = question.options.reduce((max, option) => {
         return Math.max(max, option.scoreValue);

@@ -16,6 +16,7 @@ import {
   parsePositiveIntParam,
   parseTextParam,
 } from "@/components/ui/data-table";
+import { DEFAULT_PAGE_LIMIT, DEFAULT_PAGE_SIZE_OPTIONS } from "@/constants/pagination";
 import { useAuthState } from "@/stores/auth-store";
 import {
   useAdminTrainings,
@@ -34,8 +35,8 @@ import type {
 } from "../types/training.types";
 
 const STATUS_FILTERS = ["ALL", "DRAFT", "PUBLISHED", "ARCHIVED"] as const;
-const PAGE_LIMIT = 20;
-const PAGE_SIZE_OPTIONS = [5, 10, 20, 30, 40, 50];
+const PAGE_LIMIT = DEFAULT_PAGE_LIMIT;
+const PAGE_SIZE_OPTIONS = DEFAULT_PAGE_SIZE_OPTIONS;
 const SORTABLE_COLUMNS = [
   "title",
   "status",

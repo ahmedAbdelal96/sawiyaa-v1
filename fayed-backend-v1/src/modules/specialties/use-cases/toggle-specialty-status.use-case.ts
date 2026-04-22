@@ -22,8 +22,15 @@ export class ToggleSpecialtyStatusUseCase {
     private readonly specialtyMapper: SpecialtyMapper,
   ) {}
 
-  async execute(input: { id: string; isActive: boolean; locale: SupportedLocale }) {
-    const existing = await this.specialtyRepository.findById(input.id, input.locale);
+  async execute(input: {
+    id: string;
+    isActive: boolean;
+    locale: SupportedLocale;
+  }) {
+    const existing = await this.specialtyRepository.findById(
+      input.id,
+      input.locale,
+    );
 
     if (!existing) {
       throw new NotFoundException({

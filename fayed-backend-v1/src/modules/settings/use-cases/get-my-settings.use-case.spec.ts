@@ -1,6 +1,9 @@
 import { NotFoundException } from '@nestjs/common';
 import { ContentLocale } from '@prisma/client';
-import { SETTINGS_DEFAULT_LOCALE, SETTINGS_DEFAULT_TIMEZONE } from '../types/settings.types';
+import {
+  SETTINGS_DEFAULT_LOCALE,
+  SETTINGS_DEFAULT_TIMEZONE,
+} from '../types/settings.types';
 import { SettingsRepository } from '../repositories/settings.repository';
 import { GetMySettingsNotificationPreferencesUseCase } from './get-my-settings-notification-preferences.use-case';
 import { GetMySettingsUseCase } from './get-my-settings.use-case';
@@ -24,7 +27,9 @@ describe('GetMySettingsUseCase', () => {
   });
 
   it('throws when settings owner is not found', async () => {
-    (settingsRepository.findUserPreferences as jest.Mock).mockResolvedValue(null);
+    (settingsRepository.findUserPreferences as jest.Mock).mockResolvedValue(
+      null,
+    );
 
     await expect(
       useCase.execute({
@@ -88,4 +93,3 @@ describe('GetMySettingsUseCase', () => {
     });
   });
 });
-

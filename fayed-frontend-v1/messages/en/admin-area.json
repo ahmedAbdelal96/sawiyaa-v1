@@ -1005,7 +1005,9 @@
     "sections": {
       "applicant": "Applicant",
       "profile": "Practitioner profile",
+      "profileEdit": "Edit before decision",
       "credentials": "Credentials",
+      "payout": "Payout destination",
       "application": "Application",
       "readiness": "Readiness snapshot",
       "decision": "Decision"
@@ -1024,11 +1026,18 @@
     },
     "profile": {
       "type": "Type",
+      "gender": "Gender",
+      "genderOptions": {
+        "MALE": "Male",
+        "FEMALE": "Female"
+      },
       "profileStatus": "Profile status",
       "title": "Professional title",
       "bio": "Bio",
       "years": "Years of experience",
       "languages": "Languages",
+      "primarySpecialtyCategory": "Primary specialty category",
+      "subSpecialties": "Sub-specialties",
       "specialties": "Specialties",
       "primary": "Primary",
       "noSpecialties": "No specialties linked.",
@@ -1036,6 +1045,21 @@
     },
     "credentials": {
       "empty": "No credentials uploaded.",
+      "addHeading": "Add new credential",
+      "credentialType": "Credential type",
+      "reviewStatus": "Review status",
+      "fileUrl": "File URL",
+      "fileUrlPlaceholder": "https://...",
+      "expiresAtOptional": "Expires at (optional)",
+      "reviewNotes": "Review notes",
+      "reviewNotesPlaceholder": "Optional review note",
+      "addSubmit": "Add credential",
+      "addSubmitting": "Adding...",
+      "deleteConfirm": "Delete this credential from the application?",
+      "addError": "Could not add credential. Verify required fields.",
+      "updateError": "Could not update credential.",
+      "deleteSuccess": "Credential deleted.",
+      "deleteError": "Could not delete credential.",
       "uploadedAt": "Uploaded {date}",
       "expiresAt": "Expires {date}",
       "type": {
@@ -1058,6 +1082,8 @@
       "status": "Status",
       "submittedAt": "Submitted",
       "reviewedAt": "Reviewed",
+      "reviewedByUserId": "Reviewed by user",
+      "reviewDecisionReason": "Decision reason",
       "reviewNotes": "Review notes",
       "noNotes": "No review notes.",
       "never": "—"
@@ -1065,11 +1091,36 @@
     "readiness": {
       "profileComplete": "Profile completed",
       "specialties": "Required specialties",
-      "credentials": "Required credentials",
+      "credentials": "Credentials approved",
+      "payoutDestination": "Payout destination set",
       "canBeReviewed": "Can be reviewed",
       "canBeApproved": "Can be approved",
+      "canRequestChanges": "Can request changes",
       "yes": "Yes",
       "no": "No"
+    },
+    "payout": {
+      "method": "Method",
+      "methodOptions": {
+        "BANK_ACCOUNT": "Bank account",
+        "IBAN": "IBAN",
+        "WALLET": "Wallet",
+        "OTHER": "Other"
+      },
+      "accountHolderName": "Account holder name",
+      "bankName": "Bank name",
+      "bankAccountNumber": "Bank account number",
+      "walletProvider": "Wallet provider",
+      "walletIdentifier": "Wallet identifier",
+      "otherDetails": "Other details"
+    },
+    "edit": {
+      "save": {
+        "submit": "Save edits",
+        "submitting": "Saving...",
+        "success": "Changes saved successfully.",
+        "error": "Could not save edits. Check required fields first."
+      }
     },
     "decision": {
       "heading": "Take a decision",
@@ -1082,6 +1133,18 @@
         "submitting": "Approving...",
         "success": "Application approved successfully.",
         "error": "Could not approve application. Please try again."
+      },
+      "requestChanges": {
+        "title": "Request changes",
+        "reasonLabel": "Reason",
+        "reasonPlaceholder": "Required — what should the practitioner update?",
+        "reasonRequired": "A reason is required to request changes.",
+        "noteLabel": "Note (optional)",
+        "notePlaceholder": "Optional guidance for the practitioner",
+        "submit": "Request changes",
+        "submitting": "Requesting...",
+        "success": "Changes requested successfully.",
+        "error": "Could not request changes. Please try again."
       },
       "reject": {
         "title": "Reject",

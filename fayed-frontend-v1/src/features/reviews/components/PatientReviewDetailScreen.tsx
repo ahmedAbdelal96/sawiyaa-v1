@@ -2,8 +2,9 @@
 
 import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
-import { ArrowRight, CalendarDays, ClipboardList, MessageSquareText, Star } from "lucide-react";
+import { CalendarDays, ClipboardList, MessageSquareText, Star } from "lucide-react";
 import { ListStateSkeleton, StateCard } from "@/components/shared/ContentStates";
+import DirectionalArrowIcon from "@/components/ui/navigation/DirectionalArrowIcon";
 import { usePatientReview } from "../hooks/use-reviews";
 import { getPatientReviewErrorKey } from "../lib/reviews-errors";
 import type { SessionReviewStatus } from "../types/reviews.types";
@@ -108,7 +109,7 @@ export default function PatientReviewDetailScreen({ reviewId }: Props) {
           href="/patient/reviews"
           className="mb-3 inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline"
         >
-          <ArrowRight className="h-4 w-4 rtl:rotate-180" />
+          <DirectionalArrowIcon direction="back" className="h-4 w-4" />
           {t("patient.detail.back")}
         </Link>
 

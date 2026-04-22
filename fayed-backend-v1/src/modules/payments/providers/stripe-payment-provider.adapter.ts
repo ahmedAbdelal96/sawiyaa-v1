@@ -40,7 +40,9 @@ type StripeRefundResponse = {
 export class StripePaymentProviderAdapter implements PaymentProviderAdapter {
   readonly provider = PaymentProvider.STRIPE;
 
-  constructor(private readonly paymentRuntimeConfigService: PaymentRuntimeConfigService) {}
+  constructor(
+    private readonly paymentRuntimeConfigService: PaymentRuntimeConfigService,
+  ) {}
 
   async initiateSessionPayment(input: {
     paymentId: string;
@@ -50,7 +52,9 @@ export class StripePaymentProviderAdapter implements PaymentProviderAdapter {
     sessionId: string;
     patientEmail?: string | null;
   }): Promise<PaymentProviderInitiationResult> {
-    this.paymentRuntimeConfigService.assertCheckoutConfigured(PaymentProvider.STRIPE);
+    this.paymentRuntimeConfigService.assertCheckoutConfigured(
+      PaymentProvider.STRIPE,
+    );
     const stripeConfig = this.paymentRuntimeConfigService.getStripeConfig();
     const stripeApiBaseUrl = stripeConfig.apiBaseUrl!;
 
@@ -102,7 +106,9 @@ export class StripePaymentProviderAdapter implements PaymentProviderAdapter {
     headers: Record<string, string | string[] | undefined>;
     query?: Record<string, unknown>;
   }): PaymentWebhookResult {
-    this.paymentRuntimeConfigService.assertWebhookConfigured(PaymentProvider.STRIPE);
+    this.paymentRuntimeConfigService.assertWebhookConfigured(
+      PaymentProvider.STRIPE,
+    );
     const stripeConfig = this.paymentRuntimeConfigService.getStripeConfig();
 
     const signatureHeader = input.headers['stripe-signature'];
@@ -130,7 +136,9 @@ export class StripePaymentProviderAdapter implements PaymentProviderAdapter {
       });
     }
 
-    const event = JSON.parse(input.rawBody.toString('utf8')) as StripeWebhookEvent;
+    const event = JSON.parse(
+      input.rawBody.toString('utf8'),
+    ) as StripeWebhookEvent;
 
     const providerPaymentRef = event.data?.object?.id;
 
@@ -177,7 +185,9 @@ export class StripePaymentProviderAdapter implements PaymentProviderAdapter {
     currency: string;
     reason?: string | null;
   }): Promise<PaymentProviderRefundResult> {
-    this.paymentRuntimeConfigService.assertCheckoutConfigured(PaymentProvider.STRIPE);
+    this.paymentRuntimeConfigService.assertCheckoutConfigured(
+      PaymentProvider.STRIPE,
+    );
     const stripeConfig = this.paymentRuntimeConfigService.getStripeConfig();
     const stripeApiBaseUrl = stripeConfig.apiBaseUrl!;
 
@@ -227,7 +237,10 @@ export class StripePaymentProviderAdapter implements PaymentProviderAdapter {
     };
   }
 
-  private parseStripeSignature(signature: string): { timestamp: string; v1: string } {
+  private parseStripeSignature(signature: string): {
+    timestamp: string;
+    v1: string;
+  } {
     const parts = signature.split(',');
     const timestamp = parts.find((part) => part.startsWith('t='))?.slice(2);
     const v1 = parts.find((part) => part.startsWith('v1='))?.slice(3);

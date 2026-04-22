@@ -1,4 +1,7 @@
-import { BadRequestException, ServiceUnavailableException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import { createHmac } from 'crypto';
 import { PaymentProvider, PaymentStatus } from '@prisma/client';
 import { PaymobPaymentProviderAdapter } from './paymob-payment-provider.adapter';
@@ -55,7 +58,9 @@ describe('PaymobPaymentProviderAdapter', () => {
         ),
       )
       .mockResolvedValueOnce(
-        new Response(JSON.stringify({ token: 'payment_token' }), { status: 200 }),
+        new Response(JSON.stringify({ token: 'payment_token' }), {
+          status: 200,
+        }),
       );
 
     const result = await adapter.initiateSessionPayment({
@@ -183,7 +188,10 @@ function buildWebhookEvent(input: {
   };
 }
 
-function buildPaymobHmac(event: Record<string, unknown>, secret: string): string {
+function buildPaymobHmac(
+  event: Record<string, unknown>,
+  secret: string,
+): string {
   const sourceData = (event.source_data as Record<string, unknown>) ?? {};
   const order = (event.order as Record<string, unknown>) ?? {};
   const concatenated = [

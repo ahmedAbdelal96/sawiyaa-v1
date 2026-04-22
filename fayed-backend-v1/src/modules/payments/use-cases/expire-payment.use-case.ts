@@ -7,6 +7,7 @@ import {
 } from '@prisma/client';
 import { PrismaService } from '@common/prisma/prisma.service';
 import { AppLoggerService } from '@common/logging/app-logger.service';
+import { CustomerWalletAccountingService } from '@modules/customer-wallets/services/customer-wallet-accounting.service';
 import { PaymentMapper } from '../mappers/payment.mapper';
 import { PaymentRepository } from '../repositories/payment.repository';
 import { OrchestrateSessionPaymentStatusService } from '../services/orchestrate-session-payment-status.service';
@@ -22,6 +23,7 @@ export class ExpirePaymentUseCase {
     private readonly orchestrateSessionPaymentStatusService: OrchestrateSessionPaymentStatusService,
     private readonly orchestrateTrainingEnrollmentPaymentStatusService: OrchestrateTrainingEnrollmentPaymentStatusService,
     private readonly paymentMapper: PaymentMapper,
+    private readonly customerWalletAccountingService: CustomerWalletAccountingService,
     private readonly logger: AppLoggerService,
   ) {}
 
@@ -75,6 +77,14 @@ export class ExpirePaymentUseCase {
 
       return expired;
     });
+
+    if (updated.amountFromWallet.gt(0)) {
+      await this.customerWalletAccountingService.releaseReservationForPayment({
+        paymentId: updated.id,
+        currencyCode: updated.currencyCode,
+        releaseReason: 'PAYMENT_EXPIRED',
+      });
+    }
 
     if (payment.sessionId) {
       await this.orchestrateSessionPaymentStatusService.expireSessionFromPayment(

@@ -18,7 +18,10 @@ export class PaymentRepository {
     return tx ?? this.prisma;
   }
 
-  createPayment(data: Prisma.PaymentUncheckedCreateInput, tx?: Prisma.TransactionClient) {
+  createPayment(
+    data: Prisma.PaymentUncheckedCreateInput,
+    tx?: Prisma.TransactionClient,
+  ) {
     return this.getDb(tx).payment.create({
       data,
       include: this.paymentInclude,
@@ -43,6 +46,8 @@ export class PaymentRepository {
         amountSubtotal: true,
         amountDiscount: true,
         amountTotal: true,
+        amountFromWallet: true,
+        amountFromGateway: true,
         currencyCode: true,
         providerPaymentRef: true,
         providerOrderRef: true,
@@ -69,12 +74,14 @@ export class PaymentRepository {
           select: {
             id: true,
             refundType: true,
+            destination: true,
             status: true,
             amount: true,
             currencyCode: true,
             requestedAt: true,
             processedAt: true,
             failedAt: true,
+            customerWalletCreditedAt: true,
             refundReason: true,
             providerRefundRef: true,
           },
@@ -167,7 +174,10 @@ export class PaymentRepository {
     });
   }
 
-  findByProviderReference(provider: PaymentProvider, providerPaymentRef: string) {
+  findByProviderReference(
+    provider: PaymentProvider,
+    providerPaymentRef: string,
+  ) {
     return this.prisma.payment.findUnique({
       where: {
         provider_providerPaymentRef: {
@@ -187,7 +197,10 @@ export class PaymentRepository {
     });
   }
 
-  createEvent(data: Prisma.PaymentEventUncheckedCreateInput, tx?: Prisma.TransactionClient) {
+  createEvent(
+    data: Prisma.PaymentEventUncheckedCreateInput,
+    tx?: Prisma.TransactionClient,
+  ) {
     return this.getDb(tx).paymentEvent.create({ data });
   }
 
@@ -238,7 +251,10 @@ export class PaymentRepository {
     });
   }
 
-  createRefund(data: Prisma.RefundUncheckedCreateInput, tx?: Prisma.TransactionClient) {
+  createRefund(
+    data: Prisma.RefundUncheckedCreateInput,
+    tx?: Prisma.TransactionClient,
+  ) {
     return this.getDb(tx).refund.create({ data });
   }
 

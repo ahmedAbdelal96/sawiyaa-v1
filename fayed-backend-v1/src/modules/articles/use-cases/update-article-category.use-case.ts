@@ -19,8 +19,13 @@ export class UpdateArticleCategoryUseCase {
     private readonly articlePresenter: ArticlePresenter,
   ) {}
 
-  async execute(input: { categoryId: string; payload: UpdateArticleCategoryDto }) {
-    const existing = await this.articleRepository.findCategoryById(input.categoryId);
+  async execute(input: {
+    categoryId: string;
+    payload: UpdateArticleCategoryDto;
+  }) {
+    const existing = await this.articleRepository.findCategoryById(
+      input.categoryId,
+    );
     if (!existing) {
       throw new NotFoundException({
         messageKey: 'articles.errors.categoryNotFound',
@@ -58,7 +63,10 @@ export class UpdateArticleCategoryUseCase {
                 ? { metaTitle: input.payload.metaTitle?.trim() || null }
                 : {}),
               ...(input.payload.metaDescription !== undefined
-                ? { metaDescription: input.payload.metaDescription?.trim() || null }
+                ? {
+                    metaDescription:
+                      input.payload.metaDescription?.trim() || null,
+                  }
                 : {}),
             }
           : undefined,

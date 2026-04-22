@@ -19,10 +19,14 @@ export class ListPaymentRefundsUseCase {
       });
     }
 
-    const refunds = await this.paymentRepository.listRefundsByPaymentId(input.paymentId);
+    const refunds = await this.paymentRepository.listRefundsByPaymentId(
+      input.paymentId,
+    );
 
     return {
-      items: refunds.map((refund) => this.paymentMapper.toRefundViewModel(refund)),
+      items: refunds.map((refund) =>
+        this.paymentMapper.toRefundViewModel(refund),
+      ),
     };
   }
 }

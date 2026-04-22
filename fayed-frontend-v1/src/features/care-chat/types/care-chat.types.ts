@@ -22,6 +22,13 @@ export type CareChatParticipantRole =
   | "ADMIN"
   | "SYSTEM";
 
+export type CareChatMessageStatus =
+  | "SENT"
+  | "DELIVERED"
+  | "READ"
+  | "FAILED"
+  | "DELETED";
+
 export type CareChatDecision = "APPROVE" | "REJECT";
 
 export type CareChatParticipantSummary = {
@@ -35,6 +42,8 @@ export type CareChatRequestItem = {
   reason: string | null;
   relatedSessionId: string | null;
   linkedConversationId: string | null;
+  unreadCount: number;
+  hasUnread: boolean;
   requestedAt: string;
   reviewedAt: string | null;
   approvedAt: string | null;
@@ -51,8 +60,11 @@ export type AdminCareChatRequestItem = CareChatRequestItem & {
 
 export type CareChatMessage = {
   id: string;
+  senderUserId: string | null;
   senderRole: CareChatParticipantRole;
   message: string;
+  status: CareChatMessageStatus;
+  deliveredAt: string | null;
   createdAt: string;
   readAt: string | null;
 };

@@ -22,7 +22,9 @@ describe('SendCareChatMessageUseCase', () => {
   const useCase = new SendCareChatMessageUseCase(
     actorRepository,
     conversationRepository,
-    new ValidateCareChatSendMessageService(new ResolveCareChatActivityStateService()),
+    new ValidateCareChatSendMessageService(
+      new ResolveCareChatActivityStateService(),
+    ),
     presenter,
   );
 
@@ -31,9 +33,11 @@ describe('SendCareChatMessageUseCase', () => {
   });
 
   it('blocks sending when conversation is inactive', async () => {
-    (actorRepository.findPatientProfileByUserId as jest.Mock).mockResolvedValue({
-      id: 'patient-1',
-    });
+    (actorRepository.findPatientProfileByUserId as jest.Mock).mockResolvedValue(
+      {
+        id: 'patient-1',
+      },
+    );
     (conversationRepository.findByIdForActor as jest.Mock).mockResolvedValue({
       id: 'conversation-1',
       status: ConversationStatus.SUSPENDED,

@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { ListStateSkeleton, StateCard } from "@/components/shared/ContentStates";
 import FilterClearButton from "@/components/ui/filters/FilterClearButton";
+import { DEFAULT_PAGE_LIMIT } from "@/constants/pagination";
 import CareChatRequestCard from "./CareChatRequestCard";
 import { usePractitionerCareChatRequests } from "../hooks/use-care-chat";
 import type { CareChatRequestStatus } from "../types/care-chat.types";
@@ -24,7 +25,7 @@ export default function PractitionerCareChatHomeScreen() {
   const params = useMemo(
     () => ({
       page: 1,
-      limit: 20,
+      limit: DEFAULT_PAGE_LIMIT,
       status: statusFilter === "ALL" ? undefined : statusFilter,
     }),
     [statusFilter],

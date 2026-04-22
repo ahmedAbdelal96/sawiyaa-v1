@@ -2,14 +2,15 @@
 
 import { useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import { AlertCircle, ArrowLeft, Clock3, ShieldCheck, Tag, X } from "lucide-react";
+import { AlertCircle, Clock3, ShieldCheck, Tag, X } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { toAppError } from "@/lib/api/errors";
 import { ListStateSkeleton, StateCard } from "@/components/shared/ContentStates";
 import { usePatientSession } from "@/features/sessions/hooks/use-sessions";
 import { useSessionFinancialBreakdown } from "@/features/sessions/hooks/use-session-financial";
 import Button from "@/components/ui/button/Button";
-import { useInitiateSessionPayment } from "../hooks/use-payments";
+import DirectionalArrowIcon from "@/components/ui/navigation/DirectionalArrowIcon";
+import { useInitiateSessionPayment, usePatientWalletSummary } from "../hooks/use-payments";
 import StripePaymentForm from "./StripePaymentForm";
 import type { FinancialBreakdown } from "@/features/sessions/types/financial.types";
 
@@ -35,9 +36,30 @@ function formatDatetime(isoString: string | null, numLocale: string): string {
   });
 }
 
+function normalizeAmount(amount: string): number {
+  const parsed = Number(amount);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
 function isSessionExpired(expiresAt: string | null): boolean {
   if (!expiresAt) return false;
   return new Date(expiresAt).getTime() <= Date.now();
+}
+
+function resolveWalletSplit(input: {
+  totalAmount: string;
+  walletBalance: string;
+  useWalletBalance: boolean;
+}) {
+  const total = normalizeAmount(input.totalAmount);
+  const wallet = input.useWalletBalance ? normalizeAmount(input.walletBalance) : 0;
+  const walletUsed = Math.min(wallet, total);
+  const gatewayRemaining = Math.max(total - walletUsed, 0);
+
+  return {
+    walletUsed: walletUsed.toFixed(2),
+    gatewayRemaining: gatewayRemaining.toFixed(2),
+  };
 }
 
 type PriceBreakdownProps = {
@@ -90,6 +112,60 @@ function PriceBreakdown({ breakdown, numLocale, t }: PriceBreakdownProps) {
   );
 }
 
+type WalletUsagePreviewProps = {
+  t: ReturnType<typeof useTranslations<"payments">>;
+  numLocale: string;
+  currency: string;
+  totalAmount: string;
+  walletBalance: string;
+  useWalletBalance: boolean;
+};
+
+function WalletUsagePreview({
+  t,
+  numLocale,
+  currency,
+  totalAmount,
+  walletBalance,
+  useWalletBalance,
+}: WalletUsagePreviewProps) {
+  const walletSplit = resolveWalletSplit({
+    totalAmount,
+    walletBalance,
+    useWalletBalance,
+  });
+
+  return (
+    <div className="rounded-2xl border border-border-light bg-white p-4 shadow-sm dark:border-border-light dark:bg-surface-secondary">
+      <p className="mb-3 text-sm font-semibold text-text-primary dark:text-white/90">
+        {t("walletCheckout.heading")}
+      </p>
+      <div className="space-y-2">
+        <div className="flex items-center justify-between text-sm">
+          <span className="text-text-secondary">{t("walletCheckout.totalLabel")}</span>
+          <span className="font-medium text-text-primary dark:text-white/90">
+            {formatAmount(totalAmount, currency, numLocale)}
+          </span>
+        </div>
+        <div className="flex items-center justify-between text-sm">
+          <span className="text-text-secondary">{t("walletCheckout.walletDeductionLabel")}</span>
+          <span className="font-medium text-text-brand dark:text-primary-light">
+            {formatAmount(walletSplit.walletUsed, currency, numLocale)}
+          </span>
+        </div>
+        <div className="flex items-center justify-between rounded-xl bg-surface-tertiary px-3 py-2 text-sm dark:bg-white/5">
+          <span className="font-semibold text-text-primary dark:text-white/90">
+            {t("walletCheckout.gatewayRemainderLabel")}
+          </span>
+          <span className="text-base font-bold text-primary">
+            {formatAmount(walletSplit.gatewayRemaining, currency, numLocale)}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 type Props = {
   sessionId: string;
 };
@@ -102,6 +178,7 @@ export default function PaySessionPanel({ sessionId }: Props) {
   const [phase, setPhase] = useState<Phase>("pricing");
   const [couponInput, setCouponInput] = useState("");
   const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null);
+  const [useWalletBalance, setUseWalletBalance] = useState(true);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [initiateError, setInitiateError] = useState<string | null>(null);
   const [redirectingToHostedCheckout, setRedirectingToHostedCheckout] = useState(false);
@@ -126,6 +203,21 @@ export default function PaySessionPanel({ sessionId }: Props) {
   } = useSessionFinancialBreakdown(sessionId, appliedCoupon, {
     enabled: Boolean(isPayableSession),
   });
+
+  const { data: walletSummaryData, isLoading: walletSummaryLoading } = usePatientWalletSummary();
+  const walletSummary = walletSummaryData?.item ?? null;
+  const walletCurrencyMatchesBreakdown = walletSummary && breakdown
+    ? walletSummary.currencyCode === breakdown.currency
+    : true;
+  const availableWalletBalance =
+    walletSummary && walletCurrencyMatchesBreakdown ? walletSummary.availableBalance : "0";
+  const walletSplit = breakdown
+    ? resolveWalletSplit({
+        totalAmount: breakdown.netPaidAmount,
+        walletBalance: availableWalletBalance,
+        useWalletBalance,
+      })
+    : null;
 
   const initiate = useInitiateSessionPayment();
 
@@ -152,7 +244,10 @@ export default function PaySessionPanel({ sessionId }: Props) {
     initiate.mutate(
       {
         sessionId,
-        input: { couponCode: appliedCoupon ?? undefined },
+        input: {
+          couponCode: appliedCoupon ?? undefined,
+          useWalletBalance,
+        },
       },
       {
         onSuccess: (data) => {
@@ -165,6 +260,14 @@ export default function PaySessionPanel({ sessionId }: Props) {
           if (data.item.checkoutUrl) {
             setRedirectingToHostedCheckout(true);
             window.location.assign(data.item.checkoutUrl);
+            return;
+          }
+
+          if (
+            data.item.provider === "INTERNAL_WALLET" &&
+            (data.item.status === "CAPTURED" || data.item.status === "AUTHORIZED")
+          ) {
+            window.location.assign(`${returnUrl}?redirect_status=succeeded`);
             return;
           }
 
@@ -275,7 +378,7 @@ export default function PaySessionPanel({ sessionId }: Props) {
           onClick={() => setPhase("pricing")}
           className="mb-4 inline-flex items-center gap-1.5 text-xs text-text-muted hover:text-primary"
         >
-          <ArrowLeft size={13} className="rtl:rotate-180" />
+          <DirectionalArrowIcon direction="back" className="h-[13px] w-[13px]" />
           {t("page.backToSummary")}
         </button>
 
@@ -368,6 +471,57 @@ export default function PaySessionPanel({ sessionId }: Props) {
         <PriceBreakdown breakdown={breakdown} numLocale={numLocale} t={t} />
       )}
 
+      {breakdown && (
+        <div className="rounded-2xl border border-border-light bg-white p-4 shadow-sm dark:border-border-light dark:bg-surface-secondary">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-sm font-semibold text-text-primary dark:text-white/90">
+                {t("walletCheckout.useWalletTitle")}
+              </p>
+              <p className="mt-1 text-xs text-text-secondary">
+                {t("walletCheckout.useWalletNote")}
+              </p>
+              <p className="mt-2 text-xs text-text-muted">
+                {walletSummaryLoading
+                  ? t("walletCheckout.balanceLoading")
+                  : formatAmount(
+                      availableWalletBalance,
+                      breakdown.currency,
+                      numLocale,
+                    )}
+              </p>
+            </div>
+            <label className="inline-flex items-center gap-2 text-xs font-medium text-text-secondary">
+              <input
+                type="checkbox"
+                checked={useWalletBalance}
+                onChange={(event) => setUseWalletBalance(event.target.checked)}
+                disabled={walletSummaryLoading || !walletSummary || Number(availableWalletBalance) <= 0}
+                className="h-4 w-4 rounded border-border-light text-primary focus:ring-primary"
+              />
+              {t("walletCheckout.useWalletToggle")}
+            </label>
+          </div>
+
+          {!walletCurrencyMatchesBreakdown && walletSummary ? (
+            <p className="mt-2 text-xs text-warning-700 dark:text-warning-300">
+              {t("walletCheckout.currencyMismatch")}
+            </p>
+          ) : null}
+        </div>
+      )}
+
+      {breakdown && (
+        <WalletUsagePreview
+          t={t}
+          numLocale={numLocale}
+          currency={breakdown.currency}
+          totalAmount={breakdown.netPaidAmount}
+          walletBalance={availableWalletBalance}
+          useWalletBalance={useWalletBalance}
+        />
+      )}
+
       {!appliedCoupon ? (
         <div>
           <div className="flex flex-col items-stretch gap-2 sm:flex-row">
@@ -438,9 +592,18 @@ export default function PaySessionPanel({ sessionId }: Props) {
           {t("page.paymentRequiredHeading")}
         </p>
         {breakdown ? (
-          <p className="mb-4 text-lg font-bold text-primary">
-            {formatAmount(breakdown.netPaidAmount, breakdown.currency, numLocale)}
-          </p>
+          <>
+            <p className="mb-1 text-lg font-bold text-primary">
+              {formatAmount(
+                walletSplit?.gatewayRemaining ?? "0",
+                breakdown.currency,
+                numLocale,
+              )}
+            </p>
+            <p className="mb-4 text-xs text-text-muted">
+              {t("walletCheckout.gatewayChargeHint")}
+            </p>
+          </>
         ) : null}
 
         <Button
@@ -458,13 +621,17 @@ export default function PaySessionPanel({ sessionId }: Props) {
             : redirectingToHostedCheckout
               ? t("page.redirecting")
               : breakdown
-                ? t("page.payWithAmount", {
-                    amount: formatAmount(
-                      breakdown.netPaidAmount,
-                      breakdown.currency,
-                      numLocale,
-                    ),
-                  })
+                ? Number(
+                    walletSplit?.gatewayRemaining ?? "0",
+                  ) <= 0
+                  ? t("walletCheckout.confirmWalletOnly")
+                  : t("page.payWithAmount", {
+                      amount: formatAmount(
+                        walletSplit?.gatewayRemaining ?? "0",
+                        breakdown.currency,
+                        numLocale,
+                      ),
+                    })
                 : t("page.proceedToPay")}
         </Button>
 

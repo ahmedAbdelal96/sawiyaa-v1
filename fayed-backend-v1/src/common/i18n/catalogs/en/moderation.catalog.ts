@@ -1,6 +1,7 @@
 export const enModerationCatalog = {
   errors: {
-    reporterRoleNotAllowed: 'Reporter role is not allowed to submit moderation reports',
+    reporterRoleNotAllowed:
+      'Reporter role is not allowed to submit moderation reports',
     unsupportedTargetType: 'Moderation target type is not supported',
     targetNotFoundOrNotAccessible:
       'Moderation target was not found or is not accessible',
@@ -11,8 +12,7 @@ export const enModerationCatalog = {
       'Current actor role is not allowed to execute this moderation action',
     invalidActionTargetCombination:
       'Moderation action is not valid for the selected target type',
-    actionReasonRequired:
-      'This moderation action requires an explicit reason',
+    actionReasonRequired: 'This moderation action requires an explicit reason',
     invalidCaseTransition:
       'Moderation action is not valid for current case status',
     caseTransitionRaceCondition:

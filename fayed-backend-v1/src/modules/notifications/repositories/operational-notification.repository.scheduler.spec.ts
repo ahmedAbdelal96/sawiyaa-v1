@@ -23,7 +23,9 @@ describe('OperationalNotificationRepository scheduler core', () => {
   });
 
   it('queries only due pending notifications with deterministic order and limit', async () => {
-    (prisma.notification.findMany as jest.Mock).mockResolvedValue([{ id: 'n1' }]);
+    (prisma.notification.findMany as jest.Mock).mockResolvedValue([
+      { id: 'n1' },
+    ]);
     const now = new Date('2026-04-01T10:00:00.000Z');
 
     await repository.listDueNotificationIds({ now, limit: 25 });
@@ -45,7 +47,9 @@ describe('OperationalNotificationRepository scheduler core', () => {
   });
 
   it('claims notification atomically only when still pending and due', async () => {
-    (prisma.notification.updateMany as jest.Mock).mockResolvedValue({ count: 1 });
+    (prisma.notification.updateMany as jest.Mock).mockResolvedValue({
+      count: 1,
+    });
     const now = new Date('2026-04-01T10:00:00.000Z');
 
     await repository.claimNotificationForExecution({
@@ -69,7 +73,9 @@ describe('OperationalNotificationRepository scheduler core', () => {
   });
 
   it('loads queued notification with execution payload only', async () => {
-    (prisma.notification.findFirst as jest.Mock).mockResolvedValue({ id: 'n1' });
+    (prisma.notification.findFirst as jest.Mock).mockResolvedValue({
+      id: 'n1',
+    });
 
     await repository.findQueuedNotificationForExecution('n1');
 
@@ -100,7 +106,9 @@ describe('OperationalNotificationRepository scheduler core', () => {
   });
 
   it('marks queued notification as sent only when still queued', async () => {
-    (prisma.notification.updateMany as jest.Mock).mockResolvedValue({ count: 1 });
+    (prisma.notification.updateMany as jest.Mock).mockResolvedValue({
+      count: 1,
+    });
     const sentAt = new Date('2026-04-01T11:00:00.000Z');
 
     await repository.markQueuedNotificationSent({
@@ -124,7 +132,9 @@ describe('OperationalNotificationRepository scheduler core', () => {
   });
 
   it('reschedules queued notification back to pending with next retry date', async () => {
-    (prisma.notification.updateMany as jest.Mock).mockResolvedValue({ count: 1 });
+    (prisma.notification.updateMany as jest.Mock).mockResolvedValue({
+      count: 1,
+    });
     const retryAt = new Date('2026-04-01T11:05:00.000Z');
 
     await repository.rescheduleQueuedNotificationForRetry({
@@ -146,7 +156,9 @@ describe('OperationalNotificationRepository scheduler core', () => {
   });
 
   it('suppresses queued notification with explicit reason', async () => {
-    (prisma.notification.updateMany as jest.Mock).mockResolvedValue({ count: 1 });
+    (prisma.notification.updateMany as jest.Mock).mockResolvedValue({
+      count: 1,
+    });
 
     await repository.markQueuedNotificationSuppressed({
       notificationId: 'n1',

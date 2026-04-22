@@ -13,7 +13,10 @@ export class OtpPolicyResolverService {
 
   resolve(purpose: OtpPurpose): OtpPolicy {
     const codeLength = this.configService.get<number>('auth.otp.codeLength', 6);
-    const maxAttempts = this.configService.get<number>('auth.otp.maxAttempts', 5);
+    const maxAttempts = this.configService.get<number>(
+      'auth.otp.maxAttempts',
+      5,
+    );
     const resendCooldownSeconds = this.configService.get<number>(
       'auth.otp.resendCooldownSeconds',
       30,

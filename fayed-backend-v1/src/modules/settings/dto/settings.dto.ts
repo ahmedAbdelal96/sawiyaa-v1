@@ -37,7 +37,10 @@ export class SettingsNotificationPreferencesDto {
   @ApiProperty({ type: SettingsNotificationPreferenceItemDto, isArray: true })
   items!: SettingsNotificationPreferenceItemDto[];
 
-  @ApiProperty({ enum: SETTINGS_SUPPORTED_NOTIFICATION_CHANNELS, isArray: true })
+  @ApiProperty({
+    enum: SETTINGS_SUPPORTED_NOTIFICATION_CHANNELS,
+    isArray: true,
+  })
   supportedChannels!: Array<
     (typeof SETTINGS_SUPPORTED_NOTIFICATION_CHANNELS)[number]
   >;

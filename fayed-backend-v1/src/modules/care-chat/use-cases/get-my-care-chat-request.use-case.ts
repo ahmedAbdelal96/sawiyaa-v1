@@ -16,7 +16,10 @@ export class GetMyCareChatRequestUseCase {
     userId: string;
     requestId: string;
   }) {
-    const profileId = await this.resolveProfileId(input.actorType, input.userId);
+    const profileId = await this.resolveProfileId(
+      input.actorType,
+      input.userId,
+    );
     const row = await this.careChatRequestRepository.findByIdForActor({
       actorType: input.actorType,
       profileId,
@@ -39,9 +42,8 @@ export class GetMyCareChatRequestUseCase {
     userId: string,
   ) {
     if (actorType === 'PATIENT') {
-      const patient = await this.careChatActorRepository.findPatientProfileByUserId(
-        userId,
-      );
+      const patient =
+        await this.careChatActorRepository.findPatientProfileByUserId(userId);
       if (!patient) {
         throw new NotFoundException({
           messageKey: 'careChat.errors.patientProfileNotFound',
@@ -53,7 +55,9 @@ export class GetMyCareChatRequestUseCase {
     }
 
     const practitioner =
-      await this.careChatActorRepository.findPractitionerProfileByUserId(userId);
+      await this.careChatActorRepository.findPractitionerProfileByUserId(
+        userId,
+      );
     if (!practitioner) {
       throw new NotFoundException({
         messageKey: 'careChat.errors.practitionerProfileNotFound',

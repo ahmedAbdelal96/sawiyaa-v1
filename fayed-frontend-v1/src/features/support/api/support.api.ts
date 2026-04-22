@@ -6,6 +6,7 @@ import type {
   AdminSupportListParams,
   AdminSupportTicketResponse,
   AssignSupportTicketRequest,
+  CreateAdminSupportTicketForReporterRequest,
   CreateSupportTicketRequest,
   SupportTicketResponse,
   SupportTicketsListParams,
@@ -178,6 +179,16 @@ export async function assignAdminSupportTicket(
 ): Promise<AdminSupportTicketResponse> {
   const response = await httpClient.patch<ApiPayload<AdminSupportTicketResponse>>(
     `/admin/support/tickets/${ticketId}/assign`,
+    payload,
+  );
+  return extractData(response.data);
+}
+
+export async function createAdminSupportTicketForReporter(
+  payload: CreateAdminSupportTicketForReporterRequest,
+): Promise<AdminSupportTicketResponse> {
+  const response = await httpClient.post<ApiPayload<AdminSupportTicketResponse>>(
+    "/admin/support/tickets/create-for-reporter",
     payload,
   );
   return extractData(response.data);

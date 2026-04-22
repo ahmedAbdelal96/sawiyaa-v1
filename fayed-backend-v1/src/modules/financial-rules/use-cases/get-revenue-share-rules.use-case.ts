@@ -110,4 +110,3 @@ export class GetRevenueShareRulesUseCase {
 }
 
 export { LOCAL_DEFAULT_SLUG, CROSS_BORDER_DEFAULT_SLUG };
-

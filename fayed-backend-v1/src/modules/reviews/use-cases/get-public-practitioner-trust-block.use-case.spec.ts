@@ -136,10 +136,8 @@ describe('GetPublicPractitionerTrustBlockUseCase', () => {
       },
     });
 
-    expect(result.contentSuggestions.map((item: { id: string }) => item.id)).toEqual([
-      'a1',
-      'a2',
-      'a3',
-    ]);
+    expect(
+      result.contentSuggestions.map((item: { id: string }) => item.id),
+    ).toEqual(['a1', 'a2', 'a3']);
   });
 });

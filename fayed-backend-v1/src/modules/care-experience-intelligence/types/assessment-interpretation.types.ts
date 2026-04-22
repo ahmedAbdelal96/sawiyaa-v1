@@ -41,4 +41,3 @@ export type AssessmentCareIntentInterpretation = {
   reasonCodes: AssessmentInterpretationReasonCode[];
   isActionBlockedByPayment: boolean;
 };
-

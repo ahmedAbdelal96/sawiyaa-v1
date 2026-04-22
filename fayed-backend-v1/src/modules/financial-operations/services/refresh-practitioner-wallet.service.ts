@@ -19,7 +19,8 @@ export class RefreshPractitionerWalletService {
   ) {}
 
   async refresh(practitionerId: string, tx?: Prisma.TransactionClient) {
-    const aggregates = await this.ledgerRepository.aggregatePractitionerBalances(practitionerId);
+    const aggregates =
+      await this.ledgerRepository.aggregatePractitionerBalances(practitionerId);
     const byCurrency = new Map<
       string,
       {
@@ -33,15 +34,14 @@ export class RefreshPractitionerWalletService {
     >();
 
     for (const aggregate of aggregates) {
-      const current =
-        byCurrency.get(aggregate.currencyCode) ?? {
-          available: new Prisma.Decimal(0),
-          pending: new Prisma.Decimal(0),
-          reserved: new Prisma.Decimal(0),
-          lifetimeEarned: new Prisma.Decimal(0),
-          lifetimePaidOut: new Prisma.Decimal(0),
-          lastLedgerEntryAt: null,
-        };
+      const current = byCurrency.get(aggregate.currencyCode) ?? {
+        available: new Prisma.Decimal(0),
+        pending: new Prisma.Decimal(0),
+        reserved: new Prisma.Decimal(0),
+        lifetimeEarned: new Prisma.Decimal(0),
+        lifetimePaidOut: new Prisma.Decimal(0),
+        lastLedgerEntryAt: null,
+      };
 
       const signed = this.moneyAmountService.signedAmount(
         aggregate.direction,

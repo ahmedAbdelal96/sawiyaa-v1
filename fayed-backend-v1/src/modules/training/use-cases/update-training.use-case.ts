@@ -22,7 +22,9 @@ export class UpdateTrainingUseCase {
   ) {}
 
   async execute(input: { courseId: string; payload: UpdateTrainingDto }) {
-    const existing = await this.trainingRepository.findCourseById(input.courseId);
+    const existing = await this.trainingRepository.findCourseById(
+      input.courseId,
+    );
     if (!existing) {
       throw new NotFoundException({
         messageKey: 'training.errors.notFound',
@@ -37,7 +39,9 @@ export class UpdateTrainingUseCase {
       });
     }
 
-    const hasTranslationFieldPatch = this.hasTranslationFieldPatch(input.payload);
+    const hasTranslationFieldPatch = this.hasTranslationFieldPatch(
+      input.payload,
+    );
     if (hasTranslationFieldPatch && !input.payload.locale) {
       throw new BadRequestException({
         messageKey: 'training.errors.localeRequiredForTranslationUpdate',
@@ -81,7 +85,10 @@ export class UpdateTrainingUseCase {
             ? { slug: input.payload.slug.trim().toLowerCase() }
             : {}),
           ...(input.payload.shortDescription !== undefined
-            ? { shortDescription: input.payload.shortDescription?.trim() || null }
+            ? {
+                shortDescription:
+                  input.payload.shortDescription?.trim() || null,
+              }
             : {}),
           ...(input.payload.fullDescription !== undefined
             ? { fullDescription: input.payload.fullDescription?.trim() || null }
@@ -101,7 +108,9 @@ export class UpdateTrainingUseCase {
         });
       }
 
-      const refreshed = await this.trainingRepository.findCourseById(input.courseId);
+      const refreshed = await this.trainingRepository.findCourseById(
+        input.courseId,
+      );
       if (!refreshed) {
         throw new NotFoundException({
           messageKey: 'training.errors.notFound',
@@ -112,7 +121,10 @@ export class UpdateTrainingUseCase {
       this.logger.log(`Training updated (id=${input.courseId})`);
 
       return {
-        item: this.trainingPresenter.presentAdminTrainingItem(refreshed, locale),
+        item: this.trainingPresenter.presentAdminTrainingItem(
+          refreshed,
+          locale,
+        ),
       };
     } catch (error) {
       if (
@@ -151,11 +163,19 @@ export class UpdateTrainingUseCase {
       return payloadLocale;
     }
 
-    if (course.translations.some((translation) => translation.locale === TRAINING_DEFAULT_LOCALE)) {
+    if (
+      course.translations.some(
+        (translation) => translation.locale === TRAINING_DEFAULT_LOCALE,
+      )
+    ) {
       return TRAINING_DEFAULT_LOCALE;
     }
 
-    if (course.translations.some((translation) => translation.locale === ContentLocale.en)) {
+    if (
+      course.translations.some(
+        (translation) => translation.locale === ContentLocale.en,
+      )
+    ) {
       return ContentLocale.en;
     }
 

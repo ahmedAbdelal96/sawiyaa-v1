@@ -92,7 +92,10 @@ export class AdminTrainingsController {
   @Get(':id')
   @ApiOperation({ summary: 'Get training details for owner/admin' })
   @ApiResponse({ status: 200, type: AdminTrainingItemSuccessResponseDto })
-  getById(@Param('id') courseId: string, @Query() query: TrainingLocaleQueryDto) {
+  getById(
+    @Param('id') courseId: string,
+    @Query() query: TrainingLocaleQueryDto,
+  ) {
     return this.getAdminTrainingUseCase
       .execute({
         courseId,
@@ -103,7 +106,10 @@ export class AdminTrainingsController {
 
   @Get(':id/schedules')
   @ApiOperation({ summary: 'List schedules for a training (owner/admin)' })
-  @ApiResponse({ status: 200, type: AdminTrainingScheduleListSuccessResponseDto })
+  @ApiResponse({
+    status: 200,
+    type: AdminTrainingScheduleListSuccessResponseDto,
+  })
   listSchedules(@Param('id') courseId: string) {
     return this.listAdminTrainingSchedulesUseCase
       .execute({ courseId })
@@ -111,8 +117,13 @@ export class AdminTrainingsController {
   }
 
   @Get(':id/schedules/:scheduleId/enrollments')
-  @ApiOperation({ summary: 'List enrollments for a training schedule (owner/admin)' })
-  @ApiResponse({ status: 200, type: AdminTrainingScheduleEnrollmentListSuccessResponseDto })
+  @ApiOperation({
+    summary: 'List enrollments for a training schedule (owner/admin)',
+  })
+  @ApiResponse({
+    status: 200,
+    type: AdminTrainingScheduleEnrollmentListSuccessResponseDto,
+  })
   listScheduleEnrollments(
     @Param('id') courseId: string,
     @Param('scheduleId') scheduleId: string,
@@ -143,7 +154,10 @@ export class AdminTrainingsController {
   @Post(':id/schedules')
   @ApiOperation({ summary: 'Create schedule for training (owner/admin)' })
   @ApiBody({ type: CreateTrainingScheduleDto })
-  @ApiResponse({ status: 201, type: AdminTrainingScheduleItemSuccessResponseDto })
+  @ApiResponse({
+    status: 201,
+    type: AdminTrainingScheduleItemSuccessResponseDto,
+  })
   createSchedule(
     @Param('id') courseId: string,
     @Body() body: CreateTrainingScheduleDto,
@@ -159,7 +173,10 @@ export class AdminTrainingsController {
   @Patch(':id/schedules/:scheduleId')
   @ApiOperation({ summary: 'Update schedule for training (owner/admin)' })
   @ApiBody({ type: UpdateTrainingScheduleDto })
-  @ApiResponse({ status: 200, type: AdminTrainingScheduleItemSuccessResponseDto })
+  @ApiResponse({
+    status: 200,
+    type: AdminTrainingScheduleItemSuccessResponseDto,
+  })
   updateSchedule(
     @Param('id') courseId: string,
     @Param('scheduleId') scheduleId: string,
@@ -175,9 +192,14 @@ export class AdminTrainingsController {
   }
 
   @Patch(':id/enrollments/:enrollmentId/attendance')
-  @ApiOperation({ summary: 'Mark enrollment attendance baseline (owner/admin)' })
+  @ApiOperation({
+    summary: 'Mark enrollment attendance baseline (owner/admin)',
+  })
   @ApiBody({ type: MarkTrainingEnrollmentAttendanceDto })
-  @ApiResponse({ status: 200, type: AdminTrainingScheduleEnrollmentItemSuccessResponseDto })
+  @ApiResponse({
+    status: 200,
+    type: AdminTrainingScheduleEnrollmentItemSuccessResponseDto,
+  })
   markEnrollmentAttendance(
     @Param('id') courseId: string,
     @Param('enrollmentId') enrollmentId: string,

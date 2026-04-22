@@ -44,9 +44,8 @@ export class CreateSpecialtyUseCase {
 
     const normalizedSlug = normalizeSpecialtySlug(input.slug);
 
-    const existing = await this.specialtyRepository.findByCanonicalSlug(
-      normalizedSlug,
-    );
+    const existing =
+      await this.specialtyRepository.findByCanonicalSlug(normalizedSlug);
 
     if (existing) {
       throw new ConflictException({

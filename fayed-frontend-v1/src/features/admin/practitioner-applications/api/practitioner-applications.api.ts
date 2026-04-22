@@ -6,9 +6,14 @@ import type {
   CreateAdminPractitionerRequest,
   ListPractitionerApplicationsParams,
   PractitionerApplicationDecisionResponse,
+  PractitionerApplicationCredentialResponse,
+  PractitionerApplicationCredentialDeleteResponse,
   PractitionerApplicationDetailsResponse,
   PractitionerApplicationsListResponse,
   RejectPractitionerApplicationRequest,
+  RequestPractitionerApplicationChangesRequest,
+  CreateAdminPractitionerApplicationCredentialRequest,
+  UpdateAdminPractitionerApplicationCredentialRequest,
   UpdatePractitionerApplicationDraftRequest,
 } from "../types/practitioner-applications.types";
 
@@ -67,6 +72,21 @@ export async function rejectAdminPractitionerApplication(
 }
 
 /**
+ * Requests changes for a practitioner application (editable again).
+ */
+export async function requestChangesAdminPractitionerApplication(
+  id: string,
+  data: RequestPractitionerApplicationChangesRequest
+) {
+  const response =
+    await httpClient.post<ApiPayload<PractitionerApplicationDecisionResponse>>(
+      `/admin/practitioner-applications/${id}/request-changes`,
+      data
+    );
+  return extractData(response.data);
+}
+
+/**
  * Updates practitioner application draft/submitted fields from admin review scope.
  */
 export async function updateAdminPractitionerApplicationDraft(
@@ -77,6 +97,51 @@ export async function updateAdminPractitionerApplicationDraft(
     await httpClient.patch<ApiPayload<PractitionerApplicationDecisionResponse>>(
       `/admin/practitioner-applications/${id}`,
       data
+    );
+  return extractData(response.data);
+}
+
+/**
+ * Adds one credential for the target practitioner application from admin review scope.
+ */
+export async function createAdminPractitionerApplicationCredential(
+  id: string,
+  data: CreateAdminPractitionerApplicationCredentialRequest
+) {
+  const response =
+    await httpClient.post<ApiPayload<PractitionerApplicationCredentialResponse>>(
+      `/admin/practitioner-applications/${id}/credentials`,
+      data
+    );
+  return extractData(response.data);
+}
+
+/**
+ * Updates one credential for the target practitioner application from admin review scope.
+ */
+export async function updateAdminPractitionerApplicationCredential(
+  id: string,
+  credentialId: string,
+  data: UpdateAdminPractitionerApplicationCredentialRequest
+) {
+  const response =
+    await httpClient.patch<ApiPayload<PractitionerApplicationCredentialResponse>>(
+      `/admin/practitioner-applications/${id}/credentials/${credentialId}`,
+      data
+    );
+  return extractData(response.data);
+}
+
+/**
+ * Deletes one credential for the target practitioner application from admin review scope.
+ */
+export async function deleteAdminPractitionerApplicationCredential(
+  id: string,
+  credentialId: string
+) {
+  const response =
+    await httpClient.delete<ApiPayload<PractitionerApplicationCredentialDeleteResponse>>(
+      `/admin/practitioner-applications/${id}/credentials/${credentialId}`
     );
   return extractData(response.data);
 }

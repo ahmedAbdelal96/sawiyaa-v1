@@ -22,7 +22,8 @@ export const enFinancialOperationsCatalog = {
     partialPayoutNotSupported:
       'Partial payout is not supported in this payout flow.',
     payoutProofFileRequired: 'A payout proof file is required.',
-    payoutProofInvalidType: 'Only JPG, PNG, WEBP, or PDF proof files are allowed.',
+    payoutProofInvalidType:
+      'Only JPG, PNG, WEBP, or PDF proof files are allowed.',
     payoutProofFileTooLarge: 'Payout proof file is too large.',
     invalidFilter: 'One or more finance operation filters are invalid.',
     forbiddenScope:

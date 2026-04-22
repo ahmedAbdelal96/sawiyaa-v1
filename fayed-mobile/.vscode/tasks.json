@@ -1,0 +1,31 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "expo-web-19007",
+			"type": "shell",
+			"command": "npx",
+			"args": [
+				"expo",
+				"start",
+				"--web",
+				"--port",
+				"19007"
+			],
+			"isBackground": true
+		},
+		{
+			"label": "expo-web-phase3-proof",
+			"type": "shell",
+			"command": "npx",
+			"args": [
+				"expo",
+				"start",
+				"--web",
+				"--port",
+				"19007"
+			],
+			"isBackground": true
+		}
+	]
+}

@@ -37,7 +37,8 @@ export class ValidateAssessmentSubmissionService {
       }
 
       const allowedOptions =
-        input.allowedOptionKeysByQuestion[normalizedQuestionKey] ?? new Set<string>();
+        input.allowedOptionKeysByQuestion[normalizedQuestionKey] ??
+        new Set<string>();
       if (!allowedOptions.has(normalizedOptionKey)) {
         throw new BadRequestException({
           messageKey: 'assessments.errors.invalidOptionKey',

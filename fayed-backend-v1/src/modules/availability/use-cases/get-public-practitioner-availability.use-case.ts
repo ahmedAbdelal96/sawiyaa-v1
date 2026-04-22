@@ -21,7 +21,9 @@ export class GetPublicPractitionerAvailabilityUseCase {
 
   async execute(input: { slug: string }) {
     const practitioner =
-      await this.availabilityPractitionerRepository.findByPublicSlug(input.slug);
+      await this.availabilityPractitionerRepository.findByPublicSlug(
+        input.slug,
+      );
 
     if (!practitioner) {
       throw new NotFoundException({
@@ -30,9 +32,10 @@ export class GetPublicPractitionerAvailabilityUseCase {
       });
     }
 
-    const weeklySlots = await this.availabilitySlotRepository.listActiveByPractitioner(
-      practitioner.id,
-    );
+    const weeklySlots =
+      await this.availabilitySlotRepository.listActiveByPractitioner(
+        practitioner.id,
+      );
 
     const visibility = this.publicPractitionerVisibilityPolicy.evaluate({
       practitionerStatus: practitioner.status,
@@ -59,7 +62,9 @@ export class GetPublicPractitionerAvailabilityUseCase {
 
     return {
       timezone,
-      weeklySlots: weeklySlots.map((slot) => this.availabilityMapper.toWeeklySlot(slot)),
+      weeklySlots: weeklySlots.map((slot) =>
+        this.availabilityMapper.toWeeklySlot(slot),
+      ),
     };
   }
 }

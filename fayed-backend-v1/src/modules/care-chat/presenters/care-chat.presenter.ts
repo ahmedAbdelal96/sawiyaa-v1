@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { ConversationParticipantRole } from '@prisma/client';
+import { ConversationParticipantRole, MessageStatus } from '@prisma/client';
 import { ResolveCareChatActivityStateService } from '../services/resolve-care-chat-activity-state.service';
 
 @Injectable()
@@ -8,21 +8,24 @@ export class CareChatPresenter {
     private readonly resolveCareChatActivityStateService: ResolveCareChatActivityStateService,
   ) {}
 
-  presentUserRequestItem(item: {
-    id: string;
-    status: import('@prisma/client').ChatApprovalStatus;
-    requestReason: string | null;
-    relatedSessionId: string | null;
-    linkedConversationId: string | null;
-    requestedAt: Date;
-    reviewedAt: Date | null;
-    approvedAt: Date | null;
-    rejectedAt: Date | null;
-    expiresAt: Date | null;
-    revokedAt: Date | null;
-    patient: { id: string; user: { displayName: string | null } };
-    practitioner: { id: string; user: { displayName: string | null } };
-  }) {
+  presentUserRequestItem(
+    item: {
+      id: string;
+      status: import('@prisma/client').ChatApprovalStatus;
+      requestReason: string | null;
+      relatedSessionId: string | null;
+      linkedConversationId: string | null;
+      requestedAt: Date;
+      reviewedAt: Date | null;
+      approvedAt: Date | null;
+      rejectedAt: Date | null;
+      expiresAt: Date | null;
+      revokedAt: Date | null;
+      patient: { id: string; user: { displayName: string | null } };
+      practitioner: { id: string; user: { displayName: string | null } };
+    },
+    unread?: { unreadCount: number; hasUnread: boolean },
+  ) {
     return {
       id: item.id,
       status: item.status,
@@ -43,6 +46,8 @@ export class CareChatPresenter {
         id: item.practitioner.id,
         displayName: item.practitioner.user.displayName ?? null,
       },
+      unreadCount: unread?.unreadCount ?? 0,
+      hasUnread: unread?.hasUnread ?? false,
     };
   }
 
@@ -110,7 +115,9 @@ export class CareChatPresenter {
       id: string;
       senderUserId: string | null;
       contentText: string | null;
+      status: MessageStatus;
       sentAt: Date;
+      deliveredAt: Date | null;
       readAt: Date | null;
     }>;
   }) {
@@ -118,7 +125,8 @@ export class CareChatPresenter {
       item.participants.map((entry) => [entry.userId, entry.participantRole]),
     );
     const now = new Date();
-    const resolvedExpiresAt = item.expiresAt ?? item.chatApprovalRequest?.expiresAt ?? null;
+    const resolvedExpiresAt =
+      item.expiresAt ?? item.chatApprovalRequest?.expiresAt ?? null;
     const approvalStatus = item.chatApprovalRequest?.status ?? 'REVOKED';
     const activityState = this.resolveCareChatActivityStateService.resolve({
       conversationStatus: item.status,
@@ -148,11 +156,14 @@ export class CareChatPresenter {
       messages: item.messages
         .map((message) => ({
           id: message.id,
+          senderUserId: message.senderUserId ?? null,
           senderRole: message.senderUserId
             ? (participantRoleMap.get(message.senderUserId) ??
               ConversationParticipantRole.SYSTEM)
             : ConversationParticipantRole.SYSTEM,
           message: message.contentText ?? '',
+          status: message.status,
+          deliveredAt: message.deliveredAt?.toISOString() ?? null,
           createdAt: message.sentAt.toISOString(),
           readAt: message.readAt?.toISOString() ?? null,
         }))

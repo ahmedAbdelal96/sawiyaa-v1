@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  downloadAdminPractitionerStatementCsv,
   downloadAdminPractitionerPayoutProof,
   getAdminPractitionerPayoutDetail,
   getAdminPractitionerStatement,
@@ -33,30 +34,37 @@ import type {
   RecordPractitionerSettlementPayoutInput,
   ListSettlementDuesDirectoryParams,
 } from "../types/admin-settlements.types";
+import { useSessionRole } from "@/lib/auth/use-session-role";
+import { isAdminRole } from "@/lib/auth/roles";
 
 export function useAdminSettlementBatches(params: ListSettlementBatchesParams) {
+  const role = useSessionRole();
   return useQuery({
     queryKey: adminSettlementsQueryKeys.list(params),
     queryFn: () => listAdminSettlementBatches(params),
+    enabled: isAdminRole(role),
     staleTime: 30_000,
     gcTime: 10 * 60_000,
   });
 }
 
 export function useAdminSettlementDuesDirectory(params: ListSettlementDuesDirectoryParams) {
+  const role = useSessionRole();
   return useQuery({
     queryKey: adminSettlementsQueryKeys.duesDirectory(params),
     queryFn: () => listAdminSettlementDuesDirectory(params),
+    enabled: isAdminRole(role),
     staleTime: 30_000,
     gcTime: 10 * 60_000,
   });
 }
 
 export function useAdminSettlementBatchDetails(batchId?: string) {
+  const role = useSessionRole();
   return useQuery({
     queryKey: adminSettlementsQueryKeys.details(batchId ?? ""),
     queryFn: () => getAdminSettlementBatchDetails(batchId as string),
-    enabled: Boolean(batchId),
+    enabled: isAdminRole(role) && Boolean(batchId),
     staleTime: 30_000,
     gcTime: 10 * 60_000,
   });
@@ -299,5 +307,20 @@ export function useDownloadAdminPractitionerPayoutProof() {
   return useMutation({
     mutationFn: (input: { practitionerId: string; payoutId: string }) =>
       downloadAdminPractitionerPayoutProof(input.practitionerId, input.payoutId),
+  });
+}
+
+export function useDownloadAdminPractitionerStatementCsv() {
+  return useMutation({
+    mutationFn: (input: {
+      practitionerId: string;
+      params?: {
+        currencyCode?: string;
+        rowType?: "ALL" | "EARNING" | "PAYOUT";
+        effectiveFrom?: string;
+        effectiveTo?: string;
+      };
+    }) =>
+      downloadAdminPractitionerStatementCsv(input.practitionerId, input.params),
   });
 }

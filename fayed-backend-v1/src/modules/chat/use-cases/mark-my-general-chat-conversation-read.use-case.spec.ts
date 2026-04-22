@@ -18,27 +18,27 @@ describe('MarkMyGeneralChatConversationReadUseCase', () => {
   });
 
   it('marks latest message as read for participant', async () => {
-    (generalChatRepository.findConversationByIdInGeneralScope as jest.Mock).mockResolvedValue(
-      {
-        id: 'conv_1',
-        participants: [
-          {
-            userId: 'user_1',
-            participantRole: 'PATIENT',
-            lastReadMessageId: null,
-            lastReadAt: null,
-          },
-        ],
-        messages: [
-          {
-            id: 'msg_2',
-          },
-        ],
-      },
-    );
-    (generalChatRepository.countUnreadMessagesForParticipant as jest.Mock).mockResolvedValue(
-      0,
-    );
+    (
+      generalChatRepository.findConversationByIdInGeneralScope as jest.Mock
+    ).mockResolvedValue({
+      id: 'conv_1',
+      participants: [
+        {
+          userId: 'user_1',
+          participantRole: 'PATIENT',
+          lastReadMessageId: null,
+          lastReadAt: null,
+        },
+      ],
+      messages: [
+        {
+          id: 'msg_2',
+        },
+      ],
+    });
+    (
+      generalChatRepository.countUnreadMessagesForParticipant as jest.Mock
+    ).mockResolvedValue(0);
 
     const result = await useCase.execute({
       authenticatedUser: { id: 'user_1', roles: [] },
@@ -46,7 +46,9 @@ describe('MarkMyGeneralChatConversationReadUseCase', () => {
       dto: {},
     });
 
-    expect(generalChatRepository.markConversationReadCursor).toHaveBeenCalledWith(
+    expect(
+      generalChatRepository.markConversationReadCursor,
+    ).toHaveBeenCalledWith(
       expect.objectContaining({
         conversationId: 'conv_1',
         userId: 'user_1',
@@ -59,27 +61,27 @@ describe('MarkMyGeneralChatConversationReadUseCase', () => {
 
   it('is idempotent when already read to latest message', async () => {
     const alreadyReadAt = new Date('2026-04-01T12:00:00.000Z');
-    (generalChatRepository.findConversationByIdInGeneralScope as jest.Mock).mockResolvedValue(
-      {
-        id: 'conv_1',
-        participants: [
-          {
-            userId: 'user_1',
-            participantRole: 'PATIENT',
-            lastReadMessageId: 'msg_2',
-            lastReadAt: alreadyReadAt,
-          },
-        ],
-        messages: [
-          {
-            id: 'msg_2',
-          },
-        ],
-      },
-    );
-    (generalChatRepository.countUnreadMessagesForParticipant as jest.Mock).mockResolvedValue(
-      0,
-    );
+    (
+      generalChatRepository.findConversationByIdInGeneralScope as jest.Mock
+    ).mockResolvedValue({
+      id: 'conv_1',
+      participants: [
+        {
+          userId: 'user_1',
+          participantRole: 'PATIENT',
+          lastReadMessageId: 'msg_2',
+          lastReadAt: alreadyReadAt,
+        },
+      ],
+      messages: [
+        {
+          id: 'msg_2',
+        },
+      ],
+    });
+    (
+      generalChatRepository.countUnreadMessagesForParticipant as jest.Mock
+    ).mockResolvedValue(0);
 
     const result = await useCase.execute({
       authenticatedUser: { id: 'user_1', roles: [] },
@@ -87,26 +89,28 @@ describe('MarkMyGeneralChatConversationReadUseCase', () => {
       dto: {},
     });
 
-    expect(generalChatRepository.markConversationReadCursor).not.toHaveBeenCalled();
+    expect(
+      generalChatRepository.markConversationReadCursor,
+    ).not.toHaveBeenCalled();
     expect(result.item.lastReadMessageId).toBe('msg_2');
     expect(result.item.lastReadAt).toBe('2026-04-01T12:00:00.000Z');
   });
 
   it('rejects mark-read for non-participant', async () => {
-    (generalChatRepository.findConversationByIdInGeneralScope as jest.Mock).mockResolvedValue(
-      {
-        id: 'conv_1',
-        participants: [
-          {
-            userId: 'someone_else',
-            participantRole: 'PATIENT',
-            lastReadMessageId: null,
-            lastReadAt: null,
-          },
-        ],
-        messages: [],
-      },
-    );
+    (
+      generalChatRepository.findConversationByIdInGeneralScope as jest.Mock
+    ).mockResolvedValue({
+      id: 'conv_1',
+      participants: [
+        {
+          userId: 'someone_else',
+          participantRole: 'PATIENT',
+          lastReadMessageId: null,
+          lastReadAt: null,
+        },
+      ],
+      messages: [],
+    });
 
     await expect(
       useCase.execute({
@@ -118,9 +122,9 @@ describe('MarkMyGeneralChatConversationReadUseCase', () => {
   });
 
   it('rejects mark-read when conversation does not exist', async () => {
-    (generalChatRepository.findConversationByIdInGeneralScope as jest.Mock).mockResolvedValue(
-      null,
-    );
+    (
+      generalChatRepository.findConversationByIdInGeneralScope as jest.Mock
+    ).mockResolvedValue(null);
 
     await expect(
       useCase.execute({

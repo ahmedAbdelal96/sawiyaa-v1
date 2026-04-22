@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import {
   ConversationParticipantRole,
+  MessageStatus,
   SupportTicketPriority,
 } from '@prisma/client';
 
@@ -14,6 +15,7 @@ export class SupportPresenter {
       status: string;
       priority: SupportTicketPriority;
       assignedToUserId: string | null;
+      conversationId: string;
       relatedSessionId: string | null;
       relatedPaymentId: string | null;
       relatedInstantBookingRequestId: string | null;
@@ -24,6 +26,10 @@ export class SupportPresenter {
       closedAt: Date | null;
       createdAt: Date;
     }>;
+    unreadByTicketId?: Record<
+      string,
+      { unreadCount: number; hasUnread: boolean }
+    >;
     pagination: {
       page: number;
       limit: number;
@@ -32,7 +38,9 @@ export class SupportPresenter {
     };
   }) {
     return {
-      items: input.items.map((item) => this.baseTicket(item)),
+      items: input.items.map((item) =>
+        this.baseTicket(item, input.unreadByTicketId?.[item.id]),
+      ),
       pagination: input.pagination,
     };
   }
@@ -55,6 +63,7 @@ export class SupportPresenter {
     closedAt: Date | null;
     createdAt: Date;
     conversation: {
+      id: string;
       participants: Array<{
         userId: string;
         participantRole: ConversationParticipantRole;
@@ -63,7 +72,10 @@ export class SupportPresenter {
         id: string;
         senderUserId: string | null;
         contentText: string | null;
+        status: MessageStatus;
         sentAt: Date;
+        deliveredAt: Date | null;
+        readAt: Date | null;
       }>;
     };
   }) {
@@ -76,14 +88,20 @@ export class SupportPresenter {
 
     return {
       ...this.baseTicket(ticket),
+      conversationId: ticket.conversation.id,
       description: ticket.description,
       messages: ticket.conversation.messages
         .map((message) => ({
           id: message.id,
+          senderUserId: message.senderUserId,
           senderRole: message.senderUserId
-            ? (roleMap.get(message.senderUserId) ?? ConversationParticipantRole.SYSTEM)
+            ? (roleMap.get(message.senderUserId) ??
+              ConversationParticipantRole.SYSTEM)
             : ConversationParticipantRole.SYSTEM,
           message: message.contentText ?? '',
+          status: message.status,
+          deliveredAt: message.deliveredAt?.toISOString() ?? null,
+          readAt: message.readAt?.toISOString() ?? null,
           createdAt: message.sentAt.toISOString(),
         }))
         .filter((message) => Boolean(message.message.trim())),
@@ -108,6 +126,7 @@ export class SupportPresenter {
     closedAt: Date | null;
     createdAt: Date;
     conversation: {
+      id: string;
       participants: Array<{
         userId: string;
         participantRole: ConversationParticipantRole;
@@ -116,7 +135,10 @@ export class SupportPresenter {
         id: string;
         senderUserId: string | null;
         contentText: string | null;
+        status: MessageStatus;
         sentAt: Date;
+        deliveredAt: Date | null;
+        readAt: Date | null;
       }>;
       internalNotes: Array<{
         id: string;
@@ -135,23 +157,27 @@ export class SupportPresenter {
     };
   }
 
-  private baseTicket(ticket: {
-    id: string;
-    ticketType: string;
-    subject: string;
-    status: string;
-    priority: SupportTicketPriority;
-    assignedToUserId: string | null;
-    relatedSessionId: string | null;
-    relatedPaymentId: string | null;
-    relatedInstantBookingRequestId: string | null;
-    relatedMatchingSessionId: string | null;
-    relatedAssessmentSubmissionId: string | null;
-    lastMessageAt: Date | null;
-    resolvedAt: Date | null;
-    closedAt: Date | null;
-    createdAt: Date;
-  }) {
+  private baseTicket(
+    ticket: {
+      id: string;
+      ticketType: string;
+      subject: string;
+      status: string;
+      priority: SupportTicketPriority;
+      assignedToUserId: string | null;
+      conversationId?: string;
+      relatedSessionId: string | null;
+      relatedPaymentId: string | null;
+      relatedInstantBookingRequestId: string | null;
+      relatedMatchingSessionId: string | null;
+      relatedAssessmentSubmissionId: string | null;
+      lastMessageAt: Date | null;
+      resolvedAt: Date | null;
+      closedAt: Date | null;
+      createdAt: Date;
+    },
+    unread?: { unreadCount: number; hasUnread: boolean },
+  ) {
     return {
       id: ticket.id,
       category: ticket.ticketType,
@@ -171,6 +197,8 @@ export class SupportPresenter {
       resolvedAt: ticket.resolvedAt?.toISOString() ?? null,
       closedAt: ticket.closedAt?.toISOString() ?? null,
       createdAt: ticket.createdAt.toISOString(),
+      unreadCount: unread?.unreadCount ?? 0,
+      hasUnread: unread?.hasUnread ?? false,
     };
   }
 }

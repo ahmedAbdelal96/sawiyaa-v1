@@ -77,7 +77,11 @@ export class CareChatRequestRepository {
     ]);
   }
 
-  listForAdmin(input: { page: number; limit: number; status?: ChatApprovalStatus }) {
+  listForAdmin(input: {
+    page: number;
+    limit: number;
+    status?: ChatApprovalStatus;
+  }) {
     const where: Prisma.ChatApprovalRequestWhereInput = {
       ...(input.status ? { status: input.status } : {}),
     };

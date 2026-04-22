@@ -1,4 +1,8 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { AssessmentSubmissionAccessPolicy } from '../policies/assessment-submission-access.policy';
 import { AssessmentPresenter } from '../presenters/assessment.presenter';
 import { AssessmentPatientRepository } from '../repositories/assessment-patient.repository';
@@ -14,7 +18,9 @@ export class GetMyAssessmentSubmissionUseCase {
   ) {}
 
   async execute(input: { userId: string; submissionId: string }) {
-    const patientProfile = await this.assessmentPatientRepository.findByUserId(input.userId);
+    const patientProfile = await this.assessmentPatientRepository.findByUserId(
+      input.userId,
+    );
     if (!patientProfile) {
       throw new NotFoundException({
         messageKey: 'assessments.errors.patientProfileNotFound',
@@ -41,8 +47,14 @@ export class GetMyAssessmentSubmissionUseCase {
 
     const summaryJson = submission.resultSnapshot?.summaryJson;
     const summaryText =
-      summaryJson && typeof summaryJson === 'object' && !Array.isArray(summaryJson)
-        ? String((summaryJson as { text?: string }).text ?? submission.resultSummary ?? '')
+      summaryJson &&
+      typeof summaryJson === 'object' &&
+      !Array.isArray(summaryJson)
+        ? String(
+            (summaryJson as { text?: string }).text ??
+              submission.resultSummary ??
+              '',
+          )
         : (submission.resultSummary ?? '');
 
     const nextStepJson = submission.resultSnapshot?.nextStepJson;
@@ -51,9 +63,9 @@ export class GetMyAssessmentSubmissionUseCase {
       typeof nextStepJson === 'object' &&
       !Array.isArray(nextStepJson) &&
       Array.isArray((nextStepJson as { items?: unknown[] }).items)
-        ? ((nextStepJson as { items: unknown[] }).items
+        ? (nextStepJson as { items: unknown[] }).items
             .map((item) => (typeof item === 'string' ? item : null))
-            .filter((item): item is string => Boolean(item)))
+            .filter((item): item is string => Boolean(item))
         : [];
 
     if (

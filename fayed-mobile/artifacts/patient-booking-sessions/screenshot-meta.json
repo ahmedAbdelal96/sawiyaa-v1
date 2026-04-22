@@ -1,0 +1,48 @@
+﻿{
+    "practitionerSlug":  "dr-hassan-tarek",
+    "language":  "ar",
+    "cancelPreview":  {
+                          "sessionId":  "8b2cd0df-71bd-4f21-96d3-b0150179e509",
+                          "bookingType":  "STANDARD",
+                          "canCancelNow":  false,
+                          "cancellationAllowedByPolicy":  false,
+                          "blockingReasonCode":  "SESSION_CANCELLATION_NOT_ALLOWED_BY_POLICY",
+                          "sessionStartAt":  "2026-04-22T08:00:00.000Z",
+                          "hoursBeforeStart":  17.99,
+                          "matchedRuleCode":  "STANDARD_LATE_NO_CANCEL",
+                          "matchedRuleDisplayName":  "Late cancellation is not allowed",
+                          "refundMode":  "NONE",
+                          "refundPercent":  null,
+                          "refundDestination":  null,
+                          "paymentStatus":  null,
+                          "paymentAmountTotal":  "0.00",
+                          "paymentAmountFromWallet":  "0.00",
+                          "paymentAmountFromGateway":  "0.00",
+                          "alreadyRefundedAmount":  "0.00",
+                          "reservationReleaseAmount":  "0.00",
+                          "refundAmount":  "0.00",
+                          "walletCreditAmount":  "0.00",
+                          "gatewayRefundAmount":  "0.00",
+                          "outcomeType":  "POLICY_BLOCKED"
+                      },
+    "session":  {
+                    "id":  "8b2cd0df-71bd-4f21-96d3-b0150179e509",
+                    "sessionCode":  "SES-2026-501101",
+                    "status":  "PENDING_PAYMENT",
+                    "scheduledStartAt":  "2026-04-22T08:00:00.000Z",
+                    "scheduledEndAt":  "2026-04-22T08:30:00.000Z",
+                    "durationMinutes":  30,
+                    "sessionMode":  "VIDEO",
+                    "practitioner":  {
+                                         "id":  "66666666-6666-4666-8666-666666666670",
+                                         "slug":  "dr-hassan-tarek",
+                                         "displayName":  "د. حسن طارق"
+                                     },
+                    "patient":  {
+                                    "id":  "55555555-5555-4555-8555-555555555551",
+                                    "displayName":  "أحمد محمود"
+                                }
+                },
+    "generatedAt":  "2026-04-21T16:01:24.8686175+02:00",
+    "selectedStartAt":  "2026-04-22T08:00:00.000Z"
+}

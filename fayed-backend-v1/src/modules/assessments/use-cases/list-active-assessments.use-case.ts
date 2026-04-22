@@ -10,7 +10,8 @@ export class ListActiveAssessmentsUseCase {
   ) {}
 
   async execute() {
-    const definitions = await this.assessmentDefinitionRepository.listPublishedActive();
+    const definitions =
+      await this.assessmentDefinitionRepository.listPublishedActive();
 
     return {
       items: definitions.map((definition) =>

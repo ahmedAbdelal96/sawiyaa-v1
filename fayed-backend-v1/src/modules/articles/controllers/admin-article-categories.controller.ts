@@ -53,7 +53,10 @@ export class AdminArticleCategoriesController {
   @Post()
   @ApiOperation({ summary: 'Create article category (admin only)' })
   @ApiBody({ type: CreateArticleCategoryDto })
-  @ApiResponse({ status: 201, type: AdminArticleCategoryItemSuccessResponseDto })
+  @ApiResponse({
+    status: 201,
+    type: AdminArticleCategoryItemSuccessResponseDto,
+  })
   create(
     @CurrentUser() currentUser: AuthenticatedUser,
     @Body() body: CreateArticleCategoryDto,
@@ -68,7 +71,10 @@ export class AdminArticleCategoriesController {
 
   @Get()
   @ApiOperation({ summary: 'List article categories for admin management' })
-  @ApiResponse({ status: 200, type: AdminArticleCategoryListSuccessResponseDto })
+  @ApiResponse({
+    status: 200,
+    type: AdminArticleCategoryListSuccessResponseDto,
+  })
   list(@Query() query: ListArticleCategoriesDto) {
     return this.listAdminArticleCategoriesUseCase
       .execute(query)
@@ -77,8 +83,14 @@ export class AdminArticleCategoriesController {
 
   @Get(':id')
   @ApiOperation({ summary: 'Get category details by id for admin' })
-  @ApiResponse({ status: 200, type: AdminArticleCategoryItemSuccessResponseDto })
-  getById(@Param('id') categoryId: string, @Query() query: ArticleLocaleQueryDto) {
+  @ApiResponse({
+    status: 200,
+    type: AdminArticleCategoryItemSuccessResponseDto,
+  })
+  getById(
+    @Param('id') categoryId: string,
+    @Query() query: ArticleLocaleQueryDto,
+  ) {
     return this.getAdminArticleCategoryUseCase
       .execute({
         id: categoryId,
@@ -90,7 +102,10 @@ export class AdminArticleCategoriesController {
   @Patch(':id')
   @ApiOperation({ summary: 'Update category details by id for admin' })
   @ApiBody({ type: UpdateArticleCategoryDto })
-  @ApiResponse({ status: 200, type: AdminArticleCategoryItemSuccessResponseDto })
+  @ApiResponse({
+    status: 200,
+    type: AdminArticleCategoryItemSuccessResponseDto,
+  })
   update(
     @Param('id') categoryId: string,
     @Body() body: UpdateArticleCategoryDto,

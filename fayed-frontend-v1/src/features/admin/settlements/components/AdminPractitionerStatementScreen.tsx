@@ -3,11 +3,16 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
-import { ArrowDownRight, ArrowLeft, ArrowUpRight, CalendarDays, Printer, Wallet } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, CalendarDays, Download, Printer, Wallet } from "lucide-react";
 import { ListStateSkeleton, StateCard } from "@/components/shared/ContentStates";
 import { SurfaceCard, SurfaceHeader, SurfaceStatCard, SurfaceToolbar } from "@/components/shared/SurfaceShell";
 import Button from "@/components/ui/button/Button";
-import { useAdminPractitionerStatement } from "../hooks/use-admin-settlements";
+import DirectionalArrowIcon from "@/components/ui/navigation/DirectionalArrowIcon";
+import { parseDownloadFilename, triggerBlobDownload } from "@/lib/downloads/file-download";
+import {
+  useAdminPractitionerStatement,
+  useDownloadAdminPractitionerStatementCsv,
+} from "../hooks/use-admin-settlements";
 import { formatSettlementMoney } from "../lib/settlement-formatters";
 import type {
   PractitionerStatementRow,
@@ -73,6 +78,7 @@ export default function AdminPractitionerStatementScreen({
   practitionerId: string;
 }) {
   const t = useTranslations("admin-settlements");
+  const tAccounting = useTranslations("admin-accounting");
   const locale = useLocale();
   const router = useRouter();
   const [currencyFilter, setCurrencyFilter] = useState("all");
@@ -86,6 +92,7 @@ export default function AdminPractitionerStatementScreen({
     effectiveFrom: toStartOfDayIso(fromDate),
     effectiveTo: toEndOfDayIso(toDate),
   });
+  const statementExportMutation = useDownloadAdminPractitionerStatementCsv();
 
   const statement = statementQuery.data;
   const practitioner = statement?.practitioner ?? null;
@@ -149,6 +156,23 @@ export default function AdminPractitionerStatementScreen({
     };
   }, [practitioner, t]);
 
+  const handleExportStatementCsv = async () => {
+    const exported = await statementExportMutation.mutateAsync({
+      practitionerId,
+      params: {
+        currencyCode: currencyFilter === "all" ? undefined : currencyFilter,
+        rowType: rowTypeFilter,
+        effectiveFrom: toStartOfDayIso(fromDate),
+        effectiveTo: toEndOfDayIso(toDate),
+      },
+    });
+    const fileName = parseDownloadFilename(
+      exported.fileNameHeader,
+      "practitioner-statement-package.csv",
+    );
+    triggerBlobDownload(exported.blob, fileName);
+  };
+
   return (
     <div className="space-y-6">
       <SurfaceCard as="section" variant="page" className="overflow-hidden print:rounded-none print:border-0 print:bg-white print:p-0">
@@ -164,10 +188,22 @@ export default function AdminPractitionerStatementScreen({
                 type="button"
                 variant="outline"
                 size="sm"
-                startIcon={<ArrowLeft className="h-4 w-4" />}
+                startIcon={<DirectionalArrowIcon direction="back" className="h-4 w-4" />}
                 onClick={() => router.push(`/${locale}/admin/settlements/dues`)}
               >
                 {t("statement.back")}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  router.push(
+                    `/${locale}/admin/finance/ledger?practitionerId=${practitionerId}`,
+                  )
+                }
+              >
+                {tAccounting("dashboard.actions.openLedger")}
               </Button>
               <Button
                 type="button"
@@ -176,6 +212,18 @@ export default function AdminPractitionerStatementScreen({
                 onClick={() => window.print()}
               >
                 {t("statement.exportPdf")}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                startIcon={<Download className="h-4 w-4" />}
+                onClick={handleExportStatementCsv}
+                disabled={statementExportMutation.isPending}
+              >
+                {statementExportMutation.isPending
+                  ? t("statement.exportCsvLoading")
+                  : t("statement.exportCsv")}
               </Button>
             </>
           }
@@ -493,7 +541,7 @@ export default function AdminPractitionerStatementScreen({
                                   className={`inline-flex flex-col items-end rounded-[16px] px-3 py-2 ${
                                     isEarning
                                       ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300"
-                                      : "bg-sky-50 text-sky-700 dark:bg-sky-500/10 dark:text-sky-300"
+                                      : "bg-primary-light text-text-brand dark:bg-primary/15 dark:text-primary-light"
                                   }`}
                                 >
                                   <span className="tabular-nums">

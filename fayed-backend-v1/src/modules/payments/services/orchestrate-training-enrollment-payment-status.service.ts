@@ -47,25 +47,29 @@ export class OrchestrateTrainingEnrollmentPaymentStatusService {
       return;
     }
 
-    await this.operationalNotificationService.notifyTrainingEnrollmentConfirmed({
-      userId: enrollment.userId,
-      enrollmentId: enrollment.id,
-      scheduleId: enrollment.courseScheduleId,
-      scheduledStartAt: enrollment.courseSchedule.startsAt,
-    });
+    await this.operationalNotificationService.notifyTrainingEnrollmentConfirmed(
+      {
+        userId: enrollment.userId,
+        enrollmentId: enrollment.id,
+        scheduleId: enrollment.courseScheduleId,
+        scheduledStartAt: enrollment.courseSchedule.startsAt,
+      },
+    );
 
     if (enrollment.courseSchedule.startsAt) {
       const scheduledFor = new Date(
         enrollment.courseSchedule.startsAt.getTime() - 24 * 60 * 60 * 1000,
       );
       if (scheduledFor > new Date()) {
-        await this.operationalNotificationService.queueTrainingScheduleReminder({
-          userId: enrollment.userId,
-          enrollmentId: enrollment.id,
-          scheduleId: enrollment.courseScheduleId,
-          scheduledFor,
-          scheduledStartAt: enrollment.courseSchedule.startsAt,
-        });
+        await this.operationalNotificationService.queueTrainingScheduleReminder(
+          {
+            userId: enrollment.userId,
+            enrollmentId: enrollment.id,
+            scheduleId: enrollment.courseScheduleId,
+            scheduledFor,
+            scheduledStartAt: enrollment.courseSchedule.startsAt,
+          },
+        );
       }
     }
   }

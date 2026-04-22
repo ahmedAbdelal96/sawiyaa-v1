@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import {
   ArticleStatus,
   ArticleVisibility,
@@ -19,11 +19,14 @@ import {
 import {
   ModerationCaseDetail,
   ModerationQueueCase,
+  ModerationReporterSnapshot,
   ModerationTargetSnapshot,
 } from '../types/moderation.types';
 
 @Injectable()
 export class ModerationRepository {
+  private readonly logger = new Logger(ModerationRepository.name);
+
   constructor(private readonly prisma: PrismaService) {}
 
   findAccessibleTarget(input: {
@@ -224,9 +227,9 @@ export class ModerationRepository {
   }): Promise<[ModerationQueueCase[], number]> {
     const skip = (input.page - 1) * input.limit;
     const normalizedQuery = input.query?.trim() || undefined;
-    const sortOrder = (input.sortOrder ?? ModerationReportsSortOrderDto.DESC).toLowerCase() as
-      | 'asc'
-      | 'desc';
+    const sortOrder = (
+      input.sortOrder ?? ModerationReportsSortOrderDto.DESC
+    ).toLowerCase() as 'asc' | 'desc';
     const sortBy = input.sortBy ?? ModerationReportsSortByDto.CREATED_AT;
     const primaryOrderBy =
       sortBy === ModerationReportsSortByDto.CREATED_AT
@@ -321,8 +324,46 @@ export class ModerationRepository {
       },
     });
     if (!row) {
+      this.logger.warn(
+        `findCaseById: report not found (reportId=${reportId})`,
+      );
       return null;
     }
+
+    const targetSnapshot = await this.resolveTargetSnapshot(
+      row.targetType,
+      row.targetId,
+    );
+
+    let reporter = row.reportedByUserId
+      ? await this.findReporterSnapshot(row.reportedByUserId)
+      : null;
+    this.logger.log(
+      `findCaseById: direct reporter snapshot lookup completed (reportId=${reportId}, reportedByUserId=${row.reportedByUserId ?? 'null'}, found=${Boolean(reporter)})`,
+    );
+
+    if (!reporter) {
+      const derivedUserId = await this.deriveReporterUserIdFromTarget({
+        targetType: row.targetType,
+        targetId: row.targetId,
+        reportedByRole: row.reportedByRole,
+        targetSnapshot,
+      });
+      this.logger.log(
+        `findCaseById: derived reporter user id (reportId=${reportId}, derivedUserId=${derivedUserId ?? 'null'})`,
+      );
+
+      if (derivedUserId) {
+        reporter = await this.findReporterSnapshot(derivedUserId);
+        this.logger.log(
+          `findCaseById: derived reporter snapshot lookup completed (reportId=${reportId}, found=${Boolean(reporter)})`,
+        );
+      }
+    }
+
+    this.logger.log(
+      `findCaseById: final reporter payload (reportId=${reportId}, reporterUserId=${reporter?.userId ?? 'null'}, hasDisplayName=${Boolean(reporter?.displayName)}, hasEmail=${Boolean(reporter?.email)}, hasPhone=${Boolean(reporter?.phone)}, hasPatientProfileId=${Boolean(reporter?.patientProfileId)}, hasPractitionerProfileId=${Boolean(reporter?.practitionerProfileId)})`,
+    );
 
     return {
       id: row.id,
@@ -335,7 +376,107 @@ export class ModerationRepository {
       reportedByRole: row.reportedByRole,
       createdAt: row.createdAt,
       lastActionAt: row.actions[0]?.createdAt ?? null,
-      targetSnapshot: await this.resolveTargetSnapshot(row.targetType, row.targetId),
+      reporter,
+      targetSnapshot,
+    };
+  }
+
+  private async deriveReporterUserIdFromTarget(input: {
+    targetType: ModerationReportTargetType;
+    targetId: string;
+    reportedByRole: ModerationReporterRole;
+    targetSnapshot: ModerationTargetSnapshot | null;
+  }): Promise<string | null> {
+    // For real reports, reportedByUserId should be enough.
+    // This fallback improves operator UX for seeded/legacy rows and for targets that can map back to an opener.
+    switch (input.targetType) {
+      case ModerationReportTargetType.SUPPORT_TICKET: {
+        const ticket = await this.prisma.supportTicket.findUnique({
+          where: { id: input.targetId },
+          select: {
+            openedByUserId: true,
+          },
+        });
+        return ticket?.openedByUserId ?? null;
+      }
+      case ModerationReportTargetType.CARE_CHAT_CONVERSATION: {
+        if (!input.targetSnapshot || input.targetSnapshot.kind !== 'CARE_CHAT_CONVERSATION') {
+          return null;
+        }
+
+        const profileId =
+          input.reportedByRole === ModerationReporterRole.PRACTITIONER
+            ? input.targetSnapshot.practitionerProfileId
+            : input.targetSnapshot.patientProfileId;
+
+        if (!profileId) {
+          return null;
+        }
+
+        if (input.reportedByRole === ModerationReporterRole.PRACTITIONER) {
+          const practitioner = await this.prisma.practitionerProfile.findUnique({
+            where: { id: profileId },
+            select: { userId: true },
+          });
+          return practitioner?.userId ?? null;
+        }
+
+        const patient = await this.prisma.patientProfile.findUnique({
+          where: { id: profileId },
+          select: { userId: true },
+        });
+        return patient?.userId ?? null;
+      }
+      default:
+        return null;
+    }
+  }
+
+  private async findReporterSnapshot(
+    userId: string,
+  ): Promise<ModerationReporterSnapshot | null> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        displayName: true,
+        emails: {
+          orderBy: [{ isPrimary: 'desc' }, { createdAt: 'desc' }],
+          take: 1,
+          select: { email: true },
+        },
+        phones: {
+          orderBy: [{ isPrimary: 'desc' }, { createdAt: 'desc' }],
+          take: 1,
+          select: { phone: true },
+        },
+        patientProfile: {
+          select: { id: true },
+        },
+        practitionerProfile: {
+          select: { id: true },
+        },
+      },
+    });
+
+    if (!user) {
+      this.logger.warn(
+        `findReporterSnapshot: user not found (userId=${userId})`,
+      );
+      return null;
+    }
+
+    this.logger.log(
+      `findReporterSnapshot: user found (userId=${userId}, hasDisplayName=${Boolean(user.displayName)}, hasEmail=${Boolean(user.emails[0]?.email)}, hasPhone=${Boolean(user.phones[0]?.phone)}, hasPatientProfileId=${Boolean(user.patientProfile?.id)}, hasPractitionerProfileId=${Boolean(user.practitionerProfile?.id)})`,
+    );
+
+    return {
+      userId: user.id,
+      displayName: user.displayName,
+      email: user.emails[0]?.email ?? null,
+      phone: user.phones[0]?.phone ?? null,
+      patientProfileId: user.patientProfile?.id ?? null,
+      practitionerProfileId: user.practitionerProfile?.id ?? null,
     };
   }
 
@@ -790,14 +931,20 @@ export class ModerationRepository {
             conversationId: true,
             sentAt: true,
             contentText: true,
+            conversation: {
+              select: {
+                supportTicketId: true,
+              },
+            },
           },
         });
-        if (!row) {
+        if (!row || !row.conversation.supportTicketId) {
           return null;
         }
         return {
           kind: 'SUPPORT_MESSAGE',
           conversationId: row.conversationId,
+          supportTicketId: row.conversation.supportTicketId,
           sentAt: row.sentAt,
           preview: this.previewText(row.contentText),
         };

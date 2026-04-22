@@ -33,8 +33,23 @@ export class ListMySupportTicketsUseCase {
       priority: input.query.priority,
     });
 
+    const unreadByConversationId =
+      await this.supportTicketRepository.countUnreadByConversationIdsForUser({
+        userId: input.userId,
+        conversationIds: items.map((item) => item.conversationId),
+      });
+
+    const unreadByTicketId = Object.fromEntries(
+      items.map((item) => {
+        const unreadCount =
+          unreadByConversationId.get(item.conversationId) ?? 0;
+        return [item.id, { unreadCount, hasUnread: unreadCount > 0 }];
+      }),
+    );
+
     return this.supportPresenter.presentTicketList({
       items,
+      unreadByTicketId,
       pagination: {
         page: input.query.page,
         limit: input.query.limit,
@@ -44,9 +59,13 @@ export class ListMySupportTicketsUseCase {
     });
   }
 
-  private async resolveOwnerProfileId(actorKind: SupportActorKind, userId: string) {
+  private async resolveOwnerProfileId(
+    actorKind: SupportActorKind,
+    userId: string,
+  ) {
     if (actorKind === 'PATIENT') {
-      const patient = await this.supportActorRepository.findPatientProfileByUserId(userId);
+      const patient =
+        await this.supportActorRepository.findPatientProfileByUserId(userId);
       if (!patient) {
         throw new NotFoundException({
           messageKey: 'support.errors.patientProfileNotFound',

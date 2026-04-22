@@ -19,7 +19,9 @@ export class ListModerationCasesUseCase {
     const createdFrom = input.query.createdFrom
       ? new Date(input.query.createdFrom)
       : undefined;
-    const createdTo = input.query.createdTo ? new Date(input.query.createdTo) : undefined;
+    const createdTo = input.query.createdTo
+      ? new Date(input.query.createdTo)
+      : undefined;
 
     if (createdFrom && createdTo && createdFrom > createdTo) {
       throw new BadRequestException({

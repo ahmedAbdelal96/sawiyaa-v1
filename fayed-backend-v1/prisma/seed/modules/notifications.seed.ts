@@ -93,6 +93,19 @@ export const notificationsSeedModule: SeedModule = {
           'Operational notification for practitioner when patient cancels session',
         category: NotificationCategory.SESSION,
       },
+      {
+        slug: 'training.enrollment-confirmed',
+        displayName: 'Training Enrollment Confirmed',
+        description:
+          'Operational notification when a training enrollment is confirmed',
+        category: NotificationCategory.TRAINING,
+      },
+      {
+        slug: 'training.schedule-reminder',
+        displayName: 'Training Schedule Reminder',
+        description: 'Operational reminder before a training schedule starts',
+        category: NotificationCategory.TRAINING,
+      },
     ];
 
     for (const type of typeSeed) {
@@ -361,6 +374,40 @@ export const notificationsSeedModule: SeedModule = {
             subjectTemplate: null,
             titleTemplate: 'Session cancelled by patient',
             bodyTemplate: 'A patient cancelled a session.',
+          },
+        },
+      },
+      {
+        typeSlug: 'training.enrollment-confirmed',
+        channel: NotificationChannel.IN_APP,
+        slug: 'training.enrollment-confirmed.in-app.v1',
+        translations: {
+          en: {
+            subjectTemplate: null,
+            titleTemplate: 'Training enrollment confirmed',
+            bodyTemplate: 'Your training enrollment has been confirmed.',
+          },
+          ar: {
+            subjectTemplate: null,
+            titleTemplate: 'Training enrollment confirmed',
+            bodyTemplate: 'Your training enrollment has been confirmed.',
+          },
+        },
+      },
+      {
+        typeSlug: 'training.schedule-reminder',
+        channel: NotificationChannel.IN_APP,
+        slug: 'training.schedule-reminder.in-app.v1',
+        translations: {
+          en: {
+            subjectTemplate: null,
+            titleTemplate: 'Training schedule reminder',
+            bodyTemplate: 'Your training schedule starts soon.',
+          },
+          ar: {
+            subjectTemplate: null,
+            titleTemplate: 'Training schedule reminder',
+            bodyTemplate: 'Your training schedule starts soon.',
           },
         },
       },

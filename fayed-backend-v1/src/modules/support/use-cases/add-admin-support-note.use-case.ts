@@ -21,7 +21,9 @@ export class AddAdminSupportNoteUseCase {
     ticketId: string;
     payload: AddSupportMessageDto;
   }) {
-    const ticket = await this.supportTicketRepository.findByIdForAdmin(input.ticketId);
+    const ticket = await this.supportTicketRepository.findByIdForAdmin(
+      input.ticketId,
+    );
     if (!ticket) {
       throw new NotFoundException({
         messageKey: 'support.errors.ticketNotFound',
@@ -29,7 +31,9 @@ export class AddAdminSupportNoteUseCase {
       });
     }
 
-    const actorRole = this.resolveSupportAdminActorRoleService.resolve(input.roles);
+    const actorRole = this.resolveSupportAdminActorRoleService.resolve(
+      input.roles,
+    );
     const updated = await this.supportTicketRepository.addInternalNote({
       ticketId: input.ticketId,
       actorUserId: input.userId,

@@ -16,7 +16,10 @@ export class AvailabilitySlotRepository {
     return tx ?? this.prisma;
   }
 
-  listActiveByPractitioner(practitionerId: string, tx?: Prisma.TransactionClient) {
+  listActiveByPractitioner(
+    practitionerId: string,
+    tx?: Prisma.TransactionClient,
+  ) {
     return this.getDb(tx).availabilitySlot.findMany({
       where: {
         practitionerId,

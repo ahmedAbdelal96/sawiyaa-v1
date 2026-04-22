@@ -10,7 +10,9 @@ export class GetAdminPaymentOpsDetailsUseCase {
   ) {}
 
   async execute(input: { paymentId: string }) {
-    const payment = await this.paymentRepository.findAdminOpsById(input.paymentId);
+    const payment = await this.paymentRepository.findAdminOpsById(
+      input.paymentId,
+    );
 
     if (!payment) {
       throw new NotFoundException({
@@ -24,4 +26,3 @@ export class GetAdminPaymentOpsDetailsUseCase {
     };
   }
 }
-

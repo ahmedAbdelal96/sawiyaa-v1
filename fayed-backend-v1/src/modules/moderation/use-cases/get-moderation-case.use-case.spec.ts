@@ -63,7 +63,9 @@ describe('GetModerationCaseUseCase', () => {
   it('throws not found when case id does not exist', async () => {
     (moderationRepository.findCaseById as jest.Mock).mockResolvedValue(null);
 
-    await expect(useCase.execute({ reportId: 'missing' })).rejects.toMatchObject({
+    await expect(
+      useCase.execute({ reportId: 'missing' }),
+    ).rejects.toMatchObject({
       response: expect.objectContaining({
         error: 'MODERATION_REPORT_NOT_FOUND_IN_SCOPE',
       }),

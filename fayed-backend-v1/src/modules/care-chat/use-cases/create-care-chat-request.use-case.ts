@@ -23,9 +23,10 @@ export class CreateCareChatRequestUseCase {
   ) {}
 
   async execute(input: { userId: string; payload: CreateCareChatRequestDto }) {
-    const patient = await this.careChatActorRepository.findPatientProfileByUserId(
-      input.userId,
-    );
+    const patient =
+      await this.careChatActorRepository.findPatientProfileByUserId(
+        input.userId,
+      );
     if (!patient) {
       throw new NotFoundException({
         messageKey: 'careChat.errors.patientProfileNotFound',
@@ -73,7 +74,9 @@ export class CreateCareChatRequestUseCase {
     }
 
     const expiresAt = new Date(now);
-    expiresAt.setUTCDate(expiresAt.getUTCDate() + CARE_CHAT_DEFAULT_EXPIRY_DAYS);
+    expiresAt.setUTCDate(
+      expiresAt.getUTCDate() + CARE_CHAT_DEFAULT_EXPIRY_DAYS,
+    );
 
     const created = await this.careChatRequestRepository.createRequest({
       patientId: patient.id,

@@ -13,7 +13,10 @@ export class VerifiedPhoneGuard implements CanActivate {
     const user = getAuthenticatedUser(request);
 
     if (user.isPhoneVerified !== true) {
-      forbid('A verified phone is required for this route', 'VERIFIED_PHONE_REQUIRED');
+      forbid(
+        'A verified phone is required for this route',
+        'VERIFIED_PHONE_REQUIRED',
+      );
     }
 
     return true;

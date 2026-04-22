@@ -23,8 +23,9 @@ export class GetMyPractitionerSessionsUseCase {
     locale: SupportedLocale;
     query: ListSessionsDto;
   }) {
-    const practitioner =
-      await this.sessionPractitionerRepository.findByUserId(input.userId);
+    const practitioner = await this.sessionPractitionerRepository.findByUserId(
+      input.userId,
+    );
 
     if (!practitioner) {
       throw new NotFoundException({
@@ -40,7 +41,7 @@ export class GetMyPractitionerSessionsUseCase {
     const [sessions, totalItems] =
       await this.sessionRepository.listPractitionerSessions({
         practitionerId: practitioner.id,
-        status: input.query.status as SessionStatus | undefined,
+        status: input.query.status,
         skip,
         take: limit,
       });

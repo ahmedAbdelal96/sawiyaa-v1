@@ -25,7 +25,8 @@ export class RequestPractitionerPasswordResetUseCase {
 
   async execute(input: { email: string; locale: SupportedLocale }) {
     const normalizedEmail = input.email.trim().toLowerCase();
-    const userEmail = await this.userEmailRepository.findByEmail(normalizedEmail);
+    const userEmail =
+      await this.userEmailRepository.findByEmail(normalizedEmail);
 
     if (!userEmail) {
       return {

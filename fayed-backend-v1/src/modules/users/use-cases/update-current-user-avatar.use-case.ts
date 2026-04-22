@@ -19,7 +19,11 @@ export class UpdateCurrentUserAvatarUseCase {
     private readonly userAvatarStorageService: UserAvatarStorageService,
   ) {}
 
-  async execute(input: { userId: string; locale: SupportedLocale; file?: UploadedAvatarFile }) {
+  async execute(input: {
+    userId: string;
+    locale: SupportedLocale;
+    file?: UploadedAvatarFile;
+  }) {
     if (!input.file) {
       throw new BadRequestException({
         messageKey: 'users.errors.avatarFileRequired',

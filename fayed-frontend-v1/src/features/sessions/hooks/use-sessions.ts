@@ -4,6 +4,7 @@ import {
   createScheduledSession,
   getPatientSession,
   getPatientSessions,
+  previewPatientSessionCancellation,
   preparePatientSessionRuntime,
   resolvePatientSessionJoinContract,
   markPractitionerSessionCompleted,
@@ -14,6 +15,13 @@ import {
   resolvePractitionerSessionJoinContract,
 } from "../api/sessions.api";
 import type { ListSessionsParams } from "../types/sessions.types";
+
+function sanitizeListSessionsParams(params?: ListSessionsParams): ListSessionsParams | undefined {
+  if (!params) return undefined;
+
+  const limit = typeof params.limit === "number" ? Math.min(params.limit, 50) : params.limit;
+  return { ...params, limit };
+}
 
 export const patientSessionQueryKeys = {
   all: ["patient-sessions"] as const,
@@ -50,9 +58,10 @@ export function usePatientSession(
  * Fetches the patient's session list with optional filter and pagination.
  */
 export function usePatientSessions(params?: ListSessionsParams) {
+  const safeParams = sanitizeListSessionsParams(params);
   return useQuery({
-    queryKey: patientSessionQueryKeys.list(params),
-    queryFn: () => getPatientSessions(params),
+    queryKey: patientSessionQueryKeys.list(safeParams),
+    queryFn: () => getPatientSessions(safeParams),
     staleTime: 30_000,
   });
 }
@@ -75,6 +84,12 @@ export function useCancelPatientSession() {
       // Invalidate list so it reflects the new status
       queryClient.invalidateQueries({ queryKey: patientSessionQueryKeys.all });
     },
+  });
+}
+
+export function usePreviewPatientSessionCancellation() {
+  return useMutation({
+    mutationFn: (sessionId: string) => previewPatientSessionCancellation(sessionId),
   });
 }
 
@@ -119,9 +134,10 @@ export const practitionerSessionQueryKeys = {
  * GET /practitioners/me/sessions
  */
 export function usePractitionerSessions(params?: ListSessionsParams) {
+  const safeParams = sanitizeListSessionsParams(params);
   return useQuery({
-    queryKey: practitionerSessionQueryKeys.list(params),
-    queryFn: () => getPractitionerSessions(params),
+    queryKey: practitionerSessionQueryKeys.list(safeParams),
+    queryFn: () => getPractitionerSessions(safeParams),
     staleTime: 30_000,
   });
 }

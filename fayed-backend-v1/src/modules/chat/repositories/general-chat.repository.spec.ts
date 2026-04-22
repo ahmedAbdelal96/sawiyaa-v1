@@ -19,7 +19,9 @@ describe('GeneralChatRepository', () => {
     },
     $transaction: jest
       .fn()
-      .mockImplementation((operations: unknown[]) => Promise.all(operations as Promise<unknown>[]) ),
+      .mockImplementation((operations: unknown[]) =>
+        Promise.all(operations as Promise<unknown>[]),
+      ),
   } as unknown as PrismaService;
 
   const repository = new GeneralChatRepository(prisma);

@@ -110,7 +110,8 @@ export class UpdateRevenueShareRulesUseCase {
           ruleId: crossBorder.id,
           slug: crossBorder.slug,
           platformRatePercent: crossBorder.platformRatePercent.toString(),
-          practitionerRatePercent: crossBorder.practitionerRatePercent.toString(),
+          practitionerRatePercent:
+            crossBorder.practitionerRatePercent.toString(),
           updatedAt: crossBorder.updatedAt.toISOString(),
         },
       },

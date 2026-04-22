@@ -66,8 +66,11 @@ export interface PaginationConfig {
   /** Items per page */
   limit: number;
   
-  /** Total number of items */
-  total: number;
+  /** Total number of items (optional because some backend pagination uses `totalItems`) */
+  total?: number;
+
+  /** Total number of items (backend alias) */
+  totalItems?: number;
   
   /** Total number of pages */
   totalPages: number;

@@ -13,7 +13,10 @@ export class ActiveAccountGuard implements CanActivate {
     const user = getAuthenticatedUser(request);
 
     if (user.isActive !== true) {
-      forbid('An active account is required for this route', 'ACTIVE_ACCOUNT_REQUIRED');
+      forbid(
+        'An active account is required for this route',
+        'ACTIVE_ACCOUNT_REQUIRED',
+      );
     }
 
     return true;

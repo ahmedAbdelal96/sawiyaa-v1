@@ -29,7 +29,9 @@ describe('GetPublicTrainingBySlugUseCase', () => {
   });
 
   it('rejects missing public course', async () => {
-    (trainingRepository.findPublicCourseBySlug as jest.Mock).mockResolvedValue(null);
+    (trainingRepository.findPublicCourseBySlug as jest.Mock).mockResolvedValue(
+      null,
+    );
 
     await expect(
       useCase.execute({
@@ -45,16 +47,20 @@ describe('GetPublicTrainingBySlugUseCase', () => {
       maxEnrollments: 20,
       translations: [{ locale: 'ar', title: 'x', slug: 'x' }],
     });
-    (trainingRepository.listPublicCourseSchedules as jest.Mock).mockResolvedValue([
-      { id: 'schedule_1' },
-    ]);
-    (trainingRepository.countEnrollmentsByScheduleIds as jest.Mock).mockResolvedValue({
+    (
+      trainingRepository.listPublicCourseSchedules as jest.Mock
+    ).mockResolvedValue([{ id: 'schedule_1' }]);
+    (
+      trainingRepository.countEnrollmentsByScheduleIds as jest.Mock
+    ).mockResolvedValue({
       schedule_1: 2,
     });
     (buildTrainingScheduleSnapshotsService.build as jest.Mock).mockReturnValue([
       { id: 'schedule_1' },
     ]);
-    (trainingPresenter.presentPublicTrainingDetails as jest.Mock).mockReturnValue({
+    (
+      trainingPresenter.presentPublicTrainingDetails as jest.Mock
+    ).mockReturnValue({
       id: 'course_1',
       schedules: [{ id: 'schedule_1' }],
     });

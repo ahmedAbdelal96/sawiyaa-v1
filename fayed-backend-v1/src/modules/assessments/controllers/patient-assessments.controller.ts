@@ -43,7 +43,10 @@ export class PatientAssessmentsController {
     description:
       'Returns owned assessment submissions with stable pagination for patient journey history surfaces.',
   })
-  @ApiResponse({ status: 200, type: PatientAssessmentsHistorySuccessResponseDto })
+  @ApiResponse({
+    status: 200,
+    type: PatientAssessmentsHistorySuccessResponseDto,
+  })
   @ApiUnauthorizedResponse({ description: 'Access token is required' })
   @ApiForbiddenResponse({
     description: 'Only active patient accounts may access this route',
@@ -76,7 +79,8 @@ export class PatientAssessmentsController {
   })
   @ApiUnauthorizedResponse({ description: 'Access token is required' })
   @ApiForbiddenResponse({
-    description: 'The requested submission does not belong to the authenticated patient',
+    description:
+      'The requested submission does not belong to the authenticated patient',
   })
   @ApiNotFoundResponse({ description: 'Assessment submission was not found' })
   details(

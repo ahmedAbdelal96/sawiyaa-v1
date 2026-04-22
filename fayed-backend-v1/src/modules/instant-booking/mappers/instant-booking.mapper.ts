@@ -27,7 +27,7 @@ export class InstantBookingMapper {
       id: request.id,
       status: request.status,
       requestedDurationMinutes: request.requestedDurationMinutes,
-      sessionMode: request.preferredMode as SessionMode,
+      sessionMode: request.preferredMode,
       requestedAt: request.requestedAt.toISOString(),
       expiresAt: request.expiresAt.toISOString(),
       respondedAt: request.respondedAt?.toISOString() ?? null,

@@ -16,7 +16,7 @@ import type { PractitionerApplicationStatus as AppStatus } from "../types/practi
 
 const statusColour: Record<AppStatus, string> = {
   DRAFT: "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300",
-  SUBMITTED: "bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400",
+  SUBMITTED: "bg-primary-light text-text-brand dark:bg-primary/20 dark:text-primary-light",
   UNDER_REVIEW: "bg-yellow-50 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-400",
   APPROVED: "bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400",
   REJECTED: "bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400",

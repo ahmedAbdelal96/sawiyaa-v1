@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+
+<html class="light" dir="rtl" lang="ar"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Assessment Results</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-secondary": "#ffffff",
+                        "error-container": "#ffdad6",
+                        "tertiary": "#854f00",
+                        "inverse-on-surface": "#eff1f6",
+                        "on-error-container": "#93000a",
+                        "tertiary-fixed-dim": "#ffb86b",
+                        "on-primary-fixed-variant": "#004689",
+                        "on-background": "#181c20",
+                        "primary-fixed": "#d5e3ff",
+                        "on-tertiary-container": "#fffbff",
+                        "surface-container-highest": "#e0e2e7",
+                        "on-surface-variant": "#424751",
+                        "secondary-container": "#cdddff",
+                        "error": "#ba1a1a",
+                        "primary-fixed-dim": "#a7c8ff",
+                        "inverse-primary": "#a7c8ff",
+                        "tertiary-fixed": "#ffdcbc",
+                        "secondary-fixed": "#d6e3ff",
+                        "surface-container-low": "#f1f4f9",
+                        "background": "#f7f9fe",
+                        "primary-container": "#3575c7",
+                        "on-error": "#ffffff",
+                        "on-tertiary": "#ffffff",
+                        "on-primary-container": "#fefcff",
+                        "tertiary-container": "#a86500",
+                        "surface-bright": "#f7f9fe",
+                        "secondary-fixed-dim": "#b7c7e8",
+                        "on-tertiary-fixed": "#2c1700",
+                        "surface": "#f7f9fe",
+                        "outline-variant": "#c2c6d3",
+                        "outline": "#727783",
+                        "surface-variant": "#e0e2e7",
+                        "surface-container": "#eceef3",
+                        "secondary": "#4f5f7b",
+                        "on-surface": "#181c20",
+                        "surface-container-high": "#e6e8ed",
+                        "surface-dim": "#d8dadf",
+                        "surface-container-lowest": "#ffffff",
+                        "on-secondary-container": "#51617e",
+                        "on-secondary-fixed-variant": "#374762",
+                        "primary": "#0b5cac",
+                        "on-secondary-fixed": "#0a1c34",
+                        "on-primary-fixed": "#001b3c",
+                        "inverse-surface": "#2d3135",
+                        "on-primary": "#ffffff",
+                        "surface-tint": "#125eae",
+                        "on-tertiary-fixed-variant": "#683d00"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {},
+                    "fontFamily": {
+                        "headline": ["Manrope"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    }
+                },
+            },
+        }
+    </script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+        h1, h2, h3, h4, h5, h6, .font-headline { font-family: 'Manrope', sans-serif; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface text-on-surface min-h-screen pb-32 md:pb-8">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-[#f1f4f9]/85 dark:bg-slate-950/85 backdrop-blur-[24px] shadow-[0_8px_40px_rgba(24,28,32,0.08)] dark:shadow-none">
+<div class="flex justify-between items-center px-6 h-20 w-full rtl:flex-row-reverse">
+<div class="flex items-center gap-4">
+<img alt="User Profile Avatar" class="w-10 h-10 rounded-full" data-alt="User Profile Avatar" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDpNxT5J1faiTZze9-4fAmu6QjMQe1vkJr5DuwMvN18MM1JhtnjE5OJqu1CdIaXrwIbS1UYwHFilFlhT7OTBsfs4gxOiKXaj2a3yodhefN3mOEpb4Zewn5Z9fn1repFUF6lBVRvWvFyolzjtgLMr6CWCDvs6aI5d5WozIKJDKkcxPQc633tBUUgM5A1ILgG8yWzUTPnrg2giu6Zn4K0i3nRVF1cFK8Fk4L5u0T6Hn2OoVW4PQnTei7Q1qxzA5F1ozKydKjxABMeX4zL"/>
+<span class="font-['Manrope'] tracking-[-0.02em] font-bold text-[#181c20] dark:text-white text-xl">Sanctuary</span>
+</div>
+<nav class="hidden md:flex gap-8">
+<a class="text-slate-500 hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-colors py-2 px-4 rounded" href="#">Home</a>
+<a class="text-[#0b5cac] font-bold border-b-2 border-[#0b5cac] hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-colors py-2 px-4 rounded" href="#">Assessments</a>
+<a class="text-slate-500 hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-colors py-2 px-4 rounded" href="#">Matching</a>
+<a class="text-slate-500 hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-colors py-2 px-4 rounded" href="#">Therapists</a>
+<a class="text-slate-500 hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-colors py-2 px-4 rounded" href="#">Profile</a>
+</nav>
+<button class="text-[#0b5cac] dark:text-[#3575c7] hover:bg-slate-200/50 dark:hover:bg-slate-800/50 p-2 rounded-full transition-colors scale-95 transition-transform duration-200">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+</div>
+<div class="bg-[#e6e8ed] dark:bg-slate-800 h-[1px] opacity-20 w-full"></div>
+</header>
+<!-- Main Content -->
+<main class="pt-28 px-4 md:px-8 max-w-5xl mx-auto space-y-8">
+<!-- Header Section -->
+<section class="text-center md:text-start space-y-4">
+<h1 class="font-headline text-3xl md:text-4xl font-bold tracking-tight text-on-surface">نتائج التقييم الخاص بك</h1>
+<p class="text-on-surface-variant text-lg max-w-2xl leading-relaxed">
+                شكراً لإكمال التقييم. بناءً على إجاباتك، قمنا بإعداد هذا الملخص لمساعدتك في فهم حالتك الحالية وتوجيهك نحو الخطوات التالية المناسبة.
+            </p>
+</section>
+<!-- Result Card -->
+<section class="bg-surface-container-lowest rounded-xl p-8 shadow-[0_8px_40px_rgba(24,28,32,0.05)] relative overflow-hidden">
+<!-- Accent Bar (Pulse Indicator) -->
+<div class="absolute top-0 bottom-0 inline-start-0 w-2 bg-surface-tint"></div>
+<div class="flex flex-col md:flex-row items-center gap-8">
+<!-- Score Indicator -->
+<div class="flex-shrink-0 relative w-48 h-48 flex items-center justify-center">
+<svg class="w-full h-full -rotate-90 transform" viewbox="0 0 100 100">
+<circle class="text-surface-container-high stroke-current" cx="50" cy="50" fill="transparent" r="40" stroke-width="8"></circle>
+<circle class="text-primary stroke-current" cx="50" cy="50" fill="transparent" r="40" stroke-dasharray="251.2" stroke-dashoffset="150.72" stroke-linecap="round" stroke-width="8"></circle>
+</svg>
+<div class="absolute inset-0 flex flex-col items-center justify-center text-center">
+<span class="text-sm font-label text-on-surface-variant uppercase tracking-wider mb-1">المستوى</span>
+<span class="font-headline text-2xl font-bold text-primary">قلق خفيف</span>
+</div>
+</div>
+<!-- Interpretation -->
+<div class="flex-1 space-y-4">
+<h2 class="font-headline text-2xl font-semibold text-on-surface">ماذا يعني هذا؟</h2>
+<p class="text-on-surface-variant leading-relaxed">
+                        تشير إجاباتك إلى وجود مستويات خفيفة من القلق. من الطبيعي تماماً المرور بفترات من التوتر أو القلق في الحياة اليومية. في هذا المستوى، يمكنك الاستفادة بشكل كبير من تقنيات الرعاية الذاتية وتمارين الاسترخاء البسيطة.
+                    </p>
+<div class="bg-surface-container-low p-4 rounded-lg flex items-start gap-3 mt-4">
+<span class="material-symbols-outlined text-primary mt-1">info</span>
+<p class="text-sm text-on-surface-variant">هذا التقييم هو أداة توجيهية وليس تشخيصاً طبياً. إذا كنت تشعر بصعوبة في التعامل مع هذه المشاعر، فنحن هنا لدعمك.</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Next Steps Bento Grid -->
+<section class="space-y-6">
+<h3 class="font-headline text-xl font-bold text-on-surface">الخطوات التالية الموصى بها</h3>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+<!-- Action Card 1: Therapist -->
+<a class="group bg-surface-container-lowest rounded-xl p-6 shadow-[0_4px_20px_rgba(24,28,32,0.03)] border border-outline-variant/20 hover:border-primary/50 transition-colors flex flex-col h-full" href="#">
+<div class="bg-primary/10 w-12 h-12 rounded-full flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
+<span class="material-symbols-outlined text-primary">psychology</span>
+</div>
+<h4 class="font-headline text-lg font-semibold text-on-surface mb-2">تحدث مع معالج</h4>
+<p class="text-on-surface-variant text-sm flex-1 mb-6">احجز جلسة استشارية مع أحد المتخصصين لدينا لمناقشة مشاعرك والحصول على إرشادات مخصصة.</p>
+<div class="flex items-center text-primary font-medium mt-auto group-hover:translate-x-[-4px] transition-transform">
+<span>البحث عن معالج</span>
+<span class="material-symbols-outlined text-sm mr-1">arrow_back</span>
+</div>
+</a>
+<!-- Action Card 2: Exercises -->
+<a class="group bg-surface-container-lowest rounded-xl p-6 shadow-[0_4px_20px_rgba(24,28,32,0.03)] border border-outline-variant/20 hover:border-primary/50 transition-colors flex flex-col h-full" href="#">
+<div class="bg-secondary-container w-12 h-12 rounded-full flex items-center justify-center mb-4 group-hover:bg-secondary-container/80 transition-colors">
+<span class="material-symbols-outlined text-on-secondary-container">self_improvement</span>
+</div>
+<h4 class="font-headline text-lg font-semibold text-on-surface mb-2">تمارين الاسترخاء</h4>
+<p class="text-on-surface-variant text-sm flex-1 mb-6">اكتشف مجموعة من تقنيات التنفس والتأمل المصممة خصيصاً للتخفيف من حدة القلق اليومي.</p>
+<div class="flex items-center text-primary font-medium mt-auto group-hover:translate-x-[-4px] transition-transform">
+<span>عرض التمارين</span>
+<span class="material-symbols-outlined text-sm mr-1">arrow_back</span>
+</div>
+</a>
+<!-- Action Card 3: Library -->
+<a class="group bg-surface-container-lowest rounded-xl p-6 shadow-[0_4px_20px_rgba(24,28,32,0.03)] border border-outline-variant/20 hover:border-primary/50 transition-colors flex flex-col h-full md:col-span-2 lg:col-span-1" href="#">
+<div class="bg-tertiary-container/20 w-12 h-12 rounded-full flex items-center justify-center mb-4 group-hover:bg-tertiary-container/30 transition-colors">
+<span class="material-symbols-outlined text-tertiary">menu_book</span>
+</div>
+<h4 class="font-headline text-lg font-semibold text-on-surface mb-2">مكتبة المعرفة</h4>
+<p class="text-on-surface-variant text-sm flex-1 mb-6">اقرأ مقالات موثوقة حول كيفية إدارة القلق وتحسين جودة الحياة وصحتك النفسية.</p>
+<div class="flex items-center text-primary font-medium mt-auto group-hover:translate-x-[-4px] transition-transform">
+<span>تصفح المقالات</span>
+<span class="material-symbols-outlined text-sm mr-1">arrow_back</span>
+</div>
+</a>
+</div>
+</section>
+<!-- CTA Section -->
+<section class="bg-surface-container-low rounded-xl p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-6">
+<div class="space-y-2 text-center md:text-start">
+<h4 class="font-headline text-lg font-semibold text-on-surface">هل ترغب في حفظ هذه النتائج؟</h4>
+<p class="text-sm text-on-surface-variant">يمكنك العودة إلى هذه النتائج لاحقاً أو مشاركتها مع معالجك.</p>
+</div>
+<div class="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
+<button class="bg-surface-container-lowest text-primary font-medium py-3 px-6 rounded-lg border border-outline-variant/20 hover:bg-surface-container-high transition-colors text-center">
+                    تحميل كملف PDF
+                </button>
+<button class="bg-gradient-to-br from-primary to-primary-container text-white font-medium py-3 px-6 rounded-lg shadow-md hover:shadow-lg transition-shadow text-center">
+                    حفظ في ملفي الشخصي
+                </button>
+</div>
+</section>
+</main>
+<!-- BottomNavBar -->
+<nav class="md:hidden fixed bottom-0 w-full z-50 rounded-t-[32px] bg-white/85 dark:bg-slate-900/85 backdrop-blur-[24px] border-t border-[#c2c6d3]/20 shadow-[0_-8px_40px_rgba(24,28,32,0.1)]">
+<div class="flex justify-around items-center w-full h-24 pb-safe px-4 rtl:flex-row-reverse">
+<button class="flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 px-4 py-2 hover:text-[#0b5cac] dark:hover:text-[#3575c7] transition-all active:scale-90 transition-all duration-300">
+<span class="material-symbols-outlined mb-1">home_health</span>
+<span class="font-['Inter'] text-[10px] font-medium tracking-[0.05em] uppercase">Home</span>
+</button>
+<button class="flex flex-col items-center justify-center bg-gradient-to-br from-[#0b5cac] to-[#3575c7] text-white rounded-xl px-4 py-2 active:scale-90 transition-all duration-300">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 1;">clinical_notes</span>
+<span class="font-['Inter'] text-[10px] font-medium tracking-[0.05em] uppercase">Assessments</span>
+</button>
+<button class="flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 px-4 py-2 hover:text-[#0b5cac] dark:hover:text-[#3575c7] transition-all active:scale-90 transition-all duration-300">
+<span class="material-symbols-outlined mb-1">diversity_2</span>
+<span class="font-['Inter'] text-[10px] font-medium tracking-[0.05em] uppercase">Matching</span>
+</button>
+<button class="flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 px-4 py-2 hover:text-[#0b5cac] dark:hover:text-[#3575c7] transition-all active:scale-90 transition-all duration-300">
+<span class="material-symbols-outlined mb-1">search_check</span>
+<span class="font-['Inter'] text-[10px] font-medium tracking-[0.05em] uppercase">Therapists</span>
+</button>
+<button class="flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 px-4 py-2 hover:text-[#0b5cac] dark:hover:text-[#3575c7] transition-all active:scale-90 transition-all duration-300">
+<span class="material-symbols-outlined mb-1">account_circle</span>
+<span class="font-['Inter'] text-[10px] font-medium tracking-[0.05em] uppercase">Profile</span>
+</button>
+</div>
+</nav>
+</body></html>

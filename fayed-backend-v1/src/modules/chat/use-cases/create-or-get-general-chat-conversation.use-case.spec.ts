@@ -38,7 +38,9 @@ describe('CreateOrGetGeneralChatConversationUseCase', () => {
         id: 'pr_profile_1',
         userId: 'user_practitioner',
       });
-    (generalChatRepository.findByConversationRef as jest.Mock).mockResolvedValue(null);
+    (
+      generalChatRepository.findByConversationRef as jest.Mock
+    ).mockResolvedValue(null);
     (generalChatRepository.createConversation as jest.Mock).mockResolvedValue({
       id: 'conv_1',
       conversationRef: 'gc_ref_1',
@@ -85,7 +87,9 @@ describe('CreateOrGetGeneralChatConversationUseCase', () => {
         id: 'pr_profile_1',
         userId: 'user_practitioner',
       });
-    (generalChatRepository.findByConversationRef as jest.Mock).mockResolvedValue({
+    (
+      generalChatRepository.findByConversationRef as jest.Mock
+    ).mockResolvedValue({
       id: 'conv_existing',
       conversationType: 'SYSTEM',
       status: 'OPEN',
@@ -166,7 +170,9 @@ describe('CreateOrGetGeneralChatConversationUseCase', () => {
         id: 'pr_profile_1',
         userId: 'user_practitioner',
       });
-    (generalChatRepository.findByConversationRef as jest.Mock).mockResolvedValue({
+    (
+      generalChatRepository.findByConversationRef as jest.Mock
+    ).mockResolvedValue({
       id: 'conv_bad',
       conversationType: 'SYSTEM',
       status: 'OPEN',
@@ -195,4 +201,3 @@ describe('CreateOrGetGeneralChatConversationUseCase', () => {
     ).rejects.toBeInstanceOf(ForbiddenException);
   });
 });
-

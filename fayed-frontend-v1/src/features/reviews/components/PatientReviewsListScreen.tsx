@@ -6,11 +6,12 @@ import { Link } from "@/i18n/navigation";
 import { CalendarDays, ChevronRight, ClipboardList, Star } from "lucide-react";
 import { ListStateSkeleton, StateCard } from "@/components/shared/ContentStates";
 import FilterClearButton from "@/components/ui/filters/FilterClearButton";
+import { DEFAULT_PAGE_LIMIT } from "@/constants/pagination";
 import { usePatientReviews } from "../hooks/use-reviews";
 import { getPatientReviewErrorKey } from "../lib/reviews-errors";
 import type { ListPatientReviewsParams, PatientReviewItem, SessionReviewStatus } from "../types/reviews.types";
 
-const PAGE_LIMIT = 20;
+const PAGE_LIMIT = DEFAULT_PAGE_LIMIT;
 const STATUS_FILTERS: Array<SessionReviewStatus | "ALL"> = [
   "ALL",
   "SUBMITTED",

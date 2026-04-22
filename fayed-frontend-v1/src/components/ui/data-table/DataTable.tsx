@@ -19,7 +19,7 @@
  * @version 1.0.0
  */
 
-'use client';
+"use client";
 
 import { useState, useMemo } from 'react';
 import { ArrowUp, ArrowDown } from 'lucide-react';

@@ -40,7 +40,11 @@ export class ConfigValueRepository {
           },
         ],
       },
-      orderBy: [{ priority: 'desc' }, { updatedAt: 'desc' }, { createdAt: 'desc' }],
+      orderBy: [
+        { priority: 'desc' },
+        { updatedAt: 'desc' },
+        { createdAt: 'desc' },
+      ],
     });
   }
 }

@@ -68,7 +68,9 @@ export class ValidateInstantBookingEligibilityService {
       isPublicProfilePublished: input.practitioner.isPublicProfilePublished,
       hasPublicSlug: Boolean(input.practitioner.publicSlug?.trim()),
       hasDisplayName: Boolean(input.practitioner.user.displayName?.trim()),
-      hasProfessionalTitle: Boolean(input.practitioner.professionalTitle?.trim()),
+      hasProfessionalTitle: Boolean(
+        input.practitioner.professionalTitle?.trim(),
+      ),
       hasBio: Boolean(input.practitioner.bio?.trim()),
       hasAtLeastOneActiveSpecialty: input.practitioner.specialties.length > 0,
     });
@@ -111,7 +113,9 @@ export class ValidateInstantBookingEligibilityService {
     );
 
     const [weeklySlots, exceptions] = await Promise.all([
-      this.availabilitySlotRepository.listActiveByPractitioner(input.practitioner.id),
+      this.availabilitySlotRepository.listActiveByPractitioner(
+        input.practitioner.id,
+      ),
       this.availabilityExceptionRepository.listActiveForRange(
         input.practitioner.id,
         input.nowUtc,

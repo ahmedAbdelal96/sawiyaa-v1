@@ -24,4 +24,3 @@ describe('ModerationReportsController access contract', () => {
     expect(guards).toContain(RolesGuard);
   });
 });
-

@@ -166,6 +166,8 @@ describe('BuildPatientJourneyLinkedContentService', () => {
       suggestedNextAction: 'BOOK_NEXT_SESSION',
     });
 
-    expect(result.filter((item) => item.article.id === 'article-dup')).toHaveLength(1);
+    expect(
+      result.filter((item) => item.article.id === 'article-dup'),
+    ).toHaveLength(1);
   });
 });

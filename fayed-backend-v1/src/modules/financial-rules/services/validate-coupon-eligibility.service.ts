@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { Coupon, CouponScope, CouponStatus, Prisma } from '@prisma/client';
 import { CouponRepository } from '../repositories/coupon.repository';
 import { MoneyMathService } from './money-math.service';

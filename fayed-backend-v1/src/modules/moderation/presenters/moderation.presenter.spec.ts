@@ -24,6 +24,7 @@ describe('ModerationPresenter', () => {
       targetSnapshot: {
         kind: 'SUPPORT_MESSAGE',
         conversationId: 'conv_1',
+        supportTicketId: 'ticket_1',
         sentAt: new Date('2026-03-31T19:55:00.000Z'),
         preview: 'message preview',
       },
@@ -39,6 +40,7 @@ describe('ModerationPresenter', () => {
         kind: 'SUPPORT_MESSAGE',
         context: {
           conversationId: 'conv_1',
+          supportTicketId: 'ticket_1',
           preview: 'message preview',
         },
       },

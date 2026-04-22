@@ -13,7 +13,9 @@ export class GetMyAssessmentsHistoryUseCase {
   ) {}
 
   async execute(input: { userId: string; query: ListPatientAssessmentsDto }) {
-    const patientProfile = await this.assessmentPatientRepository.findByUserId(input.userId);
+    const patientProfile = await this.assessmentPatientRepository.findByUserId(
+      input.userId,
+    );
     if (!patientProfile) {
       throw new NotFoundException({
         messageKey: 'assessments.errors.patientProfileNotFound',

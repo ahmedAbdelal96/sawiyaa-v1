@@ -54,7 +54,9 @@ export class ResendOtpChallengeUseCase {
       );
     if (latestActive) {
       await this.otpChallengeRepository.invalidate(latestActive.id);
-      this.logger.log(`OTP challenge invalidated before resend (${input.purpose})`);
+      this.logger.log(
+        `OTP challenge invalidated before resend (${input.purpose})`,
+      );
     }
 
     const challenge = await this.createOtpChallengeUseCase.execute({

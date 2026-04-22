@@ -22,11 +22,15 @@ describe('GetSettlementBatchDetailsUseCase', () => {
   });
 
   it('returns operational detail payload including empty child-state safely', async () => {
-    (settlementRepository.getSettlementBatchDetails as jest.Mock).mockResolvedValue({
+    (
+      settlementRepository.getSettlementBatchDetails as jest.Mock
+    ).mockResolvedValue({
       id: 'batch_1',
       settlements: [],
     });
-    (financialOperationsMapper.toSettlementBatchDetails as jest.Mock).mockReturnValue({
+    (
+      financialOperationsMapper.toSettlementBatchDetails as jest.Mock
+    ).mockReturnValue({
       id: 'batch_1',
       slug: 'set_2026_03_egp',
       status: 'GENERATED',
@@ -60,9 +64,9 @@ describe('GetSettlementBatchDetailsUseCase', () => {
   });
 
   it('throws not found when batch is missing', async () => {
-    (settlementRepository.getSettlementBatchDetails as jest.Mock).mockResolvedValue(
-      null,
-    );
+    (
+      settlementRepository.getSettlementBatchDetails as jest.Mock
+    ).mockResolvedValue(null);
 
     await expect(useCase.execute('batch_missing')).rejects.toBeInstanceOf(
       NotFoundException,
