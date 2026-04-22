@@ -153,7 +153,7 @@ export class PrismaCareRequestsReportProvider implements CareRequestsReportProvi
         sum(case when extract(epoch from (${input.to} - "requestedAt")) >= 259200 and extract(epoch from (${input.to} - "requestedAt")) < 604800 then 1 else 0 end)::int as "d3to7",
         sum(case when extract(epoch from (${input.to} - "requestedAt")) >= 604800 then 1 else 0 end)::int as "gt7"
       from "ChatApprovalRequest"
-      where "status" = ${ChatApprovalStatus.PENDING}
+      where "status"::text = ${ChatApprovalStatus.PENDING}
         ${input.practitionerId ? Prisma.sql`and "practitionerId" = ${input.practitionerId}` : Prisma.empty}
     `).then((rows) => {
       const row = rows[0] ?? { lt1: 0, d1to3: 0, d3to7: 0, gt7: 0 };
@@ -207,4 +207,3 @@ export class PrismaCareRequestsReportProvider implements CareRequestsReportProvi
     `);
   }
 }
-

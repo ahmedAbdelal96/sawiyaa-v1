@@ -147,7 +147,7 @@ export class PrismaPayoutsReportProvider implements PayoutsReportProvider {
         coalesce(sum(greatest("amountNet" - "amountPaidTotal", 0)), 0)::numeric(18,2) as "dueAmount",
         count(*)::int as "settlementCount"
       from "PractitionerSettlement"
-      where "status" in (${Prisma.join(activeStatuses)})
+      where "status"::text in (${Prisma.join(activeStatuses)})
         and "createdAt" <= ${input.to}
         ${input.currencyCode ? Prisma.sql`and "currencyCode" = ${input.currencyCode}` : Prisma.empty}
         ${input.practitionerId ? Prisma.sql`and "practitionerId" = ${input.practitionerId}` : Prisma.empty}

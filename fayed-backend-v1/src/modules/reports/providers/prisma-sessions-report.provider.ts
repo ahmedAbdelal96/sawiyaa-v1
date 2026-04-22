@@ -145,9 +145,9 @@ export class PrismaSessionsReportProvider implements SessionsReportProvider {
       select
         to_char(date_trunc('day', "scheduledStartAt"), 'YYYY-MM-DD') as "dateKey",
         count(*)::int as "total",
-        sum(case when "status" = ${SessionStatus.COMPLETED} then 1 else 0 end)::int as "completed",
-        sum(case when "status" = ${SessionStatus.CANCELLED} then 1 else 0 end)::int as "cancelled",
-        sum(case when "status" = ${SessionStatus.NO_SHOW} then 1 else 0 end)::int as "noShow"
+        sum(case when "status"::text = ${SessionStatus.COMPLETED} then 1 else 0 end)::int as "completed",
+        sum(case when "status"::text = ${SessionStatus.CANCELLED} then 1 else 0 end)::int as "cancelled",
+        sum(case when "status"::text = ${SessionStatus.NO_SHOW} then 1 else 0 end)::int as "noShow"
       from "Session"
       where "scheduledStartAt" >= ${input.from} and "scheduledStartAt" <= ${input.to}
       group by 1
@@ -161,4 +161,3 @@ export class PrismaSessionsReportProvider implements SessionsReportProvider {
     }));
   }
 }
-
