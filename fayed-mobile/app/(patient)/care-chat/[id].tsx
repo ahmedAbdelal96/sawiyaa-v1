@@ -25,6 +25,7 @@ import {
 } from "../../../src/features/patient/care-chat/hooks";
 import { extractApiErrorMessage } from "../../../src/lib/api";
 import { useAuth } from "../../../src/providers/AuthProvider";
+import { localizeCareChatMessageText } from "../../../src/features/care-chat/message-utils";
 import type { CareChatMessageDto } from "../../../src/features/patient/care-chat/types";
 
 export default function CareChatConversationScreen() {
@@ -93,7 +94,7 @@ export default function CareChatConversationScreen() {
               { color: isMe ? "#fff" : theme.colors.textPrimary },
             ]}
           >
-            {msg.message}
+            {localizeCareChatMessageText(msg, t)}
           </Text>
           <Text
             style={[
@@ -161,7 +162,7 @@ export default function CareChatConversationScreen() {
             >
               {t("careChat.expiresOn", {
                 date: new Date(conversation.expiresAt).toLocaleDateString(
-                  "ar-SA",
+                  i18n.language?.startsWith("ar") ? "ar-SA" : "en-US",
                   { day: "numeric", month: "long", year: "numeric" },
                 ),
               })}

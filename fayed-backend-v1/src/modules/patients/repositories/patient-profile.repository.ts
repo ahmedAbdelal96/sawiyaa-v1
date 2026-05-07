@@ -22,6 +22,7 @@ export class PatientProfileRepository {
       include: {
         country: {
           select: {
+            id: true,
             isoCode: true,
           },
         },
@@ -38,6 +39,7 @@ export class PatientProfileRepository {
       include: {
         country: {
           select: {
+            id: true,
             isoCode: true,
           },
         },
@@ -56,6 +58,7 @@ export class PatientProfileRepository {
       include: {
         country: {
           select: {
+            id: true,
             isoCode: true,
           },
         },

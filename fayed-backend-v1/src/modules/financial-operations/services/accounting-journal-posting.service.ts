@@ -405,12 +405,12 @@ export class AccountingJournalPostingService {
   }
 
   async postPractitionerPayout(input: {
-    payout: {
-      payoutId: string;
-      settlementId: string;
-      practitionerId: string;
-      amountPaid: Prisma.Decimal;
-      settlementAppliedAmount: Prisma.Decimal;
+      payout: {
+        payoutId: string;
+        settlementId?: string | null;
+        practitionerId: string;
+        amountPaid: Prisma.Decimal;
+        settlementAppliedAmount: Prisma.Decimal;
       currencyCode: string;
       effectiveAt: Date;
       payoutMethodSnapshot: Prisma.JsonValue | null;
@@ -463,8 +463,12 @@ export class AccountingJournalPostingService {
           ledgerAccountId: practitionerPayableAccountId,
           direction: LedgerDirection.DEBIT,
           amount: settlementAppliedAmount.toFixed(2),
-          memo: 'Settle practitioner payable via payout.',
-          referenceType: 'settlement_payout',
+          memo: input.payout.settlementId
+            ? 'Settle practitioner payable via settlement payout.'
+            : 'Settle practitioner payable via manual payout.',
+          referenceType: input.payout.settlementId
+            ? 'settlement_payout'
+            : 'manual_payout',
           referenceId: input.payout.payoutId,
         },
         {
@@ -523,8 +527,9 @@ export class AccountingJournalPostingService {
           metadataJson: {
             postingVersion: 2,
             source: 'practitioner-payout',
-            settlementId: input.payout.settlementId,
-            amountPaid: amountPaid.toFixed(2),
+              settlementId: input.payout.settlementId ?? null,
+              payoutKind: input.payout.settlementId ? 'SETTLEMENT' : 'MANUAL',
+              amountPaid: amountPaid.toFixed(2),
             settlementAppliedAmount: settlementAppliedAmount.toFixed(2),
             transferFeeAmount: transferFeeAmount.toFixed(2),
             transferFeeTreatment: input.payout.transferFeeTreatment,

@@ -5,12 +5,15 @@ import {
   getPatientReview,
   getPatientReviews,
   moderateReview,
+  submitPatientSessionReview,
 } from "../api/reviews.api";
 import { adminReviewsQueryKeys, patientReviewsQueryKeys } from "../constants/query-keys";
 import type {
+  CreateSessionReviewInput,
   ListAdminReviewsParams,
   ListPatientReviewsParams,
   ModerateReviewRequest,
+  PatientReviewItemData,
 } from "../types/reviews.types";
 
 export function useAdminReviews(params: ListAdminReviewsParams = {}) {
@@ -45,19 +48,38 @@ export function useModerateReview(reviewId: string) {
   });
 }
 
-export function usePatientReviews(params: ListPatientReviewsParams = {}) {
+export function usePatientReviews(
+  params: ListPatientReviewsParams = {},
+  enabled = true,
+) {
   return useQuery({
     queryKey: patientReviewsQueryKeys.reviewsList(params),
     queryFn: () => getPatientReviews(params),
+    enabled,
     staleTime: 60_000,
   });
 }
 
-export function usePatientReview(reviewId: string | null) {
+export function usePatientReview(reviewId: string | null, enabled = true) {
   return useQuery({
     queryKey: patientReviewsQueryKeys.review(reviewId ?? ""),
     queryFn: () => getPatientReview(reviewId!),
-    enabled: Boolean(reviewId),
+    enabled: Boolean(reviewId) && enabled,
     staleTime: 30_000,
+  });
+}
+
+export function useSubmitPatientSessionReview(sessionId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (payload: CreateSessionReviewInput) =>
+      submitPatientSessionReview(sessionId, payload),
+    onSuccess: (data: PatientReviewItemData) => {
+      queryClient.setQueryData(patientReviewsQueryKeys.review(data.item.id), data);
+      queryClient.invalidateQueries({
+        queryKey: patientReviewsQueryKeys.all,
+      });
+    },
   });
 }

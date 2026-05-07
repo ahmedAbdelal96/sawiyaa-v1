@@ -3,7 +3,10 @@ import { FINANCIAL_OPS_ERROR_CODES } from '@modules/financial-operations/types/f
 import { resolveRange, isValidRange } from '../utils/report-date.util';
 import { toPaginationMeta } from '../utils/report-pagination.util';
 import { ListAdminSessionsReportRowsDto } from '../dto/admin-sessions-report.dto';
-import { SessionsReportProvider, SESSIONS_REPORT_PROVIDER } from '../providers/sessions-report.provider';
+import {
+  SessionsReportProvider,
+  SESSIONS_REPORT_PROVIDER,
+} from '../providers/sessions-report.provider';
 
 @Injectable()
 export class ListAdminSessionsReportRowsUseCase {
@@ -38,4 +41,3 @@ export class ListAdminSessionsReportRowsUseCase {
     };
   }
 }
-

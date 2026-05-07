@@ -1,4 +1,8 @@
-import axios, { AxiosError, AxiosResponse } from "axios";
+import axios, {
+  AxiosError,
+  AxiosResponse,
+  InternalAxiosRequestConfig,
+} from "axios";
 import { Platform } from "react-native";
 import i18n from "../i18n";
 
@@ -6,6 +10,19 @@ interface ApiEnvelope<T> {
   success: boolean;
   data: T;
 }
+
+type ApiAuthSessionHandlers = {
+  refreshAccessToken: () => Promise<string | null>;
+  onAuthFailure: () => Promise<void>;
+};
+
+type RetriableRequestConfig = InternalAxiosRequestConfig & {
+  _retry?: boolean;
+};
+
+let apiAuthSessionHandlers: ApiAuthSessionHandlers | null = null;
+let refreshAccessTokenPromise: Promise<string | null> | null = null;
+let authFailurePromise: Promise<void> | null = null;
 
 function resolveBaseUrl() {
   const publicEnv = process.env as Record<string, string | undefined>;
@@ -34,6 +51,99 @@ apiClient.interceptors.request.use((config) => {
   config.headers["x-lang"] = i18n.language?.startsWith("ar") ? "ar" : "en";
   return config;
 });
+
+function shouldSkipAuthRefresh(url?: string) {
+  if (!url) {
+    return false;
+  }
+
+  return [
+    "/auth/patient/login",
+    "/auth/patient/register",
+    "/auth/patient/google",
+    "/auth/patient/refresh",
+    "/auth/patient/logout",
+    "/auth/practitioner/login",
+    "/auth/practitioner/register",
+    "/auth/practitioner/login/verify-otp",
+    "/auth/practitioner/refresh",
+    "/auth/practitioner/logout",
+    "/auth/practitioner/forgot-password",
+    "/auth/practitioner/reset-password",
+  ].some((path) => url.includes(path));
+}
+
+function hasAuthorizationHeader(config: RetriableRequestConfig) {
+  const headerToken =
+    config.headers?.Authorization ??
+    config.headers?.authorization ??
+    apiClient.defaults.headers.common.Authorization;
+
+  return Boolean(headerToken);
+}
+
+async function triggerAuthFailure() {
+  if (!apiAuthSessionHandlers) {
+    return;
+  }
+
+  if (!authFailurePromise) {
+    authFailurePromise = apiAuthSessionHandlers.onAuthFailure().finally(() => {
+      authFailurePromise = null;
+    });
+  }
+
+  await authFailurePromise;
+}
+
+apiClient.interceptors.response.use(
+  (response) => response,
+  async (error: AxiosError) => {
+    const originalRequest = error.config as RetriableRequestConfig | undefined;
+
+    if (
+      error.response?.status !== 401 ||
+      !originalRequest ||
+      originalRequest._retry ||
+      !apiAuthSessionHandlers ||
+      shouldSkipAuthRefresh(originalRequest.url) ||
+      !hasAuthorizationHeader(originalRequest)
+    ) {
+      return Promise.reject(error);
+    }
+
+    originalRequest._retry = true;
+
+    try {
+      if (!refreshAccessTokenPromise) {
+        refreshAccessTokenPromise = apiAuthSessionHandlers.refreshAccessToken();
+      }
+
+      const nextAccessToken = await refreshAccessTokenPromise;
+
+      if (!nextAccessToken) {
+        await triggerAuthFailure();
+        return Promise.reject(error);
+      }
+
+      originalRequest.headers = originalRequest.headers ?? {};
+      originalRequest.headers.Authorization = `Bearer ${nextAccessToken}`;
+
+      return apiClient(originalRequest);
+    } catch (refreshError) {
+      await triggerAuthFailure();
+      return Promise.reject(refreshError);
+    } finally {
+      refreshAccessTokenPromise = null;
+    }
+  },
+);
+
+export function configureApiAuthSessionHandlers(
+  handlers: ApiAuthSessionHandlers | null,
+) {
+  apiAuthSessionHandlers = handlers;
+}
 
 export function setApiAccessToken(token: string | null) {
   if (token) {

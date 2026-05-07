@@ -1,11 +1,32 @@
 import { ConfigService } from '@nestjs/config';
 import { NotificationEmailService } from './notification-email.service';
-import nodemailer from 'nodemailer';
+
+type EmailTransporterMock = {
+  sendMail: jest.Mock<
+    Promise<unknown>,
+    [{ from: string; to: string; subject: string; text: string }]
+  >;
+};
+
+type TransportConfig = {
+  host: string;
+  port: number;
+  secure: boolean;
+  auth?: {
+    user: string;
+    pass: string;
+  };
+};
+
+const createTransportMock = jest.fn() as unknown as jest.MockedFunction<
+  (config: TransportConfig) => EmailTransporterMock
+>;
 
 jest.mock('nodemailer', () => ({
   __esModule: true,
+  createTransport: createTransportMock,
   default: {
-    createTransport: jest.fn(),
+    createTransport: createTransportMock,
   },
 }));
 
@@ -71,8 +92,13 @@ describe('NotificationEmailService', () => {
   });
 
   it('bypasses OTP delivery failures in development when explicitly enabled', async () => {
-    const sendMail = jest.fn().mockRejectedValue(new Error('SMTP timeout'));
-    (nodemailer.createTransport as jest.Mock).mockReturnValue({ sendMail });
+    const sendMail = jest
+      .fn<
+        Promise<unknown>,
+        [{ from: string; to: string; subject: string; text: string }]
+      >()
+      .mockRejectedValue(new Error('SMTP timeout'));
+    createTransportMock.mockReturnValue({ sendMail });
 
     const service = new NotificationEmailService(
       buildConfigService({

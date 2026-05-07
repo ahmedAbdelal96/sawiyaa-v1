@@ -6,6 +6,7 @@ import { Link } from "@/i18n/navigation";
 import {
   AlertCircle,
   CalendarDays,
+  CalendarClock,
   CheckCircle2,
   Clock,
   ExternalLink,
@@ -25,12 +26,14 @@ import {
   useResolvePractitionerSessionJoinContract,
 } from "../hooks/use-sessions";
 import {
-  buildTokenizedSessionRoomUrl,
+  buildProviderLaunchUrl,
   canPrepareSessionRuntime,
+  canLaunchProviderRuntime,
   getRuntimeBlockedReasonKey,
   getRuntimePreparedState,
   getRuntimeProvider,
   getRuntimeRoomName,
+  formatProviderDisplayName,
   hasSessionRuntimeAccess,
   isJoinWindowOpen,
 } from "../lib/session-runtime";
@@ -189,20 +192,18 @@ export default function PractitionerSessionDetailPanel({ sessionId }: Props) {
   const canMarkNoShow = NO_SHOW_ALLOWED_STATUSES.includes(session.status);
   const isBusy =
     completeMutation.isPending || noShowMutation.isPending || joinMutation.isPending;
-  const joinUrl =
-    joinResult?.canJoin && joinResult.roomUrl && joinResult.joinToken
-      ? buildTokenizedSessionRoomUrl(joinResult.roomUrl, joinResult.joinToken)
-      : null;
+  const joinUrl = buildProviderLaunchUrl(joinResult);
   const runtimePrepared = getRuntimePreparedState({ prepareResult, joinResult });
   const runtimeProvider = getRuntimeProvider({ prepareResult, joinResult });
   const runtimeRoomName = getRuntimeRoomName({ prepareResult, joinResult });
+  const runtimeProviderLabel = formatProviderDisplayName(runtimeProvider);
   const prepareAllowed = hasRuntimeAccess && !runtimePrepared && canPrepareSessionRuntime(session);
   const joinWindowOpen = isJoinWindowOpen(session);
   const handlingNowKey = getHandlingNowKey(session.status);
   const closeoutStateKey = getCloseoutStateKey(session.status);
   const shouldShowJoinCheck =
     hasRuntimeAccess &&
-    !(joinResult?.canJoin && joinUrl) &&
+    !(joinResult?.canJoin && canLaunchProviderRuntime(joinResult)) &&
     (joinWindowOpen ||
       session.status === "READY_TO_JOIN" ||
       session.status === "IN_PROGRESS" ||
@@ -216,7 +217,7 @@ export default function PractitionerSessionDetailPanel({ sessionId }: Props) {
     ? "unavailable"
     : session.status === "IN_PROGRESS"
       ? "liveNow"
-      : joinResult?.canJoin && joinUrl
+      : joinResult?.canJoin && canLaunchProviderRuntime(joinResult)
         ? "readyToJoin"
         : runtimePrepared
           ? "preparedWaiting"
@@ -292,6 +293,13 @@ export default function PractitionerSessionDetailPanel({ sessionId }: Props) {
               ) : (
                 <span className="text-text-muted">{t("detail.noSchedule")}</span>
               )}
+            </div>
+            <div className="flex items-start gap-2">
+              <CalendarClock size={14} className="mt-0.5 shrink-0 text-text-muted" />
+              <div className="min-w-0">
+                <p className="text-xs font-medium text-text-muted">{t("detail.bookedAt")}</p>
+                <p>{formatDatetime(session.createdAt, numLocale)}</p>
+              </div>
             </div>
             <div className="flex items-center gap-2">
               <Clock size={14} className="shrink-0 text-text-muted" />
@@ -488,11 +496,7 @@ export default function PractitionerSessionDetailPanel({ sessionId }: Props) {
               {t("detail.liveFlow.facts.provider")}
             </p>
             <p className="mt-1 text-sm font-medium text-text-primary dark:text-white/90">
-              {runtimeProvider
-                ? t(
-                    `detail.liveFlow.provider.${runtimeProvider}` as Parameters<typeof t>[0],
-                  )
-                : t("detail.liveFlow.provider.NONE")}
+              {runtimeProviderLabel ?? t("detail.liveFlow.provider.NONE")}
             </p>
           </div>
           <div className="rounded-2xl bg-surface-tertiary px-4 py-3 text-sm dark:bg-white/5">

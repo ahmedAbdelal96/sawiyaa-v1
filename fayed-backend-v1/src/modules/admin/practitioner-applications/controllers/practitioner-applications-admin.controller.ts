@@ -88,6 +88,7 @@ export class PractitionerApplicationsAdminController {
     description:
       'Admin-only listing endpoint for practitioner applications with lightweight status and display-name filtering.',
   })
+  @ApiQuery({ name: 'kind', required: false })
   @ApiQuery({ name: 'status', required: false })
   @ApiQuery({ name: 'q', required: false })
   @ApiQuery({ name: 'page', required: false })
@@ -107,6 +108,7 @@ export class PractitionerApplicationsAdminController {
   ) {
     return this.listPractitionerApplicationsUseCase.execute({
       locale,
+      kind: query.kind,
       status: query.status,
       q: query.q,
       page: query.page,
@@ -148,13 +150,17 @@ export class PractitionerApplicationsAdminController {
       password: body.password,
       displayName: body.displayName,
       practitionerType: body.practitionerType,
-      practitionerGender: body.practitionerGender,
-      professionalTitle: body.professionalTitle,
-      bio: body.bio,
-      yearsOfExperience: body.yearsOfExperience,
-      countryCode: body.countryCode,
-      languageCodes: body.languageCodes,
-      specialtySelection: body.specialtySelection,
+        practitionerGender: body.practitionerGender,
+        professionalTitle: body.professionalTitle,
+        bio: body.bio,
+        yearsOfExperience: body.yearsOfExperience,
+        sessionPrice30Egp: body.sessionPrice30Egp,
+        sessionPrice30Usd: body.sessionPrice30Usd,
+        sessionPrice60Egp: body.sessionPrice60Egp,
+        sessionPrice60Usd: body.sessionPrice60Usd,
+        countryCode: body.countryCode,
+        languageCodes: body.languageCodes,
+        specialtySelection: body.specialtySelection,
       payoutDestination: body.payoutDestination,
       credentials: body.credentials,
       note: body.note,

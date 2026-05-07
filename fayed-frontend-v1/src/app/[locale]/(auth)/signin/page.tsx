@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import AuthEntryChooser from "@/components/auth/AuthEntryChooser";
+import SignInForm, { type SignInMode } from "@/components/auth/SignInForm";
 
 type Props = {
   params: Promise<{ locale: string }>;
+  searchParams: Promise<{ mode?: string; callbackUrl?: string }>;
 };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -15,8 +17,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-export default async function SignInPage({ params }: Props) {
+export default async function SignInPage({ params, searchParams }: Props) {
   const { locale } = await params;
+  const { mode } = await searchParams;
   setRequestLocale(locale);
-  return <AuthEntryChooser />;
+
+  const signInMode = mode === "patient" || mode === "practitioner" || mode === "admin"
+    ? (mode as SignInMode)
+    : null;
+
+  return signInMode ? <SignInForm mode={signInMode} /> : <AuthEntryChooser />;
 }

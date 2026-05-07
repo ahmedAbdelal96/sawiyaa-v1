@@ -2,6 +2,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import {
   getPatientPayment,
   getPatientPayments,
+  getPatientSessionPaymentCapabilities,
   getPatientWalletEntries,
   getPatientWalletSummary,
   initiateSessionPayment,
@@ -21,6 +22,8 @@ export const paymentQueryKeys = {
     [...paymentQueryKeys.all, "wallet-summary", currencyCode ?? "default"] as const,
   walletEntries: (params?: ListCustomerWalletEntriesParams) =>
     [...paymentQueryKeys.all, "wallet-entries", params ?? {}] as const,
+  sessionCapabilities: (sessionId: string) =>
+    [...paymentQueryKeys.all, "session-capabilities", sessionId] as const,
 };
 
 /**
@@ -74,6 +77,15 @@ export function usePatientWalletEntries(params?: ListCustomerWalletEntriesParams
   return useQuery({
     queryKey: paymentQueryKeys.walletEntries(params),
     queryFn: () => getPatientWalletEntries(params),
+    staleTime: 30_000,
+  });
+}
+
+export function usePatientSessionPaymentCapabilities(sessionId: string | null) {
+  return useQuery({
+    queryKey: paymentQueryKeys.sessionCapabilities(sessionId ?? ""),
+    queryFn: () => getPatientSessionPaymentCapabilities(sessionId!),
+    enabled: Boolean(sessionId),
     staleTime: 30_000,
   });
 }

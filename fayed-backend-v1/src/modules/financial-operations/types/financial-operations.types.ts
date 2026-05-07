@@ -2,6 +2,8 @@ import { AppRole } from '@common/enums/app-role.enum';
 import {
   LedgerDirection,
   LedgerEntryType,
+  PackageSettlementStatus,
+  PatientPackagePurchaseStatus,
   PractitionerSettlementStatus,
   SettlementPayoutMethod,
   SettlementPayoutSource,
@@ -21,6 +23,8 @@ export const FINANCIAL_OPS_ERROR_CODES = {
     'FINANCIAL_OPERATIONS_INVALID_SETTLEMENT_PAYOUT_STATE',
   payoutAmountInvalid: 'FINANCIAL_OPERATIONS_PAYOUT_AMOUNT_INVALID',
   payoutAmountExceedsDue: 'FINANCIAL_OPERATIONS_PAYOUT_AMOUNT_EXCEEDS_DUE',
+  manualPayoutAlreadyRecorded:
+    'FINANCIAL_OPERATIONS_MANUAL_PAYOUT_ALREADY_RECORDED',
   payoutProofFileRequired: 'FINANCIAL_OPERATIONS_PAYOUT_PROOF_FILE_REQUIRED',
   payoutProofInvalidType: 'FINANCIAL_OPERATIONS_PAYOUT_PROOF_INVALID_TYPE',
   payoutProofFileTooLarge: 'FINANCIAL_OPERATIONS_PAYOUT_PROOF_FILE_TOO_LARGE',
@@ -30,6 +34,7 @@ export const FINANCIAL_OPS_ERROR_CODES = {
 export const FINANCIAL_OPS_ROUTE_SCOPE = {
   adminOperatorOnly: [
     '/admin/settlements',
+    '/admin/practitioner-payouts',
     '/admin/finance/operations/events',
     '/admin/practitioners/:practitionerId/statement',
   ],
@@ -295,3 +300,76 @@ export type SettlementBatchDetailsViewModel =
       };
     };
   };
+
+export type PackageSettlementViewModel = {
+  id: string;
+  purchaseId: string;
+  purchaseStatus: PatientPackagePurchaseStatus;
+  practitionerId: string;
+  practitionerDisplayName: string | null;
+  practitionerSlug: string | null;
+  patientId: string;
+  patientDisplayName: string | null;
+  packagePlanCode: string | null;
+  packagePlanTitle: string | null;
+  currency: string;
+  status: PackageSettlementStatus;
+  sessionCount: number;
+  completedSessionsCount: number;
+  heldPractitionerAmount: string;
+  heldPlatformAmount: string;
+  releasablePractitionerAmount: string;
+  releasedPractitionerAmount: string;
+  normalEquivalentUsedAmount: string;
+  discountAppliedAmount: string;
+  reviewedAt: string | null;
+  reviewedByAdminId: string | null;
+  releasedAt: string | null;
+  releasedByAdminId: string | null;
+  decision: string | null;
+  notes: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type PractitionerPayoutBalanceViewModel = {
+  practitionerId: string;
+  practitionerName: string | null;
+  currencyCode: string;
+  normalSessionPayableAmount: string;
+  packageReleasedPayableAmount: string;
+  packageHeldAmount: string;
+  totalPayableAmount: string;
+  lastPayoutAt: string | null;
+};
+
+export type PractitionerManualPayoutSummaryViewModel = {
+  practitionerId: string;
+  practitionerName: string | null;
+  practitionerSlug: string | null;
+  egp: PractitionerPayoutBalanceViewModel;
+  usd: PractitionerPayoutBalanceViewModel;
+  hasPayable: boolean;
+  hasPackage: boolean;
+  lastPayoutAt: string | null;
+};
+
+export type PractitionerManualPayoutViewModel = {
+  id: string;
+  practitionerId: string;
+  practitionerName: string | null;
+  currencyCode: string;
+  amountPaid: string;
+  normalSessionAppliedAmount: string;
+  packageReleasedAppliedAmount: string;
+  packageHeldAmountSnapshot: string;
+  totalPayableSnapshot: string;
+  payoutMethod: SettlementPayoutMethod;
+  transferReference: string | null;
+  paidAt: string;
+  notes: string | null;
+  recordedByUserId: string | null;
+  recordedByDisplayName: string | null;
+  createdAt: string;
+  updatedAt: string;
+};

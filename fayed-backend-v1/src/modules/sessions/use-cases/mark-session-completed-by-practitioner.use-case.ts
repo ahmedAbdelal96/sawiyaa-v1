@@ -10,6 +10,7 @@ import { SessionMapper } from '../mappers/session.mapper';
 import { SessionPractitionerRepository } from '../repositories/session-practitioner.repository';
 import { SessionRepository } from '../repositories/session.repository';
 import { ValidateSessionStatusTransitionService } from '../services/validate-session-status-transition.service';
+import { PostPackageSessionLedgerEntriesUseCase } from '@modules/financial-operations/use-cases/post-package-session-ledger-entries.use-case';
 
 @Injectable()
 export class MarkSessionCompletedByPractitionerUseCase {
@@ -19,6 +20,7 @@ export class MarkSessionCompletedByPractitionerUseCase {
     private readonly sessionRepository: SessionRepository,
     private readonly sessionMapper: SessionMapper,
     private readonly validateSessionStatusTransitionService: ValidateSessionStatusTransitionService,
+    private readonly postPackageSessionLedgerEntriesUseCase: PostPackageSessionLedgerEntriesUseCase,
   ) {}
 
   async execute(input: {
@@ -83,6 +85,11 @@ export class MarkSessionCompletedByPractitionerUseCase {
         },
         tx,
       );
+
+      await this.postPackageSessionLedgerEntriesUseCase.execute({
+        sessionId: session.id,
+        tx,
+      });
 
       return completedSession;
     });

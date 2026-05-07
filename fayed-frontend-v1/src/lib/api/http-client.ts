@@ -13,6 +13,12 @@ import { API_CONFIG, TOKEN_CONFIG } from "./config";
 import { toAppError } from "./errors";
 import { USER_DATA_COOKIE, USER_ROLE_COOKIE } from "@/lib/auth/constants";
 
+const AUTH_COOKIE_OPTIONS = {
+  path: "/",
+  secure: process.env.NODE_ENV === "production",
+  sameSite: "lax" as const,
+};
+
 const httpClient: AxiosInstance = axios.create({
   baseURL: API_CONFIG.baseURL,
   timeout: API_CONFIG.timeout,
@@ -263,15 +269,15 @@ export const tokenManager = {
   setTokens(accessToken: string, refreshToken?: string): void {
     Cookies.set(TOKEN_CONFIG.ACCESS_TOKEN_KEY, accessToken, {
       expires: TOKEN_CONFIG.ACCESS_TOKEN_EXPIRY,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
+      ...AUTH_COOKIE_OPTIONS,
+      // Top-level redirects from external payment providers need the auth
+      // cookies to survive the return navigation back into the app.
     });
 
     if (refreshToken) {
       Cookies.set(TOKEN_CONFIG.REFRESH_TOKEN_KEY, refreshToken, {
         expires: TOKEN_CONFIG.REFRESH_TOKEN_EXPIRY,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
+        ...AUTH_COOKIE_OPTIONS,
       });
     }
   },
@@ -287,6 +293,7 @@ export const tokenManager = {
   setContextId(contextId: string): void {
     Cookies.set(TOKEN_CONFIG.CONTEXT_ID_KEY, contextId, {
       expires: 365,
+      path: "/",
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
     });
@@ -313,19 +320,17 @@ export const tokenManager = {
       }),
       {
         expires: TOKEN_CONFIG.REFRESH_TOKEN_EXPIRY,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
+        ...AUTH_COOKIE_OPTIONS,
       }
     );
 
     if (primaryRole) {
       Cookies.set(USER_ROLE_COOKIE, primaryRole, {
         expires: TOKEN_CONFIG.REFRESH_TOKEN_EXPIRY,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
+        ...AUTH_COOKIE_OPTIONS,
       });
     } else {
-      Cookies.remove(USER_ROLE_COOKIE);
+      Cookies.remove(USER_ROLE_COOKIE, { path: "/" });
     }
 
   },
@@ -335,11 +340,11 @@ export const tokenManager = {
   },
 
   clearAll(): void {
-    Cookies.remove(TOKEN_CONFIG.ACCESS_TOKEN_KEY);
-    Cookies.remove(TOKEN_CONFIG.REFRESH_TOKEN_KEY);
-    Cookies.remove(TOKEN_CONFIG.CONTEXT_ID_KEY);
-    Cookies.remove(USER_DATA_COOKIE);
-    Cookies.remove(USER_ROLE_COOKIE);
+    Cookies.remove(TOKEN_CONFIG.ACCESS_TOKEN_KEY, { path: "/" });
+    Cookies.remove(TOKEN_CONFIG.REFRESH_TOKEN_KEY, { path: "/" });
+    Cookies.remove(TOKEN_CONFIG.CONTEXT_ID_KEY, { path: "/" });
+    Cookies.remove(USER_DATA_COOKIE, { path: "/" });
+    Cookies.remove(USER_ROLE_COOKIE, { path: "/" });
 
   },
 

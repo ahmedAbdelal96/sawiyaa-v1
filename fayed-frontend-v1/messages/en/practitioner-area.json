@@ -6,7 +6,7 @@
       "title": "Sessions",
       "description": "Your session calendar, booking history, and appointment management will be available here.",
       "meta": {
-        "title": "Sessions — Practitioner",
+        "title": "Sessions â€” Practitioner",
         "description": "Manage your practitioner sessions and appointments."
       }
     },
@@ -14,7 +14,7 @@
       "title": "Patients",
       "description": "Your assigned patient roster and care coordination tools will be available here.",
       "meta": {
-        "title": "Patients — Practitioner",
+        "title": "Patients â€” Practitioner",
         "description": "View and manage your patient assignments."
       }
     },
@@ -22,7 +22,7 @@
       "title": "Reviews",
       "description": "Patient feedback, quality signals, and reputation-related summaries will be available here.",
       "meta": {
-        "title": "Reviews — Practitioner",
+        "title": "Reviews â€” Practitioner",
         "description": "View feedback and reviews from your patients."
       }
     },
@@ -30,7 +30,7 @@
       "title": "Articles",
       "description": "Educational resources, practitioner guidance, and curated content will be available here.",
       "meta": {
-        "title": "Articles — Practitioner",
+        "title": "Articles â€” Practitioner",
         "description": "Explore articles and resources for practitioners."
       }
     },
@@ -38,14 +38,100 @@
       "title": "Settings",
       "description": "Account preferences, availability setup, and notification controls will be available here.",
       "meta": {
-        "title": "Settings — Practitioner",
+        "title": "Settings â€” Practitioner",
         "description": "Manage your practitioner account settings."
+      },
+      "packageAvailability": {
+        "meta": {
+          "title": "Accept package bookings - Practitioner",
+          "description": "Enable or disable package booking acceptance."
+        },
+        "eyebrow": "Settings",
+        "title": "Session packages",
+        "description": "Enable this option if you want to receive package bookings from patients.",
+        "toggleLabel": "Accept package bookings",
+        "helper": "When this option is off, patients cannot buy new packages with you, and existing packages or sessions will not be affected.",
+        "status": {
+          "enabled": "Enabled",
+          "disabled": "Disabled"
+        },
+        "actions": {
+          "save": "Save",
+          "saving": "Saving...",
+          "saved": "No unsaved changes",
+          "unsaved": "You have unsaved changes"
+        },
+        "warning": {
+          "title": "You cannot enable packages right now",
+          "note": "Complete the following requirements first:"
+        },
+        "feedback": {
+          "success": "Package settings saved successfully.",
+          "error": "Could not save package settings right now. Please try again.",
+          "loadError": "Could not load package settings. Please try again.",
+          "retry": "Try again",
+          "missingRequirements": "You cannot enable packages before completing the required requirements."
+        },
+        "requirements": {
+          "approvedProfile": "Approved practitioner profile",
+          "sessionPrice30Egp": "30-minute session price in EGP",
+          "sessionPrice30Usd": "30-minute session price in USD",
+          "sessionPrice60Egp": "60-minute session price in EGP",
+          "sessionPrice60Usd": "60-minute session price in USD",
+          "activeAccount": "Active account",
+          "packagesEnabled": "Platform package feature enabled",
+          "packagePurchasesEnabled": "Package purchases enabled"
+        }
+      }
+    }
+  },
+  "settings": {
+    "packageAvailability": {
+      "meta": {
+        "title": "Accept package bookings - Practitioner",
+        "description": "Enable or disable package booking acceptance."
+      },
+      "eyebrow": "Settings",
+      "title": "Session packages",
+      "description": "Enable this option if you want to receive package bookings from patients.",
+      "toggleLabel": "Accept package bookings",
+      "helper": "When this option is off, patients cannot buy new packages with you, and existing packages or sessions will not be affected.",
+      "status": {
+        "enabled": "Enabled",
+        "disabled": "Disabled"
+      },
+      "actions": {
+        "save": "Save",
+        "saving": "Saving...",
+        "saved": "No unsaved changes",
+        "unsaved": "You have unsaved changes"
+      },
+      "warning": {
+        "title": "You cannot enable packages right now",
+        "note": "Complete the following requirements first:"
+      },
+      "feedback": {
+        "success": "Package settings saved successfully.",
+        "error": "Could not save package settings right now. Please try again.",
+        "loadError": "Could not load package settings. Please try again.",
+        "retry": "Try again",
+        "missingRequirements": "You cannot enable packages before completing the required requirements."
+      },
+      "requirements": {
+        "approvedProfile": "Approved practitioner profile",
+        "sessionPrice30Egp": "30-minute session price in EGP",
+        "sessionPrice30Usd": "30-minute session price in USD",
+        "sessionPrice60Egp": "60-minute session price in EGP",
+        "sessionPrice60Usd": "60-minute session price in USD",
+        "activeAccount": "Active account",
+        "packagesEnabled": "Platform package feature enabled",
+        "packagePurchasesEnabled": "Package purchases enabled"
       }
     }
   },
   "dashboard": {
     "meta": {
-      "title": "Dashboard — Practitioner",
+      "title": "Dashboard â€” Practitioner",
       "description": "Your practitioner overview, application status, and quick navigation."
     },
     "page": {
@@ -187,99 +273,265 @@
     }
   },
   "profile": {
-    "meta": {
-      "title": "Profile — Practitioner",
-      "description": "Manage your professional profile and personal information."
-    },
-    "page": {
-      "title": "Professional Profile",
-      "subtitle": "Keep your information accurate and up to date."
-    },
-    "sections": {
-      "professional": "Professional Information",
-      "personal": "Personal Details"
+    "request": {
+      "feedback": {
+        "error": "Could not submit the profile change request right now.",
+        "success": "Your profile change request was submitted successfully.",
+        "primarySpecialtyRequired": "Select a primary specialty before submitting the request."
+      },
+      "primarySpecialtyRequired": "Select a primary specialty before submitting the request.",
+      "noPayoutDestination": "No payout details",
+      "payoutAccountHolderRequired": "Account holder name is required before submitting.",
+      "photoProvided": "Photo provided",
+      "notice": "Sensitive profile changes are not applied live until admin approves them.",
+      "adminNote": "Admin note",
+      "modalDescription": "Prepare the details below and send them for admin review before they go live.",
+      "photoEmpty": "No photo",
+      "photoRemoved": "Photo removed",
+      "submittedAt": "Submitted at",
+      "noRequest": "No review request has been submitted yet.",
+      "emptyValue": "Not provided",
+      "reviewedAt": "Reviewed at",
+      "noChanges": "No changes detected in this request.",
+      "statusMessage": {
+        "SUBMITTED": "The request has been submitted and is waiting for review.",
+        "REJECTED": "The request was rejected.",
+        "APPROVED": "The request was approved and is live.",
+        "CHANGES_REQUESTED": "Admin requested changes before approval.",
+        "ARCHIVED": "This request has been archived.",
+        "UNDER_REVIEW": "The request is currently under review.",
+        "DRAFT": "This request is still a draft."
+      },
+      "noRequestHint": "Use the request flow to propose profile changes for admin approval.",
+      "reviewedBy": "Reviewed by",
+      "changeSummary": "Change summary",
+      "modalTitle": "Submit profile change request"
     },
     "avatar": {
-      "heading": "Profile photo",
-      "alt": "Practitioner profile photo",
-      "empty": "No photo",
-      "fieldLabel": "Photo URL",
-      "placeholder": "https://cdn.example.com/practitioner-avatar.jpg",
-      "hint": "Paste a direct image URL. You can update or remove it anytime.",
-      "actions": {
-        "save": "Save photo",
-        "saving": "Saving...",
-        "remove": "Remove photo",
-        "removing": "Removing..."
-      },
-      "validation": {
-        "required": "Enter a photo URL before saving.",
-        "invalidUrl": "Enter a valid URL."
-      },
       "feedback": {
-        "updateSuccess": "Profile photo updated successfully.",
-        "updateError": "Could not update profile photo right now.",
-        "removeSuccess": "Profile photo removed successfully.",
-        "removeError": "Could not remove profile photo right now."
+        "removeError": "Could not prepare the avatar removal request right now.",
+        "updateError": "Could not prepare the avatar change request right now.",
+        "removeSuccess": "Avatar removal request prepared successfully.",
+        "updateSuccess": "Avatar change request prepared successfully."
+      },
+      "keepCurrent": "Keep current",
+      "choosePhoto": "Choose photo",
+      "livePresent": "A live avatar is already available on your profile.",
+      "note": "Accepted formats: JPG, PNG, or WEBP. Large images are compressed before submission.",
+      "title": "Avatar review",
+      "hint": "What happens next",
+      "removeSelected": "Selected avatar will be removed in this request.",
+      "alt": "Practitioner profile photo",
+      "liveEmpty": "No live avatar is currently set.",
+      "pageHint": "Preview a new avatar here. It is not included in this submission yet.",
+      "replacePhoto": "Replace photo",
+      "liveLabel": "Live avatar",
+      "selectedFile": "Selected file: {fileName}",
+      "reviewOnly": "Preview only for now",
+      "removePhoto": "Remove photo",
+      "hintBody": "Use this area to preview an avatar replacement or removal locally. Profile changes are submitted separately.",
+      "validation": {
+        "invalidType": "Only JPG, PNG, and WEBP images are supported.",
+        "fileTooLarge": "Selected image is too large."
       }
-    },
-    "fields": {
-      "displayName": {
-        "label": "Display name",
-        "placeholder": "Your full name as shown to patients"
-      },
-      "professionalTitle": {
-        "label": "Professional title",
-        "placeholder": "e.g. Clinical Psychologist, Nutritionist"
-      },
-      "bio": {
-        "label": "Bio",
-        "placeholder": "Tell patients about your background and approach"
-      },
-      "yearsOfExperience": {
-        "label": "Years of experience",
-        "placeholder": "e.g. 5"
-      },
-      "practitionerType": {
-        "label": "Practitioner type",
-        "placeholder": "Select type"
-      },
-      "countryCode": {
-        "label": "Country",
-        "placeholder": "e.g. SA, EG"
-      },
-      "timezone": {
-        "label": "Timezone",
-        "placeholder": "e.g. Asia/Riyadh"
-      }
-    },
-    "practitionerType": {
-      "PSYCHOLOGIST": "Psychologist",
-      "PSYCHIATRIST": "Psychiatrist",
-      "NUTRITIONIST": "Nutritionist",
-      "WEIGHT_LOSS_SPECIALIST": "Weight loss specialist",
-      "COUNSELOR": "Counselor",
-      "OTHER": "Other"
     },
     "validation": {
-      "displayNameMax": "Display name must be 80 characters or less",
+      "countryCodeMax": "Country code must be 3 characters or less",
+      "payoutAccountHolderNameMax": "Account holder name must be 191 characters or less",
+      "bioMax": "Bio must be 4000 characters or less",
+      "timezoneMax": "Timezone must be 80 characters or less",
+      "payoutDestinationRequired": "Complete the payout details before submitting.",
+      "payoutWalletProviderMax": "Wallet provider must be 191 characters or less",
+      "payoutBankAccountNumberMax": "Bank account number must be 191 characters or less",
+      "payoutOtherDetailsMax": "Payout details must be 1000 characters or less",
+      "professionalTitleMax": "Professional title must be 191 characters or less",
       "yearsMin": "Years of experience cannot be negative",
-      "yearsMax": "Years of experience seems too high"
+      "yearsMax": "Years of experience seems too high",
+      "payoutIbanMax": "IBAN must be 191 characters or less",
+      "displayNameMax": "Display name must be 80 characters or less",
+      "payoutWalletIdentifierMax": "Wallet identifier must be 191 characters or less",
+      "payoutBankNameMax": "Bank name must be 191 characters or less",
+      "sessionPriceInvalid": "Enter a valid price greater than zero."
+    },
+    "sections": {
+      "changeRequest": "Change request",
+      "payoutDestination": "Payout details",
+      "liveProfileNote": "This is the approved profile currently visible to patients.",
+      "avatar": "Avatar",
+      "professional": "Professional details",
+      "identity": "Identity",
+      "changeRequestNote": "Draft your updates here and send them for admin review before they become live.",
+      "bio": "Bio",
+      "specialties": "Specialties",
+      "liveProfile": "Live profile",
+      "sessionPricing": "Session pricing"
+    },
+    "readiness": {
+      "notReady": "Needs review",
+      "readyNote": "Your current live profile looks ready to keep as-is.",
+      "ready": "Ready for review",
+      "notReadyNote": "You have draft changes or missing details that still need admin review.",
+      "requirements": {
+        "primarySpecialtyCategoryId": "Primary specialty",
+        "payoutAccountHolderName": "Account holder name",
+        "payoutDestination": "Payout details"
+      }
     },
     "actions": {
-      "save": "Save changes",
-      "saving": "Saving..."
+      "reviewLiveProfile": "Review live profile",
+      "cancelRequest": "Cancel",
+      "openSpecialties": "Open specialties",
+      "requestChanges": "Request changes",
+      "submitRequest": "Submit request",
+      "submitting": "Submitting...",
+      "reviseRequest": "Revise request",
+      "updateAvatar": "Update avatar"
     },
     "feedback": {
       "loadError": "Could not load your profile. Please try again.",
+      "error": "Could not save changes. Please try again.",
       "retry": "Try again",
-      "success": "Profile updated successfully.",
-      "error": "Could not save changes. Please try again."
+      "success": "Profile updated successfully."
+    },
+    "payoutMethodType": {
+      "WALLET": "Mobile wallet",
+      "BANK_TRANSFER": "Bank transfer",
+      "CASH": "Cash",
+      "OTHER": "Other",
+      "BANK_ACCOUNT": "Bank account",
+      "IBAN": "IBAN"
+    },
+    "practitionerGender": {
+      "FEMALE": "Female",
+      "MALE": "Male"
+    },
+    "summary": {
+      "credentialsNote": "{count, plural, one {# credential record is on file.} other {# credential records are on file.}}",
+      "credentials": "Credentials",
+      "readiness": "Readiness",
+      "reviewState": "Review state"
+    },
+    "meta": {
+      "description": "Review your live profile, prepare a change request, and submit updates for admin review.",
+      "title": "Profile â€” Practitioner"
+    },
+    "locale": {
+      "ar": "Arabic",
+      "en": "English"
+    },
+    "fields": {
+      "practitionerType": {
+        "placeholder": "Select type",
+        "label": "Practitioner type"
+      },
+      "professionalTitle": {
+        "placeholder": "e.g. Clinical Psychologist, Nutritionist",
+        "label": "Professional title"
+      },
+      "yearsOfExperience": {
+        "placeholder": "e.g. 5",
+        "label": "Years of experience"
+      },
+      "payoutOtherDetails": {
+        "placeholder": "Add any extra payout notes",
+        "label": "Other payout details"
+      },
+      "locale": {
+        "placeholder": "Select language",
+        "label": "Language"
+      },
+      "payoutWalletProvider": {
+        "placeholder": "Enter wallet name",
+        "label": "Wallet name"
+      },
+      "countryCode": {
+        "placeholder": "e.g. SA, EG",
+        "label": "Country"
+      },
+      "payoutWalletIdentifier": {
+        "placeholder": "Enter wallet number",
+        "label": "Wallet number"
+      },
+      "payoutMethodType": {
+        "placeholder": "Select payout method",
+        "label": "Payout method"
+      },
+      "payoutBankName": {
+        "placeholder": "Enter bank name",
+        "label": "Bank name"
+      },
+      "payoutIban": {
+        "placeholder": "Enter IBAN",
+        "label": "IBAN"
+      },
+      "payoutBankAccountNumber": {
+        "placeholder": "Enter bank account number",
+        "label": "Bank account number"
+      },
+      "displayName": {
+        "placeholder": "Your full name as shown to patients",
+        "label": "Display name"
+      },
+      "practitionerGender": {
+        "placeholder": "Select gender",
+        "label": "Gender"
+      },
+      "timezone": {
+        "placeholder": "e.g. Asia/Riyadh",
+        "label": "Timezone"
+      },
+      "bio": {
+        "placeholder": "Tell patients about your background and approach",
+        "label": "Bio"
+      },
+      "payoutAccountHolderName": {
+        "placeholder": "Enter account holder name",
+        "label": "Account holder name"
+      },
+      "sessionPrice30Egp": {
+        "label": "30-minute session price in EGP",
+        "placeholder": "e.g. 250"
+      },
+      "sessionPrice30Usd": {
+        "label": "30-minute session price in USD",
+        "placeholder": "e.g. 8"
+      },
+      "sessionPrice60Egp": {
+        "label": "60-minute session price in EGP",
+        "placeholder": "e.g. 450"
+      },
+      "sessionPrice60Usd": {
+        "label": "60-minute session price in USD",
+        "placeholder": "e.g. 15"
+      }
+    },
+    "practitionerType": {
+      "WEIGHT_LOSS_SPECIALIST": "Weight loss specialist",
+      "COUNSELOR": "Counselor",
+      "PSYCHOLOGIST": "Psychologist",
+      "PSYCHIATRIST": "Psychiatrist",
+      "OTHER": "Other",
+      "NUTRITIONIST": "Nutritionist"
+    },
+    "page": {
+      "eyebrow": "Professional profile",
+      "title": "Professional profile",
+      "fallbackTitle": "Practitioner profile",
+      "subtitle": "Review the live profile shown to patients and submit changes for admin approval."
+    },
+    "specialties": {
+      "primary": "Primary",
+      "empty": "No specialties saved yet."
     }
+  },
+  "onboarding": {
+    "otpRequiredTitle": "Complete verification first",
+    "otpRequiredNote": "We cannot open the practitioner workspace before your account OTP is verified. Once verification is complete, the full practitioner dashboard will be available.",
+    "otpRequiredAction": "Go to sign in"
   },
   "credentials": {
     "meta": {
-      "title": "Credentials — Practitioner",
+      "title": "Credentials â€” Practitioner",
       "description": "View and manage your uploaded credentials."
     },
     "page": {
@@ -353,7 +605,7 @@
   },
   "specialties": {
     "meta": {
-      "title": "Specialties — Practitioner",
+      "title": "Specialties â€” Practitioner",
       "description": "View and manage your linked specialties."
     },
     "page": {
@@ -411,7 +663,7 @@
   },
   "availability": {
     "meta": {
-      "title": "Availability — Practitioner",
+      "title": "Availability â€” Practitioner",
       "description": "Manage your weekly schedule and instant booking settings."
     },
     "page": {
@@ -444,7 +696,7 @@
     },
     "schedule": {
       "heading": "Weekly schedule",
-      "description": "Set the recurring hours you are available each week. Changes replace the full schedule.",
+      "description": "Choose a day, then set 30-minute and 60-minute slots independently.",
       "timezoneLabel": "Timezone",
       "noTimezone": "No timezone is set on your profile. Please update your timezone in Profile before setting your schedule.",
       "noSlots": "No slots",
@@ -469,31 +721,73 @@
         "thursday": "Thursday",
         "friday": "Friday",
         "saturday": "Saturday"
-      }
+      },
+      "daySelectorHeading": "Choose a day",
+      "daySelectorHint": "Pick the day you want to edit. You can clear only that day, then work on each duration separately.",
+      "timeGridHeading": "Time blocks",
+      "timeGridHint": "Tap a start time to add or remove a slot. The grid switches to hourly blocks in 60-minute mode.",
+      "selectedRangesHeading": "Selected ranges",
+      "selectedRangesHint": "Review the selected day separately for 30-minute and 60-minute slots.",
+      "emptySelectedDay": "No time has been selected for this day yet.",
+      "clearDay": "Clear day",
+      "stats": {
+        "currentDay": "Selected day",
+        "currentDayHint": "The day you are editing now",
+        "dayBlocks": "Day blocks",
+        "dayBlocksHint": "{count, plural, one {# selected range} other {# selected ranges}}",
+        "weekBlocks": "Weekly blocks",
+        "weekBlocksHint": "{count, plural, one {# saved range} other {# saved ranges}}",
+        "saved": "Your current draft matches the saved schedule.",
+        "unsaved": "You have unsaved schedule changes."
+      },
+      "durationHeading": "Select session length",
+      "durationHint": "Choose whether the time block will represent a 30-minute or 60-minute session.",
+      "duration30": "30 min",
+      "duration60": "60 min",
+      "durationNote": "New slots will use {duration}. The 30-minute and 60-minute schedules are independent.",
+      "independenceNote": "Select one duration at a time, or switch between them whenever you need to edit a different schedule.",
+      "clearDuration": "Clear",
+      "slotCount": "{count, plural, one {# slot} other {# slots}}"
     },
     "exceptions": {
-      "heading": "Schedule exceptions",
-      "description": "Block time off or add extra availability on specific dates.",
-      "empty": "No exceptions set.",
-      "add": "Add exception",
-      "delete": "Delete exception",
+      "heading": "Temporary blocks",
+      "description": "Pause bookings for today, tomorrow, a full week, or any custom range without changing your weekly schedule.",
+      "empty": "No temporary blocks yet.",
+      "custom": "Custom block",
+      "delete": "Restore availability",
       "deleteError": "Could not delete exception. Please try again.",
       "createError": "Could not create exception. Please try again.",
       "type": {
         "BLOCK": "Blocked",
         "OPEN_EXTRA": "Extra open"
       },
+      "quick": {
+        "heading": "Quick actions",
+        "note": "Use one tap to pause bookings for the most common situations.",
+        "today": "Block today",
+        "todayNote": "Pause all bookings for the current day.",
+        "tomorrow": "Block tomorrow",
+        "tomorrowNote": "Pause all bookings for the next day.",
+        "week": "Block 7 days",
+        "weekNote": "Pause bookings for the next seven days."
+      },
+      "active": {
+        "heading": "Active blocks",
+        "note": "Remove a block anytime to bring the schedule back.",
+        "count": "{count, plural, one {# active block} other {# active blocks}}"
+      },
+      "restore": "Restore",
       "addForm": {
-        "heading": "New exception",
-        "typeLabel": "Type",
+        "heading": "Custom block",
         "startsAt": "Starts at (UTC)",
         "endsAt": "Ends at (UTC)",
         "reason": "Reason (optional)",
-        "reasonPlaceholder": "e.g. Holiday, conference",
+        "reasonPlaceholder": "e.g. Holiday, conference, emergency",
         "cancel": "Cancel",
-        "save": "Create",
-        "saving": "Creating..."
+        "save": "Block",
+        "saving": "Blocking..."
       },
+      "customHint": "Use a custom range when the quick options are not enough.",
       "validation": {
         "datesRequired": "Start and end date are required.",
         "endAfterStart": "End must be after start."
@@ -502,7 +796,7 @@
   },
   "application": {
     "meta": {
-      "title": "Application — Practitioner",
+      "title": "Application â€” Practitioner",
       "description": "Review your readiness and submit your practitioner application."
     },
     "page": {

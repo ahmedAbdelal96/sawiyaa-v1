@@ -1,0 +1,105 @@
+{
+  "types": {
+    "session": "الجلسة",
+    "package": "الباقة"
+  },
+  "card": {
+    "heading": "سياسة الاسترجاع",
+    "sessionNote": "يرجى قراءة سياسة استرجاع الجلسات قبل إتمام الدفع.",
+    "packageNote": "يرجى قراءة سياسة استرجاع الباقات قبل إتمام الدفع.",
+    "activeBadge": "السياسة مفعلة",
+    "inactiveBadge": "السياسة غير مفعلة",
+    "loadingTitle": "جارٍ تحميل سياسة الاسترداد",
+    "loadingNote": "نراجع السياسة النشطة قبل المتابعة.",
+    "blockedTitle": "سياسة الاسترجاع غير متاحة",
+    "blockedNote": "لا يمكن إتمام الدفع حاليًا لأن سياسة الاسترجاع غير متاحة.",
+    "validationTitle": "مشكلة في التحقق من سياسة الاسترداد",
+    "validationNote": "تعذر استخدام سياسة الاسترجاع لهذه العملية. يرجى المحاولة مرة أخرى.",
+    "staleTitle": "تم تحديث سياسة الاسترجاع",
+    "staleNote": "تم تحديث سياسة الاسترجاع. يرجى مراجعتها والموافقة عليها مرة أخرى.",
+    "retry": "إعادة المحاولة",
+    "clauseCount": "{count} بنود",
+    "checkboxHintLabel": "تنبيه قبل الدفع",
+    "checkboxHint": "يجب الموافقة على سياسة الاسترجاع قبل الدفع.",
+    "checkboxLabel": "أوافق على سياسة الاسترجاع",
+    "checkboxNote": "لن يتم تفعيل زر الدفع إلا بعد الموافقة على السياسة.",
+    "readPolicyNote": "افتح النافذة الكاملة لقراءة البنود بوضوح قبل المتابعة.",
+    "readFullPolicy": "عرض السياسة كاملة",
+    "readerEyebrow": "معاينة السياسة",
+    "close": "إغلاق",
+    "versionLabel": "النسخة {version}",
+    "effectiveFrom": "سارية من",
+    "publishedAt": "تم النشر",
+    "policyContent": "محتوى السياسة",
+    "clauses": "البنود",
+    "rules": "القواعد",
+    "adminReview": "مراجعة إدارية",
+    "noClauses": "لم يتم نشر بنود بعد.",
+    "noRules": "لم يتم نشر قواعد بعد."
+  },
+  "public": {
+    "eyebrow": "السياسات العامة",
+    "title": "سياسات الاسترداد",
+    "description": "راجع سياسات الاسترداد النشطة الحالية للجلسات وشراء الباقات.",
+    "loadingTitle": "جارٍ تحميل سياسة الاسترداد",
+    "loadingNote": "نحصل الآن على النسخة النشطة.",
+    "unavailableTitle": "سياسة الاسترداد غير متاحة",
+    "unavailableNote": "تعذر تحميل هذه السياسة الآن. يرجى المحاولة مرة أخرى.",
+    "notConfiguredTitle": "لم يتم نشر سياسة {type} النشطة بعد",
+    "notConfiguredNote": "لم يتم نشر سياسة استرداد {type} النشطة حتى الآن.",
+    "backToOverview": "العودة إلى كل السياسات",
+    "viewPolicy": "عرض السياسة",
+    "switchOther": "عرض السياسة الأخرى",
+    "switchSession": "سياسة الجلسات",
+    "switchPackage": "سياسة الباقات",
+    "meta": {
+      "currentOnly": "النسخ النشطة الحالية فقط",
+      "sessionAndPackage": "سياسات الجلسات والباقات",
+      "version": "النسخة",
+      "effectiveFrom": "سارية من",
+      "publishedAt": "تم النشر"
+    },
+    "versionLabel": "النسخة {version}",
+    "publishedAtShort": "تم النشر {date}",
+    "notAvailable": "غير متاح",
+    "activeBadge": "نشطة",
+    "contentHeading": "محتوى السياسة",
+    "clausesHeading": "البنود",
+    "clauseIndex": "البند {index}",
+    "rulesHeading": "القواعد",
+    "relatedHeading": "روابط السياسة",
+    "relatedNote": "استخدم الروابط للتنقل بين سياسة الجلسات وسياسة الباقات.",
+    "noteHeading": "النسخ النشطة الحالية",
+    "noteBody": "تُعرض هنا دائمًا النسخة النشطة الحالية فقط. دفعات الجلسات تستخدم سياسة الجلسات وشراء الباقات يستخدم سياسة الباقات.",
+    "noContent": "لا يوجد محتوى سياسة مترجم متاح.",
+    "noClauses": "لم يتم نشر بنود بعد.",
+    "noRules": "لم يتم نشر قواعد بعد.",
+    "adminReview": "تتطلب مراجعة إدارية",
+    "ruleValues": {
+      "anyTime": "في أي وقت"
+    },
+    "ruleFields": {
+      "window": "النافذة",
+      "mode": "نوع الاسترداد",
+      "percent": "نسبة الاسترداد",
+      "fixedAmount": "مبلغ ثابت",
+      "minHours": "الحد الأدنى قبلها بـ {hours} ساعة",
+      "maxHours": "الحد الأقصى قبلها بـ {hours} ساعة",
+      "hasMetadata": "تحتوي على بيانات إضافية"
+    },
+    "rules": {
+      "triggers": {
+        "beforeSessionStart": "قبل بدء الجلسة",
+        "afterSessionStart": "بعد بدء الجلسة",
+        "noShow": "عدم الحضور",
+        "adminReview": "مراجعة إدارية"
+      },
+      "modes": {
+        "none": "لا يوجد استرداد",
+        "percentage": "نسبة مئوية",
+        "fixedAmount": "مبلغ ثابت",
+        "adminReview": "مراجعة إدارية"
+      }
+    }
+  }
+}

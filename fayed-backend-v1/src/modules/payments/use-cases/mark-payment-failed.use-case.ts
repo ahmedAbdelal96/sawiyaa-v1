@@ -4,6 +4,7 @@ import {
   PaymentPurpose,
   PaymentStatus,
   Prisma,
+  AcademyEnrollmentStatus,
 } from '@prisma/client';
 import { PrismaService } from '@common/prisma/prisma.service';
 import { AppLoggerService } from '@common/logging/app-logger.service';
@@ -14,6 +15,7 @@ import { PaymentRepository } from '../repositories/payment.repository';
 import { OrchestrateSessionPaymentStatusService } from '../services/orchestrate-session-payment-status.service';
 import { OrchestrateTrainingEnrollmentPaymentStatusService } from '../services/orchestrate-training-enrollment-payment-status.service';
 import { ValidatePaymentStatusTransitionService } from '../services/validate-payment-status-transition.service';
+import { ReconcilePackagePurchasePaymentUseCase } from '@modules/package-plans/use-cases/reconcile-package-purchase-payment.use-case';
 
 @Injectable()
 export class MarkPaymentFailedUseCase {
@@ -26,6 +28,7 @@ export class MarkPaymentFailedUseCase {
     private readonly paymentMapper: PaymentMapper,
     private readonly customerWalletAccountingService: CustomerWalletAccountingService,
     private readonly operationalNotificationService: OperationalNotificationService,
+    private readonly reconcilePackagePurchasePaymentUseCase: ReconcilePackagePurchasePaymentUseCase,
     private readonly logger: AppLoggerService,
   ) {}
 
@@ -83,6 +86,29 @@ export class MarkPaymentFailedUseCase {
       return failed;
     });
 
+    if (payment.paymentPurpose === PaymentPurpose.SESSION_PACKAGE_PURCHASE) {
+      await this.reconcilePackagePurchasePaymentUseCase.execute({
+        paymentId: payment.id,
+        providerEventRef: input.providerEventRef,
+        payload: input.payload,
+        payment: updated,
+      });
+
+      this.logger.warn(
+        {
+          message: 'Payment marked as failed',
+          paymentId: payment.id,
+          provider: payment.provider,
+          providerEventRef: input.providerEventRef,
+        },
+        'Payments',
+      );
+
+      return {
+        item: this.paymentMapper.toViewModel(updated),
+      };
+    }
+
     if (updated.amountFromWallet.gt(0)) {
       await this.customerWalletAccountingService.releaseReservationForPayment({
         paymentId: updated.id,
@@ -101,12 +127,39 @@ export class MarkPaymentFailedUseCase {
       'Payments',
     );
 
-    await this.operationalNotificationService.notifyPaymentFailed({
-      patientProfileId: updated.patientId,
-      paymentId: updated.id,
-    });
+    const paymentMetadata = (payment.metadataJson ?? {}) as Record<string, unknown>;
+    const isAcademyEnrollment =
+      paymentMetadata.source === 'academy-enrollment';
 
-    if (payment.paymentPurpose === PaymentPurpose.COURSE_ENROLLMENT) {
+    if (!isAcademyEnrollment && updated.patientId) {
+      await this.operationalNotificationService.notifyPaymentFailed({
+        patientProfileId: updated.patientId,
+        paymentId: updated.id,
+      });
+    }
+
+    if (isAcademyEnrollment) {
+      await this.prisma.academyEnrollment.updateMany({
+        where: {
+          paymentId: payment.id,
+          enrollmentStatus: {
+            in: [
+              AcademyEnrollmentStatus.PENDING_PAYMENT,
+              AcademyEnrollmentStatus.PAID,
+            ],
+          },
+        },
+        data: {
+          enrollmentStatus: AcademyEnrollmentStatus.PAYMENT_FAILED,
+          paymentStatus: PaymentStatus.FAILED,
+          failedAt: new Date(),
+          failedReason:
+            typeof paymentMetadata.failureReason === 'string'
+              ? paymentMetadata.failureReason.slice(0, 500)
+              : null,
+        },
+      });
+    } else if (payment.paymentPurpose === PaymentPurpose.COURSE_ENROLLMENT) {
       await this.orchestrateTrainingEnrollmentPaymentStatusService.markEnrollmentPaymentFailed(
         payment.id,
       );

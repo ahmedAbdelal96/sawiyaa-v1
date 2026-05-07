@@ -32,6 +32,7 @@ export const Header = ({
   const { theme } = useTheme();
   const router = useRouter();
   const navigation = useNavigation();
+  const isRTL = I18nManager.isRTL;
 
   const handleBack = () => {
     if (onBack) {
@@ -48,10 +49,16 @@ export const Header = ({
         {
           backgroundColor: theme.colors.background,
           borderBottomColor: theme.colors.borderLight,
+          flexDirection: isRTL ? "row-reverse" : "row",
         },
       ]}
     >
-      <View style={styles.leftContainer}>
+      <View
+        style={[
+          styles.sideContainer,
+          isRTL ? styles.trailingContainer : styles.leadingContainer,
+        ]}
+      >
         {showBack && (
           <TouchableOpacity onPress={handleBack} style={styles.backButton}>
             <BackIcon color={theme.colors.textPrimary} />
@@ -67,40 +74,48 @@ export const Header = ({
         ) : null}
       </View>
 
-      <View style={styles.rightContainer}>{rightElement}</View>
+      <View
+        style={[
+          styles.sideContainer,
+          isRTL ? styles.leadingContainer : styles.trailingContainer,
+        ]}
+      >
+        {rightElement}
+      </View>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   header: {
-    height: 68,
+    minHeight: 76,
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 20,
+    paddingHorizontal: 26,
     borderBottomWidth: 1,
   },
-  leftContainer: {
-    width: 54,
+  sideContainer: {
+    width: 64,
+    justifyContent: "flex-start",
+  },
+  leadingContainer: {
     alignItems: "flex-start",
   },
   titleContainer: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 8,
-  },
-  rightContainer: {
-    width: 54,
-    alignItems: "flex-end",
-    justifyContent: "center",
+    paddingHorizontal: 12,
   },
   backButton: {
-    padding: 8,
-    marginLeft: -8,
+    padding: 12,
   },
   title: {
     fontSize: 20,
     letterSpacing: 0.2,
+    textAlign: "center",
+  },
+  trailingContainer: {
+    alignItems: "flex-end",
   },
 });

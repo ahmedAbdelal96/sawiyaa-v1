@@ -12,18 +12,72 @@ import {
   Section,
 } from "../../../src/components/ui";
 import { useTheme } from "../../../src/providers/ThemeProvider";
-import { useGetPublicPractitionerDetails } from "../../../src/features/patient/discovery/api";
+import {
+  useGetPublicPractitionerDetails,
+  useGetPublicPractitionerPresence,
+} from "../../../src/features/patient/discovery/api";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
+import { usePublicAvailabilityWindows } from "../../../src/features/patient/sessions/hooks";
+import {
+  buildSlotsFromWindows,
+  formatLocalizedDateTime,
+  getWeekRange,
+} from "../../../src/features/patient/sessions/slot-utils";
+
+function resolvePresenceMeta(status?: string | null) {
+  switch (status) {
+    case "ONLINE":
+      return { icon: "radio-outline" as const, label: "Online now" };
+    case "AWAY":
+      return { icon: "time-outline" as const, label: "Away right now" };
+    case "BUSY":
+      return { icon: "pause-circle-outline" as const, label: "Currently busy" };
+    case "OFFLINE":
+    default:
+      return { icon: "moon-outline" as const, label: "Offline right now" };
+  }
+}
+
+function formatCurrencyAmount(
+  amount: number | null | undefined,
+  currency: "EGP" | "USD",
+  locale: string,
+) {
+  if (typeof amount !== "number") {
+    return null;
+  }
+
+  return new Intl.NumberFormat(locale, {
+    style: "currency",
+    currency,
+    maximumFractionDigits: 0,
+  }).format(amount);
+}
 
 export default function TherapistProfileScreen() {
   const router = useRouter();
-  const { slug } = useLocalSearchParams<{ slug: string }>();
+  const { slug, source, intent, matchScore, matchReason } =
+    useLocalSearchParams<{
+      slug: string;
+      source?: string;
+      intent?: string;
+      matchScore?: string;
+      matchReason?: string;
+    }>();
   const { theme } = useTheme();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const locale = i18n.language?.startsWith("ar") ? "ar-SA" : "en-US";
+  const weekRange = getWeekRange(0);
 
   const { data, isLoading, isError, refetch } = useGetPublicPractitionerDetails(
     slug || null,
+  );
+  const presenceQuery = useGetPublicPractitionerPresence(slug || null);
+  const availabilityQuery = usePublicAvailabilityWindows(
+    slug || null,
+    weekRange.fromIso,
+    weekRange.toIso,
   );
 
   if (isLoading) {
@@ -45,6 +99,38 @@ export default function TherapistProfileScreen() {
   }
 
   const practitioner = data.data.item;
+  const presence = presenceQuery.data?.data.presence;
+  const presenceMeta = resolvePresenceMeta(presence?.status ?? null);
+  const futureSlots = buildSlotsFromWindows(
+    availabilityQuery.data?.windows ?? [],
+  );
+  const nextSlot = futureSlots[0] ?? null;
+  const weekSlotCount = futureSlots.length;
+  const matchingScore = Number(matchScore);
+  const isRecommendedFromMatching = source === "matching";
+
+  const thirtyMinutePriceLabel =
+    formatCurrencyAmount(
+      practitioner.sessionPrice30Egp ?? practitioner.pricing.session30.egp,
+      "EGP",
+      locale,
+    ) ??
+    formatCurrencyAmount(
+      practitioner.sessionPrice30Usd ?? practitioner.pricing.session30.usd,
+      "USD",
+      locale,
+    );
+  const sixtyMinutePriceLabel =
+    formatCurrencyAmount(
+      practitioner.sessionPrice60Egp ?? practitioner.pricing.session60.egp,
+      "EGP",
+      locale,
+    ) ??
+    formatCurrencyAmount(
+      practitioner.sessionPrice60Usd ?? practitioner.pricing.session60.usd,
+      "USD",
+      locale,
+    );
 
   return (
     <Screen bg="background">
@@ -202,9 +288,193 @@ export default function TherapistProfileScreen() {
               </Text>
             </View>
           </View>
+
+          <View style={styles.trustRow}>
+            <View
+              style={[
+                styles.trustPill,
+                { backgroundColor: theme.colors.surfaceSecondary },
+              ]}
+            >
+              <Ionicons
+                name={presenceMeta.icon}
+                size={14}
+                color={theme.colors.primary}
+              />
+              <Text color={theme.colors.textSecondary} style={styles.trustText}>
+                {t(
+                  `discovery.profile.presence.${(presence?.status ?? "OFFLINE").toLowerCase()}`,
+                  presenceMeta.label,
+                )}
+              </Text>
+            </View>
+
+            <View
+              style={[
+                styles.trustPill,
+                { backgroundColor: theme.colors.surfaceSecondary },
+              ]}
+            >
+              <Ionicons
+                name="flash-outline"
+                size={14}
+                color={theme.colors.primary}
+              />
+              <Text color={theme.colors.textSecondary} style={styles.trustText}>
+                {presence?.isInstantBookingEnabled
+                  ? t(
+                      "discovery.profile.instantEnabled",
+                      "Instant booking is enabled",
+                    )
+                  : t(
+                      "discovery.profile.instantDisabled",
+                      "Standard booking applies",
+                    )}
+              </Text>
+            </View>
+          </View>
+
+          {isRecommendedFromMatching ? (
+            <Card variant="flat" padding="md" style={styles.recommendationCard}>
+              <View style={styles.recommendationHeader}>
+                <View
+                  style={[
+                    styles.recommendationIconWrap,
+                    { backgroundColor: theme.colors.primaryLight },
+                  ]}
+                >
+                  <Ionicons
+                    name="sparkles-outline"
+                    size={16}
+                    color={theme.colors.primary}
+                  />
+                </View>
+                <View style={styles.recommendationTextWrap}>
+                  <Text weight="600" style={styles.recommendationTitle}>
+                    {t(
+                      "discovery.profile.matchingRecommendationTitle",
+                      "Recommended from your matching results",
+                    )}
+                  </Text>
+                  <Text
+                    color={theme.colors.textSecondary}
+                    style={styles.recommendationBody}
+                  >
+                    {intent === "book"
+                      ? t(
+                          "discovery.profile.matchingRecommendationBookBody",
+                          "You came here ready to book. Review the profile, confirm a visible time, then check the final payment breakdown before paying.",
+                        )
+                      : t(
+                          "discovery.profile.matchingRecommendationViewBody",
+                          "This therapist was suggested from your matching answers. Review the fit signals below before choosing a time.",
+                        )}
+                  </Text>
+                </View>
+              </View>
+
+              {Number.isFinite(matchingScore) ? (
+                <View style={styles.recommendationScoreRow}>
+                  <Text color={theme.colors.textSecondary}>
+                    {t("discovery.profile.matchScoreLabel", "Match score")}
+                  </Text>
+                  <Text weight="600" color={theme.colors.primary}>
+                    {t("matching.results.score", { score: matchingScore })}
+                  </Text>
+                </View>
+              ) : null}
+
+              {matchReason ? (
+                <Text
+                  color={theme.colors.textSecondary}
+                  style={styles.recommendationReason}
+                >
+                  {matchReason}
+                </Text>
+              ) : null}
+            </Card>
+          ) : null}
         </Card>
 
-        {practitioner.fullBio && (
+        <Section
+          title={t("discovery.profile.bookingConfidence", "Booking confidence")}
+        >
+          <View style={styles.bookingConfidenceGrid}>
+            <Card variant="flat" padding="md" style={styles.confidenceCard}>
+              <Text
+                color={theme.colors.textMuted}
+                style={styles.confidenceLabel}
+              >
+                {t("discovery.profile.nextAvailable", "Next available")}
+              </Text>
+              <Text weight="600" style={styles.confidenceValue}>
+                {nextSlot
+                  ? formatLocalizedDateTime(nextSlot.startsAt, locale)
+                  : t(
+                      "discovery.profile.noUpcomingSlots",
+                      "No open time found this week",
+                    )}
+              </Text>
+            </Card>
+
+            <Card variant="flat" padding="md" style={styles.confidenceCard}>
+              <Text
+                color={theme.colors.textMuted}
+                style={styles.confidenceLabel}
+              >
+                {t("discovery.profile.thisWeekAvailability", "This week")}
+              </Text>
+              <Text weight="600" style={styles.confidenceValue}>
+                {availabilityQuery.isLoading
+                  ? t("patientSessionsFlow.common.loading")
+                  : t("discovery.profile.slotsThisWeek", {
+                      count: weekSlotCount,
+                      defaultValue:
+                        weekSlotCount === 1
+                          ? "1 visible start time"
+                          : `${weekSlotCount} visible start times`,
+                    })}
+              </Text>
+            </Card>
+          </View>
+        </Section>
+
+        <Section title={t("discovery.profile.pricing", "Session pricing")}>
+          <View style={styles.bookingConfidenceGrid}>
+            <Card variant="flat" padding="md" style={styles.confidenceCard}>
+              <Text
+                color={theme.colors.textMuted}
+                style={styles.confidenceLabel}
+              >
+                {t("discovery.profile.duration30", "30 minutes")}
+              </Text>
+              <Text weight="600" style={styles.confidenceValue}>
+                {thirtyMinutePriceLabel ??
+                  t(
+                    "discovery.profile.pricingUnavailable",
+                    "Pricing unavailable",
+                  )}
+              </Text>
+            </Card>
+            <Card variant="flat" padding="md" style={styles.confidenceCard}>
+              <Text
+                color={theme.colors.textMuted}
+                style={styles.confidenceLabel}
+              >
+                {t("discovery.profile.duration60", "60 minutes")}
+              </Text>
+              <Text weight="600" style={styles.confidenceValue}>
+                {sixtyMinutePriceLabel ??
+                  t(
+                    "discovery.profile.pricingUnavailable",
+                    "Pricing unavailable",
+                  )}
+              </Text>
+            </Card>
+          </View>
+        </Section>
+
+        {practitioner.fullBio ? (
           <Section title={t("discovery.profile.about")}>
             <Card variant="flat" padding="md">
               <Text color={theme.colors.textSecondary} style={styles.bioText}>
@@ -212,9 +482,9 @@ export default function TherapistProfileScreen() {
               </Text>
             </Card>
           </Section>
-        )}
+        ) : null}
 
-        {practitioner.specialties.length > 0 && (
+        {practitioner.specialties.length > 0 ? (
           <Section title={t("discovery.profile.specialties")}>
             <View style={styles.tagsContainer}>
               {practitioner.specialties.map((spec) => (
@@ -232,7 +502,7 @@ export default function TherapistProfileScreen() {
               ))}
             </View>
           </Section>
-        )}
+        ) : null}
 
         <Section title={t("discovery.profile.credentials")}>
           <Card variant="elevated" padding="md" style={styles.credentialsCard}>
@@ -246,7 +516,10 @@ export default function TherapistProfileScreen() {
               <Text weight="600">
                 {t("discovery.profile.verifiedProfessional")}
               </Text>
-              <Text color={theme.colors.textSecondary} style={{ fontSize: 14 }}>
+              <Text
+                color={theme.colors.textSecondary}
+                style={styles.credentialMeta}
+              >
                 {t("discovery.profile.credentialCount", {
                   count: practitioner.credentialsSummary.approvedCredentials,
                 })}
@@ -268,13 +541,43 @@ export default function TherapistProfileScreen() {
         <Section title={t("discovery.profile.availability")}>
           <Card variant="elevated" padding="lg">
             <Text
-              style={{ textAlign: "center", marginBottom: 16 }}
-              color={theme.colors.textMuted}
+              color={theme.colors.textSecondary}
+              style={styles.availabilityLead}
             >
-              {t("discovery.profile.availabilityNotice")}
+              {nextSlot
+                ? t(
+                    "discovery.profile.availabilityLead",
+                    "Choose a visible time first, then review the final payment breakdown before you continue to pay.",
+                  )
+                : t(
+                    "discovery.profile.availabilityEmptyLead",
+                    "No concrete booking window is open in the next week yet. You can still review the profile and check again later.",
+                  )}
             </Text>
+
+            {nextSlot ? (
+              <Card variant="flat" padding="md" style={styles.nextSlotCard}>
+                <Text
+                  color={theme.colors.textMuted}
+                  style={styles.confidenceLabel}
+                >
+                  {t("discovery.profile.nextVisibleSlot", "Next visible slot")}
+                </Text>
+                <Text weight="600" style={styles.confidenceValue}>
+                  {formatLocalizedDateTime(nextSlot.startsAt, locale)}
+                </Text>
+              </Card>
+            ) : null}
+
             <Button
-              title={t("discovery.profile.bookSession")}
+              title={
+                nextSlot
+                  ? t(
+                      "discovery.profile.reviewTimes",
+                      "Review times and continue",
+                    )
+                  : t("discovery.profile.bookSession")
+              }
               onPress={() =>
                 router.push({
                   pathname: "/sessions/select-time",
@@ -289,6 +592,7 @@ export default function TherapistProfileScreen() {
                   },
                 })
               }
+              disabled={!slug || weekSlotCount === 0}
             />
           </Card>
         </Section>
@@ -338,7 +642,6 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 16,
     marginBottom: 4,
-    textAlign: "center",
   },
   locationText: {
     fontSize: 13,
@@ -381,6 +684,75 @@ const styles = StyleSheet.create({
     fontSize: 12,
     textAlign: "center",
   },
+  trustRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginTop: 14,
+  },
+  trustPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+  },
+  trustText: {
+    fontSize: 12,
+  },
+  recommendationCard: {
+    marginTop: 14,
+  },
+  recommendationHeader: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 10,
+  },
+  recommendationIconWrap: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  recommendationTextWrap: {
+    flex: 1,
+  },
+  recommendationTitle: {
+    fontSize: 15,
+    marginBottom: 4,
+  },
+  recommendationBody: {
+    fontSize: 13,
+    lineHeight: 20,
+  },
+  recommendationScoreRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: 12,
+    gap: 12,
+  },
+  recommendationReason: {
+    marginTop: 8,
+    fontSize: 13,
+    lineHeight: 20,
+  },
+  bookingConfidenceGrid: {
+    gap: 10,
+  },
+  confidenceCard: {
+    minHeight: 88,
+  },
+  confidenceLabel: {
+    fontSize: 12,
+    marginBottom: 6,
+  },
+  confidenceValue: {
+    fontSize: 15,
+    lineHeight: 22,
+  },
   bioText: {
     fontSize: 15,
     lineHeight: 24,
@@ -408,5 +780,17 @@ const styles = StyleSheet.create({
   },
   credentialText: {
     flex: 1,
+  },
+  credentialMeta: {
+    fontSize: 14,
+  },
+  availabilityLead: {
+    textAlign: "center",
+    marginBottom: 16,
+    fontSize: 14,
+    lineHeight: 22,
+  },
+  nextSlotCard: {
+    marginBottom: 14,
   },
 });

@@ -23,6 +23,9 @@ export class PractitionerApplicationStatusResponseDto {
   @ApiProperty({ nullable: true })
   reviewNotes!: string | null;
 
+  @ApiProperty({ nullable: true, type: Object })
+  submissionSnapshot!: Record<string, unknown> | null;
+
   @ApiProperty()
   isProfileCompleted!: boolean;
 

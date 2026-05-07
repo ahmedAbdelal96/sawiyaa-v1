@@ -10,7 +10,11 @@ export const arAvailabilityCatalog = {
     practitionerNotFound: 'تعذر العثور على ملف المعالج',
     invalidTimezone: 'المنطقة الزمنية غير صالحة',
     invalidWeeklySlotRange: 'نطاق وقت الإتاحة الأسبوعية غير صالح',
-    invalidGranularity: 'يجب أن تستخدم الإتاحة الأسبوعية فواصل قدرها 15 دقيقة',
+    invalidWeeklySlotDuration:
+      'مدة خانة الإتاحة الأسبوعية يجب أن تطابق المدة المختارة',
+    invalidDurationMinutes:
+      'مدة خانة الإتاحة الأسبوعية يجب أن تكون 30 أو 60 دقيقة',
+    invalidGranularity: 'يجب أن تستخدم الإتاحة الأسبوعية فواصل قدرها 30 دقيقة',
     overlappingWeeklySlots:
       'جدول الإتاحة الأسبوعي يحتوي على تداخل في نفس اليوم',
     invalidExceptionRange: 'نطاق استثناء الإتاحة غير صالح',

@@ -11,6 +11,7 @@ import {
   PaymentStatus,
 } from '@prisma/client';
 import {
+  PublicTrainingCategoryItem,
   TrainingEnrollmentAvailabilityReason,
   TrainingJoinBlockedReason,
 } from '../types/training.types';
@@ -40,10 +41,13 @@ export class TrainingPresenter {
       startsAt: Date | null;
       endsAt: Date | null;
       timezone: string | null;
+      plannedDurationDays: number | null;
+      plannedLectureCount: number | null;
       maxEnrollmentsOverride: number | null;
     };
     defaultCapacity: number | null;
     enrolledSeats: number;
+    lectureCount: number;
     availability: {
       isEnrollmentOpen: boolean;
       reason: TrainingEnrollmentAvailabilityReason;
@@ -67,8 +71,16 @@ export class TrainingPresenter {
       startsAt: input.schedule.startsAt?.toISOString() ?? null,
       endsAt: input.schedule.endsAt?.toISOString() ?? null,
       timezone: input.schedule.timezone ?? null,
+      plannedDurationDays: input.schedule.plannedDurationDays ?? null,
+      plannedLectureCount: input.schedule.plannedLectureCount ?? null,
       maxEnrollments,
       availableSeats,
+      lectureCount: input.lectureCount,
+      isLecturePlanComplete:
+        input.schedule.plannedLectureCount !== null &&
+        input.schedule.plannedLectureCount !== undefined &&
+        input.schedule.plannedLectureCount > 0 &&
+        input.lectureCount >= input.schedule.plannedLectureCount,
       isEnrollmentOpen: input.availability.isEnrollmentOpen,
       enrollmentAvailabilityReason: input.availability.reason,
     };
@@ -77,11 +89,20 @@ export class TrainingPresenter {
   presentPublicTrainingItem(
     course: {
       id: string;
+      slugRoot: string;
       courseType: CourseType;
       publishedAt: Date | null;
       coverImageUrl: string | null;
       thumbnailUrl: string | null;
-      translations: Array<{
+      primaryCategory?: {
+        id: string;
+        slugRoot: string;
+        translations?: Array<{
+          locale: string;
+          title: string;
+        }>;
+      } | null;
+      translations?: Array<{
         locale: string;
         title: string;
         slug: string;
@@ -90,31 +111,34 @@ export class TrainingPresenter {
     },
     locale: ContentLocale,
   ) {
-    const translation = this.pickTranslation(course.translations, locale);
-    if (!translation) {
-      return null;
-    }
+    const translation = this.pickTranslation(course.translations ?? [], locale);
+
+    const fallbackTitle = this.humanizeSlug(course.slugRoot);
+    const fallbackSlug = course.slugRoot.trim().toLowerCase();
+    const primaryCategory = this.presentCategorySummary(course.primaryCategory, locale);
 
     return {
       id: course.id,
-      title: translation.title,
-      slug: translation.slug,
-      shortDescription: translation.shortDescription ?? null,
+      title: translation?.title?.trim() || fallbackTitle,
+      slug: translation?.slug?.trim().toLowerCase() || fallbackSlug,
+      shortDescription: translation?.shortDescription ?? null,
       coverImageUrl: course.coverImageUrl ?? null,
       thumbnailUrl: course.thumbnailUrl ?? null,
       publishedAt: course.publishedAt?.toISOString() ?? null,
       courseType: course.courseType,
+      primaryCategory,
     };
   }
 
   presentPublicTrainingDetails(
     course: {
       id: string;
+      slugRoot: string;
       courseType: CourseType;
       publishedAt: Date | null;
       coverImageUrl: string | null;
       thumbnailUrl: string | null;
-      translations: Array<{
+      translations?: Array<{
         locale: string;
         title: string;
         slug: string;
@@ -123,6 +147,14 @@ export class TrainingPresenter {
         metaTitle: string | null;
         metaDescription: string | null;
       }>;
+      primaryCategory?: {
+        id: string;
+        slugRoot: string;
+        translations?: Array<{
+          locale: string;
+          title: string;
+        }>;
+      } | null;
       schedules?: Array<{
         id: string;
         scheduleCode: string;
@@ -132,6 +164,8 @@ export class TrainingPresenter {
         startsAt: Date | null;
         endsAt: Date | null;
         timezone: string | null;
+        plannedDurationDays: number | null;
+        plannedLectureCount: number | null;
         maxEnrollmentsOverride: number | null;
       }>;
       maxEnrollments: number | null;
@@ -143,33 +177,39 @@ export class TrainingPresenter {
       status: CourseScheduleStatus;
       enrollmentOpenAt: string | null;
       enrollmentCloseAt: string | null;
-      startsAt: string | null;
-      endsAt: string | null;
-      timezone: string | null;
-      maxEnrollments: number | null;
-      availableSeats: number | null;
-      isEnrollmentOpen: boolean;
-      enrollmentAvailabilityReason: TrainingEnrollmentAvailabilityReason;
-    }> = [],
+        startsAt: string | null;
+        endsAt: string | null;
+        timezone: string | null;
+        plannedDurationDays: number | null;
+        plannedLectureCount: number | null;
+        maxEnrollments: number | null;
+        availableSeats: number | null;
+        lectureCount: number;
+        isLecturePlanComplete: boolean;
+        isEnrollmentOpen: boolean;
+        enrollmentAvailabilityReason: TrainingEnrollmentAvailabilityReason;
+      }> = [],
   ) {
-    const translation = this.pickTranslation(course.translations, locale);
-    if (!translation) {
-      return null;
-    }
+    const translation = this.pickTranslation(course.translations ?? [], locale);
+
+    const fallbackTitle = this.humanizeSlug(course.slugRoot);
+    const fallbackSlug = course.slugRoot.trim().toLowerCase();
+    const primaryCategory = this.presentCategorySummary(course.primaryCategory, locale);
 
     return {
       id: course.id,
-      title: translation.title,
-      slug: translation.slug,
-      shortDescription: translation.shortDescription ?? null,
-      fullDescription: translation.fullDescription ?? null,
+      title: translation?.title?.trim() || fallbackTitle,
+      slug: translation?.slug?.trim().toLowerCase() || fallbackSlug,
+      shortDescription: translation?.shortDescription ?? null,
+      fullDescription: translation?.fullDescription ?? null,
       coverImageUrl: course.coverImageUrl ?? null,
       thumbnailUrl: course.thumbnailUrl ?? null,
       publishedAt: course.publishedAt?.toISOString() ?? null,
       courseType: course.courseType,
+      primaryCategory,
       seo: {
-        metaTitle: translation.metaTitle ?? null,
-        metaDescription: translation.metaDescription ?? null,
+        metaTitle: translation?.metaTitle ?? null,
+        metaDescription: translation?.metaDescription ?? null,
       },
       locale,
       schedules: scheduleItems,
@@ -179,6 +219,7 @@ export class TrainingPresenter {
   presentAdminTrainingItem(
     course: {
       id: string;
+      slugRoot: string;
       courseType: CourseType;
       status: CourseStatus;
       visibility: CourseVisibility;
@@ -206,6 +247,8 @@ export class TrainingPresenter {
         startsAt: Date | null;
         endsAt: Date | null;
         timezone: string | null;
+        plannedDurationDays: number | null;
+        plannedLectureCount: number | null;
         maxEnrollmentsOverride: number | null;
       }>;
       maxEnrollments: number | null;
@@ -217,14 +260,18 @@ export class TrainingPresenter {
       status: CourseScheduleStatus;
       enrollmentOpenAt: string | null;
       enrollmentCloseAt: string | null;
-      startsAt: string | null;
-      endsAt: string | null;
-      timezone: string | null;
-      maxEnrollments: number | null;
-      availableSeats: number | null;
-      isEnrollmentOpen: boolean;
-      enrollmentAvailabilityReason: TrainingEnrollmentAvailabilityReason;
-    }> = [],
+        startsAt: string | null;
+        endsAt: string | null;
+        timezone: string | null;
+        plannedDurationDays: number | null;
+        plannedLectureCount: number | null;
+        maxEnrollments: number | null;
+        availableSeats: number | null;
+        lectureCount: number;
+        isLecturePlanComplete: boolean;
+        isEnrollmentOpen: boolean;
+        enrollmentAvailabilityReason: TrainingEnrollmentAvailabilityReason;
+      }> = [],
   ) {
     const publicDetails = this.presentPublicTrainingDetails(
       course,
@@ -245,6 +292,29 @@ export class TrainingPresenter {
     };
   }
 
+  presentPublicTrainingCategoryItem(input: {
+    id: string;
+    slugRoot: string;
+    translations?: Array<{
+      locale: string;
+      title: string;
+    }>;
+    courseCount: number;
+  }, locale: ContentLocale): PublicTrainingCategoryItem {
+    const translation =
+      input.translations?.find((item) => item.locale === locale) ??
+      input.translations?.find((item) => item.locale === ContentLocale.en) ??
+      input.translations?.[0] ??
+      null;
+
+    return {
+      id: input.id,
+      slug: input.slugRoot.trim().toLowerCase(),
+      title: translation?.title?.trim() || this.humanizeSlug(input.slugRoot),
+      courseCount: input.courseCount,
+    };
+  }
+
   private pickTranslation<
     T extends {
       locale: string;
@@ -256,6 +326,51 @@ export class TrainingPresenter {
       translations[0] ??
       null
     );
+  }
+
+  private humanizeSlug(slug: string): string {
+    const cleaned = slug
+      .trim()
+      .replace(/[_-]+/g, ' ')
+      .replace(/\s+/g, ' ');
+
+    if (!cleaned) {
+      return 'Training program';
+    }
+
+    return cleaned
+      .split(' ')
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+  }
+
+  private presentCategorySummary(
+    category:
+      | {
+      id: string;
+      slugRoot: string;
+      translations?: Array<{
+        locale: string;
+        title: string;
+      }>;
+      }
+      | null
+      | undefined,
+    locale: ContentLocale,
+  ) {
+    if (!category) {
+      return null;
+    }
+
+    return {
+      id: category.id,
+      slug: category.slugRoot.trim().toLowerCase(),
+      title:
+        category.translations?.find((item) => item.locale === locale)?.title?.trim() ||
+        category.translations?.find((item) => item.locale === ContentLocale.en)?.title?.trim() ||
+        category.translations?.[0]?.title?.trim() ||
+        this.humanizeSlug(category.slugRoot),
+    };
   }
 
   presentEnrollmentItem(
@@ -366,6 +481,86 @@ export class TrainingPresenter {
       enrolledAt: input.enrolledAt.toISOString(),
       startsAt: input.courseSchedule.startsAt?.toISOString() ?? null,
       endsAt: input.courseSchedule.endsAt?.toISOString() ?? null,
+    };
+  }
+
+  presentAdminScheduleLectureItem(input: {
+    id: string;
+    sessionOrder: number;
+    sessionTitle: string | null;
+    startsAt: Date | null;
+    endsAt: Date | null;
+    externalRoomProvider: string | null;
+    externalRoomJoinUrl: string | null;
+    externalRoomHostUrl: string | null;
+    attendanceTrackingEnabled: boolean;
+    isMandatory: boolean;
+  }) {
+    return {
+      id: input.id,
+      sessionOrder: input.sessionOrder,
+      sessionTitle: input.sessionTitle,
+      startsAt: input.startsAt?.toISOString() ?? null,
+      endsAt: input.endsAt?.toISOString() ?? null,
+      externalRoomProvider: input.externalRoomProvider,
+      externalRoomJoinUrl: input.externalRoomJoinUrl,
+      externalRoomHostUrl: input.externalRoomHostUrl,
+      attendanceTrackingEnabled: input.attendanceTrackingEnabled,
+      isMandatory: input.isMandatory,
+    };
+  }
+
+  presentAdminPaymentAttemptItem(input: {
+    id: string;
+    enrollmentId: string;
+    provider: PaymentProvider;
+    status: PaymentStatus;
+    amountSubtotal: { toString(): string };
+    amountDiscount: { toString(): string };
+    amountTotal: { toString(): string };
+    currencyCode: string;
+    providerPaymentRef: string | null;
+    providerOrderRef: string | null;
+    providerCustomerRef: string | null;
+    checkoutUrl: string | null;
+    clientSecret: string | null;
+    failureReason: string | null;
+    failedAt: Date | null;
+    createdAt: Date;
+    updatedAt: Date;
+    enrollment: {
+      userId: string;
+      user: {
+        displayName: string | null;
+      };
+      courseSchedule: {
+        id: string;
+        scheduleCode: string;
+      };
+    };
+  }) {
+    return {
+      id: input.id,
+      enrollmentId: input.enrollmentId,
+      userId: input.enrollment.userId,
+      patientDisplayName: input.enrollment.user.displayName ?? null,
+      scheduleId: input.enrollment.courseSchedule.id,
+      scheduleCode: input.enrollment.courseSchedule.scheduleCode,
+      provider: input.provider,
+      status: input.status,
+      amountSubtotal: input.amountSubtotal.toString(),
+      amountDiscount: input.amountDiscount.toString(),
+      amountTotal: input.amountTotal.toString(),
+      currencyCode: input.currencyCode,
+      providerPaymentRef: input.providerPaymentRef,
+      providerOrderRef: input.providerOrderRef,
+      providerCustomerRef: input.providerCustomerRef,
+      checkoutUrl: input.checkoutUrl,
+      clientSecret: input.clientSecret,
+      failureReason: input.failureReason,
+      failedAt: input.failedAt?.toISOString() ?? null,
+      createdAt: input.createdAt.toISOString(),
+      updatedAt: input.updatedAt.toISOString(),
     };
   }
 

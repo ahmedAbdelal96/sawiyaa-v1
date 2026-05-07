@@ -90,7 +90,7 @@ export class PatientJourneyReadRepository {
     });
   }
 
-  findPendingPayment(patientId: string, upcomingSessionId?: string) {
+  findPendingPayment(patientId: string, nowUtc: Date, upcomingSessionId?: string) {
     return this.prisma.payment.findFirst({
       where: {
         patientId,
@@ -102,6 +102,14 @@ export class PatientJourneyReadRepository {
             PaymentStatus.AUTHORIZED,
           ],
         },
+        OR: [
+          { expiredAt: null },
+          {
+            expiredAt: {
+              gt: nowUtc,
+            },
+          },
+        ],
         ...(upcomingSessionId ? { sessionId: upcomingSessionId } : {}),
       },
       orderBy: [{ createdAt: 'desc' }],
@@ -112,6 +120,7 @@ export class PatientJourneyReadRepository {
         currencyCode: true,
         sessionId: true,
         createdAt: true,
+        expiredAt: true,
       },
     });
   }

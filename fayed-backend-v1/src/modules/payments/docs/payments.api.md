@@ -89,6 +89,15 @@ V1 now uses the Financial Rules layer, which resolves:
 
 Payments persists the resolved commission and coupon snapshots on the `Payment` record for later ledger posting.
 
+## Geo / Country Trust Policy
+
+- payment country is backend-owned; the client may only provide a hint in public enrollment flows
+- authoritative country comes from stored account/profile state when available
+- public enrollment flows may derive a country from verified phone prefix and compare it with the declared country
+- country mismatch is recorded in `metadataJson.countrySnapshot` and must never silently change the resolved market
+- session payments, training enrollments, academy enrollments, and future payment flows should all persist the same country snapshot shape
+- frontend country, browser locale, or IP are not source of truth for currency or market selection
+
 ## Webhook Notes
 
 - Stripe webhook verification uses the configured webhook secret and raw body

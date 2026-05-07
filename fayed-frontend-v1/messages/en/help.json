@@ -1,0 +1,61 @@
+{
+  "meta": {
+    "listTitle": "Help Center",
+    "listDescription": "Browse common questions and find answers quickly.",
+    "categoryTitle": "Help Center",
+    "categoryDescription": "Browse the frequently asked questions for this category."
+  },
+  "public": {
+    "eyebrow": "Help Center",
+    "title": "Help Center",
+    "description": "Find clear answers to the most common questions.",
+    "categoriesHeading": "Categories",
+    "categoriesNote": "Choose a category or use search to jump straight to an answer.",
+    "questionCount": "{count, plural, one {1 question} other {{count} questions}}",
+    "updatedAt": "Last updated: {date}"
+  },
+  "faq": {
+    "heading": "Frequently asked questions",
+    "note": "Tap a question to read the full answer.",
+    "showAnswer": "Show answer",
+    "hideAnswer": "Hide answer",
+    "questionNumber": "Question {index}",
+    "empty": "No questions matched this search."
+  },
+  "navigation": {
+    "categories": "Categories"
+  },
+  "questions": {
+    "uncategorized": "Uncategorized"
+  },
+  "search": {
+    "placeholder": "Search questions",
+    "loading": "Updating search results..."
+  },
+  "states": {
+    "error": {
+      "heading": "Unable to load the help center",
+      "note": "Please try again in a moment.",
+      "retry": "Try again"
+    },
+    "notFound": {
+      "heading": "Category not found",
+      "note": "The link may be invalid or the category name may have changed."
+    },
+    "empty": {
+      "heading": "No questions are available right now",
+      "note": "More answers will be added soon."
+    },
+    "noResults": {
+      "note": "Try a different keyword or choose another category."
+    }
+  },
+  "actions": {
+    "backToOverview": "Back to help center",
+    "clearSearch": "Clear search"
+  },
+  "badges": {
+    "active": "Active",
+    "inactive": "Inactive"
+  }
+}

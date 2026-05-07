@@ -78,6 +78,14 @@ export class UpdateTrainingScheduleUseCase {
       enrollmentCloseAt,
       startsAt,
       endsAt,
+      plannedDurationDays:
+        input.payload.plannedDurationDays !== undefined
+          ? input.payload.plannedDurationDays
+          : schedule.plannedDurationDays,
+      plannedLectureCount:
+        input.payload.plannedLectureCount !== undefined
+          ? input.payload.plannedLectureCount
+          : schedule.plannedLectureCount,
       maxEnrollmentsOverride,
       status: nextStatus,
       externalRoomProvider:
@@ -95,6 +103,10 @@ export class UpdateTrainingScheduleUseCase {
         input.scheduleId,
       ]);
     const occupiedSeats = occupiedMap[input.scheduleId] ?? 0;
+    const lectureCountsByScheduleId =
+      await this.trainingRepository.countSessionsByScheduleIds([
+        input.scheduleId,
+      ]);
     const maxSeats = maxEnrollmentsOverride ?? course.maxEnrollments ?? null;
     if (maxSeats !== null && maxSeats < occupiedSeats) {
       throw new BadRequestException({
@@ -121,6 +133,12 @@ export class UpdateTrainingScheduleUseCase {
             : {}),
           ...(input.payload.startsAt !== undefined ? { startsAt } : {}),
           ...(input.payload.endsAt !== undefined ? { endsAt } : {}),
+          ...(input.payload.plannedDurationDays !== undefined
+            ? { plannedDurationDays: input.payload.plannedDurationDays }
+            : {}),
+          ...(input.payload.plannedLectureCount !== undefined
+            ? { plannedLectureCount: input.payload.plannedLectureCount }
+            : {}),
           ...(input.payload.timezone !== undefined
             ? { timezone: input.payload.timezone?.trim() || null }
             : {}),
@@ -159,6 +177,9 @@ export class UpdateTrainingScheduleUseCase {
         schedules: [updated],
         defaultCapacity: course.maxEnrollments ?? null,
         enrollmentCountsByScheduleId: { [updated.id]: occupiedSeats },
+        lectureCountsByScheduleId: {
+          [updated.id]: lectureCountsByScheduleId[input.scheduleId] ?? 0,
+        },
       });
 
       return {

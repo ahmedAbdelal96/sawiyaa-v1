@@ -53,7 +53,7 @@ function approvalStatusColor(
 export default function CareChatListScreen() {
   const router = useRouter();
   const { theme } = useTheme();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [tab, setTab] = useState<TabFilter>("active");
 
   const query = useMyCareChatRequests({ page: 1, limit: 50 });
@@ -65,7 +65,8 @@ export default function CareChatListScreen() {
   });
 
   function formatDate(dateStr: string) {
-    return new Date(dateStr).toLocaleDateString("ar-SA", {
+    const locale = i18n.language?.startsWith("ar") ? "ar-SA" : "en-US";
+    return new Date(dateStr).toLocaleDateString(locale, {
       day: "numeric",
       month: "short",
     });
@@ -144,10 +145,13 @@ export default function CareChatListScreen() {
               >
                 {" · "}
                 {t("careChat.expiresOn", {
-                  date: new Date(req.expiresAt).toLocaleDateString("ar-SA", {
+                  date: new Date(req.expiresAt).toLocaleDateString(
+                    i18n.language?.startsWith("ar") ? "ar-SA" : "en-US",
+                    {
                     day: "numeric",
                     month: "short",
-                  }),
+                    },
+                  ),
                 })}
               </Text>
             ) : null}
@@ -233,7 +237,7 @@ export default function CareChatListScreen() {
 
 const styles = StyleSheet.create({
   scroll: {
-    padding: 16,
+    padding: 20,
     paddingBottom: 40,
     flexGrow: 1,
   },
@@ -246,7 +250,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   requestCard: {
-    padding: 14,
+    padding: 18,
     gap: 10,
   },
   cardHeader: {
@@ -286,8 +290,8 @@ const styles = StyleSheet.create({
   statusPill: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
     borderRadius: 20,
     alignSelf: "flex-start",
   },
@@ -304,7 +308,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 8,
     borderRadius: 12,
-    paddingVertical: 14,
+    paddingVertical: 16,
     marginTop: 24,
   },
   newCtaText: {

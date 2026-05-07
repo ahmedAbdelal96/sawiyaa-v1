@@ -64,10 +64,22 @@ export class TrainingScheduleDto {
   timezone!: string | null;
 
   @ApiProperty({ nullable: true })
+  plannedDurationDays!: number | null;
+
+  @ApiProperty({ nullable: true })
+  plannedLectureCount!: number | null;
+
+  @ApiProperty({ nullable: true })
   maxEnrollments!: number | null;
 
   @ApiProperty({ nullable: true })
   availableSeats!: number | null;
+
+  @ApiProperty()
+  lectureCount!: number;
+
+  @ApiProperty()
+  isLecturePlanComplete!: boolean;
 
   @ApiProperty()
   isEnrollmentOpen!: boolean;
@@ -100,6 +112,9 @@ export class PublicTrainingListItemDto {
 
   @ApiProperty({ enum: CourseType })
   courseType!: CourseType;
+
+  @ApiProperty({ nullable: true, type: () => PublicTrainingCategoryDto })
+  primaryCategory!: PublicTrainingCategoryDto | null;
 }
 
 export class PublicTrainingDetailsDto extends PublicTrainingListItemDto {
@@ -114,6 +129,20 @@ export class PublicTrainingDetailsDto extends PublicTrainingListItemDto {
 
   @ApiProperty({ type: TrainingScheduleDto, isArray: true })
   schedules!: TrainingScheduleDto[];
+}
+
+export class PublicTrainingCategoryDto {
+  @ApiProperty()
+  id!: string;
+
+  @ApiProperty()
+  slug!: string;
+
+  @ApiProperty()
+  title!: string;
+
+  @ApiProperty()
+  courseCount!: number;
 }
 
 export class AdminTrainingItemDto extends PublicTrainingDetailsDto {
@@ -152,6 +181,220 @@ export class AdminTrainingScheduleListDataDto {
 export class AdminTrainingScheduleItemDataDto {
   @ApiProperty({ type: () => AdminTrainingScheduleDto })
   item!: AdminTrainingScheduleDto;
+}
+
+export class AdminTrainingScheduleLectureDto {
+  @ApiProperty()
+  id!: string;
+
+  @ApiProperty()
+  sessionOrder!: number;
+
+  @ApiProperty({ nullable: true })
+  sessionTitle!: string | null;
+
+  @ApiProperty({ nullable: true })
+  startsAt!: string | null;
+
+  @ApiProperty({ nullable: true })
+  endsAt!: string | null;
+
+  @ApiProperty({ nullable: true })
+  externalRoomProvider!: string | null;
+
+  @ApiProperty({ nullable: true })
+  externalRoomJoinUrl!: string | null;
+
+  @ApiProperty({ nullable: true })
+  externalRoomHostUrl!: string | null;
+
+  @ApiProperty()
+  attendanceTrackingEnabled!: boolean;
+
+  @ApiProperty()
+  isMandatory!: boolean;
+}
+
+export class AdminTrainingScheduleLectureDataDto {
+  @ApiProperty({ type: AdminTrainingScheduleLectureDto, isArray: true })
+  items!: AdminTrainingScheduleLectureDto[];
+}
+
+export class AdminTrainingScheduleLectureItemDataDto {
+  @ApiProperty({ type: AdminTrainingScheduleLectureDto })
+  item!: AdminTrainingScheduleLectureDto;
+}
+
+export class AdminTrainingPaymentAttemptDto {
+  @ApiProperty()
+  id!: string;
+
+  @ApiProperty()
+  enrollmentId!: string;
+
+  @ApiProperty()
+  userId!: string;
+
+  @ApiProperty({ nullable: true })
+  patientDisplayName!: string | null;
+
+  @ApiProperty()
+  scheduleId!: string;
+
+  @ApiProperty()
+  scheduleCode!: string;
+
+  @ApiProperty({ enum: PaymentProvider })
+  provider!: PaymentProvider;
+
+  @ApiProperty({ enum: PaymentStatus })
+  status!: PaymentStatus;
+
+  @ApiProperty()
+  amountSubtotal!: string;
+
+  @ApiProperty()
+  amountDiscount!: string;
+
+  @ApiProperty()
+  amountTotal!: string;
+
+  @ApiProperty()
+  currencyCode!: string;
+
+  @ApiProperty({ nullable: true })
+  providerPaymentRef!: string | null;
+
+  @ApiProperty({ nullable: true })
+  providerOrderRef!: string | null;
+
+  @ApiProperty({ nullable: true })
+  providerCustomerRef!: string | null;
+
+  @ApiProperty({ nullable: true })
+  checkoutUrl!: string | null;
+
+  @ApiProperty({ nullable: true })
+  clientSecret!: string | null;
+
+  @ApiProperty({ nullable: true })
+  failureReason!: string | null;
+
+  @ApiProperty({ nullable: true })
+  failedAt!: string | null;
+
+  @ApiProperty()
+  createdAt!: string;
+
+  @ApiProperty()
+  updatedAt!: string;
+}
+
+export class AdminTrainingPaymentAttemptListDataDto {
+  @ApiProperty({ type: AdminTrainingPaymentAttemptDto, isArray: true })
+  items!: AdminTrainingPaymentAttemptDto[];
+
+  @ApiProperty({ type: () => TrainingsPaginationDto })
+  pagination!: TrainingsPaginationDto;
+}
+
+export class AdminTrainingCohortAnalyticsDto {
+  @ApiProperty()
+  scheduleId!: string;
+
+  @ApiProperty()
+  scheduleCode!: string;
+
+  @ApiProperty({ enum: CourseScheduleStatus })
+  status!: CourseScheduleStatus;
+
+  @ApiProperty({ nullable: true })
+  plannedDurationDays!: number | null;
+
+  @ApiProperty({ nullable: true })
+  plannedLectureCount!: number | null;
+
+  @ApiProperty()
+  lectureCount!: number;
+
+  @ApiProperty()
+  isLecturePlanComplete!: boolean;
+
+  @ApiProperty()
+  totalEnrollments!: number;
+
+  @ApiProperty()
+  paidEnrollments!: number;
+
+  @ApiProperty()
+  pendingPaymentEnrollments!: number;
+
+  @ApiProperty()
+  failedPaymentAttempts!: number;
+
+  @ApiProperty()
+  attendanceCompletedEnrollments!: number;
+
+  @ApiProperty()
+  attendanceCompletionRate!: number;
+
+  @ApiProperty()
+  paymentConversionRate!: number;
+
+  @ApiProperty()
+  occupancyRate!: number;
+}
+
+export class AdminTrainingAnalyticsDto {
+  @ApiProperty()
+  totalSchedules!: number;
+
+  @ApiProperty()
+  openSchedules!: number;
+
+  @ApiProperty()
+  endedSchedules!: number;
+
+  @ApiProperty()
+  totalLectures!: number;
+
+  @ApiProperty()
+  totalEnrollments!: number;
+
+  @ApiProperty()
+  activeEnrollments!: number;
+
+  @ApiProperty()
+  completedEnrollments!: number;
+
+  @ApiProperty()
+  pendingPaymentEnrollments!: number;
+
+  @ApiProperty()
+  paidEnrollments!: number;
+
+  @ApiProperty()
+  failedPaymentAttempts!: number;
+
+  @ApiProperty()
+  abandonedPaymentAttempts!: number;
+
+  @ApiProperty()
+  attendanceCompletedEnrollments!: number;
+
+  @ApiProperty()
+  attendanceCompletionRate!: number;
+
+  @ApiProperty()
+  paymentConversionRate!: number;
+
+  @ApiProperty({ type: AdminTrainingCohortAnalyticsDto, isArray: true })
+  cohorts!: AdminTrainingCohortAnalyticsDto[];
+}
+
+export class AdminTrainingAnalyticsSuccessResponseDto {
+  @ApiProperty({ type: AdminTrainingAnalyticsDto })
+  data!: AdminTrainingAnalyticsDto;
 }
 
 export class EnrollmentPaymentSnapshotDto {
@@ -333,6 +576,11 @@ export class PublicTrainingListDataDto {
   pagination!: TrainingsPaginationDto;
 }
 
+export class PublicTrainingCategoryListDataDto {
+  @ApiProperty({ type: PublicTrainingCategoryDto, isArray: true })
+  items!: PublicTrainingCategoryDto[];
+}
+
 export class PublicTrainingItemDataDto {
   @ApiProperty({ type: PublicTrainingDetailsDto })
   item!: PublicTrainingDetailsDto;
@@ -344,6 +592,26 @@ export class AdminTrainingListDataDto {
 
   @ApiProperty({ type: () => TrainingsPaginationDto })
   pagination!: TrainingsPaginationDto;
+
+  @ApiProperty({
+    type: 'object',
+    properties: {
+      total: { type: 'number' },
+      draft: { type: 'number' },
+      published: { type: 'number' },
+      archived: { type: 'number' },
+      openForEnrollment: { type: 'number' },
+      closedForEnrollment: { type: 'number' },
+    },
+  })
+  summary!: {
+    total: number;
+    draft: number;
+    published: number;
+    archived: number;
+    openForEnrollment: number;
+    closedForEnrollment: number;
+  };
 }
 
 export class AdminTrainingItemDataDto {
@@ -357,6 +625,14 @@ export class PublicTrainingListSuccessResponseDto {
 
   @ApiProperty({ type: PublicTrainingListDataDto })
   data!: PublicTrainingListDataDto;
+}
+
+export class PublicTrainingCategoryListSuccessResponseDto {
+  @ApiProperty({ example: true })
+  success!: true;
+
+  @ApiProperty({ type: PublicTrainingCategoryListDataDto })
+  data!: PublicTrainingCategoryListDataDto;
 }
 
 export class PublicTrainingItemSuccessResponseDto {
@@ -397,6 +673,30 @@ export class AdminTrainingScheduleItemSuccessResponseDto {
 
   @ApiProperty({ type: AdminTrainingScheduleItemDataDto })
   data!: AdminTrainingScheduleItemDataDto;
+}
+
+export class AdminTrainingScheduleLectureListSuccessResponseDto {
+  @ApiProperty({ example: true })
+  success!: true;
+
+  @ApiProperty({ type: AdminTrainingScheduleLectureDataDto })
+  data!: AdminTrainingScheduleLectureDataDto;
+}
+
+export class AdminTrainingScheduleLectureItemSuccessResponseDto {
+  @ApiProperty({ example: true })
+  success!: true;
+
+  @ApiProperty({ type: AdminTrainingScheduleLectureItemDataDto })
+  data!: AdminTrainingScheduleLectureItemDataDto;
+}
+
+export class AdminTrainingPaymentAttemptListSuccessResponseDto {
+  @ApiProperty({ example: true })
+  success!: true;
+
+  @ApiProperty({ type: AdminTrainingPaymentAttemptListDataDto })
+  data!: AdminTrainingPaymentAttemptListDataDto;
 }
 
 export class PatientTrainingEnrollmentListSuccessResponseDto {

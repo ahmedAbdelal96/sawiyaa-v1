@@ -65,7 +65,7 @@ function getPidsUsingPort(port) {
 function killPid(pid) {
   try {
     if (process.platform === 'win32') {
-      execSync(`taskkill /PID ${pid} /F`, { stdio: 'ignore' });
+      execSync(`taskkill /PID ${pid} /F /T`, { stdio: 'ignore' });
       return;
     }
 

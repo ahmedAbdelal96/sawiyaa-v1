@@ -39,6 +39,7 @@ export type PatientJourney = {
       currency: string;
       sessionId: string | null;
       createdAt: string;
+      expiredAt: string | null;
     } | null;
     instantBookingRequest: {
       id: string;

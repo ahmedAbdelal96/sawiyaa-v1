@@ -30,6 +30,7 @@ import {
   PatientAssessmentHistoryItem,
 } from "../../../src/features/patient/assessments/types";
 import { AssessmentStatusCard } from "../../../src/features/patient/assessments/components/AssessmentStatusCard";
+import { getAssessmentCompatibility } from "../../../src/features/patient/assessments/compatibility";
 
 type ListFilter = "all" | "current" | "history";
 
@@ -84,18 +85,42 @@ export default function PatientAssessmentsListScreen() {
       queryKey: ["patient-assessments", "count", item.slug],
       queryFn: async () => {
         const result = await fetchAssessmentDefinition(item.slug);
-        return result.data.item.questions.length;
+        return result.data.item;
       },
       staleTime: 60_000,
     })),
   });
 
-  const questionCountMap = useMemo(() => {
-    const map = new Map<string, number | null>();
+  const detailMap = useMemo(() => {
+    const map = new Map<
+      string,
+      {
+        questionCount: number | null;
+        isCompatible: boolean | null;
+        reason: string | null;
+      }
+    >();
+
     assessmentItems.forEach((item, index) => {
-      const cached = detailQueries[index]?.data;
-      map.set(item.slug, typeof cached === "number" ? cached : null);
+      const detail = detailQueries[index]?.data;
+
+      if (!detail) {
+        map.set(item.slug, {
+          questionCount: null,
+          isCompatible: null,
+          reason: null,
+        });
+        return;
+      }
+
+      const compatibility = getAssessmentCompatibility(detail);
+      map.set(item.slug, {
+        questionCount: compatibility.totalQuestionCount,
+        isCompatible: compatibility.isCompatible,
+        reason: compatibility.reason,
+      });
     });
+
     return map;
   }, [assessmentItems, detailQueries]);
 
@@ -106,10 +131,14 @@ export default function PatientAssessmentsListScreen() {
         definition: item,
         latest,
         status: mapStatus(latest?.status),
-        questionCount: questionCountMap.get(item.slug) ?? null,
+        compatibility: detailMap.get(item.slug) ?? {
+          questionCount: null,
+          isCompatible: null,
+          reason: null,
+        },
       };
     });
-  }, [assessmentItems, latestHistoryBySlug, questionCountMap]);
+  }, [assessmentItems, latestHistoryBySlug, detailMap]);
 
   const activeCards = useMemo(
     () => enrichedCards.filter((item) => item.status !== "COMPLETED"),
@@ -318,9 +347,20 @@ export default function PatientAssessmentsListScreen() {
         ) : (
           <View style={styles.cardsColumn}>
             {visibleCards.map(
-              ({ definition, latest, status, questionCount }) => {
+              ({ definition, latest, status, compatibility }) => {
                 const isCompleted = status === "COMPLETED";
                 const isInProgress = status === "IN_PROGRESS";
+                const isUnavailableOnMobile =
+                  !isCompleted && compatibility.isCompatible === false;
+                const cardStatus = isUnavailableOnMobile
+                  ? ("NOT_STARTED" as const)
+                  : status;
+                const compatibilityNote =
+                  compatibility.reason != null
+                    ? t(
+                        `assessments.list.compatibility.${compatibility.reason}` as never,
+                      )
+                    : null;
 
                 return (
                   <AssessmentStatusCard
@@ -331,21 +371,25 @@ export default function PatientAssessmentsListScreen() {
                       t("assessments.list.descriptionFallback")
                     }
                     durationMinutes={definition.estimatedDurationMinutes}
-                    questionCount={questionCount}
-                    status={status}
+                    questionCount={compatibility.questionCount}
+                    status={cardStatus}
                     statusLabel={
-                      isCompleted
-                        ? t("assessments.list.status.completed")
-                        : isInProgress
-                          ? t("assessments.list.status.inProgress")
-                          : t("assessments.list.status.notStarted")
+                      isUnavailableOnMobile
+                        ? t("assessments.list.status.unavailable")
+                        : isCompleted
+                          ? t("assessments.list.status.completed")
+                          : isInProgress
+                            ? t("assessments.list.status.inProgress")
+                            : t("assessments.list.status.notStarted")
                     }
                     actionLabel={
                       isCompleted
                         ? t("assessments.list.actions.viewResult")
-                        : isInProgress
-                          ? t("assessments.list.actions.continue")
-                          : t("assessments.list.actions.start")
+                        : isUnavailableOnMobile
+                          ? t("assessments.list.actions.review")
+                          : isInProgress
+                            ? t("assessments.list.actions.continue")
+                            : t("assessments.list.actions.start")
                     }
                     footerNote={
                       isCompleted && latest?.completedAt
@@ -362,7 +406,9 @@ export default function PatientAssessmentsListScreen() {
                               },
                             ),
                           })
-                        : null
+                        : isUnavailableOnMobile
+                          ? compatibilityNote
+                          : null
                     }
                     onPress={() => {
                       if (isCompleted && latest) {

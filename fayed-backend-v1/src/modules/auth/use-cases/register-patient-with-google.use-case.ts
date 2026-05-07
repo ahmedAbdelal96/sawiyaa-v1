@@ -66,7 +66,7 @@ export class RegisterPatientWithGoogleUseCase {
       });
     }
 
-    const existingEmail = await this.userEmailRepository.findByEmail(
+    const existingEmail = await this.userEmailRepository.findByEmailForAuth(
       googleIdentity.email,
     );
 

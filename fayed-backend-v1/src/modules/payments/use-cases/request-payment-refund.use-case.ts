@@ -207,12 +207,14 @@ export class RequestPaymentRefundUseCase {
       };
     }
 
-    await this.operationalNotificationService.notifyRefundRequested({
-      patientProfileId: payment.patientId,
-      refundId: refund.id,
-      amount: refund.amount.toString(),
-      currencyCode: refund.currencyCode,
-    });
+    if (payment.patientId) {
+      await this.operationalNotificationService.notifyRefundRequested({
+        patientProfileId: payment.patientId,
+        refundId: refund.id,
+        amount: refund.amount.toString(),
+        currencyCode: refund.currencyCode,
+      });
+    }
 
     if (payment.sessionId) {
       await this.orchestrateSessionPaymentStatusService.markSessionRefundPending(
@@ -282,7 +284,7 @@ export class RequestPaymentRefundUseCase {
   private async finalizeWalletRefundOutcome(input: {
     payment: {
       id: string;
-      patientId: string;
+      patientId: string | null;
       status: PaymentStatus;
       amountTotal: Prisma.Decimal;
       sessionId: string | null;
@@ -315,6 +317,13 @@ export class RequestPaymentRefundUseCase {
 
       return updated;
     });
+
+    if (!input.payment.patientId) {
+      throw new BadRequestException({
+        messageKey: 'payments.errors.patientRequiredForWalletRefund',
+        error: 'PAYMENT_PATIENT_REQUIRED_FOR_WALLET_REFUND',
+      });
+    }
 
     await this.customerWalletAccountingService.creditRefundToWallet({
       patientId: input.payment.patientId,
@@ -364,12 +373,14 @@ export class RequestPaymentRefundUseCase {
       }
     }
 
-    await this.operationalNotificationService.notifyRefundSucceeded({
-      patientProfileId: input.payment.patientId,
-      refundId: succeeded.id,
-      amount: succeeded.amount.toString(),
-      currencyCode: succeeded.currencyCode,
-    });
+    if (input.payment.patientId) {
+      await this.operationalNotificationService.notifyRefundSucceeded({
+        patientProfileId: input.payment.patientId,
+        refundId: succeeded.id,
+        amount: succeeded.amount.toString(),
+        currencyCode: succeeded.currencyCode,
+      });
+    }
 
     const latest = await this.paymentRepository.findRefundById(succeeded.id);
     if (!latest) {
@@ -385,7 +396,7 @@ export class RequestPaymentRefundUseCase {
   private async finalizeRefundOutcome(input: {
     payment: {
       id: string;
-      patientId: string;
+      patientId: string | null;
       status: PaymentStatus;
       amountTotal: Prisma.Decimal;
       sessionId: string | null;
@@ -427,10 +438,12 @@ export class RequestPaymentRefundUseCase {
         status: targetStatus,
       });
 
-      await this.operationalNotificationService.notifyRefundFailed({
-        patientProfileId: input.payment.patientId,
-        refundId: failed.id,
-      });
+      if (input.payment.patientId) {
+        await this.operationalNotificationService.notifyRefundFailed({
+          patientProfileId: input.payment.patientId,
+          refundId: failed.id,
+        });
+      }
 
       return failed;
     }
@@ -498,12 +511,14 @@ export class RequestPaymentRefundUseCase {
       }
     }
 
-    await this.operationalNotificationService.notifyRefundSucceeded({
-      patientProfileId: input.payment.patientId,
-      refundId: succeeded.id,
-      amount: succeeded.amount.toString(),
-      currencyCode: succeeded.currencyCode,
-    });
+    if (input.payment.patientId) {
+      await this.operationalNotificationService.notifyRefundSucceeded({
+        patientProfileId: input.payment.patientId,
+        refundId: succeeded.id,
+        amount: succeeded.amount.toString(),
+        currencyCode: succeeded.currencyCode,
+      });
+    }
 
     return succeeded;
   }

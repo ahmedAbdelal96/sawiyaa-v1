@@ -1,5 +1,5 @@
 import React from "react";
-import { View, StyleSheet, ViewProps } from "react-native";
+import { View, StyleSheet, ViewProps, I18nManager } from "react-native";
 import { Text } from "./Text";
 import { useTheme } from "../../providers/ThemeProvider";
 
@@ -18,12 +18,19 @@ export const Section = ({
   ...props
 }: SectionProps) => {
   const { theme } = useTheme();
+  const isRTL = I18nManager.isRTL;
 
   return (
     <View style={[styles.container, style]} {...props}>
       {(title || action) && (
         <View
-          style={[styles.header, { paddingHorizontal: noPadding ? 0 : 16 }]}
+          style={[
+            styles.header,
+            {
+              paddingHorizontal: noPadding ? 0 : 28,
+              flexDirection: isRTL ? "row-reverse" : "row",
+            },
+          ]}
         >
           {title ? (
             <Text
@@ -49,7 +56,6 @@ const styles = StyleSheet.create({
     marginBottom: 30,
   },
   header: {
-    flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 14,
@@ -58,6 +64,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
   },
   contentPadding: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 32,
   },
 });

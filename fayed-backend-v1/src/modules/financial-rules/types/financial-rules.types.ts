@@ -17,8 +17,12 @@ export type SessionFinancialContext = {
   practitioner: {
     id: string;
     publicSlug: string;
-    sessionPrice30: { toString(): string } | string | null;
-    sessionPrice60: { toString(): string } | string | null;
+    sessionPrice30?: { toString(): string } | string | null;
+    sessionPrice60?: { toString(): string } | string | null;
+    sessionPrice30Egp?: { toString(): string } | string | null;
+    sessionPrice30Usd?: { toString(): string } | string | null;
+    sessionPrice60Egp?: { toString(): string } | string | null;
+    sessionPrice60Usd?: { toString(): string } | string | null;
     countryId: string | null;
     country: {
       currencyCode: string | null;

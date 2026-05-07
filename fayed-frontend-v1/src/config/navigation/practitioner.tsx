@@ -19,6 +19,7 @@ export const practitionerNavigation: NavigationConfig = [
     items: [
       { key: "careChat", icon: <NavigationIcons.support />, path: "/care-chat" },
       { key: "support", icon: <NavigationIcons.chat />, path: "/support" },
+      { key: "helpCenter", icon: <NavigationIcons.page />, path: "/help" },
     ],
   },
   {
@@ -39,6 +40,7 @@ export const practitionerNavigation: NavigationConfig = [
       { key: "profile", icon: <NavigationIcons.auth />, path: "/profile" },
       { key: "specialties", icon: <NavigationIcons.practitioners />, path: "/specialties" },
       { key: "credentials", icon: <NavigationIcons.page />, path: "/credentials" },
+      { key: "packageAvailability", icon: <NavigationIcons.settings />, path: "/settings" },
       { key: "application", icon: <NavigationIcons.operations />, path: "/application" },
     ],
   },

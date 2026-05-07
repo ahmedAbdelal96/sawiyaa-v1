@@ -27,6 +27,7 @@ export class CreateTrainingScheduleUseCase {
   async execute(input: {
     courseId: string;
     payload: CreateTrainingScheduleDto;
+    createdByUserId?: string | null;
   }) {
     const course = await this.trainingRepository.findCourseById(input.courseId);
     if (!course) {
@@ -52,6 +53,8 @@ export class CreateTrainingScheduleUseCase {
       enrollmentCloseAt,
       startsAt,
       endsAt,
+      plannedDurationDays: input.payload.plannedDurationDays ?? null,
+      plannedLectureCount: input.payload.plannedLectureCount ?? null,
       maxEnrollmentsOverride: input.payload.maxEnrollmentsOverride ?? null,
       status,
       externalRoomProvider: input.payload.externalRoomProvider?.trim() ?? null,
@@ -65,11 +68,14 @@ export class CreateTrainingScheduleUseCase {
           scheduleCode:
             input.payload.scheduleCode?.trim() ||
             `sch-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`,
+          createdByUserId: input.createdByUserId ?? null,
           status,
           enrollmentOpenAt,
           enrollmentCloseAt,
           startsAt,
           endsAt,
+          plannedDurationDays: input.payload.plannedDurationDays ?? null,
+          plannedLectureCount: input.payload.plannedLectureCount ?? null,
           timezone: input.payload.timezone?.trim() || TRAINING_DEFAULT_TIMEZONE,
           maxEnrollmentsOverride: input.payload.maxEnrollmentsOverride ?? null,
           waitlistEnabled: input.payload.waitlistEnabled ?? false,
@@ -90,6 +96,7 @@ export class CreateTrainingScheduleUseCase {
         schedules: [created],
         defaultCapacity: course.maxEnrollments ?? null,
         enrollmentCountsByScheduleId: { [created.id]: 0 },
+        lectureCountsByScheduleId: { [created.id]: 0 },
       });
 
       return {

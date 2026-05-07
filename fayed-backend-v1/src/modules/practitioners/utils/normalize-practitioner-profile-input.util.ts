@@ -24,6 +24,7 @@ export function normalizePractitionerProfileInput(
           ? null
           : input.bio.trim(),
     locale: input.locale?.trim(),
+    acceptsPackage: input.acceptsPackage,
     timezone: input.timezone?.trim(),
     countryCode:
       input.countryCode === undefined

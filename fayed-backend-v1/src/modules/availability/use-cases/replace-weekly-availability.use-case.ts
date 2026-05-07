@@ -8,6 +8,7 @@ import { AvailabilitySlotRepository } from '../repositories/availability-slot.re
 import { ResolvePractitionerTimezoneService } from '../services/resolve-practitioner-timezone.service';
 import { ValidateAvailabilityOverlapService } from '../services/validate-availability-overlap.service';
 import { WEEKDAY_INDEX_TO_ENUM } from '../utils/availability-weekday.util';
+import { WeeklyAvailabilitySlotDraftInput } from '../types/availability.types';
 
 /**
  * Weekly schedule replacement is a full deterministic write.
@@ -29,11 +30,7 @@ export class ReplaceWeeklyAvailabilityUseCase {
     userId: string;
     locale: SupportedLocale;
     timezone: string;
-    slots: Array<{
-      dayOfWeek: number;
-      startMinuteOfDay: number;
-      endMinuteOfDay: number;
-    }>;
+    slots: WeeklyAvailabilitySlotDraftInput[];
   }) {
     const practitioner =
       await this.availabilityPractitionerRepository.findByUserId(input.userId);
@@ -46,14 +43,16 @@ export class ReplaceWeeklyAvailabilityUseCase {
     }
 
     this.resolvePractitionerTimezoneService.assertValid(input.timezone);
-    this.validateAvailabilityOverlapService.validateWeeklySlots(input.slots);
+    const normalizedSlots =
+      this.validateAvailabilityOverlapService.validateWeeklySlots(input.slots);
 
     const weeklySlots =
       await this.availabilitySlotRepository.replaceWeeklySlots(
         practitioner.id,
         input.timezone,
-        input.slots.map((slot) => ({
+        normalizedSlots.map((slot) => ({
           weekday: WEEKDAY_INDEX_TO_ENUM[slot.dayOfWeek],
+          durationMinutes: slot.durationMinutes,
           startMinuteOfDay: slot.startMinuteOfDay,
           endMinuteOfDay: slot.endMinuteOfDay,
         })),

@@ -5,6 +5,7 @@ import {
   PaymentRoutingMarket,
 } from '../types/payment-routing.types';
 import { PaymentProviderCapabilitiesService } from './payment-provider-capabilities.service';
+import { PaymentRuntimeConfigService } from './payment-runtime-config.service';
 
 @Injectable()
 export class PaymentProviderResolverService {
@@ -12,6 +13,7 @@ export class PaymentProviderResolverService {
 
   constructor(
     private readonly paymentProviderCapabilitiesService: PaymentProviderCapabilitiesService,
+    private readonly paymentRuntimeConfigService: PaymentRuntimeConfigService,
   ) {}
 
   resolveProvider(context: PaymentRoutingContext): PaymentProvider {
@@ -38,8 +40,21 @@ export class PaymentProviderResolverService {
       currencyCode: normalizedCurrency,
       operatingCountryIsoCode: normalizedOperatingCountry,
     });
+    const routing = this.paymentRuntimeConfigService.getPaymentRoutingConfig();
+    const orderedProviders = this.orderProvidersByRoutingPreference([
+      provider,
+    ], routing);
 
-    this.paymentProviderCapabilitiesService.assertAvailable(provider);
+    for (const candidate of orderedProviders) {
+      try {
+        this.paymentProviderCapabilitiesService.assertAvailable(candidate, context);
+        return candidate;
+      } catch {
+        continue;
+      }
+    }
+
+    this.paymentProviderCapabilitiesService.assertAvailable(provider, context);
 
     return provider;
   }
@@ -100,20 +115,11 @@ export class PaymentProviderResolverService {
     currencyCode: string;
     operatingCountryIsoCode: string | null;
   }): PaymentProvider {
-    if (input.market === 'EGYPT_LOCAL' && input.currencyCode === 'EGP') {
+    if (input.currencyCode === 'EGP') {
       return PaymentProvider.PAYMOB;
     }
 
-    if (input.market === 'INTERNATIONAL' && input.currencyCode === 'USD') {
-      return PaymentProvider.STRIPE;
-    }
-
-    if (
-      input.currencyCode === 'USD' &&
-      input.operatingCountryIsoCode &&
-      input.operatingCountryIsoCode !==
-        PaymentProviderResolverService.EGYPT_ISO_CODE
-    ) {
+    if (input.currencyCode === 'USD') {
       return PaymentProvider.STRIPE;
     }
 
@@ -125,5 +131,23 @@ export class PaymentProviderResolverService {
         currencyCode: input.currencyCode,
       },
     });
+  }
+
+  private orderProvidersByRoutingPreference(
+    candidates: PaymentProvider[],
+    routing: ReturnType<PaymentRuntimeConfigService['getPaymentRoutingConfig']>,
+  ): PaymentProvider[] {
+    const priority = routing.priorityOrder;
+    const fallback = routing.fallbackProvider ? [routing.fallbackProvider] : [];
+    const preferred = routing.defaultProvider ? [routing.defaultProvider] : [];
+
+    return Array.from(
+      new Set([
+        ...preferred,
+        ...fallback,
+        ...priority,
+        ...candidates,
+      ]),
+    ).filter((provider) => candidates.includes(provider));
   }
 }

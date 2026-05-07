@@ -16,7 +16,6 @@ export class PractitionerApplicationEligibilityPolicy {
     reason:
       | 'READINESS_NOT_MET'
       | 'APPLICATION_ALREADY_SUBMITTED'
-      | 'APPLICATION_ALREADY_APPROVED'
       | null;
   } {
     if (!input.readiness.canSubmitApplication) {
@@ -35,15 +34,6 @@ export class PractitionerApplicationEligibilityPolicy {
       return {
         canSubmit: false,
         reason: 'APPLICATION_ALREADY_SUBMITTED',
-      };
-    }
-
-    if (
-      input.latestApplicationStatus === PractitionerApplicationStatus.APPROVED
-    ) {
-      return {
-        canSubmit: false,
-        reason: 'APPLICATION_ALREADY_APPROVED',
       };
     }
 

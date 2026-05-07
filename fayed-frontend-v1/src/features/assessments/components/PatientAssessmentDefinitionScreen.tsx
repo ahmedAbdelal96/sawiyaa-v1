@@ -112,8 +112,8 @@ export default function PatientAssessmentDefinitionScreen({
 
   if (hasUnsupportedQuestions) {
     return (
-      <div className="mx-auto max-w-3xl">
-        <div className="app-panel rounded-[32px] p-6 sm:p-7">
+      <div className="mx-auto max-w-5xl">
+        <div className="app-panel rounded-[28px] p-5 sm:p-6">
           <div className="flex items-start gap-3">
             <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary-light text-primary dark:bg-primary/15 dark:text-primary-light">
               <AlertCircle className="h-5 w-5" />
@@ -140,58 +140,73 @@ export default function PatientAssessmentDefinitionScreen({
 
   if (!started) {
     return (
-      <div className="mx-auto max-w-3xl space-y-5 sm:space-y-6">
-        <section className="app-panel rounded-[32px] p-5 sm:p-7">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div className="max-w-2xl">
+      <div className="mx-auto max-w-5xl space-y-4 sm:space-y-5">
+        <section className="app-panel rounded-[28px] p-5 sm:p-6">
+          <div className="grid gap-5 lg:grid-cols-[minmax(0,1.35fr)_minmax(280px,0.85fr)] lg:items-start">
+            <div className="min-w-0">
               <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-primary">
                 {t("detail.eyebrow")}
               </p>
               <h1 className="text-2xl font-semibold tracking-tight text-text-primary dark:text-white/95 sm:text-3xl">
                 {item.title}
               </h1>
-              <p className="mt-3 text-sm leading-6 text-text-secondary sm:text-base">
+              <p className="mt-3 max-w-2xl text-sm leading-6 text-text-secondary sm:text-base">
                 {item.introText ?? item.description ?? t("detail.note")}
               </p>
-            </div>
 
-            <div className="app-panel-soft rounded-2xl px-4 py-3 text-sm text-text-secondary">
-              <div className="flex items-center gap-2 text-text-primary dark:text-white/90">
-                <ShieldCheck className="h-4 w-4 text-primary" />
-                <span className="font-medium">{t("detail.trustTitle")}</span>
+              <div className="mt-4 flex flex-wrap gap-2.5">
+                <span className="app-chip rounded-full px-3 py-1.5 text-xs font-medium">
+                  {item.category}
+                </span>
+                {item.estimatedDurationMinutes !== null && (
+                  <span className="app-chip rounded-full px-3 py-1.5 text-xs font-medium">
+                    {t("detail.meta.duration", { value: item.estimatedDurationMinutes })}
+                  </span>
+                )}
+                <span className="app-chip rounded-full px-3 py-1.5 text-xs font-medium">
+                  {t("detail.meta.questionCount", { value: questions.length })}
+                </span>
               </div>
-              <p className="mt-1 max-w-xs text-xs leading-5 text-text-muted">
-                {t("detail.trustNote")}
-              </p>
             </div>
-          </div>
 
-          <div className="mt-5 flex flex-wrap gap-2.5">
-            <span className="app-chip rounded-full px-3 py-1.5 text-xs font-medium">
-              {item.category}
-            </span>
-            {item.estimatedDurationMinutes !== null && (
-              <span className="app-chip rounded-full px-3 py-1.5 text-xs font-medium">
-                {t("detail.meta.duration", { value: item.estimatedDurationMinutes })}
-              </span>
-            )}
-            <span className="app-chip rounded-full px-3 py-1.5 text-xs font-medium">
-              {t("detail.meta.questionCount", { value: questions.length })}
-            </span>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
+              <div className="app-panel-soft rounded-[24px] px-4 py-4 text-sm text-text-secondary">
+                <div className="flex items-center gap-2 text-text-primary dark:text-white/90">
+                  <ShieldCheck className="h-4 w-4 text-primary" />
+                  <span className="font-medium">{t("detail.trustTitle")}</span>
+                </div>
+                <p className="mt-1 text-xs leading-5 text-text-muted">
+                  {t("detail.trustNote")}
+                </p>
+              </div>
+
+              <div className="app-panel-soft rounded-[24px] px-4 py-4 text-sm text-text-secondary">
+                <p className="text-xs font-medium uppercase tracking-[0.16em] text-text-muted">
+                  {t("detail.meta.questionCount", { value: questions.length })}
+                </p>
+                <p className="mt-2 text-sm leading-6 text-text-primary dark:text-white/90">
+                  {t("detail.note")}
+                </p>
+                <div className="mt-3 flex items-center gap-2 text-xs text-text-muted">
+                  <span className="inline-flex h-2 w-2 rounded-full bg-primary" />
+                  <span>{item.estimatedDurationMinutes !== null ? t("detail.meta.duration", { value: item.estimatedDurationMinutes }) : t("detail.optional")}</span>
+                </div>
+              </div>
+            </div>
           </div>
         </section>
 
-        <section className="app-panel rounded-[32px] p-5 sm:p-7">
+        <section className="app-panel rounded-[28px] p-5 sm:p-6">
           <h2 className="text-lg font-semibold text-text-primary dark:text-white/95">
             {t("detail.beforeYouBegin.heading")}
           </h2>
-          <div className="mt-4 space-y-3">
+          <div className="mt-4 grid gap-3 md:grid-cols-3">
             {[
               t("detail.beforeYouBegin.first"),
               t("detail.beforeYouBegin.second"),
               t("detail.beforeYouBegin.third"),
             ].map((note) => (
-              <div key={note} className="app-panel-soft rounded-[24px] p-4">
+              <div key={note} className="app-panel-soft rounded-[22px] p-4">
                 <p className="text-sm leading-6 text-text-secondary">{note}</p>
               </div>
             ))}
@@ -220,8 +235,8 @@ export default function PatientAssessmentDefinitionScreen({
   const progress = buildProgress(currentIndex, questions.length);
 
   return (
-    <div className="mx-auto max-w-3xl space-y-5 sm:space-y-6">
-      <section className="app-panel rounded-[32px] p-5 sm:p-7">
+    <div className="mx-auto max-w-5xl space-y-4 sm:space-y-5">
+      <section className="app-panel rounded-[28px] p-5 sm:p-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">
@@ -246,68 +261,103 @@ export default function PatientAssessmentDefinitionScreen({
         </div>
       </section>
 
-      <section className="app-panel rounded-[32px] p-5 sm:p-7">
-        <div className="flex items-start justify-between gap-3">
-          <div className="max-w-2xl">
-            <h2 className="text-xl font-semibold text-text-primary dark:text-white/95">
-              {currentQuestion.prompt}
-            </h2>
-            {currentQuestion.description && (
-              <p className="mt-2 text-sm leading-6 text-text-secondary">
-                {currentQuestion.description}
-              </p>
+      <section className="app-panel rounded-[28px] p-5 sm:p-6">
+        <div className="grid gap-5 lg:grid-cols-[minmax(0,1.25fr)_minmax(280px,0.75fr)] lg:items-start">
+          <div className="min-w-0">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <h2 className="text-xl font-semibold text-text-primary dark:text-white/95">
+                  {currentQuestion.prompt}
+                </h2>
+                {currentQuestion.description && (
+                  <p className="mt-2 max-w-2xl text-sm leading-6 text-text-secondary">
+                    {currentQuestion.description}
+                  </p>
+                )}
+              </div>
+              {!currentQuestion.isRequired && (
+                <span className="app-chip rounded-full px-3 py-1 text-xs font-medium">
+                  {t("detail.optional")}
+                </span>
+              )}
+            </div>
+
+            <fieldset className="mt-4">
+              <legend className="sr-only">{currentQuestion.prompt}</legend>
+              <div className="grid gap-3 md:grid-cols-2">
+                {currentQuestion.options.map((option) => {
+                  const checked = answers[currentQuestion.key] === option.key;
+                  return (
+                    <label
+                      key={option.key}
+                      className={`flex min-h-[92px] cursor-pointer items-start gap-3 rounded-[22px] border px-4 py-3 transition ${
+                        checked
+                          ? "border-primary/25 bg-primary-light shadow-[0_8px_24px_-20px_rgba(24,143,141,0.35)]"
+                          : "border-border-light bg-white/80 hover:border-primary/20 hover:bg-surface-secondary dark:bg-white/5"
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name={currentQuestion.key}
+                        value={option.key}
+                        checked={checked}
+                        onChange={() => setAnswer(currentQuestion.key, option.key)}
+                        className="mt-1 h-4 w-4 shrink-0 accent-primary"
+                      />
+                      <span className="min-w-0 text-sm leading-6 text-text-primary dark:text-white/90">
+                        {option.label}
+                      </span>
+                    </label>
+                  );
+                })}
+              </div>
+            </fieldset>
+
+            {stepError && (
+              <div className="mt-4 rounded-2xl border border-accent/20 bg-accent/10 px-4 py-3 text-sm text-text-primary dark:text-white/90">
+                {stepError}
+              </div>
+            )}
+
+            {submitError && (
+              <div className="mt-4 rounded-2xl border border-accent/20 bg-accent/10 px-4 py-3 text-sm text-text-primary dark:text-white/90">
+                {submitError}
+              </div>
             )}
           </div>
-          {!currentQuestion.isRequired && (
-            <span className="app-chip rounded-full px-3 py-1 text-xs font-medium">
-              {t("detail.optional")}
-            </span>
-          )}
+
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
+            <div className="app-panel-soft rounded-[22px] px-4 py-4">
+              <p className="text-xs font-medium uppercase tracking-[0.16em] text-text-muted">
+                {t("detail.flow.progressLabel", {
+                  current: currentIndex + 1,
+                  total: questions.length,
+                })}
+              </p>
+              <p className="mt-2 text-sm font-medium text-text-primary dark:text-white/90">
+                {t("detail.meta.questionCount", { value: questions.length })}
+              </p>
+              <p className="mt-1 text-sm leading-6 text-text-secondary">
+                {t("detail.flow.footerNote")}
+              </p>
+            </div>
+
+            <div className="app-panel-soft rounded-[22px] px-4 py-4">
+              <p className="text-xs font-medium uppercase tracking-[0.16em] text-text-muted">
+                {t("detail.meta.duration", { value: item.estimatedDurationMinutes ?? 0 })}
+              </p>
+              <p className="mt-2 text-sm font-medium text-text-primary dark:text-white/90">
+                {item.category}
+              </p>
+              <p className="mt-1 text-sm leading-6 text-text-secondary">
+                {currentQuestion.isRequired ? t("detail.required") : t("detail.optional")}
+              </p>
+            </div>
+          </div>
         </div>
-
-        <fieldset className="mt-5 space-y-3">
-          <legend className="sr-only">{currentQuestion.prompt}</legend>
-          {currentQuestion.options.map((option) => {
-            const checked = answers[currentQuestion.key] === option.key;
-            return (
-              <label
-                key={option.key}
-                className={`flex cursor-pointer items-start gap-3 rounded-[24px] border p-4 transition ${
-                  checked
-                    ? "border-primary/25 bg-primary-light"
-                    : "border-border-light bg-white/80 hover:border-primary/20 hover:bg-surface-secondary dark:bg-white/5"
-                }`}
-              >
-                <input
-                  type="radio"
-                  name={currentQuestion.key}
-                  value={option.key}
-                  checked={checked}
-                  onChange={() => setAnswer(currentQuestion.key, option.key)}
-                  className="mt-1 h-4 w-4 shrink-0 accent-primary"
-                />
-                <span className="min-w-0 text-sm leading-6 text-text-primary dark:text-white/90">
-                  {option.label}
-                </span>
-              </label>
-            );
-          })}
-        </fieldset>
-
-        {stepError && (
-          <div className="mt-4 rounded-2xl border border-accent/20 bg-accent/10 px-4 py-3 text-sm text-text-primary dark:text-white/90">
-            {stepError}
-          </div>
-        )}
-
-        {submitError && (
-          <div className="mt-4 rounded-2xl border border-accent/20 bg-accent/10 px-4 py-3 text-sm text-text-primary dark:text-white/90">
-            {submitError}
-          </div>
-        )}
       </section>
 
-      <div className="app-panel sticky bottom-20 rounded-[28px] p-4 sm:bottom-6 sm:p-5">
+      <div className="app-panel sticky bottom-20 rounded-[24px] p-4 sm:bottom-6 sm:p-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-sm text-text-secondary">{t("detail.flow.footerNote")}</p>
           <div className="flex flex-wrap gap-3">

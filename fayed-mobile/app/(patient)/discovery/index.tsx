@@ -285,11 +285,11 @@ export default function DiscoveryListScreen() {
 const styles = StyleSheet.create({
   searchContainer: {
     paddingHorizontal: 20,
-    paddingTop: 14,
-    paddingBottom: 14,
+    paddingTop: 20,
+    paddingBottom: 20,
   },
   introBlock: {
-    marginBottom: 14,
+    marginBottom: 18,
   },
   introTitle: {
     fontSize: 40,
@@ -342,8 +342,8 @@ const styles = StyleSheet.create({
     fontSize: 11,
   },
   listContent: {
-    paddingHorizontal: 20,
-    paddingBottom: 128,
+    paddingHorizontal: 24,
+    paddingBottom: 136,
   },
   resultsCount: {
     fontSize: 14,

@@ -35,6 +35,7 @@ export class PatientJourneyMapper {
       currencyCode: string;
       sessionId: string | null;
       createdAt: Date;
+      expiredAt: Date | null;
     } | null;
     pendingInstantBookingRequest: {
       id: string;
@@ -139,6 +140,7 @@ export class PatientJourneyMapper {
               currency: input.pendingPayment.currencyCode,
               sessionId: input.pendingPayment.sessionId ?? null,
               createdAt: input.pendingPayment.createdAt.toISOString(),
+              expiredAt: input.pendingPayment.expiredAt?.toISOString() ?? null,
             }
           : null,
         instantBookingRequest: input.pendingInstantBookingRequest

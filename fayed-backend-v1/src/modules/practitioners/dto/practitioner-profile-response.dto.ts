@@ -7,6 +7,22 @@ import {
 } from '@prisma/client';
 import { PractitionerPayoutDestinationResponseDto } from './practitioner-payout-destination.dto';
 
+export class PractitionerPricingCurrencyResponseDto {
+  @ApiProperty({ nullable: true })
+  egp!: number | null;
+
+  @ApiProperty({ nullable: true })
+  usd!: number | null;
+}
+
+export class PractitionerPricingResponseDto {
+  @ApiProperty({ type: PractitionerPricingCurrencyResponseDto })
+  session30!: PractitionerPricingCurrencyResponseDto;
+
+  @ApiProperty({ type: PractitionerPricingCurrencyResponseDto })
+  session60!: PractitionerPricingCurrencyResponseDto;
+}
+
 export class PractitionerSpecialtyResponseDto {
   @ApiProperty()
   specialtyId!: string;
@@ -106,6 +122,12 @@ export class PractitionerProfileResponseDto {
 
   @ApiProperty({ nullable: true })
   primarySpecialtyCategoryId!: string | null;
+
+  @ApiProperty()
+  acceptsPackage!: boolean;
+
+  @ApiProperty({ type: PractitionerPricingResponseDto })
+  pricing!: PractitionerPricingResponseDto;
 
   @ApiProperty({
     type: PractitionerPayoutDestinationResponseDto,

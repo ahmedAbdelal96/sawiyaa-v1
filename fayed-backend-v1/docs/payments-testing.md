@@ -101,7 +101,57 @@ If verification fails, webhook is rejected safely with machine-readable errors. 
    - webhook HMAC validation passes
    - lifecycle updates are idempotent on retries
 
-## 6) Success/failure verification checklist
+## 6) Mobile hosted-checkout real-device validation
+
+This is the remaining production-confidence step for patient mobile session payments.
+
+Explicit state:
+
+- mobile payment parity = implemented
+- native hardening in code = implemented
+- Stripe mobile support = still not implemented
+- final production confidence = still requires real-device hosted-checkout validation
+
+Guardrails:
+
+- Do not reopen the hardening code unless a real device bug appears.
+- Treat backend session/payment state as the final truth after app return.
+- Do not mark Stripe as supported on mobile unless a native SDK-backed implementation is added and validated.
+
+Required setup:
+
+1. Install the mobile app on a physical device with the `fayed` app scheme available.
+2. Point the mobile app to a reachable backend environment using Paymob sandbox/test credentials.
+3. Ensure the backend can generate a hosted checkout URL and accept webhook callbacks from a public test endpoint.
+4. Verify the mobile initiate request sends a native `returnUrl` and the backend uses it for Paymob redirect handling.
+
+Required real-device scenarios:
+
+1. Success path:
+   - start session payment from mobile
+   - complete hosted checkout successfully
+   - confirm provider returns into the app
+   - confirm mobile recovery/reconcile resolves to confirmed backend payment/session state
+2. Failure path:
+   - complete hosted checkout with a provider-declared failure
+   - confirm app return does not imply success
+   - confirm final state remains backend-truth failed/unconfirmed
+3. Browser dismissal path:
+   - open hosted checkout and manually close or dismiss the browser
+   - confirm app shows recovery behavior only
+   - confirm no false success state is shown
+4. Delayed confirmation path:
+   - simulate or observe a path where webhook confirmation lands after app return
+   - confirm polling/recovery converges on backend truth without duplicate side effects
+
+Evidence to capture:
+
+1. Device screen recording or screenshots for each scenario.
+2. Initiate API payload/response showing hosted checkout URL and native return URL usage.
+3. Backend logs or payment records showing reconcile/webhook outcome.
+4. Final session/payment states after each scenario.
+
+## 7) Success/failure verification checklist
 
 - Success path:
   - Payment becomes `CAPTURED`
@@ -115,7 +165,7 @@ If verification fails, webhook is rejected safely with machine-readable errors. 
 - Duplicate webhook path:
   - no duplicate side effects
 
-## 7) Switching to production later
+## 8) Switching to production later
 
 Change env values only:
 

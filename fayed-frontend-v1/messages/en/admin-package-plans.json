@@ -1,0 +1,192 @@
+{
+  "meta": {
+    "listTitle": "Package plans - Admin",
+    "listDescription": "Manage the standardized package plans, their availability, and global package settings.",
+    "detailTitle": "Package plan detail - Admin",
+    "detailDescription": "Inspect and edit safe display fields for a standardized package plan.",
+    "settingsTitle": "Package settings - Admin",
+    "settingsDescription": "Manage the global package feature switches for patient-facing package purchases."
+  },
+  "page": {
+    "eyebrow": "Admin package plans",
+    "title": "Package plans",
+    "description": "Standardized plans are managed centrally and apply across the platform."
+  },
+  "notice": {
+    "heading": "Important boundary",
+    "note": "Disabling a plan only affects new quotes and new purchases. Existing purchases and linked sessions stay valid."
+  },
+  "summary": {
+    "total": "Total plans",
+    "active": "Active",
+    "inactive": "Inactive",
+    "purchases": "Package purchases"
+  },
+  "list": {
+    "tableHeading": "Standardized package plans",
+    "tableNote": "These are the three platform-wide package tiers available to patients.",
+    "columns": {
+      "code": "Code",
+      "title": "Plan",
+      "sessionCount": "Sessions",
+      "discountPercent": "Discount",
+      "status": "Status",
+      "sortOrder": "Sort order"
+    },
+    "codeHint": "{purchases, plural, one {# purchase} other {# purchases}}",
+    "statusHint": {
+      "active": "Visible to public package quotes and purchases.",
+      "inactive": "Hidden from public package quotes and purchases."
+    },
+    "feedback": {
+      "enableSuccess": "The plan was enabled.",
+      "disableSuccess": "The plan was disabled.",
+      "enableError": "Could not enable the plan right now.",
+      "disableError": "Could not disable the plan right now."
+    }
+  },
+  "settings": {
+    "eyebrow": "Global package settings",
+    "title": "Feature switches",
+    "description": "These settings control whether the package feature is visible and whether patients can buy packages.",
+    "note": "Use these switches with care. Disabling purchases blocks new package checkouts, but it does not change existing purchases.",
+    "status": {
+      "enabled": "Feature on",
+      "disabled": "Feature off"
+    },
+    "purchaseStatus": {
+      "enabled": "Purchases on",
+      "disabled": "Purchases off"
+    },
+    "fields": {
+      "packagesEnabled": "Packages enabled",
+      "packagesEnabledNote": "Controls whether the standardized package feature is available in the platform UI and APIs.",
+      "packagesPurchaseEnabled": "Package purchases enabled",
+      "packagesPurchaseEnabledNote": "Controls whether patients can start new package purchases."
+    },
+    "save": "Save settings",
+    "saving": "Saving settings...",
+    "feedback": {
+      "saveSuccess": "Package settings were updated.",
+      "saveError": "Could not update package settings right now."
+    }
+  },
+  "detail": {
+    "eyebrow": "Package plan detail",
+    "description": "Review the immutable plan rules and update only the safe display fields.",
+    "back": "Back to package plans",
+    "summary": {
+      "code": "Code",
+      "codeHint": "Read-only tier key",
+      "sessionCount": "Sessions",
+      "sessionCountHint": "Read-only package length",
+      "discountPercent": "Discount",
+      "discountPercentHint": "Read-only tier discount",
+      "purchaseCount": "Purchases",
+      "purchaseCountHint": "How many package purchases used this plan"
+    },
+    "sections": {
+      "immutable": "Immutable fields",
+      "overview": "Overview",
+      "overviewNote": "The code, session count, and discount are read-only for this standardized package tier.",
+      "description": "Description",
+      "settings": "Package settings"
+    },
+    "fields": {
+      "code": "Code",
+      "sessionCount": "Session count",
+      "discountPercent": "Discount percent",
+      "status": "Status",
+      "createdAt": "Created at",
+      "updatedAt": "Updated at",
+      "archivedAt": "Archived at",
+      "purchaseCount": "Purchase count",
+      "notAvailable": "Not available",
+      "title": "Title",
+      "titlePlaceholder": "Plan title",
+      "description": "Description",
+      "descriptionPlaceholder": "Optional public description",
+      "sortOrder": "Sort order",
+      "isActive": "Active",
+      "isActiveNote": "Toggles whether the plan is available for new quotes and purchases."
+    },
+    "actions": {
+      "heading": "Plan actions",
+      "edit": "Edit plan",
+      "enable": "Enable",
+      "disable": "Disable",
+      "activeNote": "This plan is active and available for new quotes and purchases.",
+      "inactiveNote": "This plan is inactive and hidden from new public quotes and purchases."
+    },
+    "modal": {
+      "eyebrow": "Edit package plan",
+      "title": "Update safe display fields",
+      "description": "You can update the title, description, sort order, and active state. The tier code, session count, and discount stay immutable.",
+      "save": "Save changes",
+      "saving": "Saving changes...",
+      "cancel": "Cancel"
+    },
+    "confirm": {
+      "cancel": "Cancel",
+      "enable": {
+        "title": "Enable this package plan?",
+        "note": "Enabling makes this plan available again for new public quotes and purchases.",
+        "body": "This will not change historical package purchases or linked sessions.",
+        "confirm": "Enable plan",
+        "submitting": "Enabling..."
+      },
+      "disable": {
+        "title": "Disable this package plan?",
+        "note": "Disabling hides this plan from new public quotes and purchases.",
+        "body": "Existing package purchases remain valid and are not removed.",
+        "confirm": "Disable plan",
+        "submitting": "Disabling..."
+      }
+    },
+    "feedback": {
+      "updateSuccess": "The package plan was updated.",
+      "updateError": "Could not update the package plan right now.",
+      "enableSuccess": "The package plan was enabled.",
+      "enableError": "Could not enable the package plan right now.",
+      "disableSuccess": "The package plan was disabled.",
+      "disableError": "Could not disable the package plan right now."
+    },
+    "boundary": {
+      "heading": "Scope boundary",
+      "items": {
+        "quotes": "Disabled plans are rejected by new public quotes.",
+        "purchases": "Disabled plans are rejected by new purchases.",
+        "history": "Existing purchases, payments, and linked sessions remain unchanged."
+      }
+    }
+  },
+  "states": {
+    "error": {
+      "heading": "Package plans are not available right now",
+      "note": "Could not load the package plans surface.",
+      "retry": "Try again"
+    },
+    "notFound": {
+      "heading": "Package plan was not found",
+      "note": "We could not find a standardized package plan with this code."
+    },
+    "empty": {
+      "heading": "No package plans found",
+      "note": "The backend returned no standardized package plans. There should normally be three plans."
+    }
+  },
+  "badges": {
+    "active": "Active",
+    "inactive": "Inactive"
+  },
+  "actions": {
+    "view": "View details",
+    "enable": "Enable",
+    "disable": "Disable",
+    "enabling": "Enabling...",
+    "disabling": "Disabling..."
+  },
+  "common": {
+    "noDescription": "No description provided"
+  }
+}

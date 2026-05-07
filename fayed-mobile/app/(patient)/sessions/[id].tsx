@@ -264,7 +264,7 @@ export default function SessionDetailScreen() {
           }
           onPress={() => {
             if (needsPayment) {
-              router.push(`/sessions/${session.id}/pay`);
+              router.push(`/(patient)/sessions/${session.id}/pay`);
               return;
             }
             handleJoin();
@@ -277,7 +277,9 @@ export default function SessionDetailScreen() {
 
         <Button
           title={t("patientSessionsFlow.detail.viewCancellation")}
-          onPress={() => router.push(`/sessions/${session.id}/cancel-preview`)}
+          onPress={() =>
+            router.push(`/(patient)/sessions/${session.id}/cancel-preview`)
+          }
           variant="secondary"
           disabled={!cancellationEligible}
           style={styles.secondaryAction}

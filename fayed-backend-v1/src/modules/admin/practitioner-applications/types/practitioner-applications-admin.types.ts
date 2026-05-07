@@ -13,6 +13,17 @@ import {
  * Shared read-model types for admin practitioner application review.
  * Keeping them centralized avoids response-shape drift across use cases and mappers.
  */
+export enum AdminPractitionerApplicationKind {
+  NEW_APPLICATION = 'NEW_APPLICATION',
+  EDIT_REQUEST = 'EDIT_REQUEST',
+}
+
+export enum AdminPractitionerApplicationListView {
+  ACTIVE = 'ACTIVE',
+  HISTORY = 'HISTORY',
+  ALL = 'ALL',
+}
+
 export interface AdminPractitionerApplicationListItemViewModel {
   applicationId: string;
   practitionerProfileId: string;
@@ -20,6 +31,7 @@ export interface AdminPractitionerApplicationListItemViewModel {
   displayName: string | null;
   practitionerType: PractitionerType;
   countryCode: string | null;
+  applicationKind: AdminPractitionerApplicationKind;
   mainSpecialty: {
     specialtyId: string;
     slug: string;
@@ -30,8 +42,38 @@ export interface AdminPractitionerApplicationListItemViewModel {
   updatedAt: Date;
 }
 
+export interface AdminPractitionerApplicationSummaryViewModel {
+  total: number;
+  newApplications: number;
+  editRequests: number;
+  activeApplications: number;
+  submittedApplications: number;
+  underReviewApplications: number;
+  changesRequestedApplications: number;
+  approvedApplications: number;
+  rejectedApplications: number;
+  archivedApplications: number;
+}
+
 export interface AdminPractitionerApplicationDetailsViewModel {
   applicant: {
+    userId: string;
+    practitionerProfileId: string;
+    displayName: string | null;
+    accountStatus: UserStatus;
+    email: {
+      address: string | null;
+      isVerified: boolean;
+    };
+    phone: {
+      number: string | null;
+      isVerified: boolean;
+    };
+    locale: string | null;
+    timezone: string | null;
+    countryCode: string | null;
+  };
+  liveApplicant: {
     userId: string;
     practitionerProfileId: string;
     displayName: string | null;
@@ -56,6 +98,42 @@ export interface AdminPractitionerApplicationDetailsViewModel {
     bio: string | null;
     yearsOfExperience: number | null;
     primarySpecialtyCategoryId: string | null;
+    pricing: {
+      session30: {
+        egp: number | null;
+        usd: number | null;
+      };
+      session60: {
+        egp: number | null;
+        usd: number | null;
+      };
+    };
+    languages: string[];
+    specialties: Array<{
+      specialtyId: string;
+      slug: string;
+      title: string | null;
+      isPrimary: boolean;
+    }>;
+  };
+  liveProfile: {
+    practitionerType: PractitionerType;
+    practitionerGender: PractitionerGender | null;
+    profileStatus: PractitionerStatus;
+    professionalTitle: string | null;
+    bio: string | null;
+    yearsOfExperience: number | null;
+    primarySpecialtyCategoryId: string | null;
+    pricing: {
+      session30: {
+        egp: number | null;
+        usd: number | null;
+      };
+      session60: {
+        egp: number | null;
+        usd: number | null;
+      };
+    };
     languages: string[];
     specialties: Array<{
       specialtyId: string;
@@ -76,6 +154,16 @@ export interface AdminPractitionerApplicationDetailsViewModel {
     reviewNotes: string | null;
   }>;
   payoutDestination: {
+    methodType: PractitionerPayoutMethodType | null;
+    accountHolderName: string | null;
+    bankName: string | null;
+    bankAccountNumber: string | null;
+    iban: string | null;
+    walletProvider: string | null;
+    walletIdentifier: string | null;
+    otherDetails: string | null;
+  } | null;
+  livePayoutDestination: {
     methodType: PractitionerPayoutMethodType | null;
     accountHolderName: string | null;
     bankName: string | null;

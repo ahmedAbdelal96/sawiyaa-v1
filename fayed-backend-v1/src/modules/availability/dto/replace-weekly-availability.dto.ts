@@ -3,13 +3,16 @@ import { Type } from 'class-transformer';
 import {
   ArrayMaxSize,
   IsArray,
+  IsIn,
   IsInt,
+  IsOptional,
   IsString,
   Max,
   MaxLength,
   Min,
   ValidateNested,
 } from 'class-validator';
+import { WeeklyAvailabilityDurationMinutes } from '../types/availability.types';
 
 /**
  * Weekly schedule replacement is full-state, not patch-based.
@@ -25,6 +28,17 @@ export class WeeklyAvailabilitySlotInputDto {
   @Min(0)
   @Max(6)
   dayOfWeek!: number;
+
+  @ApiProperty({
+    enum: [30, 60],
+    default: 30,
+    required: false,
+    description: 'Booking duration in minutes for this recurring slot',
+  })
+  @IsOptional()
+  @IsInt()
+  @IsIn([30, 60])
+  durationMinutes?: WeeklyAvailabilityDurationMinutes;
 
   @ApiProperty({
     minimum: 0,

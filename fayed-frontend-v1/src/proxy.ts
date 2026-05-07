@@ -51,6 +51,10 @@ function localizedPath(locale: string, pathWithoutLocale: string): string {
   return `/${locale}${pathWithoutLocale}`;
 }
 
+function isPublicPaymentReturnRoute(pathWithoutLocale: string): boolean {
+  return /^\/patient\/sessions\/[^/]+\/payment-return$/.test(pathWithoutLocale);
+}
+
 function parseRoleFromUserDataCookie(rawValue: string | undefined): AppRole | null {
   if (!rawValue) return null;
 
@@ -124,6 +128,10 @@ export default async function middleware(request: NextRequest): Promise<NextResp
   const locale = getCurrentLocale(pathname);
   const pathWithoutLocale = getPathWithoutLocale(pathname);
   const canonicalPath = normalizeToCanonicalPath(pathWithoutLocale);
+
+  if (isPublicPaymentReturnRoute(canonicalPath)) {
+    return intlMiddleware(request);
+  }
 
   if (canonicalPath !== pathWithoutLocale) {
     const redirectUrl = new URL(localizedPath(locale, canonicalPath), request.url);

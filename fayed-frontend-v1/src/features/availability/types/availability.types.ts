@@ -12,6 +12,7 @@ export type WeeklyAvailabilitySlot = {
   id: string;
   dayOfWeek: number;
   weekday: string;
+  durationMinutes: 30 | 60;
   startMinuteOfDay: number;
   endMinuteOfDay: number;
   timezone: string;
@@ -48,6 +49,7 @@ export type ReplaceWeeklyAvailabilityInput = {
   timezone: string;
   slots: {
     dayOfWeek: number;
+    durationMinutes: 30 | 60;
     startMinuteOfDay: number;
     endMinuteOfDay: number;
   }[];

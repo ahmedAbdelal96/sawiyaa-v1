@@ -3,6 +3,7 @@ import {
   Controller,
   Get,
   Param,
+  Req,
   Post,
   Query,
   UseGuards,
@@ -20,6 +21,7 @@ import {
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
+import { Request } from 'express';
 import { RequireAccountStates } from '@common/decorators/account-state.decorator';
 import { CurrentUser } from '@common/decorators/current-user.decorator';
 import { Roles } from '@common/decorators/roles.decorator';
@@ -36,9 +38,14 @@ import {
   PaymentItemSuccessResponseDto,
   PaymentsListSuccessResponseDto,
 } from '../dto/payment-response.dto';
+import { SessionPaymentCapabilitiesSuccessResponseDto } from '../dto/session-payment-capabilities.dto';
+import { ReconcileSessionPaymentReturnSuccessResponseDto } from '../dto/reconcile-session-payment-return-response.dto';
+import { ReconcileSessionPaymentReturnDto } from '../dto/reconcile-session-payment-return.dto';
+import { GetPatientSessionPaymentCapabilitiesUseCase } from '../use-cases/get-patient-session-payment-capabilities.use-case';
 import { GetPatientPaymentUseCase } from '../use-cases/get-patient-payment.use-case';
 import { InitiateSessionPaymentUseCase } from '../use-cases/initiate-session-payment.use-case';
 import { ListPatientPaymentsUseCase } from '../use-cases/list-patient-payments.use-case';
+import { ReconcileSessionPaymentReturnUseCase } from '../use-cases/reconcile-session-payment-return.use-case';
 
 @ApiTags('Payments')
 @ApiBearerAuth()
@@ -51,6 +58,8 @@ export class PatientPaymentsController {
     private readonly initiateSessionPaymentUseCase: InitiateSessionPaymentUseCase,
     private readonly listPatientPaymentsUseCase: ListPatientPaymentsUseCase,
     private readonly getPatientPaymentUseCase: GetPatientPaymentUseCase,
+    private readonly getPatientSessionPaymentCapabilitiesUseCase: GetPatientSessionPaymentCapabilitiesUseCase,
+    private readonly reconcileSessionPaymentReturnUseCase: ReconcileSessionPaymentReturnUseCase,
   ) {}
 
   @Post('sessions/:id/payments/initiate')
@@ -83,13 +92,51 @@ export class PatientPaymentsController {
     @CurrentLocale() locale: SupportedLocale,
     @Param('id') sessionId: string,
     @Body() body: InitiateSessionPaymentDto,
+    @Req() request: Request,
   ) {
     return this.initiateSessionPaymentUseCase.execute({
       userId: currentUser.id,
       locale,
       sessionId,
+      acceptedRefundPolicyId: body.acceptedRefundPolicyId,
       couponCode: body.couponCode ?? null,
       useWalletBalance: body.useWalletBalance ?? false,
+      paymobMethod: body.paymobMethod ?? null,
+      returnUrl: body.returnUrl ?? null,
+      displayLocale: locale,
+      userAgent:
+        typeof request.headers['user-agent'] === 'string'
+          ? request.headers['user-agent']
+          : null,
+      ipAddress: request.ip ?? null,
+    });
+  }
+
+  @Get('sessions/:id/payments/capabilities')
+  @ApiOperation({
+    summary: 'Get patient session payment capabilities',
+    description:
+      'Returns the currently enabled Paymob checkout methods for the authenticated patient session so the frontend can render a truthful provider-side selector only when needed.',
+  })
+  @ApiParam({ name: 'id', description: 'Session id' })
+  @ApiResponse({
+    status: 200,
+    type: SessionPaymentCapabilitiesSuccessResponseDto,
+  })
+  @ApiUnauthorizedResponse({ description: 'Access token is required' })
+  @ApiForbiddenResponse({
+    description: 'Only active patient accounts may access this route',
+  })
+  @ApiNotFoundResponse({
+    description: 'Patient profile or patient-owned session was not found',
+  })
+  capabilities(
+    @CurrentUser() currentUser: AuthenticatedUser,
+    @Param('id') sessionId: string,
+  ) {
+    return this.getPatientSessionPaymentCapabilitiesUseCase.execute({
+      userId: currentUser.id,
+      sessionId,
     });
   }
 
@@ -138,6 +185,41 @@ export class PatientPaymentsController {
       userId: currentUser.id,
       locale,
       paymentId,
+    });
+  }
+
+  @Post('sessions/:id/payments/reconcile-return')
+  @ApiOperation({
+    summary: 'Reconcile a hosted checkout return for a patient-owned session',
+    description:
+      'Best-effort reconciliation for hosted payment returns. Uses provider return data to finalize a pending payment and confirm the session when the provider webhook is delayed or missing.',
+  })
+  @ApiParam({ name: 'id', description: 'Session id' })
+  @ApiBody({ type: ReconcileSessionPaymentReturnDto })
+  @ApiResponse({
+    status: 200,
+    type: ReconcileSessionPaymentReturnSuccessResponseDto,
+  })
+  @ApiUnauthorizedResponse({ description: 'Access token is required' })
+  @ApiForbiddenResponse({
+    description:
+      'Only active patient accounts may reconcile hosted checkout returns for their own sessions',
+  })
+  @ApiNotFoundResponse({
+    description: 'Patient profile or patient-owned session was not found',
+  })
+  reconcileReturn(
+    @CurrentUser() currentUser: AuthenticatedUser,
+    @Param('id') sessionId: string,
+    @Body() body: ReconcileSessionPaymentReturnDto,
+  ) {
+    return this.reconcileSessionPaymentReturnUseCase.execute({
+      userId: currentUser.id,
+      sessionId,
+      providerReference: body.providerReference ?? null,
+      redirectStatus: body.redirectStatus ?? null,
+      success: body.success ?? null,
+      pending: body.pending ?? null,
     });
   }
 }

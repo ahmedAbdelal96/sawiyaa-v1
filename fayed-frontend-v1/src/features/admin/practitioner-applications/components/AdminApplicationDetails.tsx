@@ -14,6 +14,7 @@ import {
 } from "../hooks/use-practitioner-applications";
 import type { PractitionerApplicationDetailsResponse } from "../types/practitioner-applications.types";
 import { Skeleton } from "@/components/shared/LoadingStates";
+import { cn } from "@/lib/utils";
 import InputField from "@/components/form/input/InputField";
 import TextArea from "@/components/form/input/TextArea";
 import Label from "@/components/form/Label";
@@ -110,6 +111,7 @@ type EditableCredentialForm = {
 };
 
 type Props = { applicationId: string };
+type ReviewTab = "overview" | "compare" | "credentials" | "decision";
 
 function Section({ heading, children }: { heading: string; children: React.ReactNode }) {
   return (
@@ -117,6 +119,32 @@ function Section({ heading, children }: { heading: string; children: React.React
       <h2 className="mb-4 text-sm font-semibold text-gray-700 dark:text-gray-300">{heading}</h2>
       {children}
     </div>
+  );
+}
+
+function ReviewTabButton({
+  active,
+  label,
+  onClick,
+}: {
+  active: boolean;
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-current={active ? "page" : undefined}
+      className={cn(
+        "rounded-full border px-4 py-2 text-sm font-semibold transition",
+        active
+          ? "border-primary/30 bg-primary text-white shadow-[0_14px_28px_-20px_rgba(68,161,148,0.5)]"
+          : "border-gray-200 bg-white text-gray-600 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800",
+      )}
+    >
+      {label}
+    </button>
   );
 }
 
@@ -131,8 +159,99 @@ function Field({ label, value }: { label: string; value: React.ReactNode }) {
   );
 }
 
+function getReadableValue(value: string | number | null | undefined): string {
+  if (value === null || value === undefined) {
+    return "-";
+  }
+  if (typeof value === "string" && value.trim().length === 0) {
+    return "-";
+  }
+  return String(value);
+}
+
+function EditField({
+  label,
+  previousLabel,
+  previousValue,
+  children,
+}: {
+  label: string;
+  previousLabel: string;
+  previousValue: string | number | null | undefined;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <Label>{label}</Label>
+      {children}
+      <p className="text-xs text-gray-500 dark:text-gray-400">
+        <span className="font-medium text-gray-600 dark:text-gray-300">{previousLabel}:</span>{" "}
+        {getReadableValue(previousValue)}
+      </p>
+    </div>
+  );
+}
+
+function formatSpecialtyList(
+  specialties: Array<{ specialtyId: string; slug: string; title: string | null; isPrimary: boolean }>,
+  primaryLabel: string,
+) {
+  if (specialties.length === 0) {
+    return "-";
+  }
+
+  return specialties
+    .map((item) => `${item.title ?? item.slug}${item.isPrimary ? ` (${primaryLabel})` : ""}`)
+    .join(", ");
+}
+
+function normalizeForDiff(value: string | number | null | undefined) {
+  if (value === null || value === undefined) {
+    return "";
+  }
+  return String(value).trim();
+}
+
+function normalizeTextList(values: string[]) {
+  return values
+    .map((value) => value.trim())
+    .filter(Boolean)
+    .sort((left, right) => left.localeCompare(right))
+    .join(" | ");
+}
+
+function formatMoneyValue(value: number | null | undefined, locale: string) {
+  if (value === null || value === undefined) {
+    return "-";
+  }
+
+  try {
+    return new Intl.NumberFormat(locale.startsWith("ar") ? "ar-EG" : "en-GB", {
+      maximumFractionDigits: 2,
+    }).format(value);
+  } catch {
+    return String(value);
+  }
+}
+
 function PayoutValue({ value }: { value: string | null }) {
   return value || "-";
+}
+
+type DraftIssueMap = Partial<Record<keyof EditableDraftForm, string>>;
+
+function normalizeYearsValue(value: string) {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  const years = Number(trimmed);
+  if (!Number.isFinite(years)) {
+    return null;
+  }
+
+  return years;
 }
 
 function createInitialDraftForm(details: PractitionerApplicationDetailsResponse["details"]): EditableDraftForm {
@@ -230,6 +349,8 @@ export default function AdminApplicationDetails({ applicationId }: Props) {
     reviewNotes: "",
     expiresAt: "",
   });
+  const [reviewTab, setReviewTab] = useState<ReviewTab>("overview");
+  const [showAllChanges, setShowAllChanges] = useState(false);
 
   if (isLoading) {
     return (
@@ -270,7 +391,17 @@ export default function AdminApplicationDetails({ applicationId }: Props) {
     );
   }
 
-  const { applicant, profile, credentials, payoutDestination, application, readinessSnapshot } = data.details;
+  const {
+    applicant,
+    profile,
+    liveApplicant,
+    liveProfile,
+    credentials,
+    payoutDestination,
+    livePayoutDestination,
+    application,
+    readinessSnapshot,
+  } = data.details;
   const effectiveForm = form ?? createInitialDraftForm(data.details);
 
   const categoryOptions = (specialtyCategoriesQuery.data?.categories ?? []).map((item) => ({
@@ -293,6 +424,324 @@ export default function AdminApplicationDetails({ applicationId }: Props) {
     { value: "ar", text: "Arabic", selected: effectiveForm.languageCodes.includes("ar") },
     { value: "en", text: "English", selected: effectiveForm.languageCodes.includes("en") },
   ];
+  const categoryLabelById = new Map(categoryOptions.map((item) => [item.value, item.label] as const));
+  const previousValueLabel = t("applicationDetails.edit.previousValue");
+  const selectedPayoutMethod = effectiveForm.payoutMethodType;
+  const draftFieldIssues: DraftIssueMap = {};
+  const requiredForApprovalLabel = t("applicationDetails.edit.requiredForApproval");
+  const yearsMustBePositiveLabel = t("applicationDetails.edit.yearsMustBePositive");
+  const specialtyRequiredLabel = t("applicationDetails.edit.specialtyRequired");
+  const payoutMethodRequiredLabel = t("applicationDetails.edit.payoutMethodRequired");
+  const payoutFieldRequiredLabel = t("applicationDetails.edit.payoutFieldRequired");
+
+  if (!effectiveForm.displayName.trim()) {
+    draftFieldIssues.displayName = requiredForApprovalLabel;
+  }
+  if (!effectiveForm.practitionerType) {
+    draftFieldIssues.practitionerType = requiredForApprovalLabel;
+  }
+  if (!effectiveForm.professionalTitle.trim()) {
+    draftFieldIssues.professionalTitle = requiredForApprovalLabel;
+  }
+  if (!effectiveForm.bio.trim()) {
+    draftFieldIssues.bio = requiredForApprovalLabel;
+  }
+
+  const parsedYearsOfExperience = normalizeYearsValue(effectiveForm.yearsOfExperience);
+  if (effectiveForm.yearsOfExperience.trim()) {
+    if (parsedYearsOfExperience === null || parsedYearsOfExperience <= 0) {
+      draftFieldIssues.yearsOfExperience = yearsMustBePositiveLabel;
+    }
+  } else {
+    draftFieldIssues.yearsOfExperience = requiredForApprovalLabel;
+  }
+
+  if (!effectiveForm.countryCode.trim()) {
+    draftFieldIssues.countryCode = requiredForApprovalLabel;
+  }
+  if (effectiveForm.languageCodes.length === 0) {
+    draftFieldIssues.languageCodes = requiredForApprovalLabel;
+  }
+  if (!effectiveForm.primarySpecialtyCategoryId.trim()) {
+    draftFieldIssues.primarySpecialtyCategoryId = requiredForApprovalLabel;
+  }
+  if (effectiveForm.specialtyIds.length === 0) {
+    draftFieldIssues.specialtyIds = specialtyRequiredLabel;
+  }
+  if (!selectedPayoutMethod) {
+    draftFieldIssues.payoutMethodType = payoutMethodRequiredLabel;
+  } else {
+    if (!effectiveForm.accountHolderName.trim()) {
+      draftFieldIssues.accountHolderName = payoutFieldRequiredLabel;
+    }
+    if (selectedPayoutMethod === "BANK_ACCOUNT") {
+      if (!effectiveForm.bankName.trim()) {
+        draftFieldIssues.bankName = payoutFieldRequiredLabel;
+      }
+      if (!effectiveForm.bankAccountNumber.trim()) {
+        draftFieldIssues.bankAccountNumber = payoutFieldRequiredLabel;
+      }
+    }
+    if (selectedPayoutMethod === "IBAN" && !effectiveForm.iban.trim()) {
+      draftFieldIssues.iban = payoutFieldRequiredLabel;
+    }
+    if (selectedPayoutMethod === "WALLET") {
+      if (!effectiveForm.walletProvider.trim()) {
+        draftFieldIssues.walletProvider = payoutFieldRequiredLabel;
+      }
+      if (!effectiveForm.walletIdentifier.trim()) {
+        draftFieldIssues.walletIdentifier = payoutFieldRequiredLabel;
+      }
+    }
+    if (selectedPayoutMethod === "OTHER" && !effectiveForm.otherDetails.trim()) {
+      draftFieldIssues.otherDetails = payoutFieldRequiredLabel;
+    }
+  }
+  const reviewTabs: Array<{ id: ReviewTab; label: string }> = [
+    { id: "overview", label: t("applicationDetails.tabs.overview") },
+    { id: "compare", label: t("applicationDetails.tabs.compare") },
+    { id: "credentials", label: t("applicationDetails.tabs.credentials") },
+    { id: "decision", label: t("applicationDetails.tabs.decision") },
+  ];
+  const changeItems = [
+    {
+      key: "displayName",
+      label: t("applicationDetails.applicant.displayName"),
+      current: getReadableValue(liveApplicant.displayName),
+      requested: getReadableValue(applicant.displayName),
+      comparableCurrent: normalizeForDiff(liveApplicant.displayName),
+      comparableRequested: normalizeForDiff(applicant.displayName),
+    },
+    {
+      key: "practitionerType",
+      label: t("applicationDetails.profile.type"),
+      current: liveProfile.practitionerType
+        ? t(`practitionerType.${liveProfile.practitionerType as PractitionerType}`)
+        : "-",
+      requested: profile.practitionerType
+        ? t(`practitionerType.${profile.practitionerType as PractitionerType}`)
+        : "-",
+      comparableCurrent: normalizeForDiff(liveProfile.practitionerType),
+      comparableRequested: normalizeForDiff(profile.practitionerType),
+    },
+    {
+      key: "practitionerGender",
+      label: t("applicationDetails.profile.gender"),
+      current: liveProfile.practitionerGender
+        ? t(`applicationDetails.profile.genderOptions.${liveProfile.practitionerGender}`)
+        : "-",
+      requested: profile.practitionerGender
+        ? t(`applicationDetails.profile.genderOptions.${profile.practitionerGender}`)
+        : "-",
+      comparableCurrent: normalizeForDiff(liveProfile.practitionerGender),
+      comparableRequested: normalizeForDiff(profile.practitionerGender),
+    },
+    {
+      key: "professionalTitle",
+      label: t("applicationDetails.profile.title"),
+      current: getReadableValue(liveProfile.professionalTitle),
+      requested: getReadableValue(profile.professionalTitle),
+      comparableCurrent: normalizeForDiff(liveProfile.professionalTitle),
+      comparableRequested: normalizeForDiff(profile.professionalTitle),
+    },
+    {
+      key: "bio",
+      label: t("applicationDetails.profile.bio"),
+      current: getReadableValue(liveProfile.bio),
+      requested: getReadableValue(profile.bio),
+      comparableCurrent: normalizeForDiff(liveProfile.bio),
+      comparableRequested: normalizeForDiff(profile.bio),
+    },
+    {
+      key: "yearsOfExperience",
+      label: t("applicationDetails.profile.years"),
+      current:
+        liveProfile.yearsOfExperience != null ? String(liveProfile.yearsOfExperience) : "-",
+      requested: profile.yearsOfExperience != null ? String(profile.yearsOfExperience) : "-",
+      comparableCurrent: normalizeForDiff(liveProfile.yearsOfExperience),
+      comparableRequested: normalizeForDiff(profile.yearsOfExperience),
+    },
+    {
+      key: "sessionPrice30Egp",
+      label: t("applicationDetails.profile.sessionPrice30Egp"),
+      current: formatMoneyValue(liveProfile.pricing.session30.egp, locale),
+      requested: formatMoneyValue(profile.pricing.session30.egp, locale),
+      comparableCurrent: normalizeForDiff(liveProfile.pricing.session30.egp),
+      comparableRequested: normalizeForDiff(profile.pricing.session30.egp),
+    },
+    {
+      key: "sessionPrice30Usd",
+      label: t("applicationDetails.profile.sessionPrice30Usd"),
+      current: formatMoneyValue(liveProfile.pricing.session30.usd, locale),
+      requested: formatMoneyValue(profile.pricing.session30.usd, locale),
+      comparableCurrent: normalizeForDiff(liveProfile.pricing.session30.usd),
+      comparableRequested: normalizeForDiff(profile.pricing.session30.usd),
+    },
+    {
+      key: "sessionPrice60Egp",
+      label: t("applicationDetails.profile.sessionPrice60Egp"),
+      current: formatMoneyValue(liveProfile.pricing.session60.egp, locale),
+      requested: formatMoneyValue(profile.pricing.session60.egp, locale),
+      comparableCurrent: normalizeForDiff(liveProfile.pricing.session60.egp),
+      comparableRequested: normalizeForDiff(profile.pricing.session60.egp),
+    },
+    {
+      key: "sessionPrice60Usd",
+      label: t("applicationDetails.profile.sessionPrice60Usd"),
+      current: formatMoneyValue(liveProfile.pricing.session60.usd, locale),
+      requested: formatMoneyValue(profile.pricing.session60.usd, locale),
+      comparableCurrent: normalizeForDiff(liveProfile.pricing.session60.usd),
+      comparableRequested: normalizeForDiff(profile.pricing.session60.usd),
+    },
+    {
+      key: "countryCode",
+      label: t("applicationDetails.applicant.country"),
+      current: getReadableValue(liveApplicant.countryCode),
+      requested: getReadableValue(applicant.countryCode),
+      comparableCurrent: normalizeForDiff(liveApplicant.countryCode),
+      comparableRequested: normalizeForDiff(applicant.countryCode),
+    },
+    {
+      key: "languages",
+      label: t("applicationDetails.profile.languages"),
+      current: liveProfile.languages.length > 0 ? liveProfile.languages.join(", ") : "-",
+      requested: profile.languages.length > 0 ? profile.languages.join(", ") : "-",
+      comparableCurrent: normalizeTextList(liveProfile.languages),
+      comparableRequested: normalizeTextList(profile.languages),
+    },
+    {
+      key: "primarySpecialtyCategoryId",
+      label: t("applicationDetails.profile.primarySpecialtyCategory"),
+      current: liveProfile.primarySpecialtyCategoryId
+        ? categoryLabelById.get(liveProfile.primarySpecialtyCategoryId) ??
+          liveProfile.primarySpecialtyCategoryId
+        : "-",
+      requested: profile.primarySpecialtyCategoryId
+        ? categoryLabelById.get(profile.primarySpecialtyCategoryId) ??
+          profile.primarySpecialtyCategoryId
+        : "-",
+      comparableCurrent: normalizeForDiff(liveProfile.primarySpecialtyCategoryId),
+      comparableRequested: normalizeForDiff(profile.primarySpecialtyCategoryId),
+    },
+    {
+      key: "specialties",
+      label: t("applicationDetails.profile.subSpecialties"),
+      current: formatSpecialtyList(liveProfile.specialties, t("applicationDetails.profile.primary")),
+      requested: formatSpecialtyList(profile.specialties, t("applicationDetails.profile.primary")),
+      comparableCurrent: normalizeTextList(
+        liveProfile.specialties
+          .map((item) => `${item.specialtyId}:${item.isPrimary ? "1" : "0"}`)
+          .sort()
+      ),
+      comparableRequested: normalizeTextList(
+        profile.specialties
+          .map((item) => `${item.specialtyId}:${item.isPrimary ? "1" : "0"}`)
+          .sort()
+      ),
+    },
+    {
+      key: "payoutMethodType",
+      label: t("applicationDetails.payout.method"),
+      current: livePayoutDestination?.methodType
+        ? t(
+            `applicationDetails.payout.methodOptions.${livePayoutDestination.methodType as PractitionerPayoutMethodType}`
+          )
+        : "-",
+      requested: payoutDestination?.methodType
+        ? t(
+            `applicationDetails.payout.methodOptions.${payoutDestination.methodType as PractitionerPayoutMethodType}`
+          )
+        : "-",
+      comparableCurrent: normalizeForDiff(livePayoutDestination?.methodType),
+      comparableRequested: normalizeForDiff(payoutDestination?.methodType),
+    },
+    {
+      key: "accountHolderName",
+      label: t("applicationDetails.payout.accountHolderName"),
+      current: getReadableValue(livePayoutDestination?.accountHolderName),
+      requested: getReadableValue(payoutDestination?.accountHolderName),
+      comparableCurrent: normalizeForDiff(livePayoutDestination?.accountHolderName),
+      comparableRequested: normalizeForDiff(payoutDestination?.accountHolderName),
+    },
+    {
+      key: "bankName",
+      label: t("applicationDetails.payout.bankName"),
+      current: getReadableValue(livePayoutDestination?.bankName),
+      requested: getReadableValue(payoutDestination?.bankName),
+      comparableCurrent: normalizeForDiff(livePayoutDestination?.bankName),
+      comparableRequested: normalizeForDiff(payoutDestination?.bankName),
+    },
+    {
+      key: "bankAccountNumber",
+      label: t("applicationDetails.payout.bankAccountNumber"),
+      current: getReadableValue(livePayoutDestination?.bankAccountNumber),
+      requested: getReadableValue(payoutDestination?.bankAccountNumber),
+      comparableCurrent: normalizeForDiff(livePayoutDestination?.bankAccountNumber),
+      comparableRequested: normalizeForDiff(payoutDestination?.bankAccountNumber),
+    },
+    {
+      key: "iban",
+      label: "IBAN",
+      current: getReadableValue(livePayoutDestination?.iban),
+      requested: getReadableValue(payoutDestination?.iban),
+      comparableCurrent: normalizeForDiff(livePayoutDestination?.iban),
+      comparableRequested: normalizeForDiff(payoutDestination?.iban),
+    },
+    {
+      key: "walletProvider",
+      label: t("applicationDetails.payout.walletProvider"),
+      current: getReadableValue(livePayoutDestination?.walletProvider),
+      requested: getReadableValue(payoutDestination?.walletProvider),
+      comparableCurrent: normalizeForDiff(livePayoutDestination?.walletProvider),
+      comparableRequested: normalizeForDiff(payoutDestination?.walletProvider),
+    },
+    {
+      key: "walletIdentifier",
+      label: t("applicationDetails.payout.walletIdentifier"),
+      current: getReadableValue(livePayoutDestination?.walletIdentifier),
+      requested: getReadableValue(payoutDestination?.walletIdentifier),
+      comparableCurrent: normalizeForDiff(livePayoutDestination?.walletIdentifier),
+      comparableRequested: normalizeForDiff(payoutDestination?.walletIdentifier),
+    },
+  {
+      key: "otherDetails",
+      label: t("applicationDetails.payout.otherDetails"),
+      current: getReadableValue(livePayoutDestination?.otherDetails),
+      requested: getReadableValue(payoutDestination?.otherDetails),
+      comparableCurrent: normalizeForDiff(livePayoutDestination?.otherDetails),
+      comparableRequested: normalizeForDiff(payoutDestination?.otherDetails),
+    },
+  ].filter((item) => item.comparableCurrent !== item.comparableRequested);
+  const priceChangeItems = changeItems.filter((item) => item.key.startsWith("sessionPrice"));
+  const nonPriceChangeItems = changeItems.filter((item) => !item.key.startsWith("sessionPrice"));
+  const visibleChangeItems = showAllChanges
+    ? changeItems
+    : [
+        ...priceChangeItems,
+        ...nonPriceChangeItems.slice(0, Math.max(4 - priceChangeItems.length, 0)),
+      ];
+  const hiddenChangeCount = Math.max(changeItems.length - visibleChangeItems.length, 0);
+  const hasChangeSummary = changeItems.length > 0;
+  const approvalBlockers = [
+    draftFieldIssues.displayName && t("applicationDetails.applicant.displayName"),
+    draftFieldIssues.practitionerType && t("applicationDetails.profile.type"),
+    draftFieldIssues.professionalTitle && t("applicationDetails.profile.title"),
+    draftFieldIssues.bio && t("applicationDetails.profile.bio"),
+    draftFieldIssues.yearsOfExperience && t("applicationDetails.profile.years"),
+    draftFieldIssues.countryCode && t("applicationDetails.applicant.country"),
+    draftFieldIssues.languageCodes && t("applicationDetails.profile.languages"),
+    draftFieldIssues.primarySpecialtyCategoryId &&
+      t("applicationDetails.profile.primarySpecialtyCategory"),
+    draftFieldIssues.specialtyIds && t("applicationDetails.profile.subSpecialties"),
+    draftFieldIssues.payoutMethodType && t("applicationDetails.payout.method"),
+    draftFieldIssues.accountHolderName && t("applicationDetails.payout.accountHolderName"),
+    draftFieldIssues.bankName && t("applicationDetails.payout.bankName"),
+    draftFieldIssues.bankAccountNumber && t("applicationDetails.payout.bankAccountNumber"),
+    draftFieldIssues.iban && "IBAN",
+    draftFieldIssues.walletProvider && t("applicationDetails.payout.walletProvider"),
+    draftFieldIssues.walletIdentifier && t("applicationDetails.payout.walletIdentifier"),
+    draftFieldIssues.otherDetails && t("applicationDetails.payout.otherDetails"),
+  ].filter(Boolean) as string[];
 
   const updateForm = (patch: Partial<EditableDraftForm>) => {
     setDraftSavedResult(null);
@@ -301,8 +750,6 @@ export default function AdminApplicationDetails({ applicationId }: Props) {
       ...patch,
     }));
   };
-
-  const selectedPayoutMethod = effectiveForm.payoutMethodType;
 
   const getEditableCredential = (
     credential: PractitionerApplicationDetailsResponse["details"]["credentials"][number]
@@ -463,34 +910,35 @@ export default function AdminApplicationDetails({ applicationId }: Props) {
     const languageCodes = Array.from(
       new Set(effectiveForm.languageCodes.map((code) => code.trim().toLowerCase()).filter(Boolean))
     );
-    const yearsValue = effectiveForm.yearsOfExperience.trim();
-    const yearsOfExperience =
-      yearsValue.length > 0 ? Number(yearsValue) : null;
+    const yearsOfExperience = normalizeYearsValue(effectiveForm.yearsOfExperience);
 
-    if (!trimmedDisplayName) {
-      setDraftSavedResult("error");
-      return;
-    }
-    if (!trimmedCategoryId || specialtyIds.length === 0) {
-      setDraftSavedResult("error");
-      return;
-    }
-    if (languageCodes.length === 0) {
-      setDraftSavedResult("error");
-      return;
-    }
     if (
-      yearsOfExperience !== null &&
-      (!Number.isFinite(yearsOfExperience) || yearsOfExperience < 0)
+      effectiveForm.yearsOfExperience.trim().length > 0 &&
+      (yearsOfExperience === null || yearsOfExperience < 0)
     ) {
       setDraftSavedResult("error");
       return;
     }
 
+    const specialtySelection =
+      trimmedCategoryId && specialtyIds.length > 0
+        ? {
+            primarySpecialtyCategoryId: trimmedCategoryId,
+            specialtyIds,
+          }
+        : undefined;
+
     const payoutDestination =
-      selectedPayoutMethod === ""
-        ? null
-        : {
+      selectedPayoutMethod &&
+      !draftFieldIssues.payoutMethodType &&
+      !draftFieldIssues.accountHolderName &&
+      !draftFieldIssues.bankName &&
+      !draftFieldIssues.bankAccountNumber &&
+      !draftFieldIssues.iban &&
+      !draftFieldIssues.walletProvider &&
+      !draftFieldIssues.walletIdentifier &&
+      !draftFieldIssues.otherDetails
+        ? {
             methodType: selectedPayoutMethod,
             accountHolderName: effectiveForm.accountHolderName.trim() || undefined,
             bankName: effectiveForm.bankName.trim() || undefined,
@@ -499,7 +947,8 @@ export default function AdminApplicationDetails({ applicationId }: Props) {
             walletProvider: effectiveForm.walletProvider.trim() || undefined,
             walletIdentifier: effectiveForm.walletIdentifier.trim() || undefined,
             otherDetails: effectiveForm.otherDetails.trim() || undefined,
-          };
+          }
+        : undefined;
 
     updateDraft(
       {
@@ -513,10 +962,7 @@ export default function AdminApplicationDetails({ applicationId }: Props) {
           yearsOfExperience,
           countryCode: effectiveForm.countryCode.trim() || null,
           languageCodes,
-          specialtySelection: {
-            primarySpecialtyCategoryId: trimmedCategoryId,
-            specialtyIds,
-          },
+          specialtySelection,
           payoutDestination,
         },
       },
@@ -582,21 +1028,88 @@ export default function AdminApplicationDetails({ applicationId }: Props) {
     );
   };
 
+  const statusBadge = (
+    <span
+      className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${statusColour[application.status]}`}
+    >
+      {t(`status.${application.status}`)}
+    </span>
+  );
+
+  const readinessBadge = (
+    <span className="inline-flex items-center rounded-full border border-gray-200 bg-white px-3 py-1 text-xs font-medium text-gray-700 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300">
+      {t("applicationDetails.readiness.canBeReviewed")}:{" "}
+      {readinessSnapshot.canBeReviewed
+        ? t("applicationDetails.readiness.yes")
+        : t("applicationDetails.readiness.no")}
+    </span>
+  );
+
   return (
     <div className="space-y-4">
-      <Section heading={t("applicationDetails.sections.profileEdit")}>
+      <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div className="space-y-2">
+            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-primary">
+              {t("applicationDetails.review.title")}
+            </p>
+            <div>
+              <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
+                {liveApplicant.displayName ?? t("applicationDetails.review.fallbackTitle")}
+              </h1>
+              <p className="mt-1 max-w-2xl text-sm leading-6 text-gray-500 dark:text-gray-400">
+                {t("applicationDetails.review.subtitle")}
+              </p>
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            {statusBadge}
+            {readinessBadge}
+          </div>
+        </div>
+
+        <div className="mt-4 flex flex-wrap gap-2">
+          {reviewTabs.map((tab) => (
+            <ReviewTabButton
+              key={tab.id}
+              active={reviewTab === tab.id}
+              label={tab.label}
+              onClick={() => setReviewTab(tab.id)}
+            />
+          ))}
+        </div>
+      </div>
+
+      {reviewTab === "compare" ? (
+        <Section heading={t("applicationDetails.sections.profileEdit")}>
+        <p className="mb-4 text-sm text-gray-500 dark:text-gray-400">
+          {t("applicationDetails.edit.comparisonHint")}
+        </p>
         <div className="grid gap-6 lg:grid-cols-2">
           <div className="space-y-3">
-            <div>
-              <Label>{t("applicationDetails.applicant.displayName")}</Label>
+            <EditField
+              label={t("applicationDetails.applicant.displayName")}
+              previousLabel={previousValueLabel}
+              previousValue={liveApplicant.displayName}
+            >
               <InputField
                 type="text"
                 value={effectiveForm.displayName}
                 onChange={(e) => updateForm({ displayName: e.target.value })}
+                error={Boolean(draftFieldIssues.displayName)}
+                hint={draftFieldIssues.displayName}
               />
-            </div>
-            <div>
-              <Label>{t("applicationDetails.profile.type")}</Label>
+            </EditField>
+
+            <EditField
+              label={t("applicationDetails.profile.type")}
+              previousLabel={previousValueLabel}
+              previousValue={
+                liveProfile.practitionerType
+                  ? t(`practitionerType.${liveProfile.practitionerType as PractitionerType}`)
+                  : "-"
+              }
+            >
               <Select
                 key={`edit-practitioner-type-${effectiveForm.practitionerType}`}
                 options={PRACTITIONER_TYPES.map((type) => ({
@@ -607,10 +1120,20 @@ export default function AdminApplicationDetails({ applicationId }: Props) {
                 onChange={(value) =>
                   updateForm({ practitionerType: value as PractitionerType })
                 }
+                error={Boolean(draftFieldIssues.practitionerType)}
+                hint={draftFieldIssues.practitionerType}
               />
-            </div>
-            <div>
-              <Label>{t("applicationDetails.profile.gender")}</Label>
+            </EditField>
+
+            <EditField
+              label={t("applicationDetails.profile.gender")}
+              previousLabel={previousValueLabel}
+              previousValue={
+                liveProfile.practitionerGender
+                  ? t(`applicationDetails.profile.genderOptions.${liveProfile.practitionerGender}`)
+                  : "-"
+              }
+            >
               <Select
                 key={`edit-practitioner-gender-${effectiveForm.practitionerGender || "none"}`}
                 options={[
@@ -628,58 +1151,96 @@ export default function AdminApplicationDetails({ applicationId }: Props) {
                   updateForm({ practitionerGender: value as PractitionerGender })
                 }
               />
-            </div>
-            <div>
-              <Label>{t("applicationDetails.profile.title")}</Label>
+            </EditField>
+
+            <EditField
+              label={t("applicationDetails.profile.title")}
+              previousLabel={previousValueLabel}
+              previousValue={liveProfile.professionalTitle}
+            >
               <InputField
                 type="text"
                 value={effectiveForm.professionalTitle}
                 onChange={(e) => updateForm({ professionalTitle: e.target.value })}
+                error={Boolean(draftFieldIssues.professionalTitle)}
+                hint={draftFieldIssues.professionalTitle}
               />
-            </div>
-            <div>
-              <Label>{t("applicationDetails.profile.years")}</Label>
+            </EditField>
+
+            <EditField
+              label={t("applicationDetails.profile.years")}
+              previousLabel={previousValueLabel}
+              previousValue={
+                liveProfile.yearsOfExperience != null ? String(liveProfile.yearsOfExperience) : "-"
+              }
+            >
               <InputField
                 type="number"
                 min={0}
                 value={effectiveForm.yearsOfExperience}
                 onChange={(e) => updateForm({ yearsOfExperience: e.target.value })}
+                error={Boolean(draftFieldIssues.yearsOfExperience)}
+                hint={draftFieldIssues.yearsOfExperience}
               />
-            </div>
-            <div>
-              <Label>{t("applicationDetails.applicant.country")}</Label>
+            </EditField>
+
+            <EditField
+              label={t("applicationDetails.applicant.country")}
+              previousLabel={previousValueLabel}
+              previousValue={liveApplicant.countryCode}
+            >
               <Select
                 key={`edit-country-${SUPPORTED_COUNTRY_CODE_OPTIONS.length}-${effectiveForm.countryCode}`}
                 options={SUPPORTED_COUNTRY_CODE_OPTIONS}
                 defaultValue={effectiveForm.countryCode}
                 onChange={(value) => updateForm({ countryCode: value })}
+                error={Boolean(draftFieldIssues.countryCode)}
+                hint={draftFieldIssues.countryCode}
               />
-            </div>
-            <div>
-              <Label>{t("applicationDetails.profile.languages")}</Label>
+            </EditField>
+
+            <EditField
+              label={t("applicationDetails.profile.languages")}
+              previousLabel={previousValueLabel}
+              previousValue={liveProfile.languages.length > 0 ? liveProfile.languages.join(", ") : "-"}
+            >
               <MultiSelect
                 key={`edit-languages-${effectiveForm.languageCodes.join("-")}`}
                 label=""
                 options={languageOptions}
                 defaultSelected={effectiveForm.languageCodes}
                 onChange={(selected) => updateForm({ languageCodes: selected })}
+                error={Boolean(draftFieldIssues.languageCodes)}
+                hint={draftFieldIssues.languageCodes}
               />
-            </div>
-            <div>
-              <Label>{t("applicationDetails.profile.bio")}</Label>
+            </EditField>
+
+            <EditField
+              label={t("applicationDetails.profile.bio")}
+              previousLabel={previousValueLabel}
+              previousValue={liveProfile.bio}
+            >
               <TextArea
                 rows={4}
                 value={effectiveForm.bio}
                 onChange={(value) => updateForm({ bio: value })}
+                error={Boolean(draftFieldIssues.bio)}
+                hint={draftFieldIssues.bio}
               />
-            </div>
+            </EditField>
           </div>
 
           <div className="space-y-3">
-            <div>
-              <Label>
-                {t("applicationDetails.profile.primarySpecialtyCategory")}
-              </Label>
+            <EditField
+              label={t("applicationDetails.profile.primarySpecialtyCategory")}
+              previousLabel={previousValueLabel}
+              previousValue={
+                liveProfile.primarySpecialtyCategoryId
+                  ? categoryLabelById.get(liveProfile.primarySpecialtyCategoryId) ??
+                    liveProfile.primarySpecialtyCategoryId
+                  : "-"
+              }
+            >
               <Select
                 key={`edit-category-${effectiveForm.primarySpecialtyCategoryId || "none"}`}
                 options={categoryOptions}
@@ -690,10 +1251,19 @@ export default function AdminApplicationDetails({ applicationId }: Props) {
                     specialtyIds: [],
                   })
                 }
+                error={Boolean(draftFieldIssues.primarySpecialtyCategoryId)}
+                hint={draftFieldIssues.primarySpecialtyCategoryId}
               />
-            </div>
-            <div>
-              <Label>{t("applicationDetails.profile.subSpecialties")}</Label>
+            </EditField>
+
+            <EditField
+              label={t("applicationDetails.profile.subSpecialties")}
+              previousLabel={previousValueLabel}
+              previousValue={formatSpecialtyList(
+                liveProfile.specialties,
+                t("applicationDetails.profile.primary"),
+              )}
+            >
               <MultiSelect
                 key={`edit-specialties-${effectiveForm.primarySpecialtyCategoryId || "none"}`}
                 label=""
@@ -704,10 +1274,22 @@ export default function AdminApplicationDetails({ applicationId }: Props) {
                   specialtyOptions.length === 0
                 }
                 onChange={(selected) => updateForm({ specialtyIds: selected })}
+                error={Boolean(draftFieldIssues.specialtyIds)}
+                hint={draftFieldIssues.specialtyIds}
               />
-            </div>
-            <div>
-              <Label>{t("applicationDetails.payout.method")}</Label>
+            </EditField>
+
+            <EditField
+              label={t("applicationDetails.payout.method")}
+              previousLabel={previousValueLabel}
+              previousValue={
+                livePayoutDestination?.methodType
+                  ? t(
+                      `applicationDetails.payout.methodOptions.${livePayoutDestination.methodType as PractitionerPayoutMethodType}`
+                    )
+                  : "-"
+              }
+            >
               <Select
                 key={`edit-payout-${selectedPayoutMethod || "none"}`}
                 options={PAYOUT_METHODS.map((method) => ({
@@ -720,94 +1302,131 @@ export default function AdminApplicationDetails({ applicationId }: Props) {
                     payoutMethodType: value as PractitionerPayoutMethodType,
                   })
                 }
+                error={Boolean(draftFieldIssues.payoutMethodType)}
+                hint={draftFieldIssues.payoutMethodType}
               />
-            </div>
+            </EditField>
+
             {selectedPayoutMethod ? (
               <div className="grid gap-3 rounded-xl border border-gray-100 p-4 dark:border-gray-800">
-                <div>
-                  <Label>{t("applicationDetails.payout.accountHolderName")}</Label>
+                <EditField
+                  label={t("applicationDetails.payout.accountHolderName")}
+                  previousLabel={previousValueLabel}
+                  previousValue={livePayoutDestination?.accountHolderName}
+                >
                   <InputField
                     type="text"
                     value={effectiveForm.accountHolderName}
                     onChange={(e) =>
                       updateForm({ accountHolderName: e.target.value })
                     }
+                    error={Boolean(draftFieldIssues.accountHolderName)}
+                    hint={draftFieldIssues.accountHolderName}
                   />
-                </div>
+                </EditField>
                 {selectedPayoutMethod === "BANK_ACCOUNT" ? (
                   <>
-                    <div>
-                      <Label>{t("applicationDetails.payout.bankName")}</Label>
+                    <EditField
+                      label={t("applicationDetails.payout.bankName")}
+                      previousLabel={previousValueLabel}
+                      previousValue={livePayoutDestination?.bankName}
+                    >
                       <InputField
                         type="text"
                         value={effectiveForm.bankName}
                         onChange={(e) => updateForm({ bankName: e.target.value })}
+                        error={Boolean(draftFieldIssues.bankName)}
+                        hint={draftFieldIssues.bankName}
                       />
-                    </div>
-                    <div>
-                      <Label>
-                        {t("applicationDetails.payout.bankAccountNumber")}
-                      </Label>
+                    </EditField>
+                    <EditField
+                      label={t("applicationDetails.payout.bankAccountNumber")}
+                      previousLabel={previousValueLabel}
+                      previousValue={livePayoutDestination?.bankAccountNumber}
+                    >
                       <InputField
                         type="text"
                         value={effectiveForm.bankAccountNumber}
                         onChange={(e) =>
                           updateForm({ bankAccountNumber: e.target.value })
                         }
+                        error={Boolean(draftFieldIssues.bankAccountNumber)}
+                        hint={draftFieldIssues.bankAccountNumber}
                       />
-                    </div>
+                    </EditField>
                   </>
                 ) : null}
                 {selectedPayoutMethod === "IBAN" ? (
-                  <div>
-                    <Label>IBAN</Label>
+                  <EditField
+                    label="IBAN"
+                    previousLabel={previousValueLabel}
+                    previousValue={livePayoutDestination?.iban}
+                  >
                     <InputField
                       type="text"
                       value={effectiveForm.iban}
                       onChange={(e) => updateForm({ iban: e.target.value })}
+                      error={Boolean(draftFieldIssues.iban)}
+                      hint={draftFieldIssues.iban}
                     />
-                  </div>
+                  </EditField>
                 ) : null}
                 {selectedPayoutMethod === "WALLET" ? (
                   <>
-                    <div>
-                      <Label>{t("applicationDetails.payout.walletProvider")}</Label>
+                    <EditField
+                      label={t("applicationDetails.payout.walletProvider")}
+                      previousLabel={previousValueLabel}
+                      previousValue={livePayoutDestination?.walletProvider}
+                    >
                       <InputField
                         type="text"
                         value={effectiveForm.walletProvider}
                         onChange={(e) =>
                           updateForm({ walletProvider: e.target.value })
                         }
+                        error={Boolean(draftFieldIssues.walletProvider)}
+                        hint={draftFieldIssues.walletProvider}
                       />
-                    </div>
-                    <div>
-                      <Label>
-                        {t("applicationDetails.payout.walletIdentifier")}
-                      </Label>
+                    </EditField>
+                    <EditField
+                      label={t("applicationDetails.payout.walletIdentifier")}
+                      previousLabel={previousValueLabel}
+                      previousValue={livePayoutDestination?.walletIdentifier}
+                    >
                       <InputField
                         type="text"
                         value={effectiveForm.walletIdentifier}
                         onChange={(e) =>
                           updateForm({ walletIdentifier: e.target.value })
                         }
+                        error={Boolean(draftFieldIssues.walletIdentifier)}
+                        hint={draftFieldIssues.walletIdentifier}
                       />
-                    </div>
+                    </EditField>
                   </>
                 ) : null}
                 {selectedPayoutMethod === "OTHER" ? (
-                  <div>
-                    <Label>{t("applicationDetails.payout.otherDetails")}</Label>
+                  <EditField
+                    label={t("applicationDetails.payout.otherDetails")}
+                    previousLabel={previousValueLabel}
+                    previousValue={livePayoutDestination?.otherDetails}
+                  >
                     <TextArea
                       rows={3}
                       value={effectiveForm.otherDetails}
                       onChange={(value) => updateForm({ otherDetails: value })}
+                      error={Boolean(draftFieldIssues.otherDetails)}
+                      hint={draftFieldIssues.otherDetails}
                     />
-                  </div>
+                  </EditField>
                 ) : null}
               </div>
             ) : null}
           </div>
         </div>
+        <p className="mt-3 text-xs text-gray-500 dark:text-gray-400">
+          {t("applicationDetails.edit.save.note")}
+        </p>
         <div className="mt-4 flex flex-wrap items-center gap-3">
           <button
             type="button"
@@ -830,34 +1449,98 @@ export default function AdminApplicationDetails({ applicationId }: Props) {
             </span>
           ) : null}
         </div>
-      </Section>
+        </Section>
+      ) : null}
 
-      <Section heading={t("applicationDetails.sections.applicant")}>
-        <dl className="space-y-3">
-          <Field label={t("applicationDetails.applicant.displayName")} value={applicant.displayName ?? "-"} />
-          <Field label={t("applicationDetails.applicant.email")} value={applicant.email.address ?? "-"} />
-          <Field label={t("applicationDetails.applicant.phone")} value={applicant.phone.number ?? "-"} />
-          <Field label={t("applicationDetails.applicant.country")} value={applicant.countryCode ?? "-"} />
-          <Field label={t("applicationDetails.applicant.accountStatus")} value={applicant.accountStatus} />
-        </dl>
-      </Section>
+      {reviewTab === "overview" ? (
+        <>
+          <Section heading={t("applicationDetails.review.changesHeading")}>
+            {hasChangeSummary ? (
+              <div className="space-y-3">
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  {t("applicationDetails.review.changesIntro")}
+                </p>
+                <div className="grid gap-2 md:grid-cols-2">
+                  {visibleChangeItems.map((item) => (
+                    <div
+                      key={item.key}
+                      className="flex h-full flex-col rounded-xl border border-orange-100 bg-orange-50/30 px-3 py-3 dark:border-orange-900/40 dark:bg-orange-900/10"
+                    >
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <p className="text-sm font-semibold text-gray-800 dark:text-white">
+                          {item.label}
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => setReviewTab("compare")}
+                          className="inline-flex items-center rounded-full border border-orange-200 bg-white px-3 py-1 text-xs font-medium text-orange-700 transition hover:bg-orange-100 dark:border-orange-900/40 dark:bg-gray-900 dark:text-orange-300 dark:hover:bg-orange-900/20"
+                        >
+                          {t("applicationDetails.review.openComparison")}
+                        </button>
+                      </div>
+                      <div className="mt-2 flex flex-wrap items-center gap-2 text-sm">
+                        <span className="inline-flex max-w-full items-center rounded-full border border-gray-200 bg-white px-3 py-1 text-gray-600 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300">
+                          <span className="ml-2 text-xs font-medium text-gray-400">
+                            {t("applicationDetails.review.liveValue")}:
+                          </span>
+                          <span className="truncate">{item.current}</span>
+                        </span>
+                        <span className="text-orange-500">→</span>
+                        <span className="inline-flex max-w-full items-center rounded-full border border-orange-200 bg-white px-3 py-1 text-gray-800 dark:border-orange-900/40 dark:bg-gray-900 dark:text-white">
+                          <span className="ml-2 text-xs font-medium text-orange-500">
+                            {t("applicationDetails.review.requestedValue")}:
+                          </span>
+                          <span className="truncate">{item.requested}</span>
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                {hiddenChangeCount > 0 ? (
+                  <button
+                    type="button"
+                    onClick={() => setShowAllChanges((prev) => !prev)}
+                    className="inline-flex items-center rounded-full border border-orange-200 bg-white px-4 py-2 text-xs font-semibold text-orange-700 transition hover:bg-orange-100 dark:border-orange-900/40 dark:bg-gray-900 dark:text-orange-300 dark:hover:bg-orange-900/20"
+                  >
+                    {showAllChanges
+                      ? t("applicationDetails.review.showFewerChanges")
+                      : t("applicationDetails.review.showMoreChanges", { count: hiddenChangeCount })}
+                  </button>
+                ) : null}
+              </div>
+            ) : (
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                {t("applicationDetails.review.noChanges")}
+              </p>
+            )}
+          </Section>
 
-      <Section heading={t("applicationDetails.sections.profile")}>
+          <Section heading={t("applicationDetails.sections.applicant")}>
         <dl className="space-y-3">
-          <Field label={t("applicationDetails.profile.type")} value={t(`practitionerType.${profile.practitionerType as PractitionerType}`)} />
-          <Field label={t("applicationDetails.profile.profileStatus")} value={profile.profileStatus} />
-          <Field label={t("applicationDetails.profile.title")} value={profile.professionalTitle ?? "-"} />
-          <Field label={t("applicationDetails.profile.bio")} value={profile.bio ?? "-"} />
-          <Field label={t("applicationDetails.profile.years")} value={profile.yearsOfExperience != null ? String(profile.yearsOfExperience) : "-"} />
-          <Field label={t("applicationDetails.profile.languages")} value={profile.languages.length > 0 ? profile.languages.join(", ") : "-"} />
+          <Field label={t("applicationDetails.applicant.displayName")} value={liveApplicant.displayName ?? "-"} />
+          <Field label={t("applicationDetails.applicant.email")} value={liveApplicant.email.address ?? "-"} />
+          <Field label={t("applicationDetails.applicant.phone")} value={liveApplicant.phone.number ?? "-"} />
+          <Field label={t("applicationDetails.applicant.country")} value={liveApplicant.countryCode ?? "-"} />
+          <Field label={t("applicationDetails.applicant.accountStatus")} value={liveApplicant.accountStatus} />
+          </dl>
+        </Section>
+
+          <Section heading={t("applicationDetails.sections.profile")}>
+        <dl className="space-y-3">
+          <Field label={t("applicationDetails.profile.type")} value={t(`practitionerType.${liveProfile.practitionerType as PractitionerType}`)} />
+          <Field label={t("applicationDetails.profile.profileStatus")} value={liveProfile.profileStatus} />
+          <Field label={t("applicationDetails.profile.title")} value={liveProfile.professionalTitle ?? "-"} />
+          <Field label={t("applicationDetails.profile.bio")} value={liveProfile.bio ?? "-"} />
+          <Field label={t("applicationDetails.profile.years")} value={liveProfile.yearsOfExperience != null ? String(liveProfile.yearsOfExperience) : "-"} />
+          <Field label={t("applicationDetails.profile.languages")} value={liveProfile.languages.length > 0 ? liveProfile.languages.join(", ") : "-"} />
           <Field
             label={t("applicationDetails.profile.specialties")}
             value={
-              profile.specialties.length === 0 ? (
+              liveProfile.specialties.length === 0 ? (
                 t("applicationDetails.profile.noSpecialties")
               ) : (
                 <ul className="space-y-1">
-                  {profile.specialties.map((s) => (
+                  {liveProfile.specialties.map((s) => (
                     <li key={s.specialtyId}>
                       {s.title ?? s.slug}
                       {s.isPrimary ? ` (${t("applicationDetails.profile.primary")})` : ""}
@@ -870,7 +1553,109 @@ export default function AdminApplicationDetails({ applicationId }: Props) {
         </dl>
       </Section>
 
-      <Section heading={t("applicationDetails.sections.credentials")}>
+          <Section heading={t("applicationDetails.sections.payout")}>
+        <dl className="space-y-3">
+          <Field
+            label={t("applicationDetails.payout.method")}
+            value={
+              livePayoutDestination?.methodType
+                ? t(
+                    `applicationDetails.payout.methodOptions.${livePayoutDestination.methodType as PractitionerPayoutMethodType}`
+                  )
+                : "-"
+            }
+          />
+          <Field
+            label={t("applicationDetails.payout.accountHolderName")}
+            value={<PayoutValue value={livePayoutDestination?.accountHolderName ?? null} />}
+          />
+          <Field
+            label={t("applicationDetails.payout.bankName")}
+            value={<PayoutValue value={livePayoutDestination?.bankName ?? null} />}
+          />
+          <Field
+            label={t("applicationDetails.payout.bankAccountNumber")}
+            value={<PayoutValue value={livePayoutDestination?.bankAccountNumber ?? null} />}
+          />
+          <Field
+            label="IBAN"
+            value={<PayoutValue value={livePayoutDestination?.iban ?? null} />}
+          />
+          <Field
+            label={t("applicationDetails.payout.walletProvider")}
+            value={<PayoutValue value={livePayoutDestination?.walletProvider ?? null} />}
+          />
+          <Field
+            label={t("applicationDetails.payout.walletIdentifier")}
+            value={<PayoutValue value={livePayoutDestination?.walletIdentifier ?? null} />}
+          />
+          <Field
+            label={t("applicationDetails.payout.otherDetails")}
+            value={<PayoutValue value={livePayoutDestination?.otherDetails ?? null} />}
+          />
+        </dl>
+      </Section>
+
+          <Section heading={t("applicationDetails.sections.application")}>
+        <dl className="space-y-3">
+          <Field
+            label={t("applicationDetails.application.status")}
+            value={statusBadge}
+          />
+          <Field
+            label={t("applicationDetails.application.submittedAt")}
+            value={application.submittedAt ? new Date(application.submittedAt).toLocaleDateString(locale) : "-"}
+          />
+          <Field
+            label={t("applicationDetails.application.reviewedAt")}
+            value={application.reviewedAt ? new Date(application.reviewedAt).toLocaleDateString(locale) : "-"}
+          />
+          <Field
+            label={t("applicationDetails.application.reviewedByUserId")}
+            value={application.reviewedByUserId ?? "-"}
+          />
+          <Field
+            label={t("applicationDetails.application.reviewDecisionReason")}
+            value={application.reviewDecisionReason ?? "-"}
+          />
+          <Field
+            label={t("applicationDetails.application.reviewNotes")}
+            value={application.reviewNotes ?? t("applicationDetails.application.noNotes")}
+          />
+        </dl>
+      </Section>
+
+          <Section heading={t("applicationDetails.sections.readiness")}>
+        <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {(
+            [
+              ["profileComplete", readinessSnapshot.isProfileCompleted],
+              ["specialties", readinessSnapshot.hasRequiredSpecialties],
+              ["credentials", readinessSnapshot.hasRequiredCredentials],
+              ["payoutDestination", readinessSnapshot.hasPayoutDestination],
+              ["canBeReviewed", readinessSnapshot.canBeReviewed],
+              ["canBeApproved", readinessSnapshot.canBeApproved],
+              ["canRequestChanges", readinessSnapshot.canRequestChanges],
+            ] as [string, boolean][]
+          ).map(([key, value]) => (
+            <div key={key} className="flex items-center justify-between rounded-xl border border-gray-100 px-3 py-2 dark:border-gray-800">
+              <dt className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                {t(`applicationDetails.readiness.${key}`)}
+              </dt>
+              <dd className="text-sm font-semibold">
+                {value
+                  ? t("applicationDetails.readiness.yes")
+                  : t("applicationDetails.readiness.no")}
+              </dd>
+            </div>
+          ))}
+        </dl>
+      </Section>
+        </>
+      ) : null}
+
+      {reviewTab === "credentials" ? (
+        <Section heading={t("applicationDetails.sections.credentials")}>
         <div className="space-y-4">
           <div className="rounded-xl border border-dashed border-gray-300 p-4 dark:border-gray-700">
             <p className="mb-3 text-sm font-semibold text-gray-800 dark:text-white">
@@ -1141,111 +1926,10 @@ export default function AdminApplicationDetails({ applicationId }: Props) {
           )}
         </div>
       </Section>
+      ) : null}
 
-      <Section heading={t("applicationDetails.sections.payout")}>
-        <dl className="space-y-3">
-          <Field
-            label={t("applicationDetails.payout.method")}
-            value={
-              payoutDestination?.methodType
-                ? t(
-                    `applicationDetails.payout.methodOptions.${payoutDestination.methodType as PractitionerPayoutMethodType}`
-                  )
-                : "-"
-            }
-          />
-          <Field
-            label={t("applicationDetails.payout.accountHolderName")}
-            value={<PayoutValue value={payoutDestination?.accountHolderName ?? null} />}
-          />
-          <Field
-            label={t("applicationDetails.payout.bankName")}
-            value={<PayoutValue value={payoutDestination?.bankName ?? null} />}
-          />
-          <Field
-            label={t("applicationDetails.payout.bankAccountNumber")}
-            value={<PayoutValue value={payoutDestination?.bankAccountNumber ?? null} />}
-          />
-          <Field
-            label="IBAN"
-            value={<PayoutValue value={payoutDestination?.iban ?? null} />}
-          />
-          <Field
-            label={t("applicationDetails.payout.walletProvider")}
-            value={<PayoutValue value={payoutDestination?.walletProvider ?? null} />}
-          />
-          <Field
-            label={t("applicationDetails.payout.walletIdentifier")}
-            value={<PayoutValue value={payoutDestination?.walletIdentifier ?? null} />}
-          />
-          <Field
-            label={t("applicationDetails.payout.otherDetails")}
-            value={<PayoutValue value={payoutDestination?.otherDetails ?? null} />}
-          />
-        </dl>
-      </Section>
-
-      <Section heading={t("applicationDetails.sections.application")}>
-        <dl className="space-y-3">
-          <Field
-            label={t("applicationDetails.application.status")}
-            value={
-              <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${statusColour[application.status]}`}>
-                {t(`status.${application.status}`)}
-              </span>
-            }
-          />
-          <Field
-            label={t("applicationDetails.application.submittedAt")}
-            value={application.submittedAt ? new Date(application.submittedAt).toLocaleDateString(locale) : "-"}
-          />
-          <Field
-            label={t("applicationDetails.application.reviewedAt")}
-            value={application.reviewedAt ? new Date(application.reviewedAt).toLocaleDateString(locale) : "-"}
-          />
-          <Field
-            label={t("applicationDetails.application.reviewedByUserId")}
-            value={application.reviewedByUserId ?? "-"}
-          />
-          <Field
-            label={t("applicationDetails.application.reviewDecisionReason")}
-            value={application.reviewDecisionReason ?? "-"}
-          />
-          <Field
-            label={t("applicationDetails.application.reviewNotes")}
-            value={application.reviewNotes ?? t("applicationDetails.application.noNotes")}
-          />
-        </dl>
-      </Section>
-
-      <Section heading={t("applicationDetails.sections.readiness")}>
-        <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          {(
-            [
-              ["profileComplete", readinessSnapshot.isProfileCompleted],
-              ["specialties", readinessSnapshot.hasRequiredSpecialties],
-              ["credentials", readinessSnapshot.hasRequiredCredentials],
-              ["payoutDestination", readinessSnapshot.hasPayoutDestination],
-              ["canBeReviewed", readinessSnapshot.canBeReviewed],
-              ["canBeApproved", readinessSnapshot.canBeApproved],
-              ["canRequestChanges", readinessSnapshot.canRequestChanges],
-            ] as [string, boolean][]
-          ).map(([key, value]) => (
-            <div key={key} className="flex items-center justify-between rounded-xl border border-gray-100 px-3 py-2 dark:border-gray-800">
-              <dt className="text-xs font-medium text-gray-500 dark:text-gray-400">
-                {t(`applicationDetails.readiness.${key}`)}
-              </dt>
-              <dd className="text-sm font-semibold">
-                {value
-                  ? t("applicationDetails.readiness.yes")
-                  : t("applicationDetails.readiness.no")}
-              </dd>
-            </div>
-          ))}
-        </dl>
-      </Section>
-
-      <Section heading={t("applicationDetails.sections.decision")}>
+      {reviewTab === "decision" ? (
+        <Section heading={t("applicationDetails.sections.decision")}>
         {!readinessSnapshot.canBeReviewed ? (
           <p className="text-sm text-gray-500 dark:text-gray-400">
             {t("applicationDetails.decision.notReviewable")}
@@ -1263,6 +1947,26 @@ export default function AdminApplicationDetails({ applicationId }: Props) {
         ) : (
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
             <div className="space-y-3">
+              {!readinessSnapshot.canBeApproved ? (
+                <div className="rounded-2xl border border-orange-200 bg-orange-50/70 p-4 text-sm text-orange-900 dark:border-orange-900/40 dark:bg-orange-900/10 dark:text-orange-100">
+                  <p className="font-semibold">
+                    {t("applicationDetails.decision.blockedHeading")}
+                  </p>
+                  <p className="mt-1 text-xs leading-6 text-orange-800/90 dark:text-orange-200/80">
+                    {t("applicationDetails.decision.blockedHint")}
+                  </p>
+                  {approvalBlockers.length > 0 ? (
+                    <ul className="mt-3 space-y-1 text-xs">
+                      {approvalBlockers.map((item) => (
+                        <li key={item} className="flex items-start gap-2">
+                          <span className="mt-1 h-1.5 w-1.5 rounded-full bg-orange-500" />
+                          <span>{item}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : null}
+                </div>
+              ) : null}
               <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">
                 {t("applicationDetails.decision.approve.title")}
               </p>
@@ -1376,6 +2080,7 @@ export default function AdminApplicationDetails({ applicationId }: Props) {
           </div>
         )}
       </Section>
+      ) : null}
     </div>
   );
 }

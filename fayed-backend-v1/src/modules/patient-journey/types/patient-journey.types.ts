@@ -71,6 +71,7 @@ export interface PatientJourneyViewModel {
       currency: string;
       sessionId: string | null;
       createdAt: string;
+      expiredAt: string | null;
     } | null;
     instantBookingRequest: {
       id: string;

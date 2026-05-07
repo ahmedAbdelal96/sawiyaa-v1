@@ -14,21 +14,21 @@ import {
 const ENTRY_OPTIONS = [
   {
     key: "patient",
-    href: "/signin/patient",
-    signupHref: "/signup/patient",
+    href: "/signin?mode=patient",
+    signupHref: "/signup?mode=patient",
     showSignup: true,
     icon: UserCircleIcon,
   },
   {
     key: "practitioner",
-    href: "/signin/practitioner",
-    signupHref: "/signup/practitioner",
+    href: "/signin?mode=practitioner",
+    signupHref: "/signup?mode=practitioner",
     showSignup: true,
     icon: GroupIcon,
   },
   {
     key: "admin",
-    href: "/signin/admin",
+    href: "/signin?mode=admin",
     signupHref: null,
     showSignup: false,
     icon: GridIcon,

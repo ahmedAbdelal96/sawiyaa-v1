@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
-import { BadgeDollarSign, FileText, Layers } from "lucide-react";
+import { BadgeDollarSign, FileText, Layers, ReceiptText } from "lucide-react";
 import AdminOperationalListShell, {
   AdminSummaryCard,
 } from "@/components/shared/admin/AdminOperationalListShell";
@@ -25,7 +25,6 @@ type CurrencyFilter = "all" | string;
 
 export default function AdminSettlementBatchesScreen() {
   const t = useTranslations("admin-settlements");
-  const tNav = useTranslations("navigation");
   const tAccounting = useTranslations("admin-accounting");
   const locale = useLocale();
   const router = useRouter();
@@ -63,7 +62,7 @@ export default function AdminSettlementBatchesScreen() {
     () => [
       {
         id: "period",
-        header: t("filters.periodMonth"),
+        header: t("list.columns.period"),
         cell: (row) => (
           <div className="min-w-0">
             <p className="truncate text-sm font-semibold text-text-primary dark:text-white/95">
@@ -75,13 +74,13 @@ export default function AdminSettlementBatchesScreen() {
       },
       {
         id: "currency",
-        header: t("filters.currency"),
+        header: t("list.columns.currency"),
         accessor: (row) => row.currency,
         hideBelow: "lg",
       },
       {
         id: "status",
-        header: t("filters.status"),
+        header: t("list.columns.status"),
         cell: (row) => (
           <span className="inline-flex rounded-full bg-surface-tertiary px-3 py-1 text-xs font-semibold text-text-secondary dark:bg-white/8 dark:text-white/70">
             {t(`statuses.${row.status}` as Parameters<typeof t>[0])}
@@ -91,7 +90,7 @@ export default function AdminSettlementBatchesScreen() {
       },
       {
         id: "totalAmount",
-        header: t("detail.summaryFields.totalAmountNet"),
+        header: t("list.columns.totalAmount"),
         cell: (row) => (
           <span className="text-sm font-semibold text-text-primary dark:text-white/95">
             {formatSettlementMoney(locale, row.totalAmount, row.currency)}
@@ -100,23 +99,13 @@ export default function AdminSettlementBatchesScreen() {
       },
       {
         id: "items",
-        header: t("detail.summaryFields.settlementItemsCount"),
+        header: t("list.columns.practitioners"),
         accessor: (row) => row.settlementItemsCount,
         hideBelow: "xl",
       },
       {
-        id: "generatedAt",
-        header: t("detail.summaryFields.generatedAt"),
-        cell: (row) => (
-          <span className="text-sm text-text-secondary">
-            {formatSettlementDateTime(locale, row.generatedAt)}
-          </span>
-        ),
-        hideBelow: "xl",
-      },
-      {
         id: "createdAt",
-        header: t("detail.summaryFields.createdAt"),
+        header: t("list.columns.createdAt"),
         cell: (row) => (
           <span className="text-sm text-text-secondary">
             {formatSettlementDateTime(locale, row.createdAt)}
@@ -141,18 +130,20 @@ export default function AdminSettlementBatchesScreen() {
   return (
     <>
       <AdminOperationalListShell
-        title={tNav("main.settlements")}
-        description={t("workspace.note")}
+        title={t("meta.batchesTitle")}
+        description={t("meta.batchesDescription")}
         actions={
           <div className="flex flex-wrap items-center gap-2">
             <Button
               variant="outline"
-              onClick={() => router.push(`/${locale}/admin/finance/dashboard`)}
+              startIcon={<ReceiptText className="h-4 w-4" />}
+              onClick={() => router.push(`/${locale}/admin/settlements/payouts`)}
             >
-              {tAccounting("dashboard.title")}
+              {t("list.actions.payoutHistory")}
             </Button>
             <Button
               variant="outline"
+              startIcon={<Layers className="h-4 w-4" />}
               onClick={() => router.push(`/${locale}/admin/finance/ledger`)}
             >
               {tAccounting("dashboard.actions.openLedger")}
@@ -162,13 +153,13 @@ export default function AdminSettlementBatchesScreen() {
               startIcon={<BadgeDollarSign className="h-4 w-4" />}
               onClick={() => setIsGenerateOpen(true)}
             >
-              {t("generate.label")}
+              {t("generate.submit")}
             </Button>
           </div>
         }
         summaryCards={
           <AdminSummaryCard
-            label={tNav("main.settlements")}
+            label={t("list.totalLabel")}
             value={typeof pagination?.totalItems === "number" ? pagination.totalItems : "..."}
             tone="primary"
             icon={<Layers className="h-4 w-4" />}
@@ -219,7 +210,7 @@ export default function AdminSettlementBatchesScreen() {
                 }}
                 className="app-control w-full py-3"
               >
-                <option value="all">{t("filters.currencyPlaceholder")}</option>
+                <option value="all">{t("filters.allCurrencies")}</option>
                 {currencies.map((value) => (
                   <option key={value} value={value}>
                     {value}
@@ -230,7 +221,7 @@ export default function AdminSettlementBatchesScreen() {
 
             <label className="block">
               <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
-                {t("generate.fields.periodYear")}
+                {t("filters.periodYear")}
               </span>
               <input
                 type="number"
@@ -249,7 +240,7 @@ export default function AdminSettlementBatchesScreen() {
 
             <label className="block">
               <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
-                {t("generate.fields.periodMonth")}
+                {t("filters.periodMonth")}
               </span>
               <select
                 value={periodMonth}
@@ -296,14 +287,14 @@ export default function AdminSettlementBatchesScreen() {
               onClick: () => batchesQuery.refetch(),
             },
           }}
-          rowActionsHeader={t("detail.sections.workflow")}
+          rowActionsHeader={t("list.columns.actions")}
           rowActions={(row) => (
             <div className="flex flex-wrap items-center justify-end gap-2">
               <DataTableActionButton
                 intent="primary"
                 icon={<Layers className="h-4 w-4" />}
                 onClick={() => router.push(`/${locale}/admin/settlements/${row.id}`)}
-                label={t("detail.title")}
+                label={t("list.actions.viewDetails")}
               />
             </div>
           )}
@@ -330,8 +321,8 @@ export default function AdminSettlementBatchesScreen() {
             title: t("states.empty"),
             description: t("states.empty"),
           }}
-          ariaLabel={tNav("main.settlements")}
-          caption={tNav("main.settlements")}
+          ariaLabel={t("meta.batchesTitle")}
+          caption={t("meta.batchesTitle")}
         />
       </AdminOperationalListShell>
 

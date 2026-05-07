@@ -19,19 +19,16 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function PractitionerSessionsPage({ params }: Props) {
   const { locale } = await params;
   setRequestLocale(locale);
-  const t = await getTranslations({ locale, namespace: "sessions" });
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-8">
-      <h1 className="mb-6 text-xl font-bold text-text-primary dark:text-white/95">
-        {t("practitioner.list.heading")}
-      </h1>
+    <div className="mx-auto max-w-[1400px] px-4 py-6 sm:px-6 lg:px-8">
+      <div className="space-y-4">
+        {/* Pending instant booking requests appear at the top because they need action. */}
+        <PractitionerPendingRequestsPanel />
 
-      {/* Pending instant booking requests appear at the top because they need action. */}
-      <PractitionerPendingRequestsPanel />
-
-      {/* Scheduled sessions list */}
-      <PractitionerSessionsPanel />
+        {/* Scheduled sessions table */}
+        <PractitionerSessionsPanel />
+      </div>
     </div>
   );
 }

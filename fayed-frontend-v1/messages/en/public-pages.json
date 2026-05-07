@@ -30,6 +30,18 @@
       "title": "Fayed | Article",
       "description": "Read published public care content with author and trust context where available."
     },
+    "refundPolicies": {
+      "title": "Fayed | Refund policies",
+      "description": "Review the active refund policies for sessions and package purchases."
+    },
+    "refundPolicySession": {
+      "title": "Fayed | Session refund policy",
+      "description": "Review the currently active refund policy for normal session payments."
+    },
+    "refundPolicyPackage": {
+      "title": "Fayed | Package refund policy",
+      "description": "Review the currently active refund policy for standardized package purchases."
+    },
     "notFound": {
       "title": "Fayed | Page not found",
       "description": "This public page is not available right now or may have moved."

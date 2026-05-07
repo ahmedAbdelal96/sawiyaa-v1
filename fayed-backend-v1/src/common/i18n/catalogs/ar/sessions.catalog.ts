@@ -2,14 +2,23 @@ export const arSessionsCatalog = {
   notifications: {
     sessionConfirmedTitle: 'تم تأكيد الجلسة',
     sessionConfirmedBody:
-      'تم تأكيد جلستك في {{sessionAt}}. يمكنك التحضير للانضمام من صفحة الجلسات.',
+      'تم تأكيد جلستك في {{sessionAt}}.{{packageContext}} يمكنك التحضير للانضمام من صفحة الجلسات.',
     sessionConfirmedPractitionerTitle: 'جلسة جديدة مؤكدة',
-    sessionConfirmedPractitionerBody: 'تم تأكيد جلسة بتاريخ {{sessionAt}}.',
+    sessionConfirmedPractitionerBody:
+      'تم تأكيد جلسة بتاريخ {{sessionAt}}.{{packageContext}}',
+    sessionJoinAvailableTitle: 'جلستك جاهزة للدخول',
+    sessionJoinAvailableBody:
+      'تبدأ جلستك قريبًا.{{packageContext}} افتح صفحة الجلسة للانضمام بأمان.',
+    sessionJoinAvailableEmailSubject: 'جلستك على فايد جاهزة للدخول',
+    sessionJoinAvailableEmailTitle: 'جلستك جاهزة للدخول',
+    sessionJoinAvailableEmailBody:
+      'تبدأ جلستك قريبًا.{{packageContext}} افتح صفحة الجلسة للانضمام بأمان: {{sessionUrl}}',
     sessionCancelledTitle: 'تم إلغاء الجلسة',
     sessionCancelledBody: 'تم إلغاء جلستك المجدولة في {{sessionAt}}.',
     sessionCancelledPractitionerTitle: 'تم إلغاء الجلسة بواسطة المريض',
     sessionCancelledPractitionerBody:
       'قام المريض بإلغاء جلسة مجدولة في {{sessionAt}}.',
+    packageSessionContext: ' الجلسة {{packageSessionIndex}} من أصل {{packageSessionCount}} ضمن الباقة الخاصة بك.',
   },
   errors: {
     patientNotFound: 'لم يتم العثور على ملف المريض',

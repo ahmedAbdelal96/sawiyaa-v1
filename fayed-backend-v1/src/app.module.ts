@@ -42,11 +42,15 @@ import { PatientJourneyModule } from './modules/patient-journey/patient-journey.
 import { PaymentsModule } from './modules/payments/payments.module';
 import { PresenceModule } from './modules/presence/presence.module';
 import { PractitionersModule } from './modules/practitioners/practitioners.module';
+import { PackagePlansModule } from './modules/package-plans/package-plans.module';
+import { HelpModule } from './modules/help/help.module';
+import { RefundPoliciesModule } from './modules/refund-policies/refund-policies.module';
 import { ReviewsModule } from './modules/reviews/reviews.module';
 import { SessionsModule } from './modules/sessions/sessions.module';
 import { SettingsModule } from './modules/settings/settings.module';
 import { SpecialtiesModule } from './modules/specialties/specialties.module';
 import { SupportModule } from './modules/support/support.module';
+import { AcademyModule } from './modules/academy/academy.module';
 import { TrainingModule } from './modules/training/training.module';
 import { UsersModule } from './modules/users/users.module';
 import { ReportsModule } from './modules/reports/reports.module';
@@ -93,11 +97,15 @@ import { ReportsModule } from './modules/reports/reports.module';
     PaymentsModule,
     PresenceModule,
     PractitionersModule,
+    PackagePlansModule,
+    HelpModule,
+    RefundPoliciesModule,
     ReviewsModule,
     SessionsModule,
     SettingsModule,
     SpecialtiesModule,
     SupportModule,
+    AcademyModule,
     TrainingModule,
     UsersModule,
     ReportsModule,

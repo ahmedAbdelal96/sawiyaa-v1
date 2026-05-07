@@ -64,6 +64,7 @@ interface FormModalProps extends Omit<ModalProps, "children" | "className"> {
   eyebrow?: React.ReactNode;
   children: React.ReactNode;
   loading?: boolean;
+  submitDisabled?: boolean;
   submitLabel?: React.ReactNode;
   cancelLabel?: React.ReactNode;
   onSubmit?: () => void;
@@ -366,6 +367,7 @@ export function FormModal({
   eyebrow,
   children,
   loading = false,
+  submitDisabled = false,
   submitLabel,
   cancelLabel,
   onSubmit,
@@ -388,13 +390,13 @@ export function FormModal({
               {cancelLabel ?? "Cancel"}
             </Button>
             {submitLabel ? (
-              <Button
-                variant={destructive ? "danger" : "primary"}
-                onClick={onSubmit}
-                disabled={loading}
-              >
-                {submitLabel}
-              </Button>
+            <Button
+              variant={destructive ? "danger" : "primary"}
+              onClick={onSubmit}
+              disabled={loading || submitDisabled}
+            >
+              {submitLabel}
+            </Button>
             ) : null}
           </ModalFooter>
         ) : null}

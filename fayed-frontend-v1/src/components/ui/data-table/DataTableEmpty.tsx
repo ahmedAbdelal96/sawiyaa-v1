@@ -36,30 +36,26 @@ export function DataTableEmpty({
   action,
 }: DataTableEmptyProps) {
   return (
-    <div className="rounded-2xl border border-border-light bg-white shadow-[0_12px_32px_-24px_rgba(34,52,56,0.12)]">
-      <div className="p-12 text-center">
-        {/* Icon */}
-        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary-light text-primary ring-1 ring-inset ring-primary/10">
-          {icon || <Inbox className="w-8 h-8 text-current" />}
+    <div className="app-panel overflow-hidden">
+      <div className="px-6 py-10 text-center sm:px-8">
+        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-light text-primary ring-1 ring-inset ring-primary/10">
+          {icon || <Inbox className="h-7 w-7 text-current" />}
         </div>
-        
-        {/* Title */}
-        <h3 className="text-lg font-medium text-text-primary mb-2">
+
+        <h3 className="mb-2 text-lg font-medium text-text-primary">
           {title}
         </h3>
-        
-        {/* Description */}
+
         {description && (
-          <p className="text-sm text-text-secondary mb-6 max-w-md mx-auto">
+          <p className="mx-auto mb-6 max-w-md text-sm text-text-secondary">
             {description}
           </p>
         )}
-        
-        {/* Action Button */}
+
         {action && (
           <button
             onClick={action.onClick}
-            className="rounded-2xl bg-primary px-4 py-2 text-white shadow-[0_12px_24px_-14px_rgba(68,161,148,0.42)] transition hover:bg-primary-hover"
+            className="inline-flex h-10 items-center justify-center rounded-2xl bg-primary px-4 text-sm font-semibold text-white shadow-theme-xs transition hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-primary/20"
           >
             {action.label}
           </button>

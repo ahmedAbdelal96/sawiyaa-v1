@@ -28,7 +28,7 @@ export default function CareChatRequestCard({ item, href, viewer }: Props) {
   return (
     <Link
       href={href as never}
-      className="app-panel-soft block rounded-[24px] p-4 transition hover:border-primary/25"
+      className="app-panel-soft block rounded-[22px] p-4 transition hover:border-primary/25"
     >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
@@ -74,7 +74,7 @@ export default function CareChatRequestCard({ item, href, viewer }: Props) {
           </div>
         </div>
 
-        <span className="inline-flex items-center gap-2 text-xs font-medium text-primary">
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-primary-light px-3 py-1 text-xs font-medium text-primary dark:bg-primary/15">
           {item.linkedConversationId ? (
             <>
               <MessageSquareText className="h-4 w-4" />

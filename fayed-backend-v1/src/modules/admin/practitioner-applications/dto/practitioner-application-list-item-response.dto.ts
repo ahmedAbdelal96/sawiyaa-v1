@@ -9,6 +9,7 @@ import {
   PractitionerType,
   UserStatus,
 } from '@prisma/client';
+import { AdminPractitionerApplicationKind } from '../types/practitioner-applications-admin.types';
 
 export class AdminSpecialtySummaryResponseDto {
   @ApiProperty()
@@ -45,6 +46,9 @@ export class PractitionerApplicationListItemResponseDto {
   @ApiProperty({ nullable: true })
   countryCode!: string | null;
 
+  @ApiProperty({ enum: AdminPractitionerApplicationKind })
+  applicationKind!: AdminPractitionerApplicationKind;
+
   @ApiProperty({ type: AdminSpecialtySummaryResponseDto, nullable: true })
   mainSpecialty!: AdminSpecialtySummaryResponseDto | null;
 
@@ -69,6 +73,17 @@ export class PractitionerApplicationListPaginationResponseDto {
   total!: number;
 }
 
+export class PractitionerApplicationListSummaryResponseDto {
+  @ApiProperty()
+  total!: number;
+
+  @ApiProperty()
+  newApplications!: number;
+
+  @ApiProperty()
+  editRequests!: number;
+}
+
 export class PractitionerApplicationListSuccessResponseDto {
   @ApiProperty()
   message!: string;
@@ -81,6 +96,9 @@ export class PractitionerApplicationListSuccessResponseDto {
 
   @ApiProperty({ type: PractitionerApplicationListPaginationResponseDto })
   pagination!: PractitionerApplicationListPaginationResponseDto;
+
+  @ApiProperty({ type: PractitionerApplicationListSummaryResponseDto })
+  summary!: PractitionerApplicationListSummaryResponseDto;
 }
 
 export class AdminApplicantEmailSummaryResponseDto {
@@ -155,6 +173,24 @@ export class AdminPractitionerProfileSectionResponseDto {
 
   @ApiProperty({ type: AdminProfileSpecialtyResponseDto, isArray: true })
   specialties!: AdminProfileSpecialtyResponseDto[];
+
+  @ApiProperty({
+    type: Object,
+    example: {
+      session30: { egp: 250, usd: 8 },
+      session60: { egp: 450, usd: 15 },
+    },
+  })
+  pricing!: {
+    session30: {
+      egp: number | null;
+      usd: number | null;
+    };
+    session60: {
+      egp: number | null;
+      usd: number | null;
+    };
+  };
 }
 
 export class AdminPractitionerCredentialResponseDto {
@@ -262,8 +298,14 @@ export class PractitionerApplicationDetailsResponseDto {
   @ApiProperty({ type: AdminApplicantBasicsResponseDto })
   applicant!: AdminApplicantBasicsResponseDto;
 
+  @ApiProperty({ type: AdminApplicantBasicsResponseDto })
+  liveApplicant!: AdminApplicantBasicsResponseDto;
+
   @ApiProperty({ type: AdminPractitionerProfileSectionResponseDto })
   profile!: AdminPractitionerProfileSectionResponseDto;
+
+  @ApiProperty({ type: AdminPractitionerProfileSectionResponseDto })
+  liveProfile!: AdminPractitionerProfileSectionResponseDto;
 
   @ApiProperty({ type: AdminPractitionerCredentialResponseDto, isArray: true })
   credentials!: AdminPractitionerCredentialResponseDto[];
@@ -273,6 +315,12 @@ export class PractitionerApplicationDetailsResponseDto {
     nullable: true,
   })
   payoutDestination!: AdminPractitionerPayoutDestinationResponseDto | null;
+
+  @ApiProperty({
+    type: AdminPractitionerPayoutDestinationResponseDto,
+    nullable: true,
+  })
+  livePayoutDestination!: AdminPractitionerPayoutDestinationResponseDto | null;
 
   @ApiProperty({ type: AdminPractitionerApplicationSummaryResponseDto })
   application!: AdminPractitionerApplicationSummaryResponseDto;

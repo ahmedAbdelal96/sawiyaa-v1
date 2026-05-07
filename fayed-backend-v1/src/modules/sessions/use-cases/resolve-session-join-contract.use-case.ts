@@ -15,6 +15,7 @@ import { SessionPractitionerRepository } from '../repositories/session-practitio
 import { SessionRepository } from '../repositories/session.repository';
 import { ResolveSessionJoinReadinessService } from '../services/resolve-session-join-readiness.service';
 import { SessionVideoProviderRegistryService } from '../services/session-video-provider-registry.service';
+import { SessionVideoProviderResolverService } from '../services/session-video-provider-resolver.service';
 import { PrepareSessionRuntimeUseCase } from './prepare-session-runtime.use-case';
 
 @Injectable()
@@ -26,6 +27,7 @@ export class ResolveSessionJoinContractUseCase {
     private readonly sessionPractitionerRepository: SessionPractitionerRepository,
     private readonly resolveSessionJoinReadinessService: ResolveSessionJoinReadinessService,
     private readonly sessionVideoProviderRegistryService: SessionVideoProviderRegistryService,
+    private readonly sessionVideoProviderResolverService: SessionVideoProviderResolverService,
     private readonly validateSessionStatusTransitionService: ValidateSessionStatusTransitionService,
     private readonly prepareSessionRuntimeUseCase: PrepareSessionRuntimeUseCase,
   ) {}
@@ -98,15 +100,24 @@ export class ResolveSessionJoinContractUseCase {
           roomName: effectiveSession.providerRoomId,
           roomUrl: effectiveSession.providerSessionRef,
           joinToken: null,
+          providerRuntime: this.buildProviderRuntime({
+            provider: effectiveSession.provider,
+            roomId: effectiveSession.providerRoomId,
+            roomUrl: effectiveSession.providerSessionRef,
+          }),
         },
       };
     }
 
+    const resolvedProvider =
+      this.sessionVideoProviderResolverService.resolvePreparedProviderForSession(
+        effectiveSession,
+      );
     const adapter = this.sessionVideoProviderRegistryService.get(
-      SessionProvider.DAILY,
+      resolvedProvider,
     );
     const join = await adapter.createJoinToken({
-      roomName: effectiveSession.providerRoomId!,
+      roomId: effectiveSession.providerRoomId!,
       userId: input.userId,
       actorType: input.actorType,
       displayName:
@@ -158,6 +169,15 @@ export class ResolveSessionJoinContractUseCase {
         roomName: effectiveSession.providerRoomId,
         roomUrl: effectiveSession.providerSessionRef,
         joinToken: join.token,
+        providerRuntime: this.buildProviderRuntime({
+          provider: effectiveSession.provider,
+          roomId: effectiveSession.providerRoomId,
+          roomUrl: effectiveSession.providerSessionRef,
+          token: join.token,
+          tokenExpiresAt: this.normalizeDate(join.expiresAt),
+          joinMode: join.joinMode ?? 'redirect_url',
+          payload: join.payload ?? {},
+        }),
       },
     };
   }
@@ -205,5 +225,38 @@ export class ResolveSessionJoinContractUseCase {
         error: 'SESSION_ACCESS_DENIED',
       });
     }
+  }
+
+  private buildProviderRuntime(input: {
+    provider: SessionProvider;
+    roomId: string | null;
+    roomUrl: string | null;
+    token?: string | null;
+    tokenExpiresAt?: string | null;
+    joinMode?: 'redirect_url' | 'embedded' | 'external_url' | null;
+    payload?: Record<string, unknown>;
+  }) {
+    return {
+      name: input.provider,
+      roomId: input.roomId,
+      roomUrl: input.roomUrl,
+      token: input.token ?? null,
+      tokenExpiresAt: input.tokenExpiresAt ?? null,
+      joinMode: input.joinMode ?? null,
+      payload: input.payload ?? {},
+    };
+  }
+
+  private normalizeDate(value: Date | string | null | undefined): string | null {
+    if (!value) {
+      return null;
+    }
+
+    if (value instanceof Date) {
+      return value.toISOString();
+    }
+
+    const parsed = new Date(value);
+    return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString();
   }
 }

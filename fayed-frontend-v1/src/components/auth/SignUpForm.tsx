@@ -135,7 +135,7 @@ export default function SignUpForm({ mode }: SignUpFormProps) {
       });
       setSuccessMessage(result.message || t("practitionerRegistrationSuccess"));
       form.reset();
-      router.replace("/signin/practitioner");
+      router.replace(buildAuthHref("/signin", { callbackUrl: normalizedCallbackUrl, mode: "practitioner" }));
       router.refresh();
     } catch (submissionError) {
       setError(
@@ -146,7 +146,10 @@ export default function SignUpForm({ mode }: SignUpFormProps) {
 
   const descriptionKey =
     mode === "practitioner" ? "signUpDescriptionPractitioner" : "signUpDescriptionPatient";
-  const signInHref = buildAuthHref(`/signin/${mode}`, { callbackUrl: normalizedCallbackUrl });
+  const signInHref = buildAuthHref("/signin", {
+    callbackUrl: normalizedCallbackUrl,
+    mode,
+  });
 
   return (
     <div className="flex w-full flex-1 flex-col justify-center lg:w-1/2">

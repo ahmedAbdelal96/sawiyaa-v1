@@ -1,0 +1,27 @@
+{
+  "dropdown": {
+    "ariaLabel": "Notifications",
+    "title": "Notifications",
+    "note": "Recent updates and session alerts",
+    "count": "{value, number} unread",
+    "errorHeading": "Notifications are not available right now",
+    "errorNote": "Could not load your notifications.",
+    "retry": "Try again",
+    "emptyHeading": "No notifications yet",
+    "emptyNote": "You will see session, payment, and account updates here."
+  },
+  "actions": {
+    "open": "Open",
+    "markAllRead": "Mark all read",
+    "markAllReadLoading": "Marking as read..."
+  },
+  "status": {
+    "unread": "Unread",
+    "read": "Read"
+  },
+  "context": {
+    "patient": "Patient notifications",
+    "practitioner": "Practitioner notifications"
+  }
+}
+

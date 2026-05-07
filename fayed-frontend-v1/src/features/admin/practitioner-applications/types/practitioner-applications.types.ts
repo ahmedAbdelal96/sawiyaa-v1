@@ -21,6 +21,9 @@ export interface AdminSpecialtySummary {
   title: string | null;
 }
 
+export type PractitionerApplicationKind = "NEW_APPLICATION" | "EDIT_REQUEST";
+export type PractitionerApplicationListView = "ACTIVE" | "HISTORY" | "ALL";
+
 export interface AdminProfileSpecialty extends AdminSpecialtySummary {
   isPrimary: boolean;
 }
@@ -32,6 +35,7 @@ export interface PractitionerApplicationListItem {
   displayName: string | null;
   practitionerType: PractitionerType;
   countryCode: string | null;
+  applicationKind: PractitionerApplicationKind;
   mainSpecialty: AdminSpecialtySummary | null;
   applicationStatus: PractitionerApplicationStatus;
   submittedAt: string | null;
@@ -44,10 +48,24 @@ export interface PractitionerApplicationsPagination {
   total: number;
 }
 
+export interface PractitionerApplicationSummary {
+  total: number;
+  newApplications: number;
+  editRequests: number;
+  activeApplications: number;
+  submittedApplications: number;
+  underReviewApplications: number;
+  changesRequestedApplications: number;
+  approvedApplications: number;
+  rejectedApplications: number;
+  archivedApplications: number;
+}
+
 export interface PractitionerApplicationsListResponse {
   message: string;
   applications: PractitionerApplicationListItem[];
   pagination: PractitionerApplicationsPagination;
+  summary: PractitionerApplicationSummary;
 }
 
 export interface AdminApplicantEmailSummary {
@@ -80,6 +98,16 @@ export interface AdminPractitionerProfileSection {
   bio: string | null;
   yearsOfExperience: number | null;
   primarySpecialtyCategoryId: string | null;
+  pricing: {
+    session30: {
+      egp: number | null;
+      usd: number | null;
+    };
+    session60: {
+      egp: number | null;
+      usd: number | null;
+    };
+  };
   languages: string[];
   specialties: AdminProfileSpecialty[];
 }
@@ -118,9 +146,12 @@ export interface AdminReadinessSnapshot {
 
 export interface PractitionerApplicationDetails {
   applicant: AdminApplicantBasics;
+  liveApplicant: AdminApplicantBasics;
   profile: AdminPractitionerProfileSection;
+  liveProfile: AdminPractitionerProfileSection;
   credentials: AdminPractitionerCredential[];
   payoutDestination: PractitionerPayoutDestination | null;
+  livePayoutDestination: PractitionerPayoutDestination | null;
   application: AdminPractitionerApplicationSummary;
   readinessSnapshot: AdminReadinessSnapshot;
 }
@@ -147,6 +178,8 @@ export interface PractitionerApplicationDecisionResponse {
 }
 
 export interface ListPractitionerApplicationsParams {
+  view?: PractitionerApplicationListView;
+  kind?: PractitionerApplicationKind;
   status?: PractitionerApplicationStatus;
   q?: string;
   page?: number;

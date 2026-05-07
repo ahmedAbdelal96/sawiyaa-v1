@@ -5,6 +5,7 @@ import {
   CourseStatus,
   CourseVisibility,
   EnrollmentStatus,
+  PaymentStatus,
   Prisma,
 } from '@prisma/client';
 import { PrismaService } from '@common/prisma/prisma.service';
@@ -67,8 +68,16 @@ export class TrainingRepository {
     });
   }
 
+  findCourseBySlugRoot(slugRoot: string) {
+    return this.prisma.course.findUnique({
+      where: { slugRoot },
+      select: { id: true },
+    });
+  }
+
   findPublicCourseBySlug(input: { slug: string; locale: ContentLocale }) {
     const now = new Date();
+    const normalizedSlug = input.slug.trim().toLowerCase();
     return this.prisma.course.findFirst({
       where: {
         status: CourseStatus.PUBLISHED,
@@ -78,12 +87,19 @@ export class TrainingRepository {
         publishedAt: {
           lte: now,
         },
-        translations: {
-          some: {
-            locale: input.locale,
-            slug: input.slug.trim().toLowerCase(),
+        OR: [
+          {
+            translations: {
+              some: {
+                locale: input.locale,
+                slug: normalizedSlug,
+              },
+            },
           },
-        },
+          {
+            slugRoot: normalizedSlug,
+          },
+        ],
       },
       include: this.courseInclude(true, input.locale),
     });
@@ -94,36 +110,16 @@ export class TrainingRepository {
     limit: number;
     locale: ContentLocale;
     q?: string;
+    category?: string;
   }) {
     const skip = (input.page - 1) * input.limit;
     const now = new Date();
-    const where: Prisma.CourseWhereInput = {
-      status: CourseStatus.PUBLISHED,
-      visibility: {
-        in: TRAINING_PUBLIC_LIST_VISIBILITIES,
-      },
-      publishedAt: {
-        lte: now,
-      },
-      ...(input.q
-        ? {
-            translations: {
-              some: {
-                locale: input.locale,
-                OR: [
-                  { title: { contains: input.q, mode: 'insensitive' } },
-                  {
-                    shortDescription: {
-                      contains: input.q,
-                      mode: 'insensitive',
-                    },
-                  },
-                ],
-              },
-            },
-          }
-        : {}),
-    };
+    const where = this.buildPublicCatalogWhere({
+      now,
+      locale: input.locale,
+      q: input.q,
+      category: input.category,
+    });
 
     return Promise.all([
       this.prisma.course.findMany({
@@ -135,6 +131,56 @@ export class TrainingRepository {
       }),
       this.prisma.course.count({ where }),
     ]);
+  }
+
+  listPublicCategories(input: { locale: ContentLocale }) {
+    const now = new Date();
+    const where = this.buildPublicCatalogWhere({
+      now,
+      locale: input.locale,
+    });
+
+    return Promise.all([
+      this.prisma.courseCategory.findMany({
+        where: {
+          isActive: true,
+          courses: {
+            some: where,
+          },
+        },
+        orderBy: [{ sortOrder: 'asc' }, { slugRoot: 'asc' }],
+        include: {
+          translations: {
+            where: {
+              locale: {
+                in: [input.locale, ContentLocale.en],
+              },
+            },
+          },
+        },
+      }),
+      this.prisma.course.findMany({
+        where,
+        select: {
+          primaryCategoryId: true,
+        },
+      }),
+    ]).then(([categories, courses]) => {
+      const countByCategoryId = courses.reduce<Record<string, number>>(
+        (acc, current) => {
+          if (current.primaryCategoryId) {
+            acc[current.primaryCategoryId] = (acc[current.primaryCategoryId] ?? 0) + 1;
+          }
+          return acc;
+        },
+        {},
+      );
+
+      return categories.map((category) => ({
+        ...category,
+        courseCount: countByCategoryId[category.id] ?? 0,
+      }));
+    });
   }
 
   listAdminCourses(input: {
@@ -165,6 +211,33 @@ export class TrainingRepository {
           }
         : {}),
     };
+    const now = new Date();
+    const openEnrollmentWhere: Prisma.CourseWhereInput = {
+      ...where,
+      status: CourseStatus.PUBLISHED,
+      schedules: {
+        some: {
+          status: CourseScheduleStatus.OPEN_FOR_ENROLLMENT,
+          enrollmentOpenAt: { lte: now },
+          enrollmentCloseAt: { gte: now },
+          startsAt: { gt: now },
+        },
+      },
+    };
+    const closedEnrollmentWhere: Prisma.CourseWhereInput = {
+      ...where,
+      status: CourseStatus.PUBLISHED,
+      NOT: {
+        schedules: {
+          some: {
+            status: CourseScheduleStatus.OPEN_FOR_ENROLLMENT,
+            enrollmentOpenAt: { lte: now },
+            enrollmentCloseAt: { gte: now },
+            startsAt: { gt: now },
+          },
+        },
+      },
+    };
 
     return Promise.all([
       this.prisma.course.findMany({
@@ -175,6 +248,30 @@ export class TrainingRepository {
         include: this.courseInclude(true, input.locale),
       }),
       this.prisma.course.count({ where }),
+      this.prisma.course.count({
+        where: {
+          ...where,
+          status: CourseStatus.DRAFT,
+        },
+      }),
+      this.prisma.course.count({
+        where: {
+          ...where,
+          status: CourseStatus.PUBLISHED,
+        },
+      }),
+      this.prisma.course.count({
+        where: {
+          ...where,
+          status: CourseStatus.ARCHIVED,
+        },
+      }),
+      this.prisma.course.count({
+        where: openEnrollmentWhere,
+      }),
+      this.prisma.course.count({
+        where: closedEnrollmentWhere,
+      }),
     ]);
   }
 
@@ -201,6 +298,26 @@ export class TrainingRepository {
     });
   }
 
+  createSessionForSchedule(
+    scheduleId: string,
+    data: Omit<Prisma.CourseSessionUncheckedCreateInput, 'courseScheduleId'>,
+  ) {
+    return this.prisma.courseSession.create({
+      data: {
+        ...data,
+        courseScheduleId: scheduleId,
+      },
+      include: {
+        createdByUser: {
+          select: {
+            id: true,
+            displayName: true,
+          },
+        },
+      },
+    });
+  }
+
   updateSchedule(
     scheduleId: string,
     data: Prisma.CourseScheduleUncheckedUpdateInput,
@@ -215,6 +332,124 @@ export class TrainingRepository {
     return this.prisma.courseSchedule.findMany({
       where: { courseId },
       orderBy: [{ startsAt: 'asc' }, { createdAt: 'asc' }],
+    });
+  }
+
+  listSessionsByScheduleForAdmin(scheduleId: string) {
+    return this.prisma.courseSession.findMany({
+      where: { courseScheduleId: scheduleId },
+      orderBy: [{ sessionOrder: 'asc' }, { createdAt: 'asc' }],
+      include: {
+        createdByUser: {
+          select: {
+            id: true,
+            displayName: true,
+          },
+        },
+      },
+    });
+  }
+
+  countSchedulesByCourseId(courseId: string) {
+    return this.prisma.courseSchedule.count({
+      where: { courseId },
+    });
+  }
+
+  countSessionsByScheduleIds(scheduleIds: string[]) {
+    if (scheduleIds.length === 0) {
+      return Promise.resolve<Record<string, number>>({});
+    }
+
+    return this.prisma.courseSession
+      .groupBy({
+        by: ['courseScheduleId'],
+        where: {
+          courseScheduleId: {
+            in: scheduleIds,
+          },
+        },
+        _count: {
+          _all: true,
+        },
+      })
+      .then((items) =>
+        items.reduce<Record<string, number>>((acc, current) => {
+          acc[current.courseScheduleId] = current._count._all;
+          return acc;
+        }, {}),
+      );
+  }
+
+  countAllEnrollmentsByScheduleIds(scheduleIds: string[]) {
+    if (scheduleIds.length === 0) {
+      return Promise.resolve<Record<string, number>>({});
+    }
+
+    return this.prisma.enrollment
+      .groupBy({
+        by: ['courseScheduleId'],
+        where: {
+          courseScheduleId: {
+            in: scheduleIds,
+          },
+        },
+        _count: {
+          _all: true,
+        },
+      })
+      .then((items) =>
+        items.reduce<Record<string, number>>((acc, current) => {
+          acc[current.courseScheduleId] = current._count._all;
+          return acc;
+        }, {}),
+      );
+  }
+
+  countAttendanceByScheduleIds(scheduleIds: string[]) {
+    if (scheduleIds.length === 0) {
+      return Promise.resolve<Record<string, Record<string, number>>>({});
+    }
+
+    return this.prisma.enrollment
+      .groupBy({
+        by: ['courseScheduleId', 'attendanceStatus'],
+        where: {
+          courseScheduleId: {
+            in: scheduleIds,
+          },
+        },
+        _count: {
+          _all: true,
+        },
+      })
+      .then((items) =>
+        items.reduce<Record<string, Record<string, number>>>((acc, current) => {
+          if (!acc[current.courseScheduleId]) {
+            acc[current.courseScheduleId] = {};
+          }
+          acc[current.courseScheduleId][current.attendanceStatus] = current._count._all;
+          return acc;
+        }, {}),
+      );
+  }
+
+  listPaymentAttemptsByCourseIdForAnalytics(courseId: string) {
+    return this.prisma.trainingEnrollmentPaymentAttempt.findMany({
+      where: {
+        enrollment: {
+          courseId,
+        },
+      },
+      select: {
+        status: true,
+        enrollment: {
+          select: {
+            courseScheduleId: true,
+          },
+        },
+      },
+      orderBy: [{ createdAt: 'desc' }],
     });
   }
 
@@ -308,6 +543,50 @@ export class TrainingRepository {
         orderBy: [{ enrolledAt: 'desc' }],
       }),
       this.prisma.enrollment.count({ where }),
+    ]);
+  }
+
+  listPaymentAttemptsByCourseForAdmin(input: {
+    courseId: string;
+    status?: PaymentStatus;
+    skip: number;
+    take: number;
+  }) {
+    const where: Prisma.TrainingEnrollmentPaymentAttemptWhereInput = {
+      enrollment: {
+        courseId: input.courseId,
+      },
+      ...(input.status ? { status: input.status } : {}),
+    };
+
+    return Promise.all([
+      this.prisma.trainingEnrollmentPaymentAttempt.findMany({
+        where,
+        skip: input.skip,
+        take: input.take,
+        include: {
+          enrollment: {
+            select: {
+              id: true,
+              userId: true,
+              courseScheduleId: true,
+              user: {
+                select: {
+                  displayName: true,
+                },
+              },
+              courseSchedule: {
+                select: {
+                  id: true,
+                  scheduleCode: true,
+                },
+              },
+            },
+          },
+        },
+        orderBy: [{ createdAt: 'desc' }],
+      }),
+      this.prisma.trainingEnrollmentPaymentAttempt.count({ where }),
     ]);
   }
 
@@ -413,6 +692,19 @@ export class TrainingRepository {
     const locales = locale ? [locale, ContentLocale.en] : undefined;
 
     return {
+      primaryCategory: {
+        include: {
+          translations: locales
+            ? {
+                where: {
+                  locale: {
+                    in: locales,
+                  },
+                },
+              }
+            : true,
+        },
+      },
       translations: locales
         ? {
             where: {
@@ -448,6 +740,64 @@ export class TrainingRepository {
           metadataJson: true,
         },
       },
+    };
+  }
+
+  private buildPublicCatalogWhere(input: {
+    now: Date;
+    locale: ContentLocale;
+    q?: string;
+    category?: string;
+  }): Prisma.CourseWhereInput {
+    return {
+      status: CourseStatus.PUBLISHED,
+      visibility: {
+        in: TRAINING_PUBLIC_LIST_VISIBILITIES,
+      },
+      publishedAt: {
+        lte: input.now,
+      },
+      schedules: {
+        some: {
+          status: CourseScheduleStatus.OPEN_FOR_ENROLLMENT,
+          enrollmentOpenAt: {
+            lte: input.now,
+          },
+          enrollmentCloseAt: {
+            gte: input.now,
+          },
+          startsAt: {
+            gt: input.now,
+          },
+        },
+      },
+      ...(input.q
+        ? {
+            translations: {
+              some: {
+                locale: input.locale,
+                OR: [
+                  { title: { contains: input.q, mode: 'insensitive' } },
+                  {
+                    shortDescription: {
+                      contains: input.q,
+                      mode: 'insensitive',
+                    },
+                  },
+                ],
+              },
+            },
+          }
+        : {}),
+      ...(input.category
+        ? {
+            primaryCategory: {
+              is: {
+                slugRoot: input.category.trim().toLowerCase(),
+              },
+            },
+          }
+        : {}),
     };
   }
 

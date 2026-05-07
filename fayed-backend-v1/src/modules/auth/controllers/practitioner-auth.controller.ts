@@ -120,16 +120,23 @@ export class PractitionerAuthController {
   @ApiForbiddenResponse({ description: 'No verified OTP channel is available' })
   async login(
     @Body() dto: PractitionerLoginDto,
+    @Req() request: Request,
     @CurrentLocale() locale: SupportedLocale,
   ) {
     const result = await this.loginPractitionerPasswordUseCase.execute({
       email: dto.email,
       password: dto.password,
       locale,
+      deviceContext: getRequestDeviceContext(request),
     });
 
     return {
-      message: this.i18nService.t('auth.success.practitionerOtpSent', locale),
+      message: this.i18nService.t(
+        'tokens' in result
+          ? 'auth.success.practitionerOtpVerified'
+          : 'auth.success.practitionerOtpSent',
+        locale,
+      ),
       ...result,
     };
   }

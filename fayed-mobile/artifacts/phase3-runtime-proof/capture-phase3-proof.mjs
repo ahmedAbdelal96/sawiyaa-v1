@@ -256,18 +256,16 @@ async function main() {
     patientSession.tokens.accessToken,
     {
       category: "GENERAL",
-      subject: `Phase3 empty-state probe ${now}`,
-      description:
-        "Fresh support ticket to validate no-messages state before any replies.",
+      subject: `??? ??? ??? ${now}`,
+      description: "????? ??? ?????? ????? ??? ?????.",
     },
   );
   const supportThread = await createSupportTicket(
     patientSession.tokens.accessToken,
     {
       category: "TECHNICAL",
-      subject: `Phase3 threaded ticket ${now}`,
-      description:
-        "Ticket used to validate real support message thread rendering.",
+      subject: `?????? ??? ??? ${now}`,
+      description: "????? ??? ?????? ??? ????? ?? ?????.",
     },
   );
 
@@ -278,12 +276,12 @@ async function main() {
   await addPatientSupportMessage(
     patientSession.tokens.accessToken,
     supportThread.data.item.id,
-    "هذه رسالة مريض فعلية لاختبار خيط المحادثة في الدعم.",
+    "????? ??? ?????? ??? ????? ?? ?????.",
   );
   await addAdminSupportMessage(
     adminAccessToken,
     supportThread.data.item.id,
-    "تم استلام طلبك من الدعم وسنقوم بالمتابعة.",
+    "?? ?????? ???? ?????? ?????????.",
   );
   await closeSupportTicket(adminAccessToken, supportThread.data.item.id);
   runtime.actions.push(
@@ -294,20 +292,20 @@ async function main() {
     ? { data: { item: pendingExisting } }
     : await createCareRequest(patientSession.tokens.accessToken, {
         practitionerSlug: pendingPractitioner.slug,
-        reason: "طلب pending لإثبات حالة المراجعة.",
+        reason: "???? ?? ?????? ?????? ???????.",
       });
   const approvedRequest = await createCareRequest(
     patientSession.tokens.accessToken,
     {
       practitionerSlug: approvedPractitioner.slug,
-      reason: "طلب approve لإثبات المحادثة المعتمدة.",
+      reason: "???? ?? ?????? ?????? ???????.",
     },
   );
   const rejectedRequest = await createCareRequest(
     patientSession.tokens.accessToken,
     {
       practitionerSlug: rejectedPractitioner.slug,
-      reason: "طلب reject لإثبات حالة الرفض.",
+      reason: "???? ?? ?????? ?????? ???????.",
     },
   );
   runtime.actions.push(
@@ -320,13 +318,13 @@ async function main() {
     adminAccessToken,
     approvedRequest.data.item.id,
     "APPROVE",
-    "Approved during automated phase 3 proof run.",
+    "Reviewed and approved during validation.",
   );
   const rejectedDecision = await decideCareRequest(
     adminAccessToken,
     rejectedRequest.data.item.id,
     "REJECT",
-    "Rejected during automated phase 3 proof run.",
+    "Reviewed and rejected during validation.",
   );
   runtime.actions.push(
     "Approved one care-chat request and rejected one via PATCH /admin/care-chat/requests/:id/decision",
@@ -341,7 +339,7 @@ async function main() {
     await sendCareMessage(
       patientSession.tokens.accessToken,
       conversationId,
-      "رسالة فعلية من المريض داخل محادثة الرعاية المعتمدة.",
+      "???? ?? ?????? ???? ????????.",
     );
     runtime.actions.push(
       "Sent a patient message inside the approved care-chat conversation",

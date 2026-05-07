@@ -26,6 +26,7 @@ describe('ResolveSessionJoinContractUseCase', () => {
     blockedReason?: string | null;
     session?: any;
     patientId?: string;
+    provider?: SessionProvider;
   }) {
     const prisma = {
       $transaction: jest.fn().mockImplementation(async (fn) => fn({})),
@@ -57,9 +58,20 @@ describe('ResolveSessionJoinContractUseCase', () => {
       }),
     };
     const sessionVideoProviderRegistryService = {
-      get: jest.fn().mockReturnValue({
-        createJoinToken: jest.fn().mockResolvedValue({ token: 'daily_token' }),
-      }),
+      get: jest.fn().mockImplementation((provider: SessionProvider) => ({
+        provider,
+        createJoinToken: jest.fn().mockResolvedValue({
+          token: 'daily_token',
+          expiresAt: new Date('2026-04-02T10:45:00.000Z'),
+          joinMode: 'redirect_url',
+          payload: {},
+        }),
+      })),
+    };
+    const sessionVideoProviderResolverService = {
+      resolvePreparedProviderForSession: jest
+        .fn()
+        .mockReturnValue(overrides?.provider ?? SessionProvider.DAILY),
     };
     const validateSessionStatusTransitionService = {
       assertCanTransition: jest.fn(),
@@ -75,11 +87,17 @@ describe('ResolveSessionJoinContractUseCase', () => {
       sessionPractitionerRepository as never,
       resolveSessionJoinReadinessService as never,
       sessionVideoProviderRegistryService as never,
+      sessionVideoProviderResolverService as never,
       validateSessionStatusTransitionService as never,
       prepareSessionRuntimeUseCase as never,
     );
 
-    return { useCase, prepareSessionRuntimeUseCase };
+    return {
+      useCase,
+      prepareSessionRuntimeUseCase,
+      sessionVideoProviderRegistryService,
+      sessionVideoProviderResolverService,
+    };
   }
 
   it('returns join token when session is joinable', async () => {
@@ -92,6 +110,19 @@ describe('ResolveSessionJoinContractUseCase', () => {
 
     expect(result.item.canJoin).toBe(true);
     expect(result.item.joinToken).toBe('daily_token');
+    expect(result.item.providerRuntime).toMatchObject({
+      name: SessionProvider.DAILY,
+      roomId: 'room_1',
+      roomUrl: 'https://room.daily.co',
+      token: 'daily_token',
+      tokenExpiresAt: '2026-04-02T10:45:00.000Z',
+      joinMode: 'redirect_url',
+      payload: {},
+    });
+    expect(
+      setup.sessionVideoProviderResolverService
+        .resolvePreparedProviderForSession,
+    ).toHaveBeenCalledTimes(1);
   });
 
   it('returns blocked contract when join is not allowed', async () => {
@@ -107,6 +138,15 @@ describe('ResolveSessionJoinContractUseCase', () => {
 
     expect(result.item.canJoin).toBe(false);
     expect(result.item.joinToken).toBeNull();
+    expect(result.item.providerRuntime).toMatchObject({
+      name: SessionProvider.DAILY,
+      roomId: 'room_1',
+      roomUrl: 'https://room.daily.co',
+      token: null,
+      tokenExpiresAt: null,
+      joinMode: null,
+      payload: {},
+    });
   });
 
   it('auto-prepares runtime when needed before join', async () => {
@@ -122,6 +162,29 @@ describe('ResolveSessionJoinContractUseCase', () => {
     });
 
     expect(setup.prepareSessionRuntimeUseCase.execute).toHaveBeenCalledTimes(1);
+  });
+
+  it('uses the effective session provider for join token creation', async () => {
+    const setup = buildUseCase({
+      canJoin: true,
+      provider: SessionProvider.ZOOM,
+      session: {
+        ...baseSession,
+        provider: SessionProvider.ZOOM,
+        providerRoomId: 'zoom_room_1',
+        providerSessionRef: 'https://zoom.example/room/zoom_room_1',
+      },
+    });
+
+    await setup.useCase.execute({
+      userId: 'user_1',
+      actorType: 'PATIENT',
+      sessionId: 'session_1',
+    });
+
+    expect(
+      setup.sessionVideoProviderRegistryService.get,
+    ).toHaveBeenCalledWith(SessionProvider.ZOOM);
   });
 
   it('rejects when patient tries to resolve join for another patient session', async () => {

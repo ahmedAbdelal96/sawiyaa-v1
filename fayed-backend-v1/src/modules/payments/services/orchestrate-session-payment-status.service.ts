@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import {
   PaymentEventType,
   PaymentStatus,
@@ -16,18 +17,25 @@ import { ValidateSessionStatusTransitionService } from '@modules/sessions/servic
  */
 @Injectable()
 export class OrchestrateSessionPaymentStatusService {
+  private readonly joinLeadMinutes: number;
+
   constructor(
+    private readonly configService: ConfigService,
     private readonly prisma: PrismaService,
     private readonly sessionRepository: SessionRepository,
     private readonly validateSessionStatusTransitionService: ValidateSessionStatusTransitionService,
     private readonly expireUnpaidSessionUseCase: ExpireUnpaidSessionUseCase,
     private readonly operationalNotificationService: OperationalNotificationService,
-  ) {}
+  ) {
+    this.joinLeadMinutes =
+      this.configService.get<number>('session.joinLeadMinutes') ?? 15;
+  }
 
   async markSessionConfirmedFromPayment(input: {
     session: {
       id: string;
       status: SessionStatus;
+      scheduledStartAt?: Date | null;
     };
     actorUserId?: string | null;
   }) {
@@ -36,11 +44,19 @@ export class OrchestrateSessionPaymentStatusService {
       SessionStatus.CONFIRMED,
     );
 
+    const joinOpenAt = input.session.scheduledStartAt
+      ? new Date(
+          input.session.scheduledStartAt.getTime() -
+            this.joinLeadMinutes * 60_000,
+        )
+      : null;
+
     const updatedSession = await this.prisma.$transaction(async (tx) => {
       const session = await this.sessionRepository.updateStatus(
         input.session.id,
         {
           status: SessionStatus.CONFIRMED,
+          joinOpenAt,
         },
         tx,
       );

@@ -35,9 +35,10 @@ export const Button = ({ title, variant = 'primary', style, ...props }: ButtonPr
 
 const styles = StyleSheet.create({
   button: {
-    paddingVertical: 14,
-    paddingHorizontal: 24,
-    borderRadius: 8,
+    minHeight: 60,
+    paddingVertical: 17,
+    paddingHorizontal: 32,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
     width: '100%',

@@ -3,6 +3,7 @@ import {
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
 import {
   OtpPurpose,
@@ -11,8 +12,10 @@ import {
   UserStatus,
 } from '@prisma/client';
 import { AuthIdentityRepository } from '../repositories/auth-identity.repository';
+import { IssueAuthTokensUseCase } from './issue-auth-tokens.use-case';
 import { TwoFactorSettingRepository } from '../repositories/two-factor-setting.repository';
 import { UserEmailRepository } from '../repositories/user-email.repository';
+import { AuthSessionDeviceContext } from '../types/auth-session.types';
 import { VerifyPasswordUseCase } from './verify-password.use-case';
 import { PractitionerOtpChannelService } from '../services/practitioner-otp-channel.service';
 import { CreateOtpChallengeUseCase } from '../../verification/use-cases/create-otp-challenge.use-case';
@@ -25,10 +28,12 @@ import { SendOtpChallengeUseCase } from '../../verification/use-cases/send-otp-c
 @Injectable()
 export class LoginPractitionerPasswordUseCase {
   constructor(
+    private readonly configService: ConfigService,
     private readonly userEmailRepository: UserEmailRepository,
     private readonly authIdentityRepository: AuthIdentityRepository,
     private readonly twoFactorSettingRepository: TwoFactorSettingRepository,
     private readonly verifyPasswordUseCase: VerifyPasswordUseCase,
+    private readonly issueAuthTokensUseCase: IssueAuthTokensUseCase,
     private readonly practitionerOtpChannelService: PractitionerOtpChannelService,
     private readonly createOtpChallengeUseCase: CreateOtpChallengeUseCase,
     private readonly sendOtpChallengeUseCase: SendOtpChallengeUseCase,
@@ -38,10 +43,13 @@ export class LoginPractitionerPasswordUseCase {
     email: string;
     password: string;
     locale: SupportedLocale;
+    deviceContext: AuthSessionDeviceContext;
   }) {
     const normalizedEmail = input.email.trim().toLowerCase();
     const userEmail =
-      await this.userEmailRepository.findByEmail(normalizedEmail);
+      await this.userEmailRepository.findByEmailForPractitionerAuth(
+        normalizedEmail,
+      );
 
     if (!userEmail) {
       throw new UnauthorizedException({
@@ -116,9 +124,27 @@ export class LoginPractitionerPasswordUseCase {
       });
     }
 
+    const isDevelopmentEnvironment =
+      this.configService.get<string>('app.nodeEnv') === 'development';
+    const bypassPractitionerOtp =
+      this.configService.get<boolean>(
+        'auth.practitionerLoginOtpBypassInDev',
+      ) === true;
+
+    await this.authIdentityRepository.touchLastUsed(passwordIdentity.id);
+
+    if (isDevelopmentEnvironment && bypassPractitionerOtp) {
+      return this.issueAuthTokensUseCase.execute({
+        userId: userEmail.user.id,
+        role: UserRoleType.PRACTITIONER,
+        deviceContext: input.deviceContext,
+      });
+    }
+
     const twoFactorSetting = await this.twoFactorSettingRepository.findByUserId(
       userEmail.user.id,
     );
+
     const resolvedChannel =
       this.practitionerOtpChannelService.resolveVerifiedChannel(
         {
@@ -145,8 +171,6 @@ export class LoginPractitionerPasswordUseCase {
       expiresAt: challenge.expiresAt,
       locale: input.locale,
     });
-
-    await this.authIdentityRepository.touchLastUsed(passwordIdentity.id);
 
     return {
       challengeId: challenge.challengeId,

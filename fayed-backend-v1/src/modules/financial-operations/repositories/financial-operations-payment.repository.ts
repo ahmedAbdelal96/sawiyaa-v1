@@ -336,8 +336,8 @@ export class FinancialOperationsPaymentRepository {
         linkedPatientId: event.payment.patientId ?? null,
         linkedPractitionerId: event.payment.practitionerId ?? null,
         patientDisplayName:
-          event.payment.patient.displayName ??
-          event.payment.patient.user.displayName ??
+          event.payment.patient?.displayName ??
+          event.payment.patient?.user.displayName ??
           null,
         practitionerDisplayName:
           event.payment.practitioner?.user.displayName ?? null,
@@ -360,8 +360,8 @@ export class FinancialOperationsPaymentRepository {
         linkedPatientId: refund.payment.patientId ?? null,
         linkedPractitionerId: refund.payment.practitionerId ?? null,
         patientDisplayName:
-          refund.payment.patient.displayName ??
-          refund.payment.patient.user.displayName ??
+          refund.payment.patient?.displayName ??
+          refund.payment.patient?.user.displayName ??
           null,
         practitionerDisplayName:
           refund.payment.practitioner?.user.displayName ?? null,
@@ -465,8 +465,8 @@ export class FinancialOperationsPaymentRepository {
         linkedPatientId: paymentEvent.payment.patientId ?? null,
         linkedPractitionerId: paymentEvent.payment.practitionerId ?? null,
         patientDisplayName:
-          paymentEvent.payment.patient.displayName ??
-          paymentEvent.payment.patient.user.displayName ??
+          paymentEvent.payment.patient?.displayName ??
+          paymentEvent.payment.patient?.user.displayName ??
           null,
         practitionerDisplayName:
           paymentEvent.payment.practitioner?.user.displayName ?? null,
@@ -533,8 +533,8 @@ export class FinancialOperationsPaymentRepository {
       linkedPatientId: refund.payment.patientId ?? null,
       linkedPractitionerId: refund.payment.practitionerId ?? null,
       patientDisplayName:
-        refund.payment.patient.displayName ??
-        refund.payment.patient.user.displayName ??
+        refund.payment.patient?.displayName ??
+        refund.payment.patient?.user.displayName ??
         null,
       practitionerDisplayName:
         refund.payment.practitioner?.user.displayName ?? null,

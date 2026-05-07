@@ -1,0 +1,169 @@
+{
+  "checkedAt": "2026-04-25T09:55:48.166Z",
+  "webUrl": "http://localhost:19007",
+  "practitioner": {
+    "email": "dr.mohamed@hesba.local",
+    "originalDisplayName": "د. محمد محمود",
+    "mutatedDisplayName": "د. محمد محمود Mobile",
+    "restoredDisplayName": "د. محمد محمود",
+    "profileStatus": "APPROVED"
+  },
+  "readiness": {
+    "isProfileCompleted": true,
+    "canSubmitApplication": true,
+    "missingRequirements": [],
+    "checks": {
+      "hasDisplayName": true,
+      "hasProfessionalTitle": true,
+      "hasBio": true,
+      "hasCountry": true,
+      "hasYearsOfExperience": true,
+      "hasLanguage": true,
+      "hasSpecialty": true,
+      "hasPrimarySpecialty": true,
+      "hasCredential": true,
+      "hasPayoutDestination": true,
+      "hasPayoutAccountHolderName": true,
+      "isAccountActive": true,
+      "isPractitionerOtpVerified": true
+    }
+  },
+  "application": {
+    "applicationId": "60c1eaab-449e-4d3b-b6e7-794a65388818",
+    "status": "SUBMITTED",
+    "submittedAt": "2026-04-24T15:07:00.762Z",
+    "reviewedAt": null,
+    "reviewedByUserId": null,
+    "reviewDecisionReason": null,
+    "reviewNotes": null,
+    "submissionSnapshot": {
+      "profile": {
+        "bio": "استشاري طب نفسي بخبرة طويلة في التشخيص وخطط العلاج المتكاملة.",
+        "avatarUrl": "data:image/webp;base64,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",
+        "countryCode": "SA",
+        "practitionerType": "PSYCHIATRIST",
+        "professionalTitle": "استشاري طب نفسي",
+        "yearsOfExperience": 14,
+        "practitionerGender": null
+      },
+      "applicant": {
+        "locale": "ar",
+        "timezone": "Asia/Riyadh",
+        "displayName": "د. محمد محمود"
+      },
+      "credentials": [
+        {
+          "fileUrl": "https://files.local/practitioner-b-license.pdf",
+          "expiresAt": "2027-10-16T14:13:40.219Z",
+          "reviewedAt": null,
+          "uploadedAt": "2026-04-16T09:47:36.775Z",
+          "reviewNotes": null,
+          "credentialId": "88888888-8888-4888-8888-888888888883",
+          "reviewStatus": "APPROVED",
+          "credentialType": "LICENSE"
+        }
+      ],
+      "languageCodes": [
+        "en"
+      ],
+      "payoutDestination": {
+        "iban": null,
+        "bankName": null,
+        "methodType": "WALLET",
+        "otherDetails": null,
+        "walletProvider": "احمد محمد عبدالعال",
+        "walletIdentifier": "01121273655",
+        "accountHolderName": "محمد",
+        "bankAccountNumber": null
+      },
+      "specialtySelection": {
+        "specialties": [
+          {
+            "slug": "anxiety-therapy",
+            "title": "علاج القلق",
+            "isPrimary": true,
+            "categoryId": "34333333-3333-4333-8333-333333333341",
+            "specialtyId": "44444444-4444-4444-8444-444444444441"
+          }
+        ],
+        "primarySpecialtyCategoryId": "34333333-3333-4333-8333-333333333341"
+      }
+    },
+    "isProfileCompleted": true,
+    "canSubmitApplication": false,
+    "missingRequirements": []
+  },
+  "screenshots": [
+    "01-account-overview.png",
+    "02-account-after-save.png"
+  ],
+  "saveResponse": {
+    "status": 200
+  },
+  "dialogs": [],
+  "pageIssues": [],
+  "trackedApiCalls": [
+    {
+      "url": "http://localhost:7000/api/v1/auth/me",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "url": "http://localhost:7000/api/v1/practitioners/me/readiness",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "url": "http://localhost:7000/api/v1/practitioners/me",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "url": "http://localhost:7000/api/v1/practitioners/me/application",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "url": "http://localhost:7000/api/v1/practitioners/me",
+      "status": 200,
+      "method": "PATCH"
+    },
+    {
+      "url": "http://localhost:7000/api/v1/practitioners/me/readiness",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "url": "http://localhost:7000/api/v1/practitioners/me/application",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "url": "http://localhost:7000/api/v1/practitioners/me",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "url": "http://localhost:7000/api/v1/auth/me",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "url": "http://localhost:7000/api/v1/practitioners/me/readiness",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "url": "http://localhost:7000/api/v1/practitioners/me/application",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "url": "http://localhost:7000/api/v1/practitioners/me",
+      "status": 200,
+      "method": "GET"
+    }
+  ],
+  "restored": true,
+  "verified": true
+}

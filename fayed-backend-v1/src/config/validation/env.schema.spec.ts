@@ -62,4 +62,23 @@ describe('env.schema payment validation', () => {
       ),
     ).toThrow(/PAYMOB_IFRAME_ID is required/);
   });
+
+  it('rejects missing paymob intention config when intention flow is enabled', () => {
+    expect(() =>
+      validate(
+        buildValidEnv({
+          PAYMENT_PAYMOB_ENABLED: 'true',
+          PAYMOB_CHECKOUT_FLOW: 'intention',
+          PAYMOB_MODE: 'test',
+          PAYMOB_API_KEY: 'paymob_api',
+          PAYMOB_HMAC_SECRET: 'paymob_hmac',
+          PAYMOB_INTEGRATION_ID_CARD: '12345',
+          PAYMOB_BASE_URL: 'https://accept.paymob.com/api',
+          PAYMOB_CHECKOUT_BASE_URL: '',
+          PAYMOB_INTENTION_BASE_URL: '',
+          PAYMOB_PUBLIC_KEY: '',
+        }),
+      ),
+    ).toThrow(/PAYMOB_PUBLIC_KEY is required/);
+  });
 });

@@ -30,6 +30,24 @@ export default function MatchingResultsScreen() {
 
   const handleBackToHome = () => router.replace("/(patient)/matching/intro");
 
+  const openPractitionerProfile = (
+    slug: string,
+    score: number,
+    rationaleNote?: string,
+    intent: "view" | "book" = "view",
+  ) => {
+    router.push({
+      pathname: "/(patient)/discovery/[slug]",
+      params: {
+        slug,
+        source: "matching",
+        intent,
+        matchScore: String(score),
+        matchReason: rationaleNote ?? "",
+      },
+    });
+  };
+
   if (isLoading) {
     return (
       <Screen bg="background">
@@ -164,8 +182,11 @@ export default function MatchingResultsScreen() {
                       variant="secondary"
                       style={styles.secondaryBtn}
                       onPress={() =>
-                        router.push(
-                          `/(patient)/discovery/${item.practitioner.slug}`,
+                        openPractitionerProfile(
+                          item.practitioner.slug,
+                          item.score,
+                          item.rationale.notes[0],
+                          "view",
                         )
                       }
                     />
@@ -173,8 +194,11 @@ export default function MatchingResultsScreen() {
                       title={t("matching.results.bookNow")}
                       style={styles.primaryBtn}
                       onPress={() =>
-                        router.push(
-                          `/(patient)/discovery/${item.practitioner.slug}`,
+                        openPractitionerProfile(
+                          item.practitioner.slug,
+                          item.score,
+                          item.rationale.notes[0],
+                          "book",
                         )
                       }
                     />

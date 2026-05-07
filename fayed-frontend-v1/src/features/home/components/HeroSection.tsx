@@ -2,6 +2,7 @@ import { getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import {
   Compass,
+  GraduationCap,
   HeartHandshake,
   Lock,
   Search,
@@ -13,10 +14,11 @@ export default async function HeroSection() {
   const t = await getTranslations("home.hero");
 
   const quickLinks = [
-    { href: "/signup/patient", label: t("quickMatching"), icon: Compass },
-    { href: "/signup/patient", label: t("quickAssessment"), icon: Sparkles },
+    { href: "/signup?mode=patient", label: t("quickMatching"), icon: Compass },
+    { href: "/signup?mode=patient", label: t("quickAssessment"), icon: Sparkles },
     { href: "/practitioners", label: t("quickPractitioners"), icon: Search },
-    { href: "/signin/patient", label: t("quickSupport"), icon: HeartHandshake },
+    { href: "/academy", label: t("quickAcademy"), icon: GraduationCap },
+    { href: "/signin?mode=patient", label: t("quickSupport"), icon: HeartHandshake },
   ];
 
   return (
@@ -44,7 +46,7 @@ export default async function HeroSection() {
 
           <div className="mt-9 flex flex-wrap gap-3">
             <Link
-              href="/signup/patient"
+              href="/signup?mode=patient"
               className="app-lift inline-flex items-center rounded-2xl bg-primary px-6 py-3.5 text-base font-semibold text-white shadow-[0_18px_32px_-20px_rgba(95,143,139,0.5)] transition hover:-translate-y-0.5 hover:bg-primary-hover"
             >
               {t("ctaPrimary")}
@@ -54,6 +56,12 @@ export default async function HeroSection() {
               className="app-panel inline-flex items-center rounded-2xl px-6 py-3.5 text-base font-semibold text-primary transition hover:bg-primary-light"
             >
               {t("ctaSecondary")}
+            </Link>
+            <Link
+              href="/academy"
+              className="app-panel inline-flex items-center rounded-2xl px-6 py-3.5 text-base font-semibold text-text-primary transition hover:bg-surface-tertiary hover:text-primary dark:text-white/90 dark:hover:bg-white/5"
+            >
+              {t("ctaAcademy")}
             </Link>
           </div>
 
@@ -107,10 +115,10 @@ export default async function HeroSection() {
                 </div>
               </div>
 
-              <Link
-                href="/signup/patient"
-                className="mt-5 flex w-full items-center justify-center rounded-2xl bg-primary py-3.5 text-sm font-semibold text-white transition hover:bg-primary-hover"
-              >
+            <Link
+              href="/signup?mode=patient"
+              className="mt-5 flex w-full items-center justify-center rounded-2xl bg-primary py-3.5 text-sm font-semibold text-white transition hover:bg-primary-hover"
+            >
                 {t("sessionCta")}
               </Link>
             </div>

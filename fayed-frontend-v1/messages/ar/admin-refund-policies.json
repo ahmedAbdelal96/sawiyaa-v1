@@ -1,0 +1,610 @@
+{
+  "meta": {
+    "listTitle": "سياسات الاسترداد - الإدارة",
+    "listDescription": "إدارة عائلتي سياسة الاسترداد للجلسات والباقات.",
+    "detailTitle": "تفاصيل سياسة الاسترداد - الإدارة",
+    "detailDescription": "مراجعة الإصدارات، تعديل المسودات، نشر الإصدارات الجديدة، وأرشفة المسودات القديمة.",
+    "versionTitle": "نسخة سياسة الاسترداد",
+    "versionDescription": "عرض نسخة واحدة بالتفصيل.",
+    "invalidTitle": "سياسات الاسترداد - الإدارة",
+    "invalidDescription": "نوع سياسة الاسترداد المطلوب غير صالح."
+  },
+  "page": {
+    "eyebrow": "سياسات الاسترداد في الإدارة",
+    "title": "سياسات الاسترداد",
+    "description": "تُدار سياسة استرجاع الجلسات وسياسة استرجاع الباقات من هنا."
+  },
+  "overview": {
+    "title": "سياسات الاسترجاع",
+    "note": "أدِر سياسة الجلسات وسياسة الباقات من بطاقتين واضحتين.",
+    "columns": {
+      "policy": "عائلة السياسة",
+      "activeVersion": "النسخة النشطة",
+      "lastPublished": "آخر نشر",
+      "drafts": "المسودات",
+      "history": "السجل",
+      "contentHash": "بصمة المحتوى",
+      "actions": "الإجراءات"
+    },
+    "values": {
+      "count": "{count}"
+    },
+    "cards": {
+      "session": {
+        "title": "سياسة استرجاع الجلسات",
+        "description": "تظهر هذه السياسة للمريض عند دفع الجلسة العادية."
+      },
+      "package": {
+        "title": "سياسة استرجاع الباقات",
+        "description": "تظهر هذه السياسة للمريض عند دفع الباقة."
+      },
+      "clauses": "{count} بنود",
+      "updatedAt": "آخر تحديث: {date}",
+      "manage": "إدارة السياسة"
+    }
+  },
+  "drafts": {
+    "updatedAt": "تم التحديث",
+    "noSummary": "لم يتم توفير ملخص.",
+    "columns": {
+      "version": "النسخة",
+      "updatedAt": "تم التحديث في",
+      "summary": "الملخص",
+      "status": "الحالة",
+      "actions": "الإجراءات"
+    },
+    "empty": {
+      "title": "لا توجد مسودات بعد",
+      "note": "أنشئ مسودة لبدء تعديل نسخة جديدة."
+    },
+    "actions": {
+      "edit": "تعديل",
+      "publish": "نشر",
+      "archive": "أرشفة"
+    },
+    "feedback": {
+      "publishSuccess": "تم نشر المسودة.",
+      "publishError": "تعذر نشر المسودة الآن.",
+      "archiveSuccess": "تمت أرشفة المسودة.",
+      "archiveError": "تعذر أرشفة المسودة الآن."
+    }
+  },
+  "notice": {
+    "heading": "حد الحوكمة",
+    "note": "نشر نسخة جديدة يؤثر فقط على المدفوعات المستقبلية ولا يغيّر إثباتات الموافقة التاريخية."
+  },
+  "summary": {
+    "total": "العائلات",
+    "active": "الإصدارات النشطة",
+    "drafts": "المسودات",
+    "archived": "المؤرشفة"
+  },
+  "family": {
+    "noActive": "لا توجد نسخة نشطة",
+    "noActiveHint": "لم تُنشر نسخة نشطة بعد",
+    "fields": {
+      "activeVersion": "النسخة النشطة",
+      "versionCount": "الإصدارات",
+      "draftCount": "المسودات",
+      "lastPublished": "آخر نشر",
+      "latestHash": "أحدث بصمة محتوى",
+      "totalVersions": "{total} إصدارًا",
+      "archivedVersions": "{total} نسخة مؤرشفة"
+    },
+    "session": {
+      "title": "سياسة استرداد الجلسات",
+      "description": "تتحكم في سياسة الاسترداد المعروضة أثناء دفع الجلسة العادية."
+    },
+    "package": {
+      "title": "سياسة استرداد الباقات",
+      "description": "تتحكم في سياسة الاسترداد المعروضة أثناء دفع الباقة."
+    }
+  },
+  "actions": {
+    "back": "رجوع",
+    "open": "فتح",
+    "managePolicy": "إدارة السياسة",
+    "createDraft": "إنشاء مسودة",
+    "creatingDraft": "جارٍ إنشاء المسودة...",
+    "createDraftError": "تعذر إنشاء مسودة الآن.",
+    "retry": "إعادة المحاولة",
+    "saveDraft": "حفظ المسودة",
+    "publishDraft": "نشر المسودة",
+    "archiveDraft": "أرشفة المسودة",
+    "saving": "جارٍ الحفظ...",
+    "publishing": "جارٍ النشر...",
+    "archiving": "جارٍ الأرشفة...",
+    "addClause": "إضافة بند",
+    "addRule": "إضافة قاعدة",
+    "save": "حفظ",
+    "savePolicy": "حفظ السياسة",
+    "cancel": "إلغاء",
+    "showAdvancedJson": "إظهار JSON المتقدم",
+    "hideAdvancedJson": "إخفاء JSON المتقدم",
+    "close": "إغلاق",
+    "saveChanges": "حفظ التغييرات"
+  },
+  "tabs": {
+    "active": "النسخة النشطة",
+    "drafts": "المسودات",
+    "history": "السجل"
+  },
+  "badges": {
+    "active": "نشطة",
+    "inactive": "غير نشطة",
+    "noActive": "لا توجد نسخة نشطة"
+  },
+  "status": {
+    "active": "نشطة",
+    "draft": "مسودة",
+    "archived": "مؤرشفة"
+  },
+  "states": {
+    "error": {
+      "heading": "سياسات الاسترداد غير متاحة الآن",
+      "note": "تعذر تحميل سياسات الاسترداد.",
+      "retry": "إعادة المحاولة"
+    },
+    "empty": {
+      "heading": "لم يتم العثور على عائلات لسياسات الاسترداد",
+      "note": "لم يُرجع النظام أي عائلات لسياسات الاسترداد."
+    },
+    "loading": {
+      "title": "جارٍ تحميل سياسة الاسترداد",
+      "note": "نحمّل النسخة الحالية وسجل الإصدارات."
+    },
+    "notFound": {
+      "heading": "لم يتم العثور على نسخة سياسة الاسترداد",
+      "note": "تعذر العثور على نسخة سياسة الاسترداد المطلوبة."
+    }
+  },
+  "detail": {
+    "eyebrow": "إدارة سياسة الاسترداد",
+    "description": "تظهر هذه السياسة للمريض قبل إتمام الدفع.",
+    "back": "العودة إلى سياسات الاسترجاع",
+    "notice": {
+      "heading": "إرشاد النشر",
+      "note": "نشر نسخة جديدة يؤثر فقط على المدفوعات المستقبلية ولا يغيّر إثباتات الموافقة التاريخية."
+    },
+    "summary": {
+      "activeVersion": "النسخة النشطة",
+      "versionCount": "الإصدارات",
+      "draftCount": "المسودات",
+      "archivedCount": "المؤرشفة",
+      "noActiveHint": "لم تُنشر نسخة نشطة بعد",
+      "versionCountHint": "إجمالي الإصدارات في هذه العائلة",
+      "draftCountHint": "المسودات التي لا يزال يمكن تعديلها",
+      "archivedCountHint": "الإصدارات التاريخية المؤرشفة",
+      "clauses": "البنود",
+      "clausesHint": "بنود مرتبة يراها المريض",
+      "status": "الحالة",
+      "statusHint": "هل هذه السياسة نشطة أم لا",
+      "updatedAt": "آخر تحديث",
+      "updatedAtHint": "آخر وقت تم فيه تعديل السياسة"
+    },
+    "notFound": {
+      "heading": "لم يتم العثور على السياسة",
+      "note": "تعذر تحميل سياسة الاسترداد المطلوبة."
+    },
+    "title": {
+      "session": "سياسة استرجاع الجلسات",
+      "package": "سياسة استرجاع الباقات"
+    },
+    "mode": {
+      "edit": "تحرير",
+      "preview": "معاينة ما يراه المريض"
+    },
+    "preview": {
+      "toggleLabel": "المعاينة",
+      "toggleNote": "بدّل بين التحرير ومعاينة ما يراه المريض."
+    },
+    "sections": {
+      "policyInfo": "معلومات السياسة",
+      "policyInfoNote": "حدّث العنوان والحالة فقط.",
+      "clauses": "البنود",
+      "clausesNote": "كل بند يظهر للمريض بشكل مختصر وواضح."
+    }
+  },
+  "clauses": {
+    "heading": "البنود",
+    "note": "اجعل كل بند قصيرًا وواضحًا.",
+    "columns": {
+      "order": "الترتيب"
+    },
+    "actions": {
+      "up": "نقل لأعلى",
+      "down": "نقل لأسفل",
+      "edit": "تعديل",
+      "delete": "حذف"
+    },
+    "empty": {
+      "note": "لم تتم إضافة أي بنود بعد."
+    },
+    "modal": {
+      "create": "إنشاء بند",
+      "edit": "تعديل بند"
+    },
+    "rowNumber": "رقم البند {index}"
+  },
+  "preview": {
+    "heading": "معاينة ما يراه المريض",
+    "note": "هذه هي النسخة التي يقرأها المريض عند الدفع.",
+    "eyebrow": "معاينة",
+    "languageAr": "العربية",
+    "languageEn": "الإنجليزية"
+  },
+  "active": {
+    "note": "هذه هي السياسة الحالية التي يراها المستخدم عند الدفع.",
+    "empty": {
+      "title": "لا توجد سياسة نشطة منشورة بعد",
+      "note": "أنشئ مسودة ثم انشرها لتصبح هذه السياسة نشطة."
+    }
+  },
+  "history": {
+    "eyebrow": "سجل الإصدارات",
+    "heading": "إصدارات السياسة",
+    "note": "اختر نسخة لعرض محتواها وحالتها.",
+    "columns": {
+      "version": "النسخة",
+      "status": "الحالة",
+      "publishedAt": "تاريخ النشر",
+      "effectiveFrom": "سارية من",
+      "contentHash": "بصمة المحتوى",
+      "action": "الإجراء"
+    },
+    "actions": {
+      "view": "عرض",
+      "viewing": "المعروضة"
+    },
+    "empty": {
+      "title": "لا توجد إصدارات تاريخية بعد",
+      "note": "ستظهر هنا الإصدارات المنشورة والمؤرشفة."
+    }
+  },
+  "version": {
+    "eyebrow": "عرض النسخة",
+    "description": "راجع نسخة واحدة من السياسة، أو عدّلها إذا كانت لا تزال مسودة."
+  },
+  "types": {
+    "session": "الجلسة",
+    "package": "الباقة"
+  },
+  "warnings": {
+    "readOnlyTitle": "الإصدارات النشطة والمؤرشفة غير قابلة للتعديل",
+    "readOnlyNote": "يمكن تعديل المسودات فقط. تبقى الإصدارات المنشورة للقراءة فقط حفاظًا على سلامة السجل التاريخي.",
+    "publishTitle": "النشر يغيّر المدفوعات المستقبلية فقط",
+    "publishNote": "يمكن نشر هذه المسودة بعد التحقق منها. لا يغيّر النشر إثباتات الموافقة التاريخية."
+  },
+  "document": {
+    "eyebrow": "وثيقة السياسة",
+    "heading": "وثيقة السياسة",
+    "readOnly": "للقراءة فقط",
+    "locales": {
+      "ar": "العربية",
+      "en": "الإنجليزية"
+    },
+    "labels": {
+      "title": "العنوان",
+      "summary": "ملخص السياسة",
+      "localizedContent": "نص السياسة"
+    },
+    "clauseOrder": "ترتيب البند {order}",
+    "ruleOrder": "ترتيب القاعدة {order}",
+    "active": "نشط",
+    "inactive": "غير نشط",
+    "noLocalizedContent": "لم يتم توفير محتوى مترجم.",
+    "noClauses": "لم يتم توفير بنود.",
+    "noRules": "لم يتم توفير قواعد.",
+    "clausesHeading": "البنود",
+    "clausesTitle": "بنود بسيطة",
+    "clausesCount": "{count} بنود",
+    "rulesHeading": "القواعد",
+    "rulesTitle": "كيف يتم الاسترداد",
+    "rulesCount": "{count} قواعد",
+    "meta": {
+      "version": "النسخة",
+      "publishedAt": "تاريخ النشر",
+      "effectiveFrom": "سارية من",
+      "contentHash": "بصمة المحتوى"
+    },
+    "rules": {
+      "triggers": {
+        "before_session_start": "قبل بدء الجلسة",
+        "after_session_start": "بعد بدء الجلسة",
+        "after_session_completed": "بعد اكتمال الجلسة"
+      },
+      "modes": {
+        "none": "لا يوجد استرداد",
+        "percentage": "نسبة مئوية",
+        "fixed_amount": "مبلغ ثابت",
+        "admin_review": "مراجعة إدارية"
+      },
+      "adminReview": "يتطلب مراجعة إدارية",
+      "reviewNeeded": "راجع وفعّل السياسة",
+      "normal": "قاعدة بسيطة",
+      "mode": "نمط الاسترداد",
+      "window": "النافذة الزمنية",
+      "betweenHours": "من {min} إلى {max} ساعة",
+      "fromHours": "{min}+ ساعة",
+      "upToHours": "حتى {max} ساعة",
+      "noWindow": "لا توجد نافذة زمنية",
+      "percent": "نسبة الاسترداد",
+      "percentValue": "{value}%",
+      "fixedAmount": "مبلغ ثابت",
+      "percentTitle": "نسبة الاسترداد",
+      "fixedAmountTitle": "مبلغ ثابت"
+    },
+    "viewClause": "عرض تفاصيل البند",
+    "viewRule": "عرض تفاصيل القاعدة",
+    "modals": {
+      "clauseTitle": "تفاصيل البند",
+      "ruleTitle": "تفاصيل القاعدة"
+    },
+    "currentLanguage": "اللغة المعروضة",
+    "sentences": {
+      "generic": {
+        "percent": "الاسترداد {percent}%.",
+        "rule": "قاعدة استرداد بسيطة."
+      },
+      "session": {
+        "fullRefund": "إذا كان الموعد بعد 48 ساعة أو أكثر: استرداد كامل.",
+        "refund75": "إذا كان الموعد بين 24 و48 ساعة: استرداد 75%.",
+        "refund50": "إذا كان الموعد بين 12 و24 ساعة: استرداد 50%.",
+        "reviewBefore12": "إذا كان الموعد أقل من 12 ساعة: راجع وفعّل السياسة.",
+        "reviewAfterStart": "بعد بدء الجلسة أو عند عدم الحضور: راجع وفعّل السياسة.",
+        "fullRefundEn": "If the request is made 48 hours or more before the session: full refund.",
+        "refund75En": "If the request is made between 24 and 48 hours before the session: 75% refund.",
+        "refund50En": "If the request is made between 12 and 24 hours before the session: 50% refund.",
+        "reviewBefore12En": "If the request is made less than 12 hours before the session: needs approval.",
+        "reviewAfterStartEn": "After the session starts or if the patient does not show up: needs approval."
+      },
+      "package": {
+        "completedNoRefund": "الجلسة المكتملة لا تُسترد.",
+        "fullRefund": "إذا كان الموعد بعد 48 ساعة أو أكثر: استرداد كامل للجلسة غير المستخدمة.",
+        "refund75": "إذا كان الموعد بين 24 و48 ساعة: استرداد 75%.",
+        "refund50": "إذا كان الموعد بين 12 و24 ساعة: استرداد 50%.",
+        "reviewBefore12": "إذا كان الموعد أقل من 12 ساعة: راجع وفعّل السياسة.",
+        "reviewAfterStart": "بعد بدء الجلسة أو عند عدم الحضور: راجع وفعّل السياسة.",
+        "completedNoRefundEn": "A completed session is not refundable.",
+        "fullRefundEn": "If the session is more than 48 hours away: full refund for the unused session.",
+        "refund75En": "If the session is between 24 and 48 hours away: 75% refund.",
+        "refund50En": "If the session is between 12 and 24 hours away: 50% refund.",
+        "reviewBefore12En": "If the session is less than 12 hours away: needs approval.",
+        "reviewAfterStartEn": "After the session starts or if the patient does not show up: needs approval."
+      }
+    },
+    "clauseNumber": "البند رقم {index}",
+    "ruleNumber": "القاعدة رقم {index}"
+  },
+  "editor": {
+    "eyebrow": "محرر النسخة",
+    "heading": "تعديل محتوى السياسة",
+    "noteDraft": "يمكنك تعديل هذه المسودة، ومعاينتها، ثم نشرها أو أرشفتها.",
+    "noteReadOnly": "هذه النسخة للقراءة فقط لأنها نُشرت أو أُرشفت بالفعل.",
+    "sections": {
+      "basicInformation": "المعلومات الأساسية",
+      "basicInformationNote": "أدخل العناوين والملخصات بالعربية والإنجليزية أولًا.",
+      "arabicContent": "المحتوى العربي",
+      "arabicContentTitle": "ما سيقرأه المرضى العرب",
+      "englishContent": "المحتوى الإنجليزي",
+      "englishContentTitle": "ما سيقرأه المرضى الإنجليز",
+      "clauses": "البنود",
+      "clausesTitle": "بنود السياسة المقروءة",
+      "rules": "قواعد الاسترداد",
+      "rulesTitle": "قواعد الاسترداد المهيكلة",
+      "reviewAndPublish": "المراجعة والنشر",
+      "reviewAndPublishNote": "راجع المعاينة بعناية قبل نشر نسخة جديدة.",
+      "advancedJson": "JSON المتقدم",
+      "advancedJsonTitle": "عرض المطورين",
+      "clausesHelp": "راجع البنود كقائمة مرتبة، ثم افتح السطر لتعديله من خلال نافذة منبثقة.",
+      "rulesHelp": "راجع كل قاعدة كسطر واحد وعدّل الحقل الذي تحتاجه من النافذة المنبثقة."
+    },
+    "fields": {
+      "titleAr": "العنوان بالعربية",
+      "titleEn": "العنوان بالإنجليزية",
+      "summaryAr": "الملخص بالعربية",
+      "summaryEn": "الملخص بالإنجليزية",
+      "isActive": "السياسة نشطة",
+      "localizedContentAr": "محتوى السياسة بالعربية",
+      "localizedContentEn": "محتوى السياسة بالإنجليزية",
+      "effectiveFrom": "سارية من",
+      "clauseCode": "رمز البند",
+      "clauseSortOrder": "ترتيب البند",
+      "clauseHeadingAr": "عنوان البند بالعربية",
+      "clauseHeadingEn": "عنوان البند بالإنجليزية",
+      "bodyAr": "نص البند بالعربية",
+      "bodyEn": "نص البند بالإنجليزية",
+      "clauseBodyAr": "نص البند بالعربية",
+      "clauseBodyEn": "نص البند بالإنجليزية",
+      "clauseActive": "البند نشط",
+      "clauseActiveNote": "البنود غير النشطة تبقى داخل المسودة للمرجع لكنها تُخفى من وثيقة السياسة النشطة.",
+      "ruleCode": "رمز القاعدة",
+      "ruleSortOrder": "ترتيب القاعدة",
+      "triggerType": "نوع التفعيل",
+      "refundMode": "نمط الاسترداد",
+      "minHoursBeforeStart": "الحد الأدنى للساعات قبل البداية",
+      "maxHoursBeforeStart": "الحد الأقصى للساعات قبل البداية",
+      "refundPercent": "نسبة الاسترداد",
+      "fixedAmount": "مبلغ ثابت",
+      "requiresAdminOverride": "يتطلب موافقة إدارية",
+      "requiresAdminOverrideNote": "استخدم هذا عندما يجب التعامل مع القاعدة يدويًا من قبل العمليات.",
+      "titleByLocale": "JSON العنوان حسب اللغة",
+      "summaryByLocale": "JSON الملخص حسب اللغة",
+      "localizedContent": "JSON المحتوى المترجم",
+      "clausesJson": "JSON البنود",
+      "rulesJson": "JSON القواعد",
+      "versionNumber": "رقم النسخة",
+      "status": "الحالة",
+      "contentHash": "بصمة المحتوى",
+      "createdAt": "تاريخ الإنشاء",
+      "publishedAt": "تاريخ النشر"
+    },
+    "meta": {
+      "version": "النسخة",
+      "status": "الحالة",
+      "createdAt": "تاريخ الإنشاء",
+      "publishedAt": "تاريخ النشر",
+      "effectiveFrom": "سارية من",
+      "contentHash": "بصمة المحتوى"
+    },
+    "placeholders": {
+      "choose": "اختر..."
+    },
+    "clauses": {
+      "itemTitle": "البند رقم {index}",
+      "itemNote": "اجعل نص البند واضحًا ومقروءًا في اللغتين."
+    },
+    "rules": {
+      "itemTitle": "القاعدة رقم {index}",
+      "itemNote": "استخدم الحقول المهيكلة للقواعد بدل JSON الخام."
+    },
+    "advanced": {
+      "title": "معاينة JSON المتقدمة",
+      "summary": "JSON العنوان",
+      "content": "JSON المحتوى",
+      "rules": "JSON القواعد",
+      "hiddenNote": "عرض JSON المتقدم مخفي افتراضيًا. يستخدم المحرر الرئيسي الحقول المهيكلة بدلًا منه.",
+      "contentNote": "هذه المنطقة تعكس محتوى المسودة للمستخدمين المتقدمين ولمهام التصحيح فقط."
+    },
+    "preview": {
+      "eyebrow": "المعاينة",
+      "heading": "كيف سيرى المرضى هذه السياسة",
+      "note": "تتبع المعاينة القيم المُدخلة في المحرر المهيكل.",
+      "pendingHash": "بصمة المحتوى قيد الحساب",
+      "title": "العنوان",
+      "summary": "الملخص",
+      "content": "المحتوى المترجم",
+      "clauses": "البنود",
+      "rules": "القواعد",
+      "active": "نشط",
+      "inactive": "غير نشط",
+      "none": "لا يوجد محتوى منشور بعد.",
+      "versionNumber": "رقم النسخة",
+      "effectiveFrom": "سارية من",
+      "publishedAt": "تاريخ النشر",
+      "contentHash": "بصمة المحتوى",
+      "minHours": "الحد الأدنى {hours} ساعة",
+      "maxHours": "الحد الأقصى {hours} ساعة",
+      "fixedAmount": "مبلغ ثابت {amount}",
+      "adminReview": "يتطلب مراجعة إدارية"
+    },
+    "table": {
+      "actions": "الإجراءات",
+      "status": "الحالة",
+      "clauses": {
+        "order": "الترتيب",
+        "code": "الرمز",
+        "ar": "العربية",
+        "en": "الإنجليزية"
+      },
+      "rules": {
+        "order": "الترتيب",
+        "code": "الرمز",
+        "trigger": "التفعيل",
+        "mode": "النمط",
+        "window": "النافذة",
+        "override": "المراجعة"
+      },
+      "clausesEmpty": {
+        "title": "لا توجد بنود بعد",
+        "note": "أضف بنودًا لبناء وثيقة السياسة المقروءة."
+      },
+      "rulesEmpty": {
+        "title": "لا توجد قواعد بعد",
+        "note": "أضف قواعد لتحديد سلوك الاسترداد."
+      }
+    },
+    "actions": {
+      "editItem": "تعديل",
+      "moveUp": "نقل لأعلى",
+      "moveDown": "نقل لأسفل",
+      "deleteItem": "حذف"
+    },
+    "modals": {
+      "createClause": "إنشاء بند",
+      "editClause": "تعديل بند",
+      "clauseDescription": "عدّل محتوى البند للغة المحددة.",
+      "createRule": "إنشاء قاعدة",
+      "editRule": "تعديل قاعدة",
+      "ruleDescription": "عدّل حقول القاعدة بدون استخدام JSON الخام.",
+      "save": "حفظ",
+      "deleteTitle": "هل تريد حذف هذا العنصر؟",
+      "deleteDescription": "هذا الإجراء يحذف العنصر من المسودة فقط.",
+      "deleteConfirm": "حذف",
+      "deleteClauseWarning": "سيتم حذف هذا البند من المسودة.",
+      "deleteRuleWarning": "سيتم حذف هذه القاعدة من المسودة.",
+      "deleteNote": "يمكنك إضافته مرة أخرى لاحقًا إذا لزم الأمر."
+    }
+  },
+  "validation": {
+    "required": "{field} مطلوب.",
+    "fixErrors": "يرجى إصلاح أخطاء التحقق قبل المتابعة.",
+    "invalidJson": "يجب أن يكون {field} JSON صالحًا.",
+    "nonEmptyObject": "لا يمكن أن يكون {field} فارغًا.",
+    "invalidArray": "يجب أن يكون {field} مصفوفة JSON صالحة.",
+    "clausesRequired": "يجب وجود بند واحد على الأقل.",
+    "rulesRequired": "يجب وجود قاعدة واحدة على الأقل.",
+    "invalidClause": "بند واحد أو أكثر غير صالح.",
+    "invalidRule": "قاعدة واحدة أو أكثر غير صالحة.",
+    "invalidDate": "يجب أن يكون {field} تاريخًا صالحًا.",
+    "invalidRefundPercent": "يجب أن تكون نسبة الاسترداد بين 0 و100.",
+    "requiredField": "الحقل {field} مطلوب في العنصر رقم {index}.",
+    "overlap": "العنصران {first} و{second} متداخلان.",
+    "invalidWindow": "تحتوي {field} على نافذة ساعات غير صالحة.",
+    "invalidRefundMode": "يجب أن تكون {field} = NONE عندما يكون الإلغاء محظورًا.",
+    "refundPercentRequired": "يتطلب {field} نسبة استرداد.",
+    "policyDisplayNameRequired": "عنوان السياسة مطلوب.",
+    "ruleCodeRequired": "رمز القاعدة مطلوب.",
+    "ruleDisplayNameRequired": "اسم القاعدة مطلوب.",
+    "duplicateCode": "تم اكتشاف رمز مكرر: {code}.",
+    "clauseCodeRequired": "رمز البند مطلوب في العنصر رقم {index}.",
+    "clauseSortOrderInvalid": "ترتيب البند غير صالح في العنصر رقم {index}.",
+    "clauseHeadingRequired": "عنوان البند مطلوب في العنصر رقم {index}.",
+    "clauseBodyRequired": "نص البند مطلوب في العنصر رقم {index}.",
+    "ruleSortOrderInvalid": "ترتيب القاعدة غير صالح في العنصر رقم {index}.",
+    "triggerTypeRequired": "نوع التفعيل مطلوب في العنصر رقم {index}.",
+    "refundModeRequired": "نمط الاسترداد مطلوب في العنصر رقم {index}."
+  },
+  "feedback": {
+    "saveSuccess": "تم حفظ المسودة.",
+    "saveError": "تعذر حفظ المسودة الآن.",
+    "publishSuccess": "تم نشر المسودة.",
+    "publishError": "تعذر نشر المسودة الآن.",
+    "archiveSuccess": "تمت أرشفة المسودة.",
+    "archiveError": "تعذر أرشفة المسودة الآن.",
+    "policySaved": "تم حفظ السياسة.",
+    "policySaveError": "تعذر حفظ السياسة الآن.",
+    "clauseSaved": "تم حفظ البند.",
+    "clauseSaveError": "تعذر حفظ البند الآن.",
+    "clauseDeleted": "تم حذف البند.",
+    "clauseDeleteError": "تعذر حذف البند الآن.",
+    "reorderError": "تعذر ترتيب البنود الآن."
+  },
+  "confirm": {
+    "cancel": "إلغاء",
+    "publish": {
+      "title": "هل تريد نشر هذه المسودة؟",
+      "note": "راجع المسودة بعناية قبل نشرها.",
+      "confirm": "نشر المسودة",
+      "warningTitle": "نشر هذه النسخة يؤثر على المدفوعات المستقبلية فقط ولا يغيّر إثباتات الموافقة التاريخية.",
+      "warningBody": "عند النشر تصبح هذه النسخة نشطة وتُؤرشف النسخة النشطة السابقة."
+    },
+    "archive": {
+      "title": "هل تريد أرشفة هذه المسودة؟",
+      "note": "الأرشفة تخرج المسودة من مسار التعديل مع الاحتفاظ بالسجل.",
+      "warningTitle": "الإصدارات المؤرشفة تبقى للقراءة فقط",
+      "warningBody": "الأرشفة لا تحذف السجل ولا تؤثر على الموافقات الحالية.",
+      "confirm": "أرشفة المسودة"
+    },
+    "publishConfirm": "نشر المسودة",
+    "archiveConfirm": "أرشفة المسودة",
+    "publishTitle": "هل تريد نشر هذه المسودة؟",
+    "publishNote": "راجع المسودة بعناية قبل نشرها.",
+    "publishWarningTitle": "نشر هذه النسخة يؤثر على المدفوعات المستقبلية فقط ولا يغيّر إثباتات الموافقة التاريخية.",
+    "publishWarningBody": "عند النشر تصبح هذه النسخة نشطة وتُؤرشف النسخة النشطة السابقة.",
+    "archiveTitle": "هل تريد أرشفة هذه المسودة؟",
+    "archiveNote": "الأرشفة تخرج المسودة من مسار التعديل مع الاحتفاظ بالسجل.",
+    "archiveWarningTitle": "الإصدارات المؤرشفة تبقى للقراءة فقط",
+    "archiveWarningBody": "الأرشفة لا تحذف السجل ولا تؤثر على الموافقات الحالية."
+  }
+}

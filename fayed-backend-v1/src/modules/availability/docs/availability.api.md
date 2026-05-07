@@ -58,8 +58,9 @@ This module explicitly does **not** own:
 - `ListPublicPractitionerAvailabilityWindowsUseCase`
 
 ## Business Rules
-- recurring weekly slots must not overlap on the same day
-- weekly slot granularity is enforced at 15 minutes in V1
+- recurring weekly slots must not overlap on the same day when they share the same duration
+- weekly slot granularity is enforced at 30 minutes in V1
+- each recurring weekly slot declares an explicit booking duration of `30` or `60` minutes
 - practitioner timezone is the source of truth for recurring schedule interpretation
 - exceptions are stored as concrete UTC datetimes
 - `BLOCK` overrides all other availability
@@ -69,7 +70,7 @@ This module explicitly does **not** own:
 ## Response Notes
 - self-service `GET /me/availability` returns timezone, recurring slots, and upcoming active exceptions
 - public `/availability` returns only recurring weekly slots and timezone
-- public `/availability/windows` returns derived UTC windows for the requested range
+- public `/availability/windows` returns derived UTC windows for the requested range, including the slot duration that produced each window
 - exception `reason` is never exposed on public endpoints
 
 ## Localization Notes

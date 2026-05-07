@@ -70,6 +70,9 @@ export class GetPractitionerApplicationStatusUseCase {
               reviewDecisionReason:
                 latestApplication.reviewDecisionReason ?? null,
               reviewNotes: latestApplication.reviewNotes ?? null,
+              submissionSnapshot:
+                (latestApplication.submissionSnapshot as Record<string, unknown> | null) ??
+                null,
             })
           : this.practitionerApplicationMapper.empty()),
         isProfileCompleted: readiness.isProfileCompleted,

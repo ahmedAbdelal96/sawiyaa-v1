@@ -4,6 +4,7 @@ export {
   useModerateReview,
   usePatientReviews,
   usePatientReview,
+  useSubmitPatientSessionReview,
 } from "./hooks/use-reviews";
 export {
   getAdminReviews,
@@ -11,6 +12,7 @@ export {
   moderateReview,
   getPatientReviews,
   getPatientReview,
+  submitPatientSessionReview,
 } from "./api/reviews.api";
 export { adminReviewsQueryKeys, patientReviewsQueryKeys } from "./constants/query-keys";
 export type {
@@ -26,5 +28,6 @@ export type {
   ListPatientReviewsParams,
   ModerateReviewRequest,
   ModerationResultData,
+  CreateSessionReviewInput,
 } from "./types/reviews.types";
 export { ALLOWED_MODERATION_ACTIONS } from "./types/reviews.types";

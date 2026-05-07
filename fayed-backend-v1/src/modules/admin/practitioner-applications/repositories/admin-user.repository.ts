@@ -39,4 +39,29 @@ export class AdminUserRepository {
       },
     });
   }
+
+  updateProfilePreferences(
+    userId: string,
+    data: {
+      displayName?: string | null;
+      defaultLocale?: string | null;
+      timezone?: string | null;
+    },
+    tx?: Prisma.TransactionClient,
+  ) {
+    return this.getDb(tx).user.update({
+      where: { id: userId },
+      data: {
+        displayName: data.displayName,
+        defaultLocale: data.defaultLocale,
+        timezone: data.timezone,
+      },
+      select: {
+        id: true,
+        displayName: true,
+        defaultLocale: true,
+        timezone: true,
+      },
+    });
+  }
 }

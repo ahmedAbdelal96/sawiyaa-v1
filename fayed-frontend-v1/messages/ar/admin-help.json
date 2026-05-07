@@ -1,0 +1,175 @@
+{
+  "meta": {
+    "listTitle": "مركز المساعدة - الإدارة",
+    "listDescription": "إدارة الأقسام والأسئلة الشائعة المعروضة للمستخدمين.",
+    "categoriesTitle": "الأقسام - الإدارة",
+    "categoriesDescription": "إدارة الأقسام المعروضة للمستخدمين.",
+    "questionsTitle": "الأسئلة - الإدارة",
+    "questionsDescription": "إدارة أسئلة المساعدة التي يقرأها المستخدمون."
+  },
+  "page": {
+    "eyebrow": "الإدارة",
+    "title": "مركز المساعدة",
+    "description": "إدارة الأقسام والأسئلة الشائعة المعروضة للمستخدمين.",
+    "categoriesTitle": "الأقسام",
+    "categoriesDescription": "إدارة الأقسام المعروضة للمستخدمين.",
+    "questionsTitle": "الأسئلة",
+    "questionsDescription": "إدارة أسئلة المساعدة التي يقرأها المستخدمون."
+  },
+  "navigation": {
+    "home": "مركز المساعدة",
+    "categories": "الأقسام",
+    "questions": "الأسئلة"
+  },
+  "hub": {
+    "open": "افتح",
+    "categoriesTitle": "إدارة الأقسام",
+    "categoriesDescription": "أنشئ الأقسام وعدّلها وعطّلها ورتّبها بسهولة.",
+    "questionsTitle": "إدارة الأسئلة",
+    "questionsDescription": "أنشئ أسئلة المساعدة وعدّلها وعطّلها ورتّبها بسهولة.",
+    "note": "استخدم صفحة الأقسام لتنظيم التقسيمات وصفحة الأسئلة لمحتوى المساعدة.",
+    "inlineNote": "الصفحة العامة للمساعدة تعرض العناصر النشطة فقط."
+  },
+  "states": {
+    "error": {
+      "heading": "تعذر تحميل مركز المساعدة",
+      "note": "يرجى المحاولة مرة أخرى بعد قليل.",
+      "retry": "إعادة المحاولة"
+    },
+    "categoriesEmpty": {
+      "heading": "لا توجد أقسام بعد",
+      "note": "أضف قسمًا لتنظيم الأسئلة."
+    },
+    "questionsEmpty": {
+      "heading": "لا توجد أسئلة بعد",
+      "note": "أضف سؤالًا للبدء في بناء الأسئلة الشائعة."
+    },
+    "questionsEmptyFiltered": {
+      "heading": "لا توجد أسئلة مطابقة",
+      "note": "جرّب بحثًا مختلفًا أو امسح عوامل التصفية."
+    }
+  },
+  "actions": {
+    "addCategory": "إضافة قسم",
+    "addQuestion": "إضافة سؤال",
+    "menu": "إجراءات",
+    "view": "عرض",
+    "edit": "تعديل",
+    "delete": "حذف",
+    "activate": "تفعيل",
+    "deactivate": "تعطيل",
+    "up": "نقل لأعلى",
+    "down": "نقل لأسفل",
+    "save": "حفظ",
+    "saving": "جارٍ الحفظ...",
+    "cancel": "إلغاء"
+  },
+  "summary": {
+    "categories": "الأقسام",
+    "questions": "الأسئلة",
+    "active": "النشط",
+    "activeHint": "الأقسام والأسئلة النشطة"
+  },
+  "filters": {
+    "search": "بحث",
+    "searchPlaceholder": "ابحث في الأسئلة أو الأجوبة أو الأقسام",
+    "category": "القسم",
+    "status": "الحالة",
+    "allCategories": "كل الأقسام",
+    "allStatuses": "كل الحالات",
+    "activeOnly": "النشطة فقط",
+    "inactiveOnly": "غير النشطة فقط",
+    "clear": "مسح",
+    "uncategorized": "غير مصنف"
+  },
+  "tables": {
+    "categories": {
+      "title": "الأقسام",
+      "note": "حافظ على الأقسام قصيرة وسهلة المسح.",
+      "columns": {
+        "order": "الترتيب",
+        "titleAr": "الاسم بالعربية",
+        "titleEn": "الاسم بالإنجليزية",
+        "questionCount": "الأسئلة",
+        "status": "الحالة"
+      },
+      "questionCountValue": "{count, plural, zero {لا توجد أسئلة} one {سؤال واحد} two {سؤالان} few {{count} أسئلة} many {{count} سؤالًا} other {{count} سؤال}}"
+    },
+    "questions": {
+      "title": "الأسئلة",
+      "note": "إدارة عناصر الأسئلة الشائعة التي يراها المستخدمون في صفحة المساعدة.",
+      "columns": {
+        "questionAr": "السؤال بالعربية",
+        "questionEn": "السؤال بالإنجليزية",
+        "category": "القسم",
+        "status": "الحالة",
+        "order": "الترتيب",
+        "updatedAt": "آخر تحديث"
+      },
+      "orderValue": "الترتيب {value}"
+    }
+  },
+  "modals": {
+    "category": {
+      "create": "إضافة قسم",
+      "edit": "تعديل القسم",
+      "description": "أدخل بيانات القسم بالعربية والإنجليزية."
+    },
+    "question": {
+      "create": "إضافة سؤال",
+      "edit": "تعديل السؤال",
+      "description": "أدخل السؤال والإجابة بالعربية والإنجليزية.",
+      "viewEyebrow": "تفاصيل السؤال",
+      "viewTitle": "عرض السؤال",
+      "viewDescription": "راجع السؤال والإجابة بالكامل قبل التعديل.",
+      "viewQuestionLabel": "السؤال"
+    }
+  },
+  "fields": {
+    "slug": "المعرف",
+    "titleAr": "الاسم بالعربية",
+    "titleEn": "الاسم بالإنجليزية",
+    "descriptionAr": "الوصف بالعربية",
+    "descriptionEn": "الوصف بالإنجليزية",
+    "sortOrder": "ترتيب العرض",
+    "isActive": "نشط",
+    "category": "القسم",
+    "questionAr": "السؤال بالعربية",
+    "questionEn": "السؤال بالإنجليزية",
+    "answerAr": "الإجابة بالعربية",
+    "answerEn": "الإجابة بالإنجليزية"
+  },
+  "placeholders": {
+    "slug": "مثال: payments-and-refunds"
+  },
+  "feedback": {
+    "categorySaved": "تم حفظ القسم.",
+    "categorySaveError": "تعذر حفظ القسم.",
+    "categoryActivated": "تم تفعيل القسم.",
+    "categoryDeactivated": "تم تعطيل القسم.",
+    "categoryDeleted": "تم حذف القسم.",
+    "categoryDeleteError": "تعذر حذف القسم.",
+    "questionSaved": "تم حفظ السؤال.",
+    "questionSaveError": "تعذر حفظ السؤال.",
+    "questionActivated": "تم تفعيل السؤال.",
+    "questionDeactivated": "تم تعطيل السؤال.",
+    "questionDeleted": "تم حذف السؤال.",
+    "questionDeleteError": "تعذر حذف السؤال.",
+    "reorderSuccess": "تم تحديث الترتيب.",
+    "reorderError": "تعذر تحديث الترتيب."
+  },
+  "confirmations": {
+    "deleteCategory": {
+      "title": "هل تريد حذف هذا القسم؟",
+      "description": "سيتم حذف هذا القسم من مركز المساعدة."
+    },
+    "deleteQuestion": {
+      "title": "هل تريد حذف هذا السؤال؟",
+      "description": "سيتم حذف هذا السؤال من مركز المساعدة."
+    }
+  },
+  "badges": {
+    "active": "نشط",
+    "inactive": "غير نشط"
+  }
+}

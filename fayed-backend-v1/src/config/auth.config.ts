@@ -27,6 +27,8 @@ export default registerAs('auth', () => ({
       10,
     ),
   },
+  practitionerLoginOtpBypassInDev:
+    process.env.AUTH_PRACTITIONER_LOGIN_OTP_BYPASS_IN_DEV === 'true',
   google: {
     clientId: process.env.GOOGLE_CLIENT_ID,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,

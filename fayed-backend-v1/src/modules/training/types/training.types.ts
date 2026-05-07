@@ -58,3 +58,13 @@ export enum TrainingJoinBlockedReason {
   JOIN_WINDOW_NOT_OPEN = 'JOIN_WINDOW_NOT_OPEN',
   JOIN_ACCESS_NOT_CONFIGURED = 'JOIN_ACCESS_NOT_CONFIGURED',
 }
+
+export type TrainingCategorySummary = {
+  id: string;
+  slug: string;
+  title: string;
+};
+
+export type PublicTrainingCategoryItem = TrainingCategorySummary & {
+  courseCount: number;
+};

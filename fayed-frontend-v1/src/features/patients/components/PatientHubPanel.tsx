@@ -7,6 +7,7 @@ import { usePatientSessions } from "@/features/sessions/hooks/use-sessions";
 import { usePatientPayments } from "@/features/payments/hooks/use-payments";
 import { Skeleton } from "@/components/shared/LoadingStates";
 import type { SessionStatus } from "@/features/sessions/types/sessions.types";
+import { canContinuePayment, isPaymentExpired } from "@/features/payments/lib/payment-status";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -53,9 +54,10 @@ export default function PatientHubPanel() {
   const payments = paymentsData?.items ?? [];
 
   // Priority detection
-  const pendingPaymentSession = sessions.find(
-    (s) => s.status === "PENDING_PAYMENT",
-  );
+  const pendingPayment = payments.find((payment) => canContinuePayment(payment));
+  const pendingPaymentSession = pendingPayment?.sessionId
+    ? sessions.find((session) => session.id === pendingPayment.sessionId)
+    : undefined;
   const upcomingSession = sessions.find(
     (s) =>
       s.status === "CONFIRMED" ||
@@ -84,7 +86,7 @@ export default function PatientHubPanel() {
       {/* Priority action banner */}
       {sessionsLoading ? (
         <Skeleton className="h-24 rounded-2xl" />
-      ) : pendingPaymentSession ? (
+      ) : pendingPaymentSession && pendingPayment && !isPaymentExpired(pendingPayment) ? (
         <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5 dark:border-amber-700/30 dark:bg-amber-900/10">
           <p className="text-[11px] font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-400">
             {t("hub.priority.pendingPayment.label")}

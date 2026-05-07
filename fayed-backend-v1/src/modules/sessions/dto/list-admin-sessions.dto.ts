@@ -2,12 +2,9 @@ import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import {
   IsBoolean,
-  IsDateString,
   IsEnum,
   IsOptional,
-  IsString,
   IsUUID,
-  MaxLength,
 } from 'class-validator';
 import { ListSessionsDto } from './list-sessions.dto';
 
@@ -17,18 +14,6 @@ export enum AdminSessionsSortDto {
 }
 
 export class ListAdminSessionsDto extends ListSessionsDto {
-  @ApiPropertyOptional({
-    description:
-      'Optional human-readable session code search (for example: SES-2026-000123).',
-  })
-  @IsOptional()
-  @Transform(({ value }) =>
-    typeof value === 'string' && value.trim() ? value.trim() : undefined,
-  )
-  @IsString()
-  @MaxLength(32)
-  query?: string;
-
   @ApiPropertyOptional({
     description: 'Sort sessions by scheduled start datetime.',
     enum: AdminSessionsSortDto,
@@ -62,28 +47,6 @@ export class ListAdminSessionsDto extends ListSessionsDto {
   )
   @IsUUID()
   patientId?: string;
-
-  @ApiPropertyOptional({
-    description:
-      'Filter sessions scheduled at or after this datetime (ISO string).',
-  })
-  @IsOptional()
-  @Transform(({ value }) =>
-    typeof value === 'string' && value.trim() ? value.trim() : undefined,
-  )
-  @IsDateString()
-  scheduledFrom?: string;
-
-  @ApiPropertyOptional({
-    description:
-      'Filter sessions scheduled at or before this datetime (ISO string).',
-  })
-  @IsOptional()
-  @Transform(({ value }) =>
-    typeof value === 'string' && value.trim() ? value.trim() : undefined,
-  )
-  @IsDateString()
-  scheduledTo?: string;
 
   @ApiPropertyOptional({
     description:

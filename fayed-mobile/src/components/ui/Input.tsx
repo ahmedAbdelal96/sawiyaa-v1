@@ -103,23 +103,24 @@ const styles = StyleSheet.create({
   inputContainer: {
     borderWidth: 1,
     borderRadius: 12,
-    height: 52,
+    minHeight: 60,
     alignItems: 'center',
     overflow: 'hidden',
   },
   input: {
     flex: 1,
-    height: '100%',
+    minHeight: 60,
     paddingHorizontal: 16,
     fontSize: 16,
+    paddingVertical: 16,
   },
   leftElement: {
-    paddingLeft: 16,
+    paddingHorizontal: 16,
     justifyContent: 'center',
     alignItems: 'center',
   },
   rightElement: {
-    paddingRight: 16,
+    paddingHorizontal: 16,
     justifyContent: 'center',
     alignItems: 'center',
   },

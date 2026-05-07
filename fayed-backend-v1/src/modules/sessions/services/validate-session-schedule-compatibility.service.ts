@@ -18,6 +18,7 @@ export class ValidateSessionScheduleCompatibilityService {
     practitionerTimezone: string | null;
     requestedStartAtUtc: Date;
     requestedEndAtUtc: Date;
+    requestedDurationMinutes: 30 | 60;
   }): Promise<{ timezone: string }> {
     const [weeklySlots, exceptions] = await Promise.all([
       this.availabilitySlotRepository.listActiveByPractitioner(
@@ -45,7 +46,9 @@ export class ValidateSessionScheduleCompatibilityService {
     const fitsWindow = windows.some(
       (window) =>
         window.startsAt <= input.requestedStartAtUtc.toISOString() &&
-        window.endsAt >= input.requestedEndAtUtc.toISOString(),
+        window.endsAt >= input.requestedEndAtUtc.toISOString() &&
+        (window.durationMinutes === null ||
+          window.durationMinutes === input.requestedDurationMinutes),
     );
 
     if (!fitsWindow) {

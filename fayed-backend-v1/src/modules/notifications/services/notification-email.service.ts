@@ -1,6 +1,28 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import nodemailer from 'nodemailer';
+
+type EmailTransportConfig = {
+  host: string;
+  port: number;
+  secure: boolean;
+  auth?: {
+    user: string;
+    pass: string;
+  };
+};
+
+type EmailTransporter = {
+  sendMail(input: {
+    from: string;
+    to: string;
+    subject: string;
+    text: string;
+  }): Promise<unknown>;
+};
+
+type NodemailerModule = {
+  createTransport(config: EmailTransportConfig): EmailTransporter;
+};
 
 type OtpRedirectResolution = {
   deliveryTarget: string;
@@ -23,7 +45,7 @@ type SendEmailInput = {
 @Injectable()
 export class NotificationEmailService {
   private readonly logger = new Logger(NotificationEmailService.name);
-  private transporter: nodemailer.Transporter | null = null;
+  private transporter: EmailTransporter | null = null;
   private loggedTransportConfig = false;
 
   constructor(private readonly configService: ConfigService) {}
@@ -191,6 +213,7 @@ export class NotificationEmailService {
     this.logTransportConfigOnce();
 
     if (!this.transporter) {
+      const nodemailer = (await import('nodemailer')) as NodemailerModule;
       this.transporter = nodemailer.createTransport({
         host,
         port,
@@ -208,7 +231,7 @@ export class NotificationEmailService {
       });
 
       this.logger.log(
-        `${purposeLabel} email delivered to ${normalizedTarget} (notification ${input.notificationId})`,
+        `${purposeLabel} email delivered to ${this.maskTarget(normalizedTarget)} (notification ${input.notificationId})`,
       );
 
       return {
@@ -223,7 +246,7 @@ export class NotificationEmailService {
 
       if (input.isOtp && this.shouldBypassOtpDeliveryFailure()) {
         this.logger.warn(
-          `DEV OTP fallback enabled; treating delivery as successful for notification ${input.notificationId}. OTP content: ${input.body}`,
+          `DEV OTP fallback enabled; treating delivery as successful for notification ${input.notificationId}`,
         );
         return {
           delivered: true,

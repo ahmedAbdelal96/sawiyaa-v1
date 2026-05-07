@@ -56,7 +56,7 @@ function statusColor(
 export default function SupportListScreen() {
   const router = useRouter();
   const { theme } = useTheme();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [tab, setTab] = useState<TabFilter>("active");
 
   const query = usePatientSupportTickets({ page: 1, limit: 50 });
@@ -69,7 +69,8 @@ export default function SupportListScreen() {
 
   function formatDate(dateStr: string) {
     const date = new Date(dateStr);
-    return date.toLocaleDateString("ar-SA", {
+    const locale = i18n.language?.startsWith("ar") ? "ar-SA" : "en-US";
+    return date.toLocaleDateString(locale, {
       day: "numeric",
       month: "short",
     });
@@ -210,7 +211,7 @@ export default function SupportListScreen() {
 
 const styles = StyleSheet.create({
   scroll: {
-    padding: 16,
+    padding: 20,
     paddingBottom: 40,
     flexGrow: 1,
   },
@@ -224,7 +225,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   ticketCard: {
-    padding: 14,
+    padding: 18,
   },
   ticketHeader: {
     flexDirection: "row",
@@ -259,8 +260,8 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   statusPill: {
-    paddingHorizontal: 10,
-    paddingVertical: 3,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
     borderRadius: 20,
   },
   statusPillText: {
@@ -276,7 +277,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 8,
     borderRadius: 12,
-    paddingVertical: 14,
+    paddingVertical: 16,
     marginTop: 24,
   },
   newTicketCtaText: {

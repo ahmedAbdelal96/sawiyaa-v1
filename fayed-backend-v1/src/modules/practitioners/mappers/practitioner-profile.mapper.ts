@@ -15,6 +15,11 @@ export class PractitionerProfileMapper {
       professionalTitle: string | null;
       bio: string | null;
       yearsOfExperience: number | null;
+      sessionPrice30Egp: { toString(): string } | string | null;
+      sessionPrice30Usd: { toString(): string } | string | null;
+      sessionPrice60Egp: { toString(): string } | string | null;
+      sessionPrice60Usd: { toString(): string } | string | null;
+      acceptsPackages?: boolean;
       practitionerType: PractitionerProfileViewModel['practitionerType'];
       practitionerGender: PractitionerProfileViewModel['practitionerGender'];
       primarySpecialtyCategoryId: string | null;
@@ -53,6 +58,33 @@ export class PractitionerProfileMapper {
       practitionerType: input.profile.practitionerType,
       practitionerGender: input.profile.practitionerGender,
       primarySpecialtyCategoryId: input.profile.primarySpecialtyCategoryId,
+      acceptsPackage: input.profile.acceptsPackages ?? false,
+      pricing: {
+        session30: {
+          egp:
+            input.profile.sessionPrice30Egp === null ||
+            input.profile.sessionPrice30Egp === undefined
+              ? null
+              : Number(input.profile.sessionPrice30Egp),
+          usd:
+            input.profile.sessionPrice30Usd === null ||
+            input.profile.sessionPrice30Usd === undefined
+              ? null
+              : Number(input.profile.sessionPrice30Usd),
+        },
+        session60: {
+          egp:
+            input.profile.sessionPrice60Egp === null ||
+            input.profile.sessionPrice60Egp === undefined
+              ? null
+              : Number(input.profile.sessionPrice60Egp),
+          usd:
+            input.profile.sessionPrice60Usd === null ||
+            input.profile.sessionPrice60Usd === undefined
+              ? null
+              : Number(input.profile.sessionPrice60Usd),
+        },
+      },
       payoutDestination: input.profile.payoutDestination,
       profileStatus: input.profile.status,
       specialties: input.specialties,

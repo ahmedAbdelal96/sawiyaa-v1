@@ -1,65 +1,21 @@
-import React, { useEffect, useState } from "react";
-import {
-  Alert,
-  Modal,
-  ScrollView,
-  StyleSheet,
-  Switch,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import React from "react";
+import { Image, ScrollView, StyleSheet, View } from "react-native";
 import { useRouter } from "expo-router";
 import { Screen, Header, Text, ListRow, Card } from "../../src/components/ui";
 import { useAuth } from "../../src/providers/AuthProvider";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../../src/providers/ThemeProvider";
 import { useTranslation } from "react-i18next";
-import {
-  usePatchPatientProfile,
-  usePatientProfile,
-} from "../../src/features/patient/profile/hooks";
+import { usePatientProfile } from "../../src/features/patient/profile/hooks";
 import {
   useMySettings,
   useMySettingsNotificationPreferences,
-  usePatchMySettingsPreferences,
-  usePutMySettingsNotificationPreferences,
 } from "../../src/features/settings/hooks";
-import type { SettingsLocale } from "../../src/features/settings/types";
-import type { UpdatePatientProfilePayload } from "../../src/features/patient/profile/types";
-import { Input, Button } from "../../src/components/ui";
-import { setAppLanguage } from "../../src/i18n";
-
-function formatNotificationType(typeSlug: string) {
-  return typeSlug
-    .split("_")
-    .filter(Boolean)
-    .map((part) => part[0] + part.slice(1).toLowerCase())
-    .join(" ");
-}
-
-function getInitials(name: string | null) {
-  if (!name?.trim()) {
-    return "P";
-  }
-
-  return name
-    .trim()
-    .split(" ")
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0])
-    .join("")
-    .toUpperCase();
-}
-
-function normalizeCountryCode(value: string) {
-  const next = value.trim().toUpperCase();
-  if (!next) {
-    return null;
-  }
-
-  return next;
-}
+import { usePatientUnreadNotificationCount } from "../../src/features/patient/notifications/hooks";
+import {
+  formatProfileDate,
+  getInitials,
+} from "../../src/features/patient/profile/account-utils";
 
 export default function PatientProfileScreen() {
   const router = useRouter();
@@ -68,27 +24,9 @@ export default function PatientProfileScreen() {
   const { t, i18n } = useTranslation();
 
   const profileQuery = usePatientProfile();
-  const patchProfile = usePatchPatientProfile();
   const settingsQuery = useMySettings();
+  const notificationCenterQuery = usePatientUnreadNotificationCount();
   const notificationPreferencesQuery = useMySettingsNotificationPreferences();
-  const patchSettingsPreferences = usePatchMySettingsPreferences();
-  const putNotificationPreferences = usePutMySettingsNotificationPreferences();
-
-  const [detailsModalVisible, setDetailsModalVisible] = useState(false);
-  const [languageModalVisible, setLanguageModalVisible] = useState(false);
-  const [notificationsModalVisible, setNotificationsModalVisible] =
-    useState(false);
-  const [profileForm, setProfileForm] = useState({
-    displayName: "",
-    countryCode: "",
-    timezone: "",
-  });
-  const [selectedLanguage, setSelectedLanguage] = useState<SettingsLocale>(
-    i18n.language.startsWith("ar") ? "ar" : "en",
-  );
-  const [notificationDraft, setNotificationDraft] = useState<
-    Array<{ typeSlug: string; channel: "IN_APP" | "EMAIL"; enabled: boolean }>
-  >([]);
 
   const profile = profileQuery.data?.profile;
   const settings = settingsQuery.data?.item;
@@ -96,26 +34,27 @@ export default function PatientProfileScreen() {
     notificationPreferencesQuery.data?.item ??
     settings?.notificationPreferences;
 
-  useEffect(() => {
-    const nextLanguage = (settings?.preferences.locale ??
-      (i18n.language.startsWith("ar") ? "ar" : "en")) as SettingsLocale;
-    setSelectedLanguage(nextLanguage);
-  }, [i18n.language, settings?.preferences.locale]);
-
   const displayName =
     profile?.displayName?.trim() ||
     user?.displayName?.trim() ||
     t("profileScreen.fallbackName");
   const email = user?.primaryEmail || t("profileScreen.fallbackEmail");
+  const phone = user?.primaryPhone || t("profileScreen.none");
   const initials = getInitials(displayName);
+  const avatarUri = profile?.avatarDataUrl ?? profile?.avatarUrl ?? null;
 
   const currentTimezone =
     settings?.preferences.timezone ??
     profile?.timezone ??
     t("profileScreen.none");
 
+  const currentLocale =
+    settings?.preferences.locale ??
+    profile?.locale ??
+    (i18n.language.startsWith("ar") ? "ar" : "en");
+
   const currentLocaleLabel =
-    selectedLanguage === "ar"
+    currentLocale === "ar"
       ? t("profileScreen.language.options.ar")
       : t("profileScreen.language.options.en");
 
@@ -123,117 +62,23 @@ export default function PatientProfileScreen() {
     Boolean(notificationPreferences?.items?.length) &&
     (notificationPreferences?.items.length ?? 0) > 0;
 
-  const isBusy =
-    patchProfile.isPending ||
-    patchSettingsPreferences.isPending ||
-    putNotificationPreferences.isPending;
+  const unreadNotificationCount =
+    notificationCenterQuery.data?.item.unreadCount ?? 0;
 
-  const openDetailsModal = () => {
-    setProfileForm({
-      displayName: profile?.displayName ?? user?.displayName ?? "",
-      countryCode: profile?.countryCode ?? "",
-      timezone:
-        profile?.timezone ??
-        settings?.preferences.timezone ??
-        Intl.DateTimeFormat().resolvedOptions().timeZone ??
-        "",
-    });
-    setDetailsModalVisible(true);
-  };
+  const profileCompletionItems = [
+    !profile?.displayName,
+    !profile?.dateOfBirth,
+    !profile?.gender,
+    !profile?.countryCode,
+    !profile?.timezone && !settings?.preferences.timezone,
+    !profile?.locale,
+  ];
 
-  const saveDetails = async () => {
-    const countryCode = normalizeCountryCode(profileForm.countryCode);
-
-    if (countryCode && !/^[A-Z]{2,3}$/.test(countryCode)) {
-      Alert.alert(
-        t("profileScreen.details.invalidCountryTitle"),
-        t("profileScreen.details.invalidCountryBody"),
-      );
-      return;
-    }
-
-    const payload: UpdatePatientProfilePayload = {
-      displayName: profileForm.displayName.trim() || undefined,
-      countryCode,
-      timezone: profileForm.timezone.trim() || undefined,
-    };
-
-    try {
-      await patchProfile.mutateAsync(payload);
-      setDetailsModalVisible(false);
-    } catch {
-      Alert.alert(
-        t("profileScreen.common.saveFailedTitle"),
-        t("profileScreen.details.saveFailedBody"),
-      );
-    }
-  };
-
-  const applyLanguage = async () => {
-    const timezoneCandidate =
-      settings?.preferences.timezone ??
-      profile?.timezone ??
-      Intl.DateTimeFormat().resolvedOptions().timeZone;
-
-    try {
-      await patchSettingsPreferences.mutateAsync({
-        locale: selectedLanguage,
-        timezone: timezoneCandidate,
-      });
-
-      const result = await setAppLanguage(selectedLanguage);
-      setLanguageModalVisible(false);
-
-      if (result.requiresRestart) {
-        Alert.alert(
-          t("profileScreen.language.restartTitle"),
-          t("profileScreen.language.restartBody"),
-        );
-      }
-    } catch {
-      Alert.alert(
-        t("profileScreen.common.saveFailedTitle"),
-        t("profileScreen.language.saveFailedBody"),
-      );
-    }
-  };
-
-  const openNotificationsModal = () => {
-    if (!notificationPreferences) {
-      return;
-    }
-
-    setNotificationDraft(
-      notificationPreferences.items.map((item) => ({
-        typeSlug: item.typeSlug,
-        channel: item.channel,
-        enabled: item.enabled,
-      })),
-    );
-    setNotificationsModalVisible(true);
-  };
-
-  const toggleNotification = (index: number, enabled: boolean) => {
-    setNotificationDraft((current) =>
-      current.map((item, itemIndex) =>
-        itemIndex === index ? { ...item, enabled } : item,
-      ),
-    );
-  };
-
-  const saveNotificationPreferences = async () => {
-    try {
-      await putNotificationPreferences.mutateAsync({
-        items: notificationDraft,
-      });
-      setNotificationsModalVisible(false);
-    } catch {
-      Alert.alert(
-        t("profileScreen.common.saveFailedTitle"),
-        t("profileScreen.notifications.saveFailedBody"),
-      );
-    }
-  };
+  const missingCount = profileCompletionItems.filter(Boolean).length;
+  const birthDateLabel =
+    formatProfileDate(profile?.dateOfBirth, i18n.language) ??
+    t("profileScreen.none");
+  const genderLabel = profile?.gender?.trim() || t("profileScreen.none");
 
   return (
     <Screen bg="background">
@@ -243,28 +88,44 @@ export default function PatientProfileScreen() {
           variant="elevated"
           style={[
             styles.heroCard,
-            { borderWidth: 1, borderColor: theme.colors.borderLight },
+            {
+              borderWidth: 1,
+              borderColor: theme.colors.borderLight,
+              borderRightColor: theme.colors.primary,
+            },
           ]}
         >
           <View style={styles.headerBlock}>
-            <View
-              style={[
-                styles.avatar,
-                { backgroundColor: theme.colors.primaryLight },
-              ]}
-            >
-              <Text
-                weight="bold"
-                style={[styles.avatarText, { color: theme.colors.primary }]}
+            {avatarUri ? (
+              <Image source={{ uri: avatarUri }} style={styles.avatarImage} />
+            ) : (
+              <View
+                style={[
+                  styles.avatar,
+                  { backgroundColor: theme.colors.primaryLight },
+                ]}
               >
-                {initials || "P"}
-              </Text>
-            </View>
+                <Text
+                  weight="bold"
+                  style={[styles.avatarText, { color: theme.colors.primary }]}
+                >
+                  {initials || "P"}
+                </Text>
+              </View>
+            )}
             <Text weight="bold" style={styles.name}>
               {displayName}
             </Text>
             <Text style={[styles.email, { color: theme.colors.textSecondary }]}>
               {email}
+            </Text>
+            <Text
+              style={[
+                styles.secondaryLine,
+                { color: theme.colors.textSecondary },
+              ]}
+            >
+              {phone}
             </Text>
             <View
               style={[
@@ -284,8 +145,126 @@ export default function PatientProfileScreen() {
                 ID: P-{(user?.id ?? "0000").slice(0, 4).toUpperCase()}
               </Text>
             </View>
+            <View style={styles.heroMetaWrap}>
+              <View
+                style={[
+                  styles.heroMetaPill,
+                  { backgroundColor: theme.colors.surfaceSecondary },
+                ]}
+              >
+                <Text
+                  color={theme.colors.textSecondary}
+                  style={styles.heroMetaText}
+                >
+                  {t("profileScreen.hub.hero.localeValue", {
+                    language: currentLocaleLabel,
+                  })}
+                </Text>
+              </View>
+              <View
+                style={[
+                  styles.heroMetaPill,
+                  { backgroundColor: theme.colors.surfaceSecondary },
+                ]}
+              >
+                <Text
+                  color={theme.colors.textSecondary}
+                  style={styles.heroMetaText}
+                >
+                  {t("profileScreen.hub.hero.timezoneValue", {
+                    timezone: currentTimezone,
+                  })}
+                </Text>
+              </View>
+            </View>
+            <Text
+              style={[
+                styles.heroCaption,
+                { color: theme.colors.textSecondary },
+              ]}
+            >
+              {t("profileScreen.hub.hero.caption")}
+            </Text>
           </View>
         </Card>
+
+        {profile && !profile.isOnboardingCompleted ? (
+          <Card
+            variant="flat"
+            style={[
+              styles.onboardingBanner,
+              {
+                borderWidth: 1,
+                borderColor: theme.colors.warning,
+                backgroundColor: theme.colors.warningLight,
+              },
+            ]}
+          >
+            <View style={styles.onboardingBannerRow}>
+              <Ionicons
+                name="information-circle-outline"
+                size={20}
+                color={theme.colors.warning}
+              />
+              <View style={styles.onboardingBannerText}>
+                <Text weight="600" style={styles.onboardingBannerTitle}>
+                  {t("profileScreen.hub.onboarding.pendingTitle")}
+                </Text>
+                <Text
+                  color={theme.colors.textSecondary}
+                  style={styles.summaryBody}
+                >
+                  {t("profileScreen.hub.onboarding.pendingBody")}
+                </Text>
+              </View>
+            </View>
+          </Card>
+        ) : null}
+
+        <Card
+          variant="elevated"
+          style={[
+            styles.sectionCard,
+            { borderWidth: 1, borderColor: theme.colors.borderLight },
+          ]}
+        >
+          <Text weight="bold" style={styles.summaryTitle}>
+            {missingCount > 0
+              ? t("profileScreen.hub.completion.incompleteTitle", {
+                  count: missingCount,
+                })
+              : t("profileScreen.hub.completion.completeTitle")}
+          </Text>
+          <Text color={theme.colors.textSecondary} style={styles.summaryBody}>
+            {missingCount > 0
+              ? t("profileScreen.hub.completion.incompleteBody")
+              : t("profileScreen.hub.completion.completeBody")}
+          </Text>
+          <View style={styles.snapshotGrid}>
+            <View style={styles.snapshotItem}>
+              <Text
+                color={theme.colors.textSecondary}
+                style={styles.snapshotLabel}
+              >
+                {t("profileScreen.hub.snapshot.birthDate")}
+              </Text>
+              <Text weight="600">{birthDateLabel}</Text>
+            </View>
+            <View style={styles.snapshotItem}>
+              <Text
+                color={theme.colors.textSecondary}
+                style={styles.snapshotLabel}
+              >
+                {t("profileScreen.hub.snapshot.gender")}
+              </Text>
+              <Text weight="600">{genderLabel}</Text>
+            </View>
+          </View>
+        </Card>
+
+        <Text weight="600" style={styles.sectionHeading}>
+          {t("profileScreen.hub.sections.profile")}
+        </Text>
 
         <Card
           variant="elevated"
@@ -297,8 +276,8 @@ export default function PatientProfileScreen() {
         >
           <View style={styles.rowPad}>
             <ListRow
-              title={t("profileScreen.details.title")}
-              subtitle={t("profileScreen.details.subtitle")}
+              title={t("profileScreen.hub.rows.personal.title")}
+              subtitle={t("profileScreen.hub.rows.personal.subtitle")}
               leftElement={
                 <Ionicons
                   name="person-circle-outline"
@@ -306,29 +285,58 @@ export default function PatientProfileScreen() {
                   color={theme.colors.primary}
                 />
               }
-              onPress={openDetailsModal}
+              onPress={() => router.push("/(patient)/profile-details" as any)}
               showChevron
             />
           </View>
           <View style={styles.rowPad}>
             <ListRow
-              title={t("profileScreen.wallet.title")}
-              subtitle={t("profileScreen.wallet.subtitle")}
+              title={t("profileScreen.hub.rows.preferences.title")}
+              subtitle={t("profileScreen.hub.rows.preferences.subtitle", {
+                language: currentLocaleLabel,
+                timezone: currentTimezone,
+              })}
               leftElement={
                 <Ionicons
-                  name="wallet-outline"
+                  name="language-outline"
                   size={22}
                   color={theme.colors.primary}
                 />
               }
-              rightElement={
-                <Text weight="bold" color={theme.colors.textSecondary}>
-                  {t("profileScreen.wallet.unavailableAmount")}
-                </Text>
+              onPress={() =>
+                router.push("/(patient)/profile-preferences" as any)
               }
+              showChevron
+            />
+          </View>
+          <View style={styles.rowPad}>
+            <ListRow
+              title={t("profileScreen.hub.rows.notificationPreferences.title")}
+              subtitle={
+                canManageNotifications
+                  ? t("profileScreen.hub.rows.notificationPreferences.subtitle")
+                  : t(
+                      "profileScreen.hub.rows.notificationPreferences.unavailableSubtitle",
+                    )
+              }
+              leftElement={
+                <Ionicons
+                  name="options-outline"
+                  size={22}
+                  color={theme.colors.primary}
+                />
+              }
+              onPress={() =>
+                router.push("/(patient)/profile-notifications" as any)
+              }
+              showChevron
             />
           </View>
         </Card>
+
+        <Text weight="600" style={styles.sectionHeading}>
+          {t("profileScreen.hub.sections.activity")}
+        </Text>
 
         <Card
           variant="elevated"
@@ -340,28 +348,8 @@ export default function PatientProfileScreen() {
         >
           <View style={styles.rowPad}>
             <ListRow
-              title={t("profileScreen.language.title")}
-              subtitle={t("profileScreen.language.subtitle")}
-              leftElement={
-                <Ionicons
-                  name="language-outline"
-                  size={22}
-                  color={theme.colors.primary}
-                />
-              }
-              rightElement={<Text>{currentLocaleLabel}</Text>}
-              onPress={() => setLanguageModalVisible(true)}
-              showChevron
-            />
-          </View>
-          <View style={styles.rowPad}>
-            <ListRow
-              title={t("profileScreen.notifications.title")}
-              subtitle={
-                canManageNotifications
-                  ? t("profileScreen.notifications.subtitle")
-                  : t("profileScreen.notifications.unavailableSubtitle")
-              }
+              title={t("profileScreen.hub.rows.notificationCenter.title")}
+              subtitle={t("profileScreen.hub.rows.notificationCenter.subtitle")}
               leftElement={
                 <Ionicons
                   name="notifications-outline"
@@ -369,16 +357,45 @@ export default function PatientProfileScreen() {
                   color={theme.colors.primary}
                 />
               }
-              onPress={
-                canManageNotifications ? openNotificationsModal : undefined
+              rightElement={
+                unreadNotificationCount > 0 ? (
+                  <View
+                    style={[
+                      styles.inlineBadge,
+                      { backgroundColor: theme.colors.primaryLight },
+                    ]}
+                  >
+                    <Text color={theme.colors.primary} weight="600">
+                      {unreadNotificationCount > 99
+                        ? "99+"
+                        : String(unreadNotificationCount)}
+                    </Text>
+                  </View>
+                ) : undefined
               }
-              showChevron={canManageNotifications}
+              onPress={() => router.push("/(patient)/notifications" as any)}
+              showChevron
             />
           </View>
           <View style={styles.rowPad}>
             <ListRow
-              title={t("profileScreen.support.title")}
-              subtitle={t("support.newTicket", "Open a support request")}
+              title={t("profileScreen.hub.rows.wallet.title")}
+              subtitle={t("profileScreen.hub.rows.wallet.subtitle")}
+              leftElement={
+                <Ionicons
+                  name="wallet-outline"
+                  size={22}
+                  color={theme.colors.primary}
+                />
+              }
+              onPress={() => router.push("/(patient)/payments" as any)}
+              showChevron
+            />
+          </View>
+          <View style={styles.rowPad}>
+            <ListRow
+              title={t("profileScreen.hub.rows.support.title")}
+              subtitle={t("profileScreen.hub.rows.support.subtitle")}
               leftElement={
                 <Ionicons
                   name="help-buoy-outline"
@@ -391,6 +408,10 @@ export default function PatientProfileScreen() {
             />
           </View>
         </Card>
+
+        <Text weight="600" style={styles.sectionHeading}>
+          {t("profileScreen.hub.sections.account")}
+        </Text>
 
         <Card
           variant="elevated"
@@ -423,197 +444,6 @@ export default function PatientProfileScreen() {
           </Text>
         )}
       </ScrollView>
-
-      <Modal
-        visible={detailsModalVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setDetailsModalVisible(false)}
-      >
-        <View style={styles.modalBackdrop}>
-          <Card variant="elevated" style={styles.modalCard}>
-            <Text weight="bold" style={styles.modalTitle}>
-              {t("profileScreen.details.modalTitle")}
-            </Text>
-            <Input
-              label={t("profileScreen.details.fields.displayName")}
-              value={profileForm.displayName}
-              onChangeText={(value) =>
-                setProfileForm((current) => ({
-                  ...current,
-                  displayName: value,
-                }))
-              }
-            />
-            <Input
-              label={t("profileScreen.details.fields.countryCode")}
-              value={profileForm.countryCode}
-              autoCapitalize="characters"
-              maxLength={3}
-              onChangeText={(value) =>
-                setProfileForm((current) => ({
-                  ...current,
-                  countryCode: value,
-                }))
-              }
-            />
-            <Input
-              label={t("profileScreen.details.fields.timezone")}
-              value={profileForm.timezone}
-              onChangeText={(value) =>
-                setProfileForm((current) => ({ ...current, timezone: value }))
-              }
-            />
-            <View style={styles.modalActions}>
-              <View style={styles.modalActionHalf}>
-                <Button
-                  title={t("profileScreen.common.cancel")}
-                  variant="secondary"
-                  onPress={() => setDetailsModalVisible(false)}
-                  disabled={isBusy}
-                />
-              </View>
-              <View style={styles.modalActionHalf}>
-                <Button
-                  title={t("profileScreen.common.save")}
-                  onPress={saveDetails}
-                  disabled={isBusy}
-                />
-              </View>
-            </View>
-          </Card>
-        </View>
-      </Modal>
-
-      <Modal
-        visible={languageModalVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setLanguageModalVisible(false)}
-      >
-        <View style={styles.modalBackdrop}>
-          <Card variant="elevated" style={styles.modalCard}>
-            <Text weight="bold" style={styles.modalTitle}>
-              {t("profileScreen.language.modalTitle")}
-            </Text>
-
-            <TouchableOpacity
-              activeOpacity={0.8}
-              style={styles.choiceRow}
-              onPress={() => setSelectedLanguage("ar")}
-            >
-              <Text>{t("profileScreen.language.options.ar")}</Text>
-              {selectedLanguage === "ar" ? (
-                <Ionicons
-                  name="checkmark-circle"
-                  size={20}
-                  color={theme.colors.primary}
-                />
-              ) : null}
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              activeOpacity={0.8}
-              style={styles.choiceRow}
-              onPress={() => setSelectedLanguage("en")}
-            >
-              <Text>{t("profileScreen.language.options.en")}</Text>
-              {selectedLanguage === "en" ? (
-                <Ionicons
-                  name="checkmark-circle"
-                  size={20}
-                  color={theme.colors.primary}
-                />
-              ) : null}
-            </TouchableOpacity>
-
-            <Text color={theme.colors.textSecondary} style={styles.modalMeta}>
-              {t("profileScreen.language.currentTimezone", {
-                timezone: currentTimezone,
-              })}
-            </Text>
-
-            <View style={styles.modalActions}>
-              <View style={styles.modalActionHalf}>
-                <Button
-                  title={t("profileScreen.common.cancel")}
-                  variant="secondary"
-                  onPress={() => setLanguageModalVisible(false)}
-                  disabled={isBusy}
-                />
-              </View>
-              <View style={styles.modalActionHalf}>
-                <Button
-                  title={t("profileScreen.common.apply")}
-                  onPress={applyLanguage}
-                  disabled={isBusy}
-                />
-              </View>
-            </View>
-          </Card>
-        </View>
-      </Modal>
-
-      <Modal
-        visible={notificationsModalVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setNotificationsModalVisible(false)}
-      >
-        <View style={styles.modalBackdrop}>
-          <Card variant="elevated" style={styles.modalCard}>
-            <Text weight="bold" style={styles.modalTitle}>
-              {t("profileScreen.notifications.modalTitle")}
-            </Text>
-
-            <ScrollView
-              style={styles.notificationsScroll}
-              contentContainerStyle={styles.notificationsContent}
-            >
-              {notificationDraft.map((item, index) => (
-                <View
-                  key={`${item.typeSlug}-${item.channel}`}
-                  style={styles.notificationRow}
-                >
-                  <View style={styles.notificationTextWrap}>
-                    <Text weight="500">
-                      {formatNotificationType(item.typeSlug)}
-                    </Text>
-                    <Text
-                      color={theme.colors.textSecondary}
-                      style={styles.notificationMeta}
-                    >
-                      {item.channel}
-                    </Text>
-                  </View>
-                  <Switch
-                    value={item.enabled}
-                    onValueChange={(value) => toggleNotification(index, value)}
-                  />
-                </View>
-              ))}
-            </ScrollView>
-
-            <View style={styles.modalActions}>
-              <View style={styles.modalActionHalf}>
-                <Button
-                  title={t("profileScreen.common.cancel")}
-                  variant="secondary"
-                  onPress={() => setNotificationsModalVisible(false)}
-                  disabled={isBusy}
-                />
-              </View>
-              <View style={styles.modalActionHalf}>
-                <Button
-                  title={t("profileScreen.common.save")}
-                  onPress={saveNotificationPreferences}
-                  disabled={isBusy}
-                />
-              </View>
-            </View>
-          </Card>
-        </View>
-      </Modal>
     </Screen>
   );
 }
@@ -631,7 +461,6 @@ const styles = StyleSheet.create({
   },
   heroCard: {
     borderRightWidth: 4,
-    borderRightColor: "#3f7dcf",
   },
   avatar: {
     width: 92,
@@ -644,6 +473,12 @@ const styles = StyleSheet.create({
   avatarText: {
     fontSize: 28,
   },
+  avatarImage: {
+    width: 92,
+    height: 92,
+    borderRadius: 46,
+    marginBottom: 14,
+  },
   name: {
     fontSize: 34,
     lineHeight: 38,
@@ -651,6 +486,10 @@ const styles = StyleSheet.create({
   },
   email: {
     fontSize: 15,
+  },
+  secondaryLine: {
+    marginTop: 4,
+    fontSize: 13,
   },
   profileIdPill: {
     marginTop: 10,
@@ -664,8 +503,77 @@ const styles = StyleSheet.create({
   profileIdText: {
     fontSize: 13,
   },
+  heroMetaWrap: {
+    marginTop: 14,
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "center",
+    gap: 8,
+  },
+  heroMetaPill: {
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  heroMetaText: {
+    fontSize: 12,
+  },
+  heroCaption: {
+    marginTop: 12,
+    textAlign: "center",
+    fontSize: 13,
+    lineHeight: 20,
+  },
+  inlineBadge: {
+    minWidth: 28,
+    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    alignItems: "center",
+  },
   sectionCard: {
     marginTop: 2,
+  },
+  onboardingBanner: {
+    gap: 8,
+  },
+  onboardingBannerRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 10,
+  },
+  onboardingBannerText: {
+    flex: 1,
+  },
+  onboardingBannerTitle: {
+    fontSize: 15,
+    marginBottom: 4,
+  },
+  sectionHeading: {
+    marginTop: 6,
+    marginBottom: -2,
+    fontSize: 13,
+    letterSpacing: 0.2,
+  },
+  summaryTitle: {
+    fontSize: 18,
+    marginBottom: 6,
+  },
+  summaryBody: {
+    fontSize: 13,
+    lineHeight: 20,
+  },
+  snapshotGrid: {
+    marginTop: 14,
+    flexDirection: "row",
+    gap: 12,
+  },
+  snapshotItem: {
+    flex: 1,
+  },
+  snapshotLabel: {
+    fontSize: 12,
+    marginBottom: 4,
   },
   rowPad: {
     paddingHorizontal: 16,
@@ -673,61 +581,5 @@ const styles = StyleSheet.create({
   loadingHint: {
     textAlign: "center",
     fontSize: 13,
-  },
-  modalBackdrop: {
-    flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.22)",
-    justifyContent: "center",
-    paddingHorizontal: 20,
-  },
-  modalCard: {
-    maxHeight: "80%",
-  },
-  modalTitle: {
-    fontSize: 18,
-    marginBottom: 14,
-  },
-  modalActions: {
-    flexDirection: "row",
-    gap: 10,
-  },
-  modalActionHalf: {
-    flex: 1,
-  },
-  choiceRow: {
-    minHeight: 48,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "#d1d5db",
-  },
-  modalMeta: {
-    marginTop: 10,
-    marginBottom: 14,
-    fontSize: 12,
-  },
-  notificationsScroll: {
-    maxHeight: 300,
-    marginBottom: 12,
-  },
-  notificationsContent: {
-    gap: 10,
-  },
-  notificationRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "#d1d5db",
-    paddingBottom: 8,
-  },
-  notificationTextWrap: {
-    flex: 1,
-    paddingRight: 10,
-  },
-  notificationMeta: {
-    fontSize: 12,
-    marginTop: 2,
   },
 });

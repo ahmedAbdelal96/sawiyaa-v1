@@ -77,6 +77,7 @@ export interface PractitionerApplicationSummary {
   reviewedByUserId: string | null;
   reviewDecisionReason: string | null;
   reviewNotes: string | null;
+  submissionSnapshot: Record<string, unknown> | null;
 }
 
 export interface PractitionerProfile {
@@ -94,6 +95,17 @@ export interface PractitionerProfile {
   practitionerType: PractitionerType;
   practitionerGender: PractitionerGender | null;
   primarySpecialtyCategoryId: string | null;
+  acceptsPackage: boolean;
+  pricing: {
+    session30: {
+      egp: number | null;
+      usd: number | null;
+    };
+    session60: {
+      egp: number | null;
+      usd: number | null;
+    };
+  };
   payoutDestination: PractitionerPayoutDestination | null;
   profileStatus: PractitionerStatus;
   specialties: PractitionerSpecialty[];
@@ -169,6 +181,7 @@ export interface PractitionerApplicationStatusResponse {
   reviewedByUserId: string | null;
   reviewDecisionReason: string | null;
   reviewNotes: string | null;
+  submissionSnapshot: Record<string, unknown> | null;
   isProfileCompleted: boolean;
   canSubmitApplication: boolean;
   missingRequirements: string[];
@@ -203,7 +216,12 @@ export interface UpdatePractitionerProfileRequest {
   yearsOfExperience?: number | null;
   practitionerType?: PractitionerType;
   practitionerGender?: PractitionerGender | null;
+  sessionPrice30Egp?: number | null;
+  sessionPrice30Usd?: number | null;
+  sessionPrice60Egp?: number | null;
+  sessionPrice60Usd?: number | null;
   locale?: "ar" | "en";
+  acceptsPackage?: boolean;
   timezone?: string;
   languageCodes?: string[];
   payoutDestination?: PractitionerPayoutDestinationInput | null;
@@ -219,11 +237,16 @@ export interface SubmitPractitionerApplicationRequest {
   yearsOfExperience?: number | null;
   practitionerType?: PractitionerType;
   practitionerGender?: PractitionerGender | null;
+  sessionPrice30Egp?: number | null;
+  sessionPrice30Usd?: number | null;
+  sessionPrice60Egp?: number | null;
+  sessionPrice60Usd?: number | null;
   locale?: "ar" | "en";
   timezone?: string;
   languageCodes?: string[];
   specialtySelection?: PractitionerSpecialtySelectionInput;
   payoutDestination?: PractitionerPayoutDestinationInput | null;
+  avatarUrl?: string | null;
 }
 
 export interface UploadPractitionerCredentialMetadataRequest {

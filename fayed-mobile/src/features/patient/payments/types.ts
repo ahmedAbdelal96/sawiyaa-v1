@@ -5,6 +5,10 @@
 
 export type PaymentProvider = "STRIPE" | "PAYMOB" | "INTERNAL_WALLET";
 
+export type PaymobCheckoutMethod = "CARD" | "WALLET";
+
+export type SessionPaymentCheckoutFlow = "legacy" | "intention";
+
 export type PaymentStatus =
   | "CREATED"
   | "PENDING"
@@ -36,6 +40,7 @@ export interface PaymentItem {
   currency: string;
   providerPaymentId: string | null;
   providerReference: string | null;
+  providerMethod: string | null;
   /** Present for hosted-checkout providers (Paymob). Open via Linking. */
   checkoutUrl: string | null;
   /** Present for Stripe Elements flow. Requires @stripe/stripe-react-native SDK. */
@@ -62,6 +67,35 @@ export interface PaymentsListData {
 export interface InitiateSessionPaymentInput {
   couponCode?: string;
   useWalletBalance?: boolean;
+  paymobMethod?: PaymobCheckoutMethod;
+  returnUrl?: string;
+}
+
+export interface SessionPaymentCapabilityMethod {
+  key: string;
+  label: string;
+  type: string;
+  enabled: boolean;
+}
+
+export interface SessionPaymentCapabilitiesItem {
+  provider: PaymentProvider;
+  checkoutFlow: SessionPaymentCheckoutFlow;
+  methods: SessionPaymentCapabilityMethod[];
+  supportedMethods: string[];
+  defaultMethod: string | null;
+}
+
+export interface PaymentReconcileSessionReturnInput {
+  providerReference?: string | null;
+  redirectStatus?: string | null;
+  success?: boolean | null;
+  pending?: boolean | null;
+}
+
+export interface PaymentReconcileSessionReturnResult {
+  item: PaymentItem | null;
+  reconciled: boolean;
 }
 
 export interface ListPaymentsParams {

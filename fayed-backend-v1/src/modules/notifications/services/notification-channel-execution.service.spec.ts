@@ -1,13 +1,21 @@
 import { NotificationChannel } from '@prisma/client';
 import { NotificationEmailService } from './notification-email.service';
 import { NotificationChannelExecutionService } from './notification-channel-execution.service';
+import { NotificationPushExecutionService } from './notification-push-execution.service';
 
 describe('NotificationChannelExecutionService', () => {
   const emailService = {
     sendEmail: jest.fn(),
   } as unknown as NotificationEmailService;
 
-  const service = new NotificationChannelExecutionService(emailService);
+  const pushExecutionService = {
+    execute: jest.fn(),
+  } as unknown as NotificationPushExecutionService;
+
+  const service = new NotificationChannelExecutionService(
+    emailService,
+    pushExecutionService,
+  );
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -16,6 +24,7 @@ describe('NotificationChannelExecutionService', () => {
   it('executes in-app channel successfully without email provider', async () => {
     const result = await service.execute({
       id: 'n1',
+      userId: 'u1',
       channel: NotificationChannel.IN_APP,
       titleSnapshot: 'Title',
       subjectSnapshot: null,
@@ -40,6 +49,7 @@ describe('NotificationChannelExecutionService', () => {
 
     const result = await service.execute({
       id: 'n2',
+      userId: 'u1',
       channel: NotificationChannel.EMAIL,
       titleSnapshot: 'Title',
       subjectSnapshot: 'Subject',
@@ -64,6 +74,7 @@ describe('NotificationChannelExecutionService', () => {
   it('maps email missing target as deterministic failure', async () => {
     const result = await service.execute({
       id: 'n3',
+      userId: 'u1',
       channel: NotificationChannel.EMAIL,
       titleSnapshot: 'Title',
       subjectSnapshot: 'Subject',

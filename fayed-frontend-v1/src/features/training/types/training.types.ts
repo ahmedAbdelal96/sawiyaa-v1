@@ -4,7 +4,7 @@ export type CourseStatus = "DRAFT" | "PUBLISHED" | "ARCHIVED" | string;
 
 export type CourseVisibility = "PUBLIC" | "PRIVATE" | string;
 
-export type CourseType = "LIVE" | "WORKSHOP" | "COURSE" | string;
+export type CourseType = "LIVE_COURSE" | "LIVE_WORKSHOP" | "LIVE_SERIES" | string;
 
 export type TrainingScheduleStatus =
   | "DRAFT"
@@ -86,8 +86,12 @@ export type TrainingSchedule = {
   startsAt: string | null;
   endsAt: string | null;
   timezone: string | null;
+  plannedDurationDays: number | null;
+  plannedLectureCount: number | null;
   maxEnrollments: number | null;
   availableSeats: number | null;
+  lectureCount: number;
+  isLecturePlanComplete: boolean;
   isEnrollmentOpen: boolean;
   enrollmentAvailabilityReason: TrainingEnrollmentAvailabilityReason;
 };
@@ -107,6 +111,7 @@ export type PublicTrainingListItem = {
   thumbnailUrl: string | null;
   publishedAt: string | null;
   courseType: CourseType;
+  primaryCategory: PublicTrainingCategoryItem | null;
 };
 
 export type PublicTrainingDetails = PublicTrainingListItem & {
@@ -114,6 +119,13 @@ export type PublicTrainingDetails = PublicTrainingListItem & {
   seo: TrainingSeo;
   locale: string;
   schedules: TrainingSchedule[];
+};
+
+export type PublicTrainingCategoryItem = {
+  id: string;
+  slug: string;
+  title: string;
+  courseCount: number;
 };
 
 export type EnrollmentPaymentSnapshot = {
@@ -171,6 +183,10 @@ export type PublicTrainingsListData = {
   pagination: TrainingsPagination;
 };
 
+export type PublicTrainingCategoriesListData = {
+  items: PublicTrainingCategoryItem[];
+};
+
 export type PatientTrainingEnrollmentsListData = {
   items: PatientTrainingEnrollmentItem[];
   pagination: TrainingsPagination;
@@ -179,10 +195,126 @@ export type PatientTrainingEnrollmentsListData = {
 export type AdminTrainingsListData = {
   items: AdminTrainingItem[];
   pagination: TrainingsPagination;
+  summary: AdminTrainingCatalogSummary;
+};
+
+export type AdminTrainingCatalogSummary = {
+  total: number;
+  draft: number;
+  published: number;
+  archived: number;
+  openForEnrollment: number;
+  closedForEnrollment: number;
 };
 
 export type AdminTrainingScheduleListData = {
   items: AdminTrainingSchedule[];
+};
+
+export type AdminTrainingScheduleEnrollmentItem = {
+  id: string;
+  userId: string;
+  patientDisplayName: string | null;
+  scheduleId: string;
+  scheduleCode: string;
+  enrollmentStatus: EnrollmentStatus;
+  attendanceStatus: EnrollmentAttendanceStatus;
+  paymentStatus: string | null;
+  enrolledAt: string;
+  startsAt: string | null;
+  endsAt: string | null;
+};
+
+export type AdminTrainingScheduleLectureItem = {
+  id: string;
+  sessionOrder: number;
+  sessionTitle: string | null;
+  startsAt: string | null;
+  endsAt: string | null;
+  externalRoomProvider: string | null;
+  externalRoomJoinUrl: string | null;
+  externalRoomHostUrl: string | null;
+  attendanceTrackingEnabled: boolean;
+  isMandatory: boolean;
+};
+
+export type AdminTrainingPaymentAttemptItem = {
+  id: string;
+  enrollmentId: string;
+  userId: string;
+  patientDisplayName: string | null;
+  scheduleId: string;
+  scheduleCode: string;
+  provider: PaymentProvider;
+  status: PaymentStatus;
+  amountSubtotal: string;
+  amountDiscount: string;
+  amountTotal: string;
+  currencyCode: string;
+  providerPaymentRef: string | null;
+  providerOrderRef: string | null;
+  providerCustomerRef: string | null;
+  checkoutUrl: string | null;
+  clientSecret: string | null;
+  failureReason: string | null;
+  failedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type AdminTrainingAnalyticsCohortItem = {
+  scheduleId: string;
+  scheduleCode: string;
+  status: TrainingScheduleStatus;
+  plannedDurationDays: number | null;
+  plannedLectureCount: number | null;
+  lectureCount: number;
+  isLecturePlanComplete: boolean;
+  totalEnrollments: number;
+  paidEnrollments: number;
+  pendingPaymentEnrollments: number;
+  failedPaymentAttempts: number;
+  abandonedPaymentAttempts: number;
+  attendanceCompletedEnrollments: number;
+  attendanceCompletionRate: number;
+  paymentConversionRate: number;
+  occupancyRate: number;
+};
+
+export type AdminTrainingAnalyticsData = {
+  totalSchedules: number;
+  openSchedules: number;
+  endedSchedules: number;
+  totalLectures: number;
+  totalEnrollments: number;
+  activeEnrollments: number;
+  completedEnrollments: number;
+  pendingPaymentEnrollments: number;
+  paidEnrollments: number;
+  failedPaymentAttempts: number;
+  abandonedPaymentAttempts: number;
+  attendanceCompletedEnrollments: number;
+  attendanceCompletionRate: number;
+  paymentConversionRate: number;
+  cohorts: AdminTrainingAnalyticsCohortItem[];
+};
+
+export type AdminTrainingScheduleEnrollmentsListData = {
+  items: AdminTrainingScheduleEnrollmentItem[];
+  pagination: TrainingsPagination;
+};
+
+export type AdminTrainingScheduleLectureListData = {
+  items: AdminTrainingScheduleLectureItem[];
+};
+
+export type AdminTrainingPaymentAttemptListData = {
+  items: AdminTrainingPaymentAttemptItem[];
+  pagination: TrainingsPagination;
+};
+
+export type AdminTrainingAnalyticsResponse = {
+  data: AdminTrainingAnalyticsData;
 };
 
 export type PublicTrainingItemResponse = {
@@ -205,10 +337,23 @@ export type AdminTrainingScheduleItemResponse = {
   item: AdminTrainingSchedule;
 };
 
+export type AdminTrainingScheduleEnrollmentsListParams = {
+  page?: number;
+  limit?: number;
+  status?: EnrollmentStatus;
+};
+
+export type AdminTrainingPaymentAttemptsListParams = {
+  page?: number;
+  limit?: number;
+  status?: PaymentStatus;
+};
+
 export type ListPublicTrainingsParams = {
   page?: number;
   limit?: number;
   q?: string;
+  category?: string;
 };
 
 export type ListPatientTrainingEnrollmentsParams = {
@@ -231,7 +376,6 @@ export type CreateTrainingEnrollmentInput = {
 export type CreateAdminTrainingInput = {
   locale: TrainingLocale;
   title: string;
-  slug: string;
   shortDescription?: string;
   fullDescription?: string;
   courseType: CourseType;
@@ -242,7 +386,9 @@ export type CreateAdminTrainingInput = {
   metaDescription?: string;
 };
 
-export type UpdateAdminTrainingInput = Partial<CreateAdminTrainingInput>;
+export type UpdateAdminTrainingInput = Partial<CreateAdminTrainingInput> & {
+  slug?: string;
+};
 
 export type CreateAdminTrainingScheduleInput = {
   scheduleCode?: string;
@@ -261,3 +407,15 @@ export type CreateAdminTrainingScheduleInput = {
 
 export type UpdateAdminTrainingScheduleInput =
   Partial<CreateAdminTrainingScheduleInput>;
+
+export type CreateAdminTrainingScheduleLectureInput = {
+  sessionOrder: number;
+  sessionTitle?: string;
+  startsAt: string;
+  endsAt: string;
+  externalRoomProvider?: string;
+  externalRoomJoinUrl?: string;
+  externalRoomHostUrl?: string;
+  attendanceTrackingEnabled?: boolean;
+  isMandatory?: boolean;
+};

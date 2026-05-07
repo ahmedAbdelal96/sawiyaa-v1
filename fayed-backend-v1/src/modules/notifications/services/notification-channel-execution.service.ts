@@ -1,9 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { NotificationChannel, Prisma } from '@prisma/client';
 import { NotificationEmailService } from './notification-email.service';
+import { NotificationPushExecutionService } from './notification-push-execution.service';
 
 type QueuedNotification = {
   id: string;
+  userId: string;
   channel: NotificationChannel;
   titleSnapshot: string | null;
   subjectSnapshot: string | null;
@@ -24,6 +26,7 @@ export type ChannelExecutionResult = {
 export class NotificationChannelExecutionService {
   constructor(
     private readonly notificationEmailService: NotificationEmailService,
+    private readonly notificationPushExecutionService: NotificationPushExecutionService,
   ) {}
 
   async execute(
@@ -39,6 +42,10 @@ export class NotificationChannelExecutionService {
 
     if (notification.channel === NotificationChannel.EMAIL) {
       return this.executeEmail(notification);
+    }
+
+    if (notification.channel === NotificationChannel.PUSH) {
+      return this.notificationPushExecutionService.execute(notification);
     }
 
     return {

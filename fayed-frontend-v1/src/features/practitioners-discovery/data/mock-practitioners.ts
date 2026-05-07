@@ -16,6 +16,7 @@ export const MOCK_PRACTITIONERS: PublicPractitioner[] = [
     sessionCount: 856,
     yearsExperience: 8,
     isVerified: true,
+    acceptsPackage: true,
     initials: "سأ",
   },
   {
@@ -33,6 +34,7 @@ export const MOCK_PRACTITIONERS: PublicPractitioner[] = [
     sessionCount: 614,
     yearsExperience: 11,
     isVerified: true,
+    acceptsPackage: true,
     initials: "فع",
   },
   {
@@ -50,6 +52,7 @@ export const MOCK_PRACTITIONERS: PublicPractitioner[] = [
     sessionCount: 1203,
     yearsExperience: 14,
     isVerified: true,
+    acceptsPackage: true,
     initials: "نخ",
   },
   {
@@ -67,6 +70,7 @@ export const MOCK_PRACTITIONERS: PublicPractitioner[] = [
     sessionCount: 421,
     yearsExperience: 6,
     isVerified: true,
+    acceptsPackage: true,
     initials: "هس",
   },
   {
@@ -84,6 +88,7 @@ export const MOCK_PRACTITIONERS: PublicPractitioner[] = [
     sessionCount: 338,
     yearsExperience: 9,
     isVerified: true,
+    acceptsPackage: true,
     initials: "عق",
   },
   {
@@ -101,6 +106,7 @@ export const MOCK_PRACTITIONERS: PublicPractitioner[] = [
     sessionCount: 972,
     yearsExperience: 12,
     isVerified: true,
+    acceptsPackage: true,
     initials: "لم",
   },
   {
@@ -118,6 +124,7 @@ export const MOCK_PRACTITIONERS: PublicPractitioner[] = [
     sessionCount: 703,
     yearsExperience: 15,
     isVerified: true,
+    acceptsPackage: true,
     initials: "فر",
   },
   {
@@ -135,6 +142,7 @@ export const MOCK_PRACTITIONERS: PublicPractitioner[] = [
     sessionCount: 547,
     yearsExperience: 10,
     isVerified: true,
+    acceptsPackage: true,
     initials: "أز",
   },
   {
@@ -152,6 +160,7 @@ export const MOCK_PRACTITIONERS: PublicPractitioner[] = [
     sessionCount: 261,
     yearsExperience: 5,
     isVerified: false,
+    acceptsPackage: false,
     initials: "رع",
   },
 ];

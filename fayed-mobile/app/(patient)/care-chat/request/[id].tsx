@@ -35,7 +35,7 @@ function statusColor(
 export default function CareChatRequestDetailScreen() {
   const router = useRouter();
   const { theme } = useTheme();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { id } = useLocalSearchParams<{ id: string }>();
 
   const requestQuery = useMyCareChatRequest(id ?? null);
@@ -88,11 +88,10 @@ export default function CareChatRequestDetailScreen() {
                   t("careChat.unknownPractitioner")}
               </Text>
               <Text color={theme.colors.textMuted} style={styles.dateText}>
-                {new Date(request.requestedAt).toLocaleDateString("ar-SA", {
-                  day: "numeric",
-                  month: "long",
-                  year: "numeric",
-                })}
+                {new Date(request.requestedAt).toLocaleDateString(
+                  i18n.language?.startsWith("ar") ? "ar-SA" : "en-US",
+                  { day: "numeric", month: "long", year: "numeric" },
+                )}
               </Text>
             </View>
           </View>
@@ -126,11 +125,10 @@ export default function CareChatRequestDetailScreen() {
                 color={theme.colors.textSecondary}
                 style={styles.fieldValue}
               >
-                {new Date(request.expiresAt).toLocaleDateString("ar-SA", {
-                  day: "numeric",
-                  month: "long",
-                  year: "numeric",
-                })}
+                {new Date(request.expiresAt).toLocaleDateString(
+                  i18n.language?.startsWith("ar") ? "ar-SA" : "en-US",
+                  { day: "numeric", month: "long", year: "numeric" },
+                )}
               </Text>
             </View>
           ) : null}

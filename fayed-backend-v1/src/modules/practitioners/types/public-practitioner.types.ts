@@ -18,8 +18,16 @@ export interface PublicPractitionerListItemViewModel {
   countryCode: string | null;
   practitionerType: string;
   practitionerGender: string | null;
+  pricing: {
+    session30: { egp: number | null; usd: number | null };
+    session60: { egp: number | null; usd: number | null };
+  };
   sessionPrice30: number | null;
   sessionPrice60: number | null;
+  sessionPrice30Egp: number | null;
+  sessionPrice30Usd: number | null;
+  sessionPrice60Egp: number | null;
+  sessionPrice60Usd: number | null;
   isOnlineNow: boolean;
   acceptsCoupon: boolean;
   acceptsPackage: boolean;
@@ -47,6 +55,16 @@ export interface PublicPractitionerDetailsViewModel {
   languages: string[];
   countryCode: string | null;
   yearsExperience: number | null;
+  pricing: {
+    session30: { egp: number | null; usd: number | null };
+    session60: { egp: number | null; usd: number | null };
+  };
+  sessionPrice30: number | null;
+  sessionPrice60: number | null;
+  sessionPrice30Egp: number | null;
+  sessionPrice30Usd: number | null;
+  sessionPrice60Egp: number | null;
+  sessionPrice60Usd: number | null;
   ratingSummary: {
     averageRating: number | null;
     totalReviews: number;

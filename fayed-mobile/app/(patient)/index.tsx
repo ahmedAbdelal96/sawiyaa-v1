@@ -15,6 +15,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { usePatientJourney } from "../../src/features/patient/journey/hooks";
 import { formatLocalizedDateTime } from "../../src/features/patient/sessions/slot-utils";
+import { usePatientUnreadNotificationCount } from "../../src/features/patient/notifications/hooks";
 
 export default function PatientHomeScreen() {
   const { t, i18n } = useTranslation();
@@ -23,21 +24,48 @@ export default function PatientHomeScreen() {
   const router = useRouter();
   const locale = i18n.language?.startsWith("ar") ? "ar-SA" : "en-US";
   const journeyQuery = usePatientJourney();
+  const unreadNotificationsQuery = usePatientUnreadNotificationCount();
   const upcoming = journeyQuery.data?.upcoming;
   const upcomingSession = upcoming?.session;
   const pendingPayment = upcoming?.pendingPayment;
   const hasOpenSupportTicket = journeyQuery.data?.support?.hasOpenTicket;
+  const unreadNotificationCount =
+    unreadNotificationsQuery.data?.item.unreadCount ?? 0;
 
   return (
     <Screen bg="background">
       <Header
         title="Clinical Sanctuary"
         rightElement={
-          <Ionicons
-            name="notifications-outline"
-            size={24}
-            color={theme.colors.textPrimary}
-          />
+          <TouchableOpacity
+            onPress={() => router.push("/(patient)/notifications" as any)}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            style={styles.notificationsButton}
+          >
+            <Ionicons
+              name="notifications-outline"
+              size={24}
+              color={theme.colors.textPrimary}
+            />
+            {unreadNotificationCount > 0 ? (
+              <View
+                style={[
+                  styles.notificationBadge,
+                  { backgroundColor: theme.colors.primary },
+                ]}
+              >
+                <Text
+                  color="#fff"
+                  weight="600"
+                  style={styles.notificationBadgeText}
+                >
+                  {unreadNotificationCount > 99
+                    ? "99+"
+                    : String(unreadNotificationCount)}
+                </Text>
+              </View>
+            ) : null}
+          </TouchableOpacity>
         }
       />
 
@@ -394,6 +422,26 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     borderWidth: 1,
     borderColor: "#d9e2f0",
+  },
+  notificationsButton: {
+    minWidth: 28,
+    minHeight: 28,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  notificationBadge: {
+    position: "absolute",
+    top: -6,
+    right: -10,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 4,
+  },
+  notificationBadgeText: {
+    fontSize: 10,
   },
   nextSessionCard: {
     marginHorizontal: 20,

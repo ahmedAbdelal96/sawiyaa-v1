@@ -14,10 +14,12 @@ import {
   IsEmail,
   IsEnum,
   IsInt,
+  IsNumber,
   IsOptional,
   IsString,
   MaxLength,
   MinLength,
+  Min,
   ValidateNested,
 } from 'class-validator';
 import { PractitionerPayoutDestinationInputDto } from '@modules/practitioners/dto/practitioner-payout-destination.dto';
@@ -108,6 +110,46 @@ export class CreateAdminPractitionerDto {
   @IsOptional()
   @IsInt()
   yearsOfExperience?: number;
+
+  @ApiPropertyOptional({
+    example: 250,
+    description: '30-minute session price in EGP',
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0.01)
+  sessionPrice30Egp?: number | null;
+
+  @ApiPropertyOptional({
+    example: 8,
+    description: '30-minute session price in USD',
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0.01)
+  sessionPrice30Usd?: number | null;
+
+  @ApiPropertyOptional({
+    example: 450,
+    description: '60-minute session price in EGP',
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0.01)
+  sessionPrice60Egp?: number | null;
+
+  @ApiPropertyOptional({
+    example: 15,
+    description: '60-minute session price in USD',
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0.01)
+  sessionPrice60Usd?: number | null;
 
   @ApiPropertyOptional({
     example: 'EG',

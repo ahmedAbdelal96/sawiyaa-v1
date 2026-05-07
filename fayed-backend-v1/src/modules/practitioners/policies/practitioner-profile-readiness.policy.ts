@@ -15,8 +15,10 @@ export class PractitionerProfileReadinessPolicy {
     yearsOfExperience: number | null;
     languageCount: number;
     specialtyCount: number;
+    primarySpecialtyCategoryId: string | null;
     credentialCount: number;
     hasPayoutDestination: boolean;
+    hasPayoutAccountHolderName: boolean;
     isAccountActive: boolean;
     isPractitionerOtpVerified: boolean;
   }): PractitionerReadinessViewModel {
@@ -29,8 +31,10 @@ export class PractitionerProfileReadinessPolicy {
         input.yearsOfExperience !== null && input.yearsOfExperience >= 0,
       hasLanguage: input.languageCount > 0,
       hasSpecialty: input.specialtyCount > 0,
+      hasPrimarySpecialty: Boolean(input.primarySpecialtyCategoryId?.trim()),
       hasCredential: input.credentialCount > 0,
       hasPayoutDestination: input.hasPayoutDestination,
+      hasPayoutAccountHolderName: input.hasPayoutAccountHolderName,
       isAccountActive: input.isAccountActive,
       isPractitionerOtpVerified: input.isPractitionerOtpVerified,
     };
@@ -58,11 +62,17 @@ export class PractitionerProfileReadinessPolicy {
     if (!checks.hasSpecialty) {
       missingRequirements.push('specialties');
     }
+    if (!checks.hasPrimarySpecialty) {
+      missingRequirements.push('primarySpecialtyCategoryId');
+    }
     if (!checks.hasCredential) {
       missingRequirements.push('credentials');
     }
     if (!checks.hasPayoutDestination) {
       missingRequirements.push('payoutDestination');
+    }
+    if (!checks.hasPayoutAccountHolderName) {
+      missingRequirements.push('payoutAccountHolderName');
     }
     if (!checks.isAccountActive) {
       missingRequirements.push('activeAccount');
@@ -79,8 +89,10 @@ export class PractitionerProfileReadinessPolicy {
       checks.hasYearsOfExperience &&
       checks.hasLanguage &&
       checks.hasSpecialty &&
+      checks.hasPrimarySpecialty &&
       checks.hasCredential &&
-      checks.hasPayoutDestination;
+      checks.hasPayoutDestination &&
+      checks.hasPayoutAccountHolderName;
 
     return {
       isProfileCompleted,

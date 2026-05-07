@@ -30,15 +30,34 @@ export class UserRepository {
   findByIdWithAuthContext(userId: string) {
     return this.prisma.user.findUnique({
       where: { id: userId },
-      include: {
+      select: {
+        id: true,
+        displayName: true,
+        status: true,
+        tokenVersion: true,
         roles: true,
         emails: {
           orderBy: [{ isPrimary: 'desc' }, { createdAt: 'asc' }],
+          select: {
+            email: true,
+            isPrimary: true,
+            isVerified: true,
+          },
         },
         phones: {
           orderBy: [{ isPrimary: 'desc' }, { createdAt: 'asc' }],
+          select: {
+            phone: true,
+            isPrimary: true,
+            isVerified: true,
+          },
         },
-        practitionerProfile: true,
+        practitionerProfile: {
+          select: {
+            id: true,
+            status: true,
+          },
+        },
       },
     });
   }

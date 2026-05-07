@@ -229,6 +229,42 @@ export default function PractitionerHomeScreen() {
               onPress={() => router.push("/(practitioner)/availability")}
             />
           </View>
+          <View style={styles.quickGrid}>
+            <QuickAccessCard
+              icon="headset-outline"
+              label={t("practitioner.support.quickAccess")}
+              onPress={() => router.push("/(practitioner)/support")}
+            />
+            <QuickAccessCard
+              icon="chatbubble-ellipses-outline"
+              label={t("practitioner.careChat.quickAccess")}
+              onPress={() => router.push("/(practitioner)/care-chat")}
+            />
+          </View>
+          <View style={styles.quickGrid}>
+            <QuickAccessCard
+              icon="person-circle-outline"
+              label={t("practitioner.account.quickAccess")}
+              onPress={() => router.push("/(practitioner)/account")}
+            />
+            <QuickAccessCard
+              icon="cash-outline"
+              label={t("practitioner.finance.quickAccess")}
+              onPress={() => router.push("/(practitioner)/finance")}
+            />
+          </View>
+          <View style={styles.quickGrid}>
+            <QuickAccessCard
+              icon="wallet-outline"
+              label={t("practitioner.finance.wallet.title")}
+              onPress={() => router.push("/(practitioner)/finance/wallet")}
+            />
+            <QuickAccessCard
+              icon="person-outline"
+              label={t("practitioner.account.profileCard")}
+              onPress={() => router.push("/(practitioner)/account")}
+            />
+          </View>
         </Card>
       </ScrollView>
     </Screen>

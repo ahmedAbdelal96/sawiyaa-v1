@@ -20,7 +20,7 @@ export class RefreshPractitionerWalletService {
 
   async refresh(practitionerId: string, tx?: Prisma.TransactionClient) {
     const aggregates =
-      await this.ledgerRepository.aggregatePractitionerBalances(practitionerId);
+      await this.ledgerRepository.aggregatePractitionerBalances(practitionerId, tx);
     const byCurrency = new Map<
       string,
       {

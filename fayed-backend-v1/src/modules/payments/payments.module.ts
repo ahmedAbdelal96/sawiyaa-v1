@@ -1,10 +1,13 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { JwtAccessAuthGuard } from '@common/guards/authentication/jwt-access-auth.guard';
 import { RolesGuard } from '@common/guards/authorization/roles.guard';
 import { AppLoggerService } from '@common/logging/app-logger.service';
 import { FinancialOperationsModule } from '@modules/financial-operations/financial-operations.module';
 import { FinancialRulesModule } from '@modules/financial-rules/financial-rules.module';
+import { PaymentGatewayControlModule } from '@modules/payment-gateway-control/payment-gateway-control.module';
+import { PackagePlansModule } from '@modules/package-plans/package-plans.module';
 import { NotificationsModule } from '@modules/notifications/notifications.module';
+import { RefundPoliciesModule } from '@modules/refund-policies/refund-policies.module';
 import { SessionsModule } from '@modules/sessions/sessions.module';
 import { CustomerWalletsModule } from '@modules/customer-wallets/customer-wallets.module';
 import { PatientPaymentsController } from './controllers/patient-payments.controller';
@@ -24,12 +27,14 @@ import { PaymentConfigStartupValidationService } from './services/payment-config
 import { PaymentRuntimeConfigService } from './services/payment-runtime-config.service';
 import { PaymentProviderRegistryService } from './services/payment-provider-registry.service';
 import { PaymentProviderResolverService } from './services/payment-provider-resolver.service';
+import { PaymentGeoContextService } from './services/payment-geo-context.service';
 import { ResolveSessionPaymentPricingService } from './services/resolve-session-payment-pricing.service';
 import { ValidatePaymentStatusTransitionService } from './services/validate-payment-status-transition.service';
 import { ValidateRefundEligibilityService } from './services/validate-refund-eligibility.service';
 import { ExpirePaymentUseCase } from './use-cases/expire-payment.use-case';
 import { GetAdminPaymentOpsDetailsUseCase } from './use-cases/get-admin-payment-ops-details.use-case';
 import { GetPatientPaymentUseCase } from './use-cases/get-patient-payment.use-case';
+import { GetPatientSessionPaymentCapabilitiesUseCase } from './use-cases/get-patient-session-payment-capabilities.use-case';
 import { HandlePaymobWebhookUseCase } from './use-cases/handle-paymob-webhook.use-case';
 import { HandleStripeWebhookUseCase } from './use-cases/handle-stripe-webhook.use-case';
 import { InitiateSessionPaymentUseCase } from './use-cases/initiate-session-payment.use-case';
@@ -38,6 +43,7 @@ import { ListPaymentRefundsUseCase } from './use-cases/list-payment-refunds.use-
 import { ListPatientPaymentsUseCase } from './use-cases/list-patient-payments.use-case';
 import { MarkPaymentFailedUseCase } from './use-cases/mark-payment-failed.use-case';
 import { MarkPaymentSucceededUseCase } from './use-cases/mark-payment-succeeded.use-case';
+import { ReconcileSessionPaymentReturnUseCase } from './use-cases/reconcile-session-payment-return.use-case';
 import { RequestPaymentRefundUseCase } from './use-cases/request-payment-refund.use-case';
 import { RetryPaymentRefundUseCase } from './use-cases/retry-payment-refund.use-case';
 
@@ -48,11 +54,14 @@ import { RetryPaymentRefundUseCase } from './use-cases/retry-payment-refund.use-
  */
 @Module({
   imports: [
+    forwardRef(() => PackagePlansModule),
     SessionsModule,
     FinancialRulesModule,
     FinancialOperationsModule,
+    PaymentGatewayControlModule,
     NotificationsModule,
     CustomerWalletsModule,
+    RefundPoliciesModule,
   ],
   controllers: [
     PatientPaymentsController,
@@ -77,12 +86,14 @@ import { RetryPaymentRefundUseCase } from './use-cases/retry-payment-refund.use-
     PaymentRuntimeConfigService,
     PaymentConfigStartupValidationService,
     PaymentProviderResolverService,
+    PaymentGeoContextService,
     StripePaymentProviderAdapter,
     PaymobPaymentProviderAdapter,
     PaymentProviderRegistryService,
     InitiateSessionPaymentUseCase,
     GetAdminPaymentOpsDetailsUseCase,
     GetPatientPaymentUseCase,
+    GetPatientSessionPaymentCapabilitiesUseCase,
     ListPatientPaymentsUseCase,
     ListAdminPatientPaymentsUseCase,
     HandleStripeWebhookUseCase,
@@ -90,14 +101,17 @@ import { RetryPaymentRefundUseCase } from './use-cases/retry-payment-refund.use-
     MarkPaymentSucceededUseCase,
     MarkPaymentFailedUseCase,
     ExpirePaymentUseCase,
+    ReconcileSessionPaymentReturnUseCase,
     ListPaymentRefundsUseCase,
     RequestPaymentRefundUseCase,
     RetryPaymentRefundUseCase,
   ],
   exports: [
     PaymentRepository,
+    PaymentMapper,
     PaymentProviderRegistryService,
     PaymentProviderResolverService,
+    PaymentGeoContextService,
     ValidatePaymentStatusTransitionService,
     ExpirePaymentUseCase,
   ],

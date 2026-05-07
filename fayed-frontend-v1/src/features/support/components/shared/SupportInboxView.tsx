@@ -19,6 +19,7 @@ type Props = {
   onStatusFilterChange: (next: SupportTicketStatus | "ALL") => void;
   onCreateFromMessage: (message: string) => Promise<string>;
   onOpenConversation: (id: string) => void;
+  density?: "regular" | "compact";
 };
 
 const STATUS_FILTERS: Array<SupportTicketStatus | "ALL"> = [
@@ -52,6 +53,7 @@ export default function SupportInboxView({
   onStatusFilterChange,
   onCreateFromMessage,
   onOpenConversation,
+  density = "regular",
 }: Props) {
   const locale = useLocale();
   const numLocale = locale === "ar" ? "ar-SA" : "en-US";
@@ -83,6 +85,7 @@ export default function SupportInboxView({
 
   return (
     <SupportMessagingScaffold
+      density={density}
       eyebrow={t("home.eyebrow")}
       title={t("home.title")}
       note={t("home.note")}
@@ -104,20 +107,21 @@ export default function SupportInboxView({
         onSubmit={handleStart}
         isSubmitting={isStarting}
         helperNote={helperNote}
+        compact={density === "compact"}
       />
 
-      <section className="app-panel rounded-[32px] p-5 sm:p-7">
+      <section className={density === "compact" ? "app-panel rounded-[28px] p-4 sm:p-5" : "app-panel rounded-[32px] p-5 sm:p-7"}>
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h2 className="text-lg font-semibold text-text-primary dark:text-white/95">
+            <h2 className={density === "compact" ? "text-base font-semibold text-text-primary dark:text-white/95" : "text-lg font-semibold text-text-primary dark:text-white/95"}>
               {t("list.heading")}
             </h2>
-            <p className="mt-1 text-sm text-text-secondary">{t("list.note")}</p>
+            <p className={density === "compact" ? "mt-1 text-xs text-text-secondary" : "mt-1 text-sm text-text-secondary"}>{t("list.note")}</p>
           </div>
           <span className="app-chip rounded-full px-3 py-1 text-xs font-medium">{listCountLabel}</span>
         </div>
 
-        <div className="mt-4 flex flex-wrap items-end justify-between gap-3">
+        <div className={density === "compact" ? "mt-3 flex flex-wrap items-end justify-between gap-2.5" : "mt-4 flex flex-wrap items-end justify-between gap-3"}>
           <label className="block min-w-[220px]">
             <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
               {t("filters.all")}
@@ -145,16 +149,16 @@ export default function SupportInboxView({
         </div>
 
         {isLoading ? (
-          <div className="mt-5 space-y-3">
+          <div className={density === "compact" ? "mt-4 space-y-2.5" : "mt-5 space-y-3"}>
             {Array.from({ length: 3 }).map((_, index) => (
               <div
                 key={index}
-                className="h-28 animate-pulse rounded-[24px] bg-surface-tertiary dark:bg-white/10"
+                className={density === "compact" ? "h-24 animate-pulse rounded-[22px] bg-surface-tertiary dark:bg-white/10" : "h-28 animate-pulse rounded-[24px] bg-surface-tertiary dark:bg-white/10"}
               />
             ))}
           </div>
         ) : isError ? (
-          <div className="app-panel-soft mt-5 rounded-[24px] p-5">
+          <div className={density === "compact" ? "app-panel-soft mt-4 rounded-[22px] p-4" : "app-panel-soft mt-5 rounded-[24px] p-5"}>
             <div className="flex items-center gap-2 text-text-primary dark:text-white/90">
               <CircleAlert className="h-4 w-4 text-rose-500" />
               <p className="text-sm font-semibold">{t("states.listError.heading")}</p>
@@ -162,7 +166,7 @@ export default function SupportInboxView({
             <p className="mt-2 text-sm leading-6 text-text-secondary">{t("states.listError.note")}</p>
           </div>
         ) : items.length > 0 ? (
-          <div className="mt-5 space-y-3">
+          <div className={density === "compact" ? "mt-4 space-y-2.5" : "mt-5 space-y-3"}>
             {items.map((row) => (
               <SupportConversationCard
                 key={row.id}
@@ -182,7 +186,7 @@ export default function SupportInboxView({
             ))}
           </div>
         ) : (
-          <div className="app-panel-soft mt-5 rounded-[24px] p-5">
+          <div className={density === "compact" ? "app-panel-soft mt-4 rounded-[22px] p-4" : "app-panel-soft mt-5 rounded-[24px] p-5"}>
             <p className="text-sm font-semibold text-text-primary dark:text-white/95">
               {t("states.empty.heading")}
             </p>
@@ -193,4 +197,3 @@ export default function SupportInboxView({
     </SupportMessagingScaffold>
   );
 }
-

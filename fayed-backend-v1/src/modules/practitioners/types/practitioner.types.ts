@@ -20,7 +20,12 @@ export interface UpdatePractitionerProfileInput {
   yearsOfExperience?: number | null;
   practitionerType?: PractitionerType;
   practitionerGender?: PractitionerGender | null;
+  sessionPrice30Egp?: number | null;
+  sessionPrice30Usd?: number | null;
+  sessionPrice60Egp?: number | null;
+  sessionPrice60Usd?: number | null;
   locale?: string;
+  acceptsPackage?: boolean;
   timezone?: string;
   languageCodes?: string[];
   payoutDestination?: PractitionerPayoutDestinationInput | null;
@@ -87,6 +92,7 @@ export interface PractitionerApplicationStatusViewModel {
   reviewedByUserId: string | null;
   reviewDecisionReason: string | null;
   reviewNotes: string | null;
+  submissionSnapshot: Record<string, unknown> | null;
 }
 
 export interface PractitionerReadinessChecks {
@@ -125,6 +131,11 @@ export interface PractitionerProfileViewModel {
   practitionerType: PractitionerType;
   practitionerGender: PractitionerGender | null;
   primarySpecialtyCategoryId: string | null;
+  acceptsPackage: boolean;
+  pricing: {
+    session30: { egp: number | null; usd: number | null };
+    session60: { egp: number | null; usd: number | null };
+  };
   payoutDestination: PractitionerPayoutDestinationViewModel | null;
   profileStatus: PractitionerStatus;
   specialties: PractitionerSpecialtyViewModel[];

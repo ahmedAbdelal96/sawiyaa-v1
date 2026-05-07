@@ -90,7 +90,7 @@ export class DecideCareChatRequestUseCase {
             conversationId: conversation.id,
             actorRole: 'ADMIN',
             message:
-              'Care chat request has been approved. This conversation is available while active.',
+              'تمت الموافقة على طلب الدردشة المهنية. هذه المحادثة متاحة أثناء كونها نشطة.',
           },
           tx,
         );

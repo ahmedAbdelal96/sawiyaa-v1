@@ -132,13 +132,13 @@ export default function BookingSuccessScreen() {
       <View style={styles.actionsWrap}>
         <Button
           title={t("patientSessionsFlow.success.goToSessions")}
-          onPress={() => router.replace("/sessions")}
+          onPress={() => router.replace("/(patient)/sessions")}
           style={styles.primaryAction}
         />
         <Button
           title={t("patientSessionsFlow.success.goHome")}
           variant="secondary"
-          onPress={() => router.replace("/")}
+          onPress={() => router.replace("/(patient)")}
           style={styles.secondaryAction}
         />
       </View>

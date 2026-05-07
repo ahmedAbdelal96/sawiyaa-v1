@@ -77,7 +77,7 @@ export class ResolveSessionJoinReadinessService {
     const canPrepareRuntime =
       input.now >= prepareOpensAt && input.now <= joinClosesAt;
     const runtimePrepared =
-      input.provider === SessionProvider.DAILY &&
+      input.provider !== SessionProvider.NONE &&
       Boolean(input.providerRoomId) &&
       Boolean(input.providerSessionRef);
     const inJoinWindow = input.now >= joinOpensAt && input.now <= joinClosesAt;

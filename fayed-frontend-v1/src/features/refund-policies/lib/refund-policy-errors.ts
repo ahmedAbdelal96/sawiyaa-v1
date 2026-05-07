@@ -1,0 +1,6 @@
+export const REFUND_POLICY_ERROR_CODES = {
+  activeNotFound: "REFUND_POLICY_ACTIVE_NOT_FOUND",
+  staleAcceptance: "REFUND_POLICY_ACCEPTANCE_STALE",
+  wrongType: "REFUND_POLICY_ACCEPTANCE_WRONG_TYPE",
+} as const;
+

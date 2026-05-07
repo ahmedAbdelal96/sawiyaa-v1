@@ -4,10 +4,12 @@ import {
   PaymentPurpose,
   PaymentStatus,
   Prisma,
+  AcademyEnrollmentStatus,
 } from '@prisma/client';
 import { PrismaService } from '@common/prisma/prisma.service';
 import { AppLoggerService } from '@common/logging/app-logger.service';
 import { CustomerWalletAccountingService } from '@modules/customer-wallets/services/customer-wallet-accounting.service';
+import { ReconcilePackagePurchasePaymentUseCase } from '@modules/package-plans/use-cases/reconcile-package-purchase-payment.use-case';
 import { PaymentMapper } from '../mappers/payment.mapper';
 import { PaymentRepository } from '../repositories/payment.repository';
 import { OrchestrateSessionPaymentStatusService } from '../services/orchestrate-session-payment-status.service';
@@ -24,6 +26,7 @@ export class ExpirePaymentUseCase {
     private readonly orchestrateTrainingEnrollmentPaymentStatusService: OrchestrateTrainingEnrollmentPaymentStatusService,
     private readonly paymentMapper: PaymentMapper,
     private readonly customerWalletAccountingService: CustomerWalletAccountingService,
+    private readonly reconcilePackagePurchasePaymentUseCase: ReconcilePackagePurchasePaymentUseCase,
     private readonly logger: AppLoggerService,
   ) {}
 
@@ -78,6 +81,33 @@ export class ExpirePaymentUseCase {
       return expired;
     });
 
+    const paymentMetadata = (payment.metadataJson ?? {}) as Record<string, unknown>;
+    const isAcademyEnrollment =
+      paymentMetadata.source === 'academy-enrollment';
+
+    if (payment.paymentPurpose === PaymentPurpose.SESSION_PACKAGE_PURCHASE) {
+      await this.reconcilePackagePurchasePaymentUseCase.execute({
+        paymentId: payment.id,
+        providerEventRef: input.providerEventRef,
+        payload: input.payload,
+        payment: updated,
+      });
+
+      this.logger.warn(
+        {
+          message: 'Payment expired',
+          paymentId: payment.id,
+          provider: payment.provider,
+          providerEventRef: input.providerEventRef,
+        },
+        'Payments',
+      );
+
+      return {
+        item: this.paymentMapper.toViewModel(updated),
+      };
+    }
+
     if (updated.amountFromWallet.gt(0)) {
       await this.customerWalletAccountingService.releaseReservationForPayment({
         paymentId: updated.id,
@@ -92,7 +122,25 @@ export class ExpirePaymentUseCase {
       );
     }
 
-    if (payment.paymentPurpose === PaymentPurpose.COURSE_ENROLLMENT) {
+    if (isAcademyEnrollment) {
+      await this.prisma.academyEnrollment.updateMany({
+        where: {
+          paymentId: payment.id,
+          enrollmentStatus: {
+            in: [
+              AcademyEnrollmentStatus.PENDING_PAYMENT,
+              AcademyEnrollmentStatus.PAID,
+            ],
+          },
+        },
+        data: {
+          enrollmentStatus: AcademyEnrollmentStatus.PAYMENT_FAILED,
+          paymentStatus: PaymentStatus.EXPIRED,
+          failedAt: new Date(),
+          failedReason: 'Payment expired',
+        },
+      });
+    } else if (payment.paymentPurpose === PaymentPurpose.COURSE_ENROLLMENT) {
       await this.orchestrateTrainingEnrollmentPaymentStatusService.markEnrollmentPaymentExpired(
         payment.id,
       );

@@ -51,6 +51,9 @@ export class PaymentItemDto {
   providerReference!: string | null;
 
   @ApiProperty({ nullable: true })
+  providerMethod!: string | null;
+
+  @ApiProperty({ nullable: true })
   checkoutUrl!: string | null;
 
   @ApiProperty({ nullable: true })
@@ -237,6 +240,9 @@ export class AdminPaymentOpsSummaryDto {
 
   @ApiProperty({ nullable: true })
   providerReference!: string | null;
+
+  @ApiProperty({ nullable: true })
+  providerMethod!: string | null;
 
   @ApiProperty()
   createdAt!: string;

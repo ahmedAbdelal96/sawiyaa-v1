@@ -11,23 +11,70 @@ describe('PaymobPaymentProviderAdapter', () => {
     enabled: true,
     mode: 'test' as const,
     apiKey: 'paymob_api',
+    publicKey: 'public_key',
     hmacSecret: 'paymob_hmac',
     baseUrl: 'https://accept.paymob.com/api',
+    intentionBaseUrl: 'https://flashapi.paymob.com',
+    checkoutBaseUrl: 'https://flashapi.paymob.com',
+    checkoutFlow: 'legacy' as const,
     integrationIdCard: '12345',
-    integrationIdWallet: null,
+    integrationIdWallet: '67890',
     iframeId: '7777',
+    defaultCheckoutMethod: 'CARD' as const,
   };
 
   const buildAdapter = (overrides?: Partial<typeof baseConfig>) => {
     const paymobConfig = { ...baseConfig, ...(overrides ?? {}) };
+    const supportedMethods = [
+      paymobConfig.integrationIdCard
+        ? { method: 'CARD' as const, integrationId: paymobConfig.integrationIdCard }
+        : null,
+      paymobConfig.integrationIdWallet
+        ? {
+            method: 'WALLET' as const,
+            integrationId: paymobConfig.integrationIdWallet,
+          }
+        : null,
+    ].filter(Boolean) as Array<{
+      method: 'CARD' | 'WALLET';
+      integrationId: string;
+    }>;
+
     return new PaymobPaymentProviderAdapter({
       getPaymobConfig: () => paymobConfig,
+      getPaymobCheckoutFlow: () => paymobConfig.checkoutFlow,
+      getPaymobEnabledMethods: () => supportedMethods,
+      getPaymobIntentionPaymentMethodIds: () =>
+        supportedMethods.map((item) => Number(item.integrationId)),
+      getPaymobCheckoutLaunchUrl: (clientSecret: string) =>
+        `${paymobConfig.checkoutBaseUrl}/v1/intention/element/${paymobConfig.publicKey}/${clientSecret}/`,
+      getPaymobIntentionCreateUrl: () =>
+        `${paymobConfig.intentionBaseUrl}/v1/intention/`,
+      getPaymobDefaultCheckoutMethod: () => supportedMethods[0]?.method ?? null,
+      resolvePaymobCheckoutMethod: (preferredMethod?: string | null) => {
+        const normalized = preferredMethod?.trim().toUpperCase();
+        if (normalized === 'CARD' || normalized === 'WALLET') {
+          return supportedMethods.some((item) => item.method === normalized)
+            ? normalized
+            : null;
+        }
+
+        return supportedMethods[0]?.method ?? null;
+      },
+      resolvePaymobIntegrationId: (checkoutMethod?: string | null) => {
+        const normalized = checkoutMethod?.trim().toUpperCase();
+        const selected = normalized
+          ? supportedMethods.find((item) => item.method === normalized)
+          : supportedMethods[0];
+
+        return selected?.integrationId ?? null;
+      },
       assertCheckoutConfigured: (provider: PaymentProvider) => {
         if (
           provider === PaymentProvider.PAYMOB &&
           (!paymobConfig.apiKey ||
-            !paymobConfig.integrationIdCard ||
-            !paymobConfig.iframeId)
+            !paymobConfig.iframeId ||
+            (!paymobConfig.integrationIdCard && !paymobConfig.integrationIdWallet))
         ) {
           throw new ServiceUnavailableException();
         }
@@ -77,10 +124,109 @@ describe('PaymobPaymentProviderAdapter', () => {
     expect(result.status).toBe(PaymentStatus.PENDING);
     expect(result.checkoutUrl).toContain('/acceptance/iframes/7777');
     expect(result.checkoutUrl).toContain('payment_token=payment_token');
+    expect(result.providerMethod).toBe('CARD');
+      expect(result.metadata).toMatchObject({
+        paymobCheckoutMethod: 'CARD',
+        paymobIntegrationId: '12345',
+        paymobCheckoutFlow: 'legacy',
+      });
+  });
+
+  it('initiates a paymob wallet checkout when requested', async () => {
+    const adapter = buildAdapter();
+    jest
+      .spyOn(global, 'fetch' as never)
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ token: 'auth_token' }), { status: 200 }),
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({ id: 111, merchant_order_id: 'payment_123' }),
+          { status: 200 },
+        ),
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ token: 'payment_token' }), {
+          status: 200,
+        }),
+      );
+
+    const result = await adapter.initiateSessionPayment({
+      paymentId: 'payment_123',
+      amountMinor: 150000,
+      currency: 'EGP',
+      description: 'Session payment',
+      sessionId: 'session_1',
+      patientEmail: 'test@fayed.local',
+      paymobMethod: 'WALLET',
+    });
+
+    expect(result.providerMethod).toBe('WALLET');
+    expect(result.metadata).toMatchObject({
+      paymobCheckoutMethod: 'WALLET',
+      paymobIntegrationId: '67890',
+      paymobCheckoutFlow: 'legacy',
+    });
+  });
+
+  it('initiates a paymob intention checkout when configured', async () => {
+    const adapter = buildAdapter({
+      checkoutFlow: 'intention',
+      defaultCheckoutMethod: 'CARD',
+    });
+    const fetchMock = jest
+      .spyOn(global, 'fetch' as never)
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ token: 'auth_token' }), { status: 200 }),
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({ id: 111, merchant_order_id: 'payment_123' }),
+          { status: 200 },
+        ),
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            id: 222,
+            client_secret: 'client_secret_value',
+            special_reference: 'payment_123',
+            payment_methods: [
+              { name: 'Card', live: true },
+              { name: 'Wallets', live: true },
+            ],
+          }),
+          { status: 200 },
+        ),
+      );
+
+    const result = await adapter.initiateSessionPayment({
+      paymentId: 'payment_123',
+      amountMinor: 150000,
+      currency: 'EGP',
+      description: 'Session payment',
+      sessionId: 'session_1',
+      patientEmail: 'test@fayed.local',
+    });
+
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+    expect(result.providerMethod).toBeNull();
+    expect(result.checkoutUrl).toContain('/v1/intention/element/');
+    expect(result.checkoutUrl).toContain('client_secret_value');
+    expect(result.metadata).toMatchObject({
+      paymobCheckoutFlow: 'intention',
+      paymobIntentionId: '222',
+      paymobClientSecret: 'client_secret_value',
+      paymobSpecialReference: 'payment_123',
+    });
   });
 
   it('fails clearly when initiation config is missing', async () => {
-    const adapter = buildAdapter({ apiKey: '' });
+    const adapter = buildAdapter({
+      apiKey: '',
+      integrationIdCard: null,
+      integrationIdWallet: null,
+    });
 
     await expect(
       adapter.initiateSessionPayment({
@@ -138,6 +284,24 @@ describe('PaymobPaymentProviderAdapter', () => {
       expect(webhook.providerPaymentRef).toBe('777');
       expect(webhook.outcome).toBe('SUCCEEDED');
     }
+  });
+
+  it('rejects unsupported requested checkout methods', async () => {
+    const adapter = buildAdapter({
+      integrationIdWallet: null,
+    });
+
+    await expect(
+      adapter.initiateSessionPayment({
+        paymentId: 'payment_123',
+        amountMinor: 50000,
+        currency: 'EGP',
+        description: 'Session payment',
+        sessionId: 'session_1',
+        patientEmail: null,
+        paymobMethod: 'WALLET',
+      }),
+    ).rejects.toThrow(ServiceUnavailableException);
   });
 
   it('rejects malformed webhook payload', () => {

@@ -11,6 +11,7 @@ describe('UpdateTrainingScheduleUseCase', () => {
     findCourseById: jest.fn(),
     findScheduleById: jest.fn(),
     countEnrollmentsByScheduleIds: jest.fn(),
+    countSessionsByScheduleIds: jest.fn(),
     updateSchedule: jest.fn(),
   } as unknown as TrainingRepository;
   const validateTrainingSchedulePayloadService = {
@@ -63,12 +64,19 @@ describe('UpdateTrainingScheduleUseCase', () => {
       enrollmentCloseAt: new Date('2026-04-02T09:00:00.000Z'),
       startsAt: new Date('2026-04-03T09:00:00.000Z'),
       endsAt: new Date('2026-04-03T10:00:00.000Z'),
+      plannedDurationDays: 14,
+      plannedLectureCount: 4,
       maxEnrollmentsOverride: 10,
     });
     (
       trainingRepository.countEnrollmentsByScheduleIds as jest.Mock
     ).mockResolvedValue({
       schedule_1: 8,
+    });
+    (
+      trainingRepository.countSessionsByScheduleIds as jest.Mock
+    ).mockResolvedValue({
+      schedule_1: 4,
     });
 
     await expect(

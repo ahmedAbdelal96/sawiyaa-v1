@@ -19,6 +19,7 @@ export default function PublicNavbar() {
     { href: "/", label: t("home") },
     { href: "/specialties", label: t("specialties") },
     { href: "/practitioners", label: t("practitioners") },
+    { href: "/academy", label: t("academy") },
     { href: "/articles", label: t("articles") },
   ];
 

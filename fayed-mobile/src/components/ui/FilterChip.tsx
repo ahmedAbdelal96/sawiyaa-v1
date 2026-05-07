@@ -34,12 +34,12 @@ export const FilterChip = ({ label, selected = false, onPress }: FilterChipProps
 
 const styles = StyleSheet.create({
   chip: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 22,
     borderWidth: 1,
-    marginRight: 8,
-    marginBottom: 8,
+    marginEnd: 12,
+    marginBottom: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },

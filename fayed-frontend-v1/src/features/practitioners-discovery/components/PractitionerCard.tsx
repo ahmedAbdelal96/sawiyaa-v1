@@ -37,6 +37,7 @@ export default async function PractitionerCard({
     typeof practitioner.sessionCount === "number" ? practitioner.sessionCount : reviewCount;
   const yearsExperience =
     typeof practitioner.yearsExperience === "number" ? practitioner.yearsExperience : 0;
+  const filledStars = Math.max(0, Math.min(5, Math.round(rating)));
 
   const visibleSpecialties = practitioner.specialties.slice(0, 2);
   const visibleLanguages = practitioner.languages
@@ -47,7 +48,7 @@ export default async function PractitionerCard({
   const profileHref = `${basePath}/${practitioner.slug}`;
 
   return (
-    <article className="rounded-[26px] border border-border-light bg-white p-4 shadow-theme-xs dark:bg-surface-secondary">
+    <article className="rounded-[26px] border border-border-light bg-white p-4 shadow-theme-xs transition duration-200 hover:-translate-y-0.5 hover:border-primary/20 hover:shadow-[0_18px_30px_-24px_rgba(34,52,56,0.18)] dark:bg-surface-secondary">
       <div className={`flex items-start justify-between gap-3 ${isArabic ? "flex-row" : "flex-row-reverse"}`}>
         <div className={`min-w-0 ${isArabic ? "text-right" : "text-left"}`}>
           <p className="text-sm font-semibold text-text-primary dark:text-white/95">{name}</p>
@@ -67,15 +68,24 @@ export default async function PractitionerCard({
             />
             <span>{practitioner.isOnlineNow ? t("onlineNow") : t("offline")}</span>
           </div>
-          <div className="mt-2 inline-flex items-center gap-1 text-sm text-secondary">
-            <Star size={14} className="fill-secondary text-secondary" />
-            <Star size={14} className="fill-secondary text-secondary" />
-            <Star size={14} className="fill-secondary text-secondary" />
-            <Star size={14} className="fill-secondary text-secondary" />
-            <Star size={14} className="fill-secondary text-secondary" />
+          <div
+            className="mt-2 inline-flex items-center gap-0.5"
+            aria-label={`${t("rating")} ${rating.toFixed(1)}`}
+          >
+            {Array.from({ length: 5 }).map((_, index) => (
+              <Star
+                key={index}
+                size={14}
+                className={
+                  index < filledStars
+                    ? "fill-primary text-primary"
+                    : "fill-transparent text-border-light dark:text-white/25"
+                }
+              />
+            ))}
           </div>
           <p className="mt-1 text-xs text-text-muted">
-            ({reviewCount}) {rating.toFixed(1)}
+            {rating.toFixed(1)} · {reviewCount} {t("reviews")}
           </p>
         </div>
 

@@ -1,9 +1,13 @@
 import { Injectable } from '@nestjs/common';
-import { PractitionerApplicationStatus } from '@prisma/client';
+import { PractitionerApplicationStatus, PractitionerStatus } from '@prisma/client';
 import { I18nService } from '@common/i18n/services/i18n.service';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
 import { PractitionerApplicationsAdminMapper } from '../mappers/practitioner-applications-admin.mapper';
 import { AdminPractitionerApplicationRepository } from '../repositories/admin-practitioner-application.repository';
+import {
+  AdminPractitionerApplicationKind,
+  AdminPractitionerApplicationListView,
+} from '../types/practitioner-applications-admin.types';
 
 /**
  * Lists practitioner applications for admin review queues.
@@ -19,6 +23,8 @@ export class ListPractitionerApplicationsUseCase {
 
   async execute(input: {
     locale: SupportedLocale;
+    view?: AdminPractitionerApplicationListView;
+    kind?: AdminPractitionerApplicationKind;
     status?: PractitionerApplicationStatus;
     q?: string;
     page?: number;
@@ -30,16 +36,21 @@ export class ListPractitionerApplicationsUseCase {
 
     const [rows, total] = await Promise.all([
       this.applicationRepository.list({
+        view: input.view ?? AdminPractitionerApplicationListView.ACTIVE,
+        kind: input.kind,
         status: input.status,
         search: input.q,
         skip,
         take: limit,
       }),
       this.applicationRepository.count({
+        view: input.view ?? AdminPractitionerApplicationListView.ACTIVE,
+        kind: input.kind,
         status: input.status,
         search: input.q,
       }),
     ]);
+    const summary = await this.applicationRepository.summary();
 
     const applications = rows.map((item) => {
       const primarySpecialty = item.practitioner.specialties[0];
@@ -51,6 +62,10 @@ export class ListPractitionerApplicationsUseCase {
         displayName: item.practitioner.user.displayName ?? null,
         practitionerType: item.practitioner.practitionerType,
         countryCode: item.practitioner.country?.isoCode ?? null,
+        applicationKind:
+          item.practitioner.status === PractitionerStatus.APPROVED
+            ? AdminPractitionerApplicationKind.EDIT_REQUEST
+            : AdminPractitionerApplicationKind.NEW_APPLICATION,
         mainSpecialty: primarySpecialty
           ? {
               specialtyId: primarySpecialty.specialtyId,
@@ -78,6 +93,7 @@ export class ListPractitionerApplicationsUseCase {
         limit,
         total,
       },
+      summary,
     };
   }
 }

@@ -1,4 +1,4 @@
-import { getTranslations, getLocale } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import {
   ArrowLeft,
@@ -40,11 +40,11 @@ export default async function ProfileHeader({
   const isAr = locale === "ar";
   const displayName = isAr ? p.nameAr : p.nameEn;
   const displayTitle = isAr ? p.titleAr : p.titleEn;
-  const primarySpecialties = p.specialties.slice(0, 3);
+  const primarySpecialties = p.specialties.slice(0, 4);
   const displayedLanguages = p.languages
     .slice(0, 2)
     .map((language) => languageLabels[language] ?? language)
-    .join(" · ");
+    .join(" / ");
 
   const stats = [
     {
@@ -77,27 +77,25 @@ export default async function ProfileHeader({
           </Link>
         ) : null}
 
-        <div className="app-panel mt-5 rounded-[34px] p-6 md:p-8">
-          <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
+        <div className="app-panel mt-5 rounded-[34px] p-6 md:p-7">
+          <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_280px] lg:items-start">
             <div className="space-y-6">
-              <div className="flex flex-col gap-5 md:flex-row md:items-start">
-                <div
-                  className="flex h-24 w-24 shrink-0 items-center justify-center rounded-[30px] bg-primary-light text-2xl font-bold text-primary shadow-[0_20px_32px_-24px_rgba(95,143,139,0.32)] dark:bg-primary/15 dark:text-primary-light"
-                >
+              <div className="flex flex-col gap-4 md:flex-row md:items-start">
+                <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-[26px] bg-primary-light text-xl font-bold text-primary shadow-[0_20px_32px_-24px_rgba(95,143,139,0.32)] dark:bg-primary/15 dark:text-primary-light">
                   {p.initials}
                 </div>
 
                 <div className="min-w-0 flex-1 space-y-3">
                   <div className="flex flex-wrap items-center gap-2">
-                    {p.isVerified && (
+                    {p.isVerified ? (
                       <span className="inline-flex items-center gap-1 rounded-full bg-primary-light px-3 py-1 text-xs font-semibold text-text-brand ring-1 ring-inset ring-primary/8 dark:bg-primary/15">
                         <BadgeCheck size={13} className="text-primary" />
                         {t("header.verified")}
                       </span>
-                    )}
+                    ) : null}
                     <span className="app-chip inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold">
-                      <ShieldCheck size={13} className="text-primary" />
-                      {t("badges.secure")}
+                      <MapPin size={13} className="text-primary" />
+                      {countryLabel}
                     </span>
                   </div>
 
@@ -109,10 +107,6 @@ export default async function ProfileHeader({
                       {displayTitle}
                     </p>
                   </div>
-
-                  <p className="max-w-2xl text-sm leading-7 text-text-secondary">
-                    {t("header.summary")}
-                  </p>
 
                   <div className="flex flex-wrap gap-2">
                     {primarySpecialties.map((specialty) => (
@@ -151,13 +145,13 @@ export default async function ProfileHeader({
               <div className="grid gap-3 sm:grid-cols-3">
                 <div className="app-panel-soft rounded-2xl p-4">
                   <div className="mb-2 flex items-center gap-2 text-text-muted">
-                    <MapPin size={15} />
+                    <ShieldCheck size={15} />
                     <span className="text-xs font-semibold uppercase tracking-[0.16em]">
-                      {t("header.location")}
+                      {t("badges.secure")}
                     </span>
                   </div>
                   <p className="text-sm font-semibold text-text-primary dark:text-white/90">
-                    {countryLabel}
+                    {t("badges.verified")}
                   </p>
                 </div>
 
@@ -190,14 +184,20 @@ export default async function ProfileHeader({
             </div>
 
             <div className="app-panel rounded-[30px] p-5">
+              <div className="mb-4">
+                <p className="text-sm font-semibold text-text-primary dark:text-white/90">
+                  {t("booking.panelTitle")}
+                </p>
+                <p className="mt-1 text-xs leading-6 text-text-secondary">
+                  {t("booking.jumpToAvailability")}
+                </p>
+              </div>
+
               <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
                 {stats.map((stat) => {
                   const Icon = stat.icon;
                   return (
-                    <div
-                      key={stat.label}
-                      className="app-panel-soft rounded-2xl p-4"
-                    >
+                    <div key={stat.label} className="app-panel-soft rounded-2xl p-4">
                       <div className="mb-3 flex items-center justify-between">
                         <span className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
                           {stat.label}

@@ -6,6 +6,7 @@ import {
 import {
   LedgerDirection,
   LedgerEntryType,
+  PaymentPurpose,
   PaymentStatus,
   WalletBalanceBucket,
 } from '@prisma/client';
@@ -50,6 +51,13 @@ export class PostPaymentLedgerEntriesUseCase {
         messageKey: 'financialOperations.errors.paymentNotCaptured',
         error: 'FINANCIAL_OPERATIONS_PAYMENT_NOT_CAPTURED',
       });
+    }
+
+    if (payment.paymentPurpose === PaymentPurpose.SESSION_PACKAGE_PURCHASE) {
+      return {
+        items: [],
+        wasAlreadyPosted: true,
+      };
     }
 
     const existing = await this.ledgerRepository.findByPaymentId(payment.id);

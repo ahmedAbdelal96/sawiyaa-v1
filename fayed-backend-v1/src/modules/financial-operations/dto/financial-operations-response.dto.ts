@@ -929,6 +929,129 @@ export class FinanceOperationEventItemDataResponseDto {
   item!: FinanceOperationEventItemDto;
 }
 
+export class PractitionerManualPayoutBalanceDto {
+  @ApiProperty()
+  practitionerId!: string;
+
+  @ApiProperty({ nullable: true })
+  practitionerName!: string | null;
+
+  @ApiProperty()
+  currencyCode!: string;
+
+  @ApiProperty()
+  normalSessionPayableAmount!: string;
+
+  @ApiProperty()
+  packageReleasedPayableAmount!: string;
+
+  @ApiProperty()
+  packageHeldAmount!: string;
+
+  @ApiProperty()
+  totalPayableAmount!: string;
+
+  @ApiProperty({ nullable: true })
+  lastPayoutAt!: string | null;
+}
+
+export class PractitionerManualPayoutSummaryItemDto {
+  @ApiProperty()
+  practitionerId!: string;
+
+  @ApiProperty({ nullable: true })
+  practitionerName!: string | null;
+
+  @ApiProperty({ nullable: true })
+  practitionerSlug!: string | null;
+
+  @ApiProperty({ type: PractitionerManualPayoutBalanceDto })
+  egp!: PractitionerManualPayoutBalanceDto;
+
+  @ApiProperty({ type: PractitionerManualPayoutBalanceDto })
+  usd!: PractitionerManualPayoutBalanceDto;
+
+  @ApiProperty()
+  hasPayable!: boolean;
+
+  @ApiProperty()
+  hasPackage!: boolean;
+
+  @ApiProperty({ nullable: true })
+  lastPayoutAt!: string | null;
+}
+
+export class PractitionerManualPayoutItemDto {
+  @ApiProperty()
+  id!: string;
+
+  @ApiProperty()
+  practitionerId!: string;
+
+  @ApiProperty({ nullable: true })
+  practitionerName!: string | null;
+
+  @ApiProperty()
+  currencyCode!: string;
+
+  @ApiProperty()
+  amountPaid!: string;
+
+  @ApiProperty()
+  normalSessionAppliedAmount!: string;
+
+  @ApiProperty()
+  packageReleasedAppliedAmount!: string;
+
+  @ApiProperty()
+  packageHeldAmountSnapshot!: string;
+
+  @ApiProperty()
+  totalPayableSnapshot!: string;
+
+  @ApiProperty({ enum: SettlementPayoutMethod })
+  payoutMethod!: SettlementPayoutMethod;
+
+  @ApiProperty({ nullable: true })
+  transferReference!: string | null;
+
+  @ApiProperty()
+  paidAt!: string;
+
+  @ApiProperty({ nullable: true })
+  notes!: string | null;
+
+  @ApiProperty({ nullable: true })
+  recordedByUserId!: string | null;
+
+  @ApiProperty({ nullable: true })
+  recordedByDisplayName!: string | null;
+
+  @ApiProperty()
+  createdAt!: string;
+
+  @ApiProperty()
+  updatedAt!: string;
+}
+
+export class PractitionerManualPayoutBalanceDataResponseDto {
+  @ApiProperty({ type: PractitionerManualPayoutBalanceDto })
+  item!: PractitionerManualPayoutBalanceDto;
+}
+
+export class PractitionerManualPayoutListDataResponseDto {
+  @ApiProperty({ type: PractitionerManualPayoutItemDto, isArray: true })
+  items!: PractitionerManualPayoutItemDto[];
+
+  @ApiProperty({ type: PaginationDto })
+  pagination!: PaginationDto;
+}
+
+export class PractitionerManualPayoutItemDataResponseDto {
+  @ApiProperty({ type: PractitionerManualPayoutItemDto })
+  item!: PractitionerManualPayoutItemDto;
+}
+
 export class WalletItemSuccessResponseDto {
   @ApiProperty({ example: true })
   success!: true;
@@ -1012,4 +1135,44 @@ export class FinanceOperationEventItemSuccessResponseDto {
 
   @ApiProperty({ type: FinanceOperationEventItemDataResponseDto })
   data!: FinanceOperationEventItemDataResponseDto;
+}
+
+export class PractitionerManualPayoutBalanceSuccessResponseDto {
+  @ApiProperty({ example: true })
+  success!: true;
+
+  @ApiProperty({ type: PractitionerManualPayoutBalanceDataResponseDto })
+  data!: PractitionerManualPayoutBalanceDataResponseDto;
+}
+
+export class PractitionerManualPayoutListSuccessResponseDto {
+  @ApiProperty({ example: true })
+  success!: true;
+
+  @ApiProperty({ type: PractitionerManualPayoutListDataResponseDto })
+  data!: PractitionerManualPayoutListDataResponseDto;
+}
+
+export class PractitionerManualPayoutItemSuccessResponseDto {
+  @ApiProperty({ example: true })
+  success!: true;
+
+  @ApiProperty({ type: PractitionerManualPayoutItemDataResponseDto })
+  data!: PractitionerManualPayoutItemDataResponseDto;
+}
+
+export class PractitionerManualPayoutSummaryListDataResponseDto {
+  @ApiProperty({ type: PractitionerManualPayoutSummaryItemDto, isArray: true })
+  items!: PractitionerManualPayoutSummaryItemDto[];
+
+  @ApiProperty({ type: PaginationDto })
+  pagination!: PaginationDto;
+}
+
+export class PractitionerManualPayoutSummaryListSuccessResponseDto {
+  @ApiProperty({ example: true })
+  success!: true;
+
+  @ApiProperty({ type: PractitionerManualPayoutSummaryListDataResponseDto })
+  data!: PractitionerManualPayoutSummaryListDataResponseDto;
 }

@@ -3,6 +3,7 @@
     "home": "Home",
     "specialties": "Specialties",
     "practitioners": "Practitioners",
+    "academy": "Public academy",
     "articles": "Articles",
     "courses": "Courses",
     "about": "About",
@@ -27,7 +28,9 @@
     "quickMatching": "Create an account for matching",
     "quickAssessment": "Create an account for initial check-ins",
     "quickPractitioners": "Browse practitioners",
+    "quickAcademy": "Browse the public academy",
     "quickSupport": "Sign in for support",
+    "ctaAcademy": "Explore public academy",
     "quickCardLabel": "Guided entry",
     "quickCardValue": "Matching, initial check-ins, discovery, or support"
   },
@@ -100,6 +103,34 @@
     "unavailableNote": "You can continue with practitioner discovery for now while article content is temporarily unavailable.",
     "emptyTitle": "Published articles are still limited right now",
     "emptyNote": "You can still continue through specialties and practitioner discovery while this content expands."
+  },
+  "academy": {
+    "eyebrow": "Public academy",
+    "title": "What the academy is and who it is for",
+    "subtitle": "The academy is the platform's public training space. Anyone can browse the courses, register, pay, and follow the next step without needing a care account.",
+    "cta": "Explore the public academy",
+    "highlights": {
+      "publicTitle": "Open to everyone",
+      "publicDesc": "Courses are published for the public, not only for care journeys.",
+      "simpleTitle": "Simple registration",
+      "simpleDesc": "Keep the flow light: read, register, pay, and wait for the next instruction.",
+      "followUpTitle": "Admin follow-up",
+      "followUpDesc": "The team tracks registrations, payments, and WhatsApp follow-up in one place."
+    },
+    "examplesEyebrow": "Examples",
+    "examplesTitle": "Live academy courses from the catalog",
+    "examplesNote": "These cards are pulled from the public academy catalog so visitors can see real course examples immediately.",
+    "courseBadge": "Academy course",
+    "publicLabel": "Public",
+    "courseNoDescription": "No short description available.",
+    "courseNoDate": "Date not set",
+    "courseStarts": "Starts",
+    "free": "Free",
+    "courseEnrollments": "{count} enrollments",
+    "courseEnrollmentsFallback": "Enrollment stats not available",
+    "courseOpen": "Open course",
+    "emptyTitle": "No academy courses are published yet",
+    "emptyNote": "As soon as the first public course is published, it will appear here automatically."
   },
   "whyFayed": {
     "eyebrow": "Why this experience feels more trustworthy",

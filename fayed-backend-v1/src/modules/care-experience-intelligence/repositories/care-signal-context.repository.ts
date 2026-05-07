@@ -103,6 +103,14 @@ export class CareSignalContextRepository {
               PaymentStatus.AUTHORIZED,
             ],
           },
+          OR: [
+            { expiredAt: null },
+            {
+              expiredAt: {
+                gt: input.now,
+              },
+            },
+          ],
         },
         orderBy: [{ createdAt: 'desc' }],
         select: {

@@ -17,6 +17,10 @@ import {
   usePractitionerLogin,
   usePractitionerVerifyOtp,
 } from "@/features/auth/hooks/use-auth";
+import type {
+  AuthSuccessResponse,
+  OtpChallengeResponse,
+} from "@/features/auth/types/auth.types";
 import { getDefaultRouteByRole, resolveRole } from "@/config/route-access";
 import { normalizeCallbackPath } from "@/lib/auth/callback-url";
 
@@ -43,6 +47,8 @@ type PractitionerChallengeState = {
   maskedTarget: string;
   expiresAt: string;
 };
+
+type PractitionerLoginResponse = OtpChallengeResponse | AuthSuccessResponse;
 
 function buildAuthHref(basePath: string, params: Record<string, string | null>) {
   const search = new URLSearchParams();
@@ -86,6 +92,7 @@ const PRACTITIONER_TEST_CREDENTIALS: Array<{
   email: string;
   password: string;
 }> = [
+  { email: "dr.ahmed@hesba.local", password: "Practitioner@12345" },
   { email: "dr.mohamed@hesba.local", password: "Practitioner2@12345" },
   { email: "dr.youssef@hesba.local", password: "Practitioner5@12345" },
   { email: "dr.karim@hesba.local", password: "Practitioner6@12345" },
@@ -175,11 +182,19 @@ export default function SignInForm({ mode }: SignInFormProps) {
         return;
       }
 
-      const challengeResponse = await practitionerLogin.mutateAsync(data);
+      const loginResponse = (await practitionerLogin.mutateAsync(
+        data,
+      )) as PractitionerLoginResponse;
+
+      if ("tokens" in loginResponse) {
+        redirectAfterAuth(loginResponse.user.roles);
+        return;
+      }
+
       setChallenge({
-        challengeId: challengeResponse.challengeId,
-        maskedTarget: challengeResponse.maskedTarget,
-        expiresAt: challengeResponse.expiresAt,
+        challengeId: loginResponse.challengeId,
+        maskedTarget: loginResponse.maskedTarget,
+        expiresAt: loginResponse.expiresAt,
       });
     } catch {
       setError(getSafeCredentialsErrorMessage());
@@ -210,9 +225,9 @@ export default function SignInForm({ mode }: SignInFormProps) {
         : "signInDescriptionPatient";
   const signUpHref =
     mode === "patient"
-      ? buildAuthHref("/signup/patient", { callbackUrl: normalizedCallbackUrl })
+      ? buildAuthHref("/signup", { callbackUrl: normalizedCallbackUrl, mode: "patient" })
       : mode === "practitioner"
-        ? buildAuthHref("/signup/practitioner", { callbackUrl: normalizedCallbackUrl })
+        ? buildAuthHref("/signup", { callbackUrl: normalizedCallbackUrl, mode: "practitioner" })
         : null;
   const chooserHref = buildAuthHref("/signin", { callbackUrl: normalizedCallbackUrl });
   const shouldShowTestCredentials = process.env.NODE_ENV !== "production";

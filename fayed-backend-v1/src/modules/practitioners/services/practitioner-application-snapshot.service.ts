@@ -3,6 +3,15 @@ import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class PractitionerApplicationSnapshotService {
+  private toNullableNumber(value: Prisma.Decimal | number | string | null | undefined) {
+    if (value === null || value === undefined) {
+      return null;
+    }
+
+    const numericValue = Number(value);
+    return Number.isFinite(numericValue) ? numericValue : null;
+  }
+
   build(input: {
     user: {
       displayName: string | null;
@@ -17,6 +26,10 @@ export class PractitionerApplicationSnapshotService {
       yearsOfExperience: number | null;
       countryCode: string | null;
       primarySpecialtyCategoryId: string | null;
+      sessionPrice30Egp?: Prisma.Decimal | number | string | null;
+      sessionPrice30Usd?: Prisma.Decimal | number | string | null;
+      sessionPrice60Egp?: Prisma.Decimal | number | string | null;
+      sessionPrice60Usd?: Prisma.Decimal | number | string | null;
     };
     languageCodes: string[];
     specialties: Array<{
@@ -46,6 +59,7 @@ export class PractitionerApplicationSnapshotService {
       walletIdentifier: string | null;
       otherDetails: string | null;
     } | null;
+    avatarUrl?: string | null;
   }): Prisma.InputJsonValue {
     return {
       applicant: {
@@ -60,6 +74,17 @@ export class PractitionerApplicationSnapshotService {
         bio: input.profile.bio,
         yearsOfExperience: input.profile.yearsOfExperience,
         countryCode: input.profile.countryCode,
+        avatarUrl: input.avatarUrl,
+        pricing: {
+          session30: {
+            egp: this.toNullableNumber(input.profile.sessionPrice30Egp),
+            usd: this.toNullableNumber(input.profile.sessionPrice30Usd),
+          },
+          session60: {
+            egp: this.toNullableNumber(input.profile.sessionPrice60Egp),
+            usd: this.toNullableNumber(input.profile.sessionPrice60Usd),
+          },
+        },
       },
       specialtySelection: {
         primarySpecialtyCategoryId: input.profile.primarySpecialtyCategoryId,

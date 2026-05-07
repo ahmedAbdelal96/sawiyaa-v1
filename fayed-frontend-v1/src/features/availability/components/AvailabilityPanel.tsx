@@ -18,24 +18,35 @@ export default function AvailabilityPanel() {
   if (isLoading) {
     return (
       <div className="space-y-6">
-        {/* Schedule skeleton */}
-        <SurfaceCard variant="section">
-          <Skeleton className="mb-1 h-5 w-40" />
-          <Skeleton className="mb-5 h-4 w-64" />
-          {[0, 1, 2, 3, 4].map((i) => (
-            <div key={i} className="flex items-center gap-4 py-3">
-              <Skeleton className="h-4 w-20" />
-              <div className="flex gap-2">
-                <Skeleton className="h-7 w-28 rounded-lg" />
-                <Skeleton className="h-7 w-20 rounded-lg" />
-              </div>
+        <SurfaceCard variant="section" className="space-y-5">
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-28" />
+            <Skeleton className="h-7 w-64" />
+            <Skeleton className="h-4 w-full max-w-2xl" />
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-3">
+            {[0, 1, 2].map((i) => (
+              <Skeleton key={i} className="h-[120px] rounded-[22px]" />
+            ))}
+          </div>
+
+          <Skeleton className="h-14 w-full rounded-[22px]" />
+
+          <div className="grid gap-4 xl:grid-cols-[minmax(0,1.55fr)_minmax(320px,0.9fr)]">
+            <div className="space-y-4">
+              <Skeleton className="h-[220px] w-full rounded-[22px]" />
+              <Skeleton className="h-[300px] w-full rounded-[22px]" />
             </div>
-          ))}
+            <div className="space-y-4">
+              <Skeleton className="h-[250px] w-full rounded-[22px]" />
+              <Skeleton className="h-[160px] w-full rounded-[22px]" />
+            </div>
+          </div>
         </SurfaceCard>
-        {/* Exceptions skeleton */}
-        <SurfaceCard variant="section">
-          <Skeleton className="mb-1 h-5 w-40" />
-          <Skeleton className="mb-5 h-4 w-56" />
+        <SurfaceCard variant="section" className="space-y-4">
+          <Skeleton className="h-5 w-40" />
+          <Skeleton className="h-4 w-56" />
           <Skeleton className="h-12 w-full rounded-xl" />
         </SurfaceCard>
       </div>

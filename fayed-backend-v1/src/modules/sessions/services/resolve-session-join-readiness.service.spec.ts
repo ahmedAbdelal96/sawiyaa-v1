@@ -15,9 +15,9 @@ describe('ResolveSessionJoinReadinessService', () => {
       sessionMode: SessionMode.VIDEO,
       scheduledStartAt: start,
       scheduledEndAt: end,
-      provider: SessionProvider.DAILY,
+      provider: SessionProvider.ZOOM,
       providerRoomId: 'room_1',
-      providerSessionRef: 'https://room.daily.co',
+      providerSessionRef: 'https://room.zoom.us/j/room_1',
       now,
     });
 
@@ -31,9 +31,9 @@ describe('ResolveSessionJoinReadinessService', () => {
       sessionMode: SessionMode.AUDIO,
       scheduledStartAt: start,
       scheduledEndAt: end,
-      provider: SessionProvider.DAILY,
+      provider: SessionProvider.ZOOM,
       providerRoomId: 'room_1',
-      providerSessionRef: 'https://room.daily.co',
+      providerSessionRef: 'https://room.zoom.us/j/room_1',
       now,
     });
 
@@ -64,9 +64,9 @@ describe('ResolveSessionJoinReadinessService', () => {
       sessionMode: SessionMode.VIDEO,
       scheduledStartAt: new Date('2026-04-03T10:00:00.000Z'),
       scheduledEndAt: new Date('2026-04-03T10:30:00.000Z'),
-      provider: SessionProvider.DAILY,
+      provider: SessionProvider.ZOOM,
       providerRoomId: 'room_1',
-      providerSessionRef: 'https://room.daily.co',
+      providerSessionRef: 'https://room.zoom.us/j/room_1',
       now,
     });
 
@@ -80,9 +80,9 @@ describe('ResolveSessionJoinReadinessService', () => {
       sessionMode: SessionMode.VIDEO,
       scheduledStartAt: start,
       scheduledEndAt: end,
-      provider: SessionProvider.DAILY,
+      provider: SessionProvider.ZOOM,
       providerRoomId: 'room_1',
-      providerSessionRef: 'https://room.daily.co',
+      providerSessionRef: 'https://room.zoom.us/j/room_1',
       now,
     });
 

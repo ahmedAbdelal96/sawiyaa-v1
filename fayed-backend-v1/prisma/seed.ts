@@ -1,18 +1,22 @@
-import { PrismaClient } from '@prisma/client';
 import { adminSeedModule } from './seed/modules/admin.seed';
 import { accountingSeedModule } from './seed/modules/accounting.seed';
 import { assessmentsSeedModule } from './seed/modules/assessments.seed';
 import { auditEventsSeedModule } from './seed/modules/audit-events.seed';
 import { authSeedModule } from './seed/modules/auth.seed';
 import { configSeedModule } from './seed/modules/config.seed';
+import { financialRulesSeedModule } from './seed/modules/financial-rules.seed';
 import { notificationsSeedModule } from './seed/modules/notifications.seed';
+import { refundPoliciesSeedModule } from './seed/modules/refund-policies.seed';
 import { patientsSeedModule } from './seed/modules/patients.seed';
+import { packagePlansSeedModule } from './seed/modules/package-plans.seed';
+import { helpSeedModule } from './seed/modules/help.seed';
 import { practitionersSeedModule } from './seed/modules/practitioners.seed';
 import { referenceDataSeedModule } from './seed/modules/reference-data.seed';
 import { regionalBulkSeedModule } from './seed/modules/regional-bulk.seed';
 import { settlementsLabSeedModule } from './seed/modules/settlements-lab.seed';
 import { specialtiesSeedModule } from './seed/modules/specialties.seed';
 import { usersSeedModule } from './seed/modules/users.seed';
+import { PrismaClient } from '@prisma/client';
 import { SeedModule } from './seed/shared/seed.types';
 
 const prisma = new PrismaClient();
@@ -29,9 +33,13 @@ const seedModules: SeedModule[] = [
   assessmentsSeedModule,
   patientsSeedModule,
   practitionersSeedModule,
+  packagePlansSeedModule,
+  helpSeedModule,
+  refundPoliciesSeedModule,
   adminSeedModule,
   notificationsSeedModule,
   configSeedModule,
+  financialRulesSeedModule,
   regionalBulkSeedModule,
   settlementsLabSeedModule,
   accountingSeedModule,

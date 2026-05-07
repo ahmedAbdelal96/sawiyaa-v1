@@ -7,6 +7,8 @@ type ScheduleValidationInput = {
   enrollmentCloseAt: Date | null;
   startsAt: Date | null;
   endsAt: Date | null;
+  plannedDurationDays: number | null;
+  plannedLectureCount: number | null;
   maxEnrollmentsOverride: number | null;
   status: CourseScheduleStatus;
   externalRoomProvider?: string | null;
@@ -27,6 +29,28 @@ export class ValidateTrainingSchedulePayloadService {
       throw new BadRequestException({
         messageKey: 'training.errors.sessionWindowRequired',
         error: 'TRAINING_SESSION_WINDOW_REQUIRED',
+      });
+    }
+
+    if (
+      input.plannedDurationDays !== null &&
+      input.plannedDurationDays !== undefined &&
+      input.plannedDurationDays <= 0
+    ) {
+      throw new BadRequestException({
+        messageKey: 'training.errors.invalidPlannedDurationDays',
+        error: 'TRAINING_INVALID_PLANNED_DURATION_DAYS',
+      });
+    }
+
+    if (
+      input.plannedLectureCount !== null &&
+      input.plannedLectureCount !== undefined &&
+      input.plannedLectureCount <= 0
+    ) {
+      throw new BadRequestException({
+        messageKey: 'training.errors.invalidPlannedLectureCount',
+        error: 'TRAINING_INVALID_PLANNED_LECTURE_COUNT',
       });
     }
 
@@ -95,6 +119,19 @@ export class ValidateTrainingSchedulePayloadService {
       throw new BadRequestException({
         messageKey: 'training.errors.externalRoomProviderRequired',
         error: 'TRAINING_EXTERNAL_ROOM_PROVIDER_REQUIRED',
+      });
+    }
+
+    if (
+      input.status !== CourseScheduleStatus.DRAFT &&
+      (input.plannedDurationDays === null ||
+        input.plannedDurationDays === undefined ||
+        input.plannedLectureCount === null ||
+        input.plannedLectureCount === undefined)
+    ) {
+      throw new BadRequestException({
+        messageKey: 'training.errors.trainingPlanRequired',
+        error: 'TRAINING_TRAINING_PLAN_REQUIRED',
       });
     }
   }

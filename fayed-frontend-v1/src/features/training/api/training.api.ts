@@ -7,7 +7,15 @@ import type {
   AdminTrainingItemResponse,
   AdminTrainingSchedule,
   AdminTrainingScheduleItemResponse,
+  AdminTrainingScheduleEnrollmentsListData,
+  AdminTrainingScheduleEnrollmentsListParams,
+  AdminTrainingPaymentAttemptListData,
+  AdminTrainingPaymentAttemptsListParams,
+  AdminTrainingAnalyticsData,
+  AdminTrainingAnalyticsResponse,
   AdminTrainingScheduleListData,
+  AdminTrainingScheduleLectureListData,
+  CreateAdminTrainingScheduleLectureInput,
   CreateAdminTrainingInput,
   CreateAdminTrainingScheduleInput,
   CreateTrainingEnrollmentInput,
@@ -109,7 +117,7 @@ export async function publishAdminTraining(
 ): Promise<AdminTrainingItem> {
   const response = await httpClient.patch<ApiPayload<AdminTrainingItemResponse>>(
     `/admin/trainings/${trainingId}/publish`,
-    null,
+    undefined,
     { params: locale ? { locale } : undefined },
   );
   return extractData(response.data).item;
@@ -121,7 +129,7 @@ export async function archiveAdminTraining(
 ): Promise<AdminTrainingItem> {
   const response = await httpClient.patch<ApiPayload<AdminTrainingItemResponse>>(
     `/admin/trainings/${trainingId}/archive`,
-    null,
+    undefined,
     { params: locale ? { locale } : undefined },
   );
   return extractData(response.data).item;
@@ -132,6 +140,60 @@ export async function getAdminTrainingSchedules(
 ): Promise<AdminTrainingScheduleListData> {
   const response = await httpClient.get<ApiPayload<AdminTrainingScheduleListData>>(
     `/admin/trainings/${trainingId}/schedules`,
+  );
+  return extractData(response.data);
+}
+
+export async function getAdminTrainingScheduleEnrollments(
+  trainingId: string,
+  scheduleId: string,
+  params?: AdminTrainingScheduleEnrollmentsListParams,
+): Promise<AdminTrainingScheduleEnrollmentsListData> {
+  const response = await httpClient.get<ApiPayload<AdminTrainingScheduleEnrollmentsListData>>(
+    `/admin/trainings/${trainingId}/schedules/${scheduleId}/enrollments`,
+    { params },
+  );
+  return extractData(response.data);
+}
+
+export async function getAdminTrainingScheduleLectures(
+  trainingId: string,
+  scheduleId: string,
+): Promise<AdminTrainingScheduleLectureListData> {
+  const response = await httpClient.get<ApiPayload<AdminTrainingScheduleLectureListData>>(
+    `/admin/trainings/${trainingId}/schedules/${scheduleId}/lectures`,
+  );
+  return extractData(response.data);
+}
+
+export async function getAdminTrainingPaymentAttempts(
+  trainingId: string,
+  params?: AdminTrainingPaymentAttemptsListParams,
+): Promise<AdminTrainingPaymentAttemptListData> {
+  const response = await httpClient.get<ApiPayload<AdminTrainingPaymentAttemptListData>>(
+    `/admin/trainings/${trainingId}/payment-attempts`,
+    { params },
+  );
+  return extractData(response.data);
+}
+
+export async function getAdminTrainingAnalytics(
+  trainingId: string,
+): Promise<AdminTrainingAnalyticsData> {
+  const response = await httpClient.get<ApiPayload<AdminTrainingAnalyticsResponse>>(
+    `/admin/trainings/${trainingId}/analytics`,
+  );
+  return extractData(response.data).data;
+}
+
+export async function createAdminTrainingScheduleLecture(
+  trainingId: string,
+  scheduleId: string,
+  input: CreateAdminTrainingScheduleLectureInput,
+): Promise<{ item: AdminTrainingScheduleLectureListData["items"][number] }> {
+  const response = await httpClient.post<ApiPayload<{ item: AdminTrainingScheduleLectureListData["items"][number] }>>(
+    `/admin/trainings/${trainingId}/schedules/${scheduleId}/lectures`,
+    input,
   );
   return extractData(response.data);
 }

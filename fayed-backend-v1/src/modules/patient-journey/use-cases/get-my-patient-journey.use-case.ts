@@ -68,6 +68,7 @@ export class GetMyPatientJourneyUseCase {
     const pendingPayment =
       await this.patientJourneyReadRepository.findPendingPayment(
         patient.id,
+        nowUtc,
         upcomingSession?.id,
       );
 

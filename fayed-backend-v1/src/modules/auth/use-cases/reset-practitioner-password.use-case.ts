@@ -34,7 +34,7 @@ export class ResetPractitionerPasswordUseCase {
   }) {
     const normalizedEmail = input.email.trim().toLowerCase();
     const userEmail =
-      await this.userEmailRepository.findByEmail(normalizedEmail);
+      await this.userEmailRepository.findByEmailForAuth(normalizedEmail);
 
     if (!userEmail) {
       throw new ConflictException({

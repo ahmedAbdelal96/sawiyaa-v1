@@ -38,17 +38,17 @@ export default function PatientLayout() {
           shadowOpacity: 0.08,
           shadowRadius: 16,
           shadowOffset: { width: 0, height: -2 },
-          height: 66 + insets.bottom,
-          paddingBottom: Math.max(10, insets.bottom),
-          paddingTop: 8,
-          paddingHorizontal: 8,
+          height: 74 + insets.bottom,
+          paddingBottom: Math.max(12, insets.bottom),
+          paddingTop: 12,
+          paddingHorizontal: 18,
         },
         tabBarItemStyle: {
-          paddingVertical: 3,
-          borderRadius: 12,
+          paddingVertical: 8,
+          borderRadius: 16,
         },
         tabBarLabelStyle: {
-          fontSize: 11,
+          fontSize: 12,
           fontWeight: "600",
         },
       }}
@@ -99,6 +99,11 @@ export default function PatientLayout() {
       <Tabs.Screen name="sessions/success" options={{ href: null }} />
       <Tabs.Screen name="sessions/[id]" options={{ href: null }} />
       <Tabs.Screen name="sessions/[id]/pay" options={{ href: null }} />
+      <Tabs.Screen name="notifications" options={{ href: null }} />
+      <Tabs.Screen
+        name="sessions/[id]/payment-return"
+        options={{ href: null }}
+      />
       <Tabs.Screen
         name="sessions/[id]/cancel-preview"
         options={{ href: null }}
@@ -119,6 +124,9 @@ export default function PatientLayout() {
       <Tabs.Screen name="support/index" options={{ href: null }} />
       <Tabs.Screen name="support/new" options={{ href: null }} />
       <Tabs.Screen name="support/[id]" options={{ href: null }} />
+      <Tabs.Screen name="profile-details" options={{ href: null }} />
+      <Tabs.Screen name="profile-preferences" options={{ href: null }} />
+      <Tabs.Screen name="profile-notifications" options={{ href: null }} />
       <Tabs.Screen name="care-chat/index" options={{ href: null }} />
       <Tabs.Screen name="care-chat/new" options={{ href: null }} />
       <Tabs.Screen name="care-chat/[id]" options={{ href: null }} />

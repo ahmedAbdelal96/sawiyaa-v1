@@ -20,6 +20,7 @@ export interface PaymentViewModel {
   currency: string;
   providerPaymentId: string | null;
   providerReference: string | null;
+  providerMethod: string | null;
   checkoutUrl: string | null;
   clientSecret: string | null;
   paidAt: string | null;
@@ -61,6 +62,7 @@ export interface AdminPaymentOpsViewModel {
     currency: string;
     providerPaymentId: string | null;
     providerReference: string | null;
+    providerMethod: string | null;
     createdAt: string;
     initiatedAt: string;
     capturedAt: string | null;

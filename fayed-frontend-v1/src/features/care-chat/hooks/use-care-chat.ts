@@ -30,10 +30,14 @@ import type {
 import { useSessionRole } from "@/lib/auth/use-session-role";
 import { isAdminRole } from "@/lib/auth/roles";
 
-export function usePatientCareChatRequests(params: CareChatListParams = {}) {
+export function usePatientCareChatRequests(
+  params: CareChatListParams = {},
+  enabled = true,
+) {
   return useQuery({
     queryKey: careChatQueryKeys.requestsList(params),
     queryFn: () => getPatientCareChatRequests(params),
+    enabled,
     staleTime: 30_000,
   });
 }

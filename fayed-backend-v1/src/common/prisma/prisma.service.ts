@@ -13,6 +13,15 @@ export class PrismaService
 {
   private readonly logger = new Logger(PrismaService.name);
 
+  constructor() {
+    const datasourceUrl = process.env.DATABASE_URL;
+    if (!datasourceUrl) {
+      throw new Error('DATABASE_URL is required before PrismaService starts');
+    }
+
+    super();
+  }
+
   async onModuleInit(): Promise<void> {
     await this.$connect();
     this.logger.log('Prisma connected to database');

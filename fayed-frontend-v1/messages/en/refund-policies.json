@@ -1,0 +1,105 @@
+{
+  "types": {
+    "session": "session",
+    "package": "package"
+  },
+  "card": {
+    "heading": "Refund policy",
+    "sessionNote": "Please read the session refund policy before completing payment.",
+    "packageNote": "Please read the package refund policy before completing payment.",
+    "activeBadge": "Policy active",
+    "inactiveBadge": "Policy inactive",
+    "loadingTitle": "Loading refund policy",
+    "loadingNote": "We are checking the active policy before you continue.",
+    "blockedTitle": "Refund policy unavailable",
+    "blockedNote": "You cannot complete payment right now because the refund policy is unavailable.",
+    "validationTitle": "Refund policy validation issue",
+    "validationNote": "We could not use the refund policy for this payment. Please try again.",
+    "staleTitle": "Refund policy updated",
+    "staleNote": "The refund policy was updated. Please review it and accept it again.",
+    "retry": "Try again",
+    "clauseCount": "{count} clauses",
+    "checkboxHintLabel": "Before payment",
+    "checkboxHint": "You must accept the refund policy before paying.",
+    "checkboxLabel": "I agree to the refund policy",
+    "checkboxNote": "The payment button stays disabled until you agree.",
+    "readPolicyNote": "Open the full view to read the clauses clearly before continuing.",
+    "readFullPolicy": "View full policy",
+    "readerEyebrow": "Policy preview",
+    "close": "Close",
+    "versionLabel": "Version {version}",
+    "effectiveFrom": "Effective from",
+    "publishedAt": "Published",
+    "policyContent": "Policy content",
+    "clauses": "Clauses",
+    "rules": "Rules",
+    "adminReview": "Admin review",
+    "noClauses": "No clauses are published yet.",
+    "noRules": "No rules are published yet."
+  },
+  "public": {
+    "eyebrow": "Public policies",
+    "title": "Refund policies",
+    "description": "Review the currently active refund policies for sessions and package purchases.",
+    "loadingTitle": "Loading refund policy",
+    "loadingNote": "We are fetching the active policy version.",
+    "unavailableTitle": "Refund policy unavailable",
+    "unavailableNote": "We could not load this policy right now. Please try again.",
+    "notConfiguredTitle": "No active {type} policy is published",
+    "notConfiguredNote": "The current active {type} refund policy has not been published yet.",
+    "backToOverview": "Back to all policies",
+    "viewPolicy": "View policy",
+    "switchOther": "View the other policy",
+    "switchSession": "Session policy",
+    "switchPackage": "Package policy",
+    "meta": {
+      "currentOnly": "Current active versions only",
+      "sessionAndPackage": "Session and package policies",
+      "version": "Version",
+      "effectiveFrom": "Effective from",
+      "publishedAt": "Published"
+    },
+    "versionLabel": "Version {version}",
+    "publishedAtShort": "Published {date}",
+    "notAvailable": "Not available",
+    "activeBadge": "Active",
+    "contentHeading": "Policy content",
+    "clausesHeading": "Clauses",
+    "clauseIndex": "Clause {index}",
+    "rulesHeading": "Rules",
+    "relatedHeading": "Policy links",
+    "relatedNote": "Use the links to move between the public session and package policies.",
+    "noteHeading": "Current active versions",
+    "noteBody": "These pages always show the current active version only. Session payments use the session policy and package purchases use the package policy.",
+    "noContent": "No localized policy content is available.",
+    "noClauses": "No clauses have been published yet.",
+    "noRules": "No rules have been published yet.",
+    "adminReview": "Admin review required",
+    "ruleValues": {
+      "anyTime": "Any time"
+    },
+    "ruleFields": {
+      "window": "Window",
+      "mode": "Refund mode",
+      "percent": "Refund percent",
+      "fixedAmount": "Fixed amount",
+      "minHours": "Minimum {hours}h before",
+      "maxHours": "Maximum {hours}h before",
+      "hasMetadata": "Has metadata"
+    },
+    "rules": {
+      "triggers": {
+        "beforeSessionStart": "Before session start",
+        "afterSessionStart": "After session start",
+        "noShow": "No-show",
+        "adminReview": "Admin review"
+      },
+      "modes": {
+        "none": "No refund",
+        "percentage": "Percentage",
+        "fixedAmount": "Fixed amount",
+        "adminReview": "Admin review"
+      }
+    }
+  }
+}

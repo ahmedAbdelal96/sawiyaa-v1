@@ -16,6 +16,7 @@ import type {
   PractitionerRegisterRequest,
   PractitionerRegistrationResponse,
   PractitionerResetPasswordRequest,
+  PractitionerLoginResponse,
   PractitionerVerifyOtpRequest,
   RefreshTokenRequest,
 } from "../types/auth.types";
@@ -129,11 +130,15 @@ export async function practitionerRegister(data: PractitionerRegisterRequest) {
 }
 
 export async function practitionerLogin(data: PractitionerLoginRequest) {
-  const response = await httpClient.post<ApiPayload<OtpChallengeResponse>>(
+  const response = await httpClient.post<ApiPayload<PractitionerLoginResponse>>(
     "/auth/practitioner/login",
     data
   );
-  return extractData(response.data);
+  const normalized = extractData(response.data);
+  if ("tokens" in normalized) {
+    storeAuthSession(normalized);
+  }
+  return normalized;
 }
 
 export async function practitionerVerifyOtp(data: PractitionerVerifyOtpRequest) {

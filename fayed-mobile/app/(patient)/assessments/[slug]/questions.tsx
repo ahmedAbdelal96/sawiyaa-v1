@@ -21,6 +21,7 @@ import {
   useGetAssessmentDefinition,
   useSubmitAssessment,
 } from "../../../../src/features/patient/assessments/api";
+import { getAssessmentCompatibility } from "../../../../src/features/patient/assessments/compatibility";
 import { extractApiErrorMessage } from "../../../../src/lib/api";
 
 export default function AssessmentQuestionsScreen() {
@@ -43,9 +44,10 @@ export default function AssessmentQuestionsScreen() {
     ? Math.round(((currentIndex + 1) / questions.length) * 100)
     : 0;
 
-  const hasUnsupportedQuestions = useMemo(() => {
-    return questions.some((item) => item.inputType !== "SINGLE_CHOICE");
-  }, [questions]);
+  const compatibility = useMemo(
+    () => getAssessmentCompatibility(definition),
+    [definition],
+  );
 
   const handleSelect = (questionKey: string, optionKey: string) => {
     setAnswers((current) => ({
@@ -118,14 +120,26 @@ export default function AssessmentQuestionsScreen() {
     );
   }
 
-  if (hasUnsupportedQuestions) {
+  if (!compatibility.isCompatible) {
     return (
       <Screen bg="background">
         <ErrorState
           fullScreen
           title={t("assessments.question.unsupportedTitle")}
-          message={t("assessments.question.unsupportedSubtitle")}
-          onRetry={() => router.replace("/(patient)/assessments")}
+          message={
+            compatibility.reason
+              ? t(
+                  `assessments.question.compatibility.${compatibility.reason}` as never,
+                )
+              : t("assessments.question.unsupportedSubtitle")
+          }
+          onRetry={() =>
+            router.replace(
+              slug
+                ? `/(patient)/assessments/${slug}`
+                : "/(patient)/assessments",
+            )
+          }
         />
       </Screen>
     );
@@ -266,7 +280,11 @@ export default function AssessmentQuestionsScreen() {
             size={18}
             color={theme.colors.primary}
           />
-          <Text color={theme.colors.primary} weight="600" style={styles.prevText}>
+          <Text
+            color={theme.colors.primary}
+            weight="600"
+            style={styles.prevText}
+          >
             {t("assessments.question.previous")}
           </Text>
         </TouchableOpacity>
@@ -394,7 +412,7 @@ const styles = StyleSheet.create({
   },
   nextButton: {
     flex: 1,
-    maxWidth: '56%',
+    maxWidth: "56%",
     borderRadius: 14,
   },
 });

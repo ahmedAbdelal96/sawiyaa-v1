@@ -27,6 +27,7 @@ export class AvailabilitySlotRepository {
       },
       orderBy: [
         { weekday: 'asc' },
+        { durationMinutes: 'asc' },
         { startMinuteOfDay: 'asc' },
         { endMinuteOfDay: 'asc' },
       ],
@@ -38,6 +39,7 @@ export class AvailabilitySlotRepository {
     timezone: string,
     slots: Array<{
       weekday: AvailabilitySlot['weekday'];
+      durationMinutes: AvailabilitySlot['durationMinutes'];
       startMinuteOfDay: number;
       endMinuteOfDay: number;
     }>,
@@ -54,6 +56,7 @@ export class AvailabilitySlotRepository {
           data: slots.map((slot) => ({
             practitionerId,
             weekday: slot.weekday,
+            durationMinutes: slot.durationMinutes,
             startMinuteOfDay: slot.startMinuteOfDay,
             endMinuteOfDay: slot.endMinuteOfDay,
             timezone,

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-enum-comparison */
 import {
   BadRequestException,
   ConflictException,
@@ -9,11 +10,14 @@ import {
   PaymentProvider,
   PaymentStatus,
   Prisma,
+  PaymentPurpose,
+  RefundPolicyType,
   SessionStatus,
 } from '@prisma/client';
 import { PrismaService } from '@common/prisma/prisma.service';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
 import { CustomerWalletAccountingService } from '@modules/customer-wallets/services/customer-wallet-accounting.service';
+import { PaymentGeoContextService } from '../services/payment-geo-context.service';
 import { PaymentMapper } from '../mappers/payment.mapper';
 import { PaymentPatientRepository } from '../repositories/payment-patient.repository';
 import { PaymentRepository } from '../repositories/payment.repository';
@@ -24,7 +28,11 @@ import { PaymentProviderResolverService } from '../services/payment-provider-res
 import { PaymentRuntimeConfigService } from '../services/payment-runtime-config.service';
 import { ResolveSessionPaymentPricingService } from '../services/resolve-session-payment-pricing.service';
 import { ValidatePaymentStatusTransitionService } from '../services/validate-payment-status-transition.service';
-
+import { RefundPolicyService } from '@modules/refund-policies/services/refund-policy.service';
+import {
+  PaymentProviderAdapter,
+  PaymentProviderInitiationResult,
+} from '../providers/payment-provider-adapter.interface';
 @Injectable()
 export class InitiateSessionPaymentUseCase {
   constructor(
@@ -34,20 +42,28 @@ export class InitiateSessionPaymentUseCase {
     private readonly paymentRepository: PaymentRepository,
     private readonly paymentProviderRegistryService: PaymentProviderRegistryService,
     private readonly paymentProviderResolverService: PaymentProviderResolverService,
+    private readonly paymentGeoContextService: PaymentGeoContextService,
     private readonly customerWalletAccountingService: CustomerWalletAccountingService,
     private readonly markPaymentSucceededUseCase: MarkPaymentSucceededUseCase,
     private readonly paymentRuntimeConfigService: PaymentRuntimeConfigService,
     private readonly resolveSessionPaymentPricingService: ResolveSessionPaymentPricingService,
     private readonly validatePaymentStatusTransitionService: ValidatePaymentStatusTransitionService,
     private readonly paymentMapper: PaymentMapper,
+    private readonly refundPolicyService: RefundPolicyService,
   ) {}
 
   async execute(input: {
     userId: string;
     locale: SupportedLocale;
     sessionId: string;
+    acceptedRefundPolicyId: string;
     couponCode?: string | null;
     useWalletBalance?: boolean;
+    paymobMethod?: string | null;
+    returnUrl?: string | null;
+    displayLocale: string;
+    userAgent?: string | null;
+    ipAddress?: string | null;
   }) {
     const patient = await this.paymentPatientRepository.findByUserId(
       input.userId,
@@ -100,6 +116,21 @@ export class InitiateSessionPaymentUseCase {
       await this.paymentRepository.findLatestActiveBySessionId(session.id);
 
     if (activePayment) {
+        await this.refundPolicyService.ensureAcceptedRefundPolicyForPayment({
+          policyType: RefundPolicyType.SESSION,
+          acceptedRefundPolicyId: input.acceptedRefundPolicyId,
+          acceptedByUserId: input.userId,
+          paymentId: activePayment.id,
+          sessionId: session.id,
+        displayLocale: input.displayLocale,
+        userAgent: input.userAgent ?? null,
+        ipAddress: input.ipAddress ?? null,
+        metadataJson: {
+          paymentPurpose: PaymentPurpose.SESSION_BOOKING,
+          sessionId: session.id,
+          policyType: RefundPolicyType.SESSION,
+        },
+      });
       return {
         item: this.paymentMapper.toViewModel(activePayment),
       };
@@ -109,7 +140,9 @@ export class InitiateSessionPaymentUseCase {
       session,
       couponCode: input.couponCode ?? null,
     });
-    const accountingConfig = this.paymentRuntimeConfigService.getAccountingConfig();
+    const accountingConfig =
+      this.paymentRuntimeConfigService.getAccountingConfig();
+    const appBaseUrl = this.paymentRuntimeConfigService.getAppBaseUrl();
     const totalAmountDecimal = new Prisma.Decimal(pricing.amountTotal);
     const useWalletBalance = input.useWalletBalance === true;
     const availableWalletBalance = useWalletBalance
@@ -148,29 +181,94 @@ export class InitiateSessionPaymentUseCase {
           .toDecimalPlaces(2)
       : new Prisma.Decimal(0);
 
-    const provider = amountFromGateway.lte(0)
-      ? PaymentProvider.INTERNAL_WALLET
-      : this.paymentProviderResolverService.resolveProvider({
-          currencyCode: pricing.currencyCode,
-          commissionMarketType: pricing.marketType,
-          operatingCountryIsoCode:
-            session.practitioner.country?.isoCode ?? null,
-          checkoutCountryIsoCode: session.patient.country?.isoCode ?? null,
-        });
+    let provider: PaymentProvider;
+    if (amountFromGateway.lte(0)) {
+      provider = PaymentProvider.INTERNAL_WALLET;
+    } else {
+      provider = this.paymentProviderResolverService.resolveProvider({
+        currencyCode: pricing.currencyCode,
+        commissionMarketType: pricing.marketType,
+        operatingCountryIsoCode: session.practitioner.country?.isoCode ?? null,
+        checkoutCountryIsoCode: session.patient.country?.isoCode ?? null,
+      });
+    }
+    const providerCode = String(provider);
+    const isInternalWalletProvider = providerCode === 'INTERNAL_WALLET';
+    const isPaymobProvider = providerCode === 'PAYMOB';
+    const providerRedirectionUrl = this.resolveProviderRedirectionUrl({
+      provider,
+      locale: input.locale,
+      sessionId: session.id,
+      returnUrl: input.returnUrl ?? null,
+      appBaseUrl,
+    });
+    const paymobContext = {
+      checkoutCountryIsoCode: session.patient.country?.isoCode ?? null,
+      operatingCountryIsoCode: session.practitioner.country?.isoCode ?? null,
+    };
     const amountMinor = this.toMinorUnits(amountFromGateway.toFixed(2));
-    const providerAdapter =
-      provider === PaymentProvider.INTERNAL_WALLET
+    const providerAdapter: PaymentProviderAdapter | null =
+      isInternalWalletProvider
         ? null
-        : this.paymentProviderRegistryService.get(provider);
+        : this.paymentProviderRegistryService.get(
+            provider,
+            isPaymobProvider ? paymobContext : undefined,
+          );
     const redirectUrls = this.paymentRuntimeConfigService.getRedirectUrls();
-    const providerMode =
-      provider === PaymentProvider.INTERNAL_WALLET
-        ? 'internal'
-        : this.paymentRuntimeConfigService.isTestMode(provider)
-          ? 'test'
-          : 'live';
+    const paymobCheckoutFlow = isPaymobProvider
+      ? this.paymentRuntimeConfigService.getPaymobCheckoutFlow()
+      : null;
+    const selectedPaymobMethod =
+      isPaymobProvider && paymobCheckoutFlow === 'legacy'
+        ? this.paymentRuntimeConfigService.resolvePaymobCheckoutMethod(
+            input.paymobMethod ?? null,
+            paymobContext,
+          )
+        : null;
+    if (
+      isPaymobProvider &&
+      paymobCheckoutFlow === 'legacy' &&
+      !selectedPaymobMethod
+    ) {
+      throw new BadRequestException({
+        messageKey: 'payments.errors.providerNotConfigured',
+        error: 'PAYMENT_PROVIDER_NOT_CONFIGURED',
+        messageParams: {
+          provider: PaymentProvider.PAYMOB,
+        },
+      });
+    }
+    const providerMode = isInternalWalletProvider
+      ? 'internal'
+      : this.paymentRuntimeConfigService.isTestMode(provider)
+        ? 'test'
+        : 'live';
+    const countrySnapshot = this.paymentGeoContextService.buildCountrySnapshot({
+      declaredCountryCode: session.patient.country?.isoCode ?? null,
+      resolvedCountryCode: session.patient.country?.isoCode ?? null,
+      countrySource: 'ACCOUNT',
+      countryMismatch: false,
+      phoneCountryCode: null,
+      operatingCountryCode: session.practitioner.country?.isoCode ?? null,
+      checkoutCountryCode: session.patient.country?.isoCode ?? null,
+      pricingCurrencyCode: pricing.currencyCode,
+      pricingMarketType: pricing.marketType,
+      provider,
+    });
 
     const payment = await this.prisma.$transaction(async (tx) => {
+      const paymobRegistrySnapshot = isPaymobProvider
+        ? this.paymentRuntimeConfigService
+            .getPaymobMethodRegistry()
+            .map((item) => ({
+              key: item.key,
+              label: item.label,
+              type: item.type,
+              enabled: item.enabled,
+              supportedCheckoutFlows: item.supportedCheckoutFlows,
+            }))
+        : [];
+
       const created = await this.paymentRepository.createPayment(
         {
           sessionId: session.id,
@@ -206,16 +304,18 @@ export class InitiateSessionPaymentUseCase {
             source: 'session-payment-initiation',
             providerMode,
             redirectUrls,
+            providerMethod: selectedPaymobMethod ?? null,
+            paymobCheckoutFlow,
+            paymobRegistrySnapshot,
             amountFromWallet: amountFromWallet.toFixed(2),
             amountFromGateway: amountFromGateway.toFixed(2),
+            countrySnapshot,
             financialBreakdown: {
               ...pricing.breakdown,
               vatRatePercent: vatRatePercentDecimal.toFixed(2),
               vatAmount: vatAmountDecimal.toFixed(2),
-              gatewayFeeRatePercent:
-                gatewayFeeRatePercentDecimal.toFixed(2),
-              gatewayFeeFixedAmount:
-                gatewayFeeFixedAmountDecimal.toFixed(2),
+              gatewayFeeRatePercent: gatewayFeeRatePercentDecimal.toFixed(2),
+              gatewayFeeFixedAmount: gatewayFeeFixedAmountDecimal.toFixed(2),
               gatewayFeeAmount: gatewayFeeAmountDecimal.toFixed(2),
             },
           },
@@ -235,6 +335,25 @@ export class InitiateSessionPaymentUseCase {
         });
       }
 
+      await this.refundPolicyService.ensureAcceptedRefundPolicyForPayment(
+        {
+          policyType: RefundPolicyType.SESSION,
+          acceptedRefundPolicyId: input.acceptedRefundPolicyId,
+          acceptedByUserId: input.userId,
+          paymentId: created.id,
+          sessionId: session.id,
+          displayLocale: input.displayLocale,
+          userAgent: input.userAgent ?? null,
+          ipAddress: input.ipAddress ?? null,
+          metadataJson: {
+            paymentPurpose: PaymentPurpose.SESSION_BOOKING,
+            sessionId: session.id,
+            policyType: RefundPolicyType.SESSION,
+          },
+        },
+        tx,
+      );
+
       await this.paymentRepository.createEvent(
         {
           paymentId: created.id,
@@ -243,6 +362,9 @@ export class InitiateSessionPaymentUseCase {
             source: 'patient-initiation',
             resolvedProvider: provider,
             providerMode,
+            providerMethod: selectedPaymobMethod ?? null,
+            paymobCheckoutFlow,
+            countrySnapshot,
           },
         },
         tx,
@@ -251,7 +373,7 @@ export class InitiateSessionPaymentUseCase {
       return created;
     });
 
-    if (provider === PaymentProvider.INTERNAL_WALLET) {
+    if (isInternalWalletProvider) {
       const captured = await this.markPaymentSucceededUseCase.execute({
         paymentId: payment.id,
         providerEventRef: `internal-wallet-${payment.id}`,
@@ -265,7 +387,7 @@ export class InitiateSessionPaymentUseCase {
       return captured;
     }
 
-    let providerResult;
+    let providerResult: PaymentProviderInitiationResult;
     try {
       providerResult = await providerAdapter!.initiateSessionPayment({
         paymentId: payment.id,
@@ -274,6 +396,10 @@ export class InitiateSessionPaymentUseCase {
         description: `Session payment for ${session.practitioner.user.displayName ?? session.practitioner.publicSlug}`,
         sessionId: session.id,
         patientEmail: patient.user.emails[0]?.email ?? null,
+        redirectionUrl: providerRedirectionUrl,
+        paymobMethod: selectedPaymobMethod,
+        checkoutCountryIsoCode: paymobContext.checkoutCountryIsoCode,
+        operatingCountryIsoCode: paymobContext.operatingCountryIsoCode,
       });
     } catch {
       await this.prisma.$transaction(async (tx) => {
@@ -333,6 +459,9 @@ export class InitiateSessionPaymentUseCase {
             source: 'session-payment-initiation',
             providerMode,
             redirectUrls,
+            providerMethod:
+              providerResult.providerMethod ?? selectedPaymobMethod ?? null,
+            paymobCheckoutFlow,
             checkoutUrl: providerResult.checkoutUrl ?? null,
             clientSecret: providerResult.clientSecret ?? null,
             ...(providerResult.metadata ?? {}),
@@ -349,6 +478,9 @@ export class InitiateSessionPaymentUseCase {
           payloadJson: {
             provider,
             providerMode,
+            providerMethod:
+              providerResult.providerMethod ?? selectedPaymobMethod ?? null,
+            paymobCheckoutFlow,
             checkoutUrl: providerResult.checkoutUrl ?? null,
             clientSecret: providerResult.clientSecret ? 'present' : null,
             redirectUrls,
@@ -367,5 +499,50 @@ export class InitiateSessionPaymentUseCase {
 
   private toMinorUnits(amount: string): number {
     return Math.round(Number(amount) * 100);
+  }
+
+  private resolveProviderRedirectionUrl(input: {
+    provider: PaymentProvider;
+    locale: SupportedLocale;
+    sessionId: string;
+    returnUrl: string | null;
+    appBaseUrl: string;
+  }): string | null {
+    if (input.provider !== 'PAYMOB') {
+      return null;
+    }
+
+    if (input.returnUrl?.trim()) {
+      return this.assertSupportedReturnUrl(input.returnUrl.trim());
+    }
+
+    return `${input.appBaseUrl}/${input.locale}/patient/sessions/${input.sessionId}/payment-return`;
+  }
+
+  private assertSupportedReturnUrl(returnUrl: string): string {
+    let parsed: URL;
+
+    try {
+      parsed = new URL(returnUrl);
+    } catch {
+      throw new BadRequestException({
+        messageKey: 'payments.errors.invalidReturnUrl',
+        error: 'PAYMENT_INVALID_RETURN_URL',
+      });
+    }
+
+    const protocol = parsed.protocol.toLowerCase();
+    if (
+      protocol === 'javascript:' ||
+      protocol === 'data:' ||
+      protocol === 'file:'
+    ) {
+      throw new BadRequestException({
+        messageKey: 'payments.errors.invalidReturnUrl',
+        error: 'PAYMENT_INVALID_RETURN_URL',
+      });
+    }
+
+    return parsed.toString();
   }
 }

@@ -15,7 +15,7 @@ export type AdminSessionStatus =
 
 export type AdminSessionMode = "VIDEO" | "AUDIO" | "CHAT";
 
-export type AdminSessionProvider = "NONE" | "DAILY" | "ZOOM";
+export type AdminSessionProvider = string;
 
 export type AdminSessionJoinBlockedReason =
   | "SESSION_NOT_JOINABLE_STATUS"

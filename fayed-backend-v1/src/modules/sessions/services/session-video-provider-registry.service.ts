@@ -11,7 +11,7 @@ export class SessionVideoProviderRegistryService {
   >();
 
   constructor(dailyAdapter: DailySessionVideoProviderAdapter) {
-    this.adapters.set(dailyAdapter.provider, dailyAdapter);
+    this.register(dailyAdapter);
   }
 
   get(provider: SessionProvider): SessionVideoProviderAdapter {
@@ -26,5 +26,13 @@ export class SessionVideoProviderRegistryService {
     }
 
     return adapter;
+  }
+
+  has(provider: SessionProvider): boolean {
+    return this.adapters.has(provider);
+  }
+
+  private register(adapter: SessionVideoProviderAdapter): void {
+    this.adapters.set(adapter.provider, adapter);
   }
 }

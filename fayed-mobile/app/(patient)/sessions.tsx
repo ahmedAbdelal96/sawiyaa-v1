@@ -147,18 +147,20 @@ export default function PatientSessionsScreen() {
                   />
                 }
                 actionLabel={t("patientSessionsFlow.list.findTherapist")}
-                onAction={() => router.push("/discovery")}
+                onAction={() => router.push("/(patient)/discovery")}
               />
             </Card>
           ) : (
             <View style={styles.sessionsListWrap}>
               {filteredSessions.map((session) => (
-                <SessionCard
+              <SessionCard
                   key={session.id}
                   item={session}
                   locale={locale}
                   isRtl={isRtl}
-                  onPress={() => router.push(`/sessions/${session.id}`)}
+                  onPress={() =>
+                    router.push(`/(patient)/sessions/${session.id}`)
+                  }
                 />
               ))}
             </View>

@@ -1,9 +1,9 @@
+import { BadRequestException, ConflictException, Injectable } from '@nestjs/common';
 import {
-  BadRequestException,
-  ConflictException,
-  Injectable,
-} from '@nestjs/common';
-import { PractitionerApplicationStatus, Prisma } from '@prisma/client';
+  PractitionerApplicationStatus,
+  PractitionerPayoutMethodType,
+  Prisma,
+} from '@prisma/client';
 import { AuthenticatedUser } from '@common/interfaces/authenticated-user.interface';
 import { PrismaService } from '@common/prisma/prisma.service';
 import { I18nService } from '@common/i18n/services/i18n.service';
@@ -20,13 +20,11 @@ import { PractitionerApplicationSnapshotService } from '../services/practitioner
 import { GetPractitionerApplicationStatusUseCase } from './get-practitioner-application-status.use-case';
 import { GetPractitionerProfileReadinessUseCase } from './get-practitioner-profile-readiness.use-case';
 import { CreatePractitionerProfileUseCase } from './create-practitioner-profile.use-case';
-import { UpdatePractitionerProfileUseCase } from './update-practitioner-profile.use-case';
-import { SetPractitionerSpecialtiesUseCase } from './set-practitioner-specialties.use-case';
 import { SubmitPractitionerApplicationDto } from '../dto/submit-practitioner-application.dto';
 
 /**
- * Practitioner self-submission is allowed only when readiness and application-state policies pass.
- * This use case does not perform admin review/approval logic.
+ * Practitioner self-submission is review-gated and snapshot-based.
+ * It records the requested state without mutating live approved profile truth directly.
  */
 @Injectable()
 export class SubmitPractitionerApplicationUseCase {
@@ -34,8 +32,6 @@ export class SubmitPractitionerApplicationUseCase {
     private readonly prisma: PrismaService,
     private readonly i18nService: I18nService,
     private readonly createPractitionerProfileUseCase: CreatePractitionerProfileUseCase,
-    private readonly updatePractitionerProfileUseCase: UpdatePractitionerProfileUseCase,
-    private readonly setPractitionerSpecialtiesUseCase: SetPractitionerSpecialtiesUseCase,
     private readonly practitionerApplicationRepository: PractitionerApplicationRepository,
     private readonly practitionerProfileRepository: PractitionerProfileRepository,
     private readonly practitionerUserRepository: PractitionerUserRepository,
@@ -55,50 +51,6 @@ export class SubmitPractitionerApplicationUseCase {
     currentUser: AuthenticatedUser;
     data: SubmitPractitionerApplicationDto;
   }) {
-    const hasProfilePayload =
-      input.data.displayName !== undefined ||
-      input.data.professionalTitle !== undefined ||
-      input.data.bio !== undefined ||
-      input.data.countryCode !== undefined ||
-      input.data.yearsOfExperience !== undefined ||
-      input.data.practitionerType !== undefined ||
-      input.data.practitionerGender !== undefined ||
-      input.data.locale !== undefined ||
-      input.data.timezone !== undefined ||
-      input.data.languageCodes !== undefined ||
-      input.data.payoutDestination !== undefined;
-
-    if (hasProfilePayload) {
-      await this.updatePractitionerProfileUseCase.execute({
-        userId: input.userId,
-        locale: input.locale,
-        currentUser: input.currentUser,
-        data: {
-          displayName: input.data.displayName,
-          professionalTitle: input.data.professionalTitle,
-          bio: input.data.bio,
-          countryCode: input.data.countryCode,
-          yearsOfExperience: input.data.yearsOfExperience,
-          practitionerType: input.data.practitionerType,
-          practitionerGender: input.data.practitionerGender,
-          locale: input.data.locale,
-          timezone: input.data.timezone,
-          languageCodes: input.data.languageCodes,
-          payoutDestination: input.data.payoutDestination,
-        },
-      });
-    }
-
-    if (input.data.specialtySelection) {
-      await this.setPractitionerSpecialtiesUseCase.execute({
-        userId: input.userId,
-        locale: input.locale,
-        primarySpecialtyCategoryId:
-          input.data.specialtySelection.primarySpecialtyCategoryId,
-        specialtyIds: input.data.specialtySelection.specialtyIds,
-      });
-    }
-
     const profile = await this.createPractitionerProfileUseCase.execute(
       input.userId,
     );
@@ -128,19 +80,92 @@ export class SubmitPractitionerApplicationUseCase {
       });
     }
 
+    const mergedUser = {
+      displayName:
+        input.data.displayName !== undefined
+          ? input.data.displayName
+          : userState.displayName,
+      defaultLocale:
+        input.data.locale !== undefined
+          ? input.data.locale
+          : userState.defaultLocale,
+      timezone:
+        input.data.timezone !== undefined ? input.data.timezone : userState.timezone,
+    };
+
+    const mergedProfile = {
+      practitionerType: input.data.practitionerType ?? profileState.practitionerType,
+      practitionerGender:
+        input.data.practitionerGender !== undefined
+          ? input.data.practitionerGender
+          : profileState.practitionerGender ?? null,
+      professionalTitle:
+        input.data.professionalTitle !== undefined
+          ? input.data.professionalTitle
+          : profileState.professionalTitle ?? null,
+      bio: input.data.bio !== undefined ? input.data.bio : profileState.bio ?? null,
+      yearsOfExperience:
+        input.data.yearsOfExperience !== undefined
+          ? input.data.yearsOfExperience
+          : profileState.yearsOfExperience ?? null,
+      countryCode:
+        input.data.countryCode !== undefined
+          ? input.data.countryCode
+          : profileState.country?.isoCode ?? null,
+      sessionPrice30Egp:
+        input.data.sessionPrice30Egp !== undefined
+          ? input.data.sessionPrice30Egp
+          : profileState.sessionPrice30Egp ?? null,
+      sessionPrice30Usd:
+        input.data.sessionPrice30Usd !== undefined
+          ? input.data.sessionPrice30Usd
+          : profileState.sessionPrice30Usd ?? null,
+      sessionPrice60Egp:
+        input.data.sessionPrice60Egp !== undefined
+          ? input.data.sessionPrice60Egp
+          : profileState.sessionPrice60Egp ?? null,
+      sessionPrice60Usd:
+        input.data.sessionPrice60Usd !== undefined
+          ? input.data.sessionPrice60Usd
+          : profileState.sessionPrice60Usd ?? null,
+      primarySpecialtyCategoryId:
+        profileState.primarySpecialtyCategoryId ?? null,
+    };
+
+    const requestedPayoutDestination = input.data.payoutDestination;
+    const mergedPayoutDestination =
+      requestedPayoutDestination === null
+        ? null
+        : requestedPayoutDestination !== undefined
+          ? {
+              methodType:
+                requestedPayoutDestination.methodType as PractitionerPayoutMethodType,
+              accountHolderName: requestedPayoutDestination.accountHolderName ?? null,
+              bankName: requestedPayoutDestination.bankName ?? null,
+              bankAccountNumber:
+                requestedPayoutDestination.bankAccountNumber ?? null,
+              iban: requestedPayoutDestination.iban ?? null,
+              walletProvider: requestedPayoutDestination.walletProvider ?? null,
+              walletIdentifier: requestedPayoutDestination.walletIdentifier ?? null,
+              otherDetails: requestedPayoutDestination.otherDetails ?? null,
+            }
+          : payoutDestination
+            ? {
+                methodType: payoutDestination.methodType as PractitionerPayoutMethodType,
+                accountHolderName: payoutDestination.accountHolderName ?? null,
+                bankName: payoutDestination.bankName ?? null,
+                bankAccountNumber: payoutDestination.bankAccountNumber ?? null,
+                iban: payoutDestination.iban ?? null,
+                walletProvider: payoutDestination.walletProvider ?? null,
+                walletIdentifier: payoutDestination.walletIdentifier ?? null,
+                otherDetails: payoutDestination.otherDetails ?? null,
+              }
+            : null;
+
     const submissionSnapshot =
       this.practitionerApplicationSnapshotService.build({
-        user: userState,
-        profile: {
-          practitionerType: profileState.practitionerType,
-          practitionerGender: profileState.practitionerGender,
-          professionalTitle: profileState.professionalTitle ?? null,
-          bio: profileState.bio ?? null,
-          yearsOfExperience: profileState.yearsOfExperience ?? null,
-          countryCode: profileState.country?.isoCode ?? null,
-          primarySpecialtyCategoryId:
-            profileState.primarySpecialtyCategoryId ?? null,
-        },
+        user: mergedUser,
+        profile: mergedProfile,
         languageCodes: languageLinks.map((item) => item.language.code),
         specialties: specialtyLinks.map((link) => ({
           specialtyId: link.specialtyId,
@@ -165,24 +190,28 @@ export class SubmitPractitionerApplicationUseCase {
           reviewedAt: credential.reviewedAt ?? null,
           reviewNotes: credential.reviewNotes ?? null,
         })),
-        payoutDestination: payoutDestination
-          ? {
-              methodType: payoutDestination.methodType,
-              accountHolderName: payoutDestination.accountHolderName ?? null,
-              bankName: payoutDestination.bankName ?? null,
-              bankAccountNumber: payoutDestination.bankAccountNumber ?? null,
-              iban: payoutDestination.iban ?? null,
-              walletProvider: payoutDestination.walletProvider ?? null,
-              walletIdentifier: payoutDestination.walletIdentifier ?? null,
-              otherDetails: payoutDestination.otherDetails ?? null,
-            }
-          : null,
+        payoutDestination: mergedPayoutDestination,
+        avatarUrl:
+          input.data.avatarUrl !== undefined
+            ? input.data.avatarUrl
+            : profileState.avatarUrl ?? null,
       });
 
     const [readiness, latestApplicationBeforeTx] = await Promise.all([
       this.getPractitionerProfileReadinessUseCase.evaluate({
         userId: input.userId,
         currentUser: input.currentUser,
+        draft: {
+          displayName: mergedUser.displayName,
+          professionalTitle: mergedProfile.professionalTitle,
+          bio: mergedProfile.bio,
+          countryCode: mergedProfile.countryCode,
+          yearsOfExperience: mergedProfile.yearsOfExperience,
+          hasPayoutDestination: Boolean(mergedPayoutDestination),
+          hasPayoutAccountHolderName: Boolean(
+            mergedPayoutDestination?.accountHolderName?.trim(),
+          ),
+        },
       }),
       this.practitionerApplicationRepository.findLatestByPractitionerId(
         profile.id,
@@ -199,9 +228,7 @@ export class SubmitPractitionerApplicationUseCase {
         latestApplicationBeforeTx?.status ===
           PractitionerApplicationStatus.SUBMITTED ||
         latestApplicationBeforeTx?.status ===
-          PractitionerApplicationStatus.UNDER_REVIEW ||
-        latestApplicationBeforeTx?.status ===
-          PractitionerApplicationStatus.APPROVED;
+          PractitionerApplicationStatus.UNDER_REVIEW;
 
       if (alreadySubmitted) {
         throw new ConflictException({
@@ -229,7 +256,6 @@ export class SubmitPractitionerApplicationUseCase {
       const blockedStatuses: PractitionerApplicationStatus[] = [
         PractitionerApplicationStatus.SUBMITTED,
         PractitionerApplicationStatus.UNDER_REVIEW,
-        PractitionerApplicationStatus.APPROVED,
       ];
 
       if (

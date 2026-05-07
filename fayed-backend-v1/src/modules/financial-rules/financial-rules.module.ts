@@ -65,6 +65,11 @@ import { ValidateCouponUseCase } from './use-cases/validate-coupon.use-case';
     RedeemCouponUseCase,
     CalculateSessionFinancialBreakdownUseCase,
   ],
-  exports: [CalculateSessionFinancialBreakdownService, RedeemCouponUseCase],
+  exports: [
+    CalculateSessionFinancialBreakdownService,
+    RedeemCouponUseCase,
+    ResolveCommissionRuleService,
+    MoneyMathService,
+  ],
 })
 export class FinancialRulesModule {}

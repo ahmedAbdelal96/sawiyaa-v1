@@ -76,8 +76,8 @@ const DynamicSidebar: React.FC<DynamicSidebarProps> = ({
               onClick={() => handleSubmenuToggle(index, menuType)}
               className={`menu-item group ${
                 openSubmenu?.type === menuType && openSubmenu?.index === index
-                  ? "menu-item-active"
-                  : "menu-item-inactive"
+                  ? "menu-item-active rounded-2xl ring-1 ring-inset ring-primary/10 shadow-sm"
+                  : "menu-item-inactive rounded-2xl"
               } ${!isExpanded && !isHovered ? "lg:justify-center" : "lg:justify-start"}`}
             >
               <span
@@ -108,7 +108,9 @@ const DynamicSidebar: React.FC<DynamicSidebarProps> = ({
               <Link
                 href={basePathPrefix + nav.path}
                 className={`menu-item group ${
-                  isActive(nav.path) ? "menu-item-active" : "menu-item-inactive"
+                  isActive(nav.path)
+                    ? "menu-item-active rounded-2xl ring-1 ring-inset ring-primary/10 shadow-sm"
+                    : "menu-item-inactive rounded-2xl"
                 }`}
               >
                 <span className={isActive(nav.path) ? "menu-item-icon-active" : "menu-item-icon-inactive"}>
@@ -129,7 +131,11 @@ const DynamicSidebar: React.FC<DynamicSidebarProps> = ({
                   openSubmenu?.type === menuType && openSubmenu?.index === index ? "400px" : "0px",
               }}
             >
-              <ul className={`mt-2 space-y-1 ${isRTL ? "mr-9" : "ml-9"}`}>
+              <ul
+                className={`mt-2 space-y-1 rounded-2xl border border-border-light/70 bg-surface px-2 py-2 shadow-sm ${
+                  isRTL ? "mr-9" : "ml-9"
+                }`}
+              >
                 {nav.subItems.map((subItem) => (
                   <li key={subItem.key}>
                     <Link
@@ -154,7 +160,7 @@ const DynamicSidebar: React.FC<DynamicSidebarProps> = ({
 
   return (
     <aside
-      className={`fixed top-0 z-50 mt-16 flex h-screen flex-col border-gray-200 bg-white px-5 text-gray-900 transition-all duration-300 ease-in-out dark:border-gray-800 dark:bg-gray-900 lg:mt-0 ${
+      className={`fixed top-0 z-50 mt-16 flex h-screen flex-col border-border-light/80 bg-surface-secondary/96 px-4 text-text-primary shadow-theme-md backdrop-blur-xl transition-all duration-300 ease-in-out dark:border-border-light dark:bg-surface-secondary/96 lg:mt-0 ${
         isRTL ? "right-0 border-l" : "left-0 border-r"
       } ${
         isExpanded || isMobileOpen ? "w-[290px]" : isHovered ? "w-[290px]" : "w-[90px]"
@@ -164,17 +170,21 @@ const DynamicSidebar: React.FC<DynamicSidebarProps> = ({
       onMouseEnter={() => !isExpanded && setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <div className={`flex py-8 ${!isExpanded && !isHovered ? "lg:justify-center" : "justify-start"}`}>
+      <div
+        className={`flex items-center border-b border-border-light/60 py-6 ${
+          !isExpanded && !isHovered ? "lg:justify-center" : "justify-start"
+        }`}
+      >
         <BrandMark compact={!isExpanded && !isHovered && !isMobileOpen} href={basePathPrefix + "/"} />
       </div>
 
       <div className="no-scrollbar flex flex-col overflow-y-auto">
         <nav className="mb-6">
-          <div className="flex flex-col gap-6">
+          <div className="flex flex-col gap-5">
             {navigation.map((section) => (
               <div key={section.key}>
                 <h2
-                  className={`mb-4 flex text-xs uppercase leading-[20px] text-gray-400 ${
+                  className={`mb-3 flex text-xs uppercase leading-[20px] text-text-muted ${
                     !isExpanded && !isHovered ? "lg:justify-center" : "justify-start"
                   }`}
                 >

@@ -1,609 +1,816 @@
 {
-    "meta":  {
-                 "patientListTitle":  "Training | Patient",
-                 "patientListDescription":  "Review your training enrollments, open available training details, and continue the runtime steps that are available now.",
-                 "catalogFallbackTitle":  "Training | Patient",
-                 "catalogFallbackDescription":  "Review available training details and schedule availability.",
-                 "patientDetailTitle":  "Training Enrollment | Patient",
-                 "patientDetailDescription":  "Review your training enrollment, payment state, and join access when available.",
-                 "patientPayTitle":  "Complete Training Payment | Patient",
-                 "patientPayDescription":  "Complete payment for your training enrollment when payment is still required.",
-                 "adminTitle":  "Training management | Admin",
-                 "adminDescription":  "Manage the training catalog, publish states, and schedules within the current admin contract.",
-                 "adminDetailTitle":  "Training management detail | Admin",
-                 "adminDetailDescription":  "Review and update training details, schedules, and publish/archive actions within the current admin contract."
-             },
-    "courseTypes":  {
-                        "LIVE":  "Live training",
-                        "WORKSHOP":  "Workshop",
-                        "COURSE":  "Course"
-                    },
-    "statuses":  {
-                     "enrollment":  {
-                                        "PENDING_PAYMENT":  "Pending payment",
-                                        "ACTIVE":  "Active",
-                                        "COMPLETED":  "Completed",
-                                        "NO_SHOW":  "No-show",
-                                        "CANCELLED":  "Cancelled",
-                                        "REFUNDED":  "Refunded"
-                                    },
-                     "attendance":  {
-                                        "NOT_MARKED":  "Not marked yet",
-                                        "ATTENDED":  "Attended",
-                                        "NO_SHOW":  "No-show"
-                                    },
-                     "payment":  {
-                                     "CREATED":  "Created",
-                                     "PENDING":  "Pending",
-                                     "REQUIRES_ACTION":  "Requires action",
-                                     "AUTHORIZED":  "Authorized",
-                                     "CAPTURED":  "Captured",
-                                     "FAILED":  "Failed",
-                                     "CANCELLED":  "Cancelled",
-                                     "EXPIRED":  "Expired",
-                                     "REFUND_PENDING":  "Refund pending",
-                                     "PARTIALLY_REFUNDED":  "Partially refunded",
-                                     "REFUNDED":  "Refunded"
-                                 },
-                     "paymentProvider":  {
-                                             "STRIPE":  "Stripe",
-                                             "PAYMOB":  "Paymob"
-                                         },
-                     "schedule":  {
-                                      "DRAFT":  "Draft",
-                                      "OPEN_FOR_ENROLLMENT":  "Open for enrollment",
-                                      "FULL":  "Full",
-                                      "STARTED":  "Started",
-                                      "COMPLETED":  "Completed",
-                                      "CANCELLED":  "Cancelled",
-                                      "ARCHIVED":  "Archived"
-                                  },
-                     "course":  {
-                                    "DRAFT":  "Draft",
-                                    "PUBLISHED":  "Published",
-                                    "ARCHIVED":  "Archived"
-                                },
-                     "visibility":  {
-                                        "PUBLIC":  "Public",
-                                        "PRIVATE":  "Private"
-                                    }
-                 },
-    "patient":  {
-                    "home":  {
-                                 "eyebrow":  "Training runtime",
-                                 "title":  "Keep your training steps visible without turning this into a full learning platform.",
-                                 "note":  "This baseline shows what training is available now, what you already enrolled in, and what action is truly available next.",
-                                 "scopeHeading":  "Available now",
-                                 "scopeItems":  {
-                                                    "catalog":  "Review the current training catalog and schedule availability.",
-                                                    "enrollment":  "Open your own enrollment details, payment state, and attendance visibility.",
-                                                    "join":  "Check join access only when the backend says your enrollment is eligible."
-                                                },
-                                 "boundaryHeading":  "Outside current scope",
-                                 "boundaryItems":  {
-                                                       "noLms":  "This is not a full LMS or academy workspace.",
-                                                       "noCertificates":  "Certificates are not part of this baseline.",
-                                                       "noQuizzes":  "Quizzes, assignments, and scoring are not exposed here."
-                                                   }
-                             },
-                    "enrollments":  {
-                                        "heading":  "My training",
-                                        "note":  "Use this area to continue a real enrollment, complete payment when needed, or review what already happened.",
-                                        "count":  "{value, number} items",
-                                        "loadingCount":  "Loading",
-                                        "scheduleCode":  "Schedule {code}",
-                                        "actions":  {
-                                                        "continue":  "Continue runtime",
-                                                        "completePayment":  "Complete payment",
-                                                        "review":  "Review details"
-                                                    },
-                                        "states":  {
-                                                       "empty":  {
-                                                                     "heading":  "No training enrollments yet",
-                                                                     "note":  "Start by opening one of the available training items below and review the next honest step from there."
-                                                                 },
-                                                       "error":  {
-                                                                     "heading":  "Training enrollments are not available right now",
-                                                                     "note":  "Could not load your training enrollments.",
-                                                                     "retry":  "Try again"
-                                                                 }
-                                                   }
-                                    },
-                    "catalog":  {
-                                    "heading":  "Available training",
-                                    "note":  "These items come from the current published training catalog. Open one to review schedules and start only when enrollment is actually open.",
-                                    "count":  "{value, number} available",
-                                    "publishedAt":  "Published {date}",
-                                    "fallbackDescription":  "Open this training to review the current schedule availability and the real enrollment boundary.",
-                                    "openDetails":  "Open training details",
-                                    "states":  {
-                                                   "error":  {
-                                                                 "heading":  "Training catalog is not available right now",
-                                                                 "note":  "Could not load the current training catalog.",
-                                                                 "retry":  "Try again"
-                                                             },
-                                                   "empty":  {
-                                                                 "heading":  "No training is available right now",
-                                                                 "note":  "There are no published training items in the current catalog."
-                                                             }
-                                               }
-                                },
-                    "catalogDetail":  {
-                                          "back":  "Back to training",
-                                          "support":  "Need help choosing?",
-                                          "eyebrow":  "Training detail",
-                                          "fallbackDescription":  "Review the current training overview and the schedules that are actually available right now.",
-                                          "scopeHeading":  "What this flow supports",
-                                          "scopeItems":  {
-                                                             "enroll":  "Start an enrollment only from a schedule that is currently open.",
-                                                             "pay":  "Payment stays part of the enrollment flow when the backend requires it.",
-                                                             "join":  "Join access stays blocked until enrollment becomes active."
-                                                         },
-                                          "boundaryHeading":  "What this flow does not include",
-                                          "boundaryItems":  {
-                                                                "noCurriculum":  "There is no lesson tree or course player in this baseline.",
-                                                                "noAssignments":  "Assignments and graded progress are not part of this flow.",
-                                                                "noCertificates":  "Completion does not imply certificates or graduation tooling."
-                                                            },
-                                          "schedulesHeading":  "Available schedules",
-                                          "openSchedulesNote":  "{value, number} schedule(s) are currently open for enrollment.",
-                                          "closedSchedulesNote":  "No schedule is currently open for enrollment. You can still review the timeline and availability reasons below.",
-                                          "scheduleCode":  "Schedule {code}",
-                                          "startsAt":  "Starts",
-                                          "notScheduled":  "Start time is not available yet",
-                                          "seats":  "Seats",
-                                          "availableSeats":  "{value, number} seats left",
-                                          "seatsOpen":  "Seat limit is not shown for this schedule",
-                                          "capacity":  "{available, number} of {total, number} seats currently free",
-                                          "actions":  {
-                                                          "start":  "Start enrollment",
-                                                          "starting":  "Starting enrollment...",
-                                                          "alreadyEnrolled":  "You already have an enrollment for this schedule.",
-                                                          "error":  "Could not start this enrollment right now."
-                                                      },
-                                          "availability":  {
-                                                               "OPEN":  "Enrollment is open now.",
-                                                               "STATUS_NOT_OPEN":  "This schedule is not in an enrollment-ready state right now.",
-                                                               "NOT_OPEN_YET":  "Enrollment has not opened yet.",
-                                                               "WINDOW_CLOSED":  "The enrollment window has already closed.",
-                                                               "SESSION_STARTED":  "This schedule has already started.",
-                                                               "CAPACITY_REACHED":  "This schedule reached capacity.",
-                                                               "INVALID_WINDOW":  "This schedule is not currently open because its enrollment window is unavailable."
-                                                           },
-                                          "states":  {
-                                                         "error":  {
-                                                                       "heading":  "Training detail is not available right now",
-                                                                       "note":  "Could not load this training detail right now.",
-                                                                       "retry":  "Try again",
-                                                                       "back":  "Back to training"
-                                                                   },
-                                                         "empty":  {
-                                                                       "heading":  "No schedules are visible right now",
-                                                                       "note":  "This training does not currently expose any schedule in the public training contract."
-                                                                   }
-                                                     }
-                                      },
-                    "detail":  {
-                                   "back":  "Back to training",
-                                   "support":  "Open support",
-                                   "eyebrow":  "Enrollment detail",
-                                   "scheduleCode":  "Schedule {code}",
-                                   "startsAt":  "Starts",
-                                   "notScheduled":  "Schedule time is not available yet",
-                                   "attendance":  "Attendance",
-                                   "currentStateHeading":  "Current state",
-                                   "paymentHeading":  "Payment state",
-                                   "paymentAmount":  "Amount",
-                                   "paymentProvider":  "Provider",
-                                   "completePayment":  "Complete payment",
-                                   "joinHeading":  "Join access",
-                                   "joinNote":  "Join access stays controlled by the backend. Check here only when your enrollment is active and the schedule is near its live window.",
-                                   "joinReady":  "Join access is available now. Open the external room when you are ready.",
-                                   "joinError":  "Could not resolve join access right now.",
-                                   "joinActions":  {
-                                                       "check":  "Check join access",
-                                                       "checking":  "Checking access...",
-                                                       "open":  "Open live room"
-                                                   },
-                                   "stateNotes":  {
-                                                      "PENDING_PAYMENT":  "Payment is still required before this enrollment becomes active.",
-                                                      "ACTIVE":  "This enrollment is active. You can review join access when the schedule reaches its live window.",
-                                                      "COMPLETED":  "This training enrollment is completed in the current runtime baseline.",
-                                                      "NO_SHOW":  "This enrollment was marked as no-show.",
-                                                      "CANCELLED":  "This enrollment is no longer active.",
-                                                      "REFUNDED":  "This enrollment was refunded and is no longer available for runtime access."
-                                                  },
-                                   "paymentNotes":  {
-                                                        "CREATED":  "A payment record was created for this enrollment.",
-                                                        "PENDING":  "Payment is still pending and the enrollment stays blocked until it succeeds.",
-                                                        "REQUIRES_ACTION":  "Payment still needs action before enrollment can activate.",
-                                                        "AUTHORIZED":  "Payment is authorized and waiting for the final captured state.",
-                                                        "CAPTURED":  "Payment succeeded for this enrollment.",
-                                                        "FAILED":  "The current payment attempt failed.",
-                                                        "CANCELLED":  "The current payment attempt was cancelled.",
-                                                        "EXPIRED":  "The current payment attempt expired.",
-                                                        "REFUND_PENDING":  "A refund is still in progress for this enrollment.",
-                                                        "PARTIALLY_REFUNDED":  "Part of this payment was refunded.",
-                                                        "REFUNDED":  "This payment was refunded."
-                                                    },
-                                   "joinBlocked":  {
-                                                       "ENROLLMENT_NOT_ACTIVE":  "Join stays blocked until the enrollment becomes active.",
-                                                       "SCHEDULE_NOT_JOINABLE":  "This schedule is not in a joinable state right now.",
-                                                       "SCHEDULE_TIME_UNAVAILABLE":  "The schedule timing is not available yet.",
-                                                       "JOIN_WINDOW_NOT_OPEN":  "The join window is not open yet.",
-                                                       "JOIN_ACCESS_NOT_CONFIGURED":  "Join access has not been configured for this schedule.",
-                                                       "UNKNOWN":  "Join access is not available right now."
-                                                   },
-                                   "states":  {
-                                                  "error":  {
-                                                                "heading":  "Training enrollment is not available right now",
-                                                                "note":  "Could not load this enrollment.",
-                                                                "retry":  "Try again"
-                                                            }
-                                              }
-                               },
-                    "pay":  {
-                                "heading":  "Complete training payment",
-                                "note":  "This payment stays inside the training enrollment flow. Once payment succeeds, the enrollment can become active according to the backend contract.",
-                                "summaryHeading":  "Enrollment summary",
-                                "scheduleCode":  "Schedule {code}",
-                                "amount":  "Payment due: {amount}",
-                                "hostedCheckoutHeading":  "Hosted checkout",
-                                "hostedCheckoutNote":  "Open the hosted checkout page to continue this training payment.",
-                                "openCheckout":  "Open checkout",
-                                "states":  {
-                                               "error":  {
-                                                             "heading":  "Training payment is not available right now",
-                                                             "note":  "Could not load this enrollment payment state.",
-                                                             "retry":  "Try again"
-                                                         },
-                                               "notPayable":  {
-                                                                  "heading":  "This enrollment does not need payment right now",
-                                                                  "note":  "The current enrollment state no longer requires a payment step.",
-                                                                  "action":  "Back to enrollment"
-                                                              },
-                                               "noRuntime":  {
-                                                                 "heading":  "Payment runtime is not available right now",
-                                                                 "note":  "This enrollment does not currently expose a hosted checkout link or a payment form runtime.",
-                                                                 "action":  "Back to enrollment"
-                                                             }
-                                           }
-                            }
-                },
-    "admin":  {
-                  "eyebrow":  "Admin training management",
-                  "title":  "Manage the training catalog and schedules without turning this into a full LMS.",
-                  "note":  "This surface stays operational. Create or update training items, publish or archive them, and manage schedule windows only where the backend allows it.",
-                  "scopeHeading":  "Available now",
-                  "scopeItems":  {
-                                     "visibility":  "Review the current training list with status and visibility.",
-                                     "scheduleRead":  "Create and maintain schedule windows with enrollment timing.",
-                                     "runtimeBoundary":  "Publish or archive training items when the contract allows it."
-                                 },
-                  "boundaryHeading":  "Outside current scope",
-                  "boundaryItems":  {
-                                        "noAuthoring":  "Deep curriculum authoring and lesson structures are not part of this baseline.",
-                                        "noAnalytics":  "Training analytics and reporting are not part of this surface.",
-                                        "noCertificates":  "Certificates, assessments, and advanced learner tooling stay outside scope."
-                                    },
-                  "fallbackDescription":  "This screen focuses on real backend training items without overbuilding the admin scope.",
-                  "cards":  {
-                                "scheduleCount":  "Schedules",
-                                "schedulesValue":  "{value, number} total â€¢ {open, number} open now",
-                                "lastPublished":  "Published",
-                                "notPublished":  "Not published yet",
-                                "upcomingHeading":  "Visible schedules",
-                                "scheduleLine":  "{code} â€¢ {status}"
-                            },
-                  "list":  {
-                               "manage":  "Manage training",
-                               "actionsHeader":  "Actions",
-                               "scheduleSummary":  "{total, number} total • {open, number} open now",
-                               "scheduleSnapshotNone":  "No schedule windows yet",
-                               "columns":  {
-                                               "training":  "Training",
-                                               "status":  "Status",
-                                               "visibility":  "Visibility",
-                                               "type":  "Type",
-                                               "schedules":  "Schedules",
-                                               "published":  "Published",
-                                               "updated":  "Updated"
-                                           }
-                           },
-                  "filters":  {
-                                  "allStatuses":  "All statuses",
-                                  "search":  "Search training",
-                                  "searchPlaceholder":  "Search by title or slug"
-                           },
-                  "create":  {
-                                 "heading":  "Create training item",
-                                 "note":  "Start with the minimum details. You can refine, publish, and schedule from the detail screen.",
-                                 "label":  "Admin-only",
-                                 "helper":  "Use a lowercase, hyphenated slug only.",
-                                 "submit":  "Create training",
-                                 "submitting":  "Creating...",
-                                 "success":  "Training item created.",
-                                 "validation":  {
-                                                    "required":  "Title and slug are required.",
-                                                    "slug":  "Slug must be lowercase and hyphenated only."
-                                                },
-                                 "adminOnlyNote":  "Training management is available to admin roles only.",
-                                 "fields":  {
-                                                "locale":  "Locale",
-                                                "courseType":  "Training type",
-                                                "title":  "Title",
-                                                "slug":  "Slug",
-                                                "visibility":  "Visibility",
-                                                "shortDescription":  "Short description",
-                                                "fullDescription":  "Full description"
-                                            },
-                                 "placeholders":  {
-                                                      "title":  "Add a clear training title",
-                                                      "slug":  "example-training-title",
-                                                      "shortDescription":  "Short summary for listings",
-                                                      "fullDescription":  "Operational overview for the training detail"
-                                                  },
-                                 "locales":  {
-                                                 "ar":  "Arabic",
-                                                 "en":  "English"
-                                             }
-                             },
-                  "detail":  {
-                                 "eyebrow":  "Training management detail",
-                                 "note":  "Review core details, schedules, and the allowed publish/archive actions from the current contract.",
-                                 "back":  "Back to training",
-                                 "sections":  {
-                                                  "snapshot":  "Operational snapshot",
-                                                  "overview":  "Overview",
-                                                  "schedules":  "Schedules",
-                                                  "actions":  "Actions",
-                                                  "update":  "Update training",
-                                                  "createSchedule":  "Create schedule",
-                                                  "boundary":  "Scope boundary"
-                                              },
-                                 "snapshotNote":  "Use this summary to quickly tell whether the training item is still being prepared, whether schedules are already visible for operations, and whether this screen currently exposes limited management controls or only visibility.",
-                                 "snapshotCards":  {
-                                                       "lifecycle":  {
-                                                                         "label":  "Training state",
-                                                                         "states":  {
-                                                                                        "draft":  {
-                                                                                                      "title":  "Still in draft",
-                                                                                                      "note":  "This training item is still in draft. Review the core content and any schedule setup before treating it as a live offering."
-                                                                                                  },
-                                                                                        "published":  {
-                                                                                                          "title":  "Published baseline",
-                                                                                                          "note":  "This training item is already published in the current contract, so the main posture here is bounded operational management."
-                                                                                                      },
-                                                                                        "archived":  {
-                                                                                                         "title":  "Archived and limited",
-                                                                                                         "note":  "This training item is archived. The current admin baseline should stay careful about implying broader authoring control."
-                                                                                                     }
-                                                                                    }
-                                                                     },
-                                                       "schedules":  {
-                                                                         "label":  "Schedule posture",
-                                                                         "states":  {
-                                                                                        "none":  {
-                                                                                                     "title":  "No schedules yet",
-                                                                                                     "note":  "No schedules are currently visible for this training item, so schedule work starts from creation rather than review."
-                                                                                                 },
-                                                                                        "open":  {
-                                                                                                     "title":  "Schedules are actively open",
-                                                                                                     "note":  "At least one schedule is currently open for enrollment. Review timing and room details carefully before changing anything."
-                                                                                                 },
-                                                                                        "closed":  {
-                                                                                                       "title":  "Schedules exist but are not open now",
-                                                                                                       "note":  "Schedules already exist for this training item, but none is currently open for enrollment."
-                                                                                                   }
-                                                                                    }
-                                                                     },
-                                                       "actions":  {
-                                                                       "label":  "Action posture",
-                                                                       "states":  {
-                                                                                      "limitedActions":  {
-                                                                                                             "title":  "Limited management actions are available",
-                                                                                                             "note":  "This screen exposes only the publish and archive controls that the backend currently allows for this training item."
-                                                                                                         },
-                                                                                      "readOnly":  {
-                                                                                                       "title":  "Visibility first right now",
-                                                                                                       "note":  "No publish or archive control is currently available for this training state, so the screen should be treated as visibility and update management only."
-                                                                                                   },
-                                                                                      "adminOnly":  {
-                                                                                                        "title":  "Inspection only for non-admin roles",
-                                                                                                        "note":  "The current role can inspect training details here, but management controls remain restricted to admin roles."
-                                                                                                    }
-                                                                                  }
-                                                                   }
-                                                   },
-                                 "fields":  {
-                                                "status":  "Status",
-                                                "visibility":  "Visibility",
-                                                "courseType":  "Training type",
-                                                "locale":  "Locale",
-                                                "slug":  "Slug",
-                                                "scheduleCount":  "Schedules",
-                                                "publishedAt":  "Published",
-                                                "createdAt":  "Created",
-                                                "updatedAt":  "Updated"
-                                            },
-                                 "schedules":  {
-                                                   "note":  "Only schedules returned by the backend are visible here.",
-                                                   "edit":  "Edit",
-                                                   "cancelEdit":  "Cancel",
-                                                   "save":  "Save changes",
-                                                   "saving":  "Saving...",
-                                                   "updateSuccess":  "Schedule updated.",
-                                                   "scheduleCode":  "Schedule {code}",
-                                                   "startsAt":  "Starts",
-                                                   "endsAt":  "Ends",
-                                                   "enrollmentWindow":  "Enrollment {start} â†’ {end}",
-                                                   "capacity":  "{available, number} / {total} seats",
-                                                   "enrollmentOpen":  "Enrollment open",
-                                                   "enrollmentClosed":  "Enrollment closed",
-                                                   "fields":  {
-                                                                  "status":  "Schedule status",
-                                                                  "externalProvider":  "External room provider",
-                                                                  "externalJoinUrl":  "External join URL",
-                                                                  "externalHostUrl":  "External host URL"
-                                                              },
-                                                   "placeholders":  {
-                                                                        "externalJoinUrl":  "https://...",
-                                                                        "externalHostUrl":  "https://..."
-                                                                    },
-                                                   "providers":  {
-                                                                     "none":  "No external room",
-                                                                     "zoom":  "Zoom"
-                                                                 },
-                                                   "error":  {
-                                                                 "heading":  "Schedules are not available",
-                                                                 "note":  "Could not load schedule data for this training.",
-                                                                 "retry":  "Try again"
-                                                             },
-                                                   "empty":  {
-                                                                 "heading":  "No schedules yet",
-                                                                 "note":  "This training has no schedules in the current admin contract."
-                                                             }
-                                               },
-                                 "actions":  {
-                                                 "note":  "Only actions supported by the backend are shown here.",
-                                                 "publish":  "Publish training",
-                                                 "publishing":  "Publishing...",
-                                                 "publishSuccess":  "Training published.",
-                                                 "archive":  "Archive training",
-                                                 "archiving":  "Archiving...",
-                                                 "archiveSuccess":  "Training archived.",
-                                                 "adminOnly":  "Actions are available to admin roles only.",
-                                                 "notAvailable":  "No actions are available for this status yet.",
-                                                 "states":  {
-                                                                "notAvailable":  {
-                                                                                     "heading":  "No action is available right now",
-                                                                                     "note":  "The current training status does not expose publish or archive controls in this admin baseline."
-                                                                                 },
-                                                                "adminOnly":  {
-                                                                                  "heading":  "This area is inspection only for your role",
-                                                                                  "note":  "You can review training details here, but publish and archive controls remain limited to admin roles."
-                                                                              }
-                                                            },
-                                                 "archiveConfirm":  {
-                                                                        "title":  "Archive this training item?",
-                                                                        "description":  "Archive only when this training item should stop staying active in the current training admin baseline.",
-                                                                        "cancel":  "Keep training active"
-                                                                    }
-                                             },
-                                 "update":  {
-                                                "note":  "Update the current training details using the contract-allowed fields only.",
-                                                "submit":  "Save training updates",
-                                                "submitting":  "Saving...",
-                                                "success":  "Training updated.",
-                                                "validation":  {
-                                                                   "required":  "Title and slug are required.",
-                                                                   "slug":  "Slug must be lowercase and hyphenated only."
-                                                               },
-                                                "fields":  {
-                                                               "locale":  "Locale",
-                                                               "title":  "Title",
-                                                               "slug":  "Slug",
-                                                               "courseType":  "Training type",
-                                                               "visibility":  "Visibility",
-                                                               "shortDescription":  "Short description",
-                                                               "fullDescription":  "Full description"
-                                                           },
-                                                "placeholders":  {
-                                                                     "title":  "Update the training title",
-                                                                     "slug":  "example-training-title",
-                                                                     "shortDescription":  "Short summary for listings",
-                                                                     "fullDescription":  "Operational overview for the training detail"
-                                                                 },
-                                                "locales":  {
-                                                                "ar":  "Arabic",
-                                                                "en":  "English"
-                                                            }
-                                            },
-                                 "createSchedule":  {
-                                                        "note":  "Create a new schedule only when the window and timing are ready.",
-                                                        "submit":  "Create schedule",
-                                                        "submitting":  "Creating...",
-                                                        "success":  "Schedule created.",
-                                                        "validation":  {
-                                                                           "required":  "Enrollment and session windows are required.",
-                                                                           "enrollmentWindow":  "Enrollment open must be before enrollment close.",
-                                                                           "sessionWindow":  "Start time must be before end time.",
-                                                                           "closeBeforeStart":  "Enrollment must close before the session starts."
-                                                                       },
-                                                        "fields":  {
-                                                                       "status":  "Schedule status",
-                                                                       "scheduleCode":  "Schedule code",
-                                                                       "enrollmentOpenAt":  "Enrollment opens",
-                                                                       "enrollmentCloseAt":  "Enrollment closes",
-                                                                       "startsAt":  "Session starts",
-                                                                       "endsAt":  "Session ends",
-                                                                       "timezone":  "Timezone",
-                                                                       "externalProvider":  "External room provider",
-                                                                       "externalJoinUrl":  "External join URL",
-                                                                       "externalHostUrl":  "External host URL"
-                                                                   },
-                                                        "placeholders":  {
-                                                                             "scheduleCode":  "Optional schedule reference",
-                                                                             "timezone":  "Africa/Cairo",
-                                                                             "externalJoinUrl":  "https://...",
-                                                                             "externalHostUrl":  "https://..."
-                                                                         },
-                                                        "providers":  {
-                                                                          "none":  "No external room",
-                                                                          "zoom":  "Zoom"
-                                                                      }
-                                                    },
-                                 "boundaryItems":  {
-                                                       "noAnalytics":  "Analytics and reporting are not included in this baseline.",
-                                                       "noCertificates":  "Certificates and learner outcomes are outside scope.",
-                                                       "noAdvancedLms":  "Advanced LMS authoring is not part of this baseline."
-                                                   },
-                                 "states":  {
-                                                "error":  {
-                                                              "heading":  "Training detail is not available",
-                                                              "note":  "Could not load the training detail right now.",
-                                                              "retry":  "Try again",
-                                                              "back":  "Back to training"
-                                                          },
-                                                "notFound":  {
-                                                                 "heading":  "Training item not found",
-                                                                 "note":  "The requested training item could not be found."
-                                                             }
-                                            }
-                             },
-                  "errors":  {
-                                 "notFound":  "Training item not found.",
-                                 "slugAlreadyExists":  "Slug already exists. Choose a different one.",
-                                 "archivedReadOnly":  "This training is archived and read-only.",
-                                 "localeRequired":  "Locale is required to update translations.",
-                                 "invalidPublishTransition":  "This training cannot be published from its current status.",
-                                 "invalidArchiveTransition":  "This training cannot be archived from its current status.",
-                                 "scheduleNotFound":  "Schedule not found.",
-                                 "scheduleCodeAlreadyExists":  "Schedule code already exists.",
-                                 "invalidScheduleTransition":  "Schedule status transition is not allowed.",
-                                 "enrollmentWindowRequired":  "Enrollment window is required.",
-                                 "sessionWindowRequired":  "Session window is required.",
-                                 "invalidEnrollmentWindow":  "Enrollment window is invalid.",
-                                 "invalidSessionWindow":  "Session window is invalid.",
-                                 "enrollmentMustCloseBeforeStart":  "Enrollment must close before the session starts.",
-                                 "invalidCapacity":  "Enrollment capacity is invalid.",
-                                 "cannotOpenPastSchedule":  "Enrollment cannot open for a past schedule.",
-                                 "invalidExternalRoomProvider":  "External room provider is invalid.",
-                                 "externalJoinUrlRequired":  "External join URL is required when a provider is set.",
-                                 "externalRoomProviderRequired":  "External room provider is required when a join URL is provided.",
-                                 "capacityBelowCurrentEnrollments":  "Capacity cannot be below current enrollments.",
-                                 "generic":  "Something went wrong while saving training changes."
-                             },
-                  "states":  {
-                                 "empty":  {
-                                               "heading":  "No training items are visible right now",
-                                               "note":  "The current admin training contract did not return any training items."
-                                           },
-                                 "error":  {
-                                               "heading":  "Training visibility is not available right now",
-                                               "note":  "Could not load the current admin training snapshot.",
-                                               "retry":  "Try again"
-                                           }
-                             }
-              }
+  "meta": {
+    "patientListTitle": "Training programs | Patient",
+    "patientListDescription": "Browse published training programs, review your enrollments, and continue with the next relevant step.",
+    "catalogFallbackTitle": "Training programs | Patient",
+    "catalogFallbackDescription": "Review available training programs and timing availability.",
+    "patientDetailTitle": "Training enrollment | Patient",
+    "patientDetailDescription": "Review your training enrollment, payment state, and join access when available.",
+    "patientPayTitle": "Complete training payment | Patient",
+    "patientPayDescription": "Complete payment for your training enrollment when payment is still required.",
+    "adminTitle": "Training management | Admin",
+    "adminDescription": "Manage the training catalog, publish states, and timings within the current admin contract.",
+    "adminDetailTitle": "Training management detail | Admin",
+    "adminDetailDescription": "Review and update training details, timings, and publish/archive actions within the current admin contract."
+  },
+  "courseTypes": {
+    "LIVE": "Live training",
+    "WORKSHOP": "Workshop",
+    "COURSE": "Course",
+    "LIVE_COURSE": "Live course",
+    "LIVE_WORKSHOP": "Live workshop",
+    "LIVE_SERIES": "Live series"
+  },
+  "statuses": {
+    "enrollment": {
+      "PENDING_PAYMENT": "Pending payment",
+      "ACTIVE": "Active",
+      "COMPLETED": "Completed",
+      "NO_SHOW": "No-show",
+      "CANCELLED": "Cancelled",
+      "REFUNDED": "Refunded"
+    },
+    "attendance": {
+      "NOT_MARKED": "Not marked yet",
+      "ATTENDED": "Attended",
+      "NO_SHOW": "No-show"
+    },
+    "payment": {
+      "CREATED": "Created",
+      "PENDING": "Pending",
+      "REQUIRES_ACTION": "Requires action",
+      "AUTHORIZED": "Authorized",
+      "CAPTURED": "Captured",
+      "FAILED": "Failed",
+      "CANCELLED": "Cancelled",
+      "EXPIRED": "Expired",
+      "REFUND_PENDING": "Refund pending",
+      "PARTIALLY_REFUNDED": "Partially refunded",
+      "REFUNDED": "Refunded"
+    },
+    "paymentProvider": {
+      "STRIPE": "Stripe",
+      "PAYMOB": "Paymob"
+    },
+    "schedule": {
+      "DRAFT": "Draft",
+      "OPEN_FOR_ENROLLMENT": "Open for enrollment",
+      "FULL": "Full",
+      "STARTED": "Started",
+      "COMPLETED": "Completed",
+      "CANCELLED": "Cancelled",
+      "ARCHIVED": "Archived"
+    },
+    "course": {
+      "DRAFT": "Draft",
+      "PUBLISHED": "Published",
+      "ARCHIVED": "Archived"
+    },
+    "visibility": {
+      "PUBLIC": "Public",
+      "PRIVATE": "Private"
+    }
+  },
+  "patient": {
+    "home": {
+      "eyebrow": "Patient and family training",
+      "title": "Follow the internal training assigned to your care journey.",
+      "note": "This area shows the training linked to your account, the next step, and the enrollments that need your attention.",
+      "ctas": {
+        "support": "Get support",
+        "enrollments": "My enrollments"
+      },
+      "stats": {
+        "total": {
+          "label": "Enrollments",
+          "note": "Training items already connected to your account"
+        },
+        "active": {
+          "label": "Active now",
+          "note": "Enrollments you can continue or join"
+        },
+        "pending": {
+          "label": "Pending payment",
+          "note": "Enrollments that still need payment"
+        },
+        "next": {
+          "label": "Needs attention",
+          "note": "Items that need your attention right now"
+        }
+      },
+      "nextStep": {
+        "eyebrow": "Continue here",
+        "heading": "Your next relevant action",
+        "note": "When something needs attention, it appears here first so you can continue without guessing.",
+        "itemLabel": "Recommended step"
+      }
+    },
+    "enrollments": {
+      "heading": "My training",
+      "note": "These are the patient and family training items already connected to your account, plus the next action for each one.",
+      "count": "{value, number} items",
+      "loadingCount": "Loading",
+      "scheduleCode": "Timing {code}",
+      "actions": {
+        "continue": "Continue training",
+        "completePayment": "Complete payment",
+        "review": "Review details"
+      },
+      "nextActions": {
+        "pendingPayment": "Payment is still required for this enrollment.",
+        "active": "This enrollment is active. Open the details to review join access when it becomes ready.",
+        "default": "Open this enrollment to review its current state."
+      },
+      "states": {
+        "empty": {
+          "heading": "No training enrollments yet",
+          "note": "Your care team will add the right training here when it becomes available.",
+          "action": "Get support"
+        },
+        "error": {
+          "heading": "Could not show training enrollments right now",
+          "note": "We were not able to load your training enrollments.",
+          "retry": "Try again"
+        }
+      }
+    },
+    "detail": {
+      "back": "Back to training",
+      "support": "Open support",
+      "eyebrow": "Enrollment detail",
+      "scheduleCode": "Timing {code}",
+      "startsAt": "Starts",
+      "notScheduled": "Timing time is not available yet",
+      "attendance": "Attendance",
+      "currentStateHeading": "Current state",
+      "paymentHeading": "Payment state",
+      "paymentAmount": "Amount",
+      "paymentProvider": "Provider",
+      "completePayment": "Complete payment",
+      "joinHeading": "Join access",
+      "joinNote": "Join access appears here when your enrollment is active and the timing is ready to start.",
+      "joinReady": "Join access is available now. Open the external room when you are ready.",
+      "joinError": "Could not resolve join access right now.",
+      "joinActions": {
+        "check": "Check join access",
+        "checking": "Checking access...",
+        "open": "Open live room"
+      },
+      "stateNotes": {
+        "PENDING_PAYMENT": "Payment is still required before this enrollment becomes active.",
+        "ACTIVE": "This enrollment is active. You can review join access when the timing reaches its live window.",
+        "COMPLETED": "This enrollment is completed.",
+        "NO_SHOW": "This enrollment was marked as no-show.",
+        "CANCELLED": "This enrollment is no longer active.",
+        "REFUNDED": "This enrollment was refunded and is no longer available for runtime access."
+      },
+      "paymentNotes": {
+        "CREATED": "A payment record exists for this enrollment.",
+        "PENDING": "Payment is still pending and the enrollment stays blocked until it succeeds.",
+        "REQUIRES_ACTION": "Payment still needs action before enrollment can activate.",
+        "AUTHORIZED": "Payment is authorized and waiting for the final captured state.",
+        "CAPTURED": "Payment succeeded for this enrollment.",
+        "FAILED": "The current payment attempt failed.",
+        "CANCELLED": "The current payment attempt was cancelled.",
+        "EXPIRED": "The current payment attempt expired.",
+        "REFUND_PENDING": "A refund is still in progress for this enrollment.",
+        "PARTIALLY_REFUNDED": "Part of this payment was refunded.",
+        "REFUNDED": "This payment was refunded."
+      },
+      "joinBlocked": {
+        "ENROLLMENT_NOT_ACTIVE": "Join stays blocked until the enrollment becomes active.",
+        "SCHEDULE_NOT_JOINABLE": "This timing is not in a joinable state right now.",
+        "SCHEDULE_TIME_UNAVAILABLE": "The timing timing is not available yet.",
+        "JOIN_WINDOW_NOT_OPEN": "The join window is not open yet.",
+        "JOIN_ACCESS_NOT_CONFIGURED": "Join access has not been configured for this timing.",
+        "UNKNOWN": "Join access is not available right now."
+      },
+      "states": {
+        "error": {
+          "heading": "Training enrollment is not available right now",
+          "note": "Could not load this enrollment.",
+          "retry": "Try again"
+        }
+      }
+    },
+    "pay": {
+      "backToEnrollment": "Back to enrollment",
+      "heading": "Complete training payment",
+      "note": "This payment stays inside the training enrollment flow. Once payment succeeds, the enrollment can become active according to the backend contract.",
+      "summaryHeading": "Enrollment summary",
+      "scheduleCode": "Timing {code}",
+      "amount": "Payment due: {amount}",
+      "hostedCheckoutHeading": "Hosted checkout",
+      "hostedCheckoutNote": "Open the hosted checkout page to continue this training payment.",
+      "openCheckout": "Open checkout",
+      "states": {
+        "error": {
+          "heading": "Training payment is not available right now",
+          "note": "Could not load this enrollment payment state.",
+          "retry": "Try again"
+        },
+        "notPayable": {
+          "heading": "This enrollment does not need payment right now",
+          "note": "The current enrollment state no longer requires a payment step.",
+          "action": "Back to enrollment"
+        },
+        "noRuntime": {
+          "heading": "Payment runtime is not available right now",
+          "note": "This enrollment does not currently expose a hosted checkout link or a payment form runtime.",
+          "action": "Back to enrollment"
+        }
+      }
+    }
+  },
+  "admin": {
+    "eyebrow": "Training management",
+    "title": "Manage the training catalog and timings from one place.",
+    "note": "See what is open now, what is closed, and what has ended, then create or update items when needed.",
+    "summary": {
+      "eyebrow": "Catalog overview",
+      "title": "Track live training, closed items, and ended items at a glance.",
+      "note": "The counts below follow the current filter scope so you can scan the catalog without opening every item.",
+      "cards": {
+        "total": "Total trainings",
+        "totalNote": "All matching training items",
+        "openNow": "Open now",
+        "openNowNote": "Available for enrollment right now",
+        "closed": "Closed",
+        "closedNote": "Visible, but not open for enrollment",
+        "ended": "Ended",
+        "endedNote": "Archived or no longer active"
+      }
+    },
+    "scopeHeading": "Available now",
+    "scopeItems": {
+      "visibility": "Review the current training list with status and visibility.",
+      "scheduleRead": "Create and maintain timing windows with enrollment timing.",
+      "runtimeBoundary": "Publish or archive training items when the contract allows it."
+    },
+    "boundaryHeading": "Outside current scope",
+    "boundaryItems": {
+      "noAuthoring": "Deep curriculum authoring and lesson structures are not part of this baseline.",
+      "noAnalytics": "Training analytics and reporting are not part of this surface.",
+      "noCertificates": "Certificates, assessments, and advanced learner tooling stay outside scope."
+    },
+    "fallbackDescription": "This screen focuses on real backend training items without overbuilding the admin scope.",
+    "cards": {
+      "scheduleCount": "Cohorts",
+      "schedulesValue": "{value, number} total â€¢ {open, number} open now",
+      "lastPublished": "Published",
+      "notPublished": "Not published yet",
+      "upcomingHeading": "Visible cohorts",
+      "scheduleLine": "{code} ? {status}"
+    },
+    "list": {
+      "manage": "Manage training",
+      "actionsHeader": "Actions",
+      "scheduleSummary": "{total, number} cohorts ? {open, number} open now",
+      "scheduleSnapshotNone": "No cohorts yet",
+      "columns": {
+        "training": "Training",
+        "status": "Status",
+        "availability": "Availability",
+        "visibility": "Visibility",
+        "type": "Type",
+        "schedules": "Cohorts",
+        "published": "Published",
+        "updated": "Updated"
+      },
+      "availability": {
+        "open": "Open now",
+        "closed": "Closed",
+        "ended": "Ended",
+        "draft": "Draft"
+      }
+    },
+    "filters": {
+      "heading": "Filters",
+      "note": "Use search and status filters to narrow the catalog.",
+      "allStatuses": "All statuses",
+      "search": "Search training",
+      "searchPlaceholder": "Search by title or slug"
+    },
+    "create": {
+      "heading": "Create training item",
+      "note": "Start with the minimum details. You can refine, publish, and timing from the detail screen.",
+      "label": "Admin-only",
+      "helper": "Use a lowercase, hyphenated slug only.",
+      "open": "Create training",
+      "cancel": "Cancel",
+      "submit": "Create training",
+      "submitting": "Creating...",
+      "success": "Training item created.",
+      "validation": {
+        "required": "Title and slug are required.",
+        "slug": "Slug must be lowercase and hyphenated only."
+      },
+      "adminOnlyNote": "Training management is available to admin roles only.",
+      "fields": {
+        "locale": "Locale",
+        "courseType": "Training type",
+        "title": "Title",
+        "slug": "Slug",
+        "visibility": "Visibility",
+        "shortDescription": "Short description",
+        "fullDescription": "Full description"
+      },
+      "placeholders": {
+        "title": "Add a clear training title",
+        "slug": "example-training-title",
+        "shortDescription": "Short summary for listings",
+        "fullDescription": "Operational overview for the training detail"
+      },
+      "locales": {
+        "ar": "Arabic",
+        "en": "English"
+      }
+    },
+    "detail": {
+      "eyebrow": "Training management detail",
+      "note": "Review core details, timings, and the allowed publish/archive actions from the current contract.",
+      "back": "Back to training",
+      "sections": {
+        "details": "Training details",
+        "lifecycle": "Training story",
+        "schedules": "Training cohorts",
+        "actions": "Actions",
+        "update": "Update training",
+        "createSchedule": "Add training timing",
+        "cohorts": "Cohorts",
+        "paymentAttempts": "Payment attempts",
+        "program": "Program details"
+      },
+      "details": {
+        "note": "Review the core program record and the current operational posture of this training item.",
+        "fields": {
+          "status": "Status",
+          "visibility": "Visibility",
+          "courseType": "Training type",
+          "locale": "Locale",
+          "slug": "Slug",
+          "scheduleCount": "Timings",
+          "publishedAt": "Published",
+          "createdAt": "Created",
+          "updatedAt": "Updated"
+        }
+      },
+      "fields": {
+        "status": "Status",
+        "visibility": "Visibility",
+        "courseType": "Training type",
+        "locale": "Locale",
+        "slug": "Slug",
+        "scheduleCount": "Timings",
+        "publishedAt": "Published",
+        "createdAt": "Created",
+        "updatedAt": "Updated"
+      },
+      "lifecycle": {
+        "note": "Track the program story and the live operational load at a glance.",
+        "cards": {
+          "totalSchedules": {
+            "label": "Cohorts",
+            "value": "{value, number}",
+            "note": "All cohorts attached to this program."
+          },
+          "openSchedules": {
+            "label": "Open now",
+            "value": "{value, number}",
+            "note": "Cohorts currently open for enrollment."
+          },
+          "joinedSeats": {
+            "label": "Joined so far",
+            "value": "{value, number}",
+            "note": "The seats used across the current cohort set."
+          },
+          "endedSchedules": {
+            "label": "Ended",
+            "value": "{value, number}",
+            "note": "Cohorts that are completed, cancelled, or archived."
+          },
+          "totalLectures": {
+            "label": "Lectures",
+            "value": "{value, number}",
+            "note": "All lectures attached to the current cohorts."
+          }
+        },
+        "timeline": {
+          "createdAt": "Created",
+          "publishedAt": "Published",
+          "archivedAt": "Archived",
+          "updatedAt": "Updated"
+        }
+      },
+      "schedules": {
+        "note": "Review the training cohorts, lecture plan, and enrollment state at a glance.",
+        "edit": "Edit",
+        "viewEnrollments": "Enrollments",
+        "cancelEdit": "Cancel",
+        "save": "Save changes",
+        "saving": "Saving...",
+        "updateSuccess": "Timing updated.",
+        "occupiedSeats": "{value, number} joined",
+        "scheduleCode": "Cohort {code}",
+        "startsAt": "Starts",
+        "endsAt": "Ends",
+        "enrollmentWindow": "Enrollment {start} → {end}",
+        "capacity": "{available, number} / {total} seats",
+        "enrollmentOpen": "Enrollment open",
+        "enrollmentClosed": "Enrollment closed",
+        "fields": {
+          "status": "Cohort status",
+          "externalProvider": "External room provider",
+          "externalJoinUrl": "External join URL",
+          "externalHostUrl": "External host URL",
+          "lectures": "Lectures",
+          "lecturePlan": "Lecture plan"
+        },
+        "placeholders": {
+          "externalJoinUrl": "https://...",
+          "externalHostUrl": "https://..."
+        },
+        "providers": {
+          "none": "No external room",
+          "zoom": "Zoom"
+        },
+        "error": {
+          "heading": "Cohorts are not available",
+          "note": "Could not load cohort data for this training.",
+          "retry": "Try again"
+        },
+        "empty": {
+          "heading": "No cohorts yet",
+          "note": "Add a training cohort before publishing this training."
+        },
+        "viewLectures": "Lectures",
+        "lectureSummary": "{total, number} lectures",
+        "planComplete": "Complete",
+        "planIncomplete": "Incomplete"
+      },
+      "scheduleUpdate": {
+        "eyebrow": "Update cohort",
+        "title": "Update cohort",
+        "note": "Adjust the cohort status and external room details.",
+        "submit": "Save cohort",
+        "cancel": "Close"
+      },
+      "scheduleEnrollments": {
+        "eyebrow": "Cohort enrollments",
+        "title": "Enrollments",
+        "note": "See who has joined this cohort and review the current enrollment state.",
+        "count": "{value, number} enrollments",
+        "enrolledAt": "Joined {value}",
+        "attendance": "Attendance: {value}",
+        "paymentStatus": "Payment: {value}",
+        "patientFallback": "Unnamed patient",
+        "states": {
+          "empty": {
+            "heading": "No one has enrolled yet",
+            "note": "This timing is still waiting for its first enrollment."
+          },
+          "error": {
+            "heading": "Could not load enrollments",
+            "note": "Try again to see the current enrollment list."
+          }
+        }
+      },
+      "actions": {
+        "note": "Only supported actions are shown.",
+        "publish": "Publish training",
+        "publishing": "Publishing...",
+        "publishSuccess": "Training published.",
+        "archive": "Archive training",
+        "archiving": "Archiving...",
+        "archiveSuccess": "Training archived.",
+        "adminOnly": "Actions are available to admin roles only.",
+        "notAvailable": "No actions are available for this status yet.",
+        "states": {
+          "notAvailable": {
+            "heading": "No action is available right now",
+            "note": "The current training status does not expose publish or archive controls in this admin baseline."
+          },
+          "adminOnly": {
+            "heading": "This area is inspection only for your role",
+            "note": "You can review training details here, but publish and archive controls remain limited to admin roles."
+          }
+        },
+        "archiveConfirm": {
+          "title": "Archive this training item?",
+          "description": "Archive only when this training item should stop staying active in the current training admin baseline.",
+          "cancel": "Keep training active"
+        },
+        "addSchedule": "Add training cohort",
+        "publishBlocked": {
+          "heading": "Add a cohort before publishing",
+          "note": "This training needs at least one cohort before it can be published."
+        }
+      },
+      "update": {
+        "note": "Edit the core training details.",
+        "compactNote": "Keep this closed until you need to edit.",
+        "collapsed": "The edit form is hidden to keep the page cleaner.",
+        "expand": "Edit details",
+        "collapse": "Hide form",
+        "submit": "Save training updates",
+        "submitting": "Saving...",
+        "success": "Training updated.",
+        "validation": {
+          "required": "Title and slug are required.",
+          "slug": "Slug must be lowercase and hyphenated only."
+        },
+        "fields": {
+          "locale": "Locale",
+          "title": "Title",
+          "slug": "Slug",
+          "courseType": "Training type",
+          "visibility": "Visibility",
+          "shortDescription": "Short description",
+          "fullDescription": "Full description"
+        },
+        "placeholders": {
+          "title": "Update the training title",
+          "slug": "example-training-title",
+          "shortDescription": "Short summary for listings",
+          "fullDescription": "Operational overview for the training detail"
+        },
+        "locales": {
+          "ar": "Arabic",
+          "en": "English"
+        }
+      },
+      "createSchedule": {
+        "note": "Start with the core cohort details, then open the extra settings only if you need them.",
+        "compactNote": "Open this only when you need a new cohort.",
+        "collapsed": "New cohort form hidden.",
+        "expand": "Add cohort",
+        "collapse": "Hide form",
+        "compactHint": "Open the form only when the windows and lecture plan are ready.",
+        "submit": "Create training cohort",
+        "submitting": "Creating...",
+        "success": "Cohort created.",
+        "validation": {
+          "required": "Enrollment and session windows are required.",
+          "enrollmentWindow": "Enrollment open must be before enrollment close.",
+          "sessionWindow": "Start time must be before end time.",
+          "closeBeforeStart": "Enrollment must close before the session starts."
+        },
+        "fields": {
+          "status": "Cohort status",
+          "scheduleCode": "Cohort reference",
+          "enrollmentOpenAt": "Enrollment opens",
+          "enrollmentCloseAt": "Enrollment closes",
+          "startsAt": "Session starts",
+          "endsAt": "Session ends",
+          "timezone": "Timezone",
+          "externalProvider": "External room provider",
+          "externalJoinUrl": "External join URL",
+          "externalHostUrl": "External host URL",
+          "durationMinutes": "Duration"
+        },
+        "placeholders": {
+          "scheduleCode": "Optional reference code",
+          "timezone": "Africa/Cairo",
+          "externalJoinUrl": "https://...",
+          "externalHostUrl": "https://..."
+        },
+        "providers": {
+          "none": "No external room",
+          "zoom": "Zoom"
+        },
+        "eyebrow": "Training timing",
+        "title": "Create training cohort",
+        "sections": {
+          "core": "Core details",
+          "coreNote": "Set the core details and timezone that will be used for this cohort.",
+          "timeline": "Registration and session timing",
+          "timelineNote": "Keep enrollment open before the session starts.",
+          "advanced": "Advanced settings",
+          "advancedNote": "Optional fields for internal scheduling details and external meeting rooms."
+        },
+        "durationOptions": {
+          "30": "30 minutes",
+          "60": "60 minutes",
+          "90": "90 minutes",
+          "120": "120 minutes"
+        },
+        "durationNote": "The session end is calculated automatically from the selected start time and duration."
+      },
+      "boundaryItems": {
+        "noAnalytics": "Analytics and reporting are not included in this baseline.",
+        "noCertificates": "Certificates and learner outcomes are outside scope.",
+        "noAdvancedLms": "Advanced LMS authoring is not part of this baseline."
+      },
+      "states": {
+        "error": {
+          "heading": "Training detail is not available",
+          "note": "Could not load the training detail right now.",
+          "retry": "Try again",
+          "back": "Back to training"
+        },
+        "notFound": {
+          "heading": "Training item not found",
+          "note": "The requested training item could not be found."
+        }
+      },
+      "paymentAttempts": {
+        "eyebrow": "Payment attempts",
+        "title": "Failed payment attempts",
+        "note": "Review failed and incomplete training payment attempts so the team can follow up quickly.",
+        "summary": {
+          "label": "Attempts needing follow-up",
+          "value": "{value, number}",
+          "note": "Includes failed, expired, cancelled, and action-required attempts."
+        },
+        "open": "Open attempts",
+        "schedule": "Cohort {code}",
+        "amount": "Amount",
+        "createdAt": "Created",
+        "failureReason": "Failure reason",
+        "patientFallback": "Unnamed patient",
+        "states": {
+          "empty": {
+            "heading": "No failed attempts yet",
+            "note": "There are no failed or incomplete payment attempts for this training."
+          },
+          "error": {
+            "heading": "Could not load payment attempts",
+            "note": "Try again to see the current payment attempt list."
+          }
+        }
+      },
+      "scheduleLectures": {
+        "eyebrow": "Cohort lectures",
+        "title": "Lectures",
+        "note": "Review the lectures attached to this cohort and keep the delivery plan complete before publishing.",
+        "count": "{value, number} lectures",
+        "lectureLabel": "Lecture {value, number}",
+        "noTitle": "Untitled lecture",
+        "mandatory": "Mandatory",
+        "optional": "Optional",
+        "startsAt": "Starts",
+        "endsAt": "Ends",
+        "noRoom": "No external room",
+        "attendanceOn": "Attendance tracking on",
+        "attendanceOff": "Attendance tracking off",
+        "states": {
+          "empty": {
+            "heading": "No lectures yet",
+            "note": "Add the full lecture plan for this cohort before publishing."
+          },
+          "error": {
+            "heading": "Could not load lectures",
+            "note": "Try again to see the current lecture list."
+          }
+        },
+        "create": {
+          "open": "Add lecture",
+          "eyebrow": "Add lecture",
+          "title": "Create lecture",
+          "note": "Add a new lecture to this cohort with order, timing, and meeting-room details.",
+          "submit": "Create lecture",
+          "submitting": "Creating...",
+          "success": "Lecture created.",
+          "cancel": "Close",
+          "validation": {
+            "required": "Start and end times are required.",
+            "window": "Start time must be before end time."
+          },
+          "fields": {
+            "sessionOrder": "Lecture order",
+            "sessionTitle": "Lecture title",
+            "startsAt": "Lecture starts",
+            "endsAt": "Lecture ends",
+            "timezone": "Timezone",
+            "externalProvider": "External room provider",
+            "externalJoinUrl": "External join URL",
+            "externalHostUrl": "External host URL",
+            "attendanceTrackingEnabled": "Attendance tracking on",
+            "isMandatory": "Lecture is mandatory"
+          },
+          "placeholders": {
+            "sessionTitle": "Optional lecture title"
+          }
+        }
+      }
+    },
+    "errors": {
+      "notFound": "Training item not found.",
+      "slugAlreadyExists": "A training with a similar title already exists. Choose a different title.",
+      "archivedReadOnly": "This training is archived and read-only.",
+      "localeRequired": "Locale is required to update translations.",
+      "invalidPublishTransition": "This training cannot be published from its current status.",
+      "invalidArchiveTransition": "This training cannot be archived from its current status.",
+      "scheduleNotFound": "Timing not found.",
+      "scheduleCodeAlreadyExists": "Timing code already exists.",
+      "invalidScheduleTransition": "Timing status transition is not allowed.",
+      "enrollmentWindowRequired": "Enrollment window is required.",
+      "sessionWindowRequired": "Session window is required.",
+      "invalidEnrollmentWindow": "Enrollment window is invalid.",
+      "invalidSessionWindow": "Session window is invalid.",
+      "enrollmentMustCloseBeforeStart": "Enrollment must close before the session starts.",
+      "invalidCapacity": "Enrollment capacity is invalid.",
+      "cannotOpenPastSchedule": "Enrollment cannot open for a past timing.",
+      "invalidExternalRoomProvider": "External room provider is invalid.",
+      "externalJoinUrlRequired": "External join URL is required when a provider is set.",
+      "externalRoomProviderRequired": "External room provider is required when a join URL is provided.",
+      "capacityBelowCurrentEnrollments": "Capacity cannot be below current enrollments.",
+      "generic": "Something went wrong while saving training changes."
+    },
+    "states": {
+      "empty": {
+        "heading": "No training items are visible right now",
+        "note": "The current admin training contract did not return any training items."
+      },
+      "error": {
+        "heading": "Training visibility is not available right now",
+        "note": "Could not load the current admin training snapshot.",
+        "retry": "Try again"
+      }
+    }
+  },
+  "errors": {
+    "scheduleRequiredForPublish": "A training timing is required before publishing this training.",
+    "invalidPlannedDurationDays": "Planned duration must be at least 1 day.",
+    "invalidPlannedLectureCount": "Planned lecture count must be at least 1.",
+    "trainingPlanRequired": "A training plan is required before this timing can be opened.",
+    "trainingPlanRequiredForPublish": "A training plan is required before publishing this training.",
+    "trainingPlanIncompleteForPublish": "All planned lectures must be added before publishing this training."
+  },
+  "adminDescription": "Manage the training catalog, publish states, and training times within the current contract.",
+  "adminDetailDescription": "Review and update training details, training times, and publish/archive actions within the current contract.",
+  "training": {
+    "admin": {
+      "detail": {
+        "note": "Review the program record and the current operational posture from one place.",
+        "sections": {
+          "program": "Program",
+          "curriculum": "Curriculum",
+          "analytics": "Analytics"
+        },
+        "curriculum": {
+          "note": "Track planned lectures against the lectures already created for each cohort.",
+          "cards": {
+            "plannedLectures": {
+              "label": "Planned lectures",
+              "value": "{value, number} lectures",
+              "note": "Required before publishing the training."
+            },
+            "actualLectures": {
+              "label": "Actual lectures",
+              "value": "{value, number} lectures",
+              "note": "Lectures already created for the current cohorts."
+            },
+            "plannedDays": {
+              "label": "Planned days",
+              "value": "{value, number} days",
+              "note": "Planned operating span for the cohort."
+            },
+            "completeSchedules": {
+              "label": "Complete cohorts",
+              "value": "{value, number}",
+              "note": "{value, number} total cohorts"
+            }
+          }
+        },
+        "analytics": {
+          "note": "Track conversion, attendance, and payment follow-up from one place.",
+          "error": {
+            "heading": "Analytics are not available",
+            "note": "Could not load the training analytics right now."
+          },
+          "cards": {
+            "paymentConversion": {
+              "label": "Payment conversion",
+              "note": "Enrollments that reached a paid state."
+            },
+            "attendanceCompletion": {
+              "label": "Attendance completion",
+              "note": "Enrollments that reached an attendance outcome."
+            },
+            "failedPayments": {
+              "label": "Failed payment attempts",
+              "note": "Attempts that ended with a failure."
+            },
+            "abandonedPayments": {
+              "label": "Unfinished payment attempts",
+              "note": "Attempts that never reached capture."
+            }
+          },
+          "overallEnrollments": "Total enrollments",
+          "overallPaid": "Paid enrollments",
+          "overallPending": "Pending payment",
+          "overallAttendance": "Attendance-completed enrollments",
+          "count": "{value, number}",
+          "percentage": "{value, number}%",
+          "cohortEnrollments": "Cohort enrollments",
+          "cohortEnrollmentsValue": "{value, number} enrollments",
+          "cohortConversion": "Cohort conversion",
+          "cohortAttendance": "Attendance completion",
+          "cohortFailures": "Failed payment attempts",
+          "cohortFailuresValue": "{value, number} attempts"
+        }
+      }
+    }
+  }
 }

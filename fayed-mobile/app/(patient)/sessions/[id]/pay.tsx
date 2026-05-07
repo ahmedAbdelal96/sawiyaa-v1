@@ -1,12 +1,13 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
-  Linking,
   ScrollView,
   StyleSheet,
   Switch,
   TouchableOpacity,
   View,
 } from "react-native";
+import * as Linking from "expo-linking";
+import * as WebBrowser from "expo-web-browser";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
@@ -23,16 +24,24 @@ import { useTheme } from "../../../../src/providers/ThemeProvider";
 import { usePatientSession } from "../../../../src/features/patient/sessions/hooks";
 import {
   useInitiateSessionPayment,
+  usePatientSessionPaymentCapabilities,
   usePatientWalletSummary,
   useSessionFinancialBreakdown,
 } from "../../../../src/features/patient/payments/hooks";
+import { extractHostedCheckoutReturnParams } from "../../../../src/features/patient/payments/return-utils";
 import { extractApiErrorMessage } from "../../../../src/lib/api";
+import type { PaymobCheckoutMethod } from "../../../../src/features/patient/payments/types";
 
-/**
- * Product-grade money formatter — avoids Intl.NumberFormat currency style
- * which is unreliable in React Native Hermes.
- * Output: "350.50 SAR" — matches approved Arabic design.
- */
+WebBrowser.maybeCompleteAuthSession();
+
+const CONFIRMED_SESSION_STATUSES = new Set([
+  "CONFIRMED",
+  "UPCOMING",
+  "READY_TO_JOIN",
+  "IN_PROGRESS",
+  "COMPLETED",
+]);
+
 function formatMoney(amount: string, currencyCode: string): string {
   const num = Number(amount);
   if (!Number.isFinite(num)) return `${amount} ${currencyCode.toUpperCase()}`;
@@ -64,6 +73,53 @@ function toNumber(value: string | null | undefined): number {
   return Number.isFinite(n) ? n : 0;
 }
 
+function isConfirmedSessionStatus(status: string | null | undefined): boolean {
+  return Boolean(status && CONFIRMED_SESSION_STATUSES.has(status));
+}
+
+function resolveBlockedMessageKey(status: string, expiresAt: string | null) {
+  if (status === "EXPIRED" || isSessionExpired(expiresAt)) {
+    return "patientPaymentsFlow.checkout.sessionExpired";
+  }
+
+  if (isConfirmedSessionStatus(status)) {
+    return "patientPaymentsFlow.checkout.sessionAlreadyPaid";
+  }
+
+  if (status === "REFUND_PENDING") {
+    return "patientPaymentsFlow.checkout.sessionRefundPending";
+  }
+
+  if (status === "REFUNDED") {
+    return "patientPaymentsFlow.checkout.sessionRefunded";
+  }
+
+  return "patientPaymentsFlow.checkout.sessionNotPayable";
+}
+
+function mapBrowserResultToRedirectStatus(
+  resultType: string,
+): "canceled" | undefined {
+  if (resultType === "cancel") {
+    return "canceled";
+  }
+
+  return undefined;
+}
+
+function toPatientSafePaymentError(input: string, fallback: string): string {
+  const normalized = input.trim();
+  if (!normalized) {
+    return fallback;
+  }
+
+  if (/^[A-Z0-9_]+$/.test(normalized) || normalized.includes("PAYMENT_")) {
+    return fallback;
+  }
+
+  return normalized;
+}
+
 export default function SessionPaymentCheckoutScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -75,11 +131,16 @@ export default function SessionPaymentCheckoutScreen() {
   const [couponDraft, setCouponDraft] = useState("");
   const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null);
   const [useWalletBalance, setUseWalletBalance] = useState(true);
+  const [selectedPaymobMethod, setSelectedPaymobMethod] = useState<
+    string | null
+  >(null);
   const [flowMessage, setFlowMessage] = useState<string | null>(null);
   const [flowError, setFlowError] = useState<string | null>(null);
+  const [isLaunchingCheckout, setIsLaunchingCheckout] = useState(false);
 
   const sessionQuery = usePatientSession(id ?? null);
   const walletQuery = usePatientWalletSummary();
+  const capabilitiesQuery = usePatientSessionPaymentCapabilities(id ?? null);
   const breakdownQuery = useSessionFinancialBreakdown(
     id ?? null,
     appliedCoupon,
@@ -88,33 +149,104 @@ export default function SessionPaymentCheckoutScreen() {
 
   const wallet = walletQuery.data?.item ?? null;
   const session = sessionQuery.data;
+  const capabilities = capabilitiesQuery.data?.item ?? null;
   const breakdown = breakdownQuery.data?.item;
 
   const walletBalance = wallet?.availableBalance ?? "0";
   const currency = wallet?.currencyCode ?? breakdown?.currency ?? "SAR";
+  const nativeReturnUrl = useMemo(
+    () =>
+      id
+        ? Linking.createURL(`/sessions/${id}/payment-return`, {
+            scheme: "fayed",
+          })
+        : null,
+    [id],
+  );
 
   const split = useMemo(() => {
     if (!breakdown) {
       return { walletUsed: 0, gatewayRemaining: 0 };
     }
+
     const total = toNumber(breakdown.netPaidAmount);
     const walletPart = useWalletBalance
       ? Math.min(toNumber(walletBalance), total)
       : 0;
     const gatewayPart = Math.max(total - walletPart, 0);
     return { walletUsed: walletPart, gatewayRemaining: gatewayPart };
-  }, [breakdown, walletBalance, useWalletBalance]);
+  }, [breakdown, useWalletBalance, walletBalance]);
 
   const payableSession =
     session?.status === "PENDING_PAYMENT" &&
     !isSessionExpired(session.expiresAt ?? null);
+  const gatewayPaymentRequired = split.gatewayRemaining > 0;
 
-  // Separate session-level error from pricing/breakdown error
+  const supportedGatewayMethods = useMemo(() => {
+    if (!capabilities) return [];
+
+    const supportedKeys = new Set(capabilities.supportedMethods);
+    const enabledMethods = capabilities.methods.filter(
+      (method) => method.enabled && supportedKeys.has(method.key),
+    );
+
+    if (enabledMethods.length > 0) {
+      return enabledMethods;
+    }
+
+    return capabilities.supportedMethods.map((method) => ({
+      key: method,
+      label: method,
+      type: method,
+      enabled: true,
+    }));
+  }, [capabilities]);
+
+  const defaultGatewayMethod = useMemo(() => {
+    if (!capabilities) return null;
+
+    if (
+      capabilities.defaultMethod &&
+      capabilities.supportedMethods.includes(capabilities.defaultMethod)
+    ) {
+      return capabilities.defaultMethod;
+    }
+
+    return capabilities.supportedMethods[0] ?? null;
+  }, [capabilities]);
+
+  const paymobMethodRequired =
+    gatewayPaymentRequired &&
+    capabilities?.provider === "PAYMOB" &&
+    capabilities.checkoutFlow === "legacy" &&
+    capabilities.supportedMethods.length > 1;
+
+  useEffect(() => {
+    if (!gatewayPaymentRequired) {
+      setSelectedPaymobMethod(null);
+      return;
+    }
+
+    if (!defaultGatewayMethod) return;
+
+    setSelectedPaymobMethod((current) => {
+      if (current && capabilities?.supportedMethods.includes(current)) {
+        return current;
+      }
+
+      return defaultGatewayMethod;
+    });
+  }, [capabilities, defaultGatewayMethod, gatewayPaymentRequired]);
+
   const sessionLoading = sessionQuery.isLoading;
   const sessionError = sessionQuery.isError;
+  const capabilitiesLoading =
+    gatewayPaymentRequired && capabilitiesQuery.isLoading;
+  const capabilitiesErrorMsg =
+    gatewayPaymentRequired && capabilitiesQuery.isError
+      ? extractApiErrorMessage(capabilitiesQuery.error)
+      : null;
 
-  // Breakdown can fail with FINANCIAL_RULE_PRICING_UNAVAILABLE — that is a
-  // data/setup issue on the backend, NOT a frontend bug. Surface it inline.
   const breakdownLoading = breakdownQuery.isLoading && Boolean(id);
   const breakdownErrorMsg = breakdownQuery.isError
     ? extractApiErrorMessage(breakdownQuery.error)
@@ -140,8 +272,74 @@ export default function SessionPaymentCheckoutScreen() {
     setAppliedCoupon(null);
   };
 
-  const handleInitiatePayment = async () => {
+  const navigateToPaymentReturn = (
+    params: Record<string, string | undefined>,
+  ) => {
     if (!id) return;
+
+    router.replace({
+      pathname: "/(patient)/sessions/[id]/payment-return",
+      params: {
+        id,
+        ...Object.fromEntries(
+          Object.entries(params).filter((entry) => Boolean(entry[1])),
+        ),
+      },
+    });
+  };
+
+  const openHostedCheckoutRecovery = async (
+    checkoutUrl: string,
+    providerReference: string | null,
+  ) => {
+    setIsLaunchingCheckout(true);
+
+    if (nativeReturnUrl) {
+      try {
+        const result = await WebBrowser.openAuthSessionAsync(
+          checkoutUrl,
+          nativeReturnUrl,
+        );
+
+        if (result.type === "success") {
+          const returnParams = extractHostedCheckoutReturnParams(result.url);
+
+          navigateToPaymentReturn({
+            ...returnParams,
+            recovery: "deeplink",
+            browserResult: result.type,
+            providerReference:
+              returnParams.providerReference ?? providerReference ?? undefined,
+          });
+          return;
+        }
+
+        navigateToPaymentReturn({
+          recovery: "browser",
+          browserResult: result.type,
+          redirect_status: mapBrowserResultToRedirectStatus(result.type),
+          providerReference: providerReference ?? undefined,
+        });
+        return;
+      } finally {
+        setIsLaunchingCheckout(false);
+      }
+    }
+
+    try {
+      await WebBrowser.openBrowserAsync(checkoutUrl);
+
+      navigateToPaymentReturn({
+        recovery: "browser",
+        providerReference: providerReference ?? undefined,
+      });
+    } finally {
+      setIsLaunchingCheckout(false);
+    }
+  };
+
+  const handleInitiatePayment = async () => {
+    if (!id || isLaunchingCheckout) return;
     setFlowMessage(null);
     setFlowError(null);
 
@@ -151,6 +349,16 @@ export default function SessionPaymentCheckoutScreen() {
         input: {
           couponCode: appliedCoupon ?? undefined,
           useWalletBalance,
+          paymobMethod:
+            gatewayPaymentRequired && capabilities?.provider === "PAYMOB"
+              ? ((selectedPaymobMethod ?? defaultGatewayMethod ?? undefined) as
+                  | PaymobCheckoutMethod
+                  | undefined)
+              : undefined,
+          returnUrl:
+            gatewayPaymentRequired && capabilities?.provider === "PAYMOB"
+              ? (nativeReturnUrl ?? undefined)
+              : undefined,
         },
       });
 
@@ -158,37 +366,54 @@ export default function SessionPaymentCheckoutScreen() {
       const paidByWallet = toNumber(payment.amountFromWallet) > 0;
       const paidByGateway = toNumber(payment.amountFromGateway) > 0;
 
-      if (payment.status === "CAPTURED") {
+      if (payment.status === "CAPTURED" || payment.status === "AUTHORIZED") {
         setFlowMessage(t("patientPaymentsFlow.checkout.paymentSuccess"));
-        router.replace(`/sessions/${id}`);
+        navigateToPaymentReturn({
+          redirect_status: "succeeded",
+          success: "true",
+          pending: "false",
+          recovery: "wallet",
+          providerReference: payment.providerReference ?? undefined,
+        });
         return;
       }
 
       if (payment.checkoutUrl) {
         setFlowMessage(t("patientPaymentsFlow.checkout.redirecting"));
-        await Linking.openURL(payment.checkoutUrl);
+        await openHostedCheckoutRecovery(
+          payment.checkoutUrl,
+          payment.providerReference,
+        );
         return;
       }
 
       if (payment.clientSecret) {
-        // Honest limitation: Stripe mobile SDK is not integrated in this app yet.
-        setFlowMessage(t("patientPaymentsFlow.checkout.stripeNotice"));
+        setFlowError(
+          t("patientPaymentsFlow.checkout.unsupportedProviderPayload"),
+        );
         return;
       }
 
       if (paidByWallet && !paidByGateway) {
         setFlowMessage(t("patientPaymentsFlow.checkout.paymentSuccess"));
-        router.replace(`/sessions/${id}`);
+        navigateToPaymentReturn({
+          redirect_status: "succeeded",
+          success: "true",
+          pending: "false",
+          recovery: "wallet",
+          providerReference: payment.providerReference ?? undefined,
+        });
         return;
       }
 
-      setFlowMessage(
-        `${t("patientPaymentsFlow.checkout.paymentState")}: ${t(
-          `patientPaymentsFlow.paymentCard.status.${payment.status}` as const,
-        )}`,
-      );
+      setFlowError(t("patientPaymentsFlow.checkout.unresolvedPaymentState"));
     } catch (error) {
-      setFlowError(extractApiErrorMessage(error));
+      setFlowError(
+        toPatientSafePaymentError(
+          extractApiErrorMessage(error),
+          t("patientPaymentsFlow.checkout.requestFailed"),
+        ),
+      );
     }
   };
 
@@ -205,10 +430,6 @@ export default function SessionPaymentCheckoutScreen() {
     );
   }
 
-  // Only show full-page error if the session itself failed to load.
-  // If only the breakdown fails (e.g. FINANCIAL_RULE_PRICING_UNAVAILABLE)
-  // we continue to the checkout screen and show the error inline inside
-  // the breakdown card — the confirm button is already disabled.
   if (hasError || !session) {
     return (
       <Screen bg="background">
@@ -224,8 +445,9 @@ export default function SessionPaymentCheckoutScreen() {
           <Button
             title={t("patientPaymentsFlow.checkout.retry")}
             onPress={() => {
-              sessionQuery.refetch();
-              breakdownQuery.refetch();
+              void sessionQuery.refetch();
+              void breakdownQuery.refetch();
+              void capabilitiesQuery.refetch();
             }}
             variant="secondary"
             style={styles.centerButton}
@@ -245,13 +467,11 @@ export default function SessionPaymentCheckoutScreen() {
         />
         <View style={styles.centerState}>
           <Text weight="600" style={styles.centerTitle}>
-            {isSessionExpired(session.expiresAt)
-              ? t("patientPaymentsFlow.checkout.sessionExpired")
-              : t("patientPaymentsFlow.checkout.sessionNotPayable")}
+            {t(resolveBlockedMessageKey(session.status, session.expiresAt))}
           </Text>
           <Button
             title={t("patientPaymentsFlow.checkout.backToSession")}
-            onPress={() => router.replace(`/sessions/${session.id}`)}
+            onPress={() => router.replace(`/(patient)/sessions/${session.id}`)}
             style={styles.centerButton}
           />
         </View>
@@ -268,7 +488,6 @@ export default function SessionPaymentCheckoutScreen() {
       />
 
       <ScrollView contentContainerStyle={styles.content}>
-        {/* Session card */}
         <Card
           variant="elevated"
           padding="md"
@@ -308,7 +527,6 @@ export default function SessionPaymentCheckoutScreen() {
           </View>
         </Card>
 
-        {/* Coupon */}
         <Card variant="flat" padding="md" style={styles.sectionCard}>
           <Text weight="600" style={styles.sectionTitle}>
             {t("patientPaymentsFlow.checkout.coupon.label")}
@@ -359,7 +577,6 @@ export default function SessionPaymentCheckoutScreen() {
           ) : null}
         </Card>
 
-        {/* Wallet toggle */}
         <Card variant="flat" padding="md" style={styles.sectionCard}>
           <View style={styles.toggleRow}>
             <View style={styles.toggleTextWrap}>
@@ -387,13 +604,11 @@ export default function SessionPaymentCheckoutScreen() {
           </View>
         </Card>
 
-        {/* Financial breakdown + payment state clarity */}
         <Card variant="elevated" padding="md" style={styles.sectionCard}>
           <Text weight="bold" style={styles.sectionTitle}>
             {t("patientPaymentsFlow.checkout.breakdown.title")}
           </Text>
 
-          {/* Inline error when pricing is unavailable (backend data issue) */}
           {breakdownLoading ? (
             <LoadingState />
           ) : breakdownErrorMsg ? (
@@ -463,7 +678,6 @@ export default function SessionPaymentCheckoutScreen() {
                 </Text>
               </View>
 
-              {/* Payment state clarity */}
               <View
                 style={[
                   styles.clarityBox,
@@ -496,7 +710,7 @@ export default function SessionPaymentCheckoutScreen() {
                   style={styles.gatewayNotice}
                 >
                   {split.gatewayRemaining > 0
-                    ? t("patientPaymentsFlow.checkout.gatewayNotice")
+                    ? t("patientPaymentsFlow.checkout.browserReturnNotice")
                     : t("patientPaymentsFlow.checkout.state.walletOnly")}
                 </Text>
               </View>
@@ -504,26 +718,121 @@ export default function SessionPaymentCheckoutScreen() {
           ) : null}
         </Card>
 
-        {/* Payment method */}
         <Card variant="flat" padding="md" style={styles.sectionCard}>
           <Text weight="bold" style={styles.sectionTitle}>
             {t("patientPaymentsFlow.checkout.paymentMethod.title")}
           </Text>
-          <View style={styles.methodRow}>
-            <Ionicons
-              name="card-outline"
-              size={18}
-              color={theme.colors.primary}
-            />
-            <View style={styles.methodTextWrap}>
-              <Text weight="600">
-                {t("patientPaymentsFlow.checkout.paymentMethod.gateway")}
-              </Text>
-              <Text color={theme.colors.textMuted} style={styles.methodHint}>
-                {t("patientPaymentsFlow.checkout.paymentMethod.gatewayHint")}
-              </Text>
+
+          {!gatewayPaymentRequired ? (
+            <View style={styles.methodRow}>
+              <Ionicons
+                name="wallet-outline"
+                size={18}
+                color={theme.colors.primary}
+              />
+              <View style={styles.methodTextWrap}>
+                <Text weight="600">
+                  {t("patientPaymentsFlow.checkout.paymentMethod.wallet")}
+                </Text>
+                <Text color={theme.colors.textMuted} style={styles.methodHint}>
+                  {t("patientPaymentsFlow.checkout.state.walletOnly")}
+                </Text>
+              </View>
             </View>
-          </View>
+          ) : capabilitiesLoading ? (
+            <Text color={theme.colors.textMuted} style={styles.methodHint}>
+              {t("patientPaymentsFlow.checkout.paymentMethod.loadingMethods")}
+            </Text>
+          ) : capabilitiesErrorMsg ? (
+            <Text color="#ba1a1a" style={styles.methodHint}>
+              {capabilitiesErrorMsg}
+            </Text>
+          ) : (
+            <>
+              <View style={styles.methodRow}>
+                <Ionicons
+                  name="card-outline"
+                  size={18}
+                  color={theme.colors.primary}
+                />
+                <View style={styles.methodTextWrap}>
+                  <Text weight="600">
+                    {t(
+                      `patientPaymentsFlow.paymentCard.provider.${capabilities?.provider ?? "PAYMOB"}` as const,
+                    )}
+                  </Text>
+                  <Text
+                    color={theme.colors.textMuted}
+                    style={styles.methodHint}
+                  >
+                    {paymobMethodRequired
+                      ? t(
+                          "patientPaymentsFlow.checkout.paymentMethod.methodRequired",
+                        )
+                      : t(
+                          "patientPaymentsFlow.checkout.paymentMethod.gatewayHint",
+                        )}
+                  </Text>
+                </View>
+              </View>
+
+              {paymobMethodRequired ? (
+                <View style={styles.methodOptionsWrap}>
+                  {supportedGatewayMethods.map((method) => {
+                    const isSelected = selectedPaymobMethod === method.key;
+
+                    return (
+                      <TouchableOpacity
+                        key={method.key}
+                        activeOpacity={0.85}
+                        onPress={() => setSelectedPaymobMethod(method.key)}
+                        style={[
+                          styles.methodOption,
+                          {
+                            backgroundColor: isSelected
+                              ? theme.colors.primaryLight
+                              : theme.colors.surfaceSecondary,
+                            borderColor: isSelected
+                              ? theme.colors.primary
+                              : theme.colors.borderLight,
+                          },
+                        ]}
+                      >
+                        <Text
+                          weight="600"
+                          color={
+                            isSelected
+                              ? theme.colors.primary
+                              : theme.colors.textPrimary
+                          }
+                        >
+                          {method.label}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              ) : defaultGatewayMethod ? (
+                <Text
+                  color={theme.colors.textMuted}
+                  style={styles.methodSelected}
+                >
+                  {t("patientPaymentsFlow.checkout.paymentMethod.selected", {
+                    method:
+                      supportedGatewayMethods.find(
+                        (method) => method.key === defaultGatewayMethod,
+                      )?.label ?? defaultGatewayMethod,
+                  })}
+                </Text>
+              ) : (
+                <Text color="#ba1a1a" style={styles.methodHint}>
+                  {t(
+                    "patientPaymentsFlow.checkout.paymentMethod.methodUnavailable",
+                  )}
+                </Text>
+              )}
+            </>
+          )}
 
           <View style={styles.trustRow}>
             <View style={styles.trustItem}>
@@ -583,18 +892,24 @@ export default function SessionPaymentCheckoutScreen() {
               ? formatMoney(breakdown.netPaidAmount, breakdown.currency)
               : breakdownErrorMsg
                 ? t("patientPaymentsFlow.checkout.pricingUnavailableShort")
-                : "—"}
+                : "-"}
           </Text>
         </View>
         <Button
           title={
-            initiateMutation.isPending
+            initiateMutation.isPending || isLaunchingCheckout
               ? t("patientPaymentsFlow.checkout.processing")
               : t("patientPaymentsFlow.checkout.confirmButton")
           }
           onPress={handleInitiatePayment}
           disabled={
-            initiateMutation.isPending || !breakdown || breakdownLoading
+            initiateMutation.isPending ||
+            isLaunchingCheckout ||
+            !breakdown ||
+            breakdownLoading ||
+            capabilitiesLoading ||
+            Boolean(capabilitiesErrorMsg) ||
+            (paymobMethodRequired && !selectedPaymobMethod)
           }
           style={styles.confirmButton}
         />
@@ -688,6 +1003,22 @@ const styles = StyleSheet.create({
   },
   methodTextWrap: { flex: 1 },
   methodHint: { fontSize: 12, marginTop: 2 },
+  methodOptionsWrap: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginTop: 12,
+  },
+  methodOption: {
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  methodSelected: {
+    fontSize: 12,
+    marginTop: 12,
+  },
   trustRow: {
     flexDirection: "row",
     alignItems: "center",

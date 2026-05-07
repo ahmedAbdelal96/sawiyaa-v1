@@ -4,6 +4,7 @@ import {
   createScheduledSession,
   getPatientSession,
   getPatientSessions,
+  getPatientSessionSummary,
   previewPatientSessionCancellation,
   preparePatientSessionRuntime,
   resolvePatientSessionJoinContract,
@@ -15,6 +16,7 @@ import {
   resolvePractitionerSessionJoinContract,
 } from "../api/sessions.api";
 import type { ListSessionsParams } from "../types/sessions.types";
+import type { SessionSummary } from "../types/sessions.types";
 
 function sanitizeListSessionsParams(params?: ListSessionsParams): ListSessionsParams | undefined {
   if (!params) return undefined;
@@ -62,6 +64,18 @@ export function usePatientSessions(params?: ListSessionsParams) {
   return useQuery({
     queryKey: patientSessionQueryKeys.list(safeParams),
     queryFn: () => getPatientSessions(safeParams),
+    staleTime: 30_000,
+  });
+}
+
+export const patientSessionSummaryQueryKeys = {
+  all: ["patient-session-summary"] as const,
+};
+
+export function usePatientSessionSummary() {
+  return useQuery<SessionSummary>({
+    queryKey: patientSessionSummaryQueryKeys.all,
+    queryFn: getPatientSessionSummary,
     staleTime: 30_000,
   });
 }

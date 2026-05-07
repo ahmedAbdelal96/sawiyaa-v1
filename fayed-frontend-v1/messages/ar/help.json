@@ -1,0 +1,61 @@
+{
+  "meta": {
+    "listTitle": "مركز المساعدة",
+    "listDescription": "تصفح الأسئلة الشائعة وابحث عن الإجابات بسرعة.",
+    "categoryTitle": "مركز المساعدة",
+    "categoryDescription": "تصفح الأسئلة الشائعة الخاصة بالقسم المحدد."
+  },
+  "public": {
+    "eyebrow": "مركز المساعدة",
+    "title": "مركز المساعدة",
+    "description": "اعثر على إجابات واضحة لأكثر الأسئلة شيوعًا.",
+    "categoriesHeading": "الأقسام",
+    "categoriesNote": "اختر قسمًا أو استخدم البحث للوصول السريع إلى الإجابة.",
+    "questionCount": "{count, plural, one {سؤال واحد} other {{count} أسئلة}}",
+    "updatedAt": "آخر تحديث: {date}"
+  },
+  "faq": {
+    "heading": "الأسئلة الشائعة",
+    "note": "اضغط على السؤال لعرض الإجابة الكاملة.",
+    "showAnswer": "عرض الإجابة",
+    "hideAnswer": "إخفاء الإجابة",
+    "questionNumber": "سؤال {index}",
+    "empty": "لا توجد أسئلة مطابقة لهذا البحث."
+  },
+  "navigation": {
+    "categories": "الأقسام"
+  },
+  "questions": {
+    "uncategorized": "بدون تصنيف"
+  },
+  "search": {
+    "placeholder": "ابحث في الأسئلة",
+    "loading": "جارٍ تحديث نتائج البحث..."
+  },
+  "states": {
+    "error": {
+      "heading": "تعذر تحميل مركز المساعدة",
+      "note": "حاول مرة أخرى بعد قليل.",
+      "retry": "إعادة المحاولة"
+    },
+    "notFound": {
+      "heading": "القسم غير موجود",
+      "note": "قد يكون الرابط غير صحيح أو تم تغيير اسم القسم."
+    },
+    "empty": {
+      "heading": "لا توجد أسئلة متاحة الآن",
+      "note": "سنضيف المزيد من الإجابات قريبًا."
+    },
+    "noResults": {
+      "note": "جرّب كلمة مختلفة أو اختر قسمًا آخر."
+    }
+  },
+  "actions": {
+    "backToOverview": "العودة إلى مركز المساعدة",
+    "clearSearch": "مسح البحث"
+  },
+  "badges": {
+    "active": "مفعلة",
+    "inactive": "غير مفعلة"
+  }
+}

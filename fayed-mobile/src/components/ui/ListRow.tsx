@@ -38,7 +38,16 @@ export const ListRow = ({
   const containerProps = onPress ? { activeOpacity: 0.7, onPress } : {};
 
   return (
-    <Container style={[styles.row, { borderBottomColor: theme.colors.borderLight }]} {...containerProps}>
+    <Container
+      style={[
+        styles.row,
+        {
+          borderBottomColor: theme.colors.borderLight,
+          flexDirection: isRTL ? "row-reverse" : "row",
+        },
+      ]}
+      {...containerProps}
+    >
       {leftElement && <View style={styles.leftContainer}>{leftElement}</View>}
       
       <View style={styles.contentContainer}>
@@ -64,13 +73,13 @@ export const ListRow = ({
 
 const styles = StyleSheet.create({
   row: {
-    flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 16,
+    minHeight: 64,
+    paddingVertical: 22,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
   leftContainer: {
-    marginRight: 16,
+    marginEnd: 16,
   },
   contentContainer: {
     flex: 1,
@@ -79,7 +88,7 @@ const styles = StyleSheet.create({
   rightContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginLeft: 16,
+    marginStart: 16,
   },
   title: {
     fontSize: 16,
@@ -89,6 +98,6 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   chevron: {
-    marginLeft: 8,
+    marginStart: 8,
   },
 });

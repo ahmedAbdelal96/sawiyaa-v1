@@ -22,27 +22,50 @@ export class AuthRequestContextMiddleware implements NestMiddleware {
   ): Promise<void> {
     const header = request.headers.authorization;
     const bearerToken = header?.startsWith('Bearer ') ? header.slice(7) : null;
+    const cookieAccessToken =
+      typeof request.cookies?.fayed_access_token === 'string'
+        ? request.cookies.fayed_access_token
+        : null;
+    const cookieRefreshToken =
+      typeof request.cookies?.fayed_refresh_token === 'string'
+        ? request.cookies.fayed_refresh_token
+        : null;
     const bodyRefreshToken =
       typeof request.body?.refreshToken === 'string'
         ? request.body.refreshToken
         : null;
-    const token = bearerToken ?? bodyRefreshToken;
+    const tokenCandidates: Array<{
+      token: string;
+      tokenType: 'access' | 'refresh';
+    }> = [];
 
-    if (!token) {
+    if (bearerToken) {
+      tokenCandidates.push({ token: bearerToken, tokenType: 'access' });
+    }
+
+    if (cookieAccessToken && cookieAccessToken !== bearerToken) {
+      tokenCandidates.push({ token: cookieAccessToken, tokenType: 'access' });
+    }
+
+    if (bodyRefreshToken) {
+      tokenCandidates.push({ token: bodyRefreshToken, tokenType: 'refresh' });
+    }
+
+    if (cookieRefreshToken && cookieRefreshToken !== bodyRefreshToken) {
+      tokenCandidates.push({ token: cookieRefreshToken, tokenType: 'refresh' });
+    }
+
+    if (tokenCandidates.length === 0) {
       next();
       return;
     }
 
-    const tokenTypes: Array<'access' | 'refresh'> = bearerToken
-      ? ['access', 'refresh']
-      : ['refresh'];
-
-    for (const tokenType of tokenTypes) {
+    for (const candidate of tokenCandidates) {
       try {
         await this.authRequestContextService.attachUserToRequest(
           request,
-          token,
-          tokenType,
+          candidate.token,
+          candidate.tokenType,
         );
         next();
         return;

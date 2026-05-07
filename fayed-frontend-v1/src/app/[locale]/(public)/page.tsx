@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import { buildPublicMetadata } from "@/lib/seo/public-metadata";
 import ArticlesPreviewSection from "@/features/home/components/ArticlesPreviewSection";
+import AcademyPreviewSection from "@/features/home/components/AcademyPreviewSection";
 import GuidedEntrySection from "@/features/home/components/GuidedEntrySection";
 import HeroSection from "@/features/home/components/HeroSection";
 import HowItWorksSection from "@/features/home/components/HowItWorksSection";
@@ -37,6 +38,7 @@ export default async function HomePage({ params }: Props) {
       <PractitionersSection />
       <WhyFayedSection />
       <ArticlesPreviewSection locale={locale} />
+      <AcademyPreviewSection locale={locale} />
     </>
   );
 }

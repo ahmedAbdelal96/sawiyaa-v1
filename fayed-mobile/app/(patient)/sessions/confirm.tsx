@@ -6,8 +6,22 @@ import { useTranslation } from "react-i18next";
 import { Header, Screen, Text, Card, Button } from "../../../src/components/ui";
 import { useTheme } from "../../../src/providers/ThemeProvider";
 import { useCreateScheduledSession } from "../../../src/features/patient/sessions/hooks";
+import { useSessionFinancialBreakdown } from "../../../src/features/patient/payments/hooks";
 import { formatLocalizedDateTime } from "../../../src/features/patient/sessions/slot-utils";
 import { extractApiErrorMessage } from "../../../src/lib/api";
+
+function formatMoney(amount: string, currencyCode: string): string {
+  const value = Number(amount);
+  if (!Number.isFinite(value)) {
+    return `${amount} ${currencyCode.toUpperCase()}`;
+  }
+
+  return new Intl.NumberFormat(undefined, {
+    style: "currency",
+    currency: currencyCode,
+    maximumFractionDigits: 2,
+  }).format(value);
+}
 
 export default function BookingConfirmationScreen() {
   const router = useRouter();
@@ -29,8 +43,17 @@ export default function BookingConfirmationScreen() {
   const [duration, setDuration] = useState<30 | 60>(
     maxDuration >= 60 ? 60 : 30,
   );
-  const createMutation = useCreateScheduledSession();
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [createdSession, setCreatedSession] = useState<{
+    id: string;
+    sessionCode: string;
+    status: string;
+  } | null>(null);
+
+  const createMutation = useCreateScheduledSession();
+  const breakdownQuery = useSessionFinancialBreakdown(
+    createdSession?.id ?? null,
+  );
 
   const selectedDateText = useMemo(() => {
     if (!params.selectedStartAt) {
@@ -45,7 +68,15 @@ export default function BookingConfirmationScreen() {
     });
   }, [duration, t]);
 
+  const breakdown = breakdownQuery.data?.item;
+  const canContinueToPayment = Boolean(createdSession?.id && breakdown);
+
   const handleConfirm = async () => {
+    if (createdSession?.id) {
+      router.replace(`/(patient)/sessions/${createdSession.id}/pay` as any);
+      return;
+    }
+
     if (!params.slug || !params.selectedStartAt) {
       return;
     }
@@ -60,20 +91,10 @@ export default function BookingConfirmationScreen() {
         sessionMode: "VIDEO",
       });
 
-      router.replace({
-        pathname: "/sessions/success",
-        params: {
-          sessionId: payload.item.id,
-          sessionCode: payload.item.sessionCode,
-          status: payload.item.status,
-          practitionerName:
-            payload.item.practitioner.displayName ??
-            params.practitionerName ??
-            t("patientSessionsFlow.common.practitionerFallback"),
-          sessionStartAt:
-            payload.item.scheduledStartAt ?? params.selectedStartAt,
-          durationMinutes: String(payload.item.durationMinutes),
-        },
+      setCreatedSession({
+        id: payload.item.id,
+        sessionCode: payload.item.sessionCode,
+        status: payload.item.status,
       });
     } catch (error) {
       setSubmitError(extractApiErrorMessage(error));
@@ -194,9 +215,11 @@ export default function BookingConfirmationScreen() {
                       duration === 30
                         ? theme.colors.primary
                         : theme.colors.borderLight,
+                    opacity: createdSession ? 0.55 : 1,
                   },
                 ]}
                 onPress={() => setDuration(30)}
+                disabled={Boolean(createdSession)}
               >
                 <Text
                   weight={duration === 30 ? "600" : "normal"}
@@ -222,10 +245,10 @@ export default function BookingConfirmationScreen() {
                       duration === 60
                         ? theme.colors.primary
                         : theme.colors.borderLight,
-                    opacity: maxDuration >= 60 ? 1 : 0.35,
+                    opacity: maxDuration >= 60 && !createdSession ? 1 : 0.35,
                   },
                 ]}
-                disabled={maxDuration < 60}
+                disabled={maxDuration < 60 || Boolean(createdSession)}
                 onPress={() => setDuration(60)}
               >
                 <Text
@@ -271,12 +294,103 @@ export default function BookingConfirmationScreen() {
             </Text>
           </View>
 
+          {createdSession ? (
+            <View style={styles.moneyRow}>
+              <Text color={theme.colors.textSecondary}>
+                {t(
+                  "patientSessionsFlow.confirmation.sessionReference",
+                  "Session reference",
+                )}
+              </Text>
+              <Text weight="600">{createdSession.sessionCode}</Text>
+            </View>
+          ) : null}
+
+          {createdSession && breakdownQuery.isLoading ? (
+            <Card variant="flat" padding="sm" style={styles.securityNote}>
+              <Text
+                color={theme.colors.textSecondary}
+                style={styles.securityText}
+              >
+                {t(
+                  "patientSessionsFlow.confirmation.breakdownLoading",
+                  "Loading the final payment breakdown from the backend...",
+                )}
+              </Text>
+            </Card>
+          ) : null}
+
+          {createdSession && breakdown ? (
+            <>
+              <View style={styles.moneyRow}>
+                <Text color={theme.colors.textSecondary}>
+                  {t(
+                    "patientSessionsFlow.confirmation.grossAmount",
+                    "Session price",
+                  )}
+                </Text>
+                <Text weight="600">
+                  {formatMoney(breakdown.grossAmount, breakdown.currency)}
+                </Text>
+              </View>
+
+              <View style={styles.moneyRow}>
+                <Text color={theme.colors.textSecondary}>
+                  {t(
+                    "patientSessionsFlow.confirmation.discountAmount",
+                    "Discount",
+                  )}
+                </Text>
+                <Text weight="600">
+                  {formatMoney(breakdown.discountAmount, breakdown.currency)}
+                </Text>
+              </View>
+
+              <View style={styles.moneyRow}>
+                <Text color={theme.colors.textSecondary}>
+                  {t(
+                    "patientSessionsFlow.confirmation.amountDue",
+                    "Amount due now",
+                  )}
+                </Text>
+                <Text weight="600" color={theme.colors.primary}>
+                  {formatMoney(breakdown.netPaidAmount, breakdown.currency)}
+                </Text>
+              </View>
+            </>
+          ) : null}
+
+          {createdSession && breakdownQuery.isError ? (
+            <Card variant="flat" padding="sm" style={styles.securityNote}>
+              <Text color="#ba1a1a" style={styles.securityText}>
+                {t(
+                  "patientSessionsFlow.confirmation.breakdownError",
+                  "The payment breakdown could not be loaded yet. Try again before continuing to payment.",
+                )}
+              </Text>
+              <Button
+                title={t("patientSessionsFlow.common.retry")}
+                onPress={() => breakdownQuery.refetch()}
+                variant="secondary"
+                style={styles.retryButton}
+              />
+            </Card>
+          ) : null}
+
           <Card variant="flat" padding="sm" style={styles.securityNote}>
             <Text
               color={theme.colors.textSecondary}
               style={styles.securityText}
             >
-              {t("patientSessionsFlow.confirmation.honestPaymentNotice")}
+              {createdSession
+                ? t(
+                    "patientSessionsFlow.confirmation.reviewBeforePaymentNotice",
+                    "Your session is now pending payment. Review this final breakdown before you continue to checkout.",
+                  )
+                : t(
+                    "patientSessionsFlow.confirmation.reviewBeforeCreateNotice",
+                    "We will create a pending-payment session first, then show the final backend payment breakdown before you continue to checkout.",
+                  )}
             </Text>
           </Card>
         </Card>
@@ -317,14 +431,33 @@ export default function BookingConfirmationScreen() {
           title={
             createMutation.isPending
               ? t("patientSessionsFlow.confirmation.confirming")
-              : t("patientSessionsFlow.confirmation.confirmCta")
+              : createdSession
+                ? t(
+                    "patientSessionsFlow.confirmation.continueToPaymentCta",
+                    "Continue to payment",
+                  )
+                : t(
+                    "patientSessionsFlow.confirmation.reviewBreakdownCta",
+                    "Create booking and review payment",
+                  )
           }
           onPress={handleConfirm}
           disabled={
-            createMutation.isPending || !params.slug || !params.selectedStartAt
+            createMutation.isPending ||
+            (!createdSession && (!params.slug || !params.selectedStartAt)) ||
+            (Boolean(createdSession) && !canContinueToPayment)
           }
           style={styles.confirmButton}
         />
+
+        {createdSession ? (
+          <Button
+            title={t("patientSessionsFlow.success.goToSessions")}
+            variant="secondary"
+            onPress={() => router.replace("/(patient)/sessions")}
+            style={styles.secondaryButton}
+          />
+        ) : null}
       </View>
     </Screen>
   );
@@ -334,7 +467,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 20,
     paddingTop: 16,
-    paddingBottom: 130,
+    paddingBottom: 170,
     gap: 14,
   },
   heroBlock: {
@@ -425,6 +558,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     marginBottom: 8,
+    gap: 12,
   },
   securityNote: {
     marginTop: 8,
@@ -432,6 +566,9 @@ const styles = StyleSheet.create({
   securityText: {
     fontSize: 13,
     lineHeight: 20,
+  },
+  retryButton: {
+    marginTop: 10,
   },
   policyCard: {
     marginBottom: 4,
@@ -448,8 +585,12 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     paddingHorizontal: 20,
     paddingVertical: 14,
+    gap: 10,
   },
   confirmButton: {
+    borderRadius: 12,
+  },
+  secondaryButton: {
     borderRadius: 12,
   },
 });

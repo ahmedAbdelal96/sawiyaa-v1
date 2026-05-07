@@ -64,11 +64,42 @@ type SelectableSlot = {
   maxDuration: 30 | 60;
 };
 
+const MIN_BOOKING_LEAD_MS = 60 * 1000;
+
 type DayGroup = {
   sortKey: string;
   dayLabel: string;
   slots: SelectableSlot[];
 };
+
+function formatSlotCountLabel(count: number, locale: string): string {
+  if (locale.startsWith("ar")) {
+    if (count === 1) {
+      return `1 \u0645\u0648\u0639\u062f \u0645\u062a\u0627\u062d`;
+    }
+    if (count === 2) {
+      return `2 \u0645\u0648\u0639\u062f\u0627\u0646 \u0645\u062a\u0627\u062d\u0627\u0646`;
+    }
+    if (count >= 3 && count <= 10) {
+      return `${count} \u0645\u0648\u0627\u0639\u064a\u062f \u0645\u062a\u0627\u062d\u0629`;
+    }
+    return `${count} \u0645\u0648\u0639\u062f\u064b\u0627 \u0645\u062a\u0627\u062d\u064b\u0627`;
+  }
+
+  return count === 1 ? "1 available slot" : `${count} available slots`;
+}
+
+function formatNoDurationSlotsLabel(durationMinutes: 30 | 60, locale: string): string {
+  if (locale.startsWith("ar")) {
+    return durationMinutes === 30
+      ? "\u0644\u0627 \u062a\u0648\u062c\u062f \u0645\u0648\u0627\u0639\u064a\u062f \u0645\u062a\u0627\u062d\u0629 \u0644\u062c\u0644\u0633\u0629 30 \u062f\u0642\u064a\u0642\u0629 \u0647\u0630\u0627 \u0627\u0644\u0623\u0633\u0628\u0648\u0639."
+      : "\u0644\u0627 \u062a\u0648\u062c\u062f \u0645\u0648\u0627\u0639\u064a\u062f \u0645\u062a\u0627\u062d\u0629 \u0644\u062c\u0644\u0633\u0629 60 \u062f\u0642\u064a\u0642\u0629 \u0647\u0630\u0627 \u0627\u0644\u0623\u0633\u0628\u0648\u0639.";
+  }
+
+  return durationMinutes === 30
+    ? "No 30-minute slots are available this week."
+    : "No 60-minute slots are available this week.";
+}
 
 function buildSlotsFromWindow(window: PublicAvailabilityWindow): SelectableSlot[] {
   const slots: SelectableSlot[] = [];
@@ -76,8 +107,13 @@ function buildSlotsFromWindow(window: PublicAvailabilityWindow): SelectableSlot[
   const endTime = new Date(window.endsAt).getTime();
   const halfHourMs = 30 * 60 * 1000;
   const hourMs = 60 * 60 * 1000;
+  const earliestAllowedStart = Date.now() + MIN_BOOKING_LEAD_MS;
 
   for (let current = startTime; current + halfHourMs <= endTime; current += halfHourMs) {
+    if (current <= earliestAllowedStart) {
+      continue;
+    }
+
     const remaining = endTime - current;
     slots.push({
       startsAt: new Date(current).toISOString(),
@@ -90,7 +126,14 @@ function buildSlotsFromWindow(window: PublicAvailabilityWindow): SelectableSlot[
 }
 
 function groupByLocalDay(windows: PublicAvailabilityWindow[], numLocale: string): DayGroup[] {
-  const map = new Map<string, DayGroup>();
+  const map = new Map<
+    string,
+    {
+      sortKey: string;
+      dayLabel: string;
+      slots: Map<string, SelectableSlot>;
+    }
+  >();
 
   for (const window of windows) {
     const slots = buildSlotsFromWindow(window);
@@ -106,11 +149,28 @@ function groupByLocalDay(windows: PublicAvailabilityWindow[], numLocale: string)
         map.set(sortKey, {
           sortKey,
           dayLabel: formatDayLabel(slot.startsAt, numLocale),
-          slots: [],
+          slots: new Map<string, SelectableSlot>(),
         });
       }
 
-      map.get(sortKey)!.slots.push(slot);
+      const dayGroup = map.get(sortKey)!;
+      const existingSlot = dayGroup.slots.get(slot.startsAt);
+
+      if (!existingSlot) {
+        dayGroup.slots.set(slot.startsAt, slot);
+        continue;
+      }
+
+      if (
+        slot.maxDuration > existingSlot.maxDuration ||
+        new Date(slot.windowEndsAt).getTime() > new Date(existingSlot.windowEndsAt).getTime()
+      ) {
+        dayGroup.slots.set(slot.startsAt, {
+          ...existingSlot,
+          windowEndsAt: slot.windowEndsAt,
+          maxDuration: Math.max(existingSlot.maxDuration, slot.maxDuration) as 30 | 60,
+        });
+      }
     }
   }
 
@@ -118,7 +178,7 @@ function groupByLocalDay(windows: PublicAvailabilityWindow[], numLocale: string)
     .sort((a, b) => a.sortKey.localeCompare(b.sortKey))
     .map((group) => ({
       ...group,
-      slots: group.slots.sort((a, b) => a.startsAt.localeCompare(b.startsAt)),
+      slots: Array.from(group.slots.values()).sort((a, b) => a.startsAt.localeCompare(b.startsAt)),
     }));
 }
 
@@ -146,10 +206,25 @@ export default function PublicAvailabilityViewer({ slug }: Props) {
     () => (data ? groupByLocalDay(data.windows, numLocale) : []),
     [data, numLocale],
   );
+  const [durationFilter, setDurationFilter] = useState<30 | 60>(30);
   const [selectedDayKey, setSelectedDayKey] = useState<string | null>(null);
+  const selectedDurationLabel = durationFilter === 30 ? tBook("duration30") : tBook("duration60");
+
+  const filteredDayGroups = useMemo(
+    () =>
+      dayGroups
+        .map((group) => ({
+          ...group,
+          slots: group.slots.filter((slot) => slot.maxDuration >= durationFilter),
+        }))
+        .filter((group) => group.slots.length > 0),
+    [dayGroups, durationFilter],
+  );
 
   const selectedDay =
-    dayGroups.find((group) => group.sortKey === selectedDayKey) ?? dayGroups[0] ?? null;
+    filteredDayGroups.find((group) => group.sortKey === selectedDayKey) ??
+    filteredDayGroups[0] ??
+    null;
 
   const [phase, setPhase] = useState<Phase>("browse");
   const [selectedSlot, setSelectedSlot] = useState<SelectableSlot | null>(null);
@@ -161,10 +236,10 @@ export default function PublicAvailabilityViewer({ slug }: Props) {
 
   const handleSlotSelect = useCallback((slot: SelectableSlot) => {
     setSelectedSlot(slot);
-    setDuration(slot.maxDuration >= 60 ? 60 : 30);
+    setDuration(durationFilter <= slot.maxDuration ? durationFilter : slot.maxDuration);
     setBookingError(null);
     setPhase("confirm");
-  }, []);
+  }, [durationFilter]);
 
   const handleBack = useCallback(() => {
     setPhase("browse");
@@ -308,7 +383,7 @@ export default function PublicAvailabilityViewer({ slug }: Props) {
           <div>
             <p className="mb-2 text-xs text-text-muted">{tBook("signInNote")}</p>
             <Link
-              href="/signin/patient"
+          href="/signin?mode=patient"
               className="flex w-full items-center justify-center rounded-2xl bg-primary px-4 py-3 text-sm font-semibold text-white hover:bg-primary/90"
             >
               {tBook("signInToCta")}
@@ -423,57 +498,95 @@ export default function PublicAvailabilityViewer({ slug }: Props) {
                 <p className="mb-3 text-sm text-text-muted">{tBook("slotHint")}</p>
               )}
 
-              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                {dayGroups.map((group) => {
-                  const isSelected = group.sortKey === selectedDay?.sortKey;
-                  return (
-                    <button
-                      key={group.sortKey}
-                      type="button"
-                      onClick={() => setSelectedDayKey(group.sortKey)}
-                      className={`rounded-2xl border px-4 py-4 text-start transition ${
-                        isSelected
-                          ? "border-primary bg-primary/8 shadow-sm dark:bg-primary/12"
-                          : "border-border-light bg-white hover:border-primary/40 dark:border-border-light dark:bg-surface"
-                      }`}
-                    >
-                      <p className="text-sm font-semibold text-text-primary dark:text-white/90">
-                        {group.dayLabel}
-                      </p>
-                      <p className="mt-1 text-xs text-text-muted">
-                        {group.slots.length} {tBook("duration30")}
-                      </p>
-                    </button>
-                  );
-                })}
-              </div>
+              {filteredDayGroups.length === 0 ? (
+                <div className="rounded-2xl bg-surface px-4 py-4 dark:bg-white/5">
+                  <p className="text-sm text-text-muted">
+                    {formatNoDurationSlotsLabel(durationFilter, locale)}
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <div className="mb-3 flex flex-wrap items-start gap-2">
+                    <div className="inline-flex min-h-[64px] items-center gap-1 rounded-lg border border-border-light bg-white px-2 py-2 dark:bg-surface">
+                      <span className="text-[10px] font-medium text-text-muted">
+                        {tBook("selectDuration")}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setDurationFilter(30)}
+                        className={`rounded-full border px-2.5 py-1 text-[10px] font-semibold transition ${
+                          durationFilter === 30
+                            ? "border-primary bg-primary/10 text-primary"
+                            : "border-border-light bg-white text-text-secondary hover:border-primary/40 hover:text-primary dark:bg-surface"
+                        }`}
+                      >
+                        {tBook("duration30")}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setDurationFilter(60)}
+                        className={`rounded-full border px-2.5 py-1 text-[10px] font-semibold transition ${
+                          durationFilter === 60
+                            ? "border-primary bg-primary/10 text-primary"
+                            : "border-border-light bg-white text-text-secondary hover:border-primary/40 hover:text-primary dark:bg-surface"
+                        }`}
+                      >
+                        {tBook("duration60")}
+                      </button>
+                    </div>
+
+                    {filteredDayGroups.map((group) => {
+                      const isSelected = group.sortKey === selectedDay?.sortKey;
+                      return (
+                        <button
+                          key={group.sortKey}
+                          type="button"
+                          onClick={() => setSelectedDayKey(group.sortKey)}
+                          className={`min-h-[64px] w-[124px] flex-none rounded-lg border px-2 py-2 text-start transition sm:w-[132px] ${
+                            isSelected
+                              ? "border-primary bg-primary/8 shadow-sm dark:bg-primary/12"
+                              : "border-border-light bg-white hover:border-primary/40 dark:border-border-light dark:bg-surface"
+                          }`}
+                        >
+                          <p className="text-[11px] font-semibold leading-5 text-text-primary dark:text-white/90">
+                            {group.dayLabel}
+                          </p>
+                          <p className="mt-1 text-[10px] text-text-muted">
+                            {formatSlotCountLabel(group.slots.length, locale)} · {selectedDurationLabel}
+                          </p>
+                        </button>
+                      );
+                    })}
+                  </div>
 
               {selectedDay && (
-                <div className="mt-5 rounded-[24px] border border-border-light bg-surface p-4 dark:border-border-light dark:bg-surface">
+                <div className="mt-4 rounded-[24px] border border-border-light bg-surface p-3.5 dark:border-border-light dark:bg-surface">
                   <div className="mb-4 flex items-center justify-between gap-3">
                     <div>
                       <p className="text-sm font-semibold text-text-primary dark:text-white/90">
                         {selectedDay.dayLabel}
                       </p>
                       <p className="mt-1 text-xs text-text-muted">
-                        {selectedDay.slots.length} {tBook("duration30")}
+                        {selectedDurationLabel} · {formatSlotCountLabel(selectedDay.slots.length, locale)}
                       </p>
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-4">
+                  <div className="flex flex-wrap gap-2">
                     {selectedDay.slots.map((slot) => (
                       <button
-                        key={slot.startsAt}
+                        key={`${slot.startsAt}-${slot.windowEndsAt}-${slot.maxDuration}`}
                         type="button"
                         onClick={() => handleSlotSelect(slot)}
-                        className="rounded-2xl border border-border-light bg-white px-3 py-3 text-center text-sm font-semibold text-text-primary transition hover:border-primary hover:bg-primary/6 hover:text-primary dark:border-border-light dark:bg-surface-secondary dark:text-white/85"
+                        className="w-[82px] flex-none rounded-lg border border-border-light bg-white px-2 py-2 text-center text-[11px] font-semibold text-text-primary transition hover:border-primary hover:bg-primary/6 hover:text-primary dark:border-border-light dark:bg-surface-secondary dark:text-white/85 sm:w-[88px] lg:w-[92px]"
                       >
                         {formatTimeLabel(slot.startsAt, numLocale)}
                       </button>
                     ))}
                   </div>
                 </div>
+              )}
+                </>
               )}
             </>
           )}

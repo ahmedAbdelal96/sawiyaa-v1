@@ -15,6 +15,9 @@ export class WeeklyAvailabilitySlotResponseDto {
   @ApiProperty({ enum: AvailabilityWeekday })
   weekday!: AvailabilityWeekday;
 
+  @ApiProperty({ enum: [30, 60] })
+  durationMinutes!: number;
+
   @ApiProperty()
   startMinuteOfDay!: number;
 
@@ -63,6 +66,9 @@ export class AvailabilityWindowResponseDto {
 
   @ApiProperty()
   endsAt!: string;
+
+  @ApiProperty({ enum: [30, 60], nullable: true, required: false })
+  durationMinutes!: number | null;
 }
 
 export class MyAvailabilityDataResponseDto {

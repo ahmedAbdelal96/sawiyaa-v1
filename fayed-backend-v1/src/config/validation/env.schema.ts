@@ -54,6 +54,9 @@ const baseEnvSchema = z.object({
     .min(5)
     .max(300)
     .default(30),
+  AUTH_PRACTITIONER_LOGIN_OTP_BYPASS_IN_DEV: z
+    .enum(['true', 'false'])
+    .optional(),
 
   // Google Auth
   GOOGLE_CLIENT_ID: z.string().optional(),
@@ -93,12 +96,18 @@ const baseEnvSchema = z.object({
   PAYMENT_PAYMOB_ENABLED: z.enum(['true', 'false']).default('false'),
   PAYMOB_MODE: z.enum(['test', 'live']).default('test'),
   PAYMOB_API_KEY: z.string().optional(),
+  PAYMOB_PUBLIC_KEY: z.string().optional(),
   PAYMOB_HMAC_SECRET: z.string().optional(),
   PAYMOB_INTEGRATION_ID: z.string().optional(),
   PAYMOB_INTEGRATION_ID_CARD: z.string().optional(),
   PAYMOB_INTEGRATION_ID_WALLET: z.string().optional(),
   PAYMOB_IFRAME_ID: z.string().optional(),
   PAYMOB_BASE_URL: z.string().url().optional(),
+  PAYMOB_INTENTION_BASE_URL: z.string().url().optional(),
+  PAYMOB_CHECKOUT_BASE_URL: z.string().url().optional(),
+  PAYMOB_CHECKOUT_FLOW: z.enum(['legacy', 'intention']).default('legacy'),
+  PAYMOB_DEFAULT_CHECKOUT_METHOD: z.string().optional(),
+  PAYMOB_METHOD_REGISTRY_JSON: z.string().optional(),
   PAYMENT_SUCCESS_URL: z.string().url().optional(),
   PAYMENT_FAILED_URL: z.string().url().optional(),
   PAYMENT_PENDING_URL: z.string().url().optional(),
@@ -235,23 +244,58 @@ export const envSchema = baseEnvSchema.superRefine((env, ctx) => {
       });
     }
 
-    const cardIntegrationId =
-      env.PAYMOB_INTEGRATION_ID_CARD ?? env.PAYMOB_INTEGRATION_ID;
-    if (!cardIntegrationId?.trim()) {
+    const checkoutFlow = env.PAYMOB_CHECKOUT_FLOW ?? 'legacy';
+    const hasLegacyCardIntegration = Boolean(
+      env.PAYMOB_INTEGRATION_ID_CARD?.trim() || env.PAYMOB_INTEGRATION_ID?.trim(),
+    );
+    const hasWalletIntegration = Boolean(env.PAYMOB_INTEGRATION_ID_WALLET?.trim());
+    const rawRegistry = env.PAYMOB_METHOD_REGISTRY_JSON?.trim();
+    const hasRegistryJson = Boolean(rawRegistry);
+
+    if (checkoutFlow === 'intention') {
+      if (!env.PAYMOB_PUBLIC_KEY?.trim()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['PAYMOB_PUBLIC_KEY'],
+          message:
+            'PAYMOB_PUBLIC_KEY is required when PAYMOB_CHECKOUT_FLOW=intention',
+        });
+      }
+
+      if (!env.PAYMOB_CHECKOUT_BASE_URL?.trim()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['PAYMOB_CHECKOUT_BASE_URL'],
+          message:
+            'PAYMOB_CHECKOUT_BASE_URL is required when PAYMOB_CHECKOUT_FLOW=intention',
+        });
+      }
+
+      if (!env.PAYMOB_INTENTION_BASE_URL?.trim()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['PAYMOB_INTENTION_BASE_URL'],
+          message:
+            'PAYMOB_INTENTION_BASE_URL is required when PAYMOB_CHECKOUT_FLOW=intention',
+        });
+      }
+    }
+
+    if (!hasLegacyCardIntegration && !hasWalletIntegration && !hasRegistryJson) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ['PAYMOB_INTEGRATION_ID_CARD'],
         message:
-          'PAYMOB_INTEGRATION_ID_CARD (or legacy PAYMOB_INTEGRATION_ID) is required when PAYMENT_PAYMOB_ENABLED=true',
+          'At least one Paymob method integration id or a method registry is required when PAYMENT_PAYMOB_ENABLED=true',
       });
     }
 
-    if (!env.PAYMOB_IFRAME_ID?.trim()) {
+    if (checkoutFlow === 'legacy' && !env.PAYMOB_IFRAME_ID?.trim()) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ['PAYMOB_IFRAME_ID'],
         message:
-          'PAYMOB_IFRAME_ID is required when PAYMENT_PAYMOB_ENABLED=true',
+          'PAYMOB_IFRAME_ID is required when PAYMENT_PAYMOB_ENABLED=true and PAYMOB_CHECKOUT_FLOW=legacy',
       });
     }
   }

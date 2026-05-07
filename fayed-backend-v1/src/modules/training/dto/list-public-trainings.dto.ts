@@ -35,4 +35,9 @@ export class ListPublicTrainingsDto {
   @IsOptional()
   @IsString()
   q?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  category?: string;
 }

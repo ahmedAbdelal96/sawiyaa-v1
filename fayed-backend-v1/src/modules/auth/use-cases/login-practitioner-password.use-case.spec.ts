@@ -9,6 +9,9 @@ import {
 import { LoginPractitionerPasswordUseCase } from './login-practitioner-password.use-case';
 
 describe('LoginPractitionerPasswordUseCase', () => {
+  const configService = {
+    get: jest.fn(),
+  };
   const userEmailRepository = {
     findByEmail: jest.fn(),
   };
@@ -22,6 +25,9 @@ describe('LoginPractitionerPasswordUseCase', () => {
   const verifyPasswordUseCase = {
     execute: jest.fn(),
   };
+  const issueAuthTokensUseCase = {
+    execute: jest.fn(),
+  };
   const practitionerOtpChannelService = {
     resolveVerifiedChannel: jest.fn(),
   };
@@ -33,10 +39,12 @@ describe('LoginPractitionerPasswordUseCase', () => {
   };
 
   const useCase = new LoginPractitionerPasswordUseCase(
+    configService as any,
     userEmailRepository as any,
     authIdentityRepository as any,
     twoFactorSettingRepository as any,
     verifyPasswordUseCase as any,
+    issueAuthTokensUseCase as any,
     practitionerOtpChannelService as any,
     createOtpChallengeUseCase as any,
     sendOtpChallengeUseCase as any,
@@ -44,6 +52,11 @@ describe('LoginPractitionerPasswordUseCase', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    configService.get.mockImplementation((key: string) => {
+      if (key === 'app.nodeEnv') return 'development';
+      if (key === 'auth.practitionerLoginOtpBypassInDev') return false;
+      return undefined;
+    });
   });
 
   it('creates and sends an OTP challenge without returning the code', async () => {
@@ -93,6 +106,80 @@ describe('LoginPractitionerPasswordUseCase', () => {
     expect(createOtpChallengeUseCase.execute).toHaveBeenCalledWith(
       expect.objectContaining({
         purpose: OtpPurpose.PRACTITIONER_LOGIN,
+      }),
+    );
+    expect(issueAuthTokensUseCase.execute).not.toHaveBeenCalled();
+  });
+
+  it('bypasses OTP in development and issues tokens directly when enabled', async () => {
+    configService.get.mockImplementation((key: string) => {
+      if (key === 'app.nodeEnv') return 'development';
+      if (key === 'auth.practitionerLoginOtpBypassInDev') return true;
+      return undefined;
+    });
+    userEmailRepository.findByEmail.mockResolvedValue({
+      isPrimary: true,
+      user: {
+        id: 'user-1',
+        status: UserStatus.ACTIVE,
+        roles: [{ role: UserRoleType.PRACTITIONER }],
+        practitionerProfile: { status: PractitionerStatus.DRAFT },
+        emails: [],
+        phones: [],
+      },
+    });
+    authIdentityRepository.findPasswordIdentityByUserId.mockResolvedValue({
+      id: 'identity-1',
+      passwordHash: 'hash',
+    });
+    verifyPasswordUseCase.execute.mockResolvedValue(true);
+    twoFactorSettingRepository.findByUserId.mockResolvedValue(null);
+    issueAuthTokensUseCase.execute.mockResolvedValue({
+      tokens: {
+        accessToken: 'access-token',
+        refreshToken: 'refresh-token',
+        accessTokenExpiresAt: new Date(),
+        refreshTokenExpiresAt: new Date(),
+      },
+      user: {
+        id: 'user-1',
+        displayName: 'Dr User',
+        status: UserStatus.ACTIVE,
+        roles: [UserRoleType.PRACTITIONER],
+        primaryEmail: 'test@example.com',
+        isEmailVerified: true,
+        primaryPhone: null,
+        isPhoneVerified: false,
+        practitionerProfileId: 'profile-1',
+        practitionerStatus: PractitionerStatus.DRAFT,
+      },
+    });
+
+    const result = await useCase.execute({
+      email: 'test@example.com',
+      password: 'password',
+      locale: 'en',
+      deviceContext: {
+        deviceId: 'device-1',
+        ipAddress: '127.0.0.1',
+        userAgent: 'jest',
+      },
+    });
+
+    expect(result).toEqual(
+      expect.objectContaining({
+        tokens: expect.objectContaining({
+          accessToken: 'access-token',
+          refreshToken: 'refresh-token',
+        }),
+      }),
+    );
+    expect(createOtpChallengeUseCase.execute).not.toHaveBeenCalled();
+    expect(sendOtpChallengeUseCase.execute).not.toHaveBeenCalled();
+    expect(issueAuthTokensUseCase.execute).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: 'user-1',
+        role: UserRoleType.PRACTITIONER,
       }),
     );
   });

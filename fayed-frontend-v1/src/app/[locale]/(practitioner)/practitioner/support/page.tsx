@@ -21,7 +21,7 @@ export default async function PractitionerSupportPage({ params }: Props) {
   setRequestLocale(locale);
 
   return (
-    <div className="px-4 py-8">
+    <div className="mx-auto max-w-[1400px] px-4 py-6 sm:px-6 lg:px-8">
       <PractitionerSupportHomeScreen />
     </div>
   );

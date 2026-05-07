@@ -97,66 +97,121 @@ export class GetPractitionerApplicationDetailsUseCase {
       ? snapshot.languageCodes
       : null;
 
+    const liveSpecialties = specialtyLinks.map((link) => {
+      const specialty = specialtyMap.get(link.specialtyId);
+      return {
+        specialtyId: link.specialtyId,
+        slug: specialty?.slug ?? '',
+        title: specialty
+          ? this.mapper.pickLocalizedTitle(specialty.translations, input.locale)
+          : null,
+        isPrimary: link.isPrimary,
+      };
+    });
+
+    const liveApplicant = {
+      userId: user.id,
+      practitionerProfileId: profile.id,
+      displayName: user.displayName ?? null,
+      accountStatus: user.status,
+      email: {
+        address: user.emails[0]?.email ?? null,
+        isVerified: user.emails[0]?.isVerified ?? false,
+      },
+      phone: {
+        number: user.phones[0]?.phone ?? null,
+        isVerified: user.phones[0]?.isVerified ?? false,
+      },
+      locale: user.defaultLocale ?? null,
+      timezone: user.timezone ?? null,
+      countryCode: profile.country?.isoCode ?? null,
+    };
+
+    const liveProfile = {
+      practitionerType: profile.practitionerType,
+      practitionerGender: profile.practitionerGender ?? null,
+      profileStatus: profile.status,
+      professionalTitle: profile.professionalTitle ?? null,
+      bio: profile.bio ?? null,
+      yearsOfExperience: profile.yearsOfExperience ?? null,
+      primarySpecialtyCategoryId: profile.primarySpecialtyCategoryId ?? null,
+      pricing: {
+        session30: {
+          egp: profile.sessionPrice30Egp ? Number(profile.sessionPrice30Egp) : null,
+          usd: profile.sessionPrice30Usd ? Number(profile.sessionPrice30Usd) : null,
+        },
+        session60: {
+          egp: profile.sessionPrice60Egp ? Number(profile.sessionPrice60Egp) : null,
+          usd: profile.sessionPrice60Usd ? Number(profile.sessionPrice60Usd) : null,
+        },
+      },
+      languages: profile.languages.map((item) => item.language.code),
+      specialties: liveSpecialties,
+    };
+
+    const livePayoutDestination = profile.payoutDestination
+      ? {
+          methodType: profile.payoutDestination.methodType,
+          accountHolderName: profile.payoutDestination.accountHolderName ?? null,
+          bankName: profile.payoutDestination.bankName ?? null,
+          bankAccountNumber:
+            profile.payoutDestination.bankAccountNumber ?? null,
+          iban: profile.payoutDestination.iban ?? null,
+          walletProvider: profile.payoutDestination.walletProvider ?? null,
+          walletIdentifier: profile.payoutDestination.walletIdentifier ?? null,
+          otherDetails: profile.payoutDestination.otherDetails ?? null,
+        }
+      : null;
+
+    const requestedApplicant = {
+      ...liveApplicant,
+      displayName: snapshotApplicant?.displayName ?? liveApplicant.displayName,
+      locale: snapshotApplicant?.locale ?? liveApplicant.locale,
+      timezone: snapshotApplicant?.timezone ?? liveApplicant.timezone,
+      countryCode: snapshotProfile?.countryCode ?? liveApplicant.countryCode,
+    };
+
+    const requestedProfile = {
+      ...liveProfile,
+      practitionerType:
+        snapshotProfile?.practitionerType ?? liveProfile.practitionerType,
+      practitionerGender:
+        snapshotProfile?.practitionerGender ?? liveProfile.practitionerGender,
+      professionalTitle:
+        snapshotProfile?.professionalTitle ?? liveProfile.professionalTitle,
+      bio: snapshotProfile?.bio ?? liveProfile.bio,
+      yearsOfExperience:
+        snapshotProfile?.yearsOfExperience ?? liveProfile.yearsOfExperience,
+      primarySpecialtyCategoryId:
+        snapshotSpecialtySelection?.primarySpecialtyCategoryId ??
+        liveProfile.primarySpecialtyCategoryId,
+      pricing: snapshotProfile?.pricing ?? liveProfile.pricing,
+      languages: snapshotLanguageCodes ?? liveProfile.languages,
+      specialties:
+        snapshotSpecialtySelection?.specialties ?? liveProfile.specialties,
+    };
+
+    const requestedPayoutDestination = snapshotPayoutDestination
+      ? {
+          methodType: snapshotPayoutDestination.methodType ?? null,
+          accountHolderName:
+            snapshotPayoutDestination.accountHolderName ?? null,
+          bankName: snapshotPayoutDestination.bankName ?? null,
+          bankAccountNumber:
+            snapshotPayoutDestination.bankAccountNumber ?? null,
+          iban: snapshotPayoutDestination.iban ?? null,
+          walletProvider: snapshotPayoutDestination.walletProvider ?? null,
+          walletIdentifier:
+            snapshotPayoutDestination.walletIdentifier ?? null,
+          otherDetails: snapshotPayoutDestination.otherDetails ?? null,
+        }
+      : livePayoutDestination;
+
     const details = this.mapper.toDetails({
-      applicant: {
-        userId: user.id,
-        practitionerProfileId: profile.id,
-        displayName: snapshotApplicant?.displayName ?? user.displayName ?? null,
-        accountStatus: user.status,
-        email: {
-          address: user.emails[0]?.email ?? null,
-          isVerified: user.emails[0]?.isVerified ?? false,
-        },
-        phone: {
-          number: user.phones[0]?.phone ?? null,
-          isVerified: user.phones[0]?.isVerified ?? false,
-        },
-        locale: snapshotApplicant?.locale ?? user.defaultLocale ?? null,
-        timezone: snapshotApplicant?.timezone ?? user.timezone ?? null,
-        countryCode:
-          snapshotProfile?.countryCode ?? profile.country?.isoCode ?? null,
-      },
-      profile: {
-        practitionerType:
-          snapshotProfile?.practitionerType ?? profile.practitionerType,
-        practitionerGender:
-          snapshotProfile?.practitionerGender ??
-          profile.practitionerGender ??
-          null,
-        profileStatus: profile.status,
-        professionalTitle:
-          snapshotProfile?.professionalTitle ??
-          profile.professionalTitle ??
-          null,
-        bio: snapshotProfile?.bio ?? profile.bio ?? null,
-        yearsOfExperience:
-          snapshotProfile?.yearsOfExperience ??
-          profile.yearsOfExperience ??
-          null,
-        primarySpecialtyCategoryId:
-          snapshotSpecialtySelection?.primarySpecialtyCategoryId ??
-          profile.primarySpecialtyCategoryId ??
-          null,
-        languages:
-          snapshotLanguageCodes ??
-          profile.languages.map((item) => item.language.code),
-        specialties:
-          snapshotSpecialtySelection?.specialties ??
-          specialtyLinks.map((link) => {
-            const specialty = specialtyMap.get(link.specialtyId);
-            return {
-              specialtyId: link.specialtyId,
-              slug: specialty?.slug ?? '',
-              title: specialty
-                ? this.mapper.pickLocalizedTitle(
-                    specialty.translations,
-                    input.locale,
-                  )
-                : null,
-              isPrimary: link.isPrimary,
-            };
-          }),
-      },
+      applicant: requestedApplicant,
+      liveApplicant,
+      profile: requestedProfile,
+      liveProfile,
       credentials:
         snapshotCredentials?.map((credential) => ({
           credentialId: credential.credentialId ?? '',
@@ -186,35 +241,8 @@ export class GetPractitionerApplicationDetailsUseCase {
           reviewedByUserId: credential.reviewedByUserId ?? null,
           reviewNotes: credential.reviewNotes ?? null,
         })),
-      payoutDestination: snapshotPayoutDestination
-        ? {
-            methodType: snapshotPayoutDestination.methodType ?? null,
-            accountHolderName:
-              snapshotPayoutDestination.accountHolderName ?? null,
-            bankName: snapshotPayoutDestination.bankName ?? null,
-            bankAccountNumber:
-              snapshotPayoutDestination.bankAccountNumber ?? null,
-            iban: snapshotPayoutDestination.iban ?? null,
-            walletProvider: snapshotPayoutDestination.walletProvider ?? null,
-            walletIdentifier:
-              snapshotPayoutDestination.walletIdentifier ?? null,
-            otherDetails: snapshotPayoutDestination.otherDetails ?? null,
-          }
-        : profile.payoutDestination
-          ? {
-              methodType: profile.payoutDestination.methodType,
-              accountHolderName:
-                profile.payoutDestination.accountHolderName ?? null,
-              bankName: profile.payoutDestination.bankName ?? null,
-              bankAccountNumber:
-                profile.payoutDestination.bankAccountNumber ?? null,
-              iban: profile.payoutDestination.iban ?? null,
-              walletProvider: profile.payoutDestination.walletProvider ?? null,
-              walletIdentifier:
-                profile.payoutDestination.walletIdentifier ?? null,
-              otherDetails: profile.payoutDestination.otherDetails ?? null,
-            }
-          : null,
+      payoutDestination: requestedPayoutDestination,
+      livePayoutDestination,
       application: {
         applicationId: application.id,
         status: application.status,

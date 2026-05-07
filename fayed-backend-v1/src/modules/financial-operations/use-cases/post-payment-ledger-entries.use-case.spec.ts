@@ -1,5 +1,5 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
-import { PaymentStatus, Prisma } from '@prisma/client';
+import { PaymentPurpose, PaymentStatus, Prisma } from '@prisma/client';
 import { PostPaymentLedgerEntriesUseCase } from './post-payment-ledger-entries.use-case';
 
 describe('PostPaymentLedgerEntriesUseCase', () => {
@@ -14,6 +14,7 @@ describe('PostPaymentLedgerEntriesUseCase', () => {
           : {
               id: 'payment_1',
               status: PaymentStatus.CAPTURED,
+              paymentPurpose: PaymentPurpose.SESSION_BOOKING,
               practitionerId: 'pr_1',
               sessionId: 'session_1',
               currencyCode: 'USD',
@@ -121,5 +122,33 @@ describe('PostPaymentLedgerEntriesUseCase', () => {
       setup.useCase.execute({ paymentId: 'payment_1' }),
     ).rejects.toThrow(NotFoundException);
   });
-});
 
+  it('skips package payments so capture accounting cannot double count package earnings', async () => {
+    const setup = buildUseCase({
+      payment: {
+        id: 'payment_1',
+        status: PaymentStatus.CAPTURED,
+        paymentPurpose: PaymentPurpose.SESSION_PACKAGE_PURCHASE,
+        practitionerId: 'pr_1',
+        sessionId: null,
+        currencyCode: 'USD',
+        amountFromGateway: new Prisma.Decimal('100.00'),
+        amountFromWallet: new Prisma.Decimal('0.00'),
+        amountTotal: new Prisma.Decimal('100.00'),
+        commissionRuleId: null,
+        commissionPlatformRatePercent: null,
+        commissionPractitionerRatePercent: null,
+        metadataJson: {},
+      },
+    });
+
+    const result = await setup.useCase.execute({ paymentId: 'payment_1' });
+
+    expect(setup.ledgerRepository.createManyLedgerEntries).not.toHaveBeenCalled();
+    expect(
+      setup.accountingJournalPostingService.postPaymentCaptured,
+    ).not.toHaveBeenCalled();
+    expect(result.wasAlreadyPosted).toBe(true);
+    expect(result.items).toEqual([]);
+  });
+});

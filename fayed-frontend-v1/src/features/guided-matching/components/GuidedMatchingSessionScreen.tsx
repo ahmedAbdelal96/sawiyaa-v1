@@ -1,5 +1,6 @@
-﻿"use client";
+"use client";
 
+import type { ReactNode } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { useMatchingSession } from "../hooks/use-guided-matching";
@@ -23,6 +24,12 @@ type GuidedMatchingSessionScreenProps = {
   sessionId: string;
 };
 
+type StatCardProps = {
+  label: string;
+  value: ReactNode;
+  helper?: string;
+};
+
 function formatAmount(
   amount: string | null,
   currency: string,
@@ -38,13 +45,25 @@ function formatAmount(
   }).format(Number(amount));
 }
 
-function SummaryChip({ children }: { children: React.ReactNode }) {
+function SummaryChip({ children }: { children: ReactNode }) {
   return <span className="app-chip rounded-full px-3 py-1.5 text-xs font-medium">{children}</span>;
+}
+
+function StatCard({ label, value, helper }: StatCardProps) {
+  return (
+    <div className="app-panel-soft rounded-2xl p-4">
+      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-text-muted">{label}</p>
+      <div className="mt-2 text-2xl font-semibold tracking-tight text-text-primary dark:text-white/95">
+        {value}
+      </div>
+      {helper ? <p className="mt-1 text-xs leading-6 text-text-secondary">{helper}</p> : null}
+    </div>
+  );
 }
 
 function LoadingState() {
   return (
-          <div className="app-max-content mx-auto">
+    <div className="app-max-content mx-auto">
       <ListStateSkeleton items={3} heightClass="h-40" />
     </div>
   );
@@ -127,184 +146,216 @@ export default function GuidedMatchingSessionScreen({
     );
   }
 
+  const totalMatches = data.items.length;
+  const topScore = totalMatches > 0 ? data.items[0]?.score ?? null : null;
+  const averageScore =
+    totalMatches > 0
+      ? Math.round(data.items.reduce((sum, item) => sum + item.score, 0) / totalMatches)
+      : null;
+
   return (
-      <div className="app-max-content mx-auto space-y-5 sm:space-y-6">
-      <section className="app-panel rounded-[32px] p-5 sm:p-7">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="max-w-2xl">
-            <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-primary">
-              {t("result.eyebrow")}
-            </p>
-            <h1 className="text-2xl font-semibold tracking-tight text-text-primary dark:text-white/95 sm:text-3xl">
-              {data.items.length > 0 ? t("result.title") : t("result.empty.title")}
-            </h1>
-            <p className="mt-3 text-sm leading-6 text-text-secondary sm:text-base">
-              {data.items.length > 0 ? t("result.note") : t("result.empty.note")}
-            </p>
+    <div className="app-max-content mx-auto space-y-5 sm:space-y-6">
+      <section className="app-panel rounded-[32px] p-5 sm:p-7 xl:p-8">
+        <div className="grid gap-6 xl:grid-cols-[minmax(0,1.4fr)_minmax(320px,0.9fr)] xl:items-start">
+          <div className="space-y-5">
+            <div className="max-w-2xl">
+              <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-primary">
+                {t("result.eyebrow")}
+              </p>
+              <h1 className="text-2xl font-semibold tracking-tight text-text-primary dark:text-white/95 sm:text-3xl">
+                {data.items.length > 0 ? t("result.title") : t("result.empty.title")}
+              </h1>
+              <p className="mt-3 text-sm leading-6 text-text-secondary sm:text-base">
+                {data.items.length > 0 ? t("result.note") : t("result.empty.note")}
+              </p>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-3">
+              <StatCard
+                label={t("result.stats.matchesLabel")}
+                value={totalMatches}
+                helper={t("result.stats.matchesHint")}
+              />
+              <StatCard
+                label={t("result.stats.topScoreLabel")}
+                value={topScore !== null ? `${topScore}%` : "—"}
+                helper={t("result.stats.topScoreHint")}
+              />
+              <StatCard
+                label={t("result.stats.averageScoreLabel")}
+                value={averageScore !== null ? `${averageScore}%` : "—"}
+                helper={t("result.stats.averageScoreHint")}
+              />
+            </div>
           </div>
 
-          <div className="app-panel-soft rounded-2xl px-4 py-3 text-sm text-text-secondary">
-            <p className="font-medium text-text-primary dark:text-white/90">
-              {t("result.sessionId", { id: data.sessionId })}
-            </p>
-            <p className="mt-1 text-xs text-text-muted">{t("result.sessionSaved")}</p>
-          </div>
-        </div>
+          <aside className="xl:sticky xl:top-6">
+            <div className="app-panel-soft rounded-[28px] p-5">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
+                    {t("result.sessionPanel.title")}
+                  </p>
+                  <p className="mt-2 text-sm font-medium text-text-primary dark:text-white/90">
+                    {t("result.sessionId", { id: data.sessionId })}
+                  </p>
+                  <p className="mt-1 text-xs text-text-muted">{t("result.sessionSaved")}</p>
+                </div>
+                <div className="rounded-full bg-primary-light px-3 py-1.5 text-xs font-semibold text-primary dark:bg-primary/15">
+                  {t("result.sessionPanel.quickView")}
+                </div>
+              </div>
 
-        <div className="mt-5 flex flex-wrap gap-2.5">
-          {data.answers.primaryConcern && (
-            <SummaryChip>
-              {t("result.summary.concern", { value: data.answers.primaryConcern })}
-            </SummaryChip>
-          )}
-          {data.answers.preferredSpecialtySlug && (
-            <SummaryChip>
-              {t("result.summary.specialty", {
-                value: data.answers.preferredSpecialtySlug,
-              })}
-            </SummaryChip>
-          )}
-          {data.answers.preferredLanguage && (
-            <SummaryChip>
-              {t("result.summary.language", {
-                value: t(
-                  `choices.language.${data.answers.preferredLanguage}` as Parameters<
-                    typeof t
-                  >[0],
-                ),
-              })}
-            </SummaryChip>
-          )}
-          {data.answers.sessionMode && (
-            <SummaryChip>
-              {t("result.summary.mode", {
-                value: t(
-                  `choices.mode.${data.answers.sessionMode}` as Parameters<
-                    typeof t
-                  >[0],
-                ),
-              })}
-            </SummaryChip>
-          )}
-          <SummaryChip>
-            {t("result.summary.urgency", {
-              value: t(
-                `choices.urgency.${data.answers.urgency}.title` as Parameters<typeof t>[0],
-              ),
-            })}
-          </SummaryChip>
+              <div className="mt-5 space-y-3">
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-text-muted">
+                  {t("result.sessionPanel.preferences")}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {data.answers.primaryConcern && (
+                    <SummaryChip>
+                      {t("result.summary.concern", { value: data.answers.primaryConcern })}
+                    </SummaryChip>
+                  )}
+                  {data.answers.preferredSpecialtySlug && (
+                    <SummaryChip>
+                      {t("result.summary.specialty", {
+                        value: data.answers.preferredSpecialtySlug,
+                      })}
+                    </SummaryChip>
+                  )}
+                  {data.answers.preferredLanguage && (
+                    <SummaryChip>
+                      {t("result.summary.language", {
+                        value: t(
+                          `choices.language.${data.answers.preferredLanguage}` as Parameters<
+                            typeof t
+                          >[0],
+                        ),
+                      })}
+                    </SummaryChip>
+                  )}
+                  {data.answers.sessionMode && (
+                    <SummaryChip>
+                      {t("result.summary.mode", {
+                        value: t(
+                          `choices.mode.${data.answers.sessionMode}` as Parameters<
+                            typeof t
+                          >[0],
+                        ),
+                      })}
+                    </SummaryChip>
+                  )}
+                  <SummaryChip>
+                    {t("result.summary.urgency", {
+                      value: t(
+                        `choices.urgency.${data.answers.urgency}.title` as Parameters<typeof t>[0],
+                      ),
+                    })}
+                  </SummaryChip>
+                </div>
+              </div>
+            </div>
+          </aside>
         </div>
       </section>
 
       {data.items.length > 0 ? (
-        <section className="space-y-4">
+        <section className="grid gap-4 xl:grid-cols-2 2xl:grid-cols-3">
           {data.items.map((item) => {
             const reasons = buildReasonKeys(data, item);
             const price30 = formatAmount(item.practitioner.sessionPrice30, "EGP", numberLocale);
             const price60 = formatAmount(item.practitioner.sessionPrice60, "EGP", numberLocale);
 
             return (
-              <article
-                key={item.practitioner.id}
-                className="app-panel rounded-[32px] p-5 sm:p-6"
-              >
-                <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-3">
-                      <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-primary-light text-primary dark:bg-primary/15 dark:text-primary-light">
+              <article key={item.practitioner.id} className="app-panel h-full rounded-[28px] p-4 sm:p-5">
+                <div className="flex h-full flex-col gap-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex min-w-0 items-start gap-3">
+                      <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary-light text-primary dark:bg-primary/15 dark:text-primary-light">
                         <Stethoscope className="h-5 w-5" />
                       </span>
                       <div className="min-w-0">
-                        <p className="text-lg font-semibold text-text-primary dark:text-white/95">
+                        <p className="text-lg font-semibold leading-7 text-text-primary dark:text-white/95">
                           {item.practitioner.displayName ?? item.practitioner.slug}
                         </p>
                         {item.practitioner.professionalTitle && (
-                          <p className="mt-1 text-sm text-text-secondary">
+                          <p className="mt-1 line-clamp-2 text-sm leading-6 text-text-secondary">
                             {item.practitioner.professionalTitle}
                           </p>
                         )}
                       </div>
                     </div>
 
-                    {item.practitioner.specialties.length > 0 && (
-                      <div className="mt-4 flex flex-wrap gap-2">
-                        {item.practitioner.specialties.slice(0, 3).map((specialty) => (
-                          <SummaryChip key={specialty}>{specialty}</SummaryChip>
-                        ))}
-                      </div>
-                    )}
-
-                    <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                      <div className="app-panel-soft rounded-2xl p-4">
-                        <p className="text-xs font-medium uppercase tracking-[0.14em] text-text-muted">
-                          {t("result.card.scoreLabel")}
-                        </p>
-                        <p className="mt-2 text-xl font-semibold text-text-primary dark:text-white/95">
-                          {item.score}%
-                        </p>
-                      </div>
-
-                      <div className="app-panel-soft rounded-2xl p-4">
-                        <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-[0.14em] text-text-muted">
-                          <Globe className="h-4 w-4" />
-                          <span>{t("result.card.languagesLabel")}</span>
-                        </div>
-                        <p className="mt-2 text-sm font-medium text-text-primary dark:text-white/90">
-                          {item.practitioner.languages.length > 0
-                            ? item.practitioner.languages.join(" · ")
-                            : t("result.card.none")}
-                        </p>
-                      </div>
-
-                      <div className="app-panel-soft rounded-2xl p-4">
-                        <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-[0.14em] text-text-muted">
-                          <CircleDollarSign className="h-4 w-4" />
-                          <span>{t("result.card.priceLabel")}</span>
-                        </div>
-                        <div className="mt-2 space-y-1 text-sm font-medium text-text-primary dark:text-white/90">
-                          <p>
-                            {t("result.card.price30", {
-                              value: price30 ?? t("result.card.notAvailable"),
-                            })}
-                          </p>
-                          <p>
-                            {t("result.card.price60", {
-                              value: price60 ?? t("result.card.notAvailable"),
-                            })}
-                          </p>
-                        </div>
-                      </div>
+                    <div className="flex shrink-0 flex-col items-end gap-2">
+                      <span className="app-chip rounded-full px-3 py-1.5 text-xs font-semibold text-primary">
+                        #{item.rank}
+                      </span>
+                      <span className="rounded-full bg-primary-light px-3 py-1.5 text-xs font-semibold text-primary dark:bg-primary/15">
+                        {item.score}%
+                      </span>
                     </div>
-
-                    {reasons.length > 0 && (
-                      <div className="mt-4">
-                        <p className="text-sm font-semibold text-text-primary dark:text-white/95">
-                          {t("result.card.whyHeading")}
-                        </p>
-                        <div className="mt-3 flex flex-wrap gap-2">
-                          {reasons.map((key) => (
-                            <SummaryChip key={key}>
-                              {t(`result.reasons.${key}` as Parameters<typeof t>[0])}
-                            </SummaryChip>
-                          ))}
-                        </div>
-                      </div>
-                    )}
                   </div>
 
-                  <div className="flex shrink-0 flex-col gap-3 lg:w-56">
+                  {item.practitioner.specialties.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {item.practitioner.specialties.slice(0, 3).map((specialty) => (
+                        <SummaryChip key={specialty}>{specialty}</SummaryChip>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="grid gap-3 sm:grid-cols-2">
                     <div className="app-panel-soft rounded-2xl p-4">
-                      <p className="text-xs font-medium uppercase tracking-[0.14em] text-text-muted">
-                        {t("result.card.rankLabel")}
-                      </p>
-                      <p className="mt-2 text-xl font-semibold text-text-primary dark:text-white/95">
-                        #{item.rank}
+                      <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-[0.14em] text-text-muted">
+                        <Globe className="h-4 w-4" />
+                        <span>{t("result.card.languagesLabel")}</span>
+                      </div>
+                      <p className="mt-2 text-sm font-medium text-text-primary dark:text-white/90">
+                        {item.practitioner.languages.length > 0
+                          ? item.practitioner.languages.join(" · ")
+                          : t("result.card.none")}
                       </p>
                     </div>
 
+                    <div className="app-panel-soft rounded-2xl p-4">
+                      <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-[0.14em] text-text-muted">
+                        <CircleDollarSign className="h-4 w-4" />
+                        <span>{t("result.card.priceLabel")}</span>
+                      </div>
+                      <div className="mt-2 space-y-1 text-sm font-medium text-text-primary dark:text-white/90">
+                        <p>
+                          {t("result.card.price30", {
+                            value: price30 ?? t("result.card.notAvailable"),
+                          })}
+                        </p>
+                        <p>
+                          {t("result.card.price60", {
+                            value: price60 ?? t("result.card.notAvailable"),
+                          })}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {reasons.length > 0 && (
+                    <div className="space-y-2.5">
+                      <p className="text-sm font-semibold text-text-primary dark:text-white/95">
+                        {t("result.card.whyHeading")}
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {reasons.map((key) => (
+                          <SummaryChip key={key}>
+                            {t(`result.reasons.${key}` as Parameters<typeof t>[0])}
+                          </SummaryChip>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="mt-auto pt-1">
                     <Link
                       href={`/patient/practitioners/${item.practitioner.slug}`}
-                      className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-primary px-5 py-3 text-sm font-semibold text-white hover:bg-primary-hover"
+                      className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-primary px-5 py-3 text-sm font-semibold text-white transition hover:bg-primary-hover"
                     >
                       {t("result.card.viewProfile")}
                       <ArrowRight className="h-4 w-4 rtl:rotate-180" />
@@ -402,4 +453,3 @@ export default function GuidedMatchingSessionScreen({
     </div>
   );
 }
-

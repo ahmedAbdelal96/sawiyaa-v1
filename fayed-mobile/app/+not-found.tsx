@@ -1,6 +1,7 @@
-import { View, Text, StyleSheet } from "react-native";
+import { View, StyleSheet } from "react-native";
 import { Link, Stack } from "expo-router";
 import { useTranslation } from "react-i18next";
+import { Screen, Text, Button } from "../src/components/ui";
 
 export default function NotFoundScreen() {
   const { t } = useTranslation();
@@ -8,15 +9,21 @@ export default function NotFoundScreen() {
   return (
     <>
       <Stack.Screen options={{ title: t("commonNotFound.title") }} />
-      <View style={styles.container}>
-        <Text style={styles.title}>{t("commonNotFound.body")}</Text>
-
-        <Link href="/sessions" style={styles.link}>
-          <Text style={styles.linkText}>
+      <Screen safeArea style={styles.container}>
+        <View style={styles.content}>
+          <Text weight="bold" style={styles.title}>
+            {t("commonNotFound.body")}
+          </Text>
+          <Text color="#64748b" style={styles.description}>
             {t("commonNotFound.goToSessions")}
           </Text>
-        </Link>
-      </View>
+          <View style={styles.buttonContainer}>
+            <Link href="/" asChild>
+              <Button title={t("commonNotFound.goToSessions")} />
+            </Link>
+          </View>
+        </View>
+      </Screen>
     </>
   );
 }
@@ -24,20 +31,27 @@ export default function NotFoundScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    alignItems: "center",
     justifyContent: "center",
-    padding: 20,
+    alignItems: "center",
+  },
+  content: {
+    width: "100%",
+    maxWidth: 360,
+    alignItems: "center",
+    paddingHorizontal: 8,
   },
   title: {
-    fontSize: 20,
-    fontWeight: "bold",
+    fontSize: 22,
+    textAlign: "center",
+    marginBottom: 8,
   },
-  link: {
-    marginTop: 15,
-    paddingVertical: 15,
-  },
-  linkText: {
+  description: {
     fontSize: 14,
-    color: "#2e78b7",
+    textAlign: "center",
+    marginBottom: 24,
+    lineHeight: 22,
+  },
+  buttonContainer: {
+    width: "100%",
   },
 });

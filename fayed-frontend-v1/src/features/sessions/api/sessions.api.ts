@@ -9,6 +9,7 @@ import type {
   SessionItem,
   SessionCancellationPreviewResponseData,
   SessionRuntimeResponseData,
+  SessionSummary,
   SessionsListResponseData,
 } from "../types/sessions.types";
 
@@ -53,6 +54,18 @@ export async function getPatientSessions(
   const response = await httpClient.get<ApiPayload<SessionsListResponseData>>(
     "/patients/me/sessions",
     { params },
+  );
+  return extractData(response.data);
+}
+
+/**
+ * Returns a patient session summary grouped by lifecycle and action needs.
+ *
+ * GET /patients/me/sessions/summary
+ */
+export async function getPatientSessionSummary(): Promise<SessionSummary> {
+  const response = await httpClient.get<ApiPayload<SessionSummary>>(
+    "/patients/me/sessions/summary",
   );
   return extractData(response.data);
 }

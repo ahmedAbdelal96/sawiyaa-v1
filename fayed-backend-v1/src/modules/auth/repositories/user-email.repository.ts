@@ -35,6 +35,50 @@ export class UserEmailRepository {
     });
   }
 
+  findByEmailForAuth(email: string) {
+    return this.prisma.userEmail.findUnique({
+      where: { email },
+      include: {
+        user: {
+          include: {
+            roles: true,
+            emails: {
+              orderBy: [{ isPrimary: 'desc' }, { createdAt: 'asc' }],
+            },
+            phones: {
+              orderBy: [{ isPrimary: 'desc' }, { createdAt: 'asc' }],
+            },
+          },
+        },
+      },
+    });
+  }
+
+  findByEmailForPractitionerAuth(email: string) {
+    return this.prisma.userEmail.findUnique({
+      where: { email },
+      include: {
+        user: {
+          include: {
+            roles: true,
+            practitionerProfile: {
+              select: {
+                id: true,
+                status: true,
+              },
+            },
+            emails: {
+              orderBy: [{ isPrimary: 'desc' }, { createdAt: 'asc' }],
+            },
+            phones: {
+              orderBy: [{ isPrimary: 'desc' }, { createdAt: 'asc' }],
+            },
+          },
+        },
+      },
+    });
+  }
+
   upsertPrimaryEmail(
     userId: string,
     email: string,

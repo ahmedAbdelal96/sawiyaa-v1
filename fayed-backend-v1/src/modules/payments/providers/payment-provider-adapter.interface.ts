@@ -4,6 +4,7 @@ export type PaymentProviderInitiationResult = {
   providerPaymentRef: string;
   providerOrderRef?: string | null;
   providerCustomerRef?: string | null;
+  providerMethod?: string | null;
   status: PaymentStatus;
   checkoutUrl?: string | null;
   clientSecret?: string | null;
@@ -38,6 +39,10 @@ export interface PaymentProviderAdapter {
     description: string;
     sessionId: string;
     patientEmail?: string | null;
+    redirectionUrl?: string | null;
+    paymobMethod?: string | null;
+    checkoutCountryIsoCode?: string | null;
+    operatingCountryIsoCode?: string | null;
   }): Promise<PaymentProviderInitiationResult>;
 
   refundPayment(input: {

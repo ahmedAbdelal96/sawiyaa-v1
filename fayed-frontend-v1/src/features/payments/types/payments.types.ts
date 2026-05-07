@@ -4,6 +4,7 @@
  */
 
 export type PaymentProvider = "STRIPE" | "PAYMOB" | "INTERNAL_WALLET";
+export type PaymobCheckoutMethod = "CARD" | "WALLET";
 
 export type PaymentStatus =
   | "CREATED"
@@ -37,6 +38,7 @@ export type PaymentItem = {
   currency: string;
   providerPaymentId: string | null;
   providerReference: string | null;
+  providerMethod: string | null;
   /**
    * Only populated for hosted-checkout providers (e.g. Paymob when implemented).
    * null for Stripe Payment Intent flow.
@@ -63,6 +65,37 @@ export type PaymentItemResponseData = {
 export type InitiateSessionPaymentInput = {
   couponCode?: string;
   useWalletBalance?: boolean;
+  paymobMethod?: PaymobCheckoutMethod;
+  acceptedRefundPolicyId: string;
+};
+
+export type PaymentReconcileSessionReturnInput = {
+  providerReference?: string | null;
+  redirectStatus?: string | null;
+  success?: boolean | null;
+  pending?: boolean | null;
+};
+
+export type PaymentReconcileSessionReturnResponseData = {
+  item: PaymentItem | null;
+  reconciled: boolean;
+};
+
+export type SessionPaymentCapabilitiesItem = {
+  provider: "PAYMOB";
+  checkoutFlow: "legacy" | "intention";
+  methods: Array<{
+    key: string;
+    label: string;
+    type: string;
+    enabled: boolean;
+  }>;
+  supportedMethods: string[];
+  defaultMethod: string | null;
+};
+
+export type SessionPaymentCapabilitiesResponseData = {
+  item: SessionPaymentCapabilitiesItem;
 };
 
 export type PaymentsPagination = {

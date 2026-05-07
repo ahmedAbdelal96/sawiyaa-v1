@@ -4,6 +4,13 @@ import { PublicPractitionerMapper } from '../mappers/public-practitioner.mapper'
 import { PublicPractitionerVisibilityPolicy } from '../policies/public-practitioner-visibility.policy';
 import { PublicPractitionerReadRepository } from '../repositories/public-practitioner-read.repository';
 
+type PublicPractitionerPricingProfile = {
+  sessionPrice30Egp: string | { toString(): string } | null;
+  sessionPrice30Usd: string | { toString(): string } | null;
+  sessionPrice60Egp: string | { toString(): string } | null;
+  sessionPrice60Usd: string | { toString(): string } | null;
+};
+
 /**
  * Public details use case based on SEO-friendly practitioner slug.
  * Public contract intentionally avoids exposing email/phone/admin/review internals.
@@ -50,6 +57,8 @@ export class GetPublicPractitionerDetailsUseCase {
     const approvedCredentials =
       await this.publicReadRepository.countApprovedCredentials(profile.id);
     const averageRatingRaw = profile.ratingSummary?.averageRating;
+    const pricingProfile = profile as typeof profile &
+      PublicPractitionerPricingProfile;
 
     return {
       item: this.mapper.toDetails({
@@ -70,6 +79,62 @@ export class GetPublicPractitionerDetailsUseCase {
         languages: profile.languages.map((item) => item.language.code),
         countryCode: profile.country?.isoCode ?? null,
         yearsExperience: profile.yearsOfExperience ?? null,
+        pricing: {
+          session30: {
+            egp:
+              pricingProfile.sessionPrice30Egp === null ||
+              pricingProfile.sessionPrice30Egp === undefined
+                ? null
+                : Number(pricingProfile.sessionPrice30Egp),
+            usd:
+              pricingProfile.sessionPrice30Usd === null ||
+              pricingProfile.sessionPrice30Usd === undefined
+                ? null
+                : Number(pricingProfile.sessionPrice30Usd),
+          },
+          session60: {
+            egp:
+              pricingProfile.sessionPrice60Egp === null ||
+              pricingProfile.sessionPrice60Egp === undefined
+                ? null
+                : Number(pricingProfile.sessionPrice60Egp),
+            usd:
+              pricingProfile.sessionPrice60Usd === null ||
+              pricingProfile.sessionPrice60Usd === undefined
+                ? null
+                : Number(pricingProfile.sessionPrice60Usd),
+          },
+        },
+        sessionPrice30:
+          profile.sessionPrice30 === null ||
+          profile.sessionPrice30 === undefined
+            ? null
+            : Number(profile.sessionPrice30),
+        sessionPrice60:
+          profile.sessionPrice60 === null ||
+          profile.sessionPrice60 === undefined
+            ? null
+            : Number(profile.sessionPrice60),
+        sessionPrice30Egp:
+          pricingProfile.sessionPrice30Egp === null ||
+          pricingProfile.sessionPrice30Egp === undefined
+            ? null
+            : Number(pricingProfile.sessionPrice30Egp),
+        sessionPrice30Usd:
+          pricingProfile.sessionPrice30Usd === null ||
+          pricingProfile.sessionPrice30Usd === undefined
+            ? null
+            : Number(pricingProfile.sessionPrice30Usd),
+        sessionPrice60Egp:
+          pricingProfile.sessionPrice60Egp === null ||
+          pricingProfile.sessionPrice60Egp === undefined
+            ? null
+            : Number(pricingProfile.sessionPrice60Egp),
+        sessionPrice60Usd:
+          pricingProfile.sessionPrice60Usd === null ||
+          pricingProfile.sessionPrice60Usd === undefined
+            ? null
+            : Number(pricingProfile.sessionPrice60Usd),
         ratingSummary: {
           averageRating:
             averageRatingRaw === null || averageRatingRaw === undefined

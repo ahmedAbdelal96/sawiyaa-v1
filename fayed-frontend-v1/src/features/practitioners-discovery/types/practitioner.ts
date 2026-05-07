@@ -28,9 +28,23 @@ export type PublicPractitioner = {
   practitionerGender?: "male" | "female" | null;
   sessionPrice30?: number | null;
   sessionPrice60?: number | null;
+  sessionPrice30Egp?: number | null;
+  sessionPrice30Usd?: number | null;
+  sessionPrice60Egp?: number | null;
+  sessionPrice60Usd?: number | null;
+  pricing?: {
+    session30: {
+      egp: number | null;
+      usd: number | null;
+    };
+    session60: {
+      egp: number | null;
+      usd: number | null;
+    };
+  };
   isOnlineNow?: boolean;
   acceptsCoupon?: boolean;
-  acceptsPackage?: boolean;
+  acceptsPackage: boolean;
   rating: number;
   reviewCount: number;
   sessionCount: number | null; // null = not provided by backend public contract

@@ -16,4 +16,14 @@ export interface PaymentProviderCapability {
   configured: boolean;
   available: boolean;
   missingConfig: string[];
+  maintenanceMode?: boolean;
+  checkoutFlow?: 'legacy' | 'intention';
+  methods?: Array<{
+    key: string;
+    label: string;
+    type: string;
+    enabled: boolean;
+  }>;
+  supportedMethods?: string[];
+  defaultMethod?: string | null;
 }

@@ -59,7 +59,9 @@ export default function DashboardLayout({
       >
         <AppHeader messagingRole={messagingRole} />
 
-        <div className={`${shellMaxClass} mx-auto w-full min-w-0 p-4 md:p-6`}>{children}</div>
+        <div className={`${shellMaxClass} mx-auto w-full min-w-0 px-4 pb-4 pt-24 md:px-6 md:pb-6 md:pt-24`}>
+          {children}
+        </div>
       </div>
 
       {messagingRole ? (

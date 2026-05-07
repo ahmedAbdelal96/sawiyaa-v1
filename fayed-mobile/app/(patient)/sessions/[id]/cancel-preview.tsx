@@ -87,7 +87,7 @@ export default function SessionCancellationPreviewScreen() {
         sessionId: preview.sessionId,
         reason: reason.trim().length > 0 ? reason.trim() : undefined,
       });
-      router.replace(`/sessions/${preview.sessionId}`);
+      router.replace(`/(patient)/sessions/${preview.sessionId}`);
     } catch (error) {
       setSubmitError(extractApiErrorMessage(error));
     }

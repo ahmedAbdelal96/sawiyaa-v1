@@ -18,6 +18,7 @@ import { WEEKDAY_ENUM_TO_INDEX } from '../utils/availability-weekday.util';
 interface WindowRange {
   startsAt: Date;
   endsAt: Date;
+  durationMinutes: number | null;
 }
 
 /**
@@ -49,6 +50,7 @@ export class BuildAvailabilityWindowsService {
       .map((exception) => ({
         startsAt: exception.startsAtUtc,
         endsAt: exception.endsAtUtc,
+        durationMinutes: null,
       }));
 
     const blockWindows = input.exceptions
@@ -60,6 +62,7 @@ export class BuildAvailabilityWindowsService {
       .map((exception) => ({
         startsAt: exception.startsAtUtc,
         endsAt: exception.endsAtUtc,
+        durationMinutes: null,
       }));
 
     const mergedBase = this.mergeWindows([...baseWindows, ...extraOpenWindows]);
@@ -69,9 +72,16 @@ export class BuildAvailabilityWindowsService {
     );
 
     return availableAfterBlocks
+      .sort(
+        (left, right) =>
+          left.startsAt.getTime() - right.startsAt.getTime() ||
+          left.endsAt.getTime() - right.endsAt.getTime() ||
+          (left.durationMinutes ?? 0) - (right.durationMinutes ?? 0),
+      )
       .map((window) => ({
         startsAt: window.startsAt.toISOString(),
         endsAt: window.endsAt.toISOString(),
+        durationMinutes: window.durationMinutes,
       }))
       .filter((window) => window.endsAt > window.startsAt);
   }
@@ -131,6 +141,7 @@ export class BuildAvailabilityWindowsService {
         windows.push({
           startsAt: startsAt < fromUtc ? fromUtc : startsAt,
           endsAt: endsAt > toUtc ? toUtc : endsAt,
+          durationMinutes: slot.durationMinutes,
         });
       }
     }
@@ -168,6 +179,7 @@ export class BuildAvailabilityWindowsService {
 
     const ordered = [...windows].sort(
       (left, right) =>
+        (left.durationMinutes ?? 0) - (right.durationMinutes ?? 0) ||
         left.startsAt.getTime() - right.startsAt.getTime() ||
         left.endsAt.getTime() - right.endsAt.getTime(),
     );
@@ -177,7 +189,10 @@ export class BuildAvailabilityWindowsService {
       const current = ordered[index];
       const last = merged[merged.length - 1];
 
-      if (current.startsAt.getTime() <= last.endsAt.getTime()) {
+      if (
+        current.durationMinutes === last.durationMinutes &&
+        current.startsAt.getTime() <= last.endsAt.getTime()
+      ) {
         if (current.endsAt.getTime() > last.endsAt.getTime()) {
           last.endsAt = current.endsAt;
         }
@@ -214,6 +229,7 @@ export class BuildAvailabilityWindowsService {
           next.push({
             startsAt: window.startsAt,
             endsAt: block.startsAt,
+            durationMinutes: window.durationMinutes,
           });
         }
 
@@ -221,6 +237,7 @@ export class BuildAvailabilityWindowsService {
           next.push({
             startsAt: block.endsAt,
             endsAt: window.endsAt,
+            durationMinutes: window.durationMinutes,
           });
         }
       }

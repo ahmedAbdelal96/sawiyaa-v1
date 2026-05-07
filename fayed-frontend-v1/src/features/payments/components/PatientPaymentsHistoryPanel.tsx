@@ -2,19 +2,21 @@
 
 import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
-import { ArrowDownLeft, ArrowUpRight, CreditCard, RefreshCw, Wallet } from "lucide-react";
+import { CreditCard, RefreshCw, Wallet } from "lucide-react";
 import { ListStateSkeleton, StateCard } from "@/components/shared/ContentStates";
 import { DEFAULT_PAGE_LIMIT } from "@/constants/pagination";
 import { usePatientPayments, usePatientWalletEntries, usePatientWalletSummary } from "../hooks/use-payments";
+import PatientMoneyClarityPanel from "./PatientMoneyClarityPanel";
 import {
   canContinuePayment,
   canRetryPayment,
   getPaymentPrimaryActionKey,
   getPaymentStatusNoteKey,
 } from "../lib/payment-status";
+import { usePatientProfile } from "@/features/patients/hooks/use-patients";
+import { resolvePatientCurrencyCode } from "../lib/patient-currency";
+import WalletActivityCard from "./WalletActivityCard";
 import type {
-  CustomerWalletEntryItem,
-  CustomerWalletEntryType,
   PaymentItem,
   PaymentProvider,
   PaymentStatus,
@@ -57,8 +59,6 @@ function formatDate(isoString: string, numLocale: string): string {
   });
 }
 
-const DEFAULT_WALLET_CURRENCY = "SAR";
-
 function resolveRelevantDate(
   payment: PaymentItem,
 ): { labelKey: string; isoString: string } {
@@ -82,8 +82,20 @@ function resolveProviderLabelKey(provider: PaymentProvider): string {
   return `history.provider.${provider}`;
 }
 
-function resolveWalletEntryLabelKey(entryType: CustomerWalletEntryType): string {
-  return `history.wallet.entries.type.${entryType}`;
+function resolvePaymentSplitKey(payment: PaymentItem): string {
+  const walletApplied = Number(payment.amountFromWallet) > 0;
+  const gatewayApplied = Number(payment.amountFromGateway) > 0;
+
+  if (walletApplied && gatewayApplied) {
+    return "history.split.walletAndGateway";
+  }
+  if (walletApplied) {
+    return "history.split.walletOnly";
+  }
+  if (gatewayApplied) {
+    return "history.split.gatewayOnly";
+  }
+  return "history.split.unavailable";
 }
 
 function PaymentCard({ payment }: { payment: PaymentItem }) {
@@ -98,6 +110,11 @@ function PaymentCard({ payment }: { payment: PaymentItem }) {
 
   const walletApplied = Number(payment.amountFromWallet) > 0;
   const gatewayApplied = Number(payment.amountFromGateway) > 0;
+  const splitLabelKey = resolvePaymentSplitKey(payment);
+  const isRefundRelated =
+    payment.status === "REFUND_PENDING" ||
+    payment.status === "PARTIALLY_REFUNDED" ||
+    payment.status === "REFUNDED";
 
   return (
     <div className="rounded-2xl border border-border-light bg-surface-secondary dark:bg-white/5">
@@ -108,6 +125,9 @@ function PaymentCard({ payment }: { payment: PaymentItem }) {
           </p>
           <p className="mt-0.5 text-xs text-text-muted">
             {t(resolveProviderLabelKey(payment.provider) as Parameters<typeof t>[0])}
+          </p>
+          <p className="mt-1 text-xs font-medium text-text-secondary">
+            {t(splitLabelKey as Parameters<typeof t>[0])}
           </p>
         </div>
         <span
@@ -146,6 +166,11 @@ function PaymentCard({ payment }: { payment: PaymentItem }) {
         <p className="mt-2 text-xs text-text-secondary">
           {t(getPaymentStatusNoteKey(payment.status) as Parameters<typeof t>[0])}
         </p>
+        {isRefundRelated ? (
+          <p className="mt-2 text-xs leading-5 text-text-muted">
+            {t("history.refundClarification")}
+          </p>
+        ) : null}
         <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
           {(canContinue || canRetry) && payment.sessionId && primaryActionKey && (
             <Link
@@ -170,52 +195,16 @@ function PaymentCard({ payment }: { payment: PaymentItem }) {
   );
 }
 
-function WalletActivityCard({ entry }: { entry: CustomerWalletEntryItem }) {
-  const t = useTranslations("payments");
-  const locale = useLocale();
-  const numLocale = locale === "ar" ? "ar-SA" : "en-US";
-  const isCredit = entry.direction === "CREDIT";
-
-  return (
-    <div className="flex items-start justify-between rounded-xl border border-border-light bg-white px-4 py-3 dark:bg-white/5">
-      <div className="flex items-start gap-2">
-        <span
-          className={`mt-0.5 inline-flex h-6 w-6 items-center justify-center rounded-full ${
-            isCredit
-              ? "bg-primary-light text-text-brand dark:bg-primary/20 dark:text-primary-light"
-              : "bg-surface-tertiary text-text-secondary dark:bg-white/10 dark:text-white/70"
-          }`}
-        >
-          {isCredit ? <ArrowDownLeft size={12} /> : <ArrowUpRight size={12} />}
-        </span>
-        <div>
-          <p className="text-sm font-medium text-text-primary dark:text-white/90">
-            {t(resolveWalletEntryLabelKey(entry.entryType) as Parameters<typeof t>[0])}
-          </p>
-          <p className="mt-0.5 text-xs text-text-muted">
-            {formatDate(entry.effectiveAt, numLocale)}
-          </p>
-          {entry.description ? (
-            <p className="mt-1 text-xs text-text-secondary">{entry.description}</p>
-          ) : null}
-        </div>
-      </div>
-      <p
-        className={`text-sm font-semibold tabular-nums ${
-          isCredit ? "text-text-brand dark:text-primary-light" : "text-text-primary dark:text-white/90"
-        }`}
-      >
-        {isCredit ? "+" : "-"}
-        {formatAmount(entry.amount, entry.currencyCode, numLocale)}
-      </p>
-    </div>
-  );
-}
-
 export default function PatientPaymentsHistoryPanel() {
   const t = useTranslations("payments");
   const locale = useLocale();
   const numLocale = locale === "ar" ? "ar-SA" : "en-US";
+
+  const { data: patientProfileData, isLoading: patientProfileLoading } = usePatientProfile();
+
+  const preferredWalletCurrencyCode = resolvePatientCurrencyCode({
+    countryCode: patientProfileData?.profile.countryCode ?? null,
+  });
 
   const {
     data: paymentsData,
@@ -229,14 +218,18 @@ export default function PatientPaymentsHistoryPanel() {
     isLoading: walletSummaryLoading,
     isError: walletSummaryError,
     refetch: refetchWalletSummary,
-  } = usePatientWalletSummary();
+  } = usePatientWalletSummary(preferredWalletCurrencyCode ?? undefined);
 
   const {
     data: walletEntriesData,
     isLoading: walletEntriesLoading,
     isError: walletEntriesError,
     refetch: refetchWalletEntries,
-  } = usePatientWalletEntries({ page: 1, limit: 6 });
+  } = usePatientWalletEntries({
+    page: 1,
+    limit: 6,
+    currencyCode: preferredWalletCurrencyCode ?? undefined,
+  });
 
   if (paymentsLoading) {
     return <ListStateSkeleton items={3} heightClass="h-24" />;
@@ -256,10 +249,29 @@ export default function PatientPaymentsHistoryPanel() {
   const wallet = walletSummaryData?.item ?? null;
   const walletEntries = walletEntriesData?.items ?? [];
   const walletCurrencyCode =
+    resolvePatientCurrencyCode({
+      currencyCode:
+        wallet?.currencyCode ??
+        walletEntries[0]?.currencyCode ??
+        payments[0]?.currency ??
+        null,
+      countryCode: patientProfileData?.profile.countryCode ?? null,
+    }) ??
     wallet?.currencyCode ??
     walletEntries[0]?.currencyCode ??
     payments[0]?.currency ??
-    DEFAULT_WALLET_CURRENCY;
+    null;
+  const walletSplitPayments = payments.filter((payment) => Number(payment.amountFromWallet) > 0);
+  const gatewaySplitPayments = payments.filter((payment) => Number(payment.amountFromGateway) > 0);
+  const mixedSplitPayments = payments.filter(
+    (payment) => Number(payment.amountFromWallet) > 0 && Number(payment.amountFromGateway) > 0,
+  );
+  const refundRelatedPayments = payments.filter(
+    (payment) =>
+      payment.status === "REFUND_PENDING" ||
+      payment.status === "PARTIALLY_REFUNDED" ||
+      payment.status === "REFUNDED",
+  );
 
   return (
     <div className="space-y-5">
@@ -271,18 +283,26 @@ export default function PatientPaymentsHistoryPanel() {
               {t("history.wallet.summaryHeading")}
             </p>
           </div>
-          {walletSummaryError ? (
-            <button
-              type="button"
-              onClick={() => refetchWalletSummary()}
+          <div className="flex items-center gap-3">
+            <Link
+              href="/patient/wallet"
               className="text-xs font-medium text-primary hover:underline"
             >
-              {t("history.retry")}
-            </button>
-          ) : null}
+              {t("history.wallet.openWallet")}
+            </Link>
+            {walletSummaryError ? (
+              <button
+                type="button"
+                onClick={() => refetchWalletSummary()}
+                className="text-xs font-medium text-primary hover:underline"
+              >
+                {t("history.retry")}
+              </button>
+            ) : null}
+          </div>
         </div>
 
-        {walletSummaryLoading ? (
+        {walletSummaryLoading || patientProfileLoading ? (
           <div className="mt-3">
             <ListStateSkeleton items={1} heightClass="h-14" />
           </div>
@@ -291,13 +311,17 @@ export default function PatientPaymentsHistoryPanel() {
             <div className="rounded-xl border border-border-light bg-surface-secondary px-3 py-3 dark:bg-white/5">
               <p className="text-xs text-text-muted">{t("history.wallet.availableLabel")}</p>
               <p className="mt-1 text-lg font-bold text-text-primary dark:text-white/95">
-                {formatAmount(wallet?.availableBalance ?? "0", walletCurrencyCode, numLocale)}
+                {walletCurrencyCode
+                  ? formatAmount(wallet?.availableBalance ?? "0", walletCurrencyCode, numLocale)
+                  : wallet?.availableBalance ?? "0"}
               </p>
             </div>
             <div className="rounded-xl border border-border-light bg-surface-secondary px-3 py-3 dark:bg-white/5">
               <p className="text-xs text-text-muted">{t("history.wallet.reservedLabel")}</p>
               <p className="mt-1 text-lg font-semibold text-text-primary dark:text-white/90">
-                {formatAmount(wallet?.reservedBalance ?? "0", walletCurrencyCode, numLocale)}
+                {walletCurrencyCode
+                  ? formatAmount(wallet?.reservedBalance ?? "0", walletCurrencyCode, numLocale)
+                  : wallet?.reservedBalance ?? "0"}
               </p>
             </div>
           </div>
@@ -305,6 +329,46 @@ export default function PatientPaymentsHistoryPanel() {
 
         <p className="mt-3 text-xs text-text-muted">{t("history.wallet.refundHint")}</p>
       </section>
+
+      <PatientMoneyClarityPanel
+        eyebrow={t("history.moneyStory.eyebrow")}
+        title={t("history.moneyStory.heading")}
+        note={t("history.moneyStory.note")}
+        facts={[
+          {
+            label: t("history.moneyStory.facts.walletBacked.label"),
+            value: t("history.moneyStory.facts.walletBacked.value", {
+              count: walletSplitPayments.length,
+            }),
+            helper: t("history.moneyStory.facts.walletBacked.helper"),
+          },
+          {
+            label: t("history.moneyStory.facts.gatewayBacked.label"),
+            value: t("history.moneyStory.facts.gatewayBacked.value", {
+              count: gatewaySplitPayments.length,
+            }),
+            helper: t("history.moneyStory.facts.gatewayBacked.helper"),
+          },
+          {
+            label: t("history.moneyStory.facts.mixed.label"),
+            value: t("history.moneyStory.facts.mixed.value", {
+              count: mixedSplitPayments.length,
+            }),
+            helper: t("history.moneyStory.facts.mixed.helper"),
+          },
+          {
+            label: t("history.moneyStory.facts.refund.label"),
+            value: t("history.moneyStory.facts.refund.value", {
+              count: refundRelatedPayments.length,
+            }),
+            helper: t("history.moneyStory.facts.refund.helper"),
+          },
+        ]}
+        actions={[
+          { label: t("history.moneyStory.actions.wallet"), href: "/patient/wallet", tone: "primary" },
+          { label: t("history.moneyStory.actions.sessions"), href: "/patient/sessions" },
+        ]}
+      />
 
       <section className="space-y-3">
         {payments.length > 0 ? (

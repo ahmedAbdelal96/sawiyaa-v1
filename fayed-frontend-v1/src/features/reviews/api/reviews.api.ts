@@ -4,6 +4,7 @@ import { extractData } from "@/lib/api/response";
 import type {
   AdminReviewItemData,
   AdminReviewsListData,
+  CreateSessionReviewInput,
   ListAdminReviewsParams,
   ListPatientReviewsParams,
   ModerationResultData,
@@ -62,6 +63,17 @@ export async function getPatientReviews(
 export async function getPatientReview(reviewId: string): Promise<PatientReviewItemData> {
   const response = await httpClient.get<ApiPayload<PatientReviewItemData>>(
     `/patients/me/reviews/${reviewId}`,
+  );
+  return extractData(response.data);
+}
+
+export async function submitPatientSessionReview(
+  sessionId: string,
+  payload: CreateSessionReviewInput,
+): Promise<PatientReviewItemData> {
+  const response = await httpClient.post<ApiPayload<PatientReviewItemData>>(
+    `/patients/me/sessions/${sessionId}/review`,
+    payload,
   );
   return extractData(response.data);
 }

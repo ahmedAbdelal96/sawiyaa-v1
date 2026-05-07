@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Prisma, PractitionerStatus } from '@prisma/client';
+import { ConfigResolverService } from '@modules/config/services/config-resolver.service';
 import { AuthenticatedUser } from '@common/interfaces/authenticated-user.interface';
 import { PrismaService } from '@common/prisma/prisma.service';
 import { I18nService } from '@common/i18n/services/i18n.service';
@@ -25,6 +26,7 @@ export class UpdatePractitionerProfileUseCase {
   constructor(
     private readonly prisma: PrismaService,
     private readonly i18nService: I18nService,
+    private readonly configResolverService: ConfigResolverService,
     private readonly createPractitionerProfileUseCase: CreatePractitionerProfileUseCase,
     private readonly practitionerProfileRepository: PractitionerProfileRepository,
     private readonly practitionerUserRepository: PractitionerUserRepository,
@@ -35,6 +37,65 @@ export class UpdatePractitionerProfileUseCase {
     private readonly practitionerPayoutDestinationValidationService: PractitionerPayoutDestinationValidationService,
     private readonly getPractitionerProfileUseCase: GetPractitionerProfileUseCase,
   ) {}
+
+  private resolvePackageAvailabilityMissingRequirements(input: {
+    profile: {
+      status: PractitionerStatus;
+      acceptsPackages: boolean;
+      sessionPrice30Egp: { toString(): string } | string | null;
+      sessionPrice30Usd: { toString(): string } | string | null;
+      sessionPrice60Egp: { toString(): string } | string | null;
+      sessionPrice60Usd: { toString(): string } | string | null;
+    };
+    currentUser: AuthenticatedUser;
+    packagesEnabled: boolean | null | undefined;
+    packagePurchasesEnabled: boolean | null | undefined;
+    proposedPrices: {
+      sessionPrice30Egp: { toString(): string } | string | null;
+      sessionPrice30Usd: { toString(): string } | string | null;
+      sessionPrice60Egp: { toString(): string } | string | null;
+      sessionPrice60Usd: { toString(): string } | string | null;
+    };
+  }) {
+    const missingRequirements: string[] = [];
+
+    const isPresent = (value: { toString(): string } | string | null) =>
+      value !== null && value !== undefined && String(value).trim().length > 0;
+
+    if (input.currentUser.isActive !== true) {
+      missingRequirements.push('activeAccount');
+    }
+
+    if (input.profile.status !== PractitionerStatus.APPROVED) {
+      missingRequirements.push('approvedProfile');
+    }
+
+    if (input.packagesEnabled === false) {
+      missingRequirements.push('packagesEnabled');
+    }
+
+    if (input.packagePurchasesEnabled === false) {
+      missingRequirements.push('packagePurchasesEnabled');
+    }
+
+    if (!isPresent(input.proposedPrices.sessionPrice30Egp)) {
+      missingRequirements.push('sessionPrice30Egp');
+    }
+
+    if (!isPresent(input.proposedPrices.sessionPrice30Usd)) {
+      missingRequirements.push('sessionPrice30Usd');
+    }
+
+    if (!isPresent(input.proposedPrices.sessionPrice60Egp)) {
+      missingRequirements.push('sessionPrice60Egp');
+    }
+
+    if (!isPresent(input.proposedPrices.sessionPrice60Usd)) {
+      missingRequirements.push('sessionPrice60Usd');
+    }
+
+    return missingRequirements;
+  }
 
   async execute(input: {
     userId: string;
@@ -86,11 +147,58 @@ export class UpdatePractitionerProfileUseCase {
       }
     }
 
+    const [packagesEnabled, packagePurchasesEnabled] = await Promise.all([
+      this.configResolverService.getBoolean('packages.enabled'),
+      this.configResolverService.getBoolean('packages.purchaseEnabled'),
+    ]);
+
     await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const profile = await this.createPractitionerProfileUseCase.execute(
         input.userId,
         tx,
       );
+
+      const wantsPackageAvailability =
+        normalizedInput.acceptsPackage === true &&
+        normalizedInput.acceptsPackage !== profile.acceptsPackages;
+
+      if (wantsPackageAvailability) {
+        const missingRequirements =
+          this.resolvePackageAvailabilityMissingRequirements({
+            profile,
+            currentUser: input.currentUser,
+            packagesEnabled,
+            packagePurchasesEnabled,
+            proposedPrices: {
+              sessionPrice30Egp:
+                normalizedInput.sessionPrice30Egp === undefined
+                  ? profile.sessionPrice30Egp
+                  : normalizedInput.sessionPrice30Egp,
+              sessionPrice30Usd:
+                normalizedInput.sessionPrice30Usd === undefined
+                  ? profile.sessionPrice30Usd
+                  : normalizedInput.sessionPrice30Usd,
+              sessionPrice60Egp:
+                normalizedInput.sessionPrice60Egp === undefined
+                  ? profile.sessionPrice60Egp
+                  : normalizedInput.sessionPrice60Egp,
+              sessionPrice60Usd:
+                normalizedInput.sessionPrice60Usd === undefined
+                  ? profile.sessionPrice60Usd
+                  : normalizedInput.sessionPrice60Usd,
+            },
+          });
+
+        if (missingRequirements.length > 0) {
+          throw new BadRequestException({
+            messageKey: 'practitioners.errors.packageAvailabilityRequirementsNotMet',
+            error: 'PRACTITIONER_PACKAGE_AVAILABILITY_REQUIREMENTS_NOT_MET',
+            details: {
+              missingRequirements,
+            },
+          });
+        }
+      }
 
       await this.practitionerProfileRepository.updateByUserId(
         input.userId,
@@ -100,6 +208,11 @@ export class UpdatePractitionerProfileUseCase {
           yearsOfExperience: normalizedInput.yearsOfExperience,
           practitionerType: normalizedInput.practitionerType,
           practitionerGender: normalizedInput.practitionerGender,
+          sessionPrice30Egp: normalizedInput.sessionPrice30Egp,
+          sessionPrice30Usd: normalizedInput.sessionPrice30Usd,
+          sessionPrice60Egp: normalizedInput.sessionPrice60Egp,
+          sessionPrice60Usd: normalizedInput.sessionPrice60Usd,
+          acceptsPackages: normalizedInput.acceptsPackage,
           countryId:
             country === undefined ? undefined : country ? country.id : null,
         },

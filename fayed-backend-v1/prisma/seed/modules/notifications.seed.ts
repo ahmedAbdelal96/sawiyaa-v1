@@ -12,7 +12,16 @@ import { SeedModule } from '../shared/seed.types';
 export const notificationsSeedModule: SeedModule = {
   name: 'notifications',
   async run(prisma: PrismaClient): Promise<void> {
-    const typeSeed = [
+    const typeSeed: Array<{
+      slug: string;
+      displayName: string;
+      description: string;
+      category: NotificationCategory;
+      supportsEmail?: boolean;
+      supportsSms?: boolean;
+      supportsPush?: boolean;
+      supportsInApp?: boolean;
+    }> = [
       {
         slug: 'auth.practitioner-login-otp',
         displayName: 'Practitioner Login OTP',
@@ -58,7 +67,8 @@ export const notificationsSeedModule: SeedModule = {
       {
         slug: 'payments.refund-succeeded',
         displayName: 'Refund Succeeded',
-        description: 'Operational notification when refund is processed successfully',
+        description:
+          'Operational notification when refund is processed successfully',
         category: NotificationCategory.PAYMENT,
       },
       {
@@ -70,7 +80,8 @@ export const notificationsSeedModule: SeedModule = {
       {
         slug: 'sessions.session-confirmed',
         displayName: 'Session Confirmed (Patient)',
-        description: 'Operational notification for patient when session is confirmed',
+        description:
+          'Operational notification for patient when session is confirmed',
         category: NotificationCategory.SESSION,
       },
       {
@@ -83,7 +94,8 @@ export const notificationsSeedModule: SeedModule = {
       {
         slug: 'sessions.session-cancelled',
         displayName: 'Session Cancelled (Patient)',
-        description: 'Operational notification for patient when session is cancelled',
+        description:
+          'Operational notification for patient when session is cancelled',
         category: NotificationCategory.SESSION,
       },
       {
@@ -92,6 +104,17 @@ export const notificationsSeedModule: SeedModule = {
         description:
           'Operational notification for practitioner when patient cancels session',
         category: NotificationCategory.SESSION,
+      },
+      {
+        slug: 'sessions.session-join-available',
+        displayName: 'Session Join Available',
+        description:
+          'In-app notification when a paid session becomes ready to join',
+        category: NotificationCategory.SESSION,
+        supportsEmail: true,
+        supportsSms: false,
+        supportsPush: false,
+        supportsInApp: true,
       },
       {
         slug: 'training.enrollment-confirmed',
@@ -114,10 +137,10 @@ export const notificationsSeedModule: SeedModule = {
         create: {
           ...type,
           defaultEnabled: true,
-          supportsEmail: true,
-          supportsSms: true,
-          supportsPush: false,
-          supportsInApp: true,
+          supportsEmail: type.supportsEmail ?? true,
+          supportsSms: type.supportsSms ?? true,
+          supportsPush: type.supportsPush ?? false,
+          supportsInApp: type.supportsInApp ?? true,
           isMandatory: false,
         },
         update: {
@@ -125,10 +148,10 @@ export const notificationsSeedModule: SeedModule = {
           description: type.description,
           category: type.category,
           defaultEnabled: true,
-          supportsEmail: true,
-          supportsSms: true,
-          supportsPush: false,
-          supportsInApp: true,
+          supportsEmail: type.supportsEmail ?? true,
+          supportsSms: type.supportsSms ?? true,
+          supportsPush: type.supportsPush ?? false,
+          supportsInApp: type.supportsInApp ?? true,
         },
       });
     }
@@ -164,7 +187,8 @@ export const notificationsSeedModule: SeedModule = {
           ar: {
             subjectTemplate: 'رمز إعادة تعيين كلمة المرور',
             titleTemplate: 'رمز إعادة التعيين',
-            bodyTemplate: 'استخدم هذا الرمز لإعادة تعيين كلمة المرور: {{code}}.',
+            bodyTemplate:
+              'استخدم هذا الرمز لإعادة تعيين كلمة المرور: {{code}}.',
           },
         },
       },
@@ -211,14 +235,12 @@ export const notificationsSeedModule: SeedModule = {
           en: {
             subjectTemplate: null,
             titleTemplate: 'Payment completed',
-            bodyTemplate:
-              'Your payment has been completed successfully.',
+            bodyTemplate: 'Your payment has been completed successfully.',
           },
           ar: {
             subjectTemplate: null,
             titleTemplate: 'Payment completed',
-            bodyTemplate:
-              'Your payment has been completed successfully.',
+            bodyTemplate: 'Your payment has been completed successfully.',
           },
         },
       },
@@ -230,14 +252,12 @@ export const notificationsSeedModule: SeedModule = {
           en: {
             subjectTemplate: 'Payment completed',
             titleTemplate: 'Payment completed',
-            bodyTemplate:
-              'Your payment has been completed successfully.',
+            bodyTemplate: 'Your payment has been completed successfully.',
           },
           ar: {
             subjectTemplate: 'Payment completed',
             titleTemplate: 'Payment completed',
-            bodyTemplate:
-              'Your payment has been completed successfully.',
+            bodyTemplate: 'Your payment has been completed successfully.',
           },
         },
       },
@@ -378,6 +398,50 @@ export const notificationsSeedModule: SeedModule = {
         },
       },
       {
+        typeSlug: 'sessions.session-join-available',
+        channel: NotificationChannel.IN_APP,
+        slug: 'sessions.session-join-available.in-app.v1',
+        translations: {
+          en: {
+            subjectTemplate: null,
+            titleTemplate: 'Session ready to join',
+            bodyTemplate:
+              'Your session starts soon. Open the session page to join securely.',
+            ctaLabel: 'Open session',
+            ctaUrlTemplate: '{{appUrl}}{{routePath}}',
+          },
+          ar: {
+            subjectTemplate: null,
+            titleTemplate: 'جلستك جاهزة للدخول',
+            bodyTemplate: 'تبدأ جلستك قريبًا. افتح صفحة الجلسة للانضمام بأمان.',
+            ctaLabel: 'افتح الجلسة',
+            ctaUrlTemplate: '{{appUrl}}{{routePath}}',
+          },
+        },
+      },
+      {
+        typeSlug: 'sessions.session-join-available',
+        channel: NotificationChannel.EMAIL,
+        slug: 'sessions.session-join-available.email.v1',
+        translations: {
+          en: {
+            subjectTemplate: 'Your Fayed session is ready to join',
+            titleTemplate: 'Your session is ready',
+            bodyTemplate:
+              'Your session starts soon. Open the session page to join securely.',
+            ctaLabel: 'Open session',
+            ctaUrlTemplate: '{{appUrl}}{{routePath}}',
+          },
+          ar: {
+            subjectTemplate: 'جلستك على فايد جاهزة للدخول',
+            titleTemplate: 'جلستك جاهزة للدخول',
+            bodyTemplate: 'تبدأ جلستك قريبًا. افتح صفحة الجلسة للانضمام بأمان.',
+            ctaLabel: 'افتح الجلسة',
+            ctaUrlTemplate: '{{appUrl}}{{routePath}}',
+          },
+        },
+      },
+      {
         typeSlug: 'training.enrollment-confirmed',
         channel: NotificationChannel.IN_APP,
         slug: 'training.enrollment-confirmed.in-app.v1',
@@ -462,11 +526,15 @@ export const notificationsSeedModule: SeedModule = {
             subjectTemplate: translation.subjectTemplate,
             titleTemplate: translation.titleTemplate,
             bodyTemplate: translation.bodyTemplate,
+            ctaLabel: translation.ctaLabel ?? null,
+            ctaUrlTemplate: translation.ctaUrlTemplate ?? null,
           },
           update: {
             subjectTemplate: translation.subjectTemplate,
             titleTemplate: translation.titleTemplate,
             bodyTemplate: translation.bodyTemplate,
+            ctaLabel: translation.ctaLabel ?? null,
+            ctaUrlTemplate: translation.ctaUrlTemplate ?? null,
           },
         });
       }

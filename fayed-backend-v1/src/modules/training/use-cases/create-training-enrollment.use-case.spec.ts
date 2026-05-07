@@ -35,6 +35,9 @@ describe('CreateTrainingEnrollmentUseCase', () => {
     updateStatus: jest.fn(),
     findById: jest.fn(),
   } as unknown as PaymentRepository;
+  const paymentGeoContextService = {
+    buildCountrySnapshot: jest.fn(),
+  };
   const paymentProviderResolverService = {
     resolveProvider: jest.fn(),
   } as unknown as PaymentProviderResolverService;
@@ -55,6 +58,7 @@ describe('CreateTrainingEnrollmentUseCase', () => {
     prisma,
     trainingRepository,
     paymentRepository,
+    paymentGeoContextService as any,
     paymentProviderResolverService,
     paymentProviderRegistryService,
     validatePaymentStatusTransitionService,
@@ -65,7 +69,12 @@ describe('CreateTrainingEnrollmentUseCase', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     (prisma.$transaction as jest.Mock).mockImplementation(async (fn: any) =>
-      fn({}),
+      fn({
+        trainingEnrollmentPaymentAttempt: {
+          create: jest.fn().mockResolvedValue({}),
+          update: jest.fn().mockResolvedValue({}),
+        },
+      }),
     );
   });
 

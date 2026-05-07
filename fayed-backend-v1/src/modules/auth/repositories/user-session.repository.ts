@@ -28,17 +28,40 @@ export class UserSessionRepository {
         id: sessionId,
         revokedAt: null,
       },
-      include: {
+      select: {
+        id: true,
+        userId: true,
+        refreshTokenHash: true,
+        expiresAt: true,
         user: {
-          include: {
+          select: {
+            id: true,
+            displayName: true,
+            status: true,
+            tokenVersion: true,
             roles: true,
             emails: {
               orderBy: [{ isPrimary: 'desc' }, { createdAt: 'asc' }],
+              select: {
+                email: true,
+                isPrimary: true,
+                isVerified: true,
+              },
             },
             phones: {
               orderBy: [{ isPrimary: 'desc' }, { createdAt: 'asc' }],
+              select: {
+                phone: true,
+                isPrimary: true,
+                isVerified: true,
+              },
             },
-            practitionerProfile: true,
+            practitionerProfile: {
+              select: {
+                id: true,
+                status: true,
+              },
+            },
           },
         },
       },

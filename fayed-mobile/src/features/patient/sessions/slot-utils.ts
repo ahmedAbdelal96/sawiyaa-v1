@@ -12,6 +12,8 @@ export interface DayGroup {
   slots: SelectableSlot[];
 }
 
+const MIN_BOOKING_LEAD_MS = 60 * 1000;
+
 export function getWeekRange(weekOffset: number) {
   const today = new Date();
   const from = new Date(
@@ -37,6 +39,7 @@ export function buildSlotsFromWindows(windows: AvailabilityWindow[]) {
   const halfHourMs = 30 * 60 * 1000;
   const hourMs = 60 * 60 * 1000;
   const slots: SelectableSlot[] = [];
+  const earliestAllowedStart = Date.now() + MIN_BOOKING_LEAD_MS;
 
   for (const window of windows) {
     const startMs = new Date(window.startsAt).getTime();
@@ -47,6 +50,10 @@ export function buildSlotsFromWindows(windows: AvailabilityWindow[]) {
       cursor + halfHourMs <= endMs;
       cursor += halfHourMs
     ) {
+      if (cursor <= earliestAllowedStart) {
+        continue;
+      }
+
       const remainingMs = endMs - cursor;
       slots.push({
         startsAt: new Date(cursor).toISOString(),

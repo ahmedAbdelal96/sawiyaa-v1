@@ -92,6 +92,115 @@
     "bookAnother": "Book another slot",
     "jumpToAvailability": "View available times"
   },
+  "packages": {
+    "eyebrow": "Packages",
+    "title": "Session packages",
+    "subtitle": "Choose a package to preview the full price, savings, and per-session value with the same booking controls you already use.",
+    "selected": "Selected",
+    "availablePlans": "Available plans",
+    "retry": "Try again",
+    "refreshQuote": "Refresh quote",
+    "signInToContinue": "Sign in to continue",
+    "startPurchase": "Start purchase",
+    "viewPurchases": "View my package purchases",
+    "empty": "Packages are not available for this practitioner right now.",
+    "controls": {
+      "duration": "Duration",
+      "currency": "Currency",
+      "sessionMode": "Session mode"
+    },
+    "mode": {
+      "video": "Video"
+    },
+    "currency": {
+      "EGP": "EGP",
+      "USD": "USD"
+    },
+    "plan": {
+      "sessionCount": "Sessions",
+      "session": "session",
+      "sessions": "sessions",
+      "single": "plan",
+      "multiple": "plans",
+      "save": "Save {amount}"
+    },
+    "quote": {
+      "baseSessionPrice": "Base session price",
+      "regularTotal": "Regular total",
+      "discount": "Discount",
+      "discountAmount": "Discount amount",
+      "payableTotal": "You pay",
+      "currency": "Currency"
+    },
+    "errors": {
+      "loadFailed": "We could not load package pricing right now.",
+      "loadFailedHint": "Please try again in a moment.",
+      "currencyUnavailable": "Package pricing is not available in the selected currency.",
+      "currencyUnavailableHint": "Choose another currency to preview the available package pricing."
+    },
+    "flow": {
+      "eyebrow": "Packages",
+      "title": "Choose and book a package",
+      "subtitle": "Pick a package, select the exact session times, review the quote, and continue to payment.",
+      "steps": {
+        "choosePackage": "Choose package",
+        "chooseTimes": "Choose times",
+        "review": "Review",
+        "pay": "Pay"
+      },
+      "duration": "Duration",
+      "currency": "Currency",
+      "sessionMode": "Session mode",
+      "videoOnly": "Video session",
+      "availablePlans": "Available plans",
+      "previewHeading": "Package quote",
+      "selectedPackage": "Selected package",
+      "selectedDuration": "Selected duration",
+      "selectedCurrency": "Selected currency",
+      "selectedSessions": "Selected sessions",
+      "chosenSlots": "Chosen times",
+      "slotProgress": "{selected} of {total} sessions selected",
+      "noSlotsSelected": "Choose the session times you want to include in this package.",
+      "selected": "Selected",
+      "continueToTimes": "Choose times",
+      "reviewButton": "Review package",
+      "confirmPurchase": "Continue to payment",
+      "processing": "Processing...",
+      "back": "Back",
+      "close": "Close",
+      "authTitle": "Sign in to continue",
+      "authNote": "You need a patient account to purchase a package.",
+      "signInToContinue": "Sign in",
+      "disabledTitle": "Packages unavailable",
+      "disabledSubtitle": "This practitioner is not accepting package bookings right now.",
+      "disabledEmptyTitle": "Packages are not available",
+      "disabledEmptyNote": "You can still continue with normal single-session booking.",
+      "reviewHeading": "Review your package",
+      "reviewNote": "Your selected package and session times are ready for payment.",
+      "reviewHint": "Double-check the times before continuing.",
+      "reviewRetryHint": "Please try again.",
+      "payHeading": "Complete payment",
+      "payNote": "Use the secure checkout below to pay for your package.",
+      "redirectingTitle": "Opening checkout",
+      "redirectingNote": "You are being redirected to secure payment.",
+      "errors": {
+        "authRequired": "Sign in as a patient to continue.",
+        "slotCountMismatch": "Please select exactly {total} session times.",
+        "slotConflict": "One or more selected times are no longer available.",
+        "currencyUnavailable": "Package pricing is not available in the selected currency.",
+        "policyUnavailable": "The package refund policy is unavailable right now. Please try again later.",
+        "policyRequired": "Please accept the package refund policy before continuing.",
+        "policyStale": "The package refund policy changed. Please review the latest version and accept it again.",
+        "policyValidation": "We could not validate the package refund policy for this payment. Please try again.",
+        "createFailed": "We could not create your package purchase. Please try again.",
+        "paymentMissingRedirect": "Payment was created, but checkout details were not available.",
+        "conflict": "This package purchase could not be completed right now.",
+        "paymentFailed": "We could not start payment. Please try again."
+      },
+      "practitioner": "Practitioner",
+      "removeSlot": "Remove"
+    }
+  },
   "related": {
     "viewAll": "View all practitioners"
   },

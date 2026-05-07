@@ -145,6 +145,10 @@ export interface PractitionerLoginRequest {
   password: string;
 }
 
+export type PractitionerLoginResponse =
+  | OtpChallengeResponse
+  | AuthSuccessResponse;
+
 export interface PractitionerVerifyOtpRequest {
   challengeId: string;
   code: string;

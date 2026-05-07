@@ -26,7 +26,19 @@ export class GetPractitionerProfileReadinessUseCase {
     private readonly practitionerProfileReadinessPolicy: PractitionerProfileReadinessPolicy,
   ) {}
 
-  async evaluate(input: { userId: string; currentUser: AuthenticatedUser }) {
+  async evaluate(input: {
+    userId: string;
+    currentUser: AuthenticatedUser;
+    draft?: {
+      displayName?: string | null;
+      professionalTitle?: string | null;
+      bio?: string | null;
+      countryCode?: string | null;
+      yearsOfExperience?: number | null;
+      hasPayoutDestination?: boolean;
+      hasPayoutAccountHolderName?: boolean;
+    };
+  }) {
     const [profile, user] = await Promise.all([
       this.practitionerProfileRepository.findByUserId(input.userId),
       this.practitionerUserRepository.findProfileSeed(input.userId),
@@ -54,15 +66,32 @@ export class GetPractitionerProfileReadinessUseCase {
     ]);
 
     return this.practitionerProfileReadinessPolicy.evaluate({
-      displayName: user.displayName,
-      professionalTitle: profile.professionalTitle,
-      bio: profile.bio,
-      countryCode: profile.country?.isoCode ?? null,
-      yearsOfExperience: profile.yearsOfExperience,
+      displayName:
+        input.draft?.displayName !== undefined
+          ? input.draft.displayName
+          : user.displayName,
+      professionalTitle:
+        input.draft?.professionalTitle !== undefined
+          ? input.draft.professionalTitle
+          : profile.professionalTitle,
+      bio: input.draft?.bio !== undefined ? input.draft.bio : profile.bio,
+      countryCode:
+        input.draft?.countryCode !== undefined
+          ? input.draft.countryCode
+          : profile.country?.isoCode ?? null,
+      yearsOfExperience:
+        input.draft?.yearsOfExperience !== undefined
+          ? input.draft.yearsOfExperience
+          : profile.yearsOfExperience,
       languageCount,
       specialtyCount,
+      primarySpecialtyCategoryId: profile.primarySpecialtyCategoryId ?? null,
       credentialCount: credentialSummary.totalCredentials,
-      hasPayoutDestination: Boolean(payoutDestination),
+      hasPayoutDestination:
+        input.draft?.hasPayoutDestination ?? Boolean(payoutDestination),
+      hasPayoutAccountHolderName:
+        input.draft?.hasPayoutAccountHolderName ??
+        Boolean(payoutDestination?.accountHolderName?.trim()),
       isAccountActive: input.currentUser.isActive === true,
       isPractitionerOtpVerified:
         input.currentUser.isPractitionerOtpVerified === true,

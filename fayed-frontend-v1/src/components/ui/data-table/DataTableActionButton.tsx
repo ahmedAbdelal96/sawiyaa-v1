@@ -21,12 +21,12 @@ export default function DataTableActionButton({
   className = "",
 }: DataTableActionButtonProps) {
   const baseClasses =
-    "inline-flex min-h-10 items-center justify-center gap-1.5 rounded-2xl px-4 py-2 text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-primary/20";
+    "inline-flex min-h-9 items-center justify-center gap-2 rounded-xl px-3.5 py-2 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-50";
 
   const intentClasses =
     intent === "primary"
-      ? "bg-primary text-white shadow-[0_16px_32px_-24px_rgba(68,161,148,0.44)] hover:bg-primary-hover disabled:bg-primary/60"
-      : "border border-border-light bg-white text-text-primary shadow-[0_12px_28px_-22px_rgba(34,52,56,0.12)] hover:border-primary/30 hover:bg-surface-tertiary dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:hover:bg-white/[0.07]";
+      ? "border border-transparent bg-primary text-white shadow-theme-xs hover:bg-primary-hover"
+      : "border border-border-light bg-surface-secondary text-text-primary shadow-theme-xs hover:border-border-strong hover:bg-surface-tertiary dark:border-border-light dark:bg-surface-secondary dark:text-text-primary dark:hover:bg-surface-tertiary";
 
   return (
     <button
@@ -35,7 +35,7 @@ export default function DataTableActionButton({
       disabled={disabled}
       className={cn(baseClasses, intentClasses, disabled && "cursor-not-allowed opacity-50", className)}
     >
-      {icon ? <span className="flex items-center">{icon}</span> : null}
+      {icon ? <span className="flex shrink-0 items-center justify-center">{icon}</span> : null}
       <span className="whitespace-nowrap">{label}</span>
     </button>
   );

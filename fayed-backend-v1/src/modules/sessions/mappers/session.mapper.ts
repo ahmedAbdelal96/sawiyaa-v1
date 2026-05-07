@@ -28,6 +28,7 @@ export class SessionMapper {
       id: session.id,
       sessionCode: session.sessionCode,
       status: session.status,
+      createdAt: session.createdAt.toISOString(),
       scheduledStartAt: session.scheduledStartAt?.toISOString() ?? null,
       scheduledEndAt: session.scheduledEndAt?.toISOString() ?? null,
       durationMinutes: session.durationMinutes,

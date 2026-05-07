@@ -10,6 +10,7 @@ import type {
   PaymentItem,
   PaymentItemResponseData,
   PaymentsListResponseData,
+  SessionPaymentCapabilitiesResponseData,
 } from "../types/payments.types";
 
 /**
@@ -28,6 +29,20 @@ export async function initiateSessionPayment(
   const response = await httpClient.post<ApiPayload<PaymentItemResponseData>>(
     `/patients/me/sessions/${sessionId}/payments/initiate`,
     input,
+  );
+  return extractData(response.data);
+}
+
+/**
+ * GET /patients/me/sessions/:sessionId/payments/capabilities
+ *
+ * Returns the Paymob methods that are actually enabled for the current merchant config.
+ */
+export async function getPatientSessionPaymentCapabilities(
+  sessionId: string,
+): Promise<SessionPaymentCapabilitiesResponseData> {
+  const response = await httpClient.get<ApiPayload<SessionPaymentCapabilitiesResponseData>>(
+    `/patients/me/sessions/${sessionId}/payments/capabilities`,
   );
   return extractData(response.data);
 }

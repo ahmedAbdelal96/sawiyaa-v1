@@ -143,6 +143,19 @@
     "eyebrow": "Your result",
     "title": "These practitioners are closest to your current needs",
     "note": "Results are based on your answers. Review each profile before booking.",
+    "stats": {
+      "matchesLabel": "Matches",
+      "matchesHint": "Practitioners ranked for this session",
+      "topScoreLabel": "Best score",
+      "topScoreHint": "Top recommendation percentage",
+      "averageScoreLabel": "Average score",
+      "averageScoreHint": "Average across visible results"
+    },
+    "sessionPanel": {
+      "title": "Session overview",
+      "quickView": "Quick view",
+      "preferences": "Selected preferences"
+    },
     "sessionId": "Matching session: {id}",
     "sessionSaved": "You can revisit this result later.",
     "nextHeading": "Choose your next step",

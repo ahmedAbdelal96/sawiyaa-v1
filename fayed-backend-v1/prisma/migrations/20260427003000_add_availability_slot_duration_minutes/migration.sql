@@ -1,0 +1,2 @@
+ALTER TABLE "AvailabilitySlot"
+ADD COLUMN "durationMinutes" INTEGER NOT NULL DEFAULT 30;

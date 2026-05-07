@@ -9,12 +9,21 @@ export const adminNavigation: NavigationConfig = [
       { key: "sessions", icon: <NavigationIcons.calendar />, path: "/sessions" },
       { key: "patients", icon: <NavigationIcons.users />, path: "/patients" },
       { key: "practitioners", icon: <NavigationIcons.practitioners />, path: "/practitioners" },
+      { key: "packagePlans", icon: <NavigationIcons.payments />, path: "/package-plans" },
+      { key: "refundPolicies", icon: <NavigationIcons.page />, path: "/refund-policies" },
       {
         key: "practitionerApplications",
         icon: <NavigationIcons.practitioners />,
         path: "/practitioner-applications",
       },
-      { key: "payments", icon: <NavigationIcons.payments />, path: "/payments" },
+      {
+        key: "payments",
+        icon: <NavigationIcons.payments />,
+        subItems: [
+          { key: "paymentsHome", path: "/payments" },
+          { key: "paymentGatewayControl", path: "/payments/gateway-control" },
+        ],
+      },
       {
         key: "finance",
         icon: <NavigationIcons.settlements />,
@@ -36,15 +45,8 @@ export const adminNavigation: NavigationConfig = [
           { key: "reportsPayouts", path: "/reports/payouts" },
         ],
       },
-      {
-        key: "settlements",
-        icon: <NavigationIcons.settlements />,
-        subItems: [
-          { key: "settlementsBatches", path: "/settlements" },
-          { key: "settlementsDues", path: "/settlements/dues" },
-          { key: "settlementsPayouts", path: "/settlements/payouts" },
-        ],
-      },
+      { key: "practitionerPayouts", icon: <NavigationIcons.settlements />, path: "/practitioner-payouts" },
+      { key: "practitionerPayoutsHistory", icon: <NavigationIcons.reports />, path: "/practitioner-payouts/history" },
       { key: "assessments", icon: <NavigationIcons.reports />, path: "/assessments" },
     ],
   },
@@ -52,6 +54,15 @@ export const adminNavigation: NavigationConfig = [
     key: "workspace",
     items: [
       { key: "support", icon: <NavigationIcons.support />, path: "/support" },
+      {
+        key: "helpCenter",
+        icon: <NavigationIcons.page />,
+        subItems: [
+          { key: "helpCenterHome", path: "/help" },
+          { key: "helpCategories", path: "/help/categories" },
+          { key: "helpQuestions", path: "/help/questions" },
+        ],
+      },
       { key: "notifications", icon: <NavigationIcons.notifications />, path: "/notifications" },
       { key: "auditLog", icon: <NavigationIcons.reports />, path: "/audit" },
       { key: "specialties", icon: <NavigationIcons.specialties />, path: "/specialties" },
@@ -63,6 +74,7 @@ export const adminNavigation: NavigationConfig = [
         path: "/moderation/reports",
       },
       { key: "articles", icon: <NavigationIcons.page />, path: "/articles" },
+      { key: "academy", icon: <NavigationIcons.training />, path: "/academy" },
       { key: "training", icon: <NavigationIcons.training />, path: "/training" },
     ],
   },

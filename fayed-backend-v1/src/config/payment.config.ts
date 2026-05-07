@@ -35,6 +35,21 @@ function normalizeDecimal(value: string | undefined, fallback = '0'): string {
   return normalized;
 }
 
+function normalizePaymobCheckoutMethod(
+  value: string | undefined,
+): string | null {
+  const normalized = value?.trim();
+
+  return normalized || null;
+}
+
+function normalizePaymobCheckoutFlow(
+  value: string | undefined,
+): 'legacy' | 'intention' {
+  const normalized = value?.trim().toLowerCase();
+  return normalized === 'intention' ? 'intention' : 'legacy';
+}
+
 export default registerAs('payment', () => ({
   appEnv: process.env.APP_ENV ?? process.env.NODE_ENV ?? 'development',
   isDevelopment:
@@ -70,12 +85,26 @@ export default registerAs('payment', () => ({
     enabled: parseBooleanFlag(process.env.PAYMENT_PAYMOB_ENABLED, false),
     mode: normalizeMode(process.env.PAYMOB_MODE, 'test'),
     apiKey: process.env.PAYMOB_API_KEY,
+    publicKey: process.env.PAYMOB_PUBLIC_KEY,
     hmacSecret: process.env.PAYMOB_HMAC_SECRET,
     baseUrl: normalizeBaseUrl(process.env.PAYMOB_BASE_URL),
+    intentionBaseUrl: normalizeBaseUrl(
+      process.env.PAYMOB_INTENTION_BASE_URL ?? 'https://flashapi.paymob.com',
+    ),
+    checkoutBaseUrl: normalizeBaseUrl(
+      process.env.PAYMOB_CHECKOUT_BASE_URL ?? 'https://flashapi.paymob.com',
+    ),
+    checkoutFlow: normalizePaymobCheckoutFlow(
+      process.env.PAYMOB_CHECKOUT_FLOW,
+    ),
+    methodRegistryJson: process.env.PAYMOB_METHOD_REGISTRY_JSON ?? null,
     integrationIdCard:
       process.env.PAYMOB_INTEGRATION_ID_CARD ??
       process.env.PAYMOB_INTEGRATION_ID,
     integrationIdWallet: process.env.PAYMOB_INTEGRATION_ID_WALLET,
     iframeId: process.env.PAYMOB_IFRAME_ID,
+    defaultCheckoutMethod: normalizePaymobCheckoutMethod(
+      process.env.PAYMOB_DEFAULT_CHECKOUT_METHOD,
+    ),
   },
 }));

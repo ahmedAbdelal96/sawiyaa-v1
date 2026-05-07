@@ -4,8 +4,11 @@ import type {
   InitiateSessionPaymentInput,
   ListPaymentsParams,
   ListWalletEntriesParams,
+  PaymentReconcileSessionReturnInput,
+  PaymentReconcileSessionReturnResult,
   PaymentItem,
   PaymentsListData,
+  SessionPaymentCapabilitiesItem,
   SessionFinancialBreakdown,
   WalletEntriesData,
 } from "./types";
@@ -44,6 +47,26 @@ export async function initiateSessionPayment(
     input,
   );
   return extractApiData<{ item: PaymentItem }>(response);
+}
+
+export async function getPatientSessionPaymentCapabilities(
+  sessionId: string,
+): Promise<{ item: SessionPaymentCapabilitiesItem }> {
+  const response = await apiClient.get(
+    `/patients/me/sessions/${sessionId}/payments/capabilities`,
+  );
+  return extractApiData<{ item: SessionPaymentCapabilitiesItem }>(response);
+}
+
+export async function reconcileSessionPaymentReturn(
+  sessionId: string,
+  input: PaymentReconcileSessionReturnInput,
+): Promise<PaymentReconcileSessionReturnResult> {
+  const response = await apiClient.post(
+    `/patients/me/sessions/${sessionId}/payments/reconcile-return`,
+    input,
+  );
+  return extractApiData<PaymentReconcileSessionReturnResult>(response);
 }
 
 // ---------------------------------------------------------------------------

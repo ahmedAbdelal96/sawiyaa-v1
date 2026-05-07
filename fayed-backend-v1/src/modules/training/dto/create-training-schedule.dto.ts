@@ -45,6 +45,18 @@ export class CreateTrainingScheduleDto {
   @IsDateString()
   endsAt!: string;
 
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  plannedDurationDays?: number;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  plannedLectureCount?: number;
+
   @ApiPropertyOptional({ default: TRAINING_DEFAULT_TIMEZONE })
   @IsOptional()
   @IsString()

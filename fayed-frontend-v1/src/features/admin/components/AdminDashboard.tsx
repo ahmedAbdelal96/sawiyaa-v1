@@ -1,5 +1,6 @@
 "use client";
 
+import { useSyncExternalStore } from "react";
 import { useLocale } from "next-intl";
 import { useQueries } from "@tanstack/react-query";
 import {
@@ -99,6 +100,14 @@ type LocaleCopy = {
     comparedToPreviousBatch: string;
   };
 };
+
+function useHasHydrated() {
+  return useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
+}
 
 const COPY: Record<"en" | "ar", LocaleCopy> = {
   en: {
@@ -312,6 +321,7 @@ export default function AdminDashboard() {
   const locale = useLocale();
   const isArabic = locale === "ar";
   const copy = COPY[isArabic ? "ar" : "en"];
+  const hasHydrated = useHasHydrated();
   const chartPalette = ["#2F2FE4", "#FF9013", "#8FA2FF"];
 
   const now = new Date();
@@ -549,7 +559,7 @@ export default function AdminDashboard() {
     <div className="space-y-6">
       <section className="app-panel rounded-3xl px-6 py-5">
         <p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
-          {copy.common.updatedLabel} {formatDateTimeLabel(locale, new Date().toISOString())}
+          {copy.common.updatedLabel}
         </p>
         <h1 className="mt-2 text-2xl font-semibold tracking-tight text-text-primary dark:text-white/95">
           {copy.pageTitle}
@@ -661,7 +671,7 @@ export default function AdminDashboard() {
             actionLabel={copy.common.viewAll}
             actionHref="/admin/settlements"
           >
-            {settlementsQuery.isLoading ? (
+            {!hasHydrated || settlementsQuery.isLoading ? (
               <ListStateSkeleton items={1} heightClass="h-[240px]" />
             ) : settlementChartSeries.length === 0 ? (
               <StateCard

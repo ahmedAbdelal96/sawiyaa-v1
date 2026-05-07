@@ -102,7 +102,8 @@ function applyLedgerState(
     effectiveAt: Date;
   },
 ): void {
-  const signed = entry.direction === LedgerDirection.CREDIT ? entry.amount : -entry.amount;
+  const signed =
+    entry.direction === LedgerDirection.CREDIT ? entry.amount : -entry.amount;
 
   if (entry.bucket === WalletBalanceBucket.AVAILABLE) {
     state.available += signed;
@@ -150,7 +151,9 @@ export const settlementsLabSeedModule: SeedModule = {
     const practitionerPlans: PractitionerLabPlan[] = [
       {
         practitionerId: seedIds.practitionerProfiles.practitionerB,
-        walletId: uuid(`settlements-lab-wallet-${seedIds.practitionerProfiles.practitionerB}-${currencyCode}`),
+        walletId: uuid(
+          `settlements-lab-wallet-${seedIds.practitionerProfiles.practitionerB}-${currencyCode}`,
+        ),
         currentSettlement: {
           key: 'b-current',
           practitionerId: seedIds.practitionerProfiles.practitionerB,
@@ -193,7 +196,9 @@ export const settlementsLabSeedModule: SeedModule = {
       },
       {
         practitionerId: seedIds.practitionerProfiles.practitionerE,
-        walletId: uuid(`settlements-lab-wallet-${seedIds.practitionerProfiles.practitionerE}-${currencyCode}`),
+        walletId: uuid(
+          `settlements-lab-wallet-${seedIds.practitionerProfiles.practitionerE}-${currencyCode}`,
+        ),
         currentSettlement: {
           key: 'e-current',
           practitionerId: seedIds.practitionerProfiles.practitionerE,
@@ -264,7 +269,9 @@ export const settlementsLabSeedModule: SeedModule = {
       },
       {
         practitionerId: seedIds.practitionerProfiles.practitionerF,
-        walletId: uuid(`settlements-lab-wallet-${seedIds.practitionerProfiles.practitionerF}-${currencyCode}`),
+        walletId: uuid(
+          `settlements-lab-wallet-${seedIds.practitionerProfiles.practitionerF}-${currencyCode}`,
+        ),
         currentSettlement: {
           key: 'f-current',
           practitionerId: seedIds.practitionerProfiles.practitionerF,
@@ -311,19 +318,23 @@ export const settlementsLabSeedModule: SeedModule = {
     const planByPractitionerId = new Map<string, PractitionerLabPlan>();
     const settlementByKey = new Map<string, PractitionerLabSettlement>();
     const settlementIdByKey = new Map<string, string>();
+    const walletIdByPractitionerId = new Map<string, string>();
 
     for (const plan of practitionerPlans) {
       walletStates.set(plan.practitionerId, createState());
       planByPractitionerId.set(plan.practitionerId, plan);
       settlementByKey.set(plan.currentSettlement.key, plan.currentSettlement);
       if (plan.historicalSettlement) {
-        settlementByKey.set(plan.historicalSettlement.key, plan.historicalSettlement);
+        settlementByKey.set(
+          plan.historicalSettlement.key,
+          plan.historicalSettlement,
+        );
       }
     }
 
     await prisma.$transaction(async (tx) => {
       for (const plan of practitionerPlans) {
-        await tx.practitionerWallet.upsert({
+        const wallet = await tx.practitionerWallet.upsert({
           where: {
             practitionerId_currencyCode: {
               practitionerId: plan.practitionerId,
@@ -331,7 +342,6 @@ export const settlementsLabSeedModule: SeedModule = {
             },
           },
           create: {
-            id: plan.walletId,
             practitionerId: plan.practitionerId,
             currencyCode,
             availableBalance: '0.00',
@@ -350,6 +360,7 @@ export const settlementsLabSeedModule: SeedModule = {
             lastLedgerEntryAt: null,
           },
         });
+        walletIdByPractitionerId.set(plan.practitionerId, wallet.id);
       }
 
       const currentBatch = await tx.settlementBatch.upsert({
@@ -407,8 +418,13 @@ export const settlementsLabSeedModule: SeedModule = {
       for (const plan of practitionerPlans) {
         const currentSettlementSnapshot =
           plan.currentSettlement.payoutMethodSnapshot ?? Prisma.JsonNull;
-        const currentSettlementId = uuid(`settlements-lab-settlement-${plan.currentSettlement.key}`);
-        await tx.practitionerSettlement.upsert({
+        const walletId = walletIdByPractitionerId.get(plan.practitionerId);
+        if (!walletId) {
+          throw new Error(
+            '[seed:settlements-lab] missing wallet id for current settlement',
+          );
+        }
+        const currentSettlement = await tx.practitionerSettlement.upsert({
           where: {
             batchId_practitionerId: {
               batchId: currentBatch.id,
@@ -416,10 +432,9 @@ export const settlementsLabSeedModule: SeedModule = {
             },
           },
           create: {
-            id: currentSettlementId,
             batchId: currentBatch.id,
             practitionerId: plan.practitionerId,
-            walletId: plan.walletId,
+            walletId,
             amountGross: money(plan.currentSettlement.amountNet),
             amountAdjustments: '0.00',
             amountNet: money(plan.currentSettlement.amountNet),
@@ -432,7 +447,7 @@ export const settlementsLabSeedModule: SeedModule = {
             payoutMethodSnapshot: currentSettlementSnapshot,
           },
           update: {
-            walletId: plan.walletId,
+            walletId,
             amountGross: money(plan.currentSettlement.amountNet),
             amountAdjustments: '0.00',
             amountNet: money(plan.currentSettlement.amountNet),
@@ -444,13 +459,20 @@ export const settlementsLabSeedModule: SeedModule = {
             payoutMethodSnapshot: currentSettlementSnapshot,
           },
         });
-        settlementIdByKey.set(plan.currentSettlement.key, currentSettlementId);
+        settlementIdByKey.set(plan.currentSettlement.key, currentSettlement.id);
 
         if (plan.historicalSettlement) {
           const historicalSettlementSnapshot =
             plan.historicalSettlement.payoutMethodSnapshot ?? Prisma.JsonNull;
-          const historicalSettlementId = uuid(`settlements-lab-settlement-${plan.historicalSettlement.key}`);
-          await tx.practitionerSettlement.upsert({
+          const historicalWalletId = walletIdByPractitionerId.get(
+            plan.practitionerId,
+          );
+          if (!historicalWalletId) {
+            throw new Error(
+              '[seed:settlements-lab] missing wallet id for historical settlement',
+            );
+          }
+          const historicalSettlement = await tx.practitionerSettlement.upsert({
             where: {
               batchId_practitionerId: {
                 batchId: historicalBatch.id,
@@ -458,10 +480,9 @@ export const settlementsLabSeedModule: SeedModule = {
               },
             },
             create: {
-              id: historicalSettlementId,
               batchId: historicalBatch.id,
               practitionerId: plan.practitionerId,
-              walletId: plan.walletId,
+              walletId: historicalWalletId,
               amountGross: money(plan.historicalSettlement.amountNet),
               amountAdjustments: '0.00',
               amountNet: money(plan.historicalSettlement.amountNet),
@@ -474,7 +495,7 @@ export const settlementsLabSeedModule: SeedModule = {
               payoutMethodSnapshot: historicalSettlementSnapshot,
             },
             update: {
-              walletId: plan.walletId,
+              walletId: historicalWalletId,
               amountGross: money(plan.historicalSettlement.amountNet),
               amountAdjustments: '0.00',
               amountNet: money(plan.historicalSettlement.amountNet),
@@ -486,14 +507,21 @@ export const settlementsLabSeedModule: SeedModule = {
               payoutMethodSnapshot: historicalSettlementSnapshot,
             },
           });
-          settlementIdByKey.set(plan.historicalSettlement.key, historicalSettlementId);
+          settlementIdByKey.set(
+            plan.historicalSettlement.key,
+            historicalSettlement.id,
+          );
         }
       }
 
       for (const plan of practitionerPlans) {
         for (const sessionPlan of plan.sessions) {
-          const sessionId = uuid(`settlements-lab-session-${plan.practitionerId}-${sessionPlan.sessionSuffix}`);
-          const paymentId = uuid(`settlements-lab-payment-${plan.practitionerId}-${sessionPlan.sessionSuffix}`);
+          const sessionId = uuid(
+            `settlements-lab-session-${plan.practitionerId}-${sessionPlan.sessionSuffix}`,
+          );
+          const paymentId = uuid(
+            `settlements-lab-payment-${plan.practitionerId}-${sessionPlan.sessionSuffix}`,
+          );
           const sessionDate = daysAgo(sessionPlan.daysAgo);
           const endAt = new Date(sessionDate.getTime() + 45 * 60 * 1000);
           const subtotal = sessionPlan.subtotal;
@@ -501,7 +529,7 @@ export const settlementsLabSeedModule: SeedModule = {
           const total = subtotal - discount;
           const earnings = Math.round(total * 0.75);
           const settlementId = sessionPlan.settlementKey
-            ? settlementIdByKey.get(sessionPlan.settlementKey) ?? null
+            ? (settlementIdByKey.get(sessionPlan.settlementKey) ?? null)
             : null;
 
           await tx.session.upsert({
@@ -595,9 +623,15 @@ export const settlementsLabSeedModule: SeedModule = {
           });
 
           await tx.paymentEvent.upsert({
-            where: { id: uuid(`settlements-lab-payment-event-${plan.practitionerId}-${sessionPlan.sessionSuffix}`) },
+            where: {
+              id: uuid(
+                `settlements-lab-payment-event-${plan.practitionerId}-${sessionPlan.sessionSuffix}`,
+              ),
+            },
             create: {
-              id: uuid(`settlements-lab-payment-event-${plan.practitionerId}-${sessionPlan.sessionSuffix}`),
+              id: uuid(
+                `settlements-lab-payment-event-${plan.practitionerId}-${sessionPlan.sessionSuffix}`,
+              ),
               paymentId,
               eventType: 'PAYMENT_CAPTURED',
               providerEventRef: `lab-provider-event-${plan.practitionerId.slice(-6)}-${sessionPlan.sessionSuffix}`,
@@ -609,7 +643,9 @@ export const settlementsLabSeedModule: SeedModule = {
             },
           });
 
-          const ledgerId = uuid(`settlements-lab-ledger-${plan.practitionerId}-${sessionPlan.sessionSuffix}`);
+          const ledgerId = uuid(
+            `settlements-lab-ledger-${plan.practitionerId}-${sessionPlan.sessionSuffix}`,
+          );
           const createdEntry = {
             id: ledgerId,
             practitionerId: plan.practitionerId,
@@ -644,12 +680,26 @@ export const settlementsLabSeedModule: SeedModule = {
 
       const ePaidSettlement = settlementByKey.get('e-history');
       if (ePaidSettlement) {
-        const paidPlan = planByPractitionerId.get(ePaidSettlement.practitionerId);
+        const paidPlan = planByPractitionerId.get(
+          ePaidSettlement.practitionerId,
+        );
         const paidSettlementId = settlementIdByKey.get(ePaidSettlement.key);
         if (!paidPlan || !paidSettlementId) {
-          throw new Error('[seed:settlements-lab] missing paid settlement plan data');
+          throw new Error(
+            '[seed:settlements-lab] missing paid settlement plan data',
+          );
         }
-        const payoutId = uuid(`settlements-lab-payout-${ePaidSettlement.key}`);
+        const paidWalletId = walletIdByPractitionerId.get(
+          ePaidSettlement.practitionerId,
+        );
+        if (!paidWalletId) {
+          throw new Error(
+            '[seed:settlements-lab] missing wallet id for payout settlement',
+          );
+        }
+        const payoutId = uuid(
+          `settlements-lab-payout-${historicalBatch.id}-${ePaidSettlement.key}`,
+        );
         const payoutDate = ePaidSettlement.paidAt ?? daysAgo(2);
 
         await tx.practitionerSettlementPayout.upsert({
@@ -663,7 +713,8 @@ export const settlementsLabSeedModule: SeedModule = {
             currencyCode,
             payoutMethod: SettlementPayoutMethod.MANUAL_BANK_TRANSFER,
             payoutSource: SettlementPayoutSource.BATCH_CLOSEOUT,
-            payoutMethodSnapshot: ePaidSettlement.payoutMethodSnapshot ?? Prisma.JsonNull,
+            payoutMethodSnapshot:
+              ePaidSettlement.payoutMethodSnapshot ?? Prisma.JsonNull,
             externalPayoutRef: ePaidSettlement.externalPayoutRef,
             notes: ePaidSettlement.notes,
             effectiveAt: payoutDate,
@@ -677,7 +728,8 @@ export const settlementsLabSeedModule: SeedModule = {
             currencyCode,
             payoutMethod: SettlementPayoutMethod.MANUAL_BANK_TRANSFER,
             payoutSource: SettlementPayoutSource.BATCH_CLOSEOUT,
-            payoutMethodSnapshot: ePaidSettlement.payoutMethodSnapshot ?? Prisma.JsonNull,
+            payoutMethodSnapshot:
+              ePaidSettlement.payoutMethodSnapshot ?? Prisma.JsonNull,
             externalPayoutRef: ePaidSettlement.externalPayoutRef,
             notes: ePaidSettlement.notes,
             effectiveAt: payoutDate,
@@ -685,7 +737,9 @@ export const settlementsLabSeedModule: SeedModule = {
           },
         });
 
-        const payoutLedgerId = uuid(`settlements-lab-ledger-payout-${ePaidSettlement.key}`);
+        const payoutLedgerId = uuid(
+          `settlements-lab-ledger-payout-${historicalBatch.id}-${ePaidSettlement.key}`,
+        );
         await tx.ledgerEntry.upsert({
           where: { id: payoutLedgerId },
           create: {
@@ -736,7 +790,7 @@ export const settlementsLabSeedModule: SeedModule = {
             id: paidSettlementId,
             batchId: historicalBatch.id,
             practitionerId: ePaidSettlement.practitionerId,
-            walletId: paidPlan.walletId,
+            walletId: paidWalletId,
             amountGross: money(ePaidSettlement.amountNet),
             amountAdjustments: '0.00',
             amountNet: money(ePaidSettlement.amountNet),
@@ -746,10 +800,11 @@ export const settlementsLabSeedModule: SeedModule = {
             failedAt: null,
             notes: ePaidSettlement.notes,
             externalPayoutRef: ePaidSettlement.externalPayoutRef,
-            payoutMethodSnapshot: ePaidSettlement.payoutMethodSnapshot ?? Prisma.JsonNull,
+            payoutMethodSnapshot:
+              ePaidSettlement.payoutMethodSnapshot ?? Prisma.JsonNull,
           },
           update: {
-            walletId: paidPlan.walletId,
+            walletId: paidWalletId,
             amountGross: money(ePaidSettlement.amountNet),
             amountAdjustments: '0.00',
             amountNet: money(ePaidSettlement.amountNet),
@@ -759,18 +814,21 @@ export const settlementsLabSeedModule: SeedModule = {
             failedAt: null,
             notes: ePaidSettlement.notes,
             externalPayoutRef: ePaidSettlement.externalPayoutRef,
-            payoutMethodSnapshot: ePaidSettlement.payoutMethodSnapshot ?? Prisma.JsonNull,
+            payoutMethodSnapshot:
+              ePaidSettlement.payoutMethodSnapshot ?? Prisma.JsonNull,
           },
         });
       }
 
       for (const [practitionerId, state] of walletStates.entries()) {
-        const plan = practitionerPlans.find((item) => item.practitionerId === practitionerId);
+        const plan = practitionerPlans.find(
+          (item) => item.practitionerId === practitionerId,
+        );
         if (!plan) {
           continue;
         }
 
-        await tx.practitionerWallet.upsert({
+        const wallet = await tx.practitionerWallet.upsert({
           where: {
             practitionerId_currencyCode: {
               practitionerId,
@@ -778,7 +836,6 @@ export const settlementsLabSeedModule: SeedModule = {
             },
           },
           create: {
-            id: plan.walletId,
             practitionerId,
             currencyCode,
             availableBalance: money(state.available),
@@ -797,6 +854,7 @@ export const settlementsLabSeedModule: SeedModule = {
             lastLedgerEntryAt: state.lastLedgerEntryAt,
           },
         });
+        walletIdByPractitionerId.set(practitionerId, wallet.id);
       }
     });
 

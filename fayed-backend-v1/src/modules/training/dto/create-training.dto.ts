@@ -4,8 +4,9 @@ import {
   IsEnum,
   IsOptional,
   IsString,
-  Matches,
   MaxLength,
+  Matches,
+  ValidateIf,
 } from 'class-validator';
 import { TRAINING_SLUG_REGEX } from '../types/training.types';
 
@@ -19,11 +20,15 @@ export class CreateTrainingDto {
   @MaxLength(191)
   title!: string;
 
-  @ApiProperty()
+  @ApiPropertyOptional({
+    description: 'Optional manual slug. Generated automatically when omitted.',
+  })
+  @IsOptional()
   @IsString()
   @MaxLength(191)
+  @ValidateIf((_, value) => value !== undefined)
   @Matches(TRAINING_SLUG_REGEX)
-  slug!: string;
+  slug?: string;
 
   @ApiPropertyOptional()
   @IsOptional()

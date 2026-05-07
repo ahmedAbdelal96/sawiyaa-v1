@@ -26,6 +26,17 @@ type PaymobPaymentKeyResponse = {
   token?: string;
 };
 
+type PaymobCreateIntentionResponse = {
+  id?: number | string;
+  client_secret?: string;
+  special_reference?: string | null;
+  payment_methods?: Array<{
+    name?: string;
+    live?: boolean;
+  }>;
+  intention_detail?: Record<string, unknown>;
+};
+
 type PaymobWebhookEvent = {
   id?: number;
   success?: boolean;
@@ -75,13 +86,49 @@ export class PaymobPaymentProviderAdapter implements PaymentProviderAdapter {
     description: string;
     sessionId: string;
     patientEmail?: string | null;
+    redirectionUrl?: string | null;
+    paymobMethod?: string | null;
+    checkoutCountryIsoCode?: string | null;
+    operatingCountryIsoCode?: string | null;
   }): Promise<PaymentProviderInitiationResult> {
     this.paymentRuntimeConfigService.assertCheckoutConfigured(
       PaymentProvider.PAYMOB,
     );
     const paymobConfig = this.paymentRuntimeConfigService.getPaymobConfig();
     const paymobBaseUrl = paymobConfig.baseUrl!;
-    const paymobIframeId = paymobConfig.iframeId!;
+    const paymobCheckoutFlow = this.paymentRuntimeConfigService.getPaymobCheckoutFlow();
+    const enabledMethods = this.paymentRuntimeConfigService.getPaymobEnabledMethods({
+      checkoutCountryIsoCode: input.checkoutCountryIsoCode ?? null,
+      operatingCountryIsoCode: input.operatingCountryIsoCode ?? null,
+    });
+    const selectedMethod =
+      paymobCheckoutFlow === 'legacy'
+        ? this.paymentRuntimeConfigService.resolvePaymobCheckoutMethod(
+            input.paymobMethod ?? null,
+            {
+              checkoutCountryIsoCode: input.checkoutCountryIsoCode ?? null,
+              operatingCountryIsoCode: input.operatingCountryIsoCode ?? null,
+            },
+          )
+        : null;
+    const integrationId =
+      paymobCheckoutFlow === 'legacy'
+        ? this.paymentRuntimeConfigService.resolvePaymobIntegrationId(
+            selectedMethod,
+            {
+              checkoutCountryIsoCode: input.checkoutCountryIsoCode ?? null,
+              operatingCountryIsoCode: input.operatingCountryIsoCode ?? null,
+            },
+          )
+        : null;
+
+    if (paymobCheckoutFlow === 'legacy' && (!selectedMethod || !integrationId)) {
+      throw this.providerInitFailed();
+    }
+
+    if (paymobCheckoutFlow === 'intention' && enabledMethods.length === 0) {
+      throw this.providerInitFailed();
+    }
 
     const authToken = await this.createAuthToken();
     const createdOrder = await this.createOrder({
@@ -90,21 +137,79 @@ export class PaymobPaymentProviderAdapter implements PaymentProviderAdapter {
       amountMinor: input.amountMinor,
       currency: input.currency,
     });
-    const paymentToken = await this.createPaymentKey({
+    if (paymobCheckoutFlow === 'legacy') {
+      const paymobIframeId = paymobConfig.iframeId!;
+      const paymentToken = await this.createPaymentKey({
+        authToken,
+        orderId: createdOrder.id,
+        amountMinor: input.amountMinor,
+        currency: input.currency,
+        patientEmail: input.patientEmail ?? null,
+        redirectionUrl: input.redirectionUrl ?? null,
+        integrationId: integrationId!,
+      });
+
+      return {
+        providerPaymentRef: String(createdOrder.id),
+        providerOrderRef: String(createdOrder.id),
+        status: PaymentStatus.PENDING,
+        checkoutUrl: `${paymobBaseUrl}/acceptance/iframes/${paymobIframeId}?payment_token=${paymentToken}`,
+        providerMethod: selectedMethod,
+        metadata: {
+          paymobMerchantOrderId: createdOrder.merchantOrderId,
+          paymobCheckoutMethod: selectedMethod,
+          paymobIntegrationId: integrationId,
+          paymobCheckoutFlow: paymobCheckoutFlow,
+        },
+      };
+    }
+
+    const intention = await this.createIntention({
       authToken,
       orderId: createdOrder.id,
       amountMinor: input.amountMinor,
       currency: input.currency,
       patientEmail: input.patientEmail ?? null,
+      redirectionUrl: input.redirectionUrl ?? null,
+      paymentMethodIds: this.paymentRuntimeConfigService.getPaymobIntentionPaymentMethodIds(
+        {
+          checkoutCountryIsoCode: input.checkoutCountryIsoCode ?? null,
+          operatingCountryIsoCode: input.operatingCountryIsoCode ?? null,
+        },
+      ),
+      specialReference: createdOrder.merchantOrderId,
     });
+
+    const clientSecret = intention.client_secret?.trim();
+
+    if (!clientSecret) {
+      throw this.providerInitFailed();
+    }
 
     return {
       providerPaymentRef: String(createdOrder.id),
       providerOrderRef: String(createdOrder.id),
       status: PaymentStatus.PENDING,
-      checkoutUrl: `${paymobBaseUrl}/acceptance/iframes/${paymobIframeId}?payment_token=${paymentToken}`,
+      checkoutUrl:
+        this.paymentRuntimeConfigService.getPaymobCheckoutLaunchUrl(
+          clientSecret,
+        ),
+      providerMethod: null,
       metadata: {
         paymobMerchantOrderId: createdOrder.merchantOrderId,
+        paymobCheckoutFlow: paymobCheckoutFlow,
+        paymobIntentionId:
+          typeof intention.id === 'string'
+            ? intention.id
+            : typeof intention.id === 'number'
+              ? String(intention.id)
+              : null,
+        paymobClientSecret: clientSecret,
+        paymobSpecialReference: intention.special_reference ?? createdOrder.merchantOrderId,
+        paymobAllowedPaymentMethods: intention.payment_methods?.map((method) => ({
+          name: method.name ?? null,
+          live: Boolean(method.live),
+        })),
       },
     };
   }
@@ -305,10 +410,11 @@ export class PaymobPaymentProviderAdapter implements PaymentProviderAdapter {
     amountMinor: number;
     currency: string;
     patientEmail: string | null;
+    redirectionUrl: string | null;
+    integrationId: string;
   }): Promise<string> {
     const paymobConfig = this.paymentRuntimeConfigService.getPaymobConfig();
     const paymobBaseUrl = paymobConfig.baseUrl!;
-    const integrationIdCard = paymobConfig.integrationIdCard!;
 
     const response = await fetch(`${paymobBaseUrl}/acceptance/payment_keys`, {
       method: 'POST',
@@ -322,7 +428,8 @@ export class PaymobPaymentProviderAdapter implements PaymentProviderAdapter {
         order_id: input.orderId,
         billing_data: this.buildBillingData(input.patientEmail),
         currency: input.currency.toUpperCase(),
-        integration_id: Number(integrationIdCard),
+        integration_id: Number(input.integrationId),
+        redirection_url: input.redirectionUrl ?? undefined,
       }),
     });
 
@@ -338,6 +445,57 @@ export class PaymobPaymentProviderAdapter implements PaymentProviderAdapter {
     }
 
     return token;
+  }
+
+  private async createIntention(input: {
+    authToken: string;
+    orderId: number;
+    amountMinor: number;
+    currency: string;
+    patientEmail: string | null;
+    redirectionUrl: string | null;
+    paymentMethodIds: number[];
+    specialReference: string;
+  }): Promise<PaymobCreateIntentionResponse> {
+    if (!input.paymentMethodIds.length) {
+      throw this.providerInitFailed();
+    }
+
+    const response = await fetch(
+      this.paymentRuntimeConfigService.getPaymobIntentionCreateUrl(),
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          auth_token: input.authToken,
+          order_id: input.orderId,
+          amount_cents: String(input.amountMinor),
+          currency: input.currency.toUpperCase(),
+          payment_methods: input.paymentMethodIds,
+          special_reference: input.specialReference,
+          billing_data: this.buildBillingData(input.patientEmail),
+          items: [],
+          redirection_url: input.redirectionUrl ?? undefined,
+          expiration: 3600,
+          extras: {
+            paymob_checkout_flow: 'intention',
+          },
+        }),
+      },
+    );
+
+    if (!response.ok) {
+      throw this.providerInitFailed();
+    }
+
+    const payload = (await response.json()) as PaymobCreateIntentionResponse;
+    if (!payload) {
+      throw this.providerInitFailed();
+    }
+
+    return payload;
   }
 
   private buildBillingData(

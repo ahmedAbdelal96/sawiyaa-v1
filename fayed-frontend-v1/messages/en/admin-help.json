@@ -1,0 +1,175 @@
+{
+  "meta": {
+    "listTitle": "Help Center - Admin",
+    "listDescription": "Manage help categories and frequently asked questions.",
+    "categoriesTitle": "Help Categories - Admin",
+    "categoriesDescription": "Manage the help categories shown to users.",
+    "questionsTitle": "Help Questions - Admin",
+    "questionsDescription": "Manage the FAQ questions shown to users."
+  },
+  "page": {
+    "eyebrow": "Admin",
+    "title": "Help Center",
+    "description": "Manage the sections and FAQ items shown to users.",
+    "categoriesTitle": "Categories",
+    "categoriesDescription": "Manage the help categories shown to users.",
+    "questionsTitle": "Questions",
+    "questionsDescription": "Manage the FAQ questions shown to users."
+  },
+  "navigation": {
+    "home": "Help center",
+    "categories": "Categories",
+    "questions": "Questions"
+  },
+  "hub": {
+    "open": "Open",
+    "categoriesTitle": "Manage categories",
+    "categoriesDescription": "Create, edit, deactivate, and reorder the sections users see on the help page.",
+    "questionsTitle": "Manage questions",
+    "questionsDescription": "Create, edit, deactivate, and reorder the FAQ questions users read on the help page.",
+    "note": "Use the categories page for section structure and the questions page for FAQ content.",
+    "inlineNote": "The public help page only shows active items."
+  },
+  "states": {
+    "error": {
+      "heading": "Unable to load help center",
+      "note": "Please try again in a moment.",
+      "retry": "Try again"
+    },
+    "categoriesEmpty": {
+      "heading": "No categories yet",
+      "note": "Add a category to organize the questions."
+    },
+    "questionsEmpty": {
+      "heading": "No questions yet",
+      "note": "Add a question to start building the FAQ."
+    },
+    "questionsEmptyFiltered": {
+      "heading": "No matching questions",
+      "note": "Try a different search or clear the filters."
+    }
+  },
+  "actions": {
+    "addCategory": "Add category",
+    "addQuestion": "Add question",
+    "menu": "Actions",
+    "view": "View",
+    "edit": "Edit",
+    "delete": "Delete",
+    "activate": "Activate",
+    "deactivate": "Deactivate",
+    "up": "Move up",
+    "down": "Move down",
+    "save": "Save",
+    "saving": "Saving...",
+    "cancel": "Cancel"
+  },
+  "summary": {
+    "categories": "Categories",
+    "questions": "Questions",
+    "active": "Active items",
+    "activeHint": "Active categories and questions"
+  },
+  "filters": {
+    "search": "Search",
+    "searchPlaceholder": "Search questions, answers, or categories",
+    "category": "Category",
+    "status": "Status",
+    "allCategories": "All categories",
+    "allStatuses": "All statuses",
+    "activeOnly": "Active only",
+    "inactiveOnly": "Inactive only",
+    "clear": "Clear",
+    "uncategorized": "Uncategorized"
+  },
+  "tables": {
+    "categories": {
+      "title": "Categories",
+      "note": "Keep categories short and easy to scan.",
+      "columns": {
+        "order": "Order",
+        "titleAr": "Arabic name",
+        "titleEn": "English name",
+        "questionCount": "Questions",
+        "status": "Status"
+      },
+      "questionCountValue": "{count, plural, one {# question} other {# questions}}"
+    },
+    "questions": {
+      "title": "Questions",
+      "note": "Manage the FAQ entries users read on the help page.",
+      "columns": {
+        "questionAr": "Question in Arabic",
+        "questionEn": "Question in English",
+        "category": "Category",
+        "status": "Status",
+        "order": "Order",
+        "updatedAt": "Last updated"
+      },
+      "orderValue": "Order {value}"
+    }
+  },
+  "modals": {
+    "category": {
+      "create": "Add category",
+      "edit": "Edit category",
+      "description": "Enter the category details in Arabic and English."
+    },
+    "question": {
+      "create": "Add question",
+      "edit": "Edit question",
+      "description": "Enter the question and answer in Arabic and English.",
+      "viewEyebrow": "Question details",
+      "viewTitle": "View question",
+      "viewDescription": "Review the full question and answer before editing.",
+      "viewQuestionLabel": "Question"
+    }
+  },
+  "fields": {
+    "slug": "Slug",
+    "titleAr": "Arabic name",
+    "titleEn": "English name",
+    "descriptionAr": "Arabic description",
+    "descriptionEn": "English description",
+    "sortOrder": "Display order",
+    "isActive": "Active",
+    "category": "Category",
+    "questionAr": "Arabic question",
+    "questionEn": "English question",
+    "answerAr": "Arabic answer",
+    "answerEn": "English answer"
+  },
+  "placeholders": {
+    "slug": "e.g. payments-and-refunds"
+  },
+  "feedback": {
+    "categorySaved": "Category saved.",
+    "categorySaveError": "Could not save the category.",
+    "categoryActivated": "Category activated.",
+    "categoryDeactivated": "Category deactivated.",
+    "categoryDeleted": "Category deleted.",
+    "categoryDeleteError": "Could not delete the category.",
+    "questionSaved": "Question saved.",
+    "questionSaveError": "Could not save the question.",
+    "questionActivated": "Question activated.",
+    "questionDeactivated": "Question deactivated.",
+    "questionDeleted": "Question deleted.",
+    "questionDeleteError": "Could not delete the question.",
+    "reorderSuccess": "Order updated.",
+    "reorderError": "Could not update the order."
+  },
+  "confirmations": {
+    "deleteCategory": {
+      "title": "Delete this category?",
+      "description": "This category will be removed from the help center."
+    },
+    "deleteQuestion": {
+      "title": "Delete this question?",
+      "description": "This question will be removed from the help center."
+    }
+  },
+  "badges": {
+    "active": "Active",
+    "inactive": "Inactive"
+  }
+}

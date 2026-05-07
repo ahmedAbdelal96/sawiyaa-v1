@@ -101,7 +101,7 @@ export class PractitionerAvailabilityController {
   @ApiResponse({ status: 200, type: AvailabilityMutationSuccessResponseDto })
   @ApiBadRequestResponse({
     description:
-      'Timezone is invalid, slot ranges are invalid, granularity is invalid, or weekly slots overlap',
+      'Timezone is invalid, slot ranges are invalid, slot duration is invalid, or weekly slots overlap',
   })
   @ApiUnauthorizedResponse({ description: 'Access token is required' })
   @ApiForbiddenResponse({

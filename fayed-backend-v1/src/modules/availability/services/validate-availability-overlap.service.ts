@@ -1,31 +1,48 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { WeeklyAvailabilitySlotInput } from '../types/availability.types';
+import {
+  WeeklyAvailabilityDurationMinutes,
+  WeeklyAvailabilitySlotDraftInput,
+  WeeklyAvailabilitySlotInput,
+} from '../types/availability.types';
 
 /**
  * Overlap validation stays isolated from controllers so recurring schedule rules remain reusable.
- * V1 enforces 15-minute granularity to keep later slot generation predictable.
+ * V1 enforces 30-minute granularity to keep recurring slot generation predictable.
  */
 @Injectable()
 export class ValidateAvailabilityOverlapService {
-  private readonly minimumGranularityMinutes = 15;
+  private readonly minimumGranularityMinutes = 30;
 
-  validateWeeklySlots(slots: WeeklyAvailabilitySlotInput[]): void {
-    const groupedByDay = new Map<number, WeeklyAvailabilitySlotInput[]>();
+  validateWeeklySlots(
+    slots: WeeklyAvailabilitySlotDraftInput[],
+  ): WeeklyAvailabilitySlotInput[] {
+    const normalized: WeeklyAvailabilitySlotInput[] = slots.map((slot) => ({
+      ...slot,
+      durationMinutes: this.normalizeDuration(slot.durationMinutes),
+    }));
 
-    for (const slot of slots) {
+    const groupedByDayAndDuration = new Map<
+      string,
+      WeeklyAvailabilitySlotInput[]
+    >();
+
+    for (const slot of normalized) {
       this.validateMinuteRange(slot);
 
-      const grouped = groupedByDay.get(slot.dayOfWeek) ?? [];
+      const groupedKey = `${slot.dayOfWeek}:${slot.durationMinutes}`;
+      const grouped = groupedByDayAndDuration.get(groupedKey) ?? [];
       grouped.push(slot);
-      groupedByDay.set(slot.dayOfWeek, grouped);
+      groupedByDayAndDuration.set(groupedKey, grouped);
     }
 
-    for (const [dayOfWeek, daySlots] of groupedByDay.entries()) {
+    for (const [groupedKey, daySlots] of groupedByDayAndDuration.entries()) {
       const ordered = [...daySlots].sort(
         (left, right) =>
           left.startMinuteOfDay - right.startMinuteOfDay ||
           left.endMinuteOfDay - right.endMinuteOfDay,
       );
+
+      const [dayOfWeek] = groupedKey.split(':');
 
       for (let index = 1; index < ordered.length; index += 1) {
         const previous = ordered[index - 1];
@@ -36,12 +53,14 @@ export class ValidateAvailabilityOverlapService {
             messageKey: 'availability.errors.overlappingWeeklySlots',
             error: 'AVAILABILITY_WEEKLY_OVERLAP',
             messageParams: {
-              dayOfWeek,
+              dayOfWeek: Number(dayOfWeek),
             },
           });
         }
       }
     }
+
+    return normalized;
   }
 
   validateExceptionRange(startsAtUtc: Date, endsAtUtc: Date): void {
@@ -54,6 +73,13 @@ export class ValidateAvailabilityOverlapService {
   }
 
   private validateMinuteRange(slot: WeeklyAvailabilitySlotInput): void {
+    if (slot.durationMinutes !== 30 && slot.durationMinutes !== 60) {
+      throw new BadRequestException({
+        messageKey: 'availability.errors.invalidDurationMinutes',
+        error: 'AVAILABILITY_INVALID_DURATION_MINUTES',
+      });
+    }
+
     if (slot.endMinuteOfDay <= slot.startMinuteOfDay) {
       throw new BadRequestException({
         messageKey: 'availability.errors.invalidWeeklySlotRange',
@@ -70,5 +96,22 @@ export class ValidateAvailabilityOverlapService {
         error: 'AVAILABILITY_INVALID_GRANULARITY',
       });
     }
+
+    const durationMinutes =
+      slot.endMinuteOfDay - slot.startMinuteOfDay;
+
+    if (durationMinutes !== slot.durationMinutes) {
+      throw new BadRequestException({
+        messageKey: 'availability.errors.invalidWeeklySlotDuration',
+        error: 'AVAILABILITY_INVALID_WEEKLY_SLOT_DURATION',
+      });
+    }
   }
+
+  private normalizeDuration(
+    durationMinutes?: WeeklyAvailabilityDurationMinutes,
+  ): WeeklyAvailabilityDurationMinutes {
+    return durationMinutes === undefined ? 30 : durationMinutes;
+  }
+
 }

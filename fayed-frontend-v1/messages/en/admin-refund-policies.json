@@ -1,0 +1,610 @@
+{
+  "meta": {
+    "listTitle": "Refund policies - Admin",
+    "listDescription": "Manage the session and package refund policy families.",
+    "detailTitle": "Refund policy detail - Admin",
+    "detailDescription": "Review versions, edit drafts, publish new versions, and archive old drafts.",
+    "versionTitle": "Refund policy version",
+    "versionDescription": "Inspect one version in detail.",
+    "invalidTitle": "Refund policy - Admin",
+    "invalidDescription": "The requested refund policy type is not valid."
+  },
+  "page": {
+    "eyebrow": "Admin refund policies",
+    "title": "Refund policies",
+    "description": "Refund policies for sessions and packages are managed from here."
+  },
+  "overview": {
+    "title": "Refund policies",
+    "note": "Manage the session and package policies from two clear cards.",
+    "columns": {
+      "policy": "Policy family",
+      "activeVersion": "Active version",
+      "lastPublished": "Last published",
+      "drafts": "Drafts",
+      "history": "History",
+      "contentHash": "Content hash",
+      "actions": "Actions"
+    },
+    "values": {
+      "count": "{count}"
+    },
+    "cards": {
+      "session": {
+        "title": "Session refund policy",
+        "description": "Shown to the patient when paying for a normal session."
+      },
+      "package": {
+        "title": "Package refund policy",
+        "description": "Shown to the patient when paying for a package."
+      },
+      "clauses": "{count} clauses",
+      "updatedAt": "Last updated: {date}",
+      "manage": "Manage policy"
+    }
+  },
+  "notice": {
+    "heading": "Governance boundary",
+    "note": "Publishing a new version affects future payments only and does not change historical acceptances."
+  },
+  "summary": {
+    "total": "Families",
+    "active": "Active versions",
+    "drafts": "Drafts",
+    "archived": "Archived"
+  },
+  "family": {
+    "noActive": "No active version",
+    "noActiveHint": "No active version published yet",
+    "fields": {
+      "activeVersion": "Active version",
+      "versionCount": "Versions",
+      "draftCount": "Drafts",
+      "lastPublished": "Last published",
+      "latestHash": "Latest content hash",
+      "totalVersions": "{total} total versions",
+      "archivedVersions": "{total} archived versions"
+    },
+    "session": {
+      "title": "Session refund policy",
+      "description": "Controls the refund policy shown during normal session checkout."
+    },
+    "package": {
+      "title": "Package refund policy",
+      "description": "Controls the refund policy shown during package purchase checkout."
+    }
+  },
+  "actions": {
+    "back": "Back",
+    "open": "Open",
+    "managePolicy": "Manage policy",
+    "createDraft": "Create draft",
+    "creatingDraft": "Creating draft...",
+    "createDraftError": "Could not create a draft right now.",
+    "retry": "Try again",
+    "saveDraft": "Save draft",
+    "publishDraft": "Publish draft",
+    "archiveDraft": "Archive draft",
+    "saving": "Saving...",
+    "publishing": "Publishing...",
+    "archiving": "Archiving...",
+    "addClause": "Add clause",
+    "addRule": "Add rule",
+    "save": "Save",
+    "savePolicy": "Save policy",
+    "cancel": "Cancel",
+    "showAdvancedJson": "Show advanced JSON",
+    "hideAdvancedJson": "Hide advanced JSON",
+    "close": "Close",
+    "saveChanges": "Save changes"
+  },
+  "tabs": {
+    "active": "Active version",
+    "drafts": "Drafts",
+    "history": "History"
+  },
+  "badges": {
+    "active": "Active",
+    "inactive": "Inactive",
+    "noActive": "No active version"
+  },
+  "status": {
+    "active": "ACTIVE",
+    "draft": "DRAFT",
+    "archived": "ARCHIVED"
+  },
+  "states": {
+    "error": {
+      "heading": "Refund policies are not available right now",
+      "note": "Could not load refund policies.",
+      "retry": "Try again"
+    },
+    "empty": {
+      "heading": "No refund policy families found",
+      "note": "The backend returned no refund policy families."
+    },
+    "loading": {
+      "title": "Loading refund policy",
+      "note": "We are loading the current version and version history."
+    },
+    "notFound": {
+      "heading": "Refund policy version was not found",
+      "note": "We could not find the requested refund policy version."
+    }
+  },
+  "detail": {
+    "eyebrow": "Refund policy management",
+    "description": "This policy is shown to the patient before payment is completed.",
+    "back": "Back to refund policies",
+    "notice": {
+      "heading": "Publishing guidance",
+      "note": "Publishing a new version affects future payments only and does not change historical acceptances."
+    },
+    "summary": {
+      "activeVersion": "Active version",
+      "versionCount": "Versions",
+      "draftCount": "Drafts",
+      "archivedCount": "Archived",
+      "noActiveHint": "No active version published yet",
+      "versionCountHint": "Total versions in this family",
+      "draftCountHint": "Draft versions that can still be edited",
+      "archivedCountHint": "Historical archived versions",
+      "clauses": "Clauses",
+      "clausesHint": "Ordered items visible to patients",
+      "status": "Status",
+      "statusHint": "Whether this policy is active",
+      "updatedAt": "Last updated",
+      "updatedAtHint": "When the policy was last changed"
+    },
+    "notFound": {
+      "heading": "Policy not found",
+      "note": "We could not load the requested refund policy."
+    },
+    "title": {
+      "session": "Session refund policy",
+      "package": "Package refund policy"
+    },
+    "mode": {
+      "edit": "Edit",
+      "preview": "Patient preview"
+    },
+    "preview": {
+      "toggleLabel": "Preview mode",
+      "toggleNote": "Switch between editing and the patient view."
+    },
+    "sections": {
+      "policyInfo": "Policy information",
+      "policyInfoNote": "Update the title and status only.",
+      "clauses": "Clauses",
+      "clausesNote": "Each clause should be short and easy to read."
+    }
+  },
+  "clauses": {
+    "heading": "Clauses",
+    "note": "Keep each clause short and clear.",
+    "columns": {
+      "order": "Order"
+    },
+    "actions": {
+      "up": "Move up",
+      "down": "Move down",
+      "edit": "Edit",
+      "delete": "Delete"
+    },
+    "empty": {
+      "note": "No clauses have been added yet."
+    },
+    "modal": {
+      "create": "Create clause",
+      "edit": "Edit clause"
+    },
+    "rowNumber": "Clause {index}"
+  },
+  "preview": {
+    "heading": "Patient preview",
+    "note": "This is the version the patient reads at checkout.",
+    "eyebrow": "Preview",
+    "languageAr": "Arabic",
+    "languageEn": "English"
+  },
+  "active": {
+    "note": "This is the current policy shown to patients at checkout.",
+    "empty": {
+      "title": "No active policy is published yet",
+      "note": "Create a draft and publish it to make this policy active."
+    }
+  },
+  "drafts": {
+    "updatedAt": "Updated",
+    "noSummary": "No summary provided.",
+    "columns": {
+      "version": "Version",
+      "updatedAt": "Updated at",
+      "summary": "Summary",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "empty": {
+      "title": "No drafts yet",
+      "note": "Create a draft to start editing a new version."
+    },
+    "actions": {
+      "edit": "Edit",
+      "publish": "Publish",
+      "archive": "Archive"
+    },
+    "feedback": {
+      "publishSuccess": "Draft published.",
+      "publishError": "Could not publish the draft right now.",
+      "archiveSuccess": "Draft archived.",
+      "archiveError": "Could not archive the draft right now."
+    }
+  },
+  "history": {
+    "eyebrow": "Version history",
+    "heading": "Policy versions",
+    "note": "Select a version to inspect its content and status.",
+    "columns": {
+      "version": "Version",
+      "status": "Status",
+      "publishedAt": "Published at",
+      "effectiveFrom": "Effective from",
+      "contentHash": "Content hash",
+      "action": "Action"
+    },
+    "actions": {
+      "view": "View",
+      "viewing": "Viewing"
+    },
+    "empty": {
+      "title": "No historical versions yet",
+      "note": "Published and archived versions will appear here."
+    }
+  },
+  "version": {
+    "eyebrow": "Version view",
+    "description": "Inspect a single policy version, or edit it if it is still a draft."
+  },
+  "types": {
+    "session": "Session",
+    "package": "Package"
+  },
+  "warnings": {
+    "readOnlyTitle": "Active and archived versions are immutable",
+    "readOnlyNote": "Only drafts can be edited. Published versions stay read-only for historical integrity.",
+    "publishTitle": "Publishing changes future payments only",
+    "publishNote": "The current draft can be published after validation. Historical acceptances are not changed by publishing."
+  },
+  "document": {
+    "eyebrow": "Policy document",
+    "heading": "Policy document",
+    "readOnly": "Read only",
+    "locales": {
+      "ar": "Arabic",
+      "en": "English"
+    },
+    "labels": {
+      "title": "Title",
+      "summary": "Policy summary",
+      "localizedContent": "Policy text"
+    },
+    "clauseOrder": "Clause order {order}",
+    "ruleOrder": "Rule order {order}",
+    "active": "Active",
+    "inactive": "Inactive",
+    "noLocalizedContent": "No localized content provided.",
+    "noClauses": "No clauses were provided.",
+    "noRules": "No rules were provided.",
+    "clausesHeading": "Clauses",
+    "clausesTitle": "Clear policy points",
+    "clausesCount": "{count} clauses",
+    "rulesHeading": "Rules",
+    "rulesTitle": "How refunds work",
+    "rulesCount": "{count} rules",
+    "meta": {
+      "version": "Version",
+      "publishedAt": "Published at",
+      "effectiveFrom": "Effective from",
+      "contentHash": "Content hash"
+    },
+    "rules": {
+      "triggers": {
+        "before_session_start": "Before session start",
+        "after_session_start": "After session start",
+        "after_session_completed": "After session completed"
+      },
+      "modes": {
+        "none": "No refund",
+        "percentage": "Percentage",
+        "fixed_amount": "Fixed amount",
+        "admin_review": "Admin review"
+      },
+      "adminReview": "Admin review required",
+      "reviewNeeded": "Review and activate policy",
+      "normal": "Simple rule",
+      "mode": "Refund mode",
+      "window": "Time window",
+      "betweenHours": "{min} to {max} hours",
+      "fromHours": "{min}+ hours",
+      "upToHours": "Up to {max} hours",
+      "noWindow": "No time window",
+      "percent": "Refund percent",
+      "percentValue": "{value}%",
+      "fixedAmount": "Fixed amount",
+      "percentTitle": "Refund percent",
+      "fixedAmountTitle": "Fixed amount"
+    },
+    "viewClause": "View clause details",
+    "viewRule": "View rule details",
+    "modals": {
+      "clauseTitle": "Clause details",
+      "ruleTitle": "Rule details"
+    },
+    "currentLanguage": "Displayed language",
+    "sentences": {
+      "generic": {
+        "percent": "Refund {percent}%.",
+        "rule": "Simple refund rule."
+      },
+      "session": {
+        "fullRefund": "If the request is made 48 hours or more before the session: full refund.",
+        "refund75": "If the request is made between 24 and 48 hours before the session: 75% refund.",
+        "refund50": "If the request is made between 12 and 24 hours before the session: 50% refund.",
+        "reviewBefore12": "If the request is made less than 12 hours before the session: review and activate policy.",
+        "reviewAfterStart": "After the session starts or if the patient does not show up: review and activate policy.",
+        "fullRefundEn": "If the request is made 48 hours or more before the session: full refund.",
+        "refund75En": "If the request is made between 24 and 48 hours before the session: 75% refund.",
+        "refund50En": "If the request is made between 12 and 24 hours before the session: 50% refund.",
+        "reviewBefore12En": "If the request is made less than 12 hours before the session: needs approval.",
+        "reviewAfterStartEn": "After the session starts or if the patient does not show up: needs approval."
+      },
+      "package": {
+        "completedNoRefund": "A completed session is not refundable.",
+        "fullRefund": "If the session is more than 48 hours away: full refund for the unused session.",
+        "refund75": "If the session is between 24 and 48 hours away: 75% refund.",
+        "refund50": "If the session is between 12 and 24 hours away: 50% refund.",
+        "reviewBefore12": "If the session is less than 12 hours away: review and activate policy.",
+        "reviewAfterStart": "After the session starts or if the patient does not show up: review and activate policy.",
+        "completedNoRefundEn": "A completed session is not refundable.",
+        "fullRefundEn": "If the session is more than 48 hours away: full refund for the unused session.",
+        "refund75En": "If the session is between 24 and 48 hours away: 75% refund.",
+        "refund50En": "If the session is between 12 and 24 hours away: 50% refund.",
+        "reviewBefore12En": "If the session is less than 12 hours away: needs approval.",
+        "reviewAfterStartEn": "After the session starts or if the patient does not show up: needs approval."
+      }
+    },
+    "clauseNumber": "Clause #{index}",
+    "ruleNumber": "Rule #{index}"
+  },
+  "editor": {
+    "eyebrow": "Version editor",
+    "heading": "Edit policy content",
+    "noteDraft": "You can edit this draft, preview it, publish it, or archive it.",
+    "noteReadOnly": "This version is read-only because it has already been published or archived.",
+    "sections": {
+      "basicInformation": "Basic information",
+      "basicInformationNote": "Enter the Arabic and English titles and summaries first.",
+      "arabicContent": "Arabic content",
+      "arabicContentTitle": "What Arabic-speaking patients will read",
+      "englishContent": "English content",
+      "englishContentTitle": "What English-speaking patients will read",
+      "clauses": "Clauses",
+      "clausesTitle": "Readable policy clauses",
+      "clausesHelp": "Review clauses as a structured list, then open a row to edit it in a modal.",
+      "rules": "Refund rules",
+      "rulesTitle": "Structured refund rules",
+      "rulesHelp": "Review each rule as a row, then edit the item you need in a modal.",
+      "reviewAndPublish": "Review and publish",
+      "reviewAndPublishNote": "Check the preview carefully before publishing a new version.",
+      "advancedJson": "Advanced JSON",
+      "advancedJsonTitle": "Developer view"
+    },
+    "fields": {
+      "titleAr": "Arabic title",
+      "titleEn": "English title",
+      "summaryAr": "Arabic summary",
+      "summaryEn": "English summary",
+      "isActive": "Policy is active",
+      "localizedContentAr": "Arabic policy content",
+      "localizedContentEn": "English policy content",
+      "effectiveFrom": "Effective from",
+      "clauseCode": "Clause code",
+      "clauseSortOrder": "Clause sort order",
+      "clauseHeadingAr": "Arabic clause heading",
+      "clauseHeadingEn": "English clause heading",
+      "bodyAr": "Arabic clause body",
+      "bodyEn": "English clause body",
+      "clauseBodyAr": "Arabic clause body",
+      "clauseBodyEn": "English clause body",
+      "clauseActive": "Clause is active",
+      "clauseActiveNote": "Inactive clauses stay in the draft for reference but are hidden from the active policy document.",
+      "ruleCode": "Rule code",
+      "ruleSortOrder": "Rule sort order",
+      "triggerType": "Trigger type",
+      "refundMode": "Refund mode",
+      "minHoursBeforeStart": "Minimum hours before start",
+      "maxHoursBeforeStart": "Maximum hours before start",
+      "refundPercent": "Refund percent",
+      "fixedAmount": "Fixed amount",
+      "requiresAdminOverride": "Requires admin override",
+      "requiresAdminOverrideNote": "Use this when the rule should be handled manually by operations.",
+      "titleByLocale": "Title by locale JSON",
+      "summaryByLocale": "Summary by locale JSON",
+      "localizedContent": "Localized content JSON",
+      "clausesJson": "Clauses JSON",
+      "rulesJson": "Rules JSON",
+      "versionNumber": "Version number",
+      "status": "Status",
+      "contentHash": "Content hash",
+      "createdAt": "Created at",
+      "publishedAt": "Published at"
+    },
+    "table": {
+      "actions": "Actions",
+      "status": "Status",
+      "clauses": {
+        "order": "Order",
+        "code": "Code",
+        "ar": "Arabic",
+        "en": "English"
+      },
+      "rules": {
+        "order": "Order",
+        "code": "Code",
+        "trigger": "Trigger",
+        "mode": "Mode",
+        "window": "Window",
+        "override": "Review"
+      },
+      "clausesEmpty": {
+        "title": "No clauses yet",
+        "note": "Add clauses to build the readable policy document."
+      },
+      "rulesEmpty": {
+        "title": "No rules yet",
+        "note": "Add rules to define refund behavior."
+      }
+    },
+    "actions": {
+      "editItem": "Edit",
+      "moveUp": "Move up",
+      "moveDown": "Move down",
+      "deleteItem": "Delete"
+    },
+    "modals": {
+      "createClause": "Create clause",
+      "editClause": "Edit clause",
+      "clauseDescription": "Edit the clause content for the selected policy language.",
+      "createRule": "Create rule",
+      "editRule": "Edit rule",
+      "ruleDescription": "Edit the rule fields without using raw JSON.",
+      "save": "Save",
+      "deleteTitle": "Delete this item?",
+      "deleteDescription": "This action removes the item from the draft only.",
+      "deleteConfirm": "Delete",
+      "deleteClauseWarning": "This clause will be removed from the draft.",
+      "deleteRuleWarning": "This rule will be removed from the draft.",
+      "deleteNote": "You can add it again later if needed."
+    },
+    "meta": {
+      "version": "Version",
+      "status": "Status",
+      "createdAt": "Created at",
+      "publishedAt": "Published at",
+      "effectiveFrom": "Effective from",
+      "contentHash": "Content hash"
+    },
+    "placeholders": {
+      "choose": "Choose..."
+    },
+    "clauses": {
+      "itemTitle": "Clause #{index}",
+      "itemNote": "Keep the clause text readable in both languages."
+    },
+    "rules": {
+      "itemTitle": "Rule #{index}",
+      "itemNote": "Use the structured rule fields instead of raw JSON."
+    },
+    "advanced": {
+      "title": "Advanced JSON preview",
+      "summary": "Title JSON",
+      "content": "Content JSON",
+      "rules": "Rules JSON",
+      "hiddenNote": "The advanced JSON view is hidden by default. The main editor uses structured fields instead.",
+      "contentNote": "This area mirrors the draft content for power users and debugging only."
+    },
+    "preview": {
+      "eyebrow": "Preview",
+      "heading": "How patients will see this policy",
+      "note": "The preview reflects the values entered in the structured editor.",
+      "pendingHash": "Pending content hash",
+      "title": "Title",
+      "summary": "Summary",
+      "content": "Localized content",
+      "clauses": "Clauses",
+      "rules": "Rules",
+      "active": "Active",
+      "inactive": "Inactive",
+      "none": "Nothing published yet.",
+      "versionNumber": "Version number",
+      "effectiveFrom": "Effective from",
+      "publishedAt": "Published at",
+      "contentHash": "Content hash",
+      "minHours": "Min {hours} hours",
+      "maxHours": "Max {hours} hours",
+      "fixedAmount": "Fixed amount {amount}",
+      "adminReview": "Admin review required"
+    }
+  },
+  "validation": {
+    "required": "{field} is required.",
+    "fixErrors": "Please fix the validation errors before continuing.",
+    "invalidJson": "{field} must be valid JSON.",
+    "nonEmptyObject": "{field} cannot be empty.",
+    "invalidArray": "{field} must be a valid JSON array.",
+    "clausesRequired": "At least one clause is required.",
+    "rulesRequired": "At least one rule is required.",
+    "invalidClause": "One or more clauses are invalid.",
+    "invalidRule": "One or more rules are invalid.",
+    "invalidDate": "{field} must be a valid date.",
+    "invalidRefundPercent": "Refund percent must be between 0 and 100.",
+    "requiredField": "{field} is required for item #{index}.",
+    "overlap": "Items {first} and {second} overlap.",
+    "invalidWindow": "{field} has an invalid hours window.",
+    "invalidRefundMode": "{field} must be NONE when cancellation is blocked.",
+    "refundPercentRequired": "{field} requires a refund percent.",
+    "policyDisplayNameRequired": "Policy title is required.",
+    "ruleCodeRequired": "Rule code is required.",
+    "ruleDisplayNameRequired": "Rule display name is required.",
+    "duplicateCode": "Duplicate code detected: {code}.",
+    "clauseCodeRequired": "Clause code is required for item #{index}.",
+    "clauseSortOrderInvalid": "Clause sort order is invalid for item #{index}.",
+    "clauseHeadingRequired": "Clause heading is required for item #{index}.",
+    "clauseBodyRequired": "Clause body is required for item #{index}.",
+    "ruleSortOrderInvalid": "Rule sort order is invalid for item #{index}.",
+    "triggerTypeRequired": "Trigger type is required for item #{index}.",
+    "refundModeRequired": "Refund mode is required for item #{index}."
+  },
+  "feedback": {
+    "saveSuccess": "Draft saved.",
+    "saveError": "Could not save the draft right now.",
+    "publishSuccess": "Draft published.",
+    "publishError": "Could not publish the draft right now.",
+    "archiveSuccess": "Draft archived.",
+    "archiveError": "Could not archive the draft right now.",
+    "policySaved": "Policy saved.",
+    "policySaveError": "Could not save the policy right now.",
+    "clauseSaved": "Clause saved.",
+    "clauseSaveError": "Could not save the clause right now.",
+    "clauseDeleted": "Clause deleted.",
+    "clauseDeleteError": "Could not delete the clause right now.",
+    "reorderError": "Could not reorder clauses right now."
+  },
+  "confirm": {
+    "cancel": "Cancel",
+    "publish": {
+      "title": "Publish this draft?",
+      "note": "Review the draft carefully before publishing it.",
+      "confirm": "Publish draft",
+      "warningTitle": "Publishing this version affects future payments only and does not change historical acceptances.",
+      "warningBody": "Publishing makes this version active and archives the previous active version."
+    },
+    "archive": {
+      "title": "Archive this draft?",
+      "note": "Archiving removes the draft from edit flow but keeps the history intact.",
+      "warningTitle": "Archived versions stay read-only",
+      "warningBody": "Archiving does not delete history or affect existing acceptances.",
+      "confirm": "Archive draft"
+    },
+    "publishConfirm": "Publish draft",
+    "archiveConfirm": "Archive draft",
+    "publishTitle": "Publish this draft?",
+    "publishNote": "Review the draft carefully before publishing it.",
+    "publishWarningTitle": "Publishing this version affects future payments only and does not change historical acceptances.",
+    "publishWarningBody": "Publishing makes this version active and archives the previous active version.",
+    "archiveTitle": "Archive this draft?",
+    "archiveNote": "Archiving removes the draft from edit flow but keeps the history intact.",
+    "archiveWarningTitle": "Archived versions stay read-only",
+    "archiveWarningBody": "Archiving does not delete history or affect existing acceptances."
+  }
+}

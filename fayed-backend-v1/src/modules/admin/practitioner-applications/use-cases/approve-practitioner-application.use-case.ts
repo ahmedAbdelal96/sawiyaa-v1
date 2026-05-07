@@ -5,6 +5,9 @@ import {
 } from '@nestjs/common';
 import {
   PractitionerApplicationStatus,
+  PractitionerGender,
+  PractitionerPayoutMethodType,
+  PractitionerType,
   PractitionerStatus,
   Prisma,
 } from '@prisma/client';
@@ -21,9 +24,36 @@ import { AdminPractitionerSpecialtyRepository } from '../repositories/admin-prac
 import { AdminUserRepository } from '../repositories/admin-user.repository';
 import { AdminPractitionerApplicationNotificationService } from '../services/admin-practitioner-application-notification.service';
 
+type SubmissionSnapshot = {
+  applicant?: {
+    displayName?: string | null;
+    locale?: string | null;
+    timezone?: string | null;
+  };
+  profile?: {
+    practitionerType?: string | null;
+    practitionerGender?: string | null;
+    professionalTitle?: string | null;
+    bio?: string | null;
+    yearsOfExperience?: number | null;
+    countryCode?: string | null;
+    avatarUrl?: string | null;
+  };
+  payoutDestination?: {
+    methodType?: string | null;
+    accountHolderName?: string | null;
+    bankName?: string | null;
+    bankAccountNumber?: string | null;
+    iban?: string | null;
+    walletProvider?: string | null;
+    walletIdentifier?: string | null;
+    otherDetails?: string | null;
+  } | null;
+};
+
 /**
  * Approves a practitioner application after transition-policy checks.
- * Reviewer identity is currently not persisted in dedicated schema fields; reviewedAt + notes are stored as baseline traceability.
+ * The approved snapshot becomes the live practitioner truth at this point.
  */
 @Injectable()
 export class ApprovePractitionerApplicationUseCase {
@@ -75,20 +105,34 @@ export class ApprovePractitionerApplicationUseCase {
       });
     }
 
+    const snapshot = (existing.submissionSnapshot ?? null) as SubmissionSnapshot | null;
+
+    const requestedDisplayName =
+      snapshot?.applicant?.displayName ?? user.displayName;
+    const requestedProfessionalTitle =
+      snapshot?.profile?.professionalTitle ?? profile.professionalTitle;
+    const requestedBio = snapshot?.profile?.bio ?? profile.bio;
+    const requestedCountryCode =
+      snapshot?.profile?.countryCode ?? profile.country?.isoCode ?? null;
+    const requestedYearsOfExperience =
+      snapshot?.profile?.yearsOfExperience ?? profile.yearsOfExperience ?? null;
+    const requestedPayoutDestination =
+      snapshot?.payoutDestination ?? profile.payoutDestination ?? null;
+
     const readiness = this.reviewPolicy.evaluateReadiness({
-      hasDisplayName: Boolean(user.displayName?.trim()),
-      hasProfessionalTitle: Boolean(profile.professionalTitle?.trim()),
-      hasBio: Boolean(profile.bio?.trim()),
-      hasCountry: Boolean(profile.country?.isoCode),
+      hasDisplayName: Boolean(requestedDisplayName?.trim()),
+      hasProfessionalTitle: Boolean(requestedProfessionalTitle?.trim()),
+      hasBio: Boolean(requestedBio?.trim()),
+      hasCountry: Boolean(requestedCountryCode),
       hasYearsOfExperience:
-        typeof profile.yearsOfExperience === 'number' &&
-        profile.yearsOfExperience > 0,
+        typeof requestedYearsOfExperience === 'number' &&
+        requestedYearsOfExperience > 0,
       hasLanguage: profile.languages.length > 0,
       hasRequiredSpecialties: specialtyLinks.length > 0,
       hasRequiredCredentials:
         credentials.length > 0 &&
         credentials.every((item) => item.reviewStatus === 'APPROVED'),
-      hasPayoutDestination: Boolean(profile.payoutDestination),
+      hasPayoutDestination: Boolean(requestedPayoutDestination),
       status: existing.status,
     });
 
@@ -118,6 +162,117 @@ export class ApprovePractitionerApplicationUseCase {
 
         this.transitionPolicy.assertCanApprove(latest.status);
 
+        const applicant = (latest.submissionSnapshot as SubmissionSnapshot | null)
+          ?.applicant;
+        const requestedProfile = (latest.submissionSnapshot as SubmissionSnapshot | null)
+          ?.profile;
+        const requestedPayoutDestination = (latest.submissionSnapshot as SubmissionSnapshot | null)
+          ?.payoutDestination;
+
+        if (applicant) {
+          await this.userRepository.updateProfilePreferences(
+            latest.practitioner.userId,
+            {
+              displayName:
+                applicant.displayName !== undefined ? applicant.displayName : undefined,
+              defaultLocale:
+                applicant.locale !== undefined ? applicant.locale : undefined,
+              timezone:
+                applicant.timezone !== undefined ? applicant.timezone : undefined,
+            },
+            tx,
+          );
+        }
+
+        if (requestedProfile) {
+          let countryId: string | null | undefined = undefined;
+          if (requestedProfile.countryCode !== undefined) {
+            if (requestedProfile.countryCode === null) {
+              countryId = null;
+            } else {
+              const country = await tx.country.findUnique({
+                where: {
+                  isoCode: requestedProfile.countryCode,
+                },
+                select: {
+                  id: true,
+                },
+              });
+
+              if (!country) {
+                throw new BadRequestException({
+                  messageKey:
+                    'admin.practitionerApplications.errors.invalidApplicationState',
+                  error: 'ADMIN_PRACTITIONER_APPLICATION_INVALID_COUNTRY',
+                });
+              }
+
+              countryId = country.id;
+            }
+          }
+
+          await this.profileRepository.updateProfileDetails(
+            latest.practitioner.id,
+            {
+              practitionerType: requestedProfile.practitionerType
+                ? (requestedProfile.practitionerType as PractitionerType)
+                : undefined,
+              practitionerGender:
+                requestedProfile.practitionerGender !== undefined
+                  ? (requestedProfile.practitionerGender as
+                      | PractitionerGender
+                      | null)
+                  : undefined,
+              professionalTitle:
+                requestedProfile.professionalTitle !== undefined
+                  ? requestedProfile.professionalTitle
+                  : undefined,
+              bio:
+                requestedProfile.bio !== undefined
+                  ? requestedProfile.bio
+                  : undefined,
+              yearsOfExperience:
+                requestedProfile.yearsOfExperience !== undefined
+                  ? requestedProfile.yearsOfExperience
+                  : undefined,
+              countryId,
+            },
+            tx,
+          );
+
+          if (requestedProfile.avatarUrl !== undefined) {
+            await this.profileRepository.updateAvatar(
+              latest.practitioner.id,
+              requestedProfile.avatarUrl,
+              tx,
+            );
+          }
+        }
+
+        if (requestedPayoutDestination !== undefined) {
+          await this.profileRepository.upsertPayoutDestination(
+            latest.practitioner.id,
+            requestedPayoutDestination
+              ? ({
+                  methodType:
+                    requestedPayoutDestination.methodType as PractitionerPayoutMethodType,
+                  accountHolderName:
+                    requestedPayoutDestination.accountHolderName ?? null,
+                  bankName: requestedPayoutDestination.bankName ?? null,
+                  bankAccountNumber:
+                    requestedPayoutDestination.bankAccountNumber ?? null,
+                  iban: requestedPayoutDestination.iban ?? null,
+                  walletProvider:
+                    requestedPayoutDestination.walletProvider ?? null,
+                  walletIdentifier:
+                    requestedPayoutDestination.walletIdentifier ?? null,
+                  otherDetails: requestedPayoutDestination.otherDetails ?? null,
+                } as const)
+              : null,
+            tx,
+          );
+        }
+
         const decision = await this.applicationRepository.updateDecision(
           input.id,
           {
@@ -126,6 +281,7 @@ export class ApprovePractitionerApplicationUseCase {
             reviewedByUserId: input.adminUserId,
             reviewDecisionReason,
             reviewNotes,
+            ...(snapshot ? { submissionSnapshot: snapshot } : {}),
           },
           tx,
         );

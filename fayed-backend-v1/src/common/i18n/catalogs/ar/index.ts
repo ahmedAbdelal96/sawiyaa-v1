@@ -17,6 +17,7 @@ import { arPaymentsCatalog } from './payments.catalog';
 import { arPresenceCatalog } from './presence.catalog';
 import { arPractitionersCatalog } from './practitioners.catalog';
 import { arReviewsCatalog } from './reviews.catalog';
+import { arRefundPoliciesCatalog } from './refund-policies.catalog';
 import { arSessionsCatalog } from './sessions.catalog';
 import { arSettingsCatalog } from './settings.catalog';
 import { arSpecialtiesCatalog } from './specialties.catalog';
@@ -46,6 +47,7 @@ export const arCatalog = {
   presence: arPresenceCatalog,
   practitioners: arPractitionersCatalog,
   reviews: arReviewsCatalog,
+  refundPolicies: arRefundPoliciesCatalog,
   sessions: arSessionsCatalog,
   settings: arSettingsCatalog,
   specialties: arSpecialtiesCatalog,

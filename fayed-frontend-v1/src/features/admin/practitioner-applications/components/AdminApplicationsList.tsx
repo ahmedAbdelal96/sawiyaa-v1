@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { usePathname, useRouter } from "@/i18n/navigation";
 import { useSearchParams } from "next/navigation";
-import { Eye, Plus, Search } from "lucide-react";
+import { Edit3, Eye, FilePlus2, Plus, Search } from "lucide-react";
 import { useAdminPractitionerApplications } from "../hooks/use-practitioner-applications";
 import { DataTable } from "@/components/ui/data-table";
 import ActionIconButton from "@/components/ui/action-icon-button/ActionIconButton";
@@ -21,29 +21,44 @@ import AdminOperationalListShell, { AdminSummaryCard } from "@/components/shared
 import FilterClearButton from "@/components/ui/filters/FilterClearButton";
 import { DEFAULT_PAGE_LIMIT, DEFAULT_PAGE_SIZE_OPTIONS } from "@/constants/pagination";
 import type { PractitionerApplicationStatus, PractitionerType } from "@/features/practitioners/types/practitioners.types";
-import type { PractitionerApplicationListItem } from "../types/practitioner-applications.types";
+import type {
+  PractitionerApplicationKind,
+  PractitionerApplicationListItem,
+} from "../types/practitioner-applications.types";
 
 const statusColour: Record<PractitionerApplicationStatus, string> = {
   DRAFT: "bg-surface-tertiary text-text-secondary dark:bg-white/10 dark:text-white/70",
-  SUBMITTED: "bg-primary-light text-text-brand dark:bg-primary/12 dark:text-primary-light",
-  UNDER_REVIEW: "bg-warning-50 text-warning-700 dark:bg-warning-500/12 dark:text-warning-300",
-  APPROVED: "bg-primary-light text-text-brand dark:bg-primary/12 dark:text-primary-light",
-  REJECTED: "bg-error-50 text-error-700 dark:bg-error-500/12 dark:text-error-400",
-  CHANGES_REQUESTED: "bg-warning-50 text-warning-700 dark:bg-warning-500/12 dark:text-warning-300",
+  SUBMITTED: "bg-sky-50 text-sky-700 dark:bg-sky-500/12 dark:text-sky-300",
+  UNDER_REVIEW: "bg-amber-50 text-amber-700 dark:bg-amber-500/12 dark:text-amber-300",
+  APPROVED: "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/12 dark:text-emerald-300",
+  REJECTED: "bg-rose-50 text-rose-700 dark:bg-rose-500/12 dark:text-rose-300",
+  CHANGES_REQUESTED: "bg-orange-50 text-orange-700 dark:bg-orange-500/12 dark:text-orange-300",
   ARCHIVED: "bg-surface-tertiary text-text-muted dark:bg-white/10 dark:text-white/55",
 };
 
+type FilterView = "ACTIVE" | "HISTORY" | "ALL";
 type FilterStatus = PractitionerApplicationStatus | "ALL";
 
-const FILTER_TABS: FilterStatus[] = [
+const FILTER_VIEWS: FilterView[] = ["ACTIVE", "HISTORY", "ALL"];
+const FILTER_STATUSES: FilterStatus[] = [
   "ALL",
+  "DRAFT",
   "SUBMITTED",
   "UNDER_REVIEW",
+  "CHANGES_REQUESTED",
   "APPROVED",
   "REJECTED",
-  "CHANGES_REQUESTED",
   "ARCHIVED",
 ];
+
+type FilterKind = PractitionerApplicationKind | "ALL";
+
+const KIND_FILTER_TABS: FilterKind[] = ["ALL", "NEW_APPLICATION", "EDIT_REQUEST"];
+
+const kindColour: Record<PractitionerApplicationKind, string> = {
+  NEW_APPLICATION: "bg-primary-light text-text-brand dark:bg-primary/12 dark:text-primary-light",
+  EDIT_REQUEST: "bg-warning-50 text-warning-700 dark:bg-warning-500/12 dark:text-warning-300",
+};
 
 const SORTABLE_COLUMNS = ["applicant", "submittedAt", "updatedAt", "status"] as const;
 type SortableApplicationsColumn = (typeof SORTABLE_COLUMNS)[number];
@@ -55,10 +70,20 @@ export default function AdminApplicationsList() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  const activeFilter = parseEnumParam<FilterStatus>(
+  const activeView = parseEnumParam<FilterView>(
+    searchParams.get("view"),
+    FILTER_VIEWS,
+    "ACTIVE"
+  );
+  const activeStatusFilter = parseEnumParam<FilterStatus>(
     searchParams.get("status"),
-    FILTER_TABS,
-    "SUBMITTED"
+    FILTER_STATUSES,
+    "ALL"
+  );
+  const activeKindFilter = parseEnumParam<FilterKind>(
+    searchParams.get("kind"),
+    KIND_FILTER_TABS,
+    "ALL"
   );
   const page = parsePositiveIntParam(searchParams.get("page"), 1, { min: 1 });
   const limit = parsePositiveIntParam(searchParams.get("limit"), DEFAULT_PAGE_LIMIT, {
@@ -79,7 +104,11 @@ export default function AdminApplicationsList() {
   );
   const sortConfig: SortConfig = { column: sortColumn, direction: sortDirection };
 
-  const hasActiveFilters = activeFilter !== "SUBMITTED" || Boolean(searchQuery.trim());
+  const hasActiveFilters =
+    activeView !== "ACTIVE" ||
+    activeStatusFilter !== "ALL" ||
+    activeKindFilter !== "ALL" ||
+    Boolean(searchQuery.trim());
   const [searchInput, setSearchInput] = useState(searchQuery);
   const debouncedSearch = useDebouncedValue(searchInput, 300);
 
@@ -98,15 +127,14 @@ export default function AdminApplicationsList() {
     router.push(query ? `${pathname}?${query}` : pathname, { scroll: false });
   }, [debouncedSearch, pathname, router, searchParams, searchQuery]);
 
-  const params =
-    activeFilter === "ALL"
-      ? { q: searchQuery || undefined, page, limit }
-      : {
-          status: activeFilter as PractitionerApplicationStatus,
-          q: searchQuery || undefined,
-          page,
-          limit,
-        };
+  const params = {
+    view: activeView,
+    status: activeStatusFilter === "ALL" ? undefined : activeStatusFilter,
+    kind: activeKindFilter === "ALL" ? undefined : activeKindFilter,
+    q: searchQuery || undefined,
+    page,
+    limit,
+  };
 
   const { data, isLoading, isError, refetch } = useAdminPractitionerApplications(params, true);
 
@@ -130,6 +158,18 @@ export default function AdminApplicationsList() {
             </p>
             <p className="mt-1 text-xs text-text-muted">{row.countryCode ?? "-"}</p>
           </div>
+        ),
+      },
+      {
+        id: "kind",
+        header: t("applications.table.kind"),
+        accessor: (row) => row.applicationKind,
+        cell: (row) => (
+          <span
+            className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${kindColour[row.applicationKind]}`}
+          >
+            {t(`applications.table.kindLabels.${row.applicationKind}`)}
+          </span>
         ),
       },
       {
@@ -176,6 +216,7 @@ export default function AdminApplicationsList() {
 
   const applications = data?.applications ?? [];
   const pagination = data?.pagination;
+  const summary = data?.summary;
   const totalPages = pagination ? Math.ceil(pagination.total / pagination.limit) : 0;
 
   return (
@@ -191,15 +232,105 @@ export default function AdminApplicationsList() {
         </Button>
       }
       summaryCards={
-        <AdminSummaryCard
-          label={t("applications.title")}
-          value={typeof pagination?.total === "number" ? pagination.total : "..."}
-          tone="primary"
-        />
+        <>
+          <AdminSummaryCard
+            label={t("applications.summary.total")}
+            value={typeof summary?.total === "number" ? summary.total : "..."}
+            hint={t("applications.summary.totalHint")}
+            tone="primary"
+          />
+          <AdminSummaryCard
+            label={t("applications.summary.active")}
+            value={typeof summary?.activeApplications === "number" ? summary.activeApplications : "..."}
+            hint={t("applications.summary.activeHint")}
+            tone="success"
+            icon={<FilePlus2 className="h-5 w-5" />}
+          />
+          <AdminSummaryCard
+            label={t("applications.summary.new")}
+            value={typeof summary?.newApplications === "number" ? summary.newApplications : "..."}
+            hint={t("applications.summary.newHint")}
+            tone="primary"
+            icon={<FilePlus2 className="h-5 w-5" />}
+          />
+          <AdminSummaryCard
+            label={t("applications.summary.edit")}
+            value={typeof summary?.editRequests === "number" ? summary.editRequests : "..."}
+            hint={t("applications.summary.editHint")}
+            tone="success"
+            icon={<Edit3 className="h-5 w-5" />}
+          />
+          <AdminSummaryCard
+            label={t("applications.summary.approvedHistory")}
+            value={typeof summary?.approvedApplications === "number" ? summary.approvedApplications : "..."}
+            hint={t("applications.summary.approvedHistoryHint")}
+            tone="success"
+          />
+          <AdminSummaryCard
+            label={t("applications.summary.rejectedHistory")}
+            value={typeof summary?.rejectedApplications === "number" ? summary.rejectedApplications : "..."}
+            hint={t("applications.summary.rejectedHistoryHint")}
+            tone="warning"
+          />
+        </>
       }
       filters={
-        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-          <label className="block md:col-span-2">
+        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-6">
+          <div className="block md:col-span-2 lg:col-span-6">
+            <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
+              {t("applications.filters.view")}
+            </span>
+            <div className="flex flex-wrap gap-2">
+              {FILTER_VIEWS.map((filter) => {
+                const isActive = activeView === filter;
+                return (
+                  <button
+                    key={filter}
+                    type="button"
+                    onClick={() =>
+                      updateListQuery({
+                        view: filter === "ACTIVE" ? null : filter,
+                        page: 1,
+                      })
+                    }
+                    className={`rounded-full border px-3 py-2 text-sm font-medium transition ${
+                      isActive
+                        ? "border-primary/30 bg-primary-light text-text-brand dark:border-primary/40 dark:bg-primary/12 dark:text-primary-light"
+                        : "border-border-light bg-surface-subtle text-text-secondary hover:border-primary/25 hover:text-text-primary dark:border-white/10 dark:bg-white/[0.03] dark:text-white/70"
+                    }`}
+                  >
+                    {t(`applications.filters.viewTabs.${filter}`)}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+          <label className="block">
+            <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
+              {t("applications.table.status")}
+            </span>
+            <select
+              value={activeStatusFilter}
+              onChange={(event) => {
+                const nextStatus = event.target.value as FilterStatus;
+                updateListQuery({
+                  status: nextStatus === "ALL" ? null : nextStatus,
+                  view: nextStatus === "ALL" ? undefined : "ALL",
+                  page: 1,
+                });
+              }}
+              className="app-control w-full px-4 py-3"
+            >
+              {FILTER_STATUSES.map((filter) => (
+                <option key={filter} value={filter}>
+                  {filter === "ALL"
+                    ? t("applications.filters.all")
+                    : t(`applications.filters.${filter as PractitionerApplicationStatus}`)}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="block md:col-span-2 lg:col-span-2">
             <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
               {t("applications.filters.search")}
             </span>
@@ -213,35 +344,45 @@ export default function AdminApplicationsList() {
               />
             </div>
           </label>
-          <label className="block">
+          <div className="block md:col-span-2 lg:col-span-2">
             <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
-              {t("applications.table.status")}
+              {t("applications.filters.kind")}
             </span>
-            <select
-              value={activeFilter}
-              onChange={(event) =>
-                updateListQuery({
-                  status: event.target.value === "SUBMITTED" ? null : event.target.value,
-                  page: 1,
-                })
-              }
-              className="app-control w-full px-4 py-3"
-            >
-              {FILTER_TABS.map((filter) => (
-                <option key={filter} value={filter}>
-                  {filter === "ALL"
-                    ? t("applications.filters.all")
-                    : t(`applications.filters.${filter as PractitionerApplicationStatus}`)}
-                </option>
-              ))}
-            </select>
-          </label>
-          <div className="flex justify-end md:col-span-2 lg:col-span-3">
+            <div className="flex flex-wrap gap-2">
+              {KIND_FILTER_TABS.map((filter) => {
+                const isActive = activeKindFilter === filter;
+                return (
+                  <button
+                    key={filter}
+                    type="button"
+                    onClick={() =>
+                      updateListQuery({
+                        kind: filter === "ALL" ? null : filter,
+                        page: 1,
+                      })
+                    }
+                    className={`rounded-full border px-3 py-2 text-sm font-medium transition ${
+                      isActive
+                        ? "border-primary/30 bg-primary-light text-text-brand dark:border-primary/40 dark:bg-primary/12 dark:text-primary-light"
+                        : "border-border-light bg-surface-subtle text-text-secondary hover:border-primary/25 hover:text-text-primary dark:border-white/10 dark:bg-white/[0.03] dark:text-white/70"
+                    }`}
+                  >
+                    {filter === "ALL"
+                      ? t("applications.filters.all")
+                      : t(`applications.filters.kindTabs.${filter}`)}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+          <div className="flex justify-end md:col-span-2 lg:col-span-6">
             <FilterClearButton
               disabled={!hasActiveFilters}
               onClick={() =>
                 updateListQuery({
+                  view: null,
                   status: null,
+                  kind: null,
                   q: null,
                   page: 1,
                 })

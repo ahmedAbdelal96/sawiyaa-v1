@@ -1,0 +1,151 @@
+{
+  "meta": {
+    "listTitle": "My package purchases",
+    "listDescription": "Review your package purchases, track progress, and continue payment when needed.",
+    "detailTitle": "Package purchase details"
+  },
+  "errors": {
+    "authHeading": "Sign in to view your package purchases",
+    "authNote": "You need a patient account to access package purchase history.",
+    "authAction": "Sign in",
+    "notFoundHeading": "Package purchase not found",
+    "notFoundNote": "We couldn't find that package purchase."
+  },
+  "list": {
+    "eyebrow": "Packages",
+    "heading": "My package purchases",
+    "subtitle": "Keep track of your package bookings, session progress, and payment status in one place.",
+    "emptyHeading": "No package purchases yet",
+    "emptyNote": "Choose a package from a practitioner profile to get started.",
+    "emptyAction": "Browse practitioners",
+    "errorHeading": "Could not load package purchases",
+    "errorNote": "Please try again in a moment.",
+    "retry": "Try again",
+    "rowsPerPage": "Packages per page",
+    "pageLabel": "Page {page} of {totalPages}",
+    "previous": "Previous",
+    "next": "Next",
+    "summary": {
+      "total": "Total",
+      "totalHint": "All purchases across the current result set.",
+      "pending": "Pending payment",
+      "pendingHint": "Pending purchases on this page.",
+      "active": "Active",
+      "activeHint": "Active purchases on this page.",
+      "completed": "Completed",
+      "completedHint": "Completed purchases on this page."
+    },
+    "card": {
+      "packageTitle": "Package",
+      "packageLabel": "{sessions}-session package",
+      "payableTotal": "You pay",
+      "discountPercent": "Discount",
+      "progress": "Progress",
+      "progressValue": "{completed} of {total} sessions completed",
+      "currency": "Currency",
+      "linkedSessions": "Linked sessions",
+      "completedSessions": "Completed sessions",
+      "timeWindows": "Session states",
+      "timeWindowsValue": "{pending} pending, {live} active, {terminal} finished",
+      "nextSession": "Next session",
+      "paymentWindow": "Payment window",
+      "expiresAt": "Expires {date}",
+      "noExpiry": "No expiry time available",
+      "expiredPayment": "This payment window has expired.",
+      "expiredBadge": "Expired",
+      "continuePayment": "Continue payment",
+      "viewDetails": "View details"
+    },
+    "status": {
+      "PENDING_PAYMENT": "Pending payment",
+      "ACTIVE": "Active",
+      "COMPLETED": "Completed",
+      "CANCELLED": "Cancelled",
+      "EXPIRED": "Expired",
+      "REFUNDED": "Refunded"
+    }
+  },
+  "detail": {
+    "eyebrow": "Packages",
+    "heading": "Package purchase details",
+    "subtitle": "Review the package summary, payment window, and every linked session.",
+    "back": "Back to package purchases",
+    "retry": "Try again",
+    "errorHeading": "Could not load the package purchase",
+    "errorNote": "Please try again in a moment.",
+    "packageEyebrow": "Package overview",
+    "packageTitle": "{sessions}-session package",
+    "packageDescription": "This summary uses backend purchase snapshots and never recalculates pricing on the client.",
+    "summary": {
+      "status": "Status",
+      "progress": "Progress",
+      "progressHint": "{completed} of {total} sessions completed",
+      "currency": "Currency",
+      "currencyHint": "The selected currency for this purchase.",
+      "total": "Patient payable",
+      "totalHint": "The amount collected for the package."
+    },
+    "paymentBlock": {
+      "eyebrow": "Payment",
+      "heading": "Continue payment for this package",
+      "expiresAt": "Payment expires {date}",
+      "noExpiry": "No payment expiry time available",
+      "expiredNote": "This package purchase payment window has already expired.",
+      "expiredBadge": "Expired",
+      "continuePayment": "Continue payment"
+    },
+    "fields": {
+      "sessionCount": "Sessions",
+      "discountPercent": "Discount",
+      "duration": "Duration",
+      "paymentExpiresAt": "Payment expires",
+      "baseSessionPrice": "Base session price",
+      "undiscountedTotal": "Regular total",
+      "discountAmount": "Discount amount",
+      "patientPayableTotal": "You pay",
+      "notAvailable": "Not available"
+    },
+    "progressHeading": "Completion progress",
+    "progressValue": "{completed} of {total} sessions completed",
+    "progressFacts": {
+      "live": "{count} active or upcoming",
+      "pending": "{count} pending",
+      "terminal": "{count} finished or closed"
+    },
+    "sessionsEyebrow": "Linked sessions",
+    "sessionsHeading": "Package-linked sessions",
+    "sessionsNote": "These are normal sessions and follow the existing session flow and notifications.",
+    "nextSessionLabel": "Next upcoming session",
+    "noSessionsHeading": "No linked sessions found",
+    "noSessionsNote": "This package purchase has no linked sessions to display yet.",
+    "sections": {
+      "live": "Active and upcoming",
+      "pending": "Pending",
+      "completed": "Completed",
+      "terminal": "Closed"
+    },
+    "sessionIndex": "Session {current} of {total}",
+    "sessionNotScheduled": "Not scheduled yet",
+    "sessionMode": "Mode",
+    "sessionDuration": "Duration",
+    "minutes": "min",
+    "openable": "Open now",
+    "viewOnly": "View only",
+    "openSession": "Open session",
+    "viewSession": "View session"
+  },
+  "payment": {
+    "modalEyebrow": "Secure checkout",
+    "modalTitle": "Complete package payment",
+    "modalDescription": "Use the secure payment form below to finish checkout.",
+    "summaryHeading": "Package total",
+    "summaryLabel": "{amount}",
+    "close": "Close",
+    "continueProcessing": "Starting payment...",
+    "redirecting": "Opening secure checkout...",
+    "errors": {
+      "missingRedirect": "Payment started, but checkout details were not available.",
+      "startFailed": "We could not start payment. Please try again."
+    }
+  }
+}

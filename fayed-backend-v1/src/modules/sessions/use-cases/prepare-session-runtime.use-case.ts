@@ -11,6 +11,7 @@ import { SessionPatientRepository } from '../repositories/session-patient.reposi
 import { SessionPractitionerRepository } from '../repositories/session-practitioner.repository';
 import { SessionRepository } from '../repositories/session.repository';
 import { SessionVideoProviderRegistryService } from '../services/session-video-provider-registry.service';
+import { SessionVideoProviderResolverService } from '../services/session-video-provider-resolver.service';
 import { ResolveSessionJoinReadinessService } from '../services/resolve-session-join-readiness.service';
 
 @Injectable()
@@ -21,6 +22,7 @@ export class PrepareSessionRuntimeUseCase {
     private readonly sessionPatientRepository: SessionPatientRepository,
     private readonly sessionPractitionerRepository: SessionPractitionerRepository,
     private readonly sessionVideoProviderRegistryService: SessionVideoProviderRegistryService,
+    private readonly sessionVideoProviderResolverService: SessionVideoProviderResolverService,
     private readonly resolveSessionJoinReadinessService: ResolveSessionJoinReadinessService,
   ) {}
 
@@ -73,7 +75,7 @@ export class PrepareSessionRuntimeUseCase {
     }
 
     if (
-      session.provider === SessionProvider.DAILY &&
+      session.provider !== SessionProvider.NONE &&
       session.providerRoomId &&
       session.providerSessionRef
     ) {
@@ -83,18 +85,13 @@ export class PrepareSessionRuntimeUseCase {
           roomName: session.providerRoomId,
           roomUrl: session.providerSessionRef,
           isPrepared: true,
+          providerRuntime: this.buildProviderRuntime({
+            provider: session.provider,
+            roomId: session.providerRoomId,
+            roomUrl: session.providerSessionRef,
+          }),
         },
       };
-    }
-
-    if (
-      session.provider !== SessionProvider.NONE &&
-      session.provider !== SessionProvider.DAILY
-    ) {
-      throw new ConflictException({
-        messageKey: 'sessions.errors.runtimeAlreadyPreparedByOtherProvider',
-        error: 'SESSION_RUNTIME_ALREADY_PREPARED_BY_OTHER_PROVIDER',
-      });
     }
 
     if (!session.scheduledStartAt || !session.scheduledEndAt) {
@@ -104,38 +101,54 @@ export class PrepareSessionRuntimeUseCase {
       });
     }
 
-    const adapter = this.sessionVideoProviderRegistryService.get(
-      SessionProvider.DAILY,
-    );
+    const resolvedProvider =
+      this.sessionVideoProviderResolverService.resolvePreparedProviderForSession(
+        session,
+      );
+    const adapter =
+      this.sessionVideoProviderRegistryService.get(resolvedProvider);
     const room = await adapter.createRoom({
       sessionId: session.id,
       startsAt: session.scheduledStartAt,
       endsAt: session.scheduledEndAt,
     });
+    const roomId = room.roomId || room.roomName;
 
     const updated = await this.prisma.$transaction(async (tx) => {
-      const persisted = await this.sessionRepository.updateStatus(
+      const updateResult = await this.sessionRepository.updateRuntimeIfMissing(
         session.id,
         {
-          provider: SessionProvider.DAILY,
-          providerRoomId: room.roomName,
+          provider: resolvedProvider,
+          providerRoomId: roomId,
           providerSessionRef: room.roomUrl,
         },
         tx,
       );
 
-      await this.sessionRepository.createEvent(
-        {
-          sessionId: session.id,
-          eventType: SessionEventType.PROVIDER_ROOM_CREATED,
-          actorUserId: input.userId,
-          metadataJson: {
-            provider: SessionProvider.DAILY,
-            roomName: room.roomName,
+      const persisted = await this.sessionRepository.findById(session.id, tx);
+      if (!persisted) {
+        throw new NotFoundException({
+          messageKey: 'sessions.errors.sessionNotFound',
+          error: 'SESSION_NOT_FOUND',
+        });
+      }
+
+      if (updateResult.count > 0) {
+        await this.sessionRepository.createEvent(
+          {
+            sessionId: session.id,
+            eventType: SessionEventType.PROVIDER_ROOM_CREATED,
+            actorUserId: input.userId,
+            metadataJson: {
+              provider: resolvedProvider,
+              providerRoomId: roomId,
+              providerRoomUrl: room.roomUrl,
+              roomName: room.roomName ?? roomId,
+            },
           },
-        },
-        tx,
-      );
+          tx,
+        );
+      }
 
       return persisted;
     });
@@ -148,6 +161,11 @@ export class PrepareSessionRuntimeUseCase {
         isPrepared: Boolean(
           updated.providerRoomId && updated.providerSessionRef,
         ),
+        providerRuntime: this.buildProviderRuntime({
+          provider: updated.provider,
+          roomId: updated.providerRoomId,
+          roomUrl: updated.providerSessionRef,
+        }),
       },
     };
   }
@@ -197,5 +215,21 @@ export class PrepareSessionRuntimeUseCase {
         error: 'SESSION_ACCESS_DENIED',
       });
     }
+  }
+
+  private buildProviderRuntime(input: {
+    provider: SessionProvider;
+    roomId: string | null;
+    roomUrl: string | null;
+  }) {
+    return {
+      name: input.provider,
+      roomId: input.roomId,
+      roomUrl: input.roomUrl,
+      token: null,
+      tokenExpiresAt: null,
+      joinMode: null,
+      payload: {},
+    };
   }
 }

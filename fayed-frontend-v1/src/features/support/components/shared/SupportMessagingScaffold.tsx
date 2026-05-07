@@ -8,6 +8,7 @@ type Props = {
   title: ReactNode;
   note?: ReactNode;
   actions?: ReactNode;
+  density?: "regular" | "compact";
   children: ReactNode;
   className?: string;
 };
@@ -17,12 +18,17 @@ export default function SupportMessagingScaffold({
   title,
   note,
   actions,
+  density = "regular",
   children,
   className,
 }: Props) {
+  const shellClassName =
+    density === "compact" ? "space-y-4 sm:space-y-5" : "app-max-content mx-auto space-y-5 sm:space-y-6";
+  const heroClassName = density === "compact" ? "app-panel rounded-[28px] p-4 sm:p-5" : "app-panel rounded-[32px] p-5 sm:p-7";
+
   return (
-    <div className={cn("app-max-content mx-auto space-y-5 sm:space-y-6", className)}>
-      <section className="app-panel rounded-[32px] p-5 sm:p-7">
+    <div className={cn(shellClassName, className)}>
+      <section className={heroClassName}>
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="max-w-2xl">
             {eyebrow ? (
@@ -46,4 +52,3 @@ export default function SupportMessagingScaffold({
     </div>
   );
 }
-

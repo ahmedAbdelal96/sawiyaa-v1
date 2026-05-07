@@ -1,0 +1,194 @@
+{
+  "meta": {
+    "title": "Payment Gateway Control - Admin",
+    "description": "Manage provider state, routing, and safe runtime payment controls with typed validation and rollback."
+  },
+  "page": {
+    "eyebrow": "Operational control panel",
+    "title": "Payment Gateway Control",
+    "description": "Read-only tables show provider state and change history. Create and edit actions open dedicated modals so the screen stays clean."
+  },
+  "summary": {
+    "activeProviders": "Active providers",
+    "activeProvidersHint": "Enabled and not in maintenance mode",
+    "healthyProviders": "Healthy providers",
+    "healthyProvidersHint": "Validation health from the runtime overlay",
+    "defaultRoute": "Default route",
+    "defaultRouteHint": "Current routing default provider"
+  },
+  "sections": {
+    "providers": {
+      "title": "Providers",
+      "description": "Configure Paymob and Stripe from dedicated modals."
+    },
+    "routing": {
+      "title": "Routing",
+      "description": "Global provider order, default provider, and fallback are controlled separately from provider settings."
+    },
+    "history": {
+      "title": "Change history",
+      "description": "All provider and routing changes are logged with before and after snapshots."
+    }
+  },
+  "actions": {
+    "editPaymob": "Edit Paymob",
+    "editStripe": "Edit Stripe",
+    "configure": "Configure",
+    "configureRouting": "Configure routing",
+    "requestStepUp": "Request step-up",
+    "validate": "Validate",
+    "saveChanges": "Save changes",
+    "rollback": "Rollback",
+    "actionCompleted": "Action completed",
+    "actionFailed": "Action failed"
+  },
+  "states": {
+    "enabled": "Enabled",
+    "disabled": "Disabled",
+    "maintenance": "Maintenance",
+    "live": "Live",
+    "healthy": "Healthy",
+    "issues": "Issues",
+    "active": "active",
+    "none": "None",
+    "unavailable": "Unavailable",
+    "noChangesYet": "No changes yet",
+    "noReasonProvided": "No reason provided"
+  },
+  "providers": {
+    "stripeDescription": "Stripe controls remain limited to safe runtime availability and routing flags.",
+    "noSnapshotsTitle": "No provider snapshots",
+    "noSnapshotsDescription": "Provider runtime snapshots will appear here once the gateway control module loads.",
+    "methodSummary": "{count, plural, one {# active method} other {# active methods}} | {flow}",
+    "routingSummary": "Default: {defaultProvider} | Priority: {priority}",
+    "paymobSummary": "Paymob summary",
+    "methodRegistryTitle": "Method registry",
+    "methodRegistryDescription": "Only methods verified on the merchant account should remain enabled."
+  },
+  "table": {
+    "provider": "Provider",
+    "state": "State",
+    "validation": "Validation",
+    "countries": "Countries",
+    "lastUpdated": "Last updated",
+    "defaultProvider": "Default provider",
+    "priorityOrder": "Priority order",
+    "fallback": "Fallback",
+    "changedAt": "Changed at",
+    "scope": "Scope",
+    "action": "Action",
+    "reason": "Reason",
+    "actor": "Actor",
+    "entries": "{value, number} entries",
+    "rollback": "Rollback",
+    "rollbackUnavailable": "Unavailable"
+  },
+  "providerModal": {
+    "title": "{provider} configuration",
+    "description": "Edit the provider runtime state in a dedicated modal. Secrets remain env-managed and are not editable here.",
+    "eyebrow": "Payment gateway control",
+    "providerEnabled": "Provider enabled",
+    "maintenanceMode": "Maintenance mode",
+    "allowedCountries": "Allowed countries",
+    "checkoutFlow": "Checkout flow",
+    "checkoutFlowLegacy": "Legacy",
+    "checkoutFlowIntention": "Intention",
+    "defaultMethod": "Default method",
+    "methodRegistry": "Method registry",
+    "methodRegistryDescription": "Only methods verified on the merchant account should remain enabled.",
+    "methodRegistryActive": "{value, number} active",
+    "paymobSummary": "Paymob summary",
+    "changeReason": "Change reason",
+    "changeReasonPlaceholder": "Operational reason for the change",
+    "stepUpChallengeId": "Step-up challenge ID",
+    "stepUpChallengePlaceholder": "Received challenge ID",
+    "stepUpCode": "Step-up code",
+    "stepUpCodePlaceholder": "000000",
+    "verificationCodeSent": "Verification code sent to {target}.",
+    "superAdminNote": "SUPER_ADMIN only. Secrets remain env-managed and cannot be edited here.",
+    "validationPaymob": "Paymob draft validation",
+    "validationStripe": "Stripe draft validation",
+    "pendingChanges": "Pending changes",
+    "unableRequestStepUp": "Unable to request step-up.",
+    "unableSaveProviderConfiguration": "Unable to save provider configuration."
+  },
+  "routingModal": {
+    "title": "Routing configuration",
+    "description": "Adjust the default provider and fallback order from a dedicated modal.",
+    "eyebrow": "Payment gateway control",
+    "defaultProvider": "Default provider",
+    "fallbackProvider": "Fallback provider",
+    "priorityOrder": "Priority order",
+    "changeReason": "Change reason",
+    "changeReasonPlaceholder": "Operational reason for the change",
+    "stepUpChallengeId": "Step-up challenge ID",
+    "stepUpChallengePlaceholder": "Received challenge ID",
+    "stepUpCode": "Step-up code",
+    "stepUpCodePlaceholder": "000000",
+    "verificationCodeSent": "Verification code sent to {target}.",
+    "superAdminNote": "SUPER_ADMIN only. Routing is validated before activation.",
+    "routingValidation": "Routing validation",
+    "pendingChanges": "Pending changes",
+    "unableRequestStepUp": "Unable to request step-up.",
+    "unableSaveRoutingConfiguration": "Unable to save routing configuration."
+  },
+  "rollbackModal": {
+    "title": "Rollback change",
+    "description": "Restore a previous known-good snapshot after step-up confirmation.",
+    "eyebrow": "Payment gateway control",
+    "provider": "Provider",
+    "action": "Action",
+    "changedAt": "Changed at",
+    "rollbackReason": "Rollback reason",
+    "rollbackReasonPlaceholder": "Why should this revision be restored?",
+    "stepUpChallengeId": "Step-up challenge ID",
+    "stepUpChallengePlaceholder": "Received challenge ID",
+    "stepUpCode": "Step-up code",
+    "stepUpCodePlaceholder": "000000",
+    "requestStepUp": "Request step-up",
+    "note": "Rollbacks are audited and require SUPER_ADMIN confirmation.",
+    "actionCompleted": "Action completed",
+    "actionFailed": "Action failed",
+    "unableRequestStepUp": "Unable to request step-up.",
+    "unableRollbackConfiguration": "Unable to rollback configuration."
+  },
+  "methodEditor": {
+    "key": "Key",
+    "label": "Label",
+    "type": "Type",
+    "priority": "Priority",
+    "enabled": "Enabled",
+    "supportedCheckoutFlows": "Supported checkout flows",
+    "countryIsoCodes": "Country ISO codes",
+    "integrationReference": "Integration reference",
+    "integrationPlaceholder": "Integration / method ID",
+    "flowLegacy": "Legacy",
+    "flowIntention": "Intention"
+  },
+  "validation": {
+    "title": "Validation",
+    "healthy": "Healthy",
+    "issues": "Issues"
+  },
+  "common": {
+    "none": "None",
+    "routing": "ROUTING",
+    "provider": "Provider",
+    "state": "State",
+    "noHistory": "No history yet",
+    "noHistoryDescription": "The latest provider or routing changes will appear here after the first save.",
+    "noProviderSnapshots": "No provider snapshots",
+    "noProviderSnapshotsDescription": "Provider runtime snapshots will appear here once the gateway control module loads."
+  },
+  "changeLabels": {
+    "enabled": "Enabled",
+    "maintenance": "Maintenance",
+    "countries": "Countries",
+    "checkoutFlow": "Checkout flow",
+    "defaultMethod": "Default method",
+    "methods": "Methods",
+    "defaultProvider": "Default provider",
+    "fallbackProvider": "Fallback provider",
+    "priorityOrder": "Priority order"
+  }
+}

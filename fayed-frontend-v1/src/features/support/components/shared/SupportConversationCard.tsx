@@ -32,7 +32,7 @@ export default function SupportConversationCard({
   return (
     <Link
       href={href as never}
-      className="app-panel-soft group block rounded-[24px] p-4 transition hover:border-primary/25"
+      className="app-panel-soft group block rounded-[22px] p-3.5 transition hover:border-primary/25"
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
@@ -74,4 +74,3 @@ export default function SupportConversationCard({
     </Link>
   );
 }
-

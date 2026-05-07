@@ -3,14 +3,41 @@
     "payTitle": "Complete Payment",
     "returnTitle": "Payment Status",
     "historyTitle": "Payment History",
-    "historyDescription": "View all your payments and their status."
+    "historyDescription": "View all your payments and their status.",
+    "walletTitle": "Wallet",
+    "walletDescription": "See your wallet balance, recent activity, and money flow."
   },
   "page": {
-    "heading": "Complete Your Payment",
-    "subheading": "Review your session details and pay securely.",
+    "heading": "Complete Payment",
+    "subheading": "Review your session details and refund policy before paying.",
     "backToSessions": "Back to sessions",
     "backToSummary": "Back to summary",
-    "sessionSummaryHeading": "Your Session",
+    "sessionSummaryHeading": "Session summary",
+    "sessionSummaryIntro": "Review the session details before you pay.",
+    "sessionModeVideo": "Video session",
+    "practitionerLabel": "Practitioner",
+    "scheduledLabel": "Scheduled",
+    "unscheduledLabel": "Not scheduled",
+    "durationLabel": "Duration",
+    "sessionCodeLabel": "Session code",
+    "amountDueHeading": "Amount due now",
+    "amountDueNote": "This amount reflects wallet use and any applied discounts.",
+    "policySectionEyebrow": "Refund policy",
+    "policySectionHeading": "Session Refund Policy",
+    "policySectionIntro": "Please read the refund policy before paying. By paying, you confirm that you have reviewed these clauses and agreed to them.",
+    "policyLoadingNote": "Loading refund policy...",
+    "policyUnavailable": "Payment cannot be completed right now because the refund policy is unavailable.",
+    "policyUnavailableNote": "Please try again shortly or refresh the page.",
+    "policyValidationTitle": "Could not verify the refund policy",
+    "policyValidationNote": "There is a conflict in the policy data. Please refresh the page and try again.",
+    "policyUpdatedTitle": "Refund policy updated",
+    "policyUpdatedNote": "The refund policy changed. Please review it again and accept it once more.",
+    "policyCheckboxLabel": "I have read and accept the refund policy",
+    "policyCheckboxNote": "Payment stays disabled until you accept the clauses.",
+    "policyMandatory": "You must accept the refund policy before paying.",
+    "policyRequiredForPayment": "Please review the refund policy below and accept it before paying.",
+    "viewFullPolicy": "View full policy",
+    "securityNote": "Payment is processed securely.",
     "with": "with",
     "minutes": "minutes",
     "loading": "Loading session...",
@@ -18,6 +45,9 @@
     "retry": "Try again",
     "sessionExpired": "Payment Window Expired",
     "sessionExpiredNote": "The payment window for this session has closed. Please book a new slot.",
+    "sessionExpiredUnavailableNote": "This payment page is no longer available because the reservation window has ended.",
+    "sessionExpiredRedirectNote": "We will take you back to the practitioner page in a few seconds so you can choose a new time.",
+    "returnToPractitioner": "Back to practitioner",
     "bookAgain": "Browse practitioners",
     "alreadyPaid": "Session Already Confirmed",
     "alreadyPaidNote": "Payment has already been received and your session is secured.",
@@ -27,11 +57,44 @@
     "initiating": "Preparing checkout...",
     "redirecting": "Opening checkout...",
     "redirectingToCheckout": "We are sending you to the secure checkout page now.",
-    "paymentRequiredHeading": "Payment is still needed",
-    "paymentRequiredNote": "Complete payment now to secure this session and keep it moving forward.",
+    "paymentRequiredHeading": "Review the session details and refund policy before paying.",
+    "paymentRequiredNote": "Payment will only complete after you accept the refund policy.",
     "sessionBlockedByPayment": "Your session will not be confirmed until payment is completed successfully.",
     "initiateError": "Could not initiate payment. Please try again.",
     "initiateConflict": "An active payment already exists for this session. Please refresh and try again.",
+    "paymobMethod": {
+      "heading": "Payment method",
+      "note": "Choose one of the Paymob methods that is actually enabled on your merchant account.",
+      "card": {
+        "title": "Bank card",
+        "note": "Pay with Visa, Mastercard, or any other card supported by your account."
+      },
+      "wallet": {
+        "title": "Mobile wallet",
+        "note": "Pay from a mobile wallet when it is enabled on your Paymob account."
+      }
+    },
+    "journey": {
+      "eyebrow": "Payment journey",
+      "heading": "What happens next",
+      "note": "We keep the checkout flow simple: review the booking, complete payment, then return here for confirmation.",
+      "steps": {
+        "review": {
+          "title": "Review",
+          "note": "Check the session time, duration, and the amount due before you continue."
+        },
+        "pay": {
+          "title": "Pay securely",
+          "note": "Your payment opens in a secure checkout, or inside the page when the gateway supports it."
+        },
+        "confirm": {
+          "title": "Confirm",
+          "note": "We bring you back here and update the session status automatically."
+        }
+      },
+      "hostedNote": "If a separate payment page opens, finish the card details there and we will bring you back automatically.",
+      "inlineNote": "Your payment can be completed directly on this page when the gateway supports an embedded card form."
+    },
     "REFUND_PENDING": {
       "heading": "Refund in Progress",
       "note": "A refund is being processed for this session. We will update your session status once it is finalized."
@@ -101,6 +164,46 @@
       "heading": "Could Not Check Status",
       "note": "Please check your sessions page for the latest updates on your booking."
     },
+    "moneyStory": {
+      "eyebrow": "Money details",
+      "heading": "What this payment means",
+      "note": "The summary below reflects the final recorded amounts for this session.",
+      "expiredHeading": "If you need to pay later",
+      "expiredNote": "The slot expired before payment was finalized, so no successful charge was recorded.",
+      "cancelledHeading": "If payment was cancelled",
+      "cancelledNote": "No completed charge was recorded. You can retry payment or check history later.",
+      "failedHeading": "If payment failed",
+      "failedNote": "No successful charge was completed. Your card or gateway was not confirmed.",
+      "pendingHeading": "If the payment is still settling",
+      "pendingNote": "The booking is still finalizing. Check sessions and payment history for the latest state.",
+      "verifyingHeading": "Where to check next",
+      "verifyingNote": "We are still waiting for the payment result to settle, so the session may update shortly.",
+      "facts": {
+        "gross": {
+          "label": "Session price",
+          "helper": "The original amount before discounts."
+        },
+        "discount": {
+          "label": "Discount",
+          "helper": "Any coupon or promotion applied."
+        },
+        "net": {
+          "label": "Final amount",
+          "helper": "The amount recorded for this booking."
+        },
+        "where": {
+          "label": "Where to confirm",
+          "value": "Payment history",
+          "helper": "Wallet and history will show any later money movement."
+        }
+      },
+      "actions": {
+        "payments": "Open payment history",
+        "wallet": "Open wallet",
+        "sessions": "View sessions",
+        "history": "Payment history"
+      }
+    },
     "viewSessions": "View my sessions"
   },
   "history": {
@@ -150,6 +253,13 @@
       "PAYMOB": "Paymob",
       "INTERNAL_WALLET": "Wallet"
     },
+    "split": {
+      "walletOnly": "Paid from wallet only",
+      "gatewayOnly": "Paid through gateway only",
+      "walletAndGateway": "Paid from wallet and gateway",
+      "unavailable": "Split details not available"
+    },
+    "refundClarification": "Refund-related items stay visible here so you can follow the final result in one place.",
     "wallet": {
       "summaryHeading": "Wallet Balance",
       "availableLabel": "Available balance",
@@ -158,6 +268,7 @@
       "refundHint": "Refunded amounts are returned to this internal balance.",
       "activityHeading": "Recent wallet activity",
       "activityEmpty": "No wallet transactions yet.",
+      "openWallet": "Open wallet",
       "walletUsedLabel": "Paid from wallet",
       "gatewayUsedLabel": "Paid through gateway",
       "entries": {
@@ -172,7 +283,106 @@
           "ADJUSTMENT": "Adjustment"
         }
       }
+    },
+    "moneyStory": {
+      "eyebrow": "Money story",
+      "heading": "How to read your payment history",
+      "note": "This page keeps wallet, gateway, and refund movement in one place so you do not need to stitch it together elsewhere.",
+      "facts": {
+        "walletBacked": {
+          "label": "Wallet-backed payments",
+          "value": "{count}",
+          "helper": "Payments that used wallet balance."
+        },
+        "gatewayBacked": {
+          "label": "Gateway-backed payments",
+          "value": "{count}",
+          "helper": "Payments that charged through the payment provider."
+        },
+        "mixed": {
+          "label": "Mixed payments",
+          "value": "{count}",
+          "helper": "Payments that used both wallet and gateway."
+        },
+        "refund": {
+          "label": "Refund-related items",
+          "value": "{count}",
+          "helper": "Payments that are refunded or still settling."
+        }
+      },
+      "actions": {
+        "wallet": "Open wallet",
+        "sessions": "View sessions"
+      }
     }
+  },
+  "walletPage": {
+    "eyebrow": "Wallet",
+    "heading": "Your wallet, balance, and activity",
+    "note": "Use this page to understand what is available, what is reserved, and how your wallet changed over time.",
+    "backToPayments": "Payment history",
+    "backToSessions": "Go to sessions",
+    "metrics": {
+      "available": "Available",
+      "availableHint": "Can be used for eligible payments",
+      "reserved": "Reserved",
+      "reservedHint": "Held for in-progress payments",
+      "credited": "Credited",
+      "creditedHint": "Total money added to the wallet",
+      "debited": "Debited",
+      "debitedHint": "Total money used or deducted"
+    },
+    "activityHeading": "Wallet activity",
+    "activityNote": "These entries show how your wallet moved over time.",
+    "activityEmpty": {
+      "heading": "No wallet activity yet",
+      "note": "Your wallet activity will appear here after refunds, credits, or wallet-based payments.",
+      "action": "Open payment history"
+    },
+    "sidebar": {
+      "heading": "What this page means",
+      "note": "This page is for patients who want a simple view of wallet balances and recent ledger activity.",
+      "currency": "Wallet currency",
+      "currencyNote": "Your wallet uses the currency that matches your account market.",
+      "updateLabel": "Latest update",
+      "updateNote": "The balance here is synced from your wallet ledger.",
+      "lastEntry": "Last activity:",
+      "noActivity": "No wallet activity has been recorded yet.",
+      "openPayments": "Open payment history",
+      "openSessions": "View sessions"
+    },
+    "clarity": {
+      "eyebrow": "Money clarity",
+      "heading": "Wallet balance, explained simply",
+      "note": "Available is money you can use now. Reserved is money held for a payment that is still settling.",
+      "available": {
+        "label": "Available balance",
+        "value": "Spendable now",
+        "helper": "Ready for eligible payments or refunds."
+      },
+      "reserved": {
+        "label": "Reserved balance",
+        "value": "Held temporarily",
+        "helper": "Released when the related payment finishes."
+      },
+      "actions": {
+        "payments": "Open payment history",
+        "sessions": "View sessions"
+      }
+    },
+    "states": {
+      "error": {
+        "heading": "Wallet is not available right now",
+        "note": "We could not load your wallet summary. Please try again.",
+        "retry": "Try again"
+      },
+      "empty": {
+        "heading": "No wallet yet",
+        "note": "Your wallet will appear when your account has wallet activity.",
+        "action": "Open payment history"
+      }
+    },
+    "retry": "Try again"
   },
   "walletCheckout": {
     "heading": "How this payment will be split",
@@ -209,6 +419,21 @@
     "EXPIRED": {
       "label": "Payment window ended",
       "note": "The payment window ended before this session could be confirmed."
+    }
+  },
+  "sessionMoney": {
+    "eyebrow": "Money details",
+    "heading": "How to read this payment",
+    "notes": {
+      "PENDING_PAYMENT": "This session is still waiting for payment. Complete payment now so it can be confirmed.",
+      "SECURED": "Payment was received successfully and this session is secured.",
+      "REFUND_PENDING": "A refund is currently being processed for this session.",
+      "REFUNDED": "This session payment has already been refunded.",
+      "EXPIRED": "The payment window ended before this session could be confirmed."
+    },
+    "actions": {
+      "wallet": "Open wallet",
+      "history": "Payment history"
     }
   }
 }

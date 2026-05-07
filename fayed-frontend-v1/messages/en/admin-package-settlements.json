@@ -1,0 +1,157 @@
+{
+  "meta": {
+    "title": "Package settlements - Admin",
+    "description": "Review package money that is held, ready to release, under review, or already released.",
+    "detailTitle": "Package settlement detail - Admin",
+    "detailDescription": "Inspect one package settlement, its release readiness, and its review history."
+  },
+  "eyebrow": "Package settlements",
+  "title": "Package settlements",
+  "note": "Review held package money and release practitioner payouts when sessions are complete.",
+  "summary": {
+    "held": "Held",
+    "ready": "Ready to release",
+    "review": "Needs review",
+    "released": "Released"
+  },
+  "filters": {
+    "status": "Status",
+    "allStatuses": "All statuses",
+    "currency": "Currency",
+    "allCurrencies": "All currencies",
+    "clear": "Clear filters"
+  },
+  "statuses": {
+    "HELD": "Held",
+    "READY_TO_RELEASE": "Ready to release",
+    "PARTIALLY_RELEASED": "Partially released",
+    "RELEASED": "Released",
+    "NEEDS_REVIEW": "Needs review",
+    "REFUNDED_OR_ADJUSTED": "Refunded or adjusted"
+  },
+  "purchaseStatuses": {
+    "PENDING_PAYMENT": "Pending payment",
+    "ACTIVE": "Active",
+    "COMPLETED": "Completed",
+    "EXPIRED": "Expired",
+    "CANCELLED": "Cancelled",
+    "REFUNDED": "Refunded"
+  },
+  "table": {
+    "actions": "Actions",
+    "practitioner": "Practitioner",
+    "patient": "Patient",
+    "purchaseRef": "Purchase",
+    "status": "Status",
+    "currency": "Currency",
+    "heldPractitionerAmount": "Held for practitioner",
+    "releasablePractitionerAmount": "Ready to release",
+    "releasedPractitionerAmount": "Released",
+    "sessions": "Sessions",
+    "sessionsValue": "{completed} / {total}",
+    "updatedAt": "Updated"
+  },
+  "actions": {
+    "viewDetails": "View details",
+    "release": "Release payout",
+    "review": "Review"
+  },
+  "states": {
+    "listError": "Could not load package settlements.",
+    "retry": "Try again",
+    "emptyTitle": "No package settlements yet",
+    "emptyNote": "Package settlements will appear here once package purchases are collected and tracked.",
+    "detailError": {
+      "heading": "Package settlement is not available right now",
+      "note": "Could not load this package settlement.",
+      "retry": "Try again",
+      "back": "Back to package settlements"
+    },
+    "notFound": {
+      "heading": "Package settlement was not found",
+      "note": "This package settlement is not available in the current admin scope."
+    }
+  },
+  "modal": {
+    "eyebrow": "Release package payout",
+    "title": "Confirm payout release",
+    "description": "This will release the held practitioner amount for the selected package settlement.",
+    "note": "The payout will be added to the practitioner wallet after confirmation.",
+    "confirm": "Release payout",
+    "cancel": "Cancel",
+    "success": "Package payout released successfully.",
+    "fields": {
+      "practitioner": "Practitioner",
+      "amount": "Releasable amount",
+      "currency": "Currency",
+      "sessions": "Completed sessions",
+      "sessionsValue": "{completed} / {total}"
+    }
+  },
+  "errors": {
+    "notFound": "This package settlement could not be found.",
+    "notReady": "This package settlement is not ready for release yet.",
+    "empty": "There is nothing to release for this package settlement.",
+    "invalidAmount": "This package settlement has an invalid amount.",
+    "currencyMissing": "This package settlement is missing a currency.",
+    "snapshotMissing": "This package settlement is missing required snapshot data.",
+    "needsReview": "This package cannot be released automatically. It needs admin review.",
+    "generic": "Could not complete this package settlement action right now."
+  },
+  "detail": {
+    "back": "Back to package settlements",
+    "eyebrow": "Package settlement",
+    "title": "Package settlement detail",
+    "note": "Review the package hold, release readiness, and simple review notes.",
+    "status": "Settlement status",
+    "releasedNote": "This package payout has already been released.",
+    "sections": {
+      "overview": "Overview",
+      "overviewNote": "Basic package and participant information.",
+      "amounts": "Amounts",
+      "amountsNote": "Hold, release, and usage amounts in the package settlement.",
+      "review": "Review",
+      "reviewNote": "Administrative review and release history."
+    },
+    "fields": {
+      "settlementId": "Settlement ID",
+      "purchaseId": "Purchase ID",
+      "packagePlan": "Package",
+      "practitioner": "Practitioner",
+      "patient": "Patient",
+      "purchaseStatus": "Purchase status",
+      "currency": "Currency",
+      "sessions": "Sessions",
+      "sessionsValue": "{completed} / {total}",
+      "updatedAt": "Updated"
+    },
+    "totals": {
+      "heldPractitioner": "Held for practitioner",
+      "releasablePractitioner": "Ready to release",
+      "releasedPractitioner": "Released",
+      "sessions": "Sessions",
+      "sessionsValue": "{completed} / {total}"
+    },
+    "amounts": {
+      "heldPractitioner": "Held for practitioner",
+      "heldPlatform": "Held for platform",
+      "releasablePractitioner": "Ready to release",
+      "releasedPractitioner": "Released",
+      "normalEquivalentUsed": "Normal value used",
+      "discountApplied": "Discount applied"
+    },
+    "review": {
+      "decision": "Decision",
+      "reviewedAt": "Reviewed at",
+      "reviewedBy": "Reviewed by",
+      "releasedAt": "Released at",
+      "releasedBy": "Released by"
+    },
+    "sidebar": {
+      "packageRef": "Purchase reference",
+      "purchaseStatus": "Purchase status",
+      "progress": "Progress",
+      "currency": "Currency"
+    }
+  }
+}

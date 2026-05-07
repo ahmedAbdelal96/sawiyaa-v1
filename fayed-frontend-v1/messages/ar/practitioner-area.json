@@ -40,6 +40,97 @@
       "meta": {
         "title": "الإعدادات — الممارس",
         "description": "إدارة إعدادات حسابك كممارس."
+      },
+      "packageAvailability": {
+        "meta": {
+          "title": "قبول حجوزات الباقات — الممارس",
+          "description": "فعّل أو عطّل استقبال حجوزات الباقات من المرضى."
+        },
+        "eyebrow": "الإعدادات",
+        "title": "باقات الجلسات",
+        "description": "فعّل هذا الخيار إذا كنت تريد استقبال حجوزات الباقات من المرضى.",
+        "toggleLabel": "قبول حجوزات الباقات",
+        "helper": "عند إيقاف هذا الخيار، لن يتمكن المرضى من شراء باقات جديدة معك، ولن تتأثر الباقات أو الجلسات الحالية.",
+        "status": {
+          "enabled": "مفعّل",
+          "disabled": "غير مفعّل"
+        },
+        "actions": {
+          "save": "حفظ",
+          "saving": "جارٍ الحفظ...",
+          "saved": "لا توجد تغييرات غير محفوظة",
+          "unsaved": "لديك تغييرات غير محفوظة"
+        },
+        "warning": {
+          "title": "لا يمكنك تفعيل الباقات الآن",
+          "note": "أكمل المتطلبات التالية أولًا:"
+        },
+        "feedback": {
+          "success": "تم حفظ إعدادات الباقات بنجاح.",
+          "error": "تعذر حفظ إعدادات الباقات الآن. يرجى المحاولة مرة أخرى.",
+          "loadError": "تعذر تحميل إعدادات الباقات. يرجى المحاولة مرة أخرى.",
+          "retry": "إعادة المحاولة",
+          "missingRequirements": "لا يمكنك تفعيل الباقات قبل استكمال المتطلبات المطلوبة."
+        },
+        "requirements": {
+          "approvedProfile": "اعتماد الملف المهني",
+          "sessionPrice30Egp": "سعر جلسة 30 دقيقة بالجنيه المصري",
+          "sessionPrice30Usd": "سعر جلسة 30 دقيقة بالدولار",
+          "sessionPrice60Egp": "سعر جلسة 60 دقيقة بالجنيه المصري",
+          "sessionPrice60Usd": "سعر جلسة 60 دقيقة بالدولار",
+          "activeAccount": "الحساب النشط",
+          "packagesEnabled": "تفعيل الباقات من المنصة",
+          "packagePurchasesEnabled": "تفعيل شراء الباقات"
+        }
+      }
+    }
+  },
+  "onboarding": {
+    "otpRequiredTitle": "أكمل التحقق أولًا",
+    "otpRequiredNote": "لا يمكننا فتح مساحة الممارس قبل التحقق من OTP الخاص بالحساب. بمجرد اكتمال التحقق، ستتوفر لوحة الممارس كاملة.",
+    "otpRequiredAction": "الذهاب إلى تسجيل الدخول"
+  },
+  "settings": {
+    "packageAvailability": {
+      "meta": {
+        "title": "قبول حجوزات الباقات - الممارس",
+        "description": "فعّل أو عطّل قبول حجوزات الباقات من المرضى."
+      },
+      "eyebrow": "الإعدادات",
+      "title": "باقات الجلسات",
+      "description": "فعّل هذا الخيار إذا كنت تريد استقبال حجوزات الباقات من المرضى.",
+      "toggleLabel": "قبول حجوزات الباقات",
+      "helper": "عند إيقاف هذا الخيار، لن يتمكن المرضى من شراء باقات جديدة معك، ولن تتأثر الباقات أو الجلسات الحالية.",
+      "status": {
+        "enabled": "مفعّل",
+        "disabled": "غير مفعّل"
+      },
+      "actions": {
+        "save": "حفظ",
+        "saving": "جارٍ الحفظ...",
+        "saved": "لا توجد تغييرات غير محفوظة",
+        "unsaved": "لديك تغييرات غير محفوظة"
+      },
+      "warning": {
+        "title": "لا يمكنك تفعيل الباقات الآن",
+        "note": "أكمل المتطلبات التالية أولًا:"
+      },
+      "feedback": {
+        "success": "تم حفظ إعدادات الباقات بنجاح.",
+        "error": "تعذر حفظ إعدادات الباقات الآن. يرجى المحاولة مرة أخرى.",
+        "loadError": "تعذر تحميل إعدادات الباقات. يرجى المحاولة مرة أخرى.",
+        "retry": "إعادة المحاولة",
+        "missingRequirements": "لا يمكنك تفعيل الباقات قبل استكمال المتطلبات المطلوبة."
+      },
+      "requirements": {
+        "approvedProfile": "اعتماد الملف المهني",
+        "sessionPrice30Egp": "سعر جلسة 30 دقيقة بالجنيه المصري",
+        "sessionPrice30Usd": "سعر جلسة 30 دقيقة بالدولار",
+        "sessionPrice60Egp": "سعر جلسة 60 دقيقة بالجنيه المصري",
+        "sessionPrice60Usd": "سعر جلسة 60 دقيقة بالدولار",
+        "activeAccount": "الحساب النشط",
+        "packagesEnabled": "تفعيل الباقات من المنصة",
+        "packagePurchasesEnabled": "تفعيل شراء الباقات"
       }
     }
   },
@@ -192,11 +283,57 @@
       "description": "إدارة ملفك الشخصي المهني ومعلوماتك الشخصية."
     },
     "page": {
+      "eyebrow": "الملف المهني",
       "title": "الملف المهني",
+      "fallbackTitle": "ملف الممارس",
       "subtitle": "حافظ على دقة معلوماتك وحداثتها."
     },
+    "request": {
+      "feedback": {
+        "error": "تعذّر إرسال طلب تعديل الملف الآن.",
+        "success": "تم إرسال طلب تعديل الملف بنجاح.",
+        "primarySpecialtyRequired": "اختر التخصص الأساسي قبل إرسال الطلب."
+      },
+      "primarySpecialtyRequired": "اختر التخصص الأساسي قبل إرسال الطلب.",
+      "noPayoutDestination": "لا توجد تفاصيل للصرف",
+      "payoutAccountHolderRequired": "اسم صاحب الحساب مطلوب قبل الإرسال.",
+      "photoProvided": "تمت إضافة الصورة",
+      "notice": "لن تُطبّق التغييرات الحساسة على الملف المباشر إلا بعد اعتماد الإدارة.",
+      "adminNote": "ملاحظة الإدارة",
+      "modalDescription": "جهّز التفاصيل التالية وأرسلها للمراجعة قبل أن تصبح فعّالة.",
+      "photoEmpty": "لا توجد صورة",
+      "photoRemoved": "تم حذف الصورة",
+      "submittedAt": "تاريخ الإرسال",
+      "noRequest": "لم يتم إرسال أي طلب مراجعة بعد.",
+      "emptyValue": "غير مذكور",
+      "reviewedAt": "تاريخ المراجعة",
+      "noChanges": "لم يتم رصد أي تغييرات في هذا الطلب.",
+      "statusMessage": {
+        "SUBMITTED": "تم إرسال الطلب وهو الآن بانتظار المراجعة.",
+        "REJECTED": "تم رفض الطلب.",
+        "APPROVED": "تم اعتماد الطلب وأصبح مباشرًا.",
+        "CHANGES_REQUESTED": "طلبت الإدارة إجراء تعديلات قبل الاعتماد.",
+        "ARCHIVED": "تم أرشفة هذا الطلب.",
+        "UNDER_REVIEW": "الطلب قيد المراجعة الآن.",
+        "DRAFT": "هذا الطلب ما يزال مسودة."
+      },
+      "noRequestHint": "استخدم مسار التعديل لإرسال تغييرات الملف إلى الإدارة للمراجعة.",
+      "reviewedBy": "راجعها",
+      "changeSummary": "ملخص التغييرات",
+      "modalTitle": "إرسال طلب تعديل الملف"
+    },
     "sections": {
+      "changeRequest": "طلب التعديل",
+      "payoutDestination": "تفاصيل الصرف",
+      "liveProfileNote": "هذا هو الملف المعتمد الظاهر حاليًا للمرضى.",
+      "sessionPricing": "أسعار الجلسات",
+      "avatar": "الصورة الشخصية",
       "professional": "المعلومات المهنية",
+      "identity": "الهوية",
+      "changeRequestNote": "اكتب تعديلاتك هنا وأرسلها لمراجعة الإدارة قبل أن تصبح فعّالة.",
+      "bio": "النبذة",
+      "specialties": "التخصصات",
+      "liveProfile": "الملف المباشر",
       "personal": "التفاصيل الشخصية"
     },
     "avatar": {
@@ -205,7 +342,7 @@
       "empty": "بدون صورة",
       "fieldLabel": "رابط الصورة",
       "placeholder": "https://cdn.example.com/practitioner-avatar.jpg",
-      "hint": "أدخل رابط صورة مباشر. يمكنك التعديل أو الحذف في أي وقت.",
+      "hint": "ما الذي سيحدث بعد ذلك",
       "actions": {
         "save": "حفظ الصورة",
         "saving": "جارٍ الحفظ...",
@@ -213,15 +350,29 @@
         "removing": "جارٍ الحذف..."
       },
       "validation": {
-        "required": "أدخل رابط الصورة قبل الحفظ.",
-        "invalidUrl": "أدخل رابطًا صحيحًا."
+        "invalidType": "تُقبل صور JPG وPNG وWEBP فقط.",
+        "fileTooLarge": "الصورة المحددة كبيرة جدًا."
       },
       "feedback": {
         "updateSuccess": "تم تحديث الصورة الشخصية بنجاح.",
         "updateError": "تعذر تحديث الصورة الشخصية الآن.",
         "removeSuccess": "تم حذف الصورة الشخصية بنجاح.",
         "removeError": "تعذر حذف الصورة الشخصية الآن."
-      }
+      },
+      "keepCurrent": "الإبقاء على الحالية",
+      "choosePhoto": "اختيار صورة",
+      "livePresent": "توجد صورة شخصية منشورة بالفعل في ملفك.",
+      "note": "الصيغ المدعومة: JPG وPNG وWEBP. يتم ضغط الصور الكبيرة قبل الإرسال.",
+      "title": "مراجعة الصورة الشخصية",
+      "removeSelected": "سيتم حذف الصورة الشخصية المحددة في هذا الطلب.",
+      "liveEmpty": "لا توجد صورة شخصية منشورة حاليًا.",
+      "pageHint": "عاين الصورة الجديدة هنا. لن تُدرج بعد في هذا الطلب.",
+      "replacePhoto": "استبدال الصورة",
+      "liveLabel": "الصورة المنشورة",
+      "selectedFile": "الملف المحدد: {fileName}",
+      "reviewOnly": "معاينة فقط",
+      "removePhoto": "حذف الصورة",
+      "hintBody": "استخدم هذه المساحة لمعاينة استبدال الصورة أو حذفها محليًا. تُرسل التغييرات الشخصية بشكل منفصل."
     },
     "fields": {
       "displayName": {
@@ -240,6 +391,22 @@
         "label": "سنوات الخبرة",
         "placeholder": "مثال: 5"
       },
+      "sessionPrice30Egp": {
+        "label": "سعر جلسة 30 دقيقة بالجنيه المصري",
+        "placeholder": "مثال: 250"
+      },
+      "sessionPrice30Usd": {
+        "label": "سعر جلسة 30 دقيقة بالدولار",
+        "placeholder": "مثال: 8"
+      },
+      "sessionPrice60Egp": {
+        "label": "سعر جلسة 60 دقيقة بالجنيه المصري",
+        "placeholder": "مثال: 450"
+      },
+      "sessionPrice60Usd": {
+        "label": "سعر جلسة 60 دقيقة بالدولار",
+        "placeholder": "مثال: 15"
+      },
       "practitionerType": {
         "label": "نوع الممارس",
         "placeholder": "اختر النوع"
@@ -251,6 +418,62 @@
       "timezone": {
         "label": "المنطقة الزمنية",
         "placeholder": "مثال: Asia/Riyadh"
+      },
+      "payoutOtherDetails": {
+        "label": "تفاصيل أخرى للصرف",
+        "placeholder": "أضف أي ملاحظات إضافية للصرف"
+      },
+      "locale": {
+        "label": "اللغة",
+        "placeholder": "اختر اللغة"
+      },
+      "payoutWalletProvider": {
+        "label": "اسم المحفظة",
+        "placeholder": "أدخل اسم المحفظة"
+      },
+      "payoutWalletIdentifier": {
+        "label": "رقم المحفظة",
+        "placeholder": "أدخل رقم المحفظة"
+      },
+      "payoutMethodType": {
+        "label": "طريقة الصرف",
+        "placeholder": "اختر طريقة الصرف"
+      },
+      "payoutBankName": {
+        "label": "اسم البنك",
+        "placeholder": "أدخل اسم البنك"
+      },
+      "payoutIban": {
+        "label": "IBAN",
+        "placeholder": "أدخل IBAN"
+      },
+      "payoutBankAccountNumber": {
+        "label": "رقم الحساب البنكي",
+        "placeholder": "أدخل رقم الحساب البنكي"
+      },
+      "practitionerGender": {
+        "label": "النوع",
+        "placeholder": "اختر النوع"
+      },
+      "payoutAccountHolderName": {
+        "label": "اسم صاحب الحساب",
+        "placeholder": "أدخل اسم صاحب الحساب"
+      },
+      "sessionPrice30Egp": {
+        "label": "??? ???? 30 ????? ??????? ??????",
+        "placeholder": "????: 250"
+      },
+      "sessionPrice30Usd": {
+        "label": "??? ???? 30 ????? ????????",
+        "placeholder": "????: 8"
+      },
+      "sessionPrice60Egp": {
+        "label": "??? ???? 60 ????? ??????? ??????",
+        "placeholder": "????: 450"
+      },
+      "sessionPrice60Usd": {
+        "label": "??? ???? 60 ????? ????????",
+        "placeholder": "????: 15"
       }
     },
     "practitionerType": {
@@ -264,17 +487,75 @@
     "validation": {
       "displayNameMax": "يجب ألا يتجاوز الاسم الظاهر 80 حرفًا",
       "yearsMin": "لا يمكن أن تكون سنوات الخبرة سالبة",
-      "yearsMax": "سنوات الخبرة المُدخلة تبدو مرتفعة جدًا"
+      "yearsMax": "سنوات الخبرة المُدخلة تبدو مرتفعة جدًا",
+      "sessionPriceInvalid": "أدخل سعرًا صحيحًا أكبر من صفر.",
+      "countryCodeMax": "يجب ألا يتجاوز رمز البلد 3 أحرف",
+      "payoutAccountHolderNameMax": "يجب ألا يتجاوز اسم صاحب الحساب 191 حرفًا",
+      "bioMax": "يجب ألا تتجاوز النبذة 4000 حرف",
+      "timezoneMax": "يجب ألا تتجاوز المنطقة الزمنية 80 حرفًا",
+      "payoutDestinationRequired": "أكمل تفاصيل الصرف قبل الإرسال.",
+      "payoutWalletProviderMax": "يجب ألا يتجاوز اسم المحفظة 191 حرفًا",
+      "payoutBankAccountNumberMax": "يجب ألا يتجاوز رقم الحساب البنكي 191 حرفًا",
+      "payoutOtherDetailsMax": "يجب ألا تتجاوز تفاصيل الصرف 1000 حرف",
+      "professionalTitleMax": "يجب ألا يتجاوز اللقب المهني 191 حرفًا",
+      "payoutIbanMax": "يجب ألا يتجاوز IBAN 191 حرفًا",
+      "payoutWalletIdentifierMax": "يجب ألا يتجاوز رقم المحفظة 191 حرفًا",
+      "payoutBankNameMax": "يجب ألا يتجاوز اسم البنك 191 حرفًا"
     },
     "actions": {
       "save": "حفظ التغييرات",
-      "saving": "جارٍ الحفظ..."
+      "saving": "جارٍ الحفظ...",
+      "reviewLiveProfile": "مراجعة الملف المباشر",
+      "cancelRequest": "إلغاء",
+      "openSpecialties": "فتح التخصصات",
+      "requestChanges": "طلب تعديل",
+      "submitRequest": "إرسال الطلب",
+      "submitting": "جارٍ الإرسال...",
+      "reviseRequest": "تعديل الطلب",
+      "updateAvatar": "تحديث الصورة"
     },
     "feedback": {
       "loadError": "تعذّر تحميل ملفك الشخصي. يرجى المحاولة مرة أخرى.",
       "retry": "حاول مرة أخرى",
       "success": "تم تحديث الملف الشخصي بنجاح.",
       "error": "تعذّر حفظ التغييرات. يرجى المحاولة مرة أخرى."
+    },
+    "payoutMethodType": {
+      "WALLET": "محفظة إلكترونية",
+      "BANK_TRANSFER": "تحويل بنكي",
+      "CASH": "نقدًا",
+      "OTHER": "أخرى",
+      "BANK_ACCOUNT": "حساب بنكي",
+      "IBAN": "IBAN"
+    },
+    "practitionerGender": {
+      "FEMALE": "أنثى",
+      "MALE": "ذكر"
+    },
+    "summary": {
+      "credentialsNote": "{count, plural, one {يوجد سجل مؤهل واحد محفوظ.} other {توجد # سجلات مؤهلة محفوظة.}}",
+      "credentials": "المؤهلات",
+      "readiness": "الجاهزية",
+      "reviewState": "حالة المراجعة"
+    },
+    "locale": {
+      "ar": "العربية",
+      "en": "الإنجليزية"
+    },
+    "readiness": {
+      "notReady": "يحتاج إلى مراجعة",
+      "readyNote": "يبدو ملفك المباشر الحالي جاهزًا كما هو.",
+      "ready": "جاهز للمراجعة",
+      "notReadyNote": "لديك تغييرات مسودة أو بيانات ناقصة لا تزال تحتاج إلى مراجعة الإدارة.",
+      "requirements": {
+        "primarySpecialtyCategoryId": "التخصص الأساسي",
+        "payoutAccountHolderName": "اسم صاحب الحساب",
+        "payoutDestination": "تفاصيل الصرف"
+      }
+    },
+    "specialties": {
+      "primary": "أساسي",
+      "empty": "لم تُحفظ أي تخصصات بعد."
     }
   },
   "credentials": {
@@ -469,7 +750,33 @@
         "thursday": "الخميس",
         "friday": "الجمعة",
         "saturday": "السبت"
-      }
+      },
+      "daySelectorHeading": "اختيار اليوم",
+      "daySelectorHint": "اختر اليوم الذي تريد تعديل أوقاته الآن.",
+      "timeGridHeading": "شبكة الأوقات",
+      "timeGridHint": "اضغط على وقت البدء لإضافة فترة أو إزالتها. تتحول الشبكة إلى فترات ساعة كاملة في وضع 60 دقيقة.",
+      "selectedRangesHeading": "الفترات المحددة",
+      "selectedRangesHint": "راجع اليوم المحدد بشكل مستقل لفترات 30 دقيقة و60 دقيقة.",
+      "emptySelectedDay": "لم يتم تحديد أي وقت لهذا اليوم بعد.",
+      "clearDay": "مسح اليوم",
+      "stats": {
+        "currentDay": "اليوم المحدد",
+        "currentDayHint": "اليوم الذي تقوم بتعديله الآن",
+        "dayBlocks": "فترات اليوم",
+        "dayBlocksHint": "{count, plural, one {# فترة محددة} other {# فترات محددة}}",
+        "weekBlocks": "فترات الأسبوع",
+        "weekBlocksHint": "{count, plural, one {# فترة محفوظة} other {# فترات محفوظة}}",
+        "saved": "الجدول الحالي محفوظ ومطابق للمسودة.",
+        "unsaved": "لديك تغييرات غير محفوظة في الجدول."
+      },
+      "durationHeading": "مدة الجلسة",
+      "durationHint": "اختر مدة واحدة في كل مرة، ويمكنك التبديل بينها عند الحاجة.",
+      "duration30": "30 دقيقة",
+      "duration60": "60 دقيقة",
+      "durationNote": "سيتم استخدام المدة المختارة للفترات الجديدة. يعمل جدول 30 دقيقة وجدول 60 دقيقة بشكل مستقل.",
+      "independenceNote": "اختر مدة واحدة فقط في كل مرة، أو بدّل بينهما عندما تحتاج إلى تعديل جدول مختلف.",
+      "clearDuration": "مسح",
+      "slotCount": "{count, plural, one {# فترة} other {# فترات}}"
     },
     "exceptions": {
       "heading": "استثناءات الجدول",
@@ -477,6 +784,7 @@
       "empty": "لا توجد استثناءات.",
       "add": "إضافة استثناء",
       "delete": "حذف الاستثناء",
+      "restore": "استعادة التوفر",
       "deleteError": "تعذّر حذف الاستثناء. يرجى المحاولة مجدداً.",
       "createError": "تعذّر إنشاء الاستثناء. يرجى المحاولة مجدداً.",
       "type": {
@@ -497,6 +805,23 @@
       "validation": {
         "datesRequired": "تاريخا البدء والانتهاء مطلوبان.",
         "endAfterStart": "يجب أن يكون الانتهاء بعد البدء."
+      },
+      "custom": "حدد فترة مخصتة",
+      "customHint": "من هنا يمكنك منع عدة أو فتح فترة إضافية بشكل مؤقت.",
+      "quick": {
+        "heading": "إجراءات سريعة",
+        "note": "اختر إجراءًا سريعًا لتطبيق حجز مؤقت على الجدول.",
+        "today": "اليوم",
+        "todayNote": "احجز طوال اليوم الحالي.",
+        "tomorrow": "غدًا",
+        "tomorrowNote": "احجز لليوم التالي.",
+        "week": "أسبوع",
+        "weekNote": "احجز لأسبوع كامل."
+      },
+      "active": {
+        "heading": "حجز قيد التطبيق",
+        "note": "لديك أوقات مفعلة حاليًا. أدراج أي تعديلات جديدة بدلاً من الحذف المباشر.",
+        "count": "{count, plural, one {# فترة مفعلة} other {# فترات مفعلة}}"
       }
     }
   },

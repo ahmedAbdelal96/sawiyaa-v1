@@ -1,4 +1,9 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { CourseStatus, CourseVisibility, Prisma } from '@prisma/client';
 import { TrainingLocaleQueryDto } from '../dto/training-locale-query.dto';
 import { TrainingPresenter } from '../presenters/training.presenter';
@@ -16,7 +21,11 @@ export class PublishTrainingUseCase {
     private readonly trainingPresenter: TrainingPresenter,
   ) {}
 
-  async execute(input: { courseId: string; query: TrainingLocaleQueryDto }) {
+  async execute(input: {
+    courseId: string;
+    query: TrainingLocaleQueryDto;
+    publishedByUserId?: string | null;
+  }) {
     const existing = await this.trainingRepository.findCourseById(
       input.courseId,
     );
@@ -31,11 +40,59 @@ export class PublishTrainingUseCase {
       existing.status,
     );
 
+    const scheduleCount = await this.trainingRepository.countSchedulesByCourseId(
+      input.courseId,
+    );
+
+    if (scheduleCount === 0) {
+      throw new BadRequestException({
+        messageKey: 'training.errors.scheduleRequiredForPublish',
+        error: 'TRAINING_SCHEDULE_REQUIRED_FOR_PUBLISH',
+      });
+    }
+
+    const schedules = existing.schedules ?? [];
+    const lectureCountsByScheduleId =
+      await this.trainingRepository.countSessionsByScheduleIds(
+        schedules.map((schedule) => schedule.id),
+      );
+
+    for (const schedule of schedules) {
+      if (
+        schedule.plannedDurationDays === null ||
+        schedule.plannedDurationDays === undefined ||
+        schedule.plannedLectureCount === null ||
+        schedule.plannedLectureCount === undefined
+      ) {
+        throw new BadRequestException({
+          messageKey: 'training.errors.trainingPlanRequiredForPublish',
+          error: 'TRAINING_TRAINING_PLAN_REQUIRED_FOR_PUBLISH',
+          messageParams: {
+            scheduleCode: schedule.scheduleCode,
+          },
+        });
+      }
+
+      const lectureCount = lectureCountsByScheduleId[schedule.id] ?? 0;
+      if (lectureCount < schedule.plannedLectureCount) {
+        throw new BadRequestException({
+          messageKey: 'training.errors.trainingPlanIncompleteForPublish',
+          error: 'TRAINING_TRAINING_PLAN_INCOMPLETE_FOR_PUBLISH',
+          messageParams: {
+            scheduleCode: schedule.scheduleCode,
+            plannedLectureCount: schedule.plannedLectureCount,
+            lectureCount,
+          },
+        });
+      }
+    }
+
     const now = new Date();
     const data: Prisma.CourseUncheckedUpdateInput = {
       status: CourseStatus.PUBLISHED,
       archivedAt: null,
       publishedAt: now,
+      publishedByUserId: input.publishedByUserId ?? null,
     };
 
     if (existing.visibility === CourseVisibility.PRIVATE) {

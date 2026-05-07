@@ -41,5 +41,7 @@ export const enPaymentsCatalog = {
     providerNotImplemented:
       'Payment provider {{provider}} is not implemented in this phase',
     invalidWebhookSignature: 'Payment webhook signature is invalid',
+    unsupportedRoutingCombination:
+      'No payment provider is available for {{currencyCode}} in {{market}} routing.',
   },
 };

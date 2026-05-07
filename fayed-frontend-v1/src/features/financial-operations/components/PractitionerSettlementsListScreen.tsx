@@ -1,11 +1,22 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useLocale, useTranslations } from "next-intl";
+import { usePathname, useRouter } from "@/i18n/navigation";
+import { useSearchParams } from "next/navigation";
 import { Layers } from "lucide-react";
-import { ListStateSkeleton, StateCard } from "@/components/shared/ContentStates";
+import { DataTable } from "@/components/ui/data-table";
+import type { ColumnDef } from "@/components/ui/data-table";
+import {
+  buildUpdatedSearchParams,
+  parseEnumParam,
+  parsePositiveIntParam,
+  parseTextParam,
+} from "@/components/ui/data-table";
 import FilterClearButton from "@/components/ui/filters/FilterClearButton";
-import { DEFAULT_PAGE_LIMIT } from "@/constants/pagination";
+import DateField from "@/components/form/input/DateField";
+import { DEFAULT_PAGE_LIMIT, DEFAULT_PAGE_SIZE_OPTIONS } from "@/constants/pagination";
+import { SurfaceCard, SurfaceHeader, SurfaceStatCard } from "@/components/shared/SurfaceShell";
 import { getPractitionerSettlementsErrorKey } from "../lib/financial-operations-errors";
 import { usePractitionerSettlements } from "../hooks/use-financial-operations";
 import type {
@@ -45,264 +56,299 @@ function formatMoney(value: string, currency: string, locale: string) {
   }).format(numeric);
 }
 
-function formatDate(value: string | null, locale: string) {
+function formatDateTime(value: string | null, locale: string) {
   if (!value) return "-";
-  return new Date(value).toLocaleDateString(locale === "ar" ? "ar-SA" : "en-US", {
+  return new Date(value).toLocaleString(locale === "ar" ? "ar-SA" : "en-US", {
     year: "numeric",
     month: "short",
     day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: !locale.startsWith("ar"),
   });
 }
 
-function formatId(value: string) {
-  if (value.length <= 10) return value;
-  return `${value.slice(0, 6)}…${value.slice(-4)}`;
+function shortId(value: string) {
+  if (value.length <= 12) return value;
+  return `${value.slice(0, 8)}...${value.slice(-4)}`;
 }
 
 function getStatusTone(status: PractitionerSettlementStatus) {
   return STATUS_STYLES[status] ?? "app-chip";
 }
 
-function SettlementRow({
-  settlement,
-  locale,
-  t,
-}: {
-  settlement: PractitionerSettlementItem;
-  locale: string;
-  t: ReturnType<typeof useTranslations>;
-}) {
-  return (
-    <div className="app-panel w-full rounded-[28px] p-5 text-start">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${getStatusTone(settlement.status)}`}>
-              {t(`settlements.statuses.${settlement.status}` as Parameters<typeof t>[0])}
-            </span>
-            <span className="app-chip rounded-full px-2.5 py-1 text-xs font-medium">
-              {settlement.currency}
-            </span>
-          </div>
-
-          <div className="mt-3 flex flex-wrap items-center gap-3 text-sm font-semibold text-text-primary dark:text-white/95">
-            {formatMoney(settlement.amountNet, settlement.currency, locale)}
-            <span className="text-xs font-medium text-text-muted">
-              {t("settlements.fields.net")}
-            </span>
-          </div>
-
-          <div className="mt-2 flex flex-wrap gap-3 text-xs text-text-muted">
-            <span>
-              {t("settlements.fields.gross")}:{" "}
-              {formatMoney(settlement.amountGross, settlement.currency, locale)}
-            </span>
-            <span>
-              {t("settlements.fields.adjustments")}:{" "}
-              {formatMoney(settlement.amountAdjustments, settlement.currency, locale)}
-            </span>
-          </div>
-
-          <div className="mt-3 flex flex-wrap gap-3 text-xs text-text-muted">
-            <span>
-              {t("settlements.fields.createdAt")}: {formatDate(settlement.createdAt, locale)}
-            </span>
-            <span>
-              {t("settlements.fields.paidAt")}: {formatDate(settlement.paidAt, locale)}
-            </span>
-            <span>
-              {t("settlements.fields.failedAt")}: {formatDate(settlement.failedAt, locale)}
-            </span>
-          </div>
-
-          <div className="mt-3 flex flex-wrap gap-3 text-xs text-text-secondary">
-            <span>
-              {t("settlements.fields.batch")}:{" "}
-              <span className="font-mono text-text-primary dark:text-white/90">
-                {formatId(settlement.batchId)}
-              </span>
-            </span>
-            <span>
-              {t("settlements.fields.reference")}:{" "}
-              <span className="font-mono text-text-primary dark:text-white/90">
-                {settlement.externalPayoutRef ? formatId(settlement.externalPayoutRef) : "-"}
-              </span>
-            </span>
-          </div>
-
-          {settlement.notes ? (
-            <p className="mt-3 text-xs text-text-secondary">
-              {t("settlements.fields.notes")}: {settlement.notes}
-            </p>
-          ) : null}
-        </div>
-      </div>
-    </div>
-  );
-}
-
 export default function PractitionerSettlementsListScreen() {
   const t = useTranslations("practitioner-finance");
   const locale = useLocale();
-  const [statusFilter, setStatusFilter] = useState<PractitionerSettlementStatus | "ALL">(
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  const settlementStatus = parseEnumParam<PractitionerSettlementStatus | "ALL">(
+    searchParams.get("status"),
+    STATUS_FILTERS,
     "ALL",
   );
-  const [page, setPage] = useState(1);
+  const currencyCode = parseTextParam(searchParams.get("currencyCode"), { maxLength: 8 });
+  const createdFrom = parseTextParam(searchParams.get("createdFrom"), { maxLength: 32 });
+  const createdTo = parseTextParam(searchParams.get("createdTo"), { maxLength: 32 });
+  const settlementPage = parsePositiveIntParam(searchParams.get("page"), 1, { min: 1 });
+  const settlementLimit = parsePositiveIntParam(searchParams.get("limit"), DEFAULT_PAGE_LIMIT, {
+    min: 1,
+    max: 40,
+  });
 
-  const params = useMemo<PractitionerSettlementListParams>(() => {
-    const next: PractitionerSettlementListParams = { page, limit: DEFAULT_PAGE_LIMIT };
-    if (statusFilter !== "ALL") next.status = statusFilter;
-    return next;
-  }, [page, statusFilter]);
+  const hasSettlementFilters =
+    settlementStatus !== "ALL" || Boolean(currencyCode) || Boolean(createdFrom) || Boolean(createdTo);
+
+  const updateListQuery = (updates: Record<string, string | number | null | undefined>) => {
+    const next = buildUpdatedSearchParams(new URLSearchParams(searchParams.toString()), updates);
+    const query = next.toString();
+    router.push(query ? `${pathname}?${query}` : pathname, { scroll: false });
+  };
+
+  const params = useMemo<PractitionerSettlementListParams>(
+    () => ({
+      page: settlementPage,
+      limit: settlementLimit,
+      status: settlementStatus === "ALL" ? undefined : settlementStatus,
+      currencyCode: currencyCode || undefined,
+      createdFrom: createdFrom || undefined,
+      createdTo: createdTo || undefined,
+    }),
+    [createdFrom, createdTo, currencyCode, settlementLimit, settlementPage, settlementStatus],
+  );
 
   const settlementsQuery = usePractitionerSettlements(params);
   const data = settlementsQuery.data;
 
+  const columns = useMemo<ColumnDef<PractitionerSettlementItem>[]>(
+    () => [
+      {
+        id: "status",
+        header: locale.startsWith("ar") ? "الحالة" : "Status",
+        accessor: (row) => row.status,
+        cell: (row) => (
+          <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${getStatusTone(row.status)}`}>
+            {t(`settlements.statuses.${row.status}` as Parameters<typeof t>[0])}
+          </span>
+        ),
+      },
+      {
+        id: "amountNet",
+        header: locale.startsWith("ar") ? "الصافي" : "Net",
+        accessor: (row) => Number(row.amountNet),
+        cell: (row) => <span className="font-semibold text-text-primary dark:text-white/95">{formatMoney(row.amountNet, row.currency, locale)}</span>,
+      },
+      {
+        id: "amountGross",
+        header: locale.startsWith("ar") ? "الإجمالي" : "Gross",
+        accessor: (row) => Number(row.amountGross),
+        cell: (row) => <span className="text-sm text-text-secondary">{formatMoney(row.amountGross, row.currency, locale)}</span>,
+        hideOnMobile: true,
+      },
+      {
+        id: "amountAdjustments",
+        header: locale.startsWith("ar") ? "التعديلات" : "Adjustments",
+        accessor: (row) => Number(row.amountAdjustments),
+        cell: (row) => <span className="text-sm text-text-secondary">{formatMoney(row.amountAdjustments, row.currency, locale)}</span>,
+        hideOnMobile: true,
+      },
+      {
+        id: "batchId",
+        header: locale.startsWith("ar") ? "الدُفعة" : "Batch",
+        accessor: (row) => row.batchId,
+        cell: (row) => <span className="font-mono text-xs text-text-secondary">{shortId(row.batchId)}</span>,
+        hideOnMobile: true,
+      },
+      {
+        id: "externalPayoutRef",
+        header: locale.startsWith("ar") ? "مرجع الصرف" : "Reference",
+        accessor: (row) => row.externalPayoutRef ?? "",
+        cell: (row) =>
+          row.externalPayoutRef ? (
+            <span className="font-mono text-xs text-text-secondary">{shortId(row.externalPayoutRef)}</span>
+          ) : (
+            <span className="text-xs text-text-muted">-</span>
+          ),
+        hideOnMobile: true,
+      },
+      {
+        id: "createdAt",
+        header: locale.startsWith("ar") ? "أُنشئت" : "Created",
+        accessor: (row) => new Date(row.createdAt).getTime(),
+        cell: (row) => formatDateTime(row.createdAt, locale),
+      },
+      {
+        id: "paidAt",
+        header: locale.startsWith("ar") ? "صُرفت" : "Paid",
+        accessor: (row) => (row.paidAt ? new Date(row.paidAt).getTime() : 0),
+        cell: (row) => <span className="text-xs text-text-secondary">{formatDateTime(row.paidAt, locale)}</span>,
+        hideOnMobile: true,
+      },
+      {
+        id: "failedAt",
+        header: locale.startsWith("ar") ? "فشلت" : "Failed",
+        accessor: (row) => (row.failedAt ? new Date(row.failedAt).getTime() : 0),
+        cell: (row) => <span className="text-xs text-text-secondary">{formatDateTime(row.failedAt, locale)}</span>,
+        hideOnMobile: true,
+      },
+    ],
+    [locale, t],
+  );
+
   return (
-    <div className="space-y-6">
-      <section className="app-panel rounded-[32px] p-6 sm:p-7">
-        <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-primary">
-          {t("settlements.eyebrow")}
-        </p>
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight text-text-primary dark:text-white/95 sm:text-3xl">
-              {t("settlements.title")}
-            </h1>
-            <p className="mt-3 max-w-3xl text-sm leading-6 text-text-secondary sm:text-base">
-              {t("settlements.note")}
+    <div className="space-y-4">
+      <SurfaceCard variant="compact" className="overflow-hidden px-4 py-4 sm:px-5 sm:py-5">
+        <SurfaceHeader
+          eyebrow={t("settlements.eyebrow")}
+          title={t("settlements.title")}
+          description={t("settlements.note")}
+          actions={
+            <span className="app-chip rounded-full px-3 py-1 text-xs font-medium">
+              {data ? t("settlements.count", { value: data.pagination.totalItems }) : t("settlements.countLoading")}
+            </span>
+          }
+        />
+      </SurfaceCard>
+
+      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-2">
+        <SurfaceStatCard
+          label={locale.startsWith("ar") ? "إجمالي التسويات" : "Settlements"}
+          value={data ? String(data.pagination.totalItems) : "..."}
+          tone="primary"
+          icon={<Layers className="h-4 w-4" />}
+        />
+        <SurfaceStatCard
+          label={locale.startsWith("ar") ? "الصفحة الحالية" : "Current page"}
+          value={String(settlementPage)}
+          tone="neutral"
+          icon={<Layers className="h-4 w-4" />}
+        />
+      </section>
+
+      <SurfaceCard as="section" variant="section" className="overflow-hidden px-0 py-0">
+        <div className="flex flex-wrap items-start justify-between gap-3 px-4 pt-4 sm:px-5 sm:pt-5">
+          <div className="min-w-0">
+            <h2 className="text-sm font-semibold text-text-primary dark:text-white/95">
+              {locale.startsWith("ar") ? "فلاتر التسويات" : "Settlement filters"}
+            </h2>
+            <p className="mt-1 text-xs text-text-muted">
+              {locale.startsWith("ar")
+                ? "فلتر التسويات حسب الحالة والعملـة والتاريخ."
+                : "Filter settlements by status, currency, and creation date range."}
             </p>
           </div>
-          <span className="app-chip rounded-full px-3 py-1 text-xs font-medium">
-            {data
-              ? t("settlements.count", { value: data.pagination.totalItems })
-              : t("settlements.countLoading")}
-          </span>
         </div>
 
-        <div className="mt-6 grid gap-4 lg:grid-cols-2">
-          <div className="rounded-[24px] bg-surface-secondary px-5 py-4 dark:bg-white/5">
-            <h2 className="text-sm font-semibold text-text-primary dark:text-white/95">
-              {t("settlements.scopeHeading")}
-            </h2>
-            <ul className="mt-3 space-y-2 text-sm leading-6 text-text-secondary">
-              <li>{t("settlements.scopeItems.history")}</li>
-              <li>{t("settlements.scopeItems.statuses")}</li>
-              <li>{t("settlements.scopeItems.amounts")}</li>
-            </ul>
-          </div>
+        <div className="px-4 pb-4 pt-3 sm:px-5 sm:pb-5">
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+            <label className="block">
+              <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
+                {locale.startsWith("ar") ? "الحالة" : "Status"}
+              </span>
+              <select
+                value={settlementStatus}
+                onChange={(event) =>
+                  updateListQuery({ status: event.target.value === "ALL" ? null : event.target.value, page: 1 })
+                }
+                className="app-control w-full px-4 py-3"
+              >
+                {STATUS_FILTERS.map((status) => (
+                  <option key={status} value={status}>
+                    {status === "ALL"
+                      ? locale.startsWith("ar")
+                        ? "كل الحالات"
+                        : "All statuses"
+                      : t(`settlements.statuses.${status}` as Parameters<typeof t>[0])}
+                  </option>
+                ))}
+              </select>
+            </label>
 
-          <div className="rounded-[24px] border border-border-light bg-surface-primary px-5 py-4 dark:bg-white/5">
-            <h2 className="text-sm font-semibold text-text-primary dark:text-white/95">
-              {t("settlements.boundaryHeading")}
-            </h2>
-            <ul className="mt-3 space-y-2 text-sm leading-6 text-text-secondary">
-              <li>{t("settlements.boundaryItems.noPayouts")}</li>
-              <li>{t("settlements.boundaryItems.noLedger")}</li>
-              <li>{t("settlements.boundaryItems.noAdjustments")}</li>
-            </ul>
-          </div>
-        </div>
-      </section>
+            <label className="block">
+              <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
+                {locale.startsWith("ar") ? "العملة" : "Currency"}
+              </span>
+              <input
+                type="text"
+                value={currencyCode}
+                onChange={(event) => updateListQuery({ currencyCode: event.target.value.trim() || null, page: 1 })}
+                placeholder="EGP"
+                className="app-control w-full px-4 py-3"
+              />
+            </label>
 
-      <section className="app-panel rounded-[28px] p-5 sm:p-6">
-        <div className="grid gap-3 lg:grid-cols-2">
-          <label className="block">
-            <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
-              {t("settlements.filters.allStatuses")}
-            </span>
-            <select
-              value={statusFilter}
-              onChange={(event) => {
-                setStatusFilter(event.target.value as PractitionerSettlementStatus | "ALL");
-                setPage(1);
-              }}
-              className="app-control w-full px-4 py-3"
-            >
-              {STATUS_FILTERS.map((status) => (
-                <option key={status} value={status}>
-                  {status === "ALL"
-                    ? t("settlements.filters.allStatuses")
-                    : t(`settlements.statuses.${status}` as Parameters<typeof t>[0])}
-                </option>
-              ))}
-            </select>
-          </label>
-          <div className="flex items-end justify-end">
-            <FilterClearButton
-              disabled={statusFilter === "ALL" && page === 1}
-              onClick={() => {
-                setStatusFilter("ALL");
-                setPage(1);
-              }}
+            <DateField
+              label={locale.startsWith("ar") ? "من تاريخ" : "From date"}
+              value={createdFrom}
+              onChange={(nextValue) => updateListQuery({ createdFrom: nextValue || null, page: 1 })}
+              placeholder={locale.startsWith("ar") ? "YYYY-MM-DD" : "YYYY-MM-DD"}
             />
-          </div>
-        </div>
-      </section>
 
-      {settlementsQuery.isLoading ? (
-        <ListStateSkeleton items={6} heightClass="h-28" />
-      ) : settlementsQuery.isError ? (
-        <StateCard
-          icon={<Layers className="h-5 w-5 text-primary" />}
-          title={t("settlements.states.error.heading")}
-          note={t(getPractitionerSettlementsErrorKey(settlementsQuery.error))}
-          action={{ label: t("settlements.states.error.retry"), onClick: () => settlementsQuery.refetch() }}
-          className="rounded-[28px]"
-        />
-      ) : data && data.items.length > 0 ? (
-        <div className="space-y-3">
-          {data.items.map((settlement) => (
-            <SettlementRow
-              key={settlement.id}
-              settlement={settlement}
-              locale={locale}
-              t={t}
+            <DateField
+              label={locale.startsWith("ar") ? "إلى تاريخ" : "To date"}
+              value={createdTo}
+              onChange={(nextValue) => updateListQuery({ createdTo: nextValue || null, page: 1 })}
+              placeholder={locale.startsWith("ar") ? "YYYY-MM-DD" : "YYYY-MM-DD"}
             />
-          ))}
 
-          {data.pagination.totalPages > 1 ? (
-            <div className="flex items-center justify-between rounded-[24px] border border-border-light bg-surface-primary px-4 py-3 dark:bg-white/5">
-              <p className="text-xs text-text-muted">
-                {t("settlements.pagination.summary", {
-                  from: (data.pagination.page - 1) * data.pagination.limit + 1,
-                  to: Math.min(
-                    data.pagination.page * data.pagination.limit,
-                    data.pagination.totalItems,
-                  ),
-                  total: data.pagination.totalItems,
-                })}
-              </p>
-
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  disabled={data.pagination.page <= 1}
-                  onClick={() => setPage((current) => current - 1)}
-                  className="rounded-lg px-3 py-1.5 text-xs font-medium text-text-secondary transition hover:bg-surface-secondary disabled:cursor-not-allowed disabled:opacity-40 dark:hover:bg-white/8"
-                >
-                  {t("settlements.pagination.previous")}
-                </button>
-                <button
-                  type="button"
-                  disabled={data.pagination.page >= data.pagination.totalPages}
-                  onClick={() => setPage((current) => current + 1)}
-                  className="rounded-lg px-3 py-1.5 text-xs font-medium text-text-secondary transition hover:bg-surface-secondary disabled:cursor-not-allowed disabled:opacity-40 dark:hover:bg-white/8"
-                >
-                  {t("settlements.pagination.next")}
-                </button>
-              </div>
+            <div className="flex items-end justify-end md:col-span-2 xl:col-span-4">
+              <FilterClearButton
+                disabled={!hasSettlementFilters && settlementPage === 1}
+                onClick={() =>
+                  updateListQuery({
+                    status: null,
+                    currencyCode: null,
+                    createdFrom: null,
+                    createdTo: null,
+                    page: 1,
+                  })
+                }
+              />
             </div>
-          ) : null}
+          </div>
         </div>
-      ) : (
-        <StateCard
-          icon={<Layers className="h-5 w-5 text-primary" />}
-          title={t("settlements.states.empty.heading")}
-          note={t("settlements.states.empty.note")}
-          className="rounded-[28px] p-8"
+
+        <DataTable
+          data={data?.items ?? []}
+          columns={columns}
+          getRowId={(row) => row.id}
+          loading={settlementsQuery.isLoading}
+          error={settlementsQuery.isError ? t(getPractitionerSettlementsErrorKey(settlementsQuery.error)) : null}
+          errorState={{
+            title: t("settlements.states.error.heading"),
+            description: t(getPractitionerSettlementsErrorKey(settlementsQuery.error)),
+            action: {
+              label: t("settlements.states.error.retry"),
+              onClick: () => settlementsQuery.refetch(),
+            },
+          }}
+          emptyState={{
+            icon: <Layers className="h-5 w-5 text-primary" />,
+            title: t("settlements.states.empty.heading"),
+            description: t("settlements.states.empty.note"),
+          }}
+          pagination={
+            data
+              ? {
+                  page: data.pagination.page,
+                  limit: data.pagination.limit,
+                  total: data.pagination.totalItems,
+                  totalPages: data.pagination.totalPages,
+                  hasPrevPage: data.pagination.page > 1,
+                  hasNextPage: data.pagination.page < data.pagination.totalPages,
+                }
+              : undefined
+          }
+          onPageChange={(nextPage) => updateListQuery({ page: nextPage })}
+          onPageSizeChange={(nextLimit) => updateListQuery({ limit: nextLimit, page: 1 })}
+          pageSizeOptions={DEFAULT_PAGE_SIZE_OPTIONS}
+          ariaLabel={t("settlements.title")}
+          caption={t("settlements.title")}
+          size="sm"
         />
-      )}
+      </SurfaceCard>
     </div>
   );
 }

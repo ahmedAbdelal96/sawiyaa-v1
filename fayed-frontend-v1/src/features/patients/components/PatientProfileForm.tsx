@@ -21,6 +21,7 @@ import DateField from "@/components/form/input/DateField";
 import FileInput from "@/components/form/input/FileInput";
 import Label from "@/components/form/Label";
 import { FormSkeleton } from "@/components/shared/LoadingStates";
+import { resolvePatientCurrencyCode } from "@/features/payments/lib/patient-currency";
 
 type ProfileFormData = {
   displayName?: string;
@@ -88,8 +89,6 @@ function formatMoney(value: string, currencyCode: string, locale: string): strin
   }).format(Number(value));
 }
 
-const DEFAULT_WALLET_CURRENCY = "SAR";
-
 export default function PatientProfileForm() {
   const t = useTranslations("patient-profile");
   const locale = useLocale();
@@ -104,10 +103,19 @@ export default function PatientProfileForm() {
   const { mutate, isPending, isError: isMutateError } = useUpdatePatientProfile();
   const uploadAvatar = useUploadPatientAvatar();
   const removeAvatar = useRemovePatientAvatar();
-  const { data: walletSummaryData, isLoading: walletSummaryLoading } = usePatientWalletSummary();
   const profile = data?.profile;
+  const preferredWalletCurrencyCode = resolvePatientCurrencyCode({
+    countryCode: profile?.countryCode ?? null,
+  });
+  const { data: walletSummaryData, isLoading: walletSummaryLoading } = usePatientWalletSummary(
+    preferredWalletCurrencyCode ?? undefined,
+  );
   const walletSummary = walletSummaryData?.item ?? null;
-  const walletCurrencyCode = walletSummary?.currencyCode ?? DEFAULT_WALLET_CURRENCY;
+  const walletCurrencyCode =
+    resolvePatientCurrencyCode({
+      currencyCode: walletSummary?.currencyCode ?? null,
+      countryCode: profile?.countryCode ?? null,
+    }) ?? walletSummary?.currencyCode ?? null;
 
   const avatarPreviewUrl = useMemo(
     () => (selectedAvatarFile ? URL.createObjectURL(selectedAvatarFile) : null),
@@ -313,7 +321,7 @@ export default function PatientProfileForm() {
   return (
     <>
     <section className="rounded-2xl border border-border-light bg-white p-5 sm:p-6">
-        <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
+        <div className="grid gap-5 lg:grid-cols-[auto_minmax(0,1fr)] lg:items-center">
           <div className="flex items-center gap-4">
             <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-full border border-border-light bg-surface-secondary">
               {effectiveAvatarUrl ? (
@@ -387,7 +395,7 @@ export default function PatientProfileForm() {
               </Button>
             </div>
 
-            <p className="text-xs text-text-muted">{t("avatar.hint")}</p>
+              <p className="text-xs text-text-muted">{t("avatar.hint")}</p>
 
             {avatarFeedback ? (
               <p
@@ -412,7 +420,7 @@ export default function PatientProfileForm() {
           </Button>
         </div>
 
-        <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
           <div className="rounded-xl border border-border-light bg-surface-secondary p-3">
             <p className="text-xs text-text-muted">{t("fields.displayName.label")}</p>
             <p className="mt-1 text-sm font-medium text-text-primary">{profile.displayName || "-"}</p>
@@ -473,7 +481,9 @@ export default function PatientProfileForm() {
             <p className="mt-1 text-base font-semibold text-text-primary">
               {walletSummaryLoading
                 ? t("wallet.loading")
-                : formatMoney(walletSummary?.availableBalance ?? "0", walletCurrencyCode, locale)}
+                : walletCurrencyCode
+                  ? formatMoney(walletSummary?.availableBalance ?? "0", walletCurrencyCode, locale)
+                  : walletSummary?.availableBalance ?? "0"}
             </p>
           </div>
           <div className="rounded-xl border border-border-light bg-surface-secondary p-3">
@@ -481,7 +491,9 @@ export default function PatientProfileForm() {
             <p className="mt-1 text-base font-semibold text-text-primary">
               {walletSummaryLoading
                 ? t("wallet.loading")
-                : formatMoney(walletSummary?.reservedBalance ?? "0", walletCurrencyCode, locale)}
+                : walletCurrencyCode
+                  ? formatMoney(walletSummary?.reservedBalance ?? "0", walletCurrencyCode, locale)
+                  : walletSummary?.reservedBalance ?? "0"}
             </p>
           </div>
         </div>

@@ -6,13 +6,20 @@ export type PractitionerProfileStatus =
   | "SUSPENDED"
   | "INACTIVE";
 
+export type PractitionerPayoutMethodType =
+  | "BANK_ACCOUNT"
+  | "IBAN"
+  | "WALLET"
+  | "OTHER";
+
 export type PractitionerApplicationStatus =
   | "DRAFT"
   | "PENDING_REVIEW"
   | "UNDER_REVIEW"
   | "APPROVED"
   | "REJECTED"
-  | "WITHDRAWN"
+  | "CHANGES_REQUESTED"
+  | "ARCHIVED"
   | null;
 
 export interface PractitionerSpecialty {
@@ -57,9 +64,14 @@ export interface PractitionerProfile {
   practitionerGender: string | null;
   primarySpecialtyCategoryId: string | null;
   payoutDestination: {
-    provider: string;
-    label: string | null;
-    last4: string | null;
+    methodType: PractitionerPayoutMethodType | null;
+    accountHolderName: string | null;
+    bankName: string | null;
+    bankAccountNumber: string | null;
+    iban: string | null;
+    walletProvider: string | null;
+    walletIdentifier: string | null;
+    otherDetails: string | null;
   } | null;
   profileStatus: PractitionerProfileStatus;
   specialties: PractitionerSpecialty[];
@@ -72,6 +84,95 @@ export interface PractitionerProfile {
 }
 
 export interface PractitionerProfileResponse {
+  message: string;
+  profile: PractitionerProfile;
+}
+
+export interface PractitionerReadinessChecks {
+  hasDisplayName: boolean;
+  hasProfessionalTitle: boolean;
+  hasBio: boolean;
+  hasCountry: boolean;
+  hasYearsOfExperience: boolean;
+  hasLanguage: boolean;
+  hasSpecialty: boolean;
+  hasCredential: boolean;
+  hasPayoutDestination: boolean;
+  isAccountActive: boolean;
+  isPractitionerOtpVerified: boolean;
+}
+
+export interface PractitionerReadiness {
+  isProfileCompleted: boolean;
+  canSubmitApplication: boolean;
+  missingRequirements: string[];
+  checks: PractitionerReadinessChecks;
+}
+
+export interface PractitionerReadinessResponse {
+  message: string;
+  readiness: PractitionerReadiness;
+}
+
+export interface PractitionerApplicationStatusResponse {
+  applicationId: string | null;
+  status:
+    | "DRAFT"
+    | "SUBMITTED"
+    | "UNDER_REVIEW"
+    | "APPROVED"
+    | "REJECTED"
+    | "CHANGES_REQUESTED"
+    | "ARCHIVED"
+    | null;
+  submittedAt: string | null;
+  reviewedAt: string | null;
+  reviewedByUserId: string | null;
+  reviewDecisionReason: string | null;
+  reviewNotes: string | null;
+  submissionSnapshot: Record<string, unknown> | null;
+  isProfileCompleted: boolean;
+  canSubmitApplication: boolean;
+  missingRequirements: string[];
+}
+
+export interface PractitionerApplicationStatusResult {
+  message: string;
+  application: PractitionerApplicationStatusResponse;
+}
+
+export interface UpdatePractitionerProfileRequest {
+  displayName?: string;
+  professionalTitle?: string | null;
+  bio?: string | null;
+  countryCode?: string | null;
+  yearsOfExperience?: number | null;
+  practitionerType?:
+    | "PSYCHOLOGIST"
+    | "PSYCHIATRIST"
+    | "NUTRITIONIST"
+    | "WEIGHT_LOSS_SPECIALIST"
+    | "COUNSELOR"
+    | "OTHER";
+  practitionerGender?: "MALE" | "FEMALE" | null;
+  locale?: "ar" | "en";
+  timezone?: string;
+  languageCodes?: string[];
+  payoutDestination?:
+    | {
+        methodType: PractitionerPayoutMethodType;
+        accountHolderName?: string | null;
+        bankName?: string | null;
+        bankAccountNumber?: string | null;
+        iban?: string | null;
+        walletProvider?: string | null;
+        walletIdentifier?: string | null;
+        otherDetails?: string | null;
+      }
+    | null;
+}
+
+export interface UpdatePractitionerProfileResponse {
   message: string;
   profile: PractitionerProfile;
 }

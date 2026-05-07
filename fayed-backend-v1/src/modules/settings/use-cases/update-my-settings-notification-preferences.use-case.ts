@@ -69,7 +69,8 @@ export class UpdateMySettingsNotificationPreferencesUseCase {
 
       const channelSupported =
         (item.channel === 'IN_APP' && type.supportsInApp) ||
-        (item.channel === 'EMAIL' && type.supportsEmail);
+        (item.channel === 'EMAIL' && type.supportsEmail) ||
+        (item.channel === 'PUSH' && type.supportsPush);
 
       if (!channelSupported) {
         throw new BadRequestException({

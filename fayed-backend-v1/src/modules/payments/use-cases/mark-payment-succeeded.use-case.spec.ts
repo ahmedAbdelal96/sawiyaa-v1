@@ -2,7 +2,10 @@ import { PaymentProvider, PaymentStatus } from '@prisma/client';
 import { MarkPaymentSucceededUseCase } from './mark-payment-succeeded.use-case';
 
 describe('MarkPaymentSucceededUseCase', () => {
-  function buildUseCase(input?: { sessionStatus?: string | null }) {
+  function buildUseCase(input?: {
+    sessionStatus?: string | null;
+    paymentPurpose?: string;
+  }) {
     const prisma = {
       $transaction: jest.fn().mockImplementation(async (fn) => fn({})),
       session: {
@@ -18,6 +21,7 @@ describe('MarkPaymentSucceededUseCase', () => {
     const paymentRepository = {
       findById: jest.fn().mockResolvedValue({
         id: 'payment_1',
+        paymentPurpose: input?.paymentPurpose ?? 'SESSION_BOOKING',
         provider: PaymentProvider.STRIPE,
         status: PaymentStatus.PENDING,
         sessionId: 'session_1',
@@ -34,6 +38,7 @@ describe('MarkPaymentSucceededUseCase', () => {
       createEvent: jest.fn().mockResolvedValue({}),
       updateStatus: jest.fn().mockResolvedValue({
         id: 'payment_1',
+        paymentPurpose: input?.paymentPurpose ?? 'SESSION_BOOKING',
         provider: PaymentProvider.STRIPE,
         status: PaymentStatus.CAPTURED,
         sessionId: 'session_1',
@@ -73,6 +78,9 @@ describe('MarkPaymentSucceededUseCase', () => {
     const redeemCouponUseCase = {
       execute: jest.fn().mockResolvedValue({}),
     };
+    const reconcilePackagePurchasePaymentUseCase = {
+      execute: jest.fn().mockResolvedValue({}),
+    };
     const logger = {
       info: jest.fn(),
     };
@@ -88,14 +96,18 @@ describe('MarkPaymentSucceededUseCase', () => {
       customerWalletAccountingService as never,
       redeemCouponUseCase as never,
       operationalNotificationService as never,
+      reconcilePackagePurchasePaymentUseCase as never,
       logger as never,
     );
 
     return {
       useCase,
+      prisma,
+      paymentRepository,
       orchestrateSessionPaymentStatusService,
       postPaymentLedgerEntriesUseCase,
       operationalNotificationService,
+      reconcilePackagePurchasePaymentUseCase,
     };
   }
 
@@ -133,5 +145,33 @@ describe('MarkPaymentSucceededUseCase', () => {
       setup.orchestrateSessionPaymentStatusService
         .markSessionConfirmedFromPayment,
     ).not.toHaveBeenCalled();
+  });
+
+  it('skips package purchase orchestration', async () => {
+    const setup = buildUseCase({
+      sessionStatus: null,
+      paymentPurpose: 'SESSION_PACKAGE_PURCHASE',
+    });
+
+    await setup.useCase.execute({
+      paymentId: 'payment_1',
+      providerEventRef: 'evt_1',
+      payload: {},
+    });
+
+    expect(setup.postPaymentLedgerEntriesUseCase.execute).not.toHaveBeenCalled();
+    expect(
+      setup.operationalNotificationService.notifyPaymentSucceeded,
+    ).not.toHaveBeenCalled();
+    expect(
+      setup.reconcilePackagePurchasePaymentUseCase.execute,
+    ).toHaveBeenCalledTimes(1);
+    expect(setup.prisma.session.findUnique).not.toHaveBeenCalled();
+    expect(
+      setup.orchestrateSessionPaymentStatusService
+        .markSessionConfirmedFromPayment,
+    ).not.toHaveBeenCalled();
+    expect(setup.paymentRepository.findById).toHaveBeenCalledTimes(1);
+    expect(setup.paymentRepository.updateStatus).toHaveBeenCalledTimes(1);
   });
 });

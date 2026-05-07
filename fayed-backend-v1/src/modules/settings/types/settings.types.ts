@@ -6,6 +6,7 @@ export const SETTINGS_DEFAULT_TIMEZONE = 'Africa/Cairo';
 export const SETTINGS_SUPPORTED_NOTIFICATION_CHANNELS = [
   'IN_APP',
   'EMAIL',
+  'PUSH',
 ] as const;
 
 export type SettingsNotificationChannel =

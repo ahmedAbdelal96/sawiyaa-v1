@@ -1,0 +1,206 @@
+{
+    "meta":  {
+                 "title":  "Practitioner payouts - Admin",
+                 "description":  "Review practitioner balances, package money, and manual payout records."
+             },
+    "list":  {
+                 "meta":  {
+                              "title":  "Practitioner payouts - Admin",
+                              "description":  "Review each practitioner by currency and record the amount actually transferred outside the platform."
+                          },
+                 "eyebrow":  "Practitioner payouts",
+                 "title":  "Practitioner payouts",
+                 "description":  "Review each practitioner by currency and record the amount actually transferred outside the platform.",
+                 "searchLabel":  "Search practitioners",
+                 "searchPlaceholder":  "Search by name or identifier",
+                 "results":  "{count, number} practitioners",
+                 "loading":  "Loading practitioners...",
+                 "emptyTitle":  "No payable balances right now",
+                 "emptyDescription":  "There are no practitioners with payable or package balances at the moment.",
+                 "note":  "Session balances and package balances are shown on the same page while keeping EGP and USD separate.",
+                 "filters":  {
+                                 "all":  "All",
+                                 "hasPayable":  "Has money",
+                                 "hasPackage":  "Has package money",
+                                 "allCurrencies":  "All currencies"
+                             },
+                 "columns":  {
+                                 "practitioner":  "Practitioner",
+                                 "payableEgp":  "Payable EGP",
+                                 "payableUsd":  "Payable USD",
+                                 "lastPayout":  "Last payout",
+                                 "actions":  "Actions"
+                             },
+                 "payableNow":  "Payable now",
+                 "normalSessionsShort":  "Normal sessions:",
+                 "packageReleasedShort":  "Package released:",
+                 "packageHeldShort":  "Package held:",
+                 "packageHint":  "Held EGP: {egp} | Held USD: {usd}",
+                 "actions":  {
+                                 "viewDetails":  "View details",
+                                 "pay":  "Pay",
+                                 "history":  "Payout history"
+                             },
+                 "pagination":  {
+                                    "previous":  "Previous",
+                                    "next":  "Next",
+                                    "page":  "Page {page, number} of {totalPages, number}"
+                                }
+             },
+    "detail":  {
+                   "meta":  {
+                                "title":  "Practitioner payout details",
+                                "description":  "View currency balances, package amounts, and payout history for one practitioner."
+                            },
+                   "eyebrow":  "Practitioner payouts",
+                   "description":  "See currency-specific balances, package amounts, and payout history for one practitioner.",
+                   "backToList":  "Back to payouts list",
+                   "payNow":  "Pay now",
+                   "sections":  {
+                                    "egp":  "Egyptian pound",
+                                    "usd":  "US dollar"
+                                },
+                   "metrics":  {
+                                   "normal":  "Normal session payable",
+                                   "packageReleased":  "Package released payable",
+                                   "packageHeld":  "Package held amount",
+                                   "totalPayable":  "Total payable now",
+                                   "lastPayout":  "Last payout"
+                               },
+                   "lastPayoutEmpty":  "No payout recorded yet",
+                   "packageSectionTitle":  "Package money",
+                   "packageSectionDescription":  "Package money belongs to the practitioner account, but the held part stays outside the payable total until it is released.",
+                   "packageSectionNote":  "Held package amounts are shown for clarity only and cannot be paid now unless the backend release rules already allow it.",
+                   "historyEyebrow":  "Payout history",
+                   "historyTitle":  "Payout history",
+                   "historyDescription":  "Recent manual payouts recorded for this practitioner.",
+                   "historyEmptyTitle":  "No payouts yet",
+                   "historyEmptyDescription":  "Recorded payouts will appear here once they are saved.",
+                   "historyColumns":  {
+                                          "amount":  "Amount",
+                                          "currency":  "Currency",
+                                          "paidAt":  "Payment date",
+                                          "paymentMethod":  "Method",
+                                          "reference":  "Transfer reference",
+                                          "notes":  "Notes"
+                                      }
+               },
+    "history":  {
+                    "meta":  {
+                                 "title":  "Payout history - Admin",
+                                 "description":  "Review manual payouts recorded across practitioners."
+                             },
+                    "eyebrow":  "Payout history",
+                    "title":  "Payout history",
+                    "description":  "Review payout records recorded by admins.",
+                    "backToList":  "Back to payouts",
+                    "results":  "{count, number} records",
+                    "loading":  "Loading payout history...",
+                    "emptyTitle":  "No payout records",
+                    "emptyDescription":  "Recorded payouts will appear here.",
+                    "filters":  {
+                                    "currencyLabel":  "Currency",
+                                    "allCurrencies":  "All currencies"
+                                },
+                    "columns":  {
+                                    "practitioner":  "Practitioner",
+                                    "currency":  "Currency",
+                                    "amount":  "Amount paid",
+                                    "paidAt":  "Payment date",
+                                    "reference":  "Transfer reference",
+                                    "notes":  "Notes",
+                                    "recordedBy":  "Recorded by",
+                                    "actions":  "Actions"
+                                },
+                    "pagination":  {
+                                       "previous":  "Previous",
+                                       "next":  "Next",
+                                       "page":  "Page {page, number} of {totalPages, number}"
+                                   },
+                    "actions":  {
+                                    "viewPractitioner":  "View practitioner",
+                                    "viewDetails":  "View details"
+                                },
+                    "detail":  {
+                                   "eyebrow":  "Payout record",
+                                   "title":  "Payout details",
+                                   "description":  "Review the payout record exactly as it was saved by the admin.",
+                                   "close":  "Close",
+                                   "unknownPractitioner":  "Unknown practitioner",
+                                   "notesTitle":  "Notes",
+                                   "noNotes":  "No notes were added for this payout.",
+                                   "fields":  {
+                                                  "amount":  "Amount paid",
+                                                  "currency":  "Currency",
+                                                  "paidAt":  "Payment date",
+                                                  "paymentMethod":  "Method",
+                                                  "reference":  "Transfer reference",
+                                                  "recordedBy":  "Recorded by"
+                                              }
+                               }
+                },
+    "drawer":  {
+                   "eyebrow":  "Manual payout",
+                   "title":  "Record practitioner payout",
+                   "description":  "Choose the currency and record the amount actually transferred outside the platform.",
+                   "manualNotice":  "This only records the payout. The transfer happens outside the platform.",
+                   "currencyHelp":  "Each currency has a separate balance and is recorded independently.",
+                   "practitioner":  "Practitioner",
+                   "selectedCurrency":  "Selected currency",
+                   "summary":  {
+                                   "normal":  "Normal sessions",
+                                   "packageReleased":  "Package released payable",
+                                   "packageHeld":  "Package held amount",
+                                   "totalPayable":  "Total payable"
+                               },
+                   "lastPayout":  "Last payout",
+                   "packageHeldNote":  "Held package amounts are shown for review only and are not part of the payable total.",
+                   "noPayableAmount":  "There is no payable amount for this practitioner in the selected currency.",
+                   "currencyLabel":  "Currency",
+                   "amountPaidLabel":  "Amount transferred",
+                   "paidAtLabel":  "Transfer date",
+                   "paymentMethodLabel":  "Transfer method",
+                   "transferReferenceLabel":  "Transfer reference",
+                   "transferReferencePlaceholder":  "Bank or wallet reference",
+                   "notesLabel":  "Notes",
+                   "notesPlaceholder":  "Optional note",
+                   "remainingLabel":  "Remaining after payment",
+                   "footerNote":  "Record the amount that was actually transferred outside the platform.",
+                   "cancel":  "Cancel",
+                   "validation":  {
+                                      "amountInvalid":  "Enter a valid amount greater than zero.",
+                                      "amountTooHigh":  "You cannot record more than the payable amount for this currency."
+                                  },
+                   "amountCurrencyNote":  "Amount currency: {currency}"
+               },
+    "currencies":  {
+                       "EGP":  "EGP - Egyptian pound",
+                       "USD":  "USD - US dollar"
+                   },
+    "paymentMethods":  {
+                           "MANUAL_BANK_TRANSFER":  "Manual bank transfer",
+                           "WALLET_TRANSFER":  "Wallet transfer",
+                           "CASH":  "Cash",
+                           "OTHER":  "Other"
+                       },
+    "actions":  {
+                    "record":  "Record payout",
+                    "saving":  "Saving...",
+                    "pay":  "Pay",
+                    "payNow":  "Pay now",
+                    "backToList":  "Back to list",
+                    "viewDetails":  "View details",
+                    "history":  "Payout history"
+                },
+    "errors":  {
+                   "pickPractitioner":  "Please select a practitioner first.",
+                   "currencyRequired":  "Please select a currency.",
+                   "balanceUnavailable":  "Could not load the balance right now.",
+                   "amountInvalid":  "Enter a valid amount greater than zero.",
+                   "amountExceedsDue":  "You cannot record more than the payable balance for this currency.",
+                   "noPayableAmount":  "There is no payable balance for this practitioner in the selected currency.",
+                   "generic":  "Could not record the payout right now.",
+                   "duplicateReference":  "This transfer reference was already recorded.",
+                   "practitionerNotFound":  "Practitioner not found."
+               }
+}

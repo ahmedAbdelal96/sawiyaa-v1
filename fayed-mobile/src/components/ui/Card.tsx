@@ -50,12 +50,12 @@ export const Card = ({
       case "none":
         return 0;
       case "sm":
-        return 12;
+        return 16;
       case "lg":
-        return 24;
+        return 32;
       case "md":
       default:
-        return 16;
+        return 24;
     }
   };
 

@@ -6,7 +6,13 @@ const root = process.cwd();
 const messagesRoot = path.join(root, "messages");
 const baseLocale = "en";
 const targetLocales = ["ar"];
-const namespaces = ["common", "navigation", "auth"];
+const skippedNamespaces = new Set([
+  "academy",
+  "notifications",
+  "payments",
+  "practitioner-area",
+  "training",
+]);
 
 const mojibakeRegex = /(Ã.|Ø.|Ù.|â.|ï¿½|�)/;
 const brokenQuestionRegex = /\?{2,}/;
@@ -73,11 +79,21 @@ function validateLocaleFile(locale, namespace, baseMap, localeMap, errors) {
 
 function main() {
   const errors = [];
+  const baseLocaleDir = path.join(messagesRoot, baseLocale);
+  const namespaces = fs
+    .readdirSync(baseLocaleDir)
+    .filter((name) => name.endsWith(".json"))
+    .map((name) => path.basename(name, ".json"))
+    .sort();
 
   for (const namespace of namespaces) {
     const basePath = path.join(messagesRoot, baseLocale, `${namespace}.json`);
     if (!fs.existsSync(basePath)) {
       errors.push(`[missing-file] ${baseLocale}/${namespace}.json`);
+      continue;
+    }
+
+    if (skippedNamespaces.has(namespace)) {
       continue;
     }
 

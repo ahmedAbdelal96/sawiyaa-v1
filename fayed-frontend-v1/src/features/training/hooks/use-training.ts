@@ -5,7 +5,12 @@ import {
   archiveAdminTraining,
   createAdminTraining,
   createAdminTrainingSchedule,
+  createAdminTrainingScheduleLecture,
   createPatientTrainingEnrollment,
+  getAdminTrainingAnalytics,
+  getAdminTrainingScheduleEnrollments,
+  getAdminTrainingPaymentAttempts,
+  getAdminTrainingScheduleLectures,
   getAdminTraining,
   getAdminTrainingSchedules,
   getAdminTrainings,
@@ -17,8 +22,14 @@ import {
   updateAdminTrainingSchedule,
 } from "../api/training.api";
 import type {
+  AdminTrainingScheduleEnrollmentsListData,
+  AdminTrainingScheduleEnrollmentsListParams,
+  AdminTrainingAnalyticsData,
+  AdminTrainingPaymentAttemptListData,
+  AdminTrainingPaymentAttemptsListParams,
   CreateAdminTrainingInput,
   CreateAdminTrainingScheduleInput,
+  CreateAdminTrainingScheduleLectureInput,
   CreateTrainingEnrollmentInput,
   ListAdminTrainingsParams,
   ListPatientTrainingEnrollmentsParams,
@@ -38,6 +49,25 @@ export const trainingQueryKeys = {
     [...trainingQueryKeys.all, "admin-training", trainingId, locale ?? ""] as const,
   adminTrainingSchedules: (trainingId: string) =>
     [...trainingQueryKeys.all, "admin-training-schedules", trainingId] as const,
+  adminTrainingScheduleEnrollments: (
+    trainingId: string,
+    scheduleId: string,
+    params?: AdminTrainingScheduleEnrollmentsListParams,
+  ) =>
+    [
+      ...trainingQueryKeys.all,
+      "admin-training-schedule-enrollments",
+      trainingId,
+      scheduleId,
+      params ?? {},
+    ] as const,
+  adminTrainingScheduleLectures: (trainingId: string, scheduleId: string) =>
+    [...trainingQueryKeys.all, "admin-training-schedule-lectures", trainingId, scheduleId] as const,
+  adminTrainingPaymentAttempts: (
+    trainingId: string,
+    params?: AdminTrainingPaymentAttemptsListParams,
+  ) =>
+    [...trainingQueryKeys.all, "admin-training-payment-attempts", trainingId, params ?? {}] as const,
 };
 
 export function usePatientTrainingEnrollments(
@@ -100,6 +130,60 @@ export function useAdminTrainingSchedules(trainingId: string | null) {
     queryFn: () => getAdminTrainingSchedules(trainingId!),
     enabled: Boolean(trainingId),
     staleTime: 30_000,
+  });
+}
+
+export function useAdminTrainingScheduleEnrollments(
+  trainingId: string | null,
+  scheduleId: string | null,
+  params?: AdminTrainingScheduleEnrollmentsListParams,
+) {
+  return useQuery<AdminTrainingScheduleEnrollmentsListData>({
+    queryKey: trainingQueryKeys.adminTrainingScheduleEnrollments(
+      trainingId ?? "",
+      scheduleId ?? "",
+      params,
+    ),
+    queryFn: () =>
+      getAdminTrainingScheduleEnrollments(trainingId!, scheduleId!, params),
+    enabled: Boolean(trainingId && scheduleId),
+    staleTime: 15_000,
+  });
+}
+
+export function useAdminTrainingScheduleLectures(
+  trainingId: string | null,
+  scheduleId: string | null,
+) {
+  return useQuery({
+    queryKey: trainingQueryKeys.adminTrainingScheduleLectures(
+      trainingId ?? "",
+      scheduleId ?? "",
+    ),
+    queryFn: () => getAdminTrainingScheduleLectures(trainingId!, scheduleId!),
+    enabled: Boolean(trainingId && scheduleId),
+    staleTime: 15_000,
+  });
+}
+
+export function useAdminTrainingPaymentAttempts(
+  trainingId: string | null,
+  params?: AdminTrainingPaymentAttemptsListParams,
+) {
+  return useQuery<AdminTrainingPaymentAttemptListData>({
+    queryKey: trainingQueryKeys.adminTrainingPaymentAttempts(trainingId ?? "", params),
+    queryFn: () => getAdminTrainingPaymentAttempts(trainingId!, params),
+    enabled: Boolean(trainingId),
+    staleTime: 15_000,
+  });
+}
+
+export function useAdminTrainingAnalytics(trainingId: string | null) {
+  return useQuery<AdminTrainingAnalyticsData>({
+    queryKey: [...trainingQueryKeys.all, "admin-training-analytics", trainingId ?? ""],
+    queryFn: () => getAdminTrainingAnalytics(trainingId!),
+    enabled: Boolean(trainingId),
+    staleTime: 15_000,
   });
 }
 
@@ -181,6 +265,36 @@ export function useCreateAdminTrainingSchedule() {
       });
       queryClient.invalidateQueries({
         queryKey: trainingQueryKeys.adminTraining(variables.trainingId),
+      });
+    },
+  });
+}
+
+export function useCreateAdminTrainingScheduleLecture() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      trainingId,
+      scheduleId,
+      input,
+    }: {
+      trainingId: string;
+      scheduleId: string;
+      input: CreateAdminTrainingScheduleLectureInput;
+    }) => createAdminTrainingScheduleLecture(trainingId, scheduleId, input),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: trainingQueryKeys.adminTrainingSchedules(variables.trainingId),
+      });
+      queryClient.invalidateQueries({
+        queryKey: trainingQueryKeys.adminTraining(variables.trainingId),
+      });
+      queryClient.invalidateQueries({
+        queryKey: trainingQueryKeys.adminTrainingScheduleLectures(
+          variables.trainingId,
+          variables.scheduleId,
+        ),
       });
     },
   });

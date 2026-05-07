@@ -26,6 +26,111 @@ import {
 export class PublicPractitionerReadRepository {
   constructor(private readonly prisma: PrismaService) {}
 
+  private getPublicPractitionerSelect(locale: SupportedLocale) {
+    return {
+      id: true,
+      publicSlug: true,
+      status: true,
+      isPublicProfilePublished: true,
+      professionalTitle: true,
+      bio: true,
+      practitionerType: true,
+      practitionerGender: true,
+      countryId: true,
+      sessionPrice30: true,
+      sessionPrice60: true,
+      sessionPrice30Egp: true,
+      sessionPrice30Usd: true,
+      sessionPrice60Egp: true,
+      sessionPrice60Usd: true,
+      yearsOfExperience: true,
+      avatarUrl: true,
+      acceptsPackages: true,
+      user: {
+        select: {
+          id: true,
+          displayName: true,
+          status: true,
+          timezone: true,
+        },
+      },
+      country: {
+        select: {
+          id: true,
+          isoCode: true,
+          currencyCode: true,
+        },
+      },
+      languages: {
+        select: {
+          language: {
+            select: {
+              code: true,
+            },
+          },
+        },
+        orderBy: [{ isPrimary: 'desc' }, { createdAt: 'desc' }],
+      },
+      specialties: {
+        where: {
+          specialty: {
+            isActive: true,
+          },
+        },
+        select: {
+          specialtyId: true,
+          isPrimary: true,
+          specialty: {
+            select: {
+              slug: true,
+              translations: {
+                where: {
+                  locale: {
+                    in: [locale, 'en'],
+                  },
+                },
+                orderBy: { locale: 'asc' },
+                select: {
+                  locale: true,
+                  title: true,
+                },
+              },
+            },
+          },
+        },
+        orderBy: [{ isPrimary: 'desc' }, { createdAt: 'desc' }],
+      },
+      ratingSummary: {
+        select: {
+          averageRating: true,
+          publishedReviewsCount: true,
+        },
+      },
+      presence: {
+        select: {
+          status: true,
+        },
+      },
+      coupons: {
+        where: {
+          isActive: true,
+          status: CouponStatus.APPROVED,
+        },
+        select: {
+          startsAt: true,
+          endsAt: true,
+          isActive: true,
+          status: true,
+        },
+      },
+      _count: {
+        select: {
+          credentials: true,
+        },
+      },
+    } satisfies Prisma.PractitionerProfileSelect;
+  }
+
   private buildPublicWhere(input: {
     search?: string;
     specialtySlug?: string;
@@ -348,78 +453,7 @@ export class PublicPractitionerReadRepository {
         orderBy: this.buildOrderBy(input.sort),
         skip: input.skip,
         take: input.take,
-        include: {
-          user: {
-            select: {
-              displayName: true,
-              status: true,
-            },
-          },
-          country: {
-            select: {
-              isoCode: true,
-            },
-          },
-          languages: {
-            include: {
-              language: {
-                select: {
-                  code: true,
-                },
-              },
-            },
-            orderBy: [{ isPrimary: 'desc' }, { createdAt: 'desc' }],
-          },
-          specialties: {
-            where: {
-              specialty: {
-                isActive: true,
-              },
-            },
-            include: {
-              specialty: {
-                include: {
-                  translations: {
-                    where: {
-                      locale: {
-                        in: [input.locale, 'en'],
-                      },
-                    },
-                    orderBy: { locale: 'asc' },
-                    select: {
-                      locale: true,
-                      title: true,
-                    },
-                  },
-                },
-              },
-            },
-            orderBy: [{ isPrimary: 'desc' }, { createdAt: 'desc' }],
-          },
-          ratingSummary: {
-            select: {
-              averageRating: true,
-              publishedReviewsCount: true,
-            },
-          },
-          presence: {
-            select: {
-              status: true,
-            },
-          },
-          coupons: {
-            where: {
-              isActive: true,
-              status: CouponStatus.APPROVED,
-            },
-            select: {
-              startsAt: true,
-              endsAt: true,
-              isActive: true,
-              status: true,
-            },
-          },
-        },
+        select: this.getPublicPractitionerSelect(input.locale),
       }),
       this.prisma.practitionerProfile.count({ where }),
     ]);
@@ -433,67 +467,7 @@ export class PublicPractitionerReadRepository {
         ...this.buildPublicWhere({}),
         publicSlug: slug.trim().toLowerCase(),
       },
-      include: {
-        user: {
-          select: {
-            id: true,
-            displayName: true,
-            status: true,
-          },
-        },
-        country: {
-          select: {
-            isoCode: true,
-          },
-        },
-        languages: {
-          include: {
-            language: {
-              select: {
-                code: true,
-              },
-            },
-          },
-          orderBy: [{ isPrimary: 'desc' }, { createdAt: 'desc' }],
-        },
-        specialties: {
-          where: {
-            specialty: {
-              isActive: true,
-            },
-          },
-          include: {
-            specialty: {
-              include: {
-                translations: {
-                  where: {
-                    locale: {
-                      in: [locale, 'en'],
-                    },
-                  },
-                  orderBy: { locale: 'asc' },
-                  select: {
-                    locale: true,
-                    title: true,
-                  },
-                },
-              },
-            },
-          },
-          orderBy: [{ isPrimary: 'desc' }, { createdAt: 'desc' }],
-        },
-        _count: {
-          select: {
-            credentials: true,
-          },
-        },
-        ratingSummary: {
-          select: {
-            averageRating: true,
-            publishedReviewsCount: true,
-          },
-        },
-      },
+      select: this.getPublicPractitionerSelect(locale),
     });
   }
 

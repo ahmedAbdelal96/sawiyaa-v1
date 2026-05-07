@@ -1,5 +1,21 @@
 import { ApiProperty } from '@nestjs/swagger';
 
+export class PublicPractitionerPricingCurrencyResponseDto {
+  @ApiProperty({ nullable: true })
+  egp!: number | null;
+
+  @ApiProperty({ nullable: true })
+  usd!: number | null;
+}
+
+export class PublicPractitionerPricingResponseDto {
+  @ApiProperty({ type: PublicPractitionerPricingCurrencyResponseDto })
+  session30!: PublicPractitionerPricingCurrencyResponseDto;
+
+  @ApiProperty({ type: PublicPractitionerPricingCurrencyResponseDto })
+  session60!: PublicPractitionerPricingCurrencyResponseDto;
+}
+
 export class PublicPractitionerSpecialtyResponseDto {
   @ApiProperty()
   specialtyId!: string;
@@ -64,11 +80,26 @@ export class PublicPractitionerListItemResponseDto {
   @ApiProperty({ nullable: true })
   practitionerGender!: string | null;
 
+  @ApiProperty({ type: PublicPractitionerPricingResponseDto })
+  pricing!: PublicPractitionerPricingResponseDto;
+
   @ApiProperty({ nullable: true })
   sessionPrice30!: number | null;
 
   @ApiProperty({ nullable: true })
   sessionPrice60!: number | null;
+
+  @ApiProperty({ nullable: true })
+  sessionPrice30Egp!: number | null;
+
+  @ApiProperty({ nullable: true })
+  sessionPrice30Usd!: number | null;
+
+  @ApiProperty({ nullable: true })
+  sessionPrice60Egp!: number | null;
+
+  @ApiProperty({ nullable: true })
+  sessionPrice60Usd!: number | null;
 
   @ApiProperty()
   isOnlineNow!: boolean;
@@ -119,6 +150,27 @@ export class PublicPractitionerDetailsResponseDto {
 
   @ApiProperty({ nullable: true })
   yearsExperience!: number | null;
+
+  @ApiProperty({ type: PublicPractitionerPricingResponseDto })
+  pricing!: PublicPractitionerPricingResponseDto;
+
+  @ApiProperty({ nullable: true })
+  sessionPrice30!: number | null;
+
+  @ApiProperty({ nullable: true })
+  sessionPrice60!: number | null;
+
+  @ApiProperty({ nullable: true })
+  sessionPrice30Egp!: number | null;
+
+  @ApiProperty({ nullable: true })
+  sessionPrice30Usd!: number | null;
+
+  @ApiProperty({ nullable: true })
+  sessionPrice60Egp!: number | null;
+
+  @ApiProperty({ nullable: true })
+  sessionPrice60Usd!: number | null;
 
   @ApiProperty({ type: PublicPractitionerRatingSummaryResponseDto })
   ratingSummary!: PublicPractitionerRatingSummaryResponseDto;

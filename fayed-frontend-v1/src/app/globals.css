@@ -743,9 +743,8 @@ span.flatpickr-weekday,
 
 .input-date-icon::-webkit-inner-spin-button,
 .input-date-icon::-webkit-calendar-picker-indicator {
-  opacity: 1;
-  -webkit-appearance: auto;
-  cursor: pointer;
+  opacity: 0;
+  -webkit-appearance: none;
 }
 
 .form-check-input:checked ~ span {

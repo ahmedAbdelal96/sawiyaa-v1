@@ -172,7 +172,7 @@ export default async function ProfileTrustSection({ trustBlock }: Props) {
 
           <div className="flex w-full flex-wrap gap-2 sm:w-auto">
             <Link
-              href="/signup/patient"
+            href="/signup?mode=patient"
               className="inline-flex items-center justify-center rounded-2xl bg-primary px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-primary-hover sm:text-xs"
             >
               {t("nextSteps.matching")}

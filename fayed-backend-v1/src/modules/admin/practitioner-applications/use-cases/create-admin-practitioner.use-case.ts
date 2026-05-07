@@ -62,6 +62,10 @@ export class CreateAdminPractitionerUseCase {
     professionalTitle?: string | null;
     bio?: string | null;
     yearsOfExperience?: number | null;
+    sessionPrice30Egp?: number | null;
+    sessionPrice30Usd?: number | null;
+    sessionPrice60Egp?: number | null;
+    sessionPrice60Usd?: number | null;
     countryCode?: string | null;
     languageCodes: string[];
     specialtySelection: {
@@ -299,6 +303,10 @@ export class CreateAdminPractitionerUseCase {
             professionalTitle,
             bio,
             yearsOfExperience,
+            sessionPrice30Egp: input.sessionPrice30Egp ?? null,
+            sessionPrice30Usd: input.sessionPrice30Usd ?? null,
+            sessionPrice60Egp: input.sessionPrice60Egp ?? null,
+            sessionPrice60Usd: input.sessionPrice60Usd ?? null,
             status: PractitionerStatus.APPROVED,
             countryId,
             primarySpecialtyCategoryId:

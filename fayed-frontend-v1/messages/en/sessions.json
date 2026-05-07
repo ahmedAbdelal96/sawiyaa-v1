@@ -280,7 +280,9 @@
       "failed": "Could not cancel this session right now. Please try again."
     },
     "cancelError": "Could not cancel this session. Please try again.",
-    "bookNewSlot": "Book a new slot"
+    "bookNewSlot": "Book a new slot",
+    "bookedAt": "Booked at",
+    "bookingStartedAt": "Booking started at"
   },
   "practitioner": {
     "meta": {
@@ -310,6 +312,35 @@
         "EXPIRED": "This session expired before payment was completed.",
         "REFUND_PENDING": "A refund is being processed for this session.",
         "REFUNDED": "This session has been refunded."
+      },
+      "note": "Search and filter to review sessions quickly.",
+      "filteredEmptyHeading": "No matching sessions",
+      "filteredEmptyNote": "Try adjusting or clearing the filters to show the rest of your sessions.",
+      "summary": {
+        "total": "Total sessions",
+        "totalHint": "All sessions in your account appear here."
+      },
+      "filters": {
+        "searchLabel": "Search",
+        "searchPlaceholder": "Search by session code or patient name",
+        "statusLabel": "Status",
+        "statusAll": "All statuses",
+        "fromLabel": "From date",
+        "toLabel": "To date",
+        "clear": "Clear filters"
+      },
+      "tableTitle": "Session list",
+      "tableNote": "Use search and filters to reach the right session quickly.",
+      "table": {
+        "reference": "Session code",
+        "patient": "Patient",
+        "unknownPatient": "Unknown patient",
+        "scheduledAt": "Scheduled at",
+        "notScheduled": "Not scheduled yet",
+        "duration": "Duration",
+        "status": "Status",
+        "actions": "Actions",
+        "openDetails": "View details"
       }
     },
     "detail": {
@@ -322,6 +353,84 @@
         "open": "Open chat"
       },
       "currentStateHeading": "Current session state",
+      "reviewCard": {
+        "eyebrow": "Feedback",
+        "heading": "Share your session feedback",
+        "note": "Your feedback helps us improve care quality and keeps the review loop complete after a completed session.",
+        "eligibility": "Completed sessions only",
+        "privacyNote": "Your feedback stays linked to your account and follows moderation rules.",
+        "context": {
+          "practitioner": "Practitioner",
+          "completedAt": "Completed at",
+          "privacy": "Privacy"
+        },
+        "ratingLabel": "Overall rating",
+        "ratingHelp": "Choose a score from 1 to 5",
+        "ratingPicked": "{value}/5 selected",
+        "titleLabel": "Title",
+        "titlePlaceholder": "A short summary of your experience",
+        "titleHint": "Optional. Max 191 characters.",
+        "noteLabel": "Written note",
+        "notePlaceholder": "Tell us what felt helpful, calm, or worth improving",
+        "noteHint": "Optional. Max 4,000 characters.",
+        "submit": "Submit feedback",
+        "submitting": "Submitting...",
+        "viewHistory": "View feedback history",
+        "viewDetail": "Open feedback detail",
+        "reviewedHeading": "You already submitted feedback for this session",
+        "reviewedNote": "We are showing the submitted record below so you can review what was saved.",
+        "successHeading": "Feedback submitted successfully",
+        "successNote": "Your session feedback is now saved and will follow the normal review flow.",
+        "fields": {
+          "rating": "Rating",
+          "submittedAt": "Submitted",
+          "practitioner": "Practitioner"
+        },
+        "ratingValue": "{value}/5",
+        "notAvailable": "Not available",
+        "statuses": {
+          "DRAFT": "Draft",
+          "SUBMITTED": "Submitted",
+          "PENDING_MODERATION": "Pending moderation",
+          "PUBLISHED": "Published",
+          "REJECTED": "Not published",
+          "HIDDEN": "Hidden",
+          "ARCHIVED": "Archived"
+        },
+        "errors": {
+          "ratingRequired": "Please choose an overall rating before submitting."
+        }
+      },
+      "nextSteps": {
+        "eyebrow": "Next step",
+        "heading": "What would you like to do next?",
+        "note": "This session is completed. We kept the next actions simple so you can review it, book again, or reach support without guessing.",
+        "reviewHeading": "Share feedback for this session",
+        "reviewNote": "If you have a moment, this is the best place to leave feedback while the session is still fresh.",
+        "reviewBadge": "Primary action",
+        "rebook": {
+          "title": "Book another session",
+          "note": "Browse practitioners and pick the next slot that fits you.",
+          "cta": "Browse practitioners"
+        },
+        "sessionChat": {
+          "title": "Continue the session chat",
+          "note": "Return to the session conversation if it is still available.",
+          "cta": "Open session chat"
+        },
+        "careChat": {
+          "title": "Continue care chat",
+          "note": "Open your approved care conversation linked to this session.",
+          "cta": "Open care chat"
+        },
+        "support": {
+          "title": "Contact support",
+          "note": "If something felt off, support can help you follow up.",
+          "cta": "Open support"
+        },
+        "loadingNote": "Checking the latest review and conversation state...",
+        "closureNote": "You can leave feedback now, or move straight to rebooking and support if needed."
+      },
       "with": "with",
       "noSchedule": "Not scheduled yet",
       "actions": {
@@ -552,7 +661,8 @@
             "note": "This session is outside the current practitioner live workflow."
           }
         }
-      }
+      },
+      "bookedAt": "Booked at"
     },
     "instantBooking": {
       "sectionHeading": "Pending Requests",

@@ -2,6 +2,32 @@ import { ApiProperty } from '@nestjs/swagger';
 import { SessionProvider, SessionStatus } from '@prisma/client';
 import { SessionJoinBlockedReason } from '../types/session-video.types';
 
+export class SessionProviderRuntimeDto {
+  @ApiProperty({ enum: SessionProvider })
+  name!: SessionProvider;
+
+  @ApiProperty({ nullable: true })
+  roomId!: string | null;
+
+  @ApiProperty({ nullable: true })
+  roomUrl!: string | null;
+
+  @ApiProperty({ nullable: true })
+  token!: string | null;
+
+  @ApiProperty({ nullable: true })
+  tokenExpiresAt!: string | null;
+
+  @ApiProperty({
+    nullable: true,
+    enum: ['redirect_url', 'embedded', 'external_url'],
+  })
+  joinMode!: 'redirect_url' | 'embedded' | 'external_url' | null;
+
+  @ApiProperty({ type: Object })
+  payload!: Record<string, unknown>;
+}
+
 export class SessionRuntimeItemDto {
   @ApiProperty({ enum: SessionProvider })
   provider!: SessionProvider;
@@ -14,6 +40,9 @@ export class SessionRuntimeItemDto {
 
   @ApiProperty({ nullable: true })
   roomUrl!: string | null;
+
+  @ApiProperty({ type: SessionProviderRuntimeDto, nullable: true })
+  providerRuntime!: SessionProviderRuntimeDto | null;
 }
 
 export class SessionJoinItemDto {
@@ -48,6 +77,9 @@ export class SessionJoinItemDto {
 
   @ApiProperty({ nullable: true })
   joinToken!: string | null;
+
+  @ApiProperty({ type: SessionProviderRuntimeDto })
+  providerRuntime!: SessionProviderRuntimeDto;
 }
 
 export class SessionRuntimeItemDataResponseDto {

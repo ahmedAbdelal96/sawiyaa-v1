@@ -61,6 +61,9 @@ export class PatientJourneyPendingPaymentDto {
 
   @ApiProperty()
   createdAt!: string;
+
+  @ApiProperty({ nullable: true })
+  expiredAt!: string | null;
 }
 
 export class PatientJourneyUpcomingInstantBookingRequestDto {

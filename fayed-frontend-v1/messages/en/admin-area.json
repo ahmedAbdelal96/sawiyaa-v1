@@ -889,8 +889,20 @@
     },
     "filters": {
       "all": "All",
+      "view": "List view",
+      "viewTabs": {
+        "ACTIVE": "Active queue",
+        "HISTORY": "History",
+        "ALL": "All"
+      },
       "search": "Search",
       "searchPlaceholder": "Search by applicant name or specialty",
+      "kind": "Request kind",
+      "kindTabs": {
+        "NEW_APPLICATION": "New applications",
+        "EDIT_REQUEST": "Edit requests"
+      },
+      "DRAFT": "Draft",
       "SUBMITTED": "Submitted",
       "UNDER_REVIEW": "Under review",
       "APPROVED": "Approved",
@@ -901,6 +913,7 @@
     "table": {
       "name": "Name",
       "applicant": "Applicant",
+      "kind": "Request kind",
       "type": "Type",
       "specialty": "Specialty",
       "status": "Status",
@@ -909,7 +922,11 @@
       "viewAction": "View",
       "noName": "Unnamed",
       "noSpecialty": "—",
-      "never": "—"
+      "never": "—",
+      "kindLabels": {
+        "NEW_APPLICATION": "New application",
+        "EDIT_REQUEST": "Edit request"
+      }
     },
     "empty": "No applications match the selected filter.",
     "pagination": {
@@ -922,6 +939,20 @@
       "retry": "Try again"
     },
     "title": "Practitioner applications",
+    "summary": {
+      "total": "Total",
+      "active": "Active queue",
+      "new": "New applications",
+      "edit": "Edit requests",
+      "totalHint": "All application records in the system",
+      "activeHint": "Applications that are still being reviewed",
+      "newHint": "New practitioners who have not been approved yet",
+      "editHint": "Active practitioners updating their details",
+      "approvedHistory": "Approved history",
+      "approvedHistoryHint": "Applications that were approved and are shown as history",
+      "rejectedHistory": "Rejected history",
+      "rejectedHistoryHint": "Applications that were rejected and are shown as history"
+    },
     "directCreate": {
       "heading": "Direct practitioner onboarding",
       "note": "Create a practitioner account directly from admin without waiting for self-submitted application.",
@@ -1035,6 +1066,10 @@
       "title": "Professional title",
       "bio": "Bio",
       "years": "Years of experience",
+      "sessionPrice30Egp": "30-minute session price in EGP",
+      "sessionPrice30Usd": "30-minute session price in USD",
+      "sessionPrice60Egp": "60-minute session price in EGP",
+      "sessionPrice60Usd": "60-minute session price in USD",
       "languages": "Languages",
       "primarySpecialtyCategory": "Primary specialty category",
       "subSpecialties": "Sub-specialties",
@@ -1114,17 +1149,46 @@
       "walletIdentifier": "Wallet identifier",
       "otherDetails": "Other details"
     },
+    "tabs": {
+      "overview": "Overview",
+      "compare": "Compare",
+      "credentials": "Credentials",
+      "decision": "Decision"
+    },
+    "review": {
+      "title": "Review workspace",
+      "subtitle": "Use the tabs to review the application in smaller, focused sections.",
+      "fallbackTitle": "Practitioner application",
+      "changesHeading": "What changed",
+      "changesIntro": "These are the fields that differ between the live profile and the submitted request.",
+      "noChanges": "No differences were detected between the live profile and the submitted request.",
+      "openComparison": "Open comparison",
+      "liveValue": "Current value",
+      "requestedValue": "Submitted value",
+      "showMoreChanges": "Show {count, plural, one {# more field} other {# more fields}}",
+      "showFewerChanges": "Show fewer"
+    },
     "edit": {
+      "comparisonHint": "The current value appears below each field, while the value inside the field is the submitted change.",
+      "previousValue": "Previous value",
       "save": {
         "submit": "Save edits",
         "submitting": "Saving...",
         "success": "Changes saved successfully.",
-        "error": "Could not save edits. Check required fields first."
-      }
+        "error": "Could not save edits right now.",
+        "note": "You can save edits before the application is fully approvable, but approval stays disabled until the highlighted fields are completed."
+      },
+      "requiredForApproval": "This field is required before approval.",
+      "yearsMustBePositive": "Years of experience must be greater than zero.",
+      "specialtyRequired": "Select at least one sub-specialty.",
+      "payoutMethodRequired": "Choose a payout method first.",
+      "payoutFieldRequired": "This field is required for the selected payout method."
     },
     "decision": {
       "heading": "Take a decision",
       "notReviewable": "This application cannot be reviewed in its current state.",
+      "blockedHeading": "This application cannot be approved yet",
+      "blockedHint": "Complete the fields below, save the edits, and the approve button will become available.",
       "approve": {
         "title": "Approve",
         "noteLabel": "Note (optional)",

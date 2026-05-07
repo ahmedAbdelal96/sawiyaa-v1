@@ -63,6 +63,7 @@ export class SettingsRepository {
         slug: true,
         defaultEnabled: true,
         supportsEmail: true,
+        supportsPush: true,
         supportsInApp: true,
       },
       orderBy: [{ slug: 'asc' }],
@@ -81,6 +82,7 @@ export class SettingsRepository {
         slug: true,
         defaultEnabled: true,
         supportsEmail: true,
+        supportsPush: true,
         supportsInApp: true,
       },
     });

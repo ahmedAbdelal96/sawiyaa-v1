@@ -18,6 +18,7 @@ export class AvailabilityMapper {
       id: slot.id,
       dayOfWeek: WEEKDAY_ENUM_TO_INDEX[slot.weekday],
       weekday: slot.weekday,
+      durationMinutes: slot.durationMinutes,
       startMinuteOfDay: slot.startMinuteOfDay,
       endMinuteOfDay: slot.endMinuteOfDay,
       timezone: slot.timezone,

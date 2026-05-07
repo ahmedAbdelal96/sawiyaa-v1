@@ -9,6 +9,7 @@ type AvailableNotificationType = {
   slug: string;
   defaultEnabled: boolean;
   supportsEmail: boolean;
+  supportsPush: boolean;
   supportsInApp: boolean;
 };
 
@@ -83,6 +84,10 @@ export class BuildSettingsNotificationPreferencesStateService {
 
     if (type.supportsEmail) {
       channels.push('EMAIL');
+    }
+
+    if (type.supportsPush) {
+      channels.push('PUSH');
     }
 
     return channels;

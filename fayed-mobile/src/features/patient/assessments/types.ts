@@ -1,6 +1,6 @@
 export type AssessmentDefinitionStatus = "DRAFT" | "ACTIVE" | "INACTIVE";
 
-export type AssessmentQuestionInputType = "SINGLE_CHOICE";
+export type AssessmentQuestionInputType = "SINGLE_CHOICE" | (string & {});
 
 export type AssessmentSubmissionStatus =
   | "IN_PROGRESS"

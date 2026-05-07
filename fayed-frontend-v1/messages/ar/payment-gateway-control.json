@@ -1,0 +1,194 @@
+{
+  "meta": {
+    "title": "التحكم في بوابات الدفع - الإدارة",
+    "description": "إدارة حالة مزودي الدفع والتوجيه والتحكم التشغيلي الآمن في مسارات الدفع مع التحقق النوعي والاسترجاع."
+  },
+  "page": {
+    "eyebrow": "لوحة التحكم التشغيلية",
+    "title": "التحكم في بوابات الدفع",
+    "description": "تعرض جداول القراءة الحالة الحالية وسجل التغييرات، بينما تُفتح عمليات الإنشاء والتعديل في نوافذ مستقلة حتى تظل الصفحة واضحة."
+  },
+  "summary": {
+    "activeProviders": "المزودون النشطون",
+    "activeProvidersHint": "مفعّلون وغير موجودين في وضع الصيانة",
+    "healthyProviders": "المزودون السليمون",
+    "healthyProvidersHint": "حالة التحقق من الطبقة التشغيلية",
+    "defaultRoute": "المسار الافتراضي",
+    "defaultRouteHint": "المزود الافتراضي الحالي في التوجيه"
+  },
+  "sections": {
+    "providers": {
+      "title": "المزودون",
+      "description": "اضبط Paymob وStripe من خلال نوافذ مستقلة."
+    },
+    "routing": {
+      "title": "التوجيه",
+      "description": "ترتيب المزودين والمسار الافتراضي والبديل تُدار بشكل منفصل عن إعدادات كل مزود."
+    },
+    "history": {
+      "title": "سجل التغييرات",
+      "description": "تُسجل كل تغييرات المزودين والتوجيه مع لقطات قبل وبعد."
+    }
+  },
+  "actions": {
+    "editPaymob": "تعديل Paymob",
+    "editStripe": "تعديل Stripe",
+    "configure": "إعداد",
+    "configureRouting": "إعداد التوجيه",
+    "requestStepUp": "طلب خطوة تحقق",
+    "validate": "تحقق",
+    "saveChanges": "حفظ التغييرات",
+    "rollback": "الرجوع",
+    "actionCompleted": "اكتملت العملية",
+    "actionFailed": "فشلت العملية"
+  },
+  "states": {
+    "enabled": "مفعّل",
+    "disabled": "معطّل",
+    "maintenance": "صيانة",
+    "live": "تشغيلي",
+    "healthy": "سليم",
+    "issues": "مشكلات",
+    "active": "نشط",
+    "none": "لا شيء",
+    "unavailable": "غير متاح",
+    "noChangesYet": "لا توجد تغييرات بعد",
+    "noReasonProvided": "لا يوجد سبب مذكور"
+  },
+  "providers": {
+    "stripeDescription": "تظل إعدادات Stripe محدودة بحالة التوفر التشغيلية الآمنة ورايات التوجيه فقط.",
+    "noSnapshotsTitle": "لا توجد لقطات للمزودين",
+    "noSnapshotsDescription": "ستظهر لقطات الحالة التشغيلية للمزودين هنا بمجرد تحميل وحدة التحكم في بوابات الدفع.",
+    "methodSummary": "{count, plural, one {# طريقة نشطة} other {# طرق نشطة}} | {flow}",
+    "routingSummary": "الافتراضي: {defaultProvider} | الأولوية: {priority}",
+    "paymobSummary": "ملخص Paymob",
+    "methodRegistryTitle": "سجل الطرق",
+    "methodRegistryDescription": "يجب أن تبقى الطرق التي تم التحقق منها في حساب التاجر مفعّلة فقط."
+  },
+  "table": {
+    "provider": "المزود",
+    "state": "الحالة",
+    "validation": "التحقق",
+    "countries": "الدول",
+    "lastUpdated": "آخر تحديث",
+    "defaultProvider": "المزود الافتراضي",
+    "priorityOrder": "ترتيب الأولوية",
+    "fallback": "البديل",
+    "changedAt": "تاريخ التغيير",
+    "scope": "النطاق",
+    "action": "الإجراء",
+    "reason": "السبب",
+    "actor": "المنفذ",
+    "entries": "{value, number} عنصر",
+    "rollback": "رجوع",
+    "rollbackUnavailable": "غير متاح"
+  },
+  "providerModal": {
+    "title": "إعداد {provider}",
+    "description": "عدّل الحالة التشغيلية للمزود من نافذة مستقلة. الأسرار تبقى في البيئة ولا يمكن تعديلها هنا.",
+    "eyebrow": "التحكم في بوابات الدفع",
+    "providerEnabled": "تفعيل المزود",
+    "maintenanceMode": "وضع الصيانة",
+    "allowedCountries": "الدول المسموح بها",
+    "checkoutFlow": "نمط الدفع",
+    "checkoutFlowLegacy": "القديم",
+    "checkoutFlowIntention": "النية",
+    "defaultMethod": "الطريقة الافتراضية",
+    "methodRegistry": "سجل الطرق",
+    "methodRegistryDescription": "يجب أن تبقى الطرق التي تم التحقق منها في حساب التاجر مفعّلة فقط.",
+    "methodRegistryActive": "{value, number} نشطة",
+    "paymobSummary": "ملخص Paymob",
+    "changeReason": "سبب التغيير",
+    "changeReasonPlaceholder": "السبب التشغيلي لهذا التغيير",
+    "stepUpChallengeId": "معرّف خطوة التحقق",
+    "stepUpChallengePlaceholder": "معرّف التحدي المستلم",
+    "stepUpCode": "رمز خطوة التحقق",
+    "stepUpCodePlaceholder": "000000",
+    "verificationCodeSent": "تم إرسال رمز التحقق إلى {target}.",
+    "superAdminNote": "لـ SUPER_ADMIN فقط. الأسرار تبقى مُدارة من البيئة ولا يمكن تعديلها هنا.",
+    "validationPaymob": "تحقق مسودة Paymob",
+    "validationStripe": "تحقق مسودة Stripe",
+    "pendingChanges": "التغييرات المعلّقة",
+    "unableRequestStepUp": "تعذر طلب خطوة التحقق.",
+    "unableSaveProviderConfiguration": "تعذر حفظ إعدادات المزود."
+  },
+  "routingModal": {
+    "title": "إعداد التوجيه",
+    "description": "عدّل المزود الافتراضي وترتيب البدائل من نافذة مستقلة.",
+    "eyebrow": "التحكم في بوابات الدفع",
+    "defaultProvider": "المزود الافتراضي",
+    "fallbackProvider": "المزود البديل",
+    "priorityOrder": "ترتيب الأولوية",
+    "changeReason": "سبب التغيير",
+    "changeReasonPlaceholder": "السبب التشغيلي لهذا التغيير",
+    "stepUpChallengeId": "معرّف خطوة التحقق",
+    "stepUpChallengePlaceholder": "معرّف التحدي المستلم",
+    "stepUpCode": "رمز خطوة التحقق",
+    "stepUpCodePlaceholder": "000000",
+    "verificationCodeSent": "تم إرسال رمز التحقق إلى {target}.",
+    "superAdminNote": "لـ SUPER_ADMIN فقط. يتم التحقق من التوجيه قبل التفعيل.",
+    "routingValidation": "التحقق من التوجيه",
+    "pendingChanges": "التغييرات المعلّقة",
+    "unableRequestStepUp": "تعذر طلب خطوة التحقق.",
+    "unableSaveRoutingConfiguration": "تعذر حفظ إعدادات التوجيه."
+  },
+  "rollbackModal": {
+    "title": "الرجوع عن التغيير",
+    "description": "استعد اللقطة السابقة الموثوقة بعد تأكيد خطوة التحقق.",
+    "eyebrow": "التحكم في بوابات الدفع",
+    "provider": "المزود",
+    "action": "الإجراء",
+    "changedAt": "تاريخ التغيير",
+    "rollbackReason": "سبب الرجوع",
+    "rollbackReasonPlaceholder": "لماذا يجب استعادة هذه النسخة؟",
+    "stepUpChallengeId": "معرّف خطوة التحقق",
+    "stepUpChallengePlaceholder": "معرّف التحدي المستلم",
+    "stepUpCode": "رمز خطوة التحقق",
+    "stepUpCodePlaceholder": "000000",
+    "requestStepUp": "طلب خطوة تحقق",
+    "note": "عمليات الرجوع مُدققة وتحتاج إلى تأكيد SUPER_ADMIN.",
+    "actionCompleted": "اكتملت العملية",
+    "actionFailed": "فشلت العملية",
+    "unableRequestStepUp": "تعذر طلب خطوة التحقق.",
+    "unableRollbackConfiguration": "تعذر الرجوع عن الإعدادات."
+  },
+  "methodEditor": {
+    "key": "المفتاح",
+    "label": "الاسم",
+    "type": "النوع",
+    "priority": "الأولوية",
+    "enabled": "مفعّلة",
+    "supportedCheckoutFlows": "مسارات الدفع المدعومة",
+    "countryIsoCodes": "أكواد الدول",
+    "integrationReference": "مرجع التكامل",
+    "integrationPlaceholder": "معرّف التكامل / الطريقة",
+    "flowLegacy": "القديم",
+    "flowIntention": "النية"
+  },
+  "validation": {
+    "title": "التحقق",
+    "healthy": "سليم",
+    "issues": "مشكلات"
+  },
+  "common": {
+    "none": "لا شيء",
+    "routing": "التوجيه",
+    "provider": "المزود",
+    "state": "الحالة",
+    "noHistory": "لا يوجد سجل بعد",
+    "noHistoryDescription": "ستظهر أحدث تغييرات المزودين أو التوجيه هنا بعد أول عملية حفظ.",
+    "noProviderSnapshots": "لا توجد لقطات للمزودين",
+    "noProviderSnapshotsDescription": "ستظهر لقطات الحالة التشغيلية للمزودين هنا بمجرد تحميل وحدة التحكم في بوابات الدفع."
+  },
+  "changeLabels": {
+    "enabled": "مفعّل",
+    "maintenance": "الصيانة",
+    "countries": "الدول",
+    "checkoutFlow": "نمط الدفع",
+    "defaultMethod": "الطريقة الافتراضية",
+    "methods": "الطرق",
+    "defaultProvider": "المزود الافتراضي",
+    "fallbackProvider": "المزود البديل",
+    "priorityOrder": "ترتيب الأولوية"
+  }
+}

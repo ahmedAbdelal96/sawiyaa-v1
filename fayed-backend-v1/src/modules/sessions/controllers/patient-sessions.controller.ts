@@ -35,6 +35,9 @@ import { SessionCancellationPreviewSuccessResponseDto } from '../dto/session-can
 import { CreateScheduledSessionDto } from '../dto/create-scheduled-session.dto';
 import { ListSessionsDto } from '../dto/list-sessions.dto';
 import {
+  PatientSessionSummarySuccessResponseDto,
+} from '../dto/patient-session-summary-response.dto';
+import {
   SessionItemSuccessResponseDto,
   SessionsListSuccessResponseDto,
 } from '../dto/session-response.dto';
@@ -47,6 +50,7 @@ import { ResolveSessionJoinContractUseCase } from '../use-cases/resolve-session-
 import { CancelSessionUseCase } from '../use-cases/cancel-session.use-case';
 import { CreateScheduledSessionUseCase } from '../use-cases/create-scheduled-session.use-case';
 import { GetMyPatientSessionsUseCase } from '../use-cases/get-my-patient-sessions.use-case';
+import { GetMyPatientSessionSummaryUseCase } from '../use-cases/get-my-patient-session-summary.use-case';
 import { GetSessionDetailsUseCase } from '../use-cases/get-session-details.use-case';
 import { PreviewSessionCancellationUseCase } from '../use-cases/preview-session-cancellation.use-case';
 
@@ -64,6 +68,7 @@ export class PatientSessionsController {
   constructor(
     private readonly createScheduledSessionUseCase: CreateScheduledSessionUseCase,
     private readonly getMyPatientSessionsUseCase: GetMyPatientSessionsUseCase,
+    private readonly getMyPatientSessionSummaryUseCase: GetMyPatientSessionSummaryUseCase,
     private readonly getSessionDetailsUseCase: GetSessionDetailsUseCase,
     private readonly previewSessionCancellationUseCase: PreviewSessionCancellationUseCase,
     private readonly cancelSessionUseCase: CancelSessionUseCase,
@@ -129,6 +134,23 @@ export class PatientSessionsController {
       userId: currentUser.id,
       locale,
       query,
+    });
+  }
+
+  @Get('summary')
+  @ApiOperation({
+    summary: 'Get a patient session summary',
+    description:
+      'Returns patient session counts grouped by lifecycle and action needs for dashboard-style rendering.',
+  })
+  @ApiResponse({ status: 200, type: PatientSessionSummarySuccessResponseDto })
+  @ApiUnauthorizedResponse({ description: 'Access token is required' })
+  @ApiForbiddenResponse({
+    description: 'Only active patient accounts may view session summary',
+  })
+  summary(@CurrentUser() currentUser: AuthenticatedUser) {
+    return this.getMyPatientSessionSummaryUseCase.execute({
+      userId: currentUser.id,
     });
   }
 

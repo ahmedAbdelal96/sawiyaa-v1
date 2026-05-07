@@ -178,6 +178,41 @@ export class PaymentRepository {
     provider: PaymentProvider,
     providerPaymentRef: string,
   ) {
+    return this.prisma.payment.findFirst({
+      where: {
+        provider,
+        OR: [
+          {
+            providerPaymentRef,
+          },
+          {
+            providerOrderRef: providerPaymentRef,
+          },
+          {
+            metadataJson: {
+              path: ['paymobSpecialReference'],
+              equals: providerPaymentRef,
+            },
+          },
+          {
+            metadataJson: {
+              path: ['paymobIntentionId'],
+              equals: providerPaymentRef,
+            },
+          },
+          {
+            metadataJson: {
+              path: ['paymobClientSecret'],
+              equals: providerPaymentRef,
+            },
+          },
+        ],
+      },
+      include: this.paymentInclude,
+    });
+  }
+
+  findByProviderPaymentRef(provider: PaymentProvider, providerPaymentRef: string) {
     return this.prisma.payment.findUnique({
       where: {
         provider_providerPaymentRef: {

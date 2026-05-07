@@ -8,13 +8,21 @@ import {
 import { I18nService } from '@common/i18n/services/i18n.service';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
 import { OperationalNotificationRepository } from '../repositories/operational-notification.repository';
-import { NotificationEmailService } from './notification-email.service';
 
 type Recipient = {
   userId: string;
   displayName: string | null;
   locale: SupportedLocale;
   email: string | null;
+};
+
+type SessionPackageContext = {
+  packagePurchaseId: string;
+  packagePlanCode: string;
+  packagePlanTitle?: string | null;
+  packageSessionIndex: number;
+  packageSessionCount: number;
+  packageDiscountPercent?: string | number | null;
 };
 
 @Injectable()
@@ -24,7 +32,6 @@ export class OperationalNotificationService {
   constructor(
     private readonly repository: OperationalNotificationRepository,
     private readonly i18nService: I18nService,
-    private readonly notificationEmailService: NotificationEmailService,
   ) {}
 
   async notifyPaymentSucceeded(input: {
@@ -125,13 +132,33 @@ export class OperationalNotificationService {
     practitionerProfileId: string;
     sessionId: string;
     scheduledStartAt: Date | null;
+    packageContext?: SessionPackageContext | null;
   }): Promise<void> {
     const sessionAt = input.scheduledStartAt?.toISOString() ?? '-';
+    const packageContextPayload = input.packageContext
+      ? {
+          packagePurchaseId: input.packageContext.packagePurchaseId,
+          packagePlanCode: input.packageContext.packagePlanCode,
+          packagePlanTitle: input.packageContext.packagePlanTitle ?? null,
+          packageSessionIndex: input.packageContext.packageSessionIndex,
+          packageSessionCount: input.packageContext.packageSessionCount,
+          packageDiscountPercent:
+            input.packageContext.packageDiscountPercent ?? null,
+        }
+      : null;
 
     const [patient, practitioner] = await Promise.all([
       this.resolvePatientRecipient(input.patientProfileId),
       this.resolvePractitionerRecipient(input.practitionerProfileId),
     ]);
+    const patientPackageContextText = this.buildPackageContextText(
+      patient?.locale ?? null,
+      input.packageContext,
+    );
+    const practitionerPackageContextText = this.buildPackageContextText(
+      practitioner?.locale ?? null,
+      input.packageContext,
+    );
 
     await Promise.all([
       this.sendBySlug({
@@ -139,20 +166,25 @@ export class OperationalNotificationService {
         slug: 'sessions.session-confirmed',
         titleKey: 'sessions.notifications.sessionConfirmedTitle',
         bodyKey: 'sessions.notifications.sessionConfirmedBody',
-        params: { sessionAt },
+        params: { sessionAt, packageContext: patientPackageContextText },
         relatedEntityType: 'SESSION',
         relatedEntityId: input.sessionId,
         category: NotificationCategory.SESSION,
+        payload: packageContextPayload,
       }),
       this.sendBySlug({
         recipient: practitioner,
         slug: 'sessions.session-confirmed-practitioner',
         titleKey: 'sessions.notifications.sessionConfirmedPractitionerTitle',
         bodyKey: 'sessions.notifications.sessionConfirmedPractitionerBody',
-        params: { sessionAt },
+        params: {
+          sessionAt,
+          packageContext: practitionerPackageContextText,
+        },
         relatedEntityType: 'SESSION',
         relatedEntityId: input.sessionId,
         category: NotificationCategory.SESSION,
+        payload: packageContextPayload,
       }),
     ]);
   }
@@ -314,6 +346,24 @@ export class OperationalNotificationService {
     return raw === 'ar' ? 'ar' : 'en';
   }
 
+  private buildPackageContextText(
+    locale: SupportedLocale | null,
+    packageContext?: SessionPackageContext | null,
+  ): string {
+    if (!locale || !packageContext) {
+      return '';
+    }
+
+    return this.i18nService.t(
+      'sessions.notifications.packageSessionContext',
+      locale,
+      {
+        packageSessionIndex: packageContext.packageSessionIndex,
+        packageSessionCount: packageContext.packageSessionCount,
+      },
+    );
+  }
+
   private async sendBySlug(input: {
     recipient: Recipient | null;
     slug: string;
@@ -323,6 +373,7 @@ export class OperationalNotificationService {
     relatedEntityType: string;
     relatedEntityId: string;
     category: NotificationCategory;
+    payload?: Record<string, unknown> | null;
   }): Promise<void> {
     if (!input.recipient) {
       return;
@@ -360,6 +411,7 @@ export class OperationalNotificationService {
           title,
           body,
           payload: {
+            ...(input.payload ?? {}),
             relatedEntityType: input.relatedEntityType,
             relatedEntityId: input.relatedEntityId,
             category: input.category,
@@ -383,6 +435,7 @@ export class OperationalNotificationService {
           email: input.recipient.email,
           relatedEntityType: input.relatedEntityType,
           relatedEntityId: input.relatedEntityId,
+          payload: input.payload ?? undefined,
         });
       }
     } catch (error) {
@@ -453,6 +506,7 @@ export class OperationalNotificationService {
     email: string;
     relatedEntityType: string;
     relatedEntityId: string;
+    payload?: Record<string, unknown>;
   }) {
     const pref = await this.repository.findPreference({
       userId: input.userId,
@@ -478,7 +532,7 @@ export class OperationalNotificationService {
       return;
     }
 
-    const notification = await this.repository.createNotification({
+    await this.repository.createNotification({
       userId: input.userId,
       notificationTypeId: input.notificationTypeId,
       templateId: input.templateId,
@@ -488,33 +542,13 @@ export class OperationalNotificationService {
       titleSnapshot: input.title,
       subjectSnapshot: input.title,
       bodySnapshot: input.body,
-      payloadJson: {
-        target: input.email,
-      },
+        payloadJson: {
+          target: input.email,
+          ...(input.payload ?? {}),
+        },
       relatedEntityType: input.relatedEntityType,
       relatedEntityId: input.relatedEntityId,
-    });
-
-    const delivery = await this.notificationEmailService.sendEmail({
-      to: input.email,
-      subject: input.title,
-      body: input.body,
-      notificationId: notification.id,
-      isOtp: false,
-    });
-
-    if (!delivery.delivered) {
-      await this.repository.updateNotificationStatus(notification.id, {
-        status: NotificationStatus.FAILED,
-        failedAt: new Date(),
-        suppressedReason: delivery.error ?? null,
-      });
-      return;
-    }
-
-    await this.repository.updateNotificationStatus(notification.id, {
-      status: NotificationStatus.SENT,
-      sentAt: new Date(),
+      scheduledFor: new Date(),
     });
   }
 
@@ -528,6 +562,7 @@ export class OperationalNotificationService {
     relatedEntityId: string;
     category: NotificationCategory;
     scheduledFor: Date;
+    payload?: Record<string, unknown> | null;
   }): Promise<void> {
     if (!input.recipient) {
       return;
@@ -575,6 +610,7 @@ export class OperationalNotificationService {
           titleSnapshot: title,
           bodySnapshot: body,
           payloadJson: {
+            ...(input.payload ?? {}),
             relatedEntityType: input.relatedEntityType,
             relatedEntityId: input.relatedEntityId,
             category: input.category,
@@ -611,6 +647,7 @@ export class OperationalNotificationService {
           bodySnapshot: body,
           payloadJson: {
             target: input.recipient.email,
+            ...(input.payload ?? {}),
             relatedEntityType: input.relatedEntityType,
             relatedEntityId: input.relatedEntityId,
             category: input.category,

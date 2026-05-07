@@ -8,7 +8,6 @@ import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { LogOut, User } from "lucide-react";
 import { usePatientProfile } from "@/features/patients/hooks/use-patients";
-import { useCurrentUser } from "@/features/users/hooks/use-users";
 import type { ReactNode } from "react";
 
 type UserDropdownProps = {
@@ -33,29 +32,24 @@ export default function UserDropdown({ compact = false, quickLinks = [] }: UserD
   const [isOpen, setIsOpen] = useState(false);
   const { user, tenant, isLoading } = useAuthState();
   const patientProfileQuery = usePatientProfile(user?.role === "PATIENT" && Boolean(user));
-  const currentUserQuery = useCurrentUser(Boolean(user));
   const { logout } = useAuthActions();
   const locale = useLocale();
   const t = useTranslations("common.nav");
   const router = useRouter();
 
   const displayName = useMemo(() => {
-    const fromApi = currentUserQuery.data?.displayName?.trim();
-    if (fromApi) return fromApi;
-
     if (!user) return t("user");
 
     const fullName = `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim();
     return fullName || user.email || t("user");
-  }, [currentUserQuery.data?.displayName, t, user]);
+  }, [t, user]);
 
   const userEmail = user?.email || "";
   const userInitial = displayName.charAt(0).toUpperCase();
   const profileHref = getProfileHref(user?.role);
   const dropdownAlignment = locale === "ar" ? "left-0 origin-top-left" : "right-0 origin-top-right";
   const patientAvatar = patientProfileQuery.data?.profile.avatarDataUrl ?? null;
-  const apiAvatar = currentUserQuery.data?.avatarDataUrl ?? null;
-  const effectiveAvatar = user?.role === "PATIENT" ? patientAvatar : apiAvatar ?? user?.avatar ?? null;
+  const effectiveAvatar = user?.role === "PATIENT" ? patientAvatar : user?.avatar ?? null;
 
   const handleLogout = async () => {
     setIsOpen(false);

@@ -12,6 +12,8 @@ type ScheduleShape = {
   startsAt: Date | null;
   endsAt: Date | null;
   timezone: string | null;
+  plannedDurationDays: number | null;
+  plannedLectureCount: number | null;
   maxEnrollmentsOverride: number | null;
 };
 
@@ -26,11 +28,13 @@ export class BuildTrainingScheduleSnapshotsService {
     schedules: ScheduleShape[];
     defaultCapacity: number | null;
     enrollmentCountsByScheduleId: Record<string, number>;
+    lectureCountsByScheduleId: Record<string, number>;
     now?: Date;
   }) {
     return input.schedules.map((schedule) => {
       const enrolledSeats =
         input.enrollmentCountsByScheduleId[schedule.id] ?? 0;
+      const lectureCount = input.lectureCountsByScheduleId[schedule.id] ?? 0;
       const maxEnrollments =
         schedule.maxEnrollmentsOverride ?? input.defaultCapacity ?? null;
 
@@ -49,6 +53,7 @@ export class BuildTrainingScheduleSnapshotsService {
         schedule,
         defaultCapacity: input.defaultCapacity,
         enrolledSeats,
+        lectureCount,
         availability,
       });
     });

@@ -19,7 +19,21 @@ export type SessionStatus =
   | "REFUNDED";
 
 export type SessionMode = "VIDEO";
-export type SessionProvider = "NONE" | "DAILY";
+export type SessionProvider = string;
+export type SessionProviderJoinMode =
+  | "redirect_url"
+  | "embedded"
+  | "external_url"
+  | string;
+export type SessionProviderRuntime = {
+  name: SessionProvider;
+  roomId: string | null;
+  roomUrl: string | null;
+  token: string | null;
+  tokenExpiresAt: string | null;
+  joinMode: SessionProviderJoinMode | null;
+  payload: Record<string, unknown>;
+};
 export type SessionCancellationBookingType = "STANDARD" | "INSTANT";
 export type SessionCancellationRefundMode = "NONE" | "PERCENTAGE";
 export type RefundDestination = "CUSTOMER_WALLET" | "ORIGINAL_METHOD";
@@ -61,6 +75,7 @@ export type SessionItem = {
   id: string;
   sessionCode: string;
   status: SessionStatus;
+  createdAt: string;
   scheduledStartAt: string | null;
   scheduledEndAt: string | null;
   durationMinutes: number;
@@ -101,6 +116,7 @@ export type SessionListItem = {
   id: string;
   sessionCode: string;
   status: SessionStatus;
+  createdAt: string;
   scheduledStartAt: string | null;
   scheduledEndAt: string | null;
   durationMinutes: number;
@@ -121,8 +137,35 @@ export type SessionsListResponseData = {
   pagination: SessionsPagination;
 };
 
+export type SessionSummary = {
+  totalItems: number;
+  pendingPayment: number;
+  pendingPractitionerResponse: number;
+  confirmed: number;
+  upcoming: number;
+  readyToJoin: number;
+  inProgress: number;
+  completed: number;
+  cancelled: number;
+  noShow: number;
+  expired: number;
+  refundPending: number;
+  refunded: number;
+  actionRequired: number;
+  active: number;
+  history: number;
+  paymentExpired: number;
+};
+
+export type SessionSummaryResponseData = {
+  item: SessionSummary;
+};
+
 export type ListSessionsParams = {
   status?: SessionStatus;
+  query?: string;
+  scheduledFrom?: string;
+  scheduledTo?: string;
   page?: number;
   limit?: number;
 };
@@ -136,6 +179,7 @@ export type SessionJoinItem = {
   roomName: string | null;
   roomUrl: string | null;
   joinToken: string | null;
+  providerRuntime?: SessionProviderRuntime | null;
 };
 
 export type SessionJoinResponseData = {
@@ -147,6 +191,7 @@ export type SessionRuntimeItem = {
   isPrepared: boolean;
   roomName: string | null;
   roomUrl: string | null;
+  providerRuntime?: SessionProviderRuntime | null;
 };
 
 export type SessionRuntimeResponseData = {

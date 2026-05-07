@@ -1,6 +1,5 @@
 {
   "welcome": "Welcome to Fayed",
-  "home": "Home",
   "assessments": {
     "tab": "Assessments",
     "card": {
@@ -26,14 +25,21 @@
       "status": {
         "completed": "Completed",
         "inProgress": "In progress",
-        "notStarted": "Not started"
+        "notStarted": "Not started",
+        "unavailable": "Unavailable on mobile"
       },
       "actions": {
         "start": "Start assessment",
         "continue": "Continue",
-        "viewResult": "View result"
+        "viewResult": "View result",
+        "review": "Review availability"
       },
-      "completedAt": "Completed {{date}}"
+      "completedAt": "Completed {{date}}",
+      "compatibility": {
+        "NO_QUESTIONS": "This assessment is published, but it does not expose any answerable questions on mobile yet.",
+        "UNSUPPORTED_INPUT_TYPE": "This assessment includes question formats that are not supported safely in the current mobile app.",
+        "QUESTION_WITHOUT_OPTIONS": "This assessment includes a question that does not expose selectable answer options on mobile."
+      }
     },
     "detail": {
       "loading": "Loading assessment details...",
@@ -42,11 +48,20 @@
       "duration": "{{value}} min",
       "questionCount": "{{value}} questions",
       "fallbackIntro": "This assessment helps your care team understand your recent symptoms using a structured questionnaire.",
+      "mobileAvailabilityTitle": "Mobile availability",
+      "mobileAvailabilityReady": "This assessment definition is compatible with the current mobile runner and can be completed safely here.",
+      "mobileAvailabilityUnavailable": "This assessment is visible, but it cannot be completed safely in the current mobile app yet.",
+      "compatibility": {
+        "NO_QUESTIONS": "This assessment is published, but it does not expose any answerable questions on mobile yet.",
+        "UNSUPPORTED_INPUT_TYPE": "This assessment includes question formats that are not supported safely in the current mobile app.",
+        "QUESTION_WITHOUT_OPTIONS": "This assessment includes a question that does not expose selectable answer options on mobile."
+      },
       "privacyTitle": "Complete privacy",
       "privacyBody": "All of your answers are encrypted and protected. They are only shared with your assigned clinician.",
       "supportTitle": "Supportive environment",
       "supportBody": "There are no right or wrong answers. Answer honestly so you receive the most suitable care.",
-      "start": "Start assessment"
+      "start": "Start assessment",
+      "startUnavailable": "Unavailable on mobile"
     },
     "question": {
       "loading": "Loading questions...",
@@ -54,6 +69,11 @@
       "errorSubtitle": "The question flow is unavailable right now.",
       "unsupportedTitle": "Unsupported assessment format",
       "unsupportedSubtitle": "This mobile flow currently supports only single-choice questions from the published backend contract.",
+      "compatibility": {
+        "NO_QUESTIONS": "This assessment cannot be started on mobile because no answerable questions are published for it yet.",
+        "UNSUPPORTED_INPUT_TYPE": "This assessment cannot be started on mobile because it includes question formats that are not supported safely yet.",
+        "QUESTION_WITHOUT_OPTIONS": "This assessment cannot be started on mobile because one of its questions does not expose selectable answer options."
+      },
       "stepText": "Step {{current}} of {{total}}",
       "subtitleFallback": "Choose the answer that best reflects how you have been feeling recently.",
       "requiredError": "Please choose one answer before continuing.",
@@ -101,27 +121,120 @@
     "fallbackEmail": "Email not available",
     "none": "Not set",
     "logout": "Log Out",
+    "hub": {
+      "hero": {
+        "caption": "Manage your personal information, preferences, alerts, and account support without digging through one crowded screen.",
+        "localeValue": "Language: {{language}}",
+        "timezoneValue": "Timezone: {{timezone}}"
+      },
+      "completion": {
+        "incompleteTitle_one": "1 profile detail still needs attention",
+        "incompleteTitle_other": "{{count}} profile details still need attention",
+        "incompleteBody": "Finish the remaining details so your account stays easier to recognize across bookings, reminders, and support.",
+        "completeTitle": "Your core profile details are in good shape",
+        "completeBody": "Personal information and account preferences are available in focused sections below whenever you need to review them."
+      },
+      "snapshot": {
+        "birthDate": "Birth date",
+        "gender": "Gender"
+      },
+      "sections": {
+        "profile": "Profile & preferences",
+        "activity": "Notifications, payments & support",
+        "account": "Account access"
+      },
+      "rows": {
+        "personal": {
+          "title": "Personal information",
+          "subtitle": "Name, birth date, gender, country, and account contact details"
+        },
+        "preferences": {
+          "title": "Preferences & language",
+          "subtitle": "{{language}} · {{timezone}}"
+        },
+        "notificationPreferences": {
+          "title": "Notification preferences",
+          "subtitle": "Choose which account alerts and reminders stay enabled",
+          "unavailableSubtitle": "Notification preference controls are not published for this account yet"
+        },
+        "notificationCenter": {
+          "title": "Notification center",
+          "subtitle": "Review unread alerts and recent account reminders"
+        },
+        "wallet": {
+          "title": "Wallet & payments",
+          "subtitle": "Review wallet balance, payment history, and payment-related activity"
+        },
+        "support": {
+          "title": "Support",
+          "subtitle": "Open a support request or continue an existing one"
+        }
+      },
+      "onboarding": {
+        "pendingTitle": "Profile setup is not yet complete",
+        "pendingBody": "Finishing your personal details helps bookings, reminders, and support work correctly for your account."
+      }
+    },
     "wallet": {
-      "title": "Wallet balance",
-      "subtitle": "Wallet details are currently available in payment-related flows only",
+      "title": "Wallet & payments",
+      "subtitle": "Wallet details and payment history are available in the payments area",
       "unavailableAmount": "--"
     },
     "support": {
       "title": "Support",
-      "subtitle": "Support center is not available in this mobile build yet"
+      "subtitle": "Open a support request or continue an existing conversation"
     },
     "details": {
-      "title": "Personal details",
-      "subtitle": "Update your profile details",
-      "modalTitle": "Edit personal details",
+      "title": "Personal information",
+      "subtitle": "Review and update the patient identity fields supported on mobile",
+      "screenTitle": "Personal information",
+      "formTitle": "Editable patient details",
+      "formBody": "These fields are saved to the real patient profile contract. Contact details stay read-only here because they belong to identity flows.",
+      "accountTitle": "Account contact details",
+      "accountBody": "Email and phone are shown here for reference only.",
+      "savedTitle": "Profile saved",
+      "savedBody": "Your patient profile was updated successfully.",
       "saveFailedBody": "Could not update your profile details right now.",
       "invalidCountryTitle": "Invalid country code",
       "invalidCountryBody": "Country code must be 2 or 3 letters.",
+      "invalidBirthDateTitle": "Invalid birth date",
+      "invalidBirthDateBody": "Use the date format YYYY-MM-DD.",
+      "avatar": {
+        "title": "Profile photo",
+        "body": "Your current photo can be shown here, but secure photo upload and removal are not supported in this mobile build yet.",
+        "updatedAt": "Last profile update: {{date}}"
+      },
+      "readOnly": {
+        "email": "Email",
+        "phone": "Phone",
+        "note": "If your email or phone needs to change, use the identity/auth flows when those routes are published for mobile."
+      },
+      "genderOptions": {
+        "male": "Male",
+        "female": "Female",
+        "unspecified": "Prefer not to say"
+      },
       "fields": {
         "displayName": "Display name",
+        "dateOfBirth": "Birth date",
+        "dateOfBirthPlaceholder": "YYYY-MM-DD",
+        "gender": "Gender",
         "countryCode": "Country code",
+        "countryCodePlaceholder": "EG",
         "timezone": "Timezone"
       }
+    },
+    "preferences": {
+      "screenTitle": "Preferences & language",
+      "languageTitle": "App language",
+      "languageBody": "Choose the app language that should be used for mobile navigation and account copy.",
+      "timezoneTitle": "Timezone",
+      "timezoneBody": "Keep your timezone accurate so schedules and reminders align with your local time.",
+      "timezonePlaceholder": "Africa/Cairo",
+      "boundaryTitle": "Scope boundary",
+      "boundaryBody": "This section manages real language and timezone preferences only. It does not create a password reset path, payment method management, or other settings contracts that are not published for mobile.",
+      "savedTitle": "Preferences saved",
+      "savedBody": "Your account preferences were updated successfully."
     },
     "language": {
       "title": "Language",
@@ -141,16 +254,63 @@
       "subtitle": "Session reminders and account alerts",
       "unavailableSubtitle": "Notification preferences are not available for this account yet",
       "modalTitle": "Notification preferences",
-      "saveFailedBody": "Could not update notification preferences right now."
+      "screenTitle": "Notification preferences",
+      "centerTitle": "Notification center",
+      "centerBody": "Open your live alert feed and unread items.",
+      "preferencesTitle": "Alert controls",
+      "preferencesBody": "Only the notification preferences exposed by the backend are shown here.",
+      "unavailableTitle": "Notification preferences are not ready here yet",
+      "unavailableBody": "Your account can still use the notification center, but editable alert controls are not available until the backend publishes preference items for this account.",
+      "supportedChannels": "Supported channels: {{channels}}",
+      "savedTitle": "Preferences saved",
+      "savedBody": "Your notification preferences were updated successfully.",
+      "saveFailedBody": "Could not update notification preferences right now.",
+      "channels": {
+        "IN_APP": "In-app alerts",
+        "EMAIL": "Email",
+        "PUSH": "App alerts"
+      }
     },
     "common": {
-      "loading": "Syncing profile settings...",
-      "syncWarning": "Some profile settings could not be synced. You can still use logout.",
+      "loading": "Syncing account details...",
+      "syncWarning": "Some account details could not be synced right now. You can still continue to payments, support, or logout.",
       "saveFailedTitle": "Could not save changes",
       "cancel": "Cancel",
       "save": "Save",
-      "apply": "Apply"
+      "apply": "Apply",
+      "saving": "Saving..."
     }
+  },
+  "patientNotifications": {
+    "title": "Notifications",
+    "summaryTitle": "Notification center",
+    "summaryBody": "You have {{count}} unread notifications.",
+    "pushCardTitle": "App alerts",
+    "pushCardBody": "Link this device to your account so the backend can target future mobile alerts when push delivery is enabled.",
+    "pushEnableAction": "Enable app alerts",
+    "pushRefreshAction": "Refresh alert access",
+    "pushStatus": {
+      "checking": "Checking whether this device is already linked.",
+      "registered": "This device is linked for mobile alerts.",
+      "permission-required": "We have not asked for OS notification permission yet.",
+      "denied": "Notifications are disabled for this app in the device settings.",
+      "not-supported": "Push registration needs a physical iOS or Android device.",
+      "failed": "The device could not be linked right now. Try again from this screen."
+    },
+    "markAll": "Mark all read",
+    "markAllLoading": "Updating...",
+    "emptyTitle": "No notifications yet",
+    "emptyBody": "Session reminders and account alerts will appear here when the backend creates them.",
+    "errorTitle": "Could not load notifications",
+    "errorBody": "Try again to sync your latest notifications.",
+    "statusUnread": "Unread",
+    "statusRead": "Read",
+    "openAction": "Open",
+    "unsupportedAlertTitle": "Notification opened",
+    "unsupportedAlertBody": "This notification does not have a supported mobile destination yet.",
+    "actionFailedTitle": "Could not open notification",
+    "actionFailedBody": "Try again in a moment.",
+    "profileEntrySubtitle": "Open your notification feed and unread alerts"
   },
   "auth": {
     "common": {
@@ -391,7 +551,32 @@
       "languagesFallback": "No language details provided",
       "availability": "Availability",
       "availabilityNotice": "Live availability is not exposed by this profile endpoint yet.",
-      "bookSession": "Book session"
+      "bookSession": "Book session",
+      "presence": {
+        "online": "Online now",
+        "away": "Away right now",
+        "busy": "Currently busy",
+        "offline": "Offline right now"
+      },
+      "instantEnabled": "Instant booking is enabled",
+      "instantDisabled": "Standard booking applies",
+      "bookingConfidence": "Booking confidence",
+      "nextAvailable": "Next available",
+      "noUpcomingSlots": "No open time found this week",
+      "thisWeekAvailability": "This week",
+      "slotsThisWeek": "{{count}} visible start times",
+      "pricing": "Session pricing",
+      "duration30": "30 minutes",
+      "duration60": "60 minutes",
+      "pricingUnavailable": "Pricing unavailable",
+      "availabilityLead": "Choose a visible time first, then review the final payment breakdown before you continue to pay.",
+      "availabilityEmptyLead": "No concrete booking window is open in the next week yet. You can still review the profile and check again later.",
+      "nextVisibleSlot": "Next visible slot",
+      "reviewTimes": "Review times and continue",
+      "matchingRecommendationTitle": "Recommended from your matching results",
+      "matchingRecommendationViewBody": "This therapist was suggested from your matching answers. Review the fit signals below before choosing a time.",
+      "matchingRecommendationBookBody": "You came here ready to book. Review the profile, confirm a visible time, then check the final payment breakdown before paying.",
+      "matchScoreLabel": "Match score"
     }
   },
   "patientSessionsFlow": {
@@ -448,9 +633,19 @@
       "sessionDuration": "Duration",
       "statusLabel": "Status",
       "pendingPayment": "Pending payment",
+      "sessionReference": "Session reference",
+      "breakdownLoading": "Loading the final payment breakdown from the backend...",
+      "grossAmount": "Session price",
+      "discountAmount": "Discount",
+      "amountDue": "Amount due now",
+      "breakdownError": "The payment breakdown could not be loaded yet. Try again before continuing to payment.",
       "honestPaymentNotice": "Payment is 100% secure. Charges are only applied after the practitioner confirms the appointment.",
+      "reviewBeforeCreateNotice": "We will create a pending-payment session first, then show the final backend payment breakdown before you continue to checkout.",
+      "reviewBeforePaymentNotice": "Your session is now pending payment. Review this final breakdown before you continue to checkout.",
       "cancellationPolicy": "Cancellation policy",
       "policyHint": "You can cancel or reschedule free of charge up to 24 hours before the session.",
+      "reviewBreakdownCta": "Create booking and review payment",
+      "continueToPaymentCta": "Continue to payment",
       "confirmCta": "Confirm booking",
       "confirming": "Confirming..."
     },
@@ -548,16 +743,28 @@
     "wallet": {
       "title": "Wallet & Payments",
       "subtitle": "Manage your clinical funds and transaction history securely",
-      "balanceLabel": "Current Balance",
-      "availableHint": "Available for clinical sessions",
+      "balanceLabel": "Available balance",
+      "availableHint": "Ready for upcoming sessions",
       "reservedLabel": "Reserved",
       "addFundsLabel": "Add Funds",
       "addFundsUnavailable": "Manual top-up is not available from the app yet",
       "paymentMethodsTitle": "Payment Methods",
-      "paymentMethodsUnavailable": "Payment method management is not available yet",
+      "paymentMethodsUnavailable": "Payment methods are not managed in the app yet",
       "recentTitle": "Recent Transactions",
       "viewAll": "View All",
       "activityEmpty": "No wallet transactions yet",
+      "statusTitle": "Payment status",
+      "statusNeedsAttention": "Needs attention",
+      "statusAllGood": "All clear",
+      "statusAttentionHint": "The most important payment state appears here first.",
+      "statusClearHint": "No payment needs action right now.",
+      "statusPaymentDate": "Updated on",
+      "lastUpdatedLabel": "Last updated",
+      "lastUpdatedFallback": "Not updated yet",
+      "statusClearBody": "Your current payment state is calm. There is nothing that needs action right now.",
+      "historyHint": "Keep this section collapsed until you need older payment attempts.",
+      "historyCollapsed": "History stays hidden by default so the screen stays calm.",
+      "historyViewAll": "View full history",
       "refundHint": "Refunds are automatically added to your wallet after processing.",
       "secureHint": "Your payments are encrypted and secure",
       "loading": "Loading wallet data...",
@@ -657,6 +864,9 @@
       "errorNote": "Please try again.",
       "retry": "Retry",
       "sessionExpired": "The payment window for this session has expired",
+      "sessionAlreadyPaid": "This session has already been secured",
+      "sessionRefundPending": "This session is in refund processing and cannot be paid again",
+      "sessionRefunded": "This session has already been refunded",
       "sessionNotPayable": "This session is not payable at this time",
       "backToSession": "Back to session",
       "practitionerCard": {
@@ -685,7 +895,11 @@
         "title": "Payment method",
         "gateway": "Credit / Debit card",
         "gatewayHint": "Secure online payment",
-        "wallet": "App wallet"
+        "wallet": "App wallet",
+        "loadingMethods": "Loading available payment methods...",
+        "methodRequired": "Select the payment method required by the provider",
+        "methodUnavailable": "No payment method is available for this checkout right now.",
+        "selected": "Selected method: {{method}}"
       },
       "trustBadges": {
         "secure": "100% secure payment",
@@ -701,12 +915,57 @@
         "walletOnly": "The payment will be fully covered by your wallet balance."
       },
       "gatewayNotice": "Payment page will open in your browser to complete securely.",
+      "browserReturnNotice": "Complete the payment in your browser, then return to the app so we can verify the final session status.",
       "openGateway": "Open payment gateway",
       "stripeNotice": "Direct card payment will be enabled after the Stripe mobile SDK is installed.",
+      "unsupportedProviderPayload": "This payment payload is not supported on mobile yet. Please choose another method.",
       "paymentSuccess": "Payment completed successfully",
       "paymentError": "Payment could not be completed",
+      "requestFailed": "We couldn't confirm payment right now. Please try again.",
+      "unresolvedPaymentState": "We couldn't verify the final payment state yet. Please check your sessions or try again.",
       "pricingUnavailableNote": "No pricing is configured for this session yet. Please contact support or try again later.",
       "pricingUnavailableShort": "Pricing unavailable"
+    },
+    "return": {
+      "title": "Payment status",
+      "retry": "Retry",
+      "viewSessions": "View sessions",
+      "actionsTitle": "Next steps",
+      "viewSession": "View session",
+      "retryPayment": "Retry payment",
+      "loadErrorNote": "We could not load the latest payment status. Please try again.",
+      "reconcileErrorNote": "We are still verifying this payment with the backend. Please check again shortly.",
+      "missingSessionNote": "The return link is incomplete. Open your sessions and retry payment from the session details.",
+      "browserNote": "We are checking the backend payment state after you returned to the app from hosted checkout.",
+      "browserDismissedNote": "Checkout closed before the provider returned a final result to the app. We are checking the latest backend payment state now.",
+      "confirmed": {
+        "heading": "Payment confirmed",
+        "note": "Your session is now secured. We will take you back to the session details."
+      },
+      "failed": {
+        "heading": "Payment failed",
+        "note": "The provider reported that this payment did not complete."
+      },
+      "canceled": {
+        "heading": "Payment cancelled",
+        "note": "This payment was cancelled before completion."
+      },
+      "cancelled": {
+        "heading": "Session cancelled",
+        "note": "This session is no longer active."
+      },
+      "expired": {
+        "heading": "Payment window expired",
+        "note": "This session can no longer be secured with the previous payment attempt."
+      },
+      "verifying": {
+        "heading": "Verifying payment",
+        "note": "We are waiting for the backend to confirm the final payment result."
+      },
+      "pending": {
+        "heading": "Payment still pending",
+        "note": "The final payment state is not confirmed yet. Check the session or retry the payment if needed."
+      }
     }
   },
   "support": {
@@ -816,6 +1075,9 @@
     "conversation": {
       "empty": "No messages yet. Start the conversation with your practitioner.",
       "inputPlaceholder": "Write your message here..."
+    },
+    "systemMessages": {
+      "approvalNotice": "This conversation is now available while active."
     }
   },
   "home": {
@@ -855,6 +1117,88 @@
     "common": {
       "loadError": "Could not load the practitioner workspace right now.",
       "notAvailable": "Not available"
+    },
+    "finance": {
+      "quickAccess": "Finance",
+      "title": "Practitioner finance",
+      "subtitle": "Review your wallet, earnings ledger, and settlement snapshots without the admin complexity.",
+      "quickActions": "Quick actions",
+      "common": {
+        "loading": "Loading finance data...",
+        "loadingMore": "Loading more...",
+        "loadMore": "Load more",
+        "refresh": "Refresh",
+        "viewAll": "View all"
+      },
+      "wallet": {
+        "title": "Wallet",
+        "subtitle": "A simple snapshot of your current wallet and lifetime totals.",
+        "available": "Available balance",
+        "pending": "Pending balance",
+        "reserved": "Reserved balance",
+        "totalEarned": "Total earned",
+        "lifetimePaidOut": "Lifetime paid out",
+        "lastLedgerEntryAt": "Last ledger entry",
+        "updatedAt": "Last updated",
+        "balanceHint": "This summary is derived from the ledger and shows the current read model.",
+        "summary": "Wallet summary",
+        "recentSettlements": "Recent settlements",
+        "errorTitle": "Could not load wallet summary",
+        "errorBody": "The practitioner wallet summary is unavailable right now."
+      },
+      "ledger": {
+        "title": "Ledger",
+        "subtitle": "A plain view of earnings and payout-related ledger entries.",
+        "recentTitle": "Recent ledger entries",
+        "emptyTitle": "No ledger entries yet",
+        "emptyBody": "Ledger entries will appear here when financial activity is recorded.",
+        "errorTitle": "Could not load ledger entries",
+        "errorBody": "The practitioner ledger is unavailable right now.",
+        "entryTypes": {
+          "SESSION_GROSS": "Session gross",
+          "PLATFORM_COMMISSION": "Platform commission",
+          "PRACTITIONER_EARNING": "Practitioner earning",
+          "COUPON_PLATFORM_SHARE": "Coupon platform share",
+          "COUPON_PRACTITIONER_SHARE": "Coupon practitioner share",
+          "REFUND_PLATFORM_REVERSAL": "Refund platform reversal",
+          "REFUND_PRACTITIONER_REVERSAL": "Refund practitioner reversal",
+          "MANUAL_ADJUSTMENT": "Manual adjustment",
+          "SETTLEMENT_PAYOUT": "Settlement payout",
+          "SETTLEMENT_REVERSAL": "Settlement reversal"
+        },
+        "directions": {
+          "CREDIT": "Credit",
+          "DEBIT": "Debit"
+        },
+        "buckets": {
+          "AVAILABLE": "Available",
+          "PENDING": "Pending",
+          "RESERVED": "Reserved"
+        }
+      },
+      "settlements": {
+        "title": "Settlements",
+        "subtitle": "A simple snapshot of settlement records and payout status.",
+        "recentTitle": "Recent settlements",
+        "emptyTitle": "No settlements yet",
+        "emptyBody": "Settlement records will appear here when payouts are generated.",
+        "errorTitle": "Could not load settlements",
+        "errorBody": "The practitioner settlement list is unavailable right now.",
+        "received": "Received",
+        "receivedRef": "Received reference",
+        "pendingPayout": "Waiting for payout",
+        "failedAt": "Failed at",
+        "paidAt": "Paid at",
+        "createdAt": "Created at",
+        "statuses": {
+          "DRAFT": "Draft",
+          "READY": "Ready",
+          "PROCESSING": "Processing",
+          "PAID": "Paid",
+          "FAILED": "Failed",
+          "CANCELLED": "Cancelled"
+        }
+      }
     },
     "profileStatus": {
       "DRAFT": "Draft",
@@ -914,6 +1258,270 @@
         "title": "Full workspace access is not available yet",
         "body": "This account has not reached the fully approved web state yet. Mobile shows the real account state here without inventing onboarding routes that are not implemented yet."
       }
+    },
+    "account": {
+      "quickAccess": "Account",
+      "profileCard": "Profile",
+      "title": "Practitioner account",
+      "fallbackName": "Practitioner",
+      "fallbackTitle": "Professional account",
+      "specialtyFallback": "Specialty not set",
+      "unknown": "Unknown",
+      "verifiedEmail": "Email verified",
+      "unverifiedEmail": "Email not verified",
+      "verifiedPhone": "Phone verified",
+      "unverifiedPhone": "Phone not verified",
+      "healthTitle": "Account health",
+      "metrics": {
+        "readiness": "Readiness",
+        "application": "Application",
+        "otp": "OTP",
+        "credentials": "Credentials",
+        "credentialsHint": "{{approved}} approved, {{pending}} pending"
+      },
+      "currentTitle": "Current profile",
+      "editTitle": "Edit profile",
+      "editSubtitle": "Keep only the details that you want to change. Everything else stays as it is.",
+      "summary": {
+        "nextStep": "Next step",
+        "payout": "Payout",
+        "account": "Account"
+      },
+      "nextStepReady": "You are ready to submit your application.",
+      "nextStepMissing": "{{count}} more items are still missing before you can submit.",
+      "nextStepNotReady": "A few required items are still missing before you can submit.",
+      "payoutTitle": "Payout destination",
+      "payoutSubtitle": "This is the account used for future settlements.",
+      "payoutReadOnlyNote": "Payout details are shown here for reference. Update them from the web workspace if needed.",
+      "moreFields": {
+        "show": "Show more fields",
+        "hide": "Hide more fields",
+        "subtitle": "These fields change less often, so they stay collapsed by default."
+      },
+      "moreDetails": {
+        "title": "More details",
+        "subtitle": "Payout, verification, specialties, and record timestamps.",
+        "profileTitle": "Profile details",
+        "payoutTitle": "Payout details",
+        "verificationTitle": "Verification and contact"
+      },
+      "verificationTitle": "Verification and contact",
+      "timestampsTitle": "Record timestamps",
+      "fields": {
+        "displayName": "Display name",
+        "professionalTitle": "Professional title",
+        "countryCode": "Country code",
+        "locale": "App language",
+        "timezone": "Timezone",
+        "yearsOfExperience": "Years of experience",
+        "bio": "Bio",
+        "practitionerType": "Practitioner type",
+        "practitionerGender": "Gender",
+        "languageCodes": "Languages",
+        "languages": "Languages",
+        "payoutDestination": "Payout destination",
+        "payoutMethodType": "Payout method",
+        "payoutAccountHolderName": "Account holder name",
+        "payoutBankName": "Bank name",
+        "payoutBankAccountNumber": "Bank account number",
+        "payoutIban": "IBAN",
+        "payoutWalletProvider": "Wallet provider",
+        "payoutWalletIdentifier": "Wallet identifier",
+        "payoutOtherDetails": "Other details",
+        "email": "Email",
+        "phone": "Phone",
+        "credentialSummary": "Credential summary",
+        "createdAt": "Created at",
+        "updatedAt": "Updated at"
+      },
+      "placeholders": {
+        "displayName": "Your display name",
+        "professionalTitle": "Your public title",
+        "bio": "Short bio for your profile",
+        "languageCodes": "ar, en",
+        "payoutAccountHolderName": "Account holder name",
+        "payoutBankName": "Bank name",
+        "payoutBankAccountNumber": "Bank account number",
+        "payoutIban": "IBAN",
+        "payoutWalletProvider": "Wallet provider",
+        "payoutWalletIdentifier": "Wallet identifier",
+        "payoutOtherDetails": "Other details"
+      },
+      "languageCodesHint": "Use comma-separated language codes such as ar, en.",
+      "validation": {
+        "titleRequired": "Display name is required",
+        "titleRequiredBody": "Please keep a display name before saving your profile.",
+        "yearsTitle": "Years of experience is invalid",
+        "yearsBody": "Please enter a number between 0 and 80.",
+        "payoutTitle": "Payout details are incomplete",
+        "payoutBody": "Please fill the required payout fields for the selected method."
+      },
+      "common": {
+        "loading": "Loading account data...",
+        "savedTitle": "Profile saved",
+        "savedBody": "Your practitioner profile was updated successfully.",
+        "saveFailedTitle": "Could not save profile",
+        "saveFailedBody": "Please try again in a moment."
+      },
+      "actions": {
+        "save": "Save profile",
+        "clearPayout": "Clear payout"
+      },
+      "errorTitle": "Could not load account",
+      "errorBody": "The practitioner account profile is unavailable right now.",
+      "readiness": {
+        "ready": "Ready to submit",
+        "notReady": "Not ready yet",
+        "complete": "Profile is complete",
+        "incomplete": "Some required items are still missing"
+      },
+      "otpVerified": "OTP verified",
+      "otpNotVerified": "OTP not verified",
+      "accountActive": "Account is active",
+      "accountInactive": "Account is not active",
+      "types": {
+        "PSYCHOLOGIST": "Psychologist",
+        "PSYCHIATRIST": "Psychiatrist",
+        "NUTRITIONIST": "Nutritionist",
+        "WEIGHT_LOSS_SPECIALIST": "Weight loss specialist",
+        "COUNSELOR": "Counselor",
+        "OTHER": "Other"
+      },
+      "genders": {
+        "MALE": "Male",
+        "FEMALE": "Female"
+      },
+      "language": {
+        "ar": "Arabic",
+        "en": "English"
+      },
+      "payoutMethods": {
+        "BANK_ACCOUNT": "Bank account",
+        "IBAN": "IBAN",
+        "WALLET": "Wallet",
+        "OTHER": "Other"
+      },
+      "applicationStatuses": {
+        "NONE": "No application yet",
+        "DRAFT": "Draft",
+        "SUBMITTED": "Submitted",
+        "UNDER_REVIEW": "Under review",
+        "APPROVED": "Approved",
+        "REJECTED": "Rejected",
+        "CHANGES_REQUESTED": "Changes requested",
+        "ARCHIVED": "Archived",
+        "noneHint": "No application has been submitted yet"
+      },
+      "specialtiesTitle": "Specialties",
+      "specialtiesEmpty": "No specialties linked yet.",
+      "specialtiesNote": "Specialties are read-only here. Update them from the web workspace for now.",
+      "primary": "Primary",
+      "credentialsSummary": "{{total}} total, {{approved}} approved, {{pending}} pending"
+    },
+    "support": {
+      "title": "Practitioner support",
+      "quickAccess": "Support",
+      "heading": "Support tickets",
+      "subtitle": "Open tickets from practitioners and patients appear here. Reply only with the information that belongs in the ticket thread.",
+      "tabs": {
+        "active": "Active",
+        "resolved": "Resolved"
+      },
+      "statuses": {
+        "OPEN": "Open",
+        "IN_PROGRESS": "In progress",
+        "WAITING_FOR_USER": "Waiting for reply",
+        "ESCALATED": "Escalated",
+        "RESOLVED": "Resolved",
+        "CLOSED": "Closed"
+      },
+      "categories": {
+        "BOOKING": "Booking",
+        "PAYMENT": "Payment",
+        "SESSION": "Session",
+        "TECHNICAL": "Technical",
+        "ACCOUNT": "Account",
+        "MATCHING": "Matching",
+        "GENERAL": "General",
+        "CONTENT": "Content",
+        "CHAT": "Chat",
+        "OTHER": "Other"
+      },
+      "priorities": {
+        "LOW": "Low priority",
+        "NORMAL": "Normal priority",
+        "MEDIUM": "Medium priority",
+        "HIGH": "High priority",
+        "URGENT": "Urgent"
+      },
+      "reference": "Reference: {{value}}",
+      "empty": {
+        "title": "No support tickets",
+        "activeSubtitle": "There are no active support tickets right now.",
+        "resolvedSubtitle": "There are no resolved support tickets yet."
+      },
+      "detail": {
+        "title": "Support ticket",
+        "noMessages": "No replies yet. The thread will appear here once a support conversation starts.",
+        "replyPlaceholder": "Write a reply",
+        "closedNotice": "This ticket is closed and no longer accepts replies.",
+        "backToList": "Back to tickets"
+      }
+    },
+    "careChat": {
+      "title": "Care chat",
+      "quickAccess": "Care chat",
+      "heading": "Care chat requests",
+      "subtitle": "Review pending requests and open approved conversations. Chat stays text-only and tied to the existing request.",
+      "fallbackPatient": "Patient",
+      "sessionReference": "Session: {{value}}",
+      "tabs": {
+        "active": "Active",
+        "history": "History"
+      },
+      "requestStatus": {
+        "PENDING": "Pending approval",
+        "APPROVED": "Approved",
+        "REJECTED": "Rejected",
+        "EXPIRED": "Expired",
+        "CANCELLED": "Cancelled",
+        "REVOKED": "Revoked"
+      },
+      "activityState": {
+        "ACTIVE": "Active",
+        "EXPIRED": "Expired",
+        "REVOKED": "Revoked",
+        "CLOSED": "Closed"
+      },
+      "inactiveNotice": {
+        "EXPIRED": "This conversation has expired.",
+        "REVOKED": "Access to this conversation has been revoked.",
+        "CLOSED": "This conversation is closed.",
+        "default": "This conversation is no longer active."
+      },
+      "empty": {
+        "title": "No requests",
+        "activeSubtitle": "There are no active care-chat requests right now.",
+        "historySubtitle": "There are no historical care-chat requests yet."
+      },
+      "requestDetail": {
+        "title": "Request details",
+        "reason": "Reason",
+        "session": "Related session",
+        "expiresAt": "Expiry date",
+        "pendingNotice": "This request is still under review.",
+        "rejectedNotice": "This request was rejected.",
+        "expiredNotice": "This request has expired.",
+        "openConversation": "Open conversation"
+      },
+      "conversation": {
+        "empty": "No messages yet. Start the conversation here.",
+        "inputPlaceholder": "Write a message"
+      },
+      "systemMessages": {
+        "approvalNotice": "This conversation is now available while active."
+      },
+      "expiresOn": "Expires on {{date}}"
     },
     "sessions": {
       "title": "Practitioner sessions",
@@ -1031,18 +1639,22 @@
     "availability": {
       "title": "Availability and presence",
       "presenceTitle": "Live presence",
-      "presenceBody": "This status is separate from the weekly schedule and mirrors the real backend presence surface.",
+      "overviewTitle": "At a glance",
+      "overviewBody": "Keep your live status, weekly hours, and temporary changes easy to understand.",
+      "presenceBody": "Choose how patients should see you right now. This does not change your weekly hours.",
       "currentStatus": "Your current status",
+      "weeklyWindows": "Weekly windows",
+      "temporaryChanges": "Temporary changes",
       "instantBooking": "Instant booking",
-      "instantBookingBody": "Turns instant-booking readiness on or off without changing the weekly schedule.",
+      "instantBookingBody": "Allow or stop instant booking without changing your weekly hours.",
       "instantBookingEnabled": "Instant booking is currently on for cases the system allows.",
       "instantBookingDisabled": "Instant booking is currently off, so new instant requests will not reach you.",
       "scheduleTitle": "Weekly schedule",
-      "scheduleBody": "Manage your weekly working hours here in a simple way. Changes are not saved until you tap save schedule.",
+      "scheduleBody": "Set your repeating working hours here. Patients see the windows created from this schedule.",
       "timezone": "Current timezone: {{timezone}}",
       "timezoneLabel": "Timezone used for this schedule",
-      "emptySchedule": "There are no active weekly slots right now.",
-      "noSlots": "No slots yet",
+      "emptySchedule": "You have not set any weekly hours yet.",
+      "noSlots": "Closed",
       "slotCount": "{{count}} slot",
       "slotRange": "{{start}} to {{end}}",
       "addSlot": "Add slot",
@@ -1054,21 +1666,21 @@
       "confirmSlot": "Confirm slot",
       "saveSchedule": "Save schedule",
       "resetChanges": "Reset changes",
-      "saveHint": "You can arrange all weekly slots first, then save the schedule in one step.",
+      "saveHint": "Make your changes, then save the full week in one step.",
       "saveSuccess": "The weekly schedule was saved successfully.",
       "saveError": "The weekly schedule could not be saved right now.",
       "saving": "Saving...",
-      "exceptionsTitle": "Upcoming exceptions",
-      "exceptionsBody": "Add temporary overrides when you need to block a specific window or open extra time outside the weekly schedule.",
+      "exceptionsTitle": "Temporary changes",
+      "exceptionsBody": "Use a block when you need time off, or open extra hours outside your weekly schedule.",
       "emptyExceptions": "There are no active exceptions right now.",
-      "addException": "Add exception",
+      "addException": "Add temporary change",
       "saveException": "Save exception",
       "removeException": "Remove exception",
-      "exceptionStartsAt": "Exception starts at",
-      "exceptionEndsAt": "Exception ends at",
-      "exceptionTimeHint": "Enter date/time like 2026-04-25T14:00",
-      "exceptionReason": "Short note",
-      "exceptionReasonPlaceholder": "Example: personal leave or extra opening",
+      "exceptionStartsAt": "Start date and time",
+      "exceptionEndsAt": "End date and time",
+      "exceptionTimeHint": "Use local date and time, like 2026-04-25 14:00",
+      "exceptionReason": "Note",
+      "exceptionReasonPlaceholder": "Optional note for you",
       "exceptionRange": "{{start}} to {{end}}",
       "exceptionSaveSuccess": "The exception was saved successfully.",
       "exceptionSaveError": "The exception could not be saved right now.",
@@ -1079,11 +1691,11 @@
         "endAfterStart": "The end time must be after the start time.",
         "overlap": "This slot overlaps with another slot on the same day.",
         "exceptionDatesRequired": "Enter both the exception start and end time.",
-        "invalidDateTime": "Enter date/time in a valid format like 2026-04-25T14:00."
+        "invalidDateTime": "Enter a valid date and time, like 2026-04-25 14:00."
       },
       "exceptionType": {
         "BLOCK": "Temporary block",
-        "OPEN_EXTRA": "Extra opening"
+        "OPEN_EXTRA": "Extra hours"
       }
     }
   }

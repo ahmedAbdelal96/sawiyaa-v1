@@ -112,6 +112,12 @@ export interface ModerateReviewRequest {
   moderatorNote?: string;
 }
 
+export interface CreateSessionReviewInput {
+  overallRating: number;
+  title?: string;
+  textReview?: string;
+}
+
 // Allowed moderation actions per current status — derived from backend ValidateReviewModerationTransitionService
 export const ALLOWED_MODERATION_ACTIONS: Record<SessionReviewStatus, ReviewModerationAction[]> = {
   DRAFT: ["APPROVED", "REJECTED", "HIDDEN", "ARCHIVED"],

@@ -1,0 +1,478 @@
+{
+  "meta": {
+    "publicTitle": "الأكاديمية",
+    "publicDescription": "تصفح البرامج التدريبية العامة المسجلة على المنصة وسجل في الدورة المناسبة لك.",
+    "publicDetailTitle": "تفاصيل البرنامج التدريبي",
+    "publicDetailDescription": "راجع تفاصيل البرنامج ثم أكمل التسجيل بخطوات بسيطة.",
+    "adminTitle": "إدارة الأكاديمية",
+    "adminDescription": "أنشئ البرامج التدريبية العامة وراجع التسجيلات ومتابعة المدفوعات.",
+    "adminDetailTitle": "إدارة البرنامج التدريبي",
+    "adminDetailDescription": "راجع إعدادات البرنامج وتابع التسجيلات وحدّث محتوى التدريب العام."
+  },
+  "errors": {
+    "generic": "حدث خطأ أثناء تنفيذ الطلب.",
+    "notFound": "تعذر العثور على البرنامج التدريبي.",
+    "loadFailed": "تعذر تحميل محتوى الأكاديمية الآن.",
+    "retry": "إعادة المحاولة",
+    "missingPlan": "حدد مدة الكورس وعدد المحاضرات ووقت البداية قبل النشر.",
+    "scheduleIncomplete": "حدد مدة الكورس وعدد المحاضرات والمواعيد قبل النشر.",
+    "missingLectureSchedule": "أضف {count} محاضرة أخرى قبل النشر.",
+    "missingLecturePlan": "حدد مدة الكورس وعدد المحاضرات والمواعيد قبل إضافة المحاضرات.",
+    "invalidLectureWindow": "يجب أن تبقى كل محاضرة داخل نطاق الكورس.",
+    "lectureLimitReached": "يحتوي هذا الكورس بالفعل على العدد المخطط من المحاضرات.",
+    "lectureOrderTaken": "هذا الترتيب مستخدم بالفعل."
+  },
+  "statuses": {
+    "course": {
+      "DRAFT": "مسودة",
+      "PUBLISHED": "منشور",
+      "ARCHIVED": "مؤرشف"
+    },
+    "visibility": {
+      "PUBLIC": "عام",
+      "PRIVATE": "خاص"
+    },
+    "enrollment": {
+      "PENDING_PAYMENT": "بانتظار الدفع",
+      "PAID": "مدفوع",
+      "CONFIRMED": "مؤكد",
+      "PAYMENT_FAILED": "فشل الدفع",
+      "CANCELLED": "ملغي",
+      "REFUNDED": "مسترد"
+    },
+    "payment": {
+      "CREATED": "تم الإنشاء",
+      "PENDING": "قيد الانتظار",
+      "REQUIRES_ACTION": "يحتاج إجراء",
+      "AUTHORIZED": "مصرح به",
+      "CAPTURED": "تم التحصيل",
+      "FAILED": "فشل",
+      "CANCELLED": "ملغي",
+      "EXPIRED": "منتهي الصلاحية",
+      "REFUND_PENDING": "جارٍ الاسترداد",
+      "PARTIALLY_REFUNDED": "استرداد جزئي",
+      "REFUNDED": "مسترد"
+    }
+  },
+  "public": {
+    "badge": "برامج تدريبية عامة",
+    "hero": {
+      "title": "تعلّم من خلال برامج تدريبية منظمة وواضحة",
+      "subtitle": "تصفح عروض الأكاديمية، راجع الموعد والسعر، وسجل في الدورة المناسبة بخطوات بسيطة."
+    },
+    "stats": {
+      "courses": "البرامج",
+      "enrollments": "التسجيلات",
+      "completed": "التسجيلات المدفوعة"
+    },
+    "search": {
+      "title": "ابحث عن برنامج",
+      "subtitle": "ابحث بالعنوان أو الوصف.",
+      "placeholder": "ابحث عن برنامج تدريبي...",
+      "action": "بحث",
+      "loading": "جاري البحث..."
+    },
+    "list": {
+      "title": "البرامج المتاحة",
+      "subtitle": "البرامج التدريبية العامة المنشورة حاليًا.",
+      "count": "{count} برنامج"
+    },
+    "card": {
+      "enrollments": "تسجيل",
+      "published": "منشور",
+      "draft": "مسودة",
+      "free": "مجاني",
+      "noDescription": "لا يوجد وصف مختصر.",
+      "noDate": "لم يحدد الموعد",
+      "open": "فتح البرنامج"
+    },
+    "empty": {
+      "filtered": "لا توجد برامج تطابق البحث.",
+      "default": "لم يتم نشر أي برامج تدريبية بعد."
+    },
+    "detail": {
+      "badge": "البرنامج التدريبي",
+      "noShortDescription": "لا يوجد وصف مختصر.",
+      "noFullDescription": "لا يوجد وصف تفصيلي.",
+      "noDate": "لم يحدد الموعد",
+      "free": "مجاني",
+      "notFound": {
+        "title": "البرنامج غير موجود",
+        "note": "قد يكون البرنامج مؤرشفًا أو لم يعد الرابط متاحًا.",
+        "back": "العودة إلى الأكاديمية"
+      },
+      "summary": {
+        "title": "ملخص البرنامج",
+        "price": "السعر",
+        "status": "الحالة",
+        "published": "منشور",
+        "draft": "مسودة",
+        "visibility": "الظهور",
+        "type": "نوع الوصول",
+        "publicAccess": "برنامج عام",
+        "marketNote": "تحدد المنصة سعرًا نهائيًا واحدًا لحسابك، ولا يظهر أي تبديل للدولة هنا.",
+        "duration": "مدة الكورس بالأيام",
+        "daysUnit": "يوم",
+        "lectures": "عدد المحاضرات",
+        "lectureUnit": "محاضرات"
+      },
+      "stats": {
+        "enrollments": "{count} تسجيل"
+      },
+      "howItWorks": {
+        "title": "كيف يعمل التسجيل",
+        "step1": "املأ بياناتك الأساسية في نموذج التسجيل.",
+        "step2": "أكمل خطوة الدفع إذا كان البرنامج مدفوعًا.",
+        "step3": "احتفظ برقم التسجيل لمتابعة الحالة مع فريق الأكاديمية."
+      },
+      "schedule": {
+        "title": "جدول المحاضرات",
+        "subtitle": "راجع مواعيد المحاضرات المحفوظة قبل التسجيل.",
+        "count": "{count} محاضرة",
+        "empty": {
+          "heading": "لا يوجد جدول محاضرات بعد",
+          "note": "الكورس لا يزال قيد الإعداد. عد لاحقًا عندما تصبح المواعيد كاملة."
+        },
+        "item": {
+          "order": "المحاضرة {order}",
+          "noTitle": "محاضرة بلا عنوان",
+          "startsAt": "تبدأ في",
+          "endsAt": "تنتهي في"
+        }
+      }
+    },
+    "form": {
+      "title": "سجل مقعدك",
+      "subtitle": "نحافظ على النموذج بسيطًا حتى تكتمل عملية التسجيل بسرعة.",
+      "fullName": "الاسم الكامل",
+      "phoneNumber": "رقم الهاتف",
+      "whatsappNumber": "رقم واتس آب",
+      "email": "البريد الإلكتروني",
+      "submit": "سجل الآن",
+      "submitting": "جارٍ التسجيل...",
+      "noteTitle": "التسعير تلقائي",
+      "noteBody": "تحدد المنصة السعر النهائي لحسابك من السيرفر، ولا تحتاج لاختيار دولة هنا.",
+      "validation": {
+        "required": "يرجى إدخال الاسم ورقم الهاتف أولًا."
+      },
+      "success": "تم إنشاء التسجيل بنجاح."
+    },
+    "result": {
+      "title": "نتيجة التسجيل",
+      "status": "الحالة الحالية: {status}",
+      "reference": "رقم التسجيل",
+      "payNow": "ادفع الآن",
+      "waiting": "جاري تجهيز تسجيلك الآن.",
+      "joinAccess": {
+        "title": "روابط الانضمام",
+        "meeting": "فتح رابط الاجتماع",
+        "whatsapp": "فتح جروب واتس آب"
+      }
+    }
+  },
+  "admin": {
+    "badge": "إدارة الأكاديمية",
+    "title": "إدارة البرامج التدريبية العامة",
+    "note": "أنشئ البرامج، راقب التسجيلات، وتابع حركة الدفع من مكان واحد.",
+    "stats": {
+      "totalCourses": "إجمالي البرامج",
+      "publishedCourses": "البرامج المنشورة",
+      "totalEnrollments": "التسجيلات",
+      "pendingPayments": "المدفوعات المعلقة",
+      "lecturesCreated": "المحاضرات المنشأة"
+    },
+    "create": {
+      "badge": "إنشاء مسودة",
+      "title": "إنشاء برنامج جديد",
+      "note": "ابدأ بمسودة، ثم انشر البرنامج عندما يصبح المحتوى والجدول جاهزين.",
+      "adminOnlyNote": "يمكن للمسؤولين فقط إنشاء البرامج التدريبية.",
+      "submit": "إنشاء البرنامج",
+      "saving": "جارٍ الإنشاء...",
+      "helper": "حدّد المدة وعدد المحاضرات والمواعيد قبل حفظ الكورس.",
+      "success": "تم إنشاء البرنامج بنجاح.",
+      "failure": "تعذر إنشاء البرنامج الآن.",
+      "validation": {
+        "required": "العنوان مطلوب.",
+        "price": "أدخل قيمة صحيحة للجنيه المصري أو الدولار.",
+        "scheduleRequired": "المدة وعدد المحاضرات والمواعيد مطلوبة.",
+        "durationRequired": "مدة الكورس مطلوبة.",
+        "lectureCountRequired": "عدد المحاضرات مطلوب.",
+        "startsAtRequired": "وقت البداية مطلوب.",
+        "endsAtRequired": "وقت النهاية مطلوب.",
+        "invalidPlanWindow": "وقت النهاية يجب أن يكون بعد وقت البداية.",
+        "invalidDuration": "أدخل مدة صحيحة للكورس بالأيام.",
+        "invalidLectureCount": "أدخل عدد محاضرات صحيح."
+      },
+      "fields": {
+        "title": "العنوان",
+        "visibility": "الظهور",
+        "priceAmountEgp": "السعر بالجنيه",
+        "priceAmountUsd": "السعر بالدولار",
+        "startsAt": "تاريخ البداية",
+        "endsAt": "تاريخ النهاية",
+        "shortDescription": "وصف مختصر",
+        "fullDescription": "الوصف التفصيلي",
+        "plannedDurationDays": "مدة الكورس بالأيام",
+        "plannedLectureCount": "عدد المحاضرات",
+        "endsAtPreview": "وقت النهاية"
+      },
+      "placeholders": {
+        "title": "عنوان البرنامج",
+        "priceAmountEgp": "0",
+        "priceAmountUsd": "0",
+        "shortDescription": "ملخص قصير يظهر في القائمة العامة",
+        "fullDescription": "وصف تفصيلي للبرنامج",
+        "plannedDurationDays": "14",
+        "plannedLectureCount": "4",
+        "endsAtPreview": "سيتم حسابه تلقائيًا"
+      },
+      "open": "إنشاء دورة",
+      "cancel": "إلغاء",
+      "sections": {
+        "basics": "تفاصيل البرنامج",
+        "pricing": "التسعير",
+        "planning": "خطة الكورس"
+      },
+      "endsAtPreviewHelper": "يتم حساب وقت النهاية تلقائيًا بناءً على وقت البداية ومدة الكورس."
+    },
+    "filters": {
+      "status": "الحالة",
+      "statusAll": "كل الحالات",
+      "search": "بحث",
+      "searchPlaceholder": "ابحث باسم البرنامج أو الوصف..."
+    },
+    "list": {
+      "title": "قائمة البرامج",
+      "count": "تم العثور على {count} برنامج",
+      "manage": "إدارة",
+      "actionsHeader": "الإجراءات",
+      "columns": {
+        "title": "البرنامج",
+        "status": "الحالة",
+        "visibility": "الظهور",
+        "enrollments": "التسجيلات",
+        "price": "السعر",
+        "published": "تاريخ النشر",
+        "updated": "آخر تحديث"
+      },
+      "markets": {
+        "egp": "الجنيه",
+        "usd": "الدولار"
+      },
+      "enrollmentSummary": "{total} إجمالي، {paid} مدفوع",
+      "pendingSummary": "{total} معلّق، {failed} فشل",
+      "free": "مجاني",
+      "noDescription": "لا يوجد وصف"
+    },
+    "states": {
+      "error": {
+        "heading": "تعذر تحميل البرامج",
+        "note": "لم نتمكن من تحميل القائمة الآن.",
+        "retry": "إعادة المحاولة"
+      },
+      "empty": {
+        "heading": "لا توجد برامج",
+        "note": "يمكنك إزالة الفلاتر أو إنشاء أول مسودة."
+      }
+    },
+    "detail": {
+      "badge": "إدارة البرنامج التدريبي",
+      "notFound": {
+        "title": "البرنامج غير موجود",
+        "note": "قد يكون البرنامج محذوفًا أو لم يعد الرابط صالحًا.",
+        "back": "العودة إلى الأكاديمية"
+      },
+      "noShortDescription": "لا يوجد وصف مختصر.",
+      "sections": {
+        "course": "تفاصيل البرنامج",
+        "courseSummary": "ملخص سريع",
+        "enrollments": "التسجيلات",
+        "join": "روابط الانضمام",
+        "lectures": "المحاضرات"
+      },
+      "update": {
+        "note": "افتح نافذة التعديل لتحديث معلومات البرنامج وروابطه العامة.",
+        "success": "تم تحديث البرنامج بنجاح.",
+        "failure": "تعذر تحديث البرنامج الآن.",
+        "helper": "تُطبّق التعديلات مباشرة بعد الحفظ. اترك السعر غير المستخدم فارغًا إذا لم يكن متاحًا في تلك العملة.",
+        "validation": {
+          "required": "العنوان مطلوب.",
+          "price": "أدخل قيمة صحيحة للجنيه المصري أو الدولار.",
+          "scheduleRequired": "المدة وعدد المحاضرات والمواعيد مطلوبة.",
+          "durationRequired": "مدة الكورس مطلوبة.",
+          "lectureCountRequired": "عدد المحاضرات مطلوب.",
+          "startsAtRequired": "وقت البداية مطلوب.",
+          "endsAtRequired": "وقت النهاية مطلوب.",
+          "invalidPlanWindow": "وقت النهاية يجب أن يكون بعد وقت البداية.",
+          "invalidDuration": "أدخل مدة صحيحة للكورس بالأيام.",
+          "invalidLectureCount": "أدخل عدد محاضرات صحيح."
+        },
+        "fields": {
+          "title": "العنوان",
+          "visibility": "الظهور",
+          "status": "الحالة",
+          "shortDescription": "وصف مختصر",
+          "fullDescription": "الوصف التفصيلي",
+          "priceAmountEgp": "السعر بالجنيه",
+          "priceAmountUsd": "السعر بالدولار",
+          "startsAt": "تاريخ البداية",
+          "endsAt": "تاريخ النهاية",
+          "coverImageUrl": "رابط صورة الغلاف",
+          "thumbnailUrl": "رابط الصورة المصغرة",
+          "meetingUrl": "رابط الاجتماع",
+          "whatsappGroupUrl": "رابط جروب واتس آب",
+          "plannedDurationDays": "مدة الكورس بالأيام",
+          "plannedLectureCount": "عدد المحاضرات",
+          "endsAtPreview": "وقت النهاية"
+        },
+        "placeholders": {
+          "title": "عنوان البرنامج",
+          "shortDescription": "وصف مختصر",
+          "fullDescription": "الوصف التفصيلي",
+          "priceAmountEgp": "0",
+          "priceAmountUsd": "0",
+          "coverImageUrl": "https://...",
+          "thumbnailUrl": "https://...",
+          "meetingUrl": "https://...",
+          "whatsappGroupUrl": "https://...",
+          "plannedDurationDays": "14",
+          "plannedLectureCount": "4",
+          "endsAtPreview": "سيتم حسابه تلقائيًا"
+        },
+        "open": "تعديل البرنامج",
+        "cancel": "إلغاء",
+        "sections": {
+          "basics": "تفاصيل البرنامج",
+          "pricing": "التسعير",
+          "links": "الروابط العامة",
+          "planning": "خطة الكورس"
+        },
+        "submit": "حفظ التعديلات",
+        "endsAtPreviewHelper": "يتم حساب وقت النهاية تلقائيًا بناءً على وقت البداية ومدة الكورس."
+      },
+      "summary": {
+        "price": "السعر",
+        "priceEgp": "السعر بالجنيه",
+        "priceUsd": "السعر بالدولار",
+        "startsAt": "تاريخ البداية",
+        "endsAt": "تاريخ النهاية",
+        "updatedAt": "آخر تحديث",
+        "notSet": "غير محدد",
+        "duration": "مدة الكورس بالأيام",
+        "daysUnit": "يوم",
+        "lectures": "عدد المحاضرات",
+        "lectureUnit": "محاضرات",
+        "lecturesCreated": "المحاضرات المنشأة"
+      },
+      "stats": {
+        "totalEnrollments": "إجمالي التسجيلات",
+        "paidEnrollments": "التسجيلات المدفوعة",
+        "confirmedEnrollments": "التسجيلات المؤكدة",
+        "pendingPayments": "المدفوعات المعلقة",
+        "lecturesCreated": "المحاضرات المنشأة"
+      },
+      "actions": {
+        "publish": "نشر",
+        "publishing": "جارٍ النشر...",
+        "publishSuccess": "تم نشر البرنامج بنجاح.",
+        "archive": "أرشفة",
+        "archiving": "جارٍ الأرشفة...",
+        "archiveSuccess": "تم أرشفة البرنامج بنجاح.",
+        "failure": "تعذر تنفيذ العملية الآن.",
+        "resetFeedback": "مسح الرسالة",
+        "archiveConfirm": {
+          "title": "أرشفة البرنامج",
+          "description": "سيؤدي ذلك إلى إخفاء البرنامج من القائمة العامة.",
+          "cancel": "إلغاء"
+        }
+      },
+      "enrollments": {
+        "heading": "تسجيلات البرنامج",
+        "empty": {
+          "heading": "لا توجد تسجيلات بعد",
+          "note": "ستظهر التسجيلات هنا عندما يبدأ المتدربون في الاشتراك."
+        },
+        "columns": {
+          "learner": "المتدرب",
+          "status": "الحالة",
+          "paymentStatus": "الدفع",
+          "registeredAt": "تاريخ التسجيل",
+          "reference": "المرجع",
+          "actions": "الإجراءات"
+        },
+        "actions": {
+          "view": "عرض المتدرب"
+        }
+      },
+      "join": {
+        "note": "شارك هذه الروابط فقط مع المشاركين المناسبين بعد تجهيز البرنامج.",
+        "meetingUrl": "رابط الاجتماع",
+        "whatsappGroupUrl": "رابط جروب واتس آب",
+        "none": "غير محدد"
+      },
+      "lectures": {
+        "heading": "المحاضرات",
+        "note": "أضف مواعيد المحاضرات المحفوظة لهذا الكورس من هنا.",
+        "open": "إضافة محاضرة",
+        "noTitle": "محاضرة بلا عنوان",
+        "capacityNote": "تم إنشاء {created} من أصل {expected} محاضرة.",
+        "empty": {
+          "heading": "لا توجد محاضرات بعد",
+          "note": "لم تُحفظ أي محاضرات لهذا الكورس حتى الآن."
+        },
+        "columns": {
+          "order": "#",
+          "title": "العنوان",
+          "startsAt": "تبدأ في",
+          "endsAt": "تنتهي في"
+        },
+        "create": {
+          "eyebrow": "إنشاء محاضرة",
+          "title": "إضافة محاضرة إلى {title}",
+          "titleFallback": "إضافة محاضرة",
+          "note": "أضف وقت المحاضرة والمدة ثم احفظها داخل هذا الكورس.",
+          "cancel": "إلغاء",
+          "submit": "حفظ المحاضرة",
+          "submitting": "جارٍ الحفظ...",
+          "endsAtPreview": "وقت النهاية",
+          "endsAtHelper": "يتم حساب وقت النهاية تلقائيًا بناءً على وقت البداية ومدة المحاضرة.",
+          "fields": {
+            "lectureOrder": "ترتيب المحاضرة",
+            "lectureTitle": "عنوان المحاضرة",
+            "startsAt": "وقت البداية",
+            "durationMinutes": "المدة بالدقائق",
+            "endsAt": "وقت النهاية"
+          },
+          "durationOption": "{duration} دقيقة",
+          "placeholders": {
+            "lectureTitle": "عنوان المحاضرة"
+          },
+          "endsAtPreviewHelper": "يتم حساب وقت النهاية تلقائيًا بناءً على وقت البداية والمدة."
+        },
+        "validation": {
+          "orderRequired": "ترتيب المحاضرة مطلوب.",
+          "titleRequired": "عنوان المحاضرة مطلوب.",
+          "windowRequired": "يجب تحديد وقت البداية والنهاية.",
+          "invalidWindow": "يجب أن يكون وقت النهاية بعد وقت البداية.",
+          "limitReached": "هذا الكورس وصل إلى العدد المخطط من المحاضرات.",
+          "orderTaken": "هذا الترتيب مستخدم بالفعل."
+        }
+      }
+    },
+    "errors": {
+      "generic": "حدث خطأ أثناء حفظ تعديلات الأكاديمية.",
+      "notFound": "لم يتم العثور على البرنامج التعليمي.",
+      "archivedReadOnly": "هذا البرنامج مؤرشف ولا يمكن تعديله.",
+      "missingPricing": "يلزم تحديد سعر نهائي قبل نشر هذا البرنامج.",
+      "unsupportedCurrency": "العملة المختارة غير مدعومة لهذا البرنامج.",
+      "invalidPublishTransition": "لا يمكن نشر هذا البرنامج في حالته الحالية.",
+      "invalidArchiveTransition": "لا يمكن أرشفة هذا البرنامج في حالته الحالية.",
+      "missingPlan": "يجب تحديد مدة الكورس وعدد المحاضرات والمواعيد قبل النشر.",
+      "invalidPlanWindow": "يجب أن يسبق وقت البداية وقت النهاية.",
+      "invalidDuration": "أدخل مدة صحيحة للكورس بالأيام.",
+      "invalidLectureCount": "أدخل عدد محاضرات صحيح.",
+      "scheduleIncomplete": "يجب تحديد مدة الكورس وعدد المحاضرات والمواعيد قبل النشر.",
+      "missingLectureSchedule": "أضف {count} محاضرة أخرى قبل النشر."
+    }
+  }
+}

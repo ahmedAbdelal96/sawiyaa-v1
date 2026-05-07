@@ -25,8 +25,14 @@ export class PaymentProviderRegistryService {
     );
   }
 
-  get(provider: PaymentProvider): PaymentProviderAdapter {
-    this.paymentProviderCapabilitiesService.assertAvailable(provider);
+  get(
+    provider: PaymentProvider,
+    context?: {
+      checkoutCountryIsoCode?: string | null;
+      operatingCountryIsoCode?: string | null;
+    },
+  ): PaymentProviderAdapter {
+    this.paymentProviderCapabilitiesService.assertAvailable(provider, context);
 
     const adapter = this.adapters.get(provider);
 

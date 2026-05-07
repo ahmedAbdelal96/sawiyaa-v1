@@ -2,7 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import { useTranslations } from "next-intl";
-import { BadgeDollarSign, Info } from "lucide-react";
+import { BadgeDollarSign, CircleAlert } from "lucide-react";
 import Button from "@/components/ui/button/Button";
 import { Drawer, ModalBody, ModalHeader } from "@/components/ui/modal";
 import { useGenerateAdminSettlementBatch } from "../hooks/use-admin-settlements";
@@ -37,7 +37,7 @@ export default function AdminSettlementGenerateDrawer({
     !Number.isNaN(parsedMonth) &&
     parsedMonth >= 1 &&
     parsedMonth <= 12 &&
-    normalizedCurrency.length >= 3;
+    (normalizedCurrency === "EGP" || normalizedCurrency === "USD");
 
   const resetDrawerState = () => {
     setYear(String(currentDate.getFullYear()));
@@ -95,14 +95,13 @@ export default function AdminSettlementGenerateDrawer({
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="rounded-[24px] border border-primary/15 bg-primary/5 p-4 text-sm text-text-secondary dark:border-primary/20 dark:bg-primary/10 dark:text-primary-light">
               <div className="flex items-start gap-3">
-                <Info className="mt-0.5 h-4 w-4 shrink-0" />
+                <CircleAlert className="mt-0.5 h-4 w-4 shrink-0" />
                 <div className="space-y-2">
                   <p className="font-semibold text-text-primary dark:text-white/95">
                     {t("generate.helperTitle")}
                   </p>
                   <ul className="space-y-1 text-sm leading-6">
                     <li>{t("generate.helperItems.defaultPath")}</li>
-                    <li>{t("generate.helperItems.noPractitionerPicker")}</li>
                     <li>{t("generate.helperItems.backendDuplicateGuard")}</li>
                     <li>{t("generate.helperItems.zeroItemsPossible")}</li>
                   </ul>
@@ -156,16 +155,26 @@ export default function AdminSettlementGenerateDrawer({
               <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
                 {t("generate.fields.currency")}
               </span>
-              <input
+              <select
                 value={currency}
                 onChange={(event) => {
                   setCurrency(event.target.value);
                   if (feedback?.tone === "error") setFeedback(null);
                 }}
-                placeholder={t("generate.placeholders.currency")}
-                className="app-control w-full px-4 py-3 uppercase"
-              />
+                className="app-control w-full px-4 py-3"
+              >
+                <option value="">{t("generate.placeholders.currency")}</option>
+                <option value="EGP">EGP — {t("generate.currencyOptions.EGP")}</option>
+                <option value="USD">USD — {t("generate.currencyOptions.USD")}</option>
+              </select>
             </label>
+
+            <div className="rounded-[24px] border border-border-light bg-surface-tertiary/50 p-4 text-sm leading-6 text-text-secondary dark:border-white/8 dark:bg-white/5 dark:text-white/75">
+              <p>{t("generate.notePrimary")}</p>
+              <p className="mt-2">{t("generate.noteSecondary")}</p>
+              <p className="mt-2">{t("generate.noteTertiary")}</p>
+              <p className="mt-2">{t("generate.noteEmpty")}</p>
+            </div>
 
             {feedback ? (
               <p

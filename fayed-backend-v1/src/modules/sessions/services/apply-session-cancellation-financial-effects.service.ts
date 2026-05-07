@@ -201,7 +201,7 @@ export class ApplySessionCancellationFinancialEffectsService {
     });
 
     await this.customerWalletAccountingService.creditRefundToWallet({
-      patientId: payment.patientId,
+      patientId: payment.patientId!,
       paymentId: payment.id,
       refundId: refund.id,
       sessionId: input.session.id,

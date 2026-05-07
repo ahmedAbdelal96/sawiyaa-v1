@@ -117,6 +117,7 @@ export class CreateScheduledSessionUseCase {
           practitionerTimezone: practitioner.user.timezone,
           requestedStartAtUtc: scheduledStartAtUtc,
           requestedEndAtUtc: scheduledEndAtUtc,
+          requestedDurationMinutes: input.durationMinutes,
         },
       );
 

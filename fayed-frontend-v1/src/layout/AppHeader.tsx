@@ -3,19 +3,25 @@
 import { ThemeToggleButton } from "@/components/shared/ThemeToggleButton";
 import { LanguageSwitcher } from "@/components/shared/LanguageSwitcher";
 import BrandMark from "@/components/shared/BrandMark";
+import ActionIconButton from "@/components/ui/action-icon-button/ActionIconButton";
 import NotificationDropdown from "@/components/header/NotificationDropdown";
 import UserDropdown from "@/components/header/UserDropdown";
 import MessagesHeaderButton from "@/features/messages-shell/components/MessagesHeaderButton";
+import UserNotificationDropdown from "@/features/notifications/components/UserNotificationDropdown";
 import { useSidebar } from "@/stores";
-import React, { useState } from "react";
+import { Menu, X } from "lucide-react";
+import { useLocale } from "next-intl";
+import React from "react";
 
 type AppHeaderProps = {
   messagingRole?: "admin" | "practitioner" | "patient";
 };
 
 const AppHeader: React.FC<AppHeaderProps> = ({ messagingRole }) => {
-  const [isApplicationMenuOpen, setApplicationMenuOpen] = useState(false);
-  const { isMobileOpen, toggleSidebar, toggleMobileSidebar } = useSidebar();
+  const { isExpanded, isHovered, isMobileOpen, toggleSidebar, toggleMobileSidebar } =
+    useSidebar();
+  const locale = useLocale();
+  const isRTL = locale === "ar";
 
   const handleToggle = () => {
     if (window.innerWidth >= 1024) {
@@ -25,51 +31,51 @@ const AppHeader: React.FC<AppHeaderProps> = ({ messagingRole }) => {
     }
   };
 
+  const headerOffsetClass = isMobileOpen
+    ? "inset-x-0"
+    : isRTL
+      ? isExpanded || isHovered
+        ? "lg:right-[290px] lg:left-0"
+        : "lg:right-[90px] lg:left-0"
+      : isExpanded || isHovered
+        ? "lg:left-[290px] lg:right-0"
+        : "lg:left-[90px] lg:right-0";
+
   return (
-    <header className="sticky top-0 z-40 flex w-full border-b border-border-light bg-surface-secondary/90 backdrop-blur dark:border-border-light dark:bg-surface-secondary/90">
-      <div className="flex grow flex-col items-center justify-between lg:flex-row lg:px-6">
-        <div className="flex w-full items-center justify-between gap-3 border-b border-border-light px-3 py-3 dark:border-border-light lg:border-b-0 lg:px-0 lg:py-4">
-          <div className="flex items-center gap-3">
-            <button
-              className="flex h-10 w-10 items-center justify-center rounded-xl border border-border-light bg-surface text-text-secondary transition-colors hover:bg-primary-light hover:text-text-brand dark:border-border-light dark:bg-surface-tertiary dark:text-text-secondary lg:h-11 lg:w-11"
-              onClick={handleToggle}
-              aria-label="Toggle Sidebar"
-            >
-              {isMobileOpen ? "X" : "="}
-            </button>
-            <div className="lg:hidden">
-              <BrandMark compact />
-            </div>
-          </div>
-
-          <div className="hidden lg:flex lg:flex-col">
-            <span className="text-sm font-semibold text-text-primary">Fayed</span>
-            <span className="text-xs text-text-secondary">
-              Calm digital care workspace
-            </span>
-          </div>
-
-          <button
-            onClick={() => setApplicationMenuOpen((prev) => !prev)}
-            className="flex h-10 w-10 items-center justify-center rounded-xl text-text-secondary hover:bg-primary-light hover:text-text-brand dark:text-text-secondary dark:hover:bg-surface-tertiary lg:hidden"
-            aria-label="Toggle header menu"
-          >
-            ...
-          </button>
+    <header
+      className={`fixed top-0 z-[60] border-b border-border-light/80 bg-surface-secondary/92 backdrop-blur-xl dark:border-border-light dark:bg-surface-secondary/92 ${headerOffsetClass} transition-all duration-300 ease-in-out`}
+    >
+      <div className="mx-auto flex w-full items-center justify-between gap-3 px-4 py-2.5 md:px-6">
+        <div className="flex min-w-0 items-center gap-3">
+          <ActionIconButton
+            label={isMobileOpen ? "Close Sidebar" : "Toggle Sidebar"}
+            icon={isMobileOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+            onClick={handleToggle}
+            intent="neutral"
+            className="h-9 w-9 rounded-2xl lg:h-10 lg:w-10"
+          />
+          <BrandMark compact />
         </div>
 
-        <div
-          className={`${
-            isApplicationMenuOpen ? "flex" : "hidden"
-          } w-full items-center justify-between gap-4 px-5 py-4 shadow-theme-md lg:flex lg:w-auto lg:px-0 lg:shadow-none`}
-        >
-          <div className="flex items-center gap-2 2xsm:gap-3">
-            <LanguageSwitcher />
-            <ThemeToggleButton />
-            {messagingRole ? <MessagesHeaderButton role={messagingRole} /> : null}
-            <NotificationDropdown />
+        <div className="hidden min-w-0 items-center gap-2.5 lg:flex">
+          <LanguageSwitcher />
+          <ThemeToggleButton />
+          {messagingRole ? <MessagesHeaderButton role={messagingRole} /> : null}
+          {messagingRole === "practitioner" ? (
+            <UserNotificationDropdown role="practitioner" />
+          ) : null}
+          <NotificationDropdown />
+          <div className="ml-1.5 shrink-0">
+            <UserDropdown compact />
           </div>
-          <UserDropdown />
+        </div>
+
+        <div className="flex items-center gap-2 lg:hidden">
+          <LanguageSwitcher />
+          <ThemeToggleButton />
+          <div className="ml-1 shrink-0">
+            <UserDropdown compact />
+          </div>
         </div>
       </div>
     </header>

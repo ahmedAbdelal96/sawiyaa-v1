@@ -1,9 +1,10 @@
-import React from "react";
+import React, { useState } from "react";
 import { ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import {
+  Button,
   Card,
   EmptyState,
   ErrorState,
@@ -92,6 +93,12 @@ function canContinueOrRetryPayment(status: PaymentStatus): boolean {
     status === "REQUIRES_ACTION" ||
     status === "FAILED"
   );
+}
+
+function resolvePaymentActionLabel(status: PaymentStatus) {
+  return status === "FAILED"
+    ? "patientPaymentsFlow.paymentCard.retryPayment"
+    : "patientPaymentsFlow.paymentCard.payNow";
 }
 
 // ---------------------------------------------------------------------------
@@ -195,7 +202,9 @@ function PaymentCard({ payment }: { payment: PaymentItem }) {
               styles.payActionBtn,
               { backgroundColor: theme.colors.primary },
             ]}
-            onPress={() => router.push(`/sessions/${payment.sessionId}/pay`)}
+              onPress={() =>
+                router.push(`/(patient)/sessions/${payment.sessionId}/pay`)
+              }
           >
             <Text color="#fff" weight="600" style={styles.payActionText}>
               {t(actionKey as Parameters<typeof t>[0])}
@@ -204,7 +213,9 @@ function PaymentCard({ payment }: { payment: PaymentItem }) {
         )}
         {payment.sessionId && (
           <TouchableOpacity
-            onPress={() => router.push(`/sessions/${payment.sessionId}`)}
+            onPress={() =>
+              router.push(`/(patient)/sessions/${payment.sessionId}`)
+            }
           >
             <Text
               color={theme.colors.primary}
@@ -286,16 +297,23 @@ export default function PatientPaymentsScreen() {
   const { theme } = useTheme();
   const { t, i18n } = useTranslation();
   const router = useRouter();
+  const [showPaymentHistory, setShowPaymentHistory] = useState(false);
   const locale = i18n.language?.startsWith("ar") ? "ar-SA" : "en-US";
   const isRtl = i18n.language?.startsWith("ar") ?? false;
 
   const walletQuery = usePatientWalletSummary();
-  const paymentsQuery = usePatientPayments({ limit: 10 });
+  const paymentsQuery = usePatientPayments({ limit: 6 });
   const entriesQuery = usePatientWalletEntries({ limit: 5 });
 
   const wallet = walletQuery.data?.item ?? null;
+  const paymentsData = paymentsQuery.data ?? null;
   const payments = paymentsQuery.data?.items ?? [];
   const entries = entriesQuery.data?.items ?? [];
+  const recentPayments = payments.slice(0, 3);
+  const recentEntries = entries.slice(0, 3);
+  const actionablePayment = payments.find((payment) =>
+    canContinueOrRetryPayment(payment.status),
+  );
   const fallbackCurrency =
     wallet?.currencyCode ??
     entries[0]?.currencyCode ??
@@ -366,63 +384,179 @@ export default function PatientPaymentsScreen() {
               <Text color={theme.colors.textMuted} style={styles.heroHint}>
                 {t("patientPaymentsFlow.wallet.availableHint")}
               </Text>
-              {wallet && Number(wallet.reservedBalance) > 0 && (
-                <Text
-                  color={theme.colors.textMuted}
-                  style={styles.reservedText}
-                >
-                  {t("patientPaymentsFlow.wallet.reservedLabel")}:{" "}
-                  {formatMoney(wallet.reservedBalance, wallet.currencyCode)}
+              {wallet ? (
+                <View style={styles.heroStatsRow}>
+                  <View
+                    style={[
+                      styles.heroStat,
+                      { backgroundColor: theme.colors.surfaceSecondary },
+                    ]}
+                  >
+                    <Text
+                      color={theme.colors.textMuted}
+                      style={styles.heroStatLabel}
+                    >
+                      {t("patientPaymentsFlow.wallet.reservedLabel")}
+                    </Text>
+                    <Text weight="600" style={styles.heroStatValue}>
+                      {formatMoney(wallet.reservedBalance, wallet.currencyCode)}
+                    </Text>
+                  </View>
+                  <View
+                    style={[
+                      styles.heroStat,
+                      { backgroundColor: theme.colors.primaryLight },
+                    ]}
+                  >
+                    <Text
+                      color={theme.colors.primary}
+                      style={styles.heroStatLabel}
+                    >
+                      {t("patientPaymentsFlow.wallet.lastUpdatedLabel")}
+                    </Text>
+                    <Text
+                      weight="600"
+                      style={[styles.heroStatValue, { color: theme.colors.primary }]}
+                    >
+                      {formatDate(wallet.updatedAt, locale)}
+                    </Text>
+                  </View>
+                </View>
+              ) : (
+                <Text color={theme.colors.textMuted} style={styles.noWalletNote}>
+                  {t("patientPaymentsFlow.wallet.noWallet")}
                 </Text>
               )}
             </>
           )}
+        </Card>
 
-          {/* Add Funds — honest blocker notice */}
-          <View
-            style={[
-              styles.addFundsBtn,
-              { backgroundColor: theme.colors.primaryLight },
-            ]}
-          >
-            <Ionicons name="add" size={16} color={theme.colors.primary} />
-            <Text
-              color={theme.colors.primary}
-              weight="600"
-              style={styles.addFundsBtnText}
-            >
+        <Card variant="outlined" padding="lg" style={styles.statusCard}>
+          <View style={styles.sectionHeader}>
+            <Text weight="600" style={styles.sectionTitle}>
+              {t("patientPaymentsFlow.wallet.statusTitle")}
+            </Text>
+            <StatusBadge
+              label={
+                actionablePayment
+                  ? t("patientPaymentsFlow.wallet.statusNeedsAttention")
+                  : t("patientPaymentsFlow.wallet.statusAllGood")
+              }
+              status={actionablePayment ? "warning" : "success"}
+            />
+          </View>
+          <View style={styles.paymentStatusBody}>
+            {paymentsQuery.isLoading ? (
+              <LoadingState />
+            ) : paymentsQuery.isError ? (
+              <TouchableOpacity onPress={() => paymentsQuery.refetch()}>
+                <Text color={theme.colors.primary} style={styles.retryText}>
+                  {t("patientPaymentsFlow.wallet.retry")}
+                </Text>
+              </TouchableOpacity>
+            ) : actionablePayment ? (
+              <View style={styles.actionablePaymentCard}>
+                <View style={styles.actionablePaymentHeader}>
+                  <View style={styles.actionablePaymentCopy}>
+                    <Text weight="bold" style={styles.paymentAmount}>
+                      {formatMoney(
+                        actionablePayment.amountTotal,
+                        actionablePayment.currency,
+                      )}
+                    </Text>
+                    <Text color={theme.colors.textMuted} style={styles.paymentProvider}>
+                      {t(
+                        `patientPaymentsFlow.paymentCard.provider.${actionablePayment.provider}` as Parameters<
+                          typeof t
+                        >[0],
+                      )}
+                    </Text>
+                  </View>
+                  <StatusBadge
+                    label={t(
+                      `patientPaymentsFlow.paymentCard.status.${actionablePayment.status}` as Parameters<
+                        typeof t
+                      >[0],
+                    )}
+                    status="warning"
+                  />
+                </View>
+
+                <Text color={theme.colors.textSecondary} style={styles.paymentDate}>
+                  {t("patientPaymentsFlow.wallet.statusPaymentDate")}{" "}
+                  {formatDate(
+                    actionablePayment.paidAt ??
+                      actionablePayment.failedAt ??
+                      actionablePayment.expiredAt ??
+                      actionablePayment.createdAt,
+                    locale,
+                  )}
+                </Text>
+
+                <View style={styles.actionButtonsRow}>
+                  {actionablePayment.sessionId ? (
+                    <Button
+                      title={t(
+                        resolvePaymentActionLabel(actionablePayment.status) as Parameters<
+                          typeof t
+                        >[0],
+                      )}
+                      onPress={() =>
+                        router.push(
+                          `/(patient)/sessions/${actionablePayment.sessionId}/pay`,
+                        )
+                      }
+                      style={styles.actionButton}
+                    />
+                  ) : null}
+                  {actionablePayment.sessionId ? (
+                    <TouchableOpacity
+                      onPress={() =>
+                        router.push(`/(patient)/sessions/${actionablePayment.sessionId}`)
+                      }
+                    >
+                      <Text
+                        color={theme.colors.primary}
+                        weight="600"
+                        style={styles.viewSessionLink}
+                      >
+                        {t("patientPaymentsFlow.paymentCard.viewSession")}
+                      </Text>
+                    </TouchableOpacity>
+                  ) : null}
+                </View>
+              </View>
+            ) : (
+              <Text color={theme.colors.textMuted} style={styles.emptyNote}>
+                {t("patientPaymentsFlow.wallet.statusClearBody")}
+              </Text>
+            )}
+
+            <View style={styles.methodNote}>
+              <Ionicons
+                name="card-outline"
+                size={14}
+                color={theme.colors.textMuted}
+              />
+              <Text color={theme.colors.textSecondary} style={styles.methodNoteText}>
+                {t("patientPaymentsFlow.wallet.paymentMethodsUnavailable")}
+              </Text>
+            </View>
+            <Text color={theme.colors.textMuted} style={styles.methodFootnote}>
               {t("patientPaymentsFlow.wallet.addFundsUnavailable")}
             </Text>
           </View>
         </Card>
 
-        {/* ── Payment methods — honest blocker ── */}
-        <Card variant="flat" padding="md" style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text weight="600" style={styles.sectionTitle}>
-              {t("patientPaymentsFlow.wallet.paymentMethodsTitle")}
-            </Text>
-            <Ionicons
-              name="add-circle-outline"
-              size={22}
-              color={theme.colors.textMuted}
-            />
-          </View>
-          <Text color={theme.colors.textMuted} style={styles.blockerNote}>
-            {t("patientPaymentsFlow.wallet.paymentMethodsUnavailable")}
-          </Text>
-        </Card>
-
-        {/* ── Recent transactions (wallet entries) ── */}
         <Card variant="elevated" padding="md" style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text weight="600" style={styles.sectionTitle}>
               {t("patientPaymentsFlow.wallet.recentTitle")}
             </Text>
             {entriesQuery.data &&
-              entriesQuery.data.pagination.totalItems > 5 && (
+              entriesQuery.data.pagination.totalItems > recentEntries.length && (
                 <TouchableOpacity
-                  onPress={() => router.push("/payments/transactions")}
+                  onPress={() => router.push("/(patient)/payments/transactions")}
                 >
                   <Text
                     color={theme.colors.primary}
@@ -443,9 +577,9 @@ export default function PatientPaymentsScreen() {
                 {t("patientPaymentsFlow.wallet.retry")}
               </Text>
             </TouchableOpacity>
-          ) : entries.length > 0 ? (
+          ) : recentEntries.length > 0 ? (
             <View style={styles.entryList}>
-              {entries.map((entry) => (
+              {recentEntries.map((entry) => (
                 <WalletEntryRow key={entry.id} entry={entry} />
               ))}
             </View>
@@ -456,40 +590,74 @@ export default function PatientPaymentsScreen() {
           )}
         </Card>
 
-        {/* ── Payment history ── */}
-        <View style={styles.section}>
-          <Text weight="600" style={styles.paymentsTitle}>
-            {t("patientPaymentsFlow.payments.sectionTitle")}
-          </Text>
+        <Card variant="outlined" padding="md" style={styles.historyCard}>
+          <TouchableOpacity
+            onPress={() => setShowPaymentHistory((current) => !current)}
+            activeOpacity={0.85}
+            style={styles.historyHeader}
+          >
+            <View style={styles.historyHeaderText}>
+              <Text weight="600" style={styles.sectionTitle}>
+                {t("patientPaymentsFlow.payments.sectionTitle")}
+              </Text>
+              <Text color={theme.colors.textSecondary} style={styles.historySubtitle}>
+                {t("patientPaymentsFlow.wallet.historyHint")}
+              </Text>
+            </View>
+            <Ionicons
+              name={showPaymentHistory ? "chevron-up" : "chevron-down"}
+              size={20}
+              color={theme.colors.textSecondary}
+            />
+          </TouchableOpacity>
 
-          {paymentsQuery.isLoading ? (
-            <LoadingState />
-          ) : paymentsQuery.isError ? (
-            <ErrorState onRetry={() => paymentsQuery.refetch()} />
-          ) : payments.length > 0 ? (
-            <View style={styles.paymentList}>
-              {payments.map((p) => (
-                <PaymentCard key={p.id} payment={p} />
-              ))}
+          {showPaymentHistory ? (
+            <View style={styles.historyBody}>
+              {paymentsQuery.isLoading ? (
+                <LoadingState />
+              ) : paymentsQuery.isError ? (
+                <ErrorState onRetry={() => paymentsQuery.refetch()} />
+              ) : recentPayments.length > 0 ? (
+                <View style={styles.paymentList}>
+                  {recentPayments.map((payment) => (
+                    <PaymentCard key={payment.id} payment={payment} />
+                  ))}
+                </View>
+              ) : (
+                <EmptyState
+                  title={t("patientPaymentsFlow.payments.emptyTitle")}
+                  description={t("patientPaymentsFlow.payments.emptyNote")}
+                  icon={
+                    <Ionicons
+                      name="card-outline"
+                      size={44}
+                      color={theme.colors.textMuted}
+                    />
+                  }
+                  onAction={() => router.push("/(patient)/sessions")}
+                  actionLabel={t("patientPaymentsFlow.payments.emptyAction")}
+                />
+              )}
+
+              {paymentsData &&
+              paymentsData.pagination.totalItems > recentPayments.length ? (
+                <TouchableOpacity
+                  onPress={() => router.push("/(patient)/payments/transactions")}
+                  style={styles.viewAllHistory}
+                >
+                  <Text color={theme.colors.primary} weight="600">
+                    {t("patientPaymentsFlow.wallet.historyViewAll")}
+                  </Text>
+                </TouchableOpacity>
+              ) : null}
             </View>
           ) : (
-            <EmptyState
-              title={t("patientPaymentsFlow.payments.emptyTitle")}
-              description={t("patientPaymentsFlow.payments.emptyNote")}
-              icon={
-                <Ionicons
-                  name="card-outline"
-                  size={44}
-                  color={theme.colors.textMuted}
-                />
-              }
-              onAction={() => router.push("/sessions")}
-              actionLabel={t("patientPaymentsFlow.payments.emptyAction")}
-            />
+            <Text color={theme.colors.textMuted} style={styles.emptyNote}>
+              {t("patientPaymentsFlow.wallet.historyCollapsed")}
+            </Text>
           )}
-        </View>
+        </Card>
 
-        {/* ── Secure badge ── */}
         <View style={styles.secureRow}>
           <Ionicons
             name="shield-checkmark-outline"
@@ -517,18 +685,26 @@ const styles = StyleSheet.create({
   heroBalanceLabel: { fontSize: 14 },
   heroAmount: { fontSize: 40, letterSpacing: -1, marginBottom: 4 },
   heroHint: { fontSize: 12, marginBottom: 8 },
-  reservedText: { fontSize: 12, marginBottom: 8 },
-  addFundsBtn: {
+  heroStatsRow: {
     flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-    paddingVertical: 12,
-    borderRadius: 12,
-    marginTop: 4,
+    gap: 8,
+    flexWrap: "wrap",
+    marginBottom: 6,
   },
-  addFundsBtnText: { fontSize: 14 },
+  heroStat: {
+    flexGrow: 1,
+    minWidth: 118,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    gap: 2,
+  },
+  heroStatLabel: { fontSize: 11 },
+  heroStatValue: { fontSize: 15 },
+  noWalletNote: { fontSize: 13, marginTop: 8 },
+  reservedText: { fontSize: 12, marginBottom: 8 },
   section: { marginBottom: 0 },
+  statusCard: { marginBottom: 0 },
   sectionHeader: {
     flexDirection: "row",
     alignItems: "center",
@@ -538,6 +714,37 @@ const styles = StyleSheet.create({
   sectionTitle: { fontSize: 15 },
   blockerNote: { fontSize: 13 },
   viewAllText: { fontSize: 13 },
+  paymentStatusBody: { gap: 12 },
+  actionablePaymentCard: {
+    borderRadius: 14,
+    padding: 12,
+    gap: 8,
+  },
+  actionablePaymentHeader: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    gap: 12,
+  },
+  actionablePaymentCopy: { flex: 1 },
+  actionButtonsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    flexWrap: "wrap",
+  },
+  actionButton: {
+    flexGrow: 1,
+    minWidth: 160,
+  },
+  methodNote: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingTop: 2,
+  },
+  methodNoteText: { fontSize: 12, flex: 1 },
+  methodFootnote: { fontSize: 12, lineHeight: 18 },
   entryList: { gap: 12 },
   entryRow: {
     flexDirection: "row",
@@ -560,6 +767,17 @@ const styles = StyleSheet.create({
   emptyNote: { fontSize: 13, marginTop: 4 },
   paymentsTitle: { fontSize: 15, marginBottom: 10 },
   paymentList: { gap: 12 },
+  historyCard: { marginBottom: 0 },
+  historyHeader: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    gap: 12,
+  },
+  historyHeaderText: { flex: 1, gap: 4 },
+  historySubtitle: { fontSize: 12, lineHeight: 18 },
+  historyBody: { gap: 12, marginTop: 12 },
+  viewAllHistory: { alignSelf: "flex-start" },
   paymentCard: { marginBottom: 0 },
   paymentCardHeader: {
     flexDirection: "row",

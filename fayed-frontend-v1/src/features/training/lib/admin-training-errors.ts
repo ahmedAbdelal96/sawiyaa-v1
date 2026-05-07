@@ -6,6 +6,8 @@ const TRAINING_ERROR_MAP: Record<string, string> = {
   TRAINING_ARCHIVED_READ_ONLY: "admin.errors.archivedReadOnly",
   TRAINING_LOCALE_REQUIRED_FOR_TRANSLATION_UPDATE: "admin.errors.localeRequired",
   TRAINING_INVALID_PUBLISH_TRANSITION: "admin.errors.invalidPublishTransition",
+  TRAINING_SCHEDULE_REQUIRED_FOR_PUBLISH:
+    "admin.errors.scheduleRequiredForPublish",
   TRAINING_INVALID_ARCHIVE_TRANSITION: "admin.errors.invalidArchiveTransition",
   TRAINING_SCHEDULE_NOT_FOUND: "admin.errors.scheduleNotFound",
   TRAINING_SCHEDULE_CODE_ALREADY_EXISTS: "admin.errors.scheduleCodeAlreadyExists",

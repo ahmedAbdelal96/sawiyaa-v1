@@ -15,6 +15,28 @@ export interface PublicPractitionerCredentialsSummary {
   approvedCredentials: number;
 }
 
+export interface PublicPractitionerPricingCurrency {
+  egp: number | null;
+  usd: number | null;
+}
+
+export interface PublicPractitionerPricing {
+  session30: PublicPractitionerPricingCurrency;
+  session60: PublicPractitionerPricingCurrency;
+}
+
+export type PublicPractitionerPresenceStatus =
+  | "OFFLINE"
+  | "ONLINE"
+  | "AWAY"
+  | "BUSY";
+
+export interface PublicPractitionerPresence {
+  status: PublicPractitionerPresenceStatus;
+  isInstantBookingEnabled: boolean;
+  lastSeenAt: string | null;
+}
+
 export interface PublicPractitionerListItem {
   id: string;
   slug: string;
@@ -26,8 +48,13 @@ export interface PublicPractitionerListItem {
   countryCode: string | null;
   practitionerType: string;
   practitionerGender: string | null;
+  pricing: PublicPractitionerPricing;
   sessionPrice30: number | null;
   sessionPrice60: number | null;
+  sessionPrice30Egp?: number | null;
+  sessionPrice30Usd?: number | null;
+  sessionPrice60Egp?: number | null;
+  sessionPrice60Usd?: number | null;
   isOnlineNow: boolean;
   acceptsCoupon: boolean;
   acceptsPackage: boolean;
@@ -47,10 +74,24 @@ export interface PublicPractitionerDetails {
   languages: string[];
   countryCode: string | null;
   yearsExperience: number | null;
+  pricing: PublicPractitionerPricing;
+  sessionPrice30: number | null;
+  sessionPrice60: number | null;
+  sessionPrice30Egp?: number | null;
+  sessionPrice30Usd?: number | null;
+  sessionPrice60Egp?: number | null;
+  sessionPrice60Usd?: number | null;
   ratingSummary: PublicPractitionerRatingSummary;
   credentialsSummary: PublicPractitionerCredentialsSummary;
   isVerified: boolean;
   avatarUrl: string | null;
+}
+
+export interface PublicPractitionerPresenceResponse {
+  success: boolean;
+  data: {
+    presence: PublicPractitionerPresence;
+  };
 }
 
 export interface PublicPractitionersPagination {

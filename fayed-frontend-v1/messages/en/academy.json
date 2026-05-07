@@ -1,0 +1,474 @@
+{
+  "meta": {
+    "publicTitle": "Academy",
+    "publicDescription": "Browse the platform's public training programs and enroll in a course that fits your goals.",
+    "publicDetailTitle": "Academy course details",
+    "publicDetailDescription": "Review the course details, then register your seat in a few quick steps.",
+    "adminTitle": "Academy management",
+    "adminDescription": "Create and manage public courses, enrollments, and payment follow-up.",
+    "adminDetailTitle": "Academy course management",
+    "adminDetailDescription": "Review the course configuration, track enrollments, and update public training content."
+  },
+  "errors": {
+    "generic": "Something went wrong while processing your request.",
+    "notFound": "The academy course could not be found.",
+    "loadFailed": "We could not load the academy content right now.",
+    "retry": "Retry"
+  },
+  "statuses": {
+    "course": {
+      "DRAFT": "Draft",
+      "PUBLISHED": "Published",
+      "ARCHIVED": "Archived"
+    },
+    "visibility": {
+      "PUBLIC": "Public",
+      "PRIVATE": "Private"
+    },
+    "enrollment": {
+      "PENDING_PAYMENT": "Pending payment",
+      "PAID": "Paid",
+      "CONFIRMED": "Confirmed",
+      "PAYMENT_FAILED": "Payment failed",
+      "CANCELLED": "Cancelled",
+      "REFUNDED": "Refunded"
+    },
+    "payment": {
+      "CREATED": "Created",
+      "PENDING": "Pending",
+      "REQUIRES_ACTION": "Requires action",
+      "AUTHORIZED": "Authorized",
+      "CAPTURED": "Captured",
+      "FAILED": "Failed",
+      "CANCELLED": "Cancelled",
+      "EXPIRED": "Expired",
+      "REFUND_PENDING": "Refund pending",
+      "PARTIALLY_REFUNDED": "Partially refunded",
+      "REFUNDED": "Refunded"
+    }
+  },
+  "public": {
+    "badge": "Public programs",
+    "hero": {
+      "title": "Learn with structured public training programs",
+      "subtitle": "Browse the platform's open training offerings, review the schedule, and register your seat with a simple flow."
+    },
+    "stats": {
+      "courses": "Courses",
+      "enrollments": "Enrollments",
+      "completed": "Paid enrollments"
+    },
+    "search": {
+      "title": "Find a course",
+      "subtitle": "Search by title or description.",
+      "placeholder": "Search for a course...",
+      "action": "Search",
+      "loading": "Searching..."
+    },
+    "list": {
+      "title": "Available courses",
+      "subtitle": "Public academy programs available right now.",
+      "count": "{count} course(s)"
+    },
+    "card": {
+      "enrollments": "enrollment(s)",
+      "published": "Published",
+      "draft": "Draft",
+      "free": "Free",
+      "noDescription": "No short description available.",
+      "noDate": "Date not set",
+      "open": "Open course"
+    },
+    "empty": {
+      "filtered": "No courses match your search.",
+      "default": "No academy courses are published yet."
+    },
+    "detail": {
+      "badge": "Academy course",
+      "noShortDescription": "No short description available.",
+      "noFullDescription": "No detailed description available.",
+      "noDate": "Date not set",
+      "free": "Free",
+      "notFound": {
+        "title": "Course not found",
+        "note": "This course may have been archived or the link is no longer available.",
+        "back": "Back to academy"
+      },
+      "summary": {
+        "title": "Course summary",
+        "price": "Price",
+        "status": "Status",
+        "published": "Published",
+        "draft": "Draft",
+        "visibility": "Visibility",
+        "type": "Access",
+        "publicAccess": "Public course",
+        "marketNote": "The platform resolves one final price for your account. No country switch is shown here.",
+        "duration": "Duration in days",
+        "daysUnit": "days",
+        "lectures": "Lecture count",
+        "lectureUnit": "lectures",
+        "lecturesCreated": "Lectures created"
+      },
+      "schedule": {
+        "title": "Lecture schedule",
+        "subtitle": "Review the saved lecture timings before you register.",
+        "count": "{count} lecture(s)",
+        "empty": {
+          "heading": "No lecture schedule yet",
+          "note": "The course is still being prepared. Check back once the full schedule is ready."
+        },
+        "item": {
+          "order": "Lecture {order}",
+          "noTitle": "Untitled lecture",
+          "startsAt": "Starts at",
+          "endsAt": "Ends at"
+        }
+      },
+      "stats": {
+        "enrollments": "{count} enrollment(s)"
+      },
+      "howItWorks": {
+        "title": "How it works",
+        "step1": "Fill in the registration form with the basic contact details.",
+        "step2": "Complete the payment step if the course is paid.",
+        "step3": "Use the enrollment reference to follow up with the academy team."
+      }
+    },
+    "form": {
+      "title": "Register your seat",
+      "subtitle": "Keep the form short and simple so registration stays fast.",
+      "fullName": "Full name",
+      "phoneNumber": "Phone number",
+      "whatsappNumber": "WhatsApp number",
+      "email": "Email address",
+      "submit": "Register now",
+      "submitting": "Registering...",
+      "noteTitle": "Automatic pricing",
+      "noteBody": "The platform resolves one final price for your account on the server. You do not need to choose a country here.",
+      "validation": {
+        "required": "Please enter your name and phone number first."
+      },
+      "success": "Your registration has been created successfully."
+    },
+    "result": {
+      "title": "Registration result",
+      "status": "Current status: {status}",
+      "reference": "Reference",
+      "payNow": "Pay now",
+      "waiting": "Your registration is being prepared.",
+      "joinAccess": {
+        "title": "Join access",
+        "meeting": "Open meeting link",
+        "whatsapp": "Open WhatsApp group"
+      }
+    }
+  },
+  "admin": {
+    "badge": "Academy management",
+    "title": "Manage public courses",
+    "note": "Create academy courses, monitor enrollments, and follow up on payment activity from one place.",
+    "errors": {
+      "generic": "Something went wrong while saving academy changes.",
+      "notFound": "Academy course not found.",
+      "archivedReadOnly": "This academy course is archived and read-only.",
+      "missingPricing": "A final price is required before publishing this academy course.",
+      "unsupportedCurrency": "The selected currency is not supported for this academy course.",
+      "invalidPublishTransition": "This academy course cannot be published from its current status.",
+      "invalidArchiveTransition": "This academy course cannot be archived from its current status.",
+      "missingPlan": "Set the course duration, lecture count, and timing before publishing.",
+      "invalidPlanWindow": "The course start time must be before the end time.",
+      "invalidDuration": "Enter a valid course duration in days.",
+      "invalidLectureCount": "Enter a valid lecture count.",
+      "scheduleIncomplete": "Set the course duration, lecture count, and timing before publishing.",
+      "missingLectureSchedule": "Add {count} more lecture(s) before publishing.",
+      "missingLecturePlan": "Set the course duration, lecture count, and timing before adding lectures.",
+      "invalidLectureWindow": "Each lecture must stay within the course window.",
+      "lectureLimitReached": "This course already has the planned number of lectures.",
+      "lectureOrderTaken": "That lecture order is already in use."
+    },
+    "stats": {
+      "totalCourses": "Total courses",
+      "publishedCourses": "Published courses",
+      "totalEnrollments": "Enrollments",
+      "pendingPayments": "Pending payments"
+    },
+    "create": {
+      "badge": "Draft builder",
+      "title": "Create a new course",
+      "note": "Start with a draft, then publish once the course content and scheduling are ready.",
+      "adminOnlyNote": "Only administrators can create academy courses.",
+      "open": "Create course",
+      "cancel": "Cancel",
+      "submit": "Create course",
+      "saving": "Creating...",
+      "helper": "Set the duration, lecture count, and timing before saving this course.",
+      "success": "Course created successfully.",
+      "failure": "Unable to create the course right now.",
+      "validation": {
+        "required": "Title is required.",
+        "price": "Enter a valid amount for EGP or USD.",
+        "scheduleRequired": "Duration, lecture count, and timing are required.",
+        "durationRequired": "Course duration is required.",
+        "lectureCountRequired": "Lecture count is required.",
+        "startsAtRequired": "Start time is required.",
+        "endsAtRequired": "End time is required.",
+        "invalidPlanWindow": "End time must be after start time.",
+        "invalidDuration": "Enter a valid course duration in days.",
+        "invalidLectureCount": "Enter a valid lecture count."
+      },
+      "sections": {
+        "basics": "Course details",
+        "pricing": "Pricing",
+        "planning": "Course planning"
+      },
+      "fields": {
+        "title": "Title",
+        "visibility": "Visibility",
+        "priceAmountEgp": "Price in EGP",
+        "priceAmountUsd": "Price in USD",
+        "startsAt": "Starts at",
+        "endsAt": "Ends at",
+        "shortDescription": "Short description",
+        "fullDescription": "Full description",
+        "plannedDurationDays": "Duration in days",
+        "plannedLectureCount": "Lecture count",
+        "endsAtPreview": "End time"
+      },
+      "placeholders": {
+        "title": "Course title",
+        "priceAmountEgp": "0",
+        "priceAmountUsd": "0",
+        "shortDescription": "A short summary for the public listing",
+        "fullDescription": "Detailed course description",
+        "plannedDurationDays": "14",
+        "plannedLectureCount": "4",
+        "endsAtPreview": "Will be calculated automatically"
+      },
+      "endsAtPreviewHelper": "The end time is calculated automatically from the start time and course duration."
+    },
+    "filters": {
+      "status": "Status",
+      "statusAll": "All statuses",
+      "search": "Search",
+      "searchPlaceholder": "Search by title or description..."
+    },
+    "list": {
+      "title": "Course list",
+      "count": "{count} course(s) found",
+      "manage": "Manage",
+      "actionsHeader": "Actions",
+      "columns": {
+        "title": "Course",
+        "status": "Status",
+        "visibility": "Visibility",
+        "enrollments": "Enrollments",
+        "price": "Price",
+        "published": "Published",
+        "updated": "Updated"
+      },
+      "markets": {
+        "egp": "EGP",
+        "usd": "USD"
+      },
+      "enrollmentSummary": "{total} total, {paid} paid",
+      "pendingSummary": "{total} pending, {failed} failed",
+      "free": "Free",
+      "noDescription": "No description provided"
+    },
+    "states": {
+      "error": {
+        "heading": "Unable to load courses",
+        "note": "The list could not be loaded right now.",
+        "retry": "Retry"
+      },
+      "empty": {
+        "heading": "No courses found",
+        "note": "Try clearing filters or create the first course draft."
+      }
+    },
+    "detail": {
+      "badge": "Academy course management",
+      "notFound": {
+        "title": "Course not found",
+        "note": "This course may have been deleted or the link is no longer valid.",
+        "back": "Back to academy"
+      },
+      "noShortDescription": "No short description available.",
+      "sections": {
+        "course": "Course details",
+        "courseSummary": "Quick summary",
+        "lectures": "Lectures",
+        "enrollments": "Enrollments",
+        "join": "Join links"
+      },
+      "update": {
+        "open": "Edit course",
+        "cancel": "Cancel",
+        "note": "Open the edit modal to update the public course information and course links.",
+        "success": "Course updated successfully.",
+        "failure": "Unable to update the course right now.",
+        "helper": "Changes are applied immediately after saving. Leave a market empty if you do not sell in that currency.",
+        "validation": {
+          "required": "Title is required.",
+          "price": "Enter a valid amount for EGP or USD.",
+          "scheduleRequired": "Duration, lecture count, and timing are required.",
+          "durationRequired": "Course duration is required.",
+          "lectureCountRequired": "Lecture count is required.",
+          "startsAtRequired": "Start time is required.",
+          "endsAtRequired": "End time is required.",
+          "invalidPlanWindow": "End time must be after start time.",
+          "invalidDuration": "Enter a valid course duration in days.",
+          "invalidLectureCount": "Enter a valid lecture count."
+        },
+        "sections": {
+          "basics": "Course details",
+          "pricing": "Pricing",
+          "links": "Public links",
+          "planning": "Course planning"
+        },
+        "fields": {
+          "title": "Title",
+          "visibility": "Visibility",
+          "status": "Status",
+          "shortDescription": "Short description",
+          "fullDescription": "Full description",
+          "priceAmountEgp": "Price in EGP",
+          "priceAmountUsd": "Price in USD",
+          "startsAt": "Starts at",
+          "endsAt": "Ends at",
+          "coverImageUrl": "Cover image URL",
+          "thumbnailUrl": "Thumbnail URL",
+          "meetingUrl": "Meeting URL",
+          "whatsappGroupUrl": "WhatsApp group URL",
+          "plannedDurationDays": "Duration in days",
+          "plannedLectureCount": "Lecture count",
+          "endsAtPreview": "End time"
+        },
+        "placeholders": {
+          "title": "Course title",
+          "shortDescription": "Short summary",
+          "fullDescription": "Detailed description",
+          "priceAmountEgp": "0",
+          "priceAmountUsd": "0",
+          "coverImageUrl": "https://...",
+          "thumbnailUrl": "https://...",
+          "meetingUrl": "https://...",
+          "whatsappGroupUrl": "https://...",
+          "plannedDurationDays": "14",
+          "plannedLectureCount": "4",
+          "endsAtPreview": "Will be calculated automatically"
+        },
+        "submit": "Save changes",
+        "endsAtPreviewHelper": "The end time is calculated automatically from the start time and course duration."
+      },
+      "summary": {
+        "price": "Price",
+        "priceEgp": "Price in EGP",
+        "priceUsd": "Price in USD",
+        "startsAt": "Starts at",
+        "endsAt": "Ends at",
+        "duration": "Duration in days",
+        "updatedAt": "Updated at",
+        "notSet": "Not set",
+        "daysUnit": "days",
+        "lectures": "Lecture count",
+        "lectureUnit": "lectures",
+        "lecturesCreated": "Lectures created"
+      },
+      "stats": {
+        "totalEnrollments": "Total enrollments",
+        "paidEnrollments": "Paid enrollments",
+        "confirmedEnrollments": "Confirmed enrollments",
+        "pendingPayments": "Pending payments",
+        "lecturesCreated": "Lectures created"
+      },
+      "actions": {
+        "publish": "Publish",
+        "publishing": "Publishing...",
+        "publishSuccess": "Course published successfully.",
+        "archive": "Archive",
+        "archiving": "Archiving...",
+        "archiveSuccess": "Course archived successfully.",
+        "failure": "Unable to complete the action right now.",
+        "resetFeedback": "Clear message",
+        "archiveConfirm": {
+          "title": "Archive course",
+          "description": "This will hide the course from the public catalog.",
+          "cancel": "Cancel"
+        }
+      },
+      "lectures": {
+        "heading": "Course lectures",
+        "note": "Add the actual lecture schedule before publishing. The course stays hidden until the lecture plan is complete.",
+        "open": "Add lecture",
+        "noTitle": "Untitled lecture",
+        "capacityNote": "{created} of {expected} lecture(s) created",
+        "empty": {
+          "heading": "No lectures yet",
+          "note": "Create the planned lecture timings here so the course can be published."
+        },
+        "columns": {
+          "order": "#",
+          "title": "Lecture",
+          "startsAt": "Starts at",
+          "endsAt": "Ends at"
+        },
+        "create": {
+          "eyebrow": "Lecture builder",
+          "title": "Add a lecture for {title}",
+          "titleFallback": "Add a lecture",
+          "note": "Set the lecture order and timing. The course can only be published after the full lecture plan is saved.",
+          "cancel": "Cancel",
+          "submit": "Save lecture",
+          "submitting": "Saving...",
+          "endsAtPreview": "Will be calculated automatically",
+          "endsAtHelper": "The lecture end time is calculated automatically from the start time and selected duration.",
+          "fields": {
+            "lectureOrder": "Lecture order",
+            "lectureTitle": "Lecture title",
+            "startsAt": "Starts at",
+            "durationMinutes": "Duration",
+            "endsAt": "Ends at"
+          },
+          "durationOption": "{duration} minutes",
+          "placeholders": {
+            "lectureTitle": "Lecture title"
+          }
+        },
+        "validation": {
+          "orderRequired": "Lecture order is required.",
+          "titleRequired": "Lecture title is required.",
+          "windowRequired": "Lecture start time is required.",
+          "invalidWindow": "Lecture time must fit within the course window.",
+          "limitReached": "This course already has the planned number of lectures.",
+          "orderTaken": "That lecture order is already in use."
+        }
+      },
+      "enrollments": {
+        "heading": "Course enrollments",
+        "empty": {
+          "heading": "No enrollments yet",
+          "note": "Registrations will appear here once learners start enrolling."
+        },
+        "columns": {
+          "learner": "Learner",
+          "status": "Status",
+          "paymentStatus": "Payment",
+          "registeredAt": "Registered at",
+          "reference": "Reference",
+          "actions": "Actions"
+        },
+        "actions": {
+          "view": "View learner"
+        }
+      },
+      "join": {
+        "note": "Share these links only with the right participants once the course is ready.",
+        "meetingUrl": "Meeting link",
+        "whatsappGroupUrl": "WhatsApp group link",
+        "none": "Not set"
+      }
+    }
+  }
+}

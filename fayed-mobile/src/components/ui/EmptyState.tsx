@@ -54,9 +54,13 @@ export const EmptyState = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    width: "100%",
+    maxWidth: 360,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 24,
+    paddingHorizontal: 24,
+    paddingVertical: 28,
+    alignSelf: "center",
   },
   iconContainer: {
     marginBottom: 16,
@@ -70,10 +74,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: 'center',
     marginBottom: 24,
-    maxWidth: '80%',
+    maxWidth: '100%',
+    lineHeight: 22,
   },
   buttonContainer: {
     width: '100%',
-    maxWidth: 250,
   },
 });

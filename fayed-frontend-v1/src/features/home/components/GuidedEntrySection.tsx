@@ -5,14 +5,14 @@ import { ArrowRight, Compass, HeartHandshake, Search, Sparkles } from "lucide-re
 const ENTRY_CONFIG = [
   {
     key: "matching",
-    href: "/signup/patient",
+    href: "/signup?mode=patient",
     icon: Compass,
     emphasis: "primary",
     requiresAccount: true,
   },
   {
     key: "assessment",
-    href: "/signup/patient",
+    href: "/signup?mode=patient",
     icon: Sparkles,
     emphasis: "soft",
     requiresAccount: true,
@@ -26,7 +26,7 @@ const ENTRY_CONFIG = [
   },
   {
     key: "support",
-    href: "/signin/patient",
+    href: "/signin?mode=patient",
     icon: HeartHandshake,
     emphasis: "soft",
     requiresAccount: true,

@@ -2,16 +2,25 @@ export const enSessionsCatalog = {
   notifications: {
     sessionConfirmedTitle: 'Session confirmed',
     sessionConfirmedBody:
-      'Your session is confirmed for {{sessionAt}}. You can prepare to join from your sessions screen.',
+      'Your session is confirmed for {{sessionAt}}.{{packageContext}} You can prepare to join from your sessions screen.',
     sessionConfirmedPractitionerTitle: 'New confirmed session',
     sessionConfirmedPractitionerBody:
-      'A session has been confirmed for {{sessionAt}}.',
+      'A session has been confirmed for {{sessionAt}}.{{packageContext}}',
+    sessionJoinAvailableTitle: 'Session ready to join',
+    sessionJoinAvailableBody:
+      'Your session starts soon.{{packageContext}} Open the session page to join securely.',
+    sessionJoinAvailableEmailSubject: 'Your Fayed session is ready to join',
+    sessionJoinAvailableEmailTitle: 'Your session is ready',
+    sessionJoinAvailableEmailBody:
+      'Your session starts soon.{{packageContext}} Open the session page to join securely: {{sessionUrl}}',
     sessionCancelledTitle: 'Session cancelled',
     sessionCancelledBody:
       'Your session scheduled at {{sessionAt}} was cancelled.',
     sessionCancelledPractitionerTitle: 'Session cancelled by patient',
     sessionCancelledPractitionerBody:
       'A patient cancelled a session scheduled at {{sessionAt}}.',
+    packageSessionContext:
+      ' Session {{packageSessionIndex}} of {{packageSessionCount}} in your package.',
   },
   errors: {
     patientNotFound: 'Patient profile was not found',

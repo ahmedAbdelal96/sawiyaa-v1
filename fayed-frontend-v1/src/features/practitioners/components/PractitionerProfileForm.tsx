@@ -30,6 +30,10 @@ type ProfileFormData = {
   professionalTitle?: string;
   bio?: string;
   yearsOfExperience?: string;
+  sessionPrice30Egp?: string;
+  sessionPrice30Usd?: string;
+  sessionPrice60Egp?: string;
+  sessionPrice60Usd?: string;
   practitionerType?: PractitionerType | "";
   practitionerGender?: PractitionerGender | "";
   countryCode?: string;
@@ -69,6 +73,14 @@ const PAYOUT_METHOD_TYPES: PractitionerPayoutMethodType[] = [
   "WALLET",
   "OTHER",
 ];
+
+function parseOptionalMoneyInput(value: string | undefined): number | null | undefined {
+  if (value === undefined) return undefined;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  const parsed = Number(trimmed);
+  return Number.isFinite(parsed) ? parsed : null;
+}
 
 // ---------------------------------------------------------------------------
 // Component
@@ -111,6 +123,42 @@ export default function PractitionerProfileForm({
             (v) => !v || Number(v) <= 60,
             { message: t("profile.validation.yearsMax") }
           ),
+        sessionPrice30Egp: z.string().optional().refine(
+          (value) => {
+            if (!value) return true;
+            const trimmed = value.trim();
+            if (!trimmed) return true;
+            return /^(\d+)(\.\d{1,2})?$/.test(trimmed) && Number(trimmed) > 0;
+          },
+          { message: t("profile.validation.sessionPriceInvalid") }
+        ),
+        sessionPrice30Usd: z.string().optional().refine(
+          (value) => {
+            if (!value) return true;
+            const trimmed = value.trim();
+            if (!trimmed) return true;
+            return /^(\d+)(\.\d{1,2})?$/.test(trimmed) && Number(trimmed) > 0;
+          },
+          { message: t("profile.validation.sessionPriceInvalid") }
+        ),
+        sessionPrice60Egp: z.string().optional().refine(
+          (value) => {
+            if (!value) return true;
+            const trimmed = value.trim();
+            if (!trimmed) return true;
+            return /^(\d+)(\.\d{1,2})?$/.test(trimmed) && Number(trimmed) > 0;
+          },
+          { message: t("profile.validation.sessionPriceInvalid") }
+        ),
+        sessionPrice60Usd: z.string().optional().refine(
+          (value) => {
+            if (!value) return true;
+            const trimmed = value.trim();
+            if (!trimmed) return true;
+            return /^(\d+)(\.\d{1,2})?$/.test(trimmed) && Number(trimmed) > 0;
+          },
+          { message: t("profile.validation.sessionPriceInvalid") }
+        ),
         practitionerType: z.string().optional(),
         practitionerGender: z.string().optional(),
         countryCode: z.string().optional(),
@@ -139,6 +187,10 @@ export default function PractitionerProfileForm({
       professionalTitle: "",
       bio: "",
       yearsOfExperience: "",
+      sessionPrice30Egp: "",
+      sessionPrice30Usd: "",
+      sessionPrice60Egp: "",
+      sessionPrice60Usd: "",
       practitionerType: "",
       practitionerGender: "",
       countryCode: "",
@@ -161,6 +213,10 @@ export default function PractitionerProfileForm({
         professionalTitle: profile.professionalTitle ?? "",
         bio: profile.bio ?? "",
         yearsOfExperience: profile.yearsOfExperience != null ? String(profile.yearsOfExperience) : "",
+        sessionPrice30Egp: profile.pricing.session30.egp != null ? String(profile.pricing.session30.egp) : "",
+        sessionPrice30Usd: profile.pricing.session30.usd != null ? String(profile.pricing.session30.usd) : "",
+        sessionPrice60Egp: profile.pricing.session60.egp != null ? String(profile.pricing.session60.egp) : "",
+        sessionPrice60Usd: profile.pricing.session60.usd != null ? String(profile.pricing.session60.usd) : "",
         practitionerType: profile.practitionerType ?? "",
         practitionerGender: profile.practitionerGender ?? "",
         countryCode: profile.countryCode ?? "",
@@ -207,6 +263,18 @@ export default function PractitionerProfileForm({
     }
     if (formData.timezone !== undefined) {
       payload.timezone = formData.timezone || undefined;
+    }
+    if (formData.sessionPrice30Egp !== undefined) {
+      payload.sessionPrice30Egp = parseOptionalMoneyInput(formData.sessionPrice30Egp);
+    }
+    if (formData.sessionPrice30Usd !== undefined) {
+      payload.sessionPrice30Usd = parseOptionalMoneyInput(formData.sessionPrice30Usd);
+    }
+    if (formData.sessionPrice60Egp !== undefined) {
+      payload.sessionPrice60Egp = parseOptionalMoneyInput(formData.sessionPrice60Egp);
+    }
+    if (formData.sessionPrice60Usd !== undefined) {
+      payload.sessionPrice60Usd = parseOptionalMoneyInput(formData.sessionPrice60Usd);
     }
     if (formData.payoutMethodType) {
       payload.payoutDestination = {
@@ -403,6 +471,78 @@ export default function PractitionerProfileForm({
               {errors.yearsOfExperience && (
                 <p className="mt-1.5 text-xs text-error-500">{errors.yearsOfExperience.message}</p>
               )}
+            </div>
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+          <h2 className="mb-5 text-base font-semibold text-gray-800 dark:text-white">
+            {t("profile.sections.sessionPricing")}
+          </h2>
+
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+            <div>
+              <Label htmlFor="sessionPrice30Egp">{t("profile.fields.sessionPrice30Egp.label")}</Label>
+              <Input
+                id="sessionPrice30Egp"
+                type="number"
+                step="0.01"
+                min="0"
+                placeholder={t("profile.fields.sessionPrice30Egp.placeholder")}
+                error={!!errors.sessionPrice30Egp}
+                {...register("sessionPrice30Egp")}
+              />
+              {errors.sessionPrice30Egp ? (
+                <p className="mt-1.5 text-xs text-error-500">{errors.sessionPrice30Egp.message}</p>
+              ) : null}
+            </div>
+
+            <div>
+              <Label htmlFor="sessionPrice30Usd">{t("profile.fields.sessionPrice30Usd.label")}</Label>
+              <Input
+                id="sessionPrice30Usd"
+                type="number"
+                step="0.01"
+                min="0"
+                placeholder={t("profile.fields.sessionPrice30Usd.placeholder")}
+                error={!!errors.sessionPrice30Usd}
+                {...register("sessionPrice30Usd")}
+              />
+              {errors.sessionPrice30Usd ? (
+                <p className="mt-1.5 text-xs text-error-500">{errors.sessionPrice30Usd.message}</p>
+              ) : null}
+            </div>
+
+            <div>
+              <Label htmlFor="sessionPrice60Egp">{t("profile.fields.sessionPrice60Egp.label")}</Label>
+              <Input
+                id="sessionPrice60Egp"
+                type="number"
+                step="0.01"
+                min="0"
+                placeholder={t("profile.fields.sessionPrice60Egp.placeholder")}
+                error={!!errors.sessionPrice60Egp}
+                {...register("sessionPrice60Egp")}
+              />
+              {errors.sessionPrice60Egp ? (
+                <p className="mt-1.5 text-xs text-error-500">{errors.sessionPrice60Egp.message}</p>
+              ) : null}
+            </div>
+
+            <div>
+              <Label htmlFor="sessionPrice60Usd">{t("profile.fields.sessionPrice60Usd.label")}</Label>
+              <Input
+                id="sessionPrice60Usd"
+                type="number"
+                step="0.01"
+                min="0"
+                placeholder={t("profile.fields.sessionPrice60Usd.placeholder")}
+                error={!!errors.sessionPrice60Usd}
+                {...register("sessionPrice60Usd")}
+              />
+              {errors.sessionPrice60Usd ? (
+                <p className="mt-1.5 text-xs text-error-500">{errors.sessionPrice60Usd.message}</p>
+              ) : null}
             </div>
           </div>
         </div>

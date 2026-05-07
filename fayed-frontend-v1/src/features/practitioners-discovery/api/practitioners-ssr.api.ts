@@ -36,6 +36,10 @@ export type BackendPublicPractitionerListItem = {
   practitionerGender: string | null;
   sessionPrice30: number | null;
   sessionPrice60: number | null;
+  sessionPrice30Egp: number | null;
+  sessionPrice30Usd: number | null;
+  sessionPrice60Egp: number | null;
+  sessionPrice60Usd: number | null;
   isOnlineNow: boolean;
   acceptsCoupon: boolean;
   acceptsPackage: boolean;
@@ -84,6 +88,20 @@ export function mapBackendListItemToUi(item: BackendPublicPractitionerListItem):
           : null,
     sessionPrice30: item.sessionPrice30 ?? null,
     sessionPrice60: item.sessionPrice60 ?? null,
+    sessionPrice30Egp: item.sessionPrice30Egp ?? null,
+    sessionPrice30Usd: item.sessionPrice30Usd ?? null,
+    sessionPrice60Egp: item.sessionPrice60Egp ?? null,
+    sessionPrice60Usd: item.sessionPrice60Usd ?? null,
+    pricing: {
+      session30: {
+        egp: item.sessionPrice30Egp ?? null,
+        usd: item.sessionPrice30Usd ?? null,
+      },
+      session60: {
+        egp: item.sessionPrice60Egp ?? null,
+        usd: item.sessionPrice60Usd ?? null,
+      },
+    },
     isOnlineNow: item.isOnlineNow ?? false,
     acceptsCoupon: item.acceptsCoupon ?? false,
     acceptsPackage: item.acceptsPackage ?? false,

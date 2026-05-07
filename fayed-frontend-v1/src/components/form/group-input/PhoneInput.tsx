@@ -15,17 +15,32 @@ interface PhoneInputProps {
 
 const PhoneInput: React.FC<PhoneInputProps> = ({
   countries,
-  placeholder = "+1 (555) 000-0000",
+  placeholder = "Phone number",
   onChange,
   selectPosition = "start", // Default position is 'start'
 }) => {
-  const [selectedCountry, setSelectedCountry] = useState<string>("US");
-  const [phoneNumber, setPhoneNumber] = useState<string>("+1");
+  const [selectedCountry, setSelectedCountry] = useState<string>(countries[0]?.code ?? "");
+  const [phoneNumber, setPhoneNumber] = useState<string>(countries[0]?.label ?? "");
 
   const countryCodes: Record<string, string> = countries.reduce(
     (acc, { code, label }) => ({ ...acc, [code]: label }),
     {}
   );
+
+  React.useEffect(() => {
+    if (countries.length === 0) {
+      return;
+    }
+
+    const selectedExists = countries.some((country) => country.code === selectedCountry);
+    if (selectedExists) {
+      return;
+    }
+
+    const firstCountry = countries[0];
+    setSelectedCountry(firstCountry.code);
+    setPhoneNumber(firstCountry.label);
+  }, [countries, selectedCountry]);
 
   const handleCountryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newCountry = e.target.value;

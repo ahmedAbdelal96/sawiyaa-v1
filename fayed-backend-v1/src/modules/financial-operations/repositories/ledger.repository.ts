@@ -47,6 +47,55 @@ export class LedgerRepository {
     });
   }
 
+  findByReference(input: {
+    referenceType: string;
+    referenceId: string;
+    paymentId?: string | null;
+    sessionId?: string | null;
+    tx?: Prisma.TransactionClient;
+  }) {
+    return this.getDb(input.tx).ledgerEntry.findMany({
+      where: {
+        referenceType: input.referenceType,
+        referenceId: input.referenceId,
+        paymentId: input.paymentId ?? undefined,
+        sessionId: input.sessionId ?? undefined,
+      },
+      orderBy: [{ createdAt: 'asc' }],
+    });
+  }
+
+  findLegacyPackageEarningEntriesBySessionIds(input: {
+    sessionIds: string[];
+    tx?: Prisma.TransactionClient;
+  }) {
+    if (input.sessionIds.length === 0) {
+      return Promise.resolve([]);
+    }
+
+    return this.getDb(input.tx).ledgerEntry.findMany({
+      where: {
+        sessionId: {
+          in: input.sessionIds,
+        },
+        entryType: LedgerEntryType.PRACTITIONER_EARNING,
+        direction: 'CREDIT',
+        balanceBucket: WalletBalanceBucket.AVAILABLE,
+      },
+      select: {
+        id: true,
+        sessionId: true,
+        paymentId: true,
+        referenceType: true,
+        referenceId: true,
+        amount: true,
+        currencyCode: true,
+        createdAt: true,
+      },
+      orderBy: [{ createdAt: 'asc' }],
+    });
+  }
+
   listPractitionerLedgerEntries(input: {
     practitionerId: string;
     entryType?: LedgerEntryType;
@@ -118,8 +167,11 @@ export class LedgerRepository {
     });
   }
 
-  aggregatePractitionerBalances(practitionerId: string) {
-    return this.prisma.ledgerEntry.groupBy({
+  aggregatePractitionerBalances(
+    practitionerId: string,
+    tx?: Prisma.TransactionClient,
+  ) {
+    return this.getDb(tx).ledgerEntry.groupBy({
       by: ['currencyCode', 'balanceBucket', 'direction', 'entryType'],
       where: {
         practitionerId,
@@ -136,8 +188,9 @@ export class LedgerRepository {
   listEligibleLedgerEntriesForSettlement(input: {
     currencyCode: string;
     effectiveAtLte: Date;
+    tx?: Prisma.TransactionClient;
   }) {
-    return this.prisma.ledgerEntry.findMany({
+    return this.getDb(input.tx).ledgerEntry.findMany({
       where: {
         practitionerId: {
           not: null,

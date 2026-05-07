@@ -1,9 +1,87 @@
 import { Injectable } from '@nestjs/common';
-import { Prisma, SessionProvider, SessionStatus } from '@prisma/client';
+import {
+  Prisma,
+  SessionMode,
+  SessionProvider,
+  SessionStatus,
+} from '@prisma/client';
 import { PrismaService } from '@common/prisma/prisma.service';
 import { AdminSessionsSortDto } from '../dto/list-admin-sessions.dto';
 
 type DbClient = PrismaService | Prisma.TransactionClient;
+
+const sessionJoinNotificationCandidateSelect = {
+  id: true,
+  status: true,
+  sessionMode: true,
+  joinOpenAt: true,
+  scheduledStartAt: true,
+  scheduledEndAt: true,
+  provider: true,
+  providerRoomId: true,
+  providerSessionRef: true,
+  packagePurchaseId: true,
+  packageSessionIndex: true,
+  packageSessionCount: true,
+  packagePurchase: {
+    select: {
+      id: true,
+      packagePlanId: true,
+      packagePlan: {
+        select: {
+          id: true,
+          code: true,
+          title: true,
+          discountPercent: true,
+        },
+      },
+    },
+  },
+  patient: {
+    select: {
+      user: {
+        select: {
+          id: true,
+          defaultLocale: true,
+          emails: {
+            where: {
+              isPrimary: true,
+            },
+            take: 1,
+            select: {
+              email: true,
+              isVerified: true,
+            },
+          },
+        },
+      },
+    },
+  },
+  practitioner: {
+    select: {
+      user: {
+        select: {
+          id: true,
+          defaultLocale: true,
+          emails: {
+            where: {
+              isPrimary: true,
+            },
+            take: 1,
+            select: {
+              email: true,
+              isVerified: true,
+            },
+          },
+        },
+      },
+    },
+  },
+} as const;
+
+export type SessionJoinNotificationCandidate = Prisma.SessionGetPayload<{
+  select: typeof sessionJoinNotificationCandidateSelect;
+}>;
 
 @Injectable()
 export class SessionRepository {
@@ -23,8 +101,8 @@ export class SessionRepository {
     });
   }
 
-  findById(sessionId: string) {
-    return this.prisma.session.findUnique({
+  findById(sessionId: string, tx?: Prisma.TransactionClient) {
+    return this.getDb(tx).session.findUnique({
       where: { id: sessionId },
       include: this.sessionInclude,
     });
@@ -70,6 +148,43 @@ export class SessionRepository {
     });
   }
 
+  listJoinNotificationCandidates(input: {
+    now: Date;
+    windowStart: Date;
+    take: number;
+  }): Promise<SessionJoinNotificationCandidate[]> {
+    return this.prisma.session.findMany({
+      where: {
+        sessionMode: SessionMode.VIDEO,
+        status: {
+          in: [
+            SessionStatus.CONFIRMED,
+            SessionStatus.UPCOMING,
+            SessionStatus.READY_TO_JOIN,
+          ],
+        },
+        joinOpenAt: {
+          not: null,
+          lte: input.now,
+        },
+        scheduledStartAt: {
+          not: null,
+        },
+        scheduledEndAt: {
+          not: null,
+          gte: input.windowStart,
+        },
+      },
+      orderBy: [
+        { joinOpenAt: 'asc' },
+        { scheduledStartAt: 'asc' },
+        { createdAt: 'asc' },
+      ],
+      take: input.take,
+      select: sessionJoinNotificationCandidateSelect,
+    });
+  }
+
   listPatientSessions(input: {
     patientId: string;
     status?: SessionStatus;
@@ -93,16 +208,125 @@ export class SessionRepository {
     ]);
   }
 
+  listPendingPaymentSessionsDueForExpiry(input: { now: Date; take: number }) {
+    return this.prisma.session.findMany({
+      where: {
+        status: SessionStatus.PENDING_PAYMENT,
+        expiresAt: {
+          lte: input.now,
+        },
+      },
+      orderBy: [{ expiresAt: 'asc' }, { createdAt: 'asc' }],
+      take: input.take,
+      select: {
+        id: true,
+        sessionCode: true,
+        expiresAt: true,
+      },
+    });
+  }
+
+  async summarizePatientSessions(patientId: string) {
+    const [totalItems, grouped] = await Promise.all([
+      this.prisma.session.count({ where: { patientId } }),
+      this.prisma.session.groupBy({
+        by: ['status'],
+        where: { patientId },
+        _count: { _all: true },
+      }),
+    ]);
+
+    const counts = grouped.reduce<Record<SessionStatus, number>>(
+      (acc, row) => {
+        acc[row.status] = row._count._all;
+        return acc;
+      },
+      {} as Record<SessionStatus, number>,
+    );
+
+    const getCount = (...statuses: SessionStatus[]) =>
+      statuses.reduce((sum, status) => sum + (counts[status] ?? 0), 0);
+
+    return {
+      totalItems,
+      pendingPayment: counts[SessionStatus.PENDING_PAYMENT] ?? 0,
+      pendingPractitionerResponse:
+        counts[SessionStatus.PENDING_PRACTITIONER_RESPONSE] ?? 0,
+      confirmed: counts[SessionStatus.CONFIRMED] ?? 0,
+      upcoming: counts[SessionStatus.UPCOMING] ?? 0,
+      readyToJoin: counts[SessionStatus.READY_TO_JOIN] ?? 0,
+      inProgress: counts[SessionStatus.IN_PROGRESS] ?? 0,
+      completed: counts[SessionStatus.COMPLETED] ?? 0,
+      cancelled: counts[SessionStatus.CANCELLED] ?? 0,
+      noShow: counts[SessionStatus.NO_SHOW] ?? 0,
+      expired: counts[SessionStatus.EXPIRED] ?? 0,
+      refundPending: counts[SessionStatus.REFUND_PENDING] ?? 0,
+      refunded: counts[SessionStatus.REFUNDED] ?? 0,
+      actionRequired: getCount(
+        SessionStatus.PENDING_PAYMENT,
+        SessionStatus.PENDING_PRACTITIONER_RESPONSE,
+        SessionStatus.READY_TO_JOIN,
+      ),
+      active: getCount(
+        SessionStatus.CONFIRMED,
+        SessionStatus.UPCOMING,
+        SessionStatus.READY_TO_JOIN,
+        SessionStatus.IN_PROGRESS,
+      ),
+      history: getCount(
+        SessionStatus.COMPLETED,
+        SessionStatus.CANCELLED,
+        SessionStatus.NO_SHOW,
+        SessionStatus.EXPIRED,
+        SessionStatus.REFUND_PENDING,
+        SessionStatus.REFUNDED,
+      ),
+      paymentExpired: counts[SessionStatus.EXPIRED] ?? 0,
+    };
+  }
+
   listPractitionerSessions(input: {
     practitionerId: string;
     status?: SessionStatus;
+    query?: string;
+    scheduledFrom?: Date;
+    scheduledTo?: Date;
     skip: number;
     take: number;
   }) {
     const where: Prisma.SessionWhereInput = {
       practitionerId: input.practitionerId,
-      status: input.status,
     };
+    const andFilters: Prisma.SessionWhereInput[] = [];
+
+    if (input.status) {
+      andFilters.push({ status: input.status });
+    }
+
+    if (input.query?.trim()) {
+      andFilters.push({
+        sessionCode: {
+          contains: input.query.trim(),
+          mode: 'insensitive',
+        },
+      });
+    }
+
+    const scheduledFilter: Prisma.DateTimeFilter = {};
+    if (input.scheduledFrom) {
+      scheduledFilter.gte = input.scheduledFrom;
+    }
+    if (input.scheduledTo) {
+      scheduledFilter.lte = input.scheduledTo;
+    }
+
+    if (Object.keys(scheduledFilter).length > 0) {
+      andFilters.push({ scheduledStartAt: scheduledFilter });
+    }
+
+    if (andFilters.length > 0) {
+      where.AND = andFilters;
+    }
 
     return Promise.all([
       this.prisma.session.findMany({
@@ -219,12 +443,28 @@ export class SessionRepository {
     });
   }
 
+  updateRuntimeIfMissing(
+    sessionId: string,
+    data: Prisma.SessionUncheckedUpdateInput,
+    tx?: Prisma.TransactionClient,
+  ) {
+    return this.getDb(tx).session.updateMany({
+      where: {
+        id: sessionId,
+        providerRoomId: null,
+        providerSessionRef: null,
+      },
+      data,
+    });
+  }
+
   listSessionsInRangeForPractitioner(
     practitionerId: string,
     startsBefore: Date,
     endsAfter: Date,
+    tx?: Prisma.TransactionClient,
   ) {
-    return this.prisma.session.findMany({
+    return this.getDb(tx).session.findMany({
       where: {
         practitionerId,
         scheduledStartAt: {
@@ -241,12 +481,41 @@ export class SessionRepository {
     });
   }
 
+  expirePendingPaymentSessionsInRangeForPractitioner(input: {
+    practitionerId: string;
+    startsBefore: Date;
+    endsAfter: Date;
+    now: Date;
+    tx?: Prisma.TransactionClient;
+  }) {
+    return this.getDb(input.tx).session.updateMany({
+      where: {
+        practitionerId: input.practitionerId,
+        scheduledStartAt: {
+          lt: input.startsBefore,
+        },
+        scheduledEndAt: {
+          gt: input.endsAfter,
+        },
+        status: SessionStatus.PENDING_PAYMENT,
+        expiresAt: {
+          lte: input.now,
+        },
+      },
+      data: {
+        status: SessionStatus.EXPIRED,
+        expiredAt: input.now,
+      },
+    });
+  }
+
   listSessionsInRangeForPatient(
     patientId: string,
     startsBefore: Date,
     endsAfter: Date,
+    tx?: Prisma.TransactionClient,
   ) {
-    return this.prisma.session.findMany({
+    return this.getDb(tx).session.findMany({
       where: {
         patientId,
         scheduledStartAt: {
@@ -260,6 +529,34 @@ export class SessionRepository {
         },
       },
       include: this.sessionInclude,
+    });
+  }
+
+  expirePendingPaymentSessionsInRangeForPatient(input: {
+    patientId: string;
+    startsBefore: Date;
+    endsAfter: Date;
+    now: Date;
+    tx?: Prisma.TransactionClient;
+  }) {
+    return this.getDb(input.tx).session.updateMany({
+      where: {
+        patientId: input.patientId,
+        scheduledStartAt: {
+          lt: input.startsBefore,
+        },
+        scheduledEndAt: {
+          gt: input.endsAfter,
+        },
+        status: SessionStatus.PENDING_PAYMENT,
+        expiresAt: {
+          lte: input.now,
+        },
+      },
+      data: {
+        status: SessionStatus.EXPIRED,
+        expiredAt: input.now,
+      },
     });
   }
 
@@ -369,6 +666,20 @@ export class SessionRepository {
           select: {
             id: true,
             displayName: true,
+          },
+        },
+      },
+    },
+    packagePurchase: {
+      select: {
+        id: true,
+        packagePlanId: true,
+        packagePlan: {
+          select: {
+            id: true,
+            code: true,
+            title: true,
+            discountPercent: true,
           },
         },
       },

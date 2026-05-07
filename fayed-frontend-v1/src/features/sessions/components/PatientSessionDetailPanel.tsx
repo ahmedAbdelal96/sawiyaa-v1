@@ -6,6 +6,7 @@ import { Link } from "@/i18n/navigation";
 import {
   AlertCircle,
   CalendarDays,
+  CalendarClock,
   CheckCircle2,
   Clock,
   ExternalLink,
@@ -24,16 +25,22 @@ import {
   useResolvePatientSessionJoinContract,
 } from "../hooks/use-sessions";
 import {
-  buildTokenizedSessionRoomUrl,
+  buildProviderLaunchUrl,
   canPrepareSessionRuntime,
+  canLaunchProviderRuntime,
   getRuntimeBlockedReasonKey,
   getRuntimePreparedState,
   getRuntimeProvider,
   getRuntimeRoomName,
+  formatProviderDisplayName,
   hasSessionRuntimeAccess,
   isJoinWindowOpen,
 } from "../lib/session-runtime";
 import { dispatchOpenSessionChatInShell } from "@/features/messages-shell/lib/messages-shell-events";
+import PatientMoneyClarityPanel from "@/features/payments/components/PatientMoneyClarityPanel";
+import { canContinuePayment } from "@/features/payments/lib/payment-status";
+import { usePatientPayments } from "@/features/payments/hooks/use-payments";
+import PatientSessionNextStepsPanel from "./PatientSessionNextStepsPanel";
 import SessionStatusBadge from "./SessionStatusBadge";
 import type {
   SessionJoinItem,
@@ -42,15 +49,6 @@ import type {
 } from "../types/sessions.types";
 
 const CANCELLABLE_STATUSES: SessionStatus[] = ["CONFIRMED", "UPCOMING"];
-
-const ACTIVE_STATUSES: SessionStatus[] = [
-  "PENDING_PAYMENT",
-  "PENDING_PRACTITIONER_RESPONSE",
-  "CONFIRMED",
-  "UPCOMING",
-  "READY_TO_JOIN",
-  "IN_PROGRESS",
-];
 
 function formatDatetime(isoString: string | null, numLocale: string): string {
   if (!isoString) return "";
@@ -82,6 +80,7 @@ export default function PatientSessionDetailPanel({ sessionId }: Props) {
   const numLocale = locale === "ar" ? "ar-SA" : "en-US";
 
   const { data: session, isLoading, isError } = usePatientSession(sessionId);
+  const { data: paymentsData } = usePatientPayments({ limit: 20 });
   const cancelMutation = useCancelPatientSession();
   const previewCancellationMutation = usePreviewPatientSessionCancellation();
   const prepareMutation = usePreparePatientSessionRuntime();
@@ -126,7 +125,6 @@ export default function PatientSessionDetailPanel({ sessionId }: Props) {
   }
 
   const isCancellable = CANCELLABLE_STATUSES.includes(session.status);
-  const isActive = ACTIVE_STATUSES.includes(session.status);
   const hasRuntimeAccess = hasSessionRuntimeAccess(session.status);
   const paymentStateKey =
     session.status === "PENDING_PAYMENT"
@@ -144,18 +142,18 @@ export default function PatientSessionDetailPanel({ sessionId }: Props) {
                 session.status === "COMPLETED"
               ? "SECURED"
               : null;
-  const joinUrl =
-    joinResult?.canJoin && joinResult.roomUrl && joinResult.joinToken
-      ? buildTokenizedSessionRoomUrl(joinResult.roomUrl, joinResult.joinToken)
-      : null;
+  const sessionPayment = paymentsData?.items.find((payment) => payment.sessionId === session.id);
+  const hasActivePendingPayment = Boolean(sessionPayment && canContinuePayment(sessionPayment));
+  const joinUrl = buildProviderLaunchUrl(joinResult);
   const runtimePrepared = getRuntimePreparedState({ prepareResult, joinResult });
   const runtimeProvider = getRuntimeProvider({ prepareResult, joinResult });
   const runtimeRoomName = getRuntimeRoomName({ prepareResult, joinResult });
+  const runtimeProviderLabel = formatProviderDisplayName(runtimeProvider);
   const prepareAllowed = hasRuntimeAccess && !runtimePrepared && canPrepareSessionRuntime(session);
   const joinWindowOpen = isJoinWindowOpen(session);
   const shouldShowJoinCheck =
     hasRuntimeAccess &&
-    !(joinResult?.canJoin && joinUrl) &&
+    !(joinResult?.canJoin && canLaunchProviderRuntime(joinResult)) &&
     (joinWindowOpen ||
       session.status === "READY_TO_JOIN" ||
       session.status === "IN_PROGRESS" ||
@@ -170,7 +168,7 @@ export default function PatientSessionDetailPanel({ sessionId }: Props) {
     ? "unavailable"
     : session.status === "IN_PROGRESS"
       ? "liveNow"
-      : joinResult?.canJoin && joinUrl
+      : joinResult?.canJoin && canLaunchProviderRuntime(joinResult)
         ? "readyToJoin"
         : runtimePrepared
           ? "preparedWaiting"
@@ -250,6 +248,15 @@ export default function PatientSessionDetailPanel({ sessionId }: Props) {
                 <span className="text-text-muted">{t("detail.notScheduled")}</span>
               )}
             </div>
+            <div className="flex items-start gap-2">
+              <CalendarClock size={14} className="mt-0.5 shrink-0 text-text-muted" />
+              <div className="min-w-0">
+                <p className="text-xs font-medium text-text-muted">
+                  {t("detail.bookingStartedAt")}
+                </p>
+                <p>{formatDatetime(session.createdAt, numLocale)}</p>
+              </div>
+            </div>
             <div className="flex items-center gap-2">
               <Clock size={14} className="shrink-0 text-text-muted" />
               <span>{t("detail.duration", { n: session.durationMinutes })}</span>
@@ -273,7 +280,7 @@ export default function PatientSessionDetailPanel({ sessionId }: Props) {
             </p>
           </div>
 
-          {session.status === "PENDING_PAYMENT" && (
+          {session.status === "PENDING_PAYMENT" && hasActivePendingPayment && (
             <Link
               href={`/patient/sessions/${session.id}/pay` as never}
               className="inline-flex w-full items-center justify-center rounded-2xl bg-primary px-5 py-2.5 text-sm font-semibold text-white hover:bg-primary/90 sm:w-auto"
@@ -402,6 +409,10 @@ export default function PatientSessionDetailPanel({ sessionId }: Props) {
         )}
       </div>
 
+      {session.status === "COMPLETED" ? (
+        <PatientSessionNextStepsPanel session={session} />
+      ) : null}
+
       <div className="rounded-2xl border border-border-light bg-surface-primary p-5 dark:bg-white/5">
         <h3 className="mb-2 text-sm font-semibold text-text-primary dark:text-white/90">
           {t("detail.liveFlow.heading")}
@@ -419,11 +430,7 @@ export default function PatientSessionDetailPanel({ sessionId }: Props) {
               {t("detail.liveFlow.facts.provider")}
             </p>
             <p className="mt-1 text-sm font-medium text-text-primary dark:text-white/90">
-              {runtimeProvider
-                ? t(
-                    `detail.liveFlow.provider.${runtimeProvider}` as Parameters<typeof t>[0],
-                  )
-                : t("detail.liveFlow.provider.NONE")}
+              {runtimeProviderLabel ?? t("detail.liveFlow.provider.NONE")}
             </p>
           </div>
           <div className="rounded-2xl bg-surface-tertiary px-4 py-3 text-sm dark:bg-white/5">
@@ -500,7 +507,7 @@ export default function PatientSessionDetailPanel({ sessionId }: Props) {
             )}
           </p>
 
-          {paymentStateKey === "PENDING_PAYMENT" && (
+          {paymentStateKey === "PENDING_PAYMENT" && hasActivePendingPayment && (
             <div className="mt-4">
               <Link
                 href={`/patient/sessions/${session.id}/pay` as never}
@@ -513,7 +520,23 @@ export default function PatientSessionDetailPanel({ sessionId }: Props) {
         </div>
       )}
 
-      <div className="rounded-2xl border border-border-light bg-surface-primary p-5 dark:bg-white/5">
+      {paymentStateKey ? (
+        <PatientMoneyClarityPanel
+          eyebrow={tPayments("sessionMoney.eyebrow")}
+          title={tPayments("sessionMoney.heading")}
+          note={tPayments(`sessionMoney.notes.${paymentStateKey}` as Parameters<
+            typeof tPayments
+          >[0])}
+          actions={[
+            { label: tPayments("sessionMoney.actions.wallet"), href: "/patient/wallet" },
+            { label: tPayments("sessionMoney.actions.history"), href: "/patient/payments", tone: "primary" },
+          ]}
+          variant="soft"
+        />
+      ) : null}
+
+      {session.status !== "COMPLETED" ? (
+        <div className="rounded-2xl border border-border-light bg-surface-primary p-5 dark:bg-white/5">
         <h3 className="mb-2 text-sm font-semibold text-text-primary dark:text-white/90">
           {t("detail.chatCard.heading")}
         </h3>
@@ -551,7 +574,8 @@ export default function PatientSessionDetailPanel({ sessionId }: Props) {
             </button>
           )}
         </div>
-      </div>
+        </div>
+      ) : null}
 
       {cancelFeedbackKey === "SUCCESS" ? (
         <div className="rounded-2xl border border-success-200 bg-success-50 px-4 py-3 text-sm text-success-700 dark:border-success-500/30 dark:bg-success-500/10 dark:text-success-300">
@@ -577,17 +601,6 @@ export default function PatientSessionDetailPanel({ sessionId }: Props) {
           {cancelMutation.isError && (
             <p className="mt-3 text-xs text-red-500">{t("detail.cancelError")}</p>
           )}
-        </div>
-      )}
-
-      {!isActive && (
-        <div className="pt-1">
-          <Link
-            href="/practitioners"
-            className="inline-flex w-full items-center justify-center rounded-2xl border border-border-light px-5 py-2.5 text-sm text-text-secondary hover:bg-surface-tertiary dark:hover:bg-white/5 sm:w-auto"
-          >
-            {t("detail.bookNewSlot")}
-          </Link>
         </div>
       )}
 

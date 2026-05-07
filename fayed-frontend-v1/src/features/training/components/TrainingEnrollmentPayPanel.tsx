@@ -2,8 +2,9 @@
 
 import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
-import { AlertCircle, ExternalLink, ShieldCheck } from "lucide-react";
+import { AlertCircle, ExternalLink } from "lucide-react";
 import { StateCard } from "@/components/shared/ContentStates";
+import PaymentCheckoutShell from "@/features/payments/components/PaymentCheckoutShell";
 import StripePaymentForm from "@/features/payments/components/StripePaymentForm";
 import { usePatientTrainingEnrollment } from "../hooks/use-training";
 import { formatTrainingAmount } from "./training-utils";
@@ -65,35 +66,51 @@ export default function TrainingEnrollmentPayPanel({ enrollmentId }: Props) {
     locale,
   );
 
+  const paymentSummary = (
+    <section className="rounded-[32px] border border-border-light bg-surface-primary p-6 dark:bg-white/5">
+      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
+        {t("patient.pay.summaryHeading")}
+      </p>
+      <p className="mt-2 text-lg font-semibold text-text-primary dark:text-white/95">
+        {enrollment.courseTitle}
+      </p>
+      <p className="mt-1 text-sm text-text-secondary">
+        {t("patient.pay.scheduleCode", { code: enrollment.scheduleCode })}
+      </p>
+      <p className="mt-4 text-sm font-medium text-text-primary dark:text-white/90">
+        {t("patient.pay.amount", { amount: amountLabel })}
+      </p>
+    </section>
+  );
+
+  const paymentSidebar = (
+    <>
+      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-text-muted">
+        {t("patient.pay.summaryHeading")}
+      </p>
+      <p className="mt-2 text-sm font-semibold text-text-primary dark:text-white/90">
+        {enrollment.courseTitle}
+      </p>
+      <p className="mt-1 text-xs text-text-secondary">
+        {t("patient.pay.scheduleCode", { code: enrollment.scheduleCode })}
+      </p>
+      <p className="mt-4 text-lg font-bold text-primary">{amountLabel}</p>
+      <p className="mt-2 rounded-2xl border border-border-light bg-surface-tertiary px-4 py-3 text-xs text-text-muted dark:bg-white/5">
+        {t("patient.pay.note")}
+      </p>
+    </>
+  );
+
   return (
-    <div className="mx-auto max-w-3xl space-y-5">
-      <section className="rounded-[32px] border border-primary/15 bg-primary-light p-6 dark:border-primary/20 dark:bg-primary/10">
-        <div className="flex items-start gap-2">
-          <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-          <div>
-            <h1 className="text-lg font-semibold text-text-primary dark:text-white/95">
-              {t("patient.pay.heading")}
-            </h1>
-            <p className="mt-2 text-sm text-text-secondary">{t("patient.pay.note")}</p>
-          </div>
-        </div>
-      </section>
-
-      <section className="rounded-[32px] border border-border-light bg-surface-primary p-6 dark:bg-white/5">
-        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
-          {t("patient.pay.summaryHeading")}
-        </p>
-        <p className="mt-2 text-lg font-semibold text-text-primary dark:text-white/95">
-          {enrollment.courseTitle}
-        </p>
-        <p className="mt-1 text-sm text-text-secondary">
-          {t("patient.pay.scheduleCode", { code: enrollment.scheduleCode })}
-        </p>
-        <p className="mt-4 text-sm font-medium text-text-primary dark:text-white/90">
-          {t("patient.pay.amount", { amount: amountLabel })}
-        </p>
-      </section>
-
+    <PaymentCheckoutShell
+      backHref={`/patient/training/${enrollment.id}`}
+      backLabel={t("patient.pay.backToEnrollment")}
+      eyebrow={t("patient.pay.heading")}
+      title={t("patient.pay.heading")}
+      description={t("patient.pay.note")}
+      summary={paymentSummary}
+      sidebar={paymentSidebar}
+    >
       {enrollment.payment.checkoutUrl ? (
         <section className="rounded-[32px] border border-border-light bg-surface-primary p-6 dark:bg-white/5">
           <h2 className="text-sm font-semibold text-text-primary dark:text-white/95">
@@ -140,6 +157,6 @@ export default function TrainingEnrollmentPayPanel({ enrollmentId }: Props) {
           }}
         />
       ) : null}
-    </div>
+    </PaymentCheckoutShell>
   );
 }

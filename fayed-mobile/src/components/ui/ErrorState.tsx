@@ -46,9 +46,13 @@ export const ErrorState = ({
 
 const styles = StyleSheet.create({
   container: {
-    padding: 24,
+    width: "100%",
+    maxWidth: 360,
+    paddingHorizontal: 24,
+    paddingVertical: 28,
     alignItems: 'center',
     justifyContent: 'center',
+    alignSelf: "center",
   },
   fullScreen: {
     flex: 1,
@@ -65,10 +69,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: 'center',
     marginBottom: 24,
-    maxWidth: '80%',
+    maxWidth: '100%',
+    lineHeight: 22,
   },
   buttonContainer: {
     width: '100%',
-    maxWidth: 200,
   },
 });

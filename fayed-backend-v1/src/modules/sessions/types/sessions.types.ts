@@ -7,6 +7,7 @@ export interface SessionListItemViewModel {
   id: string;
   sessionCode: string;
   status: SessionStatus;
+  createdAt: string;
   scheduledStartAt: string | null;
   scheduledEndAt: string | null;
   durationMinutes: number;

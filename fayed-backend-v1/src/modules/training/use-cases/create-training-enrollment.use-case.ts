@@ -16,6 +16,7 @@ import {
 import { PrismaService } from '@common/prisma/prisma.service';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
 import { PaymentRepository } from '@modules/payments/repositories/payment.repository';
+import { PaymentGeoContextService } from '@modules/payments/services/payment-geo-context.service';
 import { PaymentProviderRegistryService } from '@modules/payments/services/payment-provider-registry.service';
 import { PaymentProviderResolverService } from '@modules/payments/services/payment-provider-resolver.service';
 import { ValidatePaymentStatusTransitionService } from '@modules/payments/services/validate-payment-status-transition.service';
@@ -30,6 +31,7 @@ export class CreateTrainingEnrollmentUseCase {
     private readonly prisma: PrismaService,
     private readonly trainingRepository: TrainingRepository,
     private readonly paymentRepository: PaymentRepository,
+    private readonly paymentGeoContextService: PaymentGeoContextService,
     private readonly paymentProviderResolverService: PaymentProviderResolverService,
     private readonly paymentProviderRegistryService: PaymentProviderRegistryService,
     private readonly validatePaymentStatusTransitionService: ValidatePaymentStatusTransitionService,
@@ -122,6 +124,21 @@ export class CreateTrainingEnrollmentUseCase {
       patientCountryIsoCode: patient.country?.isoCode ?? null,
     });
     const providerAdapter = this.paymentProviderRegistryService.get(provider);
+    const countrySnapshot = this.paymentGeoContextService.buildCountrySnapshot({
+      declaredCountryCode: patient.country?.isoCode ?? null,
+      resolvedCountryCode: patient.country?.isoCode ?? null,
+      countrySource: 'ACCOUNT',
+      countryMismatch: false,
+      phoneCountryCode: null,
+      operatingCountryCode: null,
+      checkoutCountryCode: patient.country?.isoCode ?? null,
+      pricingCurrencyCode: pricing.currencyCode,
+      pricingMarketType:
+        pricing.currencyCode === 'EGP'
+          ? MarketType.LOCAL
+          : MarketType.CROSS_BORDER,
+      provider,
+    });
 
     const enrollment =
       existing ??
@@ -176,10 +193,32 @@ export class CreateTrainingEnrollmentUseCase {
             courseId: schedule.course.id,
             scheduleId: schedule.id,
             couponCode: input.payload.couponCode ?? null,
+            countrySnapshot,
           },
         },
         tx,
       );
+
+      await tx.trainingEnrollmentPaymentAttempt.create({
+        data: {
+          enrollmentId: enrollment.id,
+          paymentId: createdPayment.id,
+          provider,
+          status: PaymentStatus.CREATED,
+          amountSubtotal: pricing.amount,
+          amountDiscount: '0',
+          amountTotal: pricing.amount,
+          currencyCode: pricing.currencyCode,
+          metadataJson: {
+            source: 'training-enrollment-payment-initiation',
+            enrollmentId: enrollment.id,
+            courseId: schedule.course.id,
+            scheduleId: schedule.id,
+            couponCode: input.payload.couponCode ?? null,
+            countrySnapshot,
+          },
+        },
+      });
 
       await this.paymentRepository.createEvent(
         {
@@ -201,14 +240,77 @@ export class CreateTrainingEnrollmentUseCase {
       return createdPayment;
     });
 
-    const providerResult = await providerAdapter.initiateSessionPayment({
-      paymentId: payment.id,
-      amountMinor: this.toMinorUnits(pricing.amount),
-      currency: pricing.currencyCode,
-      description: `Training enrollment payment: ${schedule.scheduleCode}`,
-      sessionId: schedule.id,
-      patientEmail: patient.user.emails[0]?.email ?? null,
-    });
+    let providerResult:
+      | Awaited<ReturnType<typeof providerAdapter.initiateSessionPayment>>
+      | null = null;
+    try {
+      providerResult = await providerAdapter.initiateSessionPayment({
+        paymentId: payment.id,
+        amountMinor: this.toMinorUnits(pricing.amount),
+        currency: pricing.currencyCode,
+        description: `Training enrollment payment: ${schedule.scheduleCode}`,
+        sessionId: schedule.id,
+        patientEmail: patient.user.emails[0]?.email ?? null,
+      });
+    } catch (error) {
+      const failureReason =
+        error instanceof Error ? error.message : 'TRAINING_PAYMENT_PROVIDER_ERROR';
+      await this.prisma.$transaction(async (tx) => {
+        await this.paymentRepository.updateStatus(
+          payment.id,
+          {
+            status: PaymentStatus.FAILED,
+            failedAt: new Date(),
+            metadataJson: {
+              source: 'training-enrollment-payment-initiation',
+              enrollmentId: enrollment.id,
+              courseId: schedule.course.id,
+              scheduleId: schedule.id,
+              countrySnapshot,
+              failureReason,
+            },
+          },
+          tx,
+        );
+
+        await this.paymentRepository.createEvent(
+          {
+            paymentId: payment.id,
+            eventType: PaymentEventType.PAYMENT_FAILED,
+            payloadJson: {
+              source: 'training-enrollment-initiation',
+              enrollmentId: enrollment.id,
+              failureReason,
+            },
+          },
+          tx,
+        );
+
+        await this.trainingRepository.updateEnrollment(enrollment.id, {
+          paymentStatus: PaymentStatus.FAILED,
+        });
+
+        await tx.trainingEnrollmentPaymentAttempt.update({
+          where: {
+            paymentId: payment.id,
+          },
+          data: {
+            status: PaymentStatus.FAILED,
+            failedAt: new Date(),
+            failureReason,
+          },
+        });
+      });
+
+      throw error;
+    }
+
+    if (!providerResult) {
+      throw new BadRequestException({
+        messageKey: 'training.errors.paymentProviderUnavailable',
+        error: 'TRAINING_PAYMENT_PROVIDER_UNAVAILABLE',
+      });
+    }
 
     this.validatePaymentStatusTransitionService.assertCanTransition(
       payment.status,
@@ -230,11 +332,36 @@ export class CreateTrainingEnrollmentUseCase {
             enrollmentId: enrollment.id,
             courseId: schedule.course.id,
             scheduleId: schedule.id,
+            countrySnapshot,
             ...(providerResult.metadata ?? {}),
           },
         },
-        tx,
-      );
+          tx,
+        );
+
+      await tx.trainingEnrollmentPaymentAttempt.update({
+        where: {
+          paymentId: payment.id,
+        },
+        data: {
+          status: providerResult.status,
+          providerPaymentRef: providerResult.providerPaymentRef,
+          providerOrderRef: providerResult.providerOrderRef ?? null,
+          providerCustomerRef: providerResult.providerCustomerRef ?? null,
+          checkoutUrl: providerResult.checkoutUrl ?? null,
+          clientSecret: providerResult.clientSecret ?? null,
+          failureReason: null,
+          metadataJson: {
+            source: 'training-enrollment-payment-initiation',
+            enrollmentId: enrollment.id,
+            courseId: schedule.course.id,
+            scheduleId: schedule.id,
+            couponCode: input.payload.couponCode ?? null,
+            countrySnapshot,
+            ...(providerResult.metadata ?? {}),
+          },
+        },
+      });
 
       await this.paymentRepository.createEvent(
         {

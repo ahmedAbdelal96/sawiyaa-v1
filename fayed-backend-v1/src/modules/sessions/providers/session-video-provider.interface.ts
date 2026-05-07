@@ -1,12 +1,18 @@
 import { SessionProvider } from '@prisma/client';
 
 export interface SessionVideoRoomResult {
-  roomName: string;
+  roomId: string;
   roomUrl: string;
+  roomName?: string;
+  raw?: unknown;
 }
 
 export interface SessionVideoJoinTokenResult {
   token: string;
+  expiresAt?: Date | string | null;
+  joinMode?: 'redirect_url' | 'embedded' | 'external_url';
+  payload?: Record<string, unknown>;
+  raw?: unknown;
 }
 
 export interface SessionVideoProviderAdapter {
@@ -19,7 +25,7 @@ export interface SessionVideoProviderAdapter {
   }): Promise<SessionVideoRoomResult>;
 
   createJoinToken(input: {
-    roomName: string;
+    roomId: string;
     userId: string;
     displayName: string | null;
     actorType: 'PATIENT' | 'PRACTITIONER';

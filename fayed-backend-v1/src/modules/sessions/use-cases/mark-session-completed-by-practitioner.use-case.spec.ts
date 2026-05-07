@@ -5,6 +5,7 @@ import { SessionPractitionerRepository } from '../repositories/session-practitio
 import { SessionRepository } from '../repositories/session.repository';
 import { ValidateSessionStatusTransitionService } from '../services/validate-session-status-transition.service';
 import { MarkSessionCompletedByPractitionerUseCase } from './mark-session-completed-by-practitioner.use-case';
+import { PostPackageSessionLedgerEntriesUseCase } from '@modules/financial-operations/use-cases/post-package-session-ledger-entries.use-case';
 
 describe('MarkSessionCompletedByPractitionerUseCase', () => {
   it('marks owned session as completed and emits completion event', async () => {
@@ -16,11 +17,17 @@ describe('MarkSessionCompletedByPractitionerUseCase', () => {
       findById: jest.fn().mockResolvedValue({
         id: 'session-1',
         status: SessionStatus.IN_PROGRESS,
+        sessionCode: 'SES-2026-000001',
+        createdAt: new Date('2026-01-01T00:00:00.000Z'),
+        updatedAt: new Date('2026-01-01T00:00:00.000Z'),
         practitioner: { id: 'practitioner-1' },
       }),
       updateStatus: jest.fn().mockResolvedValue({
         id: 'session-1',
         status: SessionStatus.COMPLETED,
+        sessionCode: 'SES-2026-000001',
+        createdAt: new Date('2026-01-01T00:00:00.000Z'),
+        updatedAt: new Date('2026-01-01T00:00:00.000Z'),
         scheduledStartAt: null,
         scheduledEndAt: null,
         durationMinutes: 60,
@@ -48,6 +55,9 @@ describe('MarkSessionCompletedByPractitionerUseCase', () => {
     const transitionService = {
       assertCanTransition: jest.fn(),
     } as unknown as ValidateSessionStatusTransitionService;
+    const postPackageSessionLedgerEntriesUseCase = {
+      execute: jest.fn().mockResolvedValue({ wasAlreadyPosted: true }),
+    } as unknown as PostPackageSessionLedgerEntriesUseCase;
 
     const prisma = {
       $transaction: jest.fn().mockImplementation(async (fn: never) => fn({})),
@@ -59,6 +69,7 @@ describe('MarkSessionCompletedByPractitionerUseCase', () => {
       sessionRepository,
       new SessionMapper(),
       transitionService,
+      postPackageSessionLedgerEntriesUseCase,
     );
 
     const result = await useCase.execute({
@@ -75,6 +86,13 @@ describe('MarkSessionCompletedByPractitionerUseCase', () => {
     expect(
       (sessionRepository.createEvent as jest.Mock).mock.calls[0][0].eventType,
     ).toBe(SessionEventType.SESSION_COMPLETED);
+    expect(
+      (postPackageSessionLedgerEntriesUseCase.execute as jest.Mock).mock.calls[0][0],
+    ).toEqual(
+      expect.objectContaining({
+        sessionId: 'session-1',
+      }),
+    );
   });
 
   it('rejects non-owned session mutation', async () => {
@@ -86,6 +104,9 @@ describe('MarkSessionCompletedByPractitionerUseCase', () => {
       findById: jest.fn().mockResolvedValue({
         id: 'session-1',
         status: SessionStatus.IN_PROGRESS,
+        sessionCode: 'SES-2026-000001',
+        createdAt: new Date('2026-01-01T00:00:00.000Z'),
+        updatedAt: new Date('2026-01-01T00:00:00.000Z'),
         practitioner: { id: 'practitioner-2' },
       }),
     } as unknown as SessionRepository;
@@ -93,6 +114,9 @@ describe('MarkSessionCompletedByPractitionerUseCase', () => {
     const transitionService = {
       assertCanTransition: jest.fn(),
     } as unknown as ValidateSessionStatusTransitionService;
+    const postPackageSessionLedgerEntriesUseCase = {
+      execute: jest.fn().mockResolvedValue({ wasAlreadyPosted: true }),
+    } as unknown as PostPackageSessionLedgerEntriesUseCase;
 
     const prisma = {
       $transaction: jest.fn(),
@@ -104,6 +128,7 @@ describe('MarkSessionCompletedByPractitionerUseCase', () => {
       sessionRepository,
       new SessionMapper(),
       transitionService,
+      postPackageSessionLedgerEntriesUseCase,
     );
 
     await expect(

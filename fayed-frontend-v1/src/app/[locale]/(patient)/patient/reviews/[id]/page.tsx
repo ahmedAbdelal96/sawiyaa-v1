@@ -20,7 +20,7 @@ export default async function PatientReviewDetailPage({ params }: Props) {
   setRequestLocale(locale);
 
   return (
-    <div className="px-4 py-8">
+    <div className="app-max-content mx-auto px-4 py-8">
       <PatientReviewDetailScreen reviewId={id} />
     </div>
   );

@@ -17,6 +17,7 @@ import { enPaymentsCatalog } from './payments.catalog';
 import { enPresenceCatalog } from './presence.catalog';
 import { enPractitionersCatalog } from './practitioners.catalog';
 import { enReviewsCatalog } from './reviews.catalog';
+import { enRefundPoliciesCatalog } from './refund-policies.catalog';
 import { enSessionsCatalog } from './sessions.catalog';
 import { enSettingsCatalog } from './settings.catalog';
 import { enSpecialtiesCatalog } from './specialties.catalog';
@@ -46,6 +47,7 @@ export const enCatalog = {
   presence: enPresenceCatalog,
   practitioners: enPractitionersCatalog,
   reviews: enReviewsCatalog,
+  refundPolicies: enRefundPoliciesCatalog,
   sessions: enSessionsCatalog,
   settings: enSettingsCatalog,
   specialties: enSpecialtiesCatalog,

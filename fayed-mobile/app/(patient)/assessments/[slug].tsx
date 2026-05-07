@@ -14,6 +14,7 @@ import {
 } from "../../../src/components/ui";
 import { useTheme } from "../../../src/providers/ThemeProvider";
 import { useGetAssessmentDefinition } from "../../../src/features/patient/assessments/api";
+import { getAssessmentCompatibility } from "../../../src/features/patient/assessments/compatibility";
 
 export default function AssessmentDetailScreen() {
   const router = useRouter();
@@ -43,6 +44,10 @@ export default function AssessmentDetailScreen() {
   }
 
   const item = query.data.data.item;
+  const compatibility = getAssessmentCompatibility(item);
+  const compatibilityMessage = compatibility.reason
+    ? t(`assessments.detail.compatibility.${compatibility.reason}` as never)
+    : null;
 
   return (
     <Screen bg="background">
@@ -128,6 +133,40 @@ export default function AssessmentDetailScreen() {
             <View
               style={[
                 styles.infoIcon,
+                {
+                  backgroundColor: compatibility.isCompatible
+                    ? theme.colors.primaryLight
+                    : theme.colors.surfaceSecondary,
+                },
+              ]}
+            >
+              <Ionicons
+                name={
+                  compatibility.isCompatible
+                    ? "checkmark-circle-outline"
+                    : "alert-circle-outline"
+                }
+                size={22}
+                color={theme.colors.primary}
+              />
+            </View>
+            <Text weight="bold" style={styles.infoTitle}>
+              {t("assessments.detail.mobileAvailabilityTitle")}
+            </Text>
+          </View>
+          <Text color={theme.colors.textSecondary} style={styles.infoBody}>
+            {compatibility.isCompatible
+              ? t("assessments.detail.mobileAvailabilityReady")
+              : (compatibilityMessage ??
+                t("assessments.detail.mobileAvailabilityUnavailable"))}
+          </Text>
+        </Card>
+
+        <Card variant="elevated" style={styles.infoCard} padding="lg">
+          <View style={styles.infoHeader}>
+            <View
+              style={[
+                styles.infoIcon,
                 { backgroundColor: theme.colors.primaryLight },
               ]}
             >
@@ -172,10 +211,15 @@ export default function AssessmentDetailScreen() {
 
       <View style={styles.footer}>
         <Button
-          title={t("assessments.detail.start")}
+          title={
+            compatibility.isCompatible
+              ? t("assessments.detail.start")
+              : t("assessments.detail.startUnavailable")
+          }
           onPress={() =>
             router.push(`/(patient)/assessments/${item.slug}/questions`)
           }
+          disabled={!compatibility.isCompatible}
           style={styles.primaryAction}
         />
       </View>

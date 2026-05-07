@@ -10,12 +10,30 @@ import {
   MaxLength,
   Min,
 } from 'class-validator';
+import { AdminPractitionerApplicationKind } from '../types/practitioner-applications-admin.types';
+import { AdminPractitionerApplicationListView } from '../types/practitioner-applications-admin.types';
 
 /**
  * Query DTO for admin list endpoint.
  * Phase 1 keeps filtering/pagination lightweight and deterministic.
  */
 export class ListPractitionerApplicationsDto {
+  @ApiPropertyOptional({
+    enum: AdminPractitionerApplicationListView,
+    description: 'Optional list view for active queue or history',
+  })
+  @IsOptional()
+  @IsEnum(AdminPractitionerApplicationListView)
+  view?: AdminPractitionerApplicationListView;
+
+  @ApiPropertyOptional({
+    enum: AdminPractitionerApplicationKind,
+    description: 'Optional kind filter for new applications or edit requests',
+  })
+  @IsOptional()
+  @IsEnum(AdminPractitionerApplicationKind)
+  kind?: AdminPractitionerApplicationKind;
+
   @ApiPropertyOptional({
     enum: PractitionerApplicationStatus,
     description: 'Optional status filter for practitioner applications',

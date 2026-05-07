@@ -11,7 +11,15 @@ export class ListAdminTrainingsUseCase {
   ) {}
 
   async execute(query: ListAdminTrainingsDto) {
-    const [items, totalItems] = await this.trainingRepository.listAdminCourses({
+    const [
+      items,
+      totalItems,
+      draftCount,
+      publishedCount,
+      archivedCount,
+      openForEnrollmentCount,
+      closedForEnrollmentCount,
+    ] = await this.trainingRepository.listAdminCourses({
       page: query.page,
       limit: query.limit,
       locale: query.locale,
@@ -30,6 +38,14 @@ export class ListAdminTrainingsUseCase {
         limit: query.limit,
         totalItems,
       }),
+      summary: {
+        total: totalItems,
+        draft: draftCount,
+        published: publishedCount,
+        archived: archivedCount,
+        openForEnrollment: openForEnrollmentCount,
+        closedForEnrollment: closedForEnrollmentCount,
+      },
     };
   }
 }

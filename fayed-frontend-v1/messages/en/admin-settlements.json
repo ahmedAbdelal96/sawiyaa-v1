@@ -1,16 +1,16 @@
 {
   "meta": {
-    "listTitle": "Practitioner payouts — Admin",
-    "listDescription": "Search a practitioner, review due payout information, record the payout, upload proof, and review payout history.",
-    "duesTitle": "Practitioner payouts — Admin",
-    "duesDescription": "Search a practitioner, review due payout information, record the payout, upload proof, and review payout history.",
-    "batchesTitle": "Settlement batches — Admin",
-    "batchesDescription": "Review generated settlement batches, their statuses, and open any batch to see its historical items.",
-    "payoutsTitle": "Payout operations — Admin",
-    "payoutsDescription": "Review recorded payout operations across the system.",
-    "detailTitle": "Legacy settlement batch — Admin",
-    "detailDescription": "Inspect a historical settlement batch and the legacy compatibility actions that remain available.",
-    "statementTitle": "Practitioner statement — Admin",
+    "listTitle": "Practitioner payouts",
+    "listDescription": "Review practitioner dues and create payout batches by period and currency.",
+    "duesTitle": "Practitioner dues",
+    "duesDescription": "Review practitioner dues, record the payout, and upload proof when needed.",
+    "batchesTitle": "Practitioner payout batches",
+    "batchesDescription": "Review payout batches by period and currency, and open any batch to see its details.",
+    "payoutsTitle": "Payout records",
+    "payoutsDescription": "Review recorded payout records across the system.",
+    "detailTitle": "Payout batch detail",
+    "detailDescription": "Review the batch snapshot and the admin actions available for it.",
+    "statementTitle": "Practitioner statement",
     "statementDescription": "Review the practitioner financial timeline and export it as a PDF-friendly statement."
   },
   "statement": {
@@ -20,7 +20,7 @@
     "eyebrow": "Statement",
     "title": "Practitioner account statement",
     "note": "Review one practitioner from the start of their activity, then export the filtered statement as PDF when needed.",
-    "back": "Back to settlements",
+    "back": "Back to practitioner payouts",
     "exportPdf": "Export PDF",
     "exportCsv": "Export CSV package",
     "exportCsvLoading": "Exporting...",
@@ -96,33 +96,41 @@
     "retry": "Try again"
   },
   "list": {
-    "eyebrow": "Payout operations",
-    "title": "Practitioner settlements",
-    "note": "Search a practitioner, review their account and due balance, then open a quick payout modal to settle them in one flow.",
-    "totalLabel": "Practitioners",
+    "eyebrow": "Practitioner payouts",
+    "title": "Practitioner payout batches",
+    "note": "Review practitioner payouts by period and currency, then open any batch for details.",
+    "totalLabel": "Total batches",
     "totalCount": "{value, number} total",
     "visibleCount": "{value, number} shown",
-    "count": "{value, number} practitioners",
-    "countLabel": "Practitioners",
-    "countLoading": "Loading practitioners...",
+    "count": "{value, number} batches",
+    "countLabel": "Batches",
+    "countLoading": "Loading batches...",
     "searchLabel": "Search practitioner",
     "searchPlaceholder": "Name or practitioner ID",
-    "fastActionNote": "Use the filters to focus on due accounts, balances, or verified practitioners.",
-    "tableEyebrow": "Current list",
-    "tableTitle": "Practitioners",
+    "fastActionNote": "Use the filters to narrow down the current payout batches.",
+    "tableEyebrow": "Current results",
+    "tableTitle": "Payout batches",
     "activeFilters": "Active filters",
     "columns": {
-      "practitioner": "Practitioner",
-      "type": "Type",
-      "country": "Country",
-      "account": "Account",
-      "due": "Due",
+      "period": "Period",
+      "currency": "Currency",
       "status": "Status",
-      "action": "Action"
+      "totalAmount": "Total amount",
+      "practitioners": "Practitioners",
+      "createdAt": "Created at",
+      "actions": "Actions"
+    },
+    "actions": {
+      "viewDetails": "View details",
+      "payoutHistory": "Payout records"
     },
     "filters": {
       "currency": "Currency",
+      "currencyPlaceholder": "Select currency",
       "allCurrencies": "All currencies",
+      "periodYear": "Period year",
+      "periodMonth": "Period month",
+      "clear": "Clear filters",
       "finance": "Finance state",
       "financeOptions": {
         "all": "All practitioners",
@@ -167,10 +175,10 @@
     "financeError": "Account unavailable",
     "noBalance": "No balance",
     "noDue": "No due balance",
-    "emptyTitle": "No practitioners found",
-    "emptyNote": "Try a different search term or clear the filter to show the full list.",
-    "errorHeading": "Practitioner list is not available right now",
-    "errorNote": "Could not load practitioners.",
+    "emptyTitle": "No payout batches found",
+    "emptyNote": "Try a different period or currency, or clear the filters to show the full list.",
+    "errorHeading": "Payout batches are not available right now",
+    "errorNote": "Could not load payout batches.",
     "retry": "Try again"
   },
   "payouts": {
@@ -288,18 +296,17 @@
     }
   },
   "generate": {
-    "eyebrow": "Settlement operations",
-    "heading": "Generate a settlement batch",
-    "description": "Create a batch for one period and currency. Practitioner selection is not part of this flow because the backend generates eligible items automatically.",
-    "note": "If no eligible rows exist, the batch is still created and may open with zero items so the operator can review it honestly.",
-    "helperTitle": "What does this path do?",
+    "eyebrow": "Practitioner payouts",
+    "heading": "Create payout batch",
+    "description": "Choose the period and currency to create a batch with payouts ready to review.",
+    "note": "If no eligible dues exist, the system may create an empty batch or show a helpful message depending on the configuration.",
+    "helperTitle": "What does this do?",
     "helperItems": {
-      "defaultPath": "Creates the eligible settlement rows for the selected period and currency.",
-      "noPractitionerPicker": "There is no practitioner picker in batch generation.",
-      "backendDuplicateGuard": "The backend rejects duplicate batches for the same period and currency.",
-      "zeroItemsPossible": "A batch may still be created with zero items when nothing is eligible."
+      "defaultPath": "Creates the eligible dues for the selected period and currency.",
+      "backendDuplicateGuard": "The system prevents duplicate batches for the same period and currency.",
+      "zeroItemsPossible": "A batch may be created with no items when nothing is eligible."
     },
-    "confirmationNote": "The execution timestamp will be stored in the operational record.",
+    "confirmationNote": "Creating the batch does not transfer money automatically.",
     "label": "Admin only",
     "fields": {
       "periodYear": "Period year",
@@ -309,22 +316,31 @@
     "placeholders": {
       "periodYear": "2026",
       "periodMonth": "4",
-      "currency": "USD"
+      "currency": "Select currency"
     },
-    "submit": "Generate batch",
-    "submitting": "Generating...",
+    "currencyOptions": {
+      "EGP": "Egyptian pound",
+      "USD": "US dollar"
+    },
+    "notePrimary": "The batch is created for eligible dues only.",
+    "noteSecondary": "This step does not mean the bank transfer has already happened.",
+    "noteTertiary": "After the transfer, record the payment from the batch page.",
+    "noteEmpty": "If there are no eligible dues, the system may create an empty batch or show a helpful message.",
+    "submit": "Create payout batch",
+    "submitting": "Creating...",
     "cancel": "Cancel",
-    "helper": "Generation reserves eligible ledger earnings for payout and creates settlement items.",
-    "validation": "Enter a valid year, month, and currency code.",
-    "success": "Settlement batch generated.",
-    "successEmpty": "Settlement batch generated, but no eligible rows were found for this period and currency.",
-    "adminOnlyNote": "Settlement generation is available to admin operators only."
+    "helper": "Creating the batch prepares the eligible dues for payout review.",
+    "validation": "Enter a valid year, month, and currency.",
+    "success": "Payout batch created.",
+    "successEmpty": "Payout batch created, but no eligible dues were found for this period and currency.",
+    "adminOnlyNote": "Creating payout batches is available to admin operators only."
   },
   "filters": {
     "allStatuses": "All statuses",
     "status": "Status",
     "currency": "Currency",
-    "currencyPlaceholder": "e.g. USD",
+    "currencyPlaceholder": "Select currency",
+    "periodYear": "Period year",
     "periodMonth": "Period month",
     "periodMonthPlaceholder": "4",
     "createdFrom": "Created from",
@@ -336,9 +352,9 @@
   "statuses": {
     "DRAFT": "Draft",
     "GENERATED": "Generated",
-    "FINALIZED": "Finalized",
+    "FINALIZED": "Ready to pay",
     "PROCESSING": "Processing",
-    "COMPLETED": "Completed",
+    "COMPLETED": "Paid",
     "FAILED": "Failed",
     "CANCELLED": "Cancelled"
   },
@@ -357,85 +373,85 @@
   },
   "states": {
     "empty": {
-      "heading": "No settlement batches yet",
-      "note": "Once settlements are generated, they will appear here."
+      "heading": "No payout batches yet",
+      "note": "Once batches are created, they will appear here."
     },
     "listError": {
-      "heading": "Settlements list is not available right now",
-      "note": "Could not load settlement batches.",
+      "heading": "Payout batches are not available right now",
+      "note": "Could not load payout batches.",
       "retry": "Try again"
     },
     "detailError": {
-      "heading": "Settlement batch is not available right now",
-      "note": "Could not load this settlement batch. Try again or return to the list.",
+      "heading": "Payout batch is not available right now",
+      "note": "Could not load this payout batch. Try again or return to the list.",
       "retry": "Try again",
-      "back": "Back to settlements"
+      "back": "Back to practitioner payouts"
     },
     "notFound": {
-      "heading": "Settlement batch was not found",
+      "heading": "Payout batch was not found",
       "note": "This batch is not available in the current admin scope."
     },
     "itemsEmpty": {
-      "heading": "No settlement items yet",
-      "note": "This batch does not contain practitioner settlement items."
+      "heading": "No practitioner payouts yet",
+      "note": "This batch does not contain practitioner payout rows."
     }
   },
   "detail": {
-    "back": "Back to settlements",
-    "eyebrow": "Settlement batch",
-    "title": "Settlement batch detail",
-    "note": "Use this screen to review the batch snapshot, payout readiness, and operational actions supported by the backend.",
+    "back": "Back to practitioner payouts",
+    "eyebrow": "Payout batch",
+    "title": "Payout batch detail",
+    "note": "Use this screen to review the batch summary, payout readiness, and the supported admin actions.",
     "workflow": {
-      "batchModeTitle": "Batch mode",
-      "batchModeNote": "This is a batch closeout generated from eligible ledger rows for one period and currency.",
-      "autoIncludeTitle": "Auto-included rows",
-      "autoIncludeNote": "Practitioners are not selected one by one in this flow.",
-      "exceptionTitle": "Single-practitioner payout",
-      "exceptionNote": "Use the separate exception path when one practitioner needs a manual payout."
+      "batchModeTitle": "Batch summary",
+      "batchModeNote": "This batch groups practitioner dues for one period and currency.",
+      "autoIncludeTitle": "Auto-selected practitioners",
+      "autoIncludeNote": "Practitioners are added automatically for the selected period.",
+      "exceptionTitle": "Manual payout",
+      "exceptionNote": "Use the separate practitioner dues screen for a single-practitioner payout."
     },
     "sections": {
-      "batch": "Batch snapshot",
-      "summary": "Operational summary",
-      "items": "Settlement items",
-      "actions": "Admin actions",
-      "boundary": "Operational boundary"
+      "batch": "Batch details",
+      "summary": "Payout summary",
+      "items": "Practitioner payouts",
+      "actions": "Payout actions",
+      "boundary": "Important note"
     },
     "fields": {
       "batchId": "Batch ID",
-      "slug": "Slug",
+      "slug": "Batch code",
       "period": "Period",
       "status": "Status",
       "currency": "Currency",
       "totalAmount": "Total amount",
-      "itemsCount": "Items count",
-      "generatedAt": "Generated",
-      "finalizedAt": "Finalized",
-      "createdAt": "Created"
+      "itemsCount": "Practitioners",
+      "generatedAt": "Generated at",
+      "finalizedAt": "Finalized at",
+      "createdAt": "Created at"
     },
-    "summaryNote": "This summary reflects the current settlement items tied to the batch.",
+    "summaryNote": "This summary reflects the payouts tied to the batch.",
     "summaryFields": {
-      "settlementItemsCount": "Total items",
-      "totalAmountNet": "Total net amount",
-      "draft": "Draft items",
-      "ready": "Ready items",
-      "processing": "Processing items",
-      "paid": "Paid items",
-      "failed": "Failed items",
-      "cancelled": "Cancelled items"
+      "settlementItemsCount": "Practitioners",
+      "totalAmountNet": "Total amount",
+      "draft": "Draft",
+      "ready": "Ready",
+      "processing": "Processing",
+      "paid": "Paid",
+      "failed": "Failed",
+      "cancelled": "Cancelled"
     },
-    "itemsNote": "Each item represents a practitioner payout record created under this batch.",
+    "itemsNote": "Each row shows one practitioner payout in this batch.",
     "emptyBatch": {
-      "heading": "This batch has no settlement items",
-      "note": "The backend created the batch, but no eligible practitioner earning rows were available for this period and currency, or they were already attached elsewhere.",
-      "reasonsTitle": "Likely reasons",
+      "heading": "This batch has no eligible payouts",
+      "note": "The system created the batch, but there were no eligible dues for this period and currency, or they were already included elsewhere.",
+      "reasonsTitle": "Common reasons",
       "reasons": {
-        "periodCurrency": "The selected period or currency does not have eligible rows.",
-        "assignedElsewhere": "The available rows were already attached to another batch.",
-        "exceptionPath": "If you only need one practitioner, use the single-practitioner payout exception path."
+        "periodCurrency": "The selected period or currency had no dues.",
+        "assignedElsewhere": "The dues were already assigned to another batch.",
+        "exceptionPath": "This payout needs the manual practitioner payout flow."
       },
-      "primaryAction": "Back to settlements",
-      "secondaryAction": "Review another period",
-      "exceptionAction": "Open the exception payout path"
+      "primaryAction": "Open practitioner dues",
+      "secondaryAction": "Review payout records",
+      "exceptionAction": "Open dues view"
     },
     "itemTitle": "Practitioner {id}",
     "itemFields": {
@@ -450,15 +466,15 @@
       "notes": "Notes: {value}"
     },
     "actionsNote": "Actions appear only for admin operators and remain subject to backend validation.",
-    "actionsEmptyBatchNote": "For an empty batch, mark paid or mark failed only changes the batch status. It does not create practitioner rows.",
+    "actionsEmptyBatchNote": "If a batch is empty, marking it paid or failed only changes its status.",
     "actionMeaning": {
-      "markPaid": "Mark paid completes the batch after the payout review is finished.",
-      "markFailed": "Mark failed closes the batch as failed and keeps the operator workflow honest."
+      "markPaid": "Use this after the money has been transferred to practitioners.",
+      "markFailed": "Use this when the transfer could not be completed."
     },
-    "boundaryNote": "This surface stays focused on settlement visibility and the supported admin actions.",
+    "boundaryNote": "This screen stays focused on payout visibility and the supported admin actions.",
     "boundaryItems": {
-      "noPayouts": "Payout execution and provider disbursement are outside this UI.",
-      "noAdjustments": "Editing settlement item amounts is not supported here.",
+      "noPayouts": "Creating the batch does not transfer money automatically.",
+      "noAdjustments": "Editing payout rows is not supported here.",
       "noAutoReconcile": "Automatic reconciliation and accounting exports are not part of this baseline."
     }
   },
@@ -476,10 +492,10 @@
     "empty": "No legacy batches found."
   },
   "actions": {
-    "markPaidTitle": "Mark batch as paid",
-    "markPaid": "Mark paid",
-    "markPaidSubmitting": "Marking paid...",
-    "markPaidSuccess": "Batch marked as paid.",
+    "markPaidTitle": "Record batch payment",
+    "markPaid": "Record payment",
+    "markPaidSubmitting": "Recording payment...",
+    "markPaidSuccess": "Batch payment recorded.",
     "markFailedTitle": "Mark batch as failed",
     "markFailed": "Mark failed",
     "markFailedSubmitting": "Marking failed...",

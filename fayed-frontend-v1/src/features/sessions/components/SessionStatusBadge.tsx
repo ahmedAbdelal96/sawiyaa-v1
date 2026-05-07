@@ -3,6 +3,7 @@ import type { SessionStatus } from "../types/sessions.types";
 
 type Props = {
   status: SessionStatus;
+  labelOverride?: string;
 };
 
 const STATUS_STYLES: Record<SessionStatus, string> = {
@@ -22,20 +23,20 @@ const STATUS_STYLES: Record<SessionStatus, string> = {
   CANCELLED: "bg-error-50 text-error-700 dark:bg-error-500/15 dark:text-error-400",
   NO_SHOW: "bg-error-50 text-error-700 dark:bg-error-500/15 dark:text-error-400",
   EXPIRED:
-    "bg-surface-tertiary text-text-muted dark:bg-white/10 dark:text-white/50",
+    "bg-warning-50 text-warning-700 dark:bg-warning-500/12 dark:text-warning-300",
   REFUND_PENDING:
     "bg-warning-50 text-warning-700 dark:bg-warning-500/12 dark:text-warning-300",
   REFUNDED:
     "bg-surface-tertiary text-text-secondary dark:bg-white/10 dark:text-white/60",
 };
 
-export default function SessionStatusBadge({ status }: Props) {
+export default function SessionStatusBadge({ status, labelOverride }: Props) {
   const t = useTranslations("sessions");
   return (
     <span
       className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_STYLES[status] ?? "bg-surface-tertiary text-text-muted"}`}
     >
-      {t(`status.${status}` as Parameters<typeof t>[0])}
+      {labelOverride ?? t(`status.${status}` as Parameters<typeof t>[0])}
     </span>
   );
 }

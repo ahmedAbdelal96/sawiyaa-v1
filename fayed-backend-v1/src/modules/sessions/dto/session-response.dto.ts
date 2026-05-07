@@ -33,6 +33,9 @@ export class SessionItemResponseDto {
   @ApiProperty({ enum: SessionStatus })
   status!: SessionStatus;
 
+  @ApiProperty()
+  createdAt!: string;
+
   @ApiProperty({ nullable: true })
   scheduledStartAt!: string | null;
 

@@ -1,4 +1,5 @@
 import { ConflictException, Injectable } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { SessionRepository } from '../repositories/session.repository';
 
 /**
@@ -13,12 +14,24 @@ export class ValidateSessionConflictsService {
     practitionerId: string;
     scheduledStartAtUtc: Date;
     scheduledEndAtUtc: Date;
+    tx?: Prisma.TransactionClient;
   }): Promise<void> {
+    await this.sessionRepository.expirePendingPaymentSessionsInRangeForPractitioner(
+      {
+        practitionerId: input.practitionerId,
+        startsBefore: input.scheduledEndAtUtc,
+        endsAfter: input.scheduledStartAtUtc,
+        now: new Date(),
+        tx: input.tx,
+      },
+    );
+
     const conflicts =
       await this.sessionRepository.listSessionsInRangeForPractitioner(
         input.practitionerId,
         input.scheduledEndAtUtc,
         input.scheduledStartAtUtc,
+        input.tx,
       );
 
     if (conflicts.length > 0) {
@@ -33,12 +46,22 @@ export class ValidateSessionConflictsService {
     patientId: string;
     scheduledStartAtUtc: Date;
     scheduledEndAtUtc: Date;
+    tx?: Prisma.TransactionClient;
   }): Promise<void> {
+    await this.sessionRepository.expirePendingPaymentSessionsInRangeForPatient({
+      patientId: input.patientId,
+      startsBefore: input.scheduledEndAtUtc,
+      endsAfter: input.scheduledStartAtUtc,
+      now: new Date(),
+      tx: input.tx,
+    });
+
     const conflicts =
       await this.sessionRepository.listSessionsInRangeForPatient(
         input.patientId,
         input.scheduledEndAtUtc,
         input.scheduledStartAtUtc,
+        input.tx,
       );
 
     if (conflicts.length > 0) {

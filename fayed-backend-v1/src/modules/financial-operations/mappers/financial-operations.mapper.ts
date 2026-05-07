@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import {
   LedgerEntry,
+  PackageSettlement,
+  PractitionerManualPayout,
   PractitionerSettlement,
   PractitionerSettlementPayout,
   PractitionerSettlementPayoutProof,
@@ -14,6 +16,10 @@ import {
   PractitionerPayoutDueSummaryViewModel,
   PractitionerPayoutDueViewModel,
   PractitionerPayoutHistoryViewModel,
+  PackageSettlementViewModel,
+  PractitionerManualPayoutViewModel,
+  PractitionerManualPayoutSummaryViewModel,
+  PractitionerPayoutBalanceViewModel,
   PractitionerStatementRowViewModel,
   PractitionerSettlementViewModel,
   SettlementPayoutProofViewModel,
@@ -106,6 +112,50 @@ type PractitionerDueSnapshot = {
   failedAt: Date | null;
   notes: string | null;
   createdAt: Date;
+};
+
+type PackageSettlementWithRelations = PackageSettlement & {
+  purchase?: {
+    id: string;
+    status: string;
+    planCodeSnapshot: string | null;
+    titleSnapshot: string;
+    paymentId: string | null;
+    packagePlan?: {
+      code: string;
+      title: string;
+    } | null;
+    payment?: {
+      status: string;
+    } | null;
+  } | null;
+  practitioner?: {
+    id: string;
+    publicSlug: string;
+    user?: {
+      displayName: string | null;
+    } | null;
+  } | null;
+  patient?: {
+    id: string;
+    user?: {
+      displayName: string | null;
+    } | null;
+  } | null;
+};
+
+type PractitionerManualPayoutWithRelations = PractitionerManualPayout & {
+  practitioner?: {
+    id: string;
+    publicSlug: string;
+    user?: {
+      displayName: string | null;
+    } | null;
+  } | null;
+  recordedByUser?: {
+    id: string;
+    displayName: string | null;
+  } | null;
 };
 
 @Injectable()
@@ -472,5 +522,110 @@ export class FinancialOperationsMapper {
         statusCounts: totals.statusCounts,
       },
     };
+  }
+
+  toPackageSettlement(
+    settlement: PackageSettlementWithRelations,
+  ): PackageSettlementViewModel {
+    return {
+      id: settlement.id,
+      purchaseId: settlement.purchaseId,
+      purchaseStatus: settlement.purchase?.status as PackageSettlementViewModel['purchaseStatus'],
+      practitionerId: settlement.practitionerId,
+      practitionerDisplayName: settlement.practitioner?.user?.displayName ?? null,
+      practitionerSlug: settlement.practitioner?.publicSlug ?? null,
+      patientId: settlement.patientId,
+      patientDisplayName: settlement.patient?.user?.displayName ?? null,
+      packagePlanCode:
+        settlement.purchase?.packagePlan?.code ??
+        settlement.purchase?.planCodeSnapshot ??
+        null,
+      packagePlanTitle:
+        settlement.purchase?.packagePlan?.title ??
+        settlement.purchase?.titleSnapshot ??
+        null,
+      currency: settlement.currencyCode,
+      status: settlement.status,
+      sessionCount: settlement.sessionCount,
+      completedSessionsCount: settlement.completedSessionsCount,
+      heldPractitionerAmount: settlement.heldPractitionerAmount.toString(),
+      heldPlatformAmount: settlement.heldPlatformAmount.toString(),
+      releasablePractitionerAmount:
+        settlement.releasablePractitionerAmount.toString(),
+      releasedPractitionerAmount:
+        settlement.releasedPractitionerAmount.toString(),
+      normalEquivalentUsedAmount:
+        settlement.normalEquivalentUsedAmount.toString(),
+      discountAppliedAmount: settlement.discountAppliedAmount.toString(),
+      reviewedAt: settlement.reviewedAt?.toISOString() ?? null,
+      reviewedByAdminId: settlement.reviewedByAdminId ?? null,
+      releasedAt: settlement.releasedAt?.toISOString() ?? null,
+      releasedByAdminId: settlement.releasedByAdminId ?? null,
+      decision: settlement.decision ?? null,
+      notes: settlement.notes ?? null,
+      createdAt: settlement.createdAt.toISOString(),
+      updatedAt: settlement.updatedAt.toISOString(),
+    };
+  }
+
+  toPractitionerPayoutBalance(input: {
+    practitionerId: string;
+    practitionerName: string | null;
+    currencyCode: string;
+    normalSessionPayableAmount: Prisma.Decimal | string;
+    packageReleasedPayableAmount: Prisma.Decimal | string;
+    packageHeldAmount: Prisma.Decimal | string;
+    totalPayableAmount: Prisma.Decimal | string;
+    lastPayoutAt: Date | null;
+  }): PractitionerPayoutBalanceViewModel {
+    return {
+      practitionerId: input.practitionerId,
+      practitionerName: input.practitionerName,
+      currencyCode: input.currencyCode,
+      normalSessionPayableAmount: input.normalSessionPayableAmount.toString(),
+      packageReleasedPayableAmount:
+        input.packageReleasedPayableAmount.toString(),
+      packageHeldAmount: input.packageHeldAmount.toString(),
+      totalPayableAmount: input.totalPayableAmount.toString(),
+      lastPayoutAt: input.lastPayoutAt?.toISOString() ?? null,
+    };
+  }
+
+  toPractitionerManualPayout(
+    payout: PractitionerManualPayoutWithRelations,
+  ): PractitionerManualPayoutViewModel {
+    return {
+      id: payout.id,
+      practitionerId: payout.practitionerId,
+      practitionerName: payout.practitioner?.user?.displayName ?? null,
+      currencyCode: payout.currencyCode,
+      amountPaid: payout.amountPaid.toString(),
+      normalSessionAppliedAmount: payout.normalSessionAppliedAmount.toString(),
+      packageReleasedAppliedAmount:
+        payout.packageReleasedAppliedAmount.toString(),
+      packageHeldAmountSnapshot: payout.packageHeldAmountSnapshot.toString(),
+      totalPayableSnapshot: payout.totalPayableSnapshot.toString(),
+      payoutMethod: payout.payoutMethod,
+      transferReference: payout.transferReference ?? null,
+      paidAt: payout.paidAt.toISOString(),
+      notes: payout.notes ?? null,
+      recordedByUserId: payout.recordedByUserId ?? null,
+      recordedByDisplayName: payout.recordedByUser?.displayName ?? null,
+      createdAt: payout.createdAt.toISOString(),
+      updatedAt: payout.updatedAt.toISOString(),
+    };
+  }
+
+  toPractitionerManualPayoutSummary(input: {
+    practitionerId: string;
+    practitionerName: string | null;
+    practitionerSlug: string | null;
+    egp: PractitionerPayoutBalanceViewModel;
+    usd: PractitionerPayoutBalanceViewModel;
+    hasPayable: boolean;
+    hasPackage: boolean;
+    lastPayoutAt: string | null;
+  }): PractitionerManualPayoutSummaryViewModel {
+    return input;
   }
 }

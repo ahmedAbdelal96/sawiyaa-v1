@@ -1,0 +1,157 @@
+{
+  "meta": {
+    "title": "تسويات الباقات - الإدارة",
+    "description": "راجع أموال الباقات المحجوزة، وما هو جاهز للصرف، وما يحتاج مراجعة، وما تم صرفه.",
+    "detailTitle": "تفاصيل تسوية الباقة - الإدارة",
+    "detailDescription": "راجع تسوية باقة واحدة وحالة الجاهزية والمراجعة الخاصة بها."
+  },
+  "eyebrow": "تسويات الباقات",
+  "title": "تسويات الباقات",
+  "note": "راجع أموال الباقات المحجوزة وصرف مستحقات المعالج عند اكتمال الجلسات.",
+  "summary": {
+    "held": "قيد الانتظار",
+    "ready": "جاهزة للصرف",
+    "review": "تحتاج مراجعة",
+    "released": "تم الصرف"
+  },
+  "filters": {
+    "status": "الحالة",
+    "allStatuses": "كل الحالات",
+    "currency": "العملة",
+    "allCurrencies": "كل العملات",
+    "clear": "مسح المرشحات"
+  },
+  "statuses": {
+    "HELD": "قيد الانتظار",
+    "READY_TO_RELEASE": "جاهزة للصرف",
+    "PARTIALLY_RELEASED": "صرف جزئي",
+    "RELEASED": "تم الصرف",
+    "NEEDS_REVIEW": "تحتاج مراجعة",
+    "REFUNDED_OR_ADJUSTED": "تم الاسترجاع أو التسوية"
+  },
+  "purchaseStatuses": {
+    "PENDING_PAYMENT": "في انتظار الدفع",
+    "ACTIVE": "نشطة",
+    "COMPLETED": "مكتملة",
+    "EXPIRED": "منتهية",
+    "CANCELLED": "ملغاة",
+    "REFUNDED": "تم الاسترجاع"
+  },
+  "table": {
+    "actions": "الإجراءات",
+    "practitioner": "المعالج",
+    "patient": "المريض",
+    "purchaseRef": "الشراء",
+    "status": "الحالة",
+    "currency": "العملة",
+    "heldPractitionerAmount": "المحجوز للمعالج",
+    "releasablePractitionerAmount": "جاهز للصرف",
+    "releasedPractitionerAmount": "تم صرفه",
+    "sessions": "الجلسات",
+    "sessionsValue": "{completed} / {total}",
+    "updatedAt": "آخر تحديث"
+  },
+  "actions": {
+    "viewDetails": "عرض التفاصيل",
+    "release": "صرف المستحقات",
+    "review": "مراجعة"
+  },
+  "states": {
+    "listError": "تعذر تحميل تسويات الباقات.",
+    "retry": "حاول مرة أخرى",
+    "emptyTitle": "لا توجد تسويات باقات بعد",
+    "emptyNote": "ستظهر تسويات الباقات هنا بعد جمع طلبات الباقات وتتبعها.",
+    "detailError": {
+      "heading": "تسوية الباقة غير متاحة الآن",
+      "note": "تعذر تحميل هذه التسوية.",
+      "retry": "حاول مرة أخرى",
+      "back": "العودة إلى تسويات الباقات"
+    },
+    "notFound": {
+      "heading": "لم يتم العثور على تسوية الباقة",
+      "note": "هذه التسوية غير متاحة ضمن نطاق الإدارة الحالي."
+    }
+  },
+  "modal": {
+    "eyebrow": "صرف مستحقات الباقة",
+    "title": "تأكيد صرف المستحقات",
+    "description": "سيتم صرف المبلغ المحجوز للمعالج في هذه الباقة.",
+    "note": "سيُضاف الصرف إلى محفظة المعالج بعد التأكيد.",
+    "confirm": "صرف المستحقات",
+    "cancel": "إلغاء",
+    "success": "تم صرف مستحقات الباقة بنجاح.",
+    "fields": {
+      "practitioner": "المعالج",
+      "amount": "المبلغ الجاهز للصرف",
+      "currency": "العملة",
+      "sessions": "الجلسات المكتملة",
+      "sessionsValue": "{completed} / {total}"
+    }
+  },
+  "errors": {
+    "notFound": "تعذر العثور على هذه التسوية.",
+    "notReady": "هذه التسوية ليست جاهزة للصرف بعد.",
+    "empty": "لا يوجد ما يمكن صرفه لهذه التسوية.",
+    "invalidAmount": "هذه التسوية تحتوي على مبلغ غير صالح.",
+    "currencyMissing": "هذه التسوية تفتقد إلى العملة.",
+    "snapshotMissing": "هذه التسوية تفتقد إلى بيانات مطلوبة.",
+    "needsReview": "لا يمكن صرف هذه الباقة تلقائيًا. تحتاج إلى مراجعة من الإدارة.",
+    "generic": "تعذر إتمام هذا الإجراء الآن."
+  },
+  "detail": {
+    "back": "العودة إلى تسويات الباقات",
+    "eyebrow": "تسوية الباقة",
+    "title": "تفاصيل تسوية الباقة",
+    "note": "راجع المحجوز، وجاهزية الصرف، وملاحظات المراجعة بشكل مبسط.",
+    "status": "حالة التسوية",
+    "releasedNote": "تم صرف هذه الباقة بالفعل.",
+    "sections": {
+      "overview": "نظرة عامة",
+      "overviewNote": "معلومات الباقة والأطراف المعنية.",
+      "amounts": "المبالغ",
+      "amountsNote": "أرقام الحجز والصرف والاستخدام داخل التسوية.",
+      "review": "المراجعة",
+      "reviewNote": "سجل المراجعة والصرف الإداري."
+    },
+    "fields": {
+      "settlementId": "معرف التسوية",
+      "purchaseId": "معرف الشراء",
+      "packagePlan": "الباقة",
+      "practitioner": "المعالج",
+      "patient": "المريض",
+      "purchaseStatus": "حالة الشراء",
+      "currency": "العملة",
+      "sessions": "الجلسات",
+      "sessionsValue": "{completed} / {total}",
+      "updatedAt": "آخر تحديث"
+    },
+    "totals": {
+      "heldPractitioner": "المحجوز للمعالج",
+      "releasablePractitioner": "جاهز للصرف",
+      "releasedPractitioner": "تم صرفه",
+      "sessions": "الجلسات",
+      "sessionsValue": "{completed} / {total}"
+    },
+    "amounts": {
+      "heldPractitioner": "المحجوز للمعالج",
+      "heldPlatform": "المحجوز للمنصة",
+      "releasablePractitioner": "جاهز للصرف",
+      "releasedPractitioner": "تم صرفه",
+      "normalEquivalentUsed": "القيمة الطبيعية المستخدمة",
+      "discountApplied": "الخصم المطبق"
+    },
+    "review": {
+      "decision": "القرار",
+      "reviewedAt": "تاريخ المراجعة",
+      "reviewedBy": "راجعها",
+      "releasedAt": "تاريخ الصرف",
+      "releasedBy": "صرفها"
+    },
+    "sidebar": {
+      "packageRef": "مرجع الشراء",
+      "purchaseStatus": "حالة الشراء",
+      "progress": "التقدم",
+      "currency": "العملة"
+    }
+  }
+}

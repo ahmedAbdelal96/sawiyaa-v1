@@ -59,8 +59,9 @@ export class DailySessionVideoProviderAdapter implements SessionVideoProviderAda
     if (!response.ok) {
       if (response.status === 409) {
         return {
-          roomName,
+          roomId: roomName,
           roomUrl: `https://${roomName}.daily.co`,
+          roomName,
         };
       }
 
@@ -79,13 +80,15 @@ export class DailySessionVideoProviderAdapter implements SessionVideoProviderAda
       payload.url?.trim() || `https://${resolvedRoomName}.daily.co`;
 
     return {
-      roomName: resolvedRoomName,
+      roomId: resolvedRoomName,
       roomUrl: resolvedRoomUrl,
+      roomName: resolvedRoomName,
+      raw: payload,
     };
   }
 
   async createJoinToken(input: {
-    roomName: string;
+    roomId: string;
     userId: string;
     displayName: string | null;
     actorType: 'PATIENT' | 'PRACTITIONER';
@@ -100,7 +103,7 @@ export class DailySessionVideoProviderAdapter implements SessionVideoProviderAda
       },
       body: JSON.stringify({
         properties: {
-          room_name: input.roomName,
+          room_name: input.roomId,
           user_id: input.userId,
           user_name: input.displayName ?? input.userId,
           is_owner: false,
@@ -132,7 +135,13 @@ export class DailySessionVideoProviderAdapter implements SessionVideoProviderAda
       });
     }
 
-    return { token };
+    return {
+      token,
+      expiresAt: new Date(Date.now() + 3600 * 1000),
+      joinMode: 'redirect_url',
+      payload: {},
+      raw: payload,
+    };
   }
 
   private assertConfigured(): void {

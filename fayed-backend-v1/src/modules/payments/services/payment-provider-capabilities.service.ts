@@ -9,7 +9,13 @@ export class PaymentProviderCapabilitiesService {
     private readonly paymentRuntimeConfigService: PaymentRuntimeConfigService,
   ) {}
 
-  getCapability(provider: PaymentProvider): PaymentProviderCapability {
+  getCapability(
+    provider: PaymentProvider,
+    context?: {
+      checkoutCountryIsoCode?: string | null;
+      operatingCountryIsoCode?: string | null;
+    },
+  ): PaymentProviderCapability {
     switch (provider) {
       case PaymentProvider.STRIPE: {
         const stripe = this.paymentRuntimeConfigService.getStripeConfig();
@@ -20,12 +26,44 @@ export class PaymentProviderCapabilitiesService {
       }
       case PaymentProvider.PAYMOB: {
         const paymob = this.paymentRuntimeConfigService.getPaymobConfig();
-        return this.buildCapability(provider, paymob.enabled, [
-          ['PAYMOB_API_KEY', paymob.apiKey],
-          ['PAYMOB_HMAC_SECRET', paymob.hmacSecret],
-          ['PAYMOB_INTEGRATION_ID_CARD', paymob.integrationIdCard],
-          ['PAYMOB_IFRAME_ID', paymob.iframeId],
-        ]);
+        const enabledMethods =
+          this.paymentRuntimeConfigService.getPaymobEnabledMethods(context);
+        const isIntentionFlow =
+          paymob.checkoutFlow === 'intention';
+        const requirements: Array<[key: string, value: string | undefined | null]> =
+          [
+            ['PAYMOB_API_KEY', paymob.apiKey],
+            ['PAYMOB_HMAC_SECRET', paymob.hmacSecret],
+            ['PAYMOB_BASE_URL', paymob.baseUrl],
+          ];
+
+        if (isIntentionFlow) {
+          requirements.push(
+            ['PAYMOB_INTENTION_BASE_URL', paymob.intentionBaseUrl],
+            ['PAYMOB_CHECKOUT_BASE_URL', paymob.checkoutBaseUrl],
+            ['PAYMOB_PUBLIC_KEY', paymob.publicKey],
+          );
+        } else {
+          requirements.push(['PAYMOB_IFRAME_ID', paymob.iframeId]);
+        }
+
+        return this.buildCapability(
+          provider,
+          paymob.enabled,
+          requirements,
+          {
+            checkoutFlow: paymob.checkoutFlow,
+            maintenanceMode: paymob.maintenanceMode,
+            methods: enabledMethods.map((item) => ({
+              key: item.key,
+              label: item.label,
+              type: item.type,
+              enabled: item.enabled,
+            })),
+            supportedMethods: enabledMethods.map((item) => item.key),
+            defaultMethod: this.paymentRuntimeConfigService.getPaymobDefaultCheckoutMethod(context),
+          },
+        );
       }
       default:
         return {
@@ -38,15 +76,23 @@ export class PaymentProviderCapabilitiesService {
     }
   }
 
-  assertAvailable(provider: PaymentProvider): void {
-    const capability = this.getCapability(provider);
+  assertAvailable(
+    provider: PaymentProvider,
+    context?: {
+      checkoutCountryIsoCode?: string | null;
+      operatingCountryIsoCode?: string | null;
+    },
+  ): void {
+    const capability = this.getCapability(provider, context);
 
     if (capability.available) {
       return;
     }
 
     const reason = capability.enabled
-      ? 'missing_configuration'
+      ? capability.maintenanceMode
+        ? 'provider_maintenance'
+        : 'missing_configuration'
       : 'provider_disabled';
 
     throw new ServiceUnavailableException({
@@ -66,18 +112,43 @@ export class PaymentProviderCapabilitiesService {
     provider: PaymentProvider,
     enabled: boolean,
     requirements: Array<[key: string, value: string | undefined | null]>,
+    extras?: {
+      checkoutFlow?: 'legacy' | 'intention';
+      maintenanceMode?: boolean;
+      methods?: Array<{
+        key: string;
+        label: string;
+        type: string;
+        enabled: boolean;
+      }>;
+      supportedMethods?: string[];
+      defaultMethod?: string | null;
+    },
   ): PaymentProviderCapability {
     const missingConfig = requirements
       .filter(([, value]) => !value || !value.trim())
       .map(([key]) => key);
+
+    if (
+      provider === PaymentProvider.PAYMOB &&
+      (!extras?.supportedMethods || extras.supportedMethods.length === 0)
+    ) {
+      missingConfig.push('PAYMOB_METHOD_REGISTRY_JSON');
+    }
+
     const configured = missingConfig.length === 0;
 
     return {
       provider,
       enabled,
       configured,
-      available: enabled && configured,
+      available: enabled && configured && !extras?.maintenanceMode,
       missingConfig,
+      checkoutFlow: extras?.checkoutFlow ?? undefined,
+      methods: extras?.methods ?? [],
+      supportedMethods: extras?.supportedMethods ?? [],
+      defaultMethod: extras?.defaultMethod ?? null,
+      maintenanceMode: extras?.maintenanceMode ?? false,
     };
   }
 }

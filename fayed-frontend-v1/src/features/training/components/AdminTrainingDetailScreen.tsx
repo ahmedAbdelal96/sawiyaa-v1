@@ -1,9 +1,16 @@
 "use client";
 
-import { useMemo, useState, type FormEvent, type ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
-import { ArrowRight, CheckCircle2, CircleOff, Pencil, Plus } from "lucide-react";
+import {
+  CheckCircle2,
+  CircleOff,
+  BookOpenText,
+  Pencil,
+  Plus,
+  Users,
+} from "lucide-react";
 import { ListStateSkeleton, StateCard } from "@/components/shared/ContentStates";
 import { SurfaceCard, SurfaceStatCard } from "@/components/shared/SurfaceShell";
 import ActionIconButton from "@/components/ui/action-icon-button/ActionIconButton";
@@ -15,14 +22,22 @@ import { useAuthState } from "@/stores/auth-store";
 import { toAppError } from "@/lib/api/errors";
 import {
   useAdminTraining,
+  useAdminTrainingAnalytics,
+  useAdminTrainingPaymentAttempts,
   useAdminTrainingSchedules,
   useArchiveAdminTraining,
   useCreateAdminTrainingSchedule,
   usePublishAdminTraining,
   useUpdateAdminTraining,
-  useUpdateAdminTrainingSchedule,
 } from "../hooks/use-training";
 import { getAdminTrainingErrorKey } from "../lib/admin-training-errors";
+import AdminTrainingScheduleCreateModal from "./AdminTrainingScheduleCreateModal";
+import AdminTrainingScheduleLectureCreateModal from "./AdminTrainingScheduleLectureCreateModal";
+import AdminTrainingPaymentAttemptsModal from "./AdminTrainingPaymentAttemptsModal";
+import AdminTrainingUpdateModal from "./AdminTrainingUpdateModal";
+import AdminTrainingScheduleEnrollmentsModal from "./AdminTrainingScheduleEnrollmentsModal";
+import AdminTrainingScheduleLecturesModal from "./AdminTrainingScheduleLecturesModal";
+import AdminTrainingScheduleUpdateModal from "./AdminTrainingScheduleUpdateModal";
 import {
   formatTrainingDatetime,
   getScheduleStatusTone,
@@ -30,10 +45,9 @@ import {
 } from "./training-utils";
 import type {
   AdminTrainingSchedule,
+  AdminTrainingAnalyticsCohortItem,
   AdminTrainingItem,
-  CourseType,
-  CourseVisibility,
-  TrainingScheduleStatus,
+  TrainingSchedule,
 } from "../types/training.types";
 
 type Props = {
@@ -41,45 +55,6 @@ type Props = {
 };
 
 type Feedback = { tone: "success" | "error"; message: string };
-
-type UpdateTrainingForm = {
-  locale: string;
-  title: string;
-  slug: string;
-  shortDescription: string;
-  fullDescription: string;
-  courseType: CourseType;
-  visibility: CourseVisibility;
-};
-
-type ScheduleCreateForm = {
-  status: TrainingScheduleStatus;
-  scheduleCode: string;
-  enrollmentOpenAt: string;
-  enrollmentCloseAt: string;
-  startsAt: string;
-  endsAt: string;
-  timezone: string;
-  externalRoomProvider: string;
-  externalRoomJoinUrl: string;
-  externalRoomHostUrl: string;
-};
-
-const COURSE_TYPES: CourseType[] = ["LIVE", "WORKSHOP", "COURSE"];
-const COURSE_VISIBILITIES: CourseVisibility[] = ["PUBLIC", "PRIVATE"];
-const SCHEDULE_STATUSES: TrainingScheduleStatus[] = [
-  "DRAFT",
-  "OPEN_FOR_ENROLLMENT",
-  "FULL",
-  "STARTED",
-  "COMPLETED",
-  "CANCELLED",
-  "ARCHIVED",
-];
-
-function localInputToIso(value: string): string {
-  return value.length === 16 ? `${value}:00Z` : value;
-}
 
 function formatDateTime(value: string | null, locale: string) {
   if (!value) return "-";
@@ -138,95 +113,32 @@ function OperationalCard({
   );
 }
 
-function getTrainingLifecycleState(item: AdminTrainingItem) {
-  if (item.status === "PUBLISHED") return "published" as const;
-  if (item.status === "ARCHIVED") return "archived" as const;
-  return "draft" as const;
-}
-
-function getTrainingScheduleState(schedules: Array<{ isEnrollmentOpen: boolean }>) {
-  if (schedules.length === 0) return "none" as const;
-  if (schedules.some((schedule) => schedule.isEnrollmentOpen)) return "open" as const;
-  return "closed" as const;
-}
-
-function getTrainingActionPosture(input: {
-  canManage: boolean;
-  canPublish: boolean;
-  canArchive: boolean;
-}) {
-  if (!input.canManage) return "adminOnly" as const;
-  if (input.canPublish || input.canArchive) return "limitedActions" as const;
-  return "readOnly" as const;
-}
-
 function ScheduleCard({
   schedule,
+  analytics,
   trainingId,
+  onOpenLectures,
+  onOpenCreateLecture,
 }: {
   schedule: AdminTrainingSchedule;
+  analytics?: AdminTrainingAnalyticsCohortItem | null;
   trainingId: string;
+  onOpenLectures: (schedule: AdminTrainingSchedule) => void;
+  onOpenCreateLecture: (schedule: AdminTrainingSchedule) => void;
 }) {
   const t = useTranslations("training");
   const locale = useLocale();
-  const updateSchedule = useUpdateAdminTrainingSchedule();
-  const [isEditing, setIsEditing] = useState(false);
-  const [feedback, setFeedback] = useState<Feedback | null>(null);
-  const [form, setForm] = useState({
-    status: schedule.status,
-    externalRoomProvider: schedule.externalRoomProvider ?? "",
-    externalRoomJoinUrl: schedule.externalRoomJoinUrl ?? "",
-    externalRoomHostUrl: schedule.externalRoomHostUrl ?? "",
-  });
-
-  const handleUpdate = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setFeedback(null);
-
-    if (form.externalRoomProvider && !form.externalRoomJoinUrl.trim()) {
-      setFeedback({
-        tone: "error",
-        message: t("admin.errors.externalJoinUrlRequired"),
-      });
-      return;
-    }
-
-    if (!form.externalRoomProvider && form.externalRoomJoinUrl.trim()) {
-      setFeedback({
-        tone: "error",
-        message: t("admin.errors.externalRoomProviderRequired"),
-      });
-      return;
-    }
-
-    try {
-      await updateSchedule.mutateAsync({
-        trainingId,
-        scheduleId: schedule.id,
-        input: {
-          status: form.status,
-          externalRoomProvider: form.externalRoomProvider || undefined,
-          externalRoomJoinUrl: form.externalRoomJoinUrl.trim() || undefined,
-          externalRoomHostUrl: form.externalRoomHostUrl.trim() || undefined,
-        },
-      });
-      setFeedback({
-        tone: "success",
-        message: t("admin.detail.schedules.updateSuccess"),
-      });
-      setIsEditing(false);
-    } catch (error) {
-      setFeedback({
-        tone: "error",
-        message: t(getAdminTrainingErrorKey(error) as Parameters<typeof t>[0]),
-      });
-    }
-  };
+  const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
+  const [isEnrollmentsModalOpen, setIsEnrollmentsModalOpen] = useState(false);
+  const occupiedSeats =
+    schedule.maxEnrollments !== null && schedule.availableSeats !== null
+      ? Math.max(0, schedule.maxEnrollments - schedule.availableSeats)
+      : null;
 
   return (
     <div className="rounded-[24px] border border-border-light bg-surface-secondary/70 p-4 dark:border-white/8 dark:bg-white/[0.03]">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <span
               className={`rounded-full px-2.5 py-1 text-xs font-semibold ${getStatusToneClasses(
@@ -244,6 +156,11 @@ function ScheduleCard({
                 {t("admin.detail.schedules.enrollmentClosed")}
               </span>
             )}
+            {occupiedSeats !== null ? (
+              <span className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary dark:bg-primary/20">
+                {t("admin.detail.schedules.occupiedSeats", { value: occupiedSeats })}
+              </span>
+            ) : null}
           </div>
 
           <p className="mt-2 text-sm font-semibold text-text-primary dark:text-white/95">
@@ -279,117 +196,118 @@ function ScheduleCard({
           </div>
         </div>
 
-        <ActionIconButton
-          type="button"
-          intent={isEditing ? "neutral" : "edit"}
-          onClick={() => setIsEditing((value) => !value)}
-          label={isEditing ? t("admin.detail.schedules.cancelEdit") : t("admin.detail.schedules.edit")}
-          icon={isEditing ? <CircleOff className="h-4 w-4" /> : <Pencil className="h-4 w-4" />}
+        <div className="flex flex-wrap gap-2">
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={() => setIsEnrollmentsModalOpen(true)}
+            startIcon={<Users className="h-3.5 w-3.5" />}
+          >
+            {t("admin.detail.schedules.viewEnrollments")}
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={() => onOpenLectures(schedule)}
+            startIcon={<BookOpenText className="h-3.5 w-3.5" />}
+          >
+            {t("admin.detail.schedules.viewLectures")}
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={() => onOpenCreateLecture(schedule)}
+            startIcon={<Plus className="h-3.5 w-3.5" />}
+          >
+            {t("admin.detail.scheduleLectures.create.open")}
+          </Button>
+          <ActionIconButton
+            type="button"
+            intent="edit"
+            onClick={() => setIsUpdateModalOpen(true)}
+            label={t("admin.detail.schedules.edit")}
+            icon={<Pencil className="h-4 w-4" />}
+          />
+        </div>
+      </div>
+
+      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+        <DetailRow
+          label={t("admin.detail.schedules.fields.status")}
+          value={t(`statuses.schedule.${schedule.status}` as Parameters<typeof t>[0])}
+        />
+        <DetailRow
+          label={t("admin.detail.schedules.fields.externalProvider")}
+          value={
+            schedule.externalRoomProvider
+              ? t(`admin.detail.schedules.providers.${schedule.externalRoomProvider.toLowerCase()}` as Parameters<typeof t>[0])
+              : t("admin.detail.schedules.providers.none")
+          }
+        />
+        <DetailRow
+          label={t("admin.detail.schedules.fields.lectures")}
+          value={t("admin.detail.schedules.lectureSummary", {
+            total: schedule.lectureCount ?? 0,
+          })}
+        />
+        <DetailRow
+          label={t("admin.detail.schedules.fields.lecturePlan")}
+          value={
+            schedule.isLecturePlanComplete
+              ? t("admin.detail.schedules.planComplete")
+              : t("admin.detail.schedules.planIncomplete")
+          }
         />
       </div>
 
-      {isEditing ? (
-        <form onSubmit={handleUpdate} className="mt-4 grid gap-3 lg:grid-cols-2">
-          <label className="block">
-            <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
-              {t("admin.detail.schedules.fields.status")}
-            </span>
-            <select
-              value={form.status}
-              onChange={(event) =>
-                setForm((current) => ({
-                  ...current,
-                  status: event.target.value as TrainingScheduleStatus,
-                }))
-              }
-              className="w-full rounded-2xl border border-border-light bg-white px-4 py-3 text-sm text-text-primary outline-none transition focus:border-primary/35 dark:bg-white/5 dark:text-white"
-            >
-              {SCHEDULE_STATUSES.map((status) => (
-                <option key={status} value={status}>
-                  {t(`statuses.schedule.${status}` as Parameters<typeof t>[0])}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label className="block">
-            <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
-              {t("admin.detail.schedules.fields.externalProvider")}
-            </span>
-            <select
-              value={form.externalRoomProvider}
-              onChange={(event) =>
-                setForm((current) => ({
-                  ...current,
-                  externalRoomProvider: event.target.value,
-                }))
-              }
-              className="w-full rounded-2xl border border-border-light bg-white px-4 py-3 text-sm text-text-primary outline-none transition focus:border-primary/35 dark:bg-white/5 dark:text-white"
-            >
-              <option value="">{t("admin.detail.schedules.providers.none")}</option>
-              <option value="ZOOM">{t("admin.detail.schedules.providers.zoom")}</option>
-            </select>
-          </label>
-
-          <label className="block lg:col-span-2">
-            <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
-              {t("admin.detail.schedules.fields.externalJoinUrl")}
-            </span>
-            <input
-              value={form.externalRoomJoinUrl}
-              onChange={(event) =>
-                setForm((current) => ({
-                  ...current,
-                  externalRoomJoinUrl: event.target.value,
-                }))
-              }
-              placeholder={t("admin.detail.schedules.placeholders.externalJoinUrl")}
-              className="w-full rounded-2xl border border-border-light bg-white px-4 py-3 text-sm text-text-primary outline-none transition focus:border-primary/35 dark:bg-white/5 dark:text-white"
-            />
-          </label>
-
-          <label className="block lg:col-span-2">
-            <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
-              {t("admin.detail.schedules.fields.externalHostUrl")}
-            </span>
-            <input
-              value={form.externalRoomHostUrl}
-              onChange={(event) =>
-                setForm((current) => ({
-                  ...current,
-                  externalRoomHostUrl: event.target.value,
-                }))
-              }
-              placeholder={t("admin.detail.schedules.placeholders.externalHostUrl")}
-              className="w-full rounded-2xl border border-border-light bg-white px-4 py-3 text-sm text-text-primary outline-none transition focus:border-primary/35 dark:bg-white/5 dark:text-white"
-            />
-          </label>
-
-          <div className="flex flex-wrap items-center gap-3 lg:col-span-2">
-            <Button
-              type="submit"
-              size="sm"
-              disabled={updateSchedule.isPending}
-              startIcon={<Pencil className="h-3.5 w-3.5" />}
-            >
-              {updateSchedule.isPending
-                ? t("admin.detail.schedules.saving")
-                : t("admin.detail.schedules.save")}
-            </Button>
-            {feedback ? (
-              <span
-                className={`text-xs ${
-                  feedback.tone === "success"
-                    ? "text-emerald-600 dark:text-emerald-400"
-                    : "text-rose-600 dark:text-rose-400"
-                }`}
-              >
-                {feedback.message}
-              </span>
-            ) : null}
-          </div>
-        </form>
+      {analytics ? (
+        <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <DetailRow
+            label={t("admin.detail.analytics.cohortEnrollments")}
+            value={t("admin.detail.analytics.cohortEnrollmentsValue", {
+              value: analytics.totalEnrollments,
+            })}
+          />
+          <DetailRow
+            label={t("admin.detail.analytics.cohortConversion")}
+            value={t("admin.detail.analytics.percentage", {
+              value: analytics.paymentConversionRate,
+            })}
+          />
+          <DetailRow
+            label={t("admin.detail.analytics.cohortAttendance")}
+            value={t("admin.detail.analytics.percentage", {
+              value: analytics.attendanceCompletionRate,
+            })}
+          />
+          <DetailRow
+            label={t("admin.detail.analytics.cohortFailures")}
+            value={t("admin.detail.analytics.cohortFailuresValue", {
+              value: analytics.failedPaymentAttempts,
+            })}
+          />
+        </div>
       ) : null}
+
+      <AdminTrainingScheduleUpdateModal
+        isOpen={isUpdateModalOpen}
+        trainingId={trainingId}
+        schedule={schedule}
+        onClose={() => setIsUpdateModalOpen(false)}
+        onSuccess={() => {
+          setIsUpdateModalOpen(false);
+        }}
+      />
+
+      <AdminTrainingScheduleEnrollmentsModal
+        isOpen={isEnrollmentsModalOpen}
+        trainingId={trainingId}
+        schedule={schedule}
+        onClose={() => setIsEnrollmentsModalOpen(false)}
+      />
     </div>
   );
 }
@@ -402,6 +320,7 @@ export default function AdminTrainingDetailScreen({ trainingId }: Props) {
 
   const trainingQuery = useAdminTraining(trainingId, locale);
   const schedulesQuery = useAdminTrainingSchedules(trainingId);
+  const analyticsQuery = useAdminTrainingAnalytics(trainingId);
   const updateTraining = useUpdateAdminTraining();
   const publishTraining = usePublishAdminTraining();
   const archiveTraining = useArchiveAdminTraining();
@@ -409,98 +328,107 @@ export default function AdminTrainingDetailScreen({ trainingId }: Props) {
 
   const [feedback, setFeedback] = useState<Feedback | null>(null);
   const [showArchiveConfirm, setShowArchiveConfirm] = useState(false);
-  const [updateForm, setUpdateForm] = useState<UpdateTrainingForm | null>(null);
-  const [scheduleForm, setScheduleForm] = useState<ScheduleCreateForm>({
-    status: "DRAFT",
-    scheduleCode: "",
-    enrollmentOpenAt: "",
-    enrollmentCloseAt: "",
-    startsAt: "",
-    endsAt: "",
-    timezone: "",
-    externalRoomProvider: "",
-    externalRoomJoinUrl: "",
-    externalRoomHostUrl: "",
-  });
+  const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
+  const [isCreateScheduleModalOpen, setIsCreateScheduleModalOpen] = useState(false);
+  const [activeLecturesSchedule, setActiveLecturesSchedule] =
+    useState<AdminTrainingSchedule | null>(null);
+  const [activeLectureCreateSchedule, setActiveLectureCreateSchedule] =
+    useState<AdminTrainingSchedule | null>(null);
+  const [showPaymentAttempts, setShowPaymentAttempts] = useState(false);
 
   const item = trainingQuery.data;
-  const effectiveUpdateForm = useMemo<UpdateTrainingForm | null>(() => {
-    if (updateForm) return updateForm;
-    if (!item) return null;
-
-    return {
-      locale: item.locale ?? locale,
-      title: item.title ?? "",
-      slug: item.slug ?? "",
-      shortDescription: item.shortDescription ?? "",
-      fullDescription: item.fullDescription ?? "",
-      courseType: item.courseType as CourseType,
-      visibility: item.visibility as CourseVisibility,
-    };
-  }, [item, locale, updateForm]);
-
+  const scheduleItems = schedulesQuery.data?.items ?? [];
+  const paymentAttemptsQuery = useAdminTrainingPaymentAttempts(item?.id ?? null, {
+    page: 1,
+    limit: 100,
+  });
+  const failedPaymentAttempts = useMemo(() => {
+    const attempts = paymentAttemptsQuery.data?.items ?? [];
+    return attempts.filter((attempt) =>
+      ["FAILED", "EXPIRED", "CANCELLED", "REQUIRES_ACTION"].includes(attempt.status),
+    );
+  }, [paymentAttemptsQuery.data?.items]);
+  const scheduleSnapshotItems: TrainingSchedule[] =
+    schedulesQuery.data?.items ?? item?.schedules ?? [];
+  const cohortAnalyticsByScheduleId = useMemo(() => {
+    return (analyticsQuery.data?.cohorts ?? []).reduce<Record<string, AdminTrainingAnalyticsCohortItem>>(
+      (acc, cohort) => {
+        acc[cohort.scheduleId] = cohort;
+        return acc;
+      },
+      {},
+    );
+  }, [analyticsQuery.data?.cohorts]);
   const actionState = useMemo(() => {
     if (!item) {
-      return { canPublish: false, canArchive: false };
+      return {
+        canPublish: false,
+        canArchive: false,
+        publishBlockedByMissingSchedule: false,
+      };
     }
+    const hasSchedules = scheduleSnapshotItems.length > 0;
     return {
-      canPublish: item.status === "DRAFT",
+      canPublish: item.status === "DRAFT" && hasSchedules,
       canArchive: item.status === "DRAFT" || item.status === "PUBLISHED",
+      publishBlockedByMissingSchedule:
+        item.status === "DRAFT" && !hasSchedules,
     };
-  }, [item]);
+  }, [item, scheduleSnapshotItems.length]);
+  const trainingStats = useMemo(() => {
+    const totalSchedules = scheduleSnapshotItems.length;
+    const openSchedules = scheduleSnapshotItems.filter((schedule) => schedule.isEnrollmentOpen).length;
+    const endedSchedules = scheduleSnapshotItems.filter((schedule) =>
+      ["COMPLETED", "CANCELLED", "ARCHIVED"].includes(schedule.status),
+    ).length;
+    const totalLectures = scheduleSnapshotItems.reduce(
+      (sum, schedule) => sum + (schedule.lectureCount ?? 0),
+      0,
+    );
+    const totalPlannedLectures = scheduleSnapshotItems.reduce(
+      (sum, schedule) => sum + (schedule.plannedLectureCount ?? 0),
+      0,
+    );
+    const totalPlannedDurationDays = scheduleSnapshotItems.reduce(
+      (sum, schedule) => sum + (schedule.plannedDurationDays ?? 0),
+      0,
+    );
+    const completeSchedules = scheduleSnapshotItems.filter(
+      (schedule) => schedule.isLecturePlanComplete,
+    ).length;
+    const totalCapacity = scheduleSnapshotItems.reduce(
+      (sum, schedule) => sum + (schedule.maxEnrollments ?? 0),
+      0,
+    );
+    const occupiedSeats = scheduleSnapshotItems.reduce((sum, schedule) => {
+      if (schedule.maxEnrollments === null || schedule.availableSeats === null) {
+        return sum;
+      }
+      return sum + Math.max(0, schedule.maxEnrollments - schedule.availableSeats);
+    }, 0);
 
-  const scheduleItems = schedulesQuery.data?.items ?? item?.schedules ?? [];
-
-  const slugPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
-
-  const handleUpdateTraining = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (!item || !effectiveUpdateForm) return;
-    setFeedback(null);
-
-    if (!effectiveUpdateForm.title.trim() || !effectiveUpdateForm.slug.trim()) {
-      setFeedback({
-        tone: "error",
-        message: t("admin.detail.update.validation.required"),
-      });
-      return;
-    }
-
-    if (!slugPattern.test(effectiveUpdateForm.slug.trim())) {
-      setFeedback({
-        tone: "error",
-        message: t("admin.detail.update.validation.slug"),
-      });
-      return;
-    }
-
-    try {
-      await updateTraining.mutateAsync({
-        trainingId: item.id,
-        input: {
-          locale: effectiveUpdateForm.locale,
-          title: effectiveUpdateForm.title.trim(),
-          slug: effectiveUpdateForm.slug.trim(),
-          shortDescription: effectiveUpdateForm.shortDescription.trim(),
-          fullDescription: effectiveUpdateForm.fullDescription.trim(),
-          courseType: effectiveUpdateForm.courseType,
-          visibility: effectiveUpdateForm.visibility,
-        },
-      });
-      setFeedback({
-        tone: "success",
-        message: t("admin.detail.update.success"),
-      });
-    } catch (error) {
-      setFeedback({
-        tone: "error",
-        message: t(getAdminTrainingErrorKey(error) as Parameters<typeof t>[0]),
-      });
-    }
-  };
+    return {
+      totalSchedules,
+      openSchedules,
+      endedSchedules,
+      totalLectures,
+      totalPlannedLectures,
+      totalPlannedDurationDays,
+      completeSchedules,
+      totalCapacity,
+      occupiedSeats,
+    };
+  }, [scheduleSnapshotItems]);
 
   const handlePublish = async () => {
     if (!item) return;
+    if (scheduleSnapshotItems.length === 0) {
+      setFeedback({
+        tone: "error",
+        message: t("admin.detail.actions.publishBlocked.note"),
+      });
+      return;
+    }
     setFeedback(null);
     try {
       await publishTraining.mutateAsync({ trainingId: item.id, locale });
@@ -526,109 +454,6 @@ export default function AdminTrainingDetailScreen({ trainingId }: Props) {
         message: t(getAdminTrainingErrorKey(error) as Parameters<typeof t>[0]),
       });
       return false;
-    }
-  };
-
-  const handleCreateSchedule = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (!item) return;
-    setFeedback(null);
-
-    if (
-      !scheduleForm.enrollmentOpenAt ||
-      !scheduleForm.enrollmentCloseAt ||
-      !scheduleForm.startsAt ||
-      !scheduleForm.endsAt
-    ) {
-      setFeedback({
-        tone: "error",
-        message: t("admin.detail.createSchedule.validation.required"),
-      });
-      return;
-    }
-
-    const enrollmentOpenAt = localInputToIso(scheduleForm.enrollmentOpenAt);
-    const enrollmentCloseAt = localInputToIso(scheduleForm.enrollmentCloseAt);
-    const startsAt = localInputToIso(scheduleForm.startsAt);
-    const endsAt = localInputToIso(scheduleForm.endsAt);
-
-    if (new Date(enrollmentOpenAt) >= new Date(enrollmentCloseAt)) {
-      setFeedback({
-        tone: "error",
-        message: t("admin.detail.createSchedule.validation.enrollmentWindow"),
-      });
-      return;
-    }
-
-    if (new Date(startsAt) >= new Date(endsAt)) {
-      setFeedback({
-        tone: "error",
-        message: t("admin.detail.createSchedule.validation.sessionWindow"),
-      });
-      return;
-    }
-
-    if (new Date(enrollmentCloseAt) > new Date(startsAt)) {
-      setFeedback({
-        tone: "error",
-        message: t("admin.detail.createSchedule.validation.closeBeforeStart"),
-      });
-      return;
-    }
-
-    if (scheduleForm.externalRoomProvider && !scheduleForm.externalRoomJoinUrl.trim()) {
-      setFeedback({
-        tone: "error",
-        message: t("admin.errors.externalJoinUrlRequired"),
-      });
-      return;
-    }
-
-    if (!scheduleForm.externalRoomProvider && scheduleForm.externalRoomJoinUrl.trim()) {
-      setFeedback({
-        tone: "error",
-        message: t("admin.errors.externalRoomProviderRequired"),
-      });
-      return;
-    }
-
-    try {
-      await createSchedule.mutateAsync({
-        trainingId: item.id,
-        input: {
-          status: scheduleForm.status,
-          scheduleCode: scheduleForm.scheduleCode.trim() || undefined,
-          enrollmentOpenAt,
-          enrollmentCloseAt,
-          startsAt,
-          endsAt,
-          timezone: scheduleForm.timezone.trim() || undefined,
-          externalRoomProvider: scheduleForm.externalRoomProvider || undefined,
-          externalRoomJoinUrl: scheduleForm.externalRoomJoinUrl.trim() || undefined,
-          externalRoomHostUrl: scheduleForm.externalRoomHostUrl.trim() || undefined,
-        },
-      });
-      setFeedback({
-        tone: "success",
-        message: t("admin.detail.createSchedule.success"),
-      });
-      setScheduleForm({
-        status: "DRAFT",
-        scheduleCode: "",
-        enrollmentOpenAt: "",
-        enrollmentCloseAt: "",
-        startsAt: "",
-        endsAt: "",
-        timezone: "",
-        externalRoomProvider: "",
-        externalRoomJoinUrl: "",
-        externalRoomHostUrl: "",
-      });
-    } catch (error) {
-      setFeedback({
-        tone: "error",
-        message: t(getAdminTrainingErrorKey(error) as Parameters<typeof t>[0]),
-      });
     }
   };
 
@@ -710,11 +535,12 @@ export default function AdminTrainingDetailScreen({ trainingId }: Props) {
           {t("admin.detail.eyebrow")}
         </p>
         <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
+          <div className="min-w-0 flex-1">
             <h1 className="text-2xl font-semibold tracking-tight text-text-primary dark:text-white/95 sm:text-3xl">
               {item.title}
             </h1>
-            <p className="mt-2 text-sm text-text-secondary">{t("admin.detail.note")}</p>
+            <div className="mt-3 h-px w-16 bg-border-light dark:bg-white/10" />
+            <p className="mt-3 max-w-2xl text-sm text-text-secondary">{t("admin.detail.note")}</p>
           </div>
           <div className="flex flex-wrap gap-2">
             <span
@@ -747,146 +573,261 @@ export default function AdminTrainingDetailScreen({ trainingId }: Props) {
         </div>
       ) : null}
 
-      <SurfaceCard variant="section" className="rounded-[28px] p-5 sm:p-6">
-        <h2 className="text-base font-semibold text-text-primary dark:text-white/95">
-          {t("admin.detail.sections.snapshot")}
-        </h2>
-        <p className="mt-1 text-sm leading-6 text-text-secondary">
-          {t("admin.detail.snapshotNote")}
-        </p>
-
-        <div className="mt-4 grid gap-3 lg:grid-cols-3">
-          <OperationalCard
-            label={t("admin.detail.snapshotCards.lifecycle.label")}
-            title={t(
-              `admin.detail.snapshotCards.lifecycle.states.${getTrainingLifecycleState(item)}.title` as Parameters<typeof t>[0],
-            )}
-            note={t(
-              `admin.detail.snapshotCards.lifecycle.states.${getTrainingLifecycleState(item)}.note` as Parameters<typeof t>[0],
-            )}
-            tone={
-              getTrainingLifecycleState(item) === "published"
-                ? "success"
-                : getTrainingLifecycleState(item) === "archived"
-                  ? "neutral"
-                  : "warning"
-            }
-          />
-          <OperationalCard
-            label={t("admin.detail.snapshotCards.schedules.label")}
-            title={t(
-              `admin.detail.snapshotCards.schedules.states.${getTrainingScheduleState(scheduleItems)}.title` as Parameters<typeof t>[0],
-            )}
-            note={t(
-              `admin.detail.snapshotCards.schedules.states.${getTrainingScheduleState(scheduleItems)}.note` as Parameters<typeof t>[0],
-            )}
-            tone={
-              getTrainingScheduleState(scheduleItems) === "open"
-                ? "brand"
-                : getTrainingScheduleState(scheduleItems) === "closed"
-                  ? "primary"
-                  : "neutral"
-            }
-          />
-          <OperationalCard
-            label={t("admin.detail.snapshotCards.actions.label")}
-            title={t(
-              `admin.detail.snapshotCards.actions.states.${getTrainingActionPosture({
-                canManage,
-                canPublish: actionState.canPublish,
-                canArchive: actionState.canArchive,
-              })}.title` as Parameters<typeof t>[0],
-            )}
-            note={t(
-              `admin.detail.snapshotCards.actions.states.${getTrainingActionPosture({
-                canManage,
-                canPublish: actionState.canPublish,
-                canArchive: actionState.canArchive,
-              })}.note` as Parameters<typeof t>[0],
-            )}
-            tone={
-              getTrainingActionPosture({
-                canManage,
-                canPublish: actionState.canPublish,
-                canArchive: actionState.canArchive,
-              }) === "limitedActions"
-                ? "primary"
-                : getTrainingActionPosture({
-                    canManage,
-                    canPublish: actionState.canPublish,
-                    canArchive: actionState.canArchive,
-                  }) === "adminOnly"
-                  ? "warning"
-                  : "neutral"
-            }
-          />
-        </div>
-      </SurfaceCard>
-
-      <div className="grid gap-5 xl:grid-cols-[minmax(0,1.5fr)_minmax(360px,0.9fr)]">
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_240px]">
         <div className="space-y-5">
-          <SummaryCard title={t("admin.detail.sections.overview")}>
-            <div className="rounded-[24px] border border-border-light px-4 dark:border-white/8">
+          <SummaryCard
+            title={t("admin.detail.sections.program")}
+            note={t("admin.detail.details.note")}
+          >
+            <div className="grid gap-2 sm:grid-cols-2">
               <DetailRow
                 label={t("admin.detail.fields.status")}
                 value={t(`statuses.course.${item.status}` as Parameters<typeof t>[0])}
               />
               <DetailRow
                 label={t("admin.detail.fields.visibility")}
-                value={t(
-                  `statuses.visibility.${item.visibility}` as Parameters<typeof t>[0],
-                )}
-              />
-              <DetailRow
-                label={t("admin.detail.fields.locale")}
-                value={item.locale ?? locale}
+                value={t(`statuses.visibility.${item.visibility}` as Parameters<typeof t>[0])}
               />
               <DetailRow
                 label={t("admin.detail.fields.courseType")}
                 value={t(`courseTypes.${item.courseType}` as Parameters<typeof t>[0])}
               />
-              <DetailRow label={t("admin.detail.fields.slug")} value={item.slug} />
               <DetailRow
-                label={t("admin.detail.fields.publishedAt")}
-                value={formatDateTime(item.publishedAt, locale)}
+                label={t("admin.detail.fields.locale")}
+                value={item.locale}
               />
               <DetailRow
-                label={t("admin.detail.fields.createdAt")}
-                value={formatDateTime(item.createdAt, locale)}
-              />
-              <DetailRow
-                label={t("admin.detail.fields.updatedAt")}
-                value={formatDateTime(item.updatedAt, locale)}
+                label={t("admin.detail.fields.slug")}
+                value={item.slug}
               />
               <DetailRow
                 label={t("admin.detail.fields.scheduleCount")}
-                value={String(item.schedules.length)}
+                value={`${scheduleItems.length}`}
+              />
+              <DetailRow
+                label={t("admin.detail.fields.publishedAt")}
+                value={item.publishedAt ? formatDateTime(item.publishedAt, locale) : "-"}
+              />
+              <DetailRow
+                label={t("admin.detail.fields.createdAt")}
+                value={item.createdAt ? formatDateTime(item.createdAt, locale) : "-"}
+              />
+              <DetailRow
+                label={t("admin.detail.fields.updatedAt")}
+                value={item.updatedAt ? formatDateTime(item.updatedAt, locale) : "-"}
               />
             </div>
           </SummaryCard>
 
           <SummaryCard
-            title={t("admin.detail.sections.schedules")}
+            title={t("admin.detail.sections.curriculum")}
+            note={t("admin.detail.curriculum.note")}
+          >
+            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+              <OperationalCard
+                label={t("admin.detail.curriculum.cards.plannedLectures.label")}
+                title={t("admin.detail.curriculum.cards.plannedLectures.value", {
+                  value: trainingStats.totalPlannedLectures,
+                })}
+                note={t("admin.detail.curriculum.cards.plannedLectures.note")}
+                tone="primary"
+              />
+              <OperationalCard
+                label={t("admin.detail.curriculum.cards.actualLectures.label")}
+                title={t("admin.detail.curriculum.cards.actualLectures.value", {
+                  value: trainingStats.totalLectures,
+                })}
+                note={t("admin.detail.curriculum.cards.actualLectures.note")}
+                tone="brand"
+              />
+              <OperationalCard
+                label={t("admin.detail.curriculum.cards.plannedDays.label")}
+                title={t("admin.detail.curriculum.cards.plannedDays.value", {
+                  value: trainingStats.totalPlannedDurationDays,
+                })}
+                note={t("admin.detail.curriculum.cards.plannedDays.note")}
+                tone="success"
+              />
+              <OperationalCard
+                label={t("admin.detail.curriculum.cards.completeSchedules.label")}
+                title={t("admin.detail.curriculum.cards.completeSchedules.value", {
+                  value: trainingStats.completeSchedules,
+                })}
+                note={t("admin.detail.curriculum.cards.completeSchedules.note", {
+                  value: trainingStats.totalSchedules,
+                })}
+                tone="warning"
+              />
+            </div>
+          </SummaryCard>
+
+          <SummaryCard
+            title={t("admin.detail.sections.analytics")}
+            note={t("admin.detail.analytics.note")}
+          >
+            {analyticsQuery.isLoading ? (
+              <ListStateSkeleton items={2} heightClass="h-28" />
+            ) : analyticsQuery.isError ? (
+              <StateCard
+                title={t("admin.detail.analytics.error.heading")}
+                note={t("admin.detail.analytics.error.note")}
+              />
+            ) : analyticsQuery.data ? (
+              <div className="space-y-4">
+                <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                  <OperationalCard
+                    label={t("admin.detail.analytics.cards.paymentConversion.label")}
+                    title={t("admin.detail.analytics.percentage", {
+                      value: analyticsQuery.data.paymentConversionRate,
+                    })}
+                    note={t("admin.detail.analytics.cards.paymentConversion.note")}
+                    tone="success"
+                  />
+                  <OperationalCard
+                    label={t("admin.detail.analytics.cards.attendanceCompletion.label")}
+                    title={t("admin.detail.analytics.percentage", {
+                      value: analyticsQuery.data.attendanceCompletionRate,
+                    })}
+                    note={t("admin.detail.analytics.cards.attendanceCompletion.note")}
+                    tone="brand"
+                  />
+                  <OperationalCard
+                    label={t("admin.detail.analytics.cards.failedPayments.label")}
+                    title={t("admin.detail.analytics.count", {
+                      value: analyticsQuery.data.failedPaymentAttempts,
+                    })}
+                    note={t("admin.detail.analytics.cards.failedPayments.note")}
+                    tone="warning"
+                  />
+                  <OperationalCard
+                    label={t("admin.detail.analytics.cards.abandonedPayments.label")}
+                    title={t("admin.detail.analytics.count", {
+                      value: analyticsQuery.data.abandonedPaymentAttempts,
+                    })}
+                    note={t("admin.detail.analytics.cards.abandonedPayments.note")}
+                    tone="neutral"
+                  />
+                </div>
+
+                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                  <DetailRow
+                    label={t("admin.detail.analytics.overallEnrollments")}
+                    value={t("admin.detail.analytics.count", {
+                      value: analyticsQuery.data.totalEnrollments,
+                    })}
+                  />
+                  <DetailRow
+                    label={t("admin.detail.analytics.overallPaid")}
+                    value={t("admin.detail.analytics.count", {
+                      value: analyticsQuery.data.paidEnrollments,
+                    })}
+                  />
+                  <DetailRow
+                    label={t("admin.detail.analytics.overallPending")}
+                    value={t("admin.detail.analytics.count", {
+                      value: analyticsQuery.data.pendingPaymentEnrollments,
+                    })}
+                  />
+                  <DetailRow
+                    label={t("admin.detail.analytics.overallAttendance")}
+                    value={t("admin.detail.analytics.count", {
+                      value: analyticsQuery.data.attendanceCompletedEnrollments,
+                    })}
+                  />
+                </div>
+              </div>
+            ) : null}
+          </SummaryCard>
+
+          <SummaryCard
+            title={t("admin.detail.sections.lifecycle")}
+            note={t("admin.detail.lifecycle.note")}
+          >
+            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+              <OperationalCard
+                label={t("admin.detail.lifecycle.cards.totalSchedules.label")}
+                title={t("admin.detail.lifecycle.cards.totalSchedules.value", {
+                  value: trainingStats.totalSchedules,
+                })}
+                note={t("admin.detail.lifecycle.cards.totalSchedules.note")}
+                tone="primary"
+              />
+              <OperationalCard
+                label={t("admin.detail.lifecycle.cards.openSchedules.label")}
+                title={t("admin.detail.lifecycle.cards.openSchedules.value", {
+                  value: trainingStats.openSchedules,
+                })}
+                note={t("admin.detail.lifecycle.cards.openSchedules.note")}
+                tone="brand"
+              />
+              <OperationalCard
+                label={t("admin.detail.lifecycle.cards.totalLectures.label")}
+                title={t("admin.detail.lifecycle.cards.totalLectures.value", {
+                  value: trainingStats.totalLectures,
+                })}
+                note={t("admin.detail.lifecycle.cards.totalLectures.note")}
+                tone="brand"
+              />
+              <OperationalCard
+                label={t("admin.detail.lifecycle.cards.joinedSeats.label")}
+                title={t("admin.detail.lifecycle.cards.joinedSeats.value", {
+                  value: trainingStats.occupiedSeats,
+                })}
+                note={t("admin.detail.lifecycle.cards.joinedSeats.note", {
+                  value: trainingStats.totalCapacity,
+                })}
+                tone="success"
+              />
+              <OperationalCard
+                label={t("admin.detail.lifecycle.cards.endedSchedules.label")}
+                title={t("admin.detail.lifecycle.cards.endedSchedules.value", {
+                  value: trainingStats.endedSchedules,
+                })}
+                note={t("admin.detail.lifecycle.cards.endedSchedules.note")}
+                tone="neutral"
+              />
+            </div>
+            <div className="mt-4 grid gap-2 sm:grid-cols-2">
+              <DetailRow
+                label={t("admin.detail.lifecycle.timeline.createdAt")}
+                value={item.createdAt ? formatDateTime(item.createdAt, locale) : "-"}
+              />
+              <DetailRow
+                label={t("admin.detail.lifecycle.timeline.publishedAt")}
+                value={item.publishedAt ? formatDateTime(item.publishedAt, locale) : "-"}
+              />
+              <DetailRow
+                label={t("admin.detail.lifecycle.timeline.archivedAt")}
+                value={item.archivedAt ? formatDateTime(item.archivedAt, locale) : "-"}
+              />
+              <DetailRow
+                label={t("admin.detail.lifecycle.timeline.updatedAt")}
+                value={item.updatedAt ? formatDateTime(item.updatedAt, locale) : "-"}
+              />
+            </div>
+          </SummaryCard>
+
+          <SummaryCard
+            title={t("admin.detail.sections.cohorts")}
             note={t("admin.detail.schedules.note")}
           >
             {schedulesQuery.isLoading ? (
-              <ListStateSkeleton items={3} heightClass="h-24" />
+              <ListStateSkeleton items={3} heightClass="h-40" />
             ) : schedulesQuery.isError ? (
               <StateCard
                 title={t("admin.detail.schedules.error.heading")}
                 note={t("admin.detail.schedules.error.note")}
-                action={{
-                  label: t("admin.detail.schedules.error.retry"),
-                  onClick: () => schedulesQuery.refetch(),
-                }}
               />
-            ) : schedulesQuery.data && schedulesQuery.data.items.length > 0 ? (
+            ) : scheduleItems.length > 0 ? (
               <div className="space-y-3">
-                {schedulesQuery.data.items.map((schedule) => (
+                {scheduleItems.map((schedule) => (
                   <ScheduleCard
                     key={schedule.id}
                     schedule={schedule}
+                    analytics={cohortAnalyticsByScheduleId[schedule.id] ?? null}
                     trainingId={item.id}
+                    onOpenLectures={setActiveLecturesSchedule}
+                    onOpenCreateLecture={setActiveLectureCreateSchedule}
                   />
                 ))}
               </div>
@@ -898,18 +839,71 @@ export default function AdminTrainingDetailScreen({ trainingId }: Props) {
             )}
           </SummaryCard>
         </div>
-        <div className="space-y-5">
+
+        <aside className="space-y-5">
+          <SummaryCard
+            title={t("admin.detail.sections.paymentAttempts")}
+            note={t("admin.detail.paymentAttempts.note")}
+          >
+            {paymentAttemptsQuery.isLoading ? (
+              <ListStateSkeleton items={2} heightClass="h-20" />
+            ) : paymentAttemptsQuery.isError ? (
+              <StateCard
+                title={t("admin.detail.paymentAttempts.states.error.heading")}
+                note={t("admin.detail.paymentAttempts.states.error.note")}
+              />
+            ) : (
+              <div className="space-y-3">
+                <OperationalCard
+                  label={t("admin.detail.paymentAttempts.summary.label")}
+                  title={t("admin.detail.paymentAttempts.summary.value", {
+                    value: failedPaymentAttempts.length,
+                  })}
+                  note={t("admin.detail.paymentAttempts.summary.note")}
+                  tone="warning"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => setShowPaymentAttempts(true)}
+                  startIcon={<BookOpenText className="h-4 w-4" />}
+                >
+                  {t("admin.detail.paymentAttempts.open")}
+                </Button>
+              </div>
+            )}
+          </SummaryCard>
+
           <SummaryCard
             title={t("admin.detail.sections.actions")}
             note={t("admin.detail.actions.note")}
           >
             {canManage ? (
-              <div className="space-y-4">
+              <div className="space-y-3">
                 <Button
                   type="button"
+                  onClick={() => setIsUpdateModalOpen(true)}
+                  className="w-full"
+                  startIcon={<Pencil className="h-4 w-4" />}
+                >
+                  {t("admin.detail.sections.update")}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsCreateScheduleModalOpen(true)}
+                  className="w-full"
+                  startIcon={<Plus className="h-4 w-4" />}
+                >
+                  {t("admin.detail.actions.addSchedule")}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
                   onClick={handlePublish}
                   disabled={!actionState.canPublish || publishTraining.isPending}
-                  className="w-full"
+                  className="w-full hover:border-emerald-300 hover:text-emerald-700"
                   startIcon={<CheckCircle2 className="h-4 w-4" />}
                 >
                   {publishTraining.isPending
@@ -933,6 +927,11 @@ export default function AdminTrainingDetailScreen({ trainingId }: Props) {
                     title={t("admin.detail.actions.states.notAvailable.heading")}
                     note={t("admin.detail.actions.states.notAvailable.note")}
                   />
+                ) : actionState.publishBlockedByMissingSchedule ? (
+                  <StateCard
+                    title={t("admin.detail.actions.publishBlocked.heading")}
+                    note={t("admin.detail.actions.publishBlocked.note")}
+                  />
                 ) : null}
               </div>
             ) : (
@@ -942,374 +941,51 @@ export default function AdminTrainingDetailScreen({ trainingId }: Props) {
               />
             )}
           </SummaryCard>
-
-          <SummaryCard
-            title={t("admin.detail.sections.update")}
-            note={t("admin.detail.update.note")}
-          >
-            {effectiveUpdateForm ? (
-              <form onSubmit={handleUpdateTraining} className="space-y-3">
-                <label className="block">
-                  <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
-                    {t("admin.detail.update.fields.locale")}
-                  </span>
-                  <select
-                    value={effectiveUpdateForm.locale}
-                    onChange={(event) =>
-                      setUpdateForm((current) => ({
-                        ...(current ?? effectiveUpdateForm),
-                        locale: event.target.value,
-                      }))
-                    }
-                    className="w-full rounded-2xl border border-border-light bg-white px-4 py-3 text-sm text-text-primary outline-none transition focus:border-primary/35 dark:bg-white/5 dark:text-white"
-                  >
-                    <option value="ar">{t("admin.detail.update.locales.ar")}</option>
-                    <option value="en">{t("admin.detail.update.locales.en")}</option>
-                  </select>
-                </label>
-
-                <label className="block">
-                  <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
-                    {t("admin.detail.update.fields.title")}
-                  </span>
-                  <input
-                    value={effectiveUpdateForm.title}
-                    onChange={(event) =>
-                      setUpdateForm((current) => ({
-                        ...(current ?? effectiveUpdateForm),
-                        title: event.target.value,
-                      }))
-                    }
-                    placeholder={t("admin.detail.update.placeholders.title")}
-                    className="w-full rounded-2xl border border-border-light bg-white px-4 py-3 text-sm text-text-primary outline-none transition focus:border-primary/35 dark:bg-white/5 dark:text-white"
-                  />
-                </label>
-
-                <label className="block">
-                  <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
-                    {t("admin.detail.update.fields.slug")}
-                  </span>
-                  <input
-                    value={effectiveUpdateForm.slug}
-                    onChange={(event) =>
-                      setUpdateForm((current) => ({
-                        ...(current ?? effectiveUpdateForm),
-                        slug: event.target.value,
-                      }))
-                    }
-                    placeholder={t("admin.detail.update.placeholders.slug")}
-                    className="w-full rounded-2xl border border-border-light bg-white px-4 py-3 text-sm text-text-primary outline-none transition focus:border-primary/35 dark:bg-white/5 dark:text-white"
-                  />
-                </label>
-
-                <label className="block">
-                  <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
-                    {t("admin.detail.update.fields.courseType")}
-                  </span>
-                  <select
-                    value={effectiveUpdateForm.courseType}
-                    onChange={(event) =>
-                      setUpdateForm((current) => ({
-                        ...(current ?? effectiveUpdateForm),
-                        courseType: event.target.value as CourseType,
-                      }))
-                    }
-                    className="w-full rounded-2xl border border-border-light bg-white px-4 py-3 text-sm text-text-primary outline-none transition focus:border-primary/35 dark:bg-white/5 dark:text-white"
-                  >
-                    {COURSE_TYPES.map((type) => (
-                      <option key={type} value={type}>
-                        {t(`courseTypes.${type}` as Parameters<typeof t>[0])}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-
-                <label className="block">
-                  <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
-                    {t("admin.detail.update.fields.visibility")}
-                  </span>
-                  <select
-                    value={effectiveUpdateForm.visibility}
-                    onChange={(event) =>
-                      setUpdateForm((current) => ({
-                        ...(current ?? effectiveUpdateForm),
-                        visibility: event.target.value as CourseVisibility,
-                      }))
-                    }
-                    className="w-full rounded-2xl border border-border-light bg-white px-4 py-3 text-sm text-text-primary outline-none transition focus:border-primary/35 dark:bg-white/5 dark:text-white"
-                  >
-                    {COURSE_VISIBILITIES.map((value) => (
-                      <option key={value} value={value}>
-                        {t(`statuses.visibility.${value}` as Parameters<typeof t>[0])}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-
-                <label className="block">
-                  <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
-                    {t("admin.detail.update.fields.shortDescription")}
-                  </span>
-                  <input
-                    value={effectiveUpdateForm.shortDescription}
-                    onChange={(event) =>
-                      setUpdateForm((current) => ({
-                        ...(current ?? effectiveUpdateForm),
-                        shortDescription: event.target.value,
-                      }))
-                    }
-                    placeholder={t("admin.detail.update.placeholders.shortDescription")}
-                    className="w-full rounded-2xl border border-border-light bg-white px-4 py-3 text-sm text-text-primary outline-none transition focus:border-primary/35 dark:bg-white/5 dark:text-white"
-                  />
-                </label>
-
-                <label className="block">
-                  <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
-                    {t("admin.detail.update.fields.fullDescription")}
-                  </span>
-                  <textarea
-                    rows={4}
-                    value={effectiveUpdateForm.fullDescription}
-                    onChange={(event) =>
-                      setUpdateForm((current) => ({
-                        ...(current ?? effectiveUpdateForm),
-                        fullDescription: event.target.value,
-                      }))
-                    }
-                    placeholder={t("admin.detail.update.placeholders.fullDescription")}
-                    className="w-full rounded-2xl border border-border-light bg-white px-4 py-3 text-sm text-text-primary outline-none transition focus:border-primary/35 dark:bg-white/5 dark:text-white"
-                  />
-                </label>
-
-                <Button
-                  type="submit"
-                  disabled={updateTraining.isPending}
-                  className="w-full"
-                  startIcon={<Pencil className="h-4 w-4" />}
-                >
-                  {updateTraining.isPending
-                    ? t("admin.detail.update.submitting")
-                    : t("admin.detail.update.submit")}
-                </Button>
-              </form>
-            ) : (
-              <ListStateSkeleton items={2} heightClass="h-10" />
-            )}
-          </SummaryCard>
-
-          <SummaryCard
-            title={t("admin.detail.sections.createSchedule")}
-            note={t("admin.detail.createSchedule.note")}
-          >
-            {canManage ? (
-              <form onSubmit={handleCreateSchedule} className="space-y-3">
-                <label className="block">
-                  <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
-                    {t("admin.detail.createSchedule.fields.status")}
-                  </span>
-                  <select
-                    value={scheduleForm.status}
-                    onChange={(event) =>
-                      setScheduleForm((current) => ({
-                        ...current,
-                        status: event.target.value as TrainingScheduleStatus,
-                      }))
-                    }
-                    className="w-full rounded-2xl border border-border-light bg-white px-4 py-3 text-sm text-text-primary outline-none transition focus:border-primary/35 dark:bg-white/5 dark:text-white"
-                  >
-                    {SCHEDULE_STATUSES.map((status) => (
-                      <option key={status} value={status}>
-                        {t(`statuses.schedule.${status}` as Parameters<typeof t>[0])}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-
-                <label className="block">
-                  <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
-                    {t("admin.detail.createSchedule.fields.scheduleCode")}
-                  </span>
-                  <input
-                    value={scheduleForm.scheduleCode}
-                    onChange={(event) =>
-                      setScheduleForm((current) => ({
-                        ...current,
-                        scheduleCode: event.target.value,
-                      }))
-                    }
-                    placeholder={t("admin.detail.createSchedule.placeholders.scheduleCode")}
-                    className="w-full rounded-2xl border border-border-light bg-white px-4 py-3 text-sm text-text-primary outline-none transition focus:border-primary/35 dark:bg-white/5 dark:text-white"
-                  />
-                </label>
-
-                <div className="grid gap-3 lg:grid-cols-2">
-                  <label className="block">
-                    <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
-                      {t("admin.detail.createSchedule.fields.enrollmentOpenAt")}
-                    </span>
-                    <input
-                      type="datetime-local"
-                      value={scheduleForm.enrollmentOpenAt}
-                      onChange={(event) =>
-                        setScheduleForm((current) => ({
-                          ...current,
-                          enrollmentOpenAt: event.target.value,
-                        }))
-                      }
-                      className="w-full rounded-2xl border border-border-light bg-white px-4 py-3 text-sm text-text-primary outline-none transition focus:border-primary/35 dark:bg-white/5 dark:text-white"
-                    />
-                  </label>
-
-                  <label className="block">
-                    <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
-                      {t("admin.detail.createSchedule.fields.enrollmentCloseAt")}
-                    </span>
-                    <input
-                      type="datetime-local"
-                      value={scheduleForm.enrollmentCloseAt}
-                      onChange={(event) =>
-                        setScheduleForm((current) => ({
-                          ...current,
-                          enrollmentCloseAt: event.target.value,
-                        }))
-                      }
-                      className="w-full rounded-2xl border border-border-light bg-white px-4 py-3 text-sm text-text-primary outline-none transition focus:border-primary/35 dark:bg-white/5 dark:text-white"
-                    />
-                  </label>
-
-                  <label className="block">
-                    <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
-                      {t("admin.detail.createSchedule.fields.startsAt")}
-                    </span>
-                    <input
-                      type="datetime-local"
-                      value={scheduleForm.startsAt}
-                      onChange={(event) =>
-                        setScheduleForm((current) => ({
-                          ...current,
-                          startsAt: event.target.value,
-                        }))
-                      }
-                      className="w-full rounded-2xl border border-border-light bg-white px-4 py-3 text-sm text-text-primary outline-none transition focus:border-primary/35 dark:bg-white/5 dark:text-white"
-                    />
-                  </label>
-
-                  <label className="block">
-                    <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
-                      {t("admin.detail.createSchedule.fields.endsAt")}
-                    </span>
-                    <input
-                      type="datetime-local"
-                      value={scheduleForm.endsAt}
-                      onChange={(event) =>
-                        setScheduleForm((current) => ({
-                          ...current,
-                          endsAt: event.target.value,
-                        }))
-                      }
-                      className="w-full rounded-2xl border border-border-light bg-white px-4 py-3 text-sm text-text-primary outline-none transition focus:border-primary/35 dark:bg-white/5 dark:text-white"
-                    />
-                  </label>
-                </div>
-
-                <label className="block">
-                  <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
-                    {t("admin.detail.createSchedule.fields.timezone")}
-                  </span>
-                  <input
-                    value={scheduleForm.timezone}
-                    onChange={(event) =>
-                      setScheduleForm((current) => ({
-                        ...current,
-                        timezone: event.target.value,
-                      }))
-                    }
-                    placeholder={t("admin.detail.createSchedule.placeholders.timezone")}
-                    className="w-full rounded-2xl border border-border-light bg-white px-4 py-3 text-sm text-text-primary outline-none transition focus:border-primary/35 dark:bg-white/5 dark:text-white"
-                  />
-                </label>
-
-                <label className="block">
-                  <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
-                    {t("admin.detail.createSchedule.fields.externalProvider")}
-                  </span>
-                  <select
-                    value={scheduleForm.externalRoomProvider}
-                    onChange={(event) =>
-                      setScheduleForm((current) => ({
-                        ...current,
-                        externalRoomProvider: event.target.value,
-                      }))
-                    }
-                    className="w-full rounded-2xl border border-border-light bg-white px-4 py-3 text-sm text-text-primary outline-none transition focus:border-primary/35 dark:bg-white/5 dark:text-white"
-                  >
-                    <option value="">{t("admin.detail.createSchedule.providers.none")}</option>
-                    <option value="ZOOM">{t("admin.detail.createSchedule.providers.zoom")}</option>
-                  </select>
-                </label>
-
-                <label className="block">
-                  <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
-                    {t("admin.detail.createSchedule.fields.externalJoinUrl")}
-                  </span>
-                  <input
-                    value={scheduleForm.externalRoomJoinUrl}
-                    onChange={(event) =>
-                      setScheduleForm((current) => ({
-                        ...current,
-                        externalRoomJoinUrl: event.target.value,
-                      }))
-                    }
-                    placeholder={t("admin.detail.createSchedule.placeholders.externalJoinUrl")}
-                    className="w-full rounded-2xl border border-border-light bg-white px-4 py-3 text-sm text-text-primary outline-none transition focus:border-primary/35 dark:bg-white/5 dark:text-white"
-                  />
-                </label>
-
-                <label className="block">
-                  <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
-                    {t("admin.detail.createSchedule.fields.externalHostUrl")}
-                  </span>
-                  <input
-                    value={scheduleForm.externalRoomHostUrl}
-                    onChange={(event) =>
-                      setScheduleForm((current) => ({
-                        ...current,
-                        externalRoomHostUrl: event.target.value,
-                      }))
-                    }
-                    placeholder={t("admin.detail.createSchedule.placeholders.externalHostUrl")}
-                    className="w-full rounded-2xl border border-border-light bg-white px-4 py-3 text-sm text-text-primary outline-none transition focus:border-primary/35 dark:bg-white/5 dark:text-white"
-                  />
-                </label>
-
-                <Button
-                  type="submit"
-                  disabled={createSchedule.isPending}
-                  className="w-full"
-                  startIcon={<Plus className="h-4 w-4" />}
-                >
-                  {createSchedule.isPending
-                    ? t("admin.detail.createSchedule.submitting")
-                    : t("admin.detail.createSchedule.submit")}
-                </Button>
-              </form>
-            ) : (
-              <StateCard
-                title={t("admin.detail.actions.states.adminOnly.heading")}
-                note={t("admin.detail.actions.states.adminOnly.note")}
-              />
-            )}
-          </SummaryCard>
-
-          <SummaryCard title={t("admin.detail.sections.boundary")}>
-            <ul className="space-y-2 text-sm text-text-secondary">
-              <li>{t("admin.detail.boundaryItems.noAnalytics")}</li>
-              <li>{t("admin.detail.boundaryItems.noCertificates")}</li>
-              <li>{t("admin.detail.boundaryItems.noAdvancedLms")}</li>
-            </ul>
-          </SummaryCard>
-        </div>
+        </aside>
       </div>
+
+      <AdminTrainingUpdateModal
+        isOpen={isUpdateModalOpen}
+        training={item}
+        onClose={() => setIsUpdateModalOpen(false)}
+        onSuccess={() =>
+          setFeedback({ tone: "success", message: t("admin.detail.update.success") })
+        }
+      />
+      <AdminTrainingScheduleCreateModal
+        isOpen={isCreateScheduleModalOpen}
+        trainingId={item.id}
+        onClose={() => setIsCreateScheduleModalOpen(false)}
+        onSuccess={() =>
+          setFeedback({ tone: "success", message: t("admin.detail.createSchedule.success") })
+        }
+      />
+
+      <AdminTrainingScheduleLecturesModal
+        isOpen={Boolean(activeLecturesSchedule)}
+        trainingId={item.id}
+        schedule={activeLecturesSchedule}
+        onClose={() => setActiveLecturesSchedule(null)}
+      />
+
+      <AdminTrainingScheduleLectureCreateModal
+        isOpen={Boolean(activeLectureCreateSchedule)}
+        trainingId={item.id}
+        schedule={activeLectureCreateSchedule}
+        onClose={() => setActiveLectureCreateSchedule(null)}
+        onSuccess={() =>
+          setFeedback({
+            tone: "success",
+            message: t("admin.detail.scheduleLectures.create.success"),
+          })
+        }
+      />
+
+      <AdminTrainingPaymentAttemptsModal
+        isOpen={showPaymentAttempts}
+        trainingId={item.id}
+        onClose={() => setShowPaymentAttempts(false)}
+      />
 
       <DestructiveConfirmModal
         isOpen={showArchiveConfirm}

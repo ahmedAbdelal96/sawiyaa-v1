@@ -3,6 +3,7 @@ import { ActiveAccountGuard } from '@common/guards/account-state/active-account.
 import { JwtAccessAuthGuard } from '@common/guards/authentication/jwt-access-auth.guard';
 import { RolesGuard } from '@common/guards/authorization/roles.guard';
 import { PractitionerOtpVerifiedGuard } from '@common/guards/practitioner/practitioner-otp-verified.guard';
+import { ConfigModule } from '@modules/config/config.module';
 import { PublicPractitionerController } from './controllers/public-practitioner.controller';
 import { PractitionerProfileController } from './controllers/practitioner-profile.controller';
 import { PublicPractitionerMapper } from './mappers/public-practitioner.mapper';
@@ -46,6 +47,7 @@ import { UploadPractitionerCredentialMetadataUseCase } from './use-cases/upload-
  * It does not include auth flows, admin review workflows, or session/payment concerns.
  */
 @Module({
+  imports: [ConfigModule],
   controllers: [PractitionerProfileController, PublicPractitionerController],
   providers: [
     JwtAccessAuthGuard,
@@ -87,6 +89,11 @@ import { UploadPractitionerCredentialMetadataUseCase } from './use-cases/upload-
     GetPractitionerProfileReadinessUseCase,
     ListPublicPractitionersUseCase,
     GetPublicPractitionerDetailsUseCase,
+  ],
+  exports: [
+    PublicPractitionerReadRepository,
+    PublicPractitionerVisibilityPolicy,
+    PublicPractitionerMapper,
   ],
 })
 export class PractitionersModule {}

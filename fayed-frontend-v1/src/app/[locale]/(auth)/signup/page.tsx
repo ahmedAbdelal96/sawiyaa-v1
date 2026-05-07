@@ -1,16 +1,26 @@
-import { redirect } from "next/navigation";
+import SignUpForm, { type SignUpMode } from "@/components/auth/SignUpForm";
+import { getTranslations, setRequestLocale } from "next-intl/server";
+import type { Metadata } from "next";
 
 type Props = {
   params: Promise<{ locale: string }>;
-  searchParams: Promise<{ callbackUrl?: string }>;
+  searchParams: Promise<{ callbackUrl?: string; mode?: string }>;
 };
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "auth" });
+  return {
+    title: t("meta.signUp.title"),
+    description: t("meta.signUp.description"),
+  };
+}
 
 export default async function SignUp({ params, searchParams }: Props) {
   const { locale } = await params;
-  const { callbackUrl } = await searchParams;
-  const redirectTarget = callbackUrl
-    ? `/${locale}/signup/patient?callbackUrl=${encodeURIComponent(callbackUrl)}`
-    : `/${locale}/signup/patient`;
+  const { callbackUrl, mode } = await searchParams;
+  setRequestLocale(locale);
 
-  redirect(redirectTarget);
+  const signUpMode: SignUpMode = mode === "practitioner" ? "practitioner" : "patient";
+  return <SignUpForm mode={signUpMode} />;
 }

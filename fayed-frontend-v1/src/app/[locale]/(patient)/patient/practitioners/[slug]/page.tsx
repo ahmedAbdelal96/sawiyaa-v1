@@ -5,19 +5,14 @@ import { AlertTriangle } from "lucide-react";
 import {
   fetchPublicPractitionerBySlug,
   fetchPublicPractitionerPresence,
-  fetchPublicPractitionerTrustBlock,
 } from "@/features/practitioner-profile/api/practitioner-profile-ssr.api";
 import ProfileAbout from "@/features/practitioner-profile/components/ProfileAbout";
 import ProfileBookingPanel from "@/features/practitioner-profile/components/ProfileBookingPanel";
 import ProfileCredentials from "@/features/practitioner-profile/components/ProfileCredentials";
 import ProfileHeader from "@/features/practitioner-profile/components/ProfileHeader";
-import RelatedPractitioners from "@/features/practitioner-profile/components/RelatedPractitioners";
 import ProfileSpecialties from "@/features/practitioner-profile/components/ProfileSpecialties";
-import ProfileTrustSection from "@/features/practitioner-profile/components/ProfileTrustSection";
-import { fetchPublicPractitioners } from "@/features/practitioners-discovery/api/practitioners-ssr.api";
 import {
   LANGUAGE_CODES,
-  type PublicPractitioner,
 } from "@/features/practitioners-discovery/types/practitioner";
 import { fetchPublicSpecialties } from "@/features/specialties-public/api/specialties-ssr.api";
 import { Link } from "@/i18n/navigation";
@@ -140,31 +135,11 @@ export default async function PatientPractitionerProfilePage({ params }: Props) 
     tProfile(`countries.${profile.country}` as Parameters<typeof tProfile>[0]) ??
     profile.country;
 
-  let related: PublicPractitioner[] = [];
-  try {
-    if (profile.specialties.length > 0) {
-      const relatedData = await fetchPublicPractitioners(locale, {
-        specialtySlug: profile.specialties[0],
-        limit: 4,
-      });
-      related = relatedData.items.filter((item) => item.slug !== slug).slice(0, 3);
-    }
-  } catch {
-    // Non-critical: related practitioners is additive.
-  }
-
   let presence = null;
   try {
     presence = await fetchPublicPractitionerPresence(slug, locale);
   } catch {
     // Non-critical: booking panel handles missing presence data.
-  }
-
-  let trustBlock = null;
-  try {
-    trustBlock = await fetchPublicPractitionerTrustBlock(slug, locale);
-  } catch {
-    // Non-critical: trust block is optional.
   }
 
   return (
@@ -182,10 +157,9 @@ export default async function PatientPractitionerProfilePage({ params }: Props) 
 
         <ProfileBookingPanel profile={profile} presence={presence} />
 
-        <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1.12fr)_minmax(0,0.88fr)]">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1.08fr)_minmax(320px,0.92fr)]">
           <div className="space-y-6">
             <ProfileAbout profile={profile} />
-            {trustBlock ? <ProfileTrustSection trustBlock={trustBlock} /> : null}
           </div>
 
           <div className="grid gap-6">
@@ -198,11 +172,6 @@ export default async function PatientPractitionerProfilePage({ params }: Props) 
           </div>
         </div>
       </div>
-
-      <RelatedPractitioners
-        practitioners={related}
-        specialtyLabels={specialtyLabels}
-      />
     </div>
   );
 }

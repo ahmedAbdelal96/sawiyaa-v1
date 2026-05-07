@@ -14,6 +14,7 @@ export class PractitionerApplicationMapper {
     reviewedByUserId: string | null;
     reviewDecisionReason: string | null;
     reviewNotes: string | null;
+    submissionSnapshot: Record<string, unknown> | null;
   }): PractitionerApplicationStatusViewModel {
     return {
       applicationId: input.id,
@@ -23,6 +24,7 @@ export class PractitionerApplicationMapper {
       reviewedByUserId: input.reviewedByUserId,
       reviewDecisionReason: input.reviewDecisionReason,
       reviewNotes: input.reviewNotes,
+      submissionSnapshot: input.submissionSnapshot,
     };
   }
 
@@ -35,6 +37,7 @@ export class PractitionerApplicationMapper {
       reviewedByUserId: null,
       reviewDecisionReason: null,
       reviewNotes: null,
+      submissionSnapshot: null,
     };
   }
 }

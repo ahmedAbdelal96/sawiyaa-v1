@@ -92,7 +92,7 @@ export default async function PublicArticleDetailScreen({ article }: Props) {
 
           <div className="mt-5 flex flex-wrap gap-3">
             <Link
-              href="/signup/patient"
+          href="/signup?mode=patient"
               className="inline-flex items-center rounded-2xl bg-primary px-5 py-3 text-sm font-semibold text-white transition hover:bg-primary-hover"
             >
               {t("detail.nextStep.startMatching")}

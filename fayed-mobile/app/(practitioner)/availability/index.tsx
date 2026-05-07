@@ -1,5 +1,11 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
+import {
+  I18nManager,
+  ScrollView,
+  StyleSheet,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { useTranslation } from "react-i18next";
 import {
   Button,
@@ -65,10 +71,20 @@ type ExceptionFormState = {
   error: string | null;
 };
 
+const EMPTY_EXCEPTION_FORM: ExceptionFormState = {
+  type: "BLOCK",
+  startsAt: "",
+  endsAt: "",
+  reason: "",
+  error: null,
+};
+
 export default function PractitionerAvailabilityScreen() {
   const { t, i18n } = useTranslation();
   const { theme } = useTheme();
   const locale = i18n.language?.startsWith("ar") ? "ar-SA" : "en-US";
+  const isRTL = I18nManager.isRTL;
+  const rowDirection = isRTL ? "row-reverse" : "row";
 
   const presenceQuery = useMyPresence();
   const availabilityQuery = useMyAvailability();
@@ -82,17 +98,22 @@ export default function PractitionerAvailabilityScreen() {
   const [slotForm, setSlotForm] = useState<SlotFormState | null>(null);
   const [slotSaveMessage, setSlotSaveMessage] = useState<string | null>(null);
   const [exceptionFormOpen, setExceptionFormOpen] = useState(false);
-  const [exceptionForm, setExceptionForm] = useState<ExceptionFormState>({
-    type: "BLOCK",
-    startsAt: "",
-    endsAt: "",
-    reason: "",
-    error: null,
-  });
+  const [exceptionForm, setExceptionForm] = useState<ExceptionFormState>(
+    EMPTY_EXCEPTION_FORM,
+  );
   const [exceptionMessage, setExceptionMessage] = useState<string | null>(null);
 
   const hasLoadError = presenceQuery.isError || availabilityQuery.isError;
   const availabilityData = availabilityQuery.data ?? null;
+  const activeSlots = useMemo(
+    () => draftSlots.length,
+    [draftSlots.length],
+  );
+  const activeExceptions = useMemo(
+    () =>
+      (availabilityData?.exceptions ?? []).filter((item) => item.isActive),
+    [availabilityData?.exceptions],
+  );
 
   useEffect(() => {
     if (!availabilityData) {
@@ -101,45 +122,21 @@ export default function PractitionerAvailabilityScreen() {
 
     setDraftSlots(buildDraftSlots(availabilityData));
     setSlotForm(null);
-    setSlotSaveMessage(null);
-    setExceptionMessage(null);
-    setExceptionForm({
-      type: "BLOCK",
-      startsAt: "",
-      endsAt: "",
-      reason: "",
-      error: null,
-    });
-  }, [
-    availabilityData?.weeklySlots,
-    availabilityData?.exceptions,
-    availabilityData?.timezone,
-  ]);
+    setExceptionFormOpen(false);
+    setExceptionForm(EMPTY_EXCEPTION_FORM);
+  }, [availabilityData]);
 
-  const isDirty = useMemo(() => {
-    if (!availabilityData) {
-      return false;
-    }
-
-    const source = buildDraftSlots(availabilityData).map(serializeSlot).sort();
-    const current = draftSlots.map(serializeSlot).sort();
-
-    return source.join("|") !== current.join("|");
-  }, [availabilityData, draftSlots]);
-
-  const groupedDraftSlots = useMemo(() => {
-    return DAY_KEYS.map((weekday, dayOfWeek) => ({
-      weekday,
-      dayOfWeek,
-      slots: draftSlots
-        .filter((slot) => slot.dayOfWeek === dayOfWeek)
-        .sort((left, right) => left.startMinuteOfDay - right.startMinuteOfDay),
-    }));
-  }, [draftSlots]);
-
-  const activeExceptions = useMemo(() => {
-    return (availabilityData?.exceptions ?? []).filter((item) => item.isActive);
-  }, [availabilityData?.exceptions]);
+  const groupedDraftSlots = useMemo(
+    () =>
+      DAY_KEYS.map((weekday, dayOfWeek) => ({
+        weekday,
+        dayOfWeek,
+        slots: draftSlots
+          .filter((slot) => slot.dayOfWeek === dayOfWeek)
+          .sort((left, right) => left.startMinuteOfDay - right.startMinuteOfDay),
+      })),
+    [draftSlots],
+  );
 
   const openAddSlot = (dayOfWeek: number) => {
     setSlotForm({
@@ -157,8 +154,8 @@ export default function PractitionerAvailabilityScreen() {
       dayOfWeek: slot.dayOfWeek,
       mode: "edit",
       targetKey: slot.key,
-      startTime: minutesToTime(slot.startMinuteOfDay),
-      endTime: minutesToTime(slot.endMinuteOfDay),
+      startTime: minutesToTime(slot.startMinuteOfDay, locale),
+      endTime: minutesToTime(slot.endMinuteOfDay, locale),
       error: null,
     });
     setSlotSaveMessage(null);
@@ -176,12 +173,7 @@ export default function PractitionerAvailabilityScreen() {
     const parsed = validateSlotForm(slotForm, draftSlots, t);
     if (!parsed.ok) {
       setSlotForm((current) =>
-        current
-          ? {
-              ...current,
-              error: parsed.error,
-            }
-          : current,
+        current ? { ...current, error: parsed.error } : current,
       );
       return;
     }
@@ -208,6 +200,7 @@ export default function PractitionerAvailabilityScreen() {
           left.startMinuteOfDay - right.startMinuteOfDay,
       );
     });
+
     setSlotForm(null);
     setSlotSaveMessage(null);
   };
@@ -219,10 +212,10 @@ export default function PractitionerAvailabilityScreen() {
 
   const handleSaveSchedule = async () => {
     if (!availabilityData?.timezone) {
+      setSlotSaveMessage(t("practitioner.availability.saveError"));
       return;
     }
 
-    setSlotSaveMessage(null);
     try {
       await replaceWeeklyAvailability.mutateAsync({
         timezone: availabilityData.timezone,
@@ -242,6 +235,7 @@ export default function PractitionerAvailabilityScreen() {
     if (!availabilityData) {
       return;
     }
+
     setDraftSlots(buildDraftSlots(availabilityData));
     setSlotForm(null);
     setSlotSaveMessage(null);
@@ -254,7 +248,6 @@ export default function PractitionerAvailabilityScreen() {
       return;
     }
 
-    setExceptionMessage(null);
     try {
       await createException.mutateAsync({
         type: exceptionForm.type,
@@ -263,13 +256,7 @@ export default function PractitionerAvailabilityScreen() {
         reason: exceptionForm.reason.trim() || undefined,
       });
       setExceptionFormOpen(false);
-      setExceptionForm({
-        type: "BLOCK",
-        startsAt: "",
-        endsAt: "",
-        reason: "",
-        error: null,
-      });
+      setExceptionForm(EMPTY_EXCEPTION_FORM);
       setExceptionMessage(t("practitioner.availability.exceptionSaveSuccess"));
     } catch {
       setExceptionMessage(t("practitioner.availability.exceptionSaveError"));
@@ -277,16 +264,17 @@ export default function PractitionerAvailabilityScreen() {
   };
 
   const handleDeleteException = async (exception: AvailabilityException) => {
-    setExceptionMessage(null);
     try {
       await deleteException.mutateAsync(exception.id);
-      setExceptionMessage(
-        t("practitioner.availability.exceptionDeleteSuccess"),
-      );
+      setExceptionMessage(t("practitioner.availability.exceptionDeleteSuccess"));
     } catch {
       setExceptionMessage(t("practitioner.availability.exceptionDeleteError"));
     }
   };
+
+  const currentStatus = presenceQuery.data?.presence.status ?? null;
+  const instantBookingEnabled =
+    presenceQuery.data?.presence.isInstantBookingEnabled ?? false;
 
   return (
     <Screen bg="background">
@@ -314,6 +302,79 @@ export default function PractitionerAvailabilityScreen() {
           <>
             <Card variant="outlined" padding="lg" style={styles.sectionCard}>
               <Text weight="600" style={styles.sectionTitle}>
+                {t("practitioner.availability.overviewTitle")}
+              </Text>
+              <Text
+                color={theme.colors.textSecondary}
+                style={styles.sectionBody}
+              >
+                {t("practitioner.availability.overviewBody")}
+              </Text>
+
+              <View style={styles.summaryList}>
+                <SummaryRow
+                  label={t("practitioner.availability.currentStatus")}
+                  value={
+                    currentStatus
+                      ? t(`practitioner.presence.status.${currentStatus}`)
+                      : "-"
+                  }
+                  theme={theme}
+                />
+                <SummaryRow
+                  label={t("practitioner.availability.weeklyWindows")}
+                  value={formatCount(activeSlots, locale)}
+                  theme={theme}
+                />
+                <SummaryRow
+                  label={t("practitioner.availability.temporaryChanges")}
+                  value={formatCount(activeExceptions.length, locale)}
+                  theme={theme}
+                />
+              </View>
+
+              <View
+                style={[
+                  styles.badgeRow,
+                  { flexDirection: rowDirection },
+                ]}
+              >
+                {availabilityData.timezone ? (
+                  <View
+                    style={[
+                      styles.badge,
+                      {
+                        backgroundColor: theme.colors.surfaceSecondary,
+                        borderColor: theme.colors.borderLight,
+                      },
+                    ]}
+                  >
+                    <Text color={theme.colors.textSecondary} style={styles.badgeText}>
+                      {formatTimezoneLabel(availabilityData.timezone, i18n.language)}
+                    </Text>
+                  </View>
+                ) : null}
+              </View>
+
+              {!availabilityData.timezone ? (
+                <View
+                  style={[
+                    styles.warningBox,
+                    {
+                      backgroundColor: theme.colors.warningLight ?? "#FEF3C7",
+                      borderColor: theme.colors.warning ?? "#F59E0B",
+                    },
+                  ]}
+                >
+                  <Text weight="600" color={theme.colors.warning ?? "#B45309"}>
+                    {t("practitioner.availability.noTimezone")}
+                  </Text>
+                </View>
+              ) : null}
+            </Card>
+
+            <Card variant="outlined" padding="lg" style={styles.sectionCard}>
+              <Text weight="600" style={styles.sectionTitle}>
                 {t("practitioner.availability.presenceTitle")}
               </Text>
               <Text
@@ -326,30 +387,31 @@ export default function PractitionerAvailabilityScreen() {
               <View
                 style={[
                   styles.currentStateBox,
-                  { backgroundColor: theme.colors.surfaceSecondary },
+                  {
+                    backgroundColor: theme.colors.surfaceSecondary,
+                    borderColor: theme.colors.borderLight,
+                  },
                 ]}
               >
                 <Text color={theme.colors.textMuted} style={styles.eyebrow}>
                   {t("practitioner.availability.currentStatus")}
                 </Text>
                 <Text weight="600" style={styles.currentStatusValue}>
-                  {t(
-                    `practitioner.presence.status.${presenceQuery.data.presence.status}`,
-                  )}
+                  {currentStatus
+                    ? t(`practitioner.presence.status.${currentStatus}`)
+                    : "-"}
                 </Text>
                 <Text
                   color={theme.colors.textSecondary}
                   style={styles.helperText}
                 >
-                  {presenceQuery.data.presence.isInstantBookingEnabled
-                    ? t("practitioner.availability.instantBookingEnabled")
-                    : t("practitioner.availability.instantBookingDisabled")}
+                  {t("practitioner.availability.presenceBody")}
                 </Text>
               </View>
 
               <View style={styles.statusGrid}>
                 {STATUS_OPTIONS.map((status) => {
-                  const active = presenceQuery.data?.presence.status === status;
+                  const active = currentStatus === status;
                   return (
                     <TouchableOpacity
                       key={status}
@@ -378,6 +440,7 @@ export default function PractitionerAvailabilityScreen() {
                             : theme.colors.textSecondary
                         }
                         weight="600"
+                        style={styles.statusChipLabel}
                       >
                         {t(`practitioner.presence.status.${status}`)}
                       </Text>
@@ -389,13 +452,14 @@ export default function PractitionerAvailabilityScreen() {
               <View
                 style={[
                   styles.instantRow,
-                  { borderTopColor: theme.colors.borderLight },
+                  {
+                    flexDirection: rowDirection,
+                    borderTopColor: theme.colors.borderLight,
+                  },
                 ]}
               >
                 <View style={styles.instantTextWrap}>
-                  <Text weight="600">
-                    {t("practitioner.availability.instantBooking")}
-                  </Text>
+                  <Text weight="600">{t("practitioner.availability.instantBooking")}</Text>
                   <Text
                     color={theme.colors.textSecondary}
                     style={styles.instantBody}
@@ -407,8 +471,7 @@ export default function PractitionerAvailabilityScreen() {
                   style={[
                     styles.toggle,
                     {
-                      backgroundColor: presenceQuery.data?.presence
-                        .isInstantBookingEnabled
+                      backgroundColor: instantBookingEnabled
                         ? theme.colors.primary
                         : theme.colors.borderLight,
                     },
@@ -416,8 +479,7 @@ export default function PractitionerAvailabilityScreen() {
                   disabled={setInstantBooking.isPending}
                   onPress={() =>
                     setInstantBooking.mutate({
-                      isInstantBookingEnabled:
-                        !presenceQuery.data?.presence.isInstantBookingEnabled,
+                      isInstantBookingEnabled: !instantBookingEnabled,
                     })
                   }
                 >
@@ -425,8 +487,7 @@ export default function PractitionerAvailabilityScreen() {
                     style={[
                       styles.toggleKnob,
                       {
-                        alignSelf: presenceQuery.data?.presence
-                          .isInstantBookingEnabled
+                        alignSelf: instantBookingEnabled
                           ? "flex-end"
                           : "flex-start",
                       },
@@ -449,18 +510,19 @@ export default function PractitionerAvailabilityScreen() {
 
               <View
                 style={[
-                  styles.currentStateBox,
-                  { backgroundColor: theme.colors.surfaceSecondary },
+                  styles.timezoneRow,
+                  {
+                    backgroundColor: theme.colors.surfaceSecondary,
+                    borderColor: theme.colors.borderLight,
+                    flexDirection: rowDirection,
+                  },
                 ]}
               >
                 <Text color={theme.colors.textMuted} style={styles.eyebrow}>
                   {t("practitioner.availability.timezoneLabel")}
                 </Text>
-                <Text weight="600" style={styles.currentStatusValue}>
-                  {formatTimezoneLabel(
-                    availabilityData.timezone,
-                    i18n.language,
-                  )}
+                <Text weight="600" style={styles.timezoneValue}>
+                  {formatTimezoneLabel(availabilityData.timezone, i18n.language)}
                 </Text>
               </View>
 
@@ -473,39 +535,52 @@ export default function PractitionerAvailabilityScreen() {
                       key={day.weekday}
                       style={[
                         styles.dayCard,
-                        { borderColor: theme.colors.borderLight },
+                        {
+                          borderColor: theme.colors.borderLight,
+                          backgroundColor: theme.colors.surface,
+                        },
                       ]}
                     >
-                      <View style={styles.dayHeader}>
+                      <View
+                        style={[
+                          styles.dayHeader,
+                          { flexDirection: rowDirection },
+                        ]}
+                      >
                         <View style={styles.dayHeaderText}>
                           <Text weight="600" style={styles.dayTitle}>
                             {t(`practitioner.weekday.${day.weekday}`)}
                           </Text>
-                          <Text color={theme.colors.textMuted}>
-                            {day.slots.length
-                              ? t("practitioner.availability.slotCount", {
-                                  count: day.slots.length,
-                                })
-                              : t("practitioner.availability.noSlots")}
+                          <Text
+                            color={theme.colors.textSecondary}
+                            style={styles.daySubtitle}
+                          >
+                            {describeDaySlots(day.slots, locale, t)}
                           </Text>
                         </View>
-                        {!isEditingThisDay ? (
-                          <TouchableOpacity
-                            style={[
-                              styles.addChip,
-                              { borderColor: theme.colors.borderLight },
-                            ]}
-                            onPress={() => openAddSlot(day.dayOfWeek)}
-                            disabled={replaceWeeklyAvailability.isPending}
-                          >
-                            <Text
-                              color={theme.colors.textSecondary}
-                              weight="600"
-                            >
-                              {t("practitioner.availability.addSlot")}
-                            </Text>
-                          </TouchableOpacity>
-                        ) : null}
+                        <TouchableOpacity
+                          style={[
+                            styles.inlineAction,
+                            {
+                              borderColor: theme.colors.borderLight,
+                              backgroundColor: theme.colors.surfaceSecondary,
+                            },
+                          ]}
+                          onPress={() =>
+                            isEditingThisDay
+                              ? cancelSlotForm()
+                              : openAddSlot(day.dayOfWeek)
+                          }
+                          disabled={replaceWeeklyAvailability.isPending}
+                        >
+                          <Text color={theme.colors.textSecondary} weight="600">
+                            {isEditingThisDay
+                              ? t("common.cancel")
+                              : day.slots.length
+                                ? t("practitioner.availability.editSlot")
+                                : t("practitioner.availability.addSlot")}
+                          </Text>
+                        </TouchableOpacity>
                       </View>
 
                       {day.slots.length ? (
@@ -518,6 +593,7 @@ export default function PractitionerAvailabilityScreen() {
                                 {
                                   backgroundColor:
                                     theme.colors.surfaceSecondary,
+                                  flexDirection: rowDirection,
                                 },
                               ]}
                             >
@@ -567,20 +643,19 @@ export default function PractitionerAvailabilityScreen() {
                         <View
                           style={[
                             styles.editorBox,
-                            { backgroundColor: theme.colors.surfaceSecondary },
+                            {
+                              backgroundColor: theme.colors.surfaceSecondary,
+                              borderColor: theme.colors.borderLight,
+                            },
                           ]}
                         >
                           <Input
                             label={t("practitioner.availability.startTime")}
-                            value={slotForm.startTime}
+                            value={slotForm?.startTime ?? ""}
                             onChangeText={(value) =>
                               setSlotForm((current) =>
                                 current
-                                  ? {
-                                      ...current,
-                                      startTime: value,
-                                      error: null,
-                                    }
+                                  ? { ...current, startTime: value, error: null }
                                   : current,
                               )
                             }
@@ -588,10 +663,13 @@ export default function PractitionerAvailabilityScreen() {
                             helperText={t("practitioner.availability.timeHint")}
                             autoCapitalize="none"
                             autoCorrect={false}
+                            keyboardType="numbers-and-punctuation"
+                            maxLength={5}
+                            style={styles.timeInput}
                           />
                           <Input
                             label={t("practitioner.availability.endTime")}
-                            value={slotForm.endTime}
+                            value={slotForm?.endTime ?? ""}
                             onChangeText={(value) =>
                               setSlotForm((current) =>
                                 current
@@ -600,9 +678,12 @@ export default function PractitionerAvailabilityScreen() {
                               )
                             }
                             placeholder="17:00"
-                            error={slotForm.error ?? undefined}
+                            error={slotForm?.error ?? undefined}
                             autoCapitalize="none"
                             autoCorrect={false}
+                            keyboardType="numbers-and-punctuation"
+                            maxLength={5}
+                            style={styles.timeInput}
                           />
 
                           <View style={styles.editorActions}>
@@ -633,7 +714,7 @@ export default function PractitionerAvailabilityScreen() {
                   onPress={() => void handleSaveSchedule()}
                   disabled={
                     !availabilityData.timezone ||
-                    !isDirty ||
+                    !isDirty(availabilityData, draftSlots) ||
                     replaceWeeklyAvailability.isPending
                   }
                 />
@@ -641,7 +722,10 @@ export default function PractitionerAvailabilityScreen() {
                   title={t("practitioner.availability.resetChanges")}
                   variant="secondary"
                   onPress={() => handleResetSchedule()}
-                  disabled={!isDirty || replaceWeeklyAvailability.isPending}
+                  disabled={
+                    !isDirty(availabilityData, draftSlots) ||
+                    replaceWeeklyAvailability.isPending
+                  }
                 />
               </View>
 
@@ -680,10 +764,16 @@ export default function PractitionerAvailabilityScreen() {
                 {!exceptionFormOpen ? (
                   <TouchableOpacity
                     style={[
-                      styles.addChip,
-                      { borderColor: theme.colors.borderLight },
+                      styles.inlineAction,
+                      {
+                        borderColor: theme.colors.borderLight,
+                        backgroundColor: theme.colors.surfaceSecondary,
+                      },
                     ]}
-                    onPress={() => setExceptionFormOpen(true)}
+                    onPress={() => {
+                      setExceptionFormOpen(true);
+                      setExceptionMessage(null);
+                    }}
                   >
                     <Text color={theme.colors.textSecondary} weight="600">
                       {t("practitioner.availability.addException")}
@@ -696,51 +786,60 @@ export default function PractitionerAvailabilityScreen() {
                 <View
                   style={[
                     styles.editorBox,
-                    { backgroundColor: theme.colors.surfaceSecondary },
+                    {
+                      backgroundColor: theme.colors.surfaceSecondary,
+                      borderColor: theme.colors.borderLight,
+                    },
                   ]}
                 >
-                  <View style={styles.typeRow}>
-                    {(
-                      ["BLOCK", "OPEN_EXTRA"] as AvailabilityExceptionType[]
-                    ).map((type) => {
-                      const active = exceptionForm.type === type;
-                      return (
-                        <TouchableOpacity
-                          key={type}
-                          style={[
-                            styles.typeChip,
-                            {
-                              backgroundColor: active
-                                ? theme.colors.primaryLight
-                                : theme.colors.surface,
-                              borderColor: active
-                                ? theme.colors.primary
-                                : theme.colors.borderLight,
-                            },
-                          ]}
-                          onPress={() =>
-                            setExceptionForm((current) => ({
-                              ...current,
-                              type,
-                              error: null,
-                            }))
-                          }
-                        >
-                          <Text
-                            color={
-                              active
-                                ? theme.colors.primary
-                                : theme.colors.textSecondary
+                  <View
+                    style={[
+                      styles.typeRow,
+                      { flexDirection: rowDirection },
+                    ]}
+                  >
+                    {(["BLOCK", "OPEN_EXTRA"] as AvailabilityExceptionType[]).map(
+                      (type) => {
+                        const active = exceptionForm.type === type;
+                        return (
+                          <TouchableOpacity
+                            key={type}
+                            style={[
+                              styles.typeChip,
+                              {
+                                backgroundColor: active
+                                  ? theme.colors.primaryLight
+                                  : theme.colors.surface,
+                                borderColor: active
+                                  ? theme.colors.primary
+                                  : theme.colors.borderLight,
+                              },
+                            ]}
+                            onPress={() =>
+                              setExceptionForm((current) => ({
+                                ...current,
+                                type,
+                                error: null,
+                              }))
                             }
-                            weight="600"
                           >
-                            {t(
-                              `practitioner.availability.exceptionType.${type}`,
-                            )}
-                          </Text>
-                        </TouchableOpacity>
-                      );
-                    })}
+                            <Text
+                              color={
+                                active
+                                  ? theme.colors.primary
+                                  : theme.colors.textSecondary
+                              }
+                              weight="600"
+                              style={styles.typeChipLabel}
+                            >
+                              {t(
+                                `practitioner.availability.exceptionType.${type}`,
+                              )}
+                            </Text>
+                          </TouchableOpacity>
+                        );
+                      },
+                    )}
                   </View>
 
                   <Input
@@ -753,12 +852,13 @@ export default function PractitionerAvailabilityScreen() {
                         error: null,
                       }))
                     }
-                    placeholder="2026-04-25T14:00"
-                    helperText={t(
-                      "practitioner.availability.exceptionTimeHint",
-                    )}
+                    placeholder="2026-04-25 14:00"
+                    helperText={t("practitioner.availability.exceptionTimeHint")}
                     autoCapitalize="none"
                     autoCorrect={false}
+                    keyboardType="numbers-and-punctuation"
+                    maxLength={16}
+                    style={styles.timeInput}
                   />
                   <Input
                     label={t("practitioner.availability.exceptionEndsAt")}
@@ -770,10 +870,13 @@ export default function PractitionerAvailabilityScreen() {
                         error: null,
                       }))
                     }
-                    placeholder="2026-04-25T16:00"
+                    placeholder="2026-04-25 16:00"
                     autoCapitalize="none"
                     autoCorrect={false}
+                    keyboardType="numbers-and-punctuation"
+                    maxLength={16}
                     error={exceptionForm.error ?? undefined}
+                    style={styles.timeInput}
                   />
                   <Input
                     label={t("practitioner.availability.exceptionReason")}
@@ -797,12 +900,15 @@ export default function PractitionerAvailabilityScreen() {
                           : t("practitioner.availability.saveException")
                       }
                       onPress={() => void handleCreateException()}
-                      disabled={createException.isPending}
                     />
                     <Button
                       title={t("common.cancel")}
                       variant="secondary"
-                      onPress={() => setExceptionFormOpen(false)}
+                      onPress={() => {
+                        setExceptionFormOpen(false);
+                        setExceptionForm(EMPTY_EXCEPTION_FORM);
+                        setExceptionMessage(null);
+                      }}
                     />
                   </View>
                 </View>
@@ -815,46 +921,60 @@ export default function PractitionerAvailabilityScreen() {
                       key={exception.id}
                       style={[
                         styles.exceptionRow,
-                        { backgroundColor: theme.colors.surfaceSecondary },
+                        {
+                          backgroundColor: theme.colors.surfaceSecondary,
+                          borderColor: theme.colors.borderLight,
+                          flexDirection: rowDirection,
+                        },
                       ]}
                     >
                       <View style={styles.exceptionTextWrap}>
-                        <Text weight="600">
-                          {t(
-                            `practitioner.availability.exceptionType.${exception.type}`,
-                          )}
-                        </Text>
-                        <Text
-                          color={theme.colors.textSecondary}
-                          style={styles.exceptionMeta}
+                        <View
+                          style={[
+                            styles.exceptionBadgeRow,
+                            { flexDirection: rowDirection },
+                          ]}
                         >
-                          {t("practitioner.availability.exceptionRange", {
-                            start: new Date(exception.startsAt).toLocaleString(
-                              locale,
+                          <View
+                            style={[
+                              styles.exceptionBadge,
                               {
-                                month: "short",
-                                day: "numeric",
-                                hour: "numeric",
-                                minute: "2-digit",
-                                hour12: !locale.startsWith("ar"),
+                                backgroundColor:
+                                  exception.type === "BLOCK"
+                                    ? theme.colors.errorLight ?? "#FEE2E2"
+                                    : theme.colors.primaryLight,
+                                borderColor:
+                                  exception.type === "BLOCK"
+                                    ? theme.colors.error ?? "#EF4444"
+                                    : theme.colors.primary,
                               },
-                            ),
-                            end: new Date(exception.endsAt).toLocaleString(
-                              locale,
-                              {
-                                month: "short",
-                                day: "numeric",
-                                hour: "numeric",
-                                minute: "2-digit",
-                                hour12: !locale.startsWith("ar"),
-                              },
-                            ),
-                          })}
-                        </Text>
+                            ]}
+                          >
+                            <Text
+                              color={
+                                exception.type === "BLOCK"
+                                  ? theme.colors.error ?? "#B91C1C"
+                                  : theme.colors.primary
+                              }
+                              weight="600"
+                              style={styles.exceptionBadgeText}
+                            >
+                              {t(
+                                `practitioner.availability.exceptionType.${exception.type}`,
+                              )}
+                            </Text>
+                          </View>
+                          <Text
+                            color={theme.colors.textSecondary}
+                            style={styles.exceptionMeta}
+                          >
+                            {formatExceptionRange(exception.startsAt, exception.endsAt, locale)}
+                          </Text>
+                        </View>
                         {exception.reason ? (
                           <Text
                             color={theme.colors.textMuted}
-                            style={styles.exceptionMeta}
+                            style={styles.exceptionReason}
                           >
                             {exception.reason}
                           </Text>
@@ -901,6 +1021,54 @@ export default function PractitionerAvailabilityScreen() {
   );
 }
 
+function SummaryRow({
+  label,
+  value,
+  theme,
+}: {
+  label: string;
+  value: string;
+  theme: ReturnType<typeof useTheme>["theme"];
+}) {
+  return (
+    <View
+      style={[
+        styles.summaryRow,
+        {
+          backgroundColor: theme.colors.surfaceSecondary,
+          borderColor: theme.colors.borderLight,
+        },
+      ]}
+    >
+      <Text color={theme.colors.textMuted} style={styles.summaryLabel}>
+        {label}
+      </Text>
+      <Text weight="600" style={styles.summaryValue}>
+        {value}
+      </Text>
+    </View>
+  );
+}
+
+function describeDaySlots(
+  slots: DraftSlot[],
+  locale: string,
+  t: (key: string, options?: Record<string, unknown>) => string,
+) {
+  if (!slots.length) {
+    return t("practitioner.availability.noSlots");
+  }
+
+  return slots
+    .map((slot) =>
+      t("practitioner.availability.slotRange", {
+        start: formatMinutes(slot.startMinuteOfDay, locale),
+        end: formatMinutes(slot.endMinuteOfDay, locale),
+      }),
+    )
+    .join(" · ");
+}
+
 function buildDraftSlots(data: AvailabilityData): DraftSlot[] {
   return data.weeklySlots
     .filter((slot) => slot.isActive)
@@ -917,20 +1085,34 @@ function buildDraftSlots(data: AvailabilityData): DraftSlot[] {
     );
 }
 
+function isDirty(data: AvailabilityData | null, draftSlots: DraftSlot[]) {
+  if (!data) {
+    return false;
+  }
+
+  const source = buildDraftSlots(data).map(serializeSlot).sort();
+  const current = draftSlots.map(serializeSlot).sort();
+  return source.join("|") !== current.join("|");
+}
+
 function serializeSlot(slot: DraftSlot) {
   return `${slot.dayOfWeek}:${slot.startMinuteOfDay}:${slot.endMinuteOfDay}`;
 }
 
-function minutesToTime(minutes: number) {
-  const hour = Math.floor(minutes / 60)
-    .toString()
-    .padStart(2, "0");
-  const minute = (minutes % 60).toString().padStart(2, "0");
+function minutesToTime(minutes: number, locale: string) {
+  const rawHour = Math.floor(minutes / 60);
+  const rawMinute = minutes % 60;
+  const hour = String(rawHour).padStart(2, "0");
+  const minute = String(rawMinute).padStart(2, "0");
   return `${hour}:${minute}`;
 }
 
+function formatMinutes(minutes: number, locale: string) {
+  return minutesToTime(minutes, locale);
+}
+
 function parseTimeToMinutes(value: string) {
-  const trimmed = value.trim();
+  const trimmed = normalizeDigits(value.trim());
   const match = trimmed.match(/^(\d{1,2}):(\d{2})$/);
   if (!match) {
     return null;
@@ -951,6 +1133,57 @@ function parseTimeToMinutes(value: string) {
   }
 
   return hours * 60 + minutes;
+}
+
+function parseLocalDateTimeToIso(value: string) {
+  const trimmed = normalizeDigits(value.trim());
+  const match = trimmed.match(
+    /^(\d{4})-(\d{2})-(\d{2})(?:T| )(\d{2}):(\d{2})$/,
+  );
+  if (!match) {
+    return null;
+  }
+
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const hours = Number(match[4]);
+  const minutes = Number(match[5]);
+
+  if (
+    [year, month, day, hours, minutes].some((part) => Number.isNaN(part))
+  ) {
+    return null;
+  }
+
+  const date = new Date(year, month - 1, day, hours, minutes);
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+
+  return date.toISOString();
+}
+
+function normalizeDigits(value: string) {
+  const arabicIndic = "٠١٢٣٤٥٦٧٨٩";
+  const easternArabicIndic = "۰۱۲۳۴۵۶۷۸۹";
+
+  return value
+    .split("")
+    .map((character) => {
+      const arabicIndex = arabicIndic.indexOf(character);
+      if (arabicIndex >= 0) {
+        return String(arabicIndex);
+      }
+
+      const easternIndex = easternArabicIndic.indexOf(character);
+      if (easternIndex >= 0) {
+        return String(easternIndex);
+      }
+
+      return character;
+    })
+    .join("");
 }
 
 function validateSlotForm(
@@ -977,7 +1210,8 @@ function validateSlotForm(
 
   const compareSlots = draftSlots.filter(
     (slot) =>
-      slot.dayOfWeek === slotForm.dayOfWeek && slot.key !== slotForm.targetKey,
+      slot.dayOfWeek === slotForm.dayOfWeek &&
+      slot.key !== slotForm.targetKey,
   );
 
   const overlaps = compareSlots.some(
@@ -1001,30 +1235,23 @@ function validateSlotForm(
 }
 
 function validateExceptionForm(
-  form: ExceptionFormState,
+  exceptionForm: ExceptionFormState,
   t: (key: string, options?: Record<string, unknown>) => string,
 ) {
-  if (!form.startsAt.trim() || !form.endsAt.trim()) {
+  const startsAt = parseLocalDateTimeToIso(exceptionForm.startsAt);
+  const endsAt = parseLocalDateTimeToIso(exceptionForm.endsAt);
+
+  if (!startsAt || !endsAt) {
     return {
       ok: false as const,
       error: t("practitioner.availability.validation.exceptionDatesRequired"),
     };
   }
 
-  const startsAt = normalizeLocalDateTime(form.startsAt);
-  const endsAt = normalizeLocalDateTime(form.endsAt);
-
-  if (!startsAt || !endsAt) {
-    return {
-      ok: false as const,
-      error: t("practitioner.availability.validation.invalidDateTime"),
-    };
-  }
-
   if (new Date(endsAt) <= new Date(startsAt)) {
     return {
       ok: false as const,
-      error: t("practitioner.availability.validation.endAfterStart"),
+      error: t("practitioner.availability.validation.invalidDateTime"),
     };
   }
 
@@ -1035,31 +1262,28 @@ function validateExceptionForm(
   };
 }
 
-function normalizeLocalDateTime(value: string) {
-  const trimmed = value.trim();
-  if (!trimmed) {
-    return null;
-  }
-
-  const normalized = trimmed.replace(" ", "T");
-  if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(normalized)) {
-    return null;
-  }
-
-  return `${normalized}:00Z`;
-}
-
-function formatMinutes(minutes: number, locale: string) {
-  const date = new Date();
-  date.setHours(Math.floor(minutes / 60), minutes % 60, 0, 0);
-  return date.toLocaleTimeString(locale, {
+function formatExceptionRange(isoStart: string, isoEnd: string, locale: string) {
+  const formatter = new Intl.DateTimeFormat(locale, {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
     hour: "numeric",
     minute: "2-digit",
     hour12: !locale.startsWith("ar"),
   });
+
+  return `${formatter.format(new Date(isoStart))} — ${formatter.format(
+    new Date(isoEnd),
+  )}`;
 }
 
-function formatTimezoneLabel(timezone: string | null, language: string) {
+function formatCount(count: number, locale: string) {
+  return new Intl.NumberFormat(locale, {
+    useGrouping: false,
+  }).format(count);
+}
+
+function formatTimezoneLabel(timezone: string, language?: string) {
   if (!timezone) {
     return "-";
   }
@@ -1084,11 +1308,11 @@ const styles = StyleSheet.create({
   content: {
     paddingHorizontal: 20,
     paddingTop: 14,
-    paddingBottom: 24,
+    paddingBottom: 28,
     gap: 14,
   },
   sectionCard: {
-    gap: 12,
+    gap: 14,
   },
   sectionTitle: {
     fontSize: 18,
@@ -1096,17 +1320,54 @@ const styles = StyleSheet.create({
   sectionBody: {
     lineHeight: 22,
   },
-  currentStateBox: {
+  summaryList: {
+    gap: 10,
+  },
+  summaryRow: {
+    borderWidth: 1,
     borderRadius: 16,
     paddingHorizontal: 14,
     paddingVertical: 12,
     gap: 4,
   },
+  summaryLabel: {
+    fontSize: 12,
+  },
+  summaryValue: {
+    fontSize: 16,
+  },
+  badgeRow: {
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  badge: {
+    alignSelf: "flex-start",
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  badgeText: {
+    fontSize: 12,
+  },
+  warningBox: {
+    borderWidth: 1,
+    borderRadius: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
+  currentStateBox: {
+    borderWidth: 1,
+    borderRadius: 18,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    gap: 6,
+  },
   eyebrow: {
     fontSize: 12,
   },
   currentStatusValue: {
-    fontSize: 16,
+    fontSize: 18,
   },
   helperText: {
     lineHeight: 20,
@@ -1117,16 +1378,22 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   statusChip: {
+    flexBasis: "48%",
+    minHeight: 58,
     borderWidth: 1,
-    borderRadius: 999,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+    borderRadius: 18,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  statusChipLabel: {
+    textAlign: "center",
   },
   instantRow: {
-    marginTop: 6,
-    paddingTop: 12,
+    marginTop: 2,
+    paddingTop: 14,
     borderTopWidth: 1,
-    flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     gap: 12,
@@ -1139,7 +1406,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   toggle: {
-    width: 54,
+    width: 56,
     borderRadius: 999,
     padding: 4,
   },
@@ -1149,29 +1416,43 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     backgroundColor: "#ffffff",
   },
+  timezoneRow: {
+    borderWidth: 1,
+    borderRadius: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+  },
+  timezoneValue: {
+    fontSize: 14,
+  },
   dayList: {
     gap: 10,
   },
   dayCard: {
     borderWidth: 1,
     borderRadius: 18,
-    padding: 12,
+    padding: 14,
     gap: 10,
   },
   dayHeader: {
-    flexDirection: "row",
+    alignItems: "flex-start",
     justifyContent: "space-between",
-    alignItems: "center",
     gap: 12,
   },
   dayHeaderText: {
     flex: 1,
-    gap: 2,
+    gap: 4,
   },
   dayTitle: {
     fontSize: 16,
   },
-  addChip: {
+  daySubtitle: {
+    lineHeight: 20,
+  },
+  inlineAction: {
     borderWidth: 1,
     borderRadius: 999,
     paddingHorizontal: 14,
@@ -1181,25 +1462,30 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   slotRow: {
-    borderRadius: 14,
+    borderRadius: 16,
     paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingVertical: 12,
     gap: 10,
+    alignItems: "flex-start",
+    justifyContent: "space-between",
   },
   slotTextWrap: {
+    flex: 1,
     gap: 4,
   },
   slotActions: {
     flexDirection: "row",
+    flexWrap: "wrap",
     gap: 16,
   },
   slotActionButton: {
     paddingVertical: 2,
   },
   editorBox: {
-    borderRadius: 16,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
+    borderWidth: 1,
+    borderRadius: 18,
+    padding: 14,
+    gap: 10,
   },
   editorActions: {
     gap: 10,
@@ -1208,9 +1494,8 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   exceptionHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "flex-start",
+    justifyContent: "space-between",
     gap: 12,
   },
   typeRow: {
@@ -1225,19 +1510,46 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 10,
   },
+  typeChipLabel: {
+    textAlign: "center",
+  },
   exceptionList: {
-    gap: 8,
+    gap: 10,
   },
   exceptionRow: {
-    borderRadius: 14,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    gap: 8,
+    borderWidth: 1,
+    borderRadius: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    gap: 10,
+    alignItems: "flex-start",
+    justifyContent: "space-between",
   },
   exceptionTextWrap: {
-    gap: 4,
+    flex: 1,
+    gap: 8,
+  },
+  exceptionBadgeRow: {
+    gap: 8,
+    flexWrap: "wrap",
+    alignItems: "center",
+  },
+  exceptionBadge: {
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  exceptionBadgeText: {
+    fontSize: 12,
   },
   exceptionMeta: {
     fontSize: 13,
+  },
+  exceptionReason: {
+    lineHeight: 20,
+  },
+  timeInput: {
+    textAlign: "center",
   },
 });

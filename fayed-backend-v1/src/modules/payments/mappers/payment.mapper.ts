@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Payment, Refund, RefundStatus } from '@prisma/client';
+import { Payment, Prisma, Refund, RefundStatus } from '@prisma/client';
 import {
   AdminPaymentOpsViewModel,
   PaymentViewModel,
@@ -32,6 +32,14 @@ export class PaymentMapper {
       currency: payment.currencyCode,
       providerPaymentId: payment.providerPaymentRef ?? null,
       providerReference: payment.providerOrderRef ?? null,
+      providerMethod:
+        typeof metadata.paymobPaymentMethod === 'string'
+          ? metadata.paymobPaymentMethod
+          : typeof metadata.paymobCheckoutMethod === 'string'
+          ? metadata.paymobCheckoutMethod
+          : typeof metadata.providerMethod === 'string'
+            ? metadata.providerMethod
+            : null,
       checkoutUrl:
         typeof metadata.checkoutUrl === 'string' ? metadata.checkoutUrl : null,
       clientSecret:
@@ -85,6 +93,7 @@ export class PaymentMapper {
     capturedAt: Date | null;
     failedAt: Date | null;
     expiredAt: Date | null;
+    metadataJson?: Prisma.JsonValue | null;
     session: {
       id: string;
       status: string;
@@ -103,6 +112,7 @@ export class PaymentMapper {
       createdAt: Date;
     }>;
   }): AdminPaymentOpsViewModel {
+    const metadata = (payment.metadataJson ?? {}) as Record<string, unknown>;
     const refunds = payment.refunds.map((refund) =>
       this.toRefundViewModel(refund),
     );
@@ -124,6 +134,14 @@ export class PaymentMapper {
         currency: payment.currencyCode,
         providerPaymentId: payment.providerPaymentRef ?? null,
         providerReference: payment.providerOrderRef ?? null,
+        providerMethod:
+          typeof metadata.paymobPaymentMethod === 'string'
+            ? String(metadata.paymobPaymentMethod)
+            : typeof metadata.paymobCheckoutMethod === 'string'
+            ? String(metadata.paymobCheckoutMethod)
+            : typeof metadata.providerMethod === 'string'
+              ? String(metadata.providerMethod)
+              : null,
         createdAt: payment.createdAt.toISOString(),
         initiatedAt: payment.initiatedAt.toISOString(),
         capturedAt: payment.capturedAt?.toISOString() ?? null,

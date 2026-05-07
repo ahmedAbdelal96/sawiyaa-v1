@@ -25,9 +25,13 @@ export const LoadingState = ({ message, fullScreen = false }: LoadingStateProps)
 
 const styles = StyleSheet.create({
   container: {
-    padding: 24,
+    width: "100%",
+    maxWidth: 360,
+    paddingHorizontal: 24,
+    paddingVertical: 28,
     alignItems: 'center',
     justifyContent: 'center',
+    alignSelf: "center",
   },
   fullScreen: {
     flex: 1,
@@ -36,5 +40,6 @@ const styles = StyleSheet.create({
     marginTop: 16,
     fontSize: 16,
     textAlign: 'center',
+    lineHeight: 22,
   },
 });

@@ -12,9 +12,17 @@ import {
   Stethoscope,
   UserRound,
 } from "lucide-react";
-import { ListStateSkeleton, StateCard } from "@/components/shared/ContentStates";
-import type { ReactNode } from "react";
+import { type ReactNode } from "react";
+import Button from "@/components/ui/button/Button";
+import { ListStateSkeleton } from "@/components/shared/ContentStates";
+import {
+  PatientActionPanel,
+  PatientPageHeader,
+  PatientSectionCard,
+  PatientStatusBadge,
+} from "@/components/patient/PatientChrome";
 import { usePatientJourney } from "../hooks/use-patient-journey";
+import { isPaymentExpired } from "@/features/payments/lib/payment-status";
 import type {
   PatientJourney,
   PatientJourneyNextStepType,
@@ -125,14 +133,6 @@ function StepIcon({ type }: { type: PatientJourneyNextStepType }) {
   }
 }
 
-function LoadingState() {
-  return (
-    <div className="mx-auto max-w-3xl">
-      <ListStateSkeleton items={3} heightClass="h-36" />
-    </div>
-  );
-}
-
 type CareEntryItem = {
   href: string;
   label: string;
@@ -149,17 +149,41 @@ export default function PatientJourneyScreen() {
   const { data: journey, isLoading, isError, refetch } = usePatientJourney();
 
   if (isLoading) {
-    return <LoadingState />;
+    return (
+      <div className="app-max-content mx-auto space-y-5 sm:space-y-6">
+        <PatientPageHeader
+          eyebrow={t("hero.eyebrow")}
+          title={t("hero.title")}
+          description={t("hero.note")}
+        />
+        <PatientSectionCard tone="subtle">
+          <ListStateSkeleton items={3} heightClass="h-36" />
+        </PatientSectionCard>
+      </div>
+    );
   }
 
   if (isError || !journey) {
     return (
-      <div className="mx-auto max-w-2xl">
-        <StateCard
-          title={t("states.error.heading")}
-          note={t("states.error.note")}
-          action={{ label: t("states.error.retry"), onClick: () => refetch() }}
+      <div className="app-max-content mx-auto space-y-5 sm:space-y-6">
+        <PatientPageHeader
+          eyebrow={t("hero.eyebrow")}
+          title={t("hero.title")}
+          description={t("hero.note")}
         />
+        <PatientSectionCard
+          tone="subtle"
+          eyebrow={t("states.error.eyebrow")}
+          title={t("states.error.heading")}
+          description={t("states.error.note")}
+          actions={
+            <Button onClick={() => refetch()} variant="outline">
+              {t("states.error.retry")}
+            </Button>
+          }
+        >
+          <div />
+        </PatientSectionCard>
       </div>
     );
   }
@@ -168,7 +192,13 @@ export default function PatientJourneyScreen() {
     journey.nextSteps.find((step) => step.type === journey.summary.suggestedNextAction) ??
     journey.nextSteps[0];
   const remainingSteps = journey.nextSteps.filter((step) => step.type !== primaryStep?.type);
-  const primaryConfig = primaryStep ? resolveStepConfig(journey, primaryStep.type) : null;
+  const activePendingPayment = Boolean(
+    journey.upcoming.pendingPayment && !isPaymentExpired(journey.upcoming.pendingPayment),
+  );
+  const primaryConfig =
+    primaryStep && !(primaryStep.type === "COMPLETE_PAYMENT" && !activePendingPayment)
+      ? resolveStepConfig(journey, primaryStep.type)
+      : null;
   const fallbackNextStep =
     primaryConfig?.supported && primaryConfig.href && primaryConfig.ctaKey
       ? primaryConfig
@@ -183,6 +213,40 @@ export default function PatientJourneyScreen() {
     journey.recentHistory.assessments.length > 0 ||
     journey.recentHistory.matching.length > 0 ||
     journey.recentHistory.payments.length > 0;
+
+  const summaryBadges: ReactNode[] = [];
+  if (activePendingPayment) {
+    summaryBadges.push(
+      <PatientStatusBadge key="pendingPayment">
+        {t("summary.chips.pendingPayment")}
+      </PatientStatusBadge>,
+    );
+  }
+  if (journey.summary.hasUpcomingSession && journey.summary.nextSessionAt) {
+    summaryBadges.push(
+      <PatientStatusBadge key="nextSession">
+        {t("summary.chips.nextSessionAt", {
+          date: formatDatetime(journey.summary.nextSessionAt, numLocale),
+        })}
+      </PatientStatusBadge>,
+    );
+  }
+  if (journey.summary.hasOpenSupportTicket) {
+    summaryBadges.push(
+      <PatientStatusBadge key="supportOpen">
+        {t("summary.chips.supportOpen")}
+      </PatientStatusBadge>,
+    );
+  }
+  if (journey.summary.lastAssessmentTakenAt) {
+    summaryBadges.push(
+      <PatientStatusBadge key="lastAssessment">
+        {t("summary.chips.lastAssessment", {
+          date: formatDate(journey.summary.lastAssessmentTakenAt, numLocale),
+        })}
+      </PatientStatusBadge>,
+    );
+  }
 
   const careEntryItems: CareEntryItem[] = [
     {
@@ -213,79 +277,31 @@ export default function PatientJourneyScreen() {
 
   return (
     <div className="app-max-content mx-auto space-y-5 sm:space-y-6">
-      <section className="app-panel overflow-hidden rounded-[32px] p-5 sm:p-7">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="max-w-xl">
-            <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-primary">
-              {t("hero.eyebrow")}
-            </p>
-            <h1 className="text-2xl font-semibold tracking-tight text-text-primary dark:text-white/95 sm:text-3xl">
-              {t("hero.title")}
-            </h1>
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-text-secondary sm:text-base">
-              {t("hero.note")}
-            </p>
-          </div>
+      <PatientPageHeader
+        eyebrow={t("hero.eyebrow")}
+        title={t("hero.title")}
+        description={t("hero.note")}
+        meta={<div className="flex flex-wrap gap-2.5">{summaryBadges}</div>}
+        actions={
           <div className="rounded-full bg-primary-light px-3 py-1.5 text-xs font-medium text-primary dark:bg-primary/15 dark:text-primary-light">
             {t(
               `summary.suggested.${journey.summary.suggestedNextAction}` as Parameters<typeof t>[0],
             )}
           </div>
-        </div>
-
-        <div className="mt-5 flex flex-wrap gap-2.5">
-          {journey.summary.hasPendingPayment && (
-            <span className="app-chip rounded-full px-3 py-1.5 text-xs font-medium">
-              {t("summary.chips.pendingPayment")}
-            </span>
-          )}
-          {journey.summary.hasUpcomingSession && journey.summary.nextSessionAt && (
-            <span className="app-chip rounded-full px-3 py-1.5 text-xs font-medium">
-              {t("summary.chips.nextSessionAt", {
-                date: formatDatetime(journey.summary.nextSessionAt, numLocale),
-              })}
-            </span>
-          )}
-          {journey.summary.hasOpenSupportTicket && (
-            <span className="app-chip rounded-full px-3 py-1.5 text-xs font-medium">
-              {t("summary.chips.supportOpen")}
-            </span>
-          )}
-          {journey.summary.lastAssessmentTakenAt && (
-            <span className="app-chip rounded-full px-3 py-1.5 text-xs font-medium">
-              {t("summary.chips.lastAssessment", {
-                date: formatDate(journey.summary.lastAssessmentTakenAt, numLocale),
-              })}
-            </span>
-          )}
-        </div>
-      </section>
+        }
+      />
 
       {primaryStep && (
-        <section className="app-panel rounded-[32px] p-5 sm:p-7">
-          <div className="flex items-start gap-3">
-            <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary-light text-primary dark:bg-primary/15 dark:text-primary-light">
-              <StepIcon type={primaryStep.type} />
-            </span>
-            <div className="min-w-0 flex-1">
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">
-                {t("primaryAction.eyebrow")}
-              </p>
-              <h2 className="mt-2 text-xl font-semibold text-text-primary dark:text-white/95">
-                {t(
-                  `nextSteps.types.${primaryStep.type}.title` as Parameters<typeof t>[0],
-                )}
-              </h2>
-              <p className="mt-2 text-sm leading-6 text-text-secondary">
-                {t(
-                  `nextSteps.types.${primaryStep.type}.note` as Parameters<typeof t>[0],
-                )}
-              </p>
-            </div>
-          </div>
-
-          <div className="mt-5 flex flex-wrap items-center gap-3">
-            {primaryConfig?.supported && primaryConfig.href && primaryConfig.ctaKey ? (
+        <PatientSectionCard
+          eyebrow={t("primaryAction.eyebrow")}
+          title={t(
+            `nextSteps.types.${primaryStep.type}.title` as Parameters<typeof t>[0],
+          )}
+          description={t(
+            `nextSteps.types.${primaryStep.type}.note` as Parameters<typeof t>[0],
+          )}
+          actions={
+            primaryConfig?.supported && primaryConfig.href && primaryConfig.ctaKey ? (
               <Link
                 href={primaryConfig.href as never}
                 className="inline-flex items-center justify-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-white hover:bg-primary-hover"
@@ -297,8 +313,22 @@ export default function PatientJourneyScreen() {
               <div className="rounded-2xl border border-border-light bg-surface-secondary px-4 py-3 text-sm text-text-secondary dark:bg-white/5">
                 {t("nextSteps.unavailable")}
               </div>
-            )}
-
+            )
+          }
+        >
+          <div className="flex items-start gap-3">
+            <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary-light text-primary dark:bg-primary/15 dark:text-primary-light">
+              <StepIcon type={primaryStep.type} />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm leading-6 text-text-secondary">
+                {t(
+                  `nextSteps.types.${primaryStep.type}.note` as Parameters<typeof t>[0],
+                )}
+              </p>
+            </div>
+          </div>
+          <div className="mt-5 flex flex-wrap items-center gap-3">
             <Link
               href="/patient/practitioners"
               className="inline-flex items-center justify-center gap-2 rounded-full border border-border-light bg-surface px-5 py-2.5 text-sm font-semibold text-text-primary transition hover:border-primary hover:text-primary"
@@ -307,133 +337,121 @@ export default function PatientJourneyScreen() {
               <ArrowRight size={14} className="rtl:rotate-180" />
             </Link>
           </div>
-        </section>
+        </PatientSectionCard>
       )}
 
-      <section className="app-panel rounded-[32px] p-5 sm:p-7">
-        <div className="max-w-2xl">
-          <h2 className="text-lg font-semibold text-text-primary dark:text-white/95">
-            {t("quickLinks.careHeading")}
-          </h2>
-          <p className="mt-1 text-sm leading-6 text-text-secondary">
-            {t("quickLinks.careNote")}
-          </p>
-        </div>
-
-        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+      <PatientSectionCard
+        eyebrow={t("quickLinks.careHeading")}
+        title={t("quickLinks.careHeading")}
+        description={t("quickLinks.careNote")}
+      >
+        <div className="grid gap-3 sm:grid-cols-2">
           {careEntryItems.map((item) => (
-            <Link
+            <PatientActionPanel
               key={item.href}
-              href={item.href as never}
-              className="app-panel-soft flex items-start gap-3 rounded-[24px] px-4 py-4 transition hover:border-primary/25 hover:bg-white/90 dark:hover:bg-white/8"
-            >
-              <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-primary-light text-primary dark:bg-primary/15 dark:text-primary-light">
-                {item.icon}
-              </span>
-              <div className="min-w-0">
-                <p className="text-sm font-semibold text-text-primary dark:text-white/95">
-                  {item.label}
-                </p>
-                <p className="mt-1 text-sm leading-6 text-text-secondary">
-                  {item.note}
-                </p>
-              </div>
-            </Link>
+              href={item.href}
+              label={item.label}
+              description={item.note}
+              icon={item.icon}
+            />
           ))}
         </div>
-      </section>
+      </PatientSectionCard>
 
-      <section className="grid gap-4 sm:grid-cols-2">
-        {journey.upcoming.pendingPayment && (
-          <div className="app-panel rounded-[28px] p-5">
-            <p className="text-sm font-semibold text-text-primary dark:text-white/95">
-              {t("upcoming.pendingPayment.heading")}
-            </p>
-            <p className="mt-2 text-lg font-semibold text-text-primary dark:text-white">
-              {formatAmount(
-                journey.upcoming.pendingPayment.amount,
-                journey.upcoming.pendingPayment.currency,
-                numLocale,
-              )}
-            </p>
-            <p className="mt-1 text-sm text-text-secondary">
-              {tPayments(
-                `history.status.${journey.upcoming.pendingPayment.status}` as Parameters<typeof tPayments>[0],
-              )}
-            </p>
-            <Link
-              href={
-                (journey.upcoming.pendingPayment.sessionId
-                  ? `/patient/sessions/${journey.upcoming.pendingPayment.sessionId}/pay`
-                  : "/patient/payments") as never
-              }
-              className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline"
-            >
-              {t("upcoming.pendingPayment.cta")}
-              <ArrowRight size={13} className="rtl:rotate-180" />
-            </Link>
-          </div>
-        )}
-
-        {journey.upcoming.session && (
-          <div className="app-panel rounded-[28px] p-5">
-            <p className="text-sm font-semibold text-text-primary dark:text-white/95">
-              {t("upcoming.session.heading")}
-            </p>
-            <p className="mt-2 text-base font-semibold text-text-primary dark:text-white">
-              {journey.upcoming.session.practitioner.displayName ??
-                journey.upcoming.session.practitioner.slug}
-            </p>
-            {journey.upcoming.session.scheduledStartAt && (
-              <p className="mt-1 text-sm text-text-secondary">
-                {formatDatetime(journey.upcoming.session.scheduledStartAt, numLocale)}
+      <PatientSectionCard>
+        <div className="grid gap-4 sm:grid-cols-2">
+          {activePendingPayment && journey.upcoming.pendingPayment ? (
+            <div className="app-panel rounded-[28px] p-5">
+              <p className="text-sm font-semibold text-text-primary dark:text-white/95">
+                {t("upcoming.pendingPayment.heading")}
               </p>
-            )}
-            <div className="mt-3 inline-flex rounded-full bg-primary-light px-2.5 py-1 text-xs font-medium text-primary dark:bg-primary/15 dark:text-primary-light">
-              {tSessions(
-                `status.${journey.upcoming.session.status}` as Parameters<typeof tSessions>[0],
-              )}
+              <p className="mt-2 text-lg font-semibold text-text-primary dark:text-white">
+                {formatAmount(
+                  journey.upcoming.pendingPayment.amount,
+                  journey.upcoming.pendingPayment.currency,
+                  numLocale,
+                )}
+              </p>
+              <p className="mt-1 text-sm text-text-secondary">
+                {tPayments(
+                  `history.status.${journey.upcoming.pendingPayment.status}` as Parameters<typeof tPayments>[0],
+                )}
+              </p>
+              <Link
+                href={
+                  (activePendingPayment && journey.upcoming.pendingPayment.sessionId
+                    ? `/patient/sessions/${journey.upcoming.pendingPayment.sessionId}/pay`
+                    : "/patient/payments") as never
+                }
+                className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline"
+              >
+                {t("upcoming.pendingPayment.cta")}
+                <ArrowRight size={13} className="rtl:rotate-180" />
+              </Link>
             </div>
-            <Link
-              href={`/patient/sessions/${journey.upcoming.session.id}` as never}
-              className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline"
-            >
-              {t("upcoming.session.cta")}
-              <ArrowRight size={13} className="rtl:rotate-180" />
-            </Link>
-          </div>
-        )}
+          ) : null}
 
-        {journey.upcoming.instantBookingRequest && (
-          <div className="app-panel-soft rounded-[28px] p-5 sm:col-span-2">
-            <p className="text-sm font-semibold text-text-primary dark:text-white/95">
-              {t("upcoming.instantBooking.heading")}
-            </p>
-            <p className="mt-2 text-sm leading-6 text-text-secondary">
-              {t("upcoming.instantBooking.note", {
-                practitioner:
-                  journey.upcoming.instantBookingRequest.practitioner.displayName ??
-                  journey.upcoming.instantBookingRequest.practitioner.slug,
-              })}
-            </p>
-            <div className="mt-3 flex flex-wrap gap-2.5">
-              <span className="app-chip rounded-full px-3 py-1.5 text-xs font-medium">
-                {t("upcoming.instantBooking.duration", {
-                  n: journey.upcoming.instantBookingRequest.durationMinutes,
-                })}
-              </span>
-              <span className="app-chip rounded-full px-3 py-1.5 text-xs font-medium">
-                {t("upcoming.instantBooking.expiresAt", {
-                  date: formatDatetime(journey.upcoming.instantBookingRequest.expiresAt, numLocale),
-                })}
-              </span>
+          {journey.upcoming.session ? (
+            <div className="app-panel rounded-[28px] p-5">
+              <p className="text-sm font-semibold text-text-primary dark:text-white/95">
+                {t("upcoming.session.heading")}
+              </p>
+              <p className="mt-2 text-base font-semibold text-text-primary dark:text-white">
+                {journey.upcoming.session.practitioner.displayName ??
+                  journey.upcoming.session.practitioner.slug}
+              </p>
+              {journey.upcoming.session.scheduledStartAt ? (
+                <p className="mt-1 text-sm text-text-secondary">
+                  {formatDatetime(journey.upcoming.session.scheduledStartAt, numLocale)}
+                </p>
+              ) : null}
+              <div className="mt-3">
+                <PatientStatusBadge className="px-2.5 py-1 text-[11px]">
+                  {tSessions(
+                    `status.${journey.upcoming.session.status}` as Parameters<typeof tSessions>[0],
+                  )}
+                </PatientStatusBadge>
+              </div>
+              <Link
+                href={`/patient/sessions/${journey.upcoming.session.id}` as never}
+                className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline"
+              >
+                {t("upcoming.session.cta")}
+                <ArrowRight size={13} className="rtl:rotate-180" />
+              </Link>
             </div>
-          </div>
-        )}
+          ) : null}
 
-        {!journey.upcoming.pendingPayment &&
+          {journey.upcoming.instantBookingRequest ? (
+            <div className="app-panel-soft rounded-[28px] p-5 sm:col-span-2">
+              <p className="text-sm font-semibold text-text-primary dark:text-white/95">
+                {t("upcoming.instantBooking.heading")}
+              </p>
+              <p className="mt-2 text-sm leading-6 text-text-secondary">
+                {t("upcoming.instantBooking.note", {
+                  practitioner:
+                    journey.upcoming.instantBookingRequest.practitioner.displayName ??
+                    journey.upcoming.instantBookingRequest.practitioner.slug,
+                })}
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2.5">
+                <PatientStatusBadge>
+                  {t("upcoming.instantBooking.duration", {
+                    n: journey.upcoming.instantBookingRequest.durationMinutes,
+                  })}
+                </PatientStatusBadge>
+                <PatientStatusBadge>
+                  {t("upcoming.instantBooking.expiresAt", {
+                    date: formatDatetime(journey.upcoming.instantBookingRequest.expiresAt, numLocale),
+                  })}
+                </PatientStatusBadge>
+              </div>
+            </div>
+          ) : null}
+
+          {!journey.upcoming.pendingPayment &&
           !journey.upcoming.session &&
-          !journey.upcoming.instantBookingRequest && (
+          !journey.upcoming.instantBookingRequest ? (
             <div className="app-panel-soft rounded-[28px] p-5 sm:col-span-2">
               <p className="text-sm font-semibold text-text-primary dark:text-white/95">
                 {t("upcoming.empty.heading")}
@@ -449,27 +467,20 @@ export default function PatientJourneyScreen() {
                 <ArrowRight size={13} className="rtl:rotate-180" />
               </Link>
             </div>
-          )}
-      </section>
+          ) : null}
+        </div>
+      </PatientSectionCard>
 
-      <section className="app-panel rounded-[32px] p-5 sm:p-7">
-        <h2 className="text-lg font-semibold text-text-primary dark:text-white/95">
-          {t("recent.heading")}
-        </h2>
-        <p className="mt-1 text-sm text-text-secondary">{t("recent.note")}</p>
-
+      <PatientSectionCard title={t("recent.heading")} description={t("recent.note")}>
         {hasRecentHistory ? (
           <div className="mt-4 grid gap-4 lg:grid-cols-2">
-            {journey.recentHistory.sessions.length > 0 && (
+            {journey.recentHistory.sessions.length > 0 ? (
               <div className="app-panel-soft rounded-[24px] p-4">
                 <div className="mb-3 flex items-center justify-between gap-3">
                   <p className="text-sm font-semibold text-text-primary dark:text-white/95">
                     {t("recent.sessions.heading")}
                   </p>
-                  <Link
-                    href="/patient/sessions"
-                    className="text-xs font-medium text-primary hover:underline"
-                  >
+                  <Link href="/patient/sessions" className="text-xs font-medium text-primary hover:underline">
                     {t("recent.sessions.viewAll")}
                   </Link>
                 </div>
@@ -484,33 +495,30 @@ export default function PatientJourneyScreen() {
                         <p className="line-clamp-2 text-sm font-medium text-text-primary dark:text-white/90">
                           {session.practitioner.displayName ?? session.practitioner.slug}
                         </p>
-                        {session.scheduledStartAt && (
+                        {session.scheduledStartAt ? (
                           <p className="mt-1 text-xs text-text-muted">
                             {formatDatetime(session.scheduledStartAt, numLocale)}
                           </p>
-                        )}
+                        ) : null}
                       </div>
-                      <span className="app-chip shrink-0 rounded-full px-2.5 py-1 text-[11px] font-medium">
+                      <PatientStatusBadge className="shrink-0 px-2.5 py-1 text-[11px]">
                         {tSessions(
                           `status.${session.status}` as Parameters<typeof tSessions>[0],
                         )}
-                      </span>
+                      </PatientStatusBadge>
                     </Link>
                   ))}
                 </div>
               </div>
-            )}
+            ) : null}
 
-            {journey.recentHistory.payments.length > 0 && (
+            {journey.recentHistory.payments.length > 0 ? (
               <div className="app-panel-soft rounded-[24px] p-4">
                 <div className="mb-3 flex items-center justify-between gap-3">
                   <p className="text-sm font-semibold text-text-primary dark:text-white/95">
                     {t("recent.payments.heading")}
                   </p>
-                  <Link
-                    href="/patient/payments"
-                    className="text-xs font-medium text-primary hover:underline"
-                  >
+                  <Link href="/patient/payments" className="text-xs font-medium text-primary hover:underline">
                     {t("recent.payments.viewAll")}
                   </Link>
                 </div>
@@ -524,39 +532,36 @@ export default function PatientJourneyScreen() {
                         <p className="text-sm font-medium text-text-primary dark:text-white/90">
                           {formatAmount(payment.amount, payment.currency, numLocale)}
                         </p>
-                        <span className="app-chip rounded-full px-2.5 py-1 text-[11px] font-medium">
+                        <PatientStatusBadge className="px-2.5 py-1 text-[11px]">
                           {tPayments(
                             `history.status.${payment.status}` as Parameters<typeof tPayments>[0],
                           )}
-                        </span>
+                        </PatientStatusBadge>
                       </div>
                       <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-text-muted">
                         <span>{formatDate(payment.createdAt, numLocale)}</span>
-                        {payment.sessionId && (
+                        {payment.sessionId ? (
                           <Link
                             href={`/patient/sessions/${payment.sessionId}` as never}
                             className="font-medium text-primary hover:underline"
                           >
                             {t("recent.payments.viewSession")}
                           </Link>
-                        )}
+                        ) : null}
                       </div>
                     </div>
                   ))}
                 </div>
               </div>
-            )}
+            ) : null}
 
-            {journey.recentHistory.assessments.length > 0 && (
+            {journey.recentHistory.assessments.length > 0 ? (
               <div className="app-panel-soft rounded-[24px] p-4">
                 <div className="mb-3 flex items-center justify-between gap-3">
                   <p className="text-sm font-semibold text-text-primary dark:text-white/95">
                     {t("recent.assessments.heading")}
                   </p>
-                  <Link
-                    href="/patient/assessments"
-                    className="text-xs font-medium text-primary hover:underline"
-                  >
+                  <Link href="/patient/assessments" className="text-xs font-medium text-primary hover:underline">
                     {t("recent.sessions.viewAll")}
                   </Link>
                 </div>
@@ -570,16 +575,16 @@ export default function PatientJourneyScreen() {
                         {assessment.assessmentTitle}
                       </p>
                       <div className="mt-1 flex flex-wrap gap-3 text-xs text-text-muted">
-                        {assessment.completedAt && (
+                        {assessment.completedAt ? (
                           <span>
                             {t("recent.assessments.completedAt", {
                               date: formatDate(assessment.completedAt, numLocale),
                             })}
                           </span>
-                        )}
-                        {assessment.score !== null && (
+                        ) : null}
+                        {assessment.score !== null ? (
                           <span>{t("recent.assessments.score", { score: assessment.score })}</span>
-                        )}
+                        ) : null}
                         <Link
                           href={`/patient/assessments/submissions/${assessment.id}` as never}
                           className="font-medium text-primary hover:underline"
@@ -591,9 +596,9 @@ export default function PatientJourneyScreen() {
                   ))}
                 </div>
               </div>
-            )}
+            ) : null}
 
-            {journey.recentHistory.matching.length > 0 && (
+            {journey.recentHistory.matching.length > 0 ? (
               <div className="app-panel-soft rounded-[24px] p-4">
                 <p className="text-sm font-semibold text-text-primary dark:text-white/95">
                   {t("recent.matching.heading")}
@@ -614,33 +619,33 @@ export default function PatientJourneyScreen() {
                           : t("recent.matching.noRecommendation")}
                       </p>
                       <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-text-muted">
-                        {matching.completedAt && (
+                        {matching.completedAt ? (
                           <span>
                             {t("recent.matching.completedAt", {
                               date: formatDate(matching.completedAt, numLocale),
                             })}
                           </span>
-                        )}
+                        ) : null}
                         <Link
                           href={`/patient/matching/${matching.id}` as never}
                           className="font-medium text-primary hover:underline"
                         >
                           {t("recent.matching.viewMatching")}
                         </Link>
-                        {matching.topRecommendation && (
+                        {matching.topRecommendation ? (
                           <Link
                             href={`/practitioners/${matching.topRecommendation.practitionerSlug}` as never}
                             className="font-medium text-primary hover:underline"
                           >
                             {t("recent.matching.viewPractitioner")}
                           </Link>
-                        )}
+                        ) : null}
                       </div>
                     </div>
                   ))}
                 </div>
               </div>
-            )}
+            ) : null}
           </div>
         ) : (
           <div className="app-panel-soft mt-4 rounded-[24px] p-5">
@@ -659,105 +664,101 @@ export default function PatientJourneyScreen() {
             </Link>
           </div>
         )}
-      </section>
+      </PatientSectionCard>
 
-      <section className="grid gap-4 sm:grid-cols-2">
-        <div className="app-panel rounded-[28px] p-5">
-          <p className="text-sm font-semibold text-text-primary dark:text-white/95">
-            {t("support.heading")}
-          </p>
-          {journey.support.latestOpenTicket ? (
-            <>
-              <p className="mt-2 text-sm text-text-secondary">
-                {t("support.openTicket")}
-              </p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                <span className="app-chip rounded-full px-3 py-1.5 text-xs font-medium">
-                  {t(`support.categories.${journey.support.latestOpenTicket.category}` as Parameters<typeof t>[0])}
-                </span>
-                <span className="app-chip rounded-full px-3 py-1.5 text-xs font-medium">
-                  {t(`support.statuses.${journey.support.latestOpenTicket.status}` as Parameters<typeof t>[0])}
-                </span>
-                <span className="app-chip rounded-full px-3 py-1.5 text-xs font-medium">
-                  {t("support.updatedAt", {
-                    date: formatDate(journey.support.latestOpenTicket.updatedAt, numLocale),
-                  })}
-                </span>
-              </div>
-              <Link
-                href={`/patient/support/${journey.support.latestOpenTicket.id}` as never}
-                className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline"
-              >
-                {t("support.viewTicket")}
-                <ArrowRight size={13} className="rtl:rotate-180" />
-              </Link>
-            </>
-          ) : (
-            <>
-              <p className="mt-2 text-sm leading-6 text-text-secondary">
-                {t("support.empty")}
-              </p>
-              <Link
-                href="/patient/support"
-                className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline"
-              >
-                {t("support.chatCta")}
-                <ArrowRight size={13} className="rtl:rotate-180" />
-              </Link>
-            </>
-          )}
-        </div>
+      <PatientSectionCard>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="app-panel rounded-[28px] p-5">
+            <p className="text-sm font-semibold text-text-primary dark:text-white/95">
+              {t("support.heading")}
+            </p>
+            {journey.support.latestOpenTicket ? (
+              <>
+                <p className="mt-2 text-sm text-text-secondary">{t("support.openTicket")}</p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <PatientStatusBadge>
+                    {t(
+                      `support.categories.${journey.support.latestOpenTicket.category}` as Parameters<typeof t>[0],
+                    )}
+                  </PatientStatusBadge>
+                  <PatientStatusBadge>
+                    {t(
+                      `support.statuses.${journey.support.latestOpenTicket.status}` as Parameters<typeof t>[0],
+                    )}
+                  </PatientStatusBadge>
+                  <PatientStatusBadge>
+                    {t("support.updatedAt", {
+                      date: formatDate(journey.support.latestOpenTicket.updatedAt, numLocale),
+                    })}
+                  </PatientStatusBadge>
+                </div>
+                <Link
+                  href={`/patient/support/${journey.support.latestOpenTicket.id}` as never}
+                  className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline"
+                >
+                  {t("support.viewTicket")}
+                  <ArrowRight size={13} className="rtl:rotate-180" />
+                </Link>
+              </>
+            ) : (
+              <>
+                <p className="mt-2 text-sm leading-6 text-text-secondary">{t("support.empty")}</p>
+                <Link
+                  href="/patient/support"
+                  className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline"
+                >
+                  {t("support.chatCta")}
+                  <ArrowRight size={13} className="rtl:rotate-180" />
+                </Link>
+              </>
+            )}
+          </div>
 
-        <div className="app-panel rounded-[28px] p-5">
-          <p className="text-sm font-semibold text-text-primary dark:text-white/95">
-            {t("quickLinks.utilityHeading")}
-          </p>
-          <p className="mt-1 text-sm leading-6 text-text-secondary">
-            {t("quickLinks.utilityNote")}
-          </p>
-          <div className="mt-4 grid grid-cols-2 gap-3">
-            {[
-              {
-                href: "/patient/sessions",
-                label: t("quickLinks.sessions"),
-                icon: <CalendarDays className="h-4 w-4" />,
-              },
-              {
-                href: "/patient/payments",
-                label: t("quickLinks.payments"),
-                icon: <CreditCard className="h-4 w-4" />,
-              },
-              {
-                href: "/patient/practitioners",
-                label: t("quickLinks.practitioners"),
-                icon: <Stethoscope className="h-4 w-4" />,
-              },
-              {
-                href: "/patient/profile",
-                label: t("quickLinks.profile"),
-                icon: <UserRound className="h-4 w-4" />,
-              },
-            ].map((item) => (
-              <Link
-                key={item.href}
-                href={item.href as never}
-                className="app-panel-soft flex items-center gap-2 rounded-2xl px-3.5 py-3 text-sm font-medium text-text-primary transition hover:border-primary/25 hover:text-primary dark:text-white/90"
-              >
-                <span className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-primary-light text-primary dark:bg-primary/15 dark:text-primary-light">
-                  {item.icon}
-                </span>
-                <span>{item.label}</span>
-              </Link>
-            ))}
+          <div className="app-panel rounded-[28px] p-5">
+            <p className="text-sm font-semibold text-text-primary dark:text-white/95">
+              {t("quickLinks.utilityHeading")}
+            </p>
+            <p className="mt-1 text-sm leading-6 text-text-secondary">
+              {t("quickLinks.utilityNote")}
+            </p>
+            <div className="mt-4 grid grid-cols-2 gap-3">
+              {[
+                {
+                  href: "/patient/sessions",
+                  label: t("quickLinks.sessions"),
+                  icon: <CalendarDays className="h-4 w-4" />,
+                },
+                {
+                  href: "/patient/payments",
+                  label: t("quickLinks.payments"),
+                  icon: <CreditCard className="h-4 w-4" />,
+                },
+                {
+                  href: "/patient/practitioners",
+                  label: t("quickLinks.practitioners"),
+                  icon: <Stethoscope className="h-4 w-4" />,
+                },
+                {
+                  href: "/patient/profile",
+                  label: t("quickLinks.profile"),
+                  icon: <UserRound className="h-4 w-4" />,
+                },
+              ].map((item) => (
+                <PatientActionPanel
+                  key={item.href}
+                  href={item.href}
+                  label={item.label}
+                  icon={item.icon}
+                  className="px-3.5 py-3"
+                />
+              ))}
+            </div>
           </div>
         </div>
-      </section>
+      </PatientSectionCard>
 
-      {remainingSteps.length > 0 && (
-        <section className="app-panel rounded-[32px] p-5 sm:p-7">
-          <h2 className="text-lg font-semibold text-text-primary dark:text-white/95">
-            {t("nextSteps.moreHeading")}
-          </h2>
+      {remainingSteps.length > 0 ? (
+        <PatientSectionCard title={t("nextSteps.moreHeading")}>
           <div className="mt-4 space-y-3">
             {remainingSteps.map((step) => {
               const config = resolveStepConfig(journey, step.type);
@@ -787,9 +788,7 @@ export default function PatientJourneyScreen() {
                           <ArrowRight size={13} className="rtl:rotate-180" />
                         </Link>
                       ) : (
-                        <p className="mt-3 text-xs text-text-muted">
-                          {t("nextSteps.unavailable")}
-                        </p>
+                        <p className="mt-3 text-xs text-text-muted">{t("nextSteps.unavailable")}</p>
                       )}
                     </div>
                   </div>
@@ -797,8 +796,8 @@ export default function PatientJourneyScreen() {
               );
             })}
           </div>
-        </section>
-      )}
+        </PatientSectionCard>
+      ) : null}
     </div>
   );
 }

@@ -42,18 +42,17 @@ export function DataTableLoading({
   };
   
   return (
-    <div className="overflow-hidden rounded-2xl border border-border-light bg-white shadow-[0_12px_32px_-24px_rgba(34,52,56,0.12)]">
-      {/* Loading header */}
+    <div className="app-panel overflow-hidden">
       <div className="overflow-x-auto">
         <table className="w-full">
-          <thead className="border-b border-border-light bg-surface-tertiary/70">
+          <thead className="border-b border-border-light bg-surface-tertiary/80">
             <tr>
               {Array.from({ length: columns }).map((_, i) => (
                 <th
                   key={i}
                   className={`${sizeClasses.header} text-start`}
                 >
-                  <div className="h-4 w-20 animate-pulse rounded bg-surface-tertiary" />
+                  <div className="h-3.5 w-20 animate-pulse rounded-full bg-surface-tertiary" />
                 </th>
               ))}
             </tr>
@@ -64,7 +63,7 @@ export function DataTableLoading({
                 {Array.from({ length: columns }).map((_, colIndex) => (
                   <td key={colIndex} className={sizeClasses.cell}>
                     <div
-                      className="h-4 animate-pulse rounded bg-surface-tertiary"
+                      className="h-3.5 animate-pulse rounded-full bg-surface-tertiary"
                       style={{
                         width: `${getSkeletonWidth(rowIndex, colIndex)}%`,
                         animationDelay: `${rowIndex * 100 + colIndex * 50}ms`,
@@ -78,11 +77,12 @@ export function DataTableLoading({
         </table>
       </div>
       
-      {/* Loading message */}
       {message && (
-        <div className="border-t border-border-light p-8 text-center">
-          <div className="mb-2 inline-block h-8 w-8 animate-spin rounded-full border-b-2 border-primary" />
-          <p className="text-sm text-text-secondary">{message}</p>
+        <div className="border-t border-border-light bg-surface-secondary/60 px-4 py-3 text-center sm:px-6">
+          <div className="inline-flex items-center gap-2 rounded-full border border-border-light bg-surface px-3 py-1.5 text-xs font-medium text-text-secondary shadow-theme-xs">
+            <span className="inline-flex h-4 w-4 animate-spin rounded-full border-2 border-primary/20 border-t-primary" />
+            <span>{message}</span>
+          </div>
         </div>
       )}
     </div>

@@ -1,0 +1,151 @@
+{
+    "meta":  {
+                 "listTitle":  "مشترياتي من الباقات",
+                 "listDescription":  "راجعي مشتريات الباقات، وتتبعي التقدم، وأكملي الدفع عند الحاجة.",
+                 "detailTitle":  "تفاصيل شراء الباقة"
+             },
+    "errors":  {
+                   "authHeading":  "سجلي الدخول لعرض مشتريات الباقات",
+                   "authNote":  "تحتاجين إلى حساب مريض للوصول إلى سجل مشتريات الباقات.",
+                   "authAction":  "تسجيل الدخول",
+                   "notFoundHeading":  "لم يتم العثور على شراء الباقة",
+                   "notFoundNote":  "تعذر العثور على شراء الباقة هذا."
+               },
+    "list":  {
+                 "eyebrow":  "الباقات",
+                 "heading":  "مشترياتي من الباقات",
+                 "subtitle":  "تابعي حجوزات الباقات، وتقدم الجلسات، وحالة الدفع في مكان واحد.",
+                 "emptyHeading":  "لا توجد مشتريات باقات بعد",
+                 "emptyNote":  "اختاري باقة من صفحة المعالج للبدء.",
+                 "emptyAction":  "تصفح المعالجين",
+                 "errorHeading":  "تعذر تحميل مشتريات الباقات",
+                 "errorNote":  "يرجى المحاولة مرة أخرى بعد قليل.",
+                 "retry":  "إعادة المحاولة",
+                 "rowsPerPage":  "الباقات في الصفحة",
+                 "pageLabel":  "الصفحة {page} من {totalPages}",
+                 "previous":  "السابق",
+                 "next":  "التالي",
+                 "summary":  {
+                                 "total":  "الإجمالي",
+                                 "totalHint":  "جميع المشتريات في مجموعة النتائج الحالية.",
+                                 "pending":  "في انتظار الدفع",
+                                 "pendingHint":  "المشتريات المنتظرة في هذه الصفحة.",
+                                 "active":  "نشطة",
+                                 "activeHint":  "المشتريات النشطة في هذه الصفحة.",
+                                 "completed":  "مكتملة",
+                                 "completedHint":  "المشتريات المكتملة في هذه الصفحة."
+                             },
+                 "card":  {
+                              "packageTitle":  "باقة",
+                              "packageLabel":  "باقة من {sessions} جلسات",
+                              "payableTotal":  "المبلغ المستحق",
+                              "discountPercent":  "الخصم",
+                              "progress":  "التقدم",
+                              "progressValue":  "اكتملت {completed} من {total} جلسات",
+                              "currency":  "العملة",
+                              "linkedSessions":  "الجلسات المرتبطة",
+                              "completedSessions":  "الجلسات المكتملة",
+                              "timeWindows":  "حالات الجلسات",
+                              "timeWindowsValue":  "{pending} بانتظار، {live} نشطة، {terminal} منتهية",
+                              "nextSession":  "الجلسة التالية",
+                              "paymentWindow":  "نافذة الدفع",
+                              "expiresAt":  "تنتهي {date}",
+                              "noExpiry":  "لا يتوفر وقت انتهاء",
+                              "expiredPayment":  "انتهت نافذة الدفع هذه.",
+                              "expiredBadge":  "منتهية",
+                              "continuePayment":  "إكمال الدفع",
+                              "viewDetails":  "عرض التفاصيل"
+                          },
+                 "status":  {
+                                "PENDING_PAYMENT":  "في انتظار الدفع",
+                                "ACTIVE":  "نشطة",
+                                "COMPLETED":  "مكتملة",
+                                "CANCELLED":  "ملغاة",
+                                "EXPIRED":  "منتهية",
+                                "REFUNDED":  "مستردة"
+                            }
+             },
+    "detail":  {
+                   "eyebrow":  "الباقات",
+                   "heading":  "تفاصيل شراء الباقة",
+                   "subtitle":  "راجعي ملخص الباقة، ونافذة الدفع، وكل جلسة مرتبطة بها.",
+                   "back":  "العودة إلى مشتريات الباقات",
+                   "retry":  "إعادة المحاولة",
+                   "errorHeading":  "تعذر تحميل شراء الباقة",
+                   "errorNote":  "يرجى المحاولة مرة أخرى بعد قليل.",
+                   "packageEyebrow":  "نظرة عامة على الباقة",
+                   "packageTitle":  "باقة من {sessions} جلسات",
+                   "packageDescription":  "يعتمد هذا الملخص على لقطات الشراء من الخلفية ولا يعيد حساب التسعير في الواجهة.",
+                   "summary":  {
+                                   "status":  "الحالة",
+                                   "progress":  "التقدم",
+                                   "progressHint":  "اكتملت {completed} من {total} جلسات",
+                                   "currency":  "العملة",
+                                   "currencyHint":  "العملة المختارة لهذا الشراء.",
+                                   "total":  "المبلغ المستحق",
+                                   "totalHint":  "المبلغ الذي تم تحصيله مقابل الباقة."
+                               },
+                   "paymentBlock":  {
+                                        "eyebrow":  "الدفع",
+                                        "heading":  "أكملي الدفع لهذه الباقة",
+                                        "expiresAt":  "تنتهي نافذة الدفع {date}",
+                                        "noExpiry":  "لا يتوفر وقت انتهاء للدفع",
+                                        "expiredNote":  "انتهت نافذة الدفع الخاصة بشراء الباقة بالفعل.",
+                                        "expiredBadge":  "منتهية",
+                                        "continuePayment":  "إكمال الدفع"
+                                    },
+                   "fields":  {
+                                  "sessionCount":  "الجلسات",
+                                  "discountPercent":  "الخصم",
+                                  "duration":  "المدة",
+                                  "paymentExpiresAt":  "ينتهي الدفع",
+                                  "baseSessionPrice":  "سعر الجلسة الأساسي",
+                                  "undiscountedTotal":  "الإجمالي قبل الخصم",
+                                  "discountAmount":  "قيمة الخصم",
+                                  "patientPayableTotal":  "المبلغ المستحق",
+                                  "notAvailable":  "غير متاح"
+                              },
+                   "progressHeading":  "تقدم الإكمال",
+                   "progressValue":  "اكتملت {completed} من {total} جلسات",
+                   "progressFacts":  {
+                                         "live":  "{count} نشطة أو قادمة",
+                                         "pending":  "{count} بانتظار",
+                                         "terminal":  "{count} منتهية أو مغلقة"
+                                     },
+                   "sessionsEyebrow":  "الجلسات المرتبطة",
+                   "sessionsHeading":  "الجلسات المرتبطة بالباقة",
+                   "sessionsNote":  "هذه جلسات عادية وتستمر في استخدام مسار الجلسات والإشعارات الحالي.",
+                   "nextSessionLabel":  "الجلسة القادمة",
+                   "noSessionsHeading":  "لا توجد جلسات مرتبطة",
+                   "noSessionsNote":  "لا يوجد أي جلسات مرتبطة بهذا الشراء بعد.",
+                   "sections":  {
+                                    "live":  "نشطة وقادمة",
+                                    "pending":  "بانتظار",
+                                    "completed":  "مكتملة",
+                                    "terminal":  "مغلقة"
+                                },
+                   "sessionIndex":  "الجلسة {current} من {total}",
+                   "sessionNotScheduled":  "لم يتم تحديد موعد بعد",
+                   "sessionMode":  "النوع",
+                   "sessionDuration":  "المدة",
+                   "minutes":  "دقيقة",
+                   "openable":  "مفتوحة الآن",
+                   "viewOnly":  "عرض فقط",
+                   "openSession":  "فتح الجلسة",
+                   "viewSession":  "عرض الجلسة"
+               },
+    "payment":  {
+                    "modalEyebrow":  "الدفع الآمن",
+                    "modalTitle":  "أكملي دفع الباقة",
+                    "modalDescription":  "استخدمي نموذج الدفع الآمن أدناه لإتمام الشراء.",
+                    "close":  "إغلاق",
+                    "continueProcessing":  "جارٍ بدء الدفع...",
+                    "redirecting":  "جارٍ فتح صفحة الدفع الآمنة...",
+                    "errors":  {
+                                   "missingRedirect":  "بدأ الدفع، لكن تفاصيل صفحة الدفع غير متاحة.",
+                                   "startFailed":  "تعذر بدء الدفع. يرجى المحاولة مرة أخرى."
+                               },
+                    "summaryHeading":  "إجمالي الباقة",
+                    "summaryLabel":  "{amount}"
+                }
+}

@@ -11,6 +11,7 @@ export interface SessionRuntimeViewModel {
   roomName: string | null;
   roomUrl: string | null;
   isPrepared: boolean;
+  providerRuntime: SessionVideoProviderRuntimeViewModel | null;
 }
 
 export interface SessionJoinContractViewModel {
@@ -22,4 +23,15 @@ export interface SessionJoinContractViewModel {
   roomName: string | null;
   roomUrl: string | null;
   joinToken: string | null;
+  providerRuntime: SessionVideoProviderRuntimeViewModel;
+}
+
+export interface SessionVideoProviderRuntimeViewModel {
+  name: SessionProvider;
+  roomId: string | null;
+  roomUrl: string | null;
+  token: string | null;
+  tokenExpiresAt: string | null;
+  joinMode: 'redirect_url' | 'embedded' | 'external_url' | null;
+  payload: Record<string, unknown>;
 }

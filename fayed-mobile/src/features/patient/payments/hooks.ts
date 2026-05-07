@@ -1,8 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuthenticatedQueryEnabled } from "../../auth/query-auth";
+import { patientSessionsQueryKeys } from "../sessions/hooks";
 import {
+  getPatientSessionPaymentCapabilities,
   getPatientPayment,
   getPatientWalletSummary,
+  reconcileSessionPaymentReturn,
   getSessionFinancialBreakdown,
   initiateSessionPayment,
   listPatientPayments,
@@ -12,6 +15,7 @@ import type {
   InitiateSessionPaymentInput,
   ListPaymentsParams,
   ListWalletEntriesParams,
+  PaymentReconcileSessionReturnInput,
 } from "./types";
 
 export const paymentQueryKeys = {
@@ -28,6 +32,8 @@ export const paymentQueryKeys = {
     ] as const,
   walletEntries: (params?: ListWalletEntriesParams) =>
     [...paymentQueryKeys.all, "wallet-entries", params ?? {}] as const,
+  capabilities: (sessionId: string) =>
+    [...paymentQueryKeys.all, "capabilities", sessionId] as const,
   financialBreakdown: (sessionId: string, couponCode?: string | null) =>
     [
       ...paymentQueryKeys.all,
@@ -81,6 +87,17 @@ export function usePatientWalletEntries(params?: ListWalletEntriesParams) {
   });
 }
 
+export function usePatientSessionPaymentCapabilities(sessionId: string | null) {
+  const enabled = useAuthenticatedQueryEnabled("patient");
+
+  return useQuery({
+    queryKey: paymentQueryKeys.capabilities(sessionId ?? ""),
+    queryFn: () => getPatientSessionPaymentCapabilities(sessionId!),
+    enabled: enabled && Boolean(sessionId),
+    staleTime: 60_000,
+  });
+}
+
 export function useSessionFinancialBreakdown(
   sessionId: string | null,
   couponCode?: string | null,
@@ -108,6 +125,27 @@ export function useInitiateSessionPayment() {
     }) => initiateSessionPayment(sessionId, input),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: paymentQueryKeys.all });
+      queryClient.invalidateQueries({ queryKey: patientSessionsQueryKeys.all });
+    },
+  });
+}
+
+export function useReconcileSessionPaymentReturn() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      sessionId,
+      input,
+    }: {
+      sessionId: string;
+      input: PaymentReconcileSessionReturnInput;
+    }) => reconcileSessionPaymentReturn(sessionId, input),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: paymentQueryKeys.all });
+      queryClient.invalidateQueries({
+        queryKey: patientSessionsQueryKeys.details(variables.sessionId),
+      });
     },
   });
 }

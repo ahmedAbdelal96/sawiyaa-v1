@@ -13,6 +13,14 @@
     "note": "These assessments are designed to support reflection and care entry. They do not replace professional evaluation or diagnosis.",
     "trustTitle": "Supportive, not diagnostic",
     "trustNote": "Your result is meant to guide your next step gently. It should not be treated as a diagnosis on its own.",
+    "heroStats": {
+      "assessmentsLabel": "Available assessments",
+      "assessmentsHint": "Tools you can start right now",
+      "categoriesLabel": "Assessment categories",
+      "categoriesHint": "Different paths for different needs",
+      "resultsLabel": "Recent results",
+      "resultsHint": "Completed assessments you can revisit"
+    },
     "availableHeading": "Available assessments",
     "availableNote": "Choose an assessment that matches what you want to understand right now.",
     "nextHeading": "Choose your next supportive step",
@@ -59,6 +67,7 @@
       "second": "The result is a supportive summary, not a diagnosis or medical conclusion.",
       "third": "If you want more personal guidance after the result, you can continue to guided matching or browse practitioners."
     },
+    "required": "Required",
     "optional": "Optional",
     "flow": {
       "progressLabel": "Question {current} of {total}",

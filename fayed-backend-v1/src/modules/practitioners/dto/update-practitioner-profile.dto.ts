@@ -2,8 +2,10 @@ import { ApiPropertyOptional } from '@nestjs/swagger';
 import { PractitionerGender, PractitionerType } from '@prisma/client';
 import {
   IsArray,
+  IsBoolean,
   IsEnum,
   IsInt,
+  IsNumber,
   IsOptional,
   IsString,
   Length,
@@ -67,11 +69,58 @@ export class UpdatePractitionerProfileDto {
   @IsEnum(PractitionerGender)
   practitionerGender?: PractitionerGender | null;
 
+  @ApiPropertyOptional({
+    example: 250,
+    description: '30-minute session price in EGP',
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0.01)
+  sessionPrice30Egp?: number | null;
+
+  @ApiPropertyOptional({
+    example: 8,
+    description: '30-minute session price in USD',
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0.01)
+  sessionPrice30Usd?: number | null;
+
+  @ApiPropertyOptional({
+    example: 450,
+    description: '60-minute session price in EGP',
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0.01)
+  sessionPrice60Egp?: number | null;
+
+  @ApiPropertyOptional({
+    example: 15,
+    description: '60-minute session price in USD',
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0.01)
+  sessionPrice60Usd?: number | null;
+
   @ApiPropertyOptional({ enum: ['ar', 'en'] })
   @IsOptional()
   @IsString()
   @Matches(/^(ar|en)$/)
   locale?: string;
+
+  @ApiPropertyOptional({
+    description: 'Whether the practitioner accepts package bookings',
+  })
+  @IsOptional()
+  @IsBoolean()
+  acceptsPackage?: boolean;
 
   @ApiPropertyOptional()
   @IsOptional()

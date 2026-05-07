@@ -92,6 +92,10 @@ export class GetPractitionerProfileUseCase {
           practitionerGender: profile.practitionerGender ?? null,
           primarySpecialtyCategoryId:
             profile.primarySpecialtyCategoryId ?? null,
+          sessionPrice30Egp: profile.sessionPrice30Egp ?? null,
+          sessionPrice30Usd: profile.sessionPrice30Usd ?? null,
+          sessionPrice60Egp: profile.sessionPrice60Egp ?? null,
+          sessionPrice60Usd: profile.sessionPrice60Usd ?? null,
           payoutDestination: profile.payoutDestination
             ? {
                 methodType: profile.payoutDestination.methodType,
@@ -122,6 +126,9 @@ export class GetPractitionerProfileUseCase {
               reviewedByUserId: latestApp.reviewedByUserId ?? null,
               reviewDecisionReason: latestApp.reviewDecisionReason ?? null,
               reviewNotes: latestApp.reviewNotes ?? null,
+              submissionSnapshot:
+                (latestApp.submissionSnapshot as Record<string, unknown> | null) ??
+                null,
             })
           : this.practitionerApplicationMapper.empty(),
         credentialSummary,

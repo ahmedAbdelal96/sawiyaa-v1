@@ -18,6 +18,10 @@ function buildResolver(config: {
   paymobApiKey?: string;
   paymobHmacSecret?: string;
   paymobBaseUrl?: string;
+  paymobPublicKey?: string;
+  paymobIntentionBaseUrl?: string;
+  paymobCheckoutBaseUrl?: string;
+  paymobCheckoutFlow?: 'legacy' | 'intention';
   paymobIntegrationIdCard?: string;
   paymobIframeId?: string;
 }) {
@@ -34,15 +38,61 @@ function buildResolver(config: {
       enabled: config.paymobEnabled ?? true,
       mode: config.paymobMode ?? 'test',
       apiKey: config.paymobApiKey ?? 'paymob_api',
+      publicKey: config.paymobPublicKey ?? 'paymob_public',
       hmacSecret: config.paymobHmacSecret ?? 'paymob_hmac',
       baseUrl: config.paymobBaseUrl ?? 'https://accept.paymob.com/api',
+      intentionBaseUrl:
+        config.paymobIntentionBaseUrl ?? 'https://flashapi.paymob.com',
+      checkoutBaseUrl:
+        config.paymobCheckoutBaseUrl ?? 'https://flashapi.paymob.com',
+      checkoutFlow: config.paymobCheckoutFlow ?? 'legacy',
       integrationIdCard: config.paymobIntegrationIdCard ?? 'paymob_integration',
       integrationIdWallet: null,
       iframeId: config.paymobIframeId ?? 'paymob_iframe',
+      defaultCheckoutMethod: 'CARD',
     }),
+    getPaymobCheckoutFlow: () => config.paymobCheckoutFlow ?? 'legacy',
+    getPaymobEnabledMethods: () =>
+      (config.paymobIntegrationIdCard ?? 'paymob_integration')
+        ? [
+            {
+              key: 'CARD',
+              label: 'Card',
+              type: 'CARD',
+              enabled: true,
+              priority: 100,
+              integrationId:
+                config.paymobIntegrationIdCard ?? 'paymob_integration',
+              supportedCheckoutFlows: ['legacy', 'intention'] as const,
+              countryIsoCodes: [],
+            },
+          ]
+        : [],
+    getPaymobDefaultCheckoutMethod: () => 'CARD',
   } as never);
 
-  return new PaymentProviderResolverService(capabilitiesService);
+  const paymentRuntimeConfigService = {
+    getPaymentRoutingConfig: () => ({
+      defaultProvider: PaymentProvider.PAYMOB,
+      priorityOrder: [PaymentProvider.PAYMOB, PaymentProvider.STRIPE],
+      fallbackProvider: PaymentProvider.STRIPE,
+      validation: {
+        healthy: true,
+        issues: [],
+      },
+      sources: {
+        defaultProvider: 'config',
+        priorityOrder: 'config',
+        fallbackProvider: 'config',
+      },
+      updatedAt: new Date().toISOString(),
+    }),
+  };
+
+  return new PaymentProviderResolverService(
+    capabilitiesService as never,
+    paymentRuntimeConfigService as never,
+  );
 }
 
 describe('PaymentProviderResolverService', () => {
@@ -72,17 +122,17 @@ describe('PaymentProviderResolverService', () => {
     ).toBe(PaymentProvider.STRIPE);
   });
 
-  it('fails on unsupported EGP international combination', () => {
+  it('routes international EGP payments to Paymob', () => {
     const service = buildResolver({});
 
-    expect(() =>
+    expect(
       service.resolveProvider({
         currencyCode: 'EGP',
         commissionMarketType: MarketType.CROSS_BORDER,
         operatingCountryIsoCode: 'USA',
         checkoutCountryIsoCode: 'EGY',
       }),
-    ).toThrow(BadRequestException);
+    ).toBe(PaymentProvider.PAYMOB);
   });
 
   it('fails when routing context is ambiguous', () => {

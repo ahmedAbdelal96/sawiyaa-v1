@@ -25,11 +25,16 @@ export class ListAdminTrainingSchedulesUseCase {
       await this.trainingRepository.countEnrollmentsByScheduleIds(
         schedules.map((schedule) => schedule.id),
       );
+    const lectureCountsByScheduleId =
+      await this.trainingRepository.countSessionsByScheduleIds(
+        schedules.map((schedule) => schedule.id),
+      );
 
     const snapshots = this.buildTrainingScheduleSnapshotsService.build({
       schedules,
       defaultCapacity: course.maxEnrollments ?? null,
       enrollmentCountsByScheduleId,
+      lectureCountsByScheduleId,
     });
 
     return {
