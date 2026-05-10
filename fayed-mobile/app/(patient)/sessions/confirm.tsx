@@ -1,5 +1,5 @@
-import React, { useMemo, useState } from "react";
-import { ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
+import React, { useMemo, useRef, useState } from "react";
+import { Image, ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
@@ -9,6 +9,7 @@ import { useCreateScheduledSession } from "../../../src/features/patient/session
 import { useSessionFinancialBreakdown } from "../../../src/features/patient/payments/hooks";
 import { formatLocalizedDateTime } from "../../../src/features/patient/sessions/slot-utils";
 import { extractApiErrorMessage } from "../../../src/lib/api";
+import { trackAnalyticsEvent } from "../../../src/lib/analytics";
 
 function formatMoney(amount: string, currencyCode: string): string {
   const value = Number(amount);
@@ -49,6 +50,7 @@ export default function BookingConfirmationScreen() {
     sessionCode: string;
     status: string;
   } | null>(null);
+  const confirmLockRef = useRef(false);
 
   const createMutation = useCreateScheduledSession();
   const breakdownQuery = useSessionFinancialBreakdown(
@@ -72,6 +74,10 @@ export default function BookingConfirmationScreen() {
   const canContinueToPayment = Boolean(createdSession?.id && breakdown);
 
   const handleConfirm = async () => {
+    if (confirmLockRef.current || createMutation.isPending) {
+      return;
+    }
+
     if (createdSession?.id) {
       router.replace(`/(patient)/sessions/${createdSession.id}/pay` as any);
       return;
@@ -82,6 +88,7 @@ export default function BookingConfirmationScreen() {
     }
 
     setSubmitError(null);
+    confirmLockRef.current = true;
 
     try {
       const payload = await createMutation.mutateAsync({
@@ -96,8 +103,17 @@ export default function BookingConfirmationScreen() {
         sessionCode: payload.item.sessionCode,
         status: payload.item.status,
       });
+      trackAnalyticsEvent("booking_confirmed", {
+        practitionerSlug: params.slug || undefined,
+        sessionId: payload.item.id,
+        sessionStatus: payload.item.status,
+        selectedStartAt: params.selectedStartAt,
+        durationMinutes: duration,
+      });
     } catch (error) {
       setSubmitError(extractApiErrorMessage(error));
+    } finally {
+      confirmLockRef.current = false;
     }
   };
 
@@ -167,11 +183,18 @@ export default function BookingConfirmationScreen() {
                 { backgroundColor: theme.colors.surfaceTertiary },
               ]}
             >
-              <Ionicons
-                name="person"
-                size={26}
-                color={theme.colors.textMuted}
-              />
+              {params.practitionerAvatarUrl ? (
+                <Image
+                  source={{ uri: params.practitionerAvatarUrl }}
+                  style={styles.avatarImage}
+                />
+              ) : (
+                <Ionicons
+                  name="person"
+                  size={26}
+                  color={theme.colors.textMuted}
+                />
+              )}
             </View>
           </View>
 
@@ -444,6 +467,7 @@ export default function BookingConfirmationScreen() {
           onPress={handleConfirm}
           disabled={
             createMutation.isPending ||
+            confirmLockRef.current ||
             (!createdSession && (!params.slug || !params.selectedStartAt)) ||
             (Boolean(createdSession) && !canContinueToPayment)
           }
@@ -521,6 +545,12 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     alignItems: "center",
     justifyContent: "center",
+    overflow: "hidden",
+  },
+  avatarImage: {
+    width: 70,
+    height: 70,
+    borderRadius: 16,
   },
   infoRow: {
     flexDirection: "row",

@@ -2,6 +2,7 @@ import { getFormatter, getLocale, getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import PublicArticleTrustBadges from "./PublicArticleTrustBadges";
 import type { PublicArticleListItem } from "../types/articles-public.types";
+import { resolveCoverImageUrl } from "../lib/resolve-cover-image-url";
 
 type Props = {
   article: PublicArticleListItem;
@@ -22,15 +23,16 @@ export default async function PatientArticleCard({ article }: Props) {
         year: "numeric",
       })
     : t("noPublishDate");
+  const coverImageUrl = resolveCoverImageUrl(article.coverImageUrl);
 
   return (
     <article className="app-panel app-lift overflow-hidden rounded-[30px] border border-border-light/80">
-      {article.coverImageUrl ? (
-        <div className="aspect-[16/9] overflow-hidden bg-surface-tertiary dark:bg-white/5">
+      {coverImageUrl ? (
+        <div className="aspect-[16/9] overflow-hidden bg-surface-tertiary p-2 dark:bg-white/5">
           <img
-            src={article.coverImageUrl}
+            src={coverImageUrl}
             alt={article.title}
-            className="h-full w-full object-cover"
+            className="h-full w-full rounded-xl object-contain"
           />
         </div>
       ) : (

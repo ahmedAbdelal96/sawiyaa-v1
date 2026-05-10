@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useMemo, useState, useEffect, useRef } from "react";
 import {
   View,
   StyleSheet,
@@ -22,6 +22,7 @@ import { useTheme } from "../../../src/providers/ThemeProvider";
 import { Ionicons } from "@expo/vector-icons";
 import { ListPublicPractitionersFilters } from "../../../src/features/patient/discovery/types";
 import { useTranslation } from "react-i18next";
+import { trackAnalyticsEvent } from "../../../src/lib/analytics";
 
 function parseBoolean(value: string | undefined): boolean | undefined {
   if (value === "true") {
@@ -68,6 +69,7 @@ export default function DiscoveryListScreen() {
   const { t } = useTranslation();
   const params = useLocalSearchParams<Record<string, string | string[]>>();
   const isRTL = I18nManager.isRTL;
+  const discoveryOpenedRef = useRef(false);
 
   const flatParams = useMemo(() => {
     const output: Record<string, string> = {};
@@ -135,6 +137,7 @@ export default function DiscoveryListScreen() {
 
   const activeFilterCount = useMemo(() => {
     const keys = [
+      "search",
       "specialtySlug",
       "language",
       "country",
@@ -153,6 +156,39 @@ export default function DiscoveryListScreen() {
     ];
     return keys.filter((key) => flatParams[key] !== undefined).length;
   }, [flatParams]);
+
+  const hasAnyFilters = activeFilterCount > 0;
+  const resetFilters = () => {
+    setSearchInput("");
+    router.replace({
+      pathname: "/(patient)/discovery",
+      params: {
+        page: "1",
+        limit: flatParams.limit,
+      },
+    });
+  };
+
+  const openFilters = () => {
+    router.push({
+      pathname: "/(patient)/discovery/filters",
+      params: flatParams,
+    });
+  };
+
+  useEffect(() => {
+    if (discoveryOpenedRef.current) {
+      return;
+    }
+
+    discoveryOpenedRef.current = true;
+    trackAnalyticsEvent("discovery_opened", {
+      source: "patient_discovery_list",
+      searchApplied: Boolean(flatParams.search),
+      activeFilterCount,
+      sort: flatParams.sort || "recommended",
+    });
+  }, [activeFilterCount, flatParams.search, flatParams.sort]);
 
   return (
     <Screen bg="background">
@@ -256,8 +292,12 @@ export default function DiscoveryListScreen() {
               color={theme.colors.textMuted}
             />
           }
-          actionLabel={t("discovery.list.clearSearch")}
-          onAction={clearSearch}
+          actionLabel={
+            hasAnyFilters
+              ? t("discovery.list.resetFilters")
+              : t("discovery.list.openFilters")
+          }
+          onAction={hasAnyFilters ? resetFilters : openFilters}
         />
       ) : (
         <FlatList

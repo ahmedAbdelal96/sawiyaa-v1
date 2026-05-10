@@ -15,6 +15,9 @@ import { DataTable } from "@/components/ui/data-table";
 import ActionIconButton from "@/components/ui/action-icon-button/ActionIconButton";
 import Button from "@/components/ui/button/Button";
 import FilterClearButton from "@/components/ui/filters/FilterClearButton";
+import AdminOperationalListShell, {
+  AdminSummaryCard,
+} from "@/components/shared/admin/AdminOperationalListShell";
 import type { ColumnDef, SortConfig } from "@/components/ui/data-table";
 import {
   buildUpdatedSearchParams,
@@ -24,7 +27,6 @@ import {
 } from "@/components/ui/data-table";
 import { DEFAULT_PAGE_LIMIT, DEFAULT_PAGE_SIZE_OPTIONS } from "@/constants/pagination";
 import { useAuthState } from "@/stores/auth-store";
-import { SurfaceCard, SurfaceHeader, SurfaceStatCard } from "@/components/shared/SurfaceShell";
 import { useAdminTrainings } from "../hooks/use-training";
 import {
   formatTrainingDatetime,
@@ -305,26 +307,66 @@ export default function AdminTrainingOverviewScreen() {
       icon: <Archive className="h-4 w-4" />,
     },
   ];
+  const activeFilterChips = [
+    statusFilter !== "ALL"
+      ? { id: "status", label: t(`statuses.course.${statusFilter}` as Parameters<typeof t>[0]) }
+      : null,
+    searchQuery.trim() ? { id: "query", label: searchQuery.trim() } : null,
+  ].filter(Boolean) as Array<{ id: string; label: string }>;
 
   return (
-    <div className="space-y-6">
-      <SurfaceCard variant="page" className="space-y-5">
-        <SurfaceHeader
-          eyebrow={t("admin.eyebrow")}
-          title={t("admin.title")}
-          description={t("admin.note")}
-          actions={
-            canManage ? (
-              <Button startIcon={<Plus className="h-4 w-4" />} onClick={() => setIsCreateOpen(true)}>
-                {t("admin.create.open")}
-              </Button>
-            ) : null
-          }
-        />
+    <AdminOperationalListShell
+      eyebrow={t("admin.eyebrow")}
+      title={t("admin.title")}
+      description={t("admin.note")}
+      actions={
+        canManage ? (
+          <Button startIcon={<Plus className="h-4 w-4" />} onClick={() => setIsCreateOpen(true)}>
+            {t("admin.create.open")}
+          </Button>
+        ) : undefined
+      }
+      notice={
+        <section className="app-panel-soft rounded-[26px] p-4 sm:p-5">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
+                {t("admin.summary.cards.total")}
+              </p>
+              <p className="mt-2 text-2xl font-semibold tracking-tight text-text-primary dark:text-white/95">
+                {formatCount(locale, summary?.total)}
+              </p>
+              <p className="mt-1 text-sm text-text-secondary">{t("admin.filters.note")}</p>
+            </div>
 
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <div className="max-w-full sm:max-w-[34rem]">
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
+                {t("admin.filters.search")}
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {activeFilterChips.length > 0 ? (
+                  activeFilterChips.map((chip) => (
+                    <span
+                      key={chip.id}
+                      className="app-chip rounded-full px-3 py-1.5 text-xs text-text-secondary dark:text-white/80"
+                    >
+                      {chip.label}
+                    </span>
+                  ))
+                ) : (
+                  <span className="app-chip rounded-full px-3 py-1.5 text-xs text-text-secondary dark:text-white/80">
+                    {t("admin.filters.allStatuses")}
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+        </section>
+      }
+      summaryCards={
+        <>
           {statCards.map((card) => (
-            <SurfaceStatCard
+            <AdminSummaryCard
               key={card.label}
               label={card.label}
               value={card.value}
@@ -333,71 +375,73 @@ export default function AdminTrainingOverviewScreen() {
               icon={card.icon}
             />
           ))}
-        </div>
-      </SurfaceCard>
-
-      <SurfaceCard variant="section" className="space-y-4">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <h2 className="text-base font-semibold text-text-primary dark:text-white/95">
-              {t("admin.filters.heading")}
-            </h2>
-            <p className="mt-1 text-sm text-text-secondary">{t("admin.filters.note")}</p>
-          </div>
-          <FilterClearButton
-            disabled={!hasActiveFilters}
-            onClick={() =>
-              updateListQuery({
-                status: null,
-                q: null,
-                page: 1,
-              })
-            }
-          />
-        </div>
-
-        <div className="grid gap-3 lg:grid-cols-2">
-          <label className="block">
-            <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
-              {t("admin.filters.allStatuses")}
-            </span>
-            <select
-              value={statusFilter}
-              onChange={(event) =>
+        </>
+      }
+      filters={
+        <div className="space-y-4">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h2 className="text-base font-semibold text-text-primary dark:text-white/95">
+                {t("admin.filters.heading")}
+              </h2>
+              <p className="mt-1 text-sm text-text-secondary">{t("admin.filters.note")}</p>
+            </div>
+            <FilterClearButton
+              disabled={!hasActiveFilters}
+              onClick={() =>
                 updateListQuery({
-                  status: event.target.value === "ALL" ? null : event.target.value,
+                  status: null,
+                  q: null,
                   page: 1,
                 })
               }
-              className="app-control w-full px-4 py-3"
-            >
-              <option value="ALL">{t("admin.filters.allStatuses")}</option>
-              {STATUS_FILTERS.filter((status) => status !== "ALL").map((status) => (
-                <option key={status} value={status}>
-                  {t(`statuses.course.${status}` as Parameters<typeof t>[0])}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label className="block">
-            <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
-              {t("admin.filters.search")}
-            </span>
-            <input
-              value={searchQuery}
-              onChange={(event) =>
-                updateListQuery({
-                  q: event.target.value || null,
-                  page: 1,
-                })
-              }
-              placeholder={t("admin.filters.searchPlaceholder")}
-              className="app-control w-full px-4 py-3"
             />
-          </label>
+          </div>
+
+          <div className="grid gap-3 lg:grid-cols-2">
+            <label className="block">
+              <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
+                {t("admin.filters.allStatuses")}
+              </span>
+              <select
+                value={statusFilter}
+                onChange={(event) =>
+                  updateListQuery({
+                    status: event.target.value === "ALL" ? null : event.target.value,
+                    page: 1,
+                  })
+                }
+                className="app-control w-full px-4 py-3"
+              >
+                <option value="ALL">{t("admin.filters.allStatuses")}</option>
+                {STATUS_FILTERS.filter((status) => status !== "ALL").map((status) => (
+                  <option key={status} value={status}>
+                    {t(`statuses.course.${status}` as Parameters<typeof t>[0])}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="block">
+              <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
+                {t("admin.filters.search")}
+              </span>
+              <input
+                value={searchQuery}
+                onChange={(event) =>
+                  updateListQuery({
+                    q: event.target.value || null,
+                    page: 1,
+                  })
+                }
+                placeholder={t("admin.filters.searchPlaceholder")}
+                className="app-control w-full px-4 py-3"
+              />
+            </label>
+          </div>
         </div>
-      </SurfaceCard>
+      }
+    >
 
       <DataTable
         data={data?.items ?? []}
@@ -455,6 +499,6 @@ export default function AdminTrainingOverviewScreen() {
       />
 
       <AdminTrainingCreateModal isOpen={isCreateOpen} onClose={() => setIsCreateOpen(false)} />
-    </div>
+    </AdminOperationalListShell>
   );
 }

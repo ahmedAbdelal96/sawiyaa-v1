@@ -431,7 +431,11 @@ export const practitionersSeedModule: SeedModule = {
     for (let i = 0; i < practitionerIds.length; i += 1) {
       const practitionerId = practitionerIds[i];
       const timezone =
-        i % 3 === 0 ? 'Africa/Cairo' : i % 3 === 1 ? 'Asia/Riyadh' : 'Asia/Dubai';
+        i % 3 === 0
+          ? 'Africa/Cairo'
+          : i % 3 === 1
+            ? 'Asia/Riyadh'
+            : 'Asia/Dubai';
       for (const weekday of weekdays) {
         weeklyAvailability.push({
           id: deterministicUuid(
@@ -468,16 +472,18 @@ export const practitionersSeedModule: SeedModule = {
         where: { practitionerId },
         create: {
           practitionerId,
-          status: i % 2 === 0 ? PresenceStatus.ONLINE : PresenceStatus.AWAY,
-          isInstantBookingEnabled: i % 3 !== 0,
-          lastSeenAtUtc: new Date(),
-          lastHeartbeatAtUtc: new Date(),
+          status: PresenceStatus.OFFLINE,
+          isInstantBookingEnabled: false,
+          lastSeenAtUtc: null,
+          lastHeartbeatAtUtc: null,
+          manuallySetAtUtc: null,
         },
         update: {
-          status: i % 2 === 0 ? PresenceStatus.ONLINE : PresenceStatus.AWAY,
-          isInstantBookingEnabled: i % 3 !== 0,
-          lastSeenAtUtc: new Date(),
-          lastHeartbeatAtUtc: new Date(),
+          status: PresenceStatus.OFFLINE,
+          isInstantBookingEnabled: false,
+          lastSeenAtUtc: null,
+          lastHeartbeatAtUtc: null,
+          manuallySetAtUtc: null,
         },
       });
     }

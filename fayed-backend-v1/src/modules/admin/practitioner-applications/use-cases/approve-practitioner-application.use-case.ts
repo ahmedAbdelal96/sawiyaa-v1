@@ -39,6 +39,18 @@ type SubmissionSnapshot = {
     countryCode?: string | null;
     avatarUrl?: string | null;
   };
+  languageCodes?: string[] | null;
+  specialtySelection?: {
+    primarySpecialtyCategoryId?: string | null;
+    specialties?: Array<{
+      specialtyId?: string | null;
+      isPrimary?: boolean | null;
+    }> | null;
+  } | null;
+  credentials?: Array<{
+    credentialId?: string | null;
+    reviewStatus?: string | null;
+  }> | null;
   payoutDestination?: {
     methodType?: string | null;
     accountHolderName?: string | null;
@@ -118,6 +130,34 @@ export class ApprovePractitionerApplicationUseCase {
       snapshot?.profile?.yearsOfExperience ?? profile.yearsOfExperience ?? null;
     const requestedPayoutDestination =
       snapshot?.payoutDestination ?? profile.payoutDestination ?? null;
+    const requestedLanguageCodes =
+      Array.isArray(snapshot?.languageCodes) &&
+      snapshot.languageCodes.some((code) => typeof code === 'string' && code.trim().length > 0)
+        ? snapshot.languageCodes
+            .filter((code): code is string => typeof code === 'string')
+            .map((code) => code.trim())
+            .filter(Boolean)
+        : profile.languages.map((item) => item.language.code);
+    const requestedSpecialties =
+      Array.isArray(snapshot?.specialtySelection?.specialties) &&
+      snapshot.specialtySelection.specialties.length > 0
+        ? snapshot.specialtySelection.specialties
+            .filter((item) => typeof item?.specialtyId === 'string')
+            .map((item) => ({
+              specialtyId: item!.specialtyId!,
+              isPrimary: item?.isPrimary === true,
+            }))
+        : specialtyLinks.map((item) => ({
+            specialtyId: item.specialtyId,
+            isPrimary: item.isPrimary,
+          }));
+    const requestedCredentials =
+      Array.isArray(snapshot?.credentials) && snapshot.credentials.length > 0
+        ? snapshot.credentials
+        : credentials.map((item) => ({
+            credentialId: item.id,
+            reviewStatus: item.reviewStatus,
+          }));
 
     const readiness = this.reviewPolicy.evaluateReadiness({
       hasDisplayName: Boolean(requestedDisplayName?.trim()),
@@ -127,20 +167,31 @@ export class ApprovePractitionerApplicationUseCase {
       hasYearsOfExperience:
         typeof requestedYearsOfExperience === 'number' &&
         requestedYearsOfExperience > 0,
-      hasLanguage: profile.languages.length > 0,
-      hasRequiredSpecialties: specialtyLinks.length > 0,
+      hasLanguage: requestedLanguageCodes.length > 0,
+      hasRequiredSpecialties: requestedSpecialties.length > 0,
       hasRequiredCredentials:
-        credentials.length > 0 &&
-        credentials.every((item) => item.reviewStatus === 'APPROVED'),
+        requestedCredentials.length > 0 &&
+        requestedCredentials.every((item) => item.reviewStatus === 'APPROVED'),
       hasPayoutDestination: Boolean(requestedPayoutDestination),
       status: existing.status,
     });
 
     if (!readiness.canBeApproved) {
+      const missingRequirements = [
+        !readiness.isProfileCompleted ? 'PROFILE_INCOMPLETE' : null,
+        !readiness.hasRequiredSpecialties ? 'SPECIALTIES_REQUIRED' : null,
+        !readiness.hasRequiredCredentials ? 'APPROVED_CREDENTIALS_REQUIRED' : null,
+        !readiness.hasPayoutDestination ? 'PAYOUT_DESTINATION_REQUIRED' : null,
+        !readiness.canBeReviewed ? 'APPLICATION_NOT_REVIEWABLE' : null,
+      ].filter((item): item is string => Boolean(item));
+
       throw new BadRequestException({
         messageKey:
           'admin.practitionerApplications.errors.invalidApplicationState',
         error: 'ADMIN_PRACTITIONER_APPLICATION_NOT_APPROVABLE',
+        details: {
+          missingRequirements,
+        },
       });
     }
 

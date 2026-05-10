@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { PresenceStatus, Prisma } from '@prisma/client';
 import { PrismaService } from '@common/prisma/prisma.service';
+import { PractitionerPresenceRepository } from '@modules/presence/repositories/practitioner-presence.repository';
 import { UserRepository } from '../repositories/user.repository';
 import { UserSessionRepository } from '../repositories/user-session.repository';
 
@@ -19,21 +20,49 @@ export class InvalidateUserTokensUseCase {
     private readonly prisma: PrismaService,
     private readonly userRepository: UserRepository,
     private readonly userSessionRepository: UserSessionRepository,
+    private readonly practitionerPresenceRepository: PractitionerPresenceRepository,
   ) {}
 
   async execute(userId: string, tx?: Prisma.TransactionClient) {
     if (tx) {
+      const user = await this.userRepository.findByIdWithAuthContext(
+        userId,
+        tx,
+      );
+
       await this.userRepository.incrementTokenVersion(userId, tx);
       await this.userSessionRepository.revokeAllActiveForUser(userId, tx);
+
+      if (user?.practitionerProfile?.id) {
+        await this.practitionerPresenceRepository.updateStatus(
+          user.practitionerProfile.id,
+          PresenceStatus.OFFLINE,
+          tx,
+        );
+      }
+
       return;
     }
 
     await this.prisma.$transaction(async (transaction) => {
+      const user = await this.userRepository.findByIdWithAuthContext(
+        userId,
+        transaction,
+      );
+
       await this.userRepository.incrementTokenVersion(userId, transaction);
       await this.userSessionRepository.revokeAllActiveForUser(
         userId,
         transaction,
       );
+
+      if (user?.practitionerProfile?.id) {
+        await this.practitionerPresenceRepository.updateStatus(
+          user.practitionerProfile.id,
+          PresenceStatus.OFFLINE,
+          transaction,
+        );
+      }
     });
   }
 }

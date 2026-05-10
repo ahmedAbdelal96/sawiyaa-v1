@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { AuthSessionService } from '../services/auth-session.service';
 
 /**
@@ -11,7 +12,7 @@ import { AuthSessionService } from '../services/auth-session.service';
 export class RevokeAuthSessionUseCase {
   constructor(private readonly authSessionService: AuthSessionService) {}
 
-  execute(sessionId: string) {
-    return this.authSessionService.revoke(sessionId);
+  execute(sessionId: string, tx?: Prisma.TransactionClient) {
+    return this.authSessionService.revoke(sessionId, tx);
   }
 }

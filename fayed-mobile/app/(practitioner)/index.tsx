@@ -4,16 +4,24 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import {
-  Button,
   Card,
   ErrorState,
   Header,
   LoadingState,
+  CompactActionRow,
   Screen,
   StatusBadge,
+  StatusChip,
+  SectionHeader,
+  SummaryRow,
+  formatDateTime,
   Text,
 } from "../../src/components/ui";
-import { usePractitionerProfile } from "../../src/features/practitioner/profile/hooks";
+import {
+  usePractitionerApplicationStatus,
+  usePractitionerProfile,
+  usePractitionerReadiness,
+} from "../../src/features/practitioner/profile/hooks";
 import { useMyPresence } from "../../src/features/practitioner/presence/hooks";
 import { usePractitionerSessions } from "../../src/features/practitioner/sessions/hooks";
 import type { SessionStatus } from "../../src/features/practitioner/sessions/types";
@@ -27,6 +35,8 @@ export default function PractitionerHomeScreen() {
   const { signOut } = useAuth();
 
   const profileQuery = usePractitionerProfile();
+  const readinessQuery = usePractitionerReadiness();
+  const applicationQuery = usePractitionerApplicationStatus();
   const presenceQuery = useMyPresence();
   const sessionsQuery = usePractitionerSessions({ limit: 3 });
 
@@ -39,6 +49,18 @@ export default function PractitionerHomeScreen() {
       ),
     );
   }, [sessionsQuery.data?.items]);
+  const upcomingSession = useMemo(() => {
+    return [...upcomingItems].sort((left, right) => {
+      const leftTime = left.scheduledStartAt
+        ? new Date(left.scheduledStartAt).getTime()
+        : Number.POSITIVE_INFINITY;
+      const rightTime = right.scheduledStartAt
+        ? new Date(right.scheduledStartAt).getTime()
+        : Number.POSITIVE_INFINITY;
+
+      return leftTime - rightTime;
+    })[0] ?? null;
+  }, [upcomingItems]);
 
   if (profileQuery.isLoading) {
     return (
@@ -59,8 +81,36 @@ export default function PractitionerHomeScreen() {
   }
 
   const profile = profileQuery.data.profile;
+  const readiness = readinessQuery.data?.readiness ?? null;
+  const application = applicationQuery.data?.application ?? null;
   const presence = presenceQuery.data?.presence;
   const approvalBlocked = profile.profileStatus !== "APPROVED";
+  const applicationStatus =
+    application?.status ?? profile.applicationStatusSummary?.status ?? null;
+  const verificationLabel = readiness
+    ? readiness.checks.isAccountActive
+      ? readiness.checks.isPractitionerOtpVerified
+        ? t("practitioner.account.otpVerified")
+        : t("practitioner.account.otpNotVerified")
+      : t("practitioner.account.accountInactive")
+    : null;
+  const verificationTone = readiness
+    ? readiness.checks.isAccountActive
+      ? readiness.checks.isPractitionerOtpVerified
+        ? "success"
+        : "warning"
+      : "error"
+    : "default";
+  const missingRequirements = readiness?.missingRequirements ?? [];
+  const isProfileComplete = readiness?.isProfileCompleted ?? profile.isProfileCompleted;
+  const workspaceState = readinessQuery.isLoading || applicationQuery.isLoading
+    ? "loading"
+    : readinessQuery.isError || applicationQuery.isError
+      ? "error"
+      : "ready";
+  const upcomingSessionActionLabel = isJoinableSessionStatus(upcomingSession?.status)
+    ? "Join"
+    : "View";
 
   return (
     <Screen bg="background">
@@ -126,6 +176,148 @@ export default function PractitionerHomeScreen() {
               value={String(profile.credentialSummary.totalCredentials)}
             />
           </View>
+        </Card>
+
+        {upcomingSession ? (
+          <Card
+            variant="outlined"
+            padding="md"
+            style={[
+              styles.upcomingSessionCard,
+              {
+                borderColor: theme.colors.borderLight,
+                backgroundColor: theme.colors.surface,
+              },
+            ]}
+          >
+            <SectionHeader
+              title={t("practitioner.home.upcomingSession.title", "Upcoming Session")}
+              subtitle={
+                upcomingSession.patient?.displayName ??
+                t("practitioner.sessions.unknownPatient")
+              }
+              action={
+                <TouchableOpacity
+                  onPress={() => router.push("/(practitioner)/sessions")}
+                >
+                  <Text color={theme.colors.textBrand} weight="600">
+                    {t("practitioner.home.viewAll")}
+                  </Text>
+                </TouchableOpacity>
+              }
+            />
+
+            <Text color={theme.colors.textSecondary} style={styles.upcomingSessionTime}>
+              {upcomingSession.scheduledStartAt
+                ? formatDateTime(upcomingSession.scheduledStartAt, locale)
+                : t("practitioner.sessions.noSchedule")}
+            </Text>
+
+            <View style={styles.upcomingSessionStatusRow}>
+              <StatusChip
+                label={t(`sessionStatus.${upcomingSession.status}`)}
+                tone={mapSessionBadge(upcomingSession.status)}
+                showDot={false}
+              />
+            </View>
+
+            <CompactActionRow
+              label={upcomingSessionActionLabel}
+              onPress={() =>
+                router.push(`/(practitioner)/sessions/${upcomingSession.id}`)
+              }
+              accessibilityLabel={upcomingSessionActionLabel}
+              style={styles.upcomingSessionCta}
+            />
+          </Card>
+        ) : null}
+
+        <Card variant="outlined" padding="lg" style={styles.workspaceCard}>
+          <SectionHeader
+            title={t("practitioner.home.workspaceStatus.title")}
+            subtitle={t("practitioner.home.workspaceStatus.subtitle")}
+            action={
+              <TouchableOpacity onPress={() => router.push("/(practitioner)/account")}>
+                <Text color={theme.colors.textBrand} weight="600">
+                  {t("practitioner.home.workspaceStatus.openAccount")}
+                </Text>
+              </TouchableOpacity>
+            }
+          />
+
+          {workspaceState === "loading" ? (
+            <LoadingState message="Loading workspace status..." />
+          ) : workspaceState === "error" ? (
+            <ErrorState
+              title="Could not load workspace status"
+              message="Please try again in a moment."
+              onRetry={() => {
+                readinessQuery.refetch();
+                applicationQuery.refetch();
+              }}
+              retryText="Try again"
+            />
+          ) : (
+            <>
+              <View style={styles.workspaceRows}>
+                <SummaryRow
+                  label={t("practitioner.home.workspaceStatus.application")}
+                  value={
+                    <StatusChip
+                      label={
+                        applicationStatus
+                          ? t(
+                              `practitioner.account.applicationStatuses.${applicationStatus}`,
+                              applicationStatus,
+                            )
+                          : t("practitioner.account.applicationStatuses.NONE")
+                      }
+                      tone={mapApplicationSummaryTone(applicationStatus)}
+                      showDot={false}
+                    />
+                  }
+                />
+                {verificationLabel ? (
+                  <SummaryRow
+                    label={t("practitioner.home.workspaceStatus.verification")}
+                    value={<StatusChip label={verificationLabel} tone={verificationTone} showDot={false} />}
+                  />
+                ) : null}
+                <SummaryRow
+                  label={t("practitioner.home.workspaceStatus.profileCompleteness")}
+                  value={
+                    <StatusChip
+                      label={
+                        isProfileComplete
+                          ? t("practitioner.account.readiness.complete")
+                          : t("practitioner.account.readiness.incomplete")
+                      }
+                      tone={isProfileComplete ? "success" : "warning"}
+                      showDot={false}
+                    />
+                  }
+                />
+              </View>
+
+              {missingRequirements.length ? (
+                <View style={styles.missingBlock}>
+                  <Text weight="600" style={styles.missingTitle} color={theme.colors.textSecondary}>
+                    {t("practitioner.home.workspaceStatus.missingSteps")}
+                  </Text>
+                  <View style={styles.missingChips}>
+                    {missingRequirements.slice(0, 4).map((item) => (
+                      <StatusChip
+                        key={item}
+                        label={formatRequirementLabel(item)}
+                        tone="warning"
+                        showDot={false}
+                      />
+                    ))}
+                  </View>
+                </View>
+              ) : null}
+            </>
+          )}
         </Card>
 
         {approvalBlocked ? (
@@ -260,9 +452,9 @@ export default function PractitionerHomeScreen() {
               onPress={() => router.push("/(practitioner)/finance/wallet")}
             />
             <QuickAccessCard
-              icon="person-outline"
-              label={t("practitioner.account.profileCard")}
-              onPress={() => router.push("/(practitioner)/account")}
+              icon="shield-checkmark-outline"
+              label={t("practitioner.home.onboarding")}
+              onPress={() => router.push("/(practitioner)/onboarding")}
             />
           </View>
         </Card>
@@ -348,6 +540,10 @@ function mapSessionBadge(status: SessionStatus) {
   }
 }
 
+function isJoinableSessionStatus(status: SessionStatus | null | undefined) {
+  return status === "READY_TO_JOIN" || status === "IN_PROGRESS";
+}
+
 const styles = StyleSheet.create({
   logoutButton: {
     padding: 6,
@@ -360,6 +556,20 @@ const styles = StyleSheet.create({
   },
   heroCard: {
     gap: 16,
+  },
+  upcomingSessionCard: {
+    gap: 12,
+    marginTop: 14,
+  },
+  upcomingSessionTime: {
+    fontSize: 14,
+    lineHeight: 22,
+  },
+  upcomingSessionStatusRow: {
+    alignItems: "flex-start",
+  },
+  upcomingSessionCta: {
+    marginTop: 2,
   },
   heroTopRow: {
     flexDirection: "row",
@@ -403,6 +613,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 22,
   },
+  workspaceCard: {
+    gap: 14,
+  },
+  workspaceRows: {
+    gap: 2,
+  },
   sectionHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -445,4 +661,43 @@ const styles = StyleSheet.create({
   quickCardLabel: {
     fontSize: 15,
   },
+  missingBlock: {
+    gap: 10,
+    paddingTop: 2,
+  },
+  missingTitle: {
+    fontSize: 13,
+    textTransform: "uppercase",
+    letterSpacing: 0.4,
+  },
+  missingChips: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
 });
+
+function mapApplicationSummaryTone(status: string | null | undefined) {
+  switch (status) {
+    case "APPROVED":
+      return "success" as const;
+    case "SUBMITTED":
+    case "PENDING_REVIEW":
+    case "UNDER_REVIEW":
+    case "CHANGES_REQUESTED":
+      return "warning" as const;
+    case "REJECTED":
+    case "ARCHIVED":
+      return "error" as const;
+    default:
+      return "default" as const;
+  }
+}
+
+function formatRequirementLabel(value: string) {
+  return value
+    .split(/[_\s-]+/)
+    .filter(Boolean)
+    .map((part) => part[0].toUpperCase() + part.slice(1).toLowerCase())
+    .join(" ");
+}

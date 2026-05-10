@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   getMyPresence,
@@ -58,4 +59,67 @@ export function useHeartbeatPresence() {
       queryClient.setQueryData(presenceQueryKeys.me(), data);
     },
   });
+}
+
+/**
+ * Keeps the practitioner's live presence fresh while the web app is active.
+ * It only runs for visible, authenticated practitioner surfaces.
+ */
+export function usePractitionerPresenceHeartbeat(enabled = true) {
+  const heartbeat = useHeartbeatPresence();
+  const inFlightRef = useRef(false);
+  const heartbeatRef = useRef(heartbeat.mutateAsync);
+
+  useEffect(() => {
+    heartbeatRef.current = heartbeat.mutateAsync;
+  }, [heartbeat.mutateAsync]);
+
+  useEffect(() => {
+    if (!enabled || typeof window === "undefined") {
+      return;
+    }
+
+    const HEARTBEAT_INTERVAL_MS = 60_000;
+
+    const sendHeartbeat = async () => {
+      if (
+        inFlightRef.current ||
+        document.visibilityState !== "visible"
+      ) {
+        return;
+      }
+
+      inFlightRef.current = true;
+      try {
+        await heartbeatRef.current();
+      } finally {
+        inFlightRef.current = false;
+      }
+    };
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        void sendHeartbeat();
+      }
+    };
+
+    const onWindowFocus = () => {
+      void sendHeartbeat();
+    };
+
+    void sendHeartbeat();
+
+    const intervalId = window.setInterval(() => {
+      void sendHeartbeat();
+    }, HEARTBEAT_INTERVAL_MS);
+
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    window.addEventListener("focus", onWindowFocus);
+
+    return () => {
+      window.clearInterval(intervalId);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+      window.removeEventListener("focus", onWindowFocus);
+    };
+  }, [enabled]);
 }

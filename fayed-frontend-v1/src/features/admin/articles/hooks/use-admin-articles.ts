@@ -8,6 +8,7 @@ import {
   getAdminArticleById,
   getAdminArticles,
   publishAdminArticle,
+  uploadAdminArticleCover,
   updateAdminArticle,
 } from "../api/admin-articles.api";
 import { adminArticlesQueryKeys } from "../constants/query-keys";
@@ -101,6 +102,12 @@ export function useUpdateAdminArticle() {
         queryKey: adminArticlesQueryKeys.detail(variables.articleId, payloadLocale(variables.payload)),
       });
     },
+  });
+}
+
+export function useUploadAdminArticleCover() {
+  return useMutation({
+    mutationFn: (file: File) => uploadAdminArticleCover(file),
   });
 }
 

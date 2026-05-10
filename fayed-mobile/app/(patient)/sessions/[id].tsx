@@ -27,6 +27,8 @@ import {
   formatLocalizedTime,
 } from "../../../src/features/patient/sessions/slot-utils";
 import { extractApiErrorMessage } from "../../../src/lib/api";
+import { normalizeAllowedExternalUrl } from "../../../src/lib/external-url";
+import { trackAnalyticsEvent } from "../../../src/lib/analytics";
 
 export default function SessionDetailScreen() {
   const router = useRouter();
@@ -90,7 +92,20 @@ export default function SessionDetailScreen() {
           ? `${contract.roomUrl}${contract.roomUrl.includes("?") ? "&" : "?"}t=${encodeURIComponent(contract.joinToken)}`
           : contract.roomUrl;
 
-      await Linking.openURL(joinUrl);
+      const safeJoinUrl = normalizeAllowedExternalUrl(joinUrl);
+      if (!safeJoinUrl) {
+        setJoinError(t("patientSessionsFlow.detail.joinError"));
+        return;
+      }
+
+      await Linking.openURL(safeJoinUrl);
+      trackAnalyticsEvent("session_joined", {
+        role: "patient",
+        sessionId: session.id,
+        sessionStatus: session.status,
+        provider: contract.provider,
+        source: "session_detail",
+      });
     } catch (error) {
       setJoinError(extractApiErrorMessage(error));
     }

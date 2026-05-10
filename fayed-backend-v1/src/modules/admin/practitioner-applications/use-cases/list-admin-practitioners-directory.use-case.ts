@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
 import { I18nService } from '@common/i18n/services/i18n.service';
+import { isPresenceEffectivelyOnline } from '@modules/presence/utils/presence-liveness';
 import {
   AdminPractitionerGenderDto,
   AdminPractitionerKindDto,
@@ -60,7 +61,7 @@ export class ListAdminPractitionersDirectoryUseCase {
         professionalTitle: row.professionalTitle ?? null,
         practitionerType: row.practitionerType,
         countryCode: row.country?.isoCode ?? null,
-        isOnlineNow: row.presence?.status === 'ONLINE',
+        isOnlineNow: isPresenceEffectivelyOnline(row.presence),
         isVerified: row.status === 'APPROVED',
         yearsExperience: row.yearsOfExperience ?? null,
         ratingSummary: {

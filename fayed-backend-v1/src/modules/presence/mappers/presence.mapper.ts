@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PractitionerPresence, PresenceStatus } from '@prisma/client';
 import { PractitionerPresenceViewModel } from '../types/presence.types';
+import { resolveEffectivePresenceStatus } from '../utils/presence-liveness';
 
 /**
  * PresenceMapper isolates stable API contracts from persistence field names.
@@ -9,6 +10,7 @@ import { PractitionerPresenceViewModel } from '../types/presence.types';
 export class PresenceMapper {
   toViewModel(
     presence: PractitionerPresence | null,
+    referenceTime = new Date(),
   ): PractitionerPresenceViewModel {
     if (!presence) {
       return {
@@ -22,7 +24,7 @@ export class PresenceMapper {
     }
 
     return {
-      status: presence.status,
+      status: resolveEffectivePresenceStatus(presence, referenceTime),
       isInstantBookingEnabled: presence.isInstantBookingEnabled,
       lastSeenAt: presence.lastSeenAtUtc?.toISOString() ?? null,
       lastHeartbeatAt: presence.lastHeartbeatAtUtc?.toISOString() ?? null,
@@ -31,8 +33,11 @@ export class PresenceMapper {
     };
   }
 
-  toPublicViewModel(presence: PractitionerPresence | null) {
-    const viewModel = this.toViewModel(presence);
+  toPublicViewModel(
+    presence: PractitionerPresence | null,
+    referenceTime = new Date(),
+  ) {
+    const viewModel = this.toViewModel(presence, referenceTime);
 
     return {
       status: viewModel.status,

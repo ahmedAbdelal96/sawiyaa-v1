@@ -498,6 +498,8 @@
       "emptyTitle": "No therapists found",
       "emptySubtitle": "Try adjusting your search or filters.",
       "clearSearch": "Clear search",
+      "resetFilters": "Reset filters",
+      "openFilters": "Open filters",
       "resultsCount": "{{count}} therapists found",
       "professionalFallback": "Licensed therapist",
       "newBadge": "New",
@@ -509,10 +511,14 @@
     },
     "filters": {
       "header": "Filters",
+      "specialty": "Specialty",
+      "language": "Language",
       "gender": "Gender",
       "any": "Any",
       "female": "Female",
       "male": "Male",
+      "specialtyLoadError": "Could not load specialties right now.",
+      "specialtyLoadErrorSubtitle": "You can retry or continue with the rest of the filters.",
       "availability": "Availability",
       "onlineNow": "Online now",
       "availableToday": "Available today",
@@ -572,7 +578,7 @@
       "availabilityLead": "Choose a visible time first, then review the final payment breakdown before you continue to pay.",
       "availabilityEmptyLead": "No concrete booking window is open in the next week yet. You can still review the profile and check again later.",
       "nextVisibleSlot": "Next visible slot",
-      "reviewTimes": "Review times and continue",
+      "reviewTimes": "View availability",
       "matchingRecommendationTitle": "Recommended from your matching results",
       "matchingRecommendationViewBody": "This therapist was suggested from your matching answers. Review the fit signals below before choosing a time.",
       "matchingRecommendationBookBody": "You came here ready to book. Review the profile, confirm a visible time, then check the final payment breakdown before paying.",
@@ -671,7 +677,35 @@
       "emptyTitle": "No sessions yet",
       "emptyDescription": "Once you complete your first booking, sessions will appear here.",
       "findTherapist": "Find a therapist",
-      "durationValue": "{{minutes}} min"
+      "durationValue": "{{minutes}} min",
+      "workspace": {
+        "title": "Sessions workspace",
+        "subtitle": "Your sessions at a glance",
+        "heroNote": "Upcoming, active, and recent sessions are grouped so you can act quickly without digging.",
+        "viewDetails": "View details",
+        "overview": {
+          "total": "Total",
+          "totalHint": "All sessions linked to your account.",
+          "action": "Needs action",
+          "actionHint": "Payment, confirmation, or join steps that need attention.",
+          "active": "Active",
+          "activeHint": "Confirmed, upcoming, or currently live sessions."
+        },
+        "sections": {
+          "upcoming": {
+            "title": "Upcoming",
+            "subtitle": "Booked sessions that are coming soon or waiting to start."
+          },
+          "active": {
+            "title": "Active",
+            "subtitle": "Sessions ready to join or already in progress."
+          },
+          "recent": {
+            "title": "Recent",
+            "subtitle": "Completed or closed sessions."
+          }
+        }
+      }
     },
     "detail": {
       "title": "Session details",
@@ -1248,6 +1282,15 @@
       "viewAll": "View all",
       "noSessions": "There are no upcoming sessions in active states right now.",
       "quickAccess": "Quick access",
+      "workspaceStatus": {
+        "title": "Workspace status",
+        "subtitle": "A compact snapshot of onboarding progress and required steps.",
+        "application": "Application",
+        "verification": "Verification",
+        "profileCompleteness": "Profile completeness",
+        "missingSteps": "Missing required steps",
+        "openAccount": "Open account"
+      },
       "metrics": {
         "presence": "Presence",
         "instantBooking": "Instant booking",
@@ -1257,6 +1300,128 @@
       "approvalNotice": {
         "title": "Full workspace access is not available yet",
         "body": "This account has not reached the fully approved web state yet. Mobile shows the real account state here without inventing onboarding routes that are not implemented yet."
+      },
+      "onboarding": "Onboarding workspace"
+    },
+    "onboarding": {
+      "title": "Onboarding workspace",
+      "loading": "Loading onboarding workspace...",
+      "errorTitle": "Could not load onboarding workspace",
+      "errorBody": "The practitioner onboarding data is unavailable right now.",
+      "retry": "Try again",
+      "heroTitle": "Complete your application workspace",
+      "heroBody": "Review specialties, credentials, prices, and submission readiness from one focused mobile screen.",
+      "summary": {
+        "missingTitle": "Missing requirements",
+        "missingCount_one": "{{count}} missing item",
+        "missingCount_other": "{{count}} missing items",
+        "noMissingRequirements": "No missing requirements",
+        "credentials": "Credentials",
+        "specialties": "Specialties"
+      },
+      "actions": {
+        "submit": "Submit application",
+        "openAccount": "Open profile editor",
+        "saving": "Saving...",
+        "submitting": "Submitting..."
+      },
+      "pricing": {
+        "title": "Pricing and package access",
+        "subtitle": "Keep your session prices and package setting ready for application submission.",
+        "fields": {
+          "sessionPrice30Egp": "30 min price in EGP",
+          "sessionPrice30Usd": "30 min price in USD",
+          "sessionPrice60Egp": "60 min price in EGP",
+          "sessionPrice60Usd": "60 min price in USD",
+          "acceptsPackage": "Accept package bookings"
+        },
+        "acceptsPackageHint": "Turn this on only if you want package bookings to be available.",
+        "note": "These values are used by the readiness and application contracts.",
+        "save": "Save pricing",
+        "savedTitle": "Pricing saved",
+        "savedBody": "Your pricing settings were updated successfully.",
+        "saveFailedTitle": "Could not save pricing",
+        "saveFailedBody": "Try again in a moment."
+      },
+      "specialties": {
+        "title": "Specialties",
+        "subtitle": "Choose the main category and linked specialties used by your application.",
+        "category": "Primary category",
+        "specialties": "Available specialties",
+        "specialtiesIn": "Specialties in {{category}}",
+        "selectCategoryFirst": "Select a category to see specialties.",
+        "currentSelection": "Current selection",
+        "none": "No specialties selected",
+        "note": "Specialties are stored through the practitioner specialties contract.",
+        "save": "Save specialties",
+        "invalidTitle": "Select specialties first",
+        "invalidBody": "Choose a category and at least one specialty before saving.",
+        "savedTitle": "Specialties saved",
+        "savedBody": "Your specialties were updated successfully.",
+        "saveFailedTitle": "Could not save specialties",
+        "saveFailedBody": "Try again in a moment.",
+        "catalogEmpty": "No active specialty catalog is available."
+      },
+      "credentials": {
+        "title": "Credentials",
+        "subtitle": "Add metadata records for the documents you want reviewed.",
+        "total": "Total",
+        "approved": "Approved",
+        "pending": "Pending",
+        "rejected": "Rejected",
+        "empty": "No credentials uploaded yet.",
+        "addTitle": "Add credential metadata",
+        "addSubtitle": "Mobile stores the metadata record; file storage is handled elsewhere.",
+        "type": "Credential type",
+        "fileUrl": "File URL",
+        "fileUrlHint": "Paste a secure https URL or storage reference.",
+        "expiresAt": "Expiry date",
+        "expiresAtHint": "Optional. Use a date like 2026-04-25.",
+        "save": "Save credential",
+        "invalidUrlTitle": "Invalid file URL",
+        "invalidUrlBody": "Enter a valid http or https URL.",
+        "savedTitle": "Credential saved",
+        "savedBody": "Your credential metadata was added successfully.",
+        "saveFailedTitle": "Could not save credential",
+        "saveFailedBody": "Try again in a moment.",
+        "uploadedAt": "Uploaded {{date}}",
+        "expiresAtLabel": "Expires {{date}}",
+        "noExpiry": "No expiry date",
+        "status": {
+          "PENDING": "Pending review",
+          "APPROVED": "Approved",
+          "REJECTED": "Rejected",
+          "EXPIRED": "Expired"
+        },
+        "credentialTypes": {
+          "LICENSE": "License",
+          "DEGREE": "Degree",
+          "CERTIFICATION": "Certification",
+          "NATIONAL_ID": "National ID",
+          "PASSPORT": "Passport",
+          "MEMBERSHIP": "Membership",
+          "OTHER": "Other"
+        }
+      },
+      "application": {
+        "title": "Application review",
+        "subtitle": "Review your readiness and submit the current workspace snapshot when everything is ready.",
+        "status": "Application status",
+        "readiness": "Readiness",
+        "profileComplete": "Profile completeness",
+        "specialties": "Specialties in snapshot",
+        "submittedAt": "Submitted at",
+        "reviewedAt": "Reviewed at",
+        "reviewNotes": "Review notes",
+        "note": "Submitting will use your saved profile data plus the specialties and pricing chosen on this screen.",
+        "submit": "Submit application",
+        "notReadyTitle": "Application is not ready",
+        "notReadyBody": "Finish the missing items before submitting your application.",
+        "submittedTitle": "Application submitted",
+        "submittedBody": "Your practitioner application was submitted successfully.",
+        "submitFailedTitle": "Could not submit application",
+        "submitFailedBody": "Try again in a moment.",
+        "viewStatus": "View status"
       }
     },
     "account": {
@@ -1529,7 +1694,20 @@
       "noSchedule": "No schedule has been assigned yet",
       "duration": "{{minutes}} min",
       "emptyTitle": "No sessions",
-      "emptyBody": "There are no sessions matching the current filter.",
+      "emptyBody": "Upcoming and recent sessions will appear here once bookings are created.",
+      "workspace": {
+        "title": "Sessions workspace",
+        "subtitle": "Track upcoming, active, and recent sessions in one mobile view.",
+        "viewDetails": "View details",
+        "sections": {
+          "upcoming": "Upcoming",
+          "upcomingSubtitle": "Scheduled sessions and anything waiting to start.",
+          "active": "Active",
+          "activeSubtitle": "Sessions ready to join now or already in progress.",
+          "recent": "Recent",
+          "recentSubtitle": "Completed or closed sessions."
+        }
+      },
       "filters": {
         "all": "All",
         "upcoming": "Upcoming",
@@ -1675,6 +1853,7 @@
       "emptyExceptions": "There are no active exceptions right now.",
       "addException": "Add temporary change",
       "saveException": "Save exception",
+      "editException": "Edit exception",
       "removeException": "Remove exception",
       "exceptionStartsAt": "Start date and time",
       "exceptionEndsAt": "End date and time",
@@ -1689,6 +1868,8 @@
       "validation": {
         "invalidTime": "Enter time in a valid format like 09:00.",
         "endAfterStart": "The end time must be after the start time.",
+        "invalidGranularity": "Use 30-minute steps for availability slots.",
+        "invalidDuration": "Use a 30- or 60-minute availability slot.",
         "overlap": "This slot overlaps with another slot on the same day.",
         "exceptionDatesRequired": "Enter both the exception start and end time.",
         "invalidDateTime": "Enter a valid date and time, like 2026-04-25 14:00."

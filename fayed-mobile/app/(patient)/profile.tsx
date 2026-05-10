@@ -1,7 +1,14 @@
 import React from "react";
 import { Image, ScrollView, StyleSheet, View } from "react-native";
 import { useRouter } from "expo-router";
-import { Screen, Header, Text, ListRow, Card } from "../../src/components/ui";
+import {
+  Screen,
+  Header,
+  Text,
+  ListRow,
+  Card,
+  SectionHeader,
+} from "../../src/components/ui";
 import { useAuth } from "../../src/providers/AuthProvider";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../../src/providers/ThemeProvider";
@@ -22,6 +29,7 @@ export default function PatientProfileScreen() {
   const { signOut, user } = useAuth();
   const { theme } = useTheme();
   const { t, i18n } = useTranslation();
+  const moreTitle = i18n.language?.startsWith("ar") ? "المزيد" : "More";
 
   const profileQuery = usePatientProfile();
   const settingsQuery = useMySettings();
@@ -82,7 +90,7 @@ export default function PatientProfileScreen() {
 
   return (
     <Screen bg="background">
-      <Header title={t("profile")} />
+      <Header title={moreTitle} />
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <Card
           variant="elevated"
@@ -262,9 +270,13 @@ export default function PatientProfileScreen() {
           </View>
         </Card>
 
-        <Text weight="600" style={styles.sectionHeading}>
-          {t("profileScreen.hub.sections.profile")}
-        </Text>
+        <SectionHeader
+          title={t("profileScreen.moreSections.account", "Account")}
+          subtitle={t(
+            "profileScreen.moreSections.accountSubtitle",
+            "Manage identity, balance, and preferences",
+          )}
+        />
 
         <Card
           variant="elevated"
@@ -286,6 +298,21 @@ export default function PatientProfileScreen() {
                 />
               }
               onPress={() => router.push("/(patient)/profile-details" as any)}
+              showChevron
+            />
+          </View>
+          <View style={styles.rowPad}>
+            <ListRow
+              title={t("profileScreen.hub.rows.wallet.title")}
+              subtitle={t("profileScreen.hub.rows.wallet.subtitle")}
+              leftElement={
+                <Ionicons
+                  name="wallet-outline"
+                  size={22}
+                  color={theme.colors.primary}
+                />
+              }
+              onPress={() => router.push("/(patient)/payments" as any)}
               showChevron
             />
           </View>
@@ -334,9 +361,13 @@ export default function PatientProfileScreen() {
           </View>
         </Card>
 
-        <Text weight="600" style={styles.sectionHeading}>
-          {t("profileScreen.hub.sections.activity")}
-        </Text>
+        <SectionHeader
+          title={t("profileScreen.moreSections.contentSupport", "Content & Support")}
+          subtitle={t(
+            "profileScreen.moreSections.contentSupportSubtitle",
+            "Quick access to updates, help, and alerts",
+          )}
+        />
 
         <Card
           variant="elevated"
@@ -346,6 +377,21 @@ export default function PatientProfileScreen() {
           ]}
           padding="none"
         >
+          <View style={styles.rowPad}>
+            <ListRow
+              title="Articles"
+              subtitle="Browse health content and guidance"
+              leftElement={
+                <Ionicons
+                  name="newspaper-outline"
+                  size={22}
+                  color={theme.colors.primary}
+                />
+              }
+              onPress={() => router.push("/(patient)/articles" as any)}
+              showChevron
+            />
+          </View>
           <View style={styles.rowPad}>
             <ListRow
               title={t("profileScreen.hub.rows.notificationCenter.title")}
@@ -379,21 +425,6 @@ export default function PatientProfileScreen() {
           </View>
           <View style={styles.rowPad}>
             <ListRow
-              title={t("profileScreen.hub.rows.wallet.title")}
-              subtitle={t("profileScreen.hub.rows.wallet.subtitle")}
-              leftElement={
-                <Ionicons
-                  name="wallet-outline"
-                  size={22}
-                  color={theme.colors.primary}
-                />
-              }
-              onPress={() => router.push("/(patient)/payments" as any)}
-              showChevron
-            />
-          </View>
-          <View style={styles.rowPad}>
-            <ListRow
               title={t("profileScreen.hub.rows.support.title")}
               subtitle={t("profileScreen.hub.rows.support.subtitle")}
               leftElement={
@@ -409,9 +440,67 @@ export default function PatientProfileScreen() {
           </View>
         </Card>
 
-        <Text weight="600" style={styles.sectionHeading}>
-          {t("profileScreen.hub.sections.account")}
-        </Text>
+        <SectionHeader
+          title={t("profileScreen.moreSections.learningPurchases", "Learning & Purchases")}
+          subtitle={t(
+            "profileScreen.moreSections.learningPurchasesSubtitle",
+            "Browse programs and track package plans",
+          )}
+        />
+
+        <Card
+          variant="elevated"
+          style={[
+            styles.sectionCard,
+            { borderWidth: 1, borderColor: theme.colors.borderLight },
+          ]}
+          padding="none"
+        >
+          <View style={styles.rowPad}>
+            <ListRow
+              title={t("profileScreen.more.rows.academy.title", "Academy")}
+              subtitle={t(
+                "profileScreen.more.rows.academy.subtitle",
+                "Browse self-paced learning programs",
+              )}
+              leftElement={
+                <Ionicons
+                  name="school-outline"
+                  size={22}
+                  color={theme.colors.primary}
+                />
+              }
+              onPress={() => router.push("/(patient)/academy" as any)}
+              showChevron
+            />
+          </View>
+          <View style={styles.rowPad}>
+            <ListRow
+              title={t("profileScreen.more.rows.packages.title", "Package purchases")}
+              subtitle={t(
+                "profileScreen.more.rows.packages.subtitle",
+                "Track package progress and payments",
+              )}
+              leftElement={
+                <Ionicons
+                  name="layers-outline"
+                  size={22}
+                  color={theme.colors.primary}
+                />
+              }
+              onPress={() => router.push("/(patient)/package-purchases" as any)}
+              showChevron
+            />
+          </View>
+        </Card>
+
+        <SectionHeader
+          title={t("profileScreen.hub.sections.account")}
+          subtitle={t(
+            "profileScreen.moreSections.accountLogoutSubtitle",
+            "Sign out when you are done using this device",
+          )}
+        />
 
         <Card
           variant="elevated"
@@ -548,12 +637,6 @@ const styles = StyleSheet.create({
   onboardingBannerTitle: {
     fontSize: 15,
     marginBottom: 4,
-  },
-  sectionHeading: {
-    marginTop: 6,
-    marginBottom: -2,
-    fontSize: 13,
-    letterSpacing: 0.2,
   },
   summaryTitle: {
     fontSize: 18,

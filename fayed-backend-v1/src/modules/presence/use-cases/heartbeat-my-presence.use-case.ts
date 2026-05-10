@@ -6,8 +6,9 @@ import { PresencePractitionerRepository } from '../repositories/presence-practit
 import { PractitionerPresenceRepository } from '../repositories/practitioner-presence.repository';
 
 /**
- * Heartbeat is a freshness-only write in V1.
- * It updates timestamps but does not silently change OFFLINE/ONLINE semantics.
+ * Heartbeat is the live-activity write for practitioner presence.
+ * It keeps freshness timestamps warm and can bootstrap a seeded/offline row to ONLINE
+ * when the practitioner app is actually active, while still respecting explicit manual OFFLINE.
  */
 @Injectable()
 export class HeartbeatMyPresenceUseCase {

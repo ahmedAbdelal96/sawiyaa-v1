@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { notFound } from "next/navigation";
+import { PatientQuickNav } from "@/components/patient/PatientSectionFrame";
 import PatientAssessmentDefinitionScreen from "@/features/assessments/components/PatientAssessmentDefinitionScreen";
 import { fetchPublicAssessmentDefinition } from "@/features/assessments/api/assessments-ssr.api";
 
@@ -37,7 +38,10 @@ export default async function PatientAssessmentDefinitionPage({ params }: Props)
   }
 
   return (
-    <div className="px-4 py-8">
+    <div className="app-max-content mx-auto space-y-5 px-4 py-8 sm:space-y-6">
+      <section className="app-panel-soft rounded-[28px] p-4 sm:p-5">
+        <PatientQuickNav />
+      </section>
       <PatientAssessmentDefinitionScreen item={data.item} />
     </div>
   );

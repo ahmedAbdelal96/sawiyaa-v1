@@ -3,6 +3,7 @@ import { BuildAssessmentDerivedRecommendationsService } from '@modules/care-expe
 import { SupportedLocale } from '@common/i18n/types/locale.types';
 import { BuildNormalizedCareSignalContextService } from '@modules/care-experience-intelligence/services/build-normalized-care-signal-context.service';
 import { PublicPractitionerVisibilityPolicy } from '@modules/practitioners/policies/public-practitioner-visibility.policy';
+import { resolveEffectivePresenceStatus } from '@modules/presence/utils/presence-liveness';
 import { CreateMatchingSessionDto } from '../dto/create-matching-session.dto';
 import { MatchingCandidateRepository } from '../repositories/matching-candidate.repository';
 import { MatchingPatientRepository } from '../repositories/matching-patient.repository';
@@ -113,7 +114,7 @@ export class CreateMatchingSessionUseCase {
             ),
             specialtySlugs: specialtySlugs.map((slug) => slug.toLowerCase()),
             hasAnyAvailability: candidate.availabilitySlots.length > 0,
-            presenceStatus: candidate.presence?.status ?? null,
+            presenceStatus: resolveEffectivePresenceStatus(candidate.presence),
             isInstantBookingEnabled:
               candidate.presence?.isInstantBookingEnabled ?? false,
             yearsOfExperience: candidate.yearsOfExperience ?? null,

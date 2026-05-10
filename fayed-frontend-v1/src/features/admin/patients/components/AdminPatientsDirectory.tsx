@@ -8,6 +8,7 @@ import { DataTable } from "@/components/ui/data-table";
 import type { ColumnDef } from "@/components/ui/data-table";
 import AdminOperationalListShell, { AdminSummaryCard } from "@/components/shared/admin/AdminOperationalListShell";
 import ActionIconButton from "@/components/ui/action-icon-button/ActionIconButton";
+import FilterClearButton from "@/components/ui/filters/FilterClearButton";
 import InputField from "@/components/form/input/InputField";
 import Label from "@/components/form/Label";
 import { DEFAULT_PAGE_LIMIT, DEFAULT_PAGE_SIZE_OPTIONS } from "@/constants/pagination";
@@ -63,6 +64,30 @@ export default function AdminPatientsDirectory() {
   const items = data?.items ?? [];
   const pagination = data?.pagination;
   const stats = data?.stats;
+  const hasActiveFilters = Boolean(search.trim()) || Boolean(status) || onboarding !== "all";
+  const statusFilterLabel =
+    status === "active"
+      ? t("filters.statusActive")
+      : status === "pending"
+        ? t("filters.statusPending")
+        : status === "suspended"
+          ? t("filters.statusSuspended")
+          : status === "inactive"
+            ? t("filters.statusInactive")
+            : null;
+  const onboardingFilterLabel =
+    onboarding === "completed"
+      ? t("filters.onboardingCompleted")
+      : onboarding === "incomplete"
+        ? t("filters.onboardingIncomplete")
+        : null;
+  const activeFilterChips = [
+    search.trim() ? { id: "search", label: `${t("filters.search")}: ${search.trim()}` } : null,
+    statusFilterLabel ? { id: "status", label: `${t("filters.status")}: ${statusFilterLabel}` } : null,
+    onboardingFilterLabel
+      ? { id: "onboarding", label: `${t("filters.onboarding")}: ${onboardingFilterLabel}` }
+      : null,
+  ].filter(Boolean) as Array<{ id: string; label: string }>;
   
   const openDetails = (patientId: string) => {
     // next-intl router auto-prefixes the active locale (localePrefix: 'always')
@@ -146,6 +171,43 @@ export default function AdminPatientsDirectory() {
         eyebrow={tNav("main.title")}
         title={tNav("main.patients")}
         description={t("description")}
+        notice={
+          <section className="app-panel-soft rounded-[26px] p-4 sm:p-5">
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
+                  {t("cards.total")}
+                </p>
+                <p className="mt-2 text-2xl font-semibold tracking-tight text-text-primary dark:text-white/95">
+                  {pagination?.totalItems ?? 0}
+                </p>
+                <p className="mt-1 text-sm text-text-secondary">{t("description")}</p>
+              </div>
+
+              <div className="max-w-full sm:max-w-[34rem]">
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
+                  {hasActiveFilters ? t("filters.search") : t("filters.status")}
+                </p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {activeFilterChips.length > 0 ? (
+                    activeFilterChips.map((chip) => (
+                      <span
+                        key={chip.id}
+                        className="app-chip rounded-full px-3 py-1.5 text-xs text-text-secondary dark:text-white/80"
+                      >
+                        {chip.label}
+                      </span>
+                    ))
+                  ) : (
+                    <span className="app-chip rounded-full px-3 py-1.5 text-xs text-text-secondary dark:text-white/80">
+                      {t("filters.statusAll")}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+          </section>
+        }
         summaryCards={
           stats ? (
             <>
@@ -174,7 +236,7 @@ export default function AdminPatientsDirectory() {
           ) : null
         }
         filters={
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div className="space-y-4">
             <div className="grid flex-1 grid-cols-1 gap-3 sm:grid-cols-3">
               <div className="min-w-0">
                 <Label>{t("filters.search")}</Label>
@@ -229,15 +291,29 @@ export default function AdminPatientsDirectory() {
               </div>
             </div>
 
-            {isError ? (
-              <button
-                type="button"
-                className="text-sm font-semibold text-primary"
-                onClick={() => refetch()}
-              >
-                {t("actions.retry")}
-              </button>
-            ) : null}
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              {hasActiveFilters ? (
+                <FilterClearButton
+                  disabled={false}
+                  onClick={() => {
+                    setSearch("");
+                    setStatus("");
+                    setOnboarding("all");
+                    setPage(1);
+                  }}
+                />
+              ) : null}
+
+              {isError ? (
+                <button
+                  type="button"
+                  className="rounded-2xl border border-border-light bg-white px-4 py-2 text-sm font-semibold text-primary transition hover:border-primary/30 hover:bg-primary-light dark:bg-white/5"
+                  onClick={() => refetch()}
+                >
+                  {t("actions.retry")}
+                </button>
+              ) : null}
+            </div>
           </div>
         }
       >

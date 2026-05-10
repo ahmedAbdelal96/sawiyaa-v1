@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
+import { PatientQuickNav } from "@/components/patient/PatientSectionFrame";
 import PatientPackagePurchaseDetailPanel from "@/features/package-plans/components/PatientPackagePurchaseDetailPanel";
 
 type Props = {
@@ -21,7 +22,11 @@ export default async function PatientPackagePurchaseDetailPage({ params }: Props
   const t = await getTranslations({ locale, namespace: "package-purchases" });
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-8">
+    <div className="mx-auto max-w-5xl space-y-5 px-4 py-8 sm:space-y-6">
+      <section className="app-panel-soft rounded-[28px] p-4 sm:p-5">
+        <PatientQuickNav />
+      </section>
+
       <div className="mb-6">
         <Link
           href="/patient/package-purchases"

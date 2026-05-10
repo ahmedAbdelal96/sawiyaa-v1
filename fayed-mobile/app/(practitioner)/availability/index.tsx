@@ -22,6 +22,7 @@ import {
   useDeleteAvailabilityException,
   useMyAvailability,
   useReplaceWeeklyAvailability,
+  useUpdateAvailabilityException,
 } from "../../../src/features/practitioner/availability/hooks";
 import type {
   AvailabilityData,
@@ -35,6 +36,7 @@ import {
 } from "../../../src/features/practitioner/presence/hooks";
 import type { PresenceStatus } from "../../../src/features/practitioner/presence/types";
 import { useTheme } from "../../../src/providers/ThemeProvider";
+import { trackAnalyticsEvent } from "../../../src/lib/analytics";
 
 const STATUS_OPTIONS: PresenceStatus[] = ["ONLINE", "AWAY", "BUSY", "OFFLINE"];
 const DAY_KEYS = [
@@ -50,6 +52,7 @@ const DAY_KEYS = [
 type DraftSlot = {
   key: string;
   dayOfWeek: number;
+  durationMinutes: 30 | 60;
   startMinuteOfDay: number;
   endMinuteOfDay: number;
 };
@@ -64,6 +67,7 @@ type SlotFormState = {
 };
 
 type ExceptionFormState = {
+  targetId?: string;
   type: AvailabilityExceptionType;
   startsAt: string;
   endsAt: string;
@@ -72,6 +76,7 @@ type ExceptionFormState = {
 };
 
 const EMPTY_EXCEPTION_FORM: ExceptionFormState = {
+  targetId: undefined,
   type: "BLOCK",
   startsAt: "",
   endsAt: "",
@@ -93,6 +98,7 @@ export default function PractitionerAvailabilityScreen() {
   const replaceWeeklyAvailability = useReplaceWeeklyAvailability();
   const createException = useCreateAvailabilityException();
   const deleteException = useDeleteAvailabilityException();
+  const updateException = useUpdateAvailabilityException();
 
   const [draftSlots, setDraftSlots] = useState<DraftSlot[]>([]);
   const [slotForm, setSlotForm] = useState<SlotFormState | null>(null);
@@ -184,12 +190,16 @@ export default function PractitionerAvailabilityScreen() {
           ? current.filter((item) => item.key !== slotForm.targetKey)
           : [...current];
 
+      const durationMinutes =
+        (parsed.endMinuteOfDay - parsed.startMinuteOfDay) as 30 | 60;
+
       next.push({
         key:
           slotForm.mode === "edit" && slotForm.targetKey
             ? slotForm.targetKey
             : `${slotForm.dayOfWeek}-${parsed.startMinuteOfDay}`,
         dayOfWeek: slotForm.dayOfWeek,
+        durationMinutes,
         startMinuteOfDay: parsed.startMinuteOfDay,
         endMinuteOfDay: parsed.endMinuteOfDay,
       });
@@ -221,11 +231,16 @@ export default function PractitionerAvailabilityScreen() {
         timezone: availabilityData.timezone,
         slots: draftSlots.map((slot) => ({
           dayOfWeek: slot.dayOfWeek,
+          durationMinutes: slot.durationMinutes,
           startMinuteOfDay: slot.startMinuteOfDay,
           endMinuteOfDay: slot.endMinuteOfDay,
         })),
       });
       setSlotSaveMessage(t("practitioner.availability.saveSuccess"));
+      trackAnalyticsEvent("practitioner_availability_updated", {
+        action: "weekly_slots_saved",
+        slotsCount: draftSlots.length,
+      });
     } catch {
       setSlotSaveMessage(t("practitioner.availability.saveError"));
     }
@@ -249,12 +264,29 @@ export default function PractitionerAvailabilityScreen() {
     }
 
     try {
-      await createException.mutateAsync({
+      const payload = {
         type: exceptionForm.type,
         startsAt: validated.startsAt,
         endsAt: validated.endsAt,
         reason: exceptionForm.reason.trim() || undefined,
-      });
+      };
+
+      if (exceptionForm.targetId) {
+        await updateException.mutateAsync({
+          exceptionId: exceptionForm.targetId,
+          payload,
+        });
+        trackAnalyticsEvent("practitioner_availability_updated", {
+          action: "exception_updated",
+          exceptionType: payload.type,
+        });
+      } else {
+        await createException.mutateAsync(payload);
+        trackAnalyticsEvent("practitioner_availability_updated", {
+          action: "exception_created",
+          exceptionType: payload.type,
+        });
+      }
       setExceptionFormOpen(false);
       setExceptionForm(EMPTY_EXCEPTION_FORM);
       setExceptionMessage(t("practitioner.availability.exceptionSaveSuccess"));
@@ -267,9 +299,32 @@ export default function PractitionerAvailabilityScreen() {
     try {
       await deleteException.mutateAsync(exception.id);
       setExceptionMessage(t("practitioner.availability.exceptionDeleteSuccess"));
+      trackAnalyticsEvent("practitioner_availability_updated", {
+        action: "exception_deleted",
+        exceptionType: exception.type,
+      });
     } catch {
       setExceptionMessage(t("practitioner.availability.exceptionDeleteError"));
     }
+  };
+
+  const openAddException = () => {
+    setExceptionFormOpen(true);
+    setExceptionForm(EMPTY_EXCEPTION_FORM);
+    setExceptionMessage(null);
+  };
+
+  const openEditException = (exception: AvailabilityException) => {
+    setExceptionFormOpen(true);
+    setExceptionForm({
+      targetId: exception.id,
+      type: exception.type,
+      startsAt: toLocalDateTimeInputValue(exception.startsAt),
+      endsAt: toLocalDateTimeInputValue(exception.endsAt),
+      reason: exception.reason ?? "",
+      error: null,
+    });
+    setExceptionMessage(null);
   };
 
   const currentStatus = presenceQuery.data?.presence.status ?? null;
@@ -612,11 +667,11 @@ export default function PractitionerAvailabilityScreen() {
                                 </Text>
                               </View>
                               <View style={styles.slotActions}>
-                                <TouchableOpacity
-                                  style={styles.slotActionButton}
-                                  onPress={() => openEditSlot(slot)}
-                                  disabled={replaceWeeklyAvailability.isPending}
-                                >
+                      <TouchableOpacity
+                        style={styles.slotActionButton}
+                        onPress={() => openEditSlot(slot)}
+                        disabled={replaceWeeklyAvailability.isPending}
+                      >
                                   <Text
                                     color={theme.colors.primary}
                                     weight="600"
@@ -770,10 +825,7 @@ export default function PractitionerAvailabilityScreen() {
                         backgroundColor: theme.colors.surfaceSecondary,
                       },
                     ]}
-                    onPress={() => {
-                      setExceptionFormOpen(true);
-                      setExceptionMessage(null);
-                    }}
+                    onPress={openAddException}
                   >
                     <Text color={theme.colors.textSecondary} weight="600">
                       {t("practitioner.availability.addException")}
@@ -895,9 +947,13 @@ export default function PractitionerAvailabilityScreen() {
                   <View style={styles.editorActions}>
                     <Button
                       title={
-                        createException.isPending
-                          ? t("practitioner.availability.saving")
-                          : t("practitioner.availability.saveException")
+                        exceptionForm.targetId
+                          ? updateException.isPending
+                            ? t("practitioner.availability.saving")
+                            : t("practitioner.availability.editException")
+                          : createException.isPending
+                            ? t("practitioner.availability.saving")
+                            : t("practitioner.availability.saveException")
                       }
                       onPress={() => void handleCreateException()}
                     />
@@ -980,6 +1036,15 @@ export default function PractitionerAvailabilityScreen() {
                           </Text>
                         ) : null}
                       </View>
+                      <TouchableOpacity
+                        style={styles.slotActionButton}
+                        onPress={() => openEditException(exception)}
+                        disabled={deleteException.isPending}
+                      >
+                        <Text color={theme.colors.primary} weight="600">
+                          {t("practitioner.availability.editException")}
+                        </Text>
+                      </TouchableOpacity>
                       <TouchableOpacity
                         style={styles.slotActionButton}
                         onPress={() => void handleDeleteException(exception)}
@@ -1072,12 +1137,18 @@ function describeDaySlots(
 function buildDraftSlots(data: AvailabilityData): DraftSlot[] {
   return data.weeklySlots
     .filter((slot) => slot.isActive)
-    .map((slot) => ({
-      key: slot.id,
-      dayOfWeek: slot.dayOfWeek,
-      startMinuteOfDay: slot.startMinuteOfDay,
-      endMinuteOfDay: slot.endMinuteOfDay,
-    }))
+    .map((slot) => {
+      const durationMinutes: 30 | 60 =
+        slot.durationMinutes === 60 ? 60 : 30;
+
+      return {
+        key: slot.id,
+        dayOfWeek: slot.dayOfWeek,
+        durationMinutes,
+        startMinuteOfDay: slot.startMinuteOfDay,
+        endMinuteOfDay: slot.endMinuteOfDay,
+      };
+    })
     .sort(
       (left, right) =>
         left.dayOfWeek - right.dayOfWeek ||
@@ -1096,7 +1167,7 @@ function isDirty(data: AvailabilityData | null, draftSlots: DraftSlot[]) {
 }
 
 function serializeSlot(slot: DraftSlot) {
-  return `${slot.dayOfWeek}:${slot.startMinuteOfDay}:${slot.endMinuteOfDay}`;
+  return `${slot.dayOfWeek}:${slot.durationMinutes}:${slot.startMinuteOfDay}:${slot.endMinuteOfDay}`;
 }
 
 function minutesToTime(minutes: number, locale: string) {
@@ -1164,6 +1235,21 @@ function parseLocalDateTimeToIso(value: string) {
   return date.toISOString();
 }
 
+function toLocalDateTimeInputValue(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
+}
+
 function normalizeDigits(value: string) {
   const arabicIndic = "٠١٢٣٤٥٦٧٨٩";
   const easternArabicIndic = "۰۱۲۳۴۵۶۷۸۹";
@@ -1205,6 +1291,24 @@ function validateSlotForm(
     return {
       ok: false as const,
       error: t("practitioner.availability.validation.endAfterStart"),
+    };
+  }
+
+  if (
+    startMinuteOfDay % 30 !== 0 ||
+    endMinuteOfDay % 30 !== 0
+  ) {
+    return {
+      ok: false as const,
+      error: t("practitioner.availability.validation.invalidGranularity"),
+    };
+  }
+
+  const durationMinutes = endMinuteOfDay - startMinuteOfDay;
+  if (durationMinutes !== 30 && durationMinutes !== 60) {
+    return {
+      ok: false as const,
+      error: t("practitioner.availability.validation.invalidDuration"),
     };
   }
 

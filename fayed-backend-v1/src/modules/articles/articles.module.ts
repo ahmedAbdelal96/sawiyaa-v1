@@ -7,6 +7,7 @@ import { PublicArticlesController } from './controllers/public-articles.controll
 import { ArticlePresenter } from './presenters/article.presenter';
 import { ArticleRepository } from './repositories/article.repository';
 import { BuildPublicArticleTrustMetadataService } from './services/build-public-article-trust-metadata.service';
+import { ArticleCoverStorageService } from './services/article-cover-storage.service';
 import { ValidateArticleStatusTransitionService } from './services/validate-article-status-transition.service';
 import { ArchiveArticleUseCase } from './use-cases/archive-article.use-case';
 import { CreateArticleCategoryUseCase } from './use-cases/create-article-category.use-case';
@@ -33,6 +34,7 @@ import { UpdateArticleUseCase } from './use-cases/update-article.use-case';
     JwtAccessAuthGuard,
     RolesGuard,
     BuildPublicArticleTrustMetadataService,
+    ArticleCoverStorageService,
     ArticlePresenter,
     ArticleRepository,
     ValidateArticleStatusTransitionService,

@@ -1,345 +1,486 @@
 import React, { useMemo, useState } from "react";
-import { View, StyleSheet, ScrollView, TouchableOpacity } from "react-native";
-import {
-  Screen,
-  Header,
-  Text,
-  EmptyState,
-  Card,
-  FilterChip,
-  LoadingState,
-  ErrorState,
-} from "../../src/components/ui";
-import { Ionicons } from "@expo/vector-icons";
+import { Linking, ScrollView, StyleSheet, View } from "react-native";
 import { useRouter } from "expo-router";
-import { useTheme } from "../../src/providers/ThemeProvider";
 import { useTranslation } from "react-i18next";
-import { usePatientSessions } from "../../src/features/patient/sessions/hooks";
+import {
+  Button,
+  Card,
+  CompactActionRow,
+  ListPageScaffold,
+  SectionHeader,
+  StatusChip,
+  SummaryRow,
+  Text,
+  formatDateTime,
+} from "../../src/components/ui";
+import {
+  usePatientSessions,
+  useResolvePatientSessionJoinContract,
+} from "../../src/features/patient/sessions/hooks";
 import type {
+  SessionJoinContract,
   SessionListItem,
   SessionStatus,
 } from "../../src/features/patient/sessions/types";
-import { formatLocalizedDateTime } from "../../src/features/patient/sessions/slot-utils";
+import { useTheme } from "../../src/providers/ThemeProvider";
+import { extractApiErrorMessage } from "../../src/lib/api";
+import { normalizeAllowedExternalUrl } from "../../src/lib/external-url";
+import { trackAnalyticsEvent } from "../../src/lib/analytics";
+
+const UPCOMING_STATUSES: SessionStatus[] = [
+  "DRAFT",
+  "PENDING_PAYMENT",
+  "PENDING_PRACTITIONER_RESPONSE",
+  "CONFIRMED",
+  "UPCOMING",
+];
+
+const ACTIVE_STATUSES: SessionStatus[] = ["READY_TO_JOIN", "IN_PROGRESS"];
+
+const RECENT_STATUSES: SessionStatus[] = [
+  "COMPLETED",
+  "CANCELLED",
+  "NO_SHOW",
+  "EXPIRED",
+  "REFUND_PENDING",
+  "REFUNDED",
+];
 
 export default function PatientSessionsScreen() {
-  const router = useRouter();
-  const { theme } = useTheme();
   const { t, i18n } = useTranslation();
-  const isRtl = i18n.language?.startsWith("ar") ?? false;
+  const { theme } = useTheme();
+  const router = useRouter();
+  const joinMutation = useResolvePatientSessionJoinContract();
+  const [joiningSessionId, setJoiningSessionId] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState<string | null>(null);
+
   const locale = i18n.language?.startsWith("ar") ? "ar-SA" : "en-US";
-  const [activeTab, setActiveTab] = useState<"upcoming" | "past">("upcoming");
-
   const sessionsQuery = usePatientSessions({ page: 1, limit: 50 });
+  const sessions = sessionsQuery.data?.items ?? [];
+  const sections = useMemo(() => buildWorkspaceSections(sessions), [sessions]);
+  const overview = useMemo(() => buildOverview(sessions), [sessions]);
 
-  const filteredSessions = useMemo(() => {
-    const upcomingStatuses = new Set<SessionStatus>([
-      "DRAFT",
-      "PENDING_PAYMENT",
-      "PENDING_PRACTITIONER_RESPONSE",
-      "CONFIRMED",
-      "UPCOMING",
-      "READY_TO_JOIN",
-      "IN_PROGRESS",
-    ]);
+  const handleViewDetails = (sessionId: string) => {
+    router.push(`/(patient)/sessions/${sessionId}`);
+  };
 
-    const allItems = sessionsQuery.data?.items ?? [];
-    const picked = allItems.filter((item) => {
-      const isUpcoming = upcomingStatuses.has(item.status);
-      return activeTab === "upcoming" ? isUpcoming : !isUpcoming;
-    });
+  const handleContinuePayment = (sessionId: string) => {
+    router.push(`/(patient)/sessions/${sessionId}/pay`);
+  };
 
-    return picked.sort((a, b) => {
-      const left = a.scheduledStartAt
-        ? new Date(a.scheduledStartAt).getTime()
-        : 0;
-      const right = b.scheduledStartAt
-        ? new Date(b.scheduledStartAt).getTime()
-        : 0;
-      return activeTab === "upcoming" ? left - right : right - left;
-    });
-  }, [activeTab, sessionsQuery.data?.items]);
+  const handleJoinSession = async (session: SessionListItem) => {
+    if (!isJoinCandidate(session)) {
+      handleViewDetails(session.id);
+      return;
+    }
+
+    setJoiningSessionId(session.id);
+    setFeedback(null);
+
+    try {
+      const payload = await joinMutation.mutateAsync(session.id);
+      const contract = payload.item;
+
+      if (!contract.canJoin || !contract.roomUrl) {
+        setFeedback(
+          t("patientSessionsFlow.detail.joinBlocked", {
+            reason: t(
+              `patientSessionsFlow.detail.joinBlockedReasons.${
+                contract.blockedReason ?? "SESSION_NOT_JOINABLE_STATUS"
+              }` as const,
+            ),
+          }),
+        );
+        return;
+      }
+
+      const joinUrl = buildJoinUrl(contract);
+      if (joinUrl) {
+        const safeJoinUrl = normalizeAllowedExternalUrl(joinUrl);
+        if (!safeJoinUrl) {
+          setFeedback(t("patientSessionsFlow.detail.joinError"));
+          return;
+        }
+
+        await Linking.openURL(safeJoinUrl);
+        trackAnalyticsEvent("session_joined", {
+          role: "patient",
+          sessionId: session.id,
+          sessionStatus: session.status,
+          provider: contract.provider,
+          source: "sessions_workspace",
+        });
+        return;
+      }
+
+      setFeedback(
+        t("patientSessionsFlow.detail.joinBlocked", {
+          reason: t(
+            "patientSessionsFlow.detail.joinBlockedReasons.SESSION_NOT_JOINABLE_STATUS",
+          ),
+        }),
+      );
+    } catch (error) {
+      setFeedback(extractApiErrorMessage(error));
+    } finally {
+      setJoiningSessionId(null);
+    }
+  };
 
   return (
-    <Screen bg="background">
-      <Header title={t("sessions")} />
+    <ListPageScaffold
+      title={t("patientSessionsFlow.list.workspace.title")}
+      loading={sessionsQuery.isLoading}
+      loadingMessage={t("patientSessionsFlow.common.loading")}
+      error={sessionsQuery.isError}
+      errorTitle={t("patientSessionsFlow.common.loadError")}
+      errorMessage={t("patientSessionsFlow.common.loadError")}
+      onRetry={() => void sessionsQuery.refetch()}
+      retryText={t("patientSessionsFlow.common.retry")}
+      empty={!sessionsQuery.isLoading && !sessionsQuery.isError && sessions.length === 0}
+      emptyTitle={t("patientSessionsFlow.list.emptyTitle")}
+      emptyDescription={t("patientSessionsFlow.list.emptyDescription")}
+      emptyActionLabel={t("patientSessionsFlow.list.findTherapist")}
+      onEmptyAction={() => router.push("/(patient)/discovery")}
+      contentContainerStyle={styles.scaffoldContent}
+    >
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
+        <Card variant="flat" padding="lg" style={styles.heroCard}>
+          <SectionHeader
+            title={t("patientSessionsFlow.list.workspace.subtitle")}
+            subtitle={t("patientSessionsFlow.list.workspace.heroNote")}
+          />
 
-      {sessionsQuery.isLoading ? <LoadingState fullScreen /> : null}
-      {sessionsQuery.isError ? (
-        <ErrorState fullScreen onRetry={sessionsQuery.refetch} />
-      ) : null}
-
-      {!sessionsQuery.isLoading && !sessionsQuery.isError ? (
-        <ScrollView contentContainerStyle={styles.scrollContent}>
-          <View style={styles.heroBlock}>
-            <Text weight="bold" style={styles.heroTitle}>
-              {t("sessions")}
-            </Text>
-            <Text
-              color={theme.colors.textSecondary}
-              style={styles.heroSubtitle}
-            >
-              {t("patientSessionsFlow.list.subtitle")}
-            </Text>
+          <View style={styles.overviewList}>
+            <SummaryRow
+              label={t("patientSessionsFlow.list.workspace.overview.total")}
+              value={String(overview.total)}
+              helperText={t("patientSessionsFlow.list.workspace.overview.totalHint")}
+            />
+            <SummaryRow
+              label={t("patientSessionsFlow.list.workspace.overview.action")}
+              value={String(overview.actionRequired)}
+              helperText={t("patientSessionsFlow.list.workspace.overview.actionHint")}
+            />
+            <SummaryRow
+              label={t("patientSessionsFlow.list.workspace.overview.active")}
+              value={String(overview.active)}
+              helperText={t("patientSessionsFlow.list.workspace.overview.activeHint")}
+            />
           </View>
+        </Card>
 
-          <View
-            style={[
-              styles.segmentedWrap,
-              {
-                backgroundColor: theme.colors.surfaceSecondary,
-                borderColor: theme.colors.borderLight,
-              },
-            ]}
-          >
-            <View
-              style={[
-                styles.segmentedInner,
-                { backgroundColor: theme.colors.surface },
-              ]}
-            >
-              <FilterChip
-                label={t("patientSessionsFlow.list.upcoming")}
-                selected={activeTab === "upcoming"}
-                onPress={() => setActiveTab("upcoming")}
-              />
-              <FilterChip
-                label={t("patientSessionsFlow.list.past")}
-                selected={activeTab === "past"}
-                onPress={() => setActiveTab("past")}
-              />
-            </View>
-          </View>
+        {feedback ? (
+          <Card variant="flat" padding="md" style={styles.feedbackCard}>
+            <Text color={theme.colors.textSecondary}>{feedback}</Text>
+          </Card>
+        ) : null}
 
-          {filteredSessions.length === 0 ? (
-            <Card
-              variant="elevated"
-              style={[
-                styles.emptyCard,
-                {
-                  borderWidth: 1,
-                  borderColor: theme.colors.borderLight,
-                  ...(isRtl
-                    ? {
-                        borderLeftWidth: 4,
-                        borderLeftColor: theme.colors.primary,
-                        borderRightWidth: 1,
-                      }
-                    : { borderRightColor: theme.colors.primary }),
-                },
-              ]}
-            >
-              <Text
-                color={theme.colors.textSecondary}
-                style={styles.emptyDateHint}
-              >
-                {activeTab === "upcoming"
-                  ? t("patientSessionsFlow.list.noUpcoming")
-                  : t("patientSessionsFlow.list.noPast")}
-              </Text>
-              <EmptyState
-                title={t("patientSessionsFlow.list.emptyTitle")}
-                description={t("patientSessionsFlow.list.emptyDescription")}
-                icon={
-                  <Ionicons
-                    name="calendar-outline"
-                    size={58}
-                    color={theme.colors.textMuted}
-                  />
-                }
-                actionLabel={t("patientSessionsFlow.list.findTherapist")}
-                onAction={() => router.push("/(patient)/discovery")}
-              />
-            </Card>
-          ) : (
-            <View style={styles.sessionsListWrap}>
-              {filteredSessions.map((session) => (
-              <SessionCard
+        {sections.map((section) => (
+          <View key={section.key} style={styles.sectionBlock}>
+            <SectionHeader
+              title={t(section.titleKey)}
+              subtitle={t(section.subtitleKey)}
+            />
+
+            <View style={styles.sectionCards}>
+              {section.items.map((session) => (
+                <SessionCard
                   key={session.id}
-                  item={session}
+                  session={session}
                   locale={locale}
-                  isRtl={isRtl}
-                  onPress={() =>
-                    router.push(`/(patient)/sessions/${session.id}`)
-                  }
+                  joiningSessionId={joiningSessionId}
+                  onJoin={handleJoinSession}
+                  onContinuePayment={handleContinuePayment}
+                  onViewDetails={handleViewDetails}
                 />
               ))}
             </View>
-          )}
-        </ScrollView>
-      ) : null}
-    </Screen>
+          </View>
+        ))}
+      </ScrollView>
+    </ListPageScaffold>
   );
 }
 
 function SessionCard({
-  item,
+  session,
   locale,
-  isRtl,
-  onPress,
+  joiningSessionId,
+  onJoin,
+  onContinuePayment,
+  onViewDetails,
 }: {
-  item: SessionListItem;
+  session: SessionListItem;
   locale: string;
-  isRtl: boolean;
-  onPress: () => void;
+  joiningSessionId: string | null;
+  onJoin: (session: SessionListItem) => void;
+  onContinuePayment: (sessionId: string) => void;
+  onViewDetails: (sessionId: string) => void;
 }) {
   const { theme } = useTheme();
   const { t } = useTranslation();
+  const tone = mapSessionTone(session.status);
+  const isJoinable = isJoinCandidate(session);
+  const isJoining = joiningSessionId === session.id;
 
   return (
-    <TouchableOpacity activeOpacity={0.9} onPress={onPress}>
-      <Card variant="elevated" padding="md" style={styles.sessionCard}>
-        <View style={styles.sessionRowTop}>
-          <View>
-            <Text weight="600" style={styles.sessionTitle}>
-              {item.practitioner.displayName ??
-                t("patientSessionsFlow.common.practitionerFallback")}
-            </Text>
-            <Text
-              color={theme.colors.textSecondary}
-              style={styles.sessionSubtitle}
-            >
-              {item.sessionCode}
-            </Text>
-          </View>
-          <Ionicons
-            name={isRtl ? "chevron-back" : "chevron-forward"}
-            size={18}
-            color={theme.colors.textMuted}
-          />
+    <Card variant="outlined" padding="lg" style={styles.sessionCard}>
+      <View style={styles.cardTopRow}>
+        <View style={styles.cardTextWrap}>
+          <Text weight="600" style={styles.sessionTitle} color={theme.colors.textPrimary}>
+            {session.practitioner.displayName ??
+              t("patientSessionsFlow.common.practitionerFallback")}
+          </Text>
+          <Text color={theme.colors.textMuted} style={styles.sessionCode}>
+            {session.sessionCode}
+          </Text>
         </View>
 
-        <View style={styles.badgeRow}>
-          <View
-            style={[
-              styles.statusBadge,
-              { backgroundColor: theme.colors.primaryLight },
-            ]}
-          >
-            <Text
-              color={theme.colors.primary}
-              weight="600"
-              style={styles.statusText}
-            >
-              {formatStatusLabel(t, item.status)}
-            </Text>
-          </View>
-        </View>
+        <StatusChip
+          label={t(`patientSessionsFlow.statuses.${session.status}`)}
+          tone={tone}
+        />
+      </View>
 
-        <Text color={theme.colors.textSecondary} style={styles.metaRow}>
-          {item.scheduledStartAt
-            ? formatLocalizedDateTime(item.scheduledStartAt, locale)
+      <View style={styles.metaStack}>
+        <Text color={theme.colors.textSecondary} style={styles.metaText}>
+          {session.scheduledStartAt
+            ? formatDateTime(session.scheduledStartAt, locale)
             : t("patientSessionsFlow.common.notAvailable")}
         </Text>
-
-        <Text color={theme.colors.textMuted} style={styles.metaRow}>
+        <Text color={theme.colors.textSecondary} style={styles.metaText}>
           {t("patientSessionsFlow.list.durationValue", {
-            minutes: item.durationMinutes,
+            minutes: session.durationMinutes,
           })}
         </Text>
-      </Card>
-    </TouchableOpacity>
+        <Text color={theme.colors.textSecondary} style={styles.metaText}>
+          {t("patientSessionsFlow.common.videoSession")}
+        </Text>
+      </View>
+
+      <View style={styles.actionsBlock}>
+        {isJoinable ? (
+          <Button
+            title={
+              isJoining
+                ? t("patientSessionsFlow.detail.joining")
+                : t("patientSessionsFlow.detail.join")
+            }
+            onPress={() => void onJoin(session)}
+            disabled={isJoining}
+          />
+        ) : session.status === "PENDING_PAYMENT" ? (
+          <Button
+            title={t("patientSessionsFlow.detail.payNow")}
+            onPress={() => onContinuePayment(session.id)}
+          />
+        ) : null}
+
+        <CompactActionRow
+          label={t("patientSessionsFlow.list.workspace.viewDetails")}
+          onPress={() => onViewDetails(session.id)}
+          accessibilityLabel={t("patientSessionsFlow.list.workspace.viewDetails")}
+        />
+      </View>
+    </Card>
   );
 }
 
-function formatStatusLabel(
-  t: ReturnType<typeof useTranslation>["t"],
-  status: SessionStatus,
-) {
-  const map: Record<SessionStatus, string> = {
-    DRAFT: t("patientSessionsFlow.statuses.DRAFT"),
-    PENDING_PAYMENT: t("patientSessionsFlow.statuses.PENDING_PAYMENT"),
-    PENDING_PRACTITIONER_RESPONSE: t(
-      "patientSessionsFlow.statuses.PENDING_PRACTITIONER_RESPONSE",
-    ),
-    CONFIRMED: t("patientSessionsFlow.statuses.CONFIRMED"),
-    UPCOMING: t("patientSessionsFlow.statuses.UPCOMING"),
-    READY_TO_JOIN: t("patientSessionsFlow.statuses.READY_TO_JOIN"),
-    IN_PROGRESS: t("patientSessionsFlow.statuses.IN_PROGRESS"),
-    COMPLETED: t("patientSessionsFlow.statuses.COMPLETED"),
-    CANCELLED: t("patientSessionsFlow.statuses.CANCELLED"),
-    NO_SHOW: t("patientSessionsFlow.statuses.NO_SHOW"),
-    EXPIRED: t("patientSessionsFlow.statuses.EXPIRED"),
-    REFUND_PENDING: t("patientSessionsFlow.statuses.REFUND_PENDING"),
-    REFUNDED: t("patientSessionsFlow.statuses.REFUNDED"),
-  };
+function buildWorkspaceSections(sessions: SessionListItem[]) {
+  const upcoming: SessionListItem[] = [];
+  const active: SessionListItem[] = [];
+  const recent: SessionListItem[] = [];
 
-  return map[status] ?? status;
+  for (const session of sessions) {
+    if (ACTIVE_STATUSES.includes(session.status)) {
+      active.push(session);
+      continue;
+    }
+
+    if (UPCOMING_STATUSES.includes(session.status)) {
+      upcoming.push(session);
+      continue;
+    }
+
+    recent.push(session);
+  }
+
+  return [
+    {
+      key: "upcoming",
+      titleKey: "patientSessionsFlow.list.workspace.sections.upcoming.title",
+      subtitleKey: "patientSessionsFlow.list.workspace.sections.upcoming.subtitle",
+      items: sortBySchedule(upcoming, "asc"),
+    },
+    {
+      key: "active",
+      titleKey: "patientSessionsFlow.list.workspace.sections.active.title",
+      subtitleKey: "patientSessionsFlow.list.workspace.sections.active.subtitle",
+      items: sortBySchedule(active, "asc"),
+    },
+    {
+      key: "recent",
+      titleKey: "patientSessionsFlow.list.workspace.sections.recent.title",
+      subtitleKey: "patientSessionsFlow.list.workspace.sections.recent.subtitle",
+      items: sortBySchedule(recent, "desc"),
+    },
+  ].filter((section) => section.items.length > 0);
+}
+
+function buildOverview(sessions: SessionListItem[]) {
+  const actionRequired = sessions.filter((session) =>
+    ["PENDING_PAYMENT", "PENDING_PRACTITIONER_RESPONSE", "READY_TO_JOIN"].includes(
+      session.status,
+    ),
+  ).length;
+  const active = sessions.filter((session) =>
+    ["CONFIRMED", "UPCOMING", "READY_TO_JOIN", "IN_PROGRESS"].includes(
+      session.status,
+    ),
+  ).length;
+
+  return {
+    total: sessions.length,
+    actionRequired,
+    active,
+  };
+}
+
+function sortBySchedule(sessions: SessionListItem[], direction: "asc" | "desc") {
+  return [...sessions].sort((left, right) => {
+    const leftTimestamp = getSessionTimestamp(left);
+    const rightTimestamp = getSessionTimestamp(right);
+
+    if (leftTimestamp === null && rightTimestamp === null) {
+      return 0;
+    }
+
+    if (leftTimestamp === null) {
+      return 1;
+    }
+
+    if (rightTimestamp === null) {
+      return -1;
+    }
+
+    return direction === "asc"
+      ? leftTimestamp - rightTimestamp
+      : rightTimestamp - leftTimestamp;
+  });
+}
+
+function getSessionTimestamp(session: SessionListItem) {
+  const raw = session.scheduledStartAt ?? session.scheduledEndAt;
+  if (!raw) {
+    return null;
+  }
+
+  const date = new Date(raw);
+  return Number.isNaN(date.getTime()) ? null : date.getTime();
+}
+
+function isJoinCandidate(session: SessionListItem) {
+  return (
+    session.sessionMode === "VIDEO" &&
+    (session.status === "READY_TO_JOIN" || session.status === "IN_PROGRESS")
+  );
+}
+
+function mapSessionTone(status: SessionStatus) {
+  switch (status) {
+    case "READY_TO_JOIN":
+    case "IN_PROGRESS":
+      return "success" as const;
+    case "UPCOMING":
+    case "CONFIRMED":
+    case "PENDING_PRACTITIONER_RESPONSE":
+    case "PENDING_PAYMENT":
+    case "DRAFT":
+      return "warning" as const;
+    case "NO_SHOW":
+    case "CANCELLED":
+    case "EXPIRED":
+      return "error" as const;
+    case "REFUND_PENDING":
+      return "info" as const;
+    default:
+      return "default" as const;
+  }
+}
+
+function buildJoinUrl(joinContract: SessionJoinContract | null) {
+  if (!joinContract?.canJoin || !joinContract.roomUrl) {
+    return null;
+  }
+
+  if (joinContract.joinToken && joinContract.provider === "DAILY") {
+    return `${joinContract.roomUrl}${
+      joinContract.roomUrl.includes("?") ? "&" : "?"
+    }t=${encodeURIComponent(joinContract.joinToken)}`;
+  }
+
+  return joinContract.roomUrl;
 }
 
 const styles = StyleSheet.create({
-  scrollContent: {
+  scaffoldContent: {
     paddingHorizontal: 20,
-    paddingTop: 18,
-    paddingBottom: 128,
   },
-  heroBlock: {
-    marginBottom: 14,
+  scrollView: {
+    flex: 1,
   },
-  heroTitle: {
-    fontSize: 38,
-    lineHeight: 42,
-    marginBottom: 6,
+  scrollContent: {
+    gap: 16,
+    paddingBottom: 24,
   },
-  heroSubtitle: {
-    fontSize: 15,
-    lineHeight: 22,
+  heroCard: {
+    gap: 8,
   },
-  segmentedWrap: {
-    borderRadius: 16,
-    borderWidth: 1,
-    padding: 6,
-    marginBottom: 14,
+  overviewList: {
+    gap: 4,
   },
-  segmentedInner: {
-    borderRadius: 12,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingHorizontal: 4,
-    paddingTop: 2,
+  feedbackCard: {
+    gap: 8,
   },
-  emptyCard: {
-    borderRightWidth: 4,
-    borderRightColor: "#3f7dcf",
+  sectionBlock: {
+    gap: 12,
   },
-  emptyDateHint: {
-    fontSize: 13,
-    marginBottom: 8,
-    textAlign: "right",
-  },
-  sessionsListWrap: {
-    gap: 10,
+  sectionCards: {
+    gap: 12,
   },
   sessionCard: {
-    borderWidth: 1,
-    borderColor: "#e7ecf2",
+    gap: 12,
   },
-  sessionRowTop: {
+  cardTopRow: {
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-start",
     justifyContent: "space-between",
-    marginBottom: 8,
+    gap: 12,
+  },
+  cardTextWrap: {
+    flex: 1,
   },
   sessionTitle: {
-    fontSize: 18,
-    marginBottom: 2,
+    fontSize: 17,
+    marginBottom: 4,
   },
-  sessionSubtitle: {
+  sessionCode: {
     fontSize: 12,
   },
-  badgeRow: {
-    marginBottom: 8,
+  metaStack: {
+    gap: 4,
   },
-  statusBadge: {
-    alignSelf: "flex-start",
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 999,
+  metaText: {
+    fontSize: 14,
+    lineHeight: 22,
   },
-  statusText: {
-    fontSize: 12,
-  },
-  metaRow: {
-    fontSize: 13,
-    marginBottom: 2,
+  actionsBlock: {
+    gap: 10,
   },
 });

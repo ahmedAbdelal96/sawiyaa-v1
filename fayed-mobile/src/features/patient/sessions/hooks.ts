@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuthenticatedQueryEnabled } from "../../auth/query-auth";
+import { patientJourneyQueryKey } from "../journey/hooks";
 import {
   cancelPatientSession,
   createScheduledSession,
@@ -46,6 +47,7 @@ export function useCreateScheduledSession() {
     mutationFn: createScheduledSession,
     onSuccess: (payload) => {
       queryClient.invalidateQueries({ queryKey: patientSessionsQueryKeys.all });
+      queryClient.invalidateQueries({ queryKey: patientJourneyQueryKey });
       queryClient.setQueryData(
         patientSessionsQueryKeys.details(payload.item.id),
         payload.item,
@@ -105,6 +107,7 @@ export function useCancelPatientSession() {
     }) => cancelPatientSession(sessionId, reason),
     onSuccess: (payload) => {
       queryClient.invalidateQueries({ queryKey: patientSessionsQueryKeys.all });
+      queryClient.invalidateQueries({ queryKey: patientJourneyQueryKey });
       queryClient.setQueryData(
         patientSessionsQueryKeys.details(payload.item.id),
         payload.item,

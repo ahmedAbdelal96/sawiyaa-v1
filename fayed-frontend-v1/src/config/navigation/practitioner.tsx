@@ -3,28 +3,35 @@ import type { NavigationConfig } from "./types";
 
 export const practitionerNavigation: NavigationConfig = [
   {
-    key: "main",
-    titleKey: "practitionerMain.title",
+    key: "practitionerOverview",
+    titleKey: "title",
     namespace: "main",
     items: [
       { key: "dashboard", icon: <NavigationIcons.dashboard />, path: "/dashboard" },
+    ],
+  },
+  {
+    key: "practitionerWorkflow",
+    titleKey: "title",
+    namespace: "main",
+    items: [
       { key: "sessions", icon: <NavigationIcons.calendar />, path: "/sessions" },
       { key: "availability", icon: <NavigationIcons.availability />, path: "/availability" },
     ],
   },
   {
-    key: "workspace",
-    titleKey: "practitionerWorkspace.title",
+    key: "practitionerCommunication",
+    titleKey: "title",
     namespace: "workspace",
     items: [
-      { key: "careChat", icon: <NavigationIcons.support />, path: "/care-chat" },
-      { key: "support", icon: <NavigationIcons.chat />, path: "/support" },
+      { key: "careChat", icon: <NavigationIcons.chat />, path: "/care-chat" },
+      { key: "support", icon: <NavigationIcons.support />, path: "/support" },
       { key: "helpCenter", icon: <NavigationIcons.page />, path: "/help" },
     ],
   },
   {
-    key: "finance",
-    titleKey: "practitionerFinance.title",
+    key: "practitionerFinance",
+    titleKey: "title",
     namespace: "main",
     items: [
       { key: "wallet", icon: <NavigationIcons.wallet />, path: "/wallet" },
@@ -33,8 +40,8 @@ export const practitionerNavigation: NavigationConfig = [
     ],
   },
   {
-    key: "readiness",
-    titleKey: "practitionerReadiness.title",
+    key: "practitionerProfile",
+    titleKey: "title",
     namespace: "settings",
     items: [
       { key: "profile", icon: <NavigationIcons.auth />, path: "/profile" },
@@ -48,8 +55,8 @@ export const practitionerNavigation: NavigationConfig = [
 
 export const practitionerOnboardingNavigation: NavigationConfig = [
   {
-    key: "readiness",
-    titleKey: "practitionerReadiness.title",
+    key: "practitionerProfile",
+    titleKey: "title",
     namespace: "settings",
     items: [{ key: "application", icon: <NavigationIcons.operations />, path: "/application" }],
   },

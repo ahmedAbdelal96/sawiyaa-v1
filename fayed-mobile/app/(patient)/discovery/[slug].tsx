@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useMemo, useRef } from "react";
 import { View, StyleSheet, ScrollView, Image } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import {
@@ -10,6 +10,7 @@ import {
   LoadingState,
   ErrorState,
   Section,
+  StatusChip,
 } from "../../../src/components/ui";
 import { useTheme } from "../../../src/providers/ThemeProvider";
 import {
@@ -24,6 +25,8 @@ import {
   formatLocalizedDateTime,
   getWeekRange,
 } from "../../../src/features/patient/sessions/slot-utils";
+import { trackAnalyticsEvent } from "../../../src/lib/analytics";
+import { usePublicPractitionerPackagePlans } from "../../../src/features/patient/package-plans/hooks";
 
 function resolvePresenceMeta(status?: string | null) {
   switch (status) {
@@ -40,12 +43,20 @@ function resolvePresenceMeta(status?: string | null) {
 }
 
 function formatCurrencyAmount(
-  amount: number | null | undefined,
-  currency: "EGP" | "USD",
+  amount: number | string | null | undefined,
+  currency: string | null | undefined,
   locale: string,
 ) {
-  if (typeof amount !== "number") {
+  if (!currency) {
     return null;
+  }
+
+  if (typeof amount !== "number") {
+    const numeric = Number(amount);
+    if (!Number.isFinite(numeric)) {
+      return null;
+    }
+    amount = numeric;
   }
 
   return new Intl.NumberFormat(locale, {
@@ -68,6 +79,8 @@ export default function TherapistProfileScreen() {
   const { theme } = useTheme();
   const { t, i18n } = useTranslation();
   const locale = i18n.language?.startsWith("ar") ? "ar-SA" : "en-US";
+  const bookingNavigationLockRef = useRef(false);
+  const profileViewedRef = useRef(false);
   const weekRange = getWeekRange(0);
 
   const { data, isLoading, isError, refetch } = useGetPublicPractitionerDetails(
@@ -131,6 +144,55 @@ export default function TherapistProfileScreen() {
       "USD",
       locale,
     );
+
+  const packageBrowseDefaults = useMemo(() => {
+    const hasSixtyMinuteEgp = Boolean(
+      practitioner.sessionPrice60Egp ?? practitioner.pricing.session60.egp,
+    );
+    const hasSixtyMinuteUsd = Boolean(
+      practitioner.sessionPrice60Usd ?? practitioner.pricing.session60.usd,
+    );
+    const hasThirtyMinuteEgp = Boolean(
+      practitioner.sessionPrice30Egp ?? practitioner.pricing.session30.egp,
+    );
+    const currencyCode = hasSixtyMinuteEgp || hasThirtyMinuteEgp ? "EGP" : "USD";
+
+    return {
+      durationMinutes: hasSixtyMinuteEgp || hasSixtyMinuteUsd ? (60 as const) : (30 as const),
+      sessionMode: "VIDEO" as const,
+      currencyCode,
+    };
+  }, [practitioner]);
+
+  const packagePlansQuery = usePublicPractitionerPackagePlans(
+    slug || null,
+    packageBrowseDefaults,
+  );
+  const packagePlans = packagePlansQuery.data?.items ?? [];
+
+  useEffect(() => {
+    if (profileViewedRef.current) {
+      return;
+    }
+
+    profileViewedRef.current = true;
+    trackAnalyticsEvent("practitioner_profile_viewed", {
+      practitionerSlug: practitioner.slug,
+      source: source || "browse",
+      intent: intent || "view",
+      availabilityVisible: weekSlotCount > 0,
+      specialtiesCount: practitioner.specialties.length,
+      hasPricing: Boolean(thirtyMinutePriceLabel || sixtyMinutePriceLabel),
+    });
+  }, [
+    intent,
+    practitioner.slug,
+    practitioner.specialties.length,
+    source,
+    sixtyMinutePriceLabel,
+    thirtyMinutePriceLabel,
+    weekSlotCount,
+  ]);
 
   return (
     <Screen bg="background">
@@ -474,6 +536,123 @@ export default function TherapistProfileScreen() {
           </View>
         </Section>
 
+        {packagePlansQuery.isLoading || packagePlansQuery.isError || packagePlans.length > 0 ? (
+          <Section title={t("discovery.profile.packagePlans", "Package plans")}>
+            <View style={styles.packagePlansStack}>
+              {packagePlansQuery.isLoading ? (
+                <Card variant="flat" padding="md">
+                  <Text color={theme.colors.textSecondary} style={styles.packagePlansNote}>
+                    {t(
+                      "discovery.profile.packagePlansLoading",
+                      "Loading package plans...",
+                    )}
+                  </Text>
+                </Card>
+              ) : packagePlansQuery.isError ? (
+                <Card variant="flat" padding="md">
+                  <Text color={theme.colors.textSecondary} style={styles.packagePlansNote}>
+                    {t(
+                      "discovery.profile.packagePlansError",
+                      "We could not load the package plans right now.",
+                    )}
+                  </Text>
+                  <Button
+                    title={t("discovery.profile.packagePlansRetry", "Try again")}
+                    onPress={() => packagePlansQuery.refetch()}
+                    style={styles.packagePlansButton}
+                  />
+                </Card>
+              ) : (
+                packagePlans.map((plan) => {
+                  const isActive = Boolean(plan.item.isActive && !plan.item.archivedAt);
+                  const totalLabel = formatCurrencyAmount(
+                    plan.quote.patientPayableTotal,
+                    plan.quote.selectedCurrencyCode,
+                    locale,
+                  );
+                  return (
+                    <Card key={plan.item.code} variant="elevated" padding="lg" style={styles.packagePlanCard}>
+                      <View style={styles.packagePlanTopRow}>
+                        <View style={styles.packagePlanTopCopy}>
+                          <Text weight="bold" style={styles.packagePlanTitle}>
+                            {plan.item.title}
+                          </Text>
+                          {plan.item.description ? (
+                            <Text color={theme.colors.textSecondary} style={styles.packagePlanDescription}>
+                              {plan.item.description}
+                            </Text>
+                          ) : null}
+                        </View>
+                        <StatusChip
+                          label={isActive ? t("discovery.profile.packagePlansActive", "Active") : t("discovery.profile.packagePlansInactive", "Unavailable")}
+                          tone={isActive ? "success" : "default"}
+                          showDot={false}
+                        />
+                      </View>
+
+                      <View style={styles.packagePlanMetaRow}>
+                        <Text color={theme.colors.textMuted} style={styles.packagePlanMetaText}>
+                          {t("discovery.profile.packagePlansSessions", {
+                            count: plan.quote.sessionCount,
+                            defaultValue:
+                              plan.quote.sessionCount === 1
+                                ? "1 session"
+                                : `${plan.quote.sessionCount} sessions`,
+                          })}
+                        </Text>
+                        <Text color={theme.colors.textMuted} style={styles.packagePlanMetaText}>
+                          {t("discovery.profile.packagePlansDiscount", {
+                            count: Number(plan.quote.discountPercent),
+                            defaultValue: `${plan.quote.discountPercent}% off`,
+                          })}
+                        </Text>
+                      </View>
+
+                      <View style={styles.packagePlanStatsRow}>
+                        <Card variant="flat" padding="sm" style={styles.packagePlanStatCard}>
+                          <Text color={theme.colors.textMuted} style={styles.packagePlanStatLabel}>
+                            {t("discovery.profile.packagePlansTotal", "Total")}
+                          </Text>
+                          <Text weight="600" style={styles.packagePlanStatValue}>
+                            {totalLabel ?? plan.quote.patientPayableTotal}
+                          </Text>
+                        </Card>
+                        <Card variant="flat" padding="sm" style={styles.packagePlanStatCard}>
+                          <Text color={theme.colors.textMuted} style={styles.packagePlanStatLabel}>
+                            {t("discovery.profile.packagePlansMode", "Mode")}
+                          </Text>
+                          <Text weight="600" style={styles.packagePlanStatValue}>
+                            {plan.quote.sessionMode}
+                          </Text>
+                        </Card>
+                      </View>
+
+                      <Button
+                        title={t("discovery.profile.packagePlansPurchase", "Purchase package")}
+                        onPress={() =>
+                          router.push({
+                            pathname: "/(patient)/package-purchases/create",
+                            params: {
+                              practitionerSlug: practitioner.slug,
+                              practitionerName:
+                                practitioner.displayName || practitioner.slug,
+                              practitionerAvatarUrl: practitioner.avatarUrl || "",
+                              packagePlanCode: plan.item.code,
+                              durationMinutes: String(plan.quote.durationMinutes),
+                              sessionMode: plan.quote.sessionMode,
+                              currencyCode: plan.quote.selectedCurrencyCode,
+                            },
+                          } as any)
+                        }
+                        style={styles.packagePlansButton}
+                      />
+                    </Card>
+                  );
+                })
+              )}
+            </View>
+          </Section>
+        ) : null}
         {practitioner.fullBio ? (
           <Section title={t("discovery.profile.about")}>
             <Card variant="flat" padding="md">
@@ -532,7 +711,7 @@ export default function TherapistProfileScreen() {
           <Card variant="flat" padding="md">
             <Text color={theme.colors.textSecondary} style={styles.bioText}>
               {practitioner.languages.length > 0
-                ? practitioner.languages.join(" • ")
+                ? practitioner.languages.join(" ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ ")
                 : t("discovery.profile.languagesFallback")}
             </Text>
           </Card>
@@ -578,9 +757,19 @@ export default function TherapistProfileScreen() {
                     )
                   : t("discovery.profile.bookSession")
               }
-              onPress={() =>
+              onPress={() => {
+                if (bookingNavigationLockRef.current) {
+                  return;
+                }
+
+                bookingNavigationLockRef.current = true;
+                trackAnalyticsEvent("booking_started", {
+                  practitionerSlug: practitioner.slug,
+                  source: "practitioner_profile",
+                  intent: intent || "view",
+                });
                 router.push({
-                  pathname: "/sessions/select-time",
+                  pathname: "/(patient)/sessions/select-time",
                   params: {
                     slug,
                     practitionerName:
@@ -590,9 +779,9 @@ export default function TherapistProfileScreen() {
                       t("discovery.profile.professionalFallback"),
                     practitionerAvatarUrl: practitioner.avatarUrl || "",
                   },
-                })
-              }
-              disabled={!slug || weekSlotCount === 0}
+                });
+              }}
+              disabled={!slug}
             />
           </Card>
         </Section>
@@ -739,7 +928,62 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 20,
   },
-  bookingConfidenceGrid: {
+  packagePlansStack: {
+    gap: 12,
+  },
+  packagePlansNote: {
+    fontSize: 13,
+    lineHeight: 20,
+  },
+  packagePlansButton: {
+    marginTop: 10,
+  },
+  packagePlanCard: {
+    gap: 10,
+  },
+  packagePlanTopRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    gap: 12,
+  },
+  packagePlanTopCopy: {
+    flex: 1,
+  },
+  packagePlanTitle: {
+    fontSize: 18,
+    lineHeight: 24,
+  },
+  packagePlanDescription: {
+    fontSize: 14,
+    lineHeight: 22,
+    marginTop: 4,
+  },
+  packagePlanMetaRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 10,
+  },
+  packagePlanMetaText: {
+    fontSize: 12,
+  },
+  packagePlanStatsRow: {
+    flexDirection: "row",
+    gap: 10,
+  },
+  packagePlanStatCard: {
+    flex: 1,
+    marginHorizontal: 0,
+  },
+  packagePlanStatLabel: {
+    fontSize: 11,
+    textTransform: "uppercase",
+    letterSpacing: 0.12,
+  },
+  packagePlanStatValue: {
+    fontSize: 14,
+    marginTop: 4,
+  },  bookingConfidenceGrid: {
     gap: 10,
   },
   confidenceCard: {
@@ -794,3 +1038,6 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
 });
+
+
+

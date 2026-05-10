@@ -1,6 +1,6 @@
 import React from "react";
 import { View, StyleSheet, Image } from "react-native";
-import { Card, Text, Button } from "../../../../components/ui";
+import { Card, Text, Button, StatusChip } from "../../../../components/ui";
 import { PublicPractitionerListItem } from "../types";
 import { useTheme } from "../../../../providers/ThemeProvider";
 import { Ionicons } from "@expo/vector-icons";
@@ -21,6 +21,16 @@ export const TherapistCard = ({ practitioner }: TherapistCardProps) => {
     practitioner.specialties[0];
   const price = practitioner.sessionPrice30 ?? practitioner.sessionPrice60;
   const averageRating = practitioner.ratingSummary.averageRating;
+  const visibleLanguages = practitioner.languages
+    .slice(0, 3)
+    .map(
+      (code) =>
+        ({
+          ar: t("matching.question.language.ar"),
+          en: t("matching.question.language.en"),
+          fr: t("matching.question.language.fr"),
+        })[code] ?? code,
+    );
 
   return (
     <Card
@@ -69,6 +79,22 @@ export const TherapistCard = ({ practitioner }: TherapistCardProps) => {
               primarySpecialty?.title ||
               t("discovery.list.professionalFallback")}
           </Text>
+
+          <View style={styles.metaPillsRow}>
+            <StatusChip
+              label={
+                practitioner.isOnlineNow
+                  ? t("discovery.profile.presence.online", "Online now")
+                  : t("discovery.profile.presence.offline", "Offline right now")
+              }
+              tone={practitioner.isOnlineNow ? "success" : "default"}
+            />
+            {visibleLanguages.length > 0 ? (
+              <Text color={theme.colors.textSecondary} style={styles.languages}>
+                {visibleLanguages.join(" • ")}
+              </Text>
+            ) : null}
+          </View>
 
           <View style={styles.statsRow}>
             {averageRating ? (
@@ -227,6 +253,16 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
   },
+  metaPillsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    flexWrap: "wrap",
+    gap: 10,
+    marginBottom: 10,
+  },
+  languages: {
+    fontSize: 13,
+  },
   name: {
     fontSize: 24,
     marginBottom: 3,
@@ -292,3 +328,4 @@ const styles = StyleSheet.create({
     paddingVertical: 11,
   },
 });
+

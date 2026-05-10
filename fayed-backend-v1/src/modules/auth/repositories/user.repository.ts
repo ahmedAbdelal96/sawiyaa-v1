@@ -2,7 +2,6 @@ import { Injectable } from '@nestjs/common';
 import {
   PractitionerStatus,
   Prisma,
-  PrismaClient,
   UserRoleType,
   UserStatus,
 } from '@prisma/client';
@@ -27,8 +26,8 @@ export class UserRepository {
     return this.getDb(tx).user.create({ data });
   }
 
-  findByIdWithAuthContext(userId: string) {
-    return this.prisma.user.findUnique({
+  findByIdWithAuthContext(userId: string, tx?: Prisma.TransactionClient) {
+    return this.getDb(tx).user.findUnique({
       where: { id: userId },
       select: {
         id: true,

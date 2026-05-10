@@ -21,6 +21,7 @@ export default function PatientLayout() {
   const { theme } = useTheme();
   const isRTL = I18nManager.isRTL;
   const insets = useSafeAreaInsets();
+  const moreLabel = t("profileScreen.moreTab", "More");
 
   return (
     <Tabs
@@ -75,30 +76,33 @@ export default function PatientLayout() {
         }}
       />
       <Tabs.Screen
-        name="payments"
-        options={{
-          title: t("patientPaymentsFlow.tab"),
-          tabBarIcon: ({ color }) => (
-            <TabIcon name="wallet-outline" color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
         name="profile"
         options={{
-          title: t("profile"),
-          tabBarIcon: ({ color }) => <TabIcon name="person" color={color} />,
+          title: moreLabel,
+          tabBarIcon: ({ color }) => (
+            <TabIcon name="ellipsis-horizontal" color={color} />
+          ),
         }}
       />
       {/* Hide stack routes from bottom tabs manually */}
       <Tabs.Screen name="discovery/index" options={{ href: null }} />
       <Tabs.Screen name="discovery/filters" options={{ href: null }} />
       <Tabs.Screen name="discovery/[slug]" options={{ href: null }} />
+      <Tabs.Screen name="articles/index" options={{ href: null }} />
+      <Tabs.Screen name="articles/[slug]" options={{ href: null }} />
+      <Tabs.Screen name="academy/index" options={{ href: null }} />
+      <Tabs.Screen name="academy/[slug]" options={{ href: null }} />
+      <Tabs.Screen name="academy/enrollments/[id]" options={{ href: null }} />
+      <Tabs.Screen name="package-purchases/index" options={{ href: null }} />
+      <Tabs.Screen name="package-purchases/[id]" options={{ href: null }} />
+      <Tabs.Screen name="package-purchases/create" options={{ href: null }} />
+      <Tabs.Screen name="package-purchases/[id]/pay" options={{ href: null }} />
       <Tabs.Screen name="sessions/select-time" options={{ href: null }} />
       <Tabs.Screen name="sessions/confirm" options={{ href: null }} />
       <Tabs.Screen name="sessions/success" options={{ href: null }} />
       <Tabs.Screen name="sessions/[id]" options={{ href: null }} />
       <Tabs.Screen name="sessions/[id]/pay" options={{ href: null }} />
+      <Tabs.Screen name="payments" options={{ href: null }} />
       <Tabs.Screen name="notifications" options={{ href: null }} />
       <Tabs.Screen
         name="sessions/[id]/payment-return"

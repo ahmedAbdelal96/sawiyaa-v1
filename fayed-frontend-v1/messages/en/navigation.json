@@ -36,14 +36,41 @@
     "assessments": "Assessments",
     "availability": "Availability"
   },
+  "overview": {
+    "title": "Overview"
+  },
+  "operations": {
+    "title": "Operations & care"
+  },
+  "catalog": {
+    "title": "Services & content"
+  },
+  "financeOps": {
+    "title": "Finance & settlements"
+  },
+  "insights": {
+    "title": "Reports & governance"
+  },
   "practitionerMain": {
     "title": "Operational core"
+  },
+  "practitionerOverview": {
+    "title": "Overview"
+  },
+  "practitionerWorkflow": {
+    "title": "Daily workflow"
+  },
+  "practitionerCommunication": {
+    "title": "Communication & support"
   },
   "practitionerWorkspace": {
     "title": "Messages"
   },
   "practitionerFinance": {
     "title": "Finance"
+  },
+  "practitionerProfile": {
+    "title": "Profile & readiness"
   },
   "practitionerReadiness": {
     "title": "Readiness"

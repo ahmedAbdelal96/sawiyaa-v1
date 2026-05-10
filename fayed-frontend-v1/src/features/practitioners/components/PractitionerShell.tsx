@@ -9,6 +9,7 @@ import {
   practitionerOnboardingNavigation,
 } from "@/config/navigation";
 import { useAuthMe } from "@/features/auth/hooks/use-auth";
+import { usePractitionerPresenceHeartbeat } from "@/features/presence/hooks/use-presence";
 import { usePractitionerProfile } from "../hooks/use-practitioners";
 
 type PractitionerShellProps = {
@@ -44,6 +45,10 @@ export default function PractitionerShell({ children }: PractitionerShellProps) 
   const approved = profile?.profileStatus === "APPROVED";
   const onboardingOnlyMode = Boolean(profile && !approved);
   const onboardingPathActive = isOnboardingPath(pathWithoutLocale);
+  const heartbeatEnabled =
+    isOtpVerified && approved && !authLoading && !profileLoading && !authError;
+
+  usePractitionerPresenceHeartbeat(heartbeatEnabled);
 
   useEffect(() => {
     if (!isOtpVerified || !profile || approved || onboardingPathActive) {

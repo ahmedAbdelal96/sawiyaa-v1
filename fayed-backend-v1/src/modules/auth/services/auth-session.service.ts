@@ -3,6 +3,7 @@ import {
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PasswordHashService } from './password-hash.service';
 import { UserSessionRepository } from '../repositories/user-session.repository';
 import {
@@ -84,7 +85,7 @@ export class AuthSessionService {
     return session;
   }
 
-  revoke(sessionId: string) {
-    return this.userSessionRepository.revoke(sessionId);
+  revoke(sessionId: string, tx?: Prisma.TransactionClient) {
+    return this.userSessionRepository.revoke(sessionId, tx);
   }
 }

@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Link, useRouter } from "@/i18n/navigation";
 import { ListStateSkeleton, StateCard } from "@/components/shared/ContentStates";
+import { PatientQuickNav } from "@/components/patient/PatientSectionFrame";
 import FilterClearButton from "@/components/ui/filters/FilterClearButton";
 import { DEFAULT_PAGE_LIMIT } from "@/constants/pagination";
 import { getCareChatErrorKey } from "../lib/care-chat-ui";
@@ -91,6 +92,10 @@ export default function PatientCareChatHomeScreen({ prefill }: Props) {
         <p className="mt-2 max-w-3xl text-sm leading-6 text-text-secondary">
           {t("patient.home.note")}
         </p>
+
+        <div className="mt-5 border-t border-border-light/70 pt-4 dark:border-white/10">
+          <PatientQuickNav />
+        </div>
       </section>
 
       {hasPrefilledPractitioner ? (

@@ -8,6 +8,9 @@ import { Star } from "lucide-react";
 import { DataTable } from "@/components/ui/data-table";
 import ActionIconButton from "@/components/ui/action-icon-button/ActionIconButton";
 import FilterClearButton from "@/components/ui/filters/FilterClearButton";
+import AdminOperationalListShell, {
+  AdminSummaryCard,
+} from "@/components/shared/admin/AdminOperationalListShell";
 import type { ColumnDef, SortConfig } from "@/components/ui/data-table";
 import { buildUpdatedSearchParams, parseEnumParam, parsePositiveIntParam } from "@/components/ui/data-table";
 import { DEFAULT_PAGE_LIMIT, DEFAULT_PAGE_SIZE_OPTIONS } from "@/constants/pagination";
@@ -113,6 +116,21 @@ export default function AdminReviewsListScreen() {
   const reviews = useAdminReviews(params);
   const data = reviews.data;
   const items = data?.items ?? [];
+  const moderationCount = items.filter((item) => item.status === "PENDING_MODERATION").length;
+  const publishedCount = items.filter((item) => item.status === "PUBLISHED").length;
+  const averageRating =
+    items.length > 0
+      ? (items.reduce((sum, item) => sum + item.overallRating, 0) / items.length).toFixed(1)
+      : "0.0";
+  const activeFilterChips = [
+    statusFilter !== "ALL"
+      ? {
+          id: "status",
+          label: t(`admin.statuses.${statusFilter}` as Parameters<typeof t>[0]),
+        }
+      : null,
+    needsModeration ? { id: "needsModeration", label: t("admin.list.needsModeration") } : null,
+  ].filter(Boolean) as Array<{ id: string; label: string }>;
 
   const columns = useMemo<ColumnDef<AdminReviewItem>[]>(() => [
     {
@@ -172,68 +190,129 @@ export default function AdminReviewsListScreen() {
   ], [locale, t]);
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-text-primary dark:text-white/95">
-          {t("admin.list.heading")}
-        </h1>
-        {data?.pagination ? (
-          <p className="mt-1 text-sm text-text-secondary">
-            {t("admin.list.count", { value: data.pagination.totalItems })}
-          </p>
-        ) : null}
-      </div>
+    <AdminOperationalListShell
+      title={t("admin.list.heading")}
+      description={data?.pagination ? t("admin.list.count", { value: data.pagination.totalItems }) : undefined}
+      notice={
+        <section className="app-panel-soft rounded-[26px] p-4 sm:p-5">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
+                {data?.pagination ? t("admin.list.count", { value: data.pagination.totalItems }) : t("admin.list.heading")}
+              </p>
+              <p className="mt-2 text-2xl font-semibold tracking-tight text-text-primary dark:text-white/95">
+                {averageRating}/5
+              </p>
+              <p className="mt-1 text-sm text-text-secondary">{t("admin.list.needsModeration")}</p>
+            </div>
 
-      <div className="grid gap-3 md:grid-cols-2">
-        <label className="block">
-          <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
-            {t("admin.statuses.all")}
-          </span>
-          <select
-            value={statusFilter}
-            onChange={(event) =>
-              updateListQuery({
-                status: event.target.value === "ALL" ? null : event.target.value,
-                page: 1,
-              })
-            }
-            className="app-control w-full px-4 py-3"
-          >
-            {STATUS_FILTERS.map((filter) => (
-              <option key={filter.value} value={filter.value}>
-                {t(`admin.statuses.${filter.labelKey}` as Parameters<typeof t>[0])}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="flex items-center gap-3 rounded-2xl border border-border-light bg-surface-secondary px-4 py-3 text-sm text-text-primary dark:bg-white/5 dark:text-white/90">
-          <input
-            type="checkbox"
-            checked={needsModeration}
-            onChange={(event) =>
-              updateListQuery({
-                needsModeration: event.target.checked ? "true" : null,
-                page: 1,
-              })
-            }
-            className="h-4 w-4 rounded border-border-light text-primary focus:ring-primary"
+            <div className="max-w-full sm:max-w-[30rem]">
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
+                {t("admin.statuses.all")}
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {activeFilterChips.length > 0 ? (
+                  activeFilterChips.map((chip) => (
+                    <span
+                      key={chip.id}
+                      className="app-chip rounded-full px-3 py-1.5 text-xs text-text-secondary dark:text-white/80"
+                    >
+                      {chip.label}
+                    </span>
+                  ))
+                ) : (
+                  <span className="app-chip rounded-full px-3 py-1.5 text-xs text-text-secondary dark:text-white/80">
+                    {t("admin.statuses.all")}
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+        </section>
+      }
+      summaryCards={
+        <>
+          <AdminSummaryCard
+            label={t("admin.list.heading")}
+            value={data?.pagination?.totalItems ?? 0}
+            tone="primary"
+            icon={<Star className="h-4 w-4" />}
           />
-          {t("admin.list.needsModeration")}
-        </label>
-        <div className="md:col-span-2 flex justify-end">
-          <FilterClearButton
-            disabled={!hasActiveFilters}
-            onClick={() =>
-              updateListQuery({
-                status: null,
-                needsModeration: null,
-                page: 1,
-              })
-            }
+          <AdminSummaryCard
+            label={t("admin.list.needsModeration")}
+            value={moderationCount}
+            tone="warning"
+            icon={<Star className="h-4 w-4" />}
           />
+          <AdminSummaryCard
+            label={t("admin.statuses.PUBLISHED")}
+            value={publishedCount}
+            tone="success"
+            icon={<Star className="h-4 w-4" />}
+          />
+          <AdminSummaryCard
+            label="Avg"
+            value={`${averageRating}/5`}
+            tone="neutral"
+            icon={<Star className="h-4 w-4" />}
+          />
+        </>
+      }
+      filters={
+        <div className="space-y-4">
+          <div className="grid gap-3 md:grid-cols-2">
+            <label className="block">
+              <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
+                {t("admin.statuses.all")}
+              </span>
+              <select
+                value={statusFilter}
+                onChange={(event) =>
+                  updateListQuery({
+                    status: event.target.value === "ALL" ? null : event.target.value,
+                    page: 1,
+                  })
+                }
+                className="app-control w-full px-4 py-3"
+              >
+                {STATUS_FILTERS.map((filter) => (
+                  <option key={filter.value} value={filter.value}>
+                    {t(`admin.statuses.${filter.labelKey}` as Parameters<typeof t>[0])}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="flex items-center gap-3 rounded-2xl border border-border-light bg-surface-secondary px-4 py-3 text-sm text-text-primary dark:bg-white/5 dark:text-white/90">
+              <input
+                type="checkbox"
+                checked={needsModeration}
+                onChange={(event) =>
+                  updateListQuery({
+                    needsModeration: event.target.checked ? "true" : null,
+                    page: 1,
+                  })
+                }
+                className="h-4 w-4 rounded border-border-light text-primary focus:ring-primary"
+              />
+              {t("admin.list.needsModeration")}
+            </label>
+          </div>
+
+          <div className="flex justify-end">
+            <FilterClearButton
+              disabled={!hasActiveFilters}
+              onClick={() =>
+                updateListQuery({
+                  status: null,
+                  needsModeration: null,
+                  page: 1,
+                })
+              }
+            />
+          </div>
         </div>
-      </div>
-
+      }
+    >
       <DataTable
         data={items}
         columns={columns}
@@ -286,6 +365,6 @@ export default function AdminReviewsListScreen() {
         ariaLabel={t("admin.list.heading")}
         caption={t("admin.list.heading")}
       />
-    </div>
+    </AdminOperationalListShell>
   );
 }

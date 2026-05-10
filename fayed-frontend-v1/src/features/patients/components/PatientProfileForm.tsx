@@ -320,7 +320,7 @@ export default function PatientProfileForm() {
 
   return (
     <>
-    <section className="rounded-2xl border border-border-light bg-white p-5 sm:p-6">
+      <section className="app-panel rounded-[28px] p-5 sm:p-6">
         <div className="grid gap-5 lg:grid-cols-[auto_minmax(0,1fr)] lg:items-center">
           <div className="flex items-center gap-4">
             <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-full border border-border-light bg-surface-secondary">
@@ -409,7 +409,7 @@ export default function PatientProfileForm() {
           </div>
         </div>
       </section>
-      <section className="rounded-2xl border border-border-light bg-white p-5 sm:p-6">
+      <section className="app-panel rounded-[28px] p-5 sm:p-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <h2 className="text-base font-semibold text-text-primary">{t("summary.title")}</h2>
@@ -421,17 +421,17 @@ export default function PatientProfileForm() {
         </div>
 
         <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
-          <div className="rounded-xl border border-border-light bg-surface-secondary p-3">
+          <div className="app-panel-soft rounded-2xl p-3">
             <p className="text-xs text-text-muted">{t("fields.displayName.label")}</p>
             <p className="mt-1 text-sm font-medium text-text-primary">{profile.displayName || "-"}</p>
           </div>
-          <div className="rounded-xl border border-border-light bg-surface-secondary p-3">
+          <div className="app-panel-soft rounded-2xl p-3">
             <p className="text-xs text-text-muted">{t("fields.dateOfBirth.label")}</p>
             <p className="mt-1 text-sm font-medium text-text-primary">
               {formatDateValue(profile.dateOfBirth, locale)}
             </p>
           </div>
-          <div className="rounded-xl border border-border-light bg-surface-secondary p-3">
+          <div className="app-panel-soft rounded-2xl p-3">
             <p className="text-xs text-text-muted">{t("fields.gender.label")}</p>
             <p className="mt-1 text-sm font-medium text-text-primary">
               {profile.gender === "male"
@@ -441,7 +441,7 @@ export default function PatientProfileForm() {
                   : "-"}
             </p>
           </div>
-          <div className="rounded-xl border border-border-light bg-surface-secondary p-3">
+          <div className="app-panel-soft rounded-2xl p-3">
             <p className="text-xs text-text-muted">{t("fields.locale.label")}</p>
             <p className="mt-1 text-sm font-medium text-text-primary">
               {profile.locale === "ar"
@@ -451,11 +451,11 @@ export default function PatientProfileForm() {
                   : "-"}
             </p>
           </div>
-          <div className="rounded-xl border border-border-light bg-surface-secondary p-3">
+          <div className="app-panel-soft rounded-2xl p-3">
             <p className="text-xs text-text-muted">{t("fields.countryCode.label")}</p>
             <p className="mt-1 text-sm font-medium text-text-primary">{profile.countryCode || "-"}</p>
           </div>
-          <div className="rounded-xl border border-border-light bg-surface-secondary p-3">
+          <div className="app-panel-soft rounded-2xl p-3">
             <p className="text-xs text-text-muted">{t("fields.timezone.label")}</p>
             <p className="mt-1 text-sm font-medium text-text-primary">{profile.timezone || "-"}</p>
           </div>
@@ -466,7 +466,7 @@ export default function PatientProfileForm() {
         ) : null}
       </section>
 
-      <section className="rounded-2xl border border-border-light bg-white p-5 sm:p-6">
+      <section className="app-panel rounded-[28px] p-5 sm:p-6">
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-2">
             <Wallet className="h-4 w-4 text-primary" />
@@ -476,7 +476,7 @@ export default function PatientProfileForm() {
         </div>
 
         <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <div className="rounded-xl border border-border-light bg-surface-secondary p-3">
+          <div className="app-panel-soft rounded-2xl p-3">
             <p className="text-xs text-text-muted">{t("wallet.availableLabel")}</p>
             <p className="mt-1 text-base font-semibold text-text-primary">
               {walletSummaryLoading
@@ -486,7 +486,7 @@ export default function PatientProfileForm() {
                   : walletSummary?.availableBalance ?? "0"}
             </p>
           </div>
-          <div className="rounded-xl border border-border-light bg-surface-secondary p-3">
+          <div className="app-panel-soft rounded-2xl p-3">
             <p className="text-xs text-text-muted">{t("wallet.reservedLabel")}</p>
             <p className="mt-1 text-base font-semibold text-text-primary">
               {walletSummaryLoading

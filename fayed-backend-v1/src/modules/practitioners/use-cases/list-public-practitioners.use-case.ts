@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
+import { isPresenceEffectivelyOnline } from '@modules/presence/utils/presence-liveness';
 import {
   PublicPractitionerGender,
   PublicPractitionerKind,
@@ -171,7 +172,7 @@ export class ListPublicPractitionersUseCase {
             pricingProfile.sessionPrice60Usd === undefined
               ? null
               : Number(pricingProfile.sessionPrice60Usd),
-          isOnlineNow: profile.presence?.status === 'ONLINE',
+          isOnlineNow: isPresenceEffectivelyOnline(profile.presence),
           acceptsCoupon:
             profile.coupons?.some(
               (coupon) =>

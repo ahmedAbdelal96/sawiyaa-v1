@@ -17,14 +17,14 @@ export function AdminDashboardChartCard({
   children,
 }: AdminDashboardChartCardProps) {
   return (
-    <article className="app-panel rounded-3xl p-5">
+    <article className="app-panel rounded-[30px] p-5 sm:p-6">
       <AdminDashboardSectionHeader
         title={title}
         subtitle={subtitle}
         actionLabel={actionLabel}
         actionHref={actionHref}
       />
-      <div className="rounded-2xl border border-border-light/90 bg-surface p-3 dark:border-white/10 dark:bg-white/[0.03]">
+      <div className="mt-5 rounded-[24px] bg-surface-secondary/75 p-2 dark:bg-white/[0.03] sm:p-3">
         {children}
       </div>
     </article>

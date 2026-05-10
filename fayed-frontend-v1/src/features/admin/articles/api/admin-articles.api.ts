@@ -3,6 +3,7 @@ import { extractData } from "@/lib/api/response";
 import type { ApiPayload } from "@/lib/api/contracts";
 import type {
   AdminArticleCategoryListResponse,
+  AdminArticleCoverUploadResponse,
   AdminArticleItemResponse,
   AdminArticleListParams,
   AdminArticleListResponse,
@@ -88,6 +89,18 @@ export async function updateAdminArticle(
   const response = await httpClient.patch<ApiPayload<AdminArticleItemResponse>>(
     `/admin/articles/${articleId}`,
     payload,
+  );
+  return extractData(response.data);
+}
+
+export async function uploadAdminArticleCover(
+  file: File,
+): Promise<AdminArticleCoverUploadResponse> {
+  const formData = new FormData();
+  formData.append("file", file);
+  const response = await httpClient.post<ApiPayload<AdminArticleCoverUploadResponse>>(
+    "/admin/articles/cover-upload",
+    formData,
   );
   return extractData(response.data);
 }

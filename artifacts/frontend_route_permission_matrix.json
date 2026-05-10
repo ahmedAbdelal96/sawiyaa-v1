@@ -1,0 +1,1242 @@
+[
+  {
+    "path": "/layout.tsx",
+    "area": "public",
+    "currentGuard": "next-intl/proxy only",
+    "requiredRoleOrPermission": "PUBLIC",
+    "riskLevel": "Low",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/admin/academy",
+    "area": "admin",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "ADMIN|SUPER_ADMIN|SUPPORT_AGENT|CONTENT_REVIEWER",
+    "riskLevel": "High",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/admin/academy/[id]",
+    "area": "admin",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "ADMIN|SUPER_ADMIN|SUPPORT_AGENT|CONTENT_REVIEWER",
+    "riskLevel": "High",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/admin/admin-operations",
+    "area": "admin",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "ADMIN|SUPER_ADMIN|SUPPORT_AGENT|CONTENT_REVIEWER",
+    "riskLevel": "High",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/admin/admin-operations/[id]",
+    "area": "admin",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "ADMIN|SUPER_ADMIN|SUPPORT_AGENT|CONTENT_REVIEWER",
+    "riskLevel": "High",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/admin/articles",
+    "area": "admin",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "ADMIN|SUPER_ADMIN|SUPPORT_AGENT|CONTENT_REVIEWER",
+    "riskLevel": "High",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/admin/assessments",
+    "area": "admin",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "ADMIN|SUPER_ADMIN|SUPPORT_AGENT|CONTENT_REVIEWER",
+    "riskLevel": "High",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/admin/assessments/[id]",
+    "area": "admin",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "ADMIN|SUPER_ADMIN|SUPPORT_AGENT|CONTENT_REVIEWER",
+    "riskLevel": "High",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/admin/audit",
+    "area": "admin",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "ADMIN|SUPER_ADMIN|SUPPORT_AGENT|CONTENT_REVIEWER",
+    "riskLevel": "High",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/admin/audit/[id]",
+    "area": "admin",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "ADMIN|SUPER_ADMIN|SUPPORT_AGENT|CONTENT_REVIEWER",
+    "riskLevel": "High",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/admin/care-chat/conversations/[id]",
+    "area": "admin",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "ADMIN|SUPER_ADMIN|SUPPORT_AGENT|CONTENT_REVIEWER",
+    "riskLevel": "High",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/admin/care-chat",
+    "area": "admin",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "ADMIN|SUPER_ADMIN|SUPPORT_AGENT|CONTENT_REVIEWER",
+    "riskLevel": "High",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/admin/care-chat/[id]",
+    "area": "admin",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "ADMIN|SUPER_ADMIN|SUPPORT_AGENT|CONTENT_REVIEWER",
+    "riskLevel": "High",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/admin/chat",
+    "area": "admin",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "ADMIN|SUPER_ADMIN|SUPPORT_AGENT|CONTENT_REVIEWER",
+    "riskLevel": "High",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/admin/dashboard",
+    "area": "admin",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "ADMIN|SUPER_ADMIN|SUPPORT_AGENT|CONTENT_REVIEWER",
+    "riskLevel": "High",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/admin/finance/dashboard",
+    "area": "admin",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "ADMIN|SUPER_ADMIN|SUPPORT_AGENT|CONTENT_REVIEWER",
+    "riskLevel": "High",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/admin/finance/ledger",
+    "area": "admin",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "ADMIN|SUPER_ADMIN|SUPPORT_AGENT|CONTENT_REVIEWER",
+    "riskLevel": "High",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/admin/finance/ledger/[journalEntryId]",
+    "area": "admin",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "ADMIN|SUPER_ADMIN|SUPPORT_AGENT|CONTENT_REVIEWER",
+    "riskLevel": "High",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/admin/finance",
+    "area": "admin",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "ADMIN|SUPER_ADMIN|SUPPORT_AGENT|CONTENT_REVIEWER",
+    "riskLevel": "High",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/admin/finance/reconciliation",
+    "area": "admin",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "ADMIN|SUPER_ADMIN|SUPPORT_AGENT|CONTENT_REVIEWER",
+    "riskLevel": "High",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/admin/help/categories",
+    "area": "admin",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "ADMIN|SUPER_ADMIN|SUPPORT_AGENT|CONTENT_REVIEWER",
+    "riskLevel": "High",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/admin/help",
+    "area": "admin",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "ADMIN|SUPER_ADMIN|SUPPORT_AGENT|CONTENT_REVIEWER",
+    "riskLevel": "High",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/admin/help/questions",
+    "area": "admin",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "ADMIN|SUPER_ADMIN|SUPPORT_AGENT|CONTENT_REVIEWER",
+    "riskLevel": "High",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/admin/moderation/reports",
+    "area": "admin",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "ADMIN|SUPER_ADMIN|SUPPORT_AGENT|CONTENT_REVIEWER",
+    "riskLevel": "High",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/admin/moderation/reports/[id]",
+    "area": "admin",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "ADMIN|SUPER_ADMIN|SUPPORT_AGENT|CONTENT_REVIEWER",
+    "riskLevel": "High",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/admin/notifications",
+    "area": "admin",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "ADMIN|SUPER_ADMIN|SUPPORT_AGENT|CONTENT_REVIEWER",
+    "riskLevel": "High",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/admin/notifications/[id]",
+    "area": "admin",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "ADMIN|SUPER_ADMIN|SUPPORT_AGENT|CONTENT_REVIEWER",
+    "riskLevel": "High",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/admin/package-plans",
+    "area": "admin",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "ADMIN|SUPER_ADMIN|SUPPORT_AGENT|CONTENT_REVIEWER",
+    "riskLevel": "High",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/admin/package-plans/[code]",
+    "area": "admin",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "ADMIN|SUPER_ADMIN|SUPPORT_AGENT|CONTENT_REVIEWER",
+    "riskLevel": "High",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/admin/package-settlements",
+    "area": "admin",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "ADMIN|SUPER_ADMIN|SUPPORT_AGENT|CONTENT_REVIEWER",
+    "riskLevel": "High",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/admin/package-settlements/[id]",
+    "area": "admin",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "ADMIN|SUPER_ADMIN|SUPPORT_AGENT|CONTENT_REVIEWER",
+    "riskLevel": "High",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/admin",
+    "area": "public",
+    "currentGuard": "next-intl/proxy only",
+    "requiredRoleOrPermission": "PUBLIC",
+    "riskLevel": "Low",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/admin/patients",
+    "area": "admin",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "ADMIN|SUPER_ADMIN|SUPPORT_AGENT|CONTENT_REVIEWER",
+    "riskLevel": "High",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/admin/patients/[patientId]",
+    "area": "admin",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "ADMIN|SUPER_ADMIN|SUPPORT_AGENT|CONTENT_REVIEWER",
+    "riskLevel": "High",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/admin/payments/gateway-control",
+    "area": "admin",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "ADMIN|SUPER_ADMIN|SUPPORT_AGENT|CONTENT_REVIEWER",
+    "riskLevel": "High",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/admin/payments",
+    "area": "admin",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "ADMIN|SUPER_ADMIN|SUPPORT_AGENT|CONTENT_REVIEWER",
+    "riskLevel": "High",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/admin/payments/[id]",
+    "area": "admin",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "ADMIN|SUPER_ADMIN|SUPPORT_AGENT|CONTENT_REVIEWER",
+    "riskLevel": "High",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/admin/practitioner-applications/create",
+    "area": "admin",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "ADMIN|SUPER_ADMIN|SUPPORT_AGENT|CONTENT_REVIEWER",
+    "riskLevel": "High",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/admin/practitioner-applications",
+    "area": "admin",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "ADMIN|SUPER_ADMIN|SUPPORT_AGENT|CONTENT_REVIEWER",
+    "riskLevel": "High",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/admin/practitioner-applications/[id]",
+    "area": "admin",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "ADMIN|SUPER_ADMIN|SUPPORT_AGENT|CONTENT_REVIEWER",
+    "riskLevel": "High",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/admin/practitioner-payouts/history",
+    "area": "admin",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "ADMIN|SUPER_ADMIN|SUPPORT_AGENT|CONTENT_REVIEWER",
+    "riskLevel": "High",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/admin/practitioner-payouts",
+    "area": "admin",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "ADMIN|SUPER_ADMIN|SUPPORT_AGENT|CONTENT_REVIEWER",
+    "riskLevel": "High",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/admin/practitioner-payouts/[practitionerId]",
+    "area": "admin",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "ADMIN|SUPER_ADMIN|SUPPORT_AGENT|CONTENT_REVIEWER",
+    "riskLevel": "High",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/admin/practitioners",
+    "area": "admin",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "ADMIN|SUPER_ADMIN|SUPPORT_AGENT|CONTENT_REVIEWER",
+    "riskLevel": "High",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/admin/refund-policies",
+    "area": "admin",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "ADMIN|SUPER_ADMIN|SUPPORT_AGENT|CONTENT_REVIEWER",
+    "riskLevel": "High",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/admin/refund-policies/[policyType]",
+    "area": "admin",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "ADMIN|SUPER_ADMIN|SUPPORT_AGENT|CONTENT_REVIEWER",
+    "riskLevel": "High",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/admin/refund-policies/[policyType]/versions/[versionId]",
+    "area": "admin",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "ADMIN|SUPER_ADMIN|SUPPORT_AGENT|CONTENT_REVIEWER",
+    "riskLevel": "High",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/admin/reports/care-requests",
+    "area": "admin",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "ADMIN|SUPER_ADMIN|SUPPORT_AGENT|CONTENT_REVIEWER",
+    "riskLevel": "High",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/admin/reports",
+    "area": "admin",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "ADMIN|SUPER_ADMIN|SUPPORT_AGENT|CONTENT_REVIEWER",
+    "riskLevel": "High",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/admin/reports/payments-revenue",
+    "area": "admin",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "ADMIN|SUPER_ADMIN|SUPPORT_AGENT|CONTENT_REVIEWER",
+    "riskLevel": "High",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/admin/reports/payouts",
+    "area": "admin",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "ADMIN|SUPER_ADMIN|SUPPORT_AGENT|CONTENT_REVIEWER",
+    "riskLevel": "High",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/admin/reports/sessions",
+    "area": "admin",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "ADMIN|SUPER_ADMIN|SUPPORT_AGENT|CONTENT_REVIEWER",
+    "riskLevel": "High",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/admin/reports/support",
+    "area": "admin",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "ADMIN|SUPER_ADMIN|SUPPORT_AGENT|CONTENT_REVIEWER",
+    "riskLevel": "High",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/admin/reviews",
+    "area": "admin",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "ADMIN|SUPER_ADMIN|SUPPORT_AGENT|CONTENT_REVIEWER",
+    "riskLevel": "High",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/admin/reviews/[id]",
+    "area": "admin",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "ADMIN|SUPER_ADMIN|SUPPORT_AGENT|CONTENT_REVIEWER",
+    "riskLevel": "High",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/admin/sessions/cancellation-policies",
+    "area": "admin",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "ADMIN|SUPER_ADMIN|SUPPORT_AGENT|CONTENT_REVIEWER",
+    "riskLevel": "High",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/admin/sessions",
+    "area": "admin",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "ADMIN|SUPER_ADMIN|SUPPORT_AGENT|CONTENT_REVIEWER",
+    "riskLevel": "High",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/admin/sessions/runtime-inspection",
+    "area": "admin",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "ADMIN|SUPER_ADMIN|SUPPORT_AGENT|CONTENT_REVIEWER",
+    "riskLevel": "High",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/admin/settings",
+    "area": "admin",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "ADMIN|SUPER_ADMIN|SUPPORT_AGENT|CONTENT_REVIEWER",
+    "riskLevel": "High",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/admin/settings/revenue-share",
+    "area": "admin",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "ADMIN|SUPER_ADMIN|SUPPORT_AGENT|CONTENT_REVIEWER",
+    "riskLevel": "High",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/admin/settlements/dues",
+    "area": "admin",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "ADMIN|SUPER_ADMIN|SUPPORT_AGENT|CONTENT_REVIEWER",
+    "riskLevel": "High",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/admin/settlements",
+    "area": "admin",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "ADMIN|SUPER_ADMIN|SUPPORT_AGENT|CONTENT_REVIEWER",
+    "riskLevel": "High",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/admin/settlements/payouts",
+    "area": "admin",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "ADMIN|SUPER_ADMIN|SUPPORT_AGENT|CONTENT_REVIEWER",
+    "riskLevel": "High",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/admin/settlements/statement/[practitionerId]",
+    "area": "admin",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "ADMIN|SUPER_ADMIN|SUPPORT_AGENT|CONTENT_REVIEWER",
+    "riskLevel": "High",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/admin/settlements/[id]",
+    "area": "admin",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "ADMIN|SUPER_ADMIN|SUPPORT_AGENT|CONTENT_REVIEWER",
+    "riskLevel": "High",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/admin/specialties",
+    "area": "admin",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "ADMIN|SUPER_ADMIN|SUPPORT_AGENT|CONTENT_REVIEWER",
+    "riskLevel": "High",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/admin/support",
+    "area": "admin",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "ADMIN|SUPER_ADMIN|SUPPORT_AGENT|CONTENT_REVIEWER",
+    "riskLevel": "High",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/admin/support/[id]",
+    "area": "admin",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "ADMIN|SUPER_ADMIN|SUPPORT_AGENT|CONTENT_REVIEWER",
+    "riskLevel": "High",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/admin/training",
+    "area": "admin",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "ADMIN|SUPER_ADMIN|SUPPORT_AGENT|CONTENT_REVIEWER",
+    "riskLevel": "High",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/admin/training/[id]",
+    "area": "admin",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "ADMIN|SUPER_ADMIN|SUPPORT_AGENT|CONTENT_REVIEWER",
+    "riskLevel": "High",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]",
+    "area": "public",
+    "currentGuard": "next-intl/proxy only",
+    "requiredRoleOrPermission": "PUBLIC",
+    "riskLevel": "Low",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]",
+    "area": "public",
+    "currentGuard": "next-intl/proxy only",
+    "requiredRoleOrPermission": "PUBLIC",
+    "riskLevel": "Low",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/signin/admin",
+    "area": "auth",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "Guest",
+    "riskLevel": "Medium",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/signin",
+    "area": "auth",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "Guest",
+    "riskLevel": "Medium",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/signin/patient",
+    "area": "auth",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "Guest",
+    "riskLevel": "Medium",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/signin/practitioner",
+    "area": "auth",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "Guest",
+    "riskLevel": "Medium",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/signup",
+    "area": "auth",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "Guest",
+    "riskLevel": "Medium",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/signup/patient",
+    "area": "auth",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "Guest",
+    "riskLevel": "Medium",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/signup/practitioner",
+    "area": "auth",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "Guest",
+    "riskLevel": "Medium",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]",
+    "area": "public",
+    "currentGuard": "next-intl/proxy only",
+    "requiredRoleOrPermission": "PUBLIC",
+    "riskLevel": "Low",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/patient/articles",
+    "area": "patient",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "PATIENT",
+    "riskLevel": "Medium",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/patient/articles/[slug]",
+    "area": "patient",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "PATIENT",
+    "riskLevel": "Medium",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/patient/assessments",
+    "area": "patient",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "PATIENT",
+    "riskLevel": "Medium",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/patient/assessments/submissions/[submissionId]",
+    "area": "patient",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "PATIENT",
+    "riskLevel": "Medium",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/patient/assessments/[slug]",
+    "area": "patient",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "PATIENT",
+    "riskLevel": "Medium",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/patient/care-chat/conversations/[id]",
+    "area": "patient",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "PATIENT",
+    "riskLevel": "Medium",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/patient/care-chat",
+    "area": "patient",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "PATIENT",
+    "riskLevel": "Medium",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/patient/care-chat/[id]",
+    "area": "patient",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "PATIENT",
+    "riskLevel": "Medium",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/patient/chat",
+    "area": "patient",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "PATIENT",
+    "riskLevel": "Medium",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/patient/dashboard",
+    "area": "patient",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "PATIENT",
+    "riskLevel": "Medium",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/patient/help",
+    "area": "patient",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "PATIENT",
+    "riskLevel": "Medium",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/patient/matching",
+    "area": "patient",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "PATIENT",
+    "riskLevel": "Medium",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/patient/matching/[id]",
+    "area": "patient",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "PATIENT",
+    "riskLevel": "Medium",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/patient/package-purchases",
+    "area": "patient",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "PATIENT",
+    "riskLevel": "Medium",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/patient/package-purchases/[id]",
+    "area": "patient",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "PATIENT",
+    "riskLevel": "Medium",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/patient",
+    "area": "public",
+    "currentGuard": "next-intl/proxy only",
+    "requiredRoleOrPermission": "PUBLIC",
+    "riskLevel": "Low",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/patient/payments",
+    "area": "patient",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "PATIENT",
+    "riskLevel": "Medium",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/patient/practitioners",
+    "area": "patient",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "PATIENT",
+    "riskLevel": "Medium",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/patient/practitioners/[slug]",
+    "area": "patient",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "PATIENT",
+    "riskLevel": "Medium",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/patient/profile",
+    "area": "patient",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "PATIENT",
+    "riskLevel": "Medium",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/patient/reviews",
+    "area": "patient",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "PATIENT",
+    "riskLevel": "Medium",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/patient/reviews/[id]",
+    "area": "patient",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "PATIENT",
+    "riskLevel": "Medium",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/patient/sessions",
+    "area": "patient",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "PATIENT",
+    "riskLevel": "Medium",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/patient/sessions/[id]/chat",
+    "area": "patient",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "PATIENT",
+    "riskLevel": "Medium",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/patient/sessions/[id]",
+    "area": "patient",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "PATIENT",
+    "riskLevel": "Medium",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/patient/sessions/[id]/pay",
+    "area": "patient",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "PATIENT",
+    "riskLevel": "Medium",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/patient/settings",
+    "area": "patient",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "PATIENT",
+    "riskLevel": "Medium",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/patient/support",
+    "area": "patient",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "PATIENT",
+    "riskLevel": "Medium",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/patient/support/[id]",
+    "area": "patient",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "PATIENT",
+    "riskLevel": "Medium",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/patient/training/catalog/[slug]",
+    "area": "patient",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "PATIENT",
+    "riskLevel": "Medium",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/patient/training",
+    "area": "patient",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "PATIENT",
+    "riskLevel": "Medium",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/patient/training/[id]",
+    "area": "patient",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "PATIENT",
+    "riskLevel": "Medium",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/patient/training/[id]/pay",
+    "area": "patient",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "PATIENT",
+    "riskLevel": "Medium",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/patient/wallet",
+    "area": "patient",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "PATIENT",
+    "riskLevel": "Medium",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]",
+    "area": "public",
+    "currentGuard": "next-intl/proxy only",
+    "requiredRoleOrPermission": "PUBLIC",
+    "riskLevel": "Low",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/practitioner/application",
+    "area": "practitioner",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "PRACTITIONER",
+    "riskLevel": "Medium",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/practitioner/articles",
+    "area": "practitioner",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "PRACTITIONER",
+    "riskLevel": "Medium",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/practitioner/availability",
+    "area": "practitioner",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "PRACTITIONER",
+    "riskLevel": "Medium",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/practitioner/care-chat/conversations/[id]",
+    "area": "practitioner",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "PRACTITIONER",
+    "riskLevel": "Medium",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/practitioner/care-chat",
+    "area": "practitioner",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "PRACTITIONER",
+    "riskLevel": "Medium",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/practitioner/care-chat/[id]",
+    "area": "practitioner",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "PRACTITIONER",
+    "riskLevel": "Medium",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/practitioner/credentials",
+    "area": "practitioner",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "PRACTITIONER",
+    "riskLevel": "Medium",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/practitioner/dashboard",
+    "area": "practitioner",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "PRACTITIONER",
+    "riskLevel": "Medium",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/practitioner/help",
+    "area": "practitioner",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "PRACTITIONER",
+    "riskLevel": "Medium",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/practitioner/ledger",
+    "area": "practitioner",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "PRACTITIONER",
+    "riskLevel": "Medium",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/practitioner",
+    "area": "public",
+    "currentGuard": "next-intl/proxy only",
+    "requiredRoleOrPermission": "PUBLIC",
+    "riskLevel": "Low",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/practitioner/patients",
+    "area": "practitioner",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "PRACTITIONER",
+    "riskLevel": "Medium",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/practitioner/profile",
+    "area": "practitioner",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "PRACTITIONER",
+    "riskLevel": "Medium",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/practitioner/reviews",
+    "area": "practitioner",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "PRACTITIONER",
+    "riskLevel": "Medium",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/practitioner/sessions",
+    "area": "practitioner",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "PRACTITIONER",
+    "riskLevel": "Medium",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/practitioner/sessions/[id]/chat",
+    "area": "practitioner",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "PRACTITIONER",
+    "riskLevel": "Medium",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/practitioner/sessions/[id]",
+    "area": "practitioner",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "PRACTITIONER",
+    "riskLevel": "Medium",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/practitioner/settings",
+    "area": "practitioner",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "PRACTITIONER",
+    "riskLevel": "Medium",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/practitioner/settlements",
+    "area": "practitioner",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "PRACTITIONER",
+    "riskLevel": "Medium",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/practitioner/specialties",
+    "area": "practitioner",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "PRACTITIONER",
+    "riskLevel": "Medium",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/practitioner/support",
+    "area": "practitioner",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "PRACTITIONER",
+    "riskLevel": "Medium",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/practitioner/support/[id]",
+    "area": "practitioner",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "PRACTITIONER",
+    "riskLevel": "Medium",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/practitioner/wallet",
+    "area": "practitioner",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "PRACTITIONER",
+    "riskLevel": "Medium",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/academy",
+    "area": "public",
+    "currentGuard": "next-intl/proxy only",
+    "requiredRoleOrPermission": "PUBLIC",
+    "riskLevel": "Low",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/academy/[slug]",
+    "area": "public",
+    "currentGuard": "next-intl/proxy only",
+    "requiredRoleOrPermission": "PUBLIC",
+    "riskLevel": "Low",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/articles",
+    "area": "public",
+    "currentGuard": "next-intl/proxy only",
+    "requiredRoleOrPermission": "PUBLIC",
+    "riskLevel": "Low",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/articles/[slug]",
+    "area": "public",
+    "currentGuard": "next-intl/proxy only",
+    "requiredRoleOrPermission": "PUBLIC",
+    "riskLevel": "Low",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/error-404",
+    "area": "public",
+    "currentGuard": "next-intl/proxy only",
+    "requiredRoleOrPermission": "PUBLIC",
+    "riskLevel": "Low",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/help",
+    "area": "public",
+    "currentGuard": "next-intl/proxy only",
+    "requiredRoleOrPermission": "PUBLIC",
+    "riskLevel": "Low",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/help/[categorySlug]",
+    "area": "public",
+    "currentGuard": "next-intl/proxy only",
+    "requiredRoleOrPermission": "PUBLIC",
+    "riskLevel": "Low",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]",
+    "area": "public",
+    "currentGuard": "next-intl/proxy only",
+    "requiredRoleOrPermission": "PUBLIC",
+    "riskLevel": "Low",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]",
+    "area": "public",
+    "currentGuard": "next-intl/proxy only",
+    "requiredRoleOrPermission": "PUBLIC",
+    "riskLevel": "Low",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/patient/sessions/[id]/payment-return",
+    "area": "patient",
+    "currentGuard": "src/proxy.ts + requireAuthenticatedArea in layout",
+    "requiredRoleOrPermission": "PATIENT",
+    "riskLevel": "Medium",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/practitioners",
+    "area": "public",
+    "currentGuard": "next-intl/proxy only",
+    "requiredRoleOrPermission": "PUBLIC",
+    "riskLevel": "Low",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/practitioners/[slug]",
+    "area": "public",
+    "currentGuard": "next-intl/proxy only",
+    "requiredRoleOrPermission": "PUBLIC",
+    "riskLevel": "Low",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/refund-policies",
+    "area": "public",
+    "currentGuard": "next-intl/proxy only",
+    "requiredRoleOrPermission": "PUBLIC",
+    "riskLevel": "Low",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/refund-policies/[policyType]",
+    "area": "public",
+    "currentGuard": "next-intl/proxy only",
+    "requiredRoleOrPermission": "PUBLIC",
+    "riskLevel": "Low",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/specialties",
+    "area": "public",
+    "currentGuard": "next-intl/proxy only",
+    "requiredRoleOrPermission": "PUBLIC",
+    "riskLevel": "Low",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]/specialties/[slug]",
+    "area": "public",
+    "currentGuard": "next-intl/proxy only",
+    "requiredRoleOrPermission": "PUBLIC",
+    "riskLevel": "Low",
+    "requiredFix": ""
+  },
+  {
+    "path": "/[locale]",
+    "area": "public",
+    "currentGuard": "next-intl/proxy only",
+    "requiredRoleOrPermission": "PUBLIC",
+    "riskLevel": "Low",
+    "requiredFix": ""
+  }
+]

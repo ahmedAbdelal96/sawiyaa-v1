@@ -38,6 +38,10 @@ const nextConfig: NextConfig = {
         source: '/api/v1/:path*',
         destination: `${apiTarget}/api/v1/:path*`,
       },
+      {
+        source: '/article-covers/:path*',
+        destination: `${apiTarget}/api/v1/article-covers/:path*`,
+      },
       // Socket.IO transport for realtime chat. We proxy it to the backend so the frontend can
       // keep using a same-origin API baseURL in dev/LAN setups (NEXT_PUBLIC_API_URL=/api/v1).
       {

@@ -16,6 +16,7 @@ export class ListPublicArticlesUseCase {
       limit: query.limit,
       locale: query.locale,
       categorySlug: query.categorySlug?.trim() || undefined,
+      categoryRoot: query.categoryRoot?.trim() || undefined,
       q: query.q?.trim() || undefined,
     });
 

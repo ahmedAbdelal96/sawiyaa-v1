@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import {
   useAdminPractitionerApplicationDetails,
@@ -15,6 +15,7 @@ import {
 import type { PractitionerApplicationDetailsResponse } from "../types/practitioner-applications.types";
 import { Skeleton } from "@/components/shared/LoadingStates";
 import { cn } from "@/lib/utils";
+import { isAppError } from "@/lib/api/errors";
 import InputField from "@/components/form/input/InputField";
 import TextArea from "@/components/form/input/TextArea";
 import Label from "@/components/form/Label";
@@ -294,6 +295,7 @@ export default function AdminApplicationDetails({ applicationId }: Props) {
   const t = useTranslations("admin-area");
   const locale = useLocale();
   const { data, isLoading, isError, refetch } = useAdminPractitionerApplicationDetails(applicationId);
+  const [hasMounted, setHasMounted] = useState(false);
   const { mutate: approve, isPending: isApproving } = useApprovePractitionerApplication();
   const { mutate: reject, isPending: isRejecting } = useRejectPractitionerApplication();
   const { mutate: requestChanges, isPending: isRequestingChanges } =
@@ -317,6 +319,7 @@ export default function AdminApplicationDetails({ applicationId }: Props) {
 
   const [approveNote, setApproveNote] = useState("");
   const [approveResult, setApproveResult] = useState<"success" | "error" | null>(null);
+  const [approveErrorMessage, setApproveErrorMessage] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState("");
   const [rejectNote, setRejectNote] = useState("");
   const [rejectReasonError, setRejectReasonError] = useState(false);
@@ -352,7 +355,11 @@ export default function AdminApplicationDetails({ applicationId }: Props) {
   const [reviewTab, setReviewTab] = useState<ReviewTab>("overview");
   const [showAllChanges, setShowAllChanges] = useState(false);
 
-  if (isLoading) {
+  useEffect(() => {
+    setHasMounted(true);
+  }, []);
+
+  if (!hasMounted || isLoading) {
     return (
       <div className="space-y-4">
         {[0, 1, 2].map((i) => (
@@ -981,11 +988,30 @@ export default function AdminApplicationDetails({ applicationId }: Props) {
 
   const handleApprove = () => {
     setApproveResult(null);
+    setApproveErrorMessage(null);
     approve(
       { id: applicationId, data: { note: approveNote || undefined } },
       {
         onSuccess: () => setApproveResult("success"),
-        onError: () => setApproveResult("error"),
+        onError: (error) => {
+          setApproveResult("error");
+
+          if (!isAppError(error)) {
+            return;
+          }
+
+          const missingRequirements = Array.isArray(error.details?.missingRequirements)
+            ? error.details?.missingRequirements
+                .filter((item): item is string => typeof item === "string")
+                .join(", ")
+            : null;
+
+          setApproveErrorMessage(
+            missingRequirements
+              ? `${t("applicationDetails.decision.approve.error")}: ${missingRequirements}`
+              : t("applicationDetails.decision.approve.error")
+          );
+        },
       }
     );
   };
@@ -1985,6 +2011,11 @@ export default function AdminApplicationDetails({ applicationId }: Props) {
               >
                 {isApproving ? t("applicationDetails.decision.approve.submitting") : t("applicationDetails.decision.approve.submit")}
               </button>
+              {approveResult === "error" ? (
+                <p className="text-xs font-medium text-error-500">
+                  {approveErrorMessage ?? t("applicationDetails.decision.approve.error")}
+                </p>
+              ) : null}
             </div>
 
             <div className="space-y-3">

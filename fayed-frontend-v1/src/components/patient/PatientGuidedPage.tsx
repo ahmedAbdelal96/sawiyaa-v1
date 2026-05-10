@@ -1,5 +1,8 @@
+"use client";
+
 import { ArrowLeft, CheckCircle2, Lightbulb } from "lucide-react";
 import type { ReactNode } from "react";
+import { PatientQuickNav } from "@/components/patient/PatientSectionFrame";
 import { SurfaceActionLink, SurfaceCard } from "@/components/shared/SurfaceShell";
 
 type GuidedListItem = {
@@ -94,6 +97,10 @@ export default function PatientGuidedPage({
               ))}
             </div>
           </div>
+        </div>
+
+        <div className="mt-5 border-t border-border-light/70 pt-4 dark:border-white/10">
+          <PatientQuickNav />
         </div>
       </SurfaceCard>
 

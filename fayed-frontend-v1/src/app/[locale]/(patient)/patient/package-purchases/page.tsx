@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
+import PatientSectionFrame from "@/components/patient/PatientSectionFrame";
 import PatientPackagePurchasesPanel from "@/features/package-plans/components/PatientPackagePurchasesPanel";
 
 type Props = {
@@ -21,11 +22,12 @@ export default async function PatientPackagePurchasesPage({ params }: Props) {
   const t = await getTranslations({ locale, namespace: "package-purchases" });
 
   return (
-    <div className="app-max-content mx-auto px-4 py-8">
-      <h1 className="mb-6 text-xl font-bold text-text-primary dark:text-white/95">
-        {t("list.heading")}
-      </h1>
+    <PatientSectionFrame
+      eyebrow={t("list.heading")}
+      title={t("list.heading")}
+      description={t("meta.listDescription")}
+    >
       <PatientPackagePurchasesPanel />
-    </div>
+    </PatientSectionFrame>
   );
 }

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
+import PatientSectionFrame from "@/components/patient/PatientSectionFrame";
 import CollapsibleHelpCenter from "@/components/shared/CollapsibleHelpCenter";
 import PatientProfileForm from "@/features/patients/components/PatientProfileForm";
 
@@ -23,12 +24,11 @@ export default async function PatientProfilePage({ params }: Props) {
   const t = await getTranslations({ locale, namespace: "patient-profile" });
 
   return (
-    <div className="app-max-content mx-auto space-y-6 px-4 py-8">
-      <section className="rounded-2xl border border-border-light bg-white p-5 sm:p-6">
-        <h1 className="text-xl font-bold text-text-primary">{t("page.title")}</h1>
-        <p className="mt-1 text-sm text-text-secondary">{t("page.subtitle")}</p>
-      </section>
-
+    <PatientSectionFrame
+      eyebrow={t("page.title")}
+      title={t("page.title")}
+      description={t("page.subtitle")}
+    >
       <PatientProfileForm />
 
       <CollapsibleHelpCenter
@@ -45,6 +45,6 @@ export default async function PatientProfilePage({ params }: Props) {
           },
         ]}
       />
-    </div>
+    </PatientSectionFrame>
   );
 }

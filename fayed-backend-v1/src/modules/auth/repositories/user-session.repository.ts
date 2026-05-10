@@ -22,8 +22,8 @@ export class UserSessionRepository {
     return this.getDb(tx).userSession.create({ data });
   }
 
-  findActiveById(sessionId: string) {
-    return this.prisma.userSession.findFirst({
+  findActiveById(sessionId: string, tx?: Prisma.TransactionClient) {
+    return this.getDb(tx).userSession.findFirst({
       where: {
         id: sessionId,
         revokedAt: null,
@@ -64,6 +64,15 @@ export class UserSessionRepository {
             },
           },
         },
+      },
+    });
+  }
+
+  countActiveByUserId(userId: string, tx?: Prisma.TransactionClient) {
+    return this.getDb(tx).userSession.count({
+      where: {
+        userId,
+        revokedAt: null,
       },
     });
   }

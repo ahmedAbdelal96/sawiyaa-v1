@@ -95,7 +95,8 @@ export type CreateAdminArticleInput = {
   slug: string;
   excerpt?: string;
   content: string;
-  primaryCategoryId: string;
+  primaryCategoryId?: string;
+  specialtyId?: string;
   coverImageUrl?: string;
   featuredImageAlt?: string;
   metaTitle?: string;
@@ -103,3 +104,7 @@ export type CreateAdminArticleInput = {
 };
 
 export type UpdateAdminArticleInput = Partial<CreateAdminArticleInput>;
+
+export type AdminArticleCoverUploadResponse = {
+  url: string;
+};

@@ -1,11 +1,62 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import type { PersistedAuthSession } from "./contracts";
+import type {
+  AuthTokens,
+  AuthenticatedUser,
+  MobileRole,
+  PersistedAuthSession,
+} from "./contracts";
 
 const AUTH_SESSION_KEY = "fayed.mobile.auth.session.v1";
 const DEVICE_ID_KEY = "fayed.mobile.device.id.v1";
 
 function createDeviceId() {
   return `device_${Date.now()}_${Math.random().toString(36).slice(2, 12)}`;
+}
+
+function isMobileRole(value: unknown): value is MobileRole {
+  return value === "patient" || value === "practitioner" || value === "admin";
+}
+
+function isAuthTokens(value: unknown): value is AuthTokens {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  const tokens = value as Record<string, unknown>;
+  return (
+    typeof tokens.accessToken === "string" &&
+    typeof tokens.refreshToken === "string" &&
+    typeof tokens.accessTokenExpiresAt === "string" &&
+    typeof tokens.refreshTokenExpiresAt === "string"
+  );
+}
+
+function isAuthenticatedUser(value: unknown): value is AuthenticatedUser {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  const user = value as Record<string, unknown>;
+  return (
+    typeof user.id === "string" &&
+    Array.isArray(user.roles) &&
+    typeof user.status === "string" &&
+    typeof user.isEmailVerified === "boolean" &&
+    typeof user.isPhoneVerified === "boolean"
+  );
+}
+
+function isPersistedAuthSession(value: unknown): value is PersistedAuthSession {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  const session = value as Record<string, unknown>;
+  return (
+    isMobileRole(session.role) &&
+    isAuthenticatedUser(session.user) &&
+    isAuthTokens(session.tokens)
+  );
 }
 
 export async function getStoredAuthSession() {
@@ -15,7 +66,13 @@ export async function getStoredAuthSession() {
   }
 
   try {
-    return JSON.parse(raw) as PersistedAuthSession;
+    const parsed = JSON.parse(raw) as unknown;
+    if (!isPersistedAuthSession(parsed)) {
+      await AsyncStorage.removeItem(AUTH_SESSION_KEY);
+      return null;
+    }
+
+    return parsed;
   } catch {
     await AsyncStorage.removeItem(AUTH_SESSION_KEY);
     return null;

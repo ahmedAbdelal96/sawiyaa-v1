@@ -13,7 +13,7 @@ describe('LoginPractitionerPasswordUseCase', () => {
     get: jest.fn(),
   };
   const userEmailRepository = {
-    findByEmail: jest.fn(),
+    findByEmailForPractitionerAuth: jest.fn(),
   };
   const authIdentityRepository = {
     findPasswordIdentityByUserId: jest.fn(),
@@ -27,6 +27,9 @@ describe('LoginPractitionerPasswordUseCase', () => {
   };
   const issueAuthTokensUseCase = {
     execute: jest.fn(),
+  };
+  const practitionerPresenceRepository = {
+    markOnline: jest.fn(),
   };
   const practitionerOtpChannelService = {
     resolveVerifiedChannel: jest.fn(),
@@ -45,6 +48,7 @@ describe('LoginPractitionerPasswordUseCase', () => {
     twoFactorSettingRepository as any,
     verifyPasswordUseCase as any,
     issueAuthTokensUseCase as any,
+    practitionerPresenceRepository as any,
     practitionerOtpChannelService as any,
     createOtpChallengeUseCase as any,
     sendOtpChallengeUseCase as any,
@@ -60,13 +64,16 @@ describe('LoginPractitionerPasswordUseCase', () => {
   });
 
   it('creates and sends an OTP challenge without returning the code', async () => {
-    userEmailRepository.findByEmail.mockResolvedValue({
+    userEmailRepository.findByEmailForPractitionerAuth.mockResolvedValue({
       isPrimary: true,
       user: {
         id: 'user-1',
         status: UserStatus.ACTIVE,
         roles: [{ role: UserRoleType.PRACTITIONER }],
-        practitionerProfile: { status: PractitionerStatus.DRAFT },
+        practitionerProfile: {
+          id: 'profile-1',
+          status: PractitionerStatus.DRAFT,
+        },
         emails: [],
         phones: [],
       },
@@ -90,11 +97,15 @@ describe('LoginPractitionerPasswordUseCase', () => {
     });
     sendOtpChallengeUseCase.execute.mockResolvedValue({ delivered: true });
 
-    const result = await useCase.execute({
+    const result = (await useCase.execute({
       email: 'test@example.com',
       password: 'password',
       locale: 'en',
-    });
+    })) as {
+      challengeId: string;
+      requiresOtpVerification: true;
+      code?: never;
+    };
 
     expect(result).toEqual(
       expect.objectContaining({
@@ -102,11 +113,14 @@ describe('LoginPractitionerPasswordUseCase', () => {
         requiresOtpVerification: true,
       }),
     );
-    expect((result as any).code).toBeUndefined();
+    expect(result).not.toHaveProperty('code');
     expect(createOtpChallengeUseCase.execute).toHaveBeenCalledWith(
       expect.objectContaining({
         purpose: OtpPurpose.PRACTITIONER_LOGIN,
       }),
+    );
+    expect(practitionerPresenceRepository.markOnline).toHaveBeenCalledWith(
+      'profile-1',
     );
     expect(issueAuthTokensUseCase.execute).not.toHaveBeenCalled();
   });
@@ -117,13 +131,16 @@ describe('LoginPractitionerPasswordUseCase', () => {
       if (key === 'auth.practitionerLoginOtpBypassInDev') return true;
       return undefined;
     });
-    userEmailRepository.findByEmail.mockResolvedValue({
+    userEmailRepository.findByEmailForPractitionerAuth.mockResolvedValue({
       isPrimary: true,
       user: {
         id: 'user-1',
         status: UserStatus.ACTIVE,
         roles: [{ role: UserRoleType.PRACTITIONER }],
-        practitionerProfile: { status: PractitionerStatus.DRAFT },
+        practitionerProfile: {
+          id: 'profile-1',
+          status: PractitionerStatus.DRAFT,
+        },
         emails: [],
         phones: [],
       },
@@ -154,8 +171,9 @@ describe('LoginPractitionerPasswordUseCase', () => {
         practitionerStatus: PractitionerStatus.DRAFT,
       },
     });
+    practitionerPresenceRepository.markOnline.mockResolvedValue({});
 
-    const result = await useCase.execute({
+    const result = (await useCase.execute({
       email: 'test@example.com',
       password: 'password',
       locale: 'en',
@@ -164,16 +182,15 @@ describe('LoginPractitionerPasswordUseCase', () => {
         ipAddress: '127.0.0.1',
         userAgent: 'jest',
       },
-    });
+    })) as {
+      tokens: {
+        accessToken: string;
+        refreshToken: string;
+      };
+    };
 
-    expect(result).toEqual(
-      expect.objectContaining({
-        tokens: expect.objectContaining({
-          accessToken: 'access-token',
-          refreshToken: 'refresh-token',
-        }),
-      }),
-    );
+    expect(result.tokens.accessToken).toBe('access-token');
+    expect(result.tokens.refreshToken).toBe('refresh-token');
     expect(createOtpChallengeUseCase.execute).not.toHaveBeenCalled();
     expect(sendOtpChallengeUseCase.execute).not.toHaveBeenCalled();
     expect(issueAuthTokensUseCase.execute).toHaveBeenCalledWith(
@@ -182,16 +199,22 @@ describe('LoginPractitionerPasswordUseCase', () => {
         role: UserRoleType.PRACTITIONER,
       }),
     );
+    expect(practitionerPresenceRepository.markOnline).toHaveBeenCalledWith(
+      'profile-1',
+    );
   });
 
   it('rejects non-practitioner accounts', async () => {
-    userEmailRepository.findByEmail.mockResolvedValue({
+    userEmailRepository.findByEmailForPractitionerAuth.mockResolvedValue({
       isPrimary: true,
       user: {
         id: 'user-1',
         status: UserStatus.ACTIVE,
         roles: [{ role: UserRoleType.PATIENT }],
-        practitionerProfile: { status: PractitionerStatus.DRAFT },
+        practitionerProfile: {
+          id: 'profile-1',
+          status: PractitionerStatus.DRAFT,
+        },
       },
     });
 
@@ -205,13 +228,16 @@ describe('LoginPractitionerPasswordUseCase', () => {
   });
 
   it('rejects invalid credentials', async () => {
-    userEmailRepository.findByEmail.mockResolvedValue({
+    userEmailRepository.findByEmailForPractitionerAuth.mockResolvedValue({
       isPrimary: true,
       user: {
         id: 'user-1',
         status: UserStatus.ACTIVE,
         roles: [{ role: UserRoleType.PRACTITIONER }],
-        practitionerProfile: { status: PractitionerStatus.DRAFT },
+        practitionerProfile: {
+          id: 'profile-1',
+          status: PractitionerStatus.DRAFT,
+        },
       },
     });
     authIdentityRepository.findPasswordIdentityByUserId.mockResolvedValue({
@@ -230,13 +256,16 @@ describe('LoginPractitionerPasswordUseCase', () => {
   });
 
   it('rejects login with non-primary email even if it belongs to the same user', async () => {
-    userEmailRepository.findByEmail.mockResolvedValue({
+    userEmailRepository.findByEmailForPractitionerAuth.mockResolvedValue({
       isPrimary: false,
       user: {
         id: 'user-1',
         status: UserStatus.ACTIVE,
         roles: [{ role: UserRoleType.PRACTITIONER }],
-        practitionerProfile: { status: PractitionerStatus.DRAFT },
+        practitionerProfile: {
+          id: 'profile-1',
+          status: PractitionerStatus.DRAFT,
+        },
       },
     });
 

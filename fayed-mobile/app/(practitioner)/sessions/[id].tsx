@@ -25,6 +25,8 @@ import type {
   SessionStatus,
 } from "../../../src/features/practitioner/sessions/types";
 import { useTheme } from "../../../src/providers/ThemeProvider";
+import { normalizeAllowedExternalUrl } from "../../../src/lib/external-url";
+import { trackAnalyticsEvent } from "../../../src/lib/analytics";
 
 const COMPLETE_ALLOWED: SessionStatus[] = ["READY_TO_JOIN", "IN_PROGRESS"];
 const NO_SHOW_ALLOWED: SessionStatus[] = [
@@ -202,7 +204,20 @@ export default function PractitionerSessionDetailScreen() {
 
     setFeedback(null);
     try {
-      await Linking.openURL(nextUrl);
+      const safeJoinUrl = normalizeAllowedExternalUrl(nextUrl);
+      if (!safeJoinUrl) {
+        setFeedback(t("practitioner.sessionDetail.joinError"));
+        return;
+      }
+
+      await Linking.openURL(safeJoinUrl);
+      trackAnalyticsEvent("session_joined", {
+        role: "practitioner",
+        sessionId: session.id,
+        sessionStatus: session.status,
+        provider: joinContract?.provider || "unknown",
+        source: "session_detail",
+      });
     } catch {
       setFeedback(t("practitioner.sessionDetail.openRoomError"));
     }

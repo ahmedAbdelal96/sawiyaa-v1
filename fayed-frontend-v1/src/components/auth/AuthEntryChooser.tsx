@@ -36,7 +36,8 @@ const ENTRY_OPTIONS = [
 ] as const;
 
 function buildAuthHref(basePath: string, params: Record<string, string | null>) {
-  const search = new URLSearchParams();
+  const [pathname, existingQuery = ""] = basePath.split("?");
+  const search = new URLSearchParams(existingQuery);
 
   Object.entries(params).forEach(([key, value]) => {
     if (value) {
@@ -45,7 +46,7 @@ function buildAuthHref(basePath: string, params: Record<string, string | null>) 
   });
 
   const query = search.toString();
-  return query ? `${basePath}?${query}` : basePath;
+  return query ? `${pathname}?${query}` : pathname;
 }
 
 export default function AuthEntryChooser() {
@@ -54,35 +55,39 @@ export default function AuthEntryChooser() {
   const callbackUrl = normalizeCallbackPath(searchParams.get("callbackUrl"));
 
   return (
-    <div className="flex w-full flex-1 flex-col lg:w-1/2">
-      <div className="mx-auto mb-6 w-full max-w-3xl sm:pt-10">
+    <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col">
+      <div className="flex items-center justify-between gap-3">
         <Link
           href="/"
-          className="inline-flex items-center text-sm text-text-secondary transition-colors hover:text-text-primary dark:text-text-secondary dark:hover:text-text-primary"
+          className="inline-flex items-center gap-2 text-sm text-text-secondary transition-colors hover:text-text-primary dark:text-text-secondary dark:hover:text-text-primary"
         >
           <ChevronLeftIcon />
           {t("backToHome")}
         </Link>
+
+        <div className="hidden rounded-full border border-border-light bg-surface/80 px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-text-secondary dark:border-border-light dark:bg-surface-tertiary/80 dark:text-text-secondary sm:block">
+          {t("authShell.footer")}
+        </div>
       </div>
 
-      <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col justify-center">
-        <div className="mb-8 max-w-2xl">
+      <div className="py-2 sm:py-4">
+        <div className="mb-8 max-w-3xl">
           <p className="mb-3 text-xs font-semibold uppercase tracking-[0.24em] text-primary sm:text-sm">
             {t("entryEyebrow")}
           </p>
-          <h1 className="mb-3 text-4xl font-semibold leading-tight text-text-primary dark:text-text-primary sm:text-5xl">
+          <h1 className="mb-3 text-3xl font-semibold leading-tight text-text-primary dark:text-text-primary sm:text-4xl lg:text-5xl">
             {t("entryTitle")}
           </h1>
-          <p className="max-w-xl text-sm leading-7 text-text-secondary dark:text-text-secondary sm:text-base">
+          <p className="max-w-2xl text-sm leading-7 text-text-secondary dark:text-text-secondary sm:text-base">
             {t("entryDescription")}
           </p>
         </div>
 
-        <div className="grid gap-5 lg:grid-cols-3">
+        <div className="grid gap-4 lg:grid-cols-3">
           {ENTRY_OPTIONS.map((option) => (
             <section
               key={option.key}
-              className="app-panel app-lift group relative overflow-hidden rounded-[28px] p-6 hover:-translate-y-0.5"
+              className="group relative flex h-full flex-col overflow-hidden rounded-[28px] border border-border-light bg-surface/78 p-6 transition duration-200 hover:border-primary/30 dark:border-border-light dark:bg-surface-tertiary/70"
             >
               <div className="absolute inset-x-0 top-0 h-1 bg-primary-light" />
 
@@ -91,25 +96,25 @@ export default function AuthEntryChooser() {
                   <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">
                     {t(`entryCards.${option.key}.eyebrow`)}
                   </p>
-                  <h2 className="text-2xl font-semibold text-text-primary dark:text-white">
+                  <h2 className="text-2xl font-semibold leading-tight text-text-primary dark:text-text-primary">
                     {t(`entryCards.${option.key}.title`)}
                   </h2>
                 </div>
 
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-light text-primary dark:bg-primary/15 dark:text-primary-light">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-light text-primary dark:bg-primary/12 dark:text-primary-light">
                   <option.icon className="h-5 w-5" />
                 </div>
               </div>
 
-              <p className="mb-4 text-sm leading-7 text-text-secondary dark:text-white/72">
+              <p className="mb-4 text-sm leading-7 text-text-secondary dark:text-text-secondary">
                 {t(`entryCards.${option.key}.description`)}
               </p>
 
-              <p className="mb-6 text-xs font-medium leading-6 text-text-muted dark:text-white/55">
+              <p className="mb-6 rounded-2xl bg-white/80 px-4 py-3 text-xs font-medium leading-6 text-text-muted dark:bg-surface/70 dark:text-text-muted">
                 {t(`entryCards.${option.key}.meta`)}
               </p>
 
-              <div className="space-y-3">
+              <div className="mt-auto space-y-3">
                 <Link
                   href={buildAuthHref(option.href, { callbackUrl })}
                   className="flex items-center justify-center rounded-2xl bg-primary px-4 py-3 text-sm font-medium text-white transition hover:bg-primary-hover"
@@ -120,7 +125,7 @@ export default function AuthEntryChooser() {
                 {option.showSignup && option.signupHref ? (
                   <Link
                     href={buildAuthHref(option.signupHref, { callbackUrl })}
-                    className="flex items-center justify-center rounded-2xl border border-border-light bg-surface-secondary px-4 py-3 text-sm font-medium text-text-secondary transition hover:border-primary hover:bg-primary-light hover:text-primary dark:border-border-light dark:text-text-secondary"
+                    className="flex items-center justify-center rounded-2xl border border-border-light bg-surface-secondary px-4 py-3 text-sm font-medium text-text-secondary transition hover:border-primary hover:bg-primary-light hover:text-primary dark:border-border-light dark:bg-surface dark:text-text-secondary"
                   >
                     {t(`entryCards.${option.key}.secondaryCta`)}
                   </Link>

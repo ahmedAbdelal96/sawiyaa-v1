@@ -1,10 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import {
-  ArticleStatus,
-  ArticleVisibility,
-  ContentLocale,
-  Prisma,
-} from '@prisma/client';
+import { ArticleStatus, ContentLocale, Prisma } from '@prisma/client';
 import { PrismaService } from '@common/prisma/prisma.service';
 import {
   ARTICLE_ALLOWED_PUBLIC_DETAIL_VISIBILITIES,
@@ -37,6 +32,55 @@ export class ArticleRepository {
       },
       include: {
         translations: true,
+      },
+    });
+  }
+
+  findCategoryByRootSlug(rootSlug: string) {
+    return this.prisma.articleCategory.findUnique({
+      where: {
+        slugRoot: rootSlug,
+      },
+      include: {
+        translations: true,
+      },
+    });
+  }
+
+  findCategoryByParentAndTranslationSlug(input: {
+    parentId: string;
+    locale: ContentLocale;
+    slug: string;
+  }) {
+    return this.prisma.articleCategory.findFirst({
+      where: {
+        parentId: input.parentId,
+        translations: {
+          some: {
+            locale: input.locale,
+            slug: input.slug.trim().toLowerCase(),
+          },
+        },
+      },
+      include: {
+        translations: true,
+      },
+    });
+  }
+
+  findSpecialtyById(input: { id: string; locale: ContentLocale }) {
+    return this.prisma.specialty.findUnique({
+      where: { id: input.id },
+      include: {
+        category: true,
+        translations: {
+          where: {
+            locale: {
+              in: [input.locale, ContentLocale.en],
+            },
+          },
+          orderBy: [{ locale: 'asc' }],
+        },
       },
     });
   }
@@ -299,6 +343,7 @@ export class ArticleRepository {
     limit: number;
     locale: ContentLocale;
     categorySlug?: string;
+    categoryRoot?: string;
     q?: string;
   }) {
     const skip = (input.page - 1) * input.limit;
@@ -334,6 +379,40 @@ export class ArticleRepository {
                           slug: input.categorySlug.trim().toLowerCase(),
                         },
                       },
+                    },
+                  },
+                },
+              },
+            ],
+          }
+        : {}),
+      ...(input.categoryRoot
+        ? {
+            OR: [
+              {
+                primaryCategory: {
+                  OR: [
+                    { slugRoot: input.categoryRoot.trim().toLowerCase() },
+                    {
+                      slugRoot: {
+                        startsWith: `${input.categoryRoot.trim().toLowerCase()}-`,
+                      },
+                    },
+                  ],
+                },
+              },
+              {
+                categoryAssignments: {
+                  some: {
+                    articleCategory: {
+                      OR: [
+                        { slugRoot: input.categoryRoot.trim().toLowerCase() },
+                        {
+                          slugRoot: {
+                            startsWith: `${input.categoryRoot.trim().toLowerCase()}-`,
+                          },
+                        },
+                      ],
                     },
                   },
                 },

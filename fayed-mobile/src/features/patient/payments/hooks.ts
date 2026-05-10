@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuthenticatedQueryEnabled } from "../../auth/query-auth";
+import { patientJourneyQueryKey } from "../journey/hooks";
 import { patientSessionsQueryKeys } from "../sessions/hooks";
 import {
   getPatientSessionPaymentCapabilities,
@@ -126,6 +127,7 @@ export function useInitiateSessionPayment() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: paymentQueryKeys.all });
       queryClient.invalidateQueries({ queryKey: patientSessionsQueryKeys.all });
+      queryClient.invalidateQueries({ queryKey: patientJourneyQueryKey });
     },
   });
 }
@@ -143,6 +145,8 @@ export function useReconcileSessionPaymentReturn() {
     }) => reconcileSessionPaymentReturn(sessionId, input),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: paymentQueryKeys.all });
+      queryClient.invalidateQueries({ queryKey: patientSessionsQueryKeys.all });
+      queryClient.invalidateQueries({ queryKey: patientJourneyQueryKey });
       queryClient.invalidateQueries({
         queryKey: patientSessionsQueryKeys.details(variables.sessionId),
       });

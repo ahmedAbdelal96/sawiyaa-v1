@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { notFound } from "next/navigation";
 import { AlertTriangle } from "lucide-react";
+import { PatientQuickNav } from "@/components/patient/PatientSectionFrame";
 import { Link } from "@/i18n/navigation";
 import PatientArticleDetailScreen from "@/features/articles-public/components/PatientArticleDetailScreen";
 import { fetchPublicArticleBySlug } from "@/features/articles-public/api/articles-public-ssr.api";
@@ -86,7 +87,10 @@ export default async function PatientArticleDetailPage({ params }: Props) {
   if (!article) notFound();
 
   return (
-    <div className="px-4 py-8">
+    <div className="app-max-content mx-auto space-y-5 px-4 py-8 sm:space-y-6">
+      <section className="app-panel-soft rounded-[28px] p-4 sm:p-5">
+        <PatientQuickNav />
+      </section>
       <PatientArticleDetailScreen article={article} />
     </div>
   );

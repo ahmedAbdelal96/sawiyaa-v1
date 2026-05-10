@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
+import PatientSectionFrame from "@/components/patient/PatientSectionFrame";
 import PatientAssessmentsHomeScreen from "@/features/assessments/components/PatientAssessmentsHomeScreen";
 import { fetchPublicAssessments } from "@/features/assessments/api/assessments-ssr.api";
 import type { AssessmentDefinition } from "@/features/assessments/types/assessments.types";
@@ -21,6 +22,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function PatientAssessmentsPage({ params }: Props) {
   const { locale } = await params;
   setRequestLocale(locale);
+  const t = await getTranslations({ locale, namespace: "assessments" });
 
   let items: AssessmentDefinition[] = [];
   let loadFailed = false;
@@ -33,8 +35,12 @@ export default async function PatientAssessmentsPage({ params }: Props) {
   }
 
   return (
-    <div className="px-4 py-8">
+    <PatientSectionFrame
+      eyebrow={t("home.eyebrow")}
+      title={t("home.title")}
+      description={t("home.note")}
+    >
       <PatientAssessmentsHomeScreen items={items} loadFailed={loadFailed} />
-    </div>
+    </PatientSectionFrame>
   );
 }

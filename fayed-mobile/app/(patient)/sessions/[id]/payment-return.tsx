@@ -17,6 +17,7 @@ import { useReconcileSessionPaymentReturn } from "../../../../src/features/patie
 import {
   normalizePaymentRedirectStatus,
 } from "../../../../src/features/patient/payments/return-utils";
+import { trackAnalyticsEvent } from "../../../../src/lib/analytics";
 
 const CONFIRMED_SESSION_STATUSES = new Set([
   "CONFIRMED",
@@ -71,6 +72,7 @@ export default function SessionPaymentReturnScreen() {
   const sessionQuery = usePatientSession(sessionId || null);
   const reconcileMutation = useReconcileSessionPaymentReturn();
   const reconciliationAttemptedRef = useRef(false);
+  const trackedOutcomeRef = useRef<string | null>(null);
   const [pollingActive, setPollingActive] = useState(shouldStartPolling);
 
   useEffect(() => {
@@ -144,6 +146,52 @@ export default function SessionPaymentReturnScreen() {
 
     router.replace(`/(patient)/sessions/${sessionId}`);
   }, [router, sessionId, sessionQuery.data]);
+
+  useEffect(() => {
+    if (!sessionQuery.data) {
+      return;
+    }
+
+    const currentStatus = sessionQuery.data.status;
+    const currentIsPendingPayment = currentStatus === "PENDING_PAYMENT";
+
+    if (isConfirmedStatus(currentStatus)) {
+      if (trackedOutcomeRef.current !== "succeeded") {
+        trackedOutcomeRef.current = "succeeded";
+        trackAnalyticsEvent("payment_succeeded", {
+          sessionId,
+          sessionStatus: currentStatus,
+          redirectStatus: normalizedRedirectStatus || "none",
+          recovery: recoveryMode || "unknown",
+        });
+      }
+      return;
+    }
+
+    const shouldMarkFailed =
+      (currentIsPendingPayment &&
+        (normalizedRedirectStatus === "failed" ||
+          normalizedRedirectStatus === "canceled")) ||
+      (currentIsPendingPayment &&
+        !pollingActive &&
+        trackedOutcomeRef.current !== "failed");
+
+    if (shouldMarkFailed && trackedOutcomeRef.current !== "failed") {
+      trackedOutcomeRef.current = "failed";
+      trackAnalyticsEvent("payment_failed", {
+        sessionId,
+        sessionStatus: currentStatus,
+        redirectStatus: normalizedRedirectStatus || "none",
+        recovery: recoveryMode || "unknown",
+      });
+    }
+  }, [
+    normalizedRedirectStatus,
+    pollingActive,
+    recoveryMode,
+    sessionId,
+    sessionQuery.data,
+  ]);
 
   const status = sessionQuery.data?.status;
   const isConfirmed = isConfirmedStatus(status);

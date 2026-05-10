@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
+import PatientSectionFrame from "@/components/patient/PatientSectionFrame";
 import PatientPaymentsHistoryPanel from "@/features/payments/components/PatientPaymentsHistoryPanel";
 
 type Props = {
@@ -21,11 +22,13 @@ export default async function PatientPaymentsPage({ params }: Props) {
   const t = await getTranslations({ locale, namespace: "payments" });
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-8">
-      <h1 className="mb-6 text-xl font-bold text-text-primary dark:text-white/95">
-        {t("history.heading")}
-      </h1>
+    <PatientSectionFrame
+      eyebrow={t("history.heading")}
+      title={t("history.heading")}
+      description={t("meta.historyDescription")}
+      className="max-w-4xl"
+    >
       <PatientPaymentsHistoryPanel />
-    </div>
+    </PatientSectionFrame>
   );
 }

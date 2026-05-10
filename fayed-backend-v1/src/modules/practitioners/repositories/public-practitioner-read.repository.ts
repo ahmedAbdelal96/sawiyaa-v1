@@ -11,6 +11,7 @@ import {
 } from '@prisma/client';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
 import { PrismaService } from '@common/prisma/prisma.service';
+import { getPresenceFreshnessCutoff } from '@modules/presence/utils/presence-liveness';
 import {
   PublicPractitionerGender,
   PublicPractitionerKind,
@@ -109,6 +110,7 @@ export class PublicPractitionerReadRepository {
       presence: {
         select: {
           status: true,
+          lastSeenAtUtc: true,
         },
       },
       coupons: {
@@ -149,6 +151,7 @@ export class PublicPractitionerReadRepository {
     maxSessionFee?: number;
   }): Prisma.PractitionerProfileWhereInput {
     const now = new Date();
+    const onlineFreshnessCutoff = getPresenceFreshnessCutoff(now);
     const search = input.search?.trim();
     const specialtySlug = input.specialtySlug?.trim().toLowerCase();
     const languageCode = input.language?.trim().toLowerCase();
@@ -300,6 +303,9 @@ export class PublicPractitionerReadRepository {
           ? {
               is: {
                 status: PresenceStatus.ONLINE,
+                lastSeenAtUtc: {
+                  gte: onlineFreshnessCutoff,
+                },
               },
             }
           : undefined,

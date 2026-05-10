@@ -57,7 +57,7 @@ This module does **not** own:
 - presence is distinct from recurring schedule availability
 - `BUSY` is distinct from `OFFLINE`
 - `isInstantBookingEnabled` is distinct from generic status
-- heartbeat updates timestamps only and does not silently change status
+- heartbeat refreshes live timestamps and can bootstrap a non-manual offline row to ONLINE when the practitioner app becomes active
 - public presence must not leak for hidden/non-public practitioners
 
 ## Response Notes

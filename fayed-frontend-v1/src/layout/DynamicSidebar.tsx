@@ -29,6 +29,7 @@ const DynamicSidebar: React.FC<DynamicSidebarProps> = ({
     type: string;
     index: number;
   } | null>(null);
+  const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({});
 
   const isActive = useCallback(
     (path: string) => {
@@ -53,6 +54,13 @@ const DynamicSidebar: React.FC<DynamicSidebarProps> = ({
     setOpenSubmenu({ type: menuType, index });
   };
 
+  const toggleSection = (sectionKey: string) => {
+    setCollapsedSections((prev) => ({
+      ...prev,
+      [sectionKey]: !prev[sectionKey],
+    }));
+  };
+
   useEffect(() => {
     navigation.forEach(({ items, key: type }) => {
       items.forEach((nav, index) => {
@@ -60,6 +68,30 @@ const DynamicSidebar: React.FC<DynamicSidebarProps> = ({
           setOpenSubmenu({ type, index });
         }
       });
+    });
+  }, [isActive, navigation]);
+
+  useEffect(() => {
+    setCollapsedSections((prev) => {
+      const next = { ...prev };
+
+      navigation.forEach((section) => {
+        const hasActiveItem = section.items.some((nav) => {
+          if (nav.path && isActive(nav.path)) {
+            return true;
+          }
+
+          return nav.subItems?.some((sub) => isActive(sub.path)) ?? false;
+        });
+
+        if (hasActiveItem) {
+          next[section.key] = false;
+        } else if (!(section.key in next)) {
+          next[section.key] = section.key !== navigation[0]?.key;
+        }
+      });
+
+      return next;
     });
   }, [isActive, navigation]);
 
@@ -91,7 +123,9 @@ const DynamicSidebar: React.FC<DynamicSidebarProps> = ({
               </span>
               {(isExpanded || isHovered || isMobileOpen) && (
                 <>
-                  <span className="menu-item-text">{t(`${namespace}.${nav.key}`)}</span>
+                  <span className="menu-item-text">
+                    {t(`${nav.namespace ?? namespace}.${nav.key}`)}
+                  </span>
                   <ChevronDownIcon
                     className={`${isRTL ? "mr-auto" : "ml-auto"} h-5 w-5 transition-transform ${
                       openSubmenu?.type === menuType &&
@@ -117,7 +151,9 @@ const DynamicSidebar: React.FC<DynamicSidebarProps> = ({
                   {nav.icon}
                 </span>
                 {(isExpanded || isHovered || isMobileOpen) && (
-                  <span className="menu-item-text">{t(`${namespace}.${nav.key}`)}</span>
+                  <span className="menu-item-text">
+                    {t(`${nav.namespace ?? namespace}.${nav.key}`)}
+                  </span>
                 )}
               </Link>
             )
@@ -146,8 +182,8 @@ const DynamicSidebar: React.FC<DynamicSidebarProps> = ({
                           : "menu-dropdown-item-inactive"
                       }`}
                     >
-                      {t(`${namespace}.${subItem.key}`)}
-                    </Link>
+                        {t(`${subItem.namespace ?? nav.namespace ?? namespace}.${subItem.key}`)}
+                      </Link>
                   </li>
                 ))}
               </ul>
@@ -183,22 +219,50 @@ const DynamicSidebar: React.FC<DynamicSidebarProps> = ({
           <div className="flex flex-col gap-5">
             {navigation.map((section) => (
               <div key={section.key}>
-                <h2
-                  className={`mb-3 flex text-xs uppercase leading-[20px] text-text-muted ${
-                    !isExpanded && !isHovered ? "lg:justify-center" : "justify-start"
-                  }`}
-                >
-                  {isExpanded || isHovered || isMobileOpen ? (
-                    t(section.titleKey ?? `${section.key}.title`)
-                  ) : (
+                {isExpanded || isHovered || isMobileOpen ? (
+                  <button
+                    type="button"
+                    onClick={() => toggleSection(section.key)}
+                    className="mb-3 flex w-full items-center gap-2 rounded-xl px-2 py-1.5 text-xs uppercase leading-[20px] text-text-muted transition hover:bg-surface hover:text-text-secondary dark:hover:bg-surface-tertiary"
+                  >
+                    <span className="flex-1 text-start">
+                      {t(
+                        section.titleKey
+                          ? section.titleKey.includes(".")
+                            ? section.titleKey
+                            : `${section.key}.${section.titleKey}`
+                          : `${section.key}.title`
+                      )}
+                    </span>
+                    <ChevronDownIcon
+                      className={`h-4 w-4 transition-transform ${
+                        collapsedSections[section.key] ? "" : "rotate-180"
+                      }`}
+                    />
+                  </button>
+                ) : (
+                  <h2 className="mb-3 flex justify-center text-xs uppercase leading-[20px] text-text-muted">
                     <span>...</span>
-                  )}
-                </h2>
-                {renderMenuItems(
-                  section.items,
-                  section.key,
-                  section.namespace ?? section.key,
+                  </h2>
                 )}
+
+                <div
+                  className="overflow-hidden transition-all duration-300"
+                  style={{
+                    maxHeight:
+                      !isExpanded && !isHovered && !isMobileOpen
+                        ? "none"
+                        : collapsedSections[section.key]
+                          ? "0px"
+                          : "1200px",
+                  }}
+                >
+                  {renderMenuItems(
+                    section.items,
+                    section.key,
+                    section.namespace ?? section.key,
+                  )}
+                </div>
               </div>
             ))}
           </div>

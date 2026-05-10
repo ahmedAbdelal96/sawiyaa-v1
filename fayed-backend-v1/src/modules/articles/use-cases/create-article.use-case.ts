@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   Logger,
@@ -21,10 +22,9 @@ export class CreateArticleUseCase {
 
   async execute(input: { userId: string; payload: CreateArticleDto }) {
     const payload = input.payload;
-
-    const category = await this.articleRepository.findCategoryById(
-      payload.primaryCategoryId,
-    );
+    const resolvedCategoryId = await this.resolveArticleCategoryId(payload);
+    const category =
+      await this.articleRepository.findCategoryById(resolvedCategoryId);
     if (!category || !category.isActive) {
       throw new NotFoundException({
         messageKey: 'articles.errors.categoryNotFound',
@@ -35,7 +35,7 @@ export class CreateArticleUseCase {
     try {
       const created = await this.articleRepository.createArticle({
         authorUserId: input.userId,
-        primaryCategoryId: payload.primaryCategoryId,
+        primaryCategoryId: resolvedCategoryId,
         status: ArticleStatus.DRAFT,
         coverImageUrl: payload.coverImageUrl?.trim() || null,
         featuredImageAlt: payload.featuredImageAlt?.trim() || null,
@@ -52,7 +52,7 @@ export class CreateArticleUseCase {
         },
         categoryAssignments: {
           create: {
-            articleCategoryId: payload.primaryCategoryId,
+            articleCategoryId: resolvedCategoryId,
             isPrimary: true,
           },
         },
@@ -80,5 +80,89 @@ export class CreateArticleUseCase {
       }
       throw error;
     }
+  }
+
+  private async resolveArticleCategoryId(payload: CreateArticleDto) {
+    if (payload.primaryCategoryId?.trim()) {
+      return payload.primaryCategoryId.trim();
+    }
+
+    if (!payload.specialtyId?.trim()) {
+      throw new BadRequestException({
+        messageKey: 'articles.errors.categoryNotFound',
+        error: 'ARTICLE_CATEGORY_NOT_FOUND',
+      });
+    }
+
+    const specialty = await this.articleRepository.findSpecialtyById({
+      id: payload.specialtyId.trim(),
+      locale: payload.locale,
+    });
+
+    if (!specialty || !specialty.isActive || !specialty.category) {
+      throw new NotFoundException({
+        messageKey: 'articles.errors.categoryNotFound',
+        error: 'ARTICLE_CATEGORY_NOT_FOUND',
+      });
+    }
+
+    const rootSlug = specialty.category.slug.trim().toLowerCase();
+    const specialtySlug = specialty.slug.trim().toLowerCase();
+    const specialtyTitle =
+      specialty.translations.find((item) => item.locale === payload.locale)
+        ?.title ??
+      specialty.translations.find((item) => item.locale === 'en')?.title ??
+      specialty.slug;
+    const specialtyDescription =
+      specialty.translations.find((item) => item.locale === payload.locale)
+        ?.description ??
+      specialty.translations.find((item) => item.locale === 'en')
+        ?.description ??
+      null;
+
+    let rootCategory =
+      await this.articleRepository.findCategoryByRootSlug(rootSlug);
+
+    if (!rootCategory) {
+      rootCategory = await this.articleRepository.createCategory({
+        slugRoot: rootSlug,
+        isActive: true,
+        isFeatured: false,
+        translations: {
+          create: {
+            locale: payload.locale,
+            title: specialty.category.name,
+            slug: rootSlug,
+            description: specialty.category.description ?? null,
+          },
+        },
+      });
+    }
+
+    let leafCategory =
+      await this.articleRepository.findCategoryByParentAndTranslationSlug({
+        parentId: rootCategory.id,
+        locale: payload.locale,
+        slug: specialtySlug,
+      });
+
+    if (!leafCategory) {
+      leafCategory = await this.articleRepository.createCategory({
+        parentId: rootCategory.id,
+        slugRoot: `${rootSlug}-${specialtySlug}`,
+        isActive: true,
+        isFeatured: false,
+        translations: {
+          create: {
+            locale: payload.locale,
+            title: specialtyTitle,
+            slug: specialtySlug,
+            description: specialtyDescription,
+          },
+        },
+      });
+    }
+
+    return leafCategory.id;
   }
 }

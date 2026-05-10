@@ -6,7 +6,8 @@ export type NavItem = {
   key: string;
   icon: React.ReactNode;
   path?: string;
-  subItems?: { key: string; path: string }[];
+  namespace?: string;
+  subItems?: { key: string; path: string; namespace?: string }[];
 };
 
 export type NavigationSection = {

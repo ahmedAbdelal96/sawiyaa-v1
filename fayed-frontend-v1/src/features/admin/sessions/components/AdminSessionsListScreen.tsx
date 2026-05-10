@@ -260,6 +260,31 @@ export default function AdminSessionsListScreen() {
   const delayedCount = quickCounts[0]?.data?.pagination.totalItems;
   const missingAttendanceCount = quickCounts[1]?.data?.pagination.totalItems;
   const startingSoonCount = quickCounts[2]?.data?.pagination.totalItems;
+  const activeFilterChips = [
+    status !== "ALL"
+      ? {
+          id: "status",
+          label: `${t("filters.status")}: ${tAdminArea(
+            `payments.sessionStatuses.${status}` as Parameters<typeof tAdminArea>[0],
+          )}`,
+        }
+      : null,
+    sort !== "newest"
+      ? {
+          id: "sort",
+          label: `${t("filters.sort")}: ${sort === "oldest" ? t("filters.sortOldest") : t("filters.sortNewest")}`,
+        }
+      : null,
+    sessionCodeQuery ? { id: "query", label: `${t("filters.sessionCode")}: ${sessionCodeQuery}` } : null,
+    practitionerId ? { id: "practitioner", label: `${t("filters.practitionerId")}: ${practitionerId}` } : null,
+    patientId ? { id: "patient", label: `${t("filters.patientId")}: ${patientId}` } : null,
+    scheduledFrom ? { id: "from", label: t("filters.scheduledFrom") } : null,
+    scheduledTo ? { id: "to", label: t("filters.scheduledTo") } : null,
+    lateOnly ? { id: "late", label: t("filters.delayedOnly") } : null,
+    missingAttendanceOnly
+      ? { id: "missingAttendance", label: t("filters.missingAttendanceOnly") }
+      : null,
+  ].filter(Boolean) as Array<{ id: string; label: string }>;
 
   const updateListQuery = (
     updates: Record<string, string | number | null | undefined>,
@@ -364,7 +389,9 @@ export default function AdminSessionsListScreen() {
 
   return (
     <AdminOperationalListShell
+      eyebrow={t("header.eyebrow")}
       title={t("header.title")}
+      description={t("header.note")}
       actions={
         <Link
           href="/admin/sessions/cancellation-policies"
@@ -373,12 +400,118 @@ export default function AdminSessionsListScreen() {
           {t("policy.actions.openEditor")}
         </Link>
       }
+      notice={
+        <section className="app-panel-soft rounded-[26px] p-4 sm:p-5">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
+                {t("quickActions.heading")}
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() =>
+                    updateListQuery({
+                      quick: "delayed",
+                      late: "true",
+                      missingAttendance: null,
+                      scheduledFrom: null,
+                      scheduledTo: null,
+                      page: 1,
+                    })
+                  }
+                  className={`rounded-full border px-3 py-2 text-xs font-semibold transition ${
+                    quickPreset === "delayed"
+                      ? "border-danger-300 bg-danger-50 text-danger-700 dark:border-danger-500/40 dark:bg-danger-500/10 dark:text-danger-300"
+                      : "border-border-light bg-white text-text-secondary hover:bg-surface-tertiary dark:bg-white/5"
+                  }`}
+                >
+                  {t("quickActions.delayedNow")}
+                  <span className="ms-2 rounded-full bg-white/70 px-1.5 py-0.5 text-[11px] font-bold dark:bg-black/20">
+                    {typeof delayedCount === "number" ? delayedCount : "..."}
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    updateListQuery({
+                      quick: "missingAttendance",
+                      missingAttendance: "true",
+                      late: null,
+                      page: 1,
+                    })
+                  }
+                  className={`rounded-full border px-3 py-2 text-xs font-semibold transition ${
+                    quickPreset === "missingAttendance"
+                      ? "border-warning-300 bg-warning-50 text-warning-700 dark:border-warning-500/40 dark:bg-warning-500/10 dark:text-warning-300"
+                      : "border-border-light bg-white text-text-secondary hover:bg-surface-tertiary dark:bg-white/5"
+                  }`}
+                >
+                  {t("quickActions.missingAttendance")}
+                  <span className="ms-2 rounded-full bg-white/70 px-1.5 py-0.5 text-[11px] font-bold dark:bg-black/20">
+                    {typeof missingAttendanceCount === "number" ? missingAttendanceCount : "..."}
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    const now = new Date();
+                    const inOneHour = new Date(now.getTime() + 60 * 60 * 1000);
+                    updateListQuery({
+                      quick: "startingSoon",
+                      scheduledFrom: toDateTimeLocalValue(now),
+                      scheduledTo: toDateTimeLocalValue(inOneHour),
+                      late: null,
+                      page: 1,
+                    });
+                  }}
+                  className={`rounded-full border px-3 py-2 text-xs font-semibold transition ${
+                    quickPreset === "startingSoon"
+                      ? "border-primary/40 bg-primary-light text-text-brand"
+                      : "border-border-light bg-white text-text-secondary hover:bg-surface-tertiary dark:bg-white/5"
+                  }`}
+                >
+                  {t("quickActions.startingSoon")}
+                  <span className="ms-2 rounded-full bg-white/70 px-1.5 py-0.5 text-[11px] font-bold dark:bg-black/20">
+                    {typeof startingSoonCount === "number" ? startingSoonCount : "..."}
+                  </span>
+                </button>
+              </div>
+            </div>
+
+            <div className="max-w-full sm:max-w-[28rem]">
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
+                {hasActiveFilters ? t("quickActions.clear") : t("filters.sort")}
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {activeFilterChips.length > 0 ? (
+                  activeFilterChips.map((chip) => (
+                    <span
+                      key={chip.id}
+                      className="app-chip rounded-full px-3 py-1.5 text-xs text-text-secondary dark:text-white/80"
+                    >
+                      {chip.label}
+                    </span>
+                  ))
+                ) : (
+                  <span className="app-chip rounded-full px-3 py-1.5 text-xs text-text-secondary dark:text-white/80">
+                    {t("filters.sortNewest")}
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+        </section>
+      }
       summaryCards={
         <>
           <AdminSummaryCard
             label={t("header.title")}
             value={typeof data?.pagination.totalItems === "number" ? data.pagination.totalItems : "..."}
             tone="primary"
+            icon={<CalendarClock className="h-4 w-4" />}
           />
           <AdminSummaryCard
             label={t("quickActions.delayedNow")}
@@ -466,8 +599,9 @@ export default function AdminSessionsListScreen() {
               <option value="oldest">{t("filters.sortOldest")}</option>
             </select>
           </label>
+          </div>
 
-          <div className="flex flex-wrap items-end justify-end gap-2 md:col-span-2 xl:col-span-2">
+          <div className="mt-4 flex flex-wrap items-end justify-end gap-2">
             <AdvancedFiltersToggleButton
               expanded={showAdvancedFilters}
               hasHiddenActive={!showAdvancedFilters && hasAdvancedFilters}
@@ -492,10 +626,10 @@ export default function AdminSessionsListScreen() {
               }
             />
           </div>
-        </div>
 
         {showAdvancedFilters ? (
-          <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <div className="mt-5 rounded-[24px] bg-surface-secondary/70 p-4 dark:bg-white/[0.03]">
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             <label className="block">
               <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
                 {t("filters.practitionerId")}
@@ -589,109 +723,9 @@ export default function AdminSessionsListScreen() {
               />
               {t("filters.missingAttendanceOnly")}
             </label>
+            </div>
           </div>
         ) : null}
-
-        <div className="mt-4 flex flex-wrap items-center gap-2">
-          <span className="me-2 text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
-            {t("quickActions.heading")}
-          </span>
-
-          <button
-            type="button"
-            onClick={() =>
-              updateListQuery({
-                quick: "delayed",
-                late: "true",
-                missingAttendance: null,
-                scheduledFrom: null,
-                scheduledTo: null,
-                page: 1,
-              })
-            }
-            className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
-              quickPreset === "delayed"
-                ? "border-danger-300 bg-danger-50 text-danger-700 dark:border-danger-500/40 dark:bg-danger-500/10 dark:text-danger-300"
-                : "border-border-light bg-surface-secondary text-text-secondary hover:bg-surface-tertiary dark:bg-white/5"
-            }`}
-          >
-            {t("quickActions.delayedNow")}
-            <span className="ms-2 rounded-full bg-white/70 px-1.5 py-0.5 text-[11px] font-bold dark:bg-black/20">
-              {typeof delayedCount === "number" ? delayedCount : "..."}
-            </span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() =>
-              updateListQuery({
-                quick: "missingAttendance",
-                missingAttendance: "true",
-                late: null,
-                page: 1,
-              })
-            }
-            className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
-              quickPreset === "missingAttendance"
-                ? "border-warning-300 bg-warning-50 text-warning-700 dark:border-warning-500/40 dark:bg-warning-500/10 dark:text-warning-300"
-                : "border-border-light bg-surface-secondary text-text-secondary hover:bg-surface-tertiary dark:bg-white/5"
-            }`}
-          >
-            {t("quickActions.missingAttendance")}
-            <span className="ms-2 rounded-full bg-white/70 px-1.5 py-0.5 text-[11px] font-bold dark:bg-black/20">
-              {typeof missingAttendanceCount === "number"
-                ? missingAttendanceCount
-                : "..."}
-            </span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              const now = new Date();
-              const inOneHour = new Date(now.getTime() + 60 * 60 * 1000);
-              updateListQuery({
-                quick: "startingSoon",
-                scheduledFrom: toDateTimeLocalValue(now),
-                scheduledTo: toDateTimeLocalValue(inOneHour),
-                late: null,
-                page: 1,
-              });
-            }}
-            className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
-              quickPreset === "startingSoon"
-                ? "border-primary/40 bg-primary-light text-text-brand"
-                : "border-border-light bg-surface-secondary text-text-secondary hover:bg-surface-tertiary dark:bg-white/5"
-            }`}
-          >
-            {t("quickActions.startingSoon")}
-            <span className="ms-2 rounded-full bg-white/70 px-1.5 py-0.5 text-[11px] font-bold dark:bg-black/20">
-              {typeof startingSoonCount === "number" ? startingSoonCount : "..."}
-            </span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() =>
-              updateListQuery({
-                quick: null,
-                sort: null,
-                query: null,
-                late: null,
-                missingAttendance: null,
-                scheduledFrom: null,
-                scheduledTo: null,
-                practitionerId: null,
-                patientId: null,
-                status: null,
-                page: 1,
-              })
-            }
-            className="rounded-full border border-border-light px-3 py-1.5 text-xs font-semibold text-text-secondary transition hover:bg-surface-tertiary dark:bg-white/5"
-          >
-            {t("quickActions.clear")}
-          </button>
-        </div>
         </>
       }
     >

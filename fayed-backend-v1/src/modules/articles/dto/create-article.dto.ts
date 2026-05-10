@@ -36,8 +36,14 @@ export class CreateArticleDto {
   content!: string;
 
   @ApiProperty()
+  @IsOptional()
   @IsString()
-  primaryCategoryId!: string;
+  primaryCategoryId?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  specialtyId?: string;
 
   @ApiPropertyOptional()
   @IsOptional()

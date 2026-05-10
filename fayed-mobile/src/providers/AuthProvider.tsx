@@ -10,6 +10,7 @@ import React, {
 import { useRouter, useSegments } from "expo-router";
 import { AxiosError } from "axios";
 import * as Notifications from "expo-notifications";
+import { Platform } from "react-native";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   getAuthMe,
@@ -115,6 +116,10 @@ function mapPushPermissionStatusToRegistrationStatus(
   return "permission-required";
 }
 
+function isSupportedMobileRole(role: MobileRole | null | undefined) {
+  return role === "patient" || role === "practitioner";
+}
+
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const router = useRouter();
   const segments = useSegments();
@@ -196,9 +201,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, [runPushRegistration]);
 
   const consumeAuthSuccess = useCallback(
-    async (payload: AuthSuccessResponse) => {
+    async (payload: AuthSuccessResponse, nextRole?: MobileRole) => {
+      const resolvedRole = nextRole ?? resolveMobileRole(payload.user);
+      if (!isSupportedMobileRole(resolvedRole)) {
+        await clearAuthenticatedState();
+        throw new Error("UNSUPPORTED_MOBILE_ROLE");
+      }
+
       const nextSession: PersistedAuthSession = {
-        role: resolveMobileRole(payload.user),
+        role: resolvedRole,
         user: payload.user,
         tokens: payload.tokens,
       };
@@ -215,6 +226,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const stored = await getStoredAuthSession();
       if (!stored) {
         await persistSession(null);
+        return;
+      }
+
+      if (!isSupportedMobileRole(stored.role)) {
+        await clearAuthenticatedState();
         return;
       }
 
@@ -237,12 +253,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
               refreshToken: stored.tokens.refreshToken,
               deviceId,
             })
-          : await practitionerRefresh({
-              refreshToken: stored.tokens.refreshToken,
-              deviceId,
-            });
+          : stored.role === "practitioner"
+            ? await practitionerRefresh({
+                refreshToken: stored.tokens.refreshToken,
+                deviceId,
+              })
+            : null;
 
-      await consumeAuthSuccess(refreshed);
+      if (!refreshed) {
+        await clearAuthenticatedState();
+        return;
+      }
+
+      await consumeAuthSuccess(refreshed, stored.role);
     } catch {
       await clearAuthenticatedState();
     } finally {
@@ -277,6 +300,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   ]);
 
   useEffect(() => {
+    if (Platform.OS === "web") {
+      return;
+    }
+
     const handleResponse = async (
       response: Notifications.NotificationResponse | null,
     ) => {
@@ -320,21 +347,35 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, [router]);
 
   useEffect(() => {
-    configureApiAuthSessionHandlers({
-      refreshAccessToken: async () => {
-        const currentSession = sessionRef.current;
+      configureApiAuthSessionHandlers({
+        refreshAccessToken: async () => {
+          const currentSession = sessionRef.current;
 
-        if (!currentSession || currentSession.role !== "patient") {
+        if (!currentSession) {
+          return null;
+        }
+
+        if (!isSupportedMobileRole(currentSession.role)) {
           return null;
         }
 
         const deviceId = await getOrCreateDeviceId();
-        const refreshed = await patientRefresh({
-          refreshToken: currentSession.tokens.refreshToken,
-          deviceId,
-        });
+        const refreshed =
+          currentSession.role === "patient"
+            ? await patientRefresh({
+                refreshToken: currentSession.tokens.refreshToken,
+                deviceId,
+              })
+            : await practitionerRefresh({
+                refreshToken: currentSession.tokens.refreshToken,
+                deviceId,
+              });
 
-        await consumeAuthSuccess(refreshed);
+        if (!refreshed) {
+          return null;
+        }
+
+        await consumeAuthSuccess(refreshed, currentSession.role);
         return refreshed.tokens.accessToken;
       },
       onAuthFailure: async () => {
@@ -379,7 +420,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     async (payload: Omit<PatientLoginRequest, "deviceId">) => {
       const deviceId = await getOrCreateDeviceId();
       const response = await patientLogin({ ...payload, deviceId });
-      await consumeAuthSuccess(response);
+      await consumeAuthSuccess(response, "patient");
     },
     [consumeAuthSuccess],
   );
@@ -388,7 +429,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     async (payload: Omit<PatientRegisterRequest, "deviceId">) => {
       const deviceId = await getOrCreateDeviceId();
       const response = await patientRegister({ ...payload, deviceId });
-      await consumeAuthSuccess(response);
+      await consumeAuthSuccess(response, "patient");
     },
     [consumeAuthSuccess],
   );
@@ -397,7 +438,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     async (idToken: string) => {
       const deviceId = await getOrCreateDeviceId();
       const response = await patientGoogleAuth({ idToken, deviceId });
-      await consumeAuthSuccess(response);
+      await consumeAuthSuccess(response, "patient");
     },
     [consumeAuthSuccess],
   );
@@ -413,7 +454,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     async (payload: Omit<PractitionerVerifyOtpRequest, "deviceId">) => {
       const deviceId = await getOrCreateDeviceId();
       const response = await practitionerVerifyOtp({ ...payload, deviceId });
-      await consumeAuthSuccess(response);
+      await consumeAuthSuccess(response, "practitioner");
     },
     [consumeAuthSuccess],
   );

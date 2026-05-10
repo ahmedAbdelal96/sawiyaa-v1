@@ -1,5 +1,14 @@
-import { Controller, Get, Param, Query } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  NotFoundException,
+  Param,
+  Query,
+  Res,
+  StreamableFile,
+} from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { Response } from 'express';
 import { ListPublicArticlesDto } from '../dto/list-public-articles.dto';
 import { ListPublicArticleCategoriesDto } from '../dto/list-public-article-categories.dto';
 import {
@@ -12,6 +21,7 @@ import { GetPublicArticleBySlugUseCase } from '../use-cases/get-public-article-b
 import { ListPublicArticleCategoriesUseCase } from '../use-cases/list-public-article-categories.use-case';
 import { ListPublicArticlesUseCase } from '../use-cases/list-public-articles.use-case';
 import { ListPublicCategoryArticlesUseCase } from '../use-cases/list-public-category-articles.use-case';
+import { ArticleCoverStorageService } from '../services/article-cover-storage.service';
 
 @ApiTags('Articles')
 @Controller()
@@ -21,7 +31,26 @@ export class PublicArticlesController {
     private readonly getPublicArticleBySlugUseCase: GetPublicArticleBySlugUseCase,
     private readonly listPublicArticleCategoriesUseCase: ListPublicArticleCategoriesUseCase,
     private readonly listPublicCategoryArticlesUseCase: ListPublicCategoryArticlesUseCase,
+    private readonly articleCoverStorageService: ArticleCoverStorageService,
   ) {}
+
+  @Get('article-covers/:fileName')
+  @ApiOperation({ summary: 'Get article cover image' })
+  async getArticleCover(
+    @Param('fileName') fileName: string,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    const file = await this.articleCoverStorageService.getCoverFile(fileName);
+    if (!file) {
+      throw new NotFoundException('Article cover not found');
+    }
+
+    response.setHeader('Content-Type', file.mimeType);
+    response.setHeader('Cache-Control', 'public, max-age=86400');
+    return new StreamableFile(
+      this.articleCoverStorageService.createFileStream(file.absolutePath),
+    );
+  }
 
   @Get('articles')
   @ApiOperation({ summary: 'List published public articles' })

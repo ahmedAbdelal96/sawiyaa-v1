@@ -65,23 +65,6 @@ export class GetPractitionerApplicationDetailsUseCase {
       specialties.map((item) => [item.id, item] as const),
     );
 
-    const readiness = this.reviewPolicy.evaluateReadiness({
-      hasDisplayName: Boolean(user.displayName?.trim()),
-      hasProfessionalTitle: Boolean(profile.professionalTitle?.trim()),
-      hasBio: Boolean(profile.bio?.trim()),
-      hasCountry: Boolean(profile.country?.isoCode),
-      hasYearsOfExperience:
-        typeof profile.yearsOfExperience === 'number' &&
-        profile.yearsOfExperience > 0,
-      hasLanguage: profile.languages.length > 0,
-      hasRequiredSpecialties: specialtyLinks.length > 0,
-      hasRequiredCredentials:
-        credentials.length > 0 &&
-        credentials.every((item) => item.reviewStatus === 'APPROVED'),
-      hasPayoutDestination: Boolean(profile.payoutDestination),
-      status: application.status,
-    });
-
     const snapshot = (application.submissionSnapshot ?? null) as Record<
       string,
       any
@@ -206,6 +189,45 @@ export class GetPractitionerApplicationDetailsUseCase {
           otherDetails: snapshotPayoutDestination.otherDetails ?? null,
         }
       : livePayoutDestination;
+
+    const requestedLanguageCodes =
+      Array.isArray(snapshotLanguageCodes) && snapshotLanguageCodes.length > 0
+        ? snapshotLanguageCodes
+            .filter((code): code is string => typeof code === 'string')
+            .map((code) => code.trim())
+            .filter(Boolean)
+        : liveProfile.languages;
+    const requestedSpecialties =
+      Array.isArray(snapshotSpecialtySelection?.specialties) &&
+      snapshotSpecialtySelection.specialties.length > 0
+        ? snapshotSpecialtySelection.specialties.filter(
+            (item: { specialtyId?: unknown }) =>
+              typeof item?.specialtyId === 'string',
+          )
+        : liveSpecialties;
+    const requestedCredentialsForReadiness =
+      Array.isArray(snapshotCredentials) && snapshotCredentials.length > 0
+        ? snapshotCredentials
+        : credentials;
+
+    const readiness = this.reviewPolicy.evaluateReadiness({
+      hasDisplayName: Boolean(requestedApplicant.displayName?.trim()),
+      hasProfessionalTitle: Boolean(requestedProfile.professionalTitle?.trim()),
+      hasBio: Boolean(requestedProfile.bio?.trim()),
+      hasCountry: Boolean(requestedApplicant.countryCode),
+      hasYearsOfExperience:
+        typeof requestedProfile.yearsOfExperience === 'number' &&
+        requestedProfile.yearsOfExperience > 0,
+      hasLanguage: requestedLanguageCodes.length > 0,
+      hasRequiredSpecialties: requestedSpecialties.length > 0,
+      hasRequiredCredentials:
+        requestedCredentialsForReadiness.length > 0 &&
+        requestedCredentialsForReadiness.every(
+          (item: { reviewStatus?: string }) => item.reviewStatus === 'APPROVED',
+        ),
+      hasPayoutDestination: Boolean(requestedPayoutDestination),
+      status: application.status,
+    });
 
     const details = this.mapper.toDetails({
       applicant: requestedApplicant,

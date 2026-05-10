@@ -5,6 +5,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { CalendarDays, ChevronRight, ClipboardList, Star } from "lucide-react";
 import { ListStateSkeleton, StateCard } from "@/components/shared/ContentStates";
+import { PatientQuickNav } from "@/components/patient/PatientSectionFrame";
 import FilterClearButton from "@/components/ui/filters/FilterClearButton";
 import { DEFAULT_PAGE_LIMIT } from "@/constants/pagination";
 import { usePatientReviews } from "../hooks/use-reviews";
@@ -181,6 +182,10 @@ export default function PatientReviewsListScreen() {
               }}
             />
           </div>
+        </div>
+
+        <div className="mt-5 border-t border-border-light/70 pt-4 dark:border-white/10">
+          <PatientQuickNav />
         </div>
       </section>
 

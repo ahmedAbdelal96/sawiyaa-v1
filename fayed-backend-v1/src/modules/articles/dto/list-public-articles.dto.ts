@@ -35,5 +35,10 @@ export class ListPublicArticlesDto {
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
+  categoryRoot?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
   q?: string;
 }

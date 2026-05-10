@@ -25,3 +25,11 @@ export async function setMyInstantBooking(payload: SetInstantBookingPayload) {
   );
   return extractApiData<PresenceResponse>(response);
 }
+
+export async function heartbeatMyPresence() {
+  const response = await apiClient.post(
+    "/practitioners/me/presence/heartbeat",
+    {},
+  );
+  return extractApiData<PresenceResponse>(response);
+}

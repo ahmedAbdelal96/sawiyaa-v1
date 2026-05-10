@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { PatientQuickNav } from "@/components/patient/PatientSectionFrame";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -45,6 +46,10 @@ export default function SupportMessagingScaffold({
           </div>
 
           {actions ? <div className="flex w-full items-start justify-end sm:w-auto">{actions}</div> : null}
+        </div>
+
+        <div className="mt-5 border-t border-border-light/70 pt-4 dark:border-white/10">
+          <PatientQuickNav />
         </div>
       </section>
 

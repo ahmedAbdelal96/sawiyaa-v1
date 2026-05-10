@@ -18,7 +18,9 @@ import {
   practitionerVerifyOtp,
 } from "../api/auth.api";
 import { authQueryKeys } from "../constants/query-keys";
+import { presenceQueryKeys } from "@/features/presence/constants/query-keys";
 import type { RefreshTokenRequest } from "../types/auth.types";
+import type { PractitionerLoginResponse } from "../types/auth.types";
 
 /**
  * Query for the currently authenticated request context from /auth/me.
@@ -46,6 +48,9 @@ function useAuthMutationInvalidation() {
     onAuthSuccess: () => {
       queryClient.invalidateQueries({ queryKey: authQueryKeys.all });
       queryClient.invalidateQueries({ queryKey: ["users"] });
+    },
+    onPractitionerPresenceSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: presenceQueryKeys.me() });
     },
     onLogoutSuccess: () => {
       queryClient.clear();
@@ -100,16 +105,29 @@ export function usePractitionerRegister() {
 }
 
 export function usePractitionerLogin() {
+  const { onAuthSuccess, onPractitionerPresenceSuccess } =
+    useAuthMutationInvalidation();
   return useMutation({
     mutationFn: practitionerLogin,
+    onSuccess: (data: PractitionerLoginResponse) => {
+      onPractitionerPresenceSuccess();
+
+      if ("tokens" in data) {
+        onAuthSuccess();
+      }
+    },
   });
 }
 
 export function usePractitionerVerifyOtp() {
-  const { onAuthSuccess } = useAuthMutationInvalidation();
+  const { onAuthSuccess, onPractitionerPresenceSuccess } =
+    useAuthMutationInvalidation();
   return useMutation({
     mutationFn: practitionerVerifyOtp,
-    onSuccess: onAuthSuccess,
+    onSuccess: () => {
+      onPractitionerPresenceSuccess();
+      onAuthSuccess();
+    },
   });
 }
 
@@ -164,4 +182,3 @@ export function useAdminLogout() {
     onSuccess: onLogoutSuccess,
   });
 }
-

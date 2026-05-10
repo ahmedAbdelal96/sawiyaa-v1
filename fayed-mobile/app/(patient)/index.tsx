@@ -11,9 +11,17 @@ import {
   Button,
   Section,
   Header,
+  ErrorState,
+  LoadingState,
+  CompactActionRow,
+  StatusChip,
 } from "../../src/components/ui";
 import { Ionicons } from "@expo/vector-icons";
 import { usePatientJourney } from "../../src/features/patient/journey/hooks";
+import type {
+  PatientJourneyNextStepDto,
+  PatientJourneyResponseDto,
+} from "../../src/features/patient/journey/types";
 import { formatLocalizedDateTime } from "../../src/features/patient/sessions/slot-utils";
 import { usePatientUnreadNotificationCount } from "../../src/features/patient/notifications/hooks";
 
@@ -31,6 +39,24 @@ export default function PatientHomeScreen() {
   const hasOpenSupportTicket = journeyQuery.data?.support?.hasOpenTicket;
   const unreadNotificationCount =
     unreadNotificationsQuery.data?.item.unreadCount ?? 0;
+  const nextStep = resolveNextStep(journeyQuery.data);
+  const nextStepRoute = nextStep
+    ? resolveNextStepRoute(journeyQuery.data, nextStep)
+    : null;
+  const journeyStateCard = journeyQuery.isLoading
+    ? "loading"
+    : journeyQuery.isError
+    ? "error"
+      : "ready";
+  const upcomingSessionTone = mapUpcomingSessionTone(upcomingSession?.status);
+  const upcomingSessionActionLabel =
+    upcomingSession &&
+    isJoinableSessionStatus(upcomingSession.status)
+      ? "Join"
+      : "View";
+  const upcomingSessionRoute = upcomingSession
+    ? `/(patient)/sessions/${upcomingSession.id}`
+    : null;
 
   return (
     <Screen bg="background">
@@ -93,97 +119,48 @@ export default function PatientHomeScreen() {
           </View>
         </View>
 
-        <Card
-          variant="elevated"
-          style={[
-            styles.nextSessionCard,
-            {
-              borderRightColor: theme.colors.primary,
-              backgroundColor: theme.colors.surface,
-            },
-          ]}
-        >
-          {upcomingSession ? (
-            <>
-              <View style={styles.nextSessionTopRow}>
-                <View
-                  style={[
-                    styles.badgePill,
-                    { backgroundColor: theme.colors.primaryLight },
-                  ]}
-                >
-                  <Text
-                    color={theme.colors.primary}
-                    weight="600"
-                    style={styles.badgeText}
-                  >
-                    {t("home.nextSession.badge", "Confirmed")}
-                  </Text>
-                </View>
-                <View style={styles.nextSessionInfo}>
-                  <Text weight="bold" style={styles.nextSessionTitle}>
-                    {t("home.nextSession.title", "Your next session")}
-                  </Text>
-                  <Text
-                    color={theme.colors.textSecondary}
-                    style={styles.nextSessionSubtitle}
-                  >
-                    {upcomingSession.scheduledStartAt
-                      ? formatLocalizedDateTime(
-                          upcomingSession.scheduledStartAt,
-                          locale,
-                        )
-                      : t(
-                          "home.nextSession.subtitle",
-                          "Join when your appointment starts",
-                        )}
-                  </Text>
-                </View>
+        {upcomingSession ? (
+          <Card
+            variant="outlined"
+            padding="md"
+            style={[
+              styles.upcomingSessionCard,
+              {
+                borderColor: theme.colors.borderLight,
+                backgroundColor: theme.colors.surface,
+              },
+            ]}
+          >
+            <View style={styles.upcomingSessionHeader}>
+              <View style={styles.upcomingSessionHeaderText}>
+                <Text weight="bold" style={styles.upcomingSessionTitle}>
+                  {t("home.upcomingSession.title", "Upcoming Session")}
+                </Text>
+                <Text color={theme.colors.textSecondary} style={styles.upcomingSessionName}>
+                  {upcomingSession.practitioner.displayName ??
+                    t("home.nextSession.defaultDoctor", "Dr. Assigned Therapist")}
+                </Text>
               </View>
-
-              <View
-                style={[
-                  styles.practitionerStrip,
-                  {
-                    backgroundColor: theme.colors.surfaceTertiary,
-                    borderColor: theme.colors.borderLight,
-                  },
-                ]}
-              >
-                <View style={styles.practitionerTextCol}>
-                  <Text weight="600" style={styles.practitionerName}>
-                    {upcomingSession.practitioner.displayName ??
-                      t(
-                        "home.nextSession.defaultDoctor",
-                        "Dr. Assigned Therapist",
-                      )}
-                  </Text>
-                </View>
-                <View
-                  style={[
-                    styles.practitionerAvatar,
-                    { backgroundColor: theme.colors.surface },
-                  ]}
-                >
-                  <Ionicons
-                    name="person"
-                    size={24}
-                    color={theme.colors.textMuted}
-                  />
-                </View>
-              </View>
-
-              <Button
-                title={t("home.nextSession.joinNow", "Join now")}
-                onPress={() =>
-                  router.push(
-                    `/(patient)/sessions/${upcomingSession.id}` as any,
-                  )
-                }
-                style={styles.joinButton}
+              <StatusChip
+                label={t(`sessionStatus.${upcomingSession.status}`)}
+                tone={upcomingSessionTone}
+                showDot={false}
               />
-            </>
-          ) : pendingPayment ? (
+            </View>
+
+            <Text color={theme.colors.textSecondary} style={styles.upcomingSessionTime}>
+              {upcomingSession.scheduledStartAt
+                ? formatLocalizedDateTime(upcomingSession.scheduledStartAt, locale)
+                : t("home.nextSession.subtitle", "Join when your appointment starts")}
+            </Text>
+
+            <CompactActionRow
+              label={upcomingSessionActionLabel}
+              onPress={() => router.push(upcomingSessionRoute as any)}
+              accessibilityLabel={upcomingSessionActionLabel}
+            />
+          </Card>
+        ) : pendingPayment ? (
             <>
               <View style={styles.nextSessionTopRow}>
                 <View
@@ -240,7 +217,7 @@ export default function PatientHomeScreen() {
                     {t(
                       "home.nextSession.subtitle",
                       "Join when your appointment starts",
-                    )}
+        )}
                   </Text>
                 </View>
               </View>
@@ -251,7 +228,73 @@ export default function PatientHomeScreen() {
               />
             </>
           )}
-        </Card>
+        {journeyStateCard === "loading" ? (
+          <Card
+            variant="outlined"
+            padding="lg"
+            style={[
+              styles.nextStepCard,
+              {
+                borderColor: theme.colors.borderLight,
+                backgroundColor: theme.colors.surface,
+              },
+            ]}
+          >
+            <LoadingState message="Loading your next step..." />
+          </Card>
+        ) : journeyStateCard === "error" ? (
+          <Card
+            variant="outlined"
+            padding="lg"
+            style={[
+              styles.nextStepCard,
+              {
+                borderColor: theme.colors.borderLight,
+                backgroundColor: theme.colors.surface,
+              },
+            ]}
+          >
+            <ErrorState
+              title="Could not load your next step"
+              message="Please try again in a moment."
+              onRetry={() => journeyQuery.refetch()}
+              retryText="Try again"
+            />
+          </Card>
+        ) : nextStep && nextStepRoute ? (
+          <Card
+            variant="outlined"
+            padding="md"
+            style={[
+              styles.nextStepCard,
+              {
+                borderColor: theme.colors.borderLight,
+                backgroundColor: theme.colors.surface,
+              },
+            ]}
+          >
+            <View style={styles.nextStepTopRow}>
+              <StatusChip label="Next step" tone="info" />
+              <Text color={theme.colors.textMuted} style={styles.nextStepMeta}>
+                {nextStep.type.replaceAll("_", " ")}
+              </Text>
+            </View>
+
+            <Text weight="bold" style={styles.nextStepTitle}>
+              {nextStep.label}
+            </Text>
+            <Text color={theme.colors.textSecondary} style={styles.nextStepBody}>
+              {nextStep.reasonText}
+            </Text>
+
+            <CompactActionRow
+              label={nextStep.action.label}
+              onPress={() => router.push(nextStepRoute as any)}
+              accessibilityLabel={nextStep.action.label}
+              style={styles.nextStepCta}
+            />
+          </Card>
+        ) : null}
 
         <Section title={t("home.quickActions.title", "Quick actions")}>
           <View style={styles.quickActionsGrid}>
@@ -259,6 +302,16 @@ export default function PatientHomeScreen() {
               icon="search"
               label={t("home.quickActions.findTherapist", "Find therapist")}
               onPress={() => router.push("/(patient)/discovery" as any)}
+            />
+            <TouchableQuickAction
+              icon="school-outline"
+              label={t("home.quickActions.academy", "Academy")}
+              onPress={() => router.push("/(patient)/academy" as any)}
+            />
+            <TouchableQuickAction
+              icon="newspaper-outline"
+              label="Articles"
+              onPress={() => router.push("/(patient)/articles" as any)}
             />
             <TouchableQuickAction
               icon="clipboard-outline"
@@ -449,6 +502,61 @@ const styles = StyleSheet.create({
     borderRightWidth: 4,
     paddingTop: 18,
   },
+  nextStepCard: {
+    marginHorizontal: 20,
+    marginBottom: 18,
+  },
+  upcomingSessionCard: {
+    marginHorizontal: 20,
+    marginBottom: 18,
+    gap: 14,
+  },
+  upcomingSessionHeader: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    gap: 12,
+  },
+  upcomingSessionHeaderText: {
+    flex: 1,
+  },
+  upcomingSessionTitle: {
+    fontSize: 18,
+    lineHeight: 24,
+    marginBottom: 4,
+  },
+  upcomingSessionName: {
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  upcomingSessionTime: {
+    fontSize: 14,
+    lineHeight: 22,
+  },
+  nextStepTopRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+    marginBottom: 10,
+  },
+  nextStepMeta: {
+    fontSize: 11,
+    letterSpacing: 0.4,
+    textTransform: "uppercase",
+  },
+  nextStepTitle: {
+    fontSize: 18,
+    lineHeight: 24,
+  },
+  nextStepBody: {
+    fontSize: 13,
+    lineHeight: 20,
+    marginTop: 6,
+  },
+  nextStepCta: {
+    marginTop: 14,
+  },
   nextSessionTopRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -577,3 +685,82 @@ const styles = StyleSheet.create({
     maxWidth: 340,
   },
 });
+
+function resolveNextStep(journey?: PatientJourneyResponseDto | null) {
+  if (!journey) {
+    return null;
+  }
+
+  return (
+    journey.nextSteps.find(
+      (step) => step.type === journey.summary.suggestedNextAction,
+    ) ?? journey.nextSteps[0] ?? null
+  );
+}
+
+function resolveNextStepRoute(
+  journey: PatientJourneyResponseDto | undefined | null,
+  step: PatientJourneyNextStepDto,
+) {
+  const route = step.action.route?.trim();
+
+  if (route) {
+    return normalizePatientRoute(route);
+  }
+
+  switch (step.type) {
+    case "COMPLETE_PAYMENT":
+      return journey?.upcoming.pendingPayment?.sessionId
+        ? `/(patient)/sessions/${journey.upcoming.pendingPayment.sessionId}/pay`
+        : "/(patient)/payments";
+    case "JOIN_UPCOMING_SESSION":
+      return journey?.upcoming.session?.id
+        ? `/(patient)/sessions/${journey.upcoming.session.id}`
+        : "/(patient)/sessions";
+    case "VIEW_SUPPORT_TICKET":
+      return journey?.support.latestOpenTicket?.id
+        ? `/(patient)/support/${journey.support.latestOpenTicket.id}`
+        : "/(patient)/support";
+    case "BOOK_NEXT_SESSION":
+      return "/(patient)/discovery";
+    case "START_GUIDED_MATCHING":
+      return "/(patient)/matching/intro";
+    case "TAKE_ASSESSMENT":
+      return "/(patient)/assessments";
+    default:
+      return null;
+  }
+}
+
+function normalizePatientRoute(route: string) {
+  if (route.startsWith("/(patient)")) {
+    return route;
+  }
+
+  if (route.startsWith("/patient")) {
+    return `/(patient)${route.slice("/patient".length)}`;
+  }
+
+  return route;
+}
+
+function isJoinableSessionStatus(status: string | null | undefined) {
+  return status === "READY_TO_JOIN" || status === "IN_PROGRESS";
+}
+
+function mapUpcomingSessionTone(status: string | null | undefined) {
+  switch (status) {
+    case "READY_TO_JOIN":
+    case "IN_PROGRESS":
+      return "success" as const;
+    case "UPCOMING":
+    case "CONFIRMED":
+      return "warning" as const;
+    case "CANCELLED":
+    case "NO_SHOW":
+    case "EXPIRED":
+      return "error" as const;
+    default:
+      return "default" as const;
+  }
+}

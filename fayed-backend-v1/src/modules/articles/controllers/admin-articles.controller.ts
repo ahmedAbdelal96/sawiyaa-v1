@@ -2,19 +2,24 @@ import {
   Body,
   Controller,
   Get,
+  BadRequestException,
   Param,
   Patch,
   Post,
   Query,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiBody,
+  ApiConsumes,
   ApiOperation,
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { RequireAccountStates } from '@common/decorators/account-state.decorator';
 import { CurrentUser } from '@common/decorators/current-user.decorator';
 import { Roles } from '@common/decorators/roles.decorator';
@@ -37,6 +42,7 @@ import { GetAdminArticleUseCase } from '../use-cases/get-admin-article.use-case'
 import { ListAdminArticlesUseCase } from '../use-cases/list-admin-articles.use-case';
 import { PublishArticleUseCase } from '../use-cases/publish-article.use-case';
 import { UpdateArticleUseCase } from '../use-cases/update-article.use-case';
+import { ArticleCoverStorageService } from '../services/article-cover-storage.service';
 
 @ApiTags('Articles')
 @ApiBearerAuth()
@@ -52,7 +58,41 @@ export class AdminArticlesController {
     private readonly updateArticleUseCase: UpdateArticleUseCase,
     private readonly publishArticleUseCase: PublishArticleUseCase,
     private readonly archiveArticleUseCase: ArchiveArticleUseCase,
+    private readonly articleCoverStorageService: ArticleCoverStorageService,
   ) {}
+
+  @Post('cover-upload')
+  @UseInterceptors(FileInterceptor('file'))
+  @ApiOperation({ summary: 'Upload article cover image (admin only)' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        file: { type: 'string', format: 'binary' },
+      },
+      required: ['file'],
+    },
+  })
+  uploadCover(
+    @UploadedFile()
+    file: { buffer: Buffer; mimetype: string } | undefined,
+  ) {
+    if (!file?.buffer) {
+      throw new BadRequestException('Missing cover image file');
+    }
+
+    if (!this.articleCoverStorageService.isAllowedMimeType(file.mimetype)) {
+      throw new BadRequestException('Unsupported cover image type');
+    }
+
+    return this.articleCoverStorageService
+      .saveCover(file.buffer, file.mimetype)
+      .then((url) => ({
+        success: true as const,
+        data: { url },
+      }));
+  }
 
   @Post()
   @ApiOperation({ summary: 'Create article draft (admin only)' })

@@ -2,6 +2,7 @@ import { getFormatter, getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import PublicArticleTrustBadges from "./PublicArticleTrustBadges";
 import type { PublicArticleDetails } from "../types/articles-public.types";
+import { resolveCoverImageUrl } from "../lib/resolve-cover-image-url";
 
 type Props = {
   article: PublicArticleDetails;
@@ -20,6 +21,7 @@ export default async function PublicArticleDetailScreen({ article }: Props) {
         year: "numeric",
       })
     : t("detail.noPublishDate");
+  const coverImageUrl = resolveCoverImageUrl(article.coverImageUrl);
 
   return (
     <article className="bg-surface px-6 py-12 dark:bg-surface">
@@ -63,12 +65,12 @@ export default async function PublicArticleDetailScreen({ article }: Props) {
           <PublicArticleTrustBadges trust={article.trust} />
         </header>
 
-        {article.coverImageUrl ? (
+        {coverImageUrl ? (
           <div className="overflow-hidden rounded-[32px] border border-border-light bg-white dark:bg-surface">
             <img
-              src={article.coverImageUrl}
+              src={coverImageUrl}
               alt={article.title}
-              className="h-auto max-h-[440px] w-full object-cover"
+              className="h-auto max-h-[560px] w-full bg-surface-tertiary object-contain"
             />
           </div>
         ) : null}

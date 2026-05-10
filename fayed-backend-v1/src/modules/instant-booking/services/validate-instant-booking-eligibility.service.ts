@@ -4,9 +4,15 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { PresenceStatus, SessionMode } from '@prisma/client';
+import {
+  PresenceStatus,
+  PractitionerStatus,
+  SessionMode,
+  UserStatus,
+} from '@prisma/client';
 import { PublicPractitionerVisibilityPolicy } from '@modules/practitioners/policies/public-practitioner-visibility.policy';
 import { PractitionerPresenceRepository } from '@modules/presence/repositories/practitioner-presence.repository';
+import { resolveEffectivePresenceStatus } from '@modules/presence/utils/presence-liveness';
 import { AvailabilityExceptionRepository } from '@modules/availability/repositories/availability-exception.repository';
 import { AvailabilitySlotRepository } from '@modules/availability/repositories/availability-slot.repository';
 import { ResolvePractitionerTimezoneService } from '@modules/availability/services/resolve-practitioner-timezone.service';
@@ -63,8 +69,8 @@ export class ValidateInstantBookingEligibilityService {
     }
 
     const visibility = this.publicPractitionerVisibilityPolicy.evaluate({
-      practitionerStatus: input.practitioner.status,
-      userStatus: input.practitioner.user.status,
+      practitionerStatus: input.practitioner.status as PractitionerStatus,
+      userStatus: input.practitioner.user.status as UserStatus,
       isPublicProfilePublished: input.practitioner.isPublicProfilePublished,
       hasPublicSlug: Boolean(input.practitioner.publicSlug?.trim()),
       hasDisplayName: Boolean(input.practitioner.user.displayName?.trim()),
@@ -86,15 +92,19 @@ export class ValidateInstantBookingEligibilityService {
       await this.practitionerPresenceRepository.createOrGetByPractitionerProfileId(
         input.practitioner.id,
       );
+    const effectivePresenceStatus = resolveEffectivePresenceStatus(
+      presence,
+      input.nowUtc,
+    );
 
-    if (presence.status === PresenceStatus.BUSY) {
+    if (effectivePresenceStatus === PresenceStatus.BUSY) {
       throw new ConflictException({
         messageKey: 'instantBooking.errors.practitionerBusy',
         error: 'INSTANT_BOOKING_PRACTITIONER_BUSY',
       });
     }
 
-    if (presence.status !== PresenceStatus.ONLINE) {
+    if (effectivePresenceStatus !== PresenceStatus.ONLINE) {
       throw new BadRequestException({
         messageKey: 'instantBooking.errors.practitionerNotOnline',
         error: 'INSTANT_BOOKING_PRACTITIONER_NOT_ONLINE',

@@ -13,35 +13,33 @@ export default async function AuthLayout({ children, params }: Props) {
   const t = await getTranslations("auth");
 
   return (
-    <div className="relative z-1 bg-surface dark:bg-surface">
-      <div className="relative flex min-h-screen w-full flex-col justify-center overflow-hidden px-4 py-4 dark:bg-surface sm:px-6 sm:py-5 lg:flex-row lg:px-0 lg:py-0">
-        {children}
+    <div className="relative min-h-screen overflow-hidden bg-[radial-gradient(circle_at_top_right,_rgba(68,161,148,0.18),_transparent_34%),radial-gradient(circle_at_bottom_left,_rgba(68,161,148,0.12),_transparent_30%)] bg-surface dark:bg-surface">
+      <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.86),rgba(244,247,245,0.94))] dark:bg-[linear-gradient(180deg,rgba(9,16,16,0.88),rgba(13,23,22,0.96))]" />
 
-        <div className="relative hidden h-full w-full overflow-hidden border-s border-border-light bg-surface-secondary lg:grid lg:w-1/2 lg:items-center dark:border-border-light dark:bg-surface-secondary">
-          <div className="absolute -right-28 top-10 h-80 w-80 rounded-full bg-primary-light opacity-70 blur-3xl dark:bg-primary/10 dark:opacity-100" />
-          <div className="absolute bottom-0 left-0 h-64 w-64 rounded-full bg-surface-tertiary opacity-90 blur-3xl dark:bg-surface-tertiary" />
-
-          <div className="relative z-10 flex h-full flex-col justify-between p-14">
-            <div className="self-end rounded-full border border-border-light bg-surface px-4 py-2 text-xs font-medium tracking-[0.22em] text-text-secondary dark:border-border-light dark:bg-surface-tertiary dark:text-text-secondary">
+      <div className="relative mx-auto flex min-h-screen w-full max-w-[1200px] flex-col px-4 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
+        <div className="overflow-hidden rounded-[30px] border border-border-light bg-white/90 shadow-[0_24px_80px_rgba(16,24,40,0.08)] backdrop-blur dark:border-border-light dark:bg-surface-secondary/90">
+          <div className="flex items-center justify-between gap-4 border-b border-border-light px-6 py-5 dark:border-border-light sm:px-8">
+            <div className="max-w-[8.5rem]">
+              <BrandMark />
+            </div>
+            <div className="rounded-full border border-border-light bg-surface px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.24em] text-text-secondary dark:border-border-light dark:bg-surface-tertiary dark:text-text-secondary">
               {t("authShell.badge")}
             </div>
+          </div>
 
-            <div className="max-w-sm">
-              <div className="mb-6 max-w-[9rem]">
-                <BrandMark />
-              </div>
-
-              <div className="space-y-4">
-                <h2 className="text-2xl font-semibold leading-tight text-text-primary dark:text-text-primary">
-                  {t("authShell.title")}
-                </h2>
-                <p className="text-sm leading-7 text-text-secondary dark:text-text-secondary">
-                  {t("authShell.description")}
-                </p>
-              </div>
+          <div className="px-4 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
+            <div className="mb-6 space-y-3 px-2 sm:px-0">
+              <h1 className="text-2xl font-semibold leading-tight text-text-primary dark:text-text-primary sm:text-3xl">
+                {t("authShell.title")}
+              </h1>
+              <p className="max-w-2xl text-sm leading-7 text-text-secondary dark:text-text-secondary">
+                {t("authShell.description")}
+              </p>
             </div>
 
-            <div className="flex items-center gap-3 text-sm text-text-muted dark:text-text-muted">
+            {children}
+
+            <div className="mt-8 flex items-center gap-3 px-2 text-sm text-text-muted dark:text-text-muted sm:px-0">
               <div className="h-px flex-1 bg-border-light" />
               <span>{t("authShell.footer")}</span>
             </div>

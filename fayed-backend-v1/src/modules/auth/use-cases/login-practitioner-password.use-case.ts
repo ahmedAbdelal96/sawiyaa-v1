@@ -20,6 +20,7 @@ import { VerifyPasswordUseCase } from './verify-password.use-case';
 import { PractitionerOtpChannelService } from '../services/practitioner-otp-channel.service';
 import { CreateOtpChallengeUseCase } from '../../verification/use-cases/create-otp-challenge.use-case';
 import { SendOtpChallengeUseCase } from '../../verification/use-cases/send-otp-challenge.use-case';
+import { PractitionerPresenceRepository } from '@modules/presence/repositories/practitioner-presence.repository';
 
 /**
  * Practitioner login is intentionally split into password step and OTP step.
@@ -34,6 +35,7 @@ export class LoginPractitionerPasswordUseCase {
     private readonly twoFactorSettingRepository: TwoFactorSettingRepository,
     private readonly verifyPasswordUseCase: VerifyPasswordUseCase,
     private readonly issueAuthTokensUseCase: IssueAuthTokensUseCase,
+    private readonly practitionerPresenceRepository: PractitionerPresenceRepository,
     private readonly practitionerOtpChannelService: PractitionerOtpChannelService,
     private readonly createOtpChallengeUseCase: CreateOtpChallengeUseCase,
     private readonly sendOtpChallengeUseCase: SendOtpChallengeUseCase,
@@ -132,13 +134,18 @@ export class LoginPractitionerPasswordUseCase {
       ) === true;
 
     await this.authIdentityRepository.touchLastUsed(passwordIdentity.id);
+    await this.practitionerPresenceRepository.markOnline(
+      practitionerProfile.id,
+    );
 
     if (isDevelopmentEnvironment && bypassPractitionerOtp) {
-      return this.issueAuthTokensUseCase.execute({
+      const result = await this.issueAuthTokensUseCase.execute({
         userId: userEmail.user.id,
         role: UserRoleType.PRACTITIONER,
         deviceContext: input.deviceContext,
       });
+
+      return result;
     }
 
     const twoFactorSetting = await this.twoFactorSettingRepository.findByUserId(

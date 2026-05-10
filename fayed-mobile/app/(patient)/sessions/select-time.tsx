@@ -1,5 +1,5 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
+﻿import React, { useEffect, useMemo, useRef, useState } from "react";
+import { Image, ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
@@ -14,6 +14,7 @@ import {
   groupSlotsByDay,
   splitDaySlotsByPart,
 } from "../../../src/features/patient/sessions/slot-utils";
+import { trackAnalyticsEvent } from "../../../src/lib/analytics";
 
 export default function SelectSessionTimeScreen() {
   const router = useRouter();
@@ -36,6 +37,7 @@ export default function SelectSessionTimeScreen() {
   const [selectedSlotMaxDuration, setSelectedSlotMaxDuration] = useState<
     30 | 60
   >(60);
+  const continueLockRef = useRef(false);
 
   const weekRange = useMemo(() => getWeekRange(weekOffset), [weekOffset]);
   const windowsQuery = usePublicAvailabilityWindows(
@@ -104,12 +106,14 @@ export default function SelectSessionTimeScreen() {
     : t("patientSessionsFlow.selectTime.noSelectedSlot");
 
   const continueToConfirmation = () => {
-    if (!selectedDay || !selectedSlot) {
+    if (continueLockRef.current || !selectedDay || !selectedSlot) {
       return;
     }
 
+    continueLockRef.current = true;
+
     router.push({
-      pathname: "/sessions/confirm",
+      pathname: "/(patient)/sessions/confirm",
       params: {
         slug: params.slug,
         practitionerName: params.practitionerName,
@@ -119,6 +123,21 @@ export default function SelectSessionTimeScreen() {
         maxDuration: String(selectedSlot.maxDuration),
       },
     });
+  };
+
+  const handleSelectSlot = (
+    startAt: string,
+    maxDuration: 30 | 60,
+  ) => {
+    trackAnalyticsEvent("slot_selected", {
+      practitionerSlug: params.slug || undefined,
+      dayKey: selectedDay?.dayKey || undefined,
+      selectedStartAt: startAt,
+      maxDuration,
+      weekOffset,
+    });
+    setSelectedSlotStartAt(startAt);
+    setSelectedSlotMaxDuration(maxDuration);
   };
 
   return (
@@ -144,17 +163,40 @@ export default function SelectSessionTimeScreen() {
               : { borderRightColor: theme.colors.primary },
           ]}
         >
-          <Text weight="600" style={styles.practitionerName}>
-            {params.practitionerName ??
-              t("patientSessionsFlow.common.practitionerFallback")}
-          </Text>
-          <Text
-            color={theme.colors.textSecondary}
-            style={styles.practitionerTitle}
-          >
-            {params.practitionerTitle ??
-              t("patientSessionsFlow.common.professionalFallback")}
-          </Text>
+          <View style={styles.practitionerHeaderRow}>
+            <View
+              style={[
+                styles.avatarWrap,
+                { backgroundColor: theme.colors.surfaceTertiary },
+              ]}
+            >
+              {params.practitionerAvatarUrl ? (
+                <Image
+                  source={{ uri: params.practitionerAvatarUrl }}
+                  style={styles.avatar}
+                />
+              ) : (
+                <Ionicons
+                  name="person"
+                  size={28}
+                  color={theme.colors.textMuted}
+                />
+              )}
+            </View>
+            <View style={styles.practitionerTextCol}>
+              <Text weight="600" style={styles.practitionerName}>
+                {params.practitionerName ??
+                  t("patientSessionsFlow.common.practitionerFallback")}
+              </Text>
+              <Text
+                color={theme.colors.textSecondary}
+                style={styles.practitionerTitle}
+              >
+                {params.practitionerTitle ??
+                  t("patientSessionsFlow.common.professionalFallback")}
+              </Text>
+            </View>
+          </View>
         </Card>
 
         <View style={styles.monthRow}>
@@ -273,10 +315,7 @@ export default function SelectSessionTimeScreen() {
                 slots={parts.morning}
                 selectedSlotStartAt={selectedSlotStartAt}
                 locale={locale}
-                onSelectSlot={(startAt, maxDuration) => {
-                  setSelectedSlotStartAt(startAt);
-                  setSelectedSlotMaxDuration(maxDuration);
-                }}
+                onSelectSlot={handleSelectSlot}
               />
               <SlotSection
                 title={t("patientSessionsFlow.selectTime.afternoon")}
@@ -284,10 +323,7 @@ export default function SelectSessionTimeScreen() {
                 slots={parts.afternoon}
                 selectedSlotStartAt={selectedSlotStartAt}
                 locale={locale}
-                onSelectSlot={(startAt, maxDuration) => {
-                  setSelectedSlotStartAt(startAt);
-                  setSelectedSlotMaxDuration(maxDuration);
-                }}
+                onSelectSlot={handleSelectSlot}
               />
               <SlotSection
                 title={t("patientSessionsFlow.selectTime.evening")}
@@ -295,10 +331,7 @@ export default function SelectSessionTimeScreen() {
                 slots={parts.evening}
                 selectedSlotStartAt={selectedSlotStartAt}
                 locale={locale}
-                onSelectSlot={(startAt, maxDuration) => {
-                  setSelectedSlotStartAt(startAt);
-                  setSelectedSlotMaxDuration(maxDuration);
-                }}
+                onSelectSlot={handleSelectSlot}
               />
             </View>
 
@@ -430,6 +463,27 @@ const styles = StyleSheet.create({
     borderRightWidth: 3,
     borderRightColor: "#3f7dcf",
   },
+  practitionerHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  avatarWrap: {
+    width: 54,
+    height: 54,
+    borderRadius: 27,
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: "hidden",
+  },
+  avatar: {
+    width: 54,
+    height: 54,
+    borderRadius: 27,
+  },
+  practitionerTextCol: {
+    flex: 1,
+  },
   practitionerName: {
     fontSize: 28,
     marginBottom: 4,
@@ -538,3 +592,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
 });
+
+
+

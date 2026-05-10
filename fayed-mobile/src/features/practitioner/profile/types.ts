@@ -29,6 +29,16 @@ export interface PractitionerSpecialty {
   isPrimary: boolean;
 }
 
+export interface PractitionerPricingCurrency {
+  egp: number | null;
+  usd: number | null;
+}
+
+export interface PractitionerPricing {
+  session30: PractitionerPricingCurrency;
+  session60: PractitionerPricingCurrency;
+}
+
 export interface PractitionerCredentialSummary {
   totalCredentials: number;
   pendingCount: number;
@@ -63,6 +73,8 @@ export interface PractitionerProfile {
   practitionerType: string;
   practitionerGender: string | null;
   primarySpecialtyCategoryId: string | null;
+  acceptsPackage: boolean;
+  pricing: PractitionerPricing;
   payoutDestination: {
     methodType: PractitionerPayoutMethodType | null;
     accountHolderName: string | null;
@@ -158,6 +170,11 @@ export interface UpdatePractitionerProfileRequest {
   locale?: "ar" | "en";
   timezone?: string;
   languageCodes?: string[];
+  sessionPrice30Egp?: number | null;
+  sessionPrice30Usd?: number | null;
+  sessionPrice60Egp?: number | null;
+  sessionPrice60Usd?: number | null;
+  acceptsPackage?: boolean;
   payoutDestination?:
     | {
         methodType: PractitionerPayoutMethodType;

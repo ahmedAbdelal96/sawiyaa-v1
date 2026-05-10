@@ -4,6 +4,8 @@ import { useTranslation } from "react-i18next";
 import { I18nManager } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useAuth } from "../../src/providers/AuthProvider";
+import { usePractitionerPresenceHeartbeat } from "../../src/features/practitioner/presence/hooks";
 import { useTheme } from "../../src/providers/ThemeProvider";
 
 const TabIcon = ({
@@ -19,6 +21,9 @@ export default function PractitionerLayout() {
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
   const isRTL = I18nManager.isRTL;
+  const { role, isLoading } = useAuth();
+
+  usePractitionerPresenceHeartbeat(!isLoading && role === "practitioner");
 
   return (
     <Tabs
@@ -84,6 +89,7 @@ export default function PractitionerLayout() {
       <Tabs.Screen name="support/index" options={{ href: null }} />
       <Tabs.Screen name="support/[id]" options={{ href: null }} />
       <Tabs.Screen name="account" options={{ href: null }} />
+      <Tabs.Screen name="onboarding" options={{ href: null }} />
       <Tabs.Screen name="care-chat/index" options={{ href: null }} />
       <Tabs.Screen name="care-chat/request/[id]" options={{ href: null }} />
       <Tabs.Screen name="care-chat/[id]" options={{ href: null }} />

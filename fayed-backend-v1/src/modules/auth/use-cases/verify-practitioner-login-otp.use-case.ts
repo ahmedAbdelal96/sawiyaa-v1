@@ -10,6 +10,7 @@ import { IssueAuthTokensUseCase } from './issue-auth-tokens.use-case';
 import { AuthSessionDeviceContext } from '../types/auth-session.types';
 import { VerifyOtpChallengeUseCase } from '../../verification/use-cases/verify-otp-challenge.use-case';
 import { UserRepository } from '../repositories/user.repository';
+import { PractitionerPresenceRepository } from '@modules/presence/repositories/practitioner-presence.repository';
 
 /**
  * Tokens are issued only after OTP verification succeeds.
@@ -21,6 +22,7 @@ export class VerifyPractitionerLoginOtpUseCase {
     private readonly verifyOtpChallengeUseCase: VerifyOtpChallengeUseCase,
     private readonly issueAuthTokensUseCase: IssueAuthTokensUseCase,
     private readonly userRepository: UserRepository,
+    private readonly practitionerPresenceRepository: PractitionerPresenceRepository,
   ) {}
 
   async execute(input: {
@@ -75,10 +77,16 @@ export class VerifyPractitionerLoginOtpUseCase {
       });
     }
 
-    return this.issueAuthTokensUseCase.execute({
+    const result = await this.issueAuthTokensUseCase.execute({
       userId: challenge.user.id,
       role: UserRoleType.PRACTITIONER,
       deviceContext: input.deviceContext,
     });
+
+    await this.practitionerPresenceRepository.markOnline(
+      currentUser.practitionerProfile.id,
+    );
+
+    return result;
   }
 }

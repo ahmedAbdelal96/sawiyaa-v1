@@ -28,14 +28,28 @@ function resolveBaseUrl() {
   const publicEnv = process.env as Record<string, string | undefined>;
   const configured = publicEnv.EXPO_PUBLIC_API_URL?.trim();
   if (configured) {
+    try {
+      new URL(configured);
+    } catch {
+      throw new Error("EXPO_PUBLIC_API_URL must be a valid absolute URL.");
+    }
+
     return configured;
   }
 
-  if (Platform.OS === "android") {
-    return "http://10.0.2.2:7000/api/v1";
+  if (typeof __DEV__ !== "undefined" && __DEV__) {
+    if (Platform.OS === "android") {
+      return "http://10.0.2.2:7000/api/v1";
+    }
+
+    return "http://localhost:7000/api/v1";
   }
 
-  return "http://localhost:7000/api/v1";
+  if (Platform.OS === "android") {
+    throw new Error("EXPO_PUBLIC_API_URL is required in production builds.");
+  }
+
+  throw new Error("EXPO_PUBLIC_API_URL is required in production builds.");
 }
 
 export const apiClient = axios.create({

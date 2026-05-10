@@ -5,6 +5,7 @@ import { useLocale } from "next-intl";
 import { useQueries } from "@tanstack/react-query";
 import {
   Activity,
+  ArrowRight,
   BadgeDollarSign,
   CalendarClock,
   ClipboardCheck,
@@ -13,6 +14,7 @@ import {
   ShieldAlert,
   WalletCards,
 } from "lucide-react";
+import { Link } from "@/i18n/navigation";
 import { useAdminSessions } from "@/features/admin/sessions/hooks/use-admin-sessions";
 import { listAdminSessions } from "@/features/admin/sessions/api/admin-sessions.api";
 import { adminSessionsQueryKeys } from "@/features/admin/sessions/constants/query-keys";
@@ -37,6 +39,13 @@ type LocaleCopy = {
   pageTitle: string;
   pageSubtitle: string;
   pageNote: string;
+  hero: {
+    prioritiesTitle: string;
+    prioritiesSubtitle: string;
+    quickActionsTitle: string;
+    quickActionsSubtitle: string;
+    countSuffix: string;
+  };
   common: {
     loading: string;
     noData: string;
@@ -115,6 +124,13 @@ const COPY: Record<"en" | "ar", LocaleCopy> = {
     pageSubtitle: "Business and operations snapshot for fast executive visibility.",
     pageNote:
       "Built from live queues and existing admin contracts to keep this screen accurate and actionable.",
+    hero: {
+      prioritiesTitle: "Operational priorities",
+      prioritiesSubtitle: "Open the queues that are building pressure right now.",
+      quickActionsTitle: "Jump to active workstreams",
+      quickActionsSubtitle: "Shortcuts into the queues and finance views most teams reopen during the day.",
+      countSuffix: "items",
+    },
     common: {
       loading: "Loading...",
       noData: "No data available",
@@ -183,6 +199,13 @@ const COPY: Record<"en" | "ar", LocaleCopy> = {
     pageSubtitle: "لقطة تنفيذية سريعة للأعمال والتشغيل من شاشة واحدة.",
     pageNote:
       "هذه اللوحة مبنية على بيانات حية من مسارات الإدارة الحالية لضمان وضوح القرار وسرعة المتابعة.",
+    hero: {
+      prioritiesTitle: "أولويات التشغيل",
+      prioritiesSubtitle: "افتح القوائم التي تحتاج متابعة مباشرة الآن.",
+      quickActionsTitle: "الانتقال السريع لمسارات العمل",
+      quickActionsSubtitle: "اختصارات لأكثر المسارات التي تعود إليها فرق الإدارة خلال اليوم.",
+      countSuffix: "عنصر",
+    },
     common: {
       loading: "جاري التحميل...",
       noData: "لا توجد بيانات متاحة",
@@ -322,7 +345,7 @@ export default function AdminDashboard() {
   const isArabic = locale === "ar";
   const copy = COPY[isArabic ? "ar" : "en"];
   const hasHydrated = useHasHydrated();
-  const chartPalette = ["#2F2FE4", "#FF9013", "#8FA2FF"];
+  const chartPalette = ["#44A194", "#F39A35", "#7C8AA5"];
 
   const now = new Date();
   const today = toIsoRange(now);
@@ -555,17 +578,209 @@ export default function AdminDashboard() {
           : copy.delta.downFromPrevious
         ).replace("{value}", formatPercent(locale, Math.abs(settlementDeltaPercent)));
 
+  const headerSnapshotItems = [
+    {
+      id: "support",
+      label: copy.attention.supportTitle,
+      value: formatNumber(locale, supportTotal),
+    },
+    {
+      id: "care",
+      label: copy.attention.careTitle,
+      value: formatNumber(locale, careTotal),
+    },
+    {
+      id: "applications",
+      label: copy.attention.applicationsTitle,
+      value: formatNumber(locale, applicationsTotal),
+    },
+  ];
+
+  const priorityItems = [
+    {
+      id: "support-priority",
+      title: copy.attention.supportTitle,
+      count: supportTotal,
+      subtitle: copy.attention.supportSubtitle,
+      href: "/admin/support",
+      icon: <Headset className="h-4 w-4" />,
+      toneClass: "bg-amber-50/85 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300",
+    },
+    {
+      id: "care-priority",
+      title: copy.attention.careTitle,
+      count: careTotal,
+      subtitle: copy.attention.careSubtitle,
+      href: "/admin/care-chat",
+      icon: <MessageSquareMore className="h-4 w-4" />,
+      toneClass: "bg-violet-50/85 text-violet-700 dark:bg-violet-500/10 dark:text-violet-300",
+    },
+    {
+      id: "applications-priority",
+      title: copy.attention.applicationsTitle,
+      count: applicationsTotal,
+      subtitle: copy.attention.applicationsSubtitle,
+      href: "/admin/practitioner-applications",
+      icon: <ClipboardCheck className="h-4 w-4" />,
+      toneClass: "bg-primary-light/75 text-text-brand dark:bg-primary/10 dark:text-primary-light",
+    },
+    {
+      id: "moderation-priority",
+      title: copy.attention.moderationTitle,
+      count: moderationTotal,
+      subtitle: copy.activity.snapshotSubtitle,
+      href: "/admin/moderation/reports",
+      icon: <ShieldAlert className="h-4 w-4" />,
+      toneClass: "bg-slate-100/85 text-slate-700 dark:bg-white/[0.06] dark:text-white/80",
+    },
+  ].sort((first, second) => second.count - first.count);
+
+  const quickActionItems = [
+    {
+      id: "sessions",
+      title: copy.kpi.sessions,
+      subtitle: copy.kpi.sessionsHelper,
+      href: "/admin/sessions",
+      icon: <CalendarClock className="h-4 w-4" />,
+      value: formatNumber(locale, sessionsToday),
+    },
+    {
+      id: "support",
+      title: copy.attention.supportTitle,
+      subtitle: copy.attention.supportSubtitle,
+      href: "/admin/support",
+      icon: <Headset className="h-4 w-4" />,
+      value: formatNumber(locale, supportTotal),
+    },
+    {
+      id: "care",
+      title: copy.attention.careTitle,
+      subtitle: copy.attention.careSubtitle,
+      href: "/admin/care-chat",
+      icon: <MessageSquareMore className="h-4 w-4" />,
+      value: formatNumber(locale, careTotal),
+    },
+    {
+      id: "settlements",
+      title: copy.charts.settlementsTitle,
+      subtitle: copy.kpi.revenueHelper,
+      href: "/admin/settlements",
+      icon: <WalletCards className="h-4 w-4" />,
+      value: formatMoney(locale, settlementLatestValue, settlementCurrency),
+    },
+  ];
+
+  const strongestPriority = priorityItems[0]?.count ?? 0;
+
   return (
     <div className="space-y-6">
-      <section className="app-panel rounded-3xl px-6 py-5">
-        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
-          {copy.common.updatedLabel}
-        </p>
-        <h1 className="mt-2 text-2xl font-semibold tracking-tight text-text-primary dark:text-white/95">
-          {copy.pageTitle}
-        </h1>
-        <p className="mt-1 text-sm text-text-secondary">{copy.pageSubtitle}</p>
-        <p className="mt-3 text-sm text-text-muted">{copy.pageNote}</p>
+      <section className="app-panel rounded-[34px] px-6 py-6 sm:px-7 sm:py-7">
+        <div className="grid gap-6 xl:grid-cols-[minmax(0,1.45fr)_minmax(320px,0.95fr)]">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
+              {copy.common.updatedLabel}
+            </p>
+            <h1 className="mt-2 text-2xl font-semibold tracking-tight text-text-primary dark:text-white/95 sm:text-3xl">
+              {copy.pageTitle}
+            </h1>
+            <p className="mt-2 max-w-[68ch] text-sm leading-6 text-text-secondary sm:text-base">
+              {copy.pageSubtitle}
+            </p>
+            <p className="mt-3 max-w-[70ch] text-sm leading-6 text-text-muted">{copy.pageNote}</p>
+
+            <div className="mt-5 flex flex-wrap gap-2.5">
+              {headerSnapshotItems.map((item) => (
+                <div
+                  key={item.id}
+                  className="app-chip rounded-full px-3.5 py-2 text-sm text-text-secondary dark:text-white/80"
+                >
+                  <span className="font-semibold text-text-primary dark:text-white/95">{item.value}</span>{" "}
+                  {item.label}
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-6">
+              <div className="flex flex-wrap items-end justify-between gap-3">
+                <div>
+                  <h2 className="text-sm font-semibold text-text-primary dark:text-white/95">
+                    {copy.hero.quickActionsTitle}
+                  </h2>
+                  <p className="mt-1 max-w-[56ch] text-sm text-text-secondary">
+                    {copy.hero.quickActionsSubtitle}
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                {quickActionItems.map((item) => (
+                  <Link
+                    key={item.id}
+                    href={item.href as never}
+                    className="app-panel-soft block rounded-[26px] p-4 transition hover:-translate-y-0.5 hover:border-primary/25 hover:bg-primary-light/35 dark:hover:bg-primary/10"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <span className="inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-primary-light text-text-brand dark:bg-primary/15 dark:text-primary-light">
+                        {item.icon}
+                      </span>
+                      <span className="text-sm font-semibold text-text-primary dark:text-white/95">
+                        {item.value}
+                      </span>
+                    </div>
+                    <h3 className="mt-4 text-sm font-semibold text-text-primary dark:text-white/95">
+                      {item.title}
+                    </h3>
+                    <p className="mt-1 text-xs leading-5 text-text-secondary">{item.subtitle}</p>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <aside className="app-panel-soft rounded-[30px] p-5 sm:p-6">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h2 className="text-base font-semibold tracking-tight text-text-primary dark:text-white/95">
+                  {copy.hero.prioritiesTitle}
+                </h2>
+                <p className="mt-1 text-sm leading-6 text-text-secondary">
+                  {copy.hero.prioritiesSubtitle}
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-5 space-y-2.5">
+              {priorityItems.map((item) => (
+                <Link
+                  key={item.id}
+                  href={item.href as never}
+                  className="flex items-center justify-between gap-3 rounded-[22px] bg-white/88 px-4 py-3 transition hover:bg-primary-light/45 dark:bg-white/[0.04] dark:hover:bg-primary/10"
+                >
+                  <div className="flex min-w-0 items-center gap-3">
+                    <span className={`inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl ${item.toneClass}`}>
+                      {item.icon}
+                    </span>
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold text-text-primary dark:text-white/95">
+                        {item.title}
+                      </p>
+                      <p className="mt-0.5 truncate text-xs text-text-secondary">{item.subtitle}</p>
+                    </div>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-2 text-text-secondary dark:text-white/75">
+                    <div className="text-end">
+                      <p className="text-sm font-semibold text-text-primary dark:text-white/95">
+                        {formatNumber(locale, item.count)}
+                      </p>
+                      <p className="text-[11px]">{copy.hero.countSuffix}</p>
+                    </div>
+                    <ArrowRight className="h-4 w-4 rtl:rotate-180" />
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </aside>
+        </div>
       </section>
 
       <section className="grid gap-4 xl:grid-cols-4">
@@ -701,31 +916,81 @@ export default function AdminDashboard() {
           title={copy.attention.heading}
           subtitle={copy.attention.subtitle}
         />
-        <div className="grid gap-5 xl:grid-cols-3">
-          <AdminDashboardQueueCard
-            title={copy.attention.supportTitle}
-            subtitle={copy.attention.supportSubtitle}
-            actionLabel={copy.common.viewAll}
-            actionHref="/admin/support"
-            emptyText={copy.attention.supportEmpty}
-            items={supportItems}
-          />
-          <AdminDashboardQueueCard
-            title={copy.attention.careTitle}
-            subtitle={copy.attention.careSubtitle}
-            actionLabel={copy.common.viewAll}
-            actionHref="/admin/care-chat"
-            emptyText={copy.attention.careEmpty}
-            items={careItems}
-          />
-          <AdminDashboardQueueCard
-            title={copy.attention.applicationsTitle}
-            subtitle={copy.attention.applicationsSubtitle}
-            actionLabel={copy.common.viewAll}
-            actionHref="/admin/practitioner-applications"
-            emptyText={copy.attention.applicationsEmpty}
-            items={applicationItems}
-          />
+        <div className="grid gap-5 xl:grid-cols-12">
+          <div className="xl:col-span-8">
+            <div className="grid gap-5 lg:grid-cols-2">
+              <AdminDashboardQueueCard
+                title={copy.attention.supportTitle}
+                subtitle={copy.attention.supportSubtitle}
+                actionLabel={copy.common.viewAll}
+                actionHref="/admin/support"
+                emptyText={copy.attention.supportEmpty}
+                items={supportItems}
+              />
+              <AdminDashboardQueueCard
+                title={copy.attention.careTitle}
+                subtitle={copy.attention.careSubtitle}
+                actionLabel={copy.common.viewAll}
+                actionHref="/admin/care-chat"
+                emptyText={copy.attention.careEmpty}
+                items={careItems}
+              />
+            </div>
+          </div>
+
+          <div className="xl:col-span-4">
+            <article className="app-panel rounded-[30px] p-5 sm:p-6">
+              <AdminDashboardSectionHeader
+                title={copy.attention.applicationsTitle}
+                subtitle={copy.attention.applicationsSubtitle}
+                actionLabel={copy.common.viewAll}
+                actionHref="/admin/practitioner-applications"
+              />
+
+              <div className="rounded-[24px] bg-primary-light/45 p-4 dark:bg-primary/10">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-brand dark:text-primary-light">
+                  {copy.common.totalLabel}
+                </p>
+                <p className="mt-2 text-[2rem] font-semibold tracking-tight text-text-primary dark:text-white/95">
+                  {formatNumber(locale, applicationsTotal)}
+                </p>
+                <p className="mt-2 text-sm leading-6 text-text-secondary">
+                  {applicationsTotal >= strongestPriority && applicationsTotal > 0
+                    ? copy.attention.subtitle
+                    : copy.attention.applicationsSubtitle}
+                </p>
+              </div>
+
+              <div className="mt-4">
+                {applicationItems.length === 0 ? (
+                  <div className="app-panel-soft rounded-[24px] border border-dashed p-4 text-sm text-text-muted dark:border-white/10">
+                    {copy.attention.applicationsEmpty}
+                  </div>
+                ) : (
+                  <ul className="overflow-hidden rounded-[24px] divide-y divide-border-light/80 bg-surface-secondary/75 dark:divide-white/10 dark:bg-white/[0.03]">
+                    {applicationItems.map((item) => (
+                      <li key={item.id}>
+                        <Link
+                          href={item.href as never}
+                          className="flex items-start justify-between gap-3 px-4 py-3.5 transition hover:bg-primary-light/55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 dark:hover:bg-primary/10"
+                        >
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-medium text-text-primary dark:text-white/95">
+                              {item.title}
+                            </p>
+                            {item.subtitle ? (
+                              <p className="mt-0.5 text-xs text-text-muted">{item.subtitle}</p>
+                            ) : null}
+                          </div>
+                          {item.badge ? <div className="shrink-0">{item.badge}</div> : null}
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </article>
+          </div>
         </div>
       </section>
 
@@ -746,29 +1011,47 @@ export default function AdminDashboard() {
             />
           </div>
           <div className="xl:col-span-5">
-            <article className="app-panel rounded-3xl p-5">
+            <article className="app-panel rounded-[30px] p-5 sm:p-6">
               <AdminDashboardSectionHeader
                 title={copy.activity.snapshotTitle}
                 subtitle={copy.activity.snapshotSubtitle}
                 actionLabel={copy.common.viewAll}
                 actionHref="/admin/moderation/reports"
               />
-              <ul className="space-y-2">
+              <ul className="space-y-2.5">
                 {queueSnapshotItems.map((item) => (
                   <li
                     key={item.id}
-                    className="flex items-center justify-between rounded-2xl border border-border-light bg-surface px-3 py-2.5 dark:border-white/10 dark:bg-white/[0.03]"
+                    className="rounded-[22px] bg-surface-secondary/80 px-4 py-3 dark:bg-white/[0.03]"
                   >
-                    <span className="text-sm font-medium text-text-primary dark:text-white/95">
-                      {item.title}
-                    </span>
-                    <span className="text-sm text-text-secondary">{item.subtitle}</span>
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-sm font-medium text-text-primary dark:text-white/95">
+                        {item.title}
+                      </span>
+                      <span className="text-sm text-text-secondary">{item.subtitle}</span>
+                    </div>
                   </li>
                 ))}
               </ul>
 
-              <div className="mt-4 grid grid-cols-2 gap-2">
-                <div className="rounded-2xl border border-border-light bg-primary-light/70 p-3 dark:border-primary/20 dark:bg-primary/10">
+              <div className="mt-5">
+                <div className="flex items-center justify-between gap-3 rounded-[22px] bg-slate-100/80 px-4 py-3 dark:bg-white/[0.04]">
+                  <div>
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-muted">
+                      {copy.common.updatedLabel}
+                    </p>
+                    <p className="mt-1 text-sm font-medium text-text-primary dark:text-white/95">
+                      {formatDateTimeLabel(locale, new Date().toISOString())}
+                    </p>
+                  </div>
+                  <span className="app-chip rounded-full px-3 py-1.5 text-xs text-text-secondary dark:text-white/80">
+                    {formatNumber(locale, supportTotal + careTotal + applicationsTotal + moderationTotal)} {copy.hero.countSuffix}
+                  </span>
+                </div>
+              </div>
+
+              <div className="mt-4 grid grid-cols-2 gap-2.5">
+                <div className="rounded-[22px] bg-primary-light/70 p-3 dark:bg-primary/10">
                   <div className="flex items-center gap-2 text-text-brand dark:text-primary-light">
                     <ClipboardCheck className="h-4 w-4" />
                     <p className="text-xs font-semibold">{copy.attention.applicationsTitle}</p>
@@ -778,7 +1061,7 @@ export default function AdminDashboard() {
                   </p>
                 </div>
 
-                <div className="rounded-2xl border border-border-light bg-surface-tertiary p-3 dark:border-white/10 dark:bg-white/5">
+                <div className="rounded-[22px] bg-surface-secondary/85 p-3 dark:bg-white/[0.03]">
                   <div className="flex items-center gap-2 text-text-secondary">
                     <ShieldAlert className="h-4 w-4" />
                     <p className="text-xs font-semibold">{copy.attention.moderationTitle}</p>
@@ -788,7 +1071,7 @@ export default function AdminDashboard() {
                   </p>
                 </div>
 
-                <div className="rounded-2xl border border-border-light bg-surface-tertiary p-3 dark:border-white/10 dark:bg-white/5">
+                <div className="rounded-[22px] bg-surface-secondary/85 p-3 dark:bg-white/[0.03]">
                   <div className="flex items-center gap-2 text-text-secondary">
                     <Activity className="h-4 w-4" />
                     <p className="text-xs font-semibold">{copy.attention.supportTitle}</p>
@@ -798,7 +1081,7 @@ export default function AdminDashboard() {
                   </p>
                 </div>
 
-                <div className="rounded-2xl border border-border-light bg-surface-tertiary p-3 dark:border-white/10 dark:bg-white/5">
+                <div className="rounded-[22px] bg-surface-secondary/85 p-3 dark:bg-white/[0.03]">
                   <div className="flex items-center gap-2 text-text-secondary">
                     <BadgeDollarSign className="h-4 w-4" />
                     <p className="text-xs font-semibold">{copy.kpi.revenue}</p>

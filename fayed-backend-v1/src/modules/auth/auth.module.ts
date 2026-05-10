@@ -47,10 +47,11 @@ import { ResetPractitionerPasswordUseCase } from './use-cases/reset-practitioner
 import { RevokeAuthSessionUseCase } from './use-cases/revoke-auth-session.use-case';
 import { VerifyPasswordUseCase } from './use-cases/verify-password.use-case';
 import { VerifyPractitionerLoginOtpUseCase } from './use-cases/verify-practitioner-login-otp.use-case';
+import { PresenceModule } from '../presence/presence.module';
 import { VerificationModule } from '../verification/verification.module';
 
 @Module({
-  imports: [JwtModule.register({}), VerificationModule],
+  imports: [JwtModule.register({}), VerificationModule, PresenceModule],
   controllers: [
     PatientAuthController,
     PractitionerAuthController,

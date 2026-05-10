@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   ScrollView,
   StyleSheet,
@@ -30,6 +30,8 @@ import {
 } from "../../../../src/features/patient/payments/hooks";
 import { extractHostedCheckoutReturnParams } from "../../../../src/features/patient/payments/return-utils";
 import { extractApiErrorMessage } from "../../../../src/lib/api";
+import { normalizeAllowedExternalUrl } from "../../../../src/lib/external-url";
+import { trackAnalyticsEvent } from "../../../../src/lib/analytics";
 import type { PaymobCheckoutMethod } from "../../../../src/features/patient/payments/types";
 
 WebBrowser.maybeCompleteAuthSession();
@@ -137,6 +139,7 @@ export default function SessionPaymentCheckoutScreen() {
   const [flowMessage, setFlowMessage] = useState<string | null>(null);
   const [flowError, setFlowError] = useState<string | null>(null);
   const [isLaunchingCheckout, setIsLaunchingCheckout] = useState(false);
+  const initiateLockRef = useRef(false);
 
   const sessionQuery = usePatientSession(id ?? null);
   const walletQuery = usePatientWalletSummary();
@@ -294,10 +297,24 @@ export default function SessionPaymentCheckoutScreen() {
   ) => {
     setIsLaunchingCheckout(true);
 
+    const safeCheckoutUrl = normalizeAllowedExternalUrl(checkoutUrl);
+    if (!safeCheckoutUrl) {
+      setFlowError(
+        t("patientPaymentsFlow.checkout.unsupportedProviderPayload"),
+      );
+      trackAnalyticsEvent("payment_failed", {
+        sessionId: id ?? "unknown",
+        reason: "invalid_checkout_url",
+        provider: capabilities?.provider || "unknown",
+      });
+      setIsLaunchingCheckout(false);
+      return;
+    }
+
     if (nativeReturnUrl) {
       try {
         const result = await WebBrowser.openAuthSessionAsync(
-          checkoutUrl,
+          safeCheckoutUrl,
           nativeReturnUrl,
         );
 
@@ -327,7 +344,7 @@ export default function SessionPaymentCheckoutScreen() {
     }
 
     try {
-      await WebBrowser.openBrowserAsync(checkoutUrl);
+      await WebBrowser.openBrowserAsync(safeCheckoutUrl);
 
       navigateToPaymentReturn({
         recovery: "browser",
@@ -339,9 +356,18 @@ export default function SessionPaymentCheckoutScreen() {
   };
 
   const handleInitiatePayment = async () => {
-    if (!id || isLaunchingCheckout) return;
+    if (!id || isLaunchingCheckout || initiateLockRef.current) return;
     setFlowMessage(null);
     setFlowError(null);
+    initiateLockRef.current = true;
+
+    trackAnalyticsEvent("payment_initiated", {
+      sessionId: id,
+      provider: capabilities?.provider || "unknown",
+      useWalletBalance,
+      gatewayRequired: gatewayPaymentRequired,
+      couponApplied: Boolean(appliedCoupon),
+    });
 
     try {
       const payload = await initiateMutation.mutateAsync({
@@ -391,6 +417,11 @@ export default function SessionPaymentCheckoutScreen() {
         setFlowError(
           t("patientPaymentsFlow.checkout.unsupportedProviderPayload"),
         );
+        trackAnalyticsEvent("payment_failed", {
+          sessionId: id,
+          reason: "unsupported_provider_payload",
+          provider: capabilities?.provider || "unknown",
+        });
         return;
       }
 
@@ -407,6 +438,11 @@ export default function SessionPaymentCheckoutScreen() {
       }
 
       setFlowError(t("patientPaymentsFlow.checkout.unresolvedPaymentState"));
+      trackAnalyticsEvent("payment_failed", {
+        sessionId: id,
+        reason: "unresolved_payment_state",
+        provider: capabilities?.provider || "unknown",
+      });
     } catch (error) {
       setFlowError(
         toPatientSafePaymentError(
@@ -414,6 +450,13 @@ export default function SessionPaymentCheckoutScreen() {
           t("patientPaymentsFlow.checkout.requestFailed"),
         ),
       );
+      trackAnalyticsEvent("payment_failed", {
+        sessionId: id,
+        reason: "initiate_failed",
+        provider: capabilities?.provider || "unknown",
+      });
+    } finally {
+      initiateLockRef.current = false;
     }
   };
 
@@ -905,6 +948,7 @@ export default function SessionPaymentCheckoutScreen() {
           disabled={
             initiateMutation.isPending ||
             isLaunchingCheckout ||
+            initiateLockRef.current ||
             !breakdown ||
             breakdownLoading ||
             capabilitiesLoading ||

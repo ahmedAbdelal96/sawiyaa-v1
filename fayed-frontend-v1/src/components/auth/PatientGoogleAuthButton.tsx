@@ -123,7 +123,7 @@ export default function PatientGoogleAuthButton({
       size: "large",
       text: "continue_with",
       shape: "pill",
-      width: 380,
+      width: Math.min(container.clientWidth || 380, 380),
     });
 
     return () => {

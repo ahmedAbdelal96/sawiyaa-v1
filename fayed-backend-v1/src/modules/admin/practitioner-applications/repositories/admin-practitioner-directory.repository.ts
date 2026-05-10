@@ -7,6 +7,7 @@ import {
   UserRoleType,
 } from '@prisma/client';
 import { PrismaService } from '@common/prisma/prisma.service';
+import { getPresenceFreshnessCutoff } from '@modules/presence/utils/presence-liveness';
 import {
   AdminPractitionerGenderDto,
   AdminPractitionerKindDto,
@@ -31,6 +32,7 @@ export class AdminPractitionerDirectoryRepository {
   }): Prisma.PractitionerProfileWhereInput {
     const search = input.search?.trim();
     const countryCode = input.country?.trim().toUpperCase();
+    const onlineFreshnessCutoff = getPresenceFreshnessCutoff();
 
     const practitionerTypeFilter =
       input.practitionerKind === AdminPractitionerKindDto.DOCTOR
@@ -80,6 +82,9 @@ export class AdminPractitionerDirectoryRepository {
           ? {
               is: {
                 status: PresenceStatus.ONLINE,
+                lastSeenAtUtc: {
+                  gte: onlineFreshnessCutoff,
+                },
               },
             }
           : undefined,
@@ -194,6 +199,7 @@ export class AdminPractitionerDirectoryRepository {
           presence: {
             select: {
               status: true,
+              lastSeenAtUtc: true,
             },
           },
           ratingSummary: {

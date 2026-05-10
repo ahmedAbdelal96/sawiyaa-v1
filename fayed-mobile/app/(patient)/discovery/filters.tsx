@@ -7,9 +7,12 @@ import {
   TextInput,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { useQuery } from "@tanstack/react-query";
 import { Header, Screen, Text, Button } from "../../../src/components/ui";
 import { useTheme } from "../../../src/providers/ThemeProvider";
 import { useTranslation } from "react-i18next";
+import { LoadingState, ErrorState } from "../../../src/components/ui";
+import { listSpecialties } from "../../../src/features/specialties/api";
 
 type ParamsShape = Record<string, string | string[]>;
 
@@ -38,7 +41,15 @@ export default function DiscoveryFiltersScreen() {
   const params = useLocalSearchParams<ParamsShape>();
 
   const baseParams = useMemo(() => toParamsRecord(params), [params]);
+  const specialtiesQuery = useQuery({
+    queryKey: ["public-specialties", "discovery-filters"],
+    queryFn: listSpecialties,
+  });
 
+  const [specialtySlug, setSpecialtySlug] = useState(
+    baseParams.specialtySlug || "",
+  );
+  const [language, setLanguage] = useState(baseParams.language || "");
   const [gender, setGender] = useState(baseParams.gender || "");
   const [onlineNow, setOnlineNow] = useState(baseParams.onlineNow || "");
   const [availableToday, setAvailableToday] = useState(
@@ -67,6 +78,34 @@ export default function DiscoveryFiltersScreen() {
     { id: "false", labelKey: "discovery.filters.booleanNo" },
   ];
 
+  const specialtyChoices = useMemo(() => {
+    return (specialtiesQuery.data?.specialties ?? [])
+      .filter((item) => item.isActive)
+      .slice()
+      .sort((a, b) => {
+        const categoryA = a.category?.name ?? "";
+        const categoryB = b.category?.name ?? "";
+        if (categoryA !== categoryB) {
+          return categoryA.localeCompare(categoryB);
+        }
+        return (a.name ?? a.slug).localeCompare(b.name ?? b.slug);
+      })
+      .map((item) => ({
+        id: item.slug,
+        label: item.name ?? item.slug,
+      }));
+  }, [specialtiesQuery.data?.specialties]);
+
+  const languageChoices = useMemo(
+    () => [
+      { id: "", label: t("discovery.filters.any") },
+      { id: "ar", label: t("matching.question.language.ar") },
+      { id: "en", label: t("matching.question.language.en") },
+      { id: "fr", label: t("matching.question.language.fr") },
+    ],
+    [t],
+  );
+
   const sortChoices = [
     { id: "", labelKey: "discovery.filters.sortNone" },
     { id: "recommended", labelKey: "discovery.filters.sortRecommended" },
@@ -80,6 +119,8 @@ export default function DiscoveryFiltersScreen() {
       params: {
         ...baseParams,
         page: "1",
+        specialtySlug: specialtySlug || undefined,
+        language: language || undefined,
         gender: gender || undefined,
         onlineNow: onlineNow || undefined,
         availableToday: availableToday || undefined,
@@ -95,6 +136,18 @@ export default function DiscoveryFiltersScreen() {
   };
 
   const clearFilters = () => {
+    setSpecialtySlug("");
+    setLanguage("");
+    setGender("");
+    setOnlineNow("");
+    setAvailableToday("");
+    setAvailableThisWeek("");
+    setAcceptsCoupon("");
+    setAcceptsPackage("");
+    setSort("");
+    setMinRating("");
+    setMinSessionFee("");
+    setMaxSessionFee("");
     router.replace({
       pathname: "/(patient)/discovery",
       params: {
@@ -114,6 +167,36 @@ export default function DiscoveryFiltersScreen() {
       />
 
       <ScrollView contentContainerStyle={styles.content}>
+        <FilterSection title={t("discovery.filters.specialty")}>
+          {specialtiesQuery.isLoading ? (
+            <LoadingState message={t("discovery.list.loading")} />
+          ) : specialtiesQuery.isError ? (
+            <ErrorState
+              title={t("discovery.filters.specialtyLoadError")}
+              message={t("discovery.filters.specialtyLoadErrorSubtitle")}
+              onRetry={() => specialtiesQuery.refetch()}
+              retryText={t("retry", "Retry")}
+            />
+          ) : (
+            <ChoiceRow
+              value={specialtySlug}
+              onChange={setSpecialtySlug}
+              choices={[
+                { id: "", label: t("discovery.filters.any") },
+                ...specialtyChoices,
+              ]}
+            />
+          )}
+        </FilterSection>
+
+        <FilterSection title={t("discovery.filters.language")}>
+          <ChoiceRow
+            value={language}
+            onChange={setLanguage}
+            choices={languageChoices}
+          />
+        </FilterSection>
+
         <FilterSection title={t("discovery.filters.gender")}>
           <ChoiceRow
             value={gender}

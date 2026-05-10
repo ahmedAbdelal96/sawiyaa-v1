@@ -1,6 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { PresenceStatus } from '@prisma/client';
 import { PrismaService } from '@common/prisma/prisma.service';
+import { Prisma } from '@prisma/client';
+
+type DbClient = PrismaService | Prisma.TransactionClient;
 
 /**
  * PractitionerPresenceRepository owns current live-state persistence only.
@@ -10,22 +13,32 @@ import { PrismaService } from '@common/prisma/prisma.service';
 export class PractitionerPresenceRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  getByPractitionerProfileId(practitionerId: string) {
-    return this.prisma.practitionerPresence.findUnique({
+  private getDb(tx?: Prisma.TransactionClient): DbClient {
+    return tx ?? this.prisma;
+  }
+
+  getByPractitionerProfileId(
+    practitionerId: string,
+    tx?: Prisma.TransactionClient,
+  ) {
+    return this.getDb(tx).practitionerPresence.findUnique({
       where: {
         practitionerId,
       },
     });
   }
 
-  async createOrGetByPractitionerProfileId(practitionerId: string) {
-    const existing = await this.getByPractitionerProfileId(practitionerId);
+  async createOrGetByPractitionerProfileId(
+    practitionerId: string,
+    tx?: Prisma.TransactionClient,
+  ) {
+    const existing = await this.getByPractitionerProfileId(practitionerId, tx);
 
     if (existing) {
       return existing;
     }
 
-    return this.prisma.practitionerPresence.create({
+    return this.getDb(tx).practitionerPresence.create({
       data: {
         practitionerId,
         status: PresenceStatus.OFFLINE,
@@ -34,10 +47,14 @@ export class PractitionerPresenceRepository {
     });
   }
 
-  async updateStatus(practitionerId: string, status: PresenceStatus) {
-    await this.createOrGetByPractitionerProfileId(practitionerId);
+  async updateStatus(
+    practitionerId: string,
+    status: PresenceStatus,
+    tx?: Prisma.TransactionClient,
+  ) {
+    await this.createOrGetByPractitionerProfileId(practitionerId, tx);
 
-    return this.prisma.practitionerPresence.update({
+    return this.getDb(tx).practitionerPresence.update({
       where: {
         practitionerId,
       },
@@ -49,13 +66,31 @@ export class PractitionerPresenceRepository {
     });
   }
 
+  async markOnline(practitionerId: string, tx?: Prisma.TransactionClient) {
+    await this.createOrGetByPractitionerProfileId(practitionerId, tx);
+
+    const now = new Date();
+
+    return this.getDb(tx).practitionerPresence.update({
+      where: {
+        practitionerId,
+      },
+      data: {
+        status: PresenceStatus.ONLINE,
+        lastSeenAtUtc: now,
+        lastHeartbeatAtUtc: now,
+      },
+    });
+  }
+
   async updateInstantBookingEnabled(
     practitionerId: string,
     isInstantBookingEnabled: boolean,
+    tx?: Prisma.TransactionClient,
   ) {
-    await this.createOrGetByPractitionerProfileId(practitionerId);
+    await this.createOrGetByPractitionerProfileId(practitionerId, tx);
 
-    return this.prisma.practitionerPresence.update({
+    return this.getDb(tx).practitionerPresence.update({
       where: {
         practitionerId,
       },
@@ -66,10 +101,10 @@ export class PractitionerPresenceRepository {
     });
   }
 
-  async touchLastSeen(practitionerId: string) {
-    await this.createOrGetByPractitionerProfileId(practitionerId);
+  async touchLastSeen(practitionerId: string, tx?: Prisma.TransactionClient) {
+    await this.createOrGetByPractitionerProfileId(practitionerId, tx);
 
-    return this.prisma.practitionerPresence.update({
+    return this.getDb(tx).practitionerPresence.update({
       where: {
         practitionerId,
       },
@@ -79,16 +114,23 @@ export class PractitionerPresenceRepository {
     });
   }
 
-  async touchHeartbeat(practitionerId: string) {
-    await this.createOrGetByPractitionerProfileId(practitionerId);
+  async touchHeartbeat(practitionerId: string, tx?: Prisma.TransactionClient) {
+    const current = await this.createOrGetByPractitionerProfileId(
+      practitionerId,
+      tx,
+    );
 
     const now = new Date();
+    const shouldPromoteToOnline =
+      current.status === PresenceStatus.OFFLINE &&
+      current.manuallySetAtUtc === null;
 
-    return this.prisma.practitionerPresence.update({
+    return this.getDb(tx).practitionerPresence.update({
       where: {
         practitionerId,
       },
       data: {
+        status: shouldPromoteToOnline ? PresenceStatus.ONLINE : current.status,
         lastSeenAtUtc: now,
         lastHeartbeatAtUtc: now,
       },

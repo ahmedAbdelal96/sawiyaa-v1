@@ -1,13 +1,23 @@
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { AlertTriangle } from "lucide-react";
+import PatientSectionFrame from "@/components/patient/PatientSectionFrame";
 import { Link } from "@/i18n/navigation";
 import PatientArticlesIndexScreen from "@/features/articles-public/components/PatientArticlesIndexScreen";
-import { fetchPublicArticles } from "@/features/articles-public/api/articles-public-ssr.api";
+import {
+  fetchPublicArticles,
+  fetchPublicSpecialties,
+  fetchPublicSpecialtyCategories,
+} from "@/features/articles-public/api/articles-public-ssr.api";
 
 type Props = {
   params: Promise<{ locale: string }>;
-  searchParams: Promise<{ page?: string }>;
+  searchParams: Promise<{
+    page?: string;
+    q?: string;
+    categoryRoot?: string;
+    categorySlug?: string;
+  }>;
 };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -24,19 +34,29 @@ export default async function PatientArticlesPage({ params, searchParams }: Prop
   const { locale } = await params;
   setRequestLocale(locale);
 
-  const { page = "1" } = await searchParams;
+  const { page = "1", q = "", categoryRoot = "", categorySlug = "" } = await searchParams;
   const currentPage = Math.max(1, parseInt(page, 10) || 1);
+  const tList = await getTranslations({ locale, namespace: "public-articles.patient.list" });
   const tUnavailable = await getTranslations({
     locale,
     namespace: "public-articles.patient.states.unavailable",
   });
 
   let data: Awaited<ReturnType<typeof fetchPublicArticles>>;
+  let specialtyCategories: Awaited<ReturnType<typeof fetchPublicSpecialtyCategories>> = [];
+  let specialties: Awaited<ReturnType<typeof fetchPublicSpecialties>> = [];
   try {
-    data = await fetchPublicArticles(locale, {
-      page: currentPage,
-      limit: 9,
-    });
+    [data, specialtyCategories, specialties] = await Promise.all([
+      fetchPublicArticles(locale, {
+        page: currentPage,
+        limit: 9,
+        q: q.trim() || undefined,
+        categoryRoot: categoryRoot.trim() || undefined,
+        categorySlug: categorySlug.trim() || undefined,
+      }),
+      fetchPublicSpecialtyCategories(locale),
+      fetchPublicSpecialties(locale),
+    ]);
   } catch {
     return (
       <div className="mx-auto max-w-3xl px-4 py-8">
@@ -70,8 +90,22 @@ export default async function PatientArticlesPage({ params, searchParams }: Prop
   }
 
   return (
-    <div className="px-4 py-8">
-      <PatientArticlesIndexScreen data={data} />
-    </div>
+    <PatientSectionFrame
+      eyebrow={tList("eyebrow")}
+      title={tList("title")}
+      description={tList("description")}
+    >
+      <PatientArticlesIndexScreen
+        data={data}
+        locale={locale}
+        specialtyCategories={specialtyCategories}
+        specialties={specialties}
+        filters={{
+          q: q.trim(),
+          categoryRoot: categoryRoot.trim(),
+          categorySlug: categorySlug.trim(),
+        }}
+      />
+    </PatientSectionFrame>
   );
 }

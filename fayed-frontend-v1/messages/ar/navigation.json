@@ -36,14 +36,41 @@
     "assessments": "الاختبارات",
     "availability": "التوفر"
   },
+  "overview": {
+    "title": "نظرة عامة"
+  },
+  "operations": {
+    "title": "التشغيل والرعاية"
+  },
+  "catalog": {
+    "title": "الخدمات والمحتوى"
+  },
+  "financeOps": {
+    "title": "المالية والتسويات"
+  },
+  "insights": {
+    "title": "التقارير والحوكمة"
+  },
   "practitionerMain": {
     "title": "العمل الأساسي"
+  },
+  "practitionerOverview": {
+    "title": "نظرة عامة"
+  },
+  "practitionerWorkflow": {
+    "title": "العمل اليومي"
+  },
+  "practitionerCommunication": {
+    "title": "التواصل والمساندة"
   },
   "practitionerWorkspace": {
     "title": "الرسائل"
   },
   "practitionerFinance": {
     "title": "الماليات"
+  },
+  "practitionerProfile": {
+    "title": "الملف والجاهزية"
   },
   "practitionerReadiness": {
     "title": "الجاهزية"

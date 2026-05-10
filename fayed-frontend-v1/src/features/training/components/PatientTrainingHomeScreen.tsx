@@ -10,6 +10,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { ListStateSkeleton, StateCard } from "@/components/shared/ContentStates";
+import { PatientQuickNav } from "@/components/patient/PatientSectionFrame";
 import { usePatientTrainingEnrollments } from "../hooks/use-training";
 import type { PatientTrainingEnrollmentItem } from "../types/training.types";
 import {
@@ -320,6 +321,10 @@ export default function PatientTrainingHomeScreen() {
               {t("patient.home.stats.next.note")}
             </p>
           </div>
+        </div>
+
+        <div className="mt-5 border-t border-border-light/70 pt-4 dark:border-white/10">
+          <PatientQuickNav />
         </div>
       </section>
 

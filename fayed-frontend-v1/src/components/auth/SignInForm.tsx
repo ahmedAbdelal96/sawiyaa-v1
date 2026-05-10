@@ -9,7 +9,14 @@ import { useSearchParams } from "next/navigation";
 import { Link, useRouter } from "@/i18n/navigation";
 import Input from "@/components/form/input/InputField";
 import Label from "@/components/form/Label";
-import { ChevronLeftIcon, EyeCloseIcon, EyeIcon } from "@/icons";
+import {
+  ChevronLeftIcon,
+  EyeCloseIcon,
+  EyeIcon,
+  GridIcon,
+  GroupIcon,
+  UserCircleIcon,
+} from "@/icons";
 import PatientGoogleAuthButton from "@/components/auth/PatientGoogleAuthButton";
 import {
   useAdminLogin,
@@ -18,6 +25,7 @@ import {
   usePractitionerVerifyOtp,
 } from "@/features/auth/hooks/use-auth";
 import type {
+  AuthenticatedUser,
   AuthSuccessResponse,
   OtpChallengeResponse,
 } from "@/features/auth/types/auth.types";
@@ -50,8 +58,19 @@ type PractitionerChallengeState = {
 
 type PractitionerLoginResponse = OtpChallengeResponse | AuthSuccessResponse;
 
+type ModeConfig = {
+  icon: typeof UserCircleIcon;
+};
+
+const MODE_CONFIG: Record<SignInMode, ModeConfig> = {
+  patient: { icon: UserCircleIcon },
+  practitioner: { icon: GroupIcon },
+  admin: { icon: GridIcon },
+};
+
 function buildAuthHref(basePath: string, params: Record<string, string | null>) {
-  const search = new URLSearchParams();
+  const [pathname, existingQuery = ""] = basePath.split("?");
+  const search = new URLSearchParams(existingQuery);
 
   Object.entries(params).forEach(([key, value]) => {
     if (value) {
@@ -60,7 +79,7 @@ function buildAuthHref(basePath: string, params: Record<string, string | null>) 
   });
 
   const query = search.toString();
-  return query ? `${basePath}?${query}` : basePath;
+  return query ? `${pathname}?${query}` : pathname;
 }
 
 type SignInFormProps = {
@@ -88,10 +107,7 @@ const TEST_CREDENTIALS_BY_MODE: Record<
   },
 };
 
-const PRACTITIONER_TEST_CREDENTIALS: Array<{
-  email: string;
-  password: string;
-}> = [
+const PRACTITIONER_TEST_CREDENTIALS = [
   { email: "dr.ahmed@hesba.local", password: "Practitioner@12345" },
   { email: "dr.mohamed@hesba.local", password: "Practitioner2@12345" },
   { email: "dr.youssef@hesba.local", password: "Practitioner5@12345" },
@@ -100,18 +116,12 @@ const PRACTITIONER_TEST_CREDENTIALS: Array<{
   { email: "dr.nour@hesba.local", password: "Practitioner8@12345" },
 ];
 
-const PATIENT_TEST_CREDENTIALS: Array<{
-  email: string;
-  password: string;
-}> = [
+const PATIENT_TEST_CREDENTIALS = [
   { email: "ahmed.patient@hesba.local", password: "Patient@12345" },
   { email: "mohamed.patient@hesba.local", password: "Patient2@12345" },
 ];
 
-const ADMIN_TEST_CREDENTIALS: Array<{
-  email: string;
-  password: string;
-}> = [{ email: "admin@hesba.local", password: "Admin@12345" }];
+const ADMIN_TEST_CREDENTIALS = [{ email: "admin@hesba.local", password: "Admin@12345" }];
 
 export default function SignInForm({ mode }: SignInFormProps) {
   const t = useTranslations("auth");
@@ -149,9 +159,13 @@ export default function SignInForm({ mode }: SignInFormProps) {
     },
   });
 
-  const redirectAfterAuth = (roles: string[]) => {
-    const resolvedRole = resolveRole(roles[0]) ?? "PATIENT";
-    const target = normalizedCallbackUrl ?? getDefaultRouteByRole(resolvedRole);
+  const redirectAfterAuth = (user: AuthenticatedUser) => {
+    const resolvedRole = resolveRole(user.roles[0]) ?? "PATIENT";
+    const practitionerNeedsOnboarding =
+      resolvedRole === "PRACTITIONER" && user.practitionerStatus !== "APPROVED";
+    const target = practitionerNeedsOnboarding
+      ? "/practitioner/application"
+      : (normalizedCallbackUrl ?? getDefaultRouteByRole(resolvedRole));
 
     router.replace(target);
     router.refresh();
@@ -163,7 +177,6 @@ export default function SignInForm({ mode }: SignInFormProps) {
   };
 
   const getSafeCredentialsErrorMessage = () => t("loginError");
-
   const getSafeOtpErrorMessage = () => t("otpError");
 
   const onSubmitCredentials = async (data: CredentialsFormData) => {
@@ -172,13 +185,13 @@ export default function SignInForm({ mode }: SignInFormProps) {
     try {
       if (mode === "patient") {
         const result = await patientLogin.mutateAsync(data);
-        redirectAfterAuth(result.user.roles);
+        redirectAfterAuth(result.user);
         return;
       }
 
       if (mode === "admin") {
         const result = await adminLogin.mutateAsync(data);
-        redirectAfterAuth(result.user.roles);
+        redirectAfterAuth(result.user);
         return;
       }
 
@@ -187,7 +200,7 @@ export default function SignInForm({ mode }: SignInFormProps) {
       )) as PractitionerLoginResponse;
 
       if ("tokens" in loginResponse) {
-        redirectAfterAuth(loginResponse.user.roles);
+        redirectAfterAuth(loginResponse.user);
         return;
       }
 
@@ -211,7 +224,7 @@ export default function SignInForm({ mode }: SignInFormProps) {
         challengeId: challenge.challengeId,
         code: data.code,
       });
-      redirectAfterAuth(result.user.roles);
+      redirectAfterAuth(result.user);
     } catch {
       setError(getSafeOtpErrorMessage());
     }
@@ -229,8 +242,9 @@ export default function SignInForm({ mode }: SignInFormProps) {
       : mode === "practitioner"
         ? buildAuthHref("/signup", { callbackUrl: normalizedCallbackUrl, mode: "practitioner" })
         : null;
-  const chooserHref = buildAuthHref("/signin", { callbackUrl: normalizedCallbackUrl });
   const shouldShowTestCredentials = process.env.NODE_ENV !== "production";
+  const modeConfig = MODE_CONFIG[mode];
+  const ModeIcon = modeConfig.icon;
   const testCredentials = TEST_CREDENTIALS_BY_MODE[mode];
   const quickAccountsByMode: Record<
     SignInMode,
@@ -260,250 +274,285 @@ export default function SignInForm({ mode }: SignInFormProps) {
   };
 
   return (
-    <div className="flex w-full flex-1 flex-col lg:w-1/2">
-      <div className="mx-auto mb-5 w-full max-w-md sm:pt-10">
+    <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col">
+      <div className="flex items-center justify-between gap-3">
         <Link
           href="/"
-          className="inline-flex items-center text-sm text-gray-500 transition-colors hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+          className="inline-flex items-center gap-2 text-sm text-text-secondary transition-colors hover:text-text-primary dark:text-text-secondary dark:hover:text-text-primary"
         >
           <ChevronLeftIcon />
           {t("backToHome")}
         </Link>
+
+        <div className="rounded-full border border-border-light bg-surface/80 px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-text-secondary dark:border-border-light dark:bg-surface-tertiary/80 dark:text-text-secondary">
+          {t(`modes.${mode}`)}
+        </div>
       </div>
 
-      <div className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center">
-        <div>
-          <div className="mb-5 sm:mb-8">
-            <h1 className="mb-2 text-title-sm font-semibold text-gray-800 dark:text-white/90 sm:text-title-md">
-              {challenge ? t("verifyOtpTitle") : t("welcomeBack")}
-            </h1>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              {challenge
-                ? t("verifyOtpDescription", { target: challenge.maskedTarget })
-                : t(descriptionKey)}
-            </p>
-          </div>
-
-          {!challenge ? (
-            <form onSubmit={credentialsForm.handleSubmit(onSubmitCredentials)}>
-              <div className="space-y-6">
-                {shouldShowTestCredentials && (
-                  <div className="rounded-2xl border border-primary/15 bg-primary/5 p-4 dark:border-primary/20 dark:bg-primary/10">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="space-y-2">
-                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">
-                          {t("testCredentials.badge")}
-                        </p>
-                        <div className="space-y-1">
-                          <p className="text-sm font-medium text-text-primary dark:text-white/90">
-                            {t("testCredentials.title")}
-                          </p>
-                          <p className="text-xs text-text-secondary dark:text-white/70">
-                            {t("testCredentials.description")}
-                          </p>
-                        </div>
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={() => applyTestCredentials()}
-                        className="shrink-0 rounded-full border border-primary/20 px-3 py-1.5 text-xs font-medium text-primary transition hover:border-primary hover:bg-primary hover:text-white"
-                      >
-                        {t("testCredentials.apply")}
-                      </button>
-                    </div>
-
-                    <div className="mt-3 grid gap-2 rounded-xl bg-white/80 p-3 text-xs text-text-secondary dark:bg-white/5 dark:text-white/70">
-                      <div className="flex items-center justify-between gap-3">
-                        <span>{t("testCredentials.emailLabel")}</span>
-                        <span className="font-medium text-text-primary dark:text-white/90">
-                          {testCredentials.email}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between gap-3">
-                        <span>{t("testCredentials.passwordLabel")}</span>
-                        <span className="font-medium text-text-primary dark:text-white/90">
-                          {testCredentials.password}
-                        </span>
-                      </div>
-                    </div>
-
-                    {quickAccounts.length > 0 && (
-                      <div className="mt-3 flex flex-wrap gap-2">
-                        {quickAccounts.map((item) => (
-                          <button
-                            key={item.email}
-                            type="button"
-                            onClick={() => applyTestCredentials(item)}
-                            className="rounded-full border border-primary/20 bg-white/80 px-3 py-1.5 text-xs font-medium text-primary transition hover:border-primary hover:bg-primary hover:text-white dark:bg-white/5"
-                          >
-                            {item.email}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
-
+      <div className="py-6">
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(24rem,30rem)] lg:items-start">
+          <section className="rounded-[30px] border border-border-light bg-surface/65 p-6 dark:border-border-light dark:bg-surface-tertiary/45 lg:sticky lg:top-6">
+            <div className="rounded-[26px] bg-primary-light/50 p-5 dark:bg-primary/10 sm:p-6">
+              <div className="mb-4 flex items-start justify-between gap-4">
                 <div>
-                  <Label>
-                    {t("email")} <span className="text-error-500">*</span>
-                  </Label>
-                  <Input
-                    placeholder={t("emailPlaceholder")}
-                    type="email"
-                    {...credentialsForm.register("email")}
-                    error={!!credentialsForm.formState.errors.email}
-                    dir="ltr"
-                  />
-                  {credentialsForm.formState.errors.email && (
-                    <p className="mt-1 text-sm text-error-500">
-                      {credentialsForm.formState.errors.email.message}
-                    </p>
-                  )}
+                  <p className="mb-2 text-xs font-semibold uppercase tracking-[0.22em] text-primary">
+                    {challenge ? t("verifyOtpTitle") : t(`entryCards.${mode}.eyebrow`)}
+                  </p>
+                  <h1 className="text-3xl font-semibold leading-tight text-text-primary dark:text-text-primary sm:text-4xl">
+                    {challenge ? t("verifyOtpTitle") : t(`entryCards.${mode}.title`)}
+                  </h1>
                 </div>
 
-                <div>
-                  <Label>
-                    {t("password")} <span className="text-error-500">*</span>
-                  </Label>
-                  <div className="relative">
-                    <Input
-                      type={showPassword ? "text" : "password"}
-                      placeholder={t("passwordPlaceholder")}
-                      {...credentialsForm.register("password")}
-                      error={!!credentialsForm.formState.errors.password}
-                      dir="ltr"
-                    />
-                    <span
-                      onClick={() => setShowPassword((prev) => !prev)}
-                      className="absolute right-4 top-1/2 z-30 -translate-y-1/2 cursor-pointer"
-                    >
-                      {showPassword ? (
-                        <EyeIcon className="fill-gray-500 dark:fill-gray-400" />
-                      ) : (
-                        <EyeCloseIcon className="fill-gray-500 dark:fill-gray-400" />
-                      )}
-                    </span>
-                  </div>
-                  {credentialsForm.formState.errors.password && (
-                    <p className="mt-1 text-sm text-error-500">
-                      {credentialsForm.formState.errors.password.message}
-                    </p>
-                  )}
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/90 text-primary dark:bg-surface/75 dark:text-primary-light">
+                  <ModeIcon className="h-5 w-5" />
                 </div>
-
-                {mode === "practitioner" && (
-                  <p className="text-xs text-text-muted">{t("practitionerOtpHint")}</p>
-                )}
-
-                <div className="flex items-center justify-end">
-                  <span className="text-sm text-gray-400 dark:text-gray-500">
-                    {t("forgotPassword")}
-                  </span>
-                </div>
-
-                {error && (
-                  <div className="rounded-lg bg-error-50 p-3 text-sm text-error-500 dark:bg-error-500/10">
-                    {error}
-                  </div>
-                )}
-
-                <div>
-                  <button
-                    type="submit"
-                    disabled={isSubmitting}
-                    className="flex w-full items-center justify-center rounded-lg bg-primary px-4 py-3 text-sm font-medium text-white shadow-theme-xs transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    {isSubmitting ? t("signingIn") : t("signInButton")}
-                  </button>
-                </div>
-
-                {mode === "patient" && (
-                  <PatientGoogleAuthButton
-                    callbackUrl={callbackUrl}
-                    defaultRedirect={getDefaultRouteByRole("PATIENT")}
-                  />
-                )}
               </div>
-            </form>
-          ) : (
-            <form onSubmit={otpForm.handleSubmit(onSubmitOtp)}>
-              <div className="space-y-6">
-                <div>
-                  <Label>
-                    {t("otpCode")} <span className="text-error-500">*</span>
-                  </Label>
-                  <Input
-                    type="text"
-                    placeholder={t("otpPlaceholder")}
-                    {...otpForm.register("code")}
-                    error={!!otpForm.formState.errors.code}
-                    dir="ltr"
-                  />
-                  {otpForm.formState.errors.code && (
-                    <p className="mt-1 text-sm text-error-500">
-                      {otpForm.formState.errors.code.message}
-                    </p>
-                  )}
+
+              <p className="text-sm leading-7 text-text-secondary dark:text-text-secondary sm:text-base">
+                {challenge
+                  ? t("verifyOtpDescription", { target: challenge.maskedTarget })
+                  : t(descriptionKey)}
+              </p>
+
+              <div className="mt-5 flex flex-wrap gap-2">
+                <div className="rounded-full border border-primary/15 bg-white/85 px-4 py-2 text-xs font-medium text-primary dark:bg-surface/75 dark:text-primary-light">
+                  {t(`entryCards.${mode}.meta`)}
                 </div>
-
-                <p className="text-xs text-text-muted">
-                  {t("otpExpiresAt", { date: new Date(challenge.expiresAt).toLocaleString() })}
-                </p>
-
-                {error && (
-                  <div className="rounded-lg bg-error-50 p-3 text-sm text-error-500 dark:bg-error-500/10">
-                    {error}
+                {mode === "practitioner" && !challenge ? (
+                  <div className="rounded-full border border-border-light bg-white/75 px-4 py-2 text-xs font-medium text-text-secondary dark:border-border-light dark:bg-surface/75 dark:text-text-secondary">
+                    {t("practitionerOtpHint")}
                   </div>
-                )}
+                ) : null}
+              </div>
+            </div>
 
-                <div className="space-y-3">
-                  <button
-                    type="submit"
-                    disabled={isSubmitting}
-                    className="flex w-full items-center justify-center rounded-lg bg-primary px-4 py-3 text-sm font-medium text-white shadow-theme-xs transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    {isSubmitting ? t("verifyingOtp") : t("verifyOtpButton")}
-                  </button>
+            {!challenge && shouldShowTestCredentials && (
+              <div className="mt-5 rounded-[24px] border border-primary/15 bg-white/78 p-5 dark:border-primary/20 dark:bg-surface/65">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="space-y-1">
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">
+                      {t("testCredentials.badge")}
+                    </p>
+                    <p className="text-sm font-medium text-text-primary dark:text-text-primary">
+                      {t("testCredentials.title")}
+                    </p>
+                    <p className="text-xs leading-6 text-text-secondary dark:text-text-secondary">
+                      {t("testCredentials.description")}
+                    </p>
+                  </div>
 
                   <button
                     type="button"
-                    onClick={resetPractitionerOtpState}
-                    className="w-full rounded-lg border border-border-light px-4 py-3 text-sm font-medium text-text-secondary transition hover:border-primary hover:text-primary"
+                    onClick={() => applyTestCredentials()}
+                    className="shrink-0 rounded-full border border-primary/20 px-3 py-1.5 text-xs font-medium text-primary transition hover:border-primary hover:bg-primary hover:text-white"
                   >
-                    {t("backToCredentials")}
+                    {t("testCredentials.apply")}
                   </button>
                 </div>
-              </div>
-            </form>
-          )}
 
-          <div className="mt-5">
-            {signUpHref ? (
-              <p className="text-center text-sm font-normal text-gray-700 dark:text-gray-400 sm:text-start">
-                {mode === "practitioner"
-                  ? t("practitionerJoinPrompt")
-                  : t("dontHaveAccount")}{" "}
-                <Link
-                  href={signUpHref}
-                  className="text-text-brand hover:text-primary-hover"
-                >
-                  {mode === "practitioner" ? t("joinAsPractitioner") : t("createAccount")}
-                </Link>
-              </p>
-            ) : (
-              <p className="text-center text-sm font-normal text-gray-700 dark:text-gray-400 sm:text-start">
-                {t("needDifferentAccessPath")}{" "}
-                <Link
-                  href={chooserHref}
-                  className="text-text-brand hover:text-primary-hover"
-                >
-                  {t("chooseAccessPath")}
-                </Link>
-              </p>
+                <div className="mt-4 grid gap-3 rounded-2xl bg-surface/85 p-4 text-xs text-text-secondary dark:bg-surface-tertiary/80 dark:text-text-secondary">
+                  <div className="flex items-center justify-between gap-3">
+                    <span>{t("testCredentials.emailLabel")}</span>
+                    <span className="font-medium text-text-primary dark:text-text-primary">
+                      {testCredentials.email}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between gap-3">
+                    <span>{t("testCredentials.passwordLabel")}</span>
+                    <span className="font-medium text-text-primary dark:text-text-primary">
+                      {testCredentials.password}
+                    </span>
+                  </div>
+                </div>
+
+                {quickAccounts.length > 0 && (
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {quickAccounts.map((item) => (
+                      <button
+                        key={item.email}
+                        type="button"
+                        onClick={() => applyTestCredentials(item)}
+                        className="rounded-full border border-primary/20 bg-surface px-3 py-1.5 text-xs font-medium text-primary transition hover:border-primary hover:bg-primary hover:text-white dark:bg-surface-tertiary"
+                      >
+                        {item.email}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             )}
-          </div>
+          </section>
+
+          <section className="rounded-[30px] border border-border-light bg-white/94 p-6 shadow-[0_24px_80px_rgba(16,24,40,0.08)] backdrop-blur dark:border-border-light dark:bg-surface-secondary/92 sm:p-8">
+            {!challenge ? (
+              <form onSubmit={credentialsForm.handleSubmit(onSubmitCredentials)}>
+                <div className="space-y-6">
+                  <div className="space-y-2">
+                    <h2 className="text-2xl font-semibold text-text-primary dark:text-text-primary">
+                      {t("welcomeBack")}
+                    </h2>
+                    <p className="text-sm leading-7 text-text-secondary dark:text-text-secondary">
+                      {t(`entryCards.${mode}.description`)}
+                    </p>
+                  </div>
+
+                  <div className="space-y-5">
+                    <div>
+                      <Label>
+                        {t("email")} <span className="text-error-500">*</span>
+                      </Label>
+                      <Input
+                        placeholder={t("emailPlaceholder")}
+                        type="email"
+                        {...credentialsForm.register("email")}
+                        error={!!credentialsForm.formState.errors.email}
+                        dir="ltr"
+                      />
+                      {credentialsForm.formState.errors.email && (
+                        <p className="mt-1.5 text-sm text-error-500">
+                          {credentialsForm.formState.errors.email.message}
+                        </p>
+                      )}
+                    </div>
+
+                    <div>
+                      <Label>
+                        {t("password")} <span className="text-error-500">*</span>
+                      </Label>
+                      <div className="relative">
+                        <Input
+                          type={showPassword ? "text" : "password"}
+                          placeholder={t("passwordPlaceholder")}
+                          {...credentialsForm.register("password")}
+                          error={!!credentialsForm.formState.errors.password}
+                          dir="ltr"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword((prev) => !prev)}
+                          className="absolute right-4 top-1/2 z-10 -translate-y-1/2 text-text-secondary transition hover:text-text-primary"
+                        >
+                          {showPassword ? (
+                            <EyeIcon className="fill-current" />
+                          ) : (
+                            <EyeCloseIcon className="fill-current" />
+                          )}
+                        </button>
+                      </div>
+                      {credentialsForm.formState.errors.password && (
+                        <p className="mt-1.5 text-sm text-error-500">
+                          {credentialsForm.formState.errors.password.message}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="rounded-2xl border border-border-light bg-surface/75 px-4 py-3 text-xs leading-6 text-text-secondary dark:border-border-light dark:bg-surface-tertiary/70 dark:text-text-secondary">
+                    {mode === "practitioner" ? t("practitionerOtpHint") : t("forgotPassword")}
+                  </div>
+
+                  {error && (
+                    <div className="rounded-2xl bg-error-50 p-3 text-sm text-error-500 dark:bg-error-500/10">
+                      {error}
+                    </div>
+                  )}
+
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="flex w-full items-center justify-center rounded-2xl bg-primary px-4 py-3 text-sm font-medium text-white shadow-theme-xs transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {isSubmitting ? t("signingIn") : t("signInButton")}
+                  </button>
+
+                  {mode === "patient" && (
+                    <PatientGoogleAuthButton
+                      callbackUrl={callbackUrl}
+                      defaultRedirect={getDefaultRouteByRole("PATIENT")}
+                    />
+                  )}
+                </div>
+              </form>
+            ) : (
+              <form onSubmit={otpForm.handleSubmit(onSubmitOtp)}>
+                <div className="space-y-6">
+                  <div className="space-y-2">
+                    <h2 className="text-2xl font-semibold text-text-primary dark:text-text-primary">
+                      {t("verifyOtpTitle")}
+                    </h2>
+                    <p className="text-sm leading-7 text-text-secondary dark:text-text-secondary">
+                      {t("verifyOtpDescription", { target: challenge.maskedTarget })}
+                    </p>
+                  </div>
+
+                  <div>
+                    <Label>
+                      {t("otpCode")} <span className="text-error-500">*</span>
+                    </Label>
+                    <Input
+                      type="text"
+                      placeholder={t("otpPlaceholder")}
+                      {...otpForm.register("code")}
+                      error={!!otpForm.formState.errors.code}
+                      dir="ltr"
+                    />
+                    {otpForm.formState.errors.code && (
+                      <p className="mt-1.5 text-sm text-error-500">
+                        {otpForm.formState.errors.code.message}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="rounded-2xl border border-border-light bg-surface/75 px-4 py-3 text-xs leading-6 text-text-secondary dark:border-border-light dark:bg-surface-tertiary/70 dark:text-text-secondary">
+                    {t("otpExpiresAt", {
+                      date: new Date(challenge.expiresAt).toLocaleString(),
+                    })}
+                  </div>
+
+                  {error && (
+                    <div className="rounded-2xl bg-error-50 p-3 text-sm text-error-500 dark:bg-error-500/10">
+                      {error}
+                    </div>
+                  )}
+
+                  <div className="space-y-3">
+                    <button
+                      type="submit"
+                      disabled={isSubmitting}
+                      className="flex w-full items-center justify-center rounded-2xl bg-primary px-4 py-3 text-sm font-medium text-white shadow-theme-xs transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {isSubmitting ? t("verifyingOtp") : t("verifyOtpButton")}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={resetPractitionerOtpState}
+                      className="w-full rounded-2xl border border-border-light px-4 py-3 text-sm font-medium text-text-secondary transition hover:border-primary hover:text-primary"
+                    >
+                      {t("backToCredentials")}
+                    </button>
+                  </div>
+                </div>
+              </form>
+            )}
+
+            <div className="mt-6 border-t border-border-light pt-6 dark:border-border-light">
+              {signUpHref ? (
+                <p className="text-sm text-text-secondary dark:text-text-secondary">
+                  {mode === "practitioner"
+                    ? t("practitionerJoinPrompt")
+                    : t("dontHaveAccount")} {" "}
+                  <Link href={signUpHref} className="font-medium text-text-brand hover:text-primary-hover">
+                    {mode === "practitioner" ? t("joinAsPractitioner") : t("createAccount")}
+                  </Link>
+                </p>
+              ) : (
+                <p className="text-sm text-text-secondary dark:text-text-secondary">
+                  {t("entryCards.admin.supportNote")}
+                </p>
+              )}
+            </div>
+          </section>
         </div>
       </div>
     </div>

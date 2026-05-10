@@ -1,8 +1,9 @@
 {
   "expo": {
-    "name": "fayed-mobile",
+    "name": "Fayed",
     "slug": "fayed-mobile",
     "scheme": "fayed",
+    "description": "A mobile care platform for patients and practitioners.",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -14,9 +15,13 @@
     },
     "assetBundlePatterns": ["**/*"],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.fayed.mobile",
+      "buildNumber": "1.0.0"
     },
     "android": {
+      "package": "com.fayed.mobile",
+      "versionCode": 1,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
