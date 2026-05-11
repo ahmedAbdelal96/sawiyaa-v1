@@ -10,6 +10,7 @@ import Badge from "@/components/ui/badge/Badge";
 import { Modal, ModalBody, ModalFooter, ModalHeader } from "@/components/ui/modal";
 import { usePatientSession } from "@/features/sessions/hooks/use-sessions";
 import { useSessionFinancialBreakdown } from "@/features/sessions/hooks/use-session-financial";
+import { resolvePatientCurrencyCode } from "@/features/payments/lib/patient-currency";
 import PublicRefundPolicyDocument from "@/features/refund-policies/components/PublicRefundPolicyDocument";
 import { REFUND_POLICY_ERROR_CODES } from "@/features/refund-policies/lib/refund-policy-errors";
 import { useRefundPolicy } from "@/features/refund-policies/hooks/use-refund-policies";
@@ -92,6 +93,11 @@ function PriceBreakdown({ breakdown, walletSplit, numLocale, t }: PriceBreakdown
   const walletUsed = walletSplit?.walletUsed ?? "0";
   const gatewayRemaining = walletSplit?.gatewayRemaining ?? breakdown.netPaidAmount;
   const hasWalletUsage = Number(walletUsed) > 0;
+  const currency = resolvePatientCurrencyCode({
+    currencyCode: breakdown.currency,
+    regionalPricingMode: breakdown.regionalPricingMode,
+    resolvedCountryIsoCode: breakdown.resolvedCountryIsoCode,
+  }) ?? "USD";
 
   return (
     <div className="rounded-2xl border border-border-light bg-white p-4 shadow-sm dark:border-border-light dark:bg-surface-secondary">
@@ -103,14 +109,14 @@ function PriceBreakdown({ breakdown, walletSplit, numLocale, t }: PriceBreakdown
         <div className="flex items-center justify-between text-sm">
           <span className="text-text-secondary">{t("breakdown.grossAmount")}</span>
           <span className="font-medium text-text-primary dark:text-white/85">
-            {formatAmount(breakdown.grossAmount, breakdown.currency, numLocale)}
+            {formatAmount(breakdown.grossAmount, currency, numLocale)}
           </span>
         </div>
 
         <div className="flex items-center justify-between text-sm">
           <span className="text-text-secondary">{t("walletCheckout.walletDeductionLabel")}</span>
           <span className={`font-medium ${hasWalletUsage ? "text-text-brand dark:text-primary-light" : "text-text-primary dark:text-white/85"}`}>
-            {formatAmount(walletUsed, breakdown.currency, numLocale)}
+            {formatAmount(walletUsed, currency, numLocale)}
           </span>
         </div>
 
@@ -121,7 +127,7 @@ function PriceBreakdown({ breakdown, walletSplit, numLocale, t }: PriceBreakdown
               {breakdown.coupon ? breakdown.coupon.code : t("breakdown.discount")}
             </span>
             <span className="font-medium text-text-brand dark:text-primary-light">
-              -{formatAmount(breakdown.discountAmount, breakdown.currency, numLocale)}
+              -{formatAmount(breakdown.discountAmount, currency, numLocale)}
             </span>
           </div>
         )}
@@ -129,7 +135,7 @@ function PriceBreakdown({ breakdown, walletSplit, numLocale, t }: PriceBreakdown
         <div className="flex items-center justify-between text-sm">
           <span className="text-text-secondary">{t("breakdown.netPaid")}</span>
           <span className="font-medium text-text-primary dark:text-white/85">
-            {formatAmount(breakdown.netPaidAmount, breakdown.currency, numLocale)}
+            {formatAmount(breakdown.netPaidAmount, currency, numLocale)}
           </span>
         </div>
 
@@ -139,7 +145,7 @@ function PriceBreakdown({ breakdown, walletSplit, numLocale, t }: PriceBreakdown
               {t("walletCheckout.gatewayRemainderLabel")}
             </span>
             <span className="text-base font-bold text-primary">
-              {formatAmount(gatewayRemaining, breakdown.currency, numLocale)}
+              {formatAmount(gatewayRemaining, currency, numLocale)}
             </span>
           </div>
         </div>
@@ -464,7 +470,14 @@ export default function PaySessionPanel({ sessionId }: Props) {
     enabled: Boolean(isPayableSession),
   });
 
-  const isPaymobPaymentFlow = Boolean(breakdown && breakdown.currency === "EGP");
+  const breakdownCurrency = breakdown
+    ? resolvePatientCurrencyCode({
+        currencyCode: breakdown.currency,
+        regionalPricingMode: breakdown.regionalPricingMode,
+        resolvedCountryIsoCode: breakdown.resolvedCountryIsoCode,
+      })
+    : null;
+  const isPaymobPaymentFlow = Boolean(breakdown && breakdownCurrency === "EGP");
   const { data: paymobCapabilitiesData } = usePatientSessionPaymentCapabilities(
     isPaymobPaymentFlow ? sessionId : null,
   );
@@ -477,8 +490,15 @@ export default function PaySessionPanel({ sessionId }: Props) {
 
   const { data: walletSummaryData, isLoading: walletSummaryLoading } = usePatientWalletSummary();
   const walletSummary = walletSummaryData?.item ?? null;
+  const walletCurrency = walletSummary
+    ? resolvePatientCurrencyCode({
+        currencyCode: walletSummary.currencyCode,
+        countryCode: walletSummary.currencyCode === "EGP" ? "EG" : null,
+      })
+    : null;
+  const displayCurrency = breakdownCurrency ?? walletCurrency ?? "USD";
   const walletCurrencyMatchesBreakdown = walletSummary && breakdown
-    ? walletSummary.currencyCode === breakdown.currency
+    ? walletCurrency === breakdownCurrency
     : true;
   const availableWalletBalance =
     walletSummary && walletCurrencyMatchesBreakdown ? walletSummary.availableBalance : "0";
@@ -781,7 +801,7 @@ export default function PaySessionPanel({ sessionId }: Props) {
         {t("page.amountDueHeading")}
       </p>
       <p className="mt-1 text-2xl font-bold text-primary">
-        {formatAmount(walletSplit?.gatewayRemaining ?? "0", breakdown.currency, numLocale)}
+        {formatAmount(walletSplit?.gatewayRemaining ?? "0", displayCurrency, numLocale)}
       </p>
       <p className="mt-1 text-xs leading-6 text-text-muted">{t("page.amountDueNote")}</p>
     </>
@@ -939,7 +959,7 @@ export default function PaySessionPanel({ sessionId }: Props) {
           <StripePaymentForm
             clientSecret={clientSecret}
             netPaidAmount={breakdown.netPaidAmount}
-            currency={breakdown.currency}
+            currency={displayCurrency}
             returnUrl={returnUrl}
           />
         </div>
@@ -1002,7 +1022,7 @@ export default function PaySessionPanel({ sessionId }: Props) {
                   ? t("walletCheckout.balanceLoading")
                   : formatAmount(
                       availableWalletBalance,
-                      breakdown.currency,
+                      displayCurrency,
                       numLocale,
                     )}
               </p>

@@ -43,6 +43,7 @@ export type SessionJoinBlockedReason =
 export interface AvailabilityWindow {
   startsAt: string;
   endsAt: string;
+  durationMinutes: number | null;
 }
 
 export interface PublicAvailabilityWindowsData {

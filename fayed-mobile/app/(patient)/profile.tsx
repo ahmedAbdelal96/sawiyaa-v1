@@ -1,6 +1,6 @@
 import React from "react";
 import { Image, ScrollView, StyleSheet, View } from "react-native";
-import { useRouter } from "expo-router";
+import { usePathname, useRouter } from "expo-router";
 import {
   Screen,
   Header,
@@ -23,9 +23,11 @@ import {
   formatProfileDate,
   getInitials,
 } from "../../src/features/patient/profile/account-utils";
+import { useGeneralChatUnreadSummary } from "../../src/features/messages/hooks";
 
 export default function PatientProfileScreen() {
   const router = useRouter();
+  const pathname = usePathname();
   const { signOut, user } = useAuth();
   const { theme } = useTheme();
   const { t, i18n } = useTranslation();
@@ -35,6 +37,7 @@ export default function PatientProfileScreen() {
   const settingsQuery = useMySettings();
   const notificationCenterQuery = usePatientUnreadNotificationCount();
   const notificationPreferencesQuery = useMySettingsNotificationPreferences();
+  const messagesSummaryQuery = useGeneralChatUnreadSummary("patient");
 
   const profile = profileQuery.data?.profile;
   const settings = settingsQuery.data?.item;
@@ -72,6 +75,8 @@ export default function PatientProfileScreen() {
 
   const unreadNotificationCount =
     notificationCenterQuery.data?.item.unreadCount ?? 0;
+  const unreadMessagesCount =
+    messagesSummaryQuery.data?.item.totalUnreadMessages ?? 0;
 
   const profileCompletionItems = [
     !profile?.displayName,
@@ -394,6 +399,38 @@ export default function PatientProfileScreen() {
           </View>
           <View style={styles.rowPad}>
             <ListRow
+              title={t("profileScreen.hub.rows.messages.title", "Messages")}
+              subtitle={t(
+                "profileScreen.hub.rows.messages.subtitle",
+                "Open conversations with your practitioner",
+              )}
+              leftElement={
+                <Ionicons
+                  name="chatbubbles-outline"
+                  size={22}
+                  color={theme.colors.primary}
+                />
+              }
+              rightElement={
+                unreadMessagesCount > 0 ? (
+                  <View
+                    style={[
+                      styles.inlineBadge,
+                      { backgroundColor: theme.colors.primaryLight },
+                    ]}
+                  >
+                    <Text color={theme.colors.primary} weight="600">
+                      {unreadMessagesCount > 99 ? "99+" : String(unreadMessagesCount)}
+                    </Text>
+                  </View>
+                ) : undefined
+              }
+              onPress={() => router.push("/(patient)/messages" as any)}
+              showChevron
+            />
+          </View>
+          <View style={styles.rowPad}>
+            <ListRow
               title={t("profileScreen.hub.rows.notificationCenter.title")}
               subtitle={t("profileScreen.hub.rows.notificationCenter.subtitle")}
               leftElement={
@@ -434,7 +471,14 @@ export default function PatientProfileScreen() {
                   color={theme.colors.primary}
                 />
               }
-              onPress={() => router.push("/(patient)/support" as any)}
+              onPress={() =>
+                router.push(
+                  {
+                    pathname: "/(patient)/support",
+                    params: { returnTo: pathname },
+                  } as any,
+                )
+              }
               showChevron
             />
           </View>

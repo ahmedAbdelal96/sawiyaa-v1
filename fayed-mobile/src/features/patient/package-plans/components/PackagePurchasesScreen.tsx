@@ -24,6 +24,7 @@ import {
   getPackagePurchaseTerminalCount,
   isPackagePurchasePaymentExpired,
 } from "../lib";
+import { resolveSupportedCurrencyCode } from "../../../../lib/currency";
 import type { PatientPackagePurchaseItem } from "../types";
 
 function getStatusTone(status: PatientPackagePurchaseItem["status"]) {
@@ -42,6 +43,11 @@ function getStatusTone(status: PatientPackagePurchaseItem["status"]) {
 function PurchaseCard({ purchase, locale }: { purchase: PatientPackagePurchaseItem; locale: string }) {
   const router = useRouter();
   const { t } = useTranslation();
+  const currency = resolveSupportedCurrencyCode({
+    currencyCode: purchase.selectedCurrencyCode,
+    regionalPricingMode: purchase.regionalPricingMode,
+    resolvedCountryIsoCode: purchase.resolvedCountryIsoCode,
+  });
   const completedCount = getPackagePurchaseCompletionCount(purchase);
   const pendingCount = getPackagePurchasePendingCount(purchase);
   const liveCount = getPackagePurchaseLiveCount(purchase);
@@ -76,7 +82,7 @@ function PurchaseCard({ purchase, locale }: { purchase: PatientPackagePurchaseIt
             {t("packagePurchases.card.total", "Amount")}
           </Text>
           <Text weight="bold" style={styles.moneyValue}>
-            {formatMoney(purchase.patientPayableTotal, purchase.selectedCurrencyCode, locale)}
+            {formatMoney(purchase.patientPayableTotal, currency, locale)}
           </Text>
         </Card>
         <Card variant="outlined" padding="md" style={styles.moneyCard}>
@@ -202,7 +208,6 @@ export default function PackagePurchasesScreen() {
     <ListPageScaffold
       title={t("packagePurchases.title", "Package purchases")}
       showBack
-      onBack={() => router.back()}
       loading={purchasesQuery.isLoading}
       loadingMessage={t("packagePurchases.loading", "Loading package purchases...")}
       error={purchasesQuery.isError}
@@ -334,3 +339,4 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
 });
+

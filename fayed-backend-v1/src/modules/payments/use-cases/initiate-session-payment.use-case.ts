@@ -245,7 +245,7 @@ export class InitiateSessionPaymentUseCase {
         : 'live';
     const countrySnapshot = this.paymentGeoContextService.buildCountrySnapshot({
       declaredCountryCode: session.patient.country?.isoCode ?? null,
-      resolvedCountryCode: session.patient.country?.isoCode ?? null,
+      resolvedCountryCode: pricing.resolvedCountryIsoCode,
       countrySource: 'ACCOUNT',
       countryMismatch: false,
       phoneCountryCode: null,
@@ -309,6 +309,9 @@ export class InitiateSessionPaymentUseCase {
             paymobRegistrySnapshot,
             amountFromWallet: amountFromWallet.toFixed(2),
             amountFromGateway: amountFromGateway.toFixed(2),
+            regionalPricingMode: pricing.regionalPricingMode,
+            resolvedCountryIsoCode: pricing.resolvedCountryIsoCode,
+            pricingCurrencyCode: pricing.currencyCode,
             countrySnapshot,
             financialBreakdown: {
               ...pricing.breakdown,
@@ -464,6 +467,9 @@ export class InitiateSessionPaymentUseCase {
             paymobCheckoutFlow,
             checkoutUrl: providerResult.checkoutUrl ?? null,
             clientSecret: providerResult.clientSecret ?? null,
+            regionalPricingMode: pricing.regionalPricingMode,
+            resolvedCountryIsoCode: pricing.resolvedCountryIsoCode,
+            pricingCurrencyCode: pricing.currencyCode,
             ...(providerResult.metadata ?? {}),
           },
         },

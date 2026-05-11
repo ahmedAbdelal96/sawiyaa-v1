@@ -29,6 +29,7 @@ import { ValidateSessionDurationService } from './services/validate-session-dura
 import { ValidateSessionScheduleCompatibilityService } from './services/validate-session-schedule-compatibility.service';
 import { ValidateSessionStatusTransitionService } from './services/validate-session-status-transition.service';
 import { ValidateSessionCancellationPolicyRulesService } from './services/validate-session-cancellation-policy-rules.service';
+import { SessionAccessPolicy } from './policies/session-access.policy';
 import { ExpireUnpaidSessionSweeperService } from './services/expire-unpaid-session-sweeper.service';
 import { CancelSessionUseCase } from './use-cases/cancel-session.use-case';
 import { CreateScheduledSessionUseCase } from './use-cases/create-scheduled-session.use-case';
@@ -69,6 +70,7 @@ import { UpdateSessionCancellationPolicyUseCase } from './use-cases/update-sessi
   providers: [
     JwtAccessAuthGuard,
     RolesGuard,
+    SessionAccessPolicy,
     PublicPractitionerVisibilityPolicy,
     SessionMapper,
     SessionRepository,

@@ -2,19 +2,25 @@ import { Injectable } from '@nestjs/common';
 import { ListPublicAcademyCoursesDto } from '../dto/list-public-academy-courses.dto';
 import { AcademyPresenter } from '../presenters/academy.presenter';
 import { AcademyRepository } from '../repositories/academy.repository';
+import { PatientProfileRepository } from '@modules/patients/repositories/patient-profile.repository';
 
 @Injectable()
 export class ListPublicAcademyCoursesUseCase {
   constructor(
     private readonly academyRepository: AcademyRepository,
     private readonly academyPresenter: AcademyPresenter,
+    private readonly patientProfileRepository: PatientProfileRepository,
   ) {}
 
-  async execute(query: ListPublicAcademyCoursesDto) {
+  async execute(input: ListPublicAcademyCoursesDto & { currentUserId?: string | null }) {
+    const patientProfile = input.currentUserId
+      ? await this.patientProfileRepository.findByUserId(input.currentUserId)
+      : null;
+
     const [items, totalItems] = await this.academyRepository.listPublicCourses({
-      page: query.page,
-      limit: query.limit,
-      q: query.q?.trim() || undefined,
+      page: input.page,
+      limit: input.limit,
+      q: input.q?.trim() || undefined,
     });
 
     const statsByCourseId = await this.academyRepository.countEnrollmentsByCourseIds(
@@ -26,11 +32,14 @@ export class ListPublicAcademyCoursesUseCase {
         this.academyPresenter.presentPublicCourseItem(
           item,
           statsByCourseId[item.id] ?? null,
+          {
+            resolvedCountryCode: patientProfile?.country?.isoCode ?? null,
+          },
         ),
       ),
       pagination: this.academyPresenter.presentPagination({
-        page: query.page,
-        limit: query.limit,
+        page: input.page,
+        limit: input.limit,
         totalItems,
       }),
     };

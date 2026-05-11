@@ -331,7 +331,6 @@ export default function SessionPaymentReturnScreen() {
       <Screen bg="background">
         <Header
           showBack
-          onBack={() => router.back()}
           title={t("patientPaymentsFlow.return.title")}
         />
         <LoadingState fullScreen />
@@ -344,7 +343,6 @@ export default function SessionPaymentReturnScreen() {
       <Screen bg="background">
         <Header
           showBack
-          onBack={() => router.back()}
           title={t("patientPaymentsFlow.return.title")}
         />
         <View style={styles.centerState}>
@@ -366,7 +364,6 @@ export default function SessionPaymentReturnScreen() {
     <Screen bg="background">
       <Header
         showBack
-        onBack={() => router.back()}
         title={t("patientPaymentsFlow.return.title")}
       />
 
@@ -481,3 +478,4 @@ const styles = StyleSheet.create({
     width: "100%",
   },
 });
+

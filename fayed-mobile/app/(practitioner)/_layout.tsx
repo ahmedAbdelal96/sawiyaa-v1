@@ -90,6 +90,8 @@ export default function PractitionerLayout() {
       <Tabs.Screen name="support/[id]" options={{ href: null }} />
       <Tabs.Screen name="account" options={{ href: null }} />
       <Tabs.Screen name="onboarding" options={{ href: null }} />
+      <Tabs.Screen name="messages/index" options={{ href: null }} />
+      <Tabs.Screen name="messages/[id]" options={{ href: null }} />
       <Tabs.Screen name="care-chat/index" options={{ href: null }} />
       <Tabs.Screen name="care-chat/request/[id]" options={{ href: null }} />
       <Tabs.Screen name="care-chat/[id]" options={{ href: null }} />

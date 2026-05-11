@@ -265,7 +265,7 @@ export function formatDateTime(date: string | Date, locale: string = "ar-SA"): s
  */
 export function formatCurrency(
   amount: number,
-  currency: string = "SAR",
+  currency: string,
   locale: string = "ar-SA"
 ): string {
   return new Intl.NumberFormat(locale, {

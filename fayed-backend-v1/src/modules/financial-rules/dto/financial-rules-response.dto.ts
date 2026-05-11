@@ -6,9 +6,11 @@ import {
   DiscountType,
   MarketType,
   PaymentPurpose,
+  PaymentProvider,
   SessionFlowType,
   SessionMode,
 } from '@prisma/client';
+import type { PaymentRegionalPricingMode } from '@common/payments/payment-region.resolver';
 
 export class CommissionRuleItemDto {
   @ApiProperty()
@@ -180,6 +182,15 @@ export class FinancialBreakdownItemDto {
 
   @ApiProperty()
   currency!: string;
+
+  @ApiProperty({ enum: ['EGYPT_LOCAL', 'INTERNATIONAL'] })
+  regionalPricingMode!: PaymentRegionalPricingMode;
+
+  @ApiProperty({ enum: PaymentProvider })
+  paymentProvider!: PaymentProvider;
+
+  @ApiProperty({ nullable: true })
+  resolvedCountryIsoCode!: string | null;
 
   @ApiProperty()
   grossAmount!: string;

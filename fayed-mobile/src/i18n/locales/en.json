@@ -501,11 +501,15 @@
       "resetFilters": "Reset filters",
       "openFilters": "Open filters",
       "resultsCount": "{{count}} therapists found",
+      "loadingMore": "Loading more therapists...",
+      "endOfList": "You have reached the end of the list.",
+      "loadMoreErrorTitle": "Could not load more therapists",
+      "loadMoreErrorSubtitle": "Try again to load the next set of results.",
       "professionalFallback": "Licensed therapist",
       "newBadge": "New",
       "experience": "{{years}} yrs exp",
       "priceLabel": "Starting from",
-      "priceValue": "EGP {{value}}",
+      "priceValue": "{{value}}",
       "priceUnavailable": "Price unavailable",
       "viewProfile": "View profile"
     },
@@ -584,6 +588,44 @@
       "matchingRecommendationBookBody": "You came here ready to book. Review the profile, confirm a visible time, then check the final payment breakdown before paying.",
       "matchScoreLabel": "Match score"
     }
+  },
+  "articlesMobile": {
+    "header": "Articles",
+    "loading": "Loading articles...",
+    "error": "We could not load articles right now. Please try again.",
+    "emptyTitle": "No articles found",
+    "emptyDescription": "There are no published articles available yet.",
+    "emptyCategoryTitle": "No articles match this category",
+    "emptyCategoryDescription": "Clear the filter to see all published articles again.",
+    "clearFilter": "Clear filter",
+    "categoriesHeader": "Categories",
+    "categoriesSubtitle": "Tap one category to filter articles",
+    "resultsCount": "Showing {{shown}} of {{total}} articles",
+    "loadingMore": "Loading more articles...",
+    "endOfList": "You have reached the end of the list.",
+    "loadMoreErrorTitle": "Could not load more articles",
+    "loadMoreErrorSubtitle": "Try again to load the next set of results."
+  },
+  "academyMobile": {
+    "title": "Academy",
+    "loading": "Loading academy programs...",
+    "errorTitle": "We could not load the academy right now",
+    "errorMessage": "Please try again in a moment.",
+    "emptyTitle": "No programs found",
+    "emptyDescription": "There are no public academy programs available right now.",
+    "sectionTitle": "Programs",
+    "sectionSubtitle": "Browse public programs, prices, and schedules at a calm pace.",
+    "resultsCount": "Showing {{shown}} of {{total}} programs",
+    "loadingMore": "Loading more academy programs...",
+    "endOfList": "You have reached the end of the list.",
+    "loadMoreErrorTitle": "Could not load more academy programs",
+    "loadMoreErrorSubtitle": "Try again to load the next set of results.",
+    "free": "Free",
+    "durationDays": "{{count}} days",
+    "published": "Published",
+    "draft": "Draft",
+    "lectureCount": "{{count}} modules/lessons",
+    "viewDetails": "View details"
   },
   "patientSessionsFlow": {
     "common": {
@@ -683,6 +725,10 @@
         "subtitle": "Your sessions at a glance",
         "heroNote": "Upcoming, active, and recent sessions are grouped so you can act quickly without digging.",
         "viewDetails": "View details",
+        "loadingMore": "Loading more sessions...",
+        "endOfList": "You have reached the end of the list.",
+        "loadMoreErrorTitle": "Could not load more sessions",
+        "loadMoreErrorSubtitle": "Try again to load the next set of results.",
         "overview": {
           "total": "Total",
           "totalHint": "All sessions linked to your account.",
@@ -816,6 +862,11 @@
       "errorNote": "Please try again.",
       "retry": "Retry"
     },
+    "page": {
+      "payNow": "Pay now",
+      "sessionExpiredRedirectNote": "Expired sessions will return you to the practitioner page so you can choose a new time.",
+      "returnToPractitioner": "Return to practitioner page"
+    },
     "paymentCard": {
       "provider": {
         "STRIPE": "Credit card",
@@ -925,13 +976,30 @@
         "remove": "Remove",
         "applied": "Coupon {{code}} applied"
       },
+      "refundPolicy": {
+        "title": "Refund policy",
+        "loading": "Loading refund policy...",
+        "acceptNote": "I accept the session refund policy.",
+        "missing": "The refund policy is unavailable right now.",
+        "viewPolicy": "Review refund policy",
+        "modalEyebrow": "Before continuing",
+        "modalSubtitle": "This policy has {{count}} clauses. Please read it fully before accepting.",
+        "modalIntro": "Scroll to the end to read every clause. Then confirm your acceptance to continue.",
+        "closeModal": "Close refund policy modal",
+        "confirm": "I understand and continue",
+        "later": "Review later",
+        "acceptedBadge": "Refund policy accepted",
+        "reviewRequired": "Please review the policy before paying.",
+        "mustAccept": "Please review and accept the refund policy before continuing."
+      },
       "paymentMethod": {
         "title": "Payment method",
         "gateway": "Credit / Debit card",
         "gatewayHint": "Secure online payment",
         "wallet": "App wallet",
+        "onlinePayment": "Online payment",
         "loadingMethods": "Loading available payment methods...",
-        "methodRequired": "Select the payment method required by the provider",
+        "methodRequired": "Select the payment method required for this checkout",
         "methodUnavailable": "No payment method is available for this checkout right now.",
         "selected": "Selected method: {{method}}"
       },
@@ -951,7 +1019,7 @@
       "gatewayNotice": "Payment page will open in your browser to complete securely.",
       "browserReturnNotice": "Complete the payment in your browser, then return to the app so we can verify the final session status.",
       "openGateway": "Open payment gateway",
-      "stripeNotice": "Direct card payment will be enabled after the Stripe mobile SDK is installed.",
+      "stripeNotice": "Direct card payment will be enabled in a future release.",
       "unsupportedProviderPayload": "This payment payload is not supported on mobile yet. Please choose another method.",
       "paymentSuccess": "Payment completed successfully",
       "paymentError": "Payment could not be completed",
@@ -1629,6 +1697,7 @@
         "title": "Support ticket",
         "noMessages": "No replies yet. The thread will appear here once a support conversation starts.",
         "replyPlaceholder": "Write a reply",
+        "sendMessage": "Send message",
         "closedNotice": "This ticket is closed and no longer accepts replies.",
         "backToList": "Back to tickets"
       }
@@ -1699,6 +1768,10 @@
         "title": "Sessions workspace",
         "subtitle": "Track upcoming, active, and recent sessions in one mobile view.",
         "viewDetails": "View details",
+        "loadingMore": "Loading more sessions...",
+        "endOfList": "You have reached the end of the list.",
+        "loadMoreErrorTitle": "Could not load more sessions",
+        "loadMoreErrorSubtitle": "Try again to load the next set of results.",
         "sections": {
           "upcoming": "Upcoming",
           "upcomingSubtitle": "Scheduled sessions and anything waiting to start.",

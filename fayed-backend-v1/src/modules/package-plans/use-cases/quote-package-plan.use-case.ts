@@ -16,6 +16,9 @@ type PublicPackagePricingPractitioner = {
   sessionPrice30Usd: string | { toString(): string } | null;
   sessionPrice60Egp: string | { toString(): string } | null;
   sessionPrice60Usd: string | { toString(): string } | null;
+  country?: {
+    isoCode?: string | null;
+  } | null;
 };
 
 @Injectable()
@@ -38,7 +41,7 @@ export class QuotePackagePlanUseCase {
     practitionerSlug: string;
     durationMinutes: number;
     sessionMode: SessionMode;
-    currencyCode: string;
+    requestedCurrencyCode?: string | null;
   }): Promise<PackagePlanQuotedResultViewModel> {
     await this.packagePlanPolicyService.assertPackagesEnabled();
     await this.packagePlanPolicyService.assertPurchasesEnabled();
@@ -105,7 +108,9 @@ export class QuotePackagePlanUseCase {
       practitioner: practitioner as typeof practitioner & PublicPackagePricingPractitioner,
       selectedDurationMinutes: input.durationMinutes,
       sessionMode: input.sessionMode,
-      selectedCurrencyCode: input.currencyCode,
+      selectedCurrencyCode: null,
+      patientCountryIsoCode: patientProfile.country?.isoCode ?? null,
+      operatingCountryIsoCode: practitioner.country?.isoCode ?? null,
       patient: {
         id: patientProfile.id,
         countryId: patientProfile.countryId,

@@ -8,10 +8,13 @@ import {
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { RequireAccountStates } from '@common/decorators/account-state.decorator';
+import { Permissions } from '@common/decorators/permissions.decorator';
 import { Roles } from '@common/decorators/roles.decorator';
 import { AccountStateRequirement } from '@common/enums/account-state-requirement.enum';
 import { AppRole } from '@common/enums/app-role.enum';
+import { PermissionKey } from '@common/enums/permission-key.enum';
 import { JwtAccessAuthGuard } from '@common/guards/authentication/jwt-access-auth.guard';
+import { PermissionsGuard } from '@common/guards/authorization/permissions.guard';
 import { RolesGuard } from '@common/guards/authorization/roles.guard';
 import { AdminPayoutHistoryListSuccessResponseDto } from '../dto/financial-operations-response.dto';
 import { ListAdminPayoutsDto } from '../dto/admin-payouts.dto';
@@ -19,9 +22,9 @@ import { ListAdminPayoutsUseCase } from '../use-cases/list-admin-payouts.use-cas
 
 @ApiTags('Admin - Payouts')
 @ApiBearerAuth()
-@UseGuards(JwtAccessAuthGuard, RolesGuard)
+@UseGuards(JwtAccessAuthGuard, RolesGuard, PermissionsGuard)
 @RequireAccountStates(AccountStateRequirement.ACTIVE_ACCOUNT)
-@Roles(AppRole.ADMIN, AppRole.SUPPORT_AGENT)
+@Roles(AppRole.ADMIN, AppRole.SUPER_ADMIN, AppRole.FINANCE_STAFF)
 @Controller('admin/payouts')
 export class AdminPayoutsController {
   constructor(
@@ -29,6 +32,7 @@ export class AdminPayoutsController {
   ) {}
 
   @Get()
+  @Permissions(PermissionKey.PRACTITIONER_PAYOUTS_READ)
   @ApiOperation({
     summary: 'List payout operations',
     description:

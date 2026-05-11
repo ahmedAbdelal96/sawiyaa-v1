@@ -13,6 +13,9 @@ import {
   Prisma,
 } from '@prisma/client';
 import { PrismaService } from '@common/prisma/prisma.service';
+import {
+  resolveProviderForCurrency,
+} from '@common/payments/payment-region.resolver';
 import { PatientProfileRepository } from '@modules/patients/repositories/patient-profile.repository';
 import { RefundPolicyType } from '@prisma/client';
 import { PaymentGeoContextService } from '@modules/payments/services/payment-geo-context.service';
@@ -379,7 +382,8 @@ export class InitiatePackagePurchasePaymentUseCase {
     patientCountryIsoCode: string | null;
     practitionerCountryIsoCode: string | null;
   }): PaymentProvider {
-    if (input.currencyCode === 'USD') {
+    const provider = resolveProviderForCurrency(input.currencyCode);
+    if (provider === PaymentProvider.STRIPE) {
       return this.paymentProviderResolverService.resolveProvider({
         currencyCode: 'USD',
         commissionMarketType: MarketType.CROSS_BORDER,
@@ -388,7 +392,7 @@ export class InitiatePackagePurchasePaymentUseCase {
       });
     }
 
-    if (input.currencyCode === 'EGP') {
+    if (provider === PaymentProvider.PAYMOB) {
       const resolvedCountry =
         input.patientCountryIsoCode ?? input.practitionerCountryIsoCode;
 

@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { JwtAccessAuthGuard } from '@common/guards/authentication/jwt-access-auth.guard';
 import { RolesGuard } from '@common/guards/authorization/roles.guard';
 import { PaymentsModule } from '@modules/payments/payments.module';
+import { PatientsModule } from '@modules/patients/patients.module';
 import { AdminAcademyController } from './controllers/admin-academy.controller';
 import { PublicAcademyController } from './controllers/public-academy.controller';
 import { AcademyPresenter } from './presenters/academy.presenter';
@@ -20,7 +21,7 @@ import { PublishAcademyCourseUseCase } from './use-cases/publish-academy-course.
 import { UpdateAcademyCourseUseCase } from './use-cases/update-academy-course.use-case';
 
 @Module({
-  imports: [PaymentsModule],
+  imports: [PaymentsModule, PatientsModule],
   controllers: [PublicAcademyController, AdminAcademyController],
   providers: [
     JwtAccessAuthGuard,

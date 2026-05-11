@@ -10,7 +10,7 @@ describe('ResetPractitionerPasswordUseCase', () => {
   const verifyOtpChallengeUseCase = { execute: jest.fn() };
   const hashPasswordUseCase = { execute: jest.fn() };
   const authIdentityRepository = { updatePasswordHash: jest.fn() };
-  const userEmailRepository = { findByEmail: jest.fn() };
+  const userEmailRepository = { findByEmailForAuth: jest.fn() };
   const invalidateUserTokensUseCase = { execute: jest.fn() };
 
   const useCase = new ResetPractitionerPasswordUseCase(
@@ -28,7 +28,7 @@ describe('ResetPractitionerPasswordUseCase', () => {
   });
 
   it('verifies OTP and resets password for practitioners', async () => {
-    userEmailRepository.findByEmail.mockResolvedValue({
+    userEmailRepository.findByEmailForAuth.mockResolvedValue({
       user: { id: 'user-1' },
     });
     verifyOtpChallengeUseCase.execute.mockResolvedValue({
@@ -54,7 +54,7 @@ describe('ResetPractitionerPasswordUseCase', () => {
   });
 
   it('rejects non-practitioner users', async () => {
-    userEmailRepository.findByEmail.mockResolvedValue({
+    userEmailRepository.findByEmailForAuth.mockResolvedValue({
       user: { id: 'user-1' },
     });
     verifyOtpChallengeUseCase.execute.mockResolvedValue({

@@ -1,5 +1,7 @@
 import { Injectable } from '@nestjs/common';
+import { resolvePaymentRegionalResolution } from '@common/payments/payment-region.resolver';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
+import { PatientProfileRepository } from '@modules/patients/repositories/patient-profile.repository';
 import { isPresenceEffectivelyOnline } from '@modules/presence/utils/presence-liveness';
 import {
   PublicPractitionerGender,
@@ -10,6 +12,7 @@ import {
 import { PublicPractitionerMapper } from '../mappers/public-practitioner.mapper';
 import { PublicPractitionerVisibilityPolicy } from '../policies/public-practitioner-visibility.policy';
 import { PublicPractitionerReadRepository } from '../repositories/public-practitioner-read.repository';
+import { resolvePublicPractitionerPricing } from '../utils/public-practitioner-pricing.util';
 
 type PublicPractitionerPricingProfile = {
   sessionPrice30Egp: string | { toString(): string } | null;
@@ -28,10 +31,12 @@ export class ListPublicPractitionersUseCase {
     private readonly mapper: PublicPractitionerMapper,
     private readonly visibilityPolicy: PublicPractitionerVisibilityPolicy,
     private readonly publicReadRepository: PublicPractitionerReadRepository,
+    private readonly patientProfileRepository: PatientProfileRepository,
   ) {}
 
   async execute(input: {
     locale: SupportedLocale;
+    currentUserId?: string | null;
     search?: string;
     specialtySlug?: string;
     language?: string;
@@ -54,9 +59,16 @@ export class ListPublicPractitionersUseCase {
     const page = input.page ?? 1;
     const limit = input.limit ?? 20;
     const skip = (page - 1) * limit;
+    const patientProfile = input.currentUserId
+      ? await this.patientProfileRepository.findByUserId(input.currentUserId)
+      : null;
+    const regionalResolution = resolvePaymentRegionalResolution({
+      patientCountryIsoCode: patientProfile?.country?.isoCode ?? null,
+    });
 
     const { rows, total } = await this.publicReadRepository.listPublic({
       locale: input.locale,
+      currencyCode: regionalResolution.currencyCode as 'EGP' | 'USD',
       search: input.search,
       specialtySlug: input.specialtySlug,
       language: input.language,
@@ -114,6 +126,13 @@ export class ListPublicPractitionersUseCase {
           })),
           languages: profile.languages.map((item) => item.language.code),
           countryCode: profile.country?.isoCode ?? null,
+          ...resolvePublicPractitionerPricing({
+            regionalResolution,
+            sessionPrice30Egp: pricingProfile.sessionPrice30Egp,
+            sessionPrice30Usd: pricingProfile.sessionPrice30Usd,
+            sessionPrice60Egp: pricingProfile.sessionPrice60Egp,
+            sessionPrice60Usd: pricingProfile.sessionPrice60Usd,
+          }),
           practitionerType: profile.practitionerType,
           practitionerGender: profile.practitionerGender ?? null,
           pricing: {

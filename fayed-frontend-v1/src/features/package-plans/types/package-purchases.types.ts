@@ -39,6 +39,8 @@ export type PatientPackagePurchaseItem = {
   durationMinutes: number;
   sessionMode: SessionMode;
   selectedCurrencyCode: string;
+  regionalPricingMode: "EGYPT_LOCAL" | "INTERNATIONAL";
+  resolvedCountryIsoCode: string | null;
   selectedBaseSessionPrice: string;
   undiscountedTotal: string;
   discountAmount: string;

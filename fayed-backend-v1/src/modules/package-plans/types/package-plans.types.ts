@@ -1,4 +1,4 @@
-import { MarketType, Prisma, SessionMode } from '@prisma/client';
+import { MarketType, PaymentProvider, Prisma, SessionMode } from '@prisma/client';
 
 export interface PackagePlanCountsViewModel {
   purchaseCount: number;
@@ -32,6 +32,9 @@ export interface PackagePlanQuoteViewModel {
   durationMinutes: number;
   sessionMode: SessionMode;
   selectedCurrencyCode: string;
+  regionalPricingMode: 'EGYPT_LOCAL' | 'INTERNATIONAL';
+  resolvedCountryIsoCode: string | null;
+  provider: PaymentProvider | null;
   selectedBaseSessionPrice: string;
   undiscountedTotal: string;
   discountAmount: string;

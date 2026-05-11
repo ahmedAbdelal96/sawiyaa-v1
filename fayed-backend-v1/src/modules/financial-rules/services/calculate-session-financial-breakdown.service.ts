@@ -2,6 +2,9 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { PaymentPurpose } from '@prisma/client';
 import { CouponRepository } from '../repositories/coupon.repository';
 import {
+  resolvePaymentRegionalResolution,
+} from '@common/payments/payment-region.resolver';
+import {
   PaymentFinancialResolution,
   SessionFinancialBreakdownViewModel,
   SessionFinancialContext,
@@ -30,16 +33,15 @@ export class CalculateSessionFinancialBreakdownService {
     session: SessionFinancialContext;
     couponCode?: string | null;
   }): Promise<PaymentFinancialResolution> {
-    const grossAmount = this.resolveGrossAmount(input.session);
-    const currencyCode =
-      input.session.practitioner.country?.currencyCode?.trim();
-
-    if (!currencyCode) {
-      throw new BadRequestException({
-        messageKey: 'financialRules.errors.currencyUnavailable',
-        error: 'FINANCIAL_RULE_CURRENCY_UNAVAILABLE',
-      });
-    }
+    const regionalResolution = resolvePaymentRegionalResolution({
+      patientCountryIsoCode: input.session.patient.country?.isoCode ?? null,
+      accountCountryIsoCode: null,
+      checkoutCountryIsoCode: null,
+      operatingCountryIsoCode:
+        input.session.practitioner.country?.isoCode ?? null,
+    });
+    const currencyCode = regionalResolution.currencyCode;
+    const grossAmount = this.resolveGrossAmount(input.session, currencyCode);
 
     const commission =
       await this.resolveCommissionRuleService.resolveForSession(input.session);
@@ -79,6 +81,9 @@ export class CalculateSessionFinancialBreakdownService {
       sessionId: input.session.id,
       paymentPurpose: commission.paymentPurpose,
       currency: currencyCode,
+      regionalPricingMode: regionalResolution.regionalPricingMode,
+      provider: regionalResolution.provider,
+      resolvedCountryIsoCode: regionalResolution.resolvedCountryIsoCode,
       grossAmount,
       discountAmount: couponBreakdown?.discountAmount ?? '0.00',
       netPaidAmount,
@@ -112,6 +117,9 @@ export class CalculateSessionFinancialBreakdownService {
       amountDiscount: breakdown.discountAmount,
       amountTotal: netPaidAmount,
       currencyCode,
+      regionalPricingMode: regionalResolution.regionalPricingMode,
+      provider: regionalResolution.provider,
+      resolvedCountryIsoCode: regionalResolution.resolvedCountryIsoCode,
       commissionRuleId: commission.rule.id,
       commissionPlatformRatePercent: commission.platformRatePercent,
       commissionPractitionerRatePercent: commission.practitionerRatePercent,
@@ -128,13 +136,26 @@ export class CalculateSessionFinancialBreakdownService {
     };
   }
 
-  private resolveGrossAmount(session: SessionFinancialContext) {
+  private resolveGrossAmount(
+    session: SessionFinancialContext,
+    currencyCode: string,
+  ) {
     const amountFromPractitioner =
-      session.durationMinutes === 30
-        ? session.practitioner.sessionPrice30
-        : session.durationMinutes === 60
-          ? session.practitioner.sessionPrice60
-          : null;
+      currencyCode === 'EGP'
+        ? session.durationMinutes === 30
+          ? session.practitioner.sessionPrice30Egp ??
+            session.practitioner.sessionPrice30
+          : session.durationMinutes === 60
+            ? session.practitioner.sessionPrice60Egp ??
+              session.practitioner.sessionPrice60
+            : null
+        : session.durationMinutes === 30
+          ? session.practitioner.sessionPrice30Usd ??
+            session.practitioner.sessionPrice30
+          : session.durationMinutes === 60
+            ? session.practitioner.sessionPrice60Usd ??
+              session.practitioner.sessionPrice60
+            : null;
 
     if (amountFromPractitioner) {
       return this.moneyMathService.toDecimal(amountFromPractitioner).toFixed(2);

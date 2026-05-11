@@ -6,6 +6,7 @@ import { useTheme } from "../../../../providers/ThemeProvider";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
+import { resolveSupportedCurrencyCode } from "../../../../lib/currency";
 
 export interface TherapistCardProps {
   practitioner: PublicPractitionerListItem;
@@ -14,12 +15,21 @@ export interface TherapistCardProps {
 export const TherapistCard = ({ practitioner }: TherapistCardProps) => {
   const { theme } = useTheme();
   const router = useRouter();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const locale = i18n.language?.startsWith("ar") ? "ar-SA" : "en-US";
 
   const primarySpecialty =
     practitioner.specialties.find((s) => s.isPrimary) ||
     practitioner.specialties[0];
-  const price = practitioner.sessionPrice30 ?? practitioner.sessionPrice60;
+  const currencyCode = resolveSupportedCurrencyCode({
+    currencyCode: practitioner.currencyCode,
+    regionalPricingMode: practitioner.regionalPricingMode,
+    resolvedCountryIsoCode: practitioner.resolvedCountryIsoCode,
+    countryCode: practitioner.countryCode,
+  });
+  const price =
+    practitioner.displaySessionPrice30 ??
+    practitioner.displaySessionPrice60;
   const averageRating = practitioner.ratingSummary.averageRating;
   const visibleLanguages = practitioner.languages
     .slice(0, 3)
@@ -191,7 +201,13 @@ export const TherapistCard = ({ practitioner }: TherapistCardProps) => {
             style={styles.priceValue}
           >
             {price !== null && price !== undefined
-              ? t("discovery.list.priceValue", { value: price })
+              ? t("discovery.list.priceValue", {
+                  value: new Intl.NumberFormat(locale, {
+                    style: "currency",
+                    currency: currencyCode,
+                    maximumFractionDigits: 0,
+                  }).format(price),
+                })
               : t("discovery.list.priceUnavailable")}
           </Text>
         </View>

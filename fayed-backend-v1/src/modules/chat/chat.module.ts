@@ -23,6 +23,7 @@ import { MarkMyGeneralChatConversationReadUseCase } from './use-cases/mark-my-ge
 import { OpenSessionGeneralChatUseCase } from './use-cases/open-session-general-chat.use-case';
 import { ReportGeneralChatTargetUseCase } from './use-cases/report-general-chat-target.use-case';
 import { SendGeneralChatMessageUseCase } from './use-cases/send-general-chat-message.use-case';
+import { ConversationAccessPolicy } from './policies/conversation-access.policy';
 
 @Module({
   imports: [ModerationModule, AuthModule, SupportModule, CareChatModule],
@@ -32,6 +33,7 @@ import { SendGeneralChatMessageUseCase } from './use-cases/send-general-chat-mes
     GeneralChatSessionController,
   ],
   providers: [
+    ConversationAccessPolicy,
     JwtAccessAuthGuard,
     GeneralChatRepository,
     GeneralChatActorRepository,

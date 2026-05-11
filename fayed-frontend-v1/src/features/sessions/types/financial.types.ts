@@ -24,6 +24,9 @@ export type FinancialBreakdown = {
   sessionId: string;
   paymentPurpose: string;
   currency: string;
+  regionalPricingMode: "EGYPT_LOCAL" | "INTERNATIONAL";
+  paymentProvider: "STRIPE" | "PAYMOB" | "INTERNAL_WALLET";
+  resolvedCountryIsoCode: string | null;
   /** Gross price before any discount */
   grossAmount: string;
   /** Discount applied (0 if no coupon) */

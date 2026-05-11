@@ -9,9 +9,12 @@ import {
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { CurrentUser } from '@common/decorators/current-user.decorator';
+import { Permissions } from '@common/decorators/permissions.decorator';
 import { Roles } from '@common/decorators/roles.decorator';
 import { AppRole } from '@common/enums/app-role.enum';
+import { PermissionKey } from '@common/enums/permission-key.enum';
 import { JwtAccessAuthGuard } from '@common/guards/authentication/jwt-access-auth.guard';
+import { PermissionsGuard } from '@common/guards/authorization/permissions.guard';
 import { RolesGuard } from '@common/guards/authorization/roles.guard';
 import { AuthenticatedUser } from '@common/interfaces/authenticated-user.interface';
 import { CurrentLocale } from '@common/i18n/decorators/current-locale.decorator';
@@ -26,8 +29,8 @@ import { ListAdminPatientsUseCase } from '../use-cases/list-admin-patients.use-c
 
 @ApiTags('Admin - Patients')
 @ApiBearerAuth()
-@UseGuards(JwtAccessAuthGuard, RolesGuard)
-@Roles(AppRole.ADMIN, AppRole.SUPPORT_AGENT, AppRole.CONTENT_REVIEWER)
+@UseGuards(JwtAccessAuthGuard, RolesGuard, PermissionsGuard)
+@Roles(AppRole.ADMIN, AppRole.SUPPORT_AGENT, AppRole.PATIENT_OPERATIONS)
 @Controller('admin/patients')
 export class AdminPatientsController {
   constructor(
@@ -36,13 +39,15 @@ export class AdminPatientsController {
   ) {}
 
   @Get()
+  @Permissions(PermissionKey.PATIENTS_READ_ADMIN)
   @ApiOperation({
     summary: 'List patients (customers) for back-office operations',
   })
   @ApiResponse({ status: 200, type: AdminPatientsListSuccessResponseDto })
   @ApiUnauthorizedResponse({ description: 'Access token is required' })
   @ApiForbiddenResponse({
-    description: 'Only admin/support/content-reviewer roles may access this route',
+    description:
+      'Only admin/support/content-reviewer roles may access this route',
   })
   list(
     @CurrentUser() _currentUser: AuthenticatedUser,
@@ -60,6 +65,7 @@ export class AdminPatientsController {
   }
 
   @Get(':patientId')
+  @Permissions(PermissionKey.PATIENTS_READ_ADMIN)
   @ApiOperation({
     summary: 'Get patient (customer) details for back-office review',
   })
@@ -67,7 +73,8 @@ export class AdminPatientsController {
   @ApiResponse({ status: 200, type: AdminPatientDetailsSuccessResponseDto })
   @ApiUnauthorizedResponse({ description: 'Access token is required' })
   @ApiForbiddenResponse({
-    description: 'Only admin/support/content-reviewer roles may access this route',
+    description:
+      'Only admin/support/content-reviewer roles may access this route',
   })
   details(
     @CurrentUser() _currentUser: AuthenticatedUser,

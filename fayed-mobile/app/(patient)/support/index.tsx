@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { View, StyleSheet, ScrollView, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import {
   Screen,
@@ -55,9 +55,14 @@ function statusColor(
 
 export default function SupportListScreen() {
   const router = useRouter();
+  const { returnTo } = useLocalSearchParams<{ returnTo?: string }>();
   const { theme } = useTheme();
   const { t, i18n } = useTranslation();
   const [tab, setTab] = useState<TabFilter>("active");
+  const returnToRoute =
+    typeof returnTo === "string" && returnTo.trim().length > 0
+      ? returnTo
+      : null;
 
   const query = usePatientSupportTickets({ page: 1, limit: 50 });
   const allTickets = query.data?.items ?? [];
@@ -80,7 +85,17 @@ export default function SupportListScreen() {
     return (
       <TouchableOpacity
         key={ticket.id}
-        onPress={() => router.push(`/(patient)/support/${ticket.id}` as any)}
+        onPress={() =>
+          router.push(
+            {
+              pathname: "/(patient)/support/[id]",
+              params: {
+                id: ticket.id,
+                returnTo: returnToRoute ?? "",
+              },
+            } as any,
+          )
+        }
         activeOpacity={0.8}
       >
         <Card style={styles.ticketCard}>
@@ -139,10 +154,21 @@ export default function SupportListScreen() {
       <Header
         title={t("support.title")}
         showBack
-        onBack={() => router.back()}
+        onBack={
+          returnToRoute
+            ? () => router.replace(returnToRoute as any)
+            : undefined
+        }
         rightElement={
           <TouchableOpacity
-            onPress={() => router.push("/(patient)/support/new" as any)}
+            onPress={() =>
+              router.push(
+                {
+                  pathname: "/(patient)/support/new",
+                  params: { returnTo: returnToRoute ?? "" },
+                } as any,
+              )
+            }
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
             <Ionicons name="add" size={26} color={theme.colors.primary} />
@@ -194,7 +220,14 @@ export default function SupportListScreen() {
                 styles.newTicketCta,
                 { backgroundColor: theme.colors.primary },
               ]}
-              onPress={() => router.push("/(patient)/support/new" as any)}
+              onPress={() =>
+                router.push(
+                  {
+                    pathname: "/(patient)/support/new",
+                    params: { returnTo: returnToRoute ?? "" },
+                  } as any,
+                )
+              }
               activeOpacity={0.85}
             >
               <Ionicons name="add-circle-outline" size={20} color="#fff" />
@@ -285,3 +318,4 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
 });
+

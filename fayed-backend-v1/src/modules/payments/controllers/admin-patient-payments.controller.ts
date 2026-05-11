@@ -9,9 +9,12 @@ import {
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { CurrentUser } from '@common/decorators/current-user.decorator';
+import { Permissions } from '@common/decorators/permissions.decorator';
 import { Roles } from '@common/decorators/roles.decorator';
 import { AppRole } from '@common/enums/app-role.enum';
+import { PermissionKey } from '@common/enums/permission-key.enum';
 import { JwtAccessAuthGuard } from '@common/guards/authentication/jwt-access-auth.guard';
+import { PermissionsGuard } from '@common/guards/authorization/permissions.guard';
 import { RolesGuard } from '@common/guards/authorization/roles.guard';
 import { CurrentLocale } from '@common/i18n/decorators/current-locale.decorator';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
@@ -22,7 +25,7 @@ import { ListAdminPatientPaymentsUseCase } from '../use-cases/list-admin-patient
 
 @ApiTags('Admin - Patients')
 @ApiBearerAuth()
-@UseGuards(JwtAccessAuthGuard, RolesGuard)
+@UseGuards(JwtAccessAuthGuard, RolesGuard, PermissionsGuard)
 @Roles(AppRole.ADMIN, AppRole.SUPPORT_AGENT)
 @Controller('admin/patients/:patientId/payments')
 export class AdminPatientPaymentsController {
@@ -31,6 +34,7 @@ export class AdminPatientPaymentsController {
   ) {}
 
   @Get()
+  @Permissions(PermissionKey.PATIENTS_READ_ADMIN)
   @ApiOperation({
     summary: 'List payments for a specific patient (back-office)',
   })

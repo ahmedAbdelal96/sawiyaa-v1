@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { AppRole } from '@common/enums/app-role.enum';
 import { AuthenticatedUser } from '@common/interfaces/authenticated-user.interface';
 import { UserRoleType, UserStatus } from '@prisma/client';
+import { normalizeAppRoles } from '@modules/auth/utils/auth-role.util';
 import { buildRoleSummary } from '../utils/role-summary.util';
 import { maskIdentityValue } from '../utils/mask-identity.util';
 import {
@@ -49,9 +50,11 @@ export class CurrentUserMapper {
   }
 
   mapRoles(roleRows: Array<{ role: UserRoleType }>): AppRole[] {
-    return roleRows
+    const roles = roleRows
       .map((role) => this.mapUserRole(role.role))
       .filter((role): role is AppRole => role !== null);
+
+    return normalizeAppRoles(roles);
   }
 
   toBasics(record: {
@@ -110,9 +113,18 @@ export class CurrentUserMapper {
 
   private mapUserRole(role: UserRoleType): AppRole | null {
     switch (role) {
-      case UserRoleType.ADMIN:
       case UserRoleType.SUPER_ADMIN:
+        return AppRole.SUPER_ADMIN;
+      case UserRoleType.ADMIN:
         return AppRole.ADMIN;
+      case UserRoleType.FINANCE_STAFF:
+        return AppRole.FINANCE_STAFF;
+      case UserRoleType.MARKETING_STAFF:
+        return AppRole.MARKETING_STAFF;
+      case UserRoleType.PRACTITIONER_REVIEWER:
+        return AppRole.PRACTITIONER_REVIEWER;
+      case UserRoleType.PATIENT_OPERATIONS:
+        return AppRole.PATIENT_OPERATIONS;
       case UserRoleType.SUPPORT:
         return AppRole.SUPPORT_AGENT;
       case UserRoleType.CONTENT_REVIEWER:

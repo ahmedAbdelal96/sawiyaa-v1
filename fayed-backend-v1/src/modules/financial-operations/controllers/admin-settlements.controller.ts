@@ -23,11 +23,14 @@ import {
 } from '@nestjs/swagger';
 import { CurrentUser } from '@common/decorators/current-user.decorator';
 import { RequireAccountStates } from '@common/decorators/account-state.decorator';
+import { Permissions } from '@common/decorators/permissions.decorator';
 import { Roles } from '@common/decorators/roles.decorator';
 import { AccountStateRequirement } from '@common/enums/account-state-requirement.enum';
 import { AppRole } from '@common/enums/app-role.enum';
+import { PermissionKey } from '@common/enums/permission-key.enum';
 import { JwtAccessAuthGuard } from '@common/guards/authentication/jwt-access-auth.guard';
 import { AdminGuard } from '@common/guards/authorization/admin.guard';
+import { PermissionsGuard } from '@common/guards/authorization/permissions.guard';
 import { RolesGuard } from '@common/guards/authorization/roles.guard';
 import { AuthenticatedUser } from '@common/interfaces/authenticated-user.interface';
 import {
@@ -61,12 +64,15 @@ import { ListSettlementDuesDirectoryUseCase } from '../use-cases/list-settlement
 import { MarkSettlementFailedUseCase } from '../use-cases/mark-settlement-failed.use-case';
 import { MarkSettlementPaidUseCase } from '../use-cases/mark-settlement-paid.use-case';
 import { RecordPractitionerSettlementPayoutUseCase } from '../use-cases/record-practitioner-settlement-payout.use-case';
+import { SecurityAuditService } from '@common/security-audit/security-audit.service';
+import { SecurityAuditOutcome } from '@prisma/client';
 
 @ApiTags('Admin - Settlements')
 @ApiBearerAuth()
-@UseGuards(JwtAccessAuthGuard, RolesGuard)
+@UseGuards(JwtAccessAuthGuard, RolesGuard, PermissionsGuard)
 @RequireAccountStates(AccountStateRequirement.ACTIVE_ACCOUNT)
-@Roles(AppRole.ADMIN, AppRole.SUPPORT_AGENT)
+@Roles(AppRole.ADMIN, AppRole.SUPER_ADMIN, AppRole.FINANCE_STAFF)
+@Permissions(PermissionKey.SETTLEMENTS_READ)
 @Controller('admin/settlements')
 export class AdminSettlementsController {
   constructor(
@@ -79,6 +85,7 @@ export class AdminSettlementsController {
     private readonly recordPractitionerSettlementPayoutUseCase: RecordPractitionerSettlementPayoutUseCase,
     private readonly markSettlementPaidUseCase: MarkSettlementPaidUseCase,
     private readonly markSettlementFailedUseCase: MarkSettlementFailedUseCase,
+    private readonly securityAuditService: SecurityAuditService,
   ) {}
 
   @Post('generate')
@@ -99,8 +106,25 @@ export class AdminSettlementsController {
   @ApiForbiddenResponse({ description: 'Admin active account is required' })
   @UseGuards(AdminGuard)
   @Roles(AppRole.ADMIN)
-  generate(@Body() body: GenerateSettlementBatchDto) {
-    return this.generateSettlementBatchUseCase.execute(body);
+  @Permissions(PermissionKey.SETTLEMENTS_WRITE)
+  async generate(
+    @Body() body: GenerateSettlementBatchDto,
+    @CurrentUser() currentUser: AuthenticatedUser,
+  ) {
+    const result = await this.generateSettlementBatchUseCase.execute(body);
+    this.securityAuditService.logAsync({
+      action: 'finance.settlement.generate',
+      outcome: SecurityAuditOutcome.SUCCESS,
+      actorUserId: currentUser.id,
+      actorRoles: currentUser.roles,
+      resourceType: 'SettlementBatch',
+      metadata: {
+        periodYear: body.periodYear,
+        periodMonth: body.periodMonth,
+        currencyCode: body.currencyCode,
+      },
+    });
+    return result;
   }
 
   @Get()
@@ -230,12 +254,13 @@ export class AdminSettlementsController {
   @ApiNotFoundResponse({ description: 'Settlement batch was not found' })
   @UseGuards(AdminGuard)
   @Roles(AppRole.ADMIN)
-  markPaid(
+  @Permissions(PermissionKey.SETTLEMENTS_WRITE)
+  async markPaid(
     @Param('id', new ParseUUIDPipe()) id: string,
     @Body() body: MarkSettlementPaidDto,
     @CurrentUser() currentUser: AuthenticatedUser,
   ) {
-    return this.markSettlementPaidUseCase.execute({
+    const result = await this.markSettlementPaidUseCase.execute({
       batchId: id,
       externalPayoutRef: body.externalPayoutRef,
       payoutMethod: body.payoutMethod,
@@ -245,6 +270,15 @@ export class AdminSettlementsController {
       notes: body.notes,
       processedByUserId: currentUser.id,
     });
+    this.securityAuditService.logAsync({
+      action: 'finance.settlement.mark_paid',
+      outcome: SecurityAuditOutcome.SUCCESS,
+      actorUserId: currentUser.id,
+      actorRoles: currentUser.roles,
+      resourceType: 'SettlementBatch',
+      resourceId: id,
+    });
+    return result;
   }
 
   @Post('practitioners/:practitionerId/payouts/:settlementId')
@@ -270,18 +304,31 @@ export class AdminSettlementsController {
   })
   @UseGuards(AdminGuard)
   @Roles(AppRole.ADMIN)
-  recordPractitionerPayout(
+  @Permissions(PermissionKey.SETTLEMENTS_WRITE)
+  async recordPractitionerPayout(
     @Param('practitionerId', new ParseUUIDPipe()) practitionerId: string,
     @Param('settlementId', new ParseUUIDPipe()) settlementId: string,
     @Body() body: RecordPractitionerSettlementPayoutDto,
     @CurrentUser() currentUser: AuthenticatedUser,
   ) {
-    return this.recordPractitionerSettlementPayoutUseCase.execute({
-      practitionerId,
-      settlementId,
-      operatorUserId: currentUser.id,
-      body,
+    const result = await this.recordPractitionerSettlementPayoutUseCase.execute(
+      {
+        practitionerId,
+        settlementId,
+        operatorUserId: currentUser.id,
+        body,
+      },
+    );
+    this.securityAuditService.logAsync({
+      action: 'finance.settlement.payout.record',
+      outcome: SecurityAuditOutcome.SUCCESS,
+      actorUserId: currentUser.id,
+      actorRoles: currentUser.roles,
+      resourceType: 'PractitionerSettlement',
+      resourceId: settlementId,
+      targetUserId: practitionerId,
     });
+    return result;
   }
 
   @Post(':id/mark-failed')
@@ -301,13 +348,24 @@ export class AdminSettlementsController {
   @ApiNotFoundResponse({ description: 'Settlement batch was not found' })
   @UseGuards(AdminGuard)
   @Roles(AppRole.ADMIN)
-  markFailed(
+  @Permissions(PermissionKey.SETTLEMENTS_WRITE)
+  async markFailed(
     @Param('id', new ParseUUIDPipe()) id: string,
     @Body() body: MarkSettlementFailedDto,
+    @CurrentUser() currentUser: AuthenticatedUser,
   ) {
-    return this.markSettlementFailedUseCase.execute({
+    const result = await this.markSettlementFailedUseCase.execute({
       batchId: id,
       notes: body.notes,
     });
+    this.securityAuditService.logAsync({
+      action: 'finance.settlement.mark_failed',
+      outcome: SecurityAuditOutcome.SUCCESS,
+      actorUserId: currentUser.id,
+      actorRoles: currentUser.roles,
+      resourceType: 'SettlementBatch',
+      resourceId: id,
+    });
+    return result;
   }
 }

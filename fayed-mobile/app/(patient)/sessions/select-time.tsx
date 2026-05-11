@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Image, ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -102,7 +102,7 @@ export default function SelectSessionTimeScreen() {
   const parts = splitDaySlotsByPart(selectedDay?.slots ?? []);
 
   const selectedSlotLabel = selectedSlot
-    ? `${selectedDay?.dayLabel ?? ""} • ${formatLocalizedTime(selectedSlot.startsAt, locale)}`
+    ? `${selectedDay?.dayLabel ?? ""} � ${formatLocalizedTime(selectedSlot.startsAt, locale)}`
     : t("patientSessionsFlow.selectTime.noSelectedSlot");
 
   const continueToConfirmation = () => {
@@ -144,7 +144,6 @@ export default function SelectSessionTimeScreen() {
     <Screen bg="background">
       <Header
         showBack
-        onBack={() => router.back()}
         title={t("patientSessionsFlow.selectTime.title")}
       />
 
@@ -592,6 +591,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
 });
+
 
 
 

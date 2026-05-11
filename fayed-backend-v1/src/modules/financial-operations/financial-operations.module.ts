@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
 import { JwtAccessAuthGuard } from '@common/guards/authentication/jwt-access-auth.guard';
+import { PermissionResolverService } from '@common/guards/authorization/permission-resolver.service';
+import { PermissionsGuard } from '@common/guards/authorization/permissions.guard';
 import { RolesGuard } from '@common/guards/authorization/roles.guard';
 import { AdminFinanceOperationsController } from './controllers/admin-finance-operations.controller';
 import { AdminPractitionerManualPayoutsController } from './controllers/admin-practitioner-manual-payouts.controller';
@@ -98,6 +100,8 @@ import { UpdateAdminAccountingReconciliationReviewUseCase } from './use-cases/up
   providers: [
     JwtAccessAuthGuard,
     RolesGuard,
+    PermissionsGuard,
+    PermissionResolverService,
     FinancialOperationsMapper,
     AccountingReadRepository,
     AccountingReconciliationRepository,

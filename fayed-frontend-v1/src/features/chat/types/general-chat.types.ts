@@ -12,9 +12,21 @@ export type GeneralChatConversationParticipantRole =
   | "ADMIN"
   | "SYSTEM";
 
+export type GeneralChatParticipantIdentity = {
+  participantId: string;
+  userId: string;
+  displayName: string;
+  avatarUrl: string | null;
+  role: GeneralChatConversationParticipantRole;
+  subtitle: string | null;
+  status: string | null;
+  verificationStatus: string | null;
+};
+
 export type GeneralChatConversationParticipant = {
   userId: string;
   role: GeneralChatConversationParticipantRole;
+  identity: GeneralChatParticipantIdentity | null;
 };
 
 export type GeneralChatConversationIdentity = {
@@ -58,6 +70,7 @@ export type GeneralChatMessageItem = {
   messageId: string;
   conversationId: string;
   senderUserId: string | null;
+  senderIdentity: GeneralChatParticipantIdentity | null;
   messageType: GeneralChatMessageType;
   status: GeneralChatMessageStatus;
   contentText: string | null;

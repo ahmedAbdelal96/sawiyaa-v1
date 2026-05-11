@@ -20,6 +20,7 @@ import {
   usePatientWalletEntries,
   usePatientWalletSummary,
 } from "../../src/features/patient/payments/hooks";
+import { resolveSupportedCurrencyCode } from "../../src/lib/currency";
 import type {
   CustomerWalletEntryItem,
   CustomerWalletEntryType,
@@ -35,7 +36,7 @@ import type {
 /**
  * Product-grade money formatter — avoids Intl.NumberFormat currency style
  * which is unreliable in React Native Hermes.
- * Output: "350.50 SAR" / "1,250 EGP" — matches approved Arabic design.
+ * Output: "350.50 EGP" / "1,250 USD" — matches approved Arabic design.
  */
 function formatMoney(amount: string, currencyCode: string): string {
   const num = Number(amount);
@@ -314,11 +315,13 @@ export default function PatientPaymentsScreen() {
   const actionablePayment = payments.find((payment) =>
     canContinueOrRetryPayment(payment.status),
   );
-  const fallbackCurrency =
-    wallet?.currencyCode ??
-    entries[0]?.currencyCode ??
-    payments[0]?.currency ??
-    "SAR";
+  const fallbackCurrency = resolveSupportedCurrencyCode({
+    currencyCode:
+      wallet?.currencyCode ??
+      entries[0]?.currencyCode ??
+      payments[0]?.currency ??
+      null,
+  });
 
   const isLoading =
     walletQuery.isLoading && paymentsQuery.isLoading && entriesQuery.isLoading;

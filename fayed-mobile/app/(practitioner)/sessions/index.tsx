@@ -1,5 +1,14 @@
-import React, { useMemo, useState } from "react";
-import { Linking, ScrollView, StyleSheet, View } from "react-native";
+import React, { useCallback, useMemo, useRef, useState } from "react";
+import {
+  Linking,
+  LayoutChangeEvent,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  View,
+} from "react-native";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import {
@@ -13,8 +22,8 @@ import {
   formatDateTime,
 } from "../../../src/components/ui";
 import {
+  useInfinitePractitionerSessions,
   usePreparePractitionerSessionRuntime,
-  usePractitionerSessions,
   useResolvePractitionerSessionJoinContract,
 } from "../../../src/features/practitioner/sessions/hooks";
 import type {
@@ -61,11 +70,82 @@ export default function PractitionerSessionsScreen() {
   const [feedback, setFeedback] = useState<string | null>(null);
 
   const locale = i18n.language?.startsWith("ar") ? "ar-SA" : "en-US";
-  const sessionsQuery = usePractitionerSessions({ limit: 50 });
-  const sessions = sessionsQuery.data?.items ?? [];
+  const sessionsQuery = useInfinitePractitionerSessions({ limit: 20 });
+  const sessions = useMemo(() => {
+    const seen = new Set<string>();
+    const flattened =
+      sessionsQuery.data?.pages.flatMap((page) => page.items) ?? [];
+
+    return flattened.filter((session) => {
+      if (seen.has(session.id)) {
+        return false;
+      }
+
+      seen.add(session.id);
+      return true;
+    });
+  }, [sessionsQuery.data?.pages]);
   const sections = useMemo(
     () => buildWorkspaceSections(sessions),
     [sessions],
+  );
+  const loadMoreGuardRef = useRef(false);
+  const contentHeightRef = useRef(0);
+  const layoutHeightRef = useRef(0);
+
+  const loadNextPage = useCallback(() => {
+    if (!sessionsQuery.hasNextPage || sessionsQuery.isFetchingNextPage) {
+      return;
+    }
+
+    if (loadMoreGuardRef.current) {
+      return;
+    }
+
+    loadMoreGuardRef.current = true;
+    void sessionsQuery.fetchNextPage().finally(() => {
+      loadMoreGuardRef.current = false;
+    });
+  }, [
+    sessionsQuery.fetchNextPage,
+    sessionsQuery.hasNextPage,
+    sessionsQuery.isFetchingNextPage,
+  ]);
+
+  const maybeLoadNextPage = useCallback(
+    (contentOffsetY = 0) => {
+      const distanceFromEnd =
+        contentHeightRef.current -
+        (layoutHeightRef.current + contentOffsetY);
+
+      if (distanceFromEnd < 520) {
+        loadNextPage();
+      }
+    },
+    [loadNextPage],
+  );
+
+  const handleLayout = useCallback(
+    (event: LayoutChangeEvent) => {
+      layoutHeightRef.current = event.nativeEvent.layout.height;
+      maybeLoadNextPage();
+    },
+    [maybeLoadNextPage],
+  );
+
+  const handleContentSizeChange = useCallback(
+    (_width: number, height: number) => {
+      contentHeightRef.current = height;
+      maybeLoadNextPage();
+    },
+    [maybeLoadNextPage],
+  );
+
+  const handleScroll = useCallback(
+    (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+      maybeLoadNextPage(event.nativeEvent.contentOffset.y);
+    },
+    [maybeLoadNextPage],
   );
 
   const handleViewDetails = (sessionId: string) => {
@@ -146,6 +226,16 @@ export default function PractitionerSessionsScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
+        refreshControl={
+          <RefreshControl
+            refreshing={sessionsQuery.isRefetching}
+            onRefresh={() => void sessionsQuery.refetch()}
+          />
+        }
+        onScroll={handleScroll}
+        onLayout={handleLayout}
+        onContentSizeChange={handleContentSizeChange}
+        scrollEventThrottle={16}
       >
         <Card variant="flat" padding="lg" style={styles.heroCard}>
           <Text color={theme.colors.textSecondary} style={styles.heroBody}>
@@ -184,9 +274,76 @@ export default function PractitionerSessionsScreen() {
             </View>
           ) : null,
         )}
+
+        {renderSessionsFooter({
+          hasNextPage: sessionsQuery.hasNextPage,
+          isFetchingNextPage: sessionsQuery.isFetchingNextPage,
+          isFetchNextPageError: sessionsQuery.isFetchNextPageError,
+          onRetryNextPage: () => void sessionsQuery.fetchNextPage(),
+          theme,
+          t,
+        })}
       </ScrollView>
     </ListPageScaffold>
   );
+}
+
+function renderSessionsFooter({
+  hasNextPage,
+  isFetchingNextPage,
+  isFetchNextPageError,
+  onRetryNextPage,
+  theme,
+  t,
+}: {
+  hasNextPage?: boolean;
+  isFetchingNextPage: boolean;
+  isFetchNextPageError: boolean;
+  onRetryNextPage: () => void;
+  theme: ReturnType<typeof useTheme>["theme"];
+  t: (key: string, options?: Record<string, unknown>) => string;
+}) {
+  if (isFetchingNextPage) {
+    return (
+      <Card variant="flat" padding="md" style={styles.paginationCard}>
+        <Text color={theme.colors.textSecondary}>
+          {t("practitioner.sessions.workspace.loadingMore")}
+        </Text>
+      </Card>
+    );
+  }
+
+  if (isFetchNextPageError) {
+    return (
+      <Card variant="flat" padding="md" style={styles.paginationCard}>
+        <Text weight="600" color={theme.colors.textPrimary}>
+          {t("practitioner.sessions.workspace.loadMoreErrorTitle")}
+        </Text>
+        <Text color={theme.colors.textSecondary} style={styles.paginationBody}>
+          {t("practitioner.sessions.workspace.loadMoreErrorSubtitle")}
+        </Text>
+        <View style={styles.paginationAction}>
+          <Button
+            title={t("practitioner.sessions.workspace.retry")}
+            onPress={onRetryNextPage}
+            variant="secondary"
+          />
+        </View>
+      </Card>
+    );
+  }
+
+  if (hasNextPage === false) {
+    return (
+      <Card variant="flat" padding="md" style={styles.paginationCard}>
+        <Text color={theme.colors.textSecondary}>
+          {t("practitioner.sessions.workspace.endOfList")}
+        </Text>
+      </Card>
+    );
+  }
+
+  return null;
 }
 
 function SessionWorkspaceCard({
@@ -452,5 +609,17 @@ const styles = StyleSheet.create({
   },
   actionsBlock: {
     gap: 10,
+  },
+  paginationCard: {
+    alignItems: "center",
+    gap: 8,
+  },
+  paginationBody: {
+    textAlign: "center",
+    fontSize: 14,
+    lineHeight: 22,
+  },
+  paginationAction: {
+    width: "100%",
   },
 });

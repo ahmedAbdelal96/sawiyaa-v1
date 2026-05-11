@@ -5,9 +5,11 @@ import {
   DiscountType,
   MarketType,
   PaymentPurpose,
+  PaymentProvider,
   SessionFlowType,
   SessionMode,
 } from '@prisma/client';
+import { PaymentRegionalPricingMode } from '@common/payments/payment-region.resolver';
 
 export type SessionFinancialContext = {
   id: string;
@@ -25,6 +27,7 @@ export type SessionFinancialContext = {
     sessionPrice60Usd?: { toString(): string } | string | null;
     countryId: string | null;
     country: {
+      isoCode?: string | null;
       currencyCode: string | null;
     } | null;
     specialties: Array<{
@@ -35,6 +38,9 @@ export type SessionFinancialContext = {
   patient: {
     id: string;
     countryId: string | null;
+    country: {
+      isoCode?: string | null;
+    } | null;
   };
   payments?: Array<{
     amountSubtotal: { toString(): string } | string;
@@ -91,6 +97,9 @@ export type SessionFinancialBreakdownViewModel = {
   sessionId: string;
   paymentPurpose: PaymentPurpose;
   currency: string;
+  regionalPricingMode: PaymentRegionalPricingMode;
+  provider: PaymentProvider;
+  resolvedCountryIsoCode: string | null;
   grossAmount: string;
   discountAmount: string;
   netPaidAmount: string;
@@ -120,6 +129,9 @@ export type PaymentFinancialResolution = {
   amountDiscount: string;
   amountTotal: string;
   currencyCode: string;
+  regionalPricingMode: PaymentRegionalPricingMode;
+  provider: PaymentProvider;
+  resolvedCountryIsoCode: string | null;
   commissionRuleId: string | null;
   commissionPlatformRatePercent: string | null;
   commissionPractitionerRatePercent: string | null;

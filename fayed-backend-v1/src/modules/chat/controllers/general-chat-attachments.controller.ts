@@ -67,7 +67,9 @@ export class GeneralChatAttachmentsController {
     description: 'Only active conversation participants may upload attachments',
   })
   @ApiNotFoundResponse({ description: 'Conversation was not found' })
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(
+    FileInterceptor('file', { limits: { fileSize: 10 * 1024 * 1024 } }),
+  )
   async upload(
     @CurrentUser() authenticatedUser: AuthenticatedUser,
     @Param('conversationId') conversationId: string,

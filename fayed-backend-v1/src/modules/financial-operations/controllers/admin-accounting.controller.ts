@@ -21,10 +21,13 @@ import {
 } from '@nestjs/swagger';
 import { RequireAccountStates } from '@common/decorators/account-state.decorator';
 import { CurrentUser } from '@common/decorators/current-user.decorator';
+import { Permissions } from '@common/decorators/permissions.decorator';
 import { Roles } from '@common/decorators/roles.decorator';
 import { AccountStateRequirement } from '@common/enums/account-state-requirement.enum';
 import { AppRole } from '@common/enums/app-role.enum';
+import { PermissionKey } from '@common/enums/permission-key.enum';
 import { JwtAccessAuthGuard } from '@common/guards/authentication/jwt-access-auth.guard';
+import { PermissionsGuard } from '@common/guards/authorization/permissions.guard';
 import { RolesGuard } from '@common/guards/authorization/roles.guard';
 import { AuthenticatedUser } from '@common/interfaces/authenticated-user.interface';
 import { JournalEntrySourceType } from '@prisma/client';
@@ -52,11 +55,13 @@ import { ListAdminAccountingReconciliationUseCase } from '../use-cases/list-admi
 import { ListAdminLedgerAccountOptionsUseCase } from '../use-cases/list-admin-ledger-account-options.use-case';
 import { ListAdminLedgerExplorerUseCase } from '../use-cases/list-admin-ledger-explorer.use-case';
 import { UpdateAdminAccountingReconciliationReviewUseCase } from '../use-cases/update-admin-accounting-reconciliation-review.use-case';
+import { SecurityAuditService } from '@common/security-audit/security-audit.service';
+import { SecurityAuditOutcome } from '@prisma/client';
 
 @ApiTags('Admin - Accounting')
 @ApiBearerAuth()
-@UseGuards(JwtAccessAuthGuard, RolesGuard)
-@Roles(AppRole.ADMIN, AppRole.SUPPORT_AGENT)
+@UseGuards(JwtAccessAuthGuard, RolesGuard, PermissionsGuard)
+@Roles(AppRole.ADMIN, AppRole.SUPER_ADMIN, AppRole.FINANCE_STAFF)
 @RequireAccountStates(AccountStateRequirement.ACTIVE_ACCOUNT)
 @Controller('admin/finance/accounting')
 export class AdminAccountingController {
@@ -70,9 +75,11 @@ export class AdminAccountingController {
     private readonly listAdminLedgerExplorerUseCase: ListAdminLedgerExplorerUseCase,
     private readonly exportAdminLedgerExplorerCsvUseCase: ExportAdminLedgerExplorerCsvUseCase,
     private readonly getAdminLedgerJournalEntryUseCase: GetAdminLedgerJournalEntryUseCase,
+    private readonly securityAuditService: SecurityAuditService,
   ) {}
 
   @Get('dashboard')
+  @Permissions(PermissionKey.ACCOUNTING_READ)
   @ApiOperation({
     summary: 'Get admin accounting dashboard snapshot',
     description:
@@ -92,6 +99,7 @@ export class AdminAccountingController {
   }
 
   @Get('dashboard/export.csv')
+  @Permissions(PermissionKey.ACCOUNTING_READ)
   @ApiOperation({
     summary: 'Export admin accounting dashboard CSV',
     description:
@@ -118,6 +126,7 @@ export class AdminAccountingController {
   }
 
   @Get('reconciliation/overview')
+  @Permissions(PermissionKey.ACCOUNTING_READ)
   @ApiOperation({
     summary: 'Get accounting reconciliation overview',
     description:
@@ -143,6 +152,7 @@ export class AdminAccountingController {
   }
 
   @Get('reconciliation/items')
+  @Permissions(PermissionKey.ACCOUNTING_READ)
   @ApiOperation({
     summary: 'List accounting reconciliation items',
     description:
@@ -156,10 +166,11 @@ export class AdminAccountingController {
   @ApiForbiddenResponse({
     description: 'Admin or support active account is required',
   })
-  async reconciliationItems(@Query() query: ListAdminAccountingReconciliationDto) {
-    const data = await this.listAdminAccountingReconciliationUseCase.execute(
-      query,
-    );
+  async reconciliationItems(
+    @Query() query: ListAdminAccountingReconciliationDto,
+  ) {
+    const data =
+      await this.listAdminAccountingReconciliationUseCase.execute(query);
     return {
       success: true as const,
       data,
@@ -167,6 +178,7 @@ export class AdminAccountingController {
   }
 
   @Patch('reconciliation/items/:sourceType/:sourceId/review')
+  @Permissions(PermissionKey.ACCOUNTING_WRITE)
   @ApiOperation({
     summary: 'Update accounting reconciliation review',
     description:
@@ -194,6 +206,15 @@ export class AdminAccountingController {
         reviewerUserId: currentUser.id,
         body,
       });
+    this.securityAuditService.logAsync({
+      action: 'finance.accounting.reconciliation.review',
+      outcome: SecurityAuditOutcome.SUCCESS,
+      actorUserId: currentUser.id,
+      actorRoles: currentUser.roles,
+      resourceType: 'FinanceReconciliationReview',
+      resourceId: sourceId,
+      metadata: { sourceType },
+    });
     return {
       success: true as const,
       data,
@@ -201,6 +222,7 @@ export class AdminAccountingController {
   }
 
   @Get('ledger/accounts')
+  @Permissions(PermissionKey.ACCOUNTING_READ)
   @ApiOperation({
     summary: 'List ledger account options',
     description:
@@ -227,6 +249,7 @@ export class AdminAccountingController {
   }
 
   @Get('ledger/entries')
+  @Permissions(PermissionKey.ACCOUNTING_READ)
   @ApiOperation({
     summary: 'List ledger explorer rows',
     description:
@@ -246,6 +269,7 @@ export class AdminAccountingController {
   }
 
   @Get('ledger/entries/export.csv')
+  @Permissions(PermissionKey.ACCOUNTING_READ)
   @ApiOperation({
     summary: 'Export ledger explorer CSV',
     description:
@@ -260,9 +284,8 @@ export class AdminAccountingController {
     @Query() query: ExportAdminLedgerExplorerDto,
     @Res({ passthrough: true }) response: Response,
   ) {
-    const exported = await this.exportAdminLedgerExplorerCsvUseCase.execute(
-      query,
-    );
+    const exported =
+      await this.exportAdminLedgerExplorerCsvUseCase.execute(query);
     response.setHeader('Content-Type', 'text/csv; charset=utf-8');
     response.setHeader(
       'Content-Disposition',
@@ -273,6 +296,7 @@ export class AdminAccountingController {
   }
 
   @Get('ledger/entries/:journalEntryId')
+  @Permissions(PermissionKey.ACCOUNTING_READ)
   @ApiOperation({
     summary: 'Get journal entry detail',
     description:
@@ -287,9 +311,8 @@ export class AdminAccountingController {
   async journalEntry(
     @Param('journalEntryId', new ParseUUIDPipe()) journalEntryId: string,
   ) {
-    const item = await this.getAdminLedgerJournalEntryUseCase.execute(
-      journalEntryId,
-    );
+    const item =
+      await this.getAdminLedgerJournalEntryUseCase.execute(journalEntryId);
     return {
       success: true as const,
       data: { item },

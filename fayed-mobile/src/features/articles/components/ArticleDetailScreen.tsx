@@ -98,7 +98,6 @@ export function ArticleDetailScreen({ slug, locale }: ArticleDetailScreenProps) 
     <DetailPageScaffold
       title="Article"
       showBack
-      onBack={() => router.back()}
       loading={articleQuery.isLoading}
       loadingMessage="Loading article..."
       error={articleQuery.isError}
@@ -247,3 +246,4 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
 });
+

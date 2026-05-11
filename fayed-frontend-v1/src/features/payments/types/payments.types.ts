@@ -36,6 +36,8 @@ export type PaymentItem = {
   amountFromWallet: string;
   amountFromGateway: string;
   currency: string;
+  regionalPricingMode: "EGYPT_LOCAL" | "INTERNATIONAL" | null;
+  resolvedCountryIsoCode: string | null;
   providerPaymentId: string | null;
   providerReference: string | null;
   providerMethod: string | null;

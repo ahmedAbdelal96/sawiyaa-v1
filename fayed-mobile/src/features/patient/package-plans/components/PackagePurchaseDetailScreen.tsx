@@ -26,6 +26,7 @@ import {
   groupPackagePurchaseSessions,
   isPackagePurchasePaymentExpired,
 } from "../lib";
+import { resolveSupportedCurrencyCode } from "../../../../lib/currency";
 
 function getStatusTone(status: string | null | undefined) {
   switch (status) {
@@ -127,7 +128,6 @@ export default function PackagePurchaseDetailScreen({
       <DetailPageScaffold
         title={t("packagePurchases.detail.title", "Package purchase")}
         showBack
-        onBack={() => router.back()}
       >
         <EmptyState
           title={t("packagePurchases.detail.notFoundTitle", "Purchase not found")}
@@ -147,7 +147,6 @@ export default function PackagePurchaseDetailScreen({
       <DetailPageScaffold
         title={t("packagePurchases.detail.title", "Package purchase")}
         showBack
-        onBack={() => router.back()}
         loading
         loadingMessage={t("packagePurchases.detail.loading", "Loading purchase...")}
       >
@@ -161,7 +160,6 @@ export default function PackagePurchaseDetailScreen({
       <DetailPageScaffold
         title={t("packagePurchases.detail.title", "Package purchase")}
         showBack
-        onBack={() => router.back()}
         error={purchaseQuery.isError}
         errorTitle={t("packagePurchases.detail.errorTitle", "We could not load the purchase")}
         errorMessage={t("packagePurchases.detail.errorMessage", "Please try again in a moment.")}
@@ -181,12 +179,16 @@ export default function PackagePurchaseDetailScreen({
   const paymentExpired = isPackagePurchasePaymentExpired(purchase);
   const canContinuePayment = canContinuePackagePurchasePayment(purchase);
   const sessions = groupPackagePurchaseSessions(purchase);
+  const currency = resolveSupportedCurrencyCode({
+    currencyCode: purchase.selectedCurrencyCode,
+    regionalPricingMode: purchase.regionalPricingMode,
+    resolvedCountryIsoCode: purchase.resolvedCountryIsoCode,
+  });
 
   return (
     <DetailPageScaffold
       title={t("packagePurchases.detail.title", "Package purchase")}
       showBack
-      onBack={() => router.back()}
       contentContainerStyle={styles.scaffold}
     >
       <View style={styles.stack}>
@@ -210,11 +212,11 @@ export default function PackagePurchaseDetailScreen({
             />
             <SummaryRow
               label={t("packagePurchases.detail.currency", "Currency")}
-              value={purchase.selectedCurrencyCode}
+              value={currency}
             />
             <SummaryRow
               label={t("packagePurchases.detail.total", "Total")}
-              value={formatMoney(purchase.patientPayableTotal, purchase.selectedCurrencyCode, locale)}
+              value={formatMoney(purchase.patientPayableTotal, currency, locale)}
             />
             <SummaryRow
               label={t("packagePurchases.detail.paymentExpiry", "Payment expiry")}
@@ -465,3 +467,4 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
 });
+

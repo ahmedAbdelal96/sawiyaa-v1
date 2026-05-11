@@ -16,7 +16,9 @@ import {
   formatDateTime,
 } from "../../../../components/ui";
 import { useTheme } from "../../../../providers/ThemeProvider";
+import { useAuth } from "../../../../providers/AuthProvider";
 import { resolveMediaUrl } from "../../../../lib/resolve-media-url";
+import { resolveSupportedCurrencyCode } from "../../../../lib/currency";
 import { extractApiErrorMessage } from "../../../../lib/api";
 import { useCreatePublicAcademyEnrollment, usePublicAcademyCourse } from "../hooks";
 import type { CreateAcademyEnrollmentInput } from "../types";
@@ -81,7 +83,17 @@ export default function AcademyDetailScreen({
   const router = useRouter();
   const { theme } = useTheme();
   const { t, i18n } = useTranslation();
-  const courseQuery = usePublicAcademyCourse(slug);
+  const { user, role, isLoading: isAuthLoading } = useAuth();
+  const authScopeKey = useMemo(() => {
+    if (isAuthLoading) {
+      return "bootstrapping";
+    }
+    if (!user) {
+      return "guest";
+    }
+    return `auth:${user.id}:${role}`;
+  }, [isAuthLoading, role, user]);
+  const courseQuery = usePublicAcademyCourse(slug, { cacheScopeKey: authScopeKey });
   const enrollMutation = useCreatePublicAcademyEnrollment();
   const [form, setForm] = useState<CreateAcademyEnrollmentInput>({
     fullName: "",
@@ -100,8 +112,13 @@ export default function AcademyDetailScreen({
   const startLabel = course?.startsAt
     ? formatDateTime(course.startsAt, locale)
     : null;
+  const displayCurrency = resolveSupportedCurrencyCode({
+    currencyCode: course?.currencyCode,
+    regionalPricingMode: course?.regionalPricingMode,
+    resolvedCountryIsoCode: course?.resolvedCountryIsoCode,
+  });
   const priceLabel =
-    formatCurrency(course?.priceAmount ?? null, course?.currencyCode ?? null, i18n.language) ??
+    formatCurrency(course?.priceAmount ?? null, displayCurrency, i18n.language) ??
     t("academy.detail.free", "Free");
   const lectures = course?.lectures ?? [];
   const contentBlocks = useMemo(
@@ -115,7 +132,6 @@ export default function AcademyDetailScreen({
     <DetailPageScaffold
       title={t("academy.detail.title", "Program details")}
       showBack
-      onBack={() => router.back()}
       loading={courseQuery.isLoading}
       loadingMessage={t("academy.detail.loading", "Loading program details...")}
       error={courseQuery.isError}
@@ -484,3 +500,4 @@ const styles = StyleSheet.create({
     marginHorizontal: 0,
   },
 });
+

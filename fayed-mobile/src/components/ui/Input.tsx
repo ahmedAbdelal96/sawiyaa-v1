@@ -1,5 +1,13 @@
 import React, { useState } from 'react';
-import { View, TextInput, TextInputProps, StyleSheet, I18nManager } from 'react-native';
+import {
+  View,
+  TextInput,
+  TextInputProps,
+  StyleSheet,
+  I18nManager,
+  type StyleProp,
+  type ViewStyle,
+} from 'react-native';
 import { Text } from './Text';
 import { useTheme } from '../../providers/ThemeProvider';
 
@@ -9,6 +17,7 @@ export interface InputProps extends TextInputProps {
   helperText?: string;
   leftElement?: React.ReactNode;
   rightElement?: React.ReactNode;
+  containerStyle?: StyleProp<ViewStyle>;
 }
 
 export const Input = ({
@@ -16,6 +25,7 @@ export const Input = ({
   error,
   helperText,
   style,
+  containerStyle,
   leftElement,
   rightElement,
   onFocus,
@@ -45,7 +55,7 @@ export const Input = ({
   const bgColor = theme.colors.surface;
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, containerStyle]}>
       {label && (
         <Text weight="500" style={styles.label} color={theme.colors.textSecondary}>
           {label}
@@ -95,6 +105,7 @@ const styles = StyleSheet.create({
   container: {
     marginBottom: 16,
     width: '100%',
+    minWidth: 0,
   },
   label: {
     fontSize: 14,

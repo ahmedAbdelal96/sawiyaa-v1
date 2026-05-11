@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
 import { JwtAccessAuthGuard } from '@common/guards/authentication/jwt-access-auth.guard';
+import { PermissionResolverService } from '@common/guards/authorization/permission-resolver.service';
+import { PermissionsGuard } from '@common/guards/authorization/permissions.guard';
 import { RolesGuard } from '@common/guards/authorization/roles.guard';
 import { AdminCareChatController } from './controllers/admin-care-chat.controller';
 import { PatientCareChatController } from './controllers/patient-care-chat.controller';
@@ -21,6 +23,7 @@ import { ListAdminCareChatRequestsUseCase } from './use-cases/list-admin-care-ch
 import { ListMyCareChatRequestsUseCase } from './use-cases/list-my-care-chat-requests.use-case';
 import { RevokeCareChatRequestUseCase } from './use-cases/revoke-care-chat-request.use-case';
 import { SendCareChatMessageUseCase } from './use-cases/send-care-chat-message.use-case';
+import { CareChatAccessPolicy } from './policies/care-chat-access.policy';
 
 @Module({
   controllers: [
@@ -29,8 +32,11 @@ import { SendCareChatMessageUseCase } from './use-cases/send-care-chat-message.u
     AdminCareChatController,
   ],
   providers: [
+    CareChatAccessPolicy,
     JwtAccessAuthGuard,
     RolesGuard,
+    PermissionsGuard,
+    PermissionResolverService,
     CareChatPresenter,
     CareChatActorRepository,
     CareChatRequestRepository,

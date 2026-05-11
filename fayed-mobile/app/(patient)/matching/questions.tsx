@@ -171,7 +171,7 @@ export default function MatchingQuestionsScreen() {
   if (specialtiesQuery.isLoading) {
     return (
       <Screen bg="background">
-        <Header showBack onBack={() => router.back()} />
+        <Header showBack  />
         <LoadingState fullScreen message={t("matching.question.loading")} />
       </Screen>
     );
@@ -180,7 +180,7 @@ export default function MatchingQuestionsScreen() {
   if (specialtiesQuery.isError) {
     return (
       <Screen bg="background">
-        <Header showBack onBack={() => router.back()} />
+        <Header showBack  />
         <ErrorState
           fullScreen
           message={t("matching.question.loadError")}
@@ -193,7 +193,7 @@ export default function MatchingQuestionsScreen() {
   if (isError && !errorText) {
     return (
       <Screen bg="background">
-        <Header showBack onBack={() => router.back()} />
+        <Header showBack  />
         <ErrorState
           title={t("matching.question.submitErrorTitle")}
           message={extractApiErrorMessage(error)}
@@ -207,7 +207,7 @@ export default function MatchingQuestionsScreen() {
 
   return (
     <Screen bg="background">
-      <Header showBack onBack={() => router.back()} />
+      <Header showBack  />
 
       <View style={styles.progressContainer}>
         <View style={styles.progressMeta}>
@@ -575,3 +575,4 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
   },
 });
+

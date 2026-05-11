@@ -5,6 +5,7 @@ import {
   RefundStatus,
   RefundType,
 } from '@prisma/client';
+import { PaymentRegionalPricingMode } from '@common/payments/payment-region.resolver';
 
 export interface PaymentViewModel {
   id: string;
@@ -18,6 +19,8 @@ export interface PaymentViewModel {
   amountFromGateway: string;
   amount: string;
   currency: string;
+  regionalPricingMode: PaymentRegionalPricingMode | null;
+  resolvedCountryIsoCode: string | null;
   providerPaymentId: string | null;
   providerReference: string | null;
   providerMethod: string | null;
@@ -60,6 +63,8 @@ export interface AdminPaymentOpsViewModel {
     amountFromWallet: string;
     amountFromGateway: string;
     currency: string;
+    regionalPricingMode: PaymentRegionalPricingMode | null;
+    resolvedCountryIsoCode: string | null;
     providerPaymentId: string | null;
     providerReference: string | null;
     providerMethod: string | null;

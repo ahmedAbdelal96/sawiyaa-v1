@@ -16,6 +16,7 @@ import {
 import { DEFAULT_PAGE_LIMIT } from "@/constants/pagination";
 import { toAppError } from "@/lib/api/errors";
 import { isUnauthorizedError } from "@/lib/api/errors";
+import { resolvePatientCurrencyCode } from "@/features/payments/lib/patient-currency";
 import { useMyPackagePurchases } from "../hooks/use-package-purchases";
 import PackagePurchasePaymentAction from "./PackagePurchasePaymentAction";
 import {
@@ -64,6 +65,12 @@ function PackagePurchaseCard({
   const t = useTranslations("package-purchases");
   const tSessions = useTranslations("sessions");
   const numLocale = locale === "ar" ? "ar-SA" : "en-US";
+  const purchaseCurrency =
+    resolvePatientCurrencyCode({
+      currencyCode: purchase.selectedCurrencyCode,
+      regionalPricingMode: purchase.regionalPricingMode,
+      resolvedCountryIsoCode: purchase.resolvedCountryIsoCode,
+    }) ?? purchase.selectedCurrencyCode;
 
   const completedCount = getPackagePurchaseCompletionCount(purchase);
   const pendingCount = getPackagePurchasePendingCount(purchase);
@@ -98,7 +105,7 @@ function PackagePurchaseCard({
             {t("list.card.payableTotal")}
           </p>
           <p className="mt-1 text-lg font-bold text-primary">
-            {formatMoney(purchase.patientPayableTotal, purchase.selectedCurrencyCode, numLocale)}
+            {formatMoney(purchase.patientPayableTotal, purchaseCurrency, numLocale)}
           </p>
         </div>
         <div className="rounded-2xl bg-surface px-4 py-3 dark:bg-white/5">
@@ -128,7 +135,7 @@ function PackagePurchaseCard({
             {t("list.card.currency")}
           </p>
           <p className="mt-1 font-semibold text-text-primary dark:text-white/90">
-            {purchase.selectedCurrencyCode}
+            {purchaseCurrency}
           </p>
         </div>
       </div>

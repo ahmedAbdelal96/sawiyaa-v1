@@ -4,6 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { GeneralChatRepository } from '../repositories/general-chat.repository';
+import { ConversationAccessPolicy } from '../policies/conversation-access.policy';
 import { ValidateGeneralChatMessagePayloadService } from '../services/validate-general-chat-message-payload.service';
 import { SendGeneralChatMessageUseCase } from './send-general-chat-message.use-case';
 
@@ -16,6 +17,7 @@ describe('SendGeneralChatMessageUseCase', () => {
   const useCase = new SendGeneralChatMessageUseCase(
     generalChatRepository,
     new ValidateGeneralChatMessagePayloadService(),
+    new ConversationAccessPolicy(),
   );
 
   beforeEach(() => {

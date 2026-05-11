@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { FlatList, ScrollView, StyleSheet, View } from "react-native";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
@@ -10,10 +10,11 @@ import {
   StatusChip,
   SectionHeader,
   Text,
+  Button,
   formatDate,
 } from "../../../components/ui";
 import { useTheme } from "../../../providers/ThemeProvider";
-import { useArticleCategories, useArticles } from "../hooks";
+import { useArticleCategories, useInfiniteArticles } from "../hooks";
 import type { ArticleListItem } from "../types";
 
 type ArticleListScreenProps = {
@@ -23,12 +24,13 @@ type ArticleListScreenProps = {
 export function ArticleListScreen({ locale }: ArticleListScreenProps) {
   const router = useRouter();
   const { theme } = useTheme();
-  const { i18n } = useTranslation();
+  const { i18n, t } = useTranslation();
   const resolvedLocale = locale ?? i18n.language;
-  const [selectedCategorySlug, setSelectedCategorySlug] = useState<string | null>(null);
-  const articlesQuery = useArticles({
-    page: 1,
-    limit: 20,
+  const [selectedCategorySlug, setSelectedCategorySlug] = useState<
+    string | null
+  >(null);
+  const articlesQuery = useInfiniteArticles({
+    limit: 12,
     locale: resolvedLocale as "ar" | "en",
     categorySlug: selectedCategorySlug ?? undefined,
   });
@@ -38,9 +40,15 @@ export function ArticleListScreen({ locale }: ArticleListScreenProps) {
     locale: resolvedLocale as "ar" | "en",
   });
 
-  const items = articlesQuery.data?.items ?? [];
-  const isEmpty = !articlesQuery.isLoading && !articlesQuery.isError && items.length === 0;
+  const items = useMemo(
+    () => articlesQuery.data?.pages.flatMap((page) => page.items) ?? [],
+    [articlesQuery.data?.pages],
+  );
+  const latestPage = articlesQuery.data?.pages.at(-1);
+  const isEmpty =
+    !articlesQuery.isLoading && !articlesQuery.isError && items.length === 0;
   const categories = categoriesQuery.data?.items ?? [];
+  const hasNextPage = articlesQuery.hasNextPage ?? false;
 
   const categoryChips = [
     { id: "all", title: "All categories", slug: null as string | null },
@@ -52,34 +60,56 @@ export function ArticleListScreen({ locale }: ArticleListScreenProps) {
   ];
 
   return (
-    <ListPageScaffold
-      title="Articles"
+      <ListPageScaffold
+      title={t("articlesMobile.header", "Articles")}
       showBack
-      onBack={() => router.back()}
       loading={articlesQuery.isLoading}
-      loadingMessage="Loading articles..."
+      loadingMessage={t("articlesMobile.loading", "Loading articles...")}
       error={articlesQuery.isError}
-      errorMessage="We could not load articles right now. Please try again."
+      errorMessage={t(
+        "articlesMobile.error",
+        "We could not load articles right now. Please try again.",
+      )}
       onRetry={() => articlesQuery.refetch()}
-      retryText="Try again"
+      retryText={t("retry", "Retry")}
       empty={isEmpty}
-      emptyTitle={selectedCategorySlug ? "No articles match this category" : "No articles found"}
+      emptyTitle={
+        selectedCategorySlug
+          ? t(
+              "articlesMobile.emptyCategoryTitle",
+              "No articles match this category",
+            )
+          : t("articlesMobile.emptyTitle", "No articles found")
+      }
       emptyDescription={
         selectedCategorySlug
-          ? "Clear the filter to see all published articles again."
-          : "There are no published articles available yet."
+          ? t(
+              "articlesMobile.emptyCategoryDescription",
+              "Clear the filter to see all published articles again.",
+            )
+          : t(
+              "articlesMobile.emptyDescription",
+              "There are no published articles available yet.",
+            )
       }
-      emptyActionLabel={selectedCategorySlug ? "Clear filter" : undefined}
+      emptyActionLabel={
+        selectedCategorySlug
+          ? t("articlesMobile.clearFilter", "Clear filter")
+          : undefined
+      }
       onEmptyAction={selectedCategorySlug ? () => setSelectedCategorySlug(null) : undefined}
       children={
         <View style={styles.contentWrap}>
           <SectionHeader
-            title="Categories"
-            subtitle="Tap one category to filter articles"
+            title={t("articlesMobile.categoriesHeader", "Categories")}
+            subtitle={t(
+              "articlesMobile.categoriesSubtitle",
+              "Tap one category to filter articles",
+            )}
             action={
               selectedCategorySlug ? (
                 <FilterChip
-                  label="Clear"
+                  label={t("articlesMobile.clearFilter", "Clear filter")}
                   selected={false}
                   onPress={() => setSelectedCategorySlug(null)}
                 />
@@ -109,6 +139,7 @@ export function ArticleListScreen({ locale }: ArticleListScreenProps) {
           <FlatList
             data={items}
             keyExtractor={(item) => item.id}
+            extraData={selectedCategorySlug}
             renderItem={({ item }) => (
               <ArticleCard
                 article={item}
@@ -127,6 +158,66 @@ export function ArticleListScreen({ locale }: ArticleListScreenProps) {
             contentContainerStyle={styles.listContent}
             showsVerticalScrollIndicator={false}
             style={styles.list}
+            refreshing={articlesQuery.isRefetching}
+            onRefresh={() => articlesQuery.refetch()}
+            onEndReached={() => {
+              if (
+                hasNextPage &&
+                !articlesQuery.isFetchingNextPage &&
+                !articlesQuery.isLoading &&
+                !articlesQuery.isError
+              ) {
+                articlesQuery.fetchNextPage();
+              }
+            }}
+            onEndReachedThreshold={0.45}
+            ListHeaderComponent={
+              <Text color={theme.colors.textSecondary} style={styles.resultsCount}>
+                {latestPage
+                  ? t("articlesMobile.resultsCount", {
+                      shown: items.length,
+                      total: latestPage.pagination.totalItems,
+                    })
+                  : " "}
+              </Text>
+            }
+            ListFooterComponent={
+              articlesQuery.isFetchingNextPage ? (
+                <View style={styles.footerState}>
+                  <Text color={theme.colors.textSecondary} style={styles.footerText}>
+                    {t("articlesMobile.loadingMore", "Loading more articles...")}
+                  </Text>
+                </View>
+              ) : articlesQuery.isFetchNextPageError ? (
+                <View style={styles.footerState}>
+                  <Text weight="bold" style={styles.footerTitle} color={theme.colors.textPrimary}>
+                    {t(
+                      "articlesMobile.loadMoreErrorTitle",
+                      "Could not load more articles",
+                    )}
+                  </Text>
+                  <Text color={theme.colors.textSecondary} style={styles.footerText}>
+                    {t(
+                      "articlesMobile.loadMoreErrorSubtitle",
+                      "Try again to load the next set of results.",
+                    )}
+                  </Text>
+                  <Button
+                    title={t("retry", "Retry")}
+                    onPress={() => articlesQuery.fetchNextPage()}
+                  />
+                </View>
+              ) : hasNextPage ? null : items.length > 0 ? (
+                <View style={styles.footerState}>
+                  <Text color={theme.colors.textSecondary} style={styles.footerText}>
+                    {t(
+                      "articlesMobile.endOfList",
+                      "You have reached the end of the list.",
+                    )}
+                  </Text>
+                </View>
+              ) : null
+            }
           />
         </View>
       }
@@ -240,4 +331,25 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: 12,
   },
+  resultsCount: {
+    fontSize: 14,
+    marginBottom: 14,
+    marginTop: 2,
+  },
+  footerState: {
+    paddingTop: 8,
+    paddingBottom: 20,
+  },
+  footerTitle: {
+    fontSize: 16,
+    marginBottom: 6,
+    textAlign: "center",
+  },
+  footerText: {
+    fontSize: 14,
+    lineHeight: 21,
+    textAlign: "center",
+    marginBottom: 14,
+  },
 });
+

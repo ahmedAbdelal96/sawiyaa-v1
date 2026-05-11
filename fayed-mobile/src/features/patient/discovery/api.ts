@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { apiClient } from "../../../lib/api";
 import {
   ListPublicPractitionersFilters,
@@ -20,6 +20,39 @@ export const useGetPublicPractitioners = (
         },
       );
       return response.data;
+    },
+  });
+};
+
+type InfinitePublicPractitionersFilters = Omit<ListPublicPractitionersFilters, "page">;
+
+export const useGetPublicPractitionersInfinite = (
+  filters: InfinitePublicPractitionersFilters,
+) => {
+  return useInfiniteQuery({
+    queryKey: ["public-practitioners", "infinite", filters],
+    initialPageParam: 1,
+    queryFn: async ({ pageParam }) => {
+      const response = await apiClient.get<PublicPractitionersListResponse>(
+        "/public/practitioners",
+        {
+          params: {
+            ...filters,
+            page: pageParam,
+            limit: filters.limit ?? 12,
+          },
+        },
+      );
+
+      return response.data;
+    },
+    getNextPageParam: (lastPage) => {
+      const pagination = lastPage.data.pagination;
+      if (pagination.page >= pagination.totalPages) {
+        return undefined;
+      }
+
+      return pagination.page + 1;
     },
   });
 };

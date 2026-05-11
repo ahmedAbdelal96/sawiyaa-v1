@@ -1,15 +1,19 @@
-import {
-  ForbiddenException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { AuthenticatedUser } from '@common/interfaces/authenticated-user.interface';
+import {
+  buildGeneralChatParticipantDirectoryMap,
+  buildGeneralChatParticipantSummary,
+} from '../helpers/general-chat-identity.mapper';
 import { GeneralChatRepository } from '../repositories/general-chat.repository';
+import { ConversationAccessPolicy } from '../policies/conversation-access.policy';
 import { GENERAL_CHAT_ERROR_CODES } from '../types/general-chat.types';
 
 @Injectable()
 export class GetMyGeneralChatConversationDetailUseCase {
-  constructor(private readonly generalChatRepository: GeneralChatRepository) {}
+  constructor(
+    private readonly generalChatRepository: GeneralChatRepository,
+    private readonly conversationAccessPolicy: ConversationAccessPolicy,
+  ) {}
 
   async execute(input: {
     authenticatedUser: AuthenticatedUser;
@@ -27,16 +31,14 @@ export class GetMyGeneralChatConversationDetailUseCase {
       });
     }
 
+    this.conversationAccessPolicy.assertParticipant({
+      participants: conversation.participants,
+      requesterId: input.authenticatedUser.id,
+    });
+
     const viewerParticipant = conversation.participants.find(
       (participant) => participant.userId === input.authenticatedUser.id,
-    );
-
-    if (!viewerParticipant) {
-      throw new ForbiddenException({
-        messageKey: 'chat.errors.conversationAccessDenied',
-        errorCode: GENERAL_CHAT_ERROR_CODES.conversationAccessDenied,
-      });
-    }
+    )!;
 
     const latestMessage = conversation.messages[0] ?? null;
     const latestActivityAt = latestMessage
@@ -49,16 +51,24 @@ export class GetMyGeneralChatConversationDetailUseCase {
         lastReadAt: viewerParticipant.lastReadAt,
       });
 
+    const participantDirectoryRecords =
+      (await this.generalChatRepository.loadParticipantIdentityRecords?.(
+        conversation.participants.map((participant) => participant.userId),
+      )) ?? [];
+    const participantDirectory = buildGeneralChatParticipantDirectoryMap(
+      participantDirectoryRecords,
+    );
+    const participantSummaries = conversation.participants.map((participant) =>
+      buildGeneralChatParticipantSummary(participant, participantDirectory),
+    );
+
     return {
       item: {
         conversationId: conversation.id,
         conversationRef: conversation.conversationRef ?? '',
         status: conversation.status,
         linkedSessionId: conversation.sessionId,
-        participants: conversation.participants.map((participant) => ({
-          userId: participant.userId,
-          role: participant.participantRole,
-        })),
+        participants: participantSummaries,
         createdAt: conversation.createdAt.toISOString(),
         latestActivityAt: latestActivityAt.toISOString(),
         latestMessage: latestMessage
@@ -68,6 +78,12 @@ export class GetMyGeneralChatConversationDetailUseCase {
               messageType: latestMessage.messageType,
               previewText: latestMessage.contentText,
               sentAt: latestMessage.sentAt.toISOString(),
+              senderIdentity: latestMessage.senderUserId
+                ? (participantSummaries.find(
+                    (participant) =>
+                      participant.userId === latestMessage.senderUserId,
+                  )?.identity ?? null)
+                : null,
             }
           : null,
         hasMessages: Boolean(latestMessage),

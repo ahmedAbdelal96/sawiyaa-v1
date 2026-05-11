@@ -21,11 +21,14 @@ import {
 } from '@nestjs/swagger';
 import { CurrentUser } from '@common/decorators/current-user.decorator';
 import { RequireAccountStates } from '@common/decorators/account-state.decorator';
+import { Permissions } from '@common/decorators/permissions.decorator';
 import { Roles } from '@common/decorators/roles.decorator';
 import { AccountStateRequirement } from '@common/enums/account-state-requirement.enum';
 import { AppRole } from '@common/enums/app-role.enum';
+import { PermissionKey } from '@common/enums/permission-key.enum';
 import { JwtAccessAuthGuard } from '@common/guards/authentication/jwt-access-auth.guard';
 import { AdminGuard } from '@common/guards/authorization/admin.guard';
+import { PermissionsGuard } from '@common/guards/authorization/permissions.guard';
 import { RolesGuard } from '@common/guards/authorization/roles.guard';
 import { AuthenticatedUser } from '@common/interfaces/authenticated-user.interface';
 import {
@@ -36,21 +39,25 @@ import { ListPackageSettlementsDto } from '../dto/list-package-settlements.dto';
 import { GetAdminPackageSettlementUseCase } from '../use-cases/get-admin-package-settlement.use-case';
 import { ListAdminPackageSettlementsUseCase } from '../use-cases/list-admin-package-settlements.use-case';
 import { ReleasePackageSettlementUseCase } from '../use-cases/release-package-settlement.use-case';
+import { SecurityAuditService } from '@common/security-audit/security-audit.service';
+import { SecurityAuditOutcome } from '@prisma/client';
 
 @ApiTags('Admin - Package Settlements')
 @ApiBearerAuth()
-@UseGuards(JwtAccessAuthGuard, RolesGuard)
+@UseGuards(JwtAccessAuthGuard, RolesGuard, PermissionsGuard)
 @RequireAccountStates(AccountStateRequirement.ACTIVE_ACCOUNT)
-@Roles(AppRole.ADMIN, AppRole.SUPPORT_AGENT)
+@Roles(AppRole.ADMIN, AppRole.SUPER_ADMIN, AppRole.FINANCE_STAFF)
 @Controller('admin/package-settlements')
 export class AdminPackageSettlementsController {
   constructor(
     private readonly listAdminPackageSettlementsUseCase: ListAdminPackageSettlementsUseCase,
     private readonly getAdminPackageSettlementUseCase: GetAdminPackageSettlementUseCase,
     private readonly releasePackageSettlementUseCase: ReleasePackageSettlementUseCase,
+    private readonly securityAuditService: SecurityAuditService,
   ) {}
 
   @Get()
+  @Permissions(PermissionKey.SETTLEMENTS_READ)
   @ApiOperation({
     summary: 'List package settlements',
     description:
@@ -67,6 +74,7 @@ export class AdminPackageSettlementsController {
   }
 
   @Get(':id')
+  @Permissions(PermissionKey.SETTLEMENTS_READ)
   @ApiOperation({
     summary: 'Get package settlement details',
     description:
@@ -102,13 +110,22 @@ export class AdminPackageSettlementsController {
   @ApiNotFoundResponse({ description: 'Package settlement was not found' })
   @UseGuards(AdminGuard)
   @Roles(AppRole.ADMIN)
-  release(
+  async release(
     @Param('id', new ParseUUIDPipe()) id: string,
     @CurrentUser() currentUser: AuthenticatedUser,
   ) {
-    return this.releasePackageSettlementUseCase.execute({
+    const result = await this.releasePackageSettlementUseCase.execute({
       settlementId: id,
       releasedByAdminId: currentUser.id,
     });
+    this.securityAuditService.logAsync({
+      action: 'finance.package_settlement.release',
+      outcome: SecurityAuditOutcome.SUCCESS,
+      actorUserId: currentUser.id,
+      actorRoles: currentUser.roles,
+      resourceType: 'PackageSettlement',
+      resourceId: id,
+    });
+    return result;
   }
 }

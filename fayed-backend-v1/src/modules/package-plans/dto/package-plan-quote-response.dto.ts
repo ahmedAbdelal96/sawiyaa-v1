@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { SessionMode } from '@prisma/client';
+import { PaymentProvider, SessionMode } from '@prisma/client';
 
 export class PackagePlanQuotePlanDto {
   @ApiProperty()
@@ -64,6 +64,17 @@ export class PackagePlanQuoteDto {
 
   @ApiProperty()
   selectedCurrencyCode!: string;
+
+  @ApiProperty({
+    enum: ['EGYPT_LOCAL', 'INTERNATIONAL'],
+  })
+  regionalPricingMode!: 'EGYPT_LOCAL' | 'INTERNATIONAL';
+
+  @ApiProperty({ nullable: true })
+  resolvedCountryIsoCode!: string | null;
+
+  @ApiProperty({ enum: PaymentProvider, nullable: true })
+  provider!: PaymentProvider | null;
 
   @ApiProperty()
   selectedBaseSessionPrice!: string;

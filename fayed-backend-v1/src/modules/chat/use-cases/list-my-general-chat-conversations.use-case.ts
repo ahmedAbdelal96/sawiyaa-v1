@@ -1,6 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { AuthenticatedUser } from '@common/interfaces/authenticated-user.interface';
 import { ListGeneralChatConversationsDto } from '../dto/list-general-chat-conversations.dto';
+import {
+  buildGeneralChatParticipantDirectoryMap,
+  buildGeneralChatParticipantSummary,
+} from '../helpers/general-chat-identity.mapper';
 import { GeneralChatRepository } from '../repositories/general-chat.repository';
 
 @Injectable()
@@ -18,6 +22,16 @@ export class ListMyGeneralChatConversationsUseCase {
         limit: input.query.limit,
       });
 
+    const participantUserIds = Array.from(
+      new Set(rows.flatMap((row) => row.participants.map((participant) => participant.userId))),
+    );
+    const participantDirectoryRecords =
+      (await this.generalChatRepository.loadParticipantIdentityRecords?.(participantUserIds)) ??
+      [];
+    const participantDirectory = buildGeneralChatParticipantDirectoryMap(
+      participantDirectoryRecords,
+    );
+
     const items = await Promise.all(
       rows.map(async (row) => {
         const latestMessage = row.messages[0] ?? null;
@@ -34,16 +48,16 @@ export class ListMyGeneralChatConversationsUseCase {
             userId: input.authenticatedUser.id,
             lastReadAt,
           });
+        const participantSummaries = row.participants.map((participant) =>
+          buildGeneralChatParticipantSummary(participant, participantDirectory),
+        );
 
         return {
           conversationId: row.id,
           conversationRef: row.conversationRef ?? '',
           status: row.status,
           linkedSessionId: row.sessionId,
-          participants: row.participants.map((participant) => ({
-            userId: participant.userId,
-            role: participant.participantRole,
-          })),
+          participants: participantSummaries,
           createdAt: row.createdAt.toISOString(),
           latestActivityAt: latestActivityAt.toISOString(),
           latestMessage: latestMessage
@@ -53,6 +67,12 @@ export class ListMyGeneralChatConversationsUseCase {
                 messageType: latestMessage.messageType,
                 previewText: latestMessage.contentText,
                 sentAt: latestMessage.sentAt.toISOString(),
+                senderIdentity:
+                  latestMessage.senderUserId
+                    ? participantSummaries
+                        .find((participant) => participant.userId === latestMessage.senderUserId)
+                        ?.identity ?? null
+                    : null,
               }
             : null,
           unreadCount,

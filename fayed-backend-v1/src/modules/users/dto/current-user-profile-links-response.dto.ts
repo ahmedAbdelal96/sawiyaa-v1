@@ -8,3 +8,11 @@ export class CurrentUserProfileLinksResponseDto {
   @ApiProperty({ type: CurrentUserProfileLinksDto })
   profileLinks!: CurrentUserProfileLinksDto;
 }
+
+export class CurrentUserProfileLinksEnvelopeResponseDto {
+  @ApiProperty({ example: true })
+  success!: true;
+
+  @ApiProperty({ type: CurrentUserProfileLinksResponseDto })
+  data!: CurrentUserProfileLinksResponseDto;
+}

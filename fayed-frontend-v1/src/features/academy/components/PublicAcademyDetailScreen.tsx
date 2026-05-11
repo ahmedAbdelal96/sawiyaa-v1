@@ -15,6 +15,8 @@ import {
 import Button from "@/components/ui/button/Button";
 import Input from "@/components/form/input/InputField";
 import { StateCard } from "@/components/shared/ContentStates";
+import { useAuthStore } from "@/stores/auth-store";
+import { resolvePatientCurrencyCode } from "@/features/payments/lib/patient-currency";
 import {
   createPublicAcademyEnrollment,
 } from "../api/academy.api";
@@ -56,12 +58,22 @@ export default function PublicAcademyDetailScreen({
   slug: string;
 }) {
   const t = useTranslations("academy");
+  const { user, isInitialized } = useAuthStore();
+  const authScopeKey = useMemo(() => {
+    if (!isInitialized) {
+      return "bootstrapping";
+    }
+    if (!user) {
+      return "guest";
+    }
+    return `auth:${user.id}:${user.role}`;
+  }, [isInitialized, user]);
   const {
     data: course,
     isLoading,
     isError,
     refetch,
-  } = usePublicAcademyCourse(slug);
+  } = usePublicAcademyCourse(slug, { cacheScopeKey: authScopeKey });
   const createEnrollment = useCreatePublicAcademyEnrollment();
   const [feedback, setFeedback] = useState<string | null>(null);
   const [form, setForm] = useState<CreateAcademyEnrollmentInput>({
@@ -76,8 +88,23 @@ export default function PublicAcademyDetailScreen({
   >(null);
 
   const priceLabel = useMemo(
-    () => formatCurrency(course?.priceAmount ?? null, course?.currencyCode ?? null, locale),
-    [course?.currencyCode, course?.priceAmount, locale],
+    () =>
+      formatCurrency(
+        course?.priceAmount ?? null,
+        resolvePatientCurrencyCode({
+          currencyCode: course?.currencyCode,
+          regionalPricingMode: course?.regionalPricingMode,
+          resolvedCountryIsoCode: course?.resolvedCountryIsoCode,
+        }) ?? course?.currencyCode ?? null,
+        locale,
+      ),
+    [
+      course?.currencyCode,
+      course?.priceAmount,
+      course?.regionalPricingMode,
+      course?.resolvedCountryIsoCode,
+      locale,
+    ],
   );
 
   const courseDateLabel = useMemo(

@@ -42,9 +42,18 @@ enum UserRoleType {
   PATIENT
   PRACTITIONER
   ADMIN
+  FINANCE_STAFF
+  MARKETING_STAFF
+  PRACTITIONER_REVIEWER
+  PATIENT_OPERATIONS
   SUPPORT
   CONTENT_REVIEWER
   SUPER_ADMIN
+}
+
+enum PermissionOverrideEffect {
+  ALLOW
+  DENY
 }
 
 enum OtpPurpose {
@@ -1114,6 +1123,7 @@ model User {
   phones              UserPhone[]
   authIdentities      AuthIdentity[]
   roles               UserRole[]
+  permissionOverrides UserPermissionOverride[]
   sessions            UserSession[]
   otpChallenges       OtpChallenge[]
   twoFactorSettings   TwoFactorSetting?
@@ -1196,6 +1206,47 @@ model UserRole {
 
   @@unique([userId, role])
   @@index([role])
+}
+
+model Permission {
+  id          String   @id @default(uuid()) @db.Uuid
+  key         String   @unique @db.VarChar(120)
+  description String?  @db.VarChar(255)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  rolePermissions RolePermission[]
+  userOverrides   UserPermissionOverride[]
+}
+
+model RolePermission {
+  id           String       @id @default(uuid()) @db.Uuid
+  role         UserRoleType
+  permissionId String       @db.Uuid
+  createdAt    DateTime     @default(now())
+
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([role, permissionId])
+  @@index([role])
+  @@index([permissionId])
+}
+
+model UserPermissionOverride {
+  id           String                   @id @default(uuid()) @db.Uuid
+  userId       String                   @db.Uuid
+  permissionId String                   @db.Uuid
+  effect       PermissionOverrideEffect
+  reason       String?                  @db.VarChar(255)
+  createdAt    DateTime                 @default(now())
+  updatedAt    DateTime                 @updatedAt
+
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, permissionId])
+  @@index([userId])
+  @@index([permissionId])
 }
 
 model UserSession {
@@ -4172,4 +4223,41 @@ model AcademyEnrollmentActivityLog {
   @@index([academyCourseId, createdAt])
   @@index([academyEnrollmentId, createdAt])
   @@index([action, createdAt])
+}
+
+//////////////////////////////
+// Security Audit
+//////////////////////////////
+
+enum SecurityAuditOutcome {
+  SUCCESS
+  FAILURE
+  DENIED
+}
+
+/// Platform-level security audit log.
+/// Separate from AuditEvent (notification delivery domain).
+/// Fire-and-forget writes: service never throws on persistence failure.
+/// Never log: raw JWTs, passwords, OTP codes, refresh tokens, or secrets.
+model SecurityAuditLog {
+  id            String               @id @default(uuid()) @db.Uuid
+  action        String               @db.VarChar(120)
+  outcome       SecurityAuditOutcome
+  actorUserId   String?              @db.Uuid
+  actorRolesJson Json?
+  resourceType  String?              @db.VarChar(100)
+  resourceId    String?              @db.VarChar(191)
+  targetUserId  String?              @db.Uuid
+  ipAddress     String?              @db.VarChar(64)
+  userAgent     String?              @db.VarChar(500)
+  correlationId String?              @db.VarChar(191)
+  reason        String?              @db.VarChar(500)
+  metadataJson  Json?
+  occurredAt    DateTime             @default(now())
+
+  @@index([action, occurredAt])
+  @@index([actorUserId, occurredAt])
+  @@index([outcome, occurredAt])
+  @@index([resourceType, resourceId])
+  @@index([occurredAt])
 }

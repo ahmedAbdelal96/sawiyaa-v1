@@ -1,16 +1,21 @@
 import {
   BadRequestException,
-  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { ConversationParticipantRole } from '@prisma/client';
 import { AuthenticatedUser } from '@common/interfaces/authenticated-user.interface';
 import {
   GENERAL_CHAT_ALLOWED_CONVERSATION_STATUS,
   GENERAL_CHAT_ERROR_CODES,
 } from '../types/general-chat.types';
 import { SendGeneralChatMessageDto } from '../dto/send-general-chat-message.dto';
+import {
+  buildGeneralChatParticipantIdentity,
+  buildGeneralChatParticipantDirectoryMap,
+} from '../helpers/general-chat-identity.mapper';
 import { GeneralChatRepository } from '../repositories/general-chat.repository';
+import { ConversationAccessPolicy } from '../policies/conversation-access.policy';
 import { ValidateGeneralChatMessagePayloadService } from '../services/validate-general-chat-message-payload.service';
 
 @Injectable()
@@ -18,6 +23,7 @@ export class SendGeneralChatMessageUseCase {
   constructor(
     private readonly generalChatRepository: GeneralChatRepository,
     private readonly validateGeneralChatMessagePayloadService: ValidateGeneralChatMessagePayloadService,
+    private readonly conversationAccessPolicy: ConversationAccessPolicy,
   ) {}
 
   async execute(input: {
@@ -37,15 +43,10 @@ export class SendGeneralChatMessageUseCase {
       });
     }
 
-    const isParticipant = conversation.participants.some(
-      (participant) => participant.userId === input.authenticatedUser.id,
-    );
-    if (!isParticipant) {
-      throw new ForbiddenException({
-        messageKey: 'chat.errors.conversationAccessDenied',
-        errorCode: GENERAL_CHAT_ERROR_CODES.conversationAccessDenied,
-      });
-    }
+    this.conversationAccessPolicy.assertParticipant({
+      participants: conversation.participants,
+      requesterId: input.authenticatedUser.id,
+    });
 
     const statusAllowed = GENERAL_CHAT_ALLOWED_CONVERSATION_STATUS.includes(
       conversation.status as (typeof GENERAL_CHAT_ALLOWED_CONVERSATION_STATUS)[number],
@@ -62,6 +63,24 @@ export class SendGeneralChatMessageUseCase {
     );
 
     const now = new Date();
+    const senderIdentityRecord =
+      (await this.generalChatRepository.loadParticipantIdentityRecord?.(
+        input.authenticatedUser.id,
+      )) ?? null;
+    const senderIdentity = senderIdentityRecord
+      ? buildGeneralChatParticipantIdentity(
+          {
+            userId: senderIdentityRecord.id,
+            participantRole:
+              conversation.participants.find(
+                (participant) =>
+                  participant.userId === input.authenticatedUser.id,
+              )?.participantRole ?? ConversationParticipantRole.PATIENT,
+          },
+          buildGeneralChatParticipantDirectoryMap([senderIdentityRecord]),
+        )
+      : null;
+
     const persisted =
       await this.generalChatRepository.appendMessageInGeneralConversation({
         conversationId: input.conversationId,
@@ -91,6 +110,7 @@ export class SendGeneralChatMessageUseCase {
         })),
         conversationLatestActivityAt:
           persisted.conversationLatestActivityAt.toISOString(),
+        senderIdentity,
       },
     };
   }

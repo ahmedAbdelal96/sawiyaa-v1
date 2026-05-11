@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import {
   Card,
@@ -58,9 +58,14 @@ function shortReference(value: string | null) {
 
 export default function PractitionerSupportListScreen() {
   const router = useRouter();
+  const { returnTo } = useLocalSearchParams<{ returnTo?: string }>();
   const { theme } = useTheme();
   const { t, i18n } = useTranslation();
   const [tab, setTab] = useState<TabFilter>("active");
+  const returnToRoute =
+    typeof returnTo === "string" && returnTo.trim().length > 0
+      ? returnTo
+      : null;
 
   const query = usePractitionerSupportTickets({ page: 1, limit: 50 });
   const allTickets = query.data?.items ?? [];
@@ -92,7 +97,17 @@ export default function PractitionerSupportListScreen() {
     return (
       <TouchableOpacity
         key={ticket.id}
-        onPress={() => router.push(`/(practitioner)/support/${ticket.id}` as never)}
+        onPress={() =>
+          router.push(
+            {
+              pathname: "/(practitioner)/support/[id]",
+              params: {
+                id: ticket.id,
+                returnTo: returnToRoute ?? "",
+              },
+            } as never,
+          )
+        }
         activeOpacity={0.85}
       >
         <Card style={styles.ticketCard}>
@@ -159,7 +174,11 @@ export default function PractitionerSupportListScreen() {
       <Header
         title={t("practitioner.support.title")}
         showBack
-        onBack={() => router.back()}
+        onBack={
+          returnToRoute
+            ? () => router.replace(returnToRoute as never)
+            : undefined
+        }
       />
 
       {query.isLoading ? <LoadingState fullScreen /> : null}
@@ -344,3 +363,4 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
 });
+

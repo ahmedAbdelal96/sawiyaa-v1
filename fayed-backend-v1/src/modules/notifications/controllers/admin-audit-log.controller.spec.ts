@@ -1,5 +1,9 @@
-import { ROLES_KEY } from '@common/constants/auth-metadata.constants';
+import {
+  PERMISSIONS_KEY,
+  ROLES_KEY,
+} from '@common/constants/auth-metadata.constants';
 import { AppRole } from '@common/enums/app-role.enum';
+import { PermissionKey } from '@common/enums/permission-key.enum';
 import { AdminAuditLogController } from './admin-audit-log.controller';
 
 describe('AdminAuditLogController', () => {
@@ -18,7 +22,19 @@ describe('AdminAuditLogController', () => {
 
   it('exposes admin/support role metadata for audit routes', () => {
     const roles = Reflect.getMetadata(ROLES_KEY, AdminAuditLogController);
-    expect(roles).toEqual([AppRole.ADMIN, AppRole.SUPPORT_AGENT]);
+    expect(roles).toEqual([
+      AppRole.ADMIN,
+      AppRole.SUPER_ADMIN,
+      AppRole.PATIENT_OPERATIONS,
+      AppRole.PRACTITIONER_REVIEWER,
+      AppRole.CONTENT_REVIEWER,
+    ]);
+
+    const permissions = Reflect.getMetadata(
+      PERMISSIONS_KEY,
+      AdminAuditLogController,
+    );
+    expect(permissions).toEqual([PermissionKey.AUDIT_LOG_READ]);
   });
 
   it('delegates list request to list use case', async () => {

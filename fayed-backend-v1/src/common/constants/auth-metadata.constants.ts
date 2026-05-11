@@ -4,6 +4,7 @@
  */
 export const IS_PUBLIC_KEY = 'auth:isPublic';
 export const ROLES_KEY = 'auth:roles';
+export const PERMISSIONS_KEY = 'auth:permissions';
 export const ACCOUNT_STATE_REQUIREMENTS_KEY = 'auth:account-state-requirements';
 export const FEATURE_FLAGS_KEY = 'auth:feature-flags';
 export const THROTTLE_POLICY_KEY = 'auth:throttle-policy';

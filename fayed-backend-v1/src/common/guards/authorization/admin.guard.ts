@@ -13,7 +13,10 @@ export class AdminGuard implements CanActivate {
     const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
     const user = getAuthenticatedUser(request);
 
-    if (!user.roles.includes(AppRole.ADMIN)) {
+    if (
+      !user.roles.includes(AppRole.ADMIN) &&
+      !user.roles.includes(AppRole.SUPER_ADMIN)
+    ) {
       forbid('Admin role is required for this route', 'ADMIN_ROLE_REQUIRED');
     }
 

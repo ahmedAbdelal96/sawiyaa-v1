@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { SessionMode } from '@prisma/client';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
+import { PatientProfileRepository } from '@modules/patients/repositories/patient-profile.repository';
 import { PublicPractitionerReadRepository } from '@modules/practitioners/repositories/public-practitioner-read.repository';
 import { PublicPractitionerVisibilityPolicy } from '@modules/practitioners/policies/public-practitioner-visibility.policy';
 import { PackagePlanPresenter } from '../presenters/package-plan.presenter';
@@ -15,6 +16,9 @@ type PublicPackagePricingPractitioner = {
   sessionPrice30Usd: string | { toString(): string } | null;
   sessionPrice60Egp: string | { toString(): string } | null;
   sessionPrice60Usd: string | { toString(): string } | null;
+  country?: {
+    isoCode?: string | null;
+  } | null;
 };
 
 @Injectable()
@@ -24,17 +28,19 @@ export class ListPublicPackagePlansUseCase {
     private readonly packagePlanPresenter: PackagePlanPresenter,
     private readonly packagePlanQuotePresenter: PackagePlanQuotePresenter,
     private readonly packagePlanPolicyService: PackagePlanPolicyService,
+    private readonly patientProfileRepository: PatientProfileRepository,
     private readonly publicPractitionerReadRepository: PublicPractitionerReadRepository,
     private readonly publicPractitionerVisibilityPolicy: PublicPractitionerVisibilityPolicy,
     private readonly packageQuoteCalculatorService: PackageQuoteCalculatorService,
   ) {}
 
   async execute(input: {
+    currentUserId?: string | null;
     locale: SupportedLocale;
     practitionerSlug: string;
     durationMinutes?: number;
     sessionMode?: SessionMode;
-    currencyCode?: string;
+    requestedCurrencyCode?: string;
   }): Promise<PackagePlanQuotedListResultViewModel> {
     await this.packagePlanPolicyService.assertPackagesEnabled();
 
@@ -65,11 +71,15 @@ export class ListPublicPackagePlansUseCase {
       return { items: [] };
     }
 
+    const patientProfile = input.currentUserId
+      ? await this.patientProfileRepository.findByUserId(input.currentUserId)
+      : null;
     const plans = await this.packagePlanRepository.listActive();
     const durationMinutes = input.durationMinutes ?? 60;
     const sessionMode = input.sessionMode ?? SessionMode.VIDEO;
-    const currencyCode =
-      input.currencyCode?.trim().toUpperCase() ||
+    const selectedCurrencyCode = patientProfile
+      ? null
+      : input.requestedCurrencyCode?.trim().toUpperCase() ||
       this.packagePlanPolicyService.resolveDefaultPreviewCurrency({
         practitionerCurrencyCode: practitioner.country?.currencyCode ?? null,
       });
@@ -80,14 +90,16 @@ export class ListPublicPackagePlansUseCase {
           const pricingPractitioner =
             practitioner as typeof practitioner & PublicPackagePricingPractitioner;
           const quote = await this.packageQuoteCalculatorService.calculate({
-            plan,
-            practitioner: pricingPractitioner,
-            selectedDurationMinutes: durationMinutes,
-            sessionMode,
-            selectedCurrencyCode: currencyCode,
-            patient: null,
-            internalBreakdownVisible: false,
-          });
+          plan,
+          practitioner: pricingPractitioner,
+          selectedDurationMinutes: durationMinutes,
+          sessionMode,
+          selectedCurrencyCode,
+          patientCountryIsoCode: patientProfile?.country?.isoCode ?? null,
+          operatingCountryIsoCode: practitioner.country?.isoCode ?? null,
+          patient: null,
+          internalBreakdownVisible: false,
+        });
 
           return this.packagePlanQuotePresenter.toPublicQuotedItem(
             this.packagePlanPresenter.toViewModel(plan),

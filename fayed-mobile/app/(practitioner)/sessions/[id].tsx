@@ -27,6 +27,7 @@ import type {
 import { useTheme } from "../../../src/providers/ThemeProvider";
 import { normalizeAllowedExternalUrl } from "../../../src/lib/external-url";
 import { trackAnalyticsEvent } from "../../../src/lib/analytics";
+import { openSessionGeneralChat } from "../../../src/features/messages/api";
 
 const COMPLETE_ALLOWED: SessionStatus[] = ["READY_TO_JOIN", "IN_PROGRESS"];
 const NO_SHOW_ALLOWED: SessionStatus[] = [
@@ -129,7 +130,6 @@ export default function PractitionerSessionDetailScreen() {
       <Screen bg="background">
         <Header
           showBack
-          onBack={() => router.back()}
           title={t("practitioner.sessionDetail.title")}
         />
         <LoadingState fullScreen />
@@ -142,7 +142,6 @@ export default function PractitionerSessionDetailScreen() {
       <Screen bg="background">
         <Header
           showBack
-          onBack={() => router.back()}
           title={t("practitioner.sessionDetail.title")}
         />
         <ErrorState fullScreen onRetry={sessionQuery.refetch} />
@@ -154,6 +153,10 @@ export default function PractitionerSessionDetailScreen() {
   const canNoShow = NO_SHOW_ALLOWED.includes(session.status);
   const canPrepare = canShowPrepareAction(session, joinContract);
   const canCheckJoin = canShowJoinCheckAction(session, joinContract);
+  const canOpenMessages =
+    session.status === "READY_TO_JOIN" ||
+    session.status === "IN_PROGRESS" ||
+    session.status === "COMPLETED";
   const joinUrl = buildJoinUrl(joinContract);
   const currentState = getCurrentStateContent(session, joinContract, t);
 
@@ -223,6 +226,19 @@ export default function PractitionerSessionDetailScreen() {
     }
   };
 
+  const handleOpenMessages = async () => {
+    if (!canOpenMessages) {
+      return;
+    }
+
+    try {
+      const payload = await openSessionGeneralChat(session.id);
+      router.push(`/(practitioner)/messages/${payload.item.conversationId}` as any);
+    } catch {
+      setFeedback(t("practitioner.sessionDetail.openMessagesError", "Could not open messages."));
+    }
+  };
+
   const handleComplete = async () => {
     setFeedback(null);
     try {
@@ -251,7 +267,6 @@ export default function PractitionerSessionDetailScreen() {
     <Screen bg="background">
       <Header
         showBack
-        onBack={() => router.back()}
         title={t("practitioner.sessionDetail.title")}
       />
 
@@ -383,6 +398,14 @@ export default function PractitionerSessionDetailScreen() {
                 variant="secondary"
                 onPress={() => void handleCheckJoin()}
                 disabled={joinMutation.isPending}
+              />
+            ) : null}
+
+            {canOpenMessages ? (
+              <Button
+                title={t("practitioner.sessionDetail.messages", "Messages")}
+                variant="secondary"
+                onPress={() => void handleOpenMessages()}
               />
             ) : null}
 
@@ -863,3 +886,4 @@ const styles = StyleSheet.create({
     textAlign: "right",
   },
 });
+

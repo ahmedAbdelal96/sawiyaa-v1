@@ -5,6 +5,7 @@ import {
   SessionFlowType,
   SessionMode,
 } from '@prisma/client';
+import { resolvePaymentRegionalResolution } from '@common/payments/payment-region.resolver';
 import { MoneyMathService } from '@modules/financial-rules/services/money-math.service';
 import { ResolveCommissionRuleService } from '@modules/financial-rules/services/resolve-commission-rule.service';
 import { ValidateSessionDurationService } from '@modules/sessions/services/validate-session-duration.service';
@@ -25,7 +26,8 @@ type PackagePlanQuoteInput = {
     sessionPrice60Egp: { toString(): string } | string | null;
     sessionPrice60Usd: { toString(): string } | string | null;
     countryId: string | null;
-    country: {
+    country?: {
+      isoCode?: string | null;
       currencyCode: string | null;
     } | null;
     specialties: Array<{
@@ -35,7 +37,11 @@ type PackagePlanQuoteInput = {
   };
   selectedDurationMinutes: number;
   sessionMode: SessionMode;
-  selectedCurrencyCode: string;
+  selectedCurrencyCode?: string | null;
+  patientCountryIsoCode?: string | null;
+  accountCountryIsoCode?: string | null;
+  checkoutCountryIsoCode?: string | null;
+  operatingCountryIsoCode?: string | null;
   patient: {
     id: string;
     countryId: string | null;
@@ -63,7 +69,14 @@ export class PackageQuoteCalculatorService {
 
     this.validateSessionDurationService.validate(input.selectedDurationMinutes);
 
-    const normalizedCurrencyCode = input.selectedCurrencyCode.trim().toUpperCase();
+    const regionalResolution = resolvePaymentRegionalResolution({
+      patientCountryIsoCode: input.patientCountryIsoCode ?? null,
+      accountCountryIsoCode: input.accountCountryIsoCode ?? null,
+      checkoutCountryIsoCode: input.checkoutCountryIsoCode ?? null,
+      operatingCountryIsoCode: input.operatingCountryIsoCode ?? null,
+      currencyCode: input.selectedCurrencyCode ?? null,
+    });
+    const normalizedCurrencyCode = regionalResolution.currencyCode;
     if (!['EGP', 'USD'].includes(normalizedCurrencyCode)) {
       throw new BadRequestException({
         messageKey: 'packagePlans.errors.unsupportedCurrency',
@@ -128,12 +141,13 @@ export class PackageQuoteCalculatorService {
             id: input.practitioner.id,
             publicSlug: input.practitioner.publicSlug,
             countryId: input.practitioner.countryId,
-            country: input.practitioner.country,
+            country: input.practitioner.country ?? null,
             specialties: input.practitioner.specialties,
           },
           patient: {
             id: input.patient.id,
             countryId: input.patient.countryId,
+            country: null,
           },
         },
       );
@@ -177,6 +191,9 @@ export class PackageQuoteCalculatorService {
       practitionerId: input.practitioner.id,
       durationMinutes: input.selectedDurationMinutes,
       sessionMode: input.sessionMode,
+      regionalPricingMode: regionalResolution.regionalPricingMode,
+      resolvedCountryIsoCode: regionalResolution.resolvedCountryIsoCode,
+      provider: regionalResolution.provider,
       baseSessionPriceEgp,
       baseSessionPriceUsd,
       selectedCurrencyCode: normalizedCurrencyCode,

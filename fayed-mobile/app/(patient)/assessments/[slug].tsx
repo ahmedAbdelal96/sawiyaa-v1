@@ -32,7 +32,7 @@ export default function AssessmentDetailScreen() {
   if (query.isError || !query.data?.data.item) {
     return (
       <Screen bg="background">
-        <Header showBack onBack={() => router.back()} />
+        <Header showBack  />
         <ErrorState
           fullScreen
           title={t("assessments.detail.errorTitle")}
@@ -51,7 +51,7 @@ export default function AssessmentDetailScreen() {
 
   return (
     <Screen bg="background">
-      <Header showBack onBack={() => router.back()} />
+      <Header showBack  />
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <Card variant="elevated" style={styles.heroCard} padding="lg">
@@ -322,3 +322,4 @@ const styles = StyleSheet.create({
     paddingVertical: 18,
   },
 });
+

@@ -19,6 +19,7 @@ import {
 } from "../../../src/features/patient/discovery/api";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
+import { useAuth } from "../../../src/providers/AuthProvider";
 import { usePublicAvailabilityWindows } from "../../../src/features/patient/sessions/hooks";
 import {
   buildSlotsFromWindows,
@@ -27,6 +28,7 @@ import {
 } from "../../../src/features/patient/sessions/slot-utils";
 import { trackAnalyticsEvent } from "../../../src/lib/analytics";
 import { usePublicPractitionerPackagePlans } from "../../../src/features/patient/package-plans/hooks";
+import { resolveSupportedCurrencyCode } from "../../../src/lib/currency";
 
 function resolvePresenceMeta(status?: string | null) {
   switch (status) {
@@ -78,10 +80,22 @@ export default function TherapistProfileScreen() {
     }>();
   const { theme } = useTheme();
   const { t, i18n } = useTranslation();
+  const { user, role, isLoading: isAuthLoading } = useAuth();
   const locale = i18n.language?.startsWith("ar") ? "ar-SA" : "en-US";
   const bookingNavigationLockRef = useRef(false);
   const profileViewedRef = useRef(false);
   const weekRange = getWeekRange(0);
+  const authScopeKey = useMemo(() => {
+    if (isAuthLoading) {
+      return "bootstrapping";
+    }
+
+    if (!user) {
+      return "guest";
+    }
+
+    return `auth:${user.id}:${role}`;
+  }, [isAuthLoading, role, user]);
 
   const { data, isLoading, isError, refetch } = useGetPublicPractitionerDetails(
     slug || null,
@@ -93,25 +107,7 @@ export default function TherapistProfileScreen() {
     weekRange.toIso,
   );
 
-  if (isLoading) {
-    return (
-      <Screen bg="background">
-        <Header showBack onBack={() => router.back()} />
-        <LoadingState fullScreen />
-      </Screen>
-    );
-  }
-
-  if (isError || !data?.data.item) {
-    return (
-      <Screen bg="background">
-        <Header showBack onBack={() => router.back()} />
-        <ErrorState fullScreen onRetry={refetch} />
-      </Screen>
-    );
-  }
-
-  const practitioner = data.data.item;
+  const practitioner = data?.data.item ?? null;
   const presence = presenceQuery.data?.data.presence;
   const presenceMeta = resolvePresenceMeta(presence?.status ?? null);
   const futureSlots = buildSlotsFromWindows(
@@ -121,57 +117,66 @@ export default function TherapistProfileScreen() {
   const weekSlotCount = futureSlots.length;
   const matchingScore = Number(matchScore);
   const isRecommendedFromMatching = source === "matching";
+  const displayCurrencyCode = practitioner
+    ? resolveSupportedCurrencyCode({
+        currencyCode: practitioner.currencyCode,
+        regionalPricingMode: practitioner.regionalPricingMode,
+        resolvedCountryIsoCode: practitioner.resolvedCountryIsoCode,
+        countryCode: practitioner.countryCode,
+      })
+    : "USD";
 
   const thirtyMinutePriceLabel =
-    formatCurrencyAmount(
-      practitioner.sessionPrice30Egp ?? practitioner.pricing.session30.egp,
-      "EGP",
-      locale,
-    ) ??
-    formatCurrencyAmount(
-      practitioner.sessionPrice30Usd ?? practitioner.pricing.session30.usd,
-      "USD",
-      locale,
-    );
+    practitioner
+      ? formatCurrencyAmount(
+          practitioner.displaySessionPrice30,
+          displayCurrencyCode,
+          locale,
+        )
+      : null;
   const sixtyMinutePriceLabel =
-    formatCurrencyAmount(
-      practitioner.sessionPrice60Egp ?? practitioner.pricing.session60.egp,
-      "EGP",
-      locale,
-    ) ??
-    formatCurrencyAmount(
-      practitioner.sessionPrice60Usd ?? practitioner.pricing.session60.usd,
-      "USD",
-      locale,
-    );
+    practitioner
+      ? formatCurrencyAmount(
+          practitioner.displaySessionPrice60,
+          displayCurrencyCode,
+          locale,
+        )
+      : null;
 
   const packageBrowseDefaults = useMemo(() => {
-    const hasSixtyMinuteEgp = Boolean(
-      practitioner.sessionPrice60Egp ?? practitioner.pricing.session60.egp,
-    );
-    const hasSixtyMinuteUsd = Boolean(
-      practitioner.sessionPrice60Usd ?? practitioner.pricing.session60.usd,
-    );
-    const hasThirtyMinuteEgp = Boolean(
-      practitioner.sessionPrice30Egp ?? practitioner.pricing.session30.egp,
-    );
-    const currencyCode = hasSixtyMinuteEgp || hasThirtyMinuteEgp ? "EGP" : "USD";
+    if (!practitioner) {
+      return {
+        durationMinutes: 60 as const,
+        sessionMode: "VIDEO" as const,
+        currencyCode: "EGP" as const,
+      };
+    }
+
+    const currencyCode = displayCurrencyCode;
+    const hasSixtyMinutePrice = practitioner.displaySessionPrice60 != null;
+    const hasThirtyMinutePrice = practitioner.displaySessionPrice30 != null;
 
     return {
-      durationMinutes: hasSixtyMinuteEgp || hasSixtyMinuteUsd ? (60 as const) : (30 as const),
+      durationMinutes:
+        hasSixtyMinutePrice || !hasThirtyMinutePrice
+          ? (60 as const)
+          : (30 as const),
       sessionMode: "VIDEO" as const,
       currencyCode,
     };
-  }, [practitioner]);
+  }, [displayCurrencyCode, practitioner]);
 
   const packagePlansQuery = usePublicPractitionerPackagePlans(
     slug || null,
     packageBrowseDefaults,
+    {
+      cacheScopeKey: authScopeKey,
+    },
   );
   const packagePlans = packagePlansQuery.data?.items ?? [];
 
   useEffect(() => {
-    if (profileViewedRef.current) {
+    if (profileViewedRef.current || !practitioner) {
       return;
     }
 
@@ -182,23 +187,40 @@ export default function TherapistProfileScreen() {
       intent: intent || "view",
       availabilityVisible: weekSlotCount > 0,
       specialtiesCount: practitioner.specialties.length,
-      hasPricing: Boolean(thirtyMinutePriceLabel || sixtyMinutePriceLabel),
-    });
+    hasPricing: Boolean(thirtyMinutePriceLabel || sixtyMinutePriceLabel),
+  });
   }, [
     intent,
-    practitioner.slug,
-    practitioner.specialties.length,
+    practitioner?.slug,
+    practitioner?.specialties.length,
     source,
     sixtyMinutePriceLabel,
     thirtyMinutePriceLabel,
     weekSlotCount,
   ]);
 
+  if (isLoading) {
+    return (
+      <Screen bg="background">
+        <Header showBack />
+        <LoadingState fullScreen />
+      </Screen>
+    );
+  }
+
+  if (isError || !practitioner) {
+    return (
+      <Screen bg="background">
+        <Header showBack />
+        <ErrorState fullScreen onRetry={refetch} />
+      </Screen>
+    );
+  }
+
   return (
     <Screen bg="background">
       <Header
         showBack
-        onBack={() => router.back()}
         rightElement={
           <Ionicons
             name="share-outline"
@@ -224,7 +246,7 @@ export default function TherapistProfileScreen() {
                 { backgroundColor: theme.colors.surfaceTertiary },
               ]}
             >
-              {practitioner.avatarUrl ? (
+                {practitioner.avatarUrl ? (
                 <Image
                   source={{ uri: practitioner.avatarUrl }}
                   style={styles.avatar}
@@ -565,9 +587,14 @@ export default function TherapistProfileScreen() {
               ) : (
                 packagePlans.map((plan) => {
                   const isActive = Boolean(plan.item.isActive && !plan.item.archivedAt);
+                  const quoteCurrency = resolveSupportedCurrencyCode({
+                    currencyCode: plan.quote.selectedCurrencyCode,
+                    regionalPricingMode: plan.quote.regionalPricingMode,
+                    resolvedCountryIsoCode: plan.quote.resolvedCountryIsoCode,
+                  });
                   const totalLabel = formatCurrencyAmount(
                     plan.quote.patientPayableTotal,
-                    plan.quote.selectedCurrencyCode,
+                    quoteCurrency,
                     locale,
                   );
                   return (
@@ -640,7 +667,7 @@ export default function TherapistProfileScreen() {
                               packagePlanCode: plan.item.code,
                               durationMinutes: String(plan.quote.durationMinutes),
                               sessionMode: plan.quote.sessionMode,
-                              currencyCode: plan.quote.selectedCurrencyCode,
+                              currencyCode: quoteCurrency,
                             },
                           } as any)
                         }
@@ -1038,6 +1065,8 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
 });
+
+
 
 
 

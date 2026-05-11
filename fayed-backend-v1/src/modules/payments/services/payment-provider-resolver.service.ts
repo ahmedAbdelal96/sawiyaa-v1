@@ -1,6 +1,9 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { MarketType, PaymentProvider } from '@prisma/client';
 import {
+  resolveProviderForCurrency,
+} from '@common/payments/payment-region.resolver';
+import {
   PaymentRoutingContext,
   PaymentRoutingMarket,
 } from '../types/payment-routing.types';
@@ -115,12 +118,9 @@ export class PaymentProviderResolverService {
     currencyCode: string;
     operatingCountryIsoCode: string | null;
   }): PaymentProvider {
-    if (input.currencyCode === 'EGP') {
-      return PaymentProvider.PAYMOB;
-    }
-
-    if (input.currencyCode === 'USD') {
-      return PaymentProvider.STRIPE;
+    const provider = resolveProviderForCurrency(input.currencyCode);
+    if (provider) {
+      return provider;
     }
 
     throw new BadRequestException({

@@ -18,9 +18,12 @@ import {
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { RequireAccountStates } from '@common/decorators/account-state.decorator';
+import { Permissions } from '@common/decorators/permissions.decorator';
 import { AccountStateRequirement } from '@common/enums/account-state-requirement.enum';
 import { AppRole } from '@common/enums/app-role.enum';
+import { PermissionKey } from '@common/enums/permission-key.enum';
 import { JwtAccessAuthGuard } from '@common/guards/authentication/jwt-access-auth.guard';
+import { PermissionsGuard } from '@common/guards/authorization/permissions.guard';
 import { RolesGuard } from '@common/guards/authorization/roles.guard';
 import { Roles } from '@common/decorators/roles.decorator';
 import { Response } from 'express';
@@ -31,9 +34,10 @@ import { GetPractitionerStatementUseCase } from '../use-cases/get-practitioner-s
 
 @ApiTags('Admin - Practitioner Statements')
 @ApiBearerAuth()
-@UseGuards(JwtAccessAuthGuard, RolesGuard)
+@UseGuards(JwtAccessAuthGuard, RolesGuard, PermissionsGuard)
 @RequireAccountStates(AccountStateRequirement.ACTIVE_ACCOUNT)
-@Roles(AppRole.ADMIN, AppRole.SUPPORT_AGENT)
+@Roles(AppRole.ADMIN, AppRole.SUPER_ADMIN, AppRole.FINANCE_STAFF)
+@Permissions(PermissionKey.PRACTITIONER_STATEMENTS_READ)
 @Controller('admin/practitioners/:practitionerId/statement')
 export class AdminPractitionerStatementsController {
   constructor(
@@ -71,7 +75,10 @@ export class AdminPractitionerStatementsController {
       'Exports a bounded practitioner statement package for the selected filters with summary, wallet snapshots, and rows.',
   })
   @ApiParam({ name: 'practitionerId', description: 'Practitioner profile id' })
-  @ApiResponse({ status: 200, description: 'Practitioner statement CSV export stream' })
+  @ApiResponse({
+    status: 200,
+    description: 'Practitioner statement CSV export stream',
+  })
   @ApiUnauthorizedResponse({ description: 'Access token is required' })
   @ApiForbiddenResponse({
     description: 'Admin or support active account is required',

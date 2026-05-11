@@ -20,6 +20,7 @@ import StripePaymentForm from "@/features/payments/components/StripePaymentForm"
 import RefundPolicyAcceptanceCard from "@/features/refund-policies/components/RefundPolicyAcceptanceCard";
 import { REFUND_POLICY_ERROR_CODES } from "@/features/refund-policies/lib/refund-policy-errors";
 import { useRefundPolicy } from "@/features/refund-policies/hooks/use-refund-policies";
+import { resolvePatientCurrencyCode } from "@/features/payments/lib/patient-currency";
 import type { PractitionerProfile } from "@/features/practitioner-profile/types/profile";
 import {
   formatDurationLabel,
@@ -176,6 +177,13 @@ export default function PackagePurchaseFlowModal({
   const quoteQuery = usePatientPackagePlanQuoteQuery(quoteInput);
   const quoteItem = quoteQuery.data?.item ?? null;
   const quote = quoteItem?.quote ?? null;
+  const quoteCurrency =
+    resolvePatientCurrencyCode({
+      currencyCode: quote?.selectedCurrencyCode ?? null,
+      regionalPricingMode: quote?.regionalPricingMode ?? null,
+      resolvedCountryIsoCode: quote?.resolvedCountryIsoCode ?? null,
+    }) ??
+    selectedCurrency;
   const requiredCount = quote?.sessionCount ?? selectedPlan?.item.sessionCount ?? 0;
   const quoteError = quoteQuery.error ? toAppError(quoteQuery.error) : null;
   const currencyUnavailable = quoteError?.code === "PACKAGE_PLAN_CURRENCY_PRICE_UNAVAILABLE";
@@ -574,7 +582,7 @@ export default function PackagePurchaseFlowModal({
                         {t("packages.quote.baseSessionPrice")}
                       </p>
                       <p className="mt-1 text-base font-semibold text-text-primary dark:text-white/90">
-                        {formatMoney(numLocale, quote.selectedCurrencyCode as CurrencyCode, quote.selectedBaseSessionPrice)}
+                        {formatMoney(numLocale, quoteCurrency as CurrencyCode, quote.selectedBaseSessionPrice)}
                       </p>
                     </div>
                     <div className="rounded-2xl bg-surface px-4 py-3 dark:bg-white/5">
@@ -582,7 +590,7 @@ export default function PackagePurchaseFlowModal({
                         {t("packages.quote.regularTotal")}
                       </p>
                       <p className="mt-1 text-base font-semibold text-text-primary dark:text-white/90">
-                        {formatMoney(numLocale, quote.selectedCurrencyCode as CurrencyCode, quote.undiscountedTotal)}
+                        {formatMoney(numLocale, quoteCurrency as CurrencyCode, quote.undiscountedTotal)}
                       </p>
                     </div>
                     <div className="rounded-2xl bg-surface px-4 py-3 dark:bg-white/5">
@@ -590,7 +598,7 @@ export default function PackagePurchaseFlowModal({
                         {t("packages.quote.discountAmount")}
                       </p>
                       <p className="mt-1 text-base font-semibold text-success-700 dark:text-success-300">
-                        {formatMoney(numLocale, quote.selectedCurrencyCode as CurrencyCode, quote.discountAmount)}
+                        {formatMoney(numLocale, quoteCurrency as CurrencyCode, quote.discountAmount)}
                       </p>
                     </div>
                     <div className="rounded-2xl bg-primary-light px-4 py-3 dark:bg-primary/10">
@@ -598,7 +606,7 @@ export default function PackagePurchaseFlowModal({
                         {t("packages.quote.payableTotal")}
                       </p>
                       <p className="mt-1 text-lg font-bold text-primary">
-                        {formatMoney(numLocale, quote.selectedCurrencyCode as CurrencyCode, quote.patientPayableTotal)}
+                        {formatMoney(numLocale, quoteCurrency as CurrencyCode, quote.patientPayableTotal)}
                       </p>
                     </div>
                   </div>
@@ -608,7 +616,7 @@ export default function PackagePurchaseFlowModal({
                     <span>•</span>
                     <span>{formatDurationLabel(quote.durationMinutes)}</span>
                     <span>•</span>
-                    <span>{quote.selectedCurrencyCode}</span>
+                    <span>{quoteCurrency}</span>
                   </div>
                 </div>
               ) : quoteError ? (
@@ -797,7 +805,7 @@ export default function PackagePurchaseFlowModal({
                         {t("packages.quote.baseSessionPrice")}
                       </p>
                       <p className="mt-1 text-base font-semibold text-text-primary dark:text-white/90">
-                        {formatMoney(numLocale, quote.selectedCurrencyCode as CurrencyCode, quote.selectedBaseSessionPrice)}
+                        {formatMoney(numLocale, quoteCurrency as CurrencyCode, quote.selectedBaseSessionPrice)}
                       </p>
                     </div>
                     <div className="rounded-2xl bg-surface px-4 py-3 dark:bg-white/5">
@@ -805,7 +813,7 @@ export default function PackagePurchaseFlowModal({
                         {t("packages.quote.regularTotal")}
                       </p>
                       <p className="mt-1 text-base font-semibold text-text-primary dark:text-white/90">
-                        {formatMoney(numLocale, quote.selectedCurrencyCode as CurrencyCode, quote.undiscountedTotal)}
+                        {formatMoney(numLocale, quoteCurrency as CurrencyCode, quote.undiscountedTotal)}
                       </p>
                     </div>
                     <div className="rounded-2xl bg-surface px-4 py-3 dark:bg-white/5">
@@ -813,7 +821,7 @@ export default function PackagePurchaseFlowModal({
                         {t("packages.quote.discountAmount")}
                       </p>
                       <p className="mt-1 text-base font-semibold text-success-700 dark:text-success-300">
-                        {formatMoney(numLocale, quote.selectedCurrencyCode as CurrencyCode, quote.discountAmount)}
+                        {formatMoney(numLocale, quoteCurrency as CurrencyCode, quote.discountAmount)}
                       </p>
                     </div>
                     <div className="rounded-2xl bg-primary-light px-4 py-3 dark:bg-primary/10">
@@ -821,7 +829,7 @@ export default function PackagePurchaseFlowModal({
                         {t("packages.quote.payableTotal")}
                       </p>
                       <p className="mt-1 text-lg font-bold text-primary">
-                        {formatMoney(numLocale, quote.selectedCurrencyCode as CurrencyCode, quote.patientPayableTotal)}
+                        {formatMoney(numLocale, quoteCurrency as CurrencyCode, quote.patientPayableTotal)}
                       </p>
                     </div>
                   </div>
@@ -854,7 +862,7 @@ export default function PackagePurchaseFlowModal({
                     {t("packages.quote.payableTotal")}
                   </p>
                   <p className="mt-2 text-3xl font-bold text-primary">
-                    {formatMoney(numLocale, quote.selectedCurrencyCode as CurrencyCode, quote.patientPayableTotal)}
+                    {formatMoney(numLocale, quoteCurrency as CurrencyCode, quote.patientPayableTotal)}
                   </p>
                   <p className="mt-2 text-sm text-text-secondary">
                     {t("packages.flow.slotProgress", {
@@ -901,7 +909,7 @@ export default function PackagePurchaseFlowModal({
               <StripePaymentForm
                 clientSecret={paymentClientSecret}
                 netPaidAmount={purchaseNetAmount}
-                currency={(quote?.selectedCurrencyCode ?? selectedCurrency).toUpperCase()}
+                currency={quoteCurrency.toUpperCase()}
                 returnUrl={paymentReturnUrl || (typeof window !== "undefined" ? window.location.href : "")}
               />
             </section>

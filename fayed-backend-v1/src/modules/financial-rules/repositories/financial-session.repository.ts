@@ -15,6 +15,11 @@ export class FinancialSessionRepository {
       select: {
         id: true,
         countryId: true,
+        country: {
+          select: {
+            isoCode: true,
+          },
+        },
         user: {
           select: {
             id: true,
@@ -31,6 +36,7 @@ export class FinancialSessionRepository {
         countryId: true,
         country: {
           select: {
+            isoCode: true,
             currencyCode: true,
           },
         },

@@ -10,6 +10,7 @@ import { useSessionFinancialBreakdown } from "../../../src/features/patient/paym
 import { formatLocalizedDateTime } from "../../../src/features/patient/sessions/slot-utils";
 import { extractApiErrorMessage } from "../../../src/lib/api";
 import { trackAnalyticsEvent } from "../../../src/lib/analytics";
+import { resolveSupportedCurrencyCode } from "../../../src/lib/currency";
 
 function formatMoney(amount: string, currencyCode: string): string {
   const value = Number(amount);
@@ -71,6 +72,11 @@ export default function BookingConfirmationScreen() {
   }, [duration, t]);
 
   const breakdown = breakdownQuery.data?.item;
+  const breakdownCurrency = resolveSupportedCurrencyCode({
+    currencyCode: breakdown?.currency ?? null,
+    regionalPricingMode: breakdown?.regionalPricingMode ?? null,
+    resolvedCountryIsoCode: breakdown?.resolvedCountryIsoCode ?? null,
+  });
   const canContinueToPayment = Boolean(createdSession?.id && breakdown);
 
   const handleConfirm = async () => {
@@ -121,7 +127,6 @@ export default function BookingConfirmationScreen() {
     <Screen bg="background">
       <Header
         showBack
-        onBack={() => router.back()}
         title={t("patientSessionsFlow.confirmation.title")}
       />
 
@@ -353,7 +358,7 @@ export default function BookingConfirmationScreen() {
                   )}
                 </Text>
                 <Text weight="600">
-                  {formatMoney(breakdown.grossAmount, breakdown.currency)}
+                  {formatMoney(breakdown.grossAmount, breakdownCurrency)}
                 </Text>
               </View>
 
@@ -365,7 +370,7 @@ export default function BookingConfirmationScreen() {
                   )}
                 </Text>
                 <Text weight="600">
-                  {formatMoney(breakdown.discountAmount, breakdown.currency)}
+                  {formatMoney(breakdown.discountAmount, breakdownCurrency)}
                 </Text>
               </View>
 
@@ -377,7 +382,7 @@ export default function BookingConfirmationScreen() {
                   )}
                 </Text>
                 <Text weight="600" color={theme.colors.primary}>
-                  {formatMoney(breakdown.netPaidAmount, breakdown.currency)}
+                  {formatMoney(breakdown.netPaidAmount, breakdownCurrency)}
                 </Text>
               </View>
             </>
@@ -624,3 +629,4 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
 });
+

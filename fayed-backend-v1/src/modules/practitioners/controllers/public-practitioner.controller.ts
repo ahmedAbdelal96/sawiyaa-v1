@@ -8,6 +8,8 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
+import { CurrentUser } from '@common/decorators/current-user.decorator';
+import { AuthenticatedUser } from '@common/interfaces/authenticated-user.interface';
 import { Public } from '@common/decorators/public.decorator';
 import { CurrentLocale } from '@common/i18n/decorators/current-locale.decorator';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
@@ -65,9 +67,11 @@ export class PublicPractitionerController {
   list(
     @Query() query: ListPublicPractitionersDto,
     @CurrentLocale() locale: SupportedLocale,
+    @CurrentUser() currentUser: AuthenticatedUser | null,
   ) {
     return this.listPublicPractitionersUseCase.execute({
       locale,
+      currentUserId: currentUser?.id ?? null,
       search: query.search ?? query.q,
       specialtySlug: query.specialtySlug ?? query.specialty,
       language: query.language ?? query.lang,
@@ -110,10 +114,12 @@ export class PublicPractitionerController {
   bySlug(
     @Param('slug') slug: string,
     @CurrentLocale() locale: SupportedLocale,
+    @CurrentUser() currentUser: AuthenticatedUser | null,
   ) {
     return this.getPublicPractitionerDetailsUseCase.execute({
       slug,
       locale,
+      currentUserId: currentUser?.id ?? null,
     });
   }
 }

@@ -5,6 +5,7 @@ import {
   clearAuthCookies,
   getRefreshToken,
   getLogoutEndpointForCurrentRole,
+  resolveAuthRequestUrl,
   setAuthCookies,
   type AuthSession,
   type LoginCredentials,
@@ -141,7 +142,7 @@ export async function loginAction(
   credentials: LoginCredentials
 ): Promise<AuthActionResult> {
   try {
-    const response = await fetch(AUTH_ENDPOINTS.login, {
+    const response = await fetch(await resolveAuthRequestUrl(AUTH_ENDPOINTS.login), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(credentials),
@@ -187,7 +188,7 @@ export async function registerAction(
   data: RegisterData
 ): Promise<AuthActionResult> {
   try {
-    const response = await fetch(AUTH_ENDPOINTS.register, {
+    const response = await fetch(await resolveAuthRequestUrl(AUTH_ENDPOINTS.register), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
@@ -235,7 +236,7 @@ export async function logoutAction(): Promise<ActionResult> {
     const logoutEndpoint = await getLogoutEndpointForCurrentRole();
 
     if (refreshToken && logoutEndpoint) {
-      fetch(logoutEndpoint, {
+      fetch(await resolveAuthRequestUrl(logoutEndpoint), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

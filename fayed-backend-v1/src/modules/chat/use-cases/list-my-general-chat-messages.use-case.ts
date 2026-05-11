@@ -1,13 +1,14 @@
-import {
-  ForbiddenException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { MessageVisibility } from '@prisma/client';
 import { PrismaService } from '@common/prisma/prisma.service';
 import { AuthenticatedUser } from '@common/interfaces/authenticated-user.interface';
 import { ListGeneralChatMessagesDto } from '../dto/list-general-chat-messages.dto';
+import {
+  buildGeneralChatParticipantDirectoryMap,
+  resolveGeneralChatMessageSenderIdentity,
+} from '../helpers/general-chat-identity.mapper';
 import { GeneralChatRepository } from '../repositories/general-chat.repository';
+import { ConversationAccessPolicy } from '../policies/conversation-access.policy';
 import { GENERAL_CHAT_ERROR_CODES } from '../types/general-chat.types';
 
 @Injectable()
@@ -15,6 +16,7 @@ export class ListMyGeneralChatMessagesUseCase {
   constructor(
     private readonly prisma: PrismaService,
     private readonly generalChatRepository: GeneralChatRepository,
+    private readonly conversationAccessPolicy: ConversationAccessPolicy,
   ) {}
 
   async execute(input: {
@@ -34,15 +36,18 @@ export class ListMyGeneralChatMessagesUseCase {
       });
     }
 
-    const isParticipant = conversation.participants.some(
-      (participant) => participant.userId === input.authenticatedUser.id,
+    this.conversationAccessPolicy.assertParticipant({
+      participants: conversation.participants,
+      requesterId: input.authenticatedUser.id,
+    });
+
+    const participantDirectoryRecords =
+      (await this.generalChatRepository.loadParticipantIdentityRecords?.(
+        conversation.participants.map((participant) => participant.userId),
+      )) ?? [];
+    const participantDirectory = buildGeneralChatParticipantDirectoryMap(
+      participantDirectoryRecords,
     );
-    if (!isParticipant) {
-      throw new ForbiddenException({
-        messageKey: 'chat.errors.conversationAccessDenied',
-        errorCode: GENERAL_CHAT_ERROR_CODES.conversationAccessDenied,
-      });
-    }
 
     const page = Math.max(1, input.query.page ?? 1);
     const limit = Math.min(50, Math.max(1, input.query.limit ?? 30));
@@ -104,6 +109,11 @@ export class ListMyGeneralChatMessagesUseCase {
           originalName: attachment.originalName ?? null,
         })),
         conversationLatestActivityAt: conversation.updatedAt.toISOString(),
+        senderIdentity: resolveGeneralChatMessageSenderIdentity(
+          message.senderUserId,
+          conversation.participants,
+          participantDirectory,
+        ),
       })),
       pagination: {
         page,

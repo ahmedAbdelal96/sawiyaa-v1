@@ -20,6 +20,7 @@ describe('MarkSessionNoShowByPractitionerUseCase', () => {
       updateStatus: jest.fn().mockResolvedValue({
         id: 'session-1',
         status: SessionStatus.NO_SHOW,
+        createdAt: new Date('2025-01-01T00:00:00.000Z'),
         scheduledStartAt: null,
         scheduledEndAt: null,
         durationMinutes: 60,

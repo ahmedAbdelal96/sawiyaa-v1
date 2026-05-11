@@ -93,7 +93,6 @@ export default function PatientNotificationsScreen() {
       <Header
         title={t("patientNotifications.title")}
         showBack
-        onBack={() => router.back()}
         rightElement={
           unreadCount > 0 ? (
             <TouchableOpacity
@@ -360,3 +359,4 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
 });
+

@@ -235,13 +235,13 @@ export default function AssessmentQuestionsScreen() {
                     >
                       <Ionicons
                         name={iconName}
-                        size={22}
+                        size={18}
                         color={theme.colors.primary}
                       />
                     </View>
                     <Ionicons
                       name={selected ? "radio-button-on" : "radio-button-off"}
-                      size={28}
+                      size={22}
                       color={
                         selected ? theme.colors.primary : theme.colors.textMuted
                       }
@@ -310,9 +310,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    paddingTop: 18,
+    paddingTop: 14,
     paddingHorizontal: 20,
-    paddingBottom: 18,
+    paddingBottom: 14,
   },
   closeButton: {
     position: "absolute",
@@ -320,7 +320,7 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   stepText: {
-    fontSize: 18,
+    fontSize: 16,
   },
   progressBar: {
     height: 4,
@@ -331,29 +331,29 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: 20,
-    paddingTop: 44,
-    paddingBottom: 150,
+    paddingTop: 28,
+    paddingBottom: 132,
   },
   questionTitle: {
-    fontSize: 36,
-    lineHeight: 54,
-    textAlign: "right",
-    marginBottom: 18,
-  },
-  questionSubtitle: {
-    fontSize: 19,
+    fontSize: 24,
     lineHeight: 34,
     textAlign: "right",
-    marginBottom: 34,
+    marginBottom: 12,
+  },
+  questionSubtitle: {
+    fontSize: 14,
+    lineHeight: 22,
+    textAlign: "right",
+    marginBottom: 20,
   },
   optionsColumn: {
-    gap: 16,
+    gap: 10,
   },
   optionCard: {
-    borderRadius: 22,
+    borderRadius: 16,
     borderWidth: 1,
-    paddingHorizontal: 20,
-    paddingVertical: 22,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
   },
   optionTopRow: {
     flexDirection: "row",
@@ -368,17 +368,18 @@ const styles = StyleSheet.create({
   optionIcons: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
+    gap: 8,
   },
   emotionBadge: {
-    width: 52,
-    height: 52,
-    borderRadius: 16,
+    width: 38,
+    height: 38,
+    borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
   },
   optionTitle: {
-    fontSize: 30,
+    fontSize: 18,
+    lineHeight: 24,
     textAlign: "right",
   },
   errorText: {

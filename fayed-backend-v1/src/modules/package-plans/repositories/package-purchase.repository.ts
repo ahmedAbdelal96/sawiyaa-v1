@@ -161,6 +161,17 @@ export class PatientPackagePurchaseRepository {
         metadataJson: true,
       },
     },
+    patient: {
+      select: {
+        id: true,
+        countryId: true,
+        country: {
+          select: {
+            isoCode: true,
+          },
+        },
+      },
+    },
     practitioner: {
       select: {
         id: true,

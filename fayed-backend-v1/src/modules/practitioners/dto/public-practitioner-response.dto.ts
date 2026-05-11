@@ -75,6 +75,15 @@ export class PublicPractitionerListItemResponseDto {
   countryCode!: string | null;
 
   @ApiProperty()
+  currencyCode!: string;
+
+  @ApiProperty({ nullable: true })
+  regionalPricingMode!: string | null;
+
+  @ApiProperty({ nullable: true })
+  resolvedCountryIsoCode!: string | null;
+
+  @ApiProperty()
   practitionerType!: string;
 
   @ApiProperty({ nullable: true })
@@ -100,6 +109,12 @@ export class PublicPractitionerListItemResponseDto {
 
   @ApiProperty({ nullable: true })
   sessionPrice60Usd!: number | null;
+
+  @ApiProperty({ nullable: true })
+  displaySessionPrice30!: number | null;
+
+  @ApiProperty({ nullable: true })
+  displaySessionPrice60!: number | null;
 
   @ApiProperty()
   isOnlineNow!: boolean;
@@ -148,6 +163,15 @@ export class PublicPractitionerDetailsResponseDto {
   @ApiProperty({ nullable: true })
   countryCode!: string | null;
 
+  @ApiProperty()
+  currencyCode!: string;
+
+  @ApiProperty({ nullable: true })
+  regionalPricingMode!: string | null;
+
+  @ApiProperty({ nullable: true })
+  resolvedCountryIsoCode!: string | null;
+
   @ApiProperty({ nullable: true })
   yearsExperience!: number | null;
 
@@ -171,6 +195,12 @@ export class PublicPractitionerDetailsResponseDto {
 
   @ApiProperty({ nullable: true })
   sessionPrice60Usd!: number | null;
+
+  @ApiProperty({ nullable: true })
+  displaySessionPrice30!: number | null;
+
+  @ApiProperty({ nullable: true })
+  displaySessionPrice60!: number | null;
 
   @ApiProperty({ type: PublicPractitionerRatingSummaryResponseDto })
   ratingSummary!: PublicPractitionerRatingSummaryResponseDto;

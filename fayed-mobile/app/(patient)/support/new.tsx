@@ -7,7 +7,7 @@ import {
   Modal,
   FlatList,
 } from "react-native";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
 import {
@@ -36,8 +36,13 @@ const CATEGORIES: SupportTicketType[] = [
 
 export default function NewSupportTicketScreen() {
   const router = useRouter();
+  const { returnTo } = useLocalSearchParams<{ returnTo?: string }>();
   const { theme } = useTheme();
   const { t } = useTranslation();
+  const returnToRoute =
+    typeof returnTo === "string" && returnTo.trim().length > 0
+      ? returnTo
+      : null;
 
   const [category, setCategory] = useState<SupportTicketType>("GENERAL");
   const [subject, setSubject] = useState("");
@@ -64,7 +69,13 @@ export default function NewSupportTicketScreen() {
         subject: subject.trim(),
         description: description.trim(),
       });
-      router.replace(`/(patient)/support/${res.item.id}` as any);
+      router.replace({
+        pathname: "/(patient)/support/[id]",
+        params: {
+          id: res.item.id,
+          returnTo: returnToRoute ?? "",
+        },
+      } as any);
     } catch (err) {
       setError(extractApiErrorMessage(err));
     }
@@ -75,7 +86,11 @@ export default function NewSupportTicketScreen() {
       <Header
         title={t("support.new.title")}
         showBack
-        onBack={() => router.back()}
+        onBack={
+          returnToRoute
+            ? () => router.replace(returnToRoute as any)
+            : undefined
+        }
       />
 
       <ScrollView
@@ -307,3 +322,4 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
 });
+

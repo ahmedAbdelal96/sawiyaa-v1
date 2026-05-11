@@ -3,7 +3,7 @@ import { RequestPractitionerPasswordResetUseCase } from './request-practitioner-
 
 describe('RequestPractitionerPasswordResetUseCase', () => {
   const i18nService = { t: jest.fn().mockReturnValue('ok') };
-  const userEmailRepository = { findByEmail: jest.fn() };
+  const userEmailRepository = { findByEmailForAuth: jest.fn() };
   const twoFactorSettingRepository = { findByUserId: jest.fn() };
   const practitionerOtpChannelService = { resolveVerifiedChannel: jest.fn() };
   const createOtpChallengeUseCase = { execute: jest.fn() };
@@ -23,7 +23,7 @@ describe('RequestPractitionerPasswordResetUseCase', () => {
   });
 
   it('creates and sends password reset OTP when practitioner exists', async () => {
-    userEmailRepository.findByEmail.mockResolvedValue({
+    userEmailRepository.findByEmailForAuth.mockResolvedValue({
       user: {
         id: 'user-1',
         roles: [{ role: UserRoleType.PRACTITIONER }],

@@ -54,7 +54,7 @@ export class PatientPackageQuotesController {
       practitionerSlug: body.practitionerSlug,
       durationMinutes: body.durationMinutes,
       sessionMode: body.sessionMode,
-      currencyCode: body.currencyCode,
+      requestedCurrencyCode: body.currencyCode,
     }).then((data) => ({ success: true as const, data }));
   }
 }

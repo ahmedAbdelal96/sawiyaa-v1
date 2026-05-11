@@ -1,4 +1,4 @@
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import {
   ACCESS_TOKEN_COOKIE,
   REFRESH_TOKEN_COOKIE,
@@ -189,6 +189,37 @@ async function getSessionRole(): Promise<string | null> {
   }
 }
 
+export async function resolveAuthRequestUrl(path: string): Promise<string> {
+  if (/^https?:\/\//i.test(path)) {
+    return path;
+  }
+
+  const requestPath = path.startsWith("/") ? path : `/${path}`;
+
+  try {
+    const headerStore = await headers();
+    const proto = headerStore.get("x-forwarded-proto") ?? "http";
+    const host = headerStore.get("x-forwarded-host") ?? headerStore.get("host");
+
+    if (host) {
+      return `${proto}://${host}${requestPath}`;
+    }
+  } catch {
+    // Fall back below when no request context is available.
+  }
+
+  const envOrigin =
+    process.env.NEXT_PUBLIC_APP_URL ||
+    process.env.NEXT_PUBLIC_SITE_URL ||
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null);
+
+  if (envOrigin) {
+    return new URL(requestPath, envOrigin).toString();
+  }
+
+  return new URL(requestPath, "http://localhost:3000").toString();
+}
+
 function resolveRoleRefreshEndpoint(role: string | null): string | null {
   if (!role) return null;
 
@@ -249,7 +280,8 @@ export async function refreshAccessToken(): Promise<boolean> {
   }
 
   try {
-    const response = await fetch(refreshEndpoint, {
+    const requestUrl = await resolveAuthRequestUrl(refreshEndpoint);
+    const response = await fetch(requestUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

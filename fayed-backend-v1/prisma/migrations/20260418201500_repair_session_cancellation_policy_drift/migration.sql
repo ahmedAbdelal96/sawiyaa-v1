@@ -255,3 +255,4 @@ SELECT
 FROM "SessionCancellationPolicy" p
 WHERE p."id" = '11111111-2222-4333-8444-555555555552'
 ON CONFLICT ("policyId", "code") DO NOTHING;
+-- marker

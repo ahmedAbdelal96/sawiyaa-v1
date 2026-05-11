@@ -4,6 +4,7 @@ import {
   NestModule,
   RequestMethod,
 } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
 import { ConfigModule as EnvConfigModule } from '@nestjs/config';
 import { validate } from './config/validation/env.schema';
 import appConfig from './config/app.config';
@@ -21,6 +22,9 @@ import { PrismaModule } from './common/prisma/prisma.module';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { LoggingModule } from './common/logging/logging.module';
 import { RequestContextMiddleware } from './common/logging/request-context.middleware';
+import { ThrottleModule } from './common/throttle/throttle.module';
+import { ThrottlePolicyGuard } from './common/throttle/throttle-policy.guard';
+import { SecurityAuditModule } from './common/security-audit/security-audit.module';
 import { HealthModule } from './health/health.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { AdminModule } from './modules/admin/admin.module';
@@ -76,6 +80,8 @@ import { ReportsModule } from './modules/reports/reports.module';
     LoggingModule,
     I18nModule,
     PrismaModule,
+    ThrottleModule,
+    SecurityAuditModule,
     HealthModule,
     ConfigModule,
     AuthModule,
@@ -110,7 +116,13 @@ import { ReportsModule } from './modules/reports/reports.module';
     UsersModule,
     ReportsModule,
   ],
-  providers: [AllExceptionsFilter],
+  providers: [
+    AllExceptionsFilter,
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlePolicyGuard,
+    },
+  ],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer): void {

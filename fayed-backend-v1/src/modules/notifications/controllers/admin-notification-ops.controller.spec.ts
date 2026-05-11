@@ -1,5 +1,9 @@
-import { ROLES_KEY } from '@common/constants/auth-metadata.constants';
+import {
+  PERMISSIONS_KEY,
+  ROLES_KEY,
+} from '@common/constants/auth-metadata.constants';
 import { AppRole } from '@common/enums/app-role.enum';
+import { PermissionKey } from '@common/enums/permission-key.enum';
 import { AdminNotificationOpsController } from './admin-notification-ops.controller';
 
 describe('AdminNotificationOpsController', () => {
@@ -24,7 +28,18 @@ describe('AdminNotificationOpsController', () => {
       ROLES_KEY,
       AdminNotificationOpsController,
     );
-    expect(roles).toEqual([AppRole.ADMIN, AppRole.SUPPORT_AGENT]);
+    expect(roles).toEqual([
+      AppRole.ADMIN,
+      AppRole.SUPER_ADMIN,
+      AppRole.MARKETING_STAFF,
+      AppRole.PATIENT_OPERATIONS,
+    ]);
+
+    const permissions = Reflect.getMetadata(
+      PERMISSIONS_KEY,
+      AdminNotificationOpsController,
+    );
+    expect(permissions).toEqual([PermissionKey.NOTIFICATION_OPS_READ]);
   });
 
   it('delegates list request to list use case', async () => {

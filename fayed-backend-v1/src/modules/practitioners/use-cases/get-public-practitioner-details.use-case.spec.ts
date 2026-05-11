@@ -1,13 +1,18 @@
 import { Prisma } from '@prisma/client';
 import { PublicPractitionerMapper } from '../mappers/public-practitioner.mapper';
 import { PublicPractitionerVisibilityPolicy } from '../policies/public-practitioner-visibility.policy';
+import type { PatientProfileRepository } from '@modules/patients/repositories/patient-profile.repository';
+import type { PublicPractitionerReadRepository } from '../repositories/public-practitioner-read.repository';
 import { GetPublicPractitionerDetailsUseCase } from './get-public-practitioner-details.use-case';
 
 describe('GetPublicPractitionerDetailsUseCase', () => {
   const publicReadRepository = {
     findByPublicSlug: jest.fn(),
     countApprovedCredentials: jest.fn(),
-  } as never;
+  } as unknown as PublicPractitionerReadRepository;
+  const patientProfileRepository = {
+    findByUserId: jest.fn(),
+  } as unknown as PatientProfileRepository;
   const mapper = new PublicPractitionerMapper();
   const visibilityPolicy = new PublicPractitionerVisibilityPolicy();
 
@@ -15,6 +20,7 @@ describe('GetPublicPractitionerDetailsUseCase', () => {
     mapper,
     visibilityPolicy,
     publicReadRepository,
+    patientProfileRepository,
   );
 
   beforeEach(() => {
@@ -58,6 +64,9 @@ describe('GetPublicPractitionerDetailsUseCase', () => {
       session30: { egp: 250, usd: 8 },
       session60: { egp: 450, usd: 15 },
     });
+    expect(result.item.currencyCode).toBe('USD');
+    expect(result.item.displaySessionPrice30).toBe(8);
+    expect(result.item.displaySessionPrice60).toBe(15);
     expect(result.item.sessionPrice60).toBe(222);
     expect(result.item.sessionPrice60Usd).toBe(15);
   });

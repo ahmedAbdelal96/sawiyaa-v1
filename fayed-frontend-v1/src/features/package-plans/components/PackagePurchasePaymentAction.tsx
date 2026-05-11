@@ -15,6 +15,7 @@ import RefundPolicyAcceptanceCard from "@/features/refund-policies/components/Re
 import { REFUND_POLICY_ERROR_CODES } from "@/features/refund-policies/lib/refund-policy-errors";
 import { useRefundPolicy } from "@/features/refund-policies/hooks/use-refund-policies";
 import { toAppError } from "@/lib/api/errors";
+import { resolvePatientCurrencyCode } from "@/features/payments/lib/patient-currency";
 import { useInitiatePackagePurchasePayment } from "../hooks/use-package-purchases";
 import { canContinuePackagePurchasePayment, formatMoney } from "../lib/package-purchase-display";
 import type { PatientPackagePurchaseItem } from "../types/package-purchases.types";
@@ -22,7 +23,13 @@ import type { PatientPackagePurchaseItem } from "../types/package-purchases.type
 type Props = {
   purchase: Pick<
     PatientPackagePurchaseItem,
-    "id" | "status" | "paymentExpiresAt" | "patientPayableTotal" | "selectedCurrencyCode"
+    | "id"
+    | "status"
+    | "paymentExpiresAt"
+    | "patientPayableTotal"
+    | "selectedCurrencyCode"
+    | "regionalPricingMode"
+    | "resolvedCountryIsoCode"
   >;
   label: string;
   className?: string;
@@ -65,6 +72,12 @@ export default function PackagePurchasePaymentAction({
   });
   const refundPolicy = refundPolicyData?.item ?? null;
   const refundPolicyAppError = refundPolicyError ? toAppError(refundPolicyError) : null;
+  const purchaseCurrency =
+    resolvePatientCurrencyCode({
+      currencyCode: purchase.selectedCurrencyCode,
+      regionalPricingMode: purchase.regionalPricingMode,
+      resolvedCountryIsoCode: purchase.resolvedCountryIsoCode,
+    }) ?? purchase.selectedCurrencyCode;
 
   function openConsentModal() {
     setAcceptedRefundPolicyId(null);
@@ -205,9 +218,9 @@ export default function PackagePurchasePaymentAction({
                   </p>
                   <p className="mt-1 text-sm font-semibold text-text-primary dark:text-white/90">
                     {t("payment.summaryLabel", {
-                      amount: formatMoney(
+                    amount: formatMoney(
                         purchase.patientPayableTotal,
-                        purchase.selectedCurrencyCode,
+                        purchaseCurrency,
                         numLocale,
                       ),
                     })}

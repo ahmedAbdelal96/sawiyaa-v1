@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+
+<html dir="ltr" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Fayed Admin - Sessions Management</title>
+<!-- Google Fonts: Manrope -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .material-symbols-outlined.fill {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-primary-fixed": "#00201c",
+                        "inverse-on-surface": "#eef2ef",
+                        "error-container": "#ffdad6",
+                        "on-tertiary-fixed": "#3a0a00",
+                        "inverse-surface": "#2d3130",
+                        "surface-container-highest": "#dfe3e1",
+                        "secondary-fixed-dim": "#b9c9d0",
+                        "on-surface": "#181c1b",
+                        "tertiary-fixed": "#ffdbd1",
+                        "primary": "#006a60",
+                        "on-primary-fixed-variant": "#005048",
+                        "secondary-fixed": "#d5e5ec",
+                        "primary-fixed-dim": "#7cd6c8",
+                        "on-secondary": "#ffffff",
+                        "outline-variant": "#bdc9c6",
+                        "on-surface-variant": "#3e4947",
+                        "tertiary": "#914a35",
+                        "on-error-container": "#93000a",
+                        "surface-container-low": "#f1f4f2",
+                        "on-background": "#181c1b",
+                        "on-secondary-fixed": "#0f1e23",
+                        "on-tertiary-container": "#511a08",
+                        "surface-container": "#ebefec",
+                        "surface": "#f6faf8",
+                        "on-secondary-fixed-variant": "#3a494f",
+                        "surface-bright": "#f6faf8",
+                        "surface-variant": "#dfe3e1",
+                        "surface-tint": "#006a60",
+                        "on-primary-container": "#00322c",
+                        "outline": "#6e7977",
+                        "error": "#ba1a1a",
+                        "primary-fixed": "#98f3e4",
+                        "secondary": "#526167",
+                        "surface-container-high": "#e5e9e7",
+                        "on-tertiary": "#ffffff",
+                        "on-primary": "#ffffff",
+                        "on-error": "#ffffff",
+                        "inverse-primary": "#7cd6c8",
+                        "surface-dim": "#d7dbd9",
+                        "tertiary-container": "#d07d64",
+                        "surface-container-lowest": "#ffffff",
+                        "background": "#f6faf8",
+                        "primary-container": "#44a194",
+                        "secondary-container": "#d5e5ec",
+                        "on-tertiary-fixed-variant": "#743420",
+                        "tertiary-fixed-dim": "#ffb59f",
+                        "on-secondary-container": "#58676d"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "base": "4px",
+                        "gutter": "24px",
+                        "xl": "3rem",
+                        "lg": "2rem",
+                        "margin": "32px",
+                        "md": "1.5rem",
+                        "sm": "1rem",
+                        "xs": "0.5rem"
+                    },
+                    "fontFamily": {
+                        "label-md": ["Manrope"],
+                        "label-sm": ["Manrope"],
+                        "body-md": ["Manrope"],
+                        "body-sm": ["Manrope"],
+                        "headline-xl": ["Manrope"],
+                        "body-lg": ["Manrope"],
+                        "headline-lg": ["Manrope"],
+                        "headline-md": ["Manrope"],
+                        "headline-lg-mobile": ["Manrope"]
+                    },
+                    "fontSize": {
+                        "label-md": ["14px", { "lineHeight": "16px", "letterSpacing": "0.01em", "fontWeight": "600" }],
+                        "label-sm": ["12px", { "lineHeight": "14px", "letterSpacing": "0.02em", "fontWeight": "500" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "body-sm": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "headline-xl": ["40px", { "lineHeight": "48px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "headline-lg-mobile": ["28px", { "lineHeight": "36px", "fontWeight": "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-background text-on-background font-body-md antialiased min-h-screen flex">
+<!-- SideNavBar (Predicted Component) -->
+<aside class="hidden md:flex h-screen w-64 fixed inset-y-0 start-0 bg-surface dark:bg-inverse-surface shadow-sm flex-col h-full border-e border-outline-variant/30 z-50">
+<!-- Brand Header -->
+<div class="p-gutter flex items-center gap-3">
+<div class="w-8 h-8 rounded bg-primary flex items-center justify-center text-on-primary font-bold">
+                F
+            </div>
+<div>
+<h1 class="font-headline-md text-headline-md font-bold text-primary dark:text-inverse-primary">Fayed</h1>
+<p class="font-label-sm text-label-sm text-on-surface-variant">Mental Wellness Admin</p>
+</div>
+</div>
+<!-- Navigation Tabs -->
+<nav class="flex-1 px-sm py-4 space-y-1">
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant dark:text-surface-variant hover:text-primary hover:bg-surface-container-low dark:hover:bg-surface-container-high transition-colors duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-label-md text-label-md">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant dark:text-surface-variant hover:text-primary hover:bg-surface-container-low dark:hover:bg-surface-container-high transition-colors duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined">medical_services</span>
+<span class="font-label-md text-label-md">Practitioners</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant dark:text-surface-variant hover:text-primary hover:bg-surface-container-low dark:hover:bg-surface-container-high transition-colors duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined">group</span>
+<span class="font-label-md text-label-md">Patients</span>
+</a>
+<!-- Active Tab: Sessions -->
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-primary dark:text-inverse-primary font-bold border-e-4 border-primary dark:border-inverse-primary bg-primary/10 transition-colors duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined fill">calendar_month</span>
+<span class="font-label-md text-label-md">Sessions</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant dark:text-surface-variant hover:text-primary hover:bg-surface-container-low dark:hover:bg-surface-container-high transition-colors duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined">monitoring</span>
+<span class="font-label-md text-label-md">Analytics</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant dark:text-surface-variant hover:text-primary hover:bg-surface-container-low dark:hover:bg-surface-container-high transition-colors duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label-md text-label-md">Settings</span>
+</a>
+</nav>
+<!-- CTA & Footer -->
+<div class="p-gutter mt-auto border-t border-outline-variant/30">
+<button class="w-full bg-primary text-on-primary font-label-md text-label-md h-12 rounded-lg mb-4 hover:bg-on-primary-fixed-variant transition-colors flex items-center justify-center gap-2 shadow-[0_2px_8px_rgba(68,161,148,0.2)]">
+<span class="material-symbols-outlined">add</span>
+                New Session
+            </button>
+<div class="space-y-1">
+<a class="flex items-center gap-3 px-4 py-2 rounded-lg text-on-surface-variant hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">help</span>
+<span class="font-label-md text-label-md">Support</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-2 rounded-lg text-on-surface-variant hover:text-error transition-colors" href="#">
+<span class="material-symbols-outlined">logout</span>
+<span class="font-label-md text-label-md">Logout</span>
+</a>
+</div>
+</div>
+</aside>
+<!-- Main Content Area -->
+<div class="flex-1 flex flex-col md:ms-64 min-w-0">
+<!-- TopNavBar (Predicted Component) -->
+<header class="flex justify-between items-center h-16 px-gutter w-full sticky top-0 z-40 bg-surface-container-lowest dark:bg-surface-dim border-b border-outline-variant/20 transition-all duration-300">
+<div class="flex items-center gap-4">
+<h2 class="font-headline-md text-headline-md font-bold text-primary dark:text-inverse-primary md:hidden">Fayed Admin</h2>
+<!-- Search styling based on input guidance -->
+<div class="hidden md:flex items-center bg-surface-container-low rounded-full px-4 py-2 w-64 border border-transparent focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition-all">
+<span class="material-symbols-outlined text-on-surface-variant mr-2">search</span>
+<input class="bg-transparent border-none focus:ring-0 p-0 font-body-sm text-body-sm w-full placeholder-on-surface-variant/70" placeholder="Search..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<button class="p-2 rounded-full text-on-surface-variant dark:text-surface-variant hover:bg-surface-container dark:hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="p-2 rounded-full text-on-surface-variant dark:text-surface-variant hover:bg-surface-container dark:hover:bg-surface-container-high transition-colors mr-2">
+<span class="material-symbols-outlined">help_outline</span>
+</button>
+<div class="w-8 h-8 rounded-full bg-secondary-container flex items-center justify-center border border-outline-variant/30 overflow-hidden">
+<!-- Placeholder avatar -->
+<img alt="Admin Profile" class="w-full h-full object-cover" data-alt="A close-up portrait of a professional administrative user looking directly at the camera with a neutral, approachable expression. The lighting is soft and natural, emphasizing a modern, clean corporate aesthetic suitable for a mental wellness platform." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCbsw1euVVNgD85qufA4MkxoMQmaHz39znFXFAskFRdxilaWamktGMKSa-6G7l5LHY58kyeGTIjY_uq-7kuEJ25EYM0UKYpzNsn3nma-j9I0rbDTdrA18U5T9DgHSEE2CvSPrHQy-ISP57Uxy9VGsoIqGncyQU2rlV5iemMApWJIFeAT5Q2mB-TFfin-z2q-gIvMCOEmheyIbvKf8HwqNNAqvC9t9wZi9eZBiUwCQdfxohBnm7wp8GfiCUMfNn2jcjHbvQMUdJGK3OD"/>
+</div>
+</div>
+</header>
+<!-- Page Content Canvas -->
+<main class="flex-1 p-gutter max-w-[1400px] mx-auto w-full pb-xl">
+<!-- Page Header & Controls -->
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-margin">
+<div>
+<h1 class="font-headline-lg text-headline-lg text-on-background mb-2">Sessions Management</h1>
+<p class="font-body-md text-body-md text-on-surface-variant">Review and manage upcoming appointments and session history.</p>
+</div>
+<div class="flex items-center gap-3">
+<button class="flex items-center gap-2 px-4 h-10 rounded-lg text-on-surface-variant hover:bg-surface-container-low transition-colors font-label-md text-label-md">
+<span class="material-symbols-outlined text-[18px]">download</span>
+                        Export
+                    </button>
+<button class="flex items-center gap-2 px-4 h-10 rounded-lg text-on-surface-variant hover:bg-surface-container-low transition-colors font-label-md text-label-md">
+<span class="material-symbols-outlined text-[18px]">refresh</span>
+                        Refresh
+                    </button>
+<button class="flex items-center gap-2 px-4 h-10 rounded-lg bg-primary text-on-primary hover:bg-on-primary-fixed-variant transition-colors font-label-md text-label-md shadow-sm">
+<span class="material-symbols-outlined text-[18px]">add</span>
+                        New Session
+                    </button>
+</div>
+</div>
+<!-- DataTable Section -->
+<div class="bg-surface-container-lowest rounded-xl border border-outline-variant/30 shadow-sm overflow-hidden flex flex-col">
+<!-- DataTable Controls (Tabs, Search, Filters) -->
+<div class="p-4 border-b border-outline-variant/30 flex flex-col gap-4">
+<!-- Top Row: Tabs & Search -->
+<div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+<!-- Tabs -->
+<div class="flex items-center gap-1 bg-surface-container-low p-1 rounded-lg w-fit overflow-x-auto">
+<button class="px-4 py-1.5 rounded-md bg-surface-container-lowest text-primary shadow-sm font-label-md text-label-md whitespace-nowrap">
+                                        All
+                                    </button>
+<button class="px-4 py-1.5 rounded-md text-on-surface-variant hover:text-primary font-label-md text-label-md transition-colors whitespace-nowrap">
+                                        Live
+                                        <span class="ml-1 inline-flex items-center justify-center bg-error/10 text-error text-[10px] h-4 w-4 rounded-full font-bold">2</span>
+</button>
+<button class="px-4 py-1.5 rounded-md text-on-surface-variant hover:text-primary font-label-md text-label-md transition-colors whitespace-nowrap">
+                                        Upcoming
+                                    </button>
+<button class="px-4 py-1.5 rounded-md text-on-surface-variant hover:text-primary font-label-md text-label-md transition-colors whitespace-nowrap">
+                                        Completed
+                                    </button>
+<button class="px-4 py-1.5 rounded-md text-on-surface-variant hover:text-primary font-label-md text-label-md transition-colors whitespace-nowrap">
+                                        Canceled
+                                    </button>
+</div>
+<!-- Search -->
+<div class="relative w-full lg:w-72">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
+<input class="w-full bg-surface-container-low border border-transparent rounded-lg pl-10 pr-4 py-2 font-body-sm text-body-sm focus:border-primary focus:ring-1 focus:ring-primary transition-colors" placeholder="Search sessions..." type="text"/>
+</div>
+</div>
+<!-- Bottom Row: Filters -->
+<div class="flex flex-wrap items-center gap-3">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-on-surface-variant text-[18px]">filter_list</span>
+<span class="font-label-md text-label-md text-on-surface-variant">Filters:</span>
+</div>
+<button class="flex items-center gap-2 px-3 py-1.5 rounded-full border border-outline-variant/50 text-on-surface font-body-sm text-body-sm hover:bg-surface-container-low transition-colors">
+                                    Date Range
+                                    <span class="material-symbols-outlined text-[16px]">arrow_drop_down</span>
+</button>
+<button class="flex items-center gap-2 px-3 py-1.5 rounded-full border border-outline-variant/50 text-on-surface font-body-sm text-body-sm hover:bg-surface-container-low transition-colors">
+                                    Practitioner
+                                    <span class="material-symbols-outlined text-[16px]">arrow_drop_down</span>
+</button>
+<button class="flex items-center gap-2 px-3 py-1.5 rounded-full border border-outline-variant/50 text-on-surface font-body-sm text-body-sm hover:bg-surface-container-low transition-colors">
+                                    Duration
+                                    <span class="material-symbols-outlined text-[16px]">arrow_drop_down</span>
+</button>
+<button class="text-primary font-label-md text-label-md hover:underline ml-auto">Clear Filters</button>
+</div>
+</div>
+<!-- Table Wrapper for scrolling -->
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="border-b border-outline-variant/30 bg-surface-container-lowest text-on-surface-variant font-label-md text-label-md">
+<th class="p-4 font-semibold whitespace-nowrap">
+<div class="flex items-center gap-2 cursor-pointer hover:text-on-surface">
+                                            Date &amp; Time
+                                            <span class="material-symbols-outlined text-[16px]">arrow_downward</span>
+</div>
+</th>
+<th class="p-4 font-semibold whitespace-nowrap">Patient</th>
+<th class="p-4 font-semibold whitespace-nowrap">Practitioner</th>
+<th class="p-4 font-semibold whitespace-nowrap">Type</th>
+<th class="p-4 font-semibold whitespace-nowrap">Duration</th>
+<th class="p-4 font-semibold whitespace-nowrap">Status</th>
+<th class="p-4 font-semibold text-right">Actions</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant/20">
+<!-- Row 1 (Live) -->
+<tr class="hover:bg-surface-container-lowest/50 transition-colors group bg-error/5 relative">
+<td class="p-4 align-middle">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-error"></div>
+<div class="flex flex-col">
+<span class="font-body-md text-body-md text-on-surface font-medium">Today, Oct 24</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">09:00 AM</span>
+</div>
+</td>
+<td class="p-4 align-middle">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-secondary-container flex items-center justify-center text-primary font-bold text-sm">ES</div>
+<span class="font-body-md text-body-md text-on-surface">Elena Smith</span>
+</div>
+</td>
+<td class="p-4 align-middle">
+<span class="font-body-md text-body-md text-on-surface">Dr. Marcus Vance</span>
+</td>
+<td class="p-4 align-middle">
+<div class="flex flex-col gap-1">
+<span class="font-body-sm text-body-sm text-on-surface">Initial Assessment</span>
+<div class="flex items-center gap-1 text-on-surface-variant text-[12px]">
+<span class="material-symbols-outlined text-[14px]">videocam</span>
+                                                In-app Video
+                                            </div>
+</div>
+</td>
+<td class="p-4 align-middle">
+<span class="font-body-md text-body-md text-on-surface">60 min</span>
+</td>
+<td class="p-4 align-middle">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-error/10 text-error font-label-sm text-label-sm border border-error/20">
+<span class="w-1.5 h-1.5 rounded-full bg-error animate-pulse"></span>
+                                            Live
+                                        </span>
+</td>
+<td class="p-4 align-middle text-right">
+<div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="p-1.5 rounded-md text-on-surface-variant hover:bg-surface-container hover:text-primary transition-colors" title="Join Session">
+<span class="material-symbols-outlined text-[20px]">login</span>
+</button>
+<button class="p-1.5 rounded-md text-on-surface-variant hover:bg-surface-container transition-colors">
+<span class="material-symbols-outlined text-[20px]">more_vert</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 2 (Scheduled) -->
+<tr class="hover:bg-surface-container-low/50 transition-colors group">
+<td class="p-4 align-middle">
+<div class="flex flex-col">
+<span class="font-body-md text-body-md text-on-surface font-medium">Tomorrow, Oct 25</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">11:30 AM</span>
+</div>
+</td>
+<td class="p-4 align-middle">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-secondary-container flex items-center justify-center text-secondary font-bold text-sm">JW</div>
+<span class="font-body-md text-body-md text-on-surface">James Wilson</span>
+</div>
+</td>
+<td class="p-4 align-middle">
+<span class="font-body-md text-body-md text-on-surface">Dr. Sarah Chen</span>
+</td>
+<td class="p-4 align-middle">
+<div class="flex flex-col gap-1">
+<span class="font-body-sm text-body-sm text-on-surface">Follow-up</span>
+<div class="flex items-center gap-1 text-on-surface-variant text-[12px]">
+<span class="material-symbols-outlined text-[14px]">call</span>
+                                                Voice Call
+                                            </div>
+</div>
+</td>
+<td class="p-4 align-middle">
+<span class="font-body-md text-body-md text-on-surface">30 min</span>
+</td>
+<td class="p-4 align-middle">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-primary/10 text-primary font-label-sm text-label-sm border border-primary/20">
+<span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
+                                            Scheduled
+                                        </span>
+</td>
+<td class="p-4 align-middle text-right">
+<div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="p-1.5 rounded-md text-on-surface-variant hover:bg-surface-container transition-colors">
+<span class="material-symbols-outlined text-[20px]">edit</span>
+</button>
+<button class="p-1.5 rounded-md text-on-surface-variant hover:bg-surface-container transition-colors">
+<span class="material-symbols-outlined text-[20px]">more_vert</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 3 (Completed) -->
+<tr class="hover:bg-surface-container-low/50 transition-colors group opacity-75">
+<td class="p-4 align-middle">
+<div class="flex flex-col">
+<span class="font-body-md text-body-md text-on-surface font-medium">Oct 23, 2023</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">02:00 PM</span>
+</div>
+</td>
+<td class="p-4 align-middle">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-secondary-container flex items-center justify-center text-secondary font-bold text-sm">RT</div>
+<span class="font-body-md text-body-md text-on-surface">Robert Taylor</span>
+</div>
+</td>
+<td class="p-4 align-middle">
+<span class="font-body-md text-body-md text-on-surface">Dr. Marcus Vance</span>
+</td>
+<td class="p-4 align-middle">
+<div class="flex flex-col gap-1">
+<span class="font-body-sm text-body-sm text-on-surface">Therapy Session</span>
+<div class="flex items-center gap-1 text-on-surface-variant text-[12px]">
+<span class="material-symbols-outlined text-[14px]">videocam</span>
+                                                In-app Video
+                                            </div>
+</div>
+</td>
+<td class="p-4 align-middle">
+<span class="font-body-md text-body-md text-on-surface">45 min</span>
+</td>
+<td class="p-4 align-middle">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-surface-container-high text-on-surface-variant font-label-sm text-label-sm border border-outline-variant/30">
+<span class="material-symbols-outlined text-[14px]">check_circle</span>
+                                            Completed
+                                        </span>
+</td>
+<td class="p-4 align-middle text-right">
+<div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="p-1.5 rounded-md text-on-surface-variant hover:bg-surface-container transition-colors" title="View Notes">
+<span class="material-symbols-outlined text-[20px]">description</span>
+</button>
+<button class="p-1.5 rounded-md text-on-surface-variant hover:bg-surface-container transition-colors">
+<span class="material-symbols-outlined text-[20px]">more_vert</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 4 (Canceled) -->
+<tr class="hover:bg-surface-container-low/50 transition-colors group opacity-60">
+<td class="p-4 align-middle">
+<div class="flex flex-col">
+<span class="font-body-md text-body-md text-on-surface font-medium line-through decoration-outline-variant/50">Oct 22, 2023</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">10:00 AM</span>
+</div>
+</td>
+<td class="p-4 align-middle">
+<div class="flex items-center gap-3">
+<img alt="Patient Avatar" class="w-8 h-8 rounded-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAwuv06T2CftATlCVM5vcaTl3J2aXOLtMcqMdReUxRnpiHIs2nJOpqRjg6zx5dAcUBnuPizmafY83PNWLIAbgCgO2FzzxU6o1Fi3bitLVboJ_q9PAMOPe-G43_Q4b7_3hN8OoJjRzqY71SlG0RTx92BK-sLjsxIZeCj-SFvVmwuZEjTXncynAShLyiAtMeiBPo7YyNQAzZCn5Gh6GdJA85O-iICVIcwYJThzftbE65U5gT5D17_cQBs7OvMfhgPCaiKr-5y2uWhWcr7"/>
+<span class="font-body-md text-body-md text-on-surface">Alice Johnson</span>
+</div>
+</td>
+<td class="p-4 align-middle">
+<span class="font-body-md text-body-md text-on-surface">Dr. Sarah Chen</span>
+</td>
+<td class="p-4 align-middle">
+<div class="flex flex-col gap-1">
+<span class="font-body-sm text-body-sm text-on-surface">Consultation</span>
+<div class="flex items-center gap-1 text-on-surface-variant text-[12px]">
+<span class="material-symbols-outlined text-[14px]">videocam</span>
+                                                In-app Video
+                                            </div>
+</div>
+</td>
+<td class="p-4 align-middle">
+<span class="font-body-md text-body-md text-on-surface">30 min</span>
+</td>
+<td class="p-4 align-middle">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-error-container/40 text-on-error-container font-label-sm text-label-sm border border-error/20">
+<span class="material-symbols-outlined text-[14px]">cancel</span>
+                                            Canceled
+                                        </span>
+</td>
+<td class="p-4 align-middle text-right">
+<div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="p-1.5 rounded-md text-on-surface-variant hover:bg-surface-container transition-colors">
+<span class="material-symbols-outlined text-[20px]">more_vert</span>
+</button>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Pagination Footer -->
+<div class="p-4 border-t border-outline-variant/30 flex items-center justify-between bg-surface-container-lowest">
+<span class="font-body-sm text-body-sm text-on-surface-variant">Showing 1 to 4 of 24 results</span>
+<div class="flex items-center gap-2">
+<button class="p-1 rounded text-on-surface-variant hover:bg-surface-container disabled:opacity-50" disabled="">
+<span class="material-symbols-outlined">chevron_left</span>
+</button>
+<button class="w-8 h-8 rounded bg-primary text-on-primary font-label-md text-label-md flex items-center justify-center">1</button>
+<button class="w-8 h-8 rounded text-on-surface-variant hover:bg-surface-container font-label-md text-label-md flex items-center justify-center">2</button>
+<button class="w-8 h-8 rounded text-on-surface-variant hover:bg-surface-container font-label-md text-label-md flex items-center justify-center">3</button>
+<span class="text-on-surface-variant">...</span>
+<button class="w-8 h-8 rounded text-on-surface-variant hover:bg-surface-container font-label-md text-label-md flex items-center justify-center">6</button>
+<button class="p-1 rounded text-on-surface-variant hover:bg-surface-container">
+<span class="material-symbols-outlined">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

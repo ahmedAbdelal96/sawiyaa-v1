@@ -17,10 +17,13 @@ import {
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { RequireAccountStates } from '@common/decorators/account-state.decorator';
+import { Permissions } from '@common/decorators/permissions.decorator';
 import { Roles } from '@common/decorators/roles.decorator';
 import { AccountStateRequirement } from '@common/enums/account-state-requirement.enum';
 import { AppRole } from '@common/enums/app-role.enum';
+import { PermissionKey } from '@common/enums/permission-key.enum';
 import { JwtAccessAuthGuard } from '@common/guards/authentication/jwt-access-auth.guard';
+import { PermissionsGuard } from '@common/guards/authorization/permissions.guard';
 import { RolesGuard } from '@common/guards/authorization/roles.guard';
 import { ListAdminNotificationsDto } from '../dto/list-admin-notifications.dto';
 import {
@@ -32,9 +35,15 @@ import { ListAdminOperationalNotificationsUseCase } from '../use-cases/list-admi
 
 @ApiTags('Admin - Notification Ops')
 @ApiBearerAuth()
-@UseGuards(JwtAccessAuthGuard, RolesGuard)
+@UseGuards(JwtAccessAuthGuard, RolesGuard, PermissionsGuard)
 @RequireAccountStates(AccountStateRequirement.ACTIVE_ACCOUNT)
-@Roles(AppRole.ADMIN, AppRole.SUPPORT_AGENT)
+@Roles(
+  AppRole.ADMIN,
+  AppRole.SUPER_ADMIN,
+  AppRole.MARKETING_STAFF,
+  AppRole.PATIENT_OPERATIONS,
+)
+@Permissions(PermissionKey.NOTIFICATION_OPS_READ)
 @Controller('admin/notifications')
 export class AdminNotificationOpsController {
   constructor(

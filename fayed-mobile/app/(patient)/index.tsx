@@ -1,6 +1,6 @@
 import React from "react";
 import { View, StyleSheet, ScrollView, TouchableOpacity } from "react-native";
-import { useRouter } from "expo-router";
+import { usePathname, useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../../src/providers/AuthProvider";
 import { useTheme } from "../../src/providers/ThemeProvider";
@@ -30,6 +30,7 @@ export default function PatientHomeScreen() {
   const { user } = useAuth();
   const { theme } = useTheme();
   const router = useRouter();
+  const pathname = usePathname();
   const locale = i18n.language?.startsWith("ar") ? "ar-SA" : "en-US";
   const journeyQuery = usePatientJourney();
   const unreadNotificationsQuery = usePatientUnreadNotificationCount();
@@ -321,7 +322,14 @@ export default function PatientHomeScreen() {
             <TouchableQuickAction
               icon="help-circle-outline"
               label={t("home.quickActions.support", "Support")}
-              onPress={() => router.push("/(patient)/support" as any)}
+              onPress={() =>
+                router.push(
+                  {
+                    pathname: "/(patient)/support",
+                    params: { returnTo: pathname },
+                  } as any,
+                )
+              }
               badge={hasOpenSupportTicket ? 1 : 0}
             />
             <TouchableQuickAction
@@ -691,11 +699,18 @@ function resolveNextStep(journey?: PatientJourneyResponseDto | null) {
     return null;
   }
 
-  return (
-    journey.nextSteps.find(
-      (step) => step.type === journey.summary.suggestedNextAction,
-    ) ?? journey.nextSteps[0] ?? null
-  );
+  const nextSteps = Array.isArray(journey.nextSteps) ? journey.nextSteps : [];
+  const suggestedAction = journey.summary?.suggestedNextAction;
+
+  if (suggestedAction) {
+    return (
+      nextSteps.find((step) => step.type === suggestedAction) ??
+      nextSteps[0] ??
+      null
+    );
+  }
+
+  return nextSteps[0] ?? null;
 }
 
 function resolveNextStepRoute(

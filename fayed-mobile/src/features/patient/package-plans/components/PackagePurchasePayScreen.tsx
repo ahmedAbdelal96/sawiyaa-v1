@@ -15,6 +15,7 @@ import {
 } from "../../../../components/ui";
 import { useTheme } from "../../../../providers/ThemeProvider";
 import { extractApiErrorMessage } from "../../../../lib/api";
+import { resolveSupportedCurrencyCode } from "../../../../lib/currency";
 import { normalizeAllowedExternalUrl } from "../../../../lib/external-url";
 import { useInitiatePackagePurchasePayment, useMyPackagePurchase, usePackageRefundPolicy } from "../hooks";
 import {
@@ -67,7 +68,6 @@ export default function PackagePurchasePayScreen({
       <DetailPageScaffold
         title={t("packagePurchases.pay.title", "Payment")}
         showBack
-        onBack={() => router.back()}
         loading
         loadingMessage={t("packagePurchases.pay.loading", "Loading payment...")}
       >
@@ -81,7 +81,6 @@ export default function PackagePurchasePayScreen({
       <DetailPageScaffold
         title={t("packagePurchases.pay.title", "Payment")}
         showBack
-        onBack={() => router.back()}
         error={purchaseQuery.isError}
         errorTitle={t("packagePurchases.pay.errorTitle", "We could not load the payment")}
         errorMessage={t("packagePurchases.pay.errorMessage", "Please try again in a moment.")}
@@ -95,6 +94,11 @@ export default function PackagePurchasePayScreen({
 
   const paymentExpired = isPackagePurchasePaymentExpired(purchase);
   const completionCount = getPackagePurchaseCompletionCount(purchase);
+  const currency = resolveSupportedCurrencyCode({
+    currencyCode: purchase.selectedCurrencyCode,
+    regionalPricingMode: purchase.regionalPricingMode,
+    resolvedCountryIsoCode: purchase.resolvedCountryIsoCode,
+  });
 
   const handleContinue = async () => {
     setLocalError(null);
@@ -168,7 +172,6 @@ export default function PackagePurchasePayScreen({
     <DetailPageScaffold
       title={t("packagePurchases.pay.title", "Payment")}
       showBack
-      onBack={() => router.back()}
       contentContainerStyle={styles.scaffold}
     >
       <View style={styles.stack}>
@@ -187,7 +190,7 @@ export default function PackagePurchasePayScreen({
           <View style={styles.paymentSummary}>
             <SummaryRow
               label={t("packagePurchases.pay.total", "Total")}
-              value={formatMoney(purchase.patientPayableTotal, purchase.selectedCurrencyCode, locale)}
+              value={formatMoney(purchase.patientPayableTotal, currency, locale)}
             />
             <SummaryRow
               label={t("packagePurchases.pay.progress", "Progress")}
@@ -361,3 +364,4 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
 });
+

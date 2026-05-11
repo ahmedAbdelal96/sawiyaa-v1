@@ -46,6 +46,9 @@ export interface PublicPractitionerListItem {
   specialties: PublicPractitionerSpecialty[];
   languages: string[];
   countryCode: string | null;
+  currencyCode?: "EGP" | "USD";
+  regionalPricingMode?: "EGYPT_LOCAL" | "INTERNATIONAL";
+  resolvedCountryIsoCode?: string | null;
   practitionerType: string;
   practitionerGender: string | null;
   pricing: PublicPractitionerPricing;
@@ -55,6 +58,8 @@ export interface PublicPractitionerListItem {
   sessionPrice30Usd?: number | null;
   sessionPrice60Egp?: number | null;
   sessionPrice60Usd?: number | null;
+  displaySessionPrice30?: number | null;
+  displaySessionPrice60?: number | null;
   isOnlineNow: boolean;
   acceptsCoupon: boolean;
   acceptsPackage: boolean;
@@ -73,6 +78,9 @@ export interface PublicPractitionerDetails {
   specialties: PublicPractitionerSpecialty[];
   languages: string[];
   countryCode: string | null;
+  currencyCode?: "EGP" | "USD";
+  regionalPricingMode?: "EGYPT_LOCAL" | "INTERNATIONAL";
+  resolvedCountryIsoCode?: string | null;
   yearsExperience: number | null;
   pricing: PublicPractitionerPricing;
   sessionPrice30: number | null;
@@ -81,6 +89,8 @@ export interface PublicPractitionerDetails {
   sessionPrice30Usd?: number | null;
   sessionPrice60Egp?: number | null;
   sessionPrice60Usd?: number | null;
+  displaySessionPrice30?: number | null;
+  displaySessionPrice60?: number | null;
   ratingSummary: PublicPractitionerRatingSummary;
   credentialsSummary: PublicPractitionerCredentialsSummary;
   isVerified: boolean;

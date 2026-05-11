@@ -164,7 +164,6 @@ export default function PractitionerCareChatListScreen() {
       <Header
         title={t("practitioner.careChat.title")}
         showBack
-        onBack={() => router.back()}
       />
 
       {query.isLoading ? <LoadingState fullScreen /> : null}
@@ -351,3 +350,4 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
 });
+

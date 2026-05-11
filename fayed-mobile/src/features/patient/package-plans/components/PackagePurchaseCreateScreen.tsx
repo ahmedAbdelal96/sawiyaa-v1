@@ -14,10 +14,12 @@ import {
   Text,
 } from "../../../../components/ui";
 import { useTheme } from "../../../../providers/ThemeProvider";
+import { useAuth } from "../../../../providers/AuthProvider";
 import { resolveMediaUrl } from "../../../../lib/resolve-media-url";
 import { extractApiErrorMessage } from "../../../../lib/api";
 import { useCreatePackagePurchase, usePublicPractitionerPackagePlans } from "../hooks";
 import { usePublicAvailabilityWindows } from "../../sessions/hooks";
+import { resolveSupportedCurrencyCode } from "../../../../lib/currency";
 import {
   buildSlotsFromWindows,
   formatLocalizedDateRange,
@@ -46,18 +48,23 @@ function formatMoney(amount: string | null | undefined, currencyCode: string | n
   }).format(num);
 }
 
-function resolveQuoteLabel(quotedItem: PackagePlanQuotedItem | undefined, locale: string) {
+function resolveQuoteLabel(
+  quotedItem: PackagePlanQuotedItem | undefined,
+  locale: string,
+  currencyCode?: string | null,
+) {
   if (!quotedItem) {
     return null;
   }
 
-  return `${quotedItem.item.title} · ${formatMoney(quotedItem.quote.patientPayableTotal, quotedItem.quote.selectedCurrencyCode, locale)}`;
+  return `${quotedItem.item.title} · ${formatMoney(quotedItem.quote.patientPayableTotal, currencyCode ?? quotedItem.quote.selectedCurrencyCode, locale)}`;
 }
 
 export default function PackagePurchaseCreateScreen() {
   const router = useRouter();
   const { theme } = useTheme();
   const { t, i18n } = useTranslation();
+  const { user, role, isLoading: isAuthLoading } = useAuth();
   const locale = i18n.language?.startsWith("ar") ? "ar-SA" : "en-US";
   const params = useLocalSearchParams<{
     practitionerSlug: string;
@@ -73,6 +80,17 @@ export default function PackagePurchaseCreateScreen() {
   const durationMinutes = Number(params.durationMinutes) >= 60 ? 60 : 30;
   const sessionMode = (params.sessionMode === "AUDIO" ? "AUDIO" : "VIDEO") as "VIDEO" | "AUDIO";
   const currencyCode = params.currencyCode?.trim().toUpperCase() || "EGP";
+  const authScopeKey = useMemo(() => {
+    if (isAuthLoading) {
+      return "bootstrapping";
+    }
+
+    if (!user) {
+      return "guest";
+    }
+
+    return `auth:${user.id}:${role}`;
+  }, [isAuthLoading, role, user]);
   const [weekOffset, setWeekOffset] = useState(0);
   const [selectedStartsAt, setSelectedStartsAt] = useState<string[]>([]);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -85,12 +103,20 @@ export default function PackagePurchaseCreateScreen() {
       sessionMode,
       currencyCode,
     },
+    {
+      cacheScopeKey: authScopeKey,
+    },
   );
   const plan = packagePlansQuery.data?.items.find(
     (item) => item.item.code === params.packagePlanCode,
   );
+  const quoteCurrency = resolveSupportedCurrencyCode({
+    currencyCode: plan?.quote.selectedCurrencyCode ?? null,
+    regionalPricingMode: plan?.quote.regionalPricingMode ?? null,
+    resolvedCountryIsoCode: plan?.quote.resolvedCountryIsoCode ?? null,
+  });
   const sessionCount = plan?.quote.sessionCount ?? plan?.item.sessionCount ?? 0;
-  const selectedQuoteLabel = resolveQuoteLabel(plan, locale);
+  const selectedQuoteLabel = resolveQuoteLabel(plan, locale, quoteCurrency);
   const currentWeek = getWeekRange(weekOffset);
   const availabilityQuery = usePublicAvailabilityWindows(
     params.practitionerSlug ?? null,
@@ -150,7 +176,6 @@ export default function PackagePurchaseCreateScreen() {
       <DetailPageScaffold
         title={t("packagePurchases.create.title", "Buy package")}
         showBack
-        onBack={() => router.back()}
       >
         <EmptyState
           title={t("packagePurchases.create.notFoundTitle", "Package not available")}
@@ -170,7 +195,6 @@ export default function PackagePurchaseCreateScreen() {
       <DetailPageScaffold
         title={t("packagePurchases.create.title", "Buy package")}
         showBack
-        onBack={() => router.back()}
         error={packagePlansQuery.isError}
         errorTitle={t("packagePurchases.create.errorTitle", "We could not load the package")}
         errorMessage={t(
@@ -191,7 +215,6 @@ export default function PackagePurchaseCreateScreen() {
     <DetailPageScaffold
       title={t("packagePurchases.create.title", "Buy package")}
       showBack
-      onBack={() => router.back()}
       contentContainerStyle={styles.scaffold}
     >
       <View style={styles.stack}>
@@ -220,7 +243,7 @@ export default function PackagePurchaseCreateScreen() {
                 />
                 <SummaryRow
                   label={t("packagePurchases.create.total", "Total")}
-                  value={formatMoney(plan.quote.patientPayableTotal, plan.quote.selectedCurrencyCode, locale)}
+                  value={formatMoney(plan.quote.patientPayableTotal, quoteCurrency, locale)}
                 />
               </View>
             </View>
@@ -439,7 +462,7 @@ export default function PackagePurchaseCreateScreen() {
                   practitionerSlug: params.practitionerSlug,
                   durationMinutes,
                   sessionMode,
-                  selectedCurrencyCode: currencyCode,
+                  selectedCurrencyCode: quoteCurrency,
                   selectedSessionSlots: selectedStartsAt.map((startsAt) => ({ scheduledStartAt: startsAt })),
                 });
 
@@ -609,3 +632,4 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
 });
+

@@ -1,10 +1,7 @@
-import {
-  ForbiddenException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
 import { SessionMapper } from '../mappers/session.mapper';
+import { SessionAccessPolicy } from '../policies/session-access.policy';
 import { SessionPatientRepository } from '../repositories/session-patient.repository';
 import { SessionPractitionerRepository } from '../repositories/session-practitioner.repository';
 import { SessionRepository } from '../repositories/session.repository';
@@ -20,6 +17,7 @@ export class GetSessionDetailsUseCase {
     private readonly sessionPatientRepository: SessionPatientRepository,
     private readonly sessionPractitionerRepository: SessionPractitionerRepository,
     private readonly sessionMapper: SessionMapper,
+    private readonly sessionAccessPolicy: SessionAccessPolicy,
   ) {}
 
   async execute(input: {
@@ -50,9 +48,9 @@ export class GetSessionDetailsUseCase {
       }
 
       if (session.patient.id !== patient.id) {
-        throw new ForbiddenException({
-          messageKey: 'sessions.errors.sessionAccessDenied',
-          error: 'SESSION_ACCESS_DENIED',
+        this.sessionAccessPolicy.assertPatientOwner({
+          sessionPatientId: session.patient.id,
+          requesterPatientId: patient.id,
         });
       }
     } else {
@@ -67,9 +65,9 @@ export class GetSessionDetailsUseCase {
       }
 
       if (session.practitioner.id !== practitioner.id) {
-        throw new ForbiddenException({
-          messageKey: 'sessions.errors.sessionAccessDenied',
-          error: 'SESSION_ACCESS_DENIED',
+        this.sessionAccessPolicy.assertPractitionerOwner({
+          sessionPractitionerId: session.practitioner.id,
+          requesterPractitionerId: practitioner.id,
         });
       }
     }

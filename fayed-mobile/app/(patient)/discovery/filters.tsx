@@ -163,7 +163,6 @@ export default function DiscoveryFiltersScreen() {
       <Header
         title={t("discovery.filters.header")}
         showBack
-        onBack={() => router.back()}
       />
 
       <ScrollView contentContainerStyle={styles.content}>
@@ -503,3 +502,4 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
 });
+

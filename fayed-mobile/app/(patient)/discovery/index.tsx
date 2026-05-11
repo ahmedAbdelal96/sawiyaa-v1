@@ -14,10 +14,13 @@ import {
   LoadingState,
   ErrorState,
   EmptyState,
+  Button,
   Text,
 } from "../../../src/components/ui";
 import { TherapistCard } from "../../../src/features/patient/discovery/components/TherapistCard";
-import { useGetPublicPractitioners } from "../../../src/features/patient/discovery/api";
+import {
+  useGetPublicPractitionersInfinite,
+} from "../../../src/features/patient/discovery/api";
 import { useTheme } from "../../../src/providers/ThemeProvider";
 import { Ionicons } from "@expo/vector-icons";
 import { ListPublicPractitionersFilters } from "../../../src/features/patient/discovery/types";
@@ -79,7 +82,9 @@ export default function DiscoveryListScreen() {
     return output;
   }, [params]);
 
-  const filters = useMemo<ListPublicPractitionersFilters>(
+  const pageSize = parseNumber(flatParams.limit) || 12;
+
+  const filters = useMemo<Omit<ListPublicPractitionersFilters, "page">>(
     () => ({
       search: flatParams.search || undefined,
       specialtySlug: flatParams.specialtySlug || undefined,
@@ -97,10 +102,9 @@ export default function DiscoveryListScreen() {
       minSessionFee: parseNumber(flatParams.minSessionFee),
       maxSessionFee: parseNumber(flatParams.maxSessionFee),
       sort: parseSort(flatParams.sort),
-      page: parseNumber(flatParams.page) || 1,
-      limit: parseNumber(flatParams.limit) || 20,
+      limit: pageSize,
     }),
-    [flatParams],
+    [flatParams, pageSize],
   );
 
   const [searchInput, setSearchInput] = useState(flatParams.search || "");
@@ -109,8 +113,13 @@ export default function DiscoveryListScreen() {
     setSearchInput(flatParams.search || "");
   }, [flatParams.search]);
 
-  const { data, isLoading, isError, refetch } =
-    useGetPublicPractitioners(filters);
+  const practitionersQuery = useGetPublicPractitionersInfinite(filters);
+  const practitioners = useMemo(
+    () =>
+      practitionersQuery.data?.pages.flatMap((page) => page.data.items) ?? [],
+    [practitionersQuery.data?.pages],
+  );
+  const pagination = practitionersQuery.data?.pages.at(-1)?.data.pagination;
 
   const handleSearchSubmit = () => {
     router.replace({
@@ -186,15 +195,63 @@ export default function DiscoveryListScreen() {
       source: "patient_discovery_list",
       searchApplied: Boolean(flatParams.search),
       activeFilterCount,
-      sort: flatParams.sort || "recommended",
-    });
+    sort: flatParams.sort || "recommended",
+  });
   }, [activeFilterCount, flatParams.search, flatParams.sort]);
+
+  const renderListFooter = () => {
+    if (practitionersQuery.isFetchingNextPage) {
+      return (
+        <View style={styles.footerState}>
+          <LoadingState message={t("discovery.list.loadingMore")} />
+        </View>
+      );
+    }
+
+    if (practitionersQuery.isFetchNextPageError) {
+      return (
+        <View style={styles.footerState}>
+          <Text
+            weight="bold"
+            style={styles.footerTitle}
+            color={theme.colors.textPrimary}
+          >
+            {t("discovery.list.loadMoreErrorTitle")}
+          </Text>
+          <Text
+            color={theme.colors.textSecondary}
+            style={styles.footerDescription}
+          >
+            {t("discovery.list.loadMoreErrorSubtitle")}
+          </Text>
+          <Button
+            title={t("retry", "Retry")}
+            onPress={() => practitionersQuery.fetchNextPage()}
+          />
+        </View>
+      );
+    }
+
+    if (practitioners.length > 0 && !practitionersQuery.hasNextPage) {
+      return (
+        <View style={styles.footerState}>
+          <Text
+            color={theme.colors.textSecondary}
+            style={styles.endOfListText}
+          >
+            {t("discovery.list.endOfList")}
+          </Text>
+        </View>
+      );
+    }
+
+    return null;
+  };
 
   return (
     <Screen bg="background">
       <Header
         showBack
-        onBack={() => router.back()}
         title={t("discovery.list.header")}
       />
 
@@ -277,11 +334,15 @@ export default function DiscoveryListScreen() {
         </View>
       </View>
 
-      {isLoading ? (
+      {practitionersQuery.isLoading ? (
         <LoadingState fullScreen message={t("discovery.list.loading")} />
-      ) : isError ? (
-        <ErrorState fullScreen onRetry={refetch} />
-      ) : data?.data.items.length === 0 ? (
+      ) : practitionersQuery.isError ? (
+        <ErrorState
+          fullScreen
+          onRetry={() => practitionersQuery.refetch()}
+          retryText={t("retry", "Retry")}
+        />
+      ) : practitioners.length === 0 ? (
         <EmptyState
           title={t("discovery.list.emptyTitle")}
           description={t("discovery.list.emptySubtitle")}
@@ -301,21 +362,35 @@ export default function DiscoveryListScreen() {
         />
       ) : (
         <FlatList
-          data={data?.data.items}
+          data={practitioners}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => <TherapistCard practitioner={item} />}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
+          refreshing={practitionersQuery.isRefetching}
+          onRefresh={() => practitionersQuery.refetch()}
+          onEndReached={() => {
+            if (
+              practitionersQuery.hasNextPage &&
+              !practitionersQuery.isFetchingNextPage &&
+              !practitionersQuery.isLoading &&
+              !practitionersQuery.isError
+            ) {
+              practitionersQuery.fetchNextPage();
+            }
+          }}
+          onEndReachedThreshold={0.45}
           ListHeaderComponent={
             <Text
               color={theme.colors.textSecondary}
               style={styles.resultsCount}
             >
               {t("discovery.list.resultsCount", {
-                count: data?.data.pagination.totalItems ?? 0,
+                count: pagination?.totalItems ?? practitioners.length,
               })}
             </Text>
           }
+          ListFooterComponent={renderListFooter}
         />
       )}
     </Screen>
@@ -390,4 +465,24 @@ const styles = StyleSheet.create({
     marginBottom: 14,
     marginTop: 2,
   },
+  footerState: {
+    paddingTop: 8,
+    paddingBottom: 20,
+  },
+  footerTitle: {
+    fontSize: 16,
+    marginBottom: 6,
+    textAlign: "center",
+  },
+  footerDescription: {
+    fontSize: 14,
+    lineHeight: 21,
+    textAlign: "center",
+    marginBottom: 14,
+  },
+  endOfListText: {
+    fontSize: 14,
+    textAlign: "center",
+  },
 });
+

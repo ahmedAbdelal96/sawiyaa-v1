@@ -30,11 +30,14 @@ import { createReadStream } from 'fs';
 import { Response } from 'express';
 import { CurrentUser } from '@common/decorators/current-user.decorator';
 import { RequireAccountStates } from '@common/decorators/account-state.decorator';
+import { Permissions } from '@common/decorators/permissions.decorator';
 import { Roles } from '@common/decorators/roles.decorator';
 import { AccountStateRequirement } from '@common/enums/account-state-requirement.enum';
 import { AppRole } from '@common/enums/app-role.enum';
+import { PermissionKey } from '@common/enums/permission-key.enum';
 import { JwtAccessAuthGuard } from '@common/guards/authentication/jwt-access-auth.guard';
 import { AdminGuard } from '@common/guards/authorization/admin.guard';
+import { PermissionsGuard } from '@common/guards/authorization/permissions.guard';
 import { RolesGuard } from '@common/guards/authorization/roles.guard';
 import { AuthenticatedUser } from '@common/interfaces/authenticated-user.interface';
 import {
@@ -55,12 +58,15 @@ import { ListPractitionerPayoutDuesUseCase } from '../use-cases/list-practitione
 import { ListPractitionerPayoutHistoryUseCase } from '../use-cases/list-practitioner-payout-history.use-case';
 import { RecordPractitionerPayoutUseCase } from '../use-cases/record-practitioner-payout.use-case';
 import { UploadPractitionerPayoutProofUseCase } from '../use-cases/upload-practitioner-payout-proof.use-case';
+import { SecurityAuditService } from '@common/security-audit/security-audit.service';
+import { SecurityAuditOutcome } from '@prisma/client';
 
 @ApiTags('Admin - Practitioner Payouts')
 @ApiBearerAuth()
-@UseGuards(JwtAccessAuthGuard, RolesGuard)
+@UseGuards(JwtAccessAuthGuard, RolesGuard, PermissionsGuard)
 @RequireAccountStates(AccountStateRequirement.ACTIVE_ACCOUNT)
-@Roles(AppRole.ADMIN, AppRole.SUPPORT_AGENT)
+@Roles(AppRole.ADMIN, AppRole.SUPER_ADMIN, AppRole.FINANCE_STAFF)
+@Permissions(PermissionKey.PRACTITIONER_PAYOUTS_READ)
 @Controller('admin/practitioners/:practitionerId/payouts')
 export class AdminPractitionerPayoutsController {
   constructor(
@@ -70,6 +76,7 @@ export class AdminPractitionerPayoutsController {
     private readonly recordPractitionerPayoutUseCase: RecordPractitionerPayoutUseCase,
     private readonly uploadPractitionerPayoutProofUseCase: UploadPractitionerPayoutProofUseCase,
     private readonly getPractitionerPayoutProofFileUseCase: GetPractitionerPayoutProofFileUseCase,
+    private readonly securityAuditService: SecurityAuditService,
   ) {}
 
   @Get('due')
@@ -147,16 +154,26 @@ export class AdminPractitionerPayoutsController {
   })
   @UseGuards(AdminGuard)
   @Roles(AppRole.ADMIN)
-  record(
+  @Permissions(PermissionKey.PRACTITIONER_PAYOUTS_WRITE)
+  async record(
     @Param('practitionerId', new ParseUUIDPipe()) practitionerId: string,
     @CurrentUser() currentUser: AuthenticatedUser,
     @Body() body: RecordPractitionerPayoutDto,
   ) {
-    return this.recordPractitionerPayoutUseCase.execute({
+    const result = await this.recordPractitionerPayoutUseCase.execute({
       practitionerId,
       body,
       operatorUserId: currentUser.id,
     });
+    this.securityAuditService.logAsync({
+      action: 'finance.practitioner_payout.record',
+      outcome: SecurityAuditOutcome.SUCCESS,
+      actorUserId: currentUser.id,
+      actorRoles: currentUser.roles,
+      resourceType: 'PractitionerPayout',
+      targetUserId: practitionerId,
+    });
+    return result;
   }
 
   @Post(':payoutId/proof')
@@ -191,6 +208,7 @@ export class AdminPractitionerPayoutsController {
   })
   @UseGuards(AdminGuard)
   @Roles(AppRole.ADMIN)
+  @Permissions(PermissionKey.PRACTITIONER_PAYOUTS_WRITE)
   @UseInterceptors(FileInterceptor('file'))
   uploadProof(
     @Param('practitionerId', new ParseUUIDPipe()) practitionerId: string,

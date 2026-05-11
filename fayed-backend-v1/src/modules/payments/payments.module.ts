@@ -1,5 +1,7 @@
 import { forwardRef, Module } from '@nestjs/common';
 import { JwtAccessAuthGuard } from '@common/guards/authentication/jwt-access-auth.guard';
+import { PermissionResolverService } from '@common/guards/authorization/permission-resolver.service';
+import { PermissionsGuard } from '@common/guards/authorization/permissions.guard';
 import { RolesGuard } from '@common/guards/authorization/roles.guard';
 import { AppLoggerService } from '@common/logging/app-logger.service';
 import { FinancialOperationsModule } from '@modules/financial-operations/financial-operations.module';
@@ -31,6 +33,7 @@ import { PaymentGeoContextService } from './services/payment-geo-context.service
 import { ResolveSessionPaymentPricingService } from './services/resolve-session-payment-pricing.service';
 import { ValidatePaymentStatusTransitionService } from './services/validate-payment-status-transition.service';
 import { ValidateRefundEligibilityService } from './services/validate-refund-eligibility.service';
+import { PaymentAccessPolicy } from './policies/payment-access.policy';
 import { ExpirePaymentUseCase } from './use-cases/expire-payment.use-case';
 import { GetAdminPaymentOpsDetailsUseCase } from './use-cases/get-admin-payment-ops-details.use-case';
 import { GetPatientPaymentUseCase } from './use-cases/get-patient-payment.use-case';
@@ -70,8 +73,11 @@ import { RetryPaymentRefundUseCase } from './use-cases/retry-payment-refund.use-
     AdminPatientPaymentsController,
   ],
   providers: [
+    PaymentAccessPolicy,
     JwtAccessAuthGuard,
     RolesGuard,
+    PermissionsGuard,
+    PermissionResolverService,
     AppLoggerService,
     PaymentMapper,
     PaymentRepository,

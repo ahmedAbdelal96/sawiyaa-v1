@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import i18n from "../../i18n";
 import {
   fetchArticleBySlug,
@@ -27,6 +27,33 @@ export function useArticles(params: ArticlesListParams = {}) {
   return useQuery({
     queryKey: articlesQueryKeys.list(resolvedParams),
     queryFn: () => fetchArticles(resolvedParams),
+    staleTime: 60_000,
+  });
+}
+
+export function useInfiniteArticles(params: ArticlesListParams = {}) {
+  const locale = getLocale(params.locale);
+  const resolvedParams = {
+    ...params,
+    locale,
+  };
+
+  return useInfiniteQuery({
+    queryKey: articlesQueryKeys.infiniteList(resolvedParams),
+    initialPageParam: 1,
+    queryFn: ({ pageParam }) =>
+      fetchArticles({
+        ...resolvedParams,
+        page: Number(pageParam) || 1,
+      }),
+    getNextPageParam: (lastPage) => {
+      const { page, totalPages } = lastPage.pagination;
+      if (page >= totalPages) {
+        return undefined;
+      }
+
+      return page + 1;
+    },
     staleTime: 60_000,
   });
 }

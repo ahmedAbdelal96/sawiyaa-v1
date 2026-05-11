@@ -1,6 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { Payment, Prisma, Refund, RefundStatus } from '@prisma/client';
 import {
+  PaymentRegionalPricingMode,
+} from '@common/payments/payment-region.resolver';
+import {
   AdminPaymentOpsViewModel,
   PaymentViewModel,
   RefundViewModel,
@@ -17,6 +20,14 @@ export class PaymentMapper {
     const refundedAt =
       payment.refunds?.find((refund) => refund.processedAt)?.processedAt ??
       null;
+    const regionalPricingMode =
+      typeof metadata.regionalPricingMode === 'string' &&
+      (metadata.regionalPricingMode === 'EGYPT_LOCAL' ||
+        metadata.regionalPricingMode === 'INTERNATIONAL')
+        ? (metadata.regionalPricingMode as PaymentRegionalPricingMode)
+        : payment.currencyCode === 'EGP'
+          ? 'EGYPT_LOCAL'
+          : 'INTERNATIONAL';
 
     return {
       id: payment.id,
@@ -30,6 +41,11 @@ export class PaymentMapper {
       amountFromGateway: payment.amountFromGateway.toString(),
       amount: payment.amountTotal.toString(),
       currency: payment.currencyCode,
+      regionalPricingMode,
+      resolvedCountryIsoCode:
+        typeof metadata.resolvedCountryIsoCode === 'string'
+          ? metadata.resolvedCountryIsoCode
+          : null,
       providerPaymentId: payment.providerPaymentRef ?? null,
       providerReference: payment.providerOrderRef ?? null,
       providerMethod:
@@ -132,6 +148,18 @@ export class PaymentMapper {
         amountFromWallet: payment.amountFromWallet.toString(),
         amountFromGateway: payment.amountFromGateway.toString(),
         currency: payment.currencyCode,
+        regionalPricingMode:
+          typeof metadata.regionalPricingMode === 'string' &&
+          (metadata.regionalPricingMode === 'EGYPT_LOCAL' ||
+            metadata.regionalPricingMode === 'INTERNATIONAL')
+            ? (metadata.regionalPricingMode as PaymentRegionalPricingMode)
+            : payment.currencyCode === 'EGP'
+              ? 'EGYPT_LOCAL'
+              : 'INTERNATIONAL',
+        resolvedCountryIsoCode:
+          typeof metadata.resolvedCountryIsoCode === 'string'
+            ? metadata.resolvedCountryIsoCode
+            : null,
         providerPaymentId: payment.providerPaymentRef ?? null,
         providerReference: payment.providerOrderRef ?? null,
         providerMethod:

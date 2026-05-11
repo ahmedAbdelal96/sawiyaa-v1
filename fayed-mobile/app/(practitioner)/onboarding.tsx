@@ -412,7 +412,6 @@ export default function PractitionerOnboardingWorkspaceScreen() {
     <DetailPageScaffold
       title={t("practitioner.onboarding.title")}
       showBack
-      onBack={() => router.back()}
       loading={false}
       contentContainerStyle={styles.content}
     >
@@ -1103,3 +1102,4 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
 });
+

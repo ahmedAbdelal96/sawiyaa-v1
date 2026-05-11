@@ -1,4 +1,9 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { useAuthenticatedQueryEnabled } from "../../auth/query-auth";
 import { patientJourneyQueryKey } from "../journey/hooks";
 import {
@@ -16,6 +21,8 @@ const patientSessionsQueryKeys = {
   all: ["patient-sessions"] as const,
   list: (query?: ListSessionsQuery) =>
     [...patientSessionsQueryKeys.all, "list", query ?? {}] as const,
+  infiniteList: (query?: Omit<ListSessionsQuery, "page">) =>
+    [...patientSessionsQueryKeys.all, "infinite-list", query ?? {}] as const,
   details: (sessionId: string) =>
     [...patientSessionsQueryKeys.all, "details", sessionId] as const,
   cancelPreview: (sessionId: string) =>
@@ -62,6 +69,32 @@ export function usePatientSessions(query?: ListSessionsQuery) {
   return useQuery({
     queryKey: patientSessionsQueryKeys.list(query),
     queryFn: () => getPatientSessions(query),
+    enabled,
+    staleTime: 30_000,
+  });
+}
+
+export function useInfinitePatientSessions(
+  query?: Omit<ListSessionsQuery, "page">,
+) {
+  const enabled = useAuthenticatedQueryEnabled("patient");
+
+  return useInfiniteQuery({
+    queryKey: patientSessionsQueryKeys.infiniteList(query),
+    initialPageParam: 1,
+    queryFn: ({ pageParam }) =>
+      getPatientSessions({
+        ...query,
+        page: Number(pageParam) || 1,
+      }),
+    getNextPageParam: (lastPage) => {
+      const { page, totalPages } = lastPage.pagination;
+      if (page >= totalPages) {
+        return undefined;
+      }
+
+      return page + 1;
+    },
     enabled,
     staleTime: 30_000,
   });

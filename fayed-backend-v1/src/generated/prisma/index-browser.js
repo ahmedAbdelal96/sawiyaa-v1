@@ -258,6 +258,31 @@ exports.Prisma.UserRoleScalarFieldEnum = {
   createdAt: 'createdAt'
 };
 
+exports.Prisma.PermissionScalarFieldEnum = {
+  id: 'id',
+  key: 'key',
+  description: 'description',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.RolePermissionScalarFieldEnum = {
+  id: 'id',
+  role: 'role',
+  permissionId: 'permissionId',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.UserPermissionOverrideScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  permissionId: 'permissionId',
+  effect: 'effect',
+  reason: 'reason',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
 exports.Prisma.UserSessionScalarFieldEnum = {
   id: 'id',
   userId: 'userId',
@@ -2083,6 +2108,23 @@ exports.Prisma.AcademyEnrollmentActivityLogScalarFieldEnum = {
   createdAt: 'createdAt'
 };
 
+exports.Prisma.SecurityAuditLogScalarFieldEnum = {
+  id: 'id',
+  action: 'action',
+  outcome: 'outcome',
+  actorUserId: 'actorUserId',
+  actorRolesJson: 'actorRolesJson',
+  resourceType: 'resourceType',
+  resourceId: 'resourceId',
+  targetUserId: 'targetUserId',
+  ipAddress: 'ipAddress',
+  userAgent: 'userAgent',
+  correlationId: 'correlationId',
+  reason: 'reason',
+  metadataJson: 'metadataJson',
+  occurredAt: 'occurredAt'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -2142,9 +2184,18 @@ exports.UserRoleType = exports.$Enums.UserRoleType = {
   PATIENT: 'PATIENT',
   PRACTITIONER: 'PRACTITIONER',
   ADMIN: 'ADMIN',
+  FINANCE_STAFF: 'FINANCE_STAFF',
+  MARKETING_STAFF: 'MARKETING_STAFF',
+  PRACTITIONER_REVIEWER: 'PRACTITIONER_REVIEWER',
+  PATIENT_OPERATIONS: 'PATIENT_OPERATIONS',
   SUPPORT: 'SUPPORT',
   CONTENT_REVIEWER: 'CONTENT_REVIEWER',
   SUPER_ADMIN: 'SUPER_ADMIN'
+};
+
+exports.PermissionOverrideEffect = exports.$Enums.PermissionOverrideEffect = {
+  ALLOW: 'ALLOW',
+  DENY: 'DENY'
 };
 
 exports.OtpPurpose = exports.$Enums.OtpPurpose = {
@@ -3072,6 +3123,12 @@ exports.AcademyEnrollmentStatus = exports.$Enums.AcademyEnrollmentStatus = {
   REFUNDED: 'REFUNDED'
 };
 
+exports.SecurityAuditOutcome = exports.$Enums.SecurityAuditOutcome = {
+  SUCCESS: 'SUCCESS',
+  FAILURE: 'FAILURE',
+  DENIED: 'DENIED'
+};
+
 exports.Prisma.ModelName = {
   PackagePlan: 'PackagePlan',
   RefundPolicy: 'RefundPolicy',
@@ -3083,6 +3140,9 @@ exports.Prisma.ModelName = {
   UserPhone: 'UserPhone',
   AuthIdentity: 'AuthIdentity',
   UserRole: 'UserRole',
+  Permission: 'Permission',
+  RolePermission: 'RolePermission',
+  UserPermissionOverride: 'UserPermissionOverride',
   UserSession: 'UserSession',
   OtpChallenge: 'OtpChallenge',
   TwoFactorSetting: 'TwoFactorSetting',
@@ -3200,7 +3260,8 @@ exports.Prisma.ModelName = {
   AcademyLearner: 'AcademyLearner',
   AcademyEnrollment: 'AcademyEnrollment',
   AcademyPaymentAttempt: 'AcademyPaymentAttempt',
-  AcademyEnrollmentActivityLog: 'AcademyEnrollmentActivityLog'
+  AcademyEnrollmentActivityLog: 'AcademyEnrollmentActivityLog',
+  SecurityAuditLog: 'SecurityAuditLog'
 };
 
 /**

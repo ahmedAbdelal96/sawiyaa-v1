@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { PaymentRegionalPricingMode } from '@common/payments/payment-region.resolver';
 import {
   PatientPackagePurchaseViewModel,
   PackagePurchaseSessionSummaryViewModel,
@@ -14,6 +15,11 @@ type PurchaseRecord = {
   sessionDurationMinutesSnapshot: number;
   sessionModeSnapshot: PackagePurchaseSessionSummaryViewModel['sessionMode'];
   selectedCurrencyCode: string;
+  patient?: {
+    country?: {
+      isoCode?: string | null;
+    } | null;
+  } | null;
   selectedBaseSessionPriceSnapshot: { toString(): string } | string | null;
   undiscountedTotalSnapshot: { toString(): string } | string | null;
   discountAmountSnapshot: { toString(): string } | string | null;
@@ -57,6 +63,8 @@ export class PackagePurchasePresenter {
       durationMinutes: input.purchase.sessionDurationMinutesSnapshot,
       sessionMode: input.purchase.sessionModeSnapshot,
       selectedCurrencyCode: input.purchase.selectedCurrencyCode,
+      regionalPricingMode: this.resolveRegionalPricingMode(input.purchase.patient),
+      resolvedCountryIsoCode: input.purchase.patient?.country?.isoCode ?? null,
       selectedBaseSessionPrice:
         input.purchase.selectedBaseSessionPriceSnapshot === null ||
         input.purchase.selectedBaseSessionPriceSnapshot === undefined
@@ -86,6 +94,15 @@ export class PackagePurchasePresenter {
       createdAt: input.purchase.createdAt.toISOString(),
       updatedAt: input.purchase.updatedAt.toISOString(),
     };
+  }
+
+  private resolveRegionalPricingMode(
+    patient: PurchaseRecord['patient'],
+  ): PaymentRegionalPricingMode {
+    const countryIsoCode = patient?.country?.isoCode?.trim().toUpperCase() ?? null;
+    return countryIsoCode === 'EG' || countryIsoCode === 'EGY'
+      ? 'EGYPT_LOCAL'
+      : 'INTERNATIONAL';
   }
 
   private toSessionViewModel(

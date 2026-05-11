@@ -22,10 +22,13 @@ import {
 } from '@nestjs/swagger';
 import { RequireAccountStates } from '@common/decorators/account-state.decorator';
 import { CurrentUser } from '@common/decorators/current-user.decorator';
+import { Permissions } from '@common/decorators/permissions.decorator';
 import { Roles } from '@common/decorators/roles.decorator';
 import { AccountStateRequirement } from '@common/enums/account-state-requirement.enum';
 import { AppRole } from '@common/enums/app-role.enum';
+import { PermissionKey } from '@common/enums/permission-key.enum';
 import { JwtAccessAuthGuard } from '@common/guards/authentication/jwt-access-auth.guard';
+import { PermissionsGuard } from '@common/guards/authorization/permissions.guard';
 import { RolesGuard } from '@common/guards/authorization/roles.guard';
 import { AuthenticatedUser } from '@common/interfaces/authenticated-user.interface';
 import { AdminPaymentOpsSuccessResponseDto } from '../dto/payment-response.dto';
@@ -41,9 +44,9 @@ import { RetryPaymentRefundUseCase } from '../use-cases/retry-payment-refund.use
 
 @ApiTags('Admin - Payment Refunds')
 @ApiBearerAuth()
-@UseGuards(JwtAccessAuthGuard, RolesGuard)
+@UseGuards(JwtAccessAuthGuard, RolesGuard, PermissionsGuard)
 @RequireAccountStates(AccountStateRequirement.ACTIVE_ACCOUNT)
-@Roles(AppRole.ADMIN, AppRole.SUPPORT_AGENT)
+@Roles(AppRole.ADMIN, AppRole.FINANCE_STAFF, AppRole.SUPPORT_AGENT)
 @Controller('admin/payments')
 export class AdminPaymentRefundsController {
   constructor(
@@ -54,6 +57,7 @@ export class AdminPaymentRefundsController {
   ) {}
 
   @Get(':id')
+  @Permissions(PermissionKey.FINANCE_EVENTS_READ)
   @ApiOperation({
     summary: 'Get payment operational details',
     description:
@@ -71,6 +75,7 @@ export class AdminPaymentRefundsController {
   }
 
   @Get(':id/refunds')
+  @Permissions(PermissionKey.FINANCE_EVENTS_READ)
   @ApiOperation({
     summary: 'List payment refunds',
     description: 'Returns all refund records for a specific payment id.',
@@ -87,6 +92,7 @@ export class AdminPaymentRefundsController {
   }
 
   @Post(':id/refunds')
+  @Permissions(PermissionKey.REFUNDS_APPROVE)
   @ApiOperation({
     summary: 'Request a payment refund',
     description:
@@ -122,6 +128,7 @@ export class AdminPaymentRefundsController {
   }
 
   @Post(':paymentId/refunds/:refundId/retry')
+  @Permissions(PermissionKey.REFUNDS_RETRY)
   @ApiOperation({
     summary: 'Retry a failed refund',
     description:

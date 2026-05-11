@@ -4,6 +4,7 @@ import { JwtAccessAuthGuard } from '@common/guards/authentication/jwt-access-aut
 import { RolesGuard } from '@common/guards/authorization/roles.guard';
 import { PractitionerOtpVerifiedGuard } from '@common/guards/practitioner/practitioner-otp-verified.guard';
 import { ConfigModule } from '@modules/config/config.module';
+import { PatientsModule } from '@modules/patients/patients.module';
 import { PublicPractitionerController } from './controllers/public-practitioner.controller';
 import { PractitionerProfileController } from './controllers/practitioner-profile.controller';
 import { PublicPractitionerMapper } from './mappers/public-practitioner.mapper';
@@ -47,7 +48,7 @@ import { UploadPractitionerCredentialMetadataUseCase } from './use-cases/upload-
  * It does not include auth flows, admin review workflows, or session/payment concerns.
  */
 @Module({
-  imports: [ConfigModule],
+  imports: [ConfigModule, PatientsModule],
   controllers: [PractitionerProfileController, PublicPractitionerController],
   providers: [
     JwtAccessAuthGuard,

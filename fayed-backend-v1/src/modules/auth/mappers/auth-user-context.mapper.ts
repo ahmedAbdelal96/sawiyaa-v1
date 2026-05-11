@@ -8,7 +8,10 @@ import {
   UserStatus,
 } from '@prisma/client';
 import { AuthenticatedUserContext } from '../types/auth-user-context.types';
-import { mapUserRoleTypeToAppRole } from '../utils/auth-role.util';
+import {
+  mapUserRoleTypeToAppRole,
+  normalizeAppRoles,
+} from '../utils/auth-role.util';
 
 type UserWithAuthContext = {
   id: string;
@@ -38,7 +41,9 @@ export class AuthUserContextMapper {
       id: user.id,
       displayName: user.displayName,
       status: user.status,
-      roles: user.roles.map((role) => mapUserRoleTypeToAppRole(role.role)),
+      roles: normalizeAppRoles(
+        user.roles.map((role) => mapUserRoleTypeToAppRole(role.role)),
+      ),
       primaryEmail: primaryEmail?.email ?? null,
       isEmailVerified: primaryEmail?.isVerified ?? false,
       primaryPhone: primaryPhone?.phone ?? null,
@@ -54,7 +59,9 @@ export class AuthUserContextMapper {
     authMethod: 'access' | 'refresh',
   ): AuthenticatedUser {
     const response = this.toResponse(user);
-    const roles = user.roles.map((role) => mapUserRoleTypeToAppRole(role.role));
+    const roles = normalizeAppRoles(
+      user.roles.map((role) => mapUserRoleTypeToAppRole(role.role)),
+    );
 
     return {
       id: response.id,

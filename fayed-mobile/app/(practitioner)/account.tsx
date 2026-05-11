@@ -8,6 +8,7 @@ import {
   View,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import {
   Button,
@@ -16,6 +17,7 @@ import {
   Header,
   Input,
   LoadingState,
+  ListRow,
   Screen,
   StatusBadge,
   Text,
@@ -38,6 +40,7 @@ import {
   profileTone,
   readinessTone,
 } from "../../src/features/practitioner/profile/utils";
+import { useGeneralChatUnreadSummary } from "../../src/features/messages/hooks";
 
 type FormState = {
   displayName: string;
@@ -77,6 +80,7 @@ function formatStatusLabel(value: string | null | undefined) {
 }
 
 export default function PractitionerAccountScreen() {
+  const router = useRouter();
   const { t, i18n } = useTranslation();
   const { theme } = useTheme();
   const { user, signOut } = useAuth();
@@ -85,6 +89,7 @@ export default function PractitionerAccountScreen() {
   const readinessQuery = usePractitionerReadiness();
   const applicationQuery = usePractitionerApplicationStatus();
   const updateProfile = useUpdatePractitionerProfile();
+  const messagesSummaryQuery = useGeneralChatUnreadSummary("practitioner");
 
   const profile = profileQuery.data?.profile ?? null;
   const readiness = readinessQuery.data?.readiness ?? null;
@@ -219,6 +224,8 @@ export default function PractitionerAccountScreen() {
     ? t("practitioner.account.readiness.ready")
     : t("practitioner.account.readiness.notReady");
   const missingRequirementsCount = readiness?.missingRequirements.length ?? 0;
+  const unreadMessagesCount =
+    messagesSummaryQuery.data?.item.totalUnreadMessages ?? 0;
   const nextStepLabel = readiness?.canSubmitApplication
     ? t("practitioner.account.nextStepReady")
     : missingRequirementsCount > 0
@@ -276,6 +283,48 @@ export default function PractitionerAccountScreen() {
             <SummaryRow label={t("practitioner.account.summary.nextStep")} value={nextStepLabel} />
             <SummaryRow label={t("practitioner.account.summary.payout")} value={currentPayout} />
             <SummaryRow label={t("practitioner.account.summary.account")} value={accountStatusLabel} />
+          </View>
+        </Card>
+
+        <Card
+          variant="elevated"
+          padding="none"
+          style={[
+            styles.sectionCard,
+            { borderWidth: 1, borderColor: theme.colors.borderLight },
+          ]}
+        >
+          <View style={styles.rowPad}>
+            <ListRow
+              title={t("practitioner.account.messages.title", "Messages")}
+              subtitle={t(
+                "practitioner.account.messages.subtitle",
+                "Open conversations with patients and sessions",
+              )}
+              leftElement={
+                <Ionicons
+                  name="chatbubbles-outline"
+                  size={22}
+                  color={theme.colors.primary}
+                />
+              }
+              rightElement={
+                unreadMessagesCount > 0 ? (
+                  <View
+                    style={[
+                      styles.inlineBadge,
+                      { backgroundColor: theme.colors.primaryLight },
+                    ]}
+                  >
+                    <Text color={theme.colors.primary} weight="600">
+                      {unreadMessagesCount > 99 ? "99+" : String(unreadMessagesCount)}
+                    </Text>
+                  </View>
+                ) : undefined
+              }
+              onPress={() => router.push("/(practitioner)/messages" as any)}
+              showChevron
+            />
           </View>
         </Card>
 
@@ -688,6 +737,9 @@ const styles = StyleSheet.create({
   heroCard: {
     gap: 14,
   },
+  sectionCard: {
+    gap: 2,
+  },
   heroTopRow: {
     flexDirection: "row",
     alignItems: "flex-start",
@@ -736,6 +788,16 @@ const styles = StyleSheet.create({
   heroSummary: {
     gap: 10,
     marginTop: 2,
+  },
+  rowPad: {
+    paddingHorizontal: 16,
+  },
+  inlineBadge: {
+    minWidth: 28,
+    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    alignItems: "center",
   },
   summaryRow: {
     gap: 4,

@@ -1,7 +1,6 @@
 import {
   BadRequestException,
   ConflictException,
-  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -10,6 +9,7 @@ import { PrismaService } from '@common/prisma/prisma.service';
 import { SessionPatientRepository } from '../repositories/session-patient.repository';
 import { SessionPractitionerRepository } from '../repositories/session-practitioner.repository';
 import { SessionRepository } from '../repositories/session.repository';
+import { SessionAccessPolicy } from '../policies/session-access.policy';
 import { SessionVideoProviderRegistryService } from '../services/session-video-provider-registry.service';
 import { SessionVideoProviderResolverService } from '../services/session-video-provider-resolver.service';
 import { ResolveSessionJoinReadinessService } from '../services/resolve-session-join-readiness.service';
@@ -24,6 +24,7 @@ export class PrepareSessionRuntimeUseCase {
     private readonly sessionVideoProviderRegistryService: SessionVideoProviderRegistryService,
     private readonly sessionVideoProviderResolverService: SessionVideoProviderResolverService,
     private readonly resolveSessionJoinReadinessService: ResolveSessionJoinReadinessService,
+    private readonly sessionAccessPolicy: SessionAccessPolicy,
   ) {}
 
   async execute(input: {
@@ -191,9 +192,9 @@ export class PrepareSessionRuntimeUseCase {
       }
 
       if (input.session.patient.id !== patient.id) {
-        throw new ForbiddenException({
-          messageKey: 'sessions.errors.sessionAccessDenied',
-          error: 'SESSION_ACCESS_DENIED',
+        this.sessionAccessPolicy.assertPatientOwner({
+          sessionPatientId: input.session.patient.id,
+          requesterPatientId: patient.id,
         });
       }
       return;
@@ -210,9 +211,9 @@ export class PrepareSessionRuntimeUseCase {
     }
 
     if (input.session.practitioner.id !== practitioner.id) {
-      throw new ForbiddenException({
-        messageKey: 'sessions.errors.sessionAccessDenied',
-        error: 'SESSION_ACCESS_DENIED',
+      this.sessionAccessPolicy.assertPractitionerOwner({
+        sessionPractitionerId: input.session.practitioner.id,
+        requesterPractitionerId: practitioner.id,
       });
     }
   }

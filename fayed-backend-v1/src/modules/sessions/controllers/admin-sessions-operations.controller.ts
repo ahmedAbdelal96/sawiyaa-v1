@@ -22,10 +22,13 @@ import {
 } from '@nestjs/swagger';
 import { SessionCancellationBookingType } from '@prisma/client';
 import { RequireAccountStates } from '@common/decorators/account-state.decorator';
+import { Permissions } from '@common/decorators/permissions.decorator';
 import { Roles } from '@common/decorators/roles.decorator';
 import { AccountStateRequirement } from '@common/enums/account-state-requirement.enum';
 import { AppRole } from '@common/enums/app-role.enum';
+import { PermissionKey } from '@common/enums/permission-key.enum';
 import { JwtAccessAuthGuard } from '@common/guards/authentication/jwt-access-auth.guard';
+import { PermissionsGuard } from '@common/guards/authorization/permissions.guard';
 import { RolesGuard } from '@common/guards/authorization/roles.guard';
 import { AdminSessionAttendanceSuccessResponseDto } from '../dto/admin-session-attendance-response.dto';
 import { AdminSessionsListSuccessResponseDto } from '../dto/admin-sessions-list-response.dto';
@@ -44,10 +47,17 @@ import { UpdateSessionCancellationPolicyUseCase } from '../use-cases/update-sess
 
 @ApiTags('Sessions')
 @ApiBearerAuth()
-@UseGuards(JwtAccessAuthGuard, RolesGuard)
+@UseGuards(JwtAccessAuthGuard, RolesGuard, PermissionsGuard)
 @RequireAccountStates(AccountStateRequirement.ACTIVE_ACCOUNT)
 @Roles(AppRole.ADMIN, AppRole.SUPPORT_AGENT)
 @Controller('admin/sessions')
+// TODO(Phase-4): SUPPORT_AGENT has `sessions.read.supportSummary` permission.
+// When a dedicated support-safe session summary endpoint is added it should:
+// - Require PermissionKey.SESSIONS_READ_SUPPORT_SUMMARY (NOT sessions.read.admin)
+// - Exclude: internal notes, clinical details, financial ledger, chat history, assessment results
+// - Include only: sessionCode, status, scheduling, and basic patient/practitioner identifiers
+// Until that endpoint exists, SUPPORT_AGENT cannot access any session detail via this controller
+// because all GET endpoints here require sessions.read.admin (which SUPPORT_AGENT does not have).
 export class AdminSessionsOperationsController {
   constructor(
     private readonly getAdminSessionsUseCase: GetAdminSessionsUseCase,
@@ -58,6 +68,7 @@ export class AdminSessionsOperationsController {
   ) {}
 
   @Get()
+  @Permissions(PermissionKey.SESSIONS_READ_ADMIN)
   @ApiOperation({
     summary: 'List sessions for admin/support operations',
     description:
@@ -76,6 +87,7 @@ export class AdminSessionsOperationsController {
   }
 
   @Get(':id/runtime-inspection')
+  @Permissions(PermissionKey.SESSIONS_READ_ADMIN)
   @ApiOperation({
     summary: 'Inspect session runtime readiness for operations',
     description:
@@ -95,6 +107,7 @@ export class AdminSessionsOperationsController {
   }
 
   @Get(':id/attendance')
+  @Permissions(PermissionKey.SESSIONS_READ_ADMIN)
   @ApiOperation({
     summary: 'Read session attendance telemetry timeline',
     description:
@@ -111,6 +124,7 @@ export class AdminSessionsOperationsController {
   }
 
   @Get('cancellation-policies')
+  @Permissions(PermissionKey.SESSIONS_READ_ADMIN)
   @ApiOperation({
     summary: 'List active session cancellation policies',
     description:

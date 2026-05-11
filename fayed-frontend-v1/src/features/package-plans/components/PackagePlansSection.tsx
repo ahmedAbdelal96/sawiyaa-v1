@@ -8,6 +8,7 @@ import Button from "@/components/ui/button/Button";
 import { Link } from "@/i18n/navigation";
 import { Skeleton } from "@/components/shared/LoadingStates";
 import { useAuthStore } from "@/stores/auth-store";
+import { resolvePatientCurrencyCode } from "@/features/payments/lib/patient-currency";
 import type { PractitionerProfile } from "@/features/practitioner-profile/types/profile";
 import { usePublicPractitionerPackagePlans } from "../hooks/use-package-plans";
 import {
@@ -31,8 +32,19 @@ type Props = {
 export default function PackagePlansSection({ slug, profile }: Props) {
   const t = useTranslations("practitioner-profile.packages");
   const locale = useLocale();
-  const { user } = useAuthStore();
+  const { user, isInitialized } = useAuthStore();
   const isPatient = user?.role === "PATIENT";
+  const authScopeKey = useMemo(() => {
+    if (!isInitialized) {
+      return "bootstrapping";
+    }
+
+    if (!user) {
+      return "guest";
+    }
+
+    return `auth:${user.id}:${user.role}`;
+  }, [isInitialized, user]);
 
   const pricing = useMemo(() => resolvePricingMatrix(profile), [profile]);
   const availableDurations = useMemo(
@@ -77,6 +89,7 @@ export default function PackagePlansSection({ slug, profile }: Props) {
     },
     {
       enabled: hasAvailablePricing,
+      cacheScopeKey: authScopeKey,
     },
   );
 
@@ -224,7 +237,12 @@ export default function PackagePlansSection({ slug, profile }: Props) {
       ) : (
         <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {plans.map(({ item, quote }) => {
-            const quoteCurrency = quote.selectedCurrencyCode as CurrencyCode;
+            const quoteCurrency =
+              resolvePatientCurrencyCode({
+                currencyCode: quote.selectedCurrencyCode,
+                regionalPricingMode: quote.regionalPricingMode,
+                resolvedCountryIsoCode: quote.resolvedCountryIsoCode,
+              }) ?? (quote.selectedCurrencyCode as CurrencyCode);
             const savings = formatMoney(locale, quoteCurrency, quote.discountAmount);
             const payable = formatMoney(locale, quoteCurrency, quote.patientPayableTotal);
             const regularTotal = formatMoney(locale, quoteCurrency, quote.undiscountedTotal);

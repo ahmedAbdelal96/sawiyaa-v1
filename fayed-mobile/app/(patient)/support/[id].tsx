@@ -63,6 +63,11 @@ export default function SupportTicketDetailScreen() {
   const { user } = useAuth();
   const isRtl = i18n.language?.startsWith("ar") ?? false;
   const { id } = useLocalSearchParams<{ id: string }>();
+  const { returnTo } = useLocalSearchParams<{ returnTo?: string }>();
+  const returnToRoute =
+    typeof returnTo === "string" && returnTo.trim().length > 0
+      ? returnTo
+      : null;
 
   const ticketQuery = usePatientSupportTicket(id ?? null);
   const addMessage = useAddSupportMessage(id ?? "");
@@ -154,7 +159,18 @@ export default function SupportTicketDetailScreen() {
   if (ticketQuery.isLoading) {
     return (
       <Screen bg="background">
-        <Header showBack onBack={() => router.back()} />
+        <Header
+          showBack
+          onBack={
+            returnToRoute
+              ? () =>
+                  router.replace({
+                    pathname: "/(patient)/support",
+                    params: { returnTo: returnToRoute },
+                  } as any)
+              : undefined
+          }
+        />
         <LoadingState fullScreen />
       </Screen>
     );
@@ -163,7 +179,18 @@ export default function SupportTicketDetailScreen() {
   if (ticketQuery.isError || !ticket) {
     return (
       <Screen bg="background">
-        <Header showBack onBack={() => router.back()} />
+        <Header
+          showBack
+          onBack={
+            returnToRoute
+              ? () =>
+                  router.replace({
+                    pathname: "/(patient)/support",
+                    params: { returnTo: returnToRoute },
+                  } as any)
+              : undefined
+          }
+        />
         <ErrorState fullScreen onRetry={ticketQuery.refetch} />
       </Screen>
     );
@@ -174,7 +201,15 @@ export default function SupportTicketDetailScreen() {
       <Header
         title={t("support.detail.title")}
         showBack
-        onBack={() => router.back()}
+        onBack={
+          returnToRoute
+            ? () =>
+                router.replace({
+                  pathname: "/(patient)/support",
+                  params: { returnTo: returnToRoute },
+                } as any)
+            : undefined
+        }
       />
 
       <KeyboardAvoidingView
@@ -272,6 +307,7 @@ export default function SupportTicketDetailScreen() {
                 placeholder={t("support.detail.replyPlaceholder")}
                 multiline
                 style={styles.replyInput}
+                containerStyle={styles.replyInputContainer}
                 maxLength={4000}
               />
               <TouchableOpacity
@@ -284,12 +320,10 @@ export default function SupportTicketDetailScreen() {
                     styles.sendBtnDisabled,
                 ]}
                 activeOpacity={0.8}
+                accessibilityRole="button"
+                accessibilityLabel={t("support.detail.sendMessage")}
               >
-                <Ionicons
-                  name={isRtl ? "arrow-back" : "arrow-forward"}
-                  size={20}
-                  color="#fff"
-                />
+                <Ionicons name="send" size={18} color="#fff" />
               </TouchableOpacity>
             </View>
           </View>
@@ -393,7 +427,7 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     paddingHorizontal: 12,
     paddingTop: 8,
-    paddingBottom: 12,
+    paddingBottom: 10,
   },
   sendError: {
     fontSize: 12,
@@ -404,19 +438,26 @@ const styles = StyleSheet.create({
     alignItems: "flex-end",
     gap: 8,
   },
-  replyInput: {
+  replyInputContainer: {
     flex: 1,
+    marginBottom: 0,
+    minWidth: 0,
+  },
+  replyInput: {
     minHeight: 44,
     maxHeight: 120,
   },
   sendBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 48,
+    height: 48,
+    borderRadius: 16,
     alignItems: "center",
     justifyContent: "center",
+    flexShrink: 0,
   },
   sendBtnDisabled: {
     opacity: 0.5,
   },
 });
+
+

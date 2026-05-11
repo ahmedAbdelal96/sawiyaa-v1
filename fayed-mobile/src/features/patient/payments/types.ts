@@ -38,6 +38,8 @@ export interface PaymentItem {
   /** Portion paid via payment gateway */
   amountFromGateway: string;
   currency: string;
+  regionalPricingMode: "EGYPT_LOCAL" | "INTERNATIONAL" | null;
+  resolvedCountryIsoCode: string | null;
   providerPaymentId: string | null;
   providerReference: string | null;
   providerMethod: string | null;
@@ -67,6 +69,7 @@ export interface PaymentsListData {
 export interface InitiateSessionPaymentInput {
   couponCode?: string;
   useWalletBalance?: boolean;
+  acceptedRefundPolicyId: string;
   paymobMethod?: PaymobCheckoutMethod;
   returnUrl?: string;
 }
@@ -185,6 +188,9 @@ export interface FinancialBreakdownCoupon {
 export interface SessionFinancialBreakdown {
   sessionId: string;
   currency: string;
+  regionalPricingMode: "EGYPT_LOCAL" | "INTERNATIONAL";
+  paymentProvider: PaymentProvider;
+  resolvedCountryIsoCode: string | null;
   grossAmount: string;
   discountAmount: string;
   netPaidAmount: string;

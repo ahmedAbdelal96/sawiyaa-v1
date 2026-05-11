@@ -16,7 +16,7 @@ export default function MatchingIntroScreen() {
 
   return (
     <Screen bg="background" style={styles.screen}>
-      <Header showBack onBack={() => router.back()} />
+      <Header showBack  />
       <View style={styles.container}>
         <View style={styles.content}>
           <View
@@ -133,3 +133,4 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
 });
+

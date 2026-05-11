@@ -138,6 +138,7 @@ export class PublicPractitionerReadRepository {
     specialtySlug?: string;
     language?: string;
     country?: string;
+    currencyCode?: 'EGP' | 'USD' | null;
     practitionerKind?: PublicPractitionerKind;
     gender?: PublicPractitionerGender;
     duration?: PublicPractitionerSessionDuration;
@@ -178,23 +179,35 @@ export class PublicPractitionerReadRepository {
       ...(minSessionFee !== undefined ? { gte: minSessionFee } : {}),
       ...(maxSessionFee !== undefined ? { lte: maxSessionFee } : {}),
     });
-    const buildFeeFilter = (field: 'sessionPrice30' | 'sessionPrice60') => ({
-      [field]: sessionFeeCondition(),
-    });
+    const buildCurrencyAwareFeeFilter = (
+      field: 'sessionPrice30' | 'sessionPrice60',
+    ): Prisma.PractitionerProfileWhereInput => {
+      if (input.currencyCode === 'EGP') {
+        return field === 'sessionPrice30'
+          ? { sessionPrice30Egp: sessionFeeCondition() }
+          : { sessionPrice60Egp: sessionFeeCondition() };
+      }
+
+      if (input.currencyCode === 'USD') {
+        return field === 'sessionPrice30'
+          ? { sessionPrice30Usd: sessionFeeCondition() }
+          : { sessionPrice60Usd: sessionFeeCondition() };
+      }
+
+      return field === 'sessionPrice30'
+        ? { sessionPrice30: sessionFeeCondition() }
+        : { sessionPrice60: sessionFeeCondition() };
+    };
     const durationFeeWhere =
       input.duration === PublicPractitionerSessionDuration.THIRTY
-        ? {
-            sessionPrice30: sessionFeeCondition(),
-          }
+        ? buildCurrencyAwareFeeFilter('sessionPrice30')
         : input.duration === PublicPractitionerSessionDuration.SIXTY
-          ? {
-              sessionPrice60: sessionFeeCondition(),
-            }
+          ? buildCurrencyAwareFeeFilter('sessionPrice60')
           : hasFeeRange
             ? {
                 OR: [
-                  buildFeeFilter('sessionPrice30'),
-                  buildFeeFilter('sessionPrice60'),
+                  buildCurrencyAwareFeeFilter('sessionPrice30'),
+                  buildCurrencyAwareFeeFilter('sessionPrice60'),
                 ],
               }
             : undefined;
@@ -436,6 +449,7 @@ export class PublicPractitionerReadRepository {
     specialtySlug?: string;
     language?: string;
     country?: string;
+    currencyCode?: 'EGP' | 'USD' | null;
     practitionerKind?: PublicPractitionerKind;
     gender?: PublicPractitionerGender;
     duration?: PublicPractitionerSessionDuration;

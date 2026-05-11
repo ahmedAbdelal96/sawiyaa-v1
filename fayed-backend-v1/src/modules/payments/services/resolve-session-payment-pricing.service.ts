@@ -25,6 +25,7 @@ export class ResolveSessionPaymentPricingService {
         sessionPrice60: { toString(): string } | null;
         countryId: string | null;
         country: {
+          isoCode?: string | null;
           currencyCode: string | null;
         } | null;
         specialties: Array<{
@@ -35,6 +36,9 @@ export class ResolveSessionPaymentPricingService {
       patient: {
         id: string;
         countryId: string | null;
+        country: {
+          isoCode?: string | null;
+        } | null;
       };
     };
     couponCode?: string | null;

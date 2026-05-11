@@ -1,4 +1,9 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { useAuthenticatedQueryEnabled } from "../../auth/query-auth";
 import {
   getPractitionerSession,
@@ -14,6 +19,8 @@ export const practitionerSessionQueryKeys = {
   all: ["practitioner-sessions"] as const,
   list: (params?: ListSessionsQuery) =>
     [...practitionerSessionQueryKeys.all, "list", params ?? {}] as const,
+  infiniteList: (params?: Omit<ListSessionsQuery, "page">) =>
+    [...practitionerSessionQueryKeys.all, "infinite-list", params ?? {}] as const,
   detail: (sessionId: string) =>
     [...practitionerSessionQueryKeys.all, "detail", sessionId] as const,
 };
@@ -24,6 +31,32 @@ export function usePractitionerSessions(params?: ListSessionsQuery) {
   return useQuery({
     queryKey: practitionerSessionQueryKeys.list(params),
     queryFn: () => getPractitionerSessions(params),
+    enabled,
+    staleTime: 30_000,
+  });
+}
+
+export function useInfinitePractitionerSessions(
+  params?: Omit<ListSessionsQuery, "page">,
+) {
+  const enabled = useAuthenticatedQueryEnabled("practitioner");
+
+  return useInfiniteQuery({
+    queryKey: practitionerSessionQueryKeys.infiniteList(params),
+    initialPageParam: 1,
+    queryFn: ({ pageParam }) =>
+      getPractitionerSessions({
+        ...params,
+        page: Number(pageParam) || 1,
+      }),
+    getNextPageParam: (lastPage) => {
+      const { page, totalPages } = lastPage.pagination;
+      if (page >= totalPages) {
+        return undefined;
+      }
+
+      return page + 1;
+    },
     enabled,
     staleTime: 30_000,
   });

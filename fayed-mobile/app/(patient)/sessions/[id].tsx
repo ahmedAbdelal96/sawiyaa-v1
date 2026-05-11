@@ -29,6 +29,7 @@ import {
 import { extractApiErrorMessage } from "../../../src/lib/api";
 import { normalizeAllowedExternalUrl } from "../../../src/lib/external-url";
 import { trackAnalyticsEvent } from "../../../src/lib/analytics";
+import { openSessionGeneralChat } from "../../../src/features/messages/api";
 
 export default function SessionDetailScreen() {
   const router = useRouter();
@@ -41,6 +42,8 @@ export default function SessionDetailScreen() {
   const sessionQuery = usePatientSession(params.id ?? null);
   const joinMutation = useResolvePatientSessionJoinContract();
   const [joinError, setJoinError] = useState<string | null>(null);
+  const [messagesError, setMessagesError] = useState<string | null>(null);
+  const [isOpeningMessages, setIsOpeningMessages] = useState(false);
 
   const canAttemptJoin = useMemo(() => {
     const status = sessionQuery.data?.status;
@@ -50,7 +53,7 @@ export default function SessionDetailScreen() {
   if (sessionQuery.isLoading) {
     return (
       <Screen bg="background">
-        <Header showBack onBack={() => router.back()} />
+        <Header showBack  />
         <LoadingState fullScreen />
       </Screen>
     );
@@ -59,7 +62,7 @@ export default function SessionDetailScreen() {
   if (sessionQuery.isError || !sessionQuery.data) {
     return (
       <Screen bg="background">
-        <Header showBack onBack={() => router.back()} />
+        <Header showBack  />
         <ErrorState fullScreen onRetry={sessionQuery.refetch} />
       </Screen>
     );
@@ -111,18 +114,39 @@ export default function SessionDetailScreen() {
     }
   };
 
+  const handleOpenMessages = async () => {
+    if (!canOpenMessages) {
+      return;
+    }
+
+    setMessagesError(null);
+    setIsOpeningMessages(true);
+
+    try {
+      const payload = await openSessionGeneralChat(session.id);
+      router.push(`/(patient)/messages/${payload.item.conversationId}` as any);
+    } catch (error) {
+      setMessagesError(extractApiErrorMessage(error));
+    } finally {
+      setIsOpeningMessages(false);
+    }
+  };
+
   const statusText = formatStatusLabel(t, session.status);
   const needsPayment = session.status === "PENDING_PAYMENT";
   const cancellationEligible =
     session.status === "CONFIRMED" ||
     session.status === "UPCOMING" ||
     session.status === "PENDING_PRACTITIONER_RESPONSE";
+  const canOpenMessages =
+    session.status === "READY_TO_JOIN" ||
+    session.status === "IN_PROGRESS" ||
+    session.status === "COMPLETED";
 
   return (
     <Screen bg="background">
       <Header
         showBack
-        onBack={() => router.back()}
         title={t("patientSessionsFlow.detail.title")}
       />
 
@@ -258,6 +282,12 @@ export default function SessionDetailScreen() {
             <Text color="#ba1a1a">{joinError}</Text>
           </Card>
         ) : null}
+
+        {messagesError ? (
+          <Card variant="flat" padding="sm">
+            <Text color="#ba1a1a">{messagesError}</Text>
+          </Card>
+        ) : null}
       </ScrollView>
 
       <View
@@ -297,6 +327,18 @@ export default function SessionDetailScreen() {
           }
           variant="secondary"
           disabled={!cancellationEligible}
+          style={styles.secondaryAction}
+        />
+
+        <Button
+          title={
+            isOpeningMessages
+              ? t("patientSessionsFlow.detail.openingMessages", "Opening messages...")
+              : t("patientSessionsFlow.detail.messages", "Messages")
+          }
+          onPress={() => void handleOpenMessages()}
+          variant="secondary"
+          disabled={!canOpenMessages || isOpeningMessages}
           style={styles.secondaryAction}
         />
       </View>
@@ -404,3 +446,5 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
 });
+
+

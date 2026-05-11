@@ -13,7 +13,7 @@ export function cn(...inputs: ClassValue[]) {
  * Format currency in Arabic
  * تنسيق العملة بالعربي
  */
-export function formatCurrency(amount: number, currency = "SAR"): string {
+export function formatCurrency(amount: number, currency: string): string {
   return new Intl.NumberFormat("ar-SA", {
     style: "currency",
     currency: currency,

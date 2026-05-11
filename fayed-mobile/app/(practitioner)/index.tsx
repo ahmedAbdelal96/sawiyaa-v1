@@ -1,7 +1,7 @@
 import React, { useMemo } from "react";
 import { ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { usePathname, useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import {
   Card,
@@ -31,6 +31,7 @@ import { useTheme } from "../../src/providers/ThemeProvider";
 export default function PractitionerHomeScreen() {
   const { t, i18n } = useTranslation();
   const router = useRouter();
+  const pathname = usePathname();
   const { theme } = useTheme();
   const { signOut } = useAuth();
 
@@ -425,7 +426,14 @@ export default function PractitionerHomeScreen() {
             <QuickAccessCard
               icon="headset-outline"
               label={t("practitioner.support.quickAccess")}
-              onPress={() => router.push("/(practitioner)/support")}
+              onPress={() =>
+                router.push(
+                  {
+                    pathname: "/(practitioner)/support",
+                    params: { returnTo: pathname },
+                  } as any,
+                )
+              }
             />
             <QuickAccessCard
               icon="chatbubble-ellipses-outline"

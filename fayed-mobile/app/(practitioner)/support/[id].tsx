@@ -66,7 +66,14 @@ export default function PractitionerSupportDetailScreen() {
   const { theme } = useTheme();
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, returnTo } = useLocalSearchParams<{
+    id: string;
+    returnTo?: string;
+  }>();
+  const returnToRoute =
+    typeof returnTo === "string" && returnTo.trim().length > 0
+      ? returnTo
+      : null;
 
   const ticketQuery = usePractitionerSupportTicket(id ?? null);
   const addMessage = useAddPractitionerSupportMessage(id ?? "");
@@ -156,7 +163,18 @@ export default function PractitionerSupportDetailScreen() {
   if (ticketQuery.isLoading) {
     return (
       <Screen bg="background">
-        <Header showBack onBack={() => router.back()} />
+        <Header
+          showBack
+          onBack={
+            returnToRoute
+              ? () =>
+                  router.replace({
+                    pathname: "/(practitioner)/support",
+                    params: { returnTo: returnToRoute },
+                  } as never)
+              : undefined
+          }
+        />
         <LoadingState fullScreen />
       </Screen>
     );
@@ -165,7 +183,18 @@ export default function PractitionerSupportDetailScreen() {
   if (ticketQuery.isError || !ticket) {
     return (
       <Screen bg="background">
-        <Header showBack onBack={() => router.back()} />
+        <Header
+          showBack
+          onBack={
+            returnToRoute
+              ? () =>
+                  router.replace({
+                    pathname: "/(practitioner)/support",
+                    params: { returnTo: returnToRoute },
+                  } as never)
+              : undefined
+          }
+        />
         <ErrorState fullScreen onRetry={ticketQuery.refetch} />
       </Screen>
     );
@@ -184,7 +213,15 @@ export default function PractitionerSupportDetailScreen() {
       <Header
         title={t("practitioner.support.detail.title")}
         showBack
-        onBack={() => router.back()}
+        onBack={
+          returnToRoute
+            ? () =>
+                router.replace({
+                  pathname: "/(practitioner)/support",
+                  params: { returnTo: returnToRoute },
+                } as never)
+            : undefined
+        }
       />
 
       <KeyboardAvoidingView
@@ -291,6 +328,7 @@ export default function PractitionerSupportDetailScreen() {
                 placeholder={t("practitioner.support.detail.replyPlaceholder")}
                 multiline
                 style={styles.replyInput}
+                containerStyle={styles.replyInputContainer}
                 maxLength={4000}
               />
               <TouchableOpacity
@@ -303,8 +341,10 @@ export default function PractitionerSupportDetailScreen() {
                     styles.sendBtnDisabled,
                 ]}
                 activeOpacity={0.8}
+                accessibilityRole="button"
+                accessibilityLabel={t("support.detail.sendMessage")}
               >
-                <Ionicons name="arrow-forward" size={20} color="#fff" />
+                <Ionicons name="send" size={18} color="#fff" />
               </TouchableOpacity>
             </View>
             <Button
@@ -433,7 +473,7 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     paddingHorizontal: 16,
     paddingTop: 10,
-    paddingBottom: 12,
+    paddingBottom: 10,
     gap: 10,
   },
   sendError: {
@@ -444,17 +484,22 @@ const styles = StyleSheet.create({
     alignItems: "flex-end",
     gap: 10,
   },
-  replyInput: {
+  replyInputContainer: {
     flex: 1,
+    marginBottom: 0,
+    minWidth: 0,
+  },
+  replyInput: {
     minHeight: 46,
     maxHeight: 120,
   },
   sendBtn: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
+    width: 48,
+    height: 48,
+    borderRadius: 16,
     alignItems: "center",
     justifyContent: "center",
+    flexShrink: 0,
   },
   sendBtnDisabled: {
     opacity: 0.5,
@@ -466,4 +511,5 @@ const styles = StyleSheet.create({
     height: 10,
   },
 });
+
 

@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { PatientProfileRepository } from '@modules/patients/repositories/patient-profile.repository';
 import { AcademyPresenter } from '../presenters/academy.presenter';
 import { AcademyRepository } from '../repositories/academy.repository';
 
@@ -7,9 +8,14 @@ export class GetPublicAcademyCourseBySlugUseCase {
   constructor(
     private readonly academyRepository: AcademyRepository,
     private readonly academyPresenter: AcademyPresenter,
+    private readonly patientProfileRepository: PatientProfileRepository,
   ) {}
 
-  async execute(input: { slug: string }) {
+  async execute(input: { slug: string; currentUserId?: string | null }) {
+    const patientProfile = input.currentUserId
+      ? await this.patientProfileRepository.findByUserId(input.currentUserId)
+      : null;
+
     const course = await this.academyRepository.findPublicCourseBySlug(
       input.slug,
     );
@@ -21,7 +27,9 @@ export class GetPublicAcademyCourseBySlugUseCase {
     }
 
     return {
-      item: this.academyPresenter.presentPublicCourseDetails(course, null),
+      item: this.academyPresenter.presentPublicCourseDetails(course, null, {
+        resolvedCountryCode: patientProfile?.country?.isoCode ?? null,
+      }),
     };
   }
 }

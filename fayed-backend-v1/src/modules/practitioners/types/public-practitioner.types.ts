@@ -2,6 +2,8 @@
  * Public read-model types for practitioner listing/details responses.
  * These shapes intentionally exclude internal/admin/private fields.
  */
+import type { PaymentRegionalPricingMode } from '@common/payments/payment-region.resolver';
+
 export interface PublicPractitionerListItemViewModel {
   id: string;
   slug: string;
@@ -16,6 +18,9 @@ export interface PublicPractitionerListItemViewModel {
   }>;
   languages: string[];
   countryCode: string | null;
+  currencyCode: string;
+  regionalPricingMode: PaymentRegionalPricingMode;
+  resolvedCountryIsoCode: string | null;
   practitionerType: string;
   practitionerGender: string | null;
   pricing: {
@@ -28,6 +33,8 @@ export interface PublicPractitionerListItemViewModel {
   sessionPrice30Usd: number | null;
   sessionPrice60Egp: number | null;
   sessionPrice60Usd: number | null;
+  displaySessionPrice30: number | null;
+  displaySessionPrice60: number | null;
   isOnlineNow: boolean;
   acceptsCoupon: boolean;
   acceptsPackage: boolean;
@@ -54,6 +61,9 @@ export interface PublicPractitionerDetailsViewModel {
   }>;
   languages: string[];
   countryCode: string | null;
+  currencyCode: string;
+  regionalPricingMode: PaymentRegionalPricingMode;
+  resolvedCountryIsoCode: string | null;
   yearsExperience: number | null;
   pricing: {
     session30: { egp: number | null; usd: number | null };
@@ -65,6 +75,8 @@ export interface PublicPractitionerDetailsViewModel {
   sessionPrice30Usd: number | null;
   sessionPrice60Egp: number | null;
   sessionPrice60Usd: number | null;
+  displaySessionPrice30: number | null;
+  displaySessionPrice60: number | null;
   ratingSummary: {
     averageRating: number | null;
     totalReviews: number;

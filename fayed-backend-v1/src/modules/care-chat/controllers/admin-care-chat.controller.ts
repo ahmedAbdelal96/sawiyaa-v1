@@ -18,10 +18,13 @@ import {
 } from '@nestjs/swagger';
 import { RequireAccountStates } from '@common/decorators/account-state.decorator';
 import { CurrentUser } from '@common/decorators/current-user.decorator';
+import { Permissions } from '@common/decorators/permissions.decorator';
 import { Roles } from '@common/decorators/roles.decorator';
 import { AccountStateRequirement } from '@common/enums/account-state-requirement.enum';
 import { AppRole } from '@common/enums/app-role.enum';
+import { PermissionKey } from '@common/enums/permission-key.enum';
 import { JwtAccessAuthGuard } from '@common/guards/authentication/jwt-access-auth.guard';
+import { PermissionsGuard } from '@common/guards/authorization/permissions.guard';
 import { RolesGuard } from '@common/guards/authorization/roles.guard';
 import { AuthenticatedUser } from '@common/interfaces/authenticated-user.interface';
 import {
@@ -41,7 +44,7 @@ import { RevokeCareChatRequestUseCase } from '../use-cases/revoke-care-chat-requ
 
 @ApiTags('Care Chat')
 @ApiBearerAuth()
-@UseGuards(JwtAccessAuthGuard, RolesGuard)
+@UseGuards(JwtAccessAuthGuard, RolesGuard, PermissionsGuard)
 @RequireAccountStates(AccountStateRequirement.ACTIVE_ACCOUNT)
 @Roles(AppRole.ADMIN, AppRole.SUPPORT_AGENT)
 @Controller('admin/care-chat')
@@ -55,6 +58,7 @@ export class AdminCareChatController {
   ) {}
 
   @Get('requests')
+  @Permissions(PermissionKey.CARE_CHAT_REQUEST_READ_ADMIN)
   @ApiOperation({
     summary: 'List care chat approval requests for admin/support',
   })
@@ -76,6 +80,7 @@ export class AdminCareChatController {
   }
 
   @Get('requests/:id')
+  @Permissions(PermissionKey.CARE_CHAT_REQUEST_READ_ADMIN)
   @ApiOperation({ summary: 'Get one care chat approval request details' })
   @ApiResponse({
     status: 200,
@@ -88,6 +93,7 @@ export class AdminCareChatController {
   }
 
   @Patch('requests/:id/decision')
+  @Permissions(PermissionKey.CARE_CHAT_REQUEST_DECIDE)
   @ApiOperation({ summary: 'Approve or reject a care chat request' })
   @ApiBody({ type: DecideCareChatRequestDto })
   @ApiResponse({ status: 200, type: CareChatDecisionSuccessResponseDto })
@@ -106,6 +112,7 @@ export class AdminCareChatController {
   }
 
   @Patch('requests/:id/revoke')
+  @Permissions(PermissionKey.CARE_CHAT_REQUEST_DECIDE)
   @ApiOperation({ summary: 'Revoke previously approved care chat request' })
   @ApiBody({ type: RevokeCareChatRequestDto })
   @ApiResponse({
@@ -127,6 +134,7 @@ export class AdminCareChatController {
   }
 
   @Get('conversations/:id')
+  @Permissions(PermissionKey.CARE_CHAT_CONVERSATION_READ_ADMIN)
   @ApiOperation({
     summary: 'Get care chat conversation details for admin/support',
   })

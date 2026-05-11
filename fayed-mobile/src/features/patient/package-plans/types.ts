@@ -8,6 +8,9 @@ export type PackagePlanSessionQuote = {
   durationMinutes: number;
   sessionMode: SessionMode;
   selectedCurrencyCode: string;
+  regionalPricingMode: "EGYPT_LOCAL" | "INTERNATIONAL";
+  resolvedCountryIsoCode: string | null;
+  provider: "PAYMOB" | "STRIPE" | "INTERNAL_WALLET" | null;
   selectedBaseSessionPrice: string;
   undiscountedTotal: string;
   discountAmount: string;
@@ -110,6 +113,8 @@ export type PatientPackagePurchaseItem = {
   durationMinutes: number;
   sessionMode: SessionMode;
   selectedCurrencyCode: string;
+  regionalPricingMode: "EGYPT_LOCAL" | "INTERNATIONAL";
+  resolvedCountryIsoCode: string | null;
   selectedBaseSessionPrice: string;
   undiscountedTotal: string;
   discountAmount: string;
@@ -175,6 +180,8 @@ export type PackagePurchasePaymentResponseData = {
     amountFromWallet: string;
     amountFromGateway: string;
     currency: string;
+    regionalPricingMode: "EGYPT_LOCAL" | "INTERNATIONAL" | null;
+    resolvedCountryIsoCode: string | null;
     providerPaymentId: string | null;
     providerReference: string | null;
     providerMethod: string | null;

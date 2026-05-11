@@ -118,7 +118,7 @@ export default function PractitionerCareChatConversationScreen() {
   if (convQuery.isLoading) {
     return (
       <Screen bg="background">
-        <Header showBack onBack={() => router.back()} />
+        <Header showBack  />
         <LoadingState fullScreen />
       </Screen>
     );
@@ -127,7 +127,7 @@ export default function PractitionerCareChatConversationScreen() {
   if (convQuery.isError || !conversation) {
     return (
       <Screen bg="background">
-        <Header showBack onBack={() => router.back()} />
+        <Header showBack  />
         <ErrorState fullScreen onRetry={convQuery.refetch} />
       </Screen>
     );
@@ -145,7 +145,6 @@ export default function PractitionerCareChatConversationScreen() {
       <Header
         title={`${patientName} · ${stateLabel}`}
         showBack
-        onBack={() => router.back()}
       />
 
       <KeyboardAvoidingView
@@ -351,3 +350,5 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
 });
+
+

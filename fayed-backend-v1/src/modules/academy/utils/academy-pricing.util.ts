@@ -90,6 +90,11 @@ export function resolveAcademyCheckoutPricing(input: {
     resolvedCountryCode === 'EG' ||
     resolvedCountryCode === 'EGY' ||
     resolvedCountryCode?.startsWith('EG') === true;
+  const regionalPricingMode = isEgypt
+    ? 'EGYPT_LOCAL'
+    : resolvedCountryCode
+      ? 'INTERNATIONAL'
+      : null;
 
   const egpAmount = input.priceAmountEgp?.toString() ?? null;
   const usdAmount = input.priceAmountUsd?.toString() ?? null;
@@ -98,27 +103,57 @@ export function resolveAcademyCheckoutPricing(input: {
 
   if (isEgypt) {
     if (egpAmount) {
-      return { amount: egpAmount, currencyCode: 'EGP' as const };
+      return {
+        amount: egpAmount,
+        currencyCode: 'EGP' as const,
+        regionalPricingMode,
+        resolvedCountryCode,
+      };
     }
 
     if (legacyCurrencyCode === 'EGP' && legacyAmount) {
-      return { amount: legacyAmount, currencyCode: 'EGP' as const };
+      return {
+        amount: legacyAmount,
+        currencyCode: 'EGP' as const,
+        regionalPricingMode,
+        resolvedCountryCode,
+      };
     }
 
     if (usdAmount) {
-      return { amount: usdAmount, currencyCode: 'USD' as const };
+      return {
+        amount: usdAmount,
+        currencyCode: 'USD' as const,
+        regionalPricingMode,
+        resolvedCountryCode,
+      };
     }
   } else {
     if (usdAmount) {
-      return { amount: usdAmount, currencyCode: 'USD' as const };
+      return {
+        amount: usdAmount,
+        currencyCode: 'USD' as const,
+        regionalPricingMode,
+        resolvedCountryCode,
+      };
     }
 
     if (legacyCurrencyCode === 'USD' && legacyAmount) {
-      return { amount: legacyAmount, currencyCode: 'USD' as const };
+      return {
+        amount: legacyAmount,
+        currencyCode: 'USD' as const,
+        regionalPricingMode,
+        resolvedCountryCode,
+      };
     }
 
     if (egpAmount) {
-      return { amount: egpAmount, currencyCode: 'EGP' as const };
+      return {
+        amount: egpAmount,
+        currencyCode: 'EGP' as const,
+        regionalPricingMode,
+        resolvedCountryCode,
+      };
     }
   }
 
@@ -126,18 +161,35 @@ export function resolveAcademyCheckoutPricing(input: {
     return {
       amount: legacyAmount,
       currencyCode: legacyCurrencyCode,
+      regionalPricingMode,
+      resolvedCountryCode,
     };
   }
 
   if (egpAmount) {
-    return { amount: egpAmount, currencyCode: 'EGP' as const };
+    return {
+      amount: egpAmount,
+      currencyCode: 'EGP' as const,
+      regionalPricingMode,
+      resolvedCountryCode,
+    };
   }
 
   if (usdAmount) {
-    return { amount: usdAmount, currencyCode: 'USD' as const };
+    return {
+      amount: usdAmount,
+      currencyCode: 'USD' as const,
+      regionalPricingMode,
+      resolvedCountryCode,
+    };
   }
 
-  return { amount: null, currencyCode: null };
+  return {
+    amount: null,
+    currencyCode: null,
+    regionalPricingMode,
+    resolvedCountryCode,
+  };
 }
 
 export function resolveAcademyDefaultPricing(input: {

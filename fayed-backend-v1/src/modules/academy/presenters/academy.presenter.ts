@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { CourseStatus, CourseVisibility, PaymentStatus } from '@prisma/client';
 import { AcademyCourseStats } from '../types/academy.types';
 import {
+  resolveAcademyCheckoutPricing,
   resolveAcademyCoursePricingState,
   resolveAcademyDefaultPricing,
 } from '../utils/academy-pricing.util';
@@ -40,6 +41,7 @@ export class AcademyPresenter {
       publishedAt: Date | null;
     },
     stats?: AcademyCourseStats | null,
+    options?: { resolvedCountryCode?: string | null },
   ) {
     const pricingState = resolveAcademyCoursePricingState(null, {
       priceAmountEgp: course.priceAmountEgp?.toString() ?? null,
@@ -47,11 +49,12 @@ export class AcademyPresenter {
       priceAmount: course.priceAmount?.toString() ?? null,
       currencyCode: course.currencyCode ?? null,
     });
-    const displayPricing = resolveAcademyDefaultPricing({
+    const displayPricing = resolveAcademyCheckoutPricing({
       priceAmountEgp: course.priceAmountEgp,
       priceAmountUsd: course.priceAmountUsd,
       priceAmount: course.priceAmount,
       currencyCode: course.currencyCode,
+      resolvedCountryCode: options?.resolvedCountryCode ?? null,
     });
 
     return {
@@ -65,6 +68,8 @@ export class AcademyPresenter {
       priceAmountUsd: pricingState.priceAmountUsd,
       priceAmount: displayPricing.amount,
       currencyCode: displayPricing.currencyCode,
+      regionalPricingMode: displayPricing.regionalPricingMode,
+      resolvedCountryIsoCode: displayPricing.resolvedCountryCode,
       startsAt: course.startsAt?.toISOString() ?? null,
       endsAt: course.endsAt?.toISOString() ?? null,
       plannedDurationDays: course.plannedDurationDays ?? null,
@@ -111,9 +116,10 @@ export class AcademyPresenter {
       }>;
     },
     stats?: AcademyCourseStats | null,
+    options?: { resolvedCountryCode?: string | null },
   ) {
     return {
-      ...this.presentPublicCourseItem(course, stats),
+      ...this.presentPublicCourseItem(course, stats, options),
       fullDescription: course.fullDescription ?? null,
       meetingUrl: null,
       whatsappGroupUrl: null,

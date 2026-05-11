@@ -10,12 +10,17 @@ import type {
 
 export const packagePlanQueryKeys = {
   all: ["package-plans"] as const,
-  publicByPractitionerSlug: (practitionerSlug: string, params?: PackagePlansQuery) =>
-    [...packagePlanQueryKeys.all, "public", practitionerSlug, params ?? {}] as const,
+  publicByPractitionerSlug: (
+    practitionerSlug: string,
+    params?: PackagePlansQuery,
+    scopeKey?: string | null,
+  ) =>
+    [...packagePlanQueryKeys.all, "public", scopeKey ?? "guest", practitionerSlug, params ?? {}] as const,
 };
 
 type UsePublicPackagePlansOptions = {
   enabled?: boolean;
+  cacheScopeKey?: string | null;
 };
 
 export function usePublicPractitionerPackagePlans(
@@ -24,7 +29,11 @@ export function usePublicPractitionerPackagePlans(
   options?: UsePublicPackagePlansOptions,
 ) {
   return useQuery({
-    queryKey: packagePlanQueryKeys.publicByPractitionerSlug(practitionerSlug, params),
+    queryKey: packagePlanQueryKeys.publicByPractitionerSlug(
+      practitionerSlug,
+      params,
+      options?.cacheScopeKey,
+    ),
     queryFn: () => fetchPublicPractitionerPackagePlans(practitionerSlug, params),
     enabled: Boolean(practitionerSlug) && (options?.enabled ?? true),
     staleTime: 30_000,

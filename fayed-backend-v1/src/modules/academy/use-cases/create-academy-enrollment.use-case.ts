@@ -10,8 +10,12 @@ import {
   PaymentEventType,
   PaymentPurpose,
   PaymentStatus,
+  PaymentProvider,
 } from '@prisma/client';
 import { PrismaService } from '@common/prisma/prisma.service';
+import {
+  resolveProviderForCurrency,
+} from '@common/payments/payment-region.resolver';
 import { PaymentRepository } from '@modules/payments/repositories/payment.repository';
 import { PaymentGeoContextService } from '@modules/payments/services/payment-geo-context.service';
 import { PaymentProviderRegistryService } from '@modules/payments/services/payment-provider-registry.service';
@@ -354,7 +358,8 @@ export class CreateAcademyEnrollmentUseCase {
     currencyCode: string;
     learnerCountryIsoCode: string | null;
   }) {
-    if (input.currencyCode === 'USD') {
+    const provider = resolveProviderForCurrency(input.currencyCode);
+    if (provider === PaymentProvider.STRIPE) {
       return this.paymentProviderResolverService.resolveProvider({
         currencyCode: 'USD',
         commissionMarketType: MarketType.CROSS_BORDER,
@@ -363,7 +368,7 @@ export class CreateAcademyEnrollmentUseCase {
       });
     }
 
-    if (input.currencyCode === 'EGP') {
+    if (provider === PaymentProvider.PAYMOB) {
       return this.paymentProviderResolverService.resolveProvider({
         currencyCode: 'EGP',
         commissionMarketType: MarketType.LOCAL,

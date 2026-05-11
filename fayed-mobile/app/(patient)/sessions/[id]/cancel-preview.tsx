@@ -62,7 +62,7 @@ export default function SessionCancellationPreviewScreen() {
   if (previewQuery.isLoading) {
     return (
       <Screen bg="background">
-        <Header showBack onBack={() => router.back()} />
+        <Header showBack  />
         <LoadingState fullScreen />
       </Screen>
     );
@@ -71,7 +71,7 @@ export default function SessionCancellationPreviewScreen() {
   if (previewQuery.isError || !previewQuery.data) {
     return (
       <Screen bg="background">
-        <Header showBack onBack={() => router.back()} />
+        <Header showBack  />
         <ErrorState fullScreen onRetry={previewQuery.refetch} />
       </Screen>
     );
@@ -97,7 +97,6 @@ export default function SessionCancellationPreviewScreen() {
     <Screen bg="background">
       <Header
         showBack
-        onBack={() => router.back()}
         title={t("patientSessionsFlow.cancelPreview.title")}
       />
 
@@ -354,3 +353,5 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
 });
+
+

@@ -49,7 +49,6 @@ export default function NewCareChatRequestScreen() {
       <Header
         title={t("careChat.new.title")}
         showBack
-        onBack={() => router.back()}
       />
 
       <ScrollView
@@ -176,3 +175,4 @@ const styles = StyleSheet.create({
     padding: 12,
   },
 });
+

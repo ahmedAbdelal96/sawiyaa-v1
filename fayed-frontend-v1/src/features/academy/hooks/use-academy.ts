@@ -31,9 +31,10 @@ import type {
 
 export const academyQueryKeys = {
   all: ["academy"] as const,
-  publicCourses: (params?: ListAcademyCoursesParams) =>
-    [...academyQueryKeys.all, "public-courses", params ?? {}] as const,
-  publicCourse: (slug: string) => [...academyQueryKeys.all, "public-course", slug] as const,
+  publicCourses: (params?: ListAcademyCoursesParams, scopeKey?: string | null) =>
+    [...academyQueryKeys.all, "public-courses", scopeKey ?? "guest", params ?? {}] as const,
+  publicCourse: (slug: string, scopeKey?: string | null) =>
+    [...academyQueryKeys.all, "public-course", scopeKey ?? "guest", slug] as const,
   publicEnrollment: (enrollmentId: string, token: string) =>
     [...academyQueryKeys.all, "public-enrollment", enrollmentId, token] as const,
   adminCourses: (params?: ListAdminAcademyCoursesParams) =>
@@ -44,17 +45,23 @@ export const academyQueryKeys = {
     [...academyQueryKeys.all, "admin-enrollments", params ?? {}] as const,
 };
 
-export function usePublicAcademyCourses(params?: ListAcademyCoursesParams) {
+export function usePublicAcademyCourses(
+  params?: ListAcademyCoursesParams,
+  options?: { cacheScopeKey?: string | null },
+) {
   return useQuery({
-    queryKey: academyQueryKeys.publicCourses(params),
+    queryKey: academyQueryKeys.publicCourses(params, options?.cacheScopeKey),
     queryFn: () => getPublicAcademyCourses(params),
     staleTime: 30_000,
   });
 }
 
-export function usePublicAcademyCourse(slug: string | null) {
+export function usePublicAcademyCourse(
+  slug: string | null,
+  options?: { cacheScopeKey?: string | null },
+) {
   return useQuery({
-    queryKey: academyQueryKeys.publicCourse(slug ?? ""),
+    queryKey: academyQueryKeys.publicCourse(slug ?? "", options?.cacheScopeKey),
     queryFn: () => getPublicAcademyCourseBySlug(slug!),
     enabled: Boolean(slug),
     staleTime: 30_000,

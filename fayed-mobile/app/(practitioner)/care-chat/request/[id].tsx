@@ -58,7 +58,7 @@ export default function PractitionerCareChatRequestDetailScreen() {
   if (requestQuery.isLoading) {
     return (
       <Screen bg="background">
-        <Header showBack onBack={() => router.back()} />
+        <Header showBack  />
         <LoadingState fullScreen />
       </Screen>
     );
@@ -67,7 +67,7 @@ export default function PractitionerCareChatRequestDetailScreen() {
   if (requestQuery.isError || !request) {
     return (
       <Screen bg="background">
-        <Header showBack onBack={() => router.back()} />
+        <Header showBack  />
         <ErrorState fullScreen onRetry={requestQuery.refetch} />
       </Screen>
     );
@@ -81,7 +81,6 @@ export default function PractitionerCareChatRequestDetailScreen() {
       <Header
         title={t("practitioner.careChat.requestDetail.title")}
         showBack
-        onBack={() => router.back()}
       />
 
       <ScrollView
@@ -297,3 +296,5 @@ const styles = StyleSheet.create({
     lineHeight: 19,
   },
 });
+
+

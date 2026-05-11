@@ -15,9 +15,11 @@ import { AuthenticatedUser } from '@common/interfaces/authenticated-user.interfa
 import { CurrentLocale } from '@common/i18n/decorators/current-locale.decorator';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
 import { CurrentUserRolesEnvelopeResponseDto } from '../dto/current-user-roles-response.dto';
+import { CurrentUserProfileLinksEnvelopeResponseDto } from '../dto/current-user-profile-links-response.dto';
 import { CurrentUserSecurityStateEnvelopeResponseDto } from '../dto/current-user-security-state-response.dto';
 import { CurrentUserSummaryEnvelopeResponseDto } from '../dto/current-user-summary-response.dto';
 import { PatchCurrentUserProfileDto } from '../dto/patch-current-user-profile.dto';
+import { GetCurrentUserProfileLinksUseCase } from '../use-cases/get-current-user-profile-links.use-case';
 import { GetCurrentUserSecurityStateUseCase } from '../use-cases/get-current-user-security-state.use-case';
 import { GetCurrentUserSummaryUseCase } from '../use-cases/get-current-user-summary.use-case';
 import { ListCurrentUserRolesUseCase } from '../use-cases/list-current-user-roles.use-case';
@@ -36,6 +38,7 @@ export class CurrentUserController {
     private readonly getCurrentUserSummaryUseCase: GetCurrentUserSummaryUseCase,
     private readonly listCurrentUserRolesUseCase: ListCurrentUserRolesUseCase,
     private readonly getCurrentUserSecurityStateUseCase: GetCurrentUserSecurityStateUseCase,
+    private readonly getCurrentUserProfileLinksUseCase: GetCurrentUserProfileLinksUseCase,
     private readonly patchCurrentUserProfileUseCase: PatchCurrentUserProfileUseCase,
   ) {}
 
@@ -80,6 +83,29 @@ export class CurrentUserController {
   })
   roles(@CurrentUser() currentUser: AuthenticatedUser) {
     return this.listCurrentUserRolesUseCase.execute(currentUser);
+  }
+
+  /** Profile links are exposed independently so clients can bootstrap current patient/practitioner state with a small payload. */
+  @Get('me/profile-links')
+  @ApiOperation({
+    summary: 'Get current user profile links',
+    description:
+      'Returns the linked patient and practitioner profile ids, plus the practitioner state summary when available.',
+  })
+  @ApiResponse({
+    status: 200,
+    type: CurrentUserProfileLinksEnvelopeResponseDto,
+  })
+  @ApiUnauthorizedResponse({ description: 'Access token is required' })
+  @ApiForbiddenResponse({
+    description:
+      'The authenticated session is not allowed to access this route',
+  })
+  @ApiNotFoundResponse({
+    description: 'Authenticated user record was not found',
+  })
+  profileLinks(@CurrentUser() currentUser: AuthenticatedUser) {
+    return this.getCurrentUserProfileLinksUseCase.execute(currentUser);
   }
 
   /**

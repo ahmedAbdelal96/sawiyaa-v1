@@ -166,7 +166,6 @@ export default function CareChatListScreen() {
       <Header
         title={t("careChat.title")}
         showBack
-        onBack={() => router.back()}
         rightElement={
           <TouchableOpacity
             onPress={() => router.push("/(patient)/care-chat/new" as any)}
@@ -316,3 +315,4 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
 });
+

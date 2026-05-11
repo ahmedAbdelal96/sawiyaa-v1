@@ -7,6 +7,8 @@ import { ArrowRight, BadgeCheck, Clock3, GraduationCap, Search, Sparkles } from 
 import { StateCard } from "@/components/shared/ContentStates";
 import Input from "@/components/form/input/InputField";
 import Button from "@/components/ui/button/Button";
+import { useAuthStore } from "@/stores/auth-store";
+import { resolvePatientCurrencyCode } from "@/features/payments/lib/patient-currency";
 import { usePublicAcademyCourses } from "../hooks/use-academy";
 
 function formatCurrency(amount: string | null, currency: string | null, locale: string) {
@@ -22,15 +24,27 @@ function formatCurrency(amount: string | null, currency: string | null, locale: 
 
 export default function PublicAcademyHomeScreen({ locale }: { locale: string }) {
   const t = useTranslations("academy");
+  const { user, isInitialized } = useAuthStore();
   const [search, setSearch] = useState("");
   const [submittedSearch, setSubmittedSearch] = useState("");
+  const authScopeKey = useMemo(() => {
+    if (!isInitialized) {
+      return "bootstrapping";
+    }
+    if (!user) {
+      return "guest";
+    }
+    return `auth:${user.id}:${user.role}`;
+  }, [isInitialized, user]);
 
   const query = useMemo(
     () => (submittedSearch.trim() ? { page: 1, limit: 12, q: submittedSearch.trim() } : { page: 1, limit: 12 }),
     [submittedSearch],
   );
 
-  const { data, isLoading, isFetching, isError, refetch } = usePublicAcademyCourses(query);
+  const { data, isLoading, isFetching, isError, refetch } = usePublicAcademyCourses(query, {
+    cacheScopeKey: authScopeKey,
+  });
 
   const items = data?.items ?? [];
   const stats = useMemo(
@@ -149,49 +163,60 @@ export default function PublicAcademyHomeScreen({ locale }: { locale: string }) 
           </div>
         ) : items.length > 0 ? (
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {items.map((item) => (
-              <article
-                key={item.id}
-                className="group overflow-hidden rounded-[28px] border border-border-light bg-white shadow-[0_16px_34px_-26px_rgba(34,52,56,0.28)] transition hover:-translate-y-1 hover:shadow-[0_24px_50px_-30px_rgba(34,52,56,0.32)]"
-              >
-                <div className="h-40 bg-[radial-gradient(circle_at_top_right,rgba(68,161,148,0.24),transparent_35%),linear-gradient(135deg,rgba(235,246,244,0.9),rgba(255,255,255,0.96))] p-5">
-                  <div className="flex h-full flex-col justify-between">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-primary shadow-sm">
-                        {item.stats?.totalEnrollments ?? 0} {t("public.card.enrollments")}
-                      </span>
-                      <span className="rounded-full bg-white/80 px-3 py-1 text-xs font-semibold text-text-muted">
-                        {item.publishedAt ? t("public.card.published") : t("public.card.draft")}
-                      </span>
-                    </div>
-                    <div className="text-sm text-text-muted">
-                      {formatCurrency(item.priceAmount, item.currencyCode, locale) ?? t("public.card.free")}
-                    </div>
-                  </div>
-                </div>
+            {items.map((item) => {
+              const displayCurrency =
+                resolvePatientCurrencyCode({
+                  currencyCode: item.currencyCode,
+                  regionalPricingMode: item.regionalPricingMode,
+                  resolvedCountryIsoCode: item.resolvedCountryIsoCode,
+                }) ?? item.currencyCode;
 
-                <div className="space-y-4 p-5">
-                  <div className="space-y-2">
-                    <h3 className="text-lg font-bold text-text-primary">{item.title}</h3>
-                    <p className="line-clamp-3 text-sm leading-6 text-text-secondary">
-                      {item.shortDescription ?? t("public.card.noDescription")}
-                    </p>
-                  </div>
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="text-xs text-text-muted">
-                      {item.startsAt ? new Date(item.startsAt).toLocaleDateString(locale) : t("public.card.noDate")}
+              return (
+                <article
+                  key={item.id}
+                  className="group overflow-hidden rounded-[28px] border border-border-light bg-white shadow-[0_16px_34px_-26px_rgba(34,52,56,0.28)] transition hover:-translate-y-1 hover:shadow-[0_24px_50px_-30px_rgba(34,52,56,0.32)]"
+                >
+                  <div className="h-40 bg-[radial-gradient(circle_at_top_right,rgba(68,161,148,0.24),transparent_35%),linear-gradient(135deg,rgba(235,246,244,0.9),rgba(255,255,255,0.96))] p-5">
+                    <div className="flex h-full flex-col justify-between">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-primary shadow-sm">
+                          {item.stats?.totalEnrollments ?? 0} {t("public.card.enrollments")}
+                        </span>
+                        <span className="rounded-full bg-white/80 px-3 py-1 text-xs font-semibold text-text-muted">
+                          {item.publishedAt ? t("public.card.published") : t("public.card.draft")}
+                        </span>
+                      </div>
+                      <div className="text-sm text-text-muted">
+                        {formatCurrency(item.priceAmount, displayCurrency, locale) ?? t("public.card.free")}
+                      </div>
                     </div>
-                    <Link
-                      href={`/${locale}/academy/${item.slug}`}
-                      className="inline-flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary-hover"
-                    >
-                      {t("public.card.open")}
-                      <ArrowRight className="h-4 w-4" />
-                    </Link>
                   </div>
-                </div>
-              </article>
-            ))}
+
+                  <div className="space-y-4 p-5">
+                    <div className="space-y-2">
+                      <h3 className="text-lg font-bold text-text-primary">{item.title}</h3>
+                      <p className="line-clamp-3 text-sm leading-6 text-text-secondary">
+                        {item.shortDescription ?? t("public.card.noDescription")}
+                      </p>
+                    </div>
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="text-xs text-text-muted">
+                        {item.startsAt
+                          ? new Date(item.startsAt).toLocaleDateString(locale)
+                          : t("public.card.noDate")}
+                      </div>
+                      <Link
+                        href={`/${locale}/academy/${item.slug}`}
+                        className="inline-flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary-hover"
+                      >
+                        {t("public.card.open")}
+                        <ArrowRight className="h-4 w-4" />
+                      </Link>
+                    </div>
+                  </div>
+                </article>
+              );
+            })}
           </div>
         ) : (
           <div className="rounded-[28px] border border-dashed border-border-light bg-white px-6 py-12 text-center text-text-muted">

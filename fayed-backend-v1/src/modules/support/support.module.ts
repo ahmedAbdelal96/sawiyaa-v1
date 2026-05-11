@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
 import { JwtAccessAuthGuard } from '@common/guards/authentication/jwt-access-auth.guard';
+import { PermissionResolverService } from '@common/guards/authorization/permission-resolver.service';
+import { PermissionsGuard } from '@common/guards/authorization/permissions.guard';
 import { RolesGuard } from '@common/guards/authorization/roles.guard';
 import { AdminSupportController } from './controllers/admin-support.controller';
 import { PatientSupportController } from './controllers/patient-support.controller';
@@ -33,6 +35,8 @@ import { UpdateSupportTicketStatusUseCase } from './use-cases/update-support-tic
   providers: [
     JwtAccessAuthGuard,
     RolesGuard,
+    PermissionsGuard,
+    PermissionResolverService,
     SupportTicketAccessPolicy,
     SupportPresenter,
     SupportActorRepository,

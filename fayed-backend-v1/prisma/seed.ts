@@ -10,6 +10,7 @@ import { refundPoliciesSeedModule } from './seed/modules/refund-policies.seed';
 import { patientsSeedModule } from './seed/modules/patients.seed';
 import { packagePlansSeedModule } from './seed/modules/package-plans.seed';
 import { helpSeedModule } from './seed/modules/help.seed';
+import { curatedDevSeedModule } from './seed/modules/curated-dev.seed';
 import { practitionersSeedModule } from './seed/modules/practitioners.seed';
 import { referenceDataSeedModule } from './seed/modules/reference-data.seed';
 import { regionalBulkSeedModule } from './seed/modules/regional-bulk.seed';
@@ -20,12 +21,13 @@ import { PrismaClient } from '@prisma/client';
 import { SeedModule } from './seed/shared/seed.types';
 
 const prisma = new PrismaClient();
+const seedProfile = (process.env.SEED_PROFILE ?? 'curated').toLowerCase();
 
 /**
  * Root seed orchestrator.
  * This file should stay small and only coordinate module seeds in deterministic order.
  */
-const seedModules: SeedModule[] = [
+const curatedSeedModules: SeedModule[] = [
   usersSeedModule,
   authSeedModule,
   referenceDataSeedModule,
@@ -40,14 +42,26 @@ const seedModules: SeedModule[] = [
   notificationsSeedModule,
   configSeedModule,
   financialRulesSeedModule,
-  regionalBulkSeedModule,
-  settlementsLabSeedModule,
-  accountingSeedModule,
-  auditEventsSeedModule,
+  curatedDevSeedModule,
+];
+
+const bulkSeedModules: SeedModule[] =
+  seedProfile === 'bulk'
+    ? [
+        regionalBulkSeedModule,
+        settlementsLabSeedModule,
+        accountingSeedModule,
+        auditEventsSeedModule,
+      ]
+    : [];
+
+const seedModules: SeedModule[] = [
+  ...curatedSeedModules,
+  ...bulkSeedModules,
 ];
 
 async function main(): Promise<void> {
-  console.log('Starting modular seed process...');
+  console.log(`Starting modular seed process (profile=${seedProfile})...`);
 
   for (const module of seedModules) {
     const startedAt = Date.now();

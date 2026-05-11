@@ -24,6 +24,9 @@ export type PublicPractitioner = {
   specialties: string[];
   languages: string[];
   country: string;
+  currencyCode?: "EGP" | "USD";
+  regionalPricingMode?: "EGYPT_LOCAL" | "INTERNATIONAL";
+  resolvedCountryIsoCode?: string | null;
   practitionerType?: string;
   practitionerGender?: "male" | "female" | null;
   sessionPrice30?: number | null;
@@ -32,6 +35,8 @@ export type PublicPractitioner = {
   sessionPrice30Usd?: number | null;
   sessionPrice60Egp?: number | null;
   sessionPrice60Usd?: number | null;
+  displaySessionPrice30?: number | null;
+  displaySessionPrice60?: number | null;
   pricing?: {
     session30: {
       egp: number | null;

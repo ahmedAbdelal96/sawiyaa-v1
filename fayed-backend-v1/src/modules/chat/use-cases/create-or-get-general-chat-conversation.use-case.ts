@@ -9,6 +9,10 @@ import { AuthenticatedUser } from '@common/interfaces/authenticated-user.interfa
 import { ConversationParticipantRole } from '@prisma/client';
 import { createHash } from 'crypto';
 import { CreateGeneralChatConversationDto } from '../dto/create-general-chat-conversation.dto';
+import {
+  buildGeneralChatParticipantDirectoryMap,
+  buildGeneralChatParticipantSummary,
+} from '../helpers/general-chat-identity.mapper';
 import { GeneralChatActorRepository } from '../repositories/general-chat-actor.repository';
 import { GeneralChatRepository } from '../repositories/general-chat.repository';
 import {
@@ -104,7 +108,7 @@ export class CreateOrGetGeneralChatConversationUseCase {
         input.authenticatedUser.id,
       );
       return {
-        item: this.toReadItem(existing, false),
+        item: await this.toReadItem(existing, false),
       };
     }
 
@@ -119,7 +123,7 @@ export class CreateOrGetGeneralChatConversationUseCase {
       });
 
       return {
-        item: this.toReadItem(created, true),
+        item: await this.toReadItem(created, true),
       };
     } catch (error) {
       if (
@@ -130,15 +134,15 @@ export class CreateOrGetGeneralChatConversationUseCase {
           await this.generalChatRepository.findByConversationRef(
             conversationRef,
           );
-        if (converged) {
-          this.assertGeneralConversationBoundary(
-            converged,
-            input.authenticatedUser.id,
-          );
-          return {
-            item: this.toReadItem(converged, false),
-          };
-        }
+          if (converged) {
+            this.assertGeneralConversationBoundary(
+              converged,
+              input.authenticatedUser.id,
+            );
+            return {
+              item: await this.toReadItem(converged, false),
+            };
+          }
       }
 
       throw error;
@@ -235,7 +239,7 @@ export class CreateOrGetGeneralChatConversationUseCase {
     }
   }
 
-  private toReadItem(
+  private async toReadItem(
     conversation: {
       id: string;
       conversationRef: string | null;
@@ -249,16 +253,23 @@ export class CreateOrGetGeneralChatConversationUseCase {
     },
     wasCreated: boolean,
   ) {
+    const participantDirectoryRecords =
+      (await this.generalChatRepository.loadParticipantIdentityRecords?.(
+        conversation.participants.map((participant) => participant.userId),
+      )) ?? [];
+    const participantDirectory = buildGeneralChatParticipantDirectoryMap(
+      participantDirectoryRecords,
+    );
+
     return {
       conversationId: conversation.id,
       conversationRef: conversation.conversationRef ?? '',
       conversationType: 'SYSTEM' as const,
       status: conversation.status,
       linkedSessionId: conversation.sessionId,
-      participants: conversation.participants.map((participant) => ({
-        userId: participant.userId,
-        role: participant.participantRole,
-      })),
+      participants: conversation.participants.map((participant) =>
+        buildGeneralChatParticipantSummary(participant, participantDirectory),
+      ),
       wasCreated,
     };
   }

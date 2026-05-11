@@ -17,6 +17,7 @@ import {
   usePatientWalletEntries,
   usePatientWalletSummary,
 } from "../../../src/features/patient/payments/hooks";
+import { resolveSupportedCurrencyCode } from "../../../src/lib/currency";
 import type {
   CustomerWalletEntryItem,
   CustomerWalletEntryType,
@@ -60,7 +61,7 @@ function filterEntry(entry: CustomerWalletEntryItem, tab: FilterTab): boolean {
 /**
  * Product-grade money formatter — avoids Intl.NumberFormat currency style
  * which is unreliable in React Native Hermes.
- * Output: "350.50 SAR" — matches approved Arabic design.
+ * Output stays tied to the resolved patient currency from backend metadata.
  */
 function formatMoney(amount: string, currencyCode: string): string {
   const num = Number(amount);
@@ -226,8 +227,9 @@ export default function TransactionHistoryScreen() {
 
   const groups = useMemo(() => groupByDay(filteredEntries), [filteredEntries]);
   const todayLabel = t("patientPaymentsFlow.transactions.today");
-  const fallbackCurrency =
-    wallet?.currencyCode ?? allEntries[0]?.currencyCode ?? "SAR";
+  const fallbackCurrency = resolveSupportedCurrencyCode({
+    currencyCode: wallet?.currencyCode ?? allEntries[0]?.currencyCode ?? null,
+  });
 
   const filters: { key: FilterTab; labelKey: string }[] = [
     { key: "all", labelKey: "patientPaymentsFlow.transactions.filters.all" },
@@ -249,7 +251,6 @@ export default function TransactionHistoryScreen() {
     <Screen bg="background">
       <Header
         showBack
-        onBack={() => router.back()}
         title={t("patientPaymentsFlow.transactions.title")}
       />
 
@@ -403,3 +404,4 @@ const styles = StyleSheet.create({
   entryAmount: { fontSize: 15, minWidth: 80, textAlign: "right" },
   itemDivider: { height: 1, marginVertical: 8 },
 });
+

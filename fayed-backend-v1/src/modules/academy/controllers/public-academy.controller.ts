@@ -1,5 +1,7 @@
 import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { CurrentUser } from '@common/decorators/current-user.decorator';
+import { AuthenticatedUser } from '@common/interfaces/authenticated-user.interface';
 import { AcademyEnrollmentTokenDto } from '../dto/academy-enrollment-token.dto';
 import { CreateAcademyEnrollmentDto } from '../dto/create-academy-enrollment.dto';
 import { ListPublicAcademyCoursesDto } from '../dto/list-public-academy-courses.dto';
@@ -20,14 +22,26 @@ export class PublicAcademyController {
 
   @Get('courses')
   @ApiOperation({ summary: 'List published academy courses' })
-  list(@Query() query: ListPublicAcademyCoursesDto) {
-    return this.listPublicAcademyCoursesUseCase.execute(query);
+  list(
+    @Query() query: ListPublicAcademyCoursesDto,
+    @CurrentUser() currentUser: AuthenticatedUser | null,
+  ) {
+    return this.listPublicAcademyCoursesUseCase.execute({
+      ...query,
+      currentUserId: currentUser?.id ?? null,
+    });
   }
 
   @Get('courses/:slug')
   @ApiOperation({ summary: 'Get published academy course by slug' })
-  getBySlug(@Param('slug') slug: string) {
-    return this.getPublicAcademyCourseBySlugUseCase.execute({ slug });
+  getBySlug(
+    @Param('slug') slug: string,
+    @CurrentUser() currentUser: AuthenticatedUser | null,
+  ) {
+    return this.getPublicAcademyCourseBySlugUseCase.execute({
+      slug,
+      currentUserId: currentUser?.id ?? null,
+    });
   }
 
   @Post('courses/:slug/enrollments')

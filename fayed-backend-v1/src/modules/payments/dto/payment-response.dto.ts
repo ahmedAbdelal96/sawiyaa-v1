@@ -9,6 +9,7 @@ import {
   SessionProvider,
   SessionStatus,
 } from '@prisma/client';
+import type { PaymentRegionalPricingMode } from '@common/payments/payment-region.resolver';
 
 export class PaymentItemDto {
   @ApiProperty()
@@ -43,6 +44,12 @@ export class PaymentItemDto {
 
   @ApiProperty()
   currency!: string;
+
+  @ApiProperty({ enum: ['EGYPT_LOCAL', 'INTERNATIONAL'], nullable: true })
+  regionalPricingMode!: PaymentRegionalPricingMode | null;
+
+  @ApiProperty({ nullable: true })
+  resolvedCountryIsoCode!: string | null;
 
   @ApiProperty({ nullable: true })
   providerPaymentId!: string | null;
@@ -155,6 +162,12 @@ export class AdminPaymentOpsRefundItemDto {
 
   @ApiProperty()
   currency!: string;
+
+  @ApiProperty({ enum: ['EGYPT_LOCAL', 'INTERNATIONAL'], nullable: true })
+  regionalPricingMode!: PaymentRegionalPricingMode | null;
+
+  @ApiProperty({ nullable: true })
+  resolvedCountryIsoCode!: string | null;
 
   @ApiProperty({ nullable: true })
   reason!: string | null;

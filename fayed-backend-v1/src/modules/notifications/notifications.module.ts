@@ -1,4 +1,6 @@
 import { Module } from '@nestjs/common';
+import { PermissionResolverService } from '@common/guards/authorization/permission-resolver.service';
+import { PermissionsGuard } from '@common/guards/authorization/permissions.guard';
 import { RolesGuard } from '@common/guards/authorization/roles.guard';
 import { AdminAuditLogController } from './controllers/admin-audit-log.controller';
 import { AdminNotificationOpsController } from './controllers/admin-notification-ops.controller';
@@ -45,6 +47,8 @@ import { RevokeNotificationDeviceUseCase } from './use-cases/revoke-notification
   ],
   providers: [
     RolesGuard,
+    PermissionsGuard,
+    PermissionResolverService,
     NotificationEmailService,
     NotificationPushExecutionService,
     NotificationDeviceRepository,

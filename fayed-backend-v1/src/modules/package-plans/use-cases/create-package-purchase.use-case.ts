@@ -38,6 +38,7 @@ type PackagePurchasePractitioner = {
   };
   countryId: string | null;
   country: {
+    isoCode: string | null;
     currencyCode: string | null;
   } | null;
   acceptsPackages: boolean;
@@ -154,7 +155,9 @@ export class CreatePackagePurchaseUseCase {
       practitioner: practitioner as PackagePurchasePractitioner,
       selectedDurationMinutes: input.durationMinutes,
       sessionMode: input.sessionMode,
-      selectedCurrencyCode: input.selectedCurrencyCode,
+      selectedCurrencyCode: null,
+      patientCountryIsoCode: patientProfile.country?.isoCode ?? null,
+      operatingCountryIsoCode: practitioner.country?.isoCode ?? null,
       patient: {
         id: patientProfile.id,
         countryId: patientProfile.countryId,

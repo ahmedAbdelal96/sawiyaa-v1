@@ -70,6 +70,8 @@ export type AcademyCourseItem = {
   priceAmountUsd: string | null;
   priceAmount: string | null;
   currencyCode: string | null;
+  regionalPricingMode: "EGYPT_LOCAL" | "INTERNATIONAL" | null;
+  resolvedCountryIsoCode: string | null;
   startsAt: string | null;
   endsAt: string | null;
   plannedDurationDays: number | null;

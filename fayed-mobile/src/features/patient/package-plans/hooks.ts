@@ -20,8 +20,8 @@ import type {
 
 export const packagePlanQueryKeys = {
   all: ["package-plans"] as const,
-  practitioner: (slug: string, params?: PackagePlansQuery) =>
-    [...packagePlanQueryKeys.all, "practitioner", slug, params ?? {}] as const,
+  practitioner: (slug: string, params?: PackagePlansQuery, scopeKey?: string | null) =>
+    [...packagePlanQueryKeys.all, "practitioner", scopeKey ?? "guest", slug, params ?? {}] as const,
   quote: (input: PatientPackagePlanQuoteRequest) =>
     [...packagePlanQueryKeys.all, "quote", input] as const,
 };
@@ -42,11 +42,16 @@ export const refundPolicyQueryKeys = {
 export function usePublicPractitionerPackagePlans(
   practitionerSlug: string | null,
   params?: PackagePlansQuery,
+  options?: { enabled?: boolean; cacheScopeKey?: string | null },
 ) {
   return useQuery({
-    queryKey: packagePlanQueryKeys.practitioner(practitionerSlug ?? "", params),
+    queryKey: packagePlanQueryKeys.practitioner(
+      practitionerSlug ?? "",
+      params,
+      options?.cacheScopeKey,
+    ),
     queryFn: () => fetchPublicPractitionerPackagePlans(practitionerSlug!, params),
-    enabled: Boolean(practitionerSlug),
+    enabled: Boolean(practitionerSlug) && (options?.enabled ?? true),
     staleTime: 60_000,
   });
 }

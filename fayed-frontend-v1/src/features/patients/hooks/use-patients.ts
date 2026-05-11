@@ -6,6 +6,10 @@ import {
   uploadPatientAvatar,
 } from "../api/patients.api";
 import { patientsQueryKeys } from "../constants/query-keys";
+import { paymentQueryKeys } from "@/features/payments/hooks/use-payments";
+import { packagePlanQueryKeys } from "@/features/package-plans/hooks/use-package-plans";
+import { packagePurchaseQueryKeys } from "@/features/package-plans/hooks/use-package-purchases";
+import { academyQueryKeys } from "@/features/academy/hooks/use-academy";
 
 /**
  * Query wrapper for current patient profile.
@@ -32,6 +36,13 @@ export function useUpdatePatientProfile() {
       queryClient.invalidateQueries({ queryKey: patientsQueryKeys.all });
       queryClient.invalidateQueries({ queryKey: ["users"] });
       queryClient.invalidateQueries({ queryKey: ["auth"] });
+      queryClient.invalidateQueries({ queryKey: paymentQueryKeys.all });
+      queryClient.invalidateQueries({ queryKey: packagePurchaseQueryKeys.all });
+      queryClient.invalidateQueries({ queryKey: packagePlanQueryKeys.all });
+      queryClient.invalidateQueries({ queryKey: academyQueryKeys.all });
+      queryClient.invalidateQueries({ queryKey: ["session-financial"] });
+      queryClient.invalidateQueries({ queryKey: ["public-practitioners"] });
+      queryClient.invalidateQueries({ queryKey: ["public-practitioner"] });
     },
   });
 }

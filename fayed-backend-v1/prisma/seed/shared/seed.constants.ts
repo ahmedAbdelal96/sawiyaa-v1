@@ -9,6 +9,7 @@ export const seedIds = {
     contentReviewer: '11111111-1111-4111-8111-111111111113',
     patientA: '11111111-1111-4111-8111-111111111114',
     patientB: '11111111-1111-4111-8111-111111111115',
+    patientC: '11111111-1111-4111-8111-111111111126',
     practitionerA: '11111111-1111-4111-8111-111111111116',
     practitionerB: '11111111-1111-4111-8111-111111111117',
     practitionerC: '11111111-1111-4111-8111-111111111118',
@@ -50,6 +51,7 @@ export const seedIds = {
   patientProfiles: {
     patientA: '55555555-5555-4555-8555-555555555551',
     patientB: '55555555-5555-4555-8555-555555555552',
+    patientC: '55555555-5555-4555-8555-555555555553',
   },
   practitionerProfiles: {
     practitionerA: '66666666-6666-4666-8666-666666666661',
@@ -91,6 +93,9 @@ export const seedIds = {
   sessions: {
     adminSession: '99999999-9999-4999-8999-999999999991',
     patientSession: '99999999-9999-4999-8999-999999999992',
+    supportSession: '99999999-9999-4999-8999-999999999993',
+    patientBSession: '99999999-9999-4999-8999-999999999994',
+    practitionerBSession: '99999999-9999-4999-8999-999999999995',
   },
 } as const;
 
@@ -115,6 +120,10 @@ export const seedCredentials = {
     email: 'mohamed.patient@hesba.local',
     password: 'Patient2@12345',
     googleSubject: 'google-patient-two-001',
+  },
+  patientC: {
+    email: 'omar.patient@hesba.local',
+    password: 'Patient3@12345',
   },
   practitionerA: {
     email: 'dr.ahmed@hesba.local',

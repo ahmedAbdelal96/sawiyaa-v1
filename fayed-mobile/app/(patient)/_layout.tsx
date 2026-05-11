@@ -128,6 +128,8 @@ export default function PatientLayout() {
       <Tabs.Screen name="support/index" options={{ href: null }} />
       <Tabs.Screen name="support/new" options={{ href: null }} />
       <Tabs.Screen name="support/[id]" options={{ href: null }} />
+      <Tabs.Screen name="messages/index" options={{ href: null }} />
+      <Tabs.Screen name="messages/[id]" options={{ href: null }} />
       <Tabs.Screen name="profile-details" options={{ href: null }} />
       <Tabs.Screen name="profile-preferences" options={{ href: null }} />
       <Tabs.Screen name="profile-notifications" options={{ href: null }} />

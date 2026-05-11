@@ -1,8 +1,9 @@
 import React, { useMemo } from "react";
-import { Image, StyleSheet, View } from "react-native";
+import { FlatList, Image, StyleSheet, View } from "react-native";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import {
+  Button,
   Card,
   CompactActionRow,
   ListPageScaffold,
@@ -12,11 +13,17 @@ import {
   formatDate,
 } from "../../../../components/ui";
 import { useTheme } from "../../../../providers/ThemeProvider";
-import { usePublicAcademyCourses } from "../hooks";
+import { useAuth } from "../../../../providers/AuthProvider";
+import { resolveSupportedCurrencyCode } from "../../../../lib/currency";
+import { useInfinitePublicAcademyCourses } from "../hooks";
 import type { AcademyCourseItem } from "../types";
 import { resolveMediaUrl } from "../../../../lib/resolve-media-url";
 
-function formatCurrency(amount: string | null, currency: string | null, locale: string) {
+function formatCurrency(
+  amount: string | null,
+  currency: string | null,
+  locale: string,
+) {
   if (!amount || !currency) {
     return null;
   }
@@ -66,22 +73,23 @@ function splitCourseContent(content: string) {
     .filter(Boolean);
 }
 
-function CourseCard({
-  course,
-}: {
-  course: AcademyCourseItem;
-}) {
+function CourseCard({ course }: { course: AcademyCourseItem }) {
   const router = useRouter();
   const { t, i18n } = useTranslation();
   const { theme } = useTheme();
   const locale = i18n.language?.startsWith("ar") ? "ar-EG" : "en-US";
   const coverUri = resolveMediaUrl(course.coverImageUrl ?? course.thumbnailUrl);
+  const displayCurrency = resolveSupportedCurrencyCode({
+    currencyCode: course.currencyCode,
+    regionalPricingMode: course.regionalPricingMode,
+    resolvedCountryIsoCode: course.resolvedCountryIsoCode,
+  });
   const priceLabel =
-    formatCurrency(course.priceAmount, course.currencyCode, locale) ||
-    t("academy.browse.free", "Free");
+    formatCurrency(course.priceAmount, displayCurrency, locale) ||
+    t("academyMobile.free", "Free");
   const lectureCount = course.plannedLectureCount ?? course.lectures?.length ?? null;
   const durationLabel = course.plannedDurationDays
-    ? t("academy.browse.durationDays", {
+    ? t("academyMobile.durationDays", {
         count: course.plannedDurationDays,
         defaultValue: `${course.plannedDurationDays} days`,
       })
@@ -101,8 +109,8 @@ function CourseCard({
           <StatusChip
             label={
               course.publishedAt
-                ? t("academy.browse.published", "Published")
-                : t("academy.browse.draft", "Draft")
+                ? t("academyMobile.published", "Published")
+                : t("academyMobile.draft", "Draft")
             }
             tone={resolveStatusTone(course.status)}
             showDot={false}
@@ -125,7 +133,7 @@ function CourseCard({
         <View style={styles.metaRow}>
           {lectureCount ? (
             <Text color={theme.colors.textMuted} style={styles.metaText}>
-              {t("academy.browse.lectureCount", {
+              {t("academyMobile.lectureCount", {
                 count: lectureCount,
                 defaultValue:
                   lectureCount === 1
@@ -147,9 +155,9 @@ function CourseCard({
         </View>
 
         <CompactActionRow
-          label={t("academy.browse.open", "View details")}
+          label={t("academyMobile.viewDetails", "View details")}
           onPress={() => router.push(`/(patient)/academy/${course.slug}` as any)}
-          accessibilityLabel={t("academy.browse.open", "View details")}
+          accessibilityLabel={t("academyMobile.viewDetails", "View details")}
           style={styles.actionRow}
         />
       </View>
@@ -159,50 +167,145 @@ function CourseCard({
 
 export default function AcademyBrowseScreen() {
   const router = useRouter();
-  const { t, i18n } = useTranslation();
-  const query = useMemo(() => ({ page: 1, limit: 12 }), []);
+  const { t } = useTranslation();
+  const { theme } = useTheme();
+  const { user, role, isLoading: isAuthLoading } = useAuth();
+  const authScopeKey = useMemo(() => {
+    if (isAuthLoading) {
+      return "bootstrapping";
+    }
+    if (!user) {
+      return "guest";
+    }
+    return `auth:${user.id}:${role}`;
+  }, [isAuthLoading, role, user]);
+  const coursesQuery = useInfinitePublicAcademyCourses(
+    { limit: 12 },
+    { cacheScopeKey: authScopeKey },
+  );
 
-  const coursesQuery = usePublicAcademyCourses(query);
-  const items = coursesQuery.data?.items ?? [];
+  const items = useMemo(
+    () => coursesQuery.data?.pages.flatMap((page) => page.items) ?? [],
+    [coursesQuery.data?.pages],
+  );
+  const latestPage = coursesQuery.data?.pages.at(-1);
 
   return (
     <ListPageScaffold
-      title={t("academy.browse.title", "Academy")}
+      title={t("academyMobile.title", "Academy")}
       showBack
-      onBack={() => router.back()}
       loading={coursesQuery.isLoading}
-      loadingMessage={t("academy.browse.loading", "Loading academy programs...")}
+      loadingMessage={t(
+        "academyMobile.loading",
+        "Loading academy programs...",
+      )}
       error={coursesQuery.isError}
-      errorTitle={t("academy.browse.errorTitle", "We could not load the academy right now")}
+      errorTitle={t(
+        "academyMobile.errorTitle",
+        "We could not load the academy right now",
+      )}
       errorMessage={t(
-        "academy.browse.errorMessage",
+        "academyMobile.errorMessage",
         "Please try again in a moment.",
       )}
       onRetry={() => coursesQuery.refetch()}
-      retryText={t("academy.browse.retry", "Try again")}
+      retryText={t("retry", "Try again")}
       empty={items.length === 0}
-      emptyTitle={t("academy.browse.emptyTitle", "No programs found")}
+      emptyTitle={t("academyMobile.emptyTitle", "No programs found")}
       emptyDescription={t(
-        "academy.browse.emptyDefault",
+        "academyMobile.emptyDescription",
         "There are no public academy programs available right now.",
       )}
       contentContainerStyle={styles.scaffold}
     >
       <View style={styles.headerStack}>
         <SectionHeader
-          title={t("academy.browse.sectionTitle", "Programs")}
+          title={t("academyMobile.sectionTitle", "Programs")}
           subtitle={t(
-            "academy.browse.sectionSubtitle",
+            "academyMobile.sectionSubtitle",
             "Browse public programs, prices, and schedules at a calm pace.",
           )}
         />
       </View>
 
-      <View style={styles.grid}>
-        {items.map((course) => (
-          <CourseCard key={course.id} course={course} />
-        ))}
-      </View>
+      <FlatList
+        data={items}
+        keyExtractor={(course) => course.id}
+        renderItem={({ item: course }) => <CourseCard course={course} />}
+        ItemSeparatorComponent={() => <View style={styles.separator} />}
+        contentContainerStyle={styles.listContent}
+        showsVerticalScrollIndicator={false}
+        refreshing={coursesQuery.isRefetching && !coursesQuery.isFetchingNextPage}
+        onRefresh={() => coursesQuery.refetch()}
+        onEndReached={() => {
+          if (
+            coursesQuery.hasNextPage &&
+            !coursesQuery.isFetchingNextPage &&
+            !coursesQuery.isLoading &&
+            !coursesQuery.isError
+          ) {
+            coursesQuery.fetchNextPage();
+          }
+        }}
+        onEndReachedThreshold={0.45}
+        ListHeaderComponent={
+          <Text color={theme.colors.textSecondary} style={styles.resultsCount}>
+            {latestPage
+              ? t("academyMobile.resultsCount", {
+                  shown: items.length,
+                  total: latestPage.pagination.totalItems,
+                })
+              : " "}
+          </Text>
+        }
+        ListFooterComponent={
+          coursesQuery.isFetchingNextPage ? (
+            <View style={styles.footerState}>
+              <Text color={theme.colors.textSecondary} style={styles.footerText}>
+                {t(
+                  "academyMobile.loadingMore",
+                  "Loading more academy programs...",
+                )}
+              </Text>
+            </View>
+          ) : coursesQuery.isFetchNextPageError ? (
+            <View style={styles.footerState}>
+              <Text
+                weight="bold"
+                style={styles.footerTitle}
+                color={theme.colors.textPrimary}
+              >
+                {t(
+                  "academyMobile.loadMoreErrorTitle",
+                  "Could not load more academy programs",
+                )}
+              </Text>
+              <Text
+                color={theme.colors.textSecondary}
+                style={styles.footerText}
+              >
+                {t(
+                  "academyMobile.loadMoreErrorSubtitle",
+                  "Try again to load the next set of results.",
+                )}
+              </Text>
+              <Button title={t("retry", "Retry")} onPress={() => coursesQuery.fetchNextPage()} />
+            </View>
+          ) : coursesQuery.hasNextPage === false && items.length > 0 ? (
+            <View style={styles.footerState}>
+              <Text
+                color={theme.colors.textSecondary}
+                style={styles.footerText}
+              >
+                {t(
+                  "academyMobile.endOfList",
+                  "You have reached the end of the list.",
+                )}
+              </Text>
+            </View>
+          ) : null
+        }
+      />
     </ListPageScaffold>
   );
 }
@@ -215,8 +318,12 @@ const styles = StyleSheet.create({
     gap: 12,
     marginBottom: 12,
   },
-  grid: {
+  listContent: {
     gap: 14,
+    paddingBottom: 24,
+  },
+  separator: {
+    height: 0,
   },
   card: {
     marginHorizontal: 0,
@@ -259,4 +366,25 @@ const styles = StyleSheet.create({
   actionRow: {
     marginTop: 6,
   },
+  resultsCount: {
+    fontSize: 14,
+    marginBottom: 14,
+    marginTop: 2,
+  },
+  footerState: {
+    paddingTop: 8,
+    paddingBottom: 20,
+  },
+  footerTitle: {
+    fontSize: 16,
+    marginBottom: 6,
+    textAlign: "center",
+  },
+  footerText: {
+    fontSize: 14,
+    lineHeight: 21,
+    textAlign: "center",
+    marginBottom: 14,
+  },
 });
+

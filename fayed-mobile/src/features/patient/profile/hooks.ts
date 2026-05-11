@@ -1,5 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuthenticatedQueryEnabled } from "../../auth/query-auth";
+import { paymentQueryKeys } from "../payments/hooks";
+import { packagePlanQueryKeys, packagePurchaseQueryKeys } from "../package-plans/hooks";
+import { academyQueryKeys } from "../academy/hooks";
 import { getPatientProfile, patchPatientProfile } from "./api";
 
 const patientProfileQueryKeys = {
@@ -25,6 +28,12 @@ export function usePatchPatientProfile() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: patientProfileQueryKeys.all });
       queryClient.invalidateQueries({ queryKey: ["auth"] });
+      queryClient.invalidateQueries({ queryKey: paymentQueryKeys.all });
+      queryClient.invalidateQueries({ queryKey: packagePurchaseQueryKeys.all });
+      queryClient.invalidateQueries({ queryKey: packagePlanQueryKeys.all });
+      queryClient.invalidateQueries({ queryKey: academyQueryKeys.all });
+      queryClient.invalidateQueries({ queryKey: ["public-practitioners"] });
+      queryClient.invalidateQueries({ queryKey: ["public-practitioner"] });
     },
   });
 }

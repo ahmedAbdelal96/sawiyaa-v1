@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
+  Modal,
   ScrollView,
   StyleSheet,
   Switch,
@@ -28,8 +29,10 @@ import {
   usePatientWalletSummary,
   useSessionFinancialBreakdown,
 } from "../../../../src/features/patient/payments/hooks";
+import { useRefundPolicy } from "../../../../src/features/patient/refund-policies/hooks";
 import { extractHostedCheckoutReturnParams } from "../../../../src/features/patient/payments/return-utils";
 import { extractApiErrorMessage } from "../../../../src/lib/api";
+import { resolveSupportedCurrencyCode } from "../../../../src/lib/currency";
 import { normalizeAllowedExternalUrl } from "../../../../src/lib/external-url";
 import { trackAnalyticsEvent } from "../../../../src/lib/analytics";
 import type { PaymobCheckoutMethod } from "../../../../src/features/patient/payments/types";
@@ -99,6 +102,192 @@ function resolveBlockedMessageKey(status: string, expiresAt: string | null) {
   return "patientPaymentsFlow.checkout.sessionNotPayable";
 }
 
+function getRefundPolicyTitle(
+  policy: { titleAr: string | null; titleEn: string | null; key: string } | null,
+  locale: string,
+) {
+  if (!policy) return "";
+  const isArabic = locale.startsWith("ar");
+  return isArabic ? policy.titleAr ?? policy.titleEn ?? policy.key : policy.titleEn ?? policy.titleAr ?? policy.key;
+}
+
+function RefundPolicyModal({
+  visible,
+  policy,
+  locale,
+  onClose,
+  onAccept,
+  t,
+}: {
+  visible: boolean;
+  policy: {
+    titleAr: string | null;
+    titleEn: string | null;
+    key: string;
+    clauseCount: number;
+    clauses: Array<{
+      titleAr: string | null;
+      titleEn: string | null;
+      bodyAr: string;
+      bodyEn: string;
+      sortOrder: number;
+    }>;
+  } | null;
+  locale: string;
+  onClose: () => void;
+  onAccept: () => void;
+  t: ReturnType<typeof useTranslation>["t"];
+}) {
+  const [scrolledToEnd, setScrolledToEnd] = useState(false);
+  const [agreed, setAgreed] = useState(false);
+  const [scrollViewportHeight, setScrollViewportHeight] = useState(0);
+  const [scrollContentHeight, setScrollContentHeight] = useState(0);
+
+  useEffect(() => {
+    if (visible) {
+      setScrolledToEnd(false);
+      setAgreed(false);
+    }
+  }, [visible]);
+
+  useEffect(() => {
+    if (
+      scrollViewportHeight > 0 &&
+      scrollContentHeight > 0 &&
+      scrollContentHeight <= scrollViewportHeight + 24
+    ) {
+      setScrolledToEnd(true);
+    }
+  }, [scrollContentHeight, scrollViewportHeight]);
+
+  if (!policy) return null;
+
+  const isArabic = locale.startsWith("ar");
+  const title = getRefundPolicyTitle(policy, locale);
+
+  return (
+    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
+      <View style={styles.modalBackdrop}>
+        <View style={styles.modalCard}>
+          <View style={styles.modalHeader}>
+            <View style={styles.modalHeaderText}>
+              <Text weight="bold" style={styles.modalEyebrow}>
+                {t("patientPaymentsFlow.checkout.refundPolicy.modalEyebrow")}
+              </Text>
+              <Text weight="bold" style={styles.modalTitle}>
+                {title}
+              </Text>
+              <Text color="#6b7280" style={styles.modalSubtitle}>
+                {t("patientPaymentsFlow.checkout.refundPolicy.modalSubtitle", {
+                  count: policy.clauseCount,
+                  defaultValue:
+                    policy.clauseCount === 1 ? "1 clause" : `${policy.clauseCount} clauses`,
+                })}
+              </Text>
+            </View>
+            <TouchableOpacity
+              accessibilityRole="button"
+              accessibilityLabel={t("patientPaymentsFlow.checkout.refundPolicy.closeModal")}
+              onPress={onClose}
+              style={styles.modalCloseButton}
+            >
+              <Ionicons name="close" size={20} color="#1f2937" />
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView
+            style={styles.modalScroll}
+            contentContainerStyle={styles.modalScrollContent}
+            onLayout={({ nativeEvent }) => {
+              setScrollViewportHeight(nativeEvent.layout.height);
+            }}
+            onContentSizeChange={(_, contentHeight) => {
+              setScrollContentHeight(contentHeight);
+            }}
+            onScroll={({ nativeEvent }) => {
+              const { layoutMeasurement, contentOffset, contentSize } = nativeEvent;
+              const reachedEnd =
+                layoutMeasurement.height + contentOffset.y >= contentSize.height - 24;
+              setScrolledToEnd(reachedEnd);
+            }}
+            scrollEventThrottle={16}
+          >
+            <Text color="#6b7280" style={styles.modalIntro}>
+              {t("patientPaymentsFlow.checkout.refundPolicy.modalIntro")}
+            </Text>
+
+            <View style={styles.modalClausesList}>
+              {policy.clauses
+                .slice()
+                .sort((left, right) => left.sortOrder - right.sortOrder)
+                .map((clause, index) => (
+                  <View key={index} style={styles.modalClauseItem}>
+                    <Text weight="bold" style={styles.modalClauseTitle}>
+                      {isArabic ? clause.titleAr ?? clause.titleEn ?? "" : clause.titleEn ?? clause.titleAr ?? ""}
+                    </Text>
+                    <Text color="#4b5563" style={styles.modalClauseBody}>
+                      {isArabic ? clause.bodyAr : clause.bodyEn}
+                    </Text>
+                  </View>
+                ))}
+            </View>
+          </ScrollView>
+
+          <View style={styles.modalFooter}>
+            <TouchableOpacity
+              activeOpacity={0.9}
+              onPress={() => {
+                if (!scrolledToEnd) return;
+                setAgreed((current) => !current);
+              }}
+              disabled={!scrolledToEnd}
+              style={[
+                styles.modalAcceptRow,
+                {
+                  backgroundColor: scrolledToEnd ? "#eaf2ff" : "#f3f4f6",
+                  borderColor: scrolledToEnd ? "#3b82f6" : "#d1d5db",
+                },
+              ]}
+            >
+              <View
+                style={[
+                  styles.modalCheckbox,
+                  {
+                    borderColor: scrolledToEnd ? "#3b82f6" : "#d1d5db",
+                    backgroundColor: agreed ? "#3b82f6" : "#fff",
+                  },
+                ]}
+              >
+                {agreed ? <Ionicons name="checkmark" size={14} color="#fff" /> : null}
+              </View>
+              <Text color="#374151" style={styles.modalAcceptText}>
+                {t("patientPaymentsFlow.checkout.refundPolicy.acceptNote")}
+              </Text>
+            </TouchableOpacity>
+
+            <View style={styles.modalActions}>
+              <Button
+                title={t("patientPaymentsFlow.checkout.refundPolicy.confirm")}
+                onPress={() => {
+                  if (!scrolledToEnd || !agreed) return;
+                  onAccept();
+                }}
+                disabled={!scrolledToEnd || !agreed}
+                style={styles.modalConfirmButton}
+              />
+              <TouchableOpacity onPress={onClose} style={styles.modalCancelButton}>
+                <Text weight="600" style={styles.modalCancelText}>
+                  {t("patientPaymentsFlow.checkout.refundPolicy.later")}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
 function mapBrowserResultToRedirectStatus(
   resultType: string,
 ): "canceled" | undefined {
@@ -139,6 +328,9 @@ export default function SessionPaymentCheckoutScreen() {
   const [flowMessage, setFlowMessage] = useState<string | null>(null);
   const [flowError, setFlowError] = useState<string | null>(null);
   const [isLaunchingCheckout, setIsLaunchingCheckout] = useState(false);
+  const [acceptedRefundPolicy, setAcceptedRefundPolicy] = useState(false);
+  const [policyModalVisible, setPolicyModalVisible] = useState(false);
+  const policyModalOpenedForIdRef = useRef<string | null>(null);
   const initiateLockRef = useRef(false);
 
   const sessionQuery = usePatientSession(id ?? null);
@@ -156,7 +348,11 @@ export default function SessionPaymentCheckoutScreen() {
   const breakdown = breakdownQuery.data?.item;
 
   const walletBalance = wallet?.availableBalance ?? "0";
-  const currency = wallet?.currencyCode ?? breakdown?.currency ?? "SAR";
+  const paymentCurrency = resolveSupportedCurrencyCode({
+    currencyCode: breakdown?.currency ?? wallet?.currencyCode ?? null,
+    regionalPricingMode: breakdown?.regionalPricingMode ?? null,
+    resolvedCountryIsoCode: breakdown?.resolvedCountryIsoCode ?? null,
+  });
   const nativeReturnUrl = useMemo(
     () =>
       id
@@ -184,6 +380,25 @@ export default function SessionPaymentCheckoutScreen() {
     session?.status === "PENDING_PAYMENT" &&
     !isSessionExpired(session.expiresAt ?? null);
   const gatewayPaymentRequired = split.gatewayRemaining > 0;
+  const refundPolicyQuery = useRefundPolicy("SESSION", {
+    enabled: Boolean(id),
+  });
+  const refundPolicy = refundPolicyQuery.data?.item ?? null;
+
+  useEffect(() => {
+    if (!refundPolicy?.id) return;
+
+    if (acceptedRefundPolicy) {
+      policyModalOpenedForIdRef.current = refundPolicy.id;
+      setPolicyModalVisible(false);
+      return;
+    }
+
+    if (policyModalOpenedForIdRef.current === refundPolicy.id) return;
+
+    policyModalOpenedForIdRef.current = refundPolicy.id;
+    setPolicyModalVisible(true);
+  }, [acceptedRefundPolicy, refundPolicy?.id]);
 
   const supportedGatewayMethods = useMemo(() => {
     if (!capabilities) return [];
@@ -359,6 +574,18 @@ export default function SessionPaymentCheckoutScreen() {
     if (!id || isLaunchingCheckout || initiateLockRef.current) return;
     setFlowMessage(null);
     setFlowError(null);
+
+    if (!refundPolicy || !acceptedRefundPolicy) {
+      setFlowError(
+        t("patientPaymentsFlow.checkout.refundPolicy.mustAccept", {
+          defaultValue:
+            "Please review and accept the session refund policy before continuing.",
+        }),
+      );
+      setPolicyModalVisible(true);
+      return;
+    }
+
     initiateLockRef.current = true;
 
     trackAnalyticsEvent("payment_initiated", {
@@ -375,11 +602,12 @@ export default function SessionPaymentCheckoutScreen() {
         input: {
           couponCode: appliedCoupon ?? undefined,
           useWalletBalance,
+          acceptedRefundPolicyId: refundPolicy.id,
           paymobMethod:
             gatewayPaymentRequired && capabilities?.provider === "PAYMOB"
               ? ((selectedPaymobMethod ?? defaultGatewayMethod ?? undefined) as
-                  | PaymobCheckoutMethod
-                  | undefined)
+                | PaymobCheckoutMethod
+                | undefined)
               : undefined,
           returnUrl:
             gatewayPaymentRequired && capabilities?.provider === "PAYMOB"
@@ -465,7 +693,6 @@ export default function SessionPaymentCheckoutScreen() {
       <Screen bg="background">
         <Header
           showBack
-          onBack={() => router.back()}
           title={t("patientPaymentsFlow.checkout.title")}
         />
         <LoadingState fullScreen />
@@ -478,7 +705,6 @@ export default function SessionPaymentCheckoutScreen() {
       <Screen bg="background">
         <Header
           showBack
-          onBack={() => router.back()}
           title={t("patientPaymentsFlow.checkout.title")}
         />
         <View style={styles.centerState}>
@@ -505,7 +731,6 @@ export default function SessionPaymentCheckoutScreen() {
       <Screen bg="background">
         <Header
           showBack
-          onBack={() => router.back()}
           title={t("patientPaymentsFlow.checkout.title")}
         />
         <View style={styles.centerState}>
@@ -526,7 +751,6 @@ export default function SessionPaymentCheckoutScreen() {
     <Screen bg="background">
       <Header
         showBack
-        onBack={() => router.back()}
         title={t("patientPaymentsFlow.checkout.title")}
       />
 
@@ -579,7 +803,7 @@ export default function SessionPaymentCheckoutScreen() {
               value={couponDraft}
               onChangeText={setCouponDraft}
               placeholder={t("patientPaymentsFlow.checkout.coupon.placeholder")}
-              style={styles.couponInput}
+              containerStyle={styles.couponInput}
             />
             {!appliedCoupon ? (
               <TouchableOpacity
@@ -629,7 +853,7 @@ export default function SessionPaymentCheckoutScreen() {
               <Text color={theme.colors.textMuted} style={styles.toggleHint}>
                 {toNumber(walletBalance) > 0
                   ? t("patientPaymentsFlow.checkout.walletToggle.available", {
-                      amount: formatMoney(walletBalance, currency),
+                      amount: formatMoney(walletBalance, paymentCurrency),
                     })
                   : t("patientPaymentsFlow.checkout.walletToggle.noBalance")}
               </Text>
@@ -682,7 +906,7 @@ export default function SessionPaymentCheckoutScreen() {
                   {t("patientPaymentsFlow.checkout.breakdown.sessionFee")}
                 </Text>
                 <Text weight="600">
-                  {formatMoney(breakdown.grossAmount, breakdown.currency)}
+                  {formatMoney(breakdown.grossAmount, paymentCurrency)}
                 </Text>
               </View>
 
@@ -699,7 +923,7 @@ export default function SessionPaymentCheckoutScreen() {
                   }
                 >
                   {toNumber(breakdown.discountAmount) > 0 ? "-" : ""}
-                  {formatMoney(breakdown.discountAmount, breakdown.currency)}
+                  {formatMoney(breakdown.discountAmount, paymentCurrency)}
                 </Text>
               </View>
 
@@ -708,7 +932,7 @@ export default function SessionPaymentCheckoutScreen() {
                   {t("patientPaymentsFlow.checkout.breakdown.walletDeduction")}
                 </Text>
                 <Text weight="600" color={theme.colors.primary}>
-                  {formatMoney(split.walletUsed.toFixed(2), breakdown.currency)}
+                  {formatMoney(split.walletUsed.toFixed(2), paymentCurrency)}
                 </Text>
               </View>
 
@@ -717,7 +941,7 @@ export default function SessionPaymentCheckoutScreen() {
                   {t("patientPaymentsFlow.checkout.breakdown.total")}
                 </Text>
                 <Text weight="bold" style={styles.totalAmount}>
-                  {formatMoney(breakdown.netPaidAmount, breakdown.currency)}
+                  {formatMoney(breakdown.netPaidAmount, paymentCurrency)}
                 </Text>
               </View>
 
@@ -734,7 +958,7 @@ export default function SessionPaymentCheckoutScreen() {
                   {t("patientPaymentsFlow.checkout.state.walletPart")}
                 </Text>
                 <Text weight="600" style={styles.clarityAmount}>
-                  {formatMoney(split.walletUsed.toFixed(2), breakdown.currency)}
+                  {formatMoney(split.walletUsed.toFixed(2), paymentCurrency)}
                 </Text>
                 <Text
                   color={theme.colors.textSecondary}
@@ -745,7 +969,7 @@ export default function SessionPaymentCheckoutScreen() {
                 <Text weight="600" style={styles.clarityAmount}>
                   {formatMoney(
                     split.gatewayRemaining.toFixed(2),
-                    breakdown.currency,
+                    paymentCurrency,
                   )}
                 </Text>
                 <Text
@@ -801,7 +1025,7 @@ export default function SessionPaymentCheckoutScreen() {
                 <View style={styles.methodTextWrap}>
                   <Text weight="600">
                     {t(
-                      `patientPaymentsFlow.paymentCard.provider.${capabilities?.provider ?? "PAYMOB"}` as const,
+                      "patientPaymentsFlow.checkout.paymentMethod.onlinePayment",
                     )}
                   </Text>
                   <Text
@@ -809,9 +1033,7 @@ export default function SessionPaymentCheckoutScreen() {
                     style={styles.methodHint}
                   >
                     {paymobMethodRequired
-                      ? t(
-                          "patientPaymentsFlow.checkout.paymentMethod.methodRequired",
-                        )
+                      ? t("patientPaymentsFlow.checkout.paymentMethod.methodRequired")
                       : t(
                           "patientPaymentsFlow.checkout.paymentMethod.gatewayHint",
                         )}
@@ -901,6 +1123,79 @@ export default function SessionPaymentCheckoutScreen() {
           </View>
         </Card>
 
+        <Card variant="flat" padding="md" style={styles.sectionCard}>
+          <Text weight="bold" style={styles.sectionTitle}>
+            {t(
+              "patientPaymentsFlow.checkout.refundPolicy.title",
+              "Refund policy",
+            )}
+          </Text>
+          {refundPolicyQuery.isLoading ? (
+            <Text color={theme.colors.textMuted} style={styles.methodHint}>
+              {t(
+                "patientPaymentsFlow.checkout.refundPolicy.loading",
+                "Loading refund policy...",
+              )}
+            </Text>
+          ) : refundPolicy ? (
+            <View style={styles.refundPolicyBox}>
+              <Text
+                color={theme.colors.textSecondary}
+                style={styles.refundPolicyText}
+              >
+                {refundPolicy.titleEn ?? refundPolicy.titleAr ?? refundPolicy.key}
+              </Text>
+              <Text color={theme.colors.textMuted} style={styles.refundPolicyMeta}>
+                {acceptedRefundPolicy
+                  ? t("patientPaymentsFlow.checkout.refundPolicy.acceptedBadge", {
+                      defaultValue: "Refund policy accepted",
+                    })
+                  : t("patientPaymentsFlow.checkout.refundPolicy.reviewRequired", {
+                      defaultValue: "Please review the policy before paying.",
+                    })}
+              </Text>
+              <TouchableOpacity
+                activeOpacity={0.9}
+                onPress={() => setPolicyModalVisible(true)}
+                style={[
+                  styles.refundPolicyButton,
+                  { borderColor: theme.colors.borderLight },
+                ]}
+              >
+                <Ionicons
+                  name="document-text-outline"
+                  size={16}
+                  color={theme.colors.primary}
+                />
+                <Text weight="600" color={theme.colors.primary}>
+                  {t(
+                    "patientPaymentsFlow.checkout.refundPolicy.viewPolicy",
+                    "Review refund policy",
+                  )}
+                </Text>
+              </TouchableOpacity>
+              {acceptedRefundPolicy ? (
+                <View style={styles.refundAcceptedBadge}>
+                  <Ionicons name="checkmark-circle" size={14} color="#16a34a" />
+                  <Text color="#166534" style={styles.refundAcceptedText}>
+                    {t(
+                      "patientPaymentsFlow.checkout.refundPolicy.acceptedBadge",
+                      "Refund policy accepted",
+                    )}
+                  </Text>
+                </View>
+              ) : null}
+            </View>
+          ) : (
+            <Text color="#ba1a1a" style={styles.methodHint}>
+              {t(
+                "patientPaymentsFlow.checkout.refundPolicy.missing",
+                "The refund policy is unavailable right now.",
+              )}
+            </Text>
+          )}
+        </Card>
+
         {flowMessage ? (
           <Card variant="flat" padding="sm" style={styles.feedbackCard}>
             <Text color={theme.colors.primary}>{flowMessage}</Text>
@@ -913,6 +1208,19 @@ export default function SessionPaymentCheckoutScreen() {
           </Card>
         ) : null}
       </ScrollView>
+
+      <RefundPolicyModal
+        visible={policyModalVisible && Boolean(refundPolicy)}
+        policy={refundPolicy}
+        locale={locale}
+        onClose={() => setPolicyModalVisible(false)}
+        onAccept={() => {
+          setAcceptedRefundPolicy(true);
+          setPolicyModalVisible(false);
+          setFlowError(null);
+        }}
+        t={t}
+      />
 
       <View
         style={[
@@ -932,7 +1240,7 @@ export default function SessionPaymentCheckoutScreen() {
           </Text>
           <Text weight="bold" style={styles.bottomSummaryAmount}>
             {breakdown
-              ? formatMoney(breakdown.netPaidAmount, breakdown.currency)
+              ? formatMoney(breakdown.netPaidAmount, paymentCurrency)
               : breakdownErrorMsg
                 ? t("patientPaymentsFlow.checkout.pricingUnavailableShort")
                 : "-"}
@@ -951,6 +1259,9 @@ export default function SessionPaymentCheckoutScreen() {
             initiateLockRef.current ||
             !breakdown ||
             breakdownLoading ||
+            refundPolicyQuery.isLoading ||
+            !refundPolicy ||
+            !acceptedRefundPolicy ||
             capabilitiesLoading ||
             Boolean(capabilitiesErrorMsg) ||
             (paymobMethodRequired && !selectedPaymobMethod)
@@ -967,6 +1278,130 @@ const styles = StyleSheet.create({
     padding: 16,
     paddingBottom: 180,
     gap: 12,
+  },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(15, 23, 42, 0.5)",
+    justifyContent: "center",
+    padding: 16,
+  },
+  modalCard: {
+    maxHeight: "90%",
+    backgroundColor: "#fff",
+    borderRadius: 24,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "#dbe4f0",
+  },
+  modalHeader: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    gap: 12,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#e6edf5",
+  },
+  modalHeaderText: {
+    flex: 1,
+    gap: 4,
+  },
+  modalEyebrow: {
+    fontSize: 12,
+    color: "#3b82f6",
+    textTransform: "uppercase",
+    letterSpacing: 0.6,
+  },
+  modalTitle: {
+    fontSize: 18,
+  },
+  modalSubtitle: {
+    fontSize: 13,
+    lineHeight: 19,
+  },
+  modalCloseButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#f3f7fd",
+  },
+  modalScroll: {
+    flexGrow: 0,
+  },
+  modalScrollContent: {
+    paddingHorizontal: 16,
+    paddingTop: 14,
+    paddingBottom: 14,
+    gap: 12,
+  },
+  modalIntro: {
+    fontSize: 13,
+    lineHeight: 20,
+  },
+  modalClausesList: {
+    gap: 12,
+  },
+  modalClauseItem: {
+    padding: 14,
+    borderRadius: 16,
+    backgroundColor: "#f8fbff",
+    borderWidth: 1,
+    borderColor: "#e1ebf7",
+    gap: 6,
+  },
+  modalClauseTitle: {
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  modalClauseBody: {
+    fontSize: 13,
+    lineHeight: 20,
+  },
+  modalFooter: {
+    borderTopWidth: 1,
+    borderTopColor: "#e6edf5",
+    padding: 16,
+    gap: 12,
+  },
+  modalAcceptRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    borderWidth: 1,
+    borderRadius: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+  },
+  modalCheckbox: {
+    width: 22,
+    height: 22,
+    borderRadius: 7,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  modalAcceptText: {
+    flex: 1,
+    fontSize: 13,
+    lineHeight: 20,
+  },
+  modalActions: {
+    gap: 10,
+  },
+  modalConfirmButton: {
+    width: "100%",
+  },
+  modalCancelButton: {
+    alignSelf: "center",
+    paddingVertical: 2,
+  },
+  modalCancelText: {
+    fontSize: 13,
+    color: "#4b5563",
   },
   centerState: {
     flex: 1,
@@ -998,12 +1433,16 @@ const styles = StyleSheet.create({
   couponRow: {
     flexDirection: "row",
     alignItems: "center",
+    width: "100%",
     gap: 8,
   },
   couponInput: {
+    flex: 1,
+    minWidth: 0,
     marginBottom: 0,
   },
   couponAction: {
+    flexShrink: 0,
     paddingHorizontal: 12,
     paddingVertical: 12,
     borderRadius: 10,
@@ -1052,6 +1491,35 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
     gap: 8,
     marginTop: 12,
+  },
+  refundPolicyBox: {
+    gap: 10,
+    paddingTop: 4,
+  },
+  refundPolicyText: {
+    fontSize: 13,
+    lineHeight: 20,
+  },
+  refundPolicyMeta: {
+    fontSize: 12,
+    lineHeight: 18,
+  },
+  refundPolicyButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    borderWidth: 1,
+    borderRadius: 14,
+    paddingVertical: 12,
+  },
+  refundAcceptedBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  refundAcceptedText: {
+    fontSize: 12,
   },
   methodOption: {
     borderWidth: 1,
@@ -1104,3 +1572,4 @@ const styles = StyleSheet.create({
   },
   pricingErrorText: { flex: 1, fontSize: 13, lineHeight: 20 },
 });
+

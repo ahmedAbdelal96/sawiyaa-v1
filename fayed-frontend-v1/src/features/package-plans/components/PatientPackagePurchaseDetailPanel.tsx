@@ -14,6 +14,7 @@ import { ListStateSkeleton, StateCard } from "@/components/shared/ContentStates"
 import { SurfaceCard, SurfaceHeader, SurfaceStatCard } from "@/components/shared/SurfaceShell";
 import { toAppError } from "@/lib/api/errors";
 import { isUnauthorizedError } from "@/lib/api/errors";
+import { resolvePatientCurrencyCode } from "@/features/payments/lib/patient-currency";
 import { useMyPackagePurchase } from "../hooks/use-package-purchases";
 import PackagePurchasePaymentAction from "./PackagePurchasePaymentAction";
 import SessionStatusBadge from "@/features/sessions/components/SessionStatusBadge";
@@ -123,8 +124,15 @@ export default function PatientPackagePurchaseDetailPanel({
   const tSessions = useTranslations("sessions");
   const locale = useLocale();
   const numLocale = locale === "ar" ? "ar-SA" : "en-US";
-
   const { data, isLoading, isError, error, refetch } = useMyPackagePurchase(purchaseId);
+  const purchasePreview = data?.item ?? null;
+  const purchaseCurrency = purchasePreview
+    ? resolvePatientCurrencyCode({
+        currencyCode: purchasePreview.selectedCurrencyCode,
+        regionalPricingMode: purchasePreview.regionalPricingMode,
+        resolvedCountryIsoCode: purchasePreview.resolvedCountryIsoCode,
+      }) ?? purchasePreview.selectedCurrencyCode
+    : "USD";
 
   if (isLoading) {
     return (
@@ -232,14 +240,14 @@ export default function PatientPackagePurchaseDetailPanel({
               />
               <SurfaceStatCard
                 label={t("detail.summary.currency")}
-                value={purchase.selectedCurrencyCode}
+                value={purchaseCurrency}
                 hint={t("detail.summary.currencyHint")}
                 tone="neutral"
                 icon={<CalendarDays className="h-4 w-4" />}
               />
               <SurfaceStatCard
                 label={t("detail.summary.total")}
-                value={formatMoney(purchase.patientPayableTotal, purchase.selectedCurrencyCode, numLocale)}
+                value={formatMoney(purchase.patientPayableTotal, purchaseCurrency, numLocale)}
                 hint={t("detail.summary.totalHint")}
                 tone="success"
                 icon={<Clock className="h-4 w-4" />}
@@ -333,7 +341,7 @@ export default function PatientPackagePurchaseDetailPanel({
               {t("detail.fields.baseSessionPrice")}
             </p>
             <p className="mt-1 text-base font-semibold text-text-primary dark:text-white/90">
-              {formatMoney(purchase.selectedBaseSessionPrice, purchase.selectedCurrencyCode, numLocale)}
+              {formatMoney(purchase.selectedBaseSessionPrice, purchaseCurrency, numLocale)}
             </p>
           </div>
           <div className="rounded-2xl bg-surface px-4 py-3 dark:bg-white/5">
@@ -341,7 +349,7 @@ export default function PatientPackagePurchaseDetailPanel({
               {t("detail.fields.undiscountedTotal")}
             </p>
             <p className="mt-1 text-base font-semibold text-text-primary dark:text-white/90">
-              {formatMoney(purchase.undiscountedTotal, purchase.selectedCurrencyCode, numLocale)}
+              {formatMoney(purchase.undiscountedTotal, purchaseCurrency, numLocale)}
             </p>
           </div>
           <div className="rounded-2xl bg-surface px-4 py-3 dark:bg-white/5">
@@ -349,7 +357,7 @@ export default function PatientPackagePurchaseDetailPanel({
               {t("detail.fields.discountAmount")}
             </p>
             <p className="mt-1 text-base font-semibold text-success-700 dark:text-success-300">
-              {formatMoney(purchase.discountAmount, purchase.selectedCurrencyCode, numLocale)}
+              {formatMoney(purchase.discountAmount, purchaseCurrency, numLocale)}
             </p>
           </div>
           <div className="rounded-2xl bg-primary-light px-4 py-3 dark:bg-primary/10">
@@ -357,7 +365,7 @@ export default function PatientPackagePurchaseDetailPanel({
               {t("detail.fields.patientPayableTotal")}
             </p>
             <p className="mt-1 text-lg font-bold text-primary">
-              {formatMoney(purchase.patientPayableTotal, purchase.selectedCurrencyCode, numLocale)}
+              {formatMoney(purchase.patientPayableTotal, purchaseCurrency, numLocale)}
             </p>
           </div>
         </div>

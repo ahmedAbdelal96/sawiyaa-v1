@@ -114,7 +114,7 @@ export default function CareChatConversationScreen() {
   if (convQuery.isLoading) {
     return (
       <Screen bg="background">
-        <Header showBack onBack={() => router.back()} />
+        <Header showBack  />
         <LoadingState fullScreen />
       </Screen>
     );
@@ -123,7 +123,7 @@ export default function CareChatConversationScreen() {
   if (convQuery.isError || !conversation) {
     return (
       <Screen bg="background">
-        <Header showBack onBack={() => router.back()} />
+        <Header showBack  />
         <ErrorState fullScreen onRetry={convQuery.refetch} />
       </Screen>
     );
@@ -139,7 +139,7 @@ export default function CareChatConversationScreen() {
 
   return (
     <Screen bg="background">
-      <Header title={headerTitle} showBack onBack={() => router.back()} />
+      <Header title={headerTitle} showBack  />
 
       <KeyboardAvoidingView
         style={styles.flex}
@@ -352,3 +352,4 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
 });
+

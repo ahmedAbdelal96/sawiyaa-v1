@@ -55,6 +55,14 @@ export class PatientPackagePurchaseResponseDto {
   @ApiProperty()
   selectedCurrencyCode!: string;
 
+  @ApiProperty({
+    enum: ['EGYPT_LOCAL', 'INTERNATIONAL'],
+  })
+  regionalPricingMode!: 'EGYPT_LOCAL' | 'INTERNATIONAL';
+
+  @ApiProperty({ nullable: true })
+  resolvedCountryIsoCode!: string | null;
+
   @ApiProperty()
   selectedBaseSessionPrice!: string;
 

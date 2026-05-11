@@ -32,6 +32,9 @@ export type BackendPublicPractitionerListItem = {
   specialties: BackendSpecialty[];
   languages: string[];
   countryCode: string | null;
+  currencyCode: "EGP" | "USD";
+  regionalPricingMode: "EGYPT_LOCAL" | "INTERNATIONAL";
+  resolvedCountryIsoCode: string | null;
   practitionerType: string;
   practitionerGender: string | null;
   sessionPrice30: number | null;
@@ -40,6 +43,8 @@ export type BackendPublicPractitionerListItem = {
   sessionPrice30Usd: number | null;
   sessionPrice60Egp: number | null;
   sessionPrice60Usd: number | null;
+  displaySessionPrice30: number | null;
+  displaySessionPrice60: number | null;
   isOnlineNow: boolean;
   acceptsCoupon: boolean;
   acceptsPackage: boolean;
@@ -79,6 +84,9 @@ export function mapBackendListItemToUi(item: BackendPublicPractitionerListItem):
     specialties: item.specialties.map((s) => s.slug),
     languages: item.languages ?? [],
     country: (item.countryCode ?? "").toLowerCase(),
+    currencyCode: item.currencyCode,
+    regionalPricingMode: item.regionalPricingMode,
+    resolvedCountryIsoCode: item.resolvedCountryIsoCode,
     practitionerType: item.practitionerType,
     practitionerGender:
       item.practitionerGender?.toLowerCase() === "male"
@@ -92,6 +100,8 @@ export function mapBackendListItemToUi(item: BackendPublicPractitionerListItem):
     sessionPrice30Usd: item.sessionPrice30Usd ?? null,
     sessionPrice60Egp: item.sessionPrice60Egp ?? null,
     sessionPrice60Usd: item.sessionPrice60Usd ?? null,
+    displaySessionPrice30: item.displaySessionPrice30 ?? null,
+    displaySessionPrice60: item.displaySessionPrice60 ?? null,
     pricing: {
       session30: {
         egp: item.sessionPrice30Egp ?? null,

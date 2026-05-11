@@ -1,8 +1,11 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { resolvePaymentRegionalResolution } from '@common/payments/payment-region.resolver';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
+import { PatientProfileRepository } from '@modules/patients/repositories/patient-profile.repository';
 import { PublicPractitionerMapper } from '../mappers/public-practitioner.mapper';
 import { PublicPractitionerVisibilityPolicy } from '../policies/public-practitioner-visibility.policy';
 import { PublicPractitionerReadRepository } from '../repositories/public-practitioner-read.repository';
+import { resolvePublicPractitionerPricing } from '../utils/public-practitioner-pricing.util';
 
 type PublicPractitionerPricingProfile = {
   sessionPrice30Egp: string | { toString(): string } | null;
@@ -21,9 +24,21 @@ export class GetPublicPractitionerDetailsUseCase {
     private readonly mapper: PublicPractitionerMapper,
     private readonly visibilityPolicy: PublicPractitionerVisibilityPolicy,
     private readonly publicReadRepository: PublicPractitionerReadRepository,
+    private readonly patientProfileRepository: PatientProfileRepository,
   ) {}
 
-  async execute(input: { slug: string; locale: SupportedLocale }) {
+  async execute(input: {
+    slug: string;
+    locale: SupportedLocale;
+    currentUserId?: string | null;
+  }) {
+    const patientProfile = input.currentUserId
+      ? await this.patientProfileRepository.findByUserId(input.currentUserId)
+      : null;
+    const regionalResolution = resolvePaymentRegionalResolution({
+      patientCountryIsoCode: patientProfile?.country?.isoCode ?? null,
+    });
+
     const profile = await this.publicReadRepository.findByPublicSlug(
       input.slug,
       input.locale,
@@ -78,6 +93,13 @@ export class GetPublicPractitionerDetailsUseCase {
         })),
         languages: profile.languages.map((item) => item.language.code),
         countryCode: profile.country?.isoCode ?? null,
+        ...resolvePublicPractitionerPricing({
+          regionalResolution,
+          sessionPrice30Egp: pricingProfile.sessionPrice30Egp,
+          sessionPrice30Usd: pricingProfile.sessionPrice30Usd,
+          sessionPrice60Egp: pricingProfile.sessionPrice60Egp,
+          sessionPrice60Usd: pricingProfile.sessionPrice60Usd,
+        }),
         yearsExperience: profile.yearsOfExperience ?? null,
         pricing: {
           session30: {

@@ -8,6 +8,8 @@ import {
 } from '@nestjs/swagger';
 import { CurrentLocale } from '@common/i18n/decorators/current-locale.decorator';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
+import { CurrentUser } from '@common/decorators/current-user.decorator';
+import { AuthenticatedUser } from '@common/interfaces/authenticated-user.interface';
 import { PublicPackagePlansQueryDto } from '../dto/public-package-plans-query.dto';
 import { PackagePlanQuotedListSuccessResponseDto } from '../dto/package-plan-quote-response.dto';
 import { ListPublicPackagePlansUseCase } from '../use-cases/list-public-package-plans.use-case';
@@ -30,16 +32,18 @@ export class PublicPackagePlansController {
   @ApiNotFoundResponse({ description: 'Practitioner was not found' })
   list(
     @Param('slug') practitionerSlug: string,
+    @CurrentUser() currentUser: AuthenticatedUser | undefined,
     @CurrentLocale() locale: SupportedLocale,
     @Query() query: PublicPackagePlansQueryDto,
   ) {
     return this.listPublicPackagePlansUseCase
       .execute({
         practitionerSlug,
+        currentUserId: currentUser?.id ?? null,
         locale,
         durationMinutes: query.durationMinutes,
         sessionMode: query.sessionMode,
-        currencyCode: query.currencyCode,
+        requestedCurrencyCode: query.currencyCode,
       })
       .then((data) => ({ success: true as const, data }));
   }

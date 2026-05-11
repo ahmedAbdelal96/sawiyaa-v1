@@ -1,4 +1,6 @@
+import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { SessionMode, SessionProvider, SessionStatus } from '@prisma/client';
+import { SessionAccessPolicy } from '../policies/session-access.policy';
 import { PrepareSessionRuntimeUseCase } from './prepare-session-runtime.use-case';
 
 describe('PrepareSessionRuntimeUseCase', () => {
@@ -98,6 +100,7 @@ describe('PrepareSessionRuntimeUseCase', () => {
       sessionVideoProviderRegistryService as never,
       sessionVideoProviderResolverService as never,
       resolveSessionJoinReadinessService as never,
+      new SessionAccessPolicy(),
     );
 
     return { useCase, sessionRepository, sessionVideoProviderResolverService };

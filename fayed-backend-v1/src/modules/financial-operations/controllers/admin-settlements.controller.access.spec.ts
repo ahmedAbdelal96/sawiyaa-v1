@@ -1,8 +1,13 @@
 import { GUARDS_METADATA } from '@nestjs/common/constants';
-import { ROLES_KEY } from '@common/constants/auth-metadata.constants';
+import {
+  PERMISSIONS_KEY,
+  ROLES_KEY,
+} from '@common/constants/auth-metadata.constants';
 import { AppRole } from '@common/enums/app-role.enum';
+import { PermissionKey } from '@common/enums/permission-key.enum';
 import { JwtAccessAuthGuard } from '@common/guards/authentication/jwt-access-auth.guard';
 import { AdminGuard } from '@common/guards/authorization/admin.guard';
+import { PermissionsGuard } from '@common/guards/authorization/permissions.guard';
 import { RolesGuard } from '@common/guards/authorization/roles.guard';
 import { AdminSettlementsController } from './admin-settlements.controller';
 
@@ -17,7 +22,17 @@ describe('AdminSettlementsController access contract', () => {
       ROLES_KEY,
       AdminSettlementsController,
     ) as AppRole[] | undefined;
-    expect(classRoles).toEqual([AppRole.ADMIN, AppRole.SUPPORT_AGENT]);
+    expect(classRoles).toEqual([
+      AppRole.ADMIN,
+      AppRole.SUPER_ADMIN,
+      AppRole.FINANCE_STAFF,
+    ]);
+
+    const classPermissions = Reflect.getMetadata(
+      PERMISSIONS_KEY,
+      AdminSettlementsController,
+    ) as PermissionKey[] | undefined;
+    expect(classPermissions).toEqual([PermissionKey.SETTLEMENTS_READ]);
   });
 
   it('keeps settlement mutation routes admin-only', () => {
@@ -41,11 +56,34 @@ describe('AdminSettlementsController access contract', () => {
       ROLES_KEY,
       recordPractitionerPayout,
     ) as AppRole[] | undefined;
+    const generatePermissions = Reflect.getMetadata(
+      PERMISSIONS_KEY,
+      generate,
+    ) as PermissionKey[] | undefined;
+    const markPaidPermissions = Reflect.getMetadata(
+      PERMISSIONS_KEY,
+      markPaid,
+    ) as PermissionKey[] | undefined;
+    const markFailedPermissions = Reflect.getMetadata(
+      PERMISSIONS_KEY,
+      markFailed,
+    ) as PermissionKey[] | undefined;
+    const recordPractitionerPayoutPermissions = Reflect.getMetadata(
+      PERMISSIONS_KEY,
+      recordPractitionerPayout,
+    ) as PermissionKey[] | undefined;
 
     expect(generateRoles).toEqual([AppRole.ADMIN]);
     expect(markPaidRoles).toEqual([AppRole.ADMIN]);
     expect(markFailedRoles).toEqual([AppRole.ADMIN]);
     expect(recordPractitionerPayoutRoles).toEqual([AppRole.ADMIN]);
+
+    expect(generatePermissions).toEqual([PermissionKey.SETTLEMENTS_WRITE]);
+    expect(markPaidPermissions).toEqual([PermissionKey.SETTLEMENTS_WRITE]);
+    expect(markFailedPermissions).toEqual([PermissionKey.SETTLEMENTS_WRITE]);
+    expect(recordPractitionerPayoutPermissions).toEqual([
+      PermissionKey.SETTLEMENTS_WRITE,
+    ]);
   });
 
   it('enforces auth/role guards at controller level and admin guard on mutation routes', () => {
@@ -55,6 +93,7 @@ describe('AdminSettlementsController access contract', () => {
     ) ?? []) as unknown[];
     expect(classGuards).toContain(JwtAccessAuthGuard);
     expect(classGuards).toContain(RolesGuard);
+    expect(classGuards).toContain(PermissionsGuard);
 
     const generate = getControllerMethod('generate');
     const markPaid = getControllerMethod('markPaid');

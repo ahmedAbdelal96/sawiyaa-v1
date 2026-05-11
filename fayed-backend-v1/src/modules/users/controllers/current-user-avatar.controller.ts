@@ -51,7 +51,9 @@ export class CurrentUserAvatarController {
   ) {}
 
   @Post()
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(
+    FileInterceptor('file', { limits: { fileSize: 512 * 1024 } }),
+  )
   @ApiOperation({
     summary: 'Upload current user avatar',
     description:

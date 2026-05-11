@@ -9,6 +9,7 @@ import {
   Prisma,
 } from '@prisma/client';
 import { PrismaService } from '@common/prisma/prisma.service';
+import type { GeneralChatParticipantDirectoryRecord } from '../helpers/general-chat-identity.mapper';
 
 const generalConversationReadSelect =
   Prisma.validator<Prisma.ConversationSelect>()({
@@ -41,6 +42,31 @@ const generalConversationReadSelect =
         messageType: true,
         contentText: true,
         sentAt: true,
+      },
+    },
+  });
+
+const generalChatParticipantDirectorySelect =
+  Prisma.validator<Prisma.UserSelect>()({
+    id: true,
+    displayName: true,
+    status: true,
+    patientProfile: {
+      select: {
+        displayName: true,
+      },
+    },
+    practitionerProfile: {
+      select: {
+        avatarUrl: true,
+        professionalTitle: true,
+        status: true,
+        isPublicProfilePublished: true,
+        primarySpecialtyCategory: {
+          select: {
+            name: true,
+          },
+        },
       },
     },
   });
@@ -508,5 +534,27 @@ export class GeneralChatRepository {
       unreadMessages,
       unreadConversations: unreadConversationRows.length,
     };
+  }
+
+  loadParticipantIdentityRecords(userIds: string[]) {
+    if (userIds.length === 0) {
+      return Promise.resolve([] as GeneralChatParticipantDirectoryRecord[]);
+    }
+
+    return this.prisma.user.findMany({
+      where: {
+        id: {
+          in: [...new Set(userIds)],
+        },
+      },
+      select: generalChatParticipantDirectorySelect,
+    }) as Promise<GeneralChatParticipantDirectoryRecord[]>;
+  }
+
+  loadParticipantIdentityRecord(userId: string) {
+    return this.prisma.user.findUnique({
+      where: { id: userId },
+      select: generalChatParticipantDirectorySelect,
+    }) as Promise<GeneralChatParticipantDirectoryRecord | null>;
   }
 }

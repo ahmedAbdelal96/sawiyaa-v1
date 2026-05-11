@@ -57,7 +57,6 @@ export default function AcademyEnrollmentDetailScreen({
     <DetailPageScaffold
       title={t("academy.enrollment.title", "Enrollment")}
       showBack
-      onBack={() => router.back()}
       loading={enrollmentQuery.isLoading}
       loadingMessage={t("academy.enrollment.loading", "Loading enrollment...")}
       error={enrollmentQuery.isError}
@@ -237,3 +236,4 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
 });
+

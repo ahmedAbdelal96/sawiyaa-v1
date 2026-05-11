@@ -18,10 +18,13 @@ import {
 } from '@nestjs/swagger';
 import { RequireAccountStates } from '@common/decorators/account-state.decorator';
 import { CurrentUser } from '@common/decorators/current-user.decorator';
+import { Permissions } from '@common/decorators/permissions.decorator';
 import { Roles } from '@common/decorators/roles.decorator';
 import { AccountStateRequirement } from '@common/enums/account-state-requirement.enum';
 import { AppRole } from '@common/enums/app-role.enum';
+import { PermissionKey } from '@common/enums/permission-key.enum';
 import { JwtAccessAuthGuard } from '@common/guards/authentication/jwt-access-auth.guard';
+import { PermissionsGuard } from '@common/guards/authorization/permissions.guard';
 import { RolesGuard } from '@common/guards/authorization/roles.guard';
 import { AuthenticatedUser } from '@common/interfaces/authenticated-user.interface';
 import { AddSupportMessageDto } from '../dto/add-support-message.dto';
@@ -43,8 +46,12 @@ import { UpdateSupportTicketStatusUseCase } from '../use-cases/update-support-ti
 
 @ApiTags('Support')
 @ApiBearerAuth()
-@UseGuards(JwtAccessAuthGuard, RolesGuard)
+@UseGuards(JwtAccessAuthGuard, RolesGuard, PermissionsGuard)
 @RequireAccountStates(AccountStateRequirement.ACTIVE_ACCOUNT)
+// BUSINESS DECISION: All ADMIN and SUPPORT_AGENT roles can read and reply to any ticket.
+// Ticket read/reply access is intentionally open to all support staff (not scoped to assigned-only).
+// If assignment-scoped access is needed in the future, introduce a SupportTicketAssignmentPolicy
+// and filter by assignedToUserId at the use-case level.
 @Roles(AppRole.ADMIN, AppRole.SUPPORT_AGENT)
 @Controller('admin/support/tickets')
 export class AdminSupportController {
@@ -125,6 +132,7 @@ export class AdminSupportController {
   }
 
   @Post(':id/internal-notes')
+  @Permissions(PermissionKey.SUPPORT_TICKET_NOTE_INTERNAL)
   @HttpCode(200)
   @ApiOperation({ summary: 'Add internal support/admin note' })
   @ApiBody({ type: AddSupportMessageDto })
@@ -164,6 +172,7 @@ export class AdminSupportController {
   }
 
   @Patch(':id/assign')
+  @Permissions(PermissionKey.SUPPORT_TICKET_ASSIGN)
   @ApiOperation({ summary: 'Assign/unassign support ticket' })
   @ApiBody({ type: AssignSupportTicketDto })
   @ApiResponse({ status: 200, type: AdminSupportTicketItemSuccessResponseDto })

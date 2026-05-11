@@ -14,6 +14,35 @@ export class GeneralChatParticipantSummaryDto {
 
   @ApiProperty({ enum: ConversationParticipantRole })
   role!: ConversationParticipantRole;
+
+  @ApiProperty({ type: () => GeneralChatParticipantIdentityDto, nullable: true })
+  identity!: GeneralChatParticipantIdentityDto | null;
+}
+
+export class GeneralChatParticipantIdentityDto {
+  @ApiProperty()
+  participantId!: string;
+
+  @ApiProperty()
+  userId!: string;
+
+  @ApiProperty()
+  displayName!: string;
+
+  @ApiProperty({ nullable: true })
+  avatarUrl!: string | null;
+
+  @ApiProperty({ enum: ConversationParticipantRole })
+  role!: ConversationParticipantRole;
+
+  @ApiProperty({ nullable: true })
+  subtitle!: string | null;
+
+  @ApiProperty({ nullable: true })
+  status!: string | null;
+
+  @ApiProperty({ nullable: true })
+  verificationStatus!: string | null;
 }
 
 export class GeneralChatLatestMessageSummaryDto {
@@ -31,6 +60,9 @@ export class GeneralChatLatestMessageSummaryDto {
 
   @ApiProperty()
   sentAt!: string;
+
+  @ApiProperty({ type: () => GeneralChatParticipantIdentityDto, nullable: true })
+  senderIdentity!: GeneralChatParticipantIdentityDto | null;
 }
 
 export class GeneralChatConversationListItemDto {
@@ -153,6 +185,9 @@ export class GeneralChatMessageItemDto {
 
   @ApiProperty()
   conversationLatestActivityAt!: string;
+
+  @ApiProperty({ type: () => GeneralChatParticipantIdentityDto, nullable: true })
+  senderIdentity!: GeneralChatParticipantIdentityDto | null;
 }
 
 export class GeneralChatMessageDataDto {

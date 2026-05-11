@@ -55,10 +55,16 @@ export function buildSlotsFromWindows(windows: AvailabilityWindow[]) {
       }
 
       const remainingMs = endMs - cursor;
+      const maxDuration: 30 | 60 =
+        window.durationMinutes === 30 || window.durationMinutes === 60
+          ? window.durationMinutes
+          : remainingMs >= hourMs
+            ? 60
+            : 30;
       slots.push({
         startsAt: new Date(cursor).toISOString(),
         windowEndsAt: window.endsAt,
-        maxDuration: remainingMs >= hourMs ? 60 : 30,
+        maxDuration,
       });
     }
   }

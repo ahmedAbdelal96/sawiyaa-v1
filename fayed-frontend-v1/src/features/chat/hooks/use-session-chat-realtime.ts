@@ -109,6 +109,7 @@ function createOptimisticMessage(
     messageId: `temp:${clientMessageId}`,
     conversationId,
     senderUserId: null,
+    senderIdentity: null,
     messageType: "TEXT",
     status: "SENT",
     contentText: payload.message,

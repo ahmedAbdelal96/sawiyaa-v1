@@ -8,6 +8,9 @@ export type PackagePlanSessionQuote = {
   durationMinutes: number;
   sessionMode: SessionMode;
   selectedCurrencyCode: string;
+  regionalPricingMode: "EGYPT_LOCAL" | "INTERNATIONAL";
+  resolvedCountryIsoCode: string | null;
+  provider: "PAYMOB" | "STRIPE" | "INTERNAL_WALLET" | null;
   selectedBaseSessionPrice: string;
   undiscountedTotal: string;
   discountAmount: string;
@@ -58,4 +61,3 @@ export type PatientPackagePlanQuoteRequest = {
 export type PatientPackagePlanQuoteResponseData = {
   item: PackagePlanQuotedItem;
 };
-
