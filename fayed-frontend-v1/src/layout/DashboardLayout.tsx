@@ -7,7 +7,6 @@ import AppHeader from "@/layout/AppHeader";
 import Backdrop from "@/layout/Backdrop";
 import DynamicSidebar from "@/layout/DynamicSidebar";
 import UnifiedMessagesLauncher from "@/features/messages-shell/components/UnifiedMessagesLauncher";
-import { useSidebar } from "@/stores";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -15,6 +14,7 @@ interface DashboardLayoutProps {
   basePathPrefix?: string; // e.g., "/admin" or ""
   layoutVariant?: "admin" | "practitioner";
   messagingRole?: "admin" | "practitioner";
+  contentMode?: "constrained" | "full";
 }
 
 /**
@@ -29,22 +29,11 @@ export default function DashboardLayout({
   basePathPrefix = "",
   layoutVariant = "admin",
   messagingRole,
+  contentMode = "constrained",
 }: DashboardLayoutProps) {
-  const { isExpanded, isHovered, isMobileOpen } = useSidebar();
   const locale = useLocale();
   const isRTL = locale === "ar";
-
-  // Keep content width and offset in sync with sidebar width to avoid clipping
-  // on narrower desktop breakpoints (especially in RTL).
-  const mainContentLayout = isMobileOpen
-    ? "w-full"
-    : isExpanded || isHovered
-      ? isRTL
-        ? "w-full lg:mr-[290px] lg:w-[calc(100%-290px)]"
-        : "w-full lg:ml-[290px] lg:w-[calc(100%-290px)]"
-      : isRTL
-        ? "w-full lg:mr-[90px] lg:w-[calc(100%-90px)]"
-        : "w-full lg:ml-[90px] lg:w-[calc(100%-90px)]";
+  const mainContentLayout = isRTL ? "lg:mr-[304px]" : "lg:ml-[304px]";
 
   const shellMaxClass =
     layoutVariant === "practitioner" ? "app-max-shell-practitioner" : "app-max-shell-admin";
@@ -55,11 +44,17 @@ export default function DashboardLayout({
       <Backdrop />
 
       <div
-        className={`min-w-0 transition-all duration-300 ease-in-out ${mainContentLayout}`}
+        className={`min-w-0 flex-1 transition-all duration-300 ease-in-out ${mainContentLayout}`}
       >
         <AppHeader messagingRole={messagingRole} />
 
-        <div className={`${shellMaxClass} mx-auto w-full min-w-0 px-4 pb-4 pt-24 md:px-6 md:pb-6 md:pt-24`}>
+        <div
+          className={
+            contentMode === "full"
+              ? "w-full min-w-0 px-4 pb-4 pt-24 md:px-6 md:pb-6 md:pt-24"
+              : `${shellMaxClass} mx-auto w-full min-w-0 px-4 pb-4 pt-24 md:px-6 md:pb-6 md:pt-24`
+          }
+        >
           {children}
         </div>
       </div>

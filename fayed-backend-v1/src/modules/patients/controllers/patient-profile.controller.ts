@@ -144,7 +144,9 @@ export class PatientProfileController {
   }
 
   @Post('me/avatar')
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(
+    FileInterceptor('file', { limits: { fileSize: 5 * 1024 * 1024 } }),
+  )
   @ApiOperation({
     summary: 'Upload current patient profile photo',
     description:

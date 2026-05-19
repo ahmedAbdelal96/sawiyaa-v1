@@ -1,3 +1,5 @@
+import { formatMoney as formatFinanceMoney } from "@/lib/finance-format";
+
 export function formatSettlementDateTime(
   locale: string,
   value: string | null | undefined,
@@ -29,18 +31,14 @@ export function formatSettlementDate(
 
 export function formatSettlementMoney(
   locale: string,
-  value: string,
-  currency: string,
+  value: string | number,
+  currency: string | null | undefined,
 ) {
-  const numeric = Number(value);
-  if (Number.isNaN(numeric)) return `${value} ${currency}`;
-
-  return new Intl.NumberFormat(locale === "ar" ? "ar-EG" : "en-US", {
-    style: "currency",
-    currency,
+  return formatFinanceMoney(locale, value, currency, {
+    fallbackText: locale === "ar" ? "العملة غير متاحة" : "Currency unavailable",
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
-  }).format(numeric);
+  });
 }
 
 export function toDateTimeLocalInputValue(date = new Date()) {

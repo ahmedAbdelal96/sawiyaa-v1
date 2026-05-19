@@ -3,6 +3,7 @@ import {
   PERMISSIONS_KEY,
   ROLES_KEY,
 } from '@common/constants/auth-metadata.constants';
+import { STEP_UP_POLICY_KEY } from '@common/decorators/step-up.decorator';
 import { AppRole } from '@common/enums/app-role.enum';
 import { PermissionKey } from '@common/enums/permission-key.enum';
 import { JwtAccessAuthGuard } from '@common/guards/authentication/jwt-access-auth.guard';
@@ -62,5 +63,8 @@ describe('AdminPackageSettlementsController access contract', () => {
     const guards = (Reflect.getMetadata(GUARDS_METADATA, method) ??
       []) as unknown[];
     expect(guards).toContain(AdminGuard);
+    expect(Reflect.getMetadata(STEP_UP_POLICY_KEY, method)).toBe(
+      'finance.package-settlement.release',
+    );
   });
 });

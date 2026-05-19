@@ -51,4 +51,3 @@ export class ListAdminPaymentsRevenueReportRowsDto extends GetAdminPaymentsReven
   @IsEnum(JournalEntrySourceType)
   sourceType?: JournalEntrySourceType;
 }
-

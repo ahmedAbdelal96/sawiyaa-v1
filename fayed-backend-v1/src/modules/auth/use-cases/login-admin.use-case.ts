@@ -9,6 +9,7 @@ import { VerifyPasswordUseCase } from './verify-password.use-case';
 import { AuthIdentityRepository } from '../repositories/auth-identity.repository';
 import { UserEmailRepository } from '../repositories/user-email.repository';
 import { AuthSessionDeviceContext } from '../types/auth-session.types';
+import { ADMIN_AUTH_ROLE_TYPES } from '../utils/auth-role.util';
 
 /**
  * Admin auth is baseline-only: existing admin accounts can login, refresh, and logout.
@@ -29,9 +30,8 @@ export class LoginAdminUseCase {
     deviceContext: AuthSessionDeviceContext;
   }) {
     const normalizedEmail = input.email.trim().toLowerCase();
-    const userEmail = await this.userEmailRepository.findByEmailForAuth(
-      normalizedEmail,
-    );
+    const userEmail =
+      await this.userEmailRepository.findByEmailForAuth(normalizedEmail);
 
     if (!userEmail) {
       throw new UnauthorizedException({
@@ -41,12 +41,9 @@ export class LoginAdminUseCase {
     }
 
     const adminRole =
-      userEmail.user.roles.find(
-        (role) => role.role === UserRoleType.SUPER_ADMIN,
-      )?.role ??
-      userEmail.user.roles.find((role) => role.role === UserRoleType.ADMIN)
-        ?.role ??
-      null;
+      userEmail.user.roles.find((role) =>
+        ADMIN_AUTH_ROLE_TYPES.includes(role.role),
+      )?.role ?? null;
 
     if (!adminRole) {
       throw new ForbiddenException({

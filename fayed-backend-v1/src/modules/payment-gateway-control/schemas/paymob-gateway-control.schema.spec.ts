@@ -44,4 +44,3 @@ describe('paymobGatewayControlDraftSchema', () => {
     expect(result.success).toBe(false);
   });
 });
-

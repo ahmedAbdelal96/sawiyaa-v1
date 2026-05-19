@@ -8,15 +8,23 @@ import { FINANCIAL_OPS_ERROR_CODES } from '../types/financial-operations.types';
 
 @Injectable()
 export class GetAdminAccountingDashboardUseCase {
-  constructor(private readonly accountingReadRepository: AccountingReadRepository) {}
+  constructor(
+    private readonly accountingReadRepository: AccountingReadRepository,
+  ) {}
 
-  async execute(query: GetAdminAccountingDashboardDto): Promise<AccountingDashboardViewModel> {
+  async execute(
+    query: GetAdminAccountingDashboardDto,
+  ): Promise<AccountingDashboardViewModel> {
     const to = query.to ? new Date(query.to) : new Date();
     const from = query.from
       ? new Date(query.from)
       : new Date(to.getTime() - 29 * 24 * 60 * 60 * 1000);
 
-    if (Number.isNaN(from.getTime()) || Number.isNaN(to.getTime()) || from > to) {
+    if (
+      Number.isNaN(from.getTime()) ||
+      Number.isNaN(to.getTime()) ||
+      from > to
+    ) {
       throw new BadRequestException({
         messageKey: 'financialOperations.errors.invalidFilter',
         error: FINANCIAL_OPS_ERROR_CODES.invalidFilter,
@@ -26,32 +34,37 @@ export class GetAdminAccountingDashboardUseCase {
     const currencyCode = query.currencyCode?.trim().toUpperCase();
     const recentLimit = query.recentLimit ?? 8;
 
-    const [journalEntries, recentJournalEntries, practitionerLiabilityLines] = await Promise.all([
-      this.accountingReadRepository.listJournalEntriesInRange({
-        from,
-        to,
-        currencyCode,
-        recentLimit,
-      }),
-      this.accountingReadRepository.listRecentJournalEntries({
-        currencyCode,
-        take: recentLimit,
-      }),
-      this.accountingReadRepository.listPractitionerLiabilityLinesUntil({
-        to,
-        currencyCode,
-      }),
-    ]);
+    const [journalEntries, recentJournalEntries, practitionerLiabilityLines] =
+      await Promise.all([
+        this.accountingReadRepository.listJournalEntriesInRange({
+          from,
+          to,
+          currencyCode,
+          recentLimit,
+        }),
+        this.accountingReadRepository.listRecentJournalEntries({
+          currencyCode,
+          take: recentLimit,
+        }),
+        this.accountingReadRepository.listPractitionerLiabilityLinesUntil({
+          to,
+          currencyCode,
+        }),
+      ]);
 
     const grossInflow = journalEntries
-      .filter((entry) => entry.sourceType === JournalEntrySourceType.PAYMENT_CAPTURED)
+      .filter(
+        (entry) => entry.sourceType === JournalEntrySourceType.PAYMENT_CAPTURED,
+      )
       .reduce((sum, entry) => {
         const metadata = this.toJson(entry.metadataJson);
         return sum.add(this.toMoney(metadata['amountTotal']));
       }, new Prisma.Decimal(0));
 
     const refundsTotal = journalEntries
-      .filter((entry) => entry.sourceType === JournalEntrySourceType.REFUND_SUCCEEDED)
+      .filter(
+        (entry) => entry.sourceType === JournalEntrySourceType.REFUND_SUCCEEDED,
+      )
       .reduce((sum, entry) => {
         const metadata = this.toJson(entry.metadataJson);
         return sum.add(this.toMoney(metadata['refundAmount']));
@@ -75,7 +88,9 @@ export class GetAdminAccountingDashboardUseCase {
     let transferFeeRecoveryRevenue = new Prisma.Decimal(0);
     const practitionerPayableOutstanding = practitionerLiabilityLines.reduce(
       (sum, line) =>
-        line.direction === 'CREDIT' ? sum.add(line.amount) : sum.sub(line.amount),
+        line.direction === 'CREDIT'
+          ? sum.add(line.amount)
+          : sum.sub(line.amount),
       new Prisma.Decimal(0),
     );
 
@@ -132,27 +147,29 @@ export class GetAdminAccountingDashboardUseCase {
 
       if (entry.sourceType === JournalEntrySourceType.REFUND_SUCCEEDED) {
         const metadata = this.toJson(entry.metadataJson);
-        bucket.refunds = bucket.refunds.add(this.toMoney(metadata['refundAmount']));
+        bucket.refunds = bucket.refunds.add(
+          this.toMoney(metadata['refundAmount']),
+        );
       }
     }
 
-    const feesTotal = gatewayFees.add(transferFees).sub(transferFeeRecoveryRevenue);
+    const feesTotal = gatewayFees
+      .add(transferFees)
+      .sub(transferFeeRecoveryRevenue);
 
     const recentEvents = recentJournalEntries.map((entry) => {
       const metadata = this.toJson(entry.metadataJson);
-      const amountFromMetadata =
-        this.toMoney(metadata['amountTotal'])
-          .add(this.toMoney(metadata['refundAmount']))
-          .add(this.toMoney(metadata['amountPaid']));
-      const amount =
-        amountFromMetadata.gt(0)
-          ? amountFromMetadata
-          : entry.lines.reduce((sum, line) => {
-              if (line.direction === 'DEBIT') {
-                return sum.add(line.amount);
-              }
-              return sum;
-            }, new Prisma.Decimal(0));
+      const amountFromMetadata = this.toMoney(metadata['amountTotal'])
+        .add(this.toMoney(metadata['refundAmount']))
+        .add(this.toMoney(metadata['amountPaid']));
+      const amount = amountFromMetadata.gt(0)
+        ? amountFromMetadata
+        : entry.lines.reduce((sum, line) => {
+            if (line.direction === 'DEBIT') {
+              return sum.add(line.amount);
+            }
+            return sum;
+          }, new Prisma.Decimal(0));
 
       return {
         journalEntryId: entry.id,
@@ -193,7 +210,8 @@ export class GetAdminAccountingDashboardUseCase {
       kpis: {
         grossInflow: grossInflow.toFixed(2),
         platformRevenue: platformRevenue.toFixed(2),
-        practitionerPayableOutstanding: practitionerPayableOutstanding.toFixed(2),
+        practitionerPayableOutstanding:
+          practitionerPayableOutstanding.toFixed(2),
         refundsTotal: refundsTotal.toFixed(2),
         vatTotal: vatTotal.toFixed(2),
         feesTotal: feesTotal.toFixed(2),
@@ -204,7 +222,9 @@ export class GetAdminAccountingDashboardUseCase {
     };
   }
 
-  private toJson(value: Prisma.JsonValue | null | undefined): Record<string, unknown> {
+  private toJson(
+    value: Prisma.JsonValue | null | undefined,
+  ): Record<string, unknown> {
     if (!value || typeof value !== 'object' || Array.isArray(value)) {
       return {};
     }
@@ -274,7 +294,11 @@ export class GetAdminAccountingDashboardUseCase {
     end.setUTCHours(0, 0, 0, 0);
 
     const days: string[] = [];
-    for (let cursor = start; cursor <= end; cursor = new Date(cursor.getTime() + 24 * 60 * 60 * 1000)) {
+    for (
+      let cursor = start;
+      cursor <= end;
+      cursor = new Date(cursor.getTime() + 24 * 60 * 60 * 1000)
+    ) {
       days.push(this.toDateKey(cursor));
     }
     return days;

@@ -61,3 +61,9 @@ export interface CurrentUserSecurityStateResponse {
   userId: string;
   securityState: CurrentUserSecurityState;
 }
+
+export interface CurrentUserPermissionsResponse {
+  userId: string;
+  /** Resolved effective permission keys. Frontend read-hint only — backend guards are authoritative. */
+  permissions: string[];
+}

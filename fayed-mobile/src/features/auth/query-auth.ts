@@ -1,7 +1,7 @@
 import { useAuth } from "../../providers/AuthProvider";
-import type { MobileRole } from "./contracts";
+import type { MobileSupportedRole } from "./contracts";
 
-export function useAuthenticatedQueryEnabled(requiredRole?: MobileRole) {
+export function useAuthenticatedQueryEnabled(requiredRole?: MobileSupportedRole) {
   const { isLoading, role, user } = useAuth();
 
   if (isLoading || !user) {

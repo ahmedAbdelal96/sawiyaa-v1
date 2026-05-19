@@ -119,3 +119,25 @@ export const serverApi = {
   delete: <T = any>(endpoint: string, options?: FetchOptions) =>
     serverFetch<T>(endpoint, { ...options, method: "DELETE" }),
 };
+
+/**
+ * Server-side helper: fetch resolved permission keys for the current user.
+ *
+ * Safe to call from Next.js Server Components and server actions.
+ * Uses httpOnly auth cookies via serverFetch — no token exposure.
+ * Returns [] on any error (unauthenticated, network, etc.) so callers
+ * can fall back gracefully without crashing the render.
+ */
+export async function getServerCurrentUserPermissions(): Promise<string[]> {
+  try {
+    const envelope = await serverApi.get<{
+      success: boolean;
+      data: { userId: string; permissions: string[] };
+    }>("/users/me/permissions", {
+      cache: "no-store",
+    });
+    return envelope?.data?.permissions ?? [];
+  } catch {
+    return [];
+  }
+}

@@ -56,8 +56,9 @@ export default function PatientGoogleAuthButton({
   }, [callbackUrl, defaultRedirect]);
 
   useEffect(() => {
-    if (!googleClientId || window.google?.accounts?.id) {
-      setScriptReady(Boolean(window.google?.accounts?.id));
+    if (!googleClientId) return;
+    if (window.google?.accounts?.id) {
+      queueMicrotask(() => setScriptReady(true));
       return;
     }
 
@@ -66,8 +67,9 @@ export default function PatientGoogleAuthButton({
     ) as HTMLScriptElement | null;
 
     if (existingScript) {
-      existingScript.addEventListener("load", () => setScriptReady(true));
-      return;
+      const onLoad = () => setScriptReady(true);
+      existingScript.addEventListener("load", onLoad);
+      return () => existingScript.removeEventListener("load", onLoad);
     }
 
     const script = document.createElement("script");
@@ -109,11 +111,11 @@ export default function PatientGoogleAuthButton({
             });
             router.replace(redirectTarget);
             router.refresh();
-            } catch {
-              setError(t("googleLoginError"));
-            }
-          },
-        });
+          } catch {
+            setError(t("googleLoginError"));
+          }
+        },
+      });
 
       window.__fayedGoogleInitializedClientId = googleClientId;
     }

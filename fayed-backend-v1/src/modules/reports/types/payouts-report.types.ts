@@ -35,4 +35,3 @@ export type PayoutsReportRow = {
   processedByUserId: string | null;
   proofUploaded: boolean;
 };
-

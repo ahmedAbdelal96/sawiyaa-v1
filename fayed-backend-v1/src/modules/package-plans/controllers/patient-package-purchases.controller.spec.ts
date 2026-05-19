@@ -3,9 +3,9 @@ import { PatientPackagePurchasesController } from './patient-package-purchases.c
 
 describe('PatientPackagePurchasesController routes', () => {
   it('uses the patient package purchases route', () => {
-    expect(Reflect.getMetadata(PATH_METADATA, PatientPackagePurchasesController)).toBe(
-      'patients/me/package-purchases',
-    );
+    expect(
+      Reflect.getMetadata(PATH_METADATA, PatientPackagePurchasesController),
+    ).toBe('patients/me/package-purchases');
   });
 
   it('exposes the payment initiation route under the package purchases namespace', () => {

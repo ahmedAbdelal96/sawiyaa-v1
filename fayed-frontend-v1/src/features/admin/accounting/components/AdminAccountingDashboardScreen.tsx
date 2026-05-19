@@ -12,28 +12,12 @@ import type { ColumnDef } from "@/components/ui/data-table";
 import { buildUpdatedSearchParams, parsePositiveIntParam } from "@/components/ui/data-table";
 import Button from "@/components/ui/button/Button";
 import { parseDownloadFilename, triggerBlobDownload } from "@/lib/downloads/file-download";
+import { formatMoney as formatFinanceMoney } from "@/lib/finance-format";
 import { useAdminAccountingDashboard, useDownloadAdminAccountingDashboardCsv } from "../hooks/use-admin-accounting";
 import type { AccountingRecentEvent } from "../types/admin-accounting.types";
 
 function normalizeLocale(locale: string) {
   return locale === "ar" ? "ar-EG" : "en-US";
-}
-
-function formatMoney(locale: string, value: string, currencyCode?: string | null) {
-  const parsed = Number(value || "0");
-  if (currencyCode) {
-    return new Intl.NumberFormat(normalizeLocale(locale), {
-      style: "currency",
-      currency: currencyCode,
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(parsed);
-  }
-
-  return new Intl.NumberFormat(normalizeLocale(locale), {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(parsed);
 }
 
 function formatDateLabel(locale: string, value: string) {
@@ -166,7 +150,10 @@ export default function AdminAccountingDashboardScreen() {
         id: "amount",
         header: t("dashboard.recent.columns.amount"),
         accessor: (row) => Number(row.amount),
-        cell: (row) => formatMoney(locale, row.amount, row.currencyCode),
+        cell: (row) =>
+          formatFinanceMoney(normalizeLocale(locale), row.amount, row.currencyCode, {
+            fallbackText: t("common.notAvailable"),
+          }),
       },
       {
         id: "occurredAt",
@@ -204,7 +191,7 @@ export default function AdminAccountingDashboardScreen() {
               type="button"
               variant="outline"
               size="sm"
-              onClick={() => router.push("/admin/finance/reconciliation")}
+              onClick={() => router.push("/admin/finance/accounting/reconciliation")}
             >
               {t("dashboard.actions.openReconciliation")}
             </Button>
@@ -290,22 +277,22 @@ export default function AdminAccountingDashboardScreen() {
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         <DashboardKpiCard
           label={t("dashboard.kpis.grossInflow")}
-          value={formatMoney(locale, dashboard?.kpis.grossInflow ?? "0", dashboard?.kpis.currencyCode)}
+          value={formatFinanceMoney(normalizeLocale(locale), dashboard?.kpis.grossInflow ?? "0", dashboard?.kpis.currencyCode)}
           helper={t("dashboard.kpis.grossInflowHint")}
           icon={<CircleDollarSign className="h-4 w-4" />}
           accentTone="teal"
         />
         <DashboardKpiCard
           label={t("dashboard.kpis.platformRevenue")}
-          value={formatMoney(locale, dashboard?.kpis.platformRevenue ?? "0", dashboard?.kpis.currencyCode)}
+          value={formatFinanceMoney(normalizeLocale(locale), dashboard?.kpis.platformRevenue ?? "0", dashboard?.kpis.currencyCode)}
           helper={t("dashboard.kpis.platformRevenueHint")}
           icon={<Building2 className="h-4 w-4" />}
           accentTone="indigo"
         />
         <DashboardKpiCard
           label={t("dashboard.kpis.practitionerPayable")}
-          value={formatMoney(
-            locale,
+          value={formatFinanceMoney(
+            normalizeLocale(locale),
             dashboard?.kpis.practitionerPayableOutstanding ?? "0",
             dashboard?.kpis.currencyCode,
           )}
@@ -315,21 +302,21 @@ export default function AdminAccountingDashboardScreen() {
         />
         <DashboardKpiCard
           label={t("dashboard.kpis.refunds")}
-          value={formatMoney(locale, dashboard?.kpis.refundsTotal ?? "0", dashboard?.kpis.currencyCode)}
+          value={formatFinanceMoney(normalizeLocale(locale), dashboard?.kpis.refundsTotal ?? "0", dashboard?.kpis.currencyCode)}
           helper={t("dashboard.kpis.refundsHint")}
           icon={<Receipt className="h-4 w-4" />}
           accentTone="orange"
         />
         <DashboardKpiCard
           label={t("dashboard.kpis.vat")}
-          value={formatMoney(locale, dashboard?.kpis.vatTotal ?? "0", dashboard?.kpis.currencyCode)}
+          value={formatFinanceMoney(normalizeLocale(locale), dashboard?.kpis.vatTotal ?? "0", dashboard?.kpis.currencyCode)}
           helper={t("dashboard.kpis.vatHint")}
           icon={<Scale className="h-4 w-4" />}
           accentTone="sky"
         />
         <DashboardKpiCard
           label={t("dashboard.kpis.fees")}
-          value={formatMoney(locale, dashboard?.kpis.feesTotal ?? "0", dashboard?.kpis.currencyCode)}
+          value={formatFinanceMoney(normalizeLocale(locale), dashboard?.kpis.feesTotal ?? "0", dashboard?.kpis.currencyCode)}
           helper={t("dashboard.kpis.feesHint")}
           icon={<TrendingUp className="h-4 w-4" />}
           accentTone="indigo"

@@ -72,6 +72,9 @@ interface FormModalProps extends Omit<ModalProps, "children" | "className"> {
   stickyFooter?: boolean;
   destructive?: boolean;
   footer?: React.ReactNode;
+  submitButtonProps?: React.ButtonHTMLAttributes<HTMLButtonElement> & {
+    "data-testid"?: string;
+  };
 }
 
 interface ConfirmModalProps extends Omit<ModalProps, "children" | "className"> {
@@ -375,6 +378,7 @@ export function FormModal({
   stickyFooter = true,
   destructive = false,
   footer,
+  submitButtonProps,
   ...modalProps
 }: FormModalProps) {
   return (
@@ -394,6 +398,7 @@ export function FormModal({
               variant={destructive ? "danger" : "primary"}
               onClick={onSubmit}
               disabled={loading || submitDisabled}
+              {...submitButtonProps}
             >
               {submitLabel}
             </Button>

@@ -31,7 +31,7 @@ export class ListAdminPackageSettlementsUseCase {
 
     const [items, totalItems] =
       await this.packageSettlementRepository.listPackageSettlements({
-        status: input.query.status as PackageSettlementStatus | undefined,
+        status: input.query.status,
         currencyCode: input.query.currencyCode?.trim().toUpperCase(),
         createdFrom,
         createdTo,

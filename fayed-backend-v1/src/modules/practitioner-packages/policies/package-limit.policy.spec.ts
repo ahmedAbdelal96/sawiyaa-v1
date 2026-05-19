@@ -23,7 +23,9 @@ describe('PackageLimitPolicy', () => {
 
   it('allows creation when the count is below the configured limit', async () => {
     (configResolverService.getNumber as jest.Mock).mockResolvedValue(4);
-    (practitionerPackageRepository.countNonArchivedByPractitionerId as jest.Mock).mockResolvedValue(2);
+    (
+      practitionerPackageRepository.countNonArchivedByPractitionerId as jest.Mock
+    ).mockResolvedValue(2);
 
     await expect(
       policy.assertCanCreatePackage('practitioner-1'),
@@ -35,7 +37,9 @@ describe('PackageLimitPolicy', () => {
 
   it('blocks creation when the practitioner is already at the configured limit', async () => {
     (configResolverService.getNumber as jest.Mock).mockResolvedValue(4);
-    (practitionerPackageRepository.countNonArchivedByPractitionerId as jest.Mock).mockResolvedValue(4);
+    (
+      practitionerPackageRepository.countNonArchivedByPractitionerId as jest.Mock
+    ).mockResolvedValue(4);
 
     await expect(
       policy.assertCanCreatePackage('practitioner-1'),

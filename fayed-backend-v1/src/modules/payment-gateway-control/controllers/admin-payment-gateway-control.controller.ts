@@ -23,6 +23,7 @@ import { PaymentProvider } from '@prisma/client';
 import { CurrentLocale } from '@common/i18n/decorators/current-locale.decorator';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
 import { JwtAccessAuthGuard } from '@common/guards/authentication/jwt-access-auth.guard';
+import { RequireStepUp } from '@common/decorators/step-up.decorator';
 import { RolesGuard } from '@common/guards/authorization/roles.guard';
 import { RequireAccountStates } from '@common/decorators/account-state.decorator';
 import { AccountStateRequirement } from '@common/enums/account-state-requirement.enum';
@@ -130,6 +131,7 @@ export class AdminPaymentGatewayControlController {
   }
 
   @Patch('providers/:provider')
+  @RequireStepUp('finance.payment-gateway-control.provider.update')
   @ApiOperation({
     summary: 'Update provider control state',
     description:
@@ -156,6 +158,7 @@ export class AdminPaymentGatewayControlController {
   }
 
   @Post('providers/:provider/rollback')
+  @RequireStepUp('finance.payment-gateway-control.provider.rollback')
   @ApiOperation({
     summary: 'Rollback provider control state',
     description:
@@ -226,10 +229,13 @@ export class AdminPaymentGatewayControlController {
       'Runs typed schema and runtime validation before a routing save is attempted.',
   })
   validateRouting(@Body() body: Record<string, unknown>) {
-    return this.paymentGatewayControlService.validateRoutingDraft(body as never);
+    return this.paymentGatewayControlService.validateRoutingDraft(
+      body as never,
+    );
   }
 
   @Patch('routing')
+  @RequireStepUp('finance.payment-gateway-control.routing.update')
   @ApiOperation({
     summary: 'Update routing control state',
     description:
@@ -252,6 +258,7 @@ export class AdminPaymentGatewayControlController {
   }
 
   @Post('routing/rollback')
+  @RequireStepUp('finance.payment-gateway-control.routing.rollback')
   @ApiOperation({
     summary: 'Rollback routing control state',
     description:

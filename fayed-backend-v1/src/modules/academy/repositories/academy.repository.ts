@@ -33,7 +33,10 @@ export class AcademyRepository {
     });
   }
 
-  updateCourse(courseId: string, data: Prisma.AcademyCourseUncheckedUpdateInput) {
+  updateCourse(
+    courseId: string,
+    data: Prisma.AcademyCourseUncheckedUpdateInput,
+  ) {
     return this.prisma.academyCourse.update({
       where: { id: courseId },
       data,
@@ -68,11 +71,7 @@ export class AcademyRepository {
     });
   }
 
-  listPublicCourses(input: {
-    page: number;
-    limit: number;
-    q?: string;
-  }) {
+  listPublicCourses(input: { page: number; limit: number; q?: string }) {
     const skip = (input.page - 1) * input.limit;
     const now = new Date();
     const where: Prisma.AcademyCourseWhereInput = {
@@ -223,10 +222,26 @@ export class AcademyRepository {
       ...(input.q
         ? {
             OR: [
-              { academyLearner: { fullName: { contains: input.q, mode: 'insensitive' } } },
-              { academyLearner: { phoneNumber: { contains: input.q, mode: 'insensitive' } } },
-              { academyLearner: { email: { contains: input.q, mode: 'insensitive' } } },
-              { academyCourse: { title: { contains: input.q, mode: 'insensitive' } } },
+              {
+                academyLearner: {
+                  fullName: { contains: input.q, mode: 'insensitive' },
+                },
+              },
+              {
+                academyLearner: {
+                  phoneNumber: { contains: input.q, mode: 'insensitive' },
+                },
+              },
+              {
+                academyLearner: {
+                  email: { contains: input.q, mode: 'insensitive' },
+                },
+              },
+              {
+                academyCourse: {
+                  title: { contains: input.q, mode: 'insensitive' },
+                },
+              },
             ],
           }
         : {}),
@@ -246,13 +261,18 @@ export class AcademyRepository {
 
   countEnrollmentsByCourseIds(courseIds: string[]) {
     if (courseIds.length === 0) {
-      return Promise.resolve<Record<string, {
-        totalEnrollments: number;
-        pendingPayments: number;
-        paidEnrollments: number;
-        failedPayments: number;
-        confirmedEnrollments: number;
-      }>>({});
+      return Promise.resolve<
+        Record<
+          string,
+          {
+            totalEnrollments: number;
+            pendingPayments: number;
+            paidEnrollments: number;
+            failedPayments: number;
+            confirmedEnrollments: number;
+          }
+        >
+      >({});
     }
 
     return this.prisma.academyEnrollment
@@ -266,30 +286,40 @@ export class AcademyRepository {
         },
       })
       .then((rows) =>
-        rows.reduce<Record<string, {
-          totalEnrollments: number;
-          pendingPayments: number;
-          paidEnrollments: number;
-          failedPayments: number;
-          confirmedEnrollments: number;
-        }>>((acc, row) => {
-          const current =
-            acc[row.academyCourseId] ?? {
-              totalEnrollments: 0,
-              pendingPayments: 0,
-              paidEnrollments: 0,
-              failedPayments: 0,
-              confirmedEnrollments: 0,
-            };
+        rows.reduce<
+          Record<
+            string,
+            {
+              totalEnrollments: number;
+              pendingPayments: number;
+              paidEnrollments: number;
+              failedPayments: number;
+              confirmedEnrollments: number;
+            }
+          >
+        >((acc, row) => {
+          const current = acc[row.academyCourseId] ?? {
+            totalEnrollments: 0,
+            pendingPayments: 0,
+            paidEnrollments: 0,
+            failedPayments: 0,
+            confirmedEnrollments: 0,
+          };
 
           current.totalEnrollments += row._count._all;
-          if (row.enrollmentStatus === AcademyEnrollmentStatus.PENDING_PAYMENT) {
+          if (
+            row.enrollmentStatus === AcademyEnrollmentStatus.PENDING_PAYMENT
+          ) {
             current.pendingPayments += row._count._all;
           } else if (row.enrollmentStatus === AcademyEnrollmentStatus.PAID) {
             current.paidEnrollments += row._count._all;
-          } else if (row.enrollmentStatus === AcademyEnrollmentStatus.PAYMENT_FAILED) {
+          } else if (
+            row.enrollmentStatus === AcademyEnrollmentStatus.PAYMENT_FAILED
+          ) {
             current.failedPayments += row._count._all;
-          } else if (row.enrollmentStatus === AcademyEnrollmentStatus.CONFIRMED) {
+          } else if (
+            row.enrollmentStatus === AcademyEnrollmentStatus.CONFIRMED
+          ) {
             current.confirmedEnrollments += row._count._all;
           }
 
@@ -331,14 +361,20 @@ export class AcademyRepository {
     });
   }
 
-  createActivityLog(data: Prisma.AcademyEnrollmentActivityLogUncheckedCreateInput) {
+  createActivityLog(
+    data: Prisma.AcademyEnrollmentActivityLogUncheckedCreateInput,
+  ) {
     return this.prisma.academyEnrollmentActivityLog.create({ data });
   }
 
   listLecturesByCourseId(courseId: string) {
     return this.prisma.academyCourseLecture.findMany({
       where: { academyCourseId: courseId },
-      orderBy: [{ lectureOrder: 'asc' }, { startsAt: 'asc' }, { createdAt: 'asc' }],
+      orderBy: [
+        { lectureOrder: 'asc' },
+        { startsAt: 'asc' },
+        { createdAt: 'asc' },
+      ],
       include: {
         createdByUser: {
           select: {
@@ -361,7 +397,11 @@ export class AcademyRepository {
       ...(includeLectures
         ? {
             lectures: {
-              orderBy: [{ lectureOrder: 'asc' }, { startsAt: 'asc' }, { createdAt: 'asc' }],
+              orderBy: [
+                { lectureOrder: 'asc' },
+                { startsAt: 'asc' },
+                { createdAt: 'asc' },
+              ],
               include: {
                 createdByUser: {
                   select: {

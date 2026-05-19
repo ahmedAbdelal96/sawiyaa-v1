@@ -15,6 +15,8 @@ import {
   WalletCards,
 } from "lucide-react";
 import { Link } from "@/i18n/navigation";
+import { useSessionRole } from "@/lib/auth/use-session-role";
+import { useCurrentUserPermissions } from "@/features/users/hooks/use-users";
 import { useAdminSessions } from "@/features/admin/sessions/hooks/use-admin-sessions";
 import { listAdminSessions } from "@/features/admin/sessions/api/admin-sessions.api";
 import { adminSessionsQueryKeys } from "@/features/admin/sessions/constants/query-keys";
@@ -25,6 +27,8 @@ import { useAdminSettlementBatches } from "@/features/admin/settlements/hooks/us
 import { useAdminModerationReports } from "@/features/admin/moderation-reports/hooks/use-admin-moderation-reports";
 import { useAdminNotifications } from "@/features/admin/notifications/hooks/use-admin-notifications";
 import { ListStateSkeleton, StateCard } from "@/components/shared/ContentStates";
+import { PermissionKey } from "@/lib/auth/permissions";
+import { formatMoney as formatFinanceMoney } from "@/lib/finance-format";
 import {
   AreaTrendChart,
   BarTrendChart,
@@ -299,15 +303,6 @@ function parseMoney(value: string | null | undefined) {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
-function formatMoney(locale: string, amount: number, currency: string) {
-  return new Intl.NumberFormat(normalizeLocale(locale), {
-    style: "currency",
-    currency,
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
-  }).format(amount);
-}
-
 function formatDateLabel(locale: string, iso: string | null) {
   if (!iso) return "-";
   return new Date(iso).toLocaleDateString(normalizeLocale(locale), {
@@ -327,6 +322,11 @@ function formatDateTimeLabel(locale: string, iso: string | null) {
   });
 }
 
+function buildLocalizedPath(locale: string, path: string) {
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+  return locale === "ar" ? `/ar${normalizedPath}` : `/en${normalizedPath}`;
+}
+
 function humanizeEventSlug(slug: string, locale: string) {
   if (!slug) return locale === "ar" ? "حدث تشغيلي" : "Operational event";
   const normalized = slug.replace(/[._-]/g, " ").trim();
@@ -344,7 +344,29 @@ export default function AdminDashboard() {
   const locale = useLocale();
   const isArabic = locale === "ar";
   const copy = COPY[isArabic ? "ar" : "en"];
+  const role = useSessionRole();
   const hasHydrated = useHasHydrated();
+  const { data: permissionData } = useCurrentUserPermissions(true);
+  const permissionSet = new Set(permissionData?.permissions ?? []);
+  const hasPermission = (permission: string) => permissionSet.has(permission);
+  const canReadSessions = hasPermission(PermissionKey.SESSIONS_READ_ADMIN);
+  const canReadSupport = hasPermission(PermissionKey.SUPPORT_TICKET_ASSIGN) || hasPermission(PermissionKey.SUPPORT_TICKET_NOTE_INTERNAL);
+  const canReadCareChat =
+    hasPermission(PermissionKey.CARE_CHAT_REQUEST_READ_ADMIN) ||
+    hasPermission(PermissionKey.CARE_CHAT_CONVERSATION_READ_ADMIN) ||
+    hasPermission(PermissionKey.CARE_CHAT_REQUEST_DECIDE);
+  const canReadApplications = hasPermission(PermissionKey.PRACTITIONER_APPLICATIONS_READ);
+  const canReadSettlements =
+    hasPermission(PermissionKey.SETTLEMENTS_READ) ||
+    hasPermission(PermissionKey.FINANCE_EVENTS_READ) ||
+    hasPermission(PermissionKey.ACCOUNTING_READ) ||
+    hasPermission(PermissionKey.PRACTITIONER_PAYOUTS_READ);
+  const canReadNotifications = hasPermission(PermissionKey.NOTIFICATION_OPS_READ);
+  const canReadModerationReports =
+    role === "ADMIN" ||
+    role === "SUPER_ADMIN" ||
+    role === "SUPPORT_AGENT" ||
+    role === "CONTENT_REVIEWER";
   const chartPalette = ["#44A194", "#F39A35", "#7C8AA5"];
 
   const now = new Date();
@@ -358,45 +380,45 @@ export default function AdminDashboard() {
     limit: 1,
     scheduledFrom: today.start,
     scheduledTo: today.end,
-  });
+  }, { enabled: canReadSessions });
   const sessionsYesterdayQuery = useAdminSessions({
     page: 1,
     limit: 1,
     scheduledFrom: yesterdayRange.start,
     scheduledTo: yesterdayRange.end,
-  });
+  }, { enabled: canReadSessions });
 
   const supportQuery = useAdminSupportTickets({
     page: 1,
     limit: 5,
     status: "OPEN",
-  });
+  }, { enabled: canReadSupport });
   const careQuery = useAdminCareChatRequests({
     page: 1,
     limit: 5,
     status: "PENDING",
-  });
+  }, { enabled: canReadCareChat });
   const applicationsQuery = useAdminPractitionerApplications(
     {
       page: 1,
       limit: 5,
       status: "SUBMITTED",
     },
-    true,
+    canReadApplications,
   );
   const moderationQuery = useAdminModerationReports({
     page: 1,
     limit: 5,
     status: "OPEN",
-  });
+  }, { enabled: canReadModerationReports });
   const settlementsQuery = useAdminSettlementBatches({
     page: 1,
     limit: 12,
-  });
+  }, { enabled: canReadSettlements });
   const notificationsQuery = useAdminNotifications({
     page: 1,
     limit: 6,
-  });
+  }, { enabled: canReadNotifications });
 
   const trendDates = Array.from({ length: 14 }, (_, index) => {
     const date = new Date(now);
@@ -405,21 +427,23 @@ export default function AdminDashboard() {
   });
 
   const sessionsTrendQueries = useQueries({
-    queries: trendDates.map((date) => {
-      const range = toIsoRange(date);
-      const params = {
-        page: 1,
-        limit: 1,
-        scheduledFrom: range.start,
-        scheduledTo: range.end,
-      } as const;
+    queries: canReadSessions
+      ? trendDates.map((date) => {
+          const range = toIsoRange(date);
+          const params = {
+            page: 1,
+            limit: 1,
+            scheduledFrom: range.start,
+            scheduledTo: range.end,
+          } as const;
 
-      return {
-        queryKey: [...adminSessionsQueryKeys.list(params), "trend"] as const,
-        queryFn: () => listAdminSessions(params),
-        staleTime: 30_000,
-      };
-    }),
+          return {
+            queryKey: [...adminSessionsQueryKeys.list(params), "trend"] as const,
+            queryFn: () => listAdminSessions(params),
+            staleTime: 30_000,
+          };
+        })
+      : [],
   });
 
   const sessionsToday = sessionsTodayQuery.data?.pagination.totalItems ?? 0;
@@ -439,7 +463,7 @@ export default function AdminDashboard() {
 
   const settlementLatestValue = parseMoney(settlementLatest?.totalAmount);
   const settlementPreviousValue = parseMoney(settlementPrevious?.totalAmount);
-  const settlementCurrency = settlementLatest?.currency ?? "USD";
+  const settlementCurrency = settlementLatest?.currency ?? null;
 
   const sessionsDeltaBase = sessionsYesterday <= 0 ? 1 : sessionsYesterday;
   const sessionsDeltaPercent = ((sessionsToday - sessionsYesterday) / sessionsDeltaBase) * 100;
@@ -488,56 +512,64 @@ export default function AdminDashboard() {
   const workloadSeries = [supportTotal, careTotal, applicationsTotal, moderationTotal];
   const hasWorkloadData = workloadSeries.some((value) => value > 0);
 
-  const supportItems = (supportQuery.data?.items ?? []).map((ticket) => ({
-    id: ticket.id,
-    title: ticket.subject,
-    subtitle: `${ticket.category} - ${formatDateLabel(locale, ticket.createdAt)}`,
-    href: `/admin/support/${ticket.id}`,
-    badge: (
-      <span className="rounded-full bg-primary-light px-2 py-0.5 text-[11px] font-semibold text-text-brand dark:bg-primary/15 dark:text-primary-light">
-        {ticket.priority}
-      </span>
-    ),
-  }));
+  const supportItems = canReadSupport
+    ? (supportQuery.data?.items ?? []).map((ticket) => ({
+        id: ticket.id,
+        title: ticket.subject,
+        subtitle: `${ticket.category} - ${formatDateLabel(locale, ticket.createdAt)}`,
+        href: `/admin/support/${ticket.id}`,
+        badge: (
+          <span className="rounded-full bg-primary-light px-2 py-0.5 text-[11px] font-semibold text-text-brand dark:bg-primary/15 dark:text-primary-light">
+            {ticket.priority}
+          </span>
+        ),
+      }))
+    : [];
 
-  const careItems = (careQuery.data?.items ?? []).map((request) => ({
-    id: request.id,
-    title: request.patient.displayName ?? copy.common.unknown,
-    subtitle: `${request.practitioner.displayName ?? copy.common.unknown} - ${formatDateLabel(
-      locale,
-      request.requestedAt,
-    )}`,
-    href: `/admin/care-chat/${request.id}`,
-    badge: (
-      <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-700 dark:bg-amber-500/15 dark:text-amber-400">
-        {request.status}
-      </span>
-    ),
-  }));
+  const careItems = canReadCareChat
+    ? (careQuery.data?.items ?? []).map((request) => ({
+        id: request.id,
+        title: request.patient.displayName ?? copy.common.unknown,
+        subtitle: `${request.practitioner.displayName ?? copy.common.unknown} - ${formatDateLabel(
+          locale,
+          request.requestedAt,
+        )}`,
+        href: `/admin/care-chat/${request.id}`,
+        badge: (
+          <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-700 dark:bg-amber-500/15 dark:text-amber-400">
+            {request.status}
+          </span>
+        ),
+      }))
+    : [];
 
-  const applicationItems = (applicationsQuery.data?.applications ?? []).map((app) => ({
-    id: app.applicationId,
-    title: app.displayName ?? copy.common.unknown,
-    subtitle: `${app.practitionerType} - ${formatDateLabel(locale, app.submittedAt)}`,
-    href: `/admin/practitioner-applications/${app.applicationId}`,
-    badge: (
-      <span className="rounded-full bg-surface-tertiary px-2 py-0.5 text-[11px] font-semibold text-text-muted dark:bg-white/10 dark:text-white/70">
-        {app.applicationStatus}
-      </span>
-    ),
-  }));
+  const applicationItems = canReadApplications
+    ? (applicationsQuery.data?.applications ?? []).map((app) => ({
+        id: app.applicationId,
+        title: app.displayName ?? copy.common.unknown,
+        subtitle: `${app.practitionerType} - ${formatDateLabel(locale, app.submittedAt)}`,
+        href: `/admin/practitioner-applications/${app.applicationId}`,
+        badge: (
+          <span className="rounded-full bg-surface-tertiary px-2 py-0.5 text-[11px] font-semibold text-text-muted dark:bg-white/10 dark:text-white/70">
+            {app.applicationStatus}
+          </span>
+        ),
+      }))
+    : [];
 
-  const recentActivityItems = (notificationsQuery.data?.items ?? []).map((item) => ({
-    id: item.id,
-    title: humanizeEventSlug(item.typeSlug, locale),
-    subtitle: `${item.category} - ${formatDateTimeLabel(locale, item.updatedAt)}`,
-    href: `/admin/notifications/${item.id}`,
-    badge: (
-      <span className="rounded-full bg-surface-tertiary px-2 py-0.5 text-[11px] font-semibold text-text-muted dark:bg-white/10 dark:text-white/70">
-        {item.status}
-      </span>
-    ),
-  }));
+  const recentActivityItems = canReadNotifications
+    ? (notificationsQuery.data?.items ?? []).map((item) => ({
+        id: item.id,
+        title: humanizeEventSlug(item.typeSlug, locale),
+        subtitle: `${item.category} - ${formatDateTimeLabel(locale, item.updatedAt)}`,
+        href: `/admin/notifications/${item.id}`,
+        badge: (
+          <span className="rounded-full bg-surface-tertiary px-2 py-0.5 text-[11px] font-semibold text-text-muted dark:bg-white/10 dark:text-white/70">
+            {item.status}
+          </span>
+        ),
+      }))
+    : [];
 
   const queueSnapshotItems = [
     {
@@ -597,77 +629,113 @@ export default function AdminDashboard() {
   ];
 
   const priorityItems = [
-    {
-      id: "support-priority",
-      title: copy.attention.supportTitle,
-      count: supportTotal,
-      subtitle: copy.attention.supportSubtitle,
-      href: "/admin/support",
-      icon: <Headset className="h-4 w-4" />,
-      toneClass: "bg-amber-50/85 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300",
-    },
-    {
-      id: "care-priority",
-      title: copy.attention.careTitle,
-      count: careTotal,
-      subtitle: copy.attention.careSubtitle,
-      href: "/admin/care-chat",
-      icon: <MessageSquareMore className="h-4 w-4" />,
-      toneClass: "bg-violet-50/85 text-violet-700 dark:bg-violet-500/10 dark:text-violet-300",
-    },
-    {
-      id: "applications-priority",
-      title: copy.attention.applicationsTitle,
-      count: applicationsTotal,
-      subtitle: copy.attention.applicationsSubtitle,
-      href: "/admin/practitioner-applications",
-      icon: <ClipboardCheck className="h-4 w-4" />,
-      toneClass: "bg-primary-light/75 text-text-brand dark:bg-primary/10 dark:text-primary-light",
-    },
-    {
-      id: "moderation-priority",
-      title: copy.attention.moderationTitle,
-      count: moderationTotal,
-      subtitle: copy.activity.snapshotSubtitle,
-      href: "/admin/moderation/reports",
-      icon: <ShieldAlert className="h-4 w-4" />,
-      toneClass: "bg-slate-100/85 text-slate-700 dark:bg-white/[0.06] dark:text-white/80",
-    },
+    ...(canReadSupport
+      ? [
+          {
+            id: "support-priority",
+            title: copy.attention.supportTitle,
+            count: supportTotal,
+            subtitle: copy.attention.supportSubtitle,
+            href: "/admin/support",
+            icon: <Headset className="h-4 w-4" />,
+            toneClass: "bg-amber-50/85 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300",
+          },
+        ]
+      : []),
+    ...(canReadCareChat
+      ? [
+          {
+            id: "care-priority",
+            title: copy.attention.careTitle,
+            count: careTotal,
+            subtitle: copy.attention.careSubtitle,
+            href: "/admin/care-chat",
+            icon: <MessageSquareMore className="h-4 w-4" />,
+            toneClass: "bg-violet-50/85 text-violet-700 dark:bg-violet-500/10 dark:text-violet-300",
+          },
+        ]
+      : []),
+    ...(canReadApplications
+      ? [
+          {
+            id: "applications-priority",
+            title: copy.attention.applicationsTitle,
+            count: applicationsTotal,
+            subtitle: copy.attention.applicationsSubtitle,
+            href: "/admin/practitioner-applications",
+            icon: <ClipboardCheck className="h-4 w-4" />,
+            toneClass: "bg-primary-light/75 text-text-brand dark:bg-primary/10 dark:text-primary-light",
+          },
+        ]
+      : []),
+    ...(canReadModerationReports
+      ? [
+          {
+            id: "moderation-priority",
+            title: copy.attention.moderationTitle,
+            count: moderationTotal,
+            subtitle: copy.activity.snapshotSubtitle,
+            href: "/admin/moderation/reports",
+            icon: <ShieldAlert className="h-4 w-4" />,
+            toneClass: "bg-slate-100/85 text-slate-700 dark:bg-white/[0.06] dark:text-white/80",
+          },
+        ]
+      : []),
   ].sort((first, second) => second.count - first.count);
 
   const quickActionItems = [
-    {
-      id: "sessions",
-      title: copy.kpi.sessions,
-      subtitle: copy.kpi.sessionsHelper,
-      href: "/admin/sessions",
-      icon: <CalendarClock className="h-4 w-4" />,
-      value: formatNumber(locale, sessionsToday),
-    },
-    {
-      id: "support",
-      title: copy.attention.supportTitle,
-      subtitle: copy.attention.supportSubtitle,
-      href: "/admin/support",
-      icon: <Headset className="h-4 w-4" />,
-      value: formatNumber(locale, supportTotal),
-    },
-    {
-      id: "care",
-      title: copy.attention.careTitle,
-      subtitle: copy.attention.careSubtitle,
-      href: "/admin/care-chat",
-      icon: <MessageSquareMore className="h-4 w-4" />,
-      value: formatNumber(locale, careTotal),
-    },
-    {
-      id: "settlements",
-      title: copy.charts.settlementsTitle,
-      subtitle: copy.kpi.revenueHelper,
-      href: "/admin/settlements",
-      icon: <WalletCards className="h-4 w-4" />,
-      value: formatMoney(locale, settlementLatestValue, settlementCurrency),
-    },
+    ...(canReadSessions
+      ? [
+          {
+            id: "sessions",
+            title: copy.kpi.sessions,
+            subtitle: copy.kpi.sessionsHelper,
+            href: "/admin/sessions",
+            icon: <CalendarClock className="h-4 w-4" />,
+            value: formatNumber(locale, sessionsToday),
+          },
+        ]
+      : []),
+    ...(canReadSupport
+      ? [
+          {
+            id: "support",
+            title: copy.attention.supportTitle,
+            subtitle: copy.attention.supportSubtitle,
+            href: "/admin/support",
+            icon: <Headset className="h-4 w-4" />,
+            value: formatNumber(locale, supportTotal),
+          },
+        ]
+      : []),
+    ...(canReadCareChat
+      ? [
+          {
+            id: "care",
+            title: copy.attention.careTitle,
+            subtitle: copy.attention.careSubtitle,
+            href: "/admin/care-chat",
+            icon: <MessageSquareMore className="h-4 w-4" />,
+            value: formatNumber(locale, careTotal),
+          },
+        ]
+      : []),
+    ...(canReadSettlements
+      ? [
+          {
+            id: "settlements",
+            title: copy.charts.settlementsTitle,
+            subtitle: copy.kpi.revenueHelper,
+            href: "/admin/settlements",
+            icon: <WalletCards className="h-4 w-4" />,
+            value: formatFinanceMoney(locale, settlementLatestValue, settlementCurrency, {
+              fallbackText: copy.common.noData,
+              minimumFractionDigits: 0,
+              maximumFractionDigits: 2,
+            }),
+          },
+        ]
+      : []),
   ];
 
   const strongestPriority = priorityItems[0]?.count ?? 0;
@@ -716,7 +784,7 @@ export default function AdminDashboard() {
                 {quickActionItems.map((item) => (
                   <Link
                     key={item.id}
-                    href={item.href as never}
+                    href={buildLocalizedPath(locale, item.href) as never}
                     className="app-panel-soft block rounded-[26px] p-4 transition hover:-translate-y-0.5 hover:border-primary/25 hover:bg-primary-light/35 dark:hover:bg-primary/10"
                   >
                     <div className="flex items-start justify-between gap-3">
@@ -753,7 +821,7 @@ export default function AdminDashboard() {
               {priorityItems.map((item) => (
                 <Link
                   key={item.id}
-                  href={item.href as never}
+                  href={buildLocalizedPath(locale, item.href) as never}
                   className="flex items-center justify-between gap-3 rounded-[22px] bg-white/88 px-4 py-3 transition hover:bg-primary-light/45 dark:bg-white/[0.04] dark:hover:bg-primary/10"
                 >
                   <div className="flex min-w-0 items-center gap-3">
@@ -809,7 +877,11 @@ export default function AdminDashboard() {
         />
         <AdminDashboardKpiCard
           label={copy.kpi.revenue}
-          value={formatMoney(locale, settlementLatestValue, settlementCurrency)}
+          value={formatFinanceMoney(locale, settlementLatestValue, settlementCurrency, {
+            fallbackText: copy.common.noData,
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 2,
+          })}
           icon={<WalletCards className="h-5 w-5" />}
           helper={copy.kpi.revenueHelper}
           deltaText={`${settlementDeltaText} - ${copy.delta.comparedToPreviousBatch}`}
@@ -829,7 +901,7 @@ export default function AdminDashboard() {
               title={copy.charts.sessionsTitle}
               subtitle={copy.charts.sessionsSubtitle}
               actionLabel={copy.common.viewAll}
-              actionHref="/admin/sessions"
+              actionHref={canReadSessions ? "/admin/sessions" : undefined}
             >
               {sessionsTrendLoading ? (
                 <ListStateSkeleton items={1} heightClass="h-[280px]" />
@@ -884,7 +956,7 @@ export default function AdminDashboard() {
             title={copy.charts.settlementsTitle}
             subtitle={copy.charts.settlementsSubtitle}
             actionLabel={copy.common.viewAll}
-            actionHref="/admin/settlements"
+            actionHref={canReadSettlements ? "/admin/settlements" : undefined}
           >
             {!hasHydrated || settlementsQuery.isLoading ? (
               <ListStateSkeleton items={1} heightClass="h-[240px]" />
@@ -901,7 +973,7 @@ export default function AdminDashboard() {
                 categories={settlementChartLabels}
                 seriesName={copy.charts.settlementsSeries}
                 values={settlementChartSeries}
-                currencyCode={settlementCurrency}
+            currencyCode={settlementCurrency ?? undefined}
                 height={260}
                 distributed
                 colors={chartPalette}
@@ -922,16 +994,16 @@ export default function AdminDashboard() {
               <AdminDashboardQueueCard
                 title={copy.attention.supportTitle}
                 subtitle={copy.attention.supportSubtitle}
-                actionLabel={copy.common.viewAll}
-                actionHref="/admin/support"
+                actionLabel={canReadSupport ? copy.common.viewAll : undefined}
+                actionHref={canReadSupport ? "/admin/support" : undefined}
                 emptyText={copy.attention.supportEmpty}
                 items={supportItems}
               />
               <AdminDashboardQueueCard
                 title={copy.attention.careTitle}
                 subtitle={copy.attention.careSubtitle}
-                actionLabel={copy.common.viewAll}
-                actionHref="/admin/care-chat"
+                actionLabel={canReadCareChat ? copy.common.viewAll : undefined}
+                actionHref={canReadCareChat ? "/admin/care-chat" : undefined}
                 emptyText={copy.attention.careEmpty}
                 items={careItems}
               />
@@ -943,8 +1015,8 @@ export default function AdminDashboard() {
               <AdminDashboardSectionHeader
                 title={copy.attention.applicationsTitle}
                 subtitle={copy.attention.applicationsSubtitle}
-                actionLabel={copy.common.viewAll}
-                actionHref="/admin/practitioner-applications"
+                actionLabel={canReadApplications ? copy.common.viewAll : undefined}
+                actionHref={canReadApplications ? "/admin/practitioner-applications" : undefined}
               />
 
               <div className="rounded-[24px] bg-primary-light/45 p-4 dark:bg-primary/10">
@@ -1004,8 +1076,8 @@ export default function AdminDashboard() {
             <AdminDashboardQueueCard
               title={copy.activity.recentTitle}
               subtitle={copy.activity.recentSubtitle}
-              actionLabel={copy.common.viewAll}
-              actionHref="/admin/notifications"
+              actionLabel={canReadNotifications ? copy.common.viewAll : undefined}
+              actionHref={canReadNotifications ? "/admin/notifications" : undefined}
               emptyText={copy.activity.recentEmpty}
               items={recentActivityItems}
             />
@@ -1015,8 +1087,8 @@ export default function AdminDashboard() {
               <AdminDashboardSectionHeader
                 title={copy.activity.snapshotTitle}
                 subtitle={copy.activity.snapshotSubtitle}
-                actionLabel={copy.common.viewAll}
-                actionHref="/admin/moderation/reports"
+                actionLabel={canReadModerationReports ? copy.common.viewAll : undefined}
+                actionHref={canReadModerationReports ? "/admin/moderation/reports" : undefined}
               />
               <ul className="space-y-2.5">
                 {queueSnapshotItems.map((item) => (
@@ -1041,7 +1113,9 @@ export default function AdminDashboard() {
                       {copy.common.updatedLabel}
                     </p>
                     <p className="mt-1 text-sm font-medium text-text-primary dark:text-white/95">
-                      {formatDateTimeLabel(locale, new Date().toISOString())}
+                      {hasHydrated
+                        ? formatDateTimeLabel(locale, new Date().toISOString())
+                        : copy.common.loading}
                     </p>
                   </div>
                   <span className="app-chip rounded-full px-3 py-1.5 text-xs text-text-secondary dark:text-white/80">
@@ -1087,7 +1161,11 @@ export default function AdminDashboard() {
                     <p className="text-xs font-semibold">{copy.kpi.revenue}</p>
                   </div>
                   <p className="mt-1 text-xl font-semibold text-text-primary dark:text-white/95">
-                    {formatMoney(locale, settlementLatestValue, settlementCurrency)}
+                    {formatFinanceMoney(locale, settlementLatestValue, settlementCurrency, {
+                      fallbackText: copy.common.noData,
+                      minimumFractionDigits: 0,
+                      maximumFractionDigits: 2,
+                    })}
                   </p>
                 </div>
               </div>

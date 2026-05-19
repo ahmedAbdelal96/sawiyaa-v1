@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import {
   usePractitionerProfile,
   useRemovePractitionerAvatar,
@@ -20,6 +20,12 @@ import type {
 import Input from "@/components/form/input/InputField";
 import Label from "@/components/form/Label";
 import { FormSkeleton } from "@/components/shared/LoadingStates";
+import {
+  getLocalizedBankOptions,
+  getLocalizedWalletProviderOptions,
+  normalizeBankValue,
+  normalizeWalletProviderValue,
+} from "@/lib/catalogs/payout";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -94,6 +100,7 @@ export default function PractitionerProfileForm({
   isEditable = true,
 }: PractitionerProfileFormProps) {
   const t = useTranslations("practitioner-area");
+  const locale = useLocale();
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [avatarUrlInput, setAvatarUrlInput] = useState<string | null>(null);
   const [avatarError, setAvatarError] = useState<string | null>(null);
@@ -179,6 +186,7 @@ export default function PractitionerProfileForm({
     register,
     handleSubmit,
     reset,
+    control,
     formState: { errors, isDirty },
   } = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
@@ -223,15 +231,29 @@ export default function PractitionerProfileForm({
         timezone: profile.timezone ?? "",
         payoutMethodType: profile.payoutDestination?.methodType ?? "",
         payoutAccountHolderName: profile.payoutDestination?.accountHolderName ?? "",
-        payoutBankName: profile.payoutDestination?.bankName ?? "",
+        payoutBankName: normalizeBankValue(profile.payoutDestination?.bankName ?? ""),
         payoutBankAccountNumber: profile.payoutDestination?.bankAccountNumber ?? "",
         payoutIban: profile.payoutDestination?.iban ?? "",
-        payoutWalletProvider: profile.payoutDestination?.walletProvider ?? "",
+        payoutWalletProvider: normalizeWalletProviderValue(profile.payoutDestination?.walletProvider ?? ""),
         payoutWalletIdentifier: profile.payoutDestination?.walletIdentifier ?? "",
         payoutOtherDetails: profile.payoutDestination?.otherDetails ?? "",
       });
     }
   }, [profile, reset]);
+
+  const watchedCountryCode = useWatch({ control, name: "countryCode" });
+  const watchedPayoutMethodType = useWatch({ control, name: "payoutMethodType" });
+  const watchedPayoutBankName = useWatch({ control, name: "payoutBankName" });
+  const watchedPayoutWalletProvider = useWatch({ control, name: "payoutWalletProvider" });
+
+  const payoutBankOptions = useMemo(
+    () => getLocalizedBankOptions(locale, watchedCountryCode, watchedPayoutBankName),
+    [locale, watchedCountryCode, watchedPayoutBankName],
+  );
+  const payoutWalletProviderOptions = useMemo(
+    () => getLocalizedWalletProviderOptions(locale, watchedCountryCode, watchedPayoutWalletProvider),
+    [locale, watchedCountryCode, watchedPayoutWalletProvider],
+  );
 
   const onSubmit = (formData: ProfileFormData) => {
     setSaveSuccess(false);
@@ -280,10 +302,10 @@ export default function PractitionerProfileForm({
       payload.payoutDestination = {
         methodType: formData.payoutMethodType as PractitionerPayoutMethodType,
         accountHolderName: formData.payoutAccountHolderName?.trim() || undefined,
-        bankName: formData.payoutBankName?.trim() || undefined,
+        bankName: normalizeBankValue(formData.payoutBankName ?? ""),
         bankAccountNumber: formData.payoutBankAccountNumber?.trim() || undefined,
         iban: formData.payoutIban?.trim() || undefined,
-        walletProvider: formData.payoutWalletProvider?.trim() || undefined,
+        walletProvider: normalizeWalletProviderValue(formData.payoutWalletProvider ?? ""),
         walletIdentifier: formData.payoutWalletIdentifier?.trim() || undefined,
         otherDetails: formData.payoutOtherDetails?.trim() || undefined,
       };
@@ -670,26 +692,50 @@ export default function PractitionerProfileForm({
               <Label htmlFor="payoutAccountHolderName">Account holder name</Label>
               <Input id="payoutAccountHolderName" type="text" {...register("payoutAccountHolderName")} />
             </div>
-            <div>
-              <Label htmlFor="payoutBankName">Bank name</Label>
-              <Input id="payoutBankName" type="text" {...register("payoutBankName")} />
-            </div>
-            <div>
-              <Label htmlFor="payoutBankAccountNumber">Bank account number</Label>
-              <Input id="payoutBankAccountNumber" type="text" {...register("payoutBankAccountNumber")} />
-            </div>
-            <div>
-              <Label htmlFor="payoutIban">IBAN</Label>
-              <Input id="payoutIban" type="text" {...register("payoutIban")} />
-            </div>
-            <div>
-              <Label htmlFor="payoutWalletProvider">Wallet provider</Label>
-              <Input id="payoutWalletProvider" type="text" {...register("payoutWalletProvider")} />
-            </div>
-            <div>
-              <Label htmlFor="payoutWalletIdentifier">Wallet identifier</Label>
-              <Input id="payoutWalletIdentifier" type="text" {...register("payoutWalletIdentifier")} />
-            </div>
+            {watchedPayoutMethodType === "BANK_ACCOUNT" ? (
+              <>
+                <div>
+                  <Label htmlFor="payoutBankName">{t("profile.fields.payoutBankName.label")}</Label>
+                  <select id="payoutBankName" className={selectClasses} {...register("payoutBankName")}>
+                    <option value="">{t("profile.fields.payoutBankName.placeholder")}</option>
+                    {payoutBankOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <Label htmlFor="payoutBankAccountNumber">Bank account number</Label>
+                  <Input id="payoutBankAccountNumber" type="text" {...register("payoutBankAccountNumber")} />
+                </div>
+              </>
+            ) : null}
+            {watchedPayoutMethodType === "IBAN" ? (
+              <div>
+                <Label htmlFor="payoutIban">IBAN</Label>
+                <Input id="payoutIban" type="text" {...register("payoutIban")} />
+              </div>
+            ) : null}
+            {watchedPayoutMethodType === "WALLET" ? (
+              <>
+                <div>
+                  <Label htmlFor="payoutWalletProvider">{t("profile.fields.payoutWalletProvider.label")}</Label>
+                  <select id="payoutWalletProvider" className={selectClasses} {...register("payoutWalletProvider")}>
+                    <option value="">{t("profile.fields.payoutWalletProvider.placeholder")}</option>
+                    {payoutWalletProviderOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <Label htmlFor="payoutWalletIdentifier">{t("profile.fields.payoutWalletIdentifier.label")}</Label>
+                  <Input id="payoutWalletIdentifier" type="text" {...register("payoutWalletIdentifier")} />
+                </div>
+              </>
+            ) : null}
             <div className="sm:col-span-2">
               <Label htmlFor="payoutOtherDetails">Other payout details</Label>
               <textarea id="payoutOtherDetails" className={textareaClasses} {...register("payoutOtherDetails")} />

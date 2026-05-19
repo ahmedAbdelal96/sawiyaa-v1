@@ -1,15 +1,29 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useTranslations } from "next-intl";
-import { Eye, Image as ImageIcon, Loader2, Search, Trash2 } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
+import {
+  BadgeCheck,
+  Eye,
+  Image as ImageIcon,
+  Loader2,
+  Star,
+  Trash2,
+  Users,
+  Wifi,
+} from "lucide-react";
 import ActionIconButton from "@/components/ui/action-icon-button/ActionIconButton";
 import ActionIconLink from "@/components/ui/action-icon-button/ActionIconLink";
 import { DataTable } from "@/components/ui/data-table";
 import type { ColumnDef } from "@/components/ui/data-table";
-import AdminOperationalListShell, {
-  AdminSummaryCard,
-} from "@/components/shared/admin/AdminOperationalListShell";
+import {
+  AdminMetricCard,
+  AdminPageHeader,
+  AdminSectionCard,
+  AdminStatusBadge,
+  AdminTableTabs,
+  AdminTableToolbar,
+} from "@/components/shared/admin/AdminDashboardKit";
 import { DEFAULT_PAGE_LIMIT, DEFAULT_PAGE_SIZE_OPTIONS } from "@/constants/pagination";
 import {
   useAdminPractitioners,
@@ -27,14 +41,16 @@ import Label from "@/components/form/Label";
 import InputField from "@/components/form/input/InputField";
 
 const PAGE_SIZE_OPTIONS = DEFAULT_PAGE_SIZE_OPTIONS;
+type PractitionerTabValue = "" | "doctor" | "therapist";
 
 export default function AdminPractitionersDirectory() {
+  const locale = useLocale();
   const tNav = useTranslations("navigation");
   const tAdmin = useTranslations("admin-area");
   const tListing = useTranslations("practitioners-listing");
 
   const [search, setSearch] = useState("");
-  const [practitionerKind, setPractitionerKind] = useState<"" | "doctor" | "therapist">("");
+  const [practitionerKind, setPractitionerKind] = useState<PractitionerTabValue>("");
   const [gender, setGender] = useState<"" | "male" | "female">("");
   const [country, setCountry] = useState("");
   const [onlineOnly, setOnlineOnly] = useState(false);
@@ -68,6 +84,26 @@ export default function AdminPractitionersDirectory() {
     limit: pageSize,
   });
 
+  const items = data?.items ?? [];
+  const pagination = data?.pagination;
+  const ratedItems = items.filter((item) => item.ratingSummary.averageRating != null);
+  const onlineCount = items.filter((item) => item.isOnlineNow).length;
+  const verifiedCount = items.filter((item) => item.isVerified).length;
+  const averageRating =
+    ratedItems.length > 0
+      ? ratedItems.reduce((sum, item) => sum + (item.ratingSummary.averageRating ?? 0), 0) /
+        ratedItems.length
+      : null;
+  const activeTypeTab = practitionerKind;
+  const practitionerTabs: Array<{
+    value: PractitionerTabValue;
+    label: string;
+  }> = [
+    { value: "", label: tListing("filter.allTypes") },
+    { value: "doctor", label: tListing("filter.practitionerTypeDoctor") },
+    { value: "therapist", label: tListing("filter.practitionerTypeTherapist") },
+  ];
+
   const columns = useMemo<ColumnDef<AdminPractitionerListItem>[]>(
     () => [
       {
@@ -75,21 +111,45 @@ export default function AdminPractitionersDirectory() {
         header: tAdmin("applications.table.applicant"),
         accessor: (row) => row.displayName ?? tAdmin("applications.table.noName"),
         cell: (row) => (
-          <div className="min-w-0">
-            <p className="truncate text-sm font-medium text-text-primary dark:text-white">
-              {row.displayName ?? tAdmin("applications.table.noName")}
-            </p>
-            <p className="mt-1 truncate text-xs text-text-muted">
-              {row.professionalTitle || "-"}
-            </p>
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-border-light bg-surface-secondary">
+              {row.avatarUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={row.avatarUrl}
+                  alt={row.displayName ?? tAdmin("applications.table.noName")}
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <span className="text-xs font-semibold text-text-muted">
+                  {(row.displayName ?? "?").slice(0, 2).toUpperCase()}
+                </span>
+              )}
+            </div>
+
+            <div className="min-w-0">
+              <p className="truncate text-sm font-semibold text-text-primary dark:text-white">
+                {row.displayName ?? tAdmin("applications.table.noName")}
+              </p>
+              <p className="truncate text-xs text-text-muted">
+                {row.professionalTitle || tListing("empty.subtitle")}
+              </p>
+              <p className="mt-1 truncate text-[11px] uppercase tracking-[0.14em] text-text-muted">
+                {row.slug}
+              </p>
+            </div>
           </div>
         ),
       },
       {
         id: "type",
         header: tAdmin("applications.table.type"),
-        accessor: (row) =>
-          tAdmin(`practitionerType.${row.practitionerType as PractitionerType}`),
+        accessor: (row) => tAdmin(`practitionerType.${row.practitionerType as PractitionerType}`),
+        cell: (row) => (
+          <AdminStatusBadge tone="primary">
+            {tAdmin(`practitionerType.${row.practitionerType as PractitionerType}`)}
+          </AdminStatusBadge>
+        ),
       },
       {
         id: "country",
@@ -113,39 +173,58 @@ export default function AdminPractitionersDirectory() {
           const value = row.ratingSummary.averageRating;
           return value == null ? "-" : `${value.toFixed(1)} (${row.ratingSummary.totalReviews})`;
         },
+        cell: (row) => {
+          const value = row.ratingSummary.averageRating;
+          return value == null ? (
+            <span className="text-sm text-text-muted">-</span>
+          ) : (
+            <div className="inline-flex items-center gap-2">
+              <span className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-warning-50 text-warning-700">
+                <Star className="h-4 w-4" />
+              </span>
+              <div>
+                <p className="text-sm font-semibold text-text-primary">
+                  {value.toFixed(1)}
+                </p>
+                <p className="text-xs text-text-muted">
+                  {row.ratingSummary.totalReviews} reviews
+                </p>
+              </div>
+            </div>
+          );
+        },
         hideOnMobile: true,
       },
       {
         id: "online",
         header: tListing("filter.onlineNow"),
-        accessor: (row) =>
-          row.isOnlineNow ? tListing("filter.yes") : tListing("filter.no"),
+        accessor: (row) => (row.isOnlineNow ? tListing("filter.yes") : tListing("filter.no")),
         cell: (row) => (
-          <span className="inline-flex items-center">
-            <span
-              className={`h-2.5 w-2.5 rounded-full ${
-                row.isOnlineNow ? "bg-emerald-500" : "bg-red-500"
-              }`}
-              aria-hidden="true"
-            />
-            <span className="sr-only">
+          <AdminStatusBadge tone={row.isOnlineNow ? "success" : "muted"}>
+            <span className="inline-flex items-center gap-2">
+              <Wifi className="h-3.5 w-3.5" />
               {row.isOnlineNow ? tListing("filter.yes") : tListing("filter.no")}
             </span>
-          </span>
+          </AdminStatusBadge>
         ),
       },
       {
         id: "verified",
         header: tListing("card.verified"),
-        accessor: (row) =>
-          row.isVerified ? tListing("filter.yes") : tListing("filter.no"),
+        accessor: (row) => (row.isVerified ? tListing("filter.yes") : tListing("filter.no")),
+        cell: (row) => (
+          <AdminStatusBadge tone={row.isVerified ? "primary" : "muted"}>
+            <span className="inline-flex items-center gap-2">
+              <BadgeCheck className="h-3.5 w-3.5" />
+              {row.isVerified ? tListing("filter.yes") : tListing("filter.no")}
+            </span>
+          </AdminStatusBadge>
+        ),
       },
     ],
     [tAdmin, tListing],
   );
 
-  const pagination = data?.pagination;
-  const items = data?.items ?? [];
   const countryOptions = useMemo(() => {
     return SUPPORTED_COUNTRY_CODES.map((code) => ({
       value: code.toUpperCase(),
@@ -223,132 +302,150 @@ export default function AdminPractitionersDirectory() {
   };
 
   return (
-    <AdminOperationalListShell
-      title={tNav("main.practitioners")}
-      summaryCards={
-        <AdminSummaryCard
+    <div className="space-y-5">
+      <AdminPageHeader
+        eyebrow={tAdmin("practitionersDirectory.avatar.title")}
+        title={tNav("main.practitioners")}
+        description={
+          locale === "ar"
+            ? "عرض وإدارة دليل الممارسين مع إبراز الهوية، التقييم، والحالة الحالية بشكل أوضح."
+            : "Browse and manage the practitioner directory with clearer identity, rating, and availability signals."
+        }
+      />
+
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <AdminMetricCard
           label={tNav("main.practitioners")}
           value={typeof pagination?.totalItems === "number" ? pagination.totalItems : "..."}
+          hint={locale === "ar" ? "إجمالي النتائج" : "Total results"}
+          icon={<Users className="h-4 w-4" />}
           tone="primary"
         />
-      }
-      filters={
-        <>
-          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-            <label className="block md:col-span-2">
-              <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
-                {tListing("search.button")}
-              </span>
-              <div className="relative">
-                <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
-                <input
-                  value={search}
-                  onChange={(event) => {
-                    setSearch(event.target.value);
-                    setPage(1);
-                  }}
-                  placeholder={tListing("search.placeholder")}
-                  className="app-control w-full py-3 pe-4 ps-10"
-                />
-              </div>
-            </label>
+        <AdminMetricCard
+          label={locale === "ar" ? "متصلون الآن" : "Online now"}
+          value={onlineCount}
+          hint={locale === "ar" ? "ضمن الصفحة الحالية" : "Current page"}
+          icon={<Wifi className="h-4 w-4" />}
+          tone="success"
+        />
+        <AdminMetricCard
+          label={locale === "ar" ? "موثقون" : "Verified"}
+          value={verifiedCount}
+          hint={locale === "ar" ? "ضمن الصفحة الحالية" : "Current page"}
+          icon={<BadgeCheck className="h-4 w-4" />}
+          tone="info"
+        />
+        <AdminMetricCard
+          label={locale === "ar" ? "متوسط التقييم" : "Average rating"}
+          value={averageRating != null ? averageRating.toFixed(1) : "-"}
+          hint={
+            locale === "ar"
+              ? "من النتائج المعروضة فقط"
+              : "Based on the loaded slice only"
+          }
+          icon={<Star className="h-4 w-4" />}
+          tone="warning"
+        />
+      </div>
 
-            <label className="block">
-              <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
-                {tListing("filter.practitionerType")}
-              </span>
-              <select
-                value={practitionerKind}
-                onChange={(event) => {
-                  setPractitionerKind(event.target.value as "" | "doctor" | "therapist");
-                  setPage(1);
-                }}
-                className="app-control h-11 w-full"
-              >
-                <option value="">{tListing("filter.allTypes")}</option>
-                <option value="doctor">{tListing("filter.practitionerTypeDoctor")}</option>
-                <option value="therapist">{tListing("filter.practitionerTypeTherapist")}</option>
-              </select>
-            </label>
+      <AdminSectionCard
+        eyebrow={tListing("search.button")}
+        title={tNav("main.practitioners")}
+        description={
+          locale === "ar"
+            ? "يمكنك البحث والتصفية مع الحفاظ على نفس سلوك القائمة الحالي."
+            : "Search and filter the current directory without changing the existing behavior."
+        }
+      >
+        <div className="space-y-5">
+          <AdminTableTabs
+            value={activeTypeTab}
+            onChange={(nextValue) => {
+              setPractitionerKind(nextValue);
+              setPage(1);
+            }}
+            tabs={practitionerTabs}
+          />
 
-            <div className="flex items-end justify-end">
-              <AdvancedFiltersToggleButton
-                expanded={showAdvancedFilters}
-                hasHiddenActive={!showAdvancedFilters && hasAdvancedFilters}
-                onToggle={() => setShowAdvancedFilters((prev) => !prev)}
-              />
-            </div>
-          </div>
-
-          <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-            <label className="flex items-center gap-3 rounded-2xl border border-border-light bg-surface-secondary px-4 py-3 text-sm text-text-primary dark:bg-white/5 dark:text-white/90">
-              <input
-                type="checkbox"
-                checked={onlineOnly}
-                onChange={(event) => {
-                  setOnlineOnly(event.target.checked);
-                  setPage(1);
-                }}
-                className="h-4 w-4 rounded border-border-light text-primary focus:ring-primary"
-              />
-              {tListing("filter.onlineNow")}
-            </label>
-
-            <label className="block">
-              <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
-                {tListing("filter.rating")}
-              </span>
-              <select
-                value={minRating}
-                onChange={(event) => {
-                  setMinRating(event.target.value as "" | "3" | "4" | "4.5");
-                  setPage(1);
-                }}
-                className="app-control h-11 w-full"
-              >
-                <option value="">{tListing("filter.anyRating")}</option>
-                <option value="3">{tListing("filter.rating3Up")}</option>
-                <option value="4">{tListing("filter.rating4Up")}</option>
-                <option value="4.5">{tListing("filter.rating45Up")}</option>
-              </select>
-            </label>
-
-            <label className="block">
-              <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
-                {tListing("sort.label")}
-              </span>
-              <select
-                value={sort}
-                onChange={(event) => {
-                  setSort(
-                    event.target.value as
-                      | "recommended"
-                      | "experience"
-                      | "rating"
-                      | "newest"
-                      | "oldest",
-                  );
-                  setPage(1);
-                }}
-                className="app-control h-11 w-full"
-              >
-                <option value="recommended">{tListing("sort.recommended")}</option>
-                <option value="rating">{tListing("sort.rating")}</option>
-                <option value="experience">{tListing("sort.experience")}</option>
-                <option value="newest">{tListing("sort.newest")}</option>
-                <option value="oldest">{tListing("sort.oldest")}</option>
-              </select>
-            </label>
-
-            <div className="flex items-end">
-              <Button variant="outline" className="h-11 w-full" onClick={resetFilters}>
+          <AdminTableToolbar
+            search={{
+              value: search,
+              onChange: (value) => {
+                setSearch(value);
+                setPage(1);
+              },
+              placeholder: tListing("search.placeholder"),
+              ariaLabel: tListing("search.button"),
+            }}
+            actions={
+              <Button variant="outline" className="h-11" onClick={resetFilters}>
                 {tListing("filter.clearAll")}
               </Button>
-            </div>
+            }
+            filters={
+              <>
+                <label className="flex items-center gap-2 rounded-[16px] border border-border-light bg-white px-3 py-2">
+                  <input
+                    type="checkbox"
+                    checked={onlineOnly}
+                    onChange={(event) => {
+                      setOnlineOnly(event.target.checked);
+                      setPage(1);
+                    }}
+                    className="h-4 w-4 rounded border-border-light text-primary focus:ring-primary"
+                  />
+                  <span className="text-sm text-text-secondary">{tListing("filter.onlineNow")}</span>
+                </label>
+
+                <select
+                  value={minRating}
+                  onChange={(event) => {
+                    setMinRating(event.target.value as "" | "3" | "4" | "4.5");
+                    setPage(1);
+                  }}
+                  className="app-control h-11 min-w-[10rem] rounded-[18px] px-4"
+                >
+                  <option value="">{tListing("filter.anyRating")}</option>
+                  <option value="3">{tListing("filter.rating3Up")}</option>
+                  <option value="4">{tListing("filter.rating4Up")}</option>
+                  <option value="4.5">{tListing("filter.rating45Up")}</option>
+                </select>
+
+                <select
+                  value={sort}
+                  onChange={(event) => {
+                    setSort(
+                      event.target.value as
+                        | "recommended"
+                        | "experience"
+                        | "rating"
+                        | "newest"
+                        | "oldest",
+                    );
+                    setPage(1);
+                  }}
+                  className="app-control h-11 min-w-[11rem] rounded-[18px] px-4"
+                >
+                  <option value="recommended">{tListing("sort.recommended")}</option>
+                  <option value="rating">{tListing("sort.rating")}</option>
+                  <option value="experience">{tListing("sort.experience")}</option>
+                  <option value="newest">{tListing("sort.newest")}</option>
+                  <option value="oldest">{tListing("sort.oldest")}</option>
+                </select>
+              </>
+            }
+          />
+
+          <div className="flex items-end justify-between gap-3">
+            <AdvancedFiltersToggleButton
+              expanded={showAdvancedFilters}
+              hasHiddenActive={!showAdvancedFilters && hasAdvancedFilters}
+              onToggle={() => setShowAdvancedFilters((prev) => !prev)}
+            />
           </div>
 
           {showAdvancedFilters ? (
-            <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
               <label className="block">
                 <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
                   {tListing("filter.gender")}
@@ -359,7 +456,7 @@ export default function AdminPractitionersDirectory() {
                     setGender(event.target.value as "" | "male" | "female");
                     setPage(1);
                   }}
-                  className="app-control h-11 w-full"
+                  className="app-control h-11 w-full rounded-[18px]"
                 >
                   <option value="">{tListing("filter.allGenders")}</option>
                   <option value="male">{tListing("filter.genderMale")}</option>
@@ -377,7 +474,7 @@ export default function AdminPractitionersDirectory() {
                     setCountry(event.target.value);
                     setPage(1);
                   }}
-                  className="app-control h-11 w-full"
+                  className="app-control h-11 w-full rounded-[18px]"
                 >
                   <option value="">{tListing("filter.allCountries")}</option>
                   {countryOptions.map((option) => (
@@ -389,69 +486,69 @@ export default function AdminPractitionersDirectory() {
               </label>
             </div>
           ) : null}
-        </>
-      }
-    >
-      <DataTable
-        data={items}
-        columns={columns}
-        getRowId={(row) => row.id}
-        loading={isLoading}
-        error={isError ? tListing("error.title") : null}
-        errorState={{
-          title: tListing("error.title"),
-          description: tListing("error.subtitle"),
-          action: {
-            label: tListing("error.retry"),
-            onClick: () => refetch(),
-          },
-        }}
-        rowActions={(row) => (
-          <div className="flex items-center gap-2">
-            <ActionIconButton
-              intent="edit"
-              label={tAdmin("practitionersDirectory.avatar.openModal")}
-              icon={<ImageIcon className="h-4 w-4" />}
-              onClick={() => {
-                setSelectedPractitioner(row);
-                setAvatarUrlInput(row.avatarUrl ?? "");
-                setAvatarError(null);
-                setAvatarSuccess(null);
-              }}
-            />
-            <ActionIconLink
-              intent="view"
-              href={`/practitioners/${row.slug}`}
-              label={tAdmin("applications.table.viewAction")}
-              icon={<Eye className="h-4 w-4" />}
-            />
-          </div>
-        )}
-        pagination={
-          pagination
-            ? {
-                page: pagination.page,
-                limit: pagination.limit,
-                total: pagination.totalItems,
-                totalPages: pagination.totalPages,
-                hasPrevPage: pagination.page > 1,
-                hasNextPage: pagination.page < pagination.totalPages,
-              }
-            : undefined
-        }
-        onPageChange={(nextPage) => setPage(nextPage)}
-        onPageSizeChange={(nextLimit) => {
-          setPageSize(nextLimit);
-          setPage(1);
-        }}
-        pageSizeOptions={PAGE_SIZE_OPTIONS}
-        emptyState={{
-          title: tListing("empty.title"),
-          description: tListing("empty.subtitle"),
-        }}
-        ariaLabel={tNav("main.practitioners")}
-        caption={tNav("main.practitioners")}
-      />
+
+          <DataTable
+            data={items}
+            columns={columns}
+            getRowId={(row) => row.id}
+            loading={isLoading}
+            error={isError ? tListing("error.title") : null}
+            errorState={{
+              title: tListing("error.title"),
+              description: tListing("error.subtitle"),
+              action: {
+                label: tListing("error.retry"),
+                onClick: () => refetch(),
+              },
+            }}
+            rowActions={(row) => (
+              <div className="flex items-center gap-2">
+                <ActionIconButton
+                  intent="edit"
+                  label={tAdmin("practitionersDirectory.avatar.openModal")}
+                  icon={<ImageIcon className="h-4 w-4" />}
+                  onClick={() => {
+                    setSelectedPractitioner(row);
+                    setAvatarUrlInput(row.avatarUrl ?? "");
+                    setAvatarError(null);
+                    setAvatarSuccess(null);
+                  }}
+                />
+                <ActionIconLink
+                  intent="view"
+                  href={`/practitioners/${row.slug}`}
+                  label={tAdmin("applications.table.viewAction")}
+                  icon={<Eye className="h-4 w-4" />}
+                />
+              </div>
+            )}
+            pagination={
+              pagination
+                ? {
+                    page: pagination.page,
+                    limit: pagination.limit,
+                    total: pagination.totalItems,
+                    totalPages: pagination.totalPages,
+                    hasPrevPage: pagination.page > 1,
+                    hasNextPage: pagination.page < pagination.totalPages,
+                  }
+                : undefined
+            }
+            onPageChange={(nextPage) => setPage(nextPage)}
+            onPageSizeChange={(nextLimit) => {
+              setPageSize(nextLimit);
+              setPage(1);
+            }}
+            pageSizeOptions={PAGE_SIZE_OPTIONS}
+            emptyState={{
+              title: tListing("empty.title"),
+              description: tListing("empty.subtitle"),
+            }}
+            ariaLabel={tNav("main.practitioners")}
+            caption={tNav("main.practitioners")}
+          />
+        </div>
+      </AdminSectionCard>
 
       <FormModal
         isOpen={!!selectedPractitioner}
@@ -547,6 +644,6 @@ export default function AdminPractitionersDirectory() {
           </div>
         ) : null}
       </FormModal>
-    </AdminOperationalListShell>
+    </div>
   );
 }

@@ -3,8 +3,8 @@ import { PractitionerPackagesController } from './practitioner-packages.controll
 
 describe('PractitionerPackagesController routes', () => {
   it('uses the me-scoped practitioner route convention', () => {
-    expect(Reflect.getMetadata(PATH_METADATA, PractitionerPackagesController)).toBe(
-      'practitioners/me/packages',
-    );
+    expect(
+      Reflect.getMetadata(PATH_METADATA, PractitionerPackagesController),
+    ).toBe('practitioners/me/packages');
   });
 });

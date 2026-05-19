@@ -62,7 +62,8 @@ export class ReconcileSessionPaymentReturnUseCase {
     if (!payment) {
       this.logger.warn(
         {
-          message: 'Unable to reconcile payment return because no payment was found',
+          message:
+            'Unable to reconcile payment return because no payment was found',
           sessionId: session.id,
           providerReference: input.providerReference ?? null,
           redirectStatus: input.redirectStatus ?? null,

@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { FinancialOperationsPractitionerRepository } from '../repositories/financial-operations-practitioner.repository';
 import { PractitionerManualPayoutBalanceService } from '../services/practitioner-manual-payout-balance.service';
 import { FINANCIAL_OPS_ERROR_CODES } from '../types/financial-operations.types';
@@ -10,10 +14,7 @@ export class GetAdminPractitionerPayoutBalanceUseCase {
     private readonly balanceService: PractitionerManualPayoutBalanceService,
   ) {}
 
-  async execute(input: {
-    practitionerId: string;
-    currency?: string;
-  }) {
+  async execute(input: { practitionerId: string; currency?: string }) {
     const practitioner = await this.practitionerRepository.findById(
       input.practitionerId,
     );

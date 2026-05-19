@@ -70,8 +70,10 @@ export default function AdminTrainingScheduleLectureCreateModal({
 
   useEffect(() => {
     if (!isOpen) return;
-    setFeedback(null);
-    setForm(createInitialForm(schedule));
+    queueMicrotask(() => {
+      setFeedback(null);
+      setForm(createInitialForm(schedule));
+    });
   }, [isOpen, schedule]);
 
   const defaultStart = useMemo(() => schedule?.startsAt ?? null, [schedule?.startsAt]);

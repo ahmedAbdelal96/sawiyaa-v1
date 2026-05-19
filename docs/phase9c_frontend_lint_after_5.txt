@@ -1,0 +1,159 @@
+﻿
+> fayed-frontend@1.0.0 lint
+> npm run i18n:check && eslint .
+
+
+> fayed-frontend@1.0.0 i18n:check
+> node scripts/validate-i18n.mjs
+
+i18n validation passed.
+
+D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\academy\components\AdminAcademyOverviewScreen.tsx
+  97:9  warning  The 'visibleItems' logical expression could make the dependencies of useMemo Hook (at line 112) change on every render. To fix this, wrap the initialization of 'visibleItems' in its own useMemo() Hook  react-hooks/exhaustive-deps
+
+D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\academy\components\PublicAcademyHomeScreen.tsx
+  49:9  warning  The 'items' logical expression could make the dependencies of useMemo Hook (at line 56) change on every render. To fix this, wrap the initialization of 'items' in its own useMemo() Hook  react-hooks/exhaustive-deps
+
+D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\admin\patients\api\admin-patients.api.ts
+  16:5  warning  Unused eslint-disable directive (no problems were reported from 'no-console')
+  27:5  warning  Unused eslint-disable directive (no problems were reported from 'no-console')
+
+D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\admin\patients\components\AdminPatient360Screen.tsx
+  115:5  warning  Unused eslint-disable directive (no problems were reported from 'no-console')
+
+D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\admin\patients\components\AdminPatientsDirectory.tsx
+  95:7  warning  Unused eslint-disable directive (no problems were reported from 'no-console')
+
+D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\admin\payment-gateway-control\components\AdminPaymentGatewayControlScreen.tsx
+  1041:9  warning  The 'paymobHistory' logical expression could make the dependencies of useMemo Hook (at line 1050) change on every render. Move it inside the useMemo callback. Alternatively, wrap the initialization of 'paymobHistory' in its own useMemo() Hook    react-hooks/exhaustive-deps
+  1042:9  warning  The 'stripeHistory' logical expression could make the dependencies of useMemo Hook (at line 1050) change on every render. Move it inside the useMemo callback. Alternatively, wrap the initialization of 'stripeHistory' in its own useMemo() Hook    react-hooks/exhaustive-deps
+  1043:9  warning  The 'routingHistory' logical expression could make the dependencies of useMemo Hook (at line 1050) change on every render. Move it inside the useMemo callback. Alternatively, wrap the initialization of 'routingHistory' in its own useMemo() Hook  react-hooks/exhaustive-deps
+
+D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\admin\practitioner-payouts\components\AdminPractitionerPayoutHistoryScreen.tsx
+  47:9  warning  The 'items' logical expression could make the dependencies of useMemo Hook (at line 65) change on every render. To fix this, wrap the initialization of 'items' in its own useMemo() Hook  react-hooks/exhaustive-deps
+
+D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\articles-public\components\PatientArticleCard.tsx
+  32:11  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\articles-public\components\PatientArticleDetailScreen.tsx
+  63:11  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\articles-public\components\PublicArticleCard.tsx
+  32:11  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\articles-public\components\PublicArticleDetailScreen.tsx
+  70:13  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\availability\components\AvailabilityExceptionsList.tsx
+  147:7  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\availability\components\AvailabilityExceptionsList.tsx:147:7
+  145 |   useEffect(() => {
+  146 |     if (isOpen) {
+> 147 |       setForm({
+      |       ^^^^^^^ Avoid calling setState() directly within an effect
+  148 |         startsAt: "",
+  149 |         endsAt: "",
+  150 |         reason: "",  react-hooks/set-state-in-effect
+
+D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\chat\components\SessionChatPanel.tsx
+  311:17  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  436:29  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\messages-shell\components\UnifiedMessagesLauncher.tsx
+  396:7  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\messages-shell\components\UnifiedMessagesLauncher.tsx:396:7
+  394 |     const snapshot = loadMessagesShellContinuitySnapshot(continuityStorageKey);
+  395 |     if (snapshot) {
+> 396 |       setActiveLane(snapshot.activeLane);
+      |       ^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  397 |       setSelectedSessionId(snapshot.selectedSessionId);
+  398 |       setSelectedSupportTicketId(snapshot.selectedSupportTicketId);
+  399 |       setSelectedPractitionerRequestId(snapshot.selectedPractitionerRequestId);  react-hooks/set-state-in-effect
+
+D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\practitioners\components\PractitionerDashboard.tsx
+  354:15  error  Error: Cannot call impure function during render
+
+`Date.now` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).
+
+D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\practitioners\components\PractitionerDashboard.tsx:354:15
+  352 |   const latestSettlementAmount = settlementValues.at(-1) ?? 0;
+  353 |
+> 354 |   const now = Date.now();
+      |               ^^^^^^^^^^ Cannot call impure function
+  355 |   const upcomingSessions = [...sessions]
+  356 |     .filter((session) => {
+  357 |       if (!session.scheduledStartAt) return false;  react-hooks/purity
+
+D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\practitioners\components\PractitionerProfileWorkspace.tsx
+  636:35  warning  Compilation Skipped: Use of incompatible library
+
+This API returns functions which cannot be memoized without leading to stale UI. To prevent this, by default React Compiler will skip memoizing this component/hook. However, you may see issues if values from this API are passed to other components/hooks that are memoized.
+
+D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\practitioners\components\PractitionerProfileWorkspace.tsx:636:35
+  634 |   };
+  635 |
+> 636 |   const watchedPayoutMethodType = watch("payoutMethodType");
+      |                                   ^^^^^ React Hook Form's `useForm()` API returns a `watch()` function which cannot be memoized safely.
+  637 |   const watchedPayoutAccountHolderName = watch("payoutAccountHolderName");
+  638 |   const watchedPayoutBankName = watch("payoutBankName");
+  639 |   const watchedPayoutBankAccountNumber = watch("payoutBankAccountNumber");  react-hooks/incompatible-library
+
+D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\sessions\hooks\use-sessions.ts
+  37:3  warning  Unused eslint-disable directive (no problems were reported from '@typescript-eslint/no-explicit-any')
+
+D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\settings\components\AdminRevenueShareRulesScreen.tsx
+  49:5  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\settings\components\AdminRevenueShareRulesScreen.tsx:49:5
+  47 |     if (!item) return;
+  48 |
+> 49 |     setForm({
+     |     ^^^^^^^ Avoid calling setState() directly within an effect
+  50 |       localPlatformRatePercent: item.local.platformRatePercent,
+  51 |       localPractitionerRatePercent: item.local.practitionerRatePercent,
+  52 |       crossBorderPlatformRatePercent: item.crossBorder.platformRatePercent,  react-hooks/set-state-in-effect
+
+D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\training\components\AdminTrainingCreateModal.tsx
+  55:5  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\training\components\AdminTrainingCreateModal.tsx:55:5
+  53 |   useEffect(() => {
+  54 |     if (!isOpen) return;
+> 55 |     setFeedback(null);
+     |     ^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  56 |     setForm((current) => ({
+  57 |       ...current,
+  58 |       locale: locale.startsWith("ar") ? "ar" : "en",  react-hooks/set-state-in-effect
+
+D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\training\components\AdminTrainingDetailScreen.tsx
+  351:9  warning  The 'scheduleSnapshotItems' logical expression could make the dependencies of useMemo Hook (at line 421) change on every render. To fix this, wrap the initialization of 'scheduleSnapshotItems' in its own useMemo() Hook  react-hooks/exhaustive-deps
+
+✖ 24 problems (5 errors, 19 warnings)
+  0 errors and 5 warnings potentially fixable with the `--fix` option.
+

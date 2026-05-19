@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { JwtAccessAuthGuard } from '@common/guards/authentication/jwt-access-auth.guard';
+import { PermissionResolverService } from '@common/guards/authorization/permission-resolver.service';
 import { CurrentUserAvatarController } from './controllers/current-user-avatar.controller';
 import { CurrentUserController } from './controllers/current-user.controller';
 import { CurrentUserMapper } from './mappers/current-user.mapper';
@@ -8,6 +9,7 @@ import { PractitionerProfileRepository } from './repositories/practitioner-profi
 import { UserRepository } from './repositories/user.repository';
 import { UserRoleRepository } from './repositories/user-role.repository';
 import { UserAvatarStorageService } from './services/user-avatar-storage.service';
+import { GetCurrentUserPermissionsUseCase } from './use-cases/get-current-user-permissions.use-case';
 import { GetCurrentUserProfileLinksUseCase } from './use-cases/get-current-user-profile-links.use-case';
 import { GetCurrentUserAvatarFileUseCase } from './use-cases/get-current-user-avatar-file.use-case';
 import { GetCurrentUserSecurityStateUseCase } from './use-cases/get-current-user-security-state.use-case';
@@ -26,6 +28,7 @@ import { UpdateCurrentUserAvatarUseCase } from './use-cases/update-current-user-
   controllers: [CurrentUserController, CurrentUserAvatarController],
   providers: [
     JwtAccessAuthGuard,
+    PermissionResolverService,
     CurrentUserMapper,
     UserRepository,
     UserRoleRepository,
@@ -34,6 +37,7 @@ import { UpdateCurrentUserAvatarUseCase } from './use-cases/update-current-user-
     UserAvatarStorageService,
     GetCurrentUserUseCase,
     GetCurrentUserSummaryUseCase,
+    GetCurrentUserPermissionsUseCase,
     ListCurrentUserRolesUseCase,
     GetCurrentUserSecurityStateUseCase,
     GetCurrentUserProfileLinksUseCase,

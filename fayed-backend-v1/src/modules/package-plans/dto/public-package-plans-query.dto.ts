@@ -1,11 +1,20 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { SessionMode } from '@prisma/client';
 import { Type } from 'class-transformer';
-import { IsEnum, IsOptional, IsString, MaxLength, Min, Max, IsInt } from 'class-validator';
+import {
+  IsEnum,
+  IsOptional,
+  IsString,
+  MaxLength,
+  Min,
+  Max,
+  IsInt,
+} from 'class-validator';
 
 export class PublicPackagePlansQueryDto {
   @ApiPropertyOptional({
-    description: 'Session duration in minutes used for the public price preview',
+    description:
+      'Session duration in minutes used for the public price preview',
     default: 60,
   })
   @IsOptional()

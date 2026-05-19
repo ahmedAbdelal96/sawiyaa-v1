@@ -58,7 +58,9 @@ export class PackageQuoteCalculatorService {
     private readonly moneyMathService: MoneyMathService,
   ) {}
 
-  async calculate(input: PackagePlanQuoteInput): Promise<PackagePlanQuoteViewModel> {
+  async calculate(
+    input: PackagePlanQuoteInput,
+  ): Promise<PackagePlanQuoteViewModel> {
     this.validatePackagePlanService.validateStandardPlan({
       code: input.plan.code,
       sessionCount: input.plan.sessionCount,
@@ -131,8 +133,8 @@ export class PackageQuoteCalculatorService {
     let roundingAdjustment: Prisma.Decimal | null = null;
 
     if (input.internalBreakdownVisible && input.patient) {
-      const commission = await this.resolveCommissionRuleService.resolveForSession(
-        {
+      const commission =
+        await this.resolveCommissionRuleService.resolveForSession({
           id: `${input.plan.code}:${input.practitioner.id}:${input.selectedDurationMinutes}:${selectedCurrencyCode}`,
           flowType: SessionFlowType.SCHEDULED,
           sessionMode: input.sessionMode,
@@ -149,13 +151,14 @@ export class PackageQuoteCalculatorService {
             countryId: input.patient.countryId,
             country: null,
           },
-        },
-      );
+        });
 
       commissionMode = commission.rule.marketType;
       platformOriginalShare = this.moneyMathService.roundMoney(
         undiscountedTotal.mul(
-          this.moneyMathService.toDecimal(commission.platformRatePercent).div(100),
+          this.moneyMathService
+            .toDecimal(commission.platformRatePercent)
+            .div(100),
         ),
       );
       practitionerOriginalShare = this.moneyMathService.subtract(

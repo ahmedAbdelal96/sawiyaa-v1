@@ -49,11 +49,14 @@ export class AdminRefundPoliciesController {
   @Get()
   @ApiOperation({
     summary: 'List refund policies',
-    description: 'Returns the current refund policies and their ordered clauses.',
+    description:
+      'Returns the current refund policies and their ordered clauses.',
   })
   @ApiResponse({ status: 200, type: RefundPoliciesResponseDto })
   @ApiUnauthorizedResponse({ description: 'Access token is required' })
-  @ApiForbiddenResponse({ description: 'Only admin active accounts can access this route' })
+  @ApiForbiddenResponse({
+    description: 'Only admin active accounts can access this route',
+  })
   listPolicies() {
     return this.refundPolicyService.listPolicies();
   }
@@ -66,7 +69,9 @@ export class AdminRefundPoliciesController {
   @ApiParam({ name: 'policyType', enum: RefundPolicyType })
   @ApiResponse({ status: 200, type: RefundPolicyDto })
   @ApiUnauthorizedResponse({ description: 'Access token is required' })
-  @ApiForbiddenResponse({ description: 'Only admin active accounts can access this route' })
+  @ApiForbiddenResponse({
+    description: 'Only admin active accounts can access this route',
+  })
   @ApiNotFoundResponse({ description: 'Policy was not found' })
   getPolicy(
     @Param('policyType', new ParseEnumPipe(RefundPolicyType))
@@ -84,7 +89,9 @@ export class AdminRefundPoliciesController {
   @ApiBody({ type: UpdateRefundPolicyDto })
   @ApiResponse({ status: 200, type: RefundPolicyDto })
   @ApiUnauthorizedResponse({ description: 'Access token is required' })
-  @ApiForbiddenResponse({ description: 'Only admin active accounts can access this route' })
+  @ApiForbiddenResponse({
+    description: 'Only admin active accounts can access this route',
+  })
   @ApiNotFoundResponse({ description: 'Policy was not found' })
   updatePolicy(
     @Param('policyType', new ParseEnumPipe(RefundPolicyType))
@@ -103,7 +110,9 @@ export class AdminRefundPoliciesController {
   @ApiBody({ type: ReorderRefundPolicyClausesDto })
   @ApiResponse({ status: 200, type: RefundPolicyDto })
   @ApiUnauthorizedResponse({ description: 'Access token is required' })
-  @ApiForbiddenResponse({ description: 'Only admin active accounts can access this route' })
+  @ApiForbiddenResponse({
+    description: 'Only admin active accounts can access this route',
+  })
   @ApiNotFoundResponse({ description: 'Policy was not found' })
   reorderClauses(
     @Param('policyType', new ParseEnumPipe(RefundPolicyType))
@@ -122,7 +131,9 @@ export class AdminRefundPoliciesController {
   @ApiBody({ type: CreateRefundPolicyClauseDto })
   @ApiResponse({ status: 200, type: RefundPolicyDto })
   @ApiUnauthorizedResponse({ description: 'Access token is required' })
-  @ApiForbiddenResponse({ description: 'Only admin active accounts can access this route' })
+  @ApiForbiddenResponse({
+    description: 'Only admin active accounts can access this route',
+  })
   @ApiNotFoundResponse({ description: 'Policy was not found' })
   createClause(
     @Param('policyType', new ParseEnumPipe(RefundPolicyType))
@@ -142,7 +153,9 @@ export class AdminRefundPoliciesController {
   @ApiBody({ type: CreateRefundPolicyClauseDto })
   @ApiResponse({ status: 200, type: RefundPolicyDto })
   @ApiUnauthorizedResponse({ description: 'Access token is required' })
-  @ApiForbiddenResponse({ description: 'Only admin active accounts can access this route' })
+  @ApiForbiddenResponse({
+    description: 'Only admin active accounts can access this route',
+  })
   @ApiNotFoundResponse({ description: 'Clause was not found' })
   updateClause(
     @Param('policyType', new ParseEnumPipe(RefundPolicyType))
@@ -163,7 +176,9 @@ export class AdminRefundPoliciesController {
   @ApiParam({ name: 'clauseId', description: 'Policy clause UUID' })
   @ApiResponse({ status: 200, type: RefundPolicyDto })
   @ApiUnauthorizedResponse({ description: 'Access token is required' })
-  @ApiForbiddenResponse({ description: 'Only admin active accounts can access this route' })
+  @ApiForbiddenResponse({
+    description: 'Only admin active accounts can access this route',
+  })
   @ApiNotFoundResponse({ description: 'Clause was not found' })
   deleteClause(
     @Param('policyType', new ParseEnumPipe(RefundPolicyType))

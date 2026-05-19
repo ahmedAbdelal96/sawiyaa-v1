@@ -13,6 +13,7 @@ import type {
   SetPractitionerSpecialtiesRequest,
   UpdatePractitionerProfileRequest,
   UpdatePractitionerAvatarRequest,
+  UploadPractitionerCredentialFileRequest,
   UploadPractitionerCredentialMetadataRequest,
 } from "../types/practitioners.types";
 
@@ -45,10 +46,24 @@ export async function updatePractitionerProfile(
 export async function updatePractitionerAvatar(
   data: UpdatePractitionerAvatarRequest
 ) {
-  const response = await httpClient.patch<ApiPayload<PractitionerAvatarSuccessResponse>>(
-    "/practitioners/me/avatar",
-    data
-  );
+  const hasFile = data.file instanceof File;
+
+  const response = hasFile
+    ? await httpClient.patch<ApiPayload<PractitionerAvatarSuccessResponse>>(
+        "/practitioners/me/avatar",
+        (() => {
+          const formData = new FormData();
+          formData.append("file", data.file as File);
+          if (data.avatarUrl) {
+            formData.append("avatarUrl", data.avatarUrl);
+          }
+          return formData;
+        })()
+      )
+    : await httpClient.patch<ApiPayload<PractitionerAvatarSuccessResponse>>(
+        "/practitioners/me/avatar",
+        data
+      );
   return extractData(response.data);
 }
 
@@ -95,6 +110,27 @@ export async function uploadPractitionerCredential(
     await httpClient.post<ApiPayload<PractitionerCredentialUploadSuccessResponse>>(
       "/practitioners/me/credentials",
       data
+    );
+  return extractData(response.data);
+}
+
+/**
+ * Uploads practitioner credential file and creates credential metadata in one request.
+ */
+export async function uploadPractitionerCredentialFile(
+  data: UploadPractitionerCredentialFileRequest
+) {
+  const formData = new FormData();
+  formData.append("file", data.file);
+  formData.append("credentialType", data.credentialType);
+  if (data.expiresAt) {
+    formData.append("expiresAt", data.expiresAt);
+  }
+
+  const response =
+    await httpClient.post<ApiPayload<PractitionerCredentialUploadSuccessResponse>>(
+      "/practitioners/me/credentials/upload",
+      formData
     );
   return extractData(response.data);
 }

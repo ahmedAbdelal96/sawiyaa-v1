@@ -6,6 +6,7 @@ import type { UserStatus } from "@/features/auth/types/auth.types";
 import type {
   CredentialReviewStatus,
   CredentialType,
+  PractitionerApplicationCompletionViewModel,
   PractitionerApplicationStatus,
   PractitionerGender,
   PractitionerPayoutDestination,
@@ -82,6 +83,7 @@ export interface AdminApplicantBasics {
   userId: string;
   practitionerProfileId: string;
   displayName: string | null;
+  avatarUrl?: string | null;
   accountStatus: UserStatus;
   email: AdminApplicantEmailSummary;
   phone: AdminApplicantPhoneSummary;
@@ -94,6 +96,7 @@ export interface AdminPractitionerProfileSection {
   practitionerType: PractitionerType;
   practitionerGender: PractitionerGender | null;
   profileStatus: PractitionerStatus;
+  avatarUrl?: string | null;
   professionalTitle: string | null;
   bio: string | null;
   yearsOfExperience: number | null;
@@ -154,6 +157,7 @@ export interface PractitionerApplicationDetails {
   livePayoutDestination: PractitionerPayoutDestination | null;
   application: AdminPractitionerApplicationSummary;
   readinessSnapshot: AdminReadinessSnapshot;
+  completion: PractitionerApplicationCompletionViewModel;
 }
 
 export interface PractitionerApplicationDetailsResponse {

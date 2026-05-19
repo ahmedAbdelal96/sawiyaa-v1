@@ -21,9 +21,8 @@ export class ReconcilePackageSettlementUseCase {
       });
     }
 
-    const settlement = await this.packageSettlementService.reconcilePurchase(
-      purchase,
-    );
+    const settlement =
+      await this.packageSettlementService.reconcilePurchase(purchase);
 
     return {
       purchase,

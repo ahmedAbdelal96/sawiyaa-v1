@@ -30,6 +30,7 @@ import { createReadStream } from 'fs';
 import { Response } from 'express';
 import { CurrentUser } from '@common/decorators/current-user.decorator';
 import { RequireAccountStates } from '@common/decorators/account-state.decorator';
+import { RequireStepUp } from '@common/decorators/step-up.decorator';
 import { Permissions } from '@common/decorators/permissions.decorator';
 import { Roles } from '@common/decorators/roles.decorator';
 import { AccountStateRequirement } from '@common/enums/account-state-requirement.enum';
@@ -132,6 +133,7 @@ export class AdminPractitionerPayoutsController {
   }
 
   @Post()
+  @RequireStepUp('finance.practitioner-payout.record')
   @ApiOperation({
     summary: 'Record practitioner payout',
     description:
@@ -209,7 +211,9 @@ export class AdminPractitionerPayoutsController {
   @UseGuards(AdminGuard)
   @Roles(AppRole.ADMIN)
   @Permissions(PermissionKey.PRACTITIONER_PAYOUTS_WRITE)
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(
+    FileInterceptor('file', { limits: { fileSize: 10 * 1024 * 1024 } }),
+  )
   uploadProof(
     @Param('practitionerId', new ParseUUIDPipe()) practitionerId: string,
     @Param('payoutId', new ParseUUIDPipe()) payoutId: string,

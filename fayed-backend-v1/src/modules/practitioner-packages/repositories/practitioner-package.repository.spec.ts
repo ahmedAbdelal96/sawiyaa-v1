@@ -1,4 +1,8 @@
-import { PractitionerPackageStatus, UserStatus, PractitionerStatus } from '@prisma/client';
+import {
+  PractitionerPackageStatus,
+  UserStatus,
+  PractitionerStatus,
+} from '@prisma/client';
 import { PrismaService } from '@common/prisma/prisma.service';
 import { PractitionerPackageRepository } from './practitioner-package.repository';
 

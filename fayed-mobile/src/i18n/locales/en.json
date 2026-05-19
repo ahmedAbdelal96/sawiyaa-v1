@@ -367,7 +367,6 @@
       "googleHelper": "Google sign in sends the native ID token to the backend patient Google endpoint.",
       "googleUnavailable": "Google sign in needs platform client IDs in the mobile environment before it can run.",
       "forgotPassword": "Forgot your password?",
-      "noForgotPasswordYet": "Patient forgot-password is not exposed by the current backend contract.",
       "noAccount": "Need a patient account?",
       "createAccount": "Create one"
     },
@@ -394,9 +393,11 @@
       "goToSignIn": "Sign in"
     },
     "patientForgotPassword": {
-      "title": "Recover patient access",
-      "subtitle": "Password reset for patient accounts is not published in the backend contract yet.",
-      "contractBlocked": "This screen is intentionally read-only until backend exposes a patient forgot/reset password contract.",
+      "eyebrow": "Password recovery",
+      "title": "Reset your password",
+      "subtitle": "Enter your email to receive a password reset code.",
+      "sendCode": "Send reset code",
+      "resetPassword": "Set new password",
       "backToSignIn": "Back to patient sign in"
     },
     "practitionerSignUp": {
@@ -974,7 +975,20 @@
         "placeholder": "Enter coupon code",
         "apply": "Apply",
         "remove": "Remove",
-        "applied": "Coupon {{code}} applied"
+        "applying": "Applying...",
+        "applied": "Promo code {{code}} applied",
+        "reapply": "Edit the code and apply again.",
+        "errors": {
+          "invalid": "This promo code is invalid.",
+          "expired": "This promo code has expired.",
+          "inactive": "This promo code is not currently available.",
+          "pendingApproval": "This promo code is not active yet.",
+          "notApplicable": "This promo code does not apply to this session.",
+          "totalLimit": "This promo code has reached its usage limit.",
+          "patientLimit": "You have reached the usage limit for this promo code.",
+          "alreadyUsed": "This promo code was already used for this session.",
+          "generic": "Could not apply the promo code. Please try again."
+        }
       },
       "refundPolicy": {
         "title": "Refund policy",
@@ -1208,7 +1222,8 @@
   },
   "common": {
     "enabled": "Enabled",
-    "disabled": "Disabled"
+    "disabled": "Disabled",
+    "notSet": "Not set"
   },
   "practitioner": {
     "tab": {
@@ -1218,31 +1233,33 @@
     },
     "common": {
       "loadError": "Could not load the practitioner workspace right now.",
-      "notAvailable": "Not available"
+      "notAvailable": "Not available",
+      "cancel": "Cancel"
     },
     "finance": {
       "quickAccess": "Finance",
       "title": "Practitioner finance",
-      "subtitle": "Review your wallet, earnings ledger, and settlement snapshots without the admin complexity.",
+      "subtitle": "Review your projected balance, earnings ledger, and settlement snapshots without the admin complexity.",
       "quickActions": "Quick actions",
       "common": {
         "loading": "Loading finance data...",
         "loadingMore": "Loading more...",
         "loadMore": "Load more",
         "refresh": "Refresh",
-        "viewAll": "View all"
+        "viewAll": "View all",
+        "currencyUnavailable": "Currency unavailable"
       },
       "wallet": {
-        "title": "Wallet",
-        "subtitle": "A simple snapshot of your current wallet and lifetime totals.",
-        "available": "Available balance",
+        "title": "Projected wallet balance",
+        "subtitle": "A simple snapshot derived from the ledger and settlement history.",
+        "available": "Projected balance",
         "pending": "Pending balance",
         "reserved": "Reserved balance",
         "totalEarned": "Total earned",
         "lifetimePaidOut": "Lifetime paid out",
         "lastLedgerEntryAt": "Last ledger entry",
         "updatedAt": "Last updated",
-        "balanceHint": "This summary is derived from the ledger and shows the current read model.",
+        "balanceHint": "This balance is derived from recorded accounting entries and shows the current read model.",
         "summary": "Wallet summary",
         "recentSettlements": "Recent settlements",
         "errorTitle": "Could not load wallet summary",
@@ -1250,7 +1267,7 @@
       },
       "ledger": {
         "title": "Ledger",
-        "subtitle": "A plain view of earnings and payout-related ledger entries.",
+        "subtitle": "A plain view of earnings, coupons, refunds, and payout-related ledger entries.",
         "recentTitle": "Recent ledger entries",
         "emptyTitle": "No ledger entries yet",
         "emptyBody": "Ledger entries will appear here when financial activity is recorded.",
@@ -1280,7 +1297,7 @@
       },
       "settlements": {
         "title": "Settlements",
-        "subtitle": "A simple snapshot of settlement records and payout status.",
+        "subtitle": "A simple snapshot of settlement records, payout status, and currency separation.",
         "recentTitle": "Recent settlements",
         "emptyTitle": "No settlements yet",
         "emptyBody": "Settlement records will appear here when payouts are generated.",
@@ -1950,6 +1967,126 @@
       "exceptionType": {
         "BLOCK": "Temporary block",
         "OPEN_EXTRA": "Extra hours"
+      }
+    },
+    "promoCodes": {
+      "title": "Promo Codes",
+      "subtitle": "Create promo codes for your sessions and share them with your patients.",
+      "financialNote": "Promo-code discounts cannot exceed 20%. The discount cost is split equally between the platform and the practitioner.",
+      "cardBadge": "Promo codes",
+      "quickAccess": "Promo Codes",
+      "openAction": "Open promo codes",
+      "createCta": "Create promo code",
+      "loading": "Loading promo codes...",
+      "errorTitle": "Could not load promo codes",
+      "errorBody": "Try again to sync your practitioner promo codes.",
+      "empty": {
+        "title": "You have not created any promo codes yet.",
+        "body": "Create session-only promo codes for your own patients and manage them from this screen.",
+        "action": "Create promo code"
+      },
+      "status": {
+        "DRAFT": "Draft",
+        "PENDING_REVIEW": "Pending review",
+        "APPROVED": "Approved",
+        "REJECTED": "Rejected",
+        "ACTIVE": "Active",
+        "EXPIRED": "Expired",
+        "DISABLED": "Disabled"
+      },
+      "list": {
+        "discount": "Discount: {{value}}",
+        "usage": "Usage",
+        "perPatient": "Per patient",
+        "noDateWindow": "No start or end date set",
+        "dateRange": "{{start}} to {{end}}",
+        "startsAt": "Starts {{value}}",
+        "endsAt": "Ends {{value}}"
+      },
+      "actions": {
+        "edit": "Edit",
+        "disable": "Disable",
+        "details": "Details"
+      },
+      "disable": {
+        "title": "Disable promo code",
+        "body": "Are you sure you want to disable this code? Patients will not be able to use it afterward.",
+        "confirm": "Disable"
+      },
+      "notifications": {
+        "success": "Success",
+        "notice": "Notice",
+        "createdTitle": "Promo code created",
+        "createdBody": "{{code}} is now available to your patients.",
+        "updatedTitle": "Promo code updated",
+        "updatedBody": "{{code}} was updated successfully.",
+        "disabledTitle": "Promo code disabled",
+        "disabledBody": "{{code}} is now inactive."
+      },
+      "form": {
+        "createTitle": "Create promo code",
+        "editTitle": "Edit promo code",
+        "subtitle": "Keep the code percentage-only, session-only, and within the 20% limit.",
+        "note": "Backend validation still decides the final result. The mobile form only helps you prepare a safe request.",
+        "codeLabel": "Code",
+        "codePlaceholder": "DR_AHMED20",
+        "codeHint": "Use letters and numbers only. You may also use - or _.",
+        "codeReadOnlyHint": "The code is read-only after creation.",
+        "discountLabel": "Discount percentage",
+        "discountPlaceholder": "10",
+        "discountHint": "Maximum discount is 20%.",
+        "discountReadOnlyHint": "This discount is read-only because the code has already been redeemed.",
+        "totalLimitLabel": "Usage limit total",
+        "totalLimitPlaceholder": "Optional",
+        "totalLimitHint": "Leave blank if there is no total usage limit.",
+        "patientLimitLabel": "Usage limit per patient",
+        "patientLimitPlaceholder": "Optional",
+        "patientLimitHint": "Leave blank if patients may reuse the code without a per-patient cap.",
+        "startsAtLabel": "Starts at",
+        "endsAtLabel": "Ends at",
+        "datePlaceholder": "YYYY-MM-DD",
+        "startsAtHint": "Optional. Use a valid date format like 2026-05-01.",
+        "endsAtHint": "Optional. Use a valid date format like 2026-12-31.",
+        "activeLabel": "Active now",
+        "activeHint": "Turn this off to create the code in a disabled state.",
+        "createSubmit": "Create promo code",
+        "updateSubmit": "Save changes",
+        "errors": {
+          "required": "This field is required.",
+          "invalid": "Enter a valid value.",
+          "tooHigh": "Practitioner promo codes cannot exceed 20%.",
+          "invalidRange": "The end date must be after the start date.",
+          "locked": "The discount can no longer be changed because this code has already been redeemed."
+        }
+      },
+      "detail": {
+        "title": "Promo code details",
+        "loading": "Loading promo code details...",
+        "errorTitle": "Could not load promo code details",
+        "errorBody": "Try again to load the details and redemption history.",
+        "financeTitle": "Financial note",
+        "financeBody": "Each redemption records the discounted amount, the platform share, and the practitioner share using the backend calculation.",
+        "redemptionsTitle": "Redemptions",
+        "emptyRedemptionsTitle": "This promo code has not been used yet.",
+        "emptyRedemptionsBody": "Redemption history will appear here after the first successful payment capture.",
+        "unknownPatient": "Patient",
+        "grossAmount": "Gross",
+        "platformShare": "Platform share",
+        "practitionerShare": "Practitioner share",
+        "sessionRef": "Session",
+        "paymentRef": "Payment"
+      },
+      "errors": {
+        "genericTitle": "Could not save promo code",
+        "generic": "Could not save the promo code right now.",
+        "duplicateCode": "That promo code already exists.",
+        "invalidCode": "Enter a code with only letters, numbers, dash, or underscore.",
+        "discountTooHigh": "Practitioner promo codes cannot exceed 20%.",
+        "percentageOnly": "Practitioner promo codes are percentage-only.",
+        "invalidDateRange": "The promo code date range is invalid.",
+        "usageLimitBelowCurrentUsage": "The usage limit cannot be lower than the number of redemptions already recorded.",
+        "notPractitioner": "Only practitioner accounts can manage promo codes.",
+        "notFound": "That promo code was not found."
       }
     }
   }

@@ -1,5 +1,12 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
-import { PackageSchedulePolicy, PractitionerPackageStatus } from '@prisma/client';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import {
+  PackageSchedulePolicy,
+  PractitionerPackageStatus,
+} from '@prisma/client';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { CreatePractitionerPackageDto } from '../dto/create-practitioner-package.dto';
 import { PractitionerPackagePresenter } from '../presenters/practitioner-package.presenter';
@@ -20,9 +27,10 @@ export class CreatePractitionerPackageUseCase {
     userId: string;
     payload: CreatePractitionerPackageDto;
   }) {
-    const profile = await this.practitionerPackageRepository.findPractitionerProfileByUserId(
-      input.userId,
-    );
+    const profile =
+      await this.practitionerPackageRepository.findPractitionerProfileByUserId(
+        input.userId,
+      );
 
     if (!profile) {
       throw new NotFoundException({

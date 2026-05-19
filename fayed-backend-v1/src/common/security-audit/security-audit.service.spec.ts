@@ -117,6 +117,39 @@ describe('SecurityAuditService', () => {
       });
     });
 
+    it('strips nested sensitive keys recursively', async () => {
+      service.logAsync({
+        action: 'test.nested',
+        outcome: SecurityAuditOutcome.SUCCESS,
+        metadata: {
+          actor: {
+            userId: 'u1',
+            password: 'secret',
+          },
+          items: [
+            {
+              refreshToken: 'refresh-secret',
+              safe: true,
+            },
+          ],
+        },
+      });
+
+      await new Promise((r) => setImmediate(r));
+
+      const call = createMock.mock.calls[0][0] as { data: Record<string, any> };
+      expect(call.data.metadataJson).toEqual({
+        actor: {
+          userId: 'u1',
+        },
+        items: [
+          {
+            safe: true,
+          },
+        ],
+      });
+    });
+
     it('stores undefined metadataJson when no metadata is provided', async () => {
       service.logAsync({
         action: 'test.no-meta',

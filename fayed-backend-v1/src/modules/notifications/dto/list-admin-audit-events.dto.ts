@@ -1,7 +1,19 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { NotificationCategory, NotificationChannel, UserRoleType } from '@prisma/client';
+import {
+  NotificationCategory,
+  NotificationChannel,
+  UserRoleType,
+} from '@prisma/client';
 import { Type } from 'class-transformer';
-import { IsDateString, IsEnum, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
+import {
+  IsDateString,
+  IsEnum,
+  IsInt,
+  IsOptional,
+  IsString,
+  Max,
+  Min,
+} from 'class-validator';
 
 export enum AdminAuditSeverity {
   LOW = 'LOW',
@@ -39,7 +51,8 @@ export class ListAdminAuditEventsDto {
   actorRole?: UserRoleType;
 
   @ApiPropertyOptional({
-    description: 'Event family prefix, for example: auth, payments, sessions, training',
+    description:
+      'Event family prefix, for example: auth, payments, sessions, training',
   })
   @IsOptional()
   @IsString()
@@ -66,7 +79,8 @@ export class ListAdminAuditEventsDto {
   targetEntityType?: string;
 
   @ApiPropertyOptional({
-    description: 'Free text search against event slug, actor, target, and snapshots',
+    description:
+      'Free text search against event slug, actor, target, and snapshots',
   })
   @IsOptional()
   @IsString()

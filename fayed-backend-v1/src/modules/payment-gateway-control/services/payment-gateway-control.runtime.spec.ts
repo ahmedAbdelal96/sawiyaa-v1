@@ -9,13 +9,21 @@ describe('PaymentGatewayControlRuntimeService', () => {
           case 'payment.provider.paymob.enabled':
             return { value: true, source: 'database', dataType: 'BOOLEAN' };
           case 'payment.provider.paymob.checkoutFlow':
-            return { value: 'intention', source: 'database', dataType: 'STRING' };
+            return {
+              value: 'intention',
+              source: 'database',
+              dataType: 'STRING',
+            };
           case 'payment.provider.paymob.defaultMethod':
             return { value: 'WALLET', source: 'database', dataType: 'STRING' };
           case 'payment.provider.paymob.maintenanceMode':
             return { value: true, source: 'database', dataType: 'BOOLEAN' };
           case 'payment.provider.paymob.allowedCountries':
-            return { value: ['EG'], source: 'database', dataType: 'STRING_ARRAY' };
+            return {
+              value: ['EG'],
+              source: 'database',
+              dataType: 'STRING_ARRAY',
+            };
           case 'payment.provider.paymob.methodRegistry':
             return {
               value: [

@@ -68,9 +68,9 @@ describe('PublishTrainingUseCase', () => {
       status: CourseStatus.DRAFT,
       visibility: 'PUBLIC',
     });
-    (trainingRepository.countSchedulesByCourseId as jest.Mock).mockResolvedValue(
-      0,
-    );
+    (
+      trainingRepository.countSchedulesByCourseId as jest.Mock
+    ).mockResolvedValue(0);
 
     await expect(
       useCase.execute({
@@ -95,9 +95,9 @@ describe('PublishTrainingUseCase', () => {
         },
       ],
     });
-    (trainingRepository.countSchedulesByCourseId as jest.Mock).mockResolvedValue(
-      1,
-    );
+    (
+      trainingRepository.countSchedulesByCourseId as jest.Mock
+    ).mockResolvedValue(1);
     (
       trainingRepository.countSessionsByScheduleIds as jest.Mock
     ).mockResolvedValue({

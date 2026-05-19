@@ -115,7 +115,10 @@ export class TrainingPresenter {
 
     const fallbackTitle = this.humanizeSlug(course.slugRoot);
     const fallbackSlug = course.slugRoot.trim().toLowerCase();
-    const primaryCategory = this.presentCategorySummary(course.primaryCategory, locale);
+    const primaryCategory = this.presentCategorySummary(
+      course.primaryCategory,
+      locale,
+    );
 
     return {
       id: course.id,
@@ -177,24 +180,27 @@ export class TrainingPresenter {
       status: CourseScheduleStatus;
       enrollmentOpenAt: string | null;
       enrollmentCloseAt: string | null;
-        startsAt: string | null;
-        endsAt: string | null;
-        timezone: string | null;
-        plannedDurationDays: number | null;
-        plannedLectureCount: number | null;
-        maxEnrollments: number | null;
-        availableSeats: number | null;
-        lectureCount: number;
-        isLecturePlanComplete: boolean;
-        isEnrollmentOpen: boolean;
-        enrollmentAvailabilityReason: TrainingEnrollmentAvailabilityReason;
-      }> = [],
+      startsAt: string | null;
+      endsAt: string | null;
+      timezone: string | null;
+      plannedDurationDays: number | null;
+      plannedLectureCount: number | null;
+      maxEnrollments: number | null;
+      availableSeats: number | null;
+      lectureCount: number;
+      isLecturePlanComplete: boolean;
+      isEnrollmentOpen: boolean;
+      enrollmentAvailabilityReason: TrainingEnrollmentAvailabilityReason;
+    }> = [],
   ) {
     const translation = this.pickTranslation(course.translations ?? [], locale);
 
     const fallbackTitle = this.humanizeSlug(course.slugRoot);
     const fallbackSlug = course.slugRoot.trim().toLowerCase();
-    const primaryCategory = this.presentCategorySummary(course.primaryCategory, locale);
+    const primaryCategory = this.presentCategorySummary(
+      course.primaryCategory,
+      locale,
+    );
 
     return {
       id: course.id,
@@ -260,18 +266,18 @@ export class TrainingPresenter {
       status: CourseScheduleStatus;
       enrollmentOpenAt: string | null;
       enrollmentCloseAt: string | null;
-        startsAt: string | null;
-        endsAt: string | null;
-        timezone: string | null;
-        plannedDurationDays: number | null;
-        plannedLectureCount: number | null;
-        maxEnrollments: number | null;
-        availableSeats: number | null;
-        lectureCount: number;
-        isLecturePlanComplete: boolean;
-        isEnrollmentOpen: boolean;
-        enrollmentAvailabilityReason: TrainingEnrollmentAvailabilityReason;
-      }> = [],
+      startsAt: string | null;
+      endsAt: string | null;
+      timezone: string | null;
+      plannedDurationDays: number | null;
+      plannedLectureCount: number | null;
+      maxEnrollments: number | null;
+      availableSeats: number | null;
+      lectureCount: number;
+      isLecturePlanComplete: boolean;
+      isEnrollmentOpen: boolean;
+      enrollmentAvailabilityReason: TrainingEnrollmentAvailabilityReason;
+    }> = [],
   ) {
     const publicDetails = this.presentPublicTrainingDetails(
       course,
@@ -292,15 +298,18 @@ export class TrainingPresenter {
     };
   }
 
-  presentPublicTrainingCategoryItem(input: {
-    id: string;
-    slugRoot: string;
-    translations?: Array<{
-      locale: string;
-      title: string;
-    }>;
-    courseCount: number;
-  }, locale: ContentLocale): PublicTrainingCategoryItem {
+  presentPublicTrainingCategoryItem(
+    input: {
+      id: string;
+      slugRoot: string;
+      translations?: Array<{
+        locale: string;
+        title: string;
+      }>;
+      courseCount: number;
+    },
+    locale: ContentLocale,
+  ): PublicTrainingCategoryItem {
     const translation =
       input.translations?.find((item) => item.locale === locale) ??
       input.translations?.find((item) => item.locale === ContentLocale.en) ??
@@ -329,10 +338,7 @@ export class TrainingPresenter {
   }
 
   private humanizeSlug(slug: string): string {
-    const cleaned = slug
-      .trim()
-      .replace(/[_-]+/g, ' ')
-      .replace(/\s+/g, ' ');
+    const cleaned = slug.trim().replace(/[_-]+/g, ' ').replace(/\s+/g, ' ');
 
     if (!cleaned) {
       return 'Training program';
@@ -347,13 +353,13 @@ export class TrainingPresenter {
   private presentCategorySummary(
     category:
       | {
-      id: string;
-      slugRoot: string;
-      translations?: Array<{
-        locale: string;
-        title: string;
-      }>;
-      }
+          id: string;
+          slugRoot: string;
+          translations?: Array<{
+            locale: string;
+            title: string;
+          }>;
+        }
       | null
       | undefined,
     locale: ContentLocale,
@@ -366,8 +372,12 @@ export class TrainingPresenter {
       id: category.id,
       slug: category.slugRoot.trim().toLowerCase(),
       title:
-        category.translations?.find((item) => item.locale === locale)?.title?.trim() ||
-        category.translations?.find((item) => item.locale === ContentLocale.en)?.title?.trim() ||
+        category.translations
+          ?.find((item) => item.locale === locale)
+          ?.title?.trim() ||
+        category.translations
+          ?.find((item) => item.locale === ContentLocale.en)
+          ?.title?.trim() ||
         category.translations?.[0]?.title?.trim() ||
         this.humanizeSlug(category.slugRoot),
     };

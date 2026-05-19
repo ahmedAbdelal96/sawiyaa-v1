@@ -18,7 +18,9 @@ export class GetMyPackagePurchaseUseCase {
     locale: SupportedLocale;
     purchaseId: string;
   }): Promise<PatientPackagePurchaseResultViewModel> {
-    const patient = await this.patientProfileRepository.findByUserId(input.userId);
+    const patient = await this.patientProfileRepository.findByUserId(
+      input.userId,
+    );
 
     if (!patient) {
       throw new NotFoundException({

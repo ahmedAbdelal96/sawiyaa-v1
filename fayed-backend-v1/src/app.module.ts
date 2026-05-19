@@ -11,11 +11,14 @@ import appConfig from './config/app.config';
 import databaseConfig from './config/database.config';
 import authConfig from './config/auth.config';
 import paymentConfig from './config/payment.config';
+import accountingReconciliationConfig from './config/accounting-reconciliation.config';
 import videoConfig from './config/video.config';
 import notificationConfig from './config/notification.config';
 import moduleConfig from './config/module.config';
 import loggingConfig from './config/logging.config';
 import sessionConfig from './config/session.config';
+import throttleConfig from './config/throttle.config';
+import stepUpConfig from './config/step-up.config';
 import { I18nModule } from './common/i18n/i18n.module';
 import { LocaleContextMiddleware } from './common/i18n/services/locale-context.middleware';
 import { PrismaModule } from './common/prisma/prisma.module';
@@ -24,6 +27,8 @@ import { LoggingModule } from './common/logging/logging.module';
 import { RequestContextMiddleware } from './common/logging/request-context.middleware';
 import { ThrottleModule } from './common/throttle/throttle.module';
 import { ThrottlePolicyGuard } from './common/throttle/throttle-policy.guard';
+import { CsrfProtectionGuard } from './common/guards/security/csrf-protection.guard';
+import { StepUpGuard } from './common/guards/security/step-up.guard';
 import { SecurityAuditModule } from './common/security-audit/security-audit.module';
 import { HealthModule } from './health/health.module';
 import { AuthModule } from './modules/auth/auth.module';
@@ -70,11 +75,14 @@ import { ReportsModule } from './modules/reports/reports.module';
         databaseConfig,
         authConfig,
         paymentConfig,
+        accountingReconciliationConfig,
         videoConfig,
         notificationConfig,
         moduleConfig,
         loggingConfig,
         sessionConfig,
+        throttleConfig,
+        stepUpConfig,
       ],
     }),
     LoggingModule,
@@ -121,6 +129,14 @@ import { ReportsModule } from './modules/reports/reports.module';
     {
       provide: APP_GUARD,
       useClass: ThrottlePolicyGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: CsrfProtectionGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: StepUpGuard,
     },
   ],
 })

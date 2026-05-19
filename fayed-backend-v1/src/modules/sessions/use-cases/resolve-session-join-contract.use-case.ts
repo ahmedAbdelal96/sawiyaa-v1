@@ -113,9 +113,8 @@ export class ResolveSessionJoinContractUseCase {
       this.sessionVideoProviderResolverService.resolvePreparedProviderForSession(
         effectiveSession,
       );
-    const adapter = this.sessionVideoProviderRegistryService.get(
-      resolvedProvider,
-    );
+    const adapter =
+      this.sessionVideoProviderRegistryService.get(resolvedProvider);
     const join = await adapter.createJoinToken({
       roomId: effectiveSession.providerRoomId!,
       userId: input.userId,
@@ -247,7 +246,9 @@ export class ResolveSessionJoinContractUseCase {
     };
   }
 
-  private normalizeDate(value: Date | string | null | undefined): string | null {
+  private normalizeDate(
+    value: Date | string | null | undefined,
+  ): string | null {
     if (!value) {
       return null;
     }

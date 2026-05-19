@@ -52,7 +52,7 @@ export class PermissionsGuard implements CanActivate {
         actorUserId: user.id,
         actorRoles: user.roles,
         ipAddress: this.extractIp(request),
-        userAgent: request.headers?.['user-agent'] as string | undefined,
+        userAgent: request.headers?.['user-agent'],
         reason: `Required permissions: ${requiredPermissions.join(', ')}`,
         metadata: {
           handler: context.getHandler().name,

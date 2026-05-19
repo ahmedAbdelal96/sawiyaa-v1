@@ -3,6 +3,7 @@ import {
   PERMISSIONS_KEY,
   ROLES_KEY,
 } from '@common/constants/auth-metadata.constants';
+import { STEP_UP_POLICY_KEY } from '@common/decorators/step-up.decorator';
 import { AppRole } from '@common/enums/app-role.enum';
 import { PermissionKey } from '@common/enums/permission-key.enum';
 import { JwtAccessAuthGuard } from '@common/guards/authentication/jwt-access-auth.guard';
@@ -84,6 +85,16 @@ describe('AdminSettlementsController access contract', () => {
     expect(recordPractitionerPayoutPermissions).toEqual([
       PermissionKey.SETTLEMENTS_WRITE,
     ]);
+
+    expect(Reflect.getMetadata(STEP_UP_POLICY_KEY, generate)).toBe(
+      'finance.settlement.generate',
+    );
+    expect(Reflect.getMetadata(STEP_UP_POLICY_KEY, markPaid)).toBe(
+      'finance.settlement.mark-paid',
+    );
+    expect(Reflect.getMetadata(STEP_UP_POLICY_KEY, markFailed)).toBe(
+      'finance.settlement.mark-failed',
+    );
   });
 
   it('enforces auth/role guards at controller level and admin guard on mutation routes', () => {

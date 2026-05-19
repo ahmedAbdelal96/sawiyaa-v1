@@ -1,10 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import { UserRoleType } from '@prisma/client';
 import { RefreshAuthSessionUseCase } from './refresh-auth-session.use-case';
 import { AuthSessionDeviceContext } from '../types/auth-session.types';
+import { ADMIN_AUTH_ROLE_TYPES } from '../utils/auth-role.util';
 
 /**
- * Admin refresh supports both ADMIN and SUPER_ADMIN tokens.
+ * Admin refresh supports all internal admin-class tokens.
  */
 @Injectable()
 export class RefreshAdminTokenUseCase {
@@ -18,7 +18,7 @@ export class RefreshAdminTokenUseCase {
   }) {
     return this.refreshAuthSessionUseCase.execute({
       refreshToken: input.refreshToken,
-      expectedRoles: [UserRoleType.ADMIN, UserRoleType.SUPER_ADMIN],
+      expectedRoles: [...ADMIN_AUTH_ROLE_TYPES],
       deviceContext: input.deviceContext,
     });
   }

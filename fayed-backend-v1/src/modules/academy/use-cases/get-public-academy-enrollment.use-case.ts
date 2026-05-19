@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { AcademyPresenter } from '../presenters/academy.presenter';
 import { AcademyRepository } from '../repositories/academy.repository';
 

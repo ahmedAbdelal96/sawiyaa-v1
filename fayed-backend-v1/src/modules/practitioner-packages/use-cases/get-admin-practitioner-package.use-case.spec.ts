@@ -21,7 +21,9 @@ describe('GetAdminPractitionerPackageUseCase', () => {
   });
 
   it('returns package detail with practitioner context', async () => {
-    (practitionerPackageRepository.findAdminById as jest.Mock).mockResolvedValue({
+    (
+      practitionerPackageRepository.findAdminById as jest.Mock
+    ).mockResolvedValue({
       id: 'package-1',
       practitioner: {
         id: 'practitioner-1',

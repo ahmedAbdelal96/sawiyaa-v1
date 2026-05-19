@@ -35,7 +35,9 @@ describe('ListPublicPractitionerPackagesUseCase', () => {
   });
 
   it('lists only public active packages for visible practitioners who accept packages', async () => {
-    (publicPractitionerReadRepository.findByPublicSlug as jest.Mock).mockResolvedValue({
+    (
+      publicPractitionerReadRepository.findByPublicSlug as jest.Mock
+    ).mockResolvedValue({
       id: 'practitioner-1',
       publicSlug: 'dr-example',
       status: PractitionerStatus.APPROVED,
@@ -53,10 +55,9 @@ describe('ListPublicPractitionerPackagesUseCase', () => {
       isVisible: true,
       isVerified: true,
     });
-    (practitionerPackageRepository.listPublicActiveByPractitionerId as jest.Mock).mockResolvedValue([
-      [{ id: 'package-1' }],
-      1,
-    ]);
+    (
+      practitionerPackageRepository.listPublicActiveByPractitionerId as jest.Mock
+    ).mockResolvedValue([[{ id: 'package-1' }], 1]);
 
     const result = await useCase.execute({
       slug: 'dr-example',
@@ -64,7 +65,9 @@ describe('ListPublicPractitionerPackagesUseCase', () => {
       query: { page: 1, limit: 20 },
     } as never);
 
-    expect(practitionerPackageRepository.listPublicActiveByPractitionerId).toHaveBeenCalledWith({
+    expect(
+      practitionerPackageRepository.listPublicActiveByPractitionerId,
+    ).toHaveBeenCalledWith({
       practitionerId: 'practitioner-1',
       page: 1,
       limit: 20,
@@ -73,7 +76,9 @@ describe('ListPublicPractitionerPackagesUseCase', () => {
   });
 
   it('rejects practitioners that do not accept packages', async () => {
-    (publicPractitionerReadRepository.findByPublicSlug as jest.Mock).mockResolvedValue({
+    (
+      publicPractitionerReadRepository.findByPublicSlug as jest.Mock
+    ).mockResolvedValue({
       id: 'practitioner-1',
       publicSlug: 'dr-example',
       status: PractitionerStatus.APPROVED,

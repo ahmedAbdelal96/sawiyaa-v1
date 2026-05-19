@@ -1,5 +1,10 @@
 import { BadRequestException, ForbiddenException } from '@nestjs/common';
-import { OtpChannel, OtpPurpose, PaymentProvider, UserRoleType } from '@prisma/client';
+import {
+  OtpChannel,
+  OtpPurpose,
+  PaymentProvider,
+  UserRoleType,
+} from '@prisma/client';
 import { PaymentGatewayControlService } from './payment-gateway-control.service';
 import type {
   PaymentRoutingRuntimeSnapshot,
@@ -7,7 +12,9 @@ import type {
   StripeGatewayControlRuntimeSnapshot,
 } from '../types/payment-gateway-control.types';
 
-function createSnapshot(overrides?: Partial<PaymobGatewayControlRuntimeSnapshot>): PaymobGatewayControlRuntimeSnapshot {
+function createSnapshot(
+  overrides?: Partial<PaymobGatewayControlRuntimeSnapshot>,
+): PaymobGatewayControlRuntimeSnapshot {
   return {
     provider: PaymentProvider.PAYMOB,
     enabled: true,
@@ -95,7 +102,9 @@ describe('PaymentGatewayControlService', () => {
   };
   const runtimeService = {
     getProviderSnapshot: jest.fn((provider: PaymentProvider) =>
-      provider === PaymentProvider.PAYMOB ? createSnapshot() : createStripeSnapshot(),
+      provider === PaymentProvider.PAYMOB
+        ? createSnapshot()
+        : createStripeSnapshot(),
     ),
     getPaymobSnapshot: jest.fn(() => createSnapshot()),
     getStripeSnapshot: jest.fn(() => createStripeSnapshot()),
@@ -131,19 +140,19 @@ describe('PaymentGatewayControlService', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    (prisma.user.findUnique as jest.Mock).mockResolvedValue({
+    prisma.user.findUnique.mockResolvedValue({
       id: 'user-1',
       roles: [{ role: UserRoleType.SUPER_ADMIN }],
       emails: [{ email: 'admin@example.com', isVerified: true }],
     });
-    (verifyOtpChallengeUseCase.execute as jest.Mock).mockResolvedValue({});
-    (repository.applySnapshot as jest.Mock).mockResolvedValue({
+    verifyOtpChallengeUseCase.execute.mockResolvedValue({});
+    repository.applySnapshot.mockResolvedValue({
       revisionNumber: 7,
       auditEventId: 'audit-1',
       configChangeLogIds: ['log-1'],
       changedKeys: ['enabled'],
     });
-    (repository.findHistoryEvent as jest.Mock).mockResolvedValue({
+    repository.findHistoryEvent.mockResolvedValue({
       id: 'event-1',
       metadataJson: {
         afterSnapshot: createSnapshot({
@@ -164,11 +173,11 @@ describe('PaymentGatewayControlService', () => {
 
   it('blocks invalid drafts when no usable method remains', async () => {
     const result = await service.validateDraft(PaymentProvider.PAYMOB, {
-        enabled: true,
-        checkoutFlow: 'legacy' as any,
-        defaultMethod: null,
-        maintenanceMode: false,
-        allowedCountryIsoCodes: [],
+      enabled: true,
+      checkoutFlow: 'legacy' as any,
+      defaultMethod: null,
+      maintenanceMode: false,
+      allowedCountryIsoCodes: [],
       methodRegistry: [],
     });
 
@@ -180,11 +189,11 @@ describe('PaymentGatewayControlService', () => {
 
   it('allows maintenance mode even when no active methods remain', async () => {
     const result = await service.validateDraft(PaymentProvider.PAYMOB, {
-        enabled: true,
-        checkoutFlow: 'legacy' as any,
-        defaultMethod: null,
-        maintenanceMode: true,
-        allowedCountryIsoCodes: [],
+      enabled: true,
+      checkoutFlow: 'legacy' as any,
+      defaultMethod: null,
+      maintenanceMode: true,
+      allowedCountryIsoCodes: [],
       methodRegistry: [],
     });
 
@@ -213,7 +222,7 @@ describe('PaymentGatewayControlService', () => {
   });
 
   it('rejects updates from non-super-admin users', async () => {
-    (prisma.user.findUnique as jest.Mock).mockResolvedValueOnce({
+    prisma.user.findUnique.mockResolvedValueOnce({
       id: 'user-2',
       roles: [{ role: UserRoleType.ADMIN }],
       emails: [{ email: 'admin@example.com', isVerified: true }],

@@ -89,4 +89,3 @@ describe('MarkMyNotificationReadUseCase', () => {
     ).rejects.toBeInstanceOf(ForbiddenException);
   });
 });
-

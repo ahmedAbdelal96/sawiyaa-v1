@@ -4,6 +4,7 @@ import { RolesGuard } from '@common/guards/authorization/roles.guard';
 import { AdminCommissionRulesController } from './controllers/admin-commission-rules.controller';
 import { AdminRevenueShareRulesController } from './controllers/admin-revenue-share-rules.controller';
 import { AdminCouponsController } from './controllers/admin-coupons.controller';
+import { PractitionerCouponsController } from './controllers/practitioner-coupons.controller';
 import { PatientSessionFinancialRulesController } from './controllers/patient-session-financial-rules.controller';
 import { FinancialRulesMapper } from './mappers/financial-rules.mapper';
 import { CommissionRuleRepository } from './repositories/commission-rule.repository';
@@ -21,10 +22,16 @@ import { ApplyCouponToSessionUseCase } from './use-cases/apply-coupon-to-session
 import { CalculateSessionFinancialBreakdownUseCase } from './use-cases/calculate-session-financial-breakdown.use-case';
 import { CreateCommissionRuleUseCase } from './use-cases/create-commission-rule.use-case';
 import { CreateCouponUseCase } from './use-cases/create-coupon.use-case';
+import { CreateMyPractitionerCouponUseCase } from './use-cases/create-my-practitioner-coupon.use-case';
+import { DisableMyPractitionerCouponUseCase } from './use-cases/disable-my-practitioner-coupon.use-case';
+import { GetMyPractitionerCouponUseCase } from './use-cases/get-my-practitioner-coupon.use-case';
 import { ListCommissionRulesUseCase } from './use-cases/list-commission-rules.use-case';
 import { GetRevenueShareRulesUseCase } from './use-cases/get-revenue-share-rules.use-case';
+import { ListMyPractitionerCouponRedemptionsUseCase } from './use-cases/list-my-practitioner-coupon-redemptions.use-case';
+import { ListMyPractitionerCouponsUseCase } from './use-cases/list-my-practitioner-coupons.use-case';
 import { RedeemCouponUseCase } from './use-cases/redeem-coupon.use-case';
 import { ResolveCommissionForSessionUseCase } from './use-cases/resolve-commission-for-session.use-case';
+import { UpdateMyPractitionerCouponUseCase } from './use-cases/update-my-practitioner-coupon.use-case';
 import { UpdateRevenueShareRulesUseCase } from './use-cases/update-revenue-share-rules.use-case';
 import { ValidateCouponUseCase } from './use-cases/validate-coupon.use-case';
 
@@ -37,6 +44,7 @@ import { ValidateCouponUseCase } from './use-cases/validate-coupon.use-case';
     AdminCommissionRulesController,
     AdminRevenueShareRulesController,
     AdminCouponsController,
+    PractitionerCouponsController,
     PatientSessionFinancialRulesController,
   ],
   providers: [
@@ -60,6 +68,12 @@ import { ValidateCouponUseCase } from './use-cases/validate-coupon.use-case';
     UpdateRevenueShareRulesUseCase,
     ResolveCommissionForSessionUseCase,
     CreateCouponUseCase,
+    CreateMyPractitionerCouponUseCase,
+    ListMyPractitionerCouponsUseCase,
+    GetMyPractitionerCouponUseCase,
+    UpdateMyPractitionerCouponUseCase,
+    DisableMyPractitionerCouponUseCase,
+    ListMyPractitionerCouponRedemptionsUseCase,
     ValidateCouponUseCase,
     ApplyCouponToSessionUseCase,
     RedeemCouponUseCase,

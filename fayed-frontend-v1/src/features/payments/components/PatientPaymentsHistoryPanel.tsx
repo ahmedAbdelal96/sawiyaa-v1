@@ -15,6 +15,7 @@ import {
 } from "../lib/payment-status";
 import { usePatientProfile } from "@/features/patients/hooks/use-patients";
 import { resolvePatientCurrencyCode } from "../lib/patient-currency";
+import { formatMoney as formatFinanceMoney } from "@/lib/finance-format";
 import WalletActivityCard from "./WalletActivityCard";
 import type {
   PaymentItem,
@@ -42,14 +43,6 @@ const STATUS_STYLES: Record<PaymentStatus, string> = {
   REFUNDED:
     "bg-surface-tertiary text-text-secondary dark:bg-white/10 dark:text-white/60",
 };
-
-function formatAmount(amount: string, currency: string, numLocale: string): string {
-  return new Intl.NumberFormat(numLocale, {
-    style: "currency",
-    currency: currency.toUpperCase(),
-    minimumFractionDigits: 0,
-  }).format(Number(amount));
-}
 
 function formatDate(isoString: string, numLocale: string): string {
   return new Date(isoString).toLocaleDateString(numLocale, {
@@ -121,7 +114,9 @@ function PaymentCard({ payment }: { payment: PaymentItem }) {
       <div className="flex flex-col gap-2 px-5 pb-3 pt-4 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
         <div>
           <p className="text-lg font-bold tabular-nums text-text-primary dark:text-white/95">
-            {formatAmount(payment.amountTotal, payment.currency, numLocale)}
+            {formatFinanceMoney(numLocale, payment.amountTotal, payment.currency, {
+              fallbackText: "—",
+            })}
           </p>
           <p className="mt-0.5 text-xs text-text-muted">
             {t(resolveProviderLabelKey(payment.provider) as Parameters<typeof t>[0])}
@@ -151,13 +146,17 @@ function PaymentCard({ payment }: { payment: PaymentItem }) {
             <div className="rounded-xl border border-border-light bg-white px-3 py-2 text-xs dark:bg-white/5">
               <p className="text-text-muted">{t("history.wallet.walletUsedLabel")}</p>
               <p className="mt-1 font-semibold text-text-primary dark:text-white/90">
-                {formatAmount(payment.amountFromWallet, payment.currency, numLocale)}
+                {formatFinanceMoney(numLocale, payment.amountFromWallet, payment.currency, {
+                  fallbackText: "—",
+                })}
               </p>
             </div>
             <div className="rounded-xl border border-border-light bg-white px-3 py-2 text-xs dark:bg-white/5">
               <p className="text-text-muted">{t("history.wallet.gatewayUsedLabel")}</p>
               <p className="mt-1 font-semibold text-text-primary dark:text-white/90">
-                {formatAmount(payment.amountFromGateway, payment.currency, numLocale)}
+                {formatFinanceMoney(numLocale, payment.amountFromGateway, payment.currency, {
+                  fallbackText: "—",
+                })}
               </p>
             </div>
           </div>
@@ -312,7 +311,9 @@ export default function PatientPaymentsHistoryPanel() {
               <p className="text-xs text-text-muted">{t("history.wallet.availableLabel")}</p>
               <p className="mt-1 text-lg font-bold text-text-primary dark:text-white/95">
                 {walletCurrencyCode
-                  ? formatAmount(wallet?.availableBalance ?? "0", walletCurrencyCode, numLocale)
+                  ? formatFinanceMoney(numLocale, wallet?.availableBalance ?? "0", walletCurrencyCode, {
+                      fallbackText: "0",
+                    })
                   : wallet?.availableBalance ?? "0"}
               </p>
             </div>
@@ -320,7 +321,9 @@ export default function PatientPaymentsHistoryPanel() {
               <p className="text-xs text-text-muted">{t("history.wallet.reservedLabel")}</p>
               <p className="mt-1 text-lg font-semibold text-text-primary dark:text-white/90">
                 {walletCurrencyCode
-                  ? formatAmount(wallet?.reservedBalance ?? "0", walletCurrencyCode, numLocale)
+                  ? formatFinanceMoney(numLocale, wallet?.reservedBalance ?? "0", walletCurrencyCode, {
+                      fallbackText: "0",
+                    })
                   : wallet?.reservedBalance ?? "0"}
               </p>
             </div>

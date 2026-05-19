@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useSearchParams } from "next/navigation";
 import { Link, useRouter } from "@/i18n/navigation";
 import Input from "@/components/form/input/InputField";
@@ -68,6 +68,8 @@ type SignUpFormProps = {
 
 export default function SignUpForm({ mode }: SignUpFormProps) {
   const t = useTranslations("auth");
+  const locale = useLocale();
+  const isRtl = locale.startsWith("ar");
   const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl");
@@ -169,85 +171,94 @@ export default function SignUpForm({ mode }: SignUpFormProps) {
   });
   const chooserHref = buildAuthHref("/signin", { callbackUrl: normalizedCallbackUrl });
 
-  return (
-    <div className="flex w-full flex-1 flex-col px-4 py-6 sm:px-8 lg:w-1/2 lg:px-10 lg:py-10">
-      <div className="mx-auto flex w-full max-w-xl flex-1 flex-col">
-        <div className="flex items-center justify-between gap-3">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-2 text-sm text-text-secondary transition-colors hover:text-text-primary dark:text-text-secondary dark:hover:text-text-primary"
+  const guidancePanel = (
+    <section className="rounded-[28px] border border-border-light bg-white/75 p-6 shadow-[0_18px_60px_rgba(16,24,40,0.06)] backdrop-blur dark:border-border-light dark:bg-surface-secondary/70 sm:p-7">
+      <p className="mb-3 text-xs font-semibold uppercase tracking-[0.22em] text-primary">
+        {t("signUpGuidance.eyebrow")}
+      </p>
+      <h2 className="text-2xl font-semibold leading-tight text-text-primary dark:text-text-primary">
+        {mode === "practitioner"
+          ? t("signUpGuidance.practitionerTitle")
+          : t("signUpGuidance.patientTitle")}
+      </h2>
+      <p className="mt-2 max-w-prose text-sm leading-7 text-text-secondary dark:text-text-secondary">
+        {mode === "practitioner"
+          ? t("signUpGuidance.practitionerSubtitle")
+          : t("signUpGuidance.patientSubtitle")}
+      </p>
+
+      <div className="mt-6 grid gap-3">
+        {(mode === "practitioner"
+          ? (["p1", "p2", "p3"] as const)
+          : (["c1", "c2", "c3"] as const)
+        ).map((key, idx) => (
+          <div
+            key={key}
+            className="flex items-start gap-3 rounded-2xl border border-border-light bg-white/75 p-4 dark:border-border-light dark:bg-surface/65"
           >
-            <ChevronLeftIcon />
-            {t("backToHome")}
-          </Link>
-
-          <Link
-            href={chooserHref}
-            className="hidden rounded-full border border-border-light bg-surface/80 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-text-secondary transition hover:border-primary hover:text-primary dark:border-border-light dark:bg-surface-tertiary/80 dark:text-text-secondary sm:inline-flex"
-          >
-            {t("chooseAccessPath")}
-          </Link>
-        </div>
-
-        <div className="flex flex-1 flex-col justify-center py-6">
-          <div className="rounded-[32px] border border-border-light bg-white/92 p-6 shadow-[0_24px_80px_rgba(16,24,40,0.08)] backdrop-blur dark:border-border-light dark:bg-surface-secondary/92 sm:p-8">
-            <div className="rounded-[28px] bg-primary-light/55 p-5 dark:bg-primary/10 sm:p-6">
-              <div className="mb-4 flex items-start justify-between gap-4">
-                <div>
-                  <p className="mb-2 text-xs font-semibold uppercase tracking-[0.22em] text-primary">
-                    {t(`entryCards.${mode}.eyebrow`)}
-                  </p>
-                  <h1 className="text-3xl font-semibold leading-tight text-text-primary dark:text-text-primary">
-                    {t("createAccountTitle")}
-                  </h1>
-                </div>
-
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/85 text-primary dark:bg-surface/75 dark:text-primary-light">
-                  <ModeIcon className="h-5 w-5" />
-                </div>
-              </div>
-
-              <p className="text-sm leading-7 text-text-secondary dark:text-text-secondary">
-                {t(descriptionKey)}
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-light text-xs font-semibold text-primary dark:bg-primary/12 dark:text-primary-light">
+              {idx + 1}
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-text-primary dark:text-text-primary">
+                {t(`signUpGuidance.steps.${key}.title`)}
               </p>
-
-              <div className="mt-4 flex flex-wrap gap-2">
-                <div className="rounded-full border border-primary/15 bg-white/80 px-4 py-2 text-xs font-medium text-primary dark:bg-surface/75 dark:text-primary-light">
-                  {t(`modes.${mode}`)}
-                </div>
-                <div className="rounded-full border border-border-light bg-white/70 px-4 py-2 text-xs font-medium text-text-secondary dark:border-border-light dark:bg-surface/75 dark:text-text-secondary">
-                  {t(`entryCards.${mode}.meta`)}
-                </div>
-              </div>
+              <p className="mt-0.5 text-xs leading-6 text-text-secondary dark:text-text-secondary">
+                {t(`signUpGuidance.steps.${key}.desc`)}
+              </p>
             </div>
+          </div>
+        ))}
+      </div>
 
-            <div className="mt-6 flex flex-wrap gap-2">
-              {SIGN_UP_MODES.map((option) => {
-                const OptionIcon = MODE_CONFIG[option].icon;
-                const isActive = option === mode;
+      <div className="mt-6 rounded-2xl border border-primary/15 bg-primary-light/55 p-4 text-sm leading-7 text-text-secondary dark:bg-primary/10 dark:text-text-secondary">
+        {mode === "practitioner"
+          ? t("signUpGuidance.practitionerNext")
+          : t("signUpGuidance.patientNext")}
+      </div>
+    </section>
+  );
 
-                return (
-                  <Link
-                    key={option}
-                    href={buildAuthHref("/signup", {
-                      callbackUrl: normalizedCallbackUrl,
-                      mode: option,
-                    })}
-                    className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition ${
-                      isActive
-                        ? "border-primary bg-primary text-white"
-                        : "border-border-light bg-surface text-text-secondary hover:border-primary hover:text-primary dark:border-border-light dark:bg-surface-tertiary dark:text-text-secondary"
-                    }`}
-                  >
-                    <OptionIcon className="h-4 w-4" />
-                    {t(`modes.${option}`)}
-                  </Link>
-                );
-              })}
-            </div>
+  const formPanel = (
+    <section className="rounded-[28px] border border-border-light bg-white/92 p-6 shadow-[0_24px_80px_rgba(16,24,40,0.08)] backdrop-blur dark:border-border-light dark:bg-surface-secondary/90 sm:p-8">
+      <div className="flex items-center justify-between gap-3">
+        <Link
+          href="/"
+          className="inline-flex items-center gap-2 text-sm text-text-secondary transition-colors hover:text-text-primary dark:text-text-secondary dark:hover:text-text-primary"
+        >
+          <ChevronLeftIcon className={isRtl ? "rotate-180" : ""} />
+          {t("backToHome")}
+        </Link>
 
-            <form onSubmit={form.handleSubmit(onSubmit)} className="mt-6">
-              <div className="space-y-6">
+        <Link
+          href={chooserHref}
+          className="hidden rounded-full border border-border-light bg-surface/80 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-text-secondary transition hover:border-primary hover:text-primary dark:border-border-light dark:bg-surface-tertiary/80 dark:text-text-secondary sm:inline-flex"
+        >
+          {t("chooseAccessPath")}
+        </Link>
+      </div>
+
+      <div className="mt-6 rounded-[24px] bg-primary-light/55 p-5 dark:bg-primary/10 sm:p-6">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="mb-2 text-xs font-semibold uppercase tracking-[0.22em] text-primary">
+              {t(`entryCards.${mode}.eyebrow`)}
+            </p>
+            <h1 className="text-3xl font-semibold leading-tight text-text-primary dark:text-text-primary">
+              {t("createAccountTitle")}
+            </h1>
+          </div>
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/85 text-primary dark:bg-surface/75 dark:text-primary-light">
+            <ModeIcon className="h-5 w-5" />
+          </div>
+        </div>
+        <p className="mt-2 text-sm leading-7 text-text-secondary dark:text-text-secondary">
+          {t(descriptionKey)}
+        </p>
+      </div>
+
+      <form onSubmit={form.handleSubmit(onSubmit)} className="mt-8">
+        <div className="space-y-6">
                 <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
                   <div>
                     <Label>
@@ -339,9 +350,14 @@ export default function SignUpForm({ mode }: SignUpFormProps) {
 
                 {mode === "practitioner" && (
                   <div className="rounded-[24px] border border-border-light bg-surface/75 p-5 dark:border-border-light dark:bg-surface-tertiary/70">
-                    <p className="mb-4 text-sm leading-7 text-text-secondary dark:text-text-secondary">
-                      {t("practitionerRegistrationHint")}
-                    </p>
+                    <div className="mb-4">
+                      <p className="text-sm font-semibold text-text-primary dark:text-text-primary">
+                        {t("signUpInitialSpecialty.title")}
+                      </p>
+                      <p className="mt-1 text-xs leading-6 text-text-secondary dark:text-text-secondary">
+                        {t("signUpInitialSpecialty.helper")}
+                      </p>
+                    </div>
 
                     <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
                       <div>
@@ -368,6 +384,7 @@ export default function SignUpForm({ mode }: SignUpFormProps) {
                         <MultiSelect
                           key={`signup-specialties-${selectedCategoryId || "none"}`}
                           label=""
+                          placeholder={t("practitionerSpecialties.subSpecialtyPlaceholder")}
                           options={specialtyOptions}
                           defaultSelected={selectedSpecialtyIds}
                           disabled={!selectedCategoryId || specialtyOptions.length === 0}
@@ -406,18 +423,36 @@ export default function SignUpForm({ mode }: SignUpFormProps) {
               </div>
             </form>
 
-            <div className="mt-6 border-t border-border-light pt-6 dark:border-border-light">
-              <p className="text-sm text-text-secondary dark:text-text-secondary">
-                {mode === "practitioner"
-                  ? t("alreadyStartedPractitionerJourney")
-                  : t("alreadyHaveAccount")} {" "}
-                <Link href={signInHref} className="font-medium text-text-brand hover:text-primary-hover">
-                  {t("signIn")}
-                </Link>
-              </p>
-            </div>
-          </div>
-        </div>
+      <div className="mt-6 border-t border-border-light pt-6 dark:border-border-light">
+        <p className="text-sm text-text-secondary dark:text-text-secondary">
+          {mode === "practitioner"
+            ? t("alreadyStartedPractitionerJourney")
+            : t("alreadyHaveAccount")}{" "}
+          <Link
+            href={signInHref}
+            className="font-medium text-text-brand hover:text-primary-hover"
+          >
+            {t("signIn")}
+          </Link>
+        </p>
+      </div>
+    </section>
+  );
+
+  return (
+    <div className="w-full pb-10">
+      <div className="grid items-start gap-6 lg:grid-cols-2 lg:gap-8">
+        {isRtl ? (
+          <>
+            {formPanel}
+            {guidancePanel}
+          </>
+        ) : (
+          <>
+            {guidancePanel}
+            {formPanel}
+          </>
+        )}
       </div>
     </div>
   );

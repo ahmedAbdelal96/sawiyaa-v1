@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { PractitionerApplicationCompletionResponseDto } from './practitioner-application-completion-response.dto';
 
 export class PractitionerReadinessChecksResponseDto {
   @ApiProperty()
@@ -44,6 +45,9 @@ export class PractitionerProfileReadinessResponseDto {
 
   @ApiProperty({ type: PractitionerReadinessChecksResponseDto })
   checks!: PractitionerReadinessChecksResponseDto;
+
+  @ApiProperty({ type: PractitionerApplicationCompletionResponseDto })
+  completion!: PractitionerApplicationCompletionResponseDto;
 }
 
 export class PractitionerProfileReadinessSuccessResponseDto {

@@ -1,0 +1,204 @@
+{
+  "common": {
+    "cancel": "Cancel",
+    "retry": "Try again",
+    "yes": "Yes",
+    "no": "No",
+    "notSet": "Not set",
+    "unlimited": "Unlimited",
+    "alwaysActive": "Always active",
+    "noStartDate": "No start date",
+    "noEndDate": "No end date"
+  },
+  "eyebrow": "Promo codes",
+  "title": "Promo Codes",
+  "description": "Create promo codes for your sessions and share them with your patients.",
+  "summary": {
+    "totalCodes": "Total codes",
+    "totalCodesHint": "Your own promo codes",
+    "activeCodes": "Active codes",
+    "activeCodesHint": "Ready for patient checkout",
+    "totalRedemptions": "Total redemptions",
+    "totalRedemptionsHint": "Successful coupon uses"
+  },
+  "note": {
+    "title": "Practitioner promo rules",
+    "body": "Promo-code discounts cannot exceed 20%. The discount cost is split equally between the platform and the practitioner.",
+    "split": "The backend calculates the discount split. The patient sees only the final payable amount, and the discount is recorded in payment snapshots and settlement logic.",
+    "sessionOnly": "Promo codes apply to your own session payments only. They do not apply to other practitioners or to package purchases."
+  },
+  "filters": {
+    "searchLabel": "Search promo codes",
+    "searchPlaceholder": "Search by code",
+    "status": "Status",
+    "all": "All statuses"
+  },
+  "table": {
+    "code": "Code",
+    "codeHint": "Practitioner-owned session coupon",
+    "discount": "Discount",
+    "maxDiscount": "Max",
+    "noMaxDiscount": "No cap",
+    "status": "Status",
+    "active": "Active",
+    "inactive": "Inactive",
+    "usage": "Usage",
+    "usageHint": "Total redemptions and patient limit",
+    "window": "Date window",
+    "windowHint": "Start and end dates if set",
+    "actions": "Actions"
+  },
+  "empty": {
+    "title": "You have not created any promo codes yet.",
+    "description": "Create a code for your own sessions, share it with patients, and track how often it is redeemed.",
+    "action": "Create promo code"
+  },
+  "error": {
+    "title": "Could not load promo codes",
+    "note": "Please try again in a moment."
+  },
+  "actions": {
+    "create": "Create promo code",
+    "clearFilters": "Clear filters",
+    "view": "View details",
+    "edit": "Edit",
+    "disable": "Disable",
+    "redemptions": "Redemptions"
+  },
+  "status": {
+    "ACTIVE": "Active",
+    "DISABLED": "Disabled",
+    "EXPIRED": "Expired",
+    "PENDING_REVIEW": "Pending review",
+    "APPROVED": "Approved",
+    "REJECTED": "Rejected",
+    "DRAFT": "Draft"
+  },
+  "form": {
+    "createTitle": "Create promo code",
+    "editTitle": "Edit promo code",
+    "createDescription": "Set up a session-only promo code for your patients.",
+    "editDescription": "Update safe fields for this promo code.",
+    "code": "Code",
+    "codePlaceholder": "QA10",
+    "codeHint": "Use letters and numbers only. You may also use - or _. The value is normalized to uppercase.",
+    "codeReadOnlyHint": "The code is immutable after creation.",
+    "discountValue": "Discount percentage",
+    "discountHint": "Maximum discount is 20%. Percentage-only for practitioner promo codes.",
+    "discountLockedHint": "This coupon already has redemptions, so the discount value is locked.",
+    "maxDiscountAmount": "Max discount amount",
+    "maxDiscountAmountPlaceholder": "Optional cap",
+    "maxDiscountAmountHint": "Optional cap on the discount amount if you want one.",
+    "usageLimitTotal": "Total usage limit",
+    "usageLimitTotalPlaceholder": "Optional limit",
+    "usageLimitTotalHint": "Leave empty for unlimited usage.",
+    "usageLimitPerPatient": "Per-patient limit",
+    "usageLimitPerPatientPlaceholder": "Optional per-patient limit",
+    "usageLimitPerPatientHint": "Leave empty if a patient may use it more than once.",
+    "startsAt": "Start date",
+    "startsAtHint": "Optional start time for when the promo code becomes active.",
+    "endsAt": "End date",
+    "endsAtHint": "Optional end time for when the promo code expires.",
+    "isActive": "Active",
+    "isActiveHint": "Inactive codes remain visible but cannot be used at checkout.",
+    "createSubmit": "Create code",
+    "updateSubmit": "Save changes",
+    "validation": {
+      "codeRequired": "Enter a promo code.",
+      "codeInvalid": "Use only letters, numbers, dash, and underscore.",
+      "discountRequired": "Enter a discount percentage.",
+      "discountPositive": "Discount must be greater than 0.",
+      "discountTooHigh": "Practitioner promo codes cannot exceed 20%.",
+      "moneyPositive": "Enter a positive amount.",
+      "usagePositive": "Enter a positive whole number.",
+      "usageBelowCurrent": "Usage limit cannot be lower than current redemptions.",
+      "dateInvalid": "Enter a valid date and time.",
+      "dateRangeInvalid": "End date must be after the start date.",
+      "discountLockedAfterRedemption": "Discount value cannot be changed after redemptions exist."
+    }
+  },
+  "detail": {
+    "eyebrow": "Promo code details",
+    "title": "Promo code details",
+    "description": "Review usage, limits, and redemption history for this code.",
+    "tabs": {
+      "overview": "Overview",
+      "redemptions": "Redemptions"
+    },
+    "sectionSummary": "Summary",
+    "sectionStatus": "Status and schedule",
+    "code": "Code",
+    "scope": "Scope",
+    "sessionOnly": "Session only",
+    "discountType": "Discount type",
+    "discountTypes": {
+      "PERCENTAGE": "Percentage",
+      "FIXED_AMOUNT": "Fixed amount"
+    },
+    "maxDiscount": "Max discount",
+    "usageLimitTotal": "Usage limit",
+    "usageLimitPerPatient": "Per-patient limit",
+    "status": "Status",
+    "isActive": "Active",
+    "startsAt": "Start date",
+    "endsAt": "End date",
+    "createdAt": "Created",
+    "updatedAt": "Updated",
+    "perPatient": "per patient",
+    "stats": {
+      "discount": "Discount",
+      "discountHint": "The patient pays the discounted amount only",
+      "usage": "Usage",
+      "usageHint": "Current redemptions",
+      "window": "Date window",
+      "windowDefined": "Window set",
+      "split": "Split",
+      "splitHint": "Platform and practitioner share the discount equally"
+    },
+    "ruleNote": "This promo code applies only to your own sessions. It cannot be used on another practitioner, and package purchases are not part of the V1 scope.",
+    "redemptionsNote": "Redemption history is shown newest first. Patient contact details are intentionally hidden.",
+    "deniedTitle": "You cannot view this promo code",
+    "deniedNote": "You do not have access to this promo code.",
+    "notFoundTitle": "Promo code not found",
+    "notFoundNote": "This promo code does not exist or is no longer available.",
+    "errorTitle": "Could not load promo code details",
+    "errorNote": "Please try again in a moment."
+  },
+  "redemptions": {
+    "title": "Redemption history",
+    "emptyTitle": "This promo code has not been used yet.",
+    "emptyNote": "Redemption rows will appear here after a successful payment uses this code.",
+    "anonymousPatient": "Patient",
+    "columns": {
+      "patient": "Patient",
+      "payment": "Payment",
+      "amounts": "Amounts",
+      "split": "Split"
+    },
+    "gross": "Gross",
+    "discount": "Discount",
+    "platformShare": "Platform share",
+    "practitionerShare": "Practitioner share",
+    "deniedTitle": "You cannot view these redemptions",
+    "deniedNote": "You do not have access to this redemption history.",
+    "notFoundTitle": "Redemptions not found",
+    "notFoundNote": "This promo code does not have redemption history yet.",
+    "errorTitle": "Could not load redemptions",
+    "errorNote": "Please try again in a moment."
+  },
+  "disableModal": {
+    "title": "Disable promo code",
+    "description": "This will stop patients from using the promo code in future checkout sessions.",
+    "body": "Are you sure you want to disable this code? It will remain visible in your list, but it can no longer be applied at checkout.",
+    "confirm": "Disable",
+    "cancel": "Cancel"
+  },
+  "toast": {
+    "created": "Promo code created successfully.",
+    "updated": "Promo code updated successfully.",
+    "disabled": "Promo code disabled.",
+    "createFailed": "Could not create promo code.",
+    "updateFailed": "Could not update promo code.",
+    "disableFailed": "Could not disable promo code."
+  }
+}

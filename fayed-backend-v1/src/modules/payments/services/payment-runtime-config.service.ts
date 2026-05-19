@@ -87,9 +87,7 @@ export class PaymentRuntimeConfigService {
       intentionBaseUrl: this.toNullable(
         this.paymentCfg.paymob.intentionBaseUrl,
       ),
-      checkoutBaseUrl: this.toNullable(
-        this.paymentCfg.paymob.checkoutBaseUrl,
-      ),
+      checkoutBaseUrl: this.toNullable(this.paymentCfg.paymob.checkoutBaseUrl),
       checkoutFlow: snapshot.checkoutFlow,
       integrationIdCard: this.toNullable(
         this.paymentCfg.paymob.integrationIdCard,
@@ -110,7 +108,8 @@ export class PaymentRuntimeConfigService {
   }
 
   getPaymobMethodRegistry(): PaymobMethodRegistryEntry[] {
-    const snapshot = this.paymentGatewayControlRuntimeService.getPaymobSnapshot();
+    const snapshot =
+      this.paymentGatewayControlRuntimeService.getPaymobSnapshot();
     const parsedRegistry = snapshot.methodRegistry;
 
     if (parsedRegistry.length > 0) {
@@ -168,15 +167,19 @@ export class PaymentRuntimeConfigService {
 
     if (
       configuredDefault &&
-      enabledMethods.some((item) => this.normalizeMethodKey(item.key) === configuredDefault)
-    ) {
-      return enabledMethods.find(
+      enabledMethods.some(
         (item) => this.normalizeMethodKey(item.key) === configuredDefault,
-      )?.key ?? null;
+      )
+    ) {
+      return (
+        enabledMethods.find(
+          (item) => this.normalizeMethodKey(item.key) === configuredDefault,
+        )?.key ?? null
+      );
     }
 
-    const cardDefault = enabledMethods.find((item) =>
-      this.normalizeMethodKey(item.key) === 'CARD',
+    const cardDefault = enabledMethods.find(
+      (item) => this.normalizeMethodKey(item.key) === 'CARD',
     );
     if (cardDefault) {
       return cardDefault.key;
@@ -230,11 +233,13 @@ export class PaymentRuntimeConfigService {
             this.normalizeMethodKey(item.key) === normalizedMethod ||
             this.normalizeMethodKey(item.type) === normalizedMethod,
         )
-      : enabledMethods.find(
+      : (enabledMethods.find(
           (item) =>
             this.normalizeMethodKey(item.key) ===
-            this.normalizeMethodKey(this.getPaymobDefaultCheckoutMethod(context)),
-        ) ?? enabledMethods[0];
+            this.normalizeMethodKey(
+              this.getPaymobDefaultCheckoutMethod(context),
+            ),
+        ) ?? enabledMethods[0]);
 
     return selected?.integrationId ?? null;
   }
@@ -347,7 +352,10 @@ export class PaymentRuntimeConfigService {
         this.throwProviderNotConfigured(PaymentProvider.PAYMOB);
       }
 
-      if (paymob.checkoutFlow === PaymobCheckoutFlow.LEGACY && !paymob.iframeId) {
+      if (
+        paymob.checkoutFlow === PaymobCheckoutFlow.LEGACY &&
+        !paymob.iframeId
+      ) {
         this.throwProviderNotConfigured(PaymentProvider.PAYMOB);
       }
 
@@ -415,9 +423,7 @@ export class PaymentRuntimeConfigService {
 
       return candidates
         .map((entry, index) => this.normalizePaymobRegistryEntry(entry, index))
-        .filter(
-          (entry): entry is PaymobMethodRegistryEntry => Boolean(entry),
-        );
+        .filter((entry): entry is PaymobMethodRegistryEntry => Boolean(entry));
     } catch {
       return [];
     }
@@ -441,8 +447,7 @@ export class PaymentRuntimeConfigService {
     }
 
     const label =
-      this.toNullable(raw.label ?? raw.title ?? raw.displayName ?? null) ??
-      key;
+      this.toNullable(raw.label ?? raw.title ?? raw.displayName ?? null) ?? key;
     const type = this.inferPaymobMethodType(
       this.toNullable(raw.type ?? raw.methodType ?? raw.category ?? null) ??
         key,
@@ -456,7 +461,10 @@ export class PaymentRuntimeConfigService {
       label,
       type,
       enabled: this.toBoolean(raw.enabled, true),
-      priority: this.toNumber(raw.priority ?? raw.order ?? raw.position ?? 0, 0),
+      priority: this.toNumber(
+        raw.priority ?? raw.order ?? raw.position ?? 0,
+        0,
+      ),
       integrationId,
       supportedCheckoutFlows: this.normalizeSupportedCheckoutFlows(
         raw.supportedCheckoutFlows ?? raw.checkoutFlows ?? raw.flows ?? null,
@@ -620,10 +628,7 @@ export class PaymentRuntimeConfigService {
     return trimmed ? trimmed.toUpperCase() : null;
   }
 
-  private toBoolean(
-    value: unknown,
-    fallback = false,
-  ): boolean {
+  private toBoolean(value: unknown, fallback = false): boolean {
     if (typeof value === 'boolean') {
       return value;
     }

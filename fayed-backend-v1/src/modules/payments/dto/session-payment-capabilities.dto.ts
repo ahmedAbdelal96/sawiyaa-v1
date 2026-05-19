@@ -11,7 +11,8 @@ export class SessionPaymentCapabilitiesItemDto {
   @ApiProperty({
     type: Object,
     isArray: true,
-    description: 'Registry entries for Paymob checkout methods enabled by config.',
+    description:
+      'Registry entries for Paymob checkout methods enabled by config.',
   })
   methods!: Array<{
     key: string;

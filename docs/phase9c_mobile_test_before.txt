@@ -1,0 +1,19 @@
+﻿
+> fayed-mobile@1.0.0 test
+> jest
+
+node.exe : PASS __tests__/auth/secure-token-storage.test.ts (12.683 s)
+At line:1 char:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (PASS __tests__/...t.ts (12.683 s):String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+PASS __tests__/auth/notification-route-hardening.test.ts (12.9 s)
+PASS __tests__/auth/role-hardening.test.ts (13.986 s)
+
+Test Suites: 3 passed, 3 total
+Tests:       40 passed, 40 total
+Snapshots:   0 total
+Time:        17.192 s
+Ran all test suites.

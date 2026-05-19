@@ -24,23 +24,30 @@ describe('CalculatePackageSessionAllocationService', () => {
     );
 
     expect(
-      allocations.reduce(
-        (sum, item) => sum.add(new Prisma.Decimal(item.patientPayableAmount)),
-        new Prisma.Decimal(0),
-      ).toFixed(2),
+      allocations
+        .reduce(
+          (sum, item) => sum.add(new Prisma.Decimal(item.patientPayableAmount)),
+          new Prisma.Decimal(0),
+        )
+        .toFixed(2),
     ).toBe('100.01');
     expect(
-      allocations.reduce(
-        (sum, item) => sum.add(new Prisma.Decimal(item.platformFinalShareAmount)),
-        new Prisma.Decimal(0),
-      ).toFixed(2),
+      allocations
+        .reduce(
+          (sum, item) =>
+            sum.add(new Prisma.Decimal(item.platformFinalShareAmount)),
+          new Prisma.Decimal(0),
+        )
+        .toFixed(2),
     ).toBe('30.01');
     expect(
-      allocations.reduce(
-        (sum, item) =>
-          sum.add(new Prisma.Decimal(item.practitionerFinalShareAmount)),
-        new Prisma.Decimal(0),
-      ).toFixed(2),
+      allocations
+        .reduce(
+          (sum, item) =>
+            sum.add(new Prisma.Decimal(item.practitionerFinalShareAmount)),
+          new Prisma.Decimal(0),
+        )
+        .toFixed(2),
     ).toBe('70.00');
   });
 
@@ -61,16 +68,21 @@ describe('CalculatePackageSessionAllocationService', () => {
     );
 
     expect(
-      allocations.reduce(
-        (sum, item) => sum.add(new Prisma.Decimal(item.patientPayableAmount)),
-        new Prisma.Decimal(0),
-      ).toFixed(2),
+      allocations
+        .reduce(
+          (sum, item) => sum.add(new Prisma.Decimal(item.patientPayableAmount)),
+          new Prisma.Decimal(0),
+        )
+        .toFixed(2),
     ).toBe('100.00');
     expect(
-      allocations.reduce(
-        (sum, item) => sum.add(new Prisma.Decimal(item.roundingAdjustmentAmount)),
-        new Prisma.Decimal(0),
-      ).toFixed(2),
+      allocations
+        .reduce(
+          (sum, item) =>
+            sum.add(new Prisma.Decimal(item.roundingAdjustmentAmount)),
+          new Prisma.Decimal(0),
+        )
+        .toFixed(2),
     ).toBe('0.00');
   });
 
@@ -92,18 +104,22 @@ describe('CalculatePackageSessionAllocationService', () => {
 
     expect(allocations[7]?.patientPayableAmount).toBe('10.03');
     expect(
-      allocations.reduce(
-        (sum, item) =>
-          sum.add(new Prisma.Decimal(item.platformDiscountShareAmount)),
-        new Prisma.Decimal(0),
-      ).toFixed(2),
+      allocations
+        .reduce(
+          (sum, item) =>
+            sum.add(new Prisma.Decimal(item.platformDiscountShareAmount)),
+          new Prisma.Decimal(0),
+        )
+        .toFixed(2),
     ).toBe('8.00');
     expect(
-      allocations.reduce(
-        (sum, item) =>
-          sum.add(new Prisma.Decimal(item.practitionerDiscountShareAmount)),
-        new Prisma.Decimal(0),
-      ).toFixed(2),
+      allocations
+        .reduce(
+          (sum, item) =>
+            sum.add(new Prisma.Decimal(item.practitionerDiscountShareAmount)),
+          new Prisma.Decimal(0),
+        )
+        .toFixed(2),
     ).toBe('8.01');
   });
 });

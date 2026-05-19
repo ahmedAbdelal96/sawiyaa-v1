@@ -74,7 +74,10 @@ export class AdminAcademyController {
 
   @Patch('courses/:id')
   @ApiOperation({ summary: 'Update academy course' })
-  updateCourse(@Param('id') courseId: string, @Body() body: UpdateAcademyCourseDto) {
+  updateCourse(
+    @Param('id') courseId: string,
+    @Body() body: UpdateAcademyCourseDto,
+  ) {
     return this.updateAcademyCourseUseCase.execute({ courseId, payload: body });
   }
 

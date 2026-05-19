@@ -2,6 +2,9 @@ import { Module } from '@nestjs/common';
 import { ActiveAccountGuard } from '@common/guards/account-state/active-account.guard';
 import { JwtAccessAuthGuard } from '@common/guards/authentication/jwt-access-auth.guard';
 import { AdminGuard } from '@common/guards/authorization/admin.guard';
+import { PermissionResolverService } from '@common/guards/authorization/permission-resolver.service';
+import { PermissionsGuard } from '@common/guards/authorization/permissions.guard';
+import { RolesGuard } from '@common/guards/authorization/roles.guard';
 import { AdminPractitionersController } from './controllers/admin-practitioners.controller';
 import { PractitionerApplicationsAdminController } from './controllers/practitioner-applications-admin.controller';
 import { PractitionerApplicationsAdminMapper } from './mappers/practitioner-applications-admin.mapper';
@@ -17,6 +20,7 @@ import { AdminSpecialtyRepository } from './repositories/admin-specialty.reposit
 import { AdminUserRepository } from './repositories/admin-user.repository';
 import { AdminPractitionerApplicationNotificationService } from './services/admin-practitioner-application-notification.service';
 import { PractitionerApplicationSnapshotService } from '@modules/practitioners/services/practitioner-application-snapshot.service';
+import { PractitionerApplicationCompletionService } from '@modules/practitioners/services/practitioner-application-completion.service';
 import { PractitionerPayoutDestinationValidationService } from '@modules/practitioners/services/practitioner-payout-destination-validation.service';
 import { PractitionerSpecialtyIntegrityService } from '@modules/practitioners/services/practitioner-specialty-integrity.service';
 import { ApprovePractitionerApplicationUseCase } from './use-cases/approve-practitioner-application.use-case';
@@ -31,6 +35,10 @@ import { RequestPractitionerApplicationChangesUseCase } from './use-cases/reques
 import { UpsertPractitionerApplicationCredentialUseCase } from './use-cases/upsert-practitioner-application-credential.use-case';
 import { UpdateAdminPractitionerAvatarUseCase } from './use-cases/update-admin-practitioner-avatar.use-case';
 import { UpdatePractitionerApplicationDraftUseCase } from './use-cases/update-practitioner-application-draft.use-case';
+import { GetPractitionerApplicationAvatarFileUseCase } from './use-cases/get-practitioner-application-avatar-file.use-case';
+import { GetPractitionerApplicationCredentialFileUseCase } from './use-cases/get-practitioner-application-credential-file.use-case';
+import { PractitionerAvatarStorageService } from '@modules/practitioners/services/practitioner-avatar-storage.service';
+import { PractitionerCredentialStorageService } from '@modules/practitioners/services/practitioner-credential-storage.service';
 
 /**
  * This sub-module isolates admin-only practitioner review/application-management concerns.
@@ -44,6 +52,9 @@ import { UpdatePractitionerApplicationDraftUseCase } from './use-cases/update-pr
   providers: [
     JwtAccessAuthGuard,
     AdminGuard,
+    RolesGuard,
+    PermissionsGuard,
+    PermissionResolverService,
     ActiveAccountGuard,
     PractitionerApplicationsAdminMapper,
     PractitionerApplicationReviewPolicy,
@@ -60,11 +71,16 @@ import { UpdatePractitionerApplicationDraftUseCase } from './use-cases/update-pr
     PractitionerSpecialtyIntegrityService,
     PractitionerPayoutDestinationValidationService,
     PractitionerApplicationSnapshotService,
+    PractitionerApplicationCompletionService,
+    PractitionerAvatarStorageService,
+    PractitionerCredentialStorageService,
     ListPractitionerApplicationsUseCase,
     ListAdminPractitionersDirectoryUseCase,
     UpdateAdminPractitionerAvatarUseCase,
     RemoveAdminPractitionerAvatarUseCase,
     GetPractitionerApplicationDetailsUseCase,
+    GetPractitionerApplicationAvatarFileUseCase,
+    GetPractitionerApplicationCredentialFileUseCase,
     CreateAdminPractitionerUseCase,
     UpdatePractitionerApplicationDraftUseCase,
     UpsertPractitionerApplicationCredentialUseCase,

@@ -4,26 +4,40 @@ import { useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Link, usePathname, useRouter } from "@/i18n/navigation";
 import { useSearchParams } from "next/navigation";
-import { CalendarClock } from "lucide-react";
-import { DataTable } from "@/components/ui/data-table";
+import { useQueries, useQuery } from "@tanstack/react-query";
+import {
+  AlertTriangle,
+  CalendarClock,
+  Clock3,
+  Plus,
+  RefreshCw,
+  Search,
+  TimerReset,
+} from "lucide-react";
+import { DEFAULT_PAGE_LIMIT } from "@/constants/pagination";
 import ActionIconButton from "@/components/ui/action-icon-button/ActionIconButton";
-import CollapsibleHelpCenter from "@/components/shared/CollapsibleHelpCenter";
-import AdminOperationalListShell, {
-  AdminSummaryCard,
-} from "@/components/shared/admin/AdminOperationalListShell";
-import { DEFAULT_PAGE_LIMIT, DEFAULT_PAGE_SIZE_OPTIONS } from "@/constants/pagination";
 import DateTimeField from "@/components/form/input/DateTimeField";
 import FilterClearButton from "@/components/ui/filters/FilterClearButton";
-import AdvancedFiltersToggleButton from "@/components/ui/filters/AdvancedFiltersToggleButton";
-import type { ColumnDef } from "@/components/ui/data-table";
+import { Drawer, ModalBody, ModalHeader } from "@/components/ui/modal";
+import Pagination from "@/components/tables/Pagination";
+import { cn } from "@/lib/utils";
 import {
   buildUpdatedSearchParams,
   parseEnumParam,
   parsePositiveIntParam,
   parseTextParam,
 } from "@/components/ui/data-table";
-import { Drawer, ModalBody, ModalHeader } from "@/components/ui/modal";
+import {
+  AdminMetricCard,
+  AdminPageHeader,
+  AdminSectionCard,
+  AdminStatusBadge,
+  AdminTableTabs,
+} from "@/components/shared/admin/AdminDashboardKit";
+import SessionStatusBadge from "@/features/sessions/components/SessionStatusBadge";
 import { useAdminSessions } from "../hooks/use-admin-sessions";
+import { adminSessionsQueryKeys } from "../constants/query-keys";
+import { listAdminSessions } from "../api/admin-sessions.api";
 import type {
   AdminSessionListItem,
   ListAdminSessionsParams,
@@ -33,64 +47,48 @@ import {
   useAdminSessionAttendance,
   useAdminSessionRuntimeInspection,
 } from "@/features/admin/session-runtime/hooks/use-admin-session-runtime";
-import { useQueries } from "@tanstack/react-query";
-import { listAdminSessions } from "../api/admin-sessions.api";
-import { adminSessionsQueryKeys } from "../constants/query-keys";
 
-const PAGE_SIZE_OPTIONS = DEFAULT_PAGE_SIZE_OPTIONS;
 const STATUS_FILTERS: Array<SessionStatus | "ALL"> = [
   "ALL",
-  "DRAFT",
   "PENDING_PAYMENT",
-  "PENDING_PRACTITIONER_RESPONSE",
-  "CONFIRMED",
   "UPCOMING",
-  "READY_TO_JOIN",
   "IN_PROGRESS",
   "COMPLETED",
   "CANCELLED",
   "NO_SHOW",
-  "EXPIRED",
   "REFUND_PENDING",
   "REFUNDED",
 ];
 
-const STATUS_TONE: Partial<Record<SessionStatus, string>> = {
-  DRAFT: "bg-surface-tertiary text-text-secondary",
-  PENDING_PAYMENT:
-    "bg-warning-50 text-warning-700 dark:bg-warning-500/10 dark:text-warning-300",
-  PENDING_PRACTITIONER_RESPONSE:
-    "bg-warning-50 text-warning-700 dark:bg-warning-500/10 dark:text-warning-300",
-  CONFIRMED: "bg-primary-light text-text-brand",
-  UPCOMING: "bg-primary-light text-text-brand",
-  READY_TO_JOIN:
-    "bg-success-50 text-success-700 dark:bg-success-500/10 dark:text-success-300",
-  IN_PROGRESS:
-    "bg-success-50 text-success-700 dark:bg-success-500/10 dark:text-success-300",
-  COMPLETED: "bg-surface-tertiary text-text-secondary",
-  CANCELLED:
-    "bg-danger-50 text-danger-700 dark:bg-danger-500/10 dark:text-danger-300",
-  NO_SHOW:
-    "bg-danger-50 text-danger-700 dark:bg-danger-500/10 dark:text-danger-300",
-  EXPIRED:
-    "bg-danger-50 text-danger-700 dark:bg-danger-500/10 dark:text-danger-300",
-  REFUND_PENDING:
-    "bg-warning-50 text-warning-700 dark:bg-warning-500/10 dark:text-warning-300",
-  REFUNDED: "bg-surface-tertiary text-text-secondary",
-};
+type SessionTabValue =
+  | "ALL"
+  | "PENDING_PAYMENT"
+  | "IN_PROGRESS"
+  | "UPCOMING"
+  | "COMPLETED"
+  | "CANCELLED"
+  | "REFUNDED"
+  | "NO_SHOW";
 
-function formatDateTime(value: string | null, locale: string, fallback: string) {
-  if (!value) {
-    return fallback;
-  }
-  return new Date(value).toLocaleString(locale === "ar" ? "ar-SA" : "en-US", {
+function formatDateTime(value: string | null, locale: string, fallback = "-") {
+  if (!value) return fallback;
+  return new Intl.DateTimeFormat(locale === "ar" ? "ar-SA" : "en-US", {
     year: "numeric",
     month: "short",
     day: "numeric",
     hour: "numeric",
     minute: "2-digit",
     hour12: !locale.startsWith("ar"),
-  });
+  }).format(new Date(value));
+}
+
+function formatTimeOnly(value: string | null, locale: string, fallback = "-") {
+  if (!value) return fallback;
+  return new Intl.DateTimeFormat(locale === "ar" ? "ar-SA" : "en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: !locale.startsWith("ar"),
+  }).format(new Date(value));
 }
 
 function parseBooleanParam(value: string | null): boolean | undefined {
@@ -99,18 +97,62 @@ function parseBooleanParam(value: string | null): boolean | undefined {
   return undefined;
 }
 
-function toDateTimeLocalValue(value: Date) {
-  const shifted = new Date(value.getTime() - value.getTimezoneOffset() * 60_000);
-  return shifted.toISOString().slice(0, 16);
+function getInitials(value: string | null | undefined) {
+  if (!value) return "-";
+  return value
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join("");
+}
+
+function getModeLabel(mode: AdminSessionListItem["sessionMode"]) {
+  return mode === "VIDEO" ? "Video" : mode;
+}
+
+function getStatusLabel(status: SessionStatus, locale: string) {
+  const labels: Record<SessionStatus, string> = {
+    DRAFT: locale === "ar" ? "مسودة" : "Draft",
+    PENDING_PAYMENT: locale === "ar" ? "بانتظار الدفع" : "Pending Payment",
+    PENDING_PRACTITIONER_RESPONSE:
+      locale === "ar" ? "بانتظار رد المعالج" : "Pending Practitioner Response",
+    CONFIRMED: locale === "ar" ? "مؤكدة" : "Confirmed",
+    UPCOMING: locale === "ar" ? "قادمة" : "Upcoming",
+    READY_TO_JOIN: locale === "ar" ? "جاهزة للانضمام" : "Ready to Join",
+    IN_PROGRESS: locale === "ar" ? "مباشرة" : "Live",
+    COMPLETED: locale === "ar" ? "مكتملة" : "Completed",
+    CANCELLED: locale === "ar" ? "ملغاة" : "Cancelled",
+    NO_SHOW: locale === "ar" ? "فاتت" : "Missed",
+    EXPIRED: locale === "ar" ? "منتهية" : "Expired",
+    REFUND_PENDING: locale === "ar" ? "استرداد قيد المعالجة" : "Refund Pending",
+    REFUNDED: locale === "ar" ? "مستردة" : "Refunded",
+  };
+
+  return labels[status];
+}
+
+function getRowClass(status: AdminSessionListItem["status"]) {
+  if (status === "IN_PROGRESS" || status === "READY_TO_JOIN") {
+    return "bg-error/5 shadow-[inset_4px_0_0_0_rgba(220,38,38,0.95)]";
+  }
+  if (status === "CANCELLED" || status === "NO_SHOW" || status === "EXPIRED") {
+    return "opacity-70";
+  }
+  return "";
+}
+
+function getSessionModeDescription(mode: AdminSessionListItem["sessionMode"]) {
+  return mode === "VIDEO" ? "In-app video" : "-";
 }
 
 export default function AdminSessionsListScreen() {
   const t = useTranslations("admin-sessions");
-  const tAdminArea = useTranslations("admin-area");
   const locale = useLocale();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
 
   const status = parseEnumParam<SessionStatus | "ALL">(
@@ -118,109 +160,67 @@ export default function AdminSessionsListScreen() {
     STATUS_FILTERS,
     "ALL",
   );
-  const sort = parseEnumParam<"newest" | "oldest">(
-    searchParams.get("sort"),
-    ["newest", "oldest"],
-    "newest",
-  );
-  const lateOnly = parseBooleanParam(searchParams.get("late")) ?? false;
-  const missingAttendanceOnly =
-    parseBooleanParam(searchParams.get("missingAttendance")) ?? false;
   const page = parsePositiveIntParam(searchParams.get("page"), 1, { min: 1 });
   const limit = parsePositiveIntParam(searchParams.get("limit"), DEFAULT_PAGE_LIMIT, {
     min: 1,
     max: 50,
   });
-  const practitionerId = parseTextParam(searchParams.get("practitionerId"), {
-    maxLength: 64,
-  });
-  const sessionCodeQuery = parseTextParam(searchParams.get("query"), {
-    maxLength: 32,
-  });
-  const patientId = parseTextParam(searchParams.get("patientId"), {
-    maxLength: 64,
-  });
-  const scheduledFrom = parseTextParam(searchParams.get("scheduledFrom"), {
-    maxLength: 40,
-  });
-  const scheduledTo = parseTextParam(searchParams.get("scheduledTo"), {
-    maxLength: 40,
-  });
-  const quickPreset = parseEnumParam<"delayed" | "missingAttendance" | "startingSoon" | "ALL">(
-    searchParams.get("quick"),
-    ["ALL", "delayed", "missingAttendance", "startingSoon"],
-    "ALL",
-  );
-  const hasAdvancedFilters =
+  const query = parseTextParam(searchParams.get("query"), { maxLength: 64 });
+  const lateOnly = parseBooleanParam(searchParams.get("late")) ?? false;
+  const missingAttendanceOnly = parseBooleanParam(searchParams.get("missingAttendance")) ?? false;
+  const scheduledFrom = parseTextParam(searchParams.get("scheduledFrom"), { maxLength: 40 });
+  const scheduledTo = parseTextParam(searchParams.get("scheduledTo"), { maxLength: 40 });
+
+  const hasFilters =
+    Boolean(query) ||
+    status !== "ALL" ||
     lateOnly ||
     missingAttendanceOnly ||
-    Boolean(practitionerId) ||
-    Boolean(patientId) ||
     Boolean(scheduledFrom) ||
     Boolean(scheduledTo);
-  const hasActiveFilters =
-    Boolean(sessionCodeQuery) ||
-    sort !== "newest" ||
-    status !== "ALL" ||
-    hasAdvancedFilters;
-
-  const [showAdvancedFilters, setShowAdvancedFilters] = useState(hasAdvancedFilters);
 
   const params = useMemo<ListAdminSessionsParams>(() => {
-    const next: ListAdminSessionsParams = { page, limit, sort };
-    if (sessionCodeQuery) next.query = sessionCodeQuery;
+    const next: ListAdminSessionsParams = { page, limit };
     if (status !== "ALL") next.status = status;
     if (lateOnly) next.late = true;
     if (missingAttendanceOnly) next.missingAttendance = true;
-    if (practitionerId) next.practitionerId = practitionerId;
-    if (patientId) next.patientId = patientId;
     if (scheduledFrom) next.scheduledFrom = new Date(scheduledFrom).toISOString();
     if (scheduledTo) next.scheduledTo = new Date(scheduledTo).toISOString();
     return next;
-  }, [
-    lateOnly,
-    missingAttendanceOnly,
-    page,
-    patientId,
-    practitionerId,
-    scheduledFrom,
-    scheduledTo,
-    sessionCodeQuery,
-    sort,
-    status,
-    limit,
-  ]);
+  }, [lateOnly, limit, missingAttendanceOnly, page, scheduledFrom, scheduledTo, status]);
 
   const sessions = useAdminSessions(params);
   const data = sessions.data;
+
   const runtime = useAdminSessionRuntimeInspection(selectedSessionId ?? undefined);
   const attendance = useAdminSessionAttendance(selectedSessionId ?? undefined);
 
   const countBaseParams = useMemo<ListAdminSessionsParams>(() => {
-    const base: ListAdminSessionsParams = { page: 1, limit: 1 };
-    if (status !== "ALL") base.status = status;
-    if (sessionCodeQuery) base.query = sessionCodeQuery;
-    if (practitionerId) base.practitionerId = practitionerId;
-    if (patientId) base.patientId = patientId;
-    return base;
-  }, [status, sessionCodeQuery, practitionerId, patientId]);
-
-  const startingSoonWindow = useMemo(() => {
-    const from = new Date();
-    const to = new Date(from.getTime() + 60 * 60 * 1000);
-    return {
-      fromIso: from.toISOString(),
-      toIso: to.toISOString(),
-    };
+    return { page: 1, limit: 1 };
   }, []);
 
-  const quickCounts = useQueries({
+  const counts = useQueries({
     queries: [
       {
-        queryKey: adminSessionsQueryKeys.list({
-          ...countBaseParams,
-          late: true,
-        }),
+        queryKey: adminSessionsQueryKeys.list({ ...countBaseParams, status: "IN_PROGRESS" }),
+        queryFn: () =>
+          listAdminSessions({
+            ...countBaseParams,
+            status: "IN_PROGRESS",
+          }),
+        staleTime: 20_000,
+      },
+      {
+        queryKey: adminSessionsQueryKeys.list({ ...countBaseParams, status: "UPCOMING" }),
+        queryFn: () =>
+          listAdminSessions({
+            ...countBaseParams,
+            status: "UPCOMING",
+          }),
+        staleTime: 20_000,
+      },
+      {
+        queryKey: adminSessionsQueryKeys.list({ ...countBaseParams, late: true }),
         queryFn: () =>
           listAdminSessions({
             ...countBaseParams,
@@ -229,10 +229,7 @@ export default function AdminSessionsListScreen() {
         staleTime: 20_000,
       },
       {
-        queryKey: adminSessionsQueryKeys.list({
-          ...countBaseParams,
-          missingAttendance: true,
-        }),
+        queryKey: adminSessionsQueryKeys.list({ ...countBaseParams, missingAttendance: true }),
         queryFn: () =>
           listAdminSessions({
             ...countBaseParams,
@@ -240,695 +237,771 @@ export default function AdminSessionsListScreen() {
           }),
         staleTime: 20_000,
       },
-      {
-        queryKey: adminSessionsQueryKeys.list({
-          ...countBaseParams,
-          scheduledFrom: startingSoonWindow.fromIso,
-          scheduledTo: startingSoonWindow.toIso,
-        }),
-        queryFn: () =>
-          listAdminSessions({
-            ...countBaseParams,
-            scheduledFrom: startingSoonWindow.fromIso,
-            scheduledTo: startingSoonWindow.toIso,
-          }),
-        staleTime: 20_000,
-      },
     ],
   });
 
-  const delayedCount = quickCounts[0]?.data?.pagination.totalItems;
-  const missingAttendanceCount = quickCounts[1]?.data?.pagination.totalItems;
-  const startingSoonCount = quickCounts[2]?.data?.pagination.totalItems;
-  const activeFilterChips = [
-    status !== "ALL"
-      ? {
-          id: "status",
-          label: `${t("filters.status")}: ${tAdminArea(
-            `payments.sessionStatuses.${status}` as Parameters<typeof tAdminArea>[0],
-          )}`,
-        }
-      : null,
-    sort !== "newest"
-      ? {
-          id: "sort",
-          label: `${t("filters.sort")}: ${sort === "oldest" ? t("filters.sortOldest") : t("filters.sortNewest")}`,
-        }
-      : null,
-    sessionCodeQuery ? { id: "query", label: `${t("filters.sessionCode")}: ${sessionCodeQuery}` } : null,
-    practitionerId ? { id: "practitioner", label: `${t("filters.practitionerId")}: ${practitionerId}` } : null,
-    patientId ? { id: "patient", label: `${t("filters.patientId")}: ${patientId}` } : null,
-    scheduledFrom ? { id: "from", label: t("filters.scheduledFrom") } : null,
-    scheduledTo ? { id: "to", label: t("filters.scheduledTo") } : null,
-    lateOnly ? { id: "late", label: t("filters.delayedOnly") } : null,
-    missingAttendanceOnly
-      ? { id: "missingAttendance", label: t("filters.missingAttendanceOnly") }
-      : null,
-  ].filter(Boolean) as Array<{ id: string; label: string }>;
+  const liveCount = counts[0]?.data?.pagination.totalItems;
+  const upcomingCount = counts[1]?.data?.pagination.totalItems;
+  const delayedCount = counts[2]?.data?.pagination.totalItems;
+  const missingCount = counts[3]?.data?.pagination.totalItems;
 
-  const updateListQuery = (
-    updates: Record<string, string | number | null | undefined>,
-  ) => {
-    const next = buildUpdatedSearchParams(
-      new URLSearchParams(searchParams.toString()),
-      updates,
-    );
+  const updateListQuery = (updates: Record<string, string | number | null | undefined>) => {
+    const next = buildUpdatedSearchParams(new URLSearchParams(searchParams.toString()), updates);
     const queryString = next.toString();
-    router.push(queryString ? `${pathname}?${queryString}` : pathname, {
-      scroll: false,
-    });
+    router.push(queryString ? `${pathname}?${queryString}` : pathname, { scroll: false });
   };
 
-  const columns = useMemo<ColumnDef<AdminSessionListItem>[]>(
-    () => [
-      {
-        id: "sessionCode",
-        header: t("table.headers.sessionCode"),
-        accessor: (row) => row.sessionCode,
-        cell: (row) => (
-          <span className="font-mono text-xs text-text-secondary">{row.sessionCode}</span>
-        ),
-      },
-      {
-        id: "status",
-        header: t("table.headers.status"),
-        accessor: (row) => row.status,
-        cell: (row) => (
-          <div className="space-y-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <span
-                className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
-                  STATUS_TONE[row.status] ??
-                  "bg-surface-tertiary text-text-secondary"
-                }`}
-              >
-                {tAdminArea(
-                  `payments.sessionStatuses.${row.status}` as Parameters<
-                    typeof tAdminArea
-                  >[0],
-                )}
-              </span>
-              {row.isDelayed ? (
-                <span className="rounded-full bg-danger-50 px-2.5 py-1 text-xs font-semibold text-danger-700 dark:bg-danger-500/10 dark:text-danger-300">
-                  {t("badges.delayed")}
-                </span>
-              ) : null}
-            </div>
-          </div>
-        ),
-      },
-      {
-        id: "scheduledStartAt",
-        header: t("table.headers.scheduledStart"),
-        accessor: (row) =>
-          formatDateTime(row.scheduledStartAt, locale, t("table.fallback.none")),
-      },
-      {
-        id: "practitioner",
-        header: t("table.headers.practitioner"),
-        accessor: (row) => row.practitioner.displayName ?? row.practitioner.slug,
-        cell: (row) => (
-          <div className="min-w-0">
-            <p className="truncate text-sm font-medium text-text-primary dark:text-white/95">
-              {row.practitioner.displayName ?? t("table.fallback.noName")}
-            </p>
-            <p className="truncate text-xs text-text-muted">{row.practitioner.slug}</p>
-          </div>
-        ),
-      },
-      {
-        id: "patient",
-        header: t("table.headers.patient"),
-        accessor: (row) => row.patient?.displayName ?? "",
-        cell: (row) => (
-          <div className="min-w-0">
-            <p className="truncate text-sm text-text-primary dark:text-white/95">
-              {row.patient?.displayName ?? t("table.fallback.noName")}
-            </p>
-            {row.patient ? (
-              <p className="truncate text-xs text-text-muted">{row.patient.id.slice(0, 8)}</p>
-            ) : null}
-          </div>
-        ),
-      },
-      {
-        id: "mode",
-        header: t("table.headers.mode"),
-        accessor: (row) => t(`modes.${row.sessionMode}` as Parameters<typeof t>[0]),
-        hideBelow: "xl",
-      },
-    ],
-    [locale, t, tAdminArea],
-  );
+  const activeTab: SessionTabValue =
+    status === "PENDING_PAYMENT" ||
+    status === "IN_PROGRESS" ||
+    status === "UPCOMING" ||
+    status === "COMPLETED" ||
+    status === "CANCELLED" ||
+    status === "REFUNDED" ||
+    status === "NO_SHOW"
+      ? status
+      : "ALL";
 
-  const attendanceSummary = attendance.data?.summary;
+  const tabs: Array<{ value: SessionTabValue; label: string }> = [
+    { value: "ALL", label: locale === "ar" ? "الكل" : "All" },
+    { value: "PENDING_PAYMENT", label: locale === "ar" ? "بانتظار الدفع" : "Pending Payment" },
+    { value: "IN_PROGRESS", label: locale === "ar" ? "مباشر" : "Live" },
+    { value: "UPCOMING", label: locale === "ar" ? "قادمة" : "Upcoming" },
+    { value: "COMPLETED", label: locale === "ar" ? "مكتملة" : "Completed" },
+    { value: "CANCELLED", label: locale === "ar" ? "ملغاة" : "Cancelled" },
+    { value: "REFUNDED", label: locale === "ar" ? "مستردة" : "Refunded" },
+    { value: "NO_SHOW", label: locale === "ar" ? "فاتت" : "Missed" },
+  ];
+
+  const metrics = [
+    {
+      label: locale === "ar" ? "إجمالي الجلسات" : "Total sessions",
+      value: data?.pagination.totalItems ?? "...",
+      hint: locale === "ar" ? "ضمن النتائج الحالية" : "Current result set",
+      icon: <CalendarClock className="h-4 w-4" />,
+      tone: "primary" as const,
+    },
+    {
+      label: locale === "ar" ? "مباشرة الآن" : "Live now",
+      value: liveCount ?? "...",
+      hint: locale === "ar" ? "الجلسات النشطة" : "Active sessions",
+      icon: <Clock3 className="h-4 w-4" />,
+      tone: "danger" as const,
+    },
+    {
+      label: locale === "ar" ? "قادمة" : "Upcoming",
+      value: upcomingCount ?? "...",
+      hint: locale === "ar" ? "قريبًا" : "Scheduled ahead",
+      icon: <CalendarClock className="h-4 w-4" />,
+      tone: "success" as const,
+    },
+    {
+      label: locale === "ar" ? "تنبيه تشغيلي" : "Operational alerts",
+      value:
+        typeof delayedCount === "number" && typeof missingCount === "number"
+          ? delayedCount + missingCount
+          : "...",
+      hint: locale === "ar" ? "متأخرة أو ناقصة الحضور" : "Delayed or missing attendance",
+      icon: <AlertTriangle className="h-4 w-4" />,
+      tone: "warning" as const,
+    },
+  ];
+
+  const searchTerm = query.trim().toLowerCase();
+  const searchMode = searchTerm.length > 0;
+
+  const allSessionsQuery = useQuery({
+    queryKey: [
+      "admin-sessions-search-all",
+      {
+        status,
+        lateOnly,
+        missingAttendanceOnly,
+        scheduledFrom,
+        scheduledTo,
+      },
+    ] as const,
+    queryFn: async () => {
+      const pageSize = 50;
+      let pageCursor = 1;
+      let totalPages = 1;
+      const collected: AdminSessionListItem[] = [];
+
+      do {
+        const response = await listAdminSessions({
+          page: pageCursor,
+          limit: pageSize,
+          status: status === "ALL" ? undefined : status,
+          late: lateOnly || undefined,
+          missingAttendance: missingAttendanceOnly || undefined,
+          scheduledFrom: scheduledFrom ? new Date(scheduledFrom).toISOString() : undefined,
+          scheduledTo: scheduledTo ? new Date(scheduledTo).toISOString() : undefined,
+        });
+
+        collected.push(...response.items);
+        totalPages = response.pagination.totalPages;
+        pageCursor += 1;
+      } while (pageCursor <= totalPages);
+
+      return collected;
+    },
+    enabled: searchMode,
+    staleTime: 30_000,
+  });
+
+  const items = useMemo(() => data?.items ?? [], [data?.items]);
+  const displayedItems = useMemo(() => {
+    const baseItems = searchMode ? allSessionsQuery.data ?? [] : items;
+    if (!searchTerm) return baseItems;
+
+    return baseItems.filter((row) => {
+      const values = [
+        row.sessionCode,
+        row.patient?.displayName,
+        row.practitioner.displayName,
+        row.practitioner.slug,
+        row.patient?.id,
+        row.practitioner.id,
+      ];
+
+      return values.some((value) => value?.toLowerCase().includes(searchTerm));
+    });
+  }, [allSessionsQuery.data, items, searchMode, searchTerm]);
   const selectedSession = useMemo(
-    () => data?.items.find((item) => item.id === selectedSessionId) ?? null,
-    [data?.items, selectedSessionId],
+    () => items.find((item) => item.id === selectedSessionId) ?? null,
+    [items, selectedSessionId],
+  );
+  const runtimeItem = runtime.data?.item ?? null;
+  const attendanceData = attendance.data ?? null;
+
+  const activePage = page;
+  const activeLimit = limit;
+  const searchPaginationTotal = displayedItems.length;
+  const searchPaginationPages = Math.max(1, Math.ceil(searchPaginationTotal / activeLimit));
+  const pagedDisplayedItems = searchMode
+    ? displayedItems.slice((activePage - 1) * activeLimit, activePage * activeLimit)
+    : displayedItems;
+  const paginationTotal = searchMode ? searchPaginationTotal : data?.pagination.totalItems ?? 0;
+  const paginationTotalPages = searchMode
+    ? searchPaginationPages
+    : data?.pagination.totalPages ?? 1;
+  const summaryStart = paginationTotal
+    ? Math.min((activePage - 1) * activeLimit + 1, paginationTotal)
+    : 0;
+  const summaryEnd = paginationTotal
+    ? Math.min(activePage * activeLimit, paginationTotal)
+    : 0;
+
+  const renderStatusChip = (statusValue: SessionStatus) => (
+    <AdminStatusBadge tone="muted">{getStatusLabel(statusValue, locale)}</AdminStatusBadge>
   );
 
   return (
-    <AdminOperationalListShell
-      eyebrow={t("header.eyebrow")}
-      title={t("header.title")}
-      description={t("header.note")}
-      actions={
-        <Link
-          href="/admin/sessions/cancellation-policies"
-          className="inline-flex items-center justify-center rounded-2xl border border-border-light bg-white px-4 py-2 text-sm font-semibold text-text-primary transition hover:border-primary/30 hover:bg-brand-25 dark:bg-surface-secondary dark:text-white/95 dark:hover:bg-white/10"
-        >
-          {t("policy.actions.openEditor")}
-        </Link>
-      }
-      notice={
-        <section className="app-panel-soft rounded-[26px] p-4 sm:p-5">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
-                {t("quickActions.heading")}
-              </p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  onClick={() =>
-                    updateListQuery({
-                      quick: "delayed",
-                      late: "true",
-                      missingAttendance: null,
-                      scheduledFrom: null,
-                      scheduledTo: null,
-                      page: 1,
-                    })
-                  }
-                  className={`rounded-full border px-3 py-2 text-xs font-semibold transition ${
-                    quickPreset === "delayed"
-                      ? "border-danger-300 bg-danger-50 text-danger-700 dark:border-danger-500/40 dark:bg-danger-500/10 dark:text-danger-300"
-                      : "border-border-light bg-white text-text-secondary hover:bg-surface-tertiary dark:bg-white/5"
-                  }`}
-                >
-                  {t("quickActions.delayedNow")}
-                  <span className="ms-2 rounded-full bg-white/70 px-1.5 py-0.5 text-[11px] font-bold dark:bg-black/20">
-                    {typeof delayedCount === "number" ? delayedCount : "..."}
-                  </span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() =>
-                    updateListQuery({
-                      quick: "missingAttendance",
-                      missingAttendance: "true",
-                      late: null,
-                      page: 1,
-                    })
-                  }
-                  className={`rounded-full border px-3 py-2 text-xs font-semibold transition ${
-                    quickPreset === "missingAttendance"
-                      ? "border-warning-300 bg-warning-50 text-warning-700 dark:border-warning-500/40 dark:bg-warning-500/10 dark:text-warning-300"
-                      : "border-border-light bg-white text-text-secondary hover:bg-surface-tertiary dark:bg-white/5"
-                  }`}
-                >
-                  {t("quickActions.missingAttendance")}
-                  <span className="ms-2 rounded-full bg-white/70 px-1.5 py-0.5 text-[11px] font-bold dark:bg-black/20">
-                    {typeof missingAttendanceCount === "number" ? missingAttendanceCount : "..."}
-                  </span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    const now = new Date();
-                    const inOneHour = new Date(now.getTime() + 60 * 60 * 1000);
-                    updateListQuery({
-                      quick: "startingSoon",
-                      scheduledFrom: toDateTimeLocalValue(now),
-                      scheduledTo: toDateTimeLocalValue(inOneHour),
-                      late: null,
-                      page: 1,
-                    });
-                  }}
-                  className={`rounded-full border px-3 py-2 text-xs font-semibold transition ${
-                    quickPreset === "startingSoon"
-                      ? "border-primary/40 bg-primary-light text-text-brand"
-                      : "border-border-light bg-white text-text-secondary hover:bg-surface-tertiary dark:bg-white/5"
-                  }`}
-                >
-                  {t("quickActions.startingSoon")}
-                  <span className="ms-2 rounded-full bg-white/70 px-1.5 py-0.5 text-[11px] font-bold dark:bg-black/20">
-                    {typeof startingSoonCount === "number" ? startingSoonCount : "..."}
-                  </span>
-                </button>
-              </div>
-            </div>
-
-            <div className="max-w-full sm:max-w-[28rem]">
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
-                {hasActiveFilters ? t("quickActions.clear") : t("filters.sort")}
-              </p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                {activeFilterChips.length > 0 ? (
-                  activeFilterChips.map((chip) => (
-                    <span
-                      key={chip.id}
-                      className="app-chip rounded-full px-3 py-1.5 text-xs text-text-secondary dark:text-white/80"
-                    >
-                      {chip.label}
-                    </span>
-                  ))
-                ) : (
-                  <span className="app-chip rounded-full px-3 py-1.5 text-xs text-text-secondary dark:text-white/80">
-                    {t("filters.sortNewest")}
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
-        </section>
-      }
-      summaryCards={
-        <>
-          <AdminSummaryCard
-            label={t("header.title")}
-            value={typeof data?.pagination.totalItems === "number" ? data.pagination.totalItems : "..."}
-            tone="primary"
-            icon={<CalendarClock className="h-4 w-4" />}
-          />
-          <AdminSummaryCard
-            label={t("quickActions.delayedNow")}
-            value={typeof delayedCount === "number" ? delayedCount : "..."}
-            tone="warning"
-          />
-          <AdminSummaryCard
-            label={t("quickActions.missingAttendance")}
-            value={typeof missingAttendanceCount === "number" ? missingAttendanceCount : "..."}
-            tone="warning"
-          />
-          <AdminSummaryCard
-            label={t("quickActions.startingSoon")}
-            value={typeof startingSoonCount === "number" ? startingSoonCount : "..."}
-            tone="success"
-          />
-        </>
-      }
-      filters={
-        <>
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <label className="block md:col-span-2">
-            <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
-              {t("filters.sessionCode")}
-            </span>
-            <input
-              type="text"
-              value={sessionCodeQuery}
-              onChange={(event) =>
-                updateListQuery({
-                  query: event.target.value || null,
-                  page: 1,
-                })
-              }
-              className="app-control w-full px-4 py-3"
-              placeholder={t("filters.sessionCodePlaceholder")}
-            />
-          </label>
-
-          <label className="block">
-            <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
-              {t("filters.status")}
-            </span>
-            <select
-              value={status}
-              onChange={(event) =>
-                updateListQuery({
-                  status: event.target.value === "ALL" ? null : event.target.value,
-                  page: 1,
-                  quick: null,
-                })
-              }
-              className="app-control w-full px-4 py-3"
+    <div className="space-y-6">
+      <AdminPageHeader
+        eyebrow={locale === "ar" ? "إدارة الجلسات" : "Sessions management"}
+        title={t("header.title")}
+        description={t("header.note")}
+        actions={
+          <>
+            <Link
+              href="/admin/sessions/cancellation-policies"
+              className="inline-flex items-center justify-center rounded-xl border border-border-light bg-white px-4 py-2 text-sm font-semibold text-text-primary shadow-theme-xs transition hover:border-primary/30 hover:bg-surface-secondary"
             >
-              <option value="ALL">{t("filters.allStatuses")}</option>
-              {STATUS_FILTERS.filter(
-                (value): value is SessionStatus => value !== "ALL",
-              ).map((value) => (
-                <option key={value} value={value}>
-                  {tAdminArea(
-                    `payments.sessionStatuses.${value}` as Parameters<
-                      typeof tAdminArea
-                    >[0],
-                  )}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label className="block">
-            <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
-              {t("filters.sort")}
-            </span>
-            <select
-              value={sort}
-              onChange={(event) =>
-                updateListQuery({
-                  sort: event.target.value,
-                  page: 1,
-                })
-              }
-              className="app-control w-full px-4 py-3"
+              {t("policy.actions.openEditor")}
+            </Link>
+            <button
+              type="button"
+              onClick={() => sessions.refetch()}
+              className="inline-flex items-center justify-center gap-2 rounded-xl border border-border-light bg-white px-4 py-2 text-sm font-semibold text-text-primary shadow-theme-xs transition hover:border-primary/30 hover:bg-surface-secondary"
             >
-              <option value="newest">{t("filters.sortNewest")}</option>
-              <option value="oldest">{t("filters.sortOldest")}</option>
-            </select>
-          </label>
-          </div>
-
-          <div className="mt-4 flex flex-wrap items-end justify-end gap-2">
-            <AdvancedFiltersToggleButton
-              expanded={showAdvancedFilters}
-              hasHiddenActive={!showAdvancedFilters && hasAdvancedFilters}
-              onToggle={() => setShowAdvancedFilters((prev) => !prev)}
-            />
-            <FilterClearButton
-              disabled={!hasActiveFilters}
-              onClick={() =>
-                updateListQuery({
-                  query: null,
-                  sort: null,
-                  status: null,
-                  late: null,
-                  missingAttendance: null,
-                  practitionerId: null,
-                  patientId: null,
-                  scheduledFrom: null,
-                  scheduledTo: null,
-                  quick: null,
-                  page: 1,
-                })
-              }
-            />
-          </div>
-
-        {showAdvancedFilters ? (
-          <div className="mt-5 rounded-[24px] bg-surface-secondary/70 p-4 dark:bg-white/[0.03]">
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            <label className="block">
-              <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
-                {t("filters.practitionerId")}
-              </span>
-              <input
-                type="text"
-                value={practitionerId}
-                onChange={(event) =>
-                  updateListQuery({
-                    practitionerId: event.target.value || null,
-                    page: 1,
-                    quick: null,
-                  })
-                }
-                className="app-control w-full px-4 py-3"
-                placeholder={t("filters.idPlaceholder")}
-              />
-            </label>
-
-            <label className="block">
-              <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
-                {t("filters.patientId")}
-              </span>
-              <input
-                type="text"
-                value={patientId}
-                onChange={(event) =>
-                  updateListQuery({
-                    patientId: event.target.value || null,
-                    page: 1,
-                    quick: null,
-                  })
-                }
-                className="app-control w-full px-4 py-3"
-                placeholder={t("filters.idPlaceholder")}
-              />
-            </label>
-
-            <DateTimeField
-              label={t("filters.scheduledFrom")}
-              value={scheduledFrom}
-              onChange={(value) =>
-                updateListQuery({
-                  scheduledFrom: value || null,
-                  page: 1,
-                  quick: null,
-                })
-              }
-            />
-
-            <DateTimeField
-              label={t("filters.scheduledTo")}
-              value={scheduledTo}
-              onChange={(value) =>
-                updateListQuery({
-                  scheduledTo: value || null,
-                  page: 1,
-                  quick: null,
-                })
-              }
-            />
-
-            <label className="flex w-full items-center gap-3 rounded-2xl border border-border-light bg-surface-secondary px-4 py-3 text-sm text-text-primary dark:bg-white/5 dark:text-white/90">
-              <input
-                type="checkbox"
-                checked={lateOnly}
-                onChange={(event) =>
-                  updateListQuery({
-                    late: event.target.checked ? "true" : null,
-                    page: 1,
-                    quick: null,
-                  })
-                }
-                className="h-4 w-4 rounded border-border-light text-primary focus:ring-primary"
-              />
-              {t("filters.delayedOnly")}
-            </label>
-
-            <label className="flex w-full items-center gap-3 rounded-2xl border border-border-light bg-surface-secondary px-4 py-3 text-sm text-text-primary dark:bg-white/5 dark:text-white/90">
-              <input
-                type="checkbox"
-                checked={missingAttendanceOnly}
-                onChange={(event) =>
-                  updateListQuery({
-                    missingAttendance: event.target.checked ? "true" : null,
-                    page: 1,
-                    quick: null,
-                  })
-                }
-                className="h-4 w-4 rounded border-border-light text-primary focus:ring-primary"
-              />
-              {t("filters.missingAttendanceOnly")}
-            </label>
-            </div>
-          </div>
-        ) : null}
-        </>
-      }
-    >
-
-      <DataTable
-        data={data?.items ?? []}
-        columns={columns}
-        getRowId={(row) => row.id}
-        loading={sessions.isLoading}
-        error={sessions.isError ? t("states.error.note") : null}
-        errorState={{
-          title: t("states.error.heading"),
-          description: t("states.error.note"),
-          action: {
-            label: t("states.error.retry"),
-            onClick: () => sessions.refetch(),
-          },
-        }}
-        onRowClick={(row) => setSelectedSessionId(row.id)}
-        rowActions={(row) => (
-          <ActionIconButton
-            intent="view"
-            label={t("table.openRuntime")}
-            icon={<CalendarClock className="h-4 w-4" />}
-            onClick={() => router.push(`/admin/sessions/runtime-inspection?sessionId=${row.id}` as never)}
-          />
-        )}
-        pagination={
-          data
-            ? {
-                page: data.pagination.page,
-                limit: data.pagination.limit,
-                total: data.pagination.totalItems,
-                totalPages: data.pagination.totalPages,
-                hasPrevPage: data.pagination.page > 1,
-                hasNextPage: data.pagination.page < data.pagination.totalPages,
-              }
-            : undefined
+              <RefreshCw className="h-4 w-4" />
+              {locale === "ar" ? "تحديث" : "Refresh"}
+            </button>
+            <button
+              type="button"
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white shadow-[0_10px_24px_-18px_rgba(0,106,96,0.45)] transition hover:bg-primary/90"
+            >
+              <Plus className="h-4 w-4" />
+              {locale === "ar" ? "جلسة جديدة" : "New Session"}
+            </button>
+          </>
         }
-        onPageChange={(nextPage) => updateListQuery({ page: nextPage })}
-        onPageSizeChange={(nextLimit) => updateListQuery({ limit: nextLimit, page: 1 })}
-        pageSizeOptions={PAGE_SIZE_OPTIONS}
-        emptyState={{
-          icon: <CalendarClock className="h-5 w-5 text-primary" />,
-          title: t("states.empty.heading"),
-          description: t("states.empty.note"),
-        }}
-        ariaLabel={t("header.title")}
-        caption={t("header.title")}
       />
+
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {metrics.map((metric) => (
+          <AdminMetricCard key={metric.label} {...metric} />
+        ))}
+      </div>
+
+      <AdminSectionCard
+        title={locale === "ar" ? "قائمة الجلسات" : "Sessions Directory"}
+        description={
+          locale === "ar"
+            ? "بحث وتشغيل الجلسات من لوحة واحدة."
+            : "Search and manage sessions from one operational board."
+        }
+      >
+        <div className="space-y-5">
+          <div className="rounded-[24px] border border-border-light bg-surface-secondary/45 p-3 sm:p-4">
+            <div className="flex flex-col gap-3 xl:grid xl:grid-cols-[minmax(0,1fr)_auto] xl:items-center xl:gap-4">
+              <AdminTableTabs
+                value={activeTab}
+                onChange={(nextValue) => {
+                  updateListQuery({
+                    status: nextValue === "ALL" ? null : nextValue,
+                    page: 1,
+                  });
+                }}
+                tabs={tabs}
+                className="w-full xl:justify-self-end"
+              />
+
+              <div className="w-full xl:max-w-[32rem] xl:justify-self-start">
+                <label className="relative block">
+                  <Search className="pointer-events-none absolute start-4 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
+                  <input
+                    type="search"
+                    value={query}
+                    onChange={(event) =>
+                      updateListQuery({
+                        query: event.target.value || null,
+                        page: 1,
+                      })
+                    }
+                    className="app-control w-full rounded-full bg-white px-4 py-3 ps-11 text-sm shadow-theme-xs"
+                    placeholder={
+                      locale === "ar"
+                        ? "ابحث باسم المستفيد أو المعالج أو رقم الجلسة..."
+                        : "Search by beneficiary name, practitioner name, or session ID..."
+                    }
+                    aria-label={locale === "ar" ? "بحث الجلسات" : "Search sessions"}
+                  />
+                </label>
+              </div>
+            </div>
+
+            <div className="mt-4 flex flex-wrap items-end gap-3">
+              <div className="inline-flex items-center gap-2 rounded-full border border-border-light bg-white px-3 py-2 text-sm text-text-primary shadow-theme-xs">
+                <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+                {locale === "ar" ? "الفلاتر" : "Filters"}
+              </div>
+
+              <label className="inline-flex items-center gap-2 rounded-full border border-border-light bg-white px-3 py-2 text-sm text-text-primary shadow-theme-xs">
+                <input
+                  type="checkbox"
+                  checked={lateOnly}
+                  onChange={(event) =>
+                    updateListQuery({
+                      late: event.target.checked ? "true" : null,
+                      page: 1,
+                    })
+                  }
+                  className="h-4 w-4 rounded border-border-light text-primary focus:ring-primary"
+                />
+                {locale === "ar" ? "الجلسات المتأخرة" : "Delayed sessions"}
+              </label>
+
+              <label className="inline-flex items-center gap-2 rounded-full border border-border-light bg-white px-3 py-2 text-sm text-text-primary shadow-theme-xs">
+                <input
+                  type="checkbox"
+                  checked={missingAttendanceOnly}
+                  onChange={(event) =>
+                    updateListQuery({
+                      missingAttendance: event.target.checked ? "true" : null,
+                      page: 1,
+                    })
+                  }
+                  className="h-4 w-4 rounded border-border-light text-primary focus:ring-primary"
+                />
+                {locale === "ar" ? "غياب الحضور" : "Missing attendance"}
+              </label>
+
+              <div className="min-w-[11rem] flex-1 sm:flex-[0_0_11rem]">
+                <span className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.16em] text-text-muted">
+                  {locale === "ar" ? "من" : "From"}
+                </span>
+                <DateTimeField
+                  value={scheduledFrom}
+                  onChange={(value) =>
+                    updateListQuery({
+                      scheduledFrom: value || null,
+                      page: 1,
+                    })
+                  }
+                />
+              </div>
+
+              <div className="min-w-[11rem] flex-1 sm:flex-[0_0_11rem]">
+                <span className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.16em] text-text-muted">
+                  {locale === "ar" ? "إلى" : "To"}
+                </span>
+                <DateTimeField
+                  value={scheduledTo}
+                  onChange={(value) =>
+                    updateListQuery({
+                      scheduledTo: value || null,
+                      page: 1,
+                    })
+                  }
+                />
+              </div>
+
+              <FilterClearButton
+                disabled={!hasFilters}
+                onClick={() =>
+                  updateListQuery({
+                    query: null,
+                    status: null,
+                    late: null,
+                    missingAttendance: null,
+                    scheduledFrom: null,
+                    scheduledTo: null,
+                    page: 1,
+                  })
+                }
+              />
+            </div>
+          </div>
+
+          <div className="overflow-hidden rounded-[28px] border border-border-light bg-white shadow-[0_18px_36px_-30px_rgba(34,52,56,0.18)]">
+            {sessions.isLoading || (searchMode && allSessionsQuery.isLoading) ? (
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[1040px]">
+                  <thead className="border-b border-border-light bg-surface-secondary/80">
+                    <tr>
+                      {[
+                        t("table.headers.scheduledStart"),
+                        t("table.headers.patient"),
+                        t("table.headers.practitioner"),
+                        t("table.headers.mode"),
+                        locale === "ar" ? "المدة" : "Duration",
+                        t("table.headers.status"),
+                        locale === "ar" ? "الإجراءات" : "Actions",
+                      ].map((header) => (
+                        <th
+                          key={header}
+                          className="px-4 py-4 text-start text-xs font-semibold uppercase tracking-[0.16em] text-text-muted sm:px-6"
+                        >
+                          {header}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border-light/80">
+                    {Array.from({ length: 6 }).map((_, rowIndex) => (
+                      <tr key={rowIndex}>
+                        {Array.from({ length: 7 }).map((__, colIndex) => (
+                          <td key={colIndex} className="px-4 py-4 sm:px-6">
+                            <div
+                              className="h-3.5 animate-pulse rounded-full bg-surface-tertiary"
+                              style={{ width: `${64 + ((rowIndex + colIndex) % 4) * 8}%` }}
+                            />
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : sessions.isError || (searchMode && allSessionsQuery.isError) ? (
+              <div className="flex min-h-[18rem] items-center justify-center px-6 py-10">
+                <div className="max-w-md text-center">
+                  <div className="mx-auto mb-4 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-error-50 text-error-700">
+                    <AlertTriangle className="h-5 w-5" />
+                  </div>
+                  <h3 className="text-xl font-semibold text-text-primary">{t("states.error.heading")}</h3>
+                  <p className="mt-2 text-sm leading-6 text-text-secondary">
+                    {searchMode
+                      ? locale === "ar"
+                        ? "تعذر تحميل كل الصفحات المطلوبة للبحث."
+                        : "Could not load all pages needed for search."
+                      : t("states.error.note")}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      sessions.refetch();
+                      if (searchMode) {
+                        allSessionsQuery.refetch();
+                      }
+                    }}
+                    className="mt-5 inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-primary/90"
+                  >
+                    <RefreshCw className="h-4 w-4" />
+                    {t("states.error.retry")}
+                  </button>
+                </div>
+              </div>
+            ) : pagedDisplayedItems.length === 0 ? (
+              <div className="flex min-h-[18rem] items-center justify-center px-6 py-10">
+                <div className="max-w-md text-center">
+                  <div className="mx-auto mb-4 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-light text-text-brand">
+                    <CalendarClock className="h-5 w-5" />
+                  </div>
+                  <h3 className="text-xl font-semibold text-text-primary">{t("states.empty.heading")}</h3>
+                  <p className="mt-2 text-sm leading-6 text-text-secondary">{t("states.empty.note")}</p>
+                </div>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[1040px]">
+                  <thead className="border-b border-border-light bg-surface-secondary/80">
+                    <tr>
+                      <th className="px-4 py-4 text-start text-xs font-semibold uppercase tracking-[0.16em] text-text-muted sm:px-6">
+                        {t("table.headers.scheduledStart")}
+                      </th>
+                      <th className="px-4 py-4 text-start text-xs font-semibold uppercase tracking-[0.16em] text-text-muted sm:px-6">
+                        {t("table.headers.patient")}
+                      </th>
+                      <th className="px-4 py-4 text-start text-xs font-semibold uppercase tracking-[0.16em] text-text-muted sm:px-6">
+                        {t("table.headers.practitioner")}
+                      </th>
+                      <th className="px-4 py-4 text-start text-xs font-semibold uppercase tracking-[0.16em] text-text-muted sm:px-6">
+                        {t("table.headers.mode")}
+                      </th>
+                      <th className="px-4 py-4 text-start text-xs font-semibold uppercase tracking-[0.16em] text-text-muted sm:px-6">
+                        {locale === "ar" ? "المدة" : "Duration"}
+                      </th>
+                      <th className="px-4 py-4 text-start text-xs font-semibold uppercase tracking-[0.16em] text-text-muted sm:px-6">
+                        {t("table.headers.status")}
+                      </th>
+                      <th className="px-4 py-4 text-end text-xs font-semibold uppercase tracking-[0.16em] text-text-muted sm:px-6">
+                        {locale === "ar" ? "الإجراءات" : "Actions"}
+                      </th>
+                    </tr>
+                  </thead>
+
+                  <tbody className="divide-y divide-border-light/80">
+                    {pagedDisplayedItems.map((row) => (
+                      <tr
+                        key={row.id}
+                        className={cn("group transition hover:bg-surface-secondary/55", getRowClass(row.status))}
+                        onClick={() => setSelectedSessionId(row.id)}
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter" || event.key === " ") {
+                            event.preventDefault();
+                            setSelectedSessionId(row.id);
+                          }
+                        }}
+                      >
+                        <td className="px-4 py-4 sm:px-6">
+                          <div className="min-w-[11rem] space-y-1">
+                            <p className="text-sm font-semibold text-text-primary">
+                              {formatDateTime(row.scheduledStartAt, locale)}
+                            </p>
+                            <p className="text-sm text-text-secondary">
+                              {formatTimeOnly(row.scheduledStartAt, locale)}
+                            </p>
+                            <p className="text-xs font-medium text-text-muted">{row.sessionCode}</p>
+                          </div>
+                        </td>
+
+                        <td className="px-4 py-4 sm:px-6">
+                          <div className="flex min-w-[12rem] items-center gap-3">
+                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-border-light bg-primary-light text-xs font-semibold text-text-brand">
+                              {getInitials(row.patient?.displayName)}
+                            </div>
+                            <div className="min-w-0">
+                              <p className="truncate text-sm font-semibold text-text-primary">
+                                {row.patient?.displayName ?? t("table.fallback.noName")}
+                              </p>
+                              <p className="truncate text-xs text-text-muted">
+                                {row.patient?.id ?? (locale === "ar" ? "غير متوفر" : "Unavailable")}
+                              </p>
+                            </div>
+                          </div>
+                        </td>
+
+                        <td className="px-4 py-4 sm:px-6">
+                          <div className="min-w-[12rem]">
+                            <p className="truncate text-sm font-semibold text-text-primary">
+                              {row.practitioner.displayName ?? t("table.fallback.noName")}
+                            </p>
+                            <p className="truncate text-xs text-text-muted">{row.practitioner.slug}</p>
+                          </div>
+                        </td>
+
+                        <td className="px-4 py-4 sm:px-6">
+                          <div className="space-y-1">
+                            <p className="text-sm font-semibold text-text-primary">{getModeLabel(row.sessionMode)}</p>
+                            <p className="text-xs text-text-muted">{getSessionModeDescription(row.sessionMode)}</p>
+                          </div>
+                        </td>
+
+                        <td className="px-4 py-4 sm:px-6">
+                          <p className="text-sm font-semibold text-text-primary">{row.durationMinutes} min</p>
+                        </td>
+
+                        <td className="px-4 py-4 sm:px-6">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <SessionStatusBadge status={row.status} />
+                            {row.isDelayed ? (
+                              <AdminStatusBadge tone="danger">
+                                {locale === "ar" ? "متأخرة" : "Delayed"}
+                              </AdminStatusBadge>
+                            ) : null}
+                          </div>
+                        </td>
+
+                        <td className="px-4 py-4 sm:px-6">
+                          <div className="flex items-center justify-end">
+                            <ActionIconButton
+                              intent="view"
+                              label={locale === "ar" ? "فتح المعاينة" : "Open runtime"}
+                              icon={<CalendarClock className="h-4 w-4" />}
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                router.push(`/admin/sessions/runtime-inspection?sessionId=${row.id}` as never);
+                              }}
+                            />
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {!sessions.isLoading && !sessions.isError && (data || searchMode) ? (
+              <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border-light px-4 py-4 sm:px-6">
+                <p className="text-sm text-text-secondary">
+                  {locale === "ar"
+                    ? `عرض ${summaryStart} إلى ${summaryEnd} من ${paginationTotal}`
+                    : `Showing ${summaryStart} to ${summaryEnd} of ${paginationTotal}`}
+                </p>
+                {paginationTotalPages > 1 ? (
+                  <Pagination
+                    currentPage={activePage}
+                    totalPages={paginationTotalPages}
+                    onPageChange={(nextPage) => updateListQuery({ page: nextPage })}
+                  />
+                ) : null}
+              </div>
+            ) : null}
+          </div>
+        </div>
+      </AdminSectionCard>
 
       <Drawer
         isOpen={Boolean(selectedSessionId)}
         onClose={() => setSelectedSessionId(null)}
-        side={locale === "ar" ? "left" : "right"}
+        side="right"
+        className="max-w-[42rem]"
       >
         <ModalHeader
-          title={t("drawer.title")}
+          eyebrow={locale === "ar" ? "تفاصيل الجلسة" : "Session details"}
+          title={
+            selectedSession
+              ? `${selectedSession.patient?.displayName ?? t("table.fallback.noName")} · ${selectedSession.sessionCode}`
+              : locale === "ar"
+                ? "تفاصيل الجلسة"
+                : "Session details"
+          }
           description={
             selectedSession
-              ? t("drawer.description", {
-                  code: selectedSession.sessionCode,
-                  id: selectedSession.id,
-                })
+              ? `${formatDateTime(selectedSession.scheduledStartAt, locale)} · ${selectedSession.practitioner.displayName ?? selectedSession.practitioner.slug}`
               : undefined
           }
         />
-        <ModalBody>
-          <div className="space-y-4">
-            {runtime.isLoading || attendance.isLoading ? (
-              <p className="text-sm text-text-secondary">{t("drawer.loading")}</p>
-            ) : runtime.isError || attendance.isError ? (
-              <div className="rounded-2xl border border-danger-200 bg-danger-50 px-4 py-3 text-sm text-danger-700 dark:border-danger-500/30 dark:bg-danger-500/10 dark:text-danger-300">
-                <p>{t("drawer.error")}</p>
-              </div>
-            ) : runtime.data ? (
-              <>
-                <div className="rounded-2xl border border-border-light bg-surface-secondary px-4 py-3 dark:bg-white/5">
-                  <h3 className="text-sm font-semibold text-text-primary dark:text-white/95">
-                    {t("drawer.runtimeHeading")}
-                  </h3>
-                  <dl className="mt-3 grid gap-2 text-sm text-text-secondary">
-                    <div className="flex items-center justify-between gap-4">
-                      <dt>{t("drawer.fields.status")}</dt>
-                      <dd>
-                        {tAdminArea(
-                          `payments.sessionStatuses.${runtime.data.item.status}` as Parameters<
-                            typeof tAdminArea
-                          >[0],
-                        )}
-                      </dd>
-                    </div>
-                    <div className="flex items-center justify-between gap-4">
-                      <dt>{t("drawer.fields.scheduledStart")}</dt>
-                      <dd>
-                        {formatDateTime(
-                          runtime.data.item.scheduledStartAt,
-                          locale,
-                          t("table.fallback.none"),
-                        )}
-                      </dd>
-                    </div>
-                    <div className="flex items-center justify-between gap-4">
-                      <dt>{t("drawer.fields.scheduledEnd")}</dt>
-                      <dd>
-                        {formatDateTime(
-                          runtime.data.item.scheduledEndAt,
-                          locale,
-                          t("table.fallback.none"),
-                        )}
-                      </dd>
-                    </div>
-                  </dl>
+        <ModalBody className="space-y-5 overflow-y-auto">
+          {selectedSession ? (
+            <>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="rounded-[22px] border border-border-light bg-surface-secondary/60 p-4">
+                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
+                    {locale === "ar" ? "الحالة" : "Status"}
+                  </p>
+                  <div className="mt-2 flex flex-wrap items-center gap-2">
+                    <SessionStatusBadge status={selectedSession.status} />
+                    {selectedSession.isDelayed ? (
+                      <AdminStatusBadge tone="danger">
+                        {locale === "ar" ? "متأخرة" : "Delayed"}
+                      </AdminStatusBadge>
+                    ) : null}
+                  </div>
                 </div>
 
-                <div className="rounded-2xl border border-border-light bg-surface-secondary px-4 py-3 dark:bg-white/5">
-                  <h3 className="text-sm font-semibold text-text-primary dark:text-white/95">
-                    {t("drawer.attendanceHeading")}
-                  </h3>
-                  {attendanceSummary ? (
-                    <dl className="mt-3 grid gap-2 text-sm text-text-secondary">
-                      <div className="flex items-center justify-between gap-4">
-                        <dt>{t("drawer.fields.patientJoined")}</dt>
-                        <dd>
-                          {attendanceSummary.patientHasJoined
-                            ? t("drawer.values.yes")
-                            : t("drawer.values.no")}
-                        </dd>
+                <div className="rounded-[22px] border border-border-light bg-surface-secondary/60 p-4">
+                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
+                    {locale === "ar" ? "النوع" : "Mode"}
+                  </p>
+                  <p className="mt-2 text-sm font-semibold text-text-primary">
+                    {getModeLabel(selectedSession.sessionMode)}
+                  </p>
+                  <p className="text-sm text-text-secondary">
+                    {getSessionModeDescription(selectedSession.sessionMode)}
+                  </p>
+                </div>
+
+                <div className="rounded-[22px] border border-border-light bg-white p-4 shadow-theme-xs">
+                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
+                    {locale === "ar" ? "المستفيد" : "Beneficiary"}
+                  </p>
+                  <p className="mt-2 text-sm font-semibold text-text-primary">
+                    {selectedSession.patient?.displayName ?? t("table.fallback.noName")}
+                  </p>
+                  <p className="text-sm text-text-secondary">
+                    {selectedSession.patient?.id ?? (locale === "ar" ? "غير متوفر" : "Unavailable")}
+                  </p>
+                </div>
+
+                <div className="rounded-[22px] border border-border-light bg-white p-4 shadow-theme-xs">
+                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
+                    {locale === "ar" ? "المعالج" : "Practitioner"}
+                  </p>
+                  <p className="mt-2 text-sm font-semibold text-text-primary">
+                    {selectedSession.practitioner.displayName ?? t("table.fallback.noName")}
+                  </p>
+                  <p className="text-sm text-text-secondary">{selectedSession.practitioner.slug}</p>
+                </div>
+              </div>
+
+              <div className="rounded-[24px] border border-border-light bg-white p-4 shadow-theme-xs">
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
+                      {locale === "ar" ? "الموعد" : "Scheduled"}
+                    </p>
+                    <p className="mt-2 text-sm font-semibold text-text-primary">
+                      {formatDateTime(selectedSession.scheduledStartAt, locale)}
+                    </p>
+                    <p className="text-sm text-text-secondary">
+                      {selectedSession.scheduledEndAt
+                        ? `${locale === "ar" ? "ينتهي" : "Ends"} ${formatTimeOnly(selectedSession.scheduledEndAt, locale)}`
+                        : "-"}
+                    </p>
+                  </div>
+
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
+                      {locale === "ar" ? "المدة" : "Duration"}
+                    </p>
+                    <p className="mt-2 text-sm font-semibold text-text-primary">
+                      {selectedSession.durationMinutes} min
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-[24px] border border-border-light bg-surface-secondary/50 p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
+                      {locale === "ar" ? "فحص وقت التشغيل" : "Runtime inspection"}
+                    </p>
+                    <p className="text-sm text-text-secondary">
+                      {locale === "ar"
+                        ? "البيانات الحالية من نافذة التشخيص."
+                        : "Live data from the runtime inspection endpoint."}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      router.push(
+                        `/admin/sessions/runtime-inspection?sessionId=${selectedSession.id}` as never,
+                      )
+                    }
+                    className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary/90"
+                  >
+                    <CalendarClock className="h-4 w-4" />
+                    {locale === "ar" ? "فتح الصفحة" : "Open page"}
+                  </button>
+                </div>
+
+                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                  <div className="rounded-[20px] border border-border-light bg-white p-4">
+                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
+                      {locale === "ar" ? "المزوّد" : "Provider"}
+                    </p>
+                    <p className="mt-2 text-sm font-semibold text-text-primary">{runtimeItem?.provider ?? "-"}</p>
+                  </div>
+
+                  <div className="rounded-[20px] border border-border-light bg-white p-4">
+                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
+                      {locale === "ar" ? "يمكن الانضمام" : "Can join"}
+                    </p>
+                    <p className="mt-2 text-sm font-semibold text-text-primary">
+                      {runtimeItem ? (runtimeItem.canJoin ? "Yes" : "No") : "-"}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-[24px] border border-border-light bg-white p-4 shadow-theme-xs">
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
+                  {locale === "ar" ? "الحضور" : "Attendance"}
+                </p>
+
+                <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                  <div className="rounded-[20px] border border-border-light bg-surface-secondary/60 p-4">
+                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
+                      {locale === "ar" ? "المريض انضم" : "Patient joined"}
+                    </p>
+                    <p className="mt-2 text-sm font-semibold text-text-primary">
+                      {attendanceData ? (attendanceData.summary.patientHasJoined ? "Yes" : "No") : "-"}
+                    </p>
+                    <p className="text-sm text-text-secondary">
+                      {attendanceData?.summary.patientJoinedAt
+                        ? formatDateTime(attendanceData.summary.patientJoinedAt, locale)
+                        : "-"}
+                    </p>
+                  </div>
+
+                  <div className="rounded-[20px] border border-border-light bg-surface-secondary/60 p-4">
+                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
+                      {locale === "ar" ? "المعالج انضم" : "Practitioner joined"}
+                    </p>
+                    <p className="mt-2 text-sm font-semibold text-text-primary">
+                      {attendanceData ? (attendanceData.summary.practitionerHasJoined ? "Yes" : "No") : "-"}
+                    </p>
+                    <p className="text-sm text-text-secondary">
+                      {attendanceData?.summary.practitionerJoinedAt
+                        ? formatDateTime(attendanceData.summary.practitionerJoinedAt, locale)
+                        : "-"}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mt-4 space-y-3">
+                  {attendanceData?.timeline?.length ? (
+                    attendanceData.timeline.map((item) => (
+                      <div
+                        key={item.id}
+                        className="rounded-[20px] border border-border-light bg-surface-secondary/40 p-4"
+                      >
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <p className="text-sm font-semibold text-text-primary">
+                            {item.attendanceEventType} · {item.participantRole}
+                          </p>
+                          <p className="text-xs text-text-muted">{formatDateTime(item.occurredAt, locale)}</p>
+                        </div>
+                        <p className="mt-2 text-sm text-text-secondary">
+                          {item.providerEventType}
+                          {item.providerEventRef ? ` · ${item.providerEventRef}` : ""}
+                        </p>
                       </div>
-                      <div className="flex items-center justify-between gap-4">
-                        <dt>{t("drawer.fields.practitionerJoined")}</dt>
-                        <dd>
-                          {attendanceSummary.practitionerHasJoined
-                            ? t("drawer.values.yes")
-                            : t("drawer.values.no")}
-                        </dd>
-                      </div>
-                      <div className="flex items-center justify-between gap-4">
-                        <dt>{t("drawer.fields.firstJoinedAt")}</dt>
-                        <dd>
-                          {formatDateTime(
-                            attendanceSummary.firstJoinedAt,
-                            locale,
-                            t("table.fallback.none"),
-                          )}
-                        </dd>
-                      </div>
-                      <div className="flex items-center justify-between gap-4">
-                        <dt>{t("drawer.fields.lastLeftAt")}</dt>
-                        <dd>
-                          {formatDateTime(
-                            attendanceSummary.lastLeftAt,
-                            locale,
-                            t("table.fallback.none"),
-                          )}
-                        </dd>
-                      </div>
-                    </dl>
+                    ))
                   ) : (
-                    <p className="mt-3 text-sm text-text-secondary">
-                      {t("drawer.noAttendance")}
+                    <p className="text-sm text-text-secondary">
+                      {locale === "ar" ? "لا توجد بيانات حضور حالياً." : "No attendance records yet."}
                     </p>
                   )}
                 </div>
-
-                {selectedSessionId ? (
-                  <Link
-                    href={`/admin/sessions/runtime-inspection?sessionId=${selectedSessionId}` as never}
-                    className="inline-flex items-center rounded-xl bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary/90"
-                  >
-                    {t("drawer.openFullRuntime")}
-                  </Link>
-                ) : null}
-              </>
-            ) : (
-              <p className="text-sm text-text-secondary">{t("drawer.empty")}</p>
-            )}
-          </div>
+              </div>
+            </>
+          ) : (
+            <div className="rounded-[24px] border border-border-light bg-surface-secondary/50 p-6 text-sm text-text-secondary">
+              {locale === "ar" ? "جاري تحميل تفاصيل الجلسة..." : "Loading session details..."}
+            </div>
+          )}
         </ModalBody>
       </Drawer>
-
-      <CollapsibleHelpCenter
-        title={t("header.eyebrow")}
-        summary={t("header.note")}
-        sections={[
-          {
-            heading: t("scope.heading"),
-            items: [
-              t("scope.items.statuses"),
-              t("scope.items.delayedFilter"),
-              t("scope.items.runtimeLink"),
-            ],
-          },
-          {
-            heading: t("boundaries.heading"),
-            items: [
-              t("boundaries.items.visibilityOnly"),
-              t("boundaries.items.noAlerts"),
-              t("boundaries.items.noRealtime"),
-            ],
-          },
-        ]}
-      />
-    </AdminOperationalListShell>
+    </div>
   );
 }

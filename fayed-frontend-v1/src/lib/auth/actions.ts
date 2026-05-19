@@ -12,6 +12,7 @@ import {
   type RegisterData,
 } from "./server";
 import { AUTH_ENDPOINTS } from "./constants";
+import { requestSensitiveCacheClear } from "@/lib/security/sensitive-cache";
 
 export interface ActionResult<T = void> {
   success: boolean;
@@ -176,7 +177,12 @@ export async function loginAction(
       },
     };
   } catch (error) {
-    console.error("[Auth] Login error:", error);
+    if (process.env.NODE_ENV === "development") {
+      console.error("[Auth] Login error:", {
+        name: error instanceof Error ? error.name : "UnknownError",
+        message: error instanceof Error ? error.message : String(error),
+      });
+    }
     return {
       success: false,
       error: "An error occurred during login",
@@ -222,7 +228,12 @@ export async function registerAction(
       },
     };
   } catch (error) {
-    console.error("[Auth] Register error:", error);
+    if (process.env.NODE_ENV === "development") {
+      console.error("[Auth] Register error:", {
+        name: error instanceof Error ? error.name : "UnknownError",
+        message: error instanceof Error ? error.message : String(error),
+      });
+    }
     return {
       success: false,
       error: "An error occurred during registration",
@@ -249,12 +260,19 @@ export async function logoutAction(): Promise<ActionResult> {
     }
 
     await clearAuthCookies();
+    requestSensitiveCacheClear("logout");
     revalidatePath("/", "layout");
 
     return { success: true };
   } catch (error) {
-    console.error("[Auth] Logout error:", error);
+    if (process.env.NODE_ENV === "development") {
+      console.error("[Auth] Logout error:", {
+        name: error instanceof Error ? error.name : "UnknownError",
+        message: error instanceof Error ? error.message : String(error),
+      });
+    }
     await clearAuthCookies();
+    requestSensitiveCacheClear("logout");
     return { success: true };
   }
 }
@@ -287,7 +305,12 @@ export async function getCurrentUserAction(): Promise<
       },
     };
   } catch (error) {
-    console.error("[Auth] Get current user error:", error);
+    if (process.env.NODE_ENV === "development") {
+      console.error("[Auth] Get current user error:", {
+        name: error instanceof Error ? error.name : "UnknownError",
+        message: error instanceof Error ? error.message : String(error),
+      });
+    }
     return {
       success: false,
       error: "Failed to fetch user data",

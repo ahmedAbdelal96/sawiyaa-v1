@@ -191,7 +191,8 @@ export class UpdatePractitionerProfileUseCase {
 
         if (missingRequirements.length > 0) {
           throw new BadRequestException({
-            messageKey: 'practitioners.errors.packageAvailabilityRequirementsNotMet',
+            messageKey:
+              'practitioners.errors.packageAvailabilityRequirementsNotMet',
             error: 'PRACTITIONER_PACKAGE_AVAILABILITY_REQUIREMENTS_NOT_MET',
             details: {
               missingRequirements,

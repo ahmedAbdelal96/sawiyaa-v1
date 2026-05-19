@@ -3,9 +3,7 @@ import { PaymobCheckoutFlowValue } from '@modules/payments/types/paymob-payment.
 
 export type PaymentGatewayControlProvider = PaymentProvider;
 
-export type PaymentGatewayControlManagedProvider =
-  | 'PAYMOB'
-  | 'STRIPE';
+export type PaymentGatewayControlManagedProvider = 'PAYMOB' | 'STRIPE';
 
 export type PaymentGatewayControlRoutingProvider =
   PaymentGatewayControlManagedProvider;

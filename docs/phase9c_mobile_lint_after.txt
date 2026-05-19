@@ -1,0 +1,146 @@
+﻿
+> fayed-mobile@1.0.0 lint
+> eslint .
+
+
+D:\Web\full-projects\fayed\fayed-mobile\__tests__\auth\secure-token-storage.test.ts
+  20:1  warning  Import in body of module; reorder to top  import/first
+
+D:\Web\full-projects\fayed\fayed-mobile\app\(auth)\signup\practitioner.tsx
+  26:27  warning  Array type using 'Array<T>' is forbidden. Use 'T[]' instead  @typescript-eslint/array-type
+
+D:\Web\full-projects\fayed\fayed-mobile\app\(patient)\_layout.tsx
+  22:9  warning  'isRTL' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+D:\Web\full-projects\fayed\fayed-mobile\app\(patient)\assessments\index.tsx
+  76:9  warning  The 'assessmentItems' logical expression could make the dependencies of useMemo Hook (at line 125) change on every render. To fix this, wrap the initialization of 'assessmentItems' in its own useMemo() Hook                                  react-hooks/exhaustive-deps
+  76:9  warning  The 'assessmentItems' logical expression could make the dependencies of useMemo Hook (at line 141) change on every render. To fix this, wrap the initialization of 'assessmentItems' in its own useMemo() Hook                                  react-hooks/exhaustive-deps
+  77:9  warning  The 'historyItems' logical expression could make the dependencies of useMemo Hook (at line 80) change on every render. Move it inside the useMemo callback. Alternatively, wrap the initialization of 'historyItems' in its own useMemo() Hook  react-hooks/exhaustive-deps
+
+D:\Web\full-projects\fayed\fayed-mobile\app\(patient)\assessments\submissions\[submissionId].tsx
+  19:10  warning  'bandColor' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+D:\Web\full-projects\fayed\fayed-mobile\app\(patient)\care-chat\[id].tsx
+  32:9  warning  'router' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+D:\Web\full-projects\fayed\fayed-mobile\app\(patient)\care-chat\new.tsx
+  2:40  warning  'TouchableOpacity' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+D:\Web\full-projects\fayed\fayed-mobile\app\(patient)\discovery\[slug].tsx
+  192:6  warning  React Hook useEffect has a missing dependency: 'practitioner'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+D:\Web\full-projects\fayed\fayed-mobile\app\(patient)\discovery\filters.tsx
+  379:12  warning  Array type using 'Array<T>' is forbidden. Use 'T[]' instead  @typescript-eslint/array-type
+  429:12  warning  Array type using 'Array<T>' is forbidden. Use 'T[]' instead  @typescript-eslint/array-type
+
+D:\Web\full-projects\fayed\fayed-mobile\app\(patient)\matching\intro.tsx
+  6:10  warning  'Ionicons' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+D:\Web\full-projects\fayed\fayed-mobile\app\(patient)\payments.tsx
+  26:3  warning  'CustomerWalletEntryType' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  28:3  warning  'PaymentProvider' is defined but never used. Allowed unused vars must match /^_/u          @typescript-eslint/no-unused-vars
+
+D:\Web\full-projects\fayed\fayed-mobile\app\(patient)\payments\transactions.tsx
+    2:34  warning  'TouchableOpacity' is defined but never used. Allowed unused vars must match /^_/u                                                                                                                    @typescript-eslint/no-unused-vars
+  127:9   warning  'locale' is assigned a value but never used. Allowed unused vars must match /^_/u                                                                                                                     @typescript-eslint/no-unused-vars
+  211:9   warning  'router' is assigned a value but never used. Allowed unused vars must match /^_/u                                                                                                                     @typescript-eslint/no-unused-vars
+  221:9   warning  The 'allEntries' logical expression could make the dependencies of useMemo Hook (at line 225) change on every render. To fix this, wrap the initialization of 'allEntries' in its own useMemo() Hook  react-hooks/exhaustive-deps
+
+D:\Web\full-projects\fayed\fayed-mobile\app\(patient)\profile-notifications.tsx
+  37:5  warning  Array type using 'Array<T>' is forbidden. Use 'T[]' instead  @typescript-eslint/array-type
+
+D:\Web\full-projects\fayed\fayed-mobile\app\(patient)\sessions.tsx
+   49:7  warning  'RECENT_STATUSES' is assigned a value but never used. Allowed unused vars must match /^_/u                          @typescript-eslint/no-unused-vars
+  101:6  warning  React Hook useCallback has a missing dependency: 'sessionsQuery'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+D:\Web\full-projects\fayed\fayed-mobile\app\(patient)\sessions\[id].tsx
+  21:3  warning  'SessionJoinBlockedReason' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+D:\Web\full-projects\fayed\fayed-mobile\app\(patient)\sessions\[id]\pay.tsx
+  128:14  warning  Array type using 'Array<T>' is forbidden. Use 'T[]' instead  @typescript-eslint/array-type
+
+D:\Web\full-projects\fayed\fayed-mobile\app\(patient)\sessions\select-time.tsx
+   37:10  warning  'selectedSlotMaxDuration' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  386:10  warning  Array type using 'Array<T>' is forbidden. Use 'T[]' instead                                         @typescript-eslint/array-type
+
+D:\Web\full-projects\fayed\fayed-mobile\app\(patient)\support\[id].tsx
+  17:3  warning  'Card' is defined but never used. Allowed unused vars must match /^_/u            @typescript-eslint/no-unused-vars
+  21:3  warning  'Button' is defined but never used. Allowed unused vars must match /^_/u          @typescript-eslint/no-unused-vars
+  64:9  warning  'isRtl' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+D:\Web\full-projects\fayed\fayed-mobile\app\(patient)\support\index.tsx
+  15:3  warning  'StatusBadge' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+D:\Web\full-projects\fayed\fayed-mobile\app\(practitioner)\account.tsx
+  685:12  warning  Array type using 'Array<T>' is forbidden. Use 'T[]' instead  @typescript-eslint/array-type
+
+D:\Web\full-projects\fayed\fayed-mobile\app\(practitioner)\availability\index.tsx
+  1173:41  warning  'locale' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+
+D:\Web\full-projects\fayed\fayed-mobile\app\(practitioner)\care-chat\[id].tsx
+  32:9  warning  'router' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+D:\Web\full-projects\fayed\fayed-mobile\app\(practitioner)\onboarding.tsx
+   10:10  warning  'Ionicons' is defined but never used. Allowed unused vars must match /^_/u                                                                                                                                                                               @typescript-eslint/no-unused-vars
+   44:3   warning  'UploadPractitionerCredentialRequest' is defined but never used. Allowed unused vars must match /^_/u                                                                                                                                                    @typescript-eslint/no-unused-vars
+  143:9   warning  The 'specialtyItems' logical expression could make the dependencies of useEffect Hook (at line 215) change on every render. Move it inside the useEffect callback. Alternatively, wrap the initialization of 'specialtyItems' in its own useMemo() Hook  react-hooks/exhaustive-deps
+  146:9   warning  The 'catalogCategories' logical expression could make the dependencies of useEffect Hook (at line 215) change on every render. To fix this, wrap the initialization of 'catalogCategories' in its own useMemo() Hook                                     react-hooks/exhaustive-deps
+  147:9   warning  The 'catalogSpecialties' logical expression could make the dependencies of useEffect Hook (at line 215) change on every render. To fix this, wrap the initialization of 'catalogSpecialties' in its own useMemo() Hook                                   react-hooks/exhaustive-deps
+  147:9   warning  The 'catalogSpecialties' logical expression could make the dependencies of useMemo Hook (at line 225) change on every render. To fix this, wrap the initialization of 'catalogSpecialties' in its own useMemo() Hook                                     react-hooks/exhaustive-deps
+  147:9   warning  The 'catalogSpecialties' logical expression could make the dependencies of useMemo Hook (at line 231) change on every render. To fix this, wrap the initialization of 'catalogSpecialties' in its own useMemo() Hook                                     react-hooks/exhaustive-deps
+  197:6   warning  React Hook useEffect has missing dependencies: 'pricing.session30.egp', 'pricing.session30.usd', 'pricing.session60.egp', and 'pricing.session60.usd'. Either include them or remove the dependency array                                                react-hooks/exhaustive-deps
+
+D:\Web\full-projects\fayed\fayed-mobile\app\(practitioner)\sessions\[id].tsx
+  99:6  warning  React Hook useEffect has missing dependencies: 'resolveJoinContract' and 'session'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+D:\Web\full-projects\fayed\fayed-mobile\app\(practitioner)\sessions\index.tsx
+   48:7  warning  'RECENT_STATUSES' is assigned a value but never used. Allowed unused vars must match /^_/u                          @typescript-eslint/no-unused-vars
+  109:6  warning  React Hook useCallback has a missing dependency: 'sessionsQuery'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+D:\Web\full-projects\fayed\fayed-mobile\src\components\ui\SharedPrimitives.tsx
+  175:11  warning  'theme' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+D:\Web\full-projects\fayed\fayed-mobile\src\features\messages\components\MessagesInboxScreen.tsx
+  65:9  warning  'isRTL' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+D:\Web\full-projects\fayed\fayed-mobile\src\features\messages\types.ts
+  161:17  warning  Array type using 'Array<T>' is forbidden. Use 'T[]' instead  @typescript-eslint/array-type
+
+D:\Web\full-projects\fayed\fayed-mobile\src\features\patient\academy\components\AcademyBrowseScreen.tsx
+   56:10  warning  'splitCourseContent' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  169:9   warning  'router' is assigned a value but never used. Allowed unused vars must match /^_/u     @typescript-eslint/no-unused-vars
+
+D:\Web\full-projects\fayed\fayed-mobile\src\features\patient\academy\components\AcademyEnrollmentDetailScreen.tsx
+  48:14  warning  'i18n' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+D:\Web\full-projects\fayed\fayed-mobile\src\features\patient\package-plans\api.ts
+  6:3  warning  'PackagePlanQuotedItem' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+D:\Web\full-projects\fayed\fayed-mobile\src\features\patient\package-plans\components\PackagePurchaseCreateScreen.tsx
+  2:17  warning  'ScrollView' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+D:\Web\full-projects\fayed\fayed-mobile\src\features\patient\package-plans\components\PackagePurchaseDetailScreen.tsx
+  2:10  warning  'Linking' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+D:\Web\full-projects\fayed\fayed-mobile\src\features\patient\package-plans\components\PackagePurchasePayScreen.tsx
+   2:19  warning  'ScrollView' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+   5:10  warning  'Ionicons' is defined but never used. Allowed unused vars must match /^_/u    @typescript-eslint/no-unused-vars
+  10:3   warning  'EmptyState' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+D:\Web\full-projects\fayed\fayed-mobile\src\features\patient\sessions\slot-utils.ts
+  78:3  warning  'splitByTimeOfDay' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+D:\Web\full-projects\fayed\fayed-mobile\src\features\practitioner\availability\types.ts
+  35:10  warning  Array type using 'Array<T>' is forbidden. Use 'T[]' instead  @typescript-eslint/array-type
+
+D:\Web\full-projects\fayed\fayed-mobile\src\features\practitioner\onboarding\types.ts
+  63:15  warning  Array type using 'Array<T>' is forbidden. Use 'T[]' instead  @typescript-eslint/array-type
+  71:16  warning  Array type using 'Array<T>' is forbidden. Use 'T[]' instead  @typescript-eslint/array-type
+
+D:\Web\full-projects\fayed\fayed-mobile\src\providers\AuthProvider.tsx
+  221:5  warning  React Hook useCallback has a missing dependency: 'clearAuthenticatedState'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  427:6  warning  React Hook useEffect has a missing dependency: 'clearAuthenticatedState'. Either include it or remove the dependency array    react-hooks/exhaustive-deps
+
+✖ 62 problems (0 errors, 62 warnings)
+  0 errors and 12 warnings potentially fixable with the `--fix` option.
+

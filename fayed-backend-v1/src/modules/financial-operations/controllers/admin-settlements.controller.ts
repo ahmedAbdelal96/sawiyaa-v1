@@ -66,6 +66,7 @@ import { MarkSettlementPaidUseCase } from '../use-cases/mark-settlement-paid.use
 import { RecordPractitionerSettlementPayoutUseCase } from '../use-cases/record-practitioner-settlement-payout.use-case';
 import { SecurityAuditService } from '@common/security-audit/security-audit.service';
 import { SecurityAuditOutcome } from '@prisma/client';
+import { RequireStepUp } from '@common/decorators/step-up.decorator';
 
 @ApiTags('Admin - Settlements')
 @ApiBearerAuth()
@@ -89,6 +90,7 @@ export class AdminSettlementsController {
   ) {}
 
   @Post('generate')
+  @RequireStepUp('finance.settlement.generate')
   @ApiOperation({
     summary: 'Generate legacy settlement batch',
     description:
@@ -237,6 +239,7 @@ export class AdminSettlementsController {
   }
 
   @Post(':id/mark-paid')
+  @RequireStepUp('finance.settlement.mark-paid')
   @ApiOperation({
     summary: 'Mark legacy settlement batch as paid',
     description:
@@ -332,6 +335,7 @@ export class AdminSettlementsController {
   }
 
   @Post(':id/mark-failed')
+  @RequireStepUp('finance.settlement.mark-failed')
   @ApiOperation({
     summary: 'Mark legacy settlement batch as failed',
     description:

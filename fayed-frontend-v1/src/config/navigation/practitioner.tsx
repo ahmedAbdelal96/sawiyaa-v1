@@ -36,6 +36,7 @@ export const practitionerNavigation: NavigationConfig = [
     items: [
       { key: "wallet", icon: <NavigationIcons.wallet />, path: "/wallet" },
       { key: "ledger", icon: <NavigationIcons.ledger />, path: "/ledger" },
+      { key: "promoCodes", icon: <NavigationIcons.promoCodes />, path: "/promo-codes" },
       { key: "settlements", icon: <NavigationIcons.settlements />, path: "/settlements" },
     ],
   },

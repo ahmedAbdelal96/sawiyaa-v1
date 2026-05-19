@@ -320,7 +320,7 @@ function SessionsLoadingState({ locale }: { locale: string }) {
       <SessionsTableSkeleton />
 
       <p className={`text-sm text-text-secondary ${isRtl ? "text-right" : ""}`}>
-        {isRtl ? "Ø¬Ø§Ø±Ù ØªØ¬Ù‡ÙŠØ² Ø¬Ù„Ø³Ø§ØªÙƒ..." : "Preparing your sessions..."}
+        {isRtl ? "جارٍ تجهيز جلساتك..." : "Preparing your sessions..."}
       </p>
     </div>
   );
@@ -334,7 +334,7 @@ function SessionsEmptyState({ locale }: { locale: string }) {
       className="inline-flex items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-3 text-sm font-semibold text-white shadow-[0_14px_28px_-18px_rgba(68,161,148,0.4)] transition hover:bg-primary-hover"
     >
       <Sparkles size={16} />
-      {locale === "ar" ? "Ø§Ø¨Ø¯Ø£ Ø§Ù„Ø­Ø¬Ø²" : "Start booking"}
+      {locale === "ar" ? "ابدأ الحجز" : "Start booking"}
     </Link>
   );
 
@@ -342,40 +342,40 @@ function SessionsEmptyState({ locale }: { locale: string }) {
     <div className="space-y-5">
       <SurfaceCard as="section" variant="page" className="overflow-hidden">
         <SurfaceHeader
-          eyebrow={locale === "ar" ? "Ø¬Ø¯ÙˆÙ„ Ø§Ù„Ø¬Ù„Ø³Ø§Øª" : "Session dashboard"}
-          title={locale === "ar" ? "Ù„Ø§ ØªÙˆØ¬Ø¯ Ø¬Ù„Ø³Ø§Øª Ø¨Ø¹Ø¯" : "No sessions yet"}
+          eyebrow={locale === "ar" ? "جدول الجلسات" : "Session dashboard"}
+          title={locale === "ar" ? "لا توجد جلسات بعد" : "No sessions yet"}
           description={
             locale === "ar"
-              ? "Ø§Ø¨Ø¯Ø£ Ø¬Ù„Ø³Ø© Ø¬Ø¯ÙŠØ¯Ø© Ø£Ùˆ Ø§Ø¨Ø­Ø« Ø¹Ù† Ù…Ø®ØªØµ Ù…Ù†Ø§Ø³Ø¨ØŒ ÙˆØ³ØªØ¨Ø¯Ø£ Ù‡Ù†Ø§ Ø¨ØªØ³Ù„Ø³Ù„ ÙˆØ§Ø¶Ø­ Ø¨Ø§Ù„Ø¬Ù„Ø³Ø§Øª ÙˆØ§Ù„Ø§Ø±Ø´ÙŠÙ."
+              ? "ابدأ جلسة جديدة أو ابحث عن مختص مناسب، وستبدأ هنا بتسلسل واضح بالجلسات والارشيف."
               : "Book your first session or find the right practitioner, and your timeline will appear here."
           }
           meta={
             <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
               <SurfaceStatCard
-                label={locale === "ar" ? "Ø§Ù„Ø¥Ø¬Ù…Ø§Ù„ÙŠ" : "Total"}
+                label={locale === "ar" ? "الإجمالي" : "Total"}
                 value="0"
-                hint={locale === "ar" ? "Ù„Ø§ ÙŠÙˆØ¬Ø¯ Ø§ÙŠ Ø¬Ù„Ø³Ø§Øª Ù…Ø¨ÙƒØ±Ø©" : "No bookings yet."}
+                hint={locale === "ar" ? "لا يوجد اي جلسات مبكرة" : "No bookings yet."}
                 tone="neutral"
                 icon={<CalendarDays className="h-4 w-4" />}
               />
               <SurfaceStatCard
-                label={locale === "ar" ? "Ø¨Ø­Ø§Ø¬Ø© Ø¥Ø¬Ø±Ø§Ø¡" : "Needs action"}
+                label={locale === "ar" ? "بحاجة إجراء" : "Needs action"}
                 value="0"
-                hint={locale === "ar" ? "Ù„Ø§ ÙŠÙˆØ¬Ø¯ Ø£ÙŠ Ø³Ø¯Ø§Ø¯ Ù‚Ø§Ø¦Ù…" : "Nothing pending."}
+                hint={locale === "ar" ? "لا يوجد أي سداد قائم" : "Nothing pending."}
                 tone="warning"
                 icon={<AlertCircle className="h-4 w-4" />}
               />
               <SurfaceStatCard
-                label={locale === "ar" ? "Ù†Ø´Ø·Ø©" : "Active"}
+                label={locale === "ar" ? "نشطة" : "Active"}
                 value="0"
-                hint={locale === "ar" ? "Ø³ØªØ¸Ù‡Ø± Ù‡Ù†Ø§ Ø§Ù„Ø¬Ù„Ø³Ø§Øª Ø§Ù„Ù…Ø¤ÙƒØ¯Ø©" : "Confirmed sessions will appear here."}
+                hint={locale === "ar" ? "ستظهر هنا الجلسات المؤكدة" : "Confirmed sessions will appear here."}
                 tone="success"
                 icon={<CheckCircle2 className="h-4 w-4" />}
               />
               <SurfaceStatCard
-                label={locale === "ar" ? "Ø§Ù„Ø£Ø±Ø´ÙŠÙ" : "Archive"}
+                label={locale === "ar" ? "الأرشيف" : "Archive"}
                 value="0"
-                hint={locale === "ar" ? "Ø§Ù„Ø³Ø¨Ù„ ÙˆØ§Ù„Ù…Ù†ØªÙ‡ÙŠØ©" : "Past sessions will collect here."}
+                hint={locale === "ar" ? "السبل والمنتهية" : "Past sessions will collect here."}
                 tone="neutral"
                 icon={<History className="h-4 w-4" />}
               />

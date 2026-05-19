@@ -38,7 +38,9 @@ export class SessionVideoProviderResolverService {
     }
 
     const normalized = value.trim().toUpperCase();
-    return Object.values(SessionProvider).includes(normalized as SessionProvider)
+    return Object.values(SessionProvider).includes(
+      normalized as SessionProvider,
+    )
       ? (normalized as SessionProvider)
       : null;
   }

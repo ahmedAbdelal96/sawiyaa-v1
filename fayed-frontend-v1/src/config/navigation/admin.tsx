@@ -1,4 +1,5 @@
 import { NavigationIcons } from "./icons";
+import { PermissionKey as PK } from "@/lib/auth/permissions";
 import type { NavigationConfig } from "./types";
 
 export const adminNavigation: NavigationConfig = [
@@ -15,25 +16,42 @@ export const adminNavigation: NavigationConfig = [
     titleKey: "title",
     namespace: "main",
     items: [
-      { key: "sessions", icon: <NavigationIcons.calendar />, path: "/sessions" },
-      { key: "patients", icon: <NavigationIcons.users />, path: "/patients" },
+      {
+        key: "sessions",
+        icon: <NavigationIcons.calendar />,
+        path: "/sessions",
+        requiredPermissions: [PK.SESSIONS_READ_ADMIN],
+      },
+      {
+        key: "patients",
+        icon: <NavigationIcons.users />,
+        path: "/patients",
+        requiredPermissions: [PK.PATIENTS_READ_ADMIN, PK.PATIENTS_SENSITIVE_READ],
+      },
       { key: "practitioners", icon: <NavigationIcons.practitioners />, path: "/practitioners" },
       {
         key: "practitionerApplications",
         icon: <NavigationIcons.practitioners />,
         path: "/practitioner-applications",
+        requiredPermissions: [PK.PRACTITIONER_APPLICATIONS_READ],
       },
       {
         key: "support",
         icon: <NavigationIcons.support />,
         path: "/support",
         namespace: "workspace",
+        requiredPermissions: [PK.SUPPORT_TICKET_NOTE_INTERNAL, PK.SUPPORT_TICKET_ASSIGN],
       },
       {
         key: "careChat",
         icon: <NavigationIcons.chat />,
         path: "/care-chat",
         namespace: "workspace",
+        requiredPermissions: [
+          PK.CARE_CHAT_REQUEST_READ_ADMIN,
+          PK.CARE_CHAT_CONVERSATION_READ_ADMIN,
+          PK.CARE_CHAT_REQUEST_DECIDE,
+        ],
       },
       { key: "assessments", icon: <NavigationIcons.reports />, path: "/assessments" },
       {
@@ -41,6 +59,7 @@ export const adminNavigation: NavigationConfig = [
         icon: <NavigationIcons.notifications />,
         path: "/notifications",
         namespace: "workspace",
+        requiredPermissions: [PK.NOTIFICATION_OPS_READ],
       },
     ],
   },
@@ -80,10 +99,19 @@ export const adminNavigation: NavigationConfig = [
     key: "financeOps",
     titleKey: "title",
     namespace: "main",
+    requiredPermissions: [
+      PK.FINANCE_EVENTS_READ,
+      PK.ACCOUNTING_READ,
+      PK.SETTLEMENTS_READ,
+      PK.PRACTITIONER_PAYOUTS_READ,
+      PK.REFUNDS_APPROVE,
+      PK.REFUNDS_RETRY,
+    ],
     items: [
       {
         key: "payments",
         icon: <NavigationIcons.payments />,
+        requiredPermissions: [PK.FINANCE_EVENTS_READ, PK.REFUNDS_APPROVE, PK.REFUNDS_RETRY],
         subItems: [
           { key: "paymentsHome", path: "/payments" },
           { key: "paymentGatewayControl", path: "/payments/gateway-control" },
@@ -92,21 +120,29 @@ export const adminNavigation: NavigationConfig = [
       {
         key: "finance",
         icon: <NavigationIcons.settlements />,
+        requiredPermissions: [PK.ACCOUNTING_READ, PK.FINANCE_EVENTS_READ],
         subItems: [
           { key: "financeDashboard", path: "/finance/dashboard" },
           { key: "financeLedger", path: "/finance/ledger" },
-          { key: "financeReconciliation", path: "/finance/reconciliation" },
         ],
+      },
+      {
+        key: "financeReconciliation",
+        icon: <NavigationIcons.reports />,
+        path: "/finance/accounting/reconciliation",
+        requiredPermissions: [PK.ACCOUNTING_READ],
       },
       {
         key: "practitionerPayouts",
         icon: <NavigationIcons.settlements />,
         path: "/practitioner-payouts",
+        requiredPermissions: [PK.PRACTITIONER_PAYOUTS_READ, PK.PRACTITIONER_PAYOUTS_WRITE],
       },
       {
         key: "practitionerPayoutsHistory",
         icon: <NavigationIcons.reports />,
         path: "/practitioner-payouts/history",
+        requiredPermissions: [PK.PRACTITIONER_PAYOUTS_READ],
       },
     ],
   },
@@ -119,6 +155,7 @@ export const adminNavigation: NavigationConfig = [
         key: "reports",
         icon: <NavigationIcons.reports />,
         namespace: "main",
+        requiredPermissions: [PK.FINANCE_EVENTS_READ],
         subItems: [
           { key: "reportsHome", path: "/reports", namespace: "main" },
           { key: "reportsSessions", path: "/reports/sessions", namespace: "main" },
@@ -142,7 +179,18 @@ export const adminNavigation: NavigationConfig = [
         icon: <NavigationIcons.reports />,
         path: "/moderation/reports",
       },
-      { key: "auditLog", icon: <NavigationIcons.reports />, path: "/audit" },
+      {
+        key: "auditLog",
+        icon: <NavigationIcons.reports />,
+        path: "/audit",
+        requiredPermissions: [PK.AUDIT_LOG_READ],
+      },
+      {
+        key: "adminUsers",
+        icon: <NavigationIcons.users />,
+        path: "/users",
+        requiredPermissions: [PK.ADMIN_USERS_READ],
+      },
     ],
   },
 ];

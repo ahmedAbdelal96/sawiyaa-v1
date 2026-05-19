@@ -27,4 +27,3 @@ export type SessionsReportRow = {
   patientId: string;
   practitionerId: string;
 };
-

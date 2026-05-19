@@ -19,6 +19,8 @@ export const THROTTLE_POLICIES: Record<string, ThrottlePolicyLimit> = {
   'auth-patient-register': { limit: 5, windowMs: 60 * 60_000 },
   'auth-patient-login': { limit: 10, windowMs: 15 * 60_000 },
   'auth-patient-refresh': { limit: 30, windowMs: 15 * 60_000 },
+  'auth-patient-forgot-password': { limit: 5, windowMs: 60 * 60_000 },
+  'auth-patient-reset-password': { limit: 5, windowMs: 60 * 60_000 },
 
   // ── Practitioner auth ─────────────────────────────────────────
   'auth-practitioner-register': { limit: 5, windowMs: 60 * 60_000 },
@@ -31,4 +33,12 @@ export const THROTTLE_POLICIES: Record<string, ThrottlePolicyLimit> = {
   // ── Admin auth ────────────────────────────────────────────────
   'auth-admin-login': { limit: 10, windowMs: 15 * 60_000 },
   'auth-admin-refresh': { limit: 30, windowMs: 15 * 60_000 },
+  'auth-admin-step-up-verify': { limit: 5, windowMs: 15 * 60_000 },
+
+  // Public forms / abuse-prone mutations
+  'academy-public-enrollment': { limit: 10, windowMs: 15 * 60_000 },
+
+  // Admin user management (security-sensitive)
+  'admin-users-create': { limit: 10, windowMs: 15 * 60_000 },
+  'admin-users-sensitive-mutation': { limit: 30, windowMs: 15 * 60_000 },
 };

@@ -19,6 +19,8 @@ import {
   patientLogout,
   patientRefresh,
   patientRegister,
+  patientForgotPassword,
+  patientResetPassword,
   practitionerForgotPassword,
   practitionerLogin,
   practitionerLogout,
@@ -30,10 +32,12 @@ import {
 import type {
   AuthSuccessResponse,
   AuthenticatedUser,
-  MobileRole,
+  MobileSupportedRole,
   OtpChallengeResponse,
   PatientLoginRequest,
   PatientRegisterRequest,
+  PatientForgotPasswordRequest,
+  PatientResetPasswordRequest,
   PersistedAuthSession,
   PractitionerForgotPasswordRequest,
   PractitionerLoginRequest,
@@ -61,7 +65,7 @@ import { configureApiAuthSessionHandlers, setApiAccessToken } from "../lib/api";
 
 interface AuthContextValue {
   user: AuthenticatedUser | null;
-  role: MobileRole | null;
+  role: MobileSupportedRole | null;
   isLoading: boolean;
   pushRegistrationStatus: PushRegistrationStatus;
   isPushRegistrationPending: boolean;
@@ -83,6 +87,12 @@ interface AuthContextValue {
   signUpPractitioner: (
     payload: PractitionerRegisterRequest,
   ) => ReturnType<typeof practitionerRegister>;
+  requestPatientPasswordReset: (
+    payload: PatientForgotPasswordRequest,
+  ) => ReturnType<typeof patientForgotPassword>;
+  resetPatientPassword: (
+    payload: PatientResetPasswordRequest,
+  ) => ReturnType<typeof patientResetPassword>;
   requestPractitionerPasswordReset: (
     payload: PractitionerForgotPasswordRequest,
   ) => ReturnType<typeof practitionerForgotPassword>;
@@ -116,7 +126,9 @@ function mapPushPermissionStatusToRegistrationStatus(
   return "permission-required";
 }
 
-function isSupportedMobileRole(role: MobileRole | null | undefined) {
+function isSupportedMobileRole(
+  role: string | null | undefined,
+): role is MobileSupportedRole {
   return role === "patient" || role === "practitioner";
 }
 
@@ -201,7 +213,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, [runPushRegistration]);
 
   const consumeAuthSuccess = useCallback(
-    async (payload: AuthSuccessResponse, nextRole?: MobileRole) => {
+    async (payload: AuthSuccessResponse, nextRole?: MobileSupportedRole) => {
       const resolvedRole = nextRole ?? resolveMobileRole(payload.user);
       if (!isSupportedMobileRole(resolvedRole)) {
         await clearAuthenticatedState();
@@ -347,9 +359,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, [router]);
 
   useEffect(() => {
-      configureApiAuthSessionHandlers({
-        refreshAccessToken: async () => {
-          const currentSession = sessionRef.current;
+    configureApiAuthSessionHandlers({
+      refreshAccessToken: async () => {
+        const currentSession = sessionRef.current;
 
         if (!currentSession) {
           return null;
@@ -403,6 +415,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       if (!inAuthGroup) {
         router.replace("/(auth)");
       }
+      return;
+    }
+
+    // Safety: if stored session has an unsupported role (e.g. admin-class user
+    // who somehow bypassed the earlier validators), clear and redirect to auth.
+    if (!isSupportedMobileRole(session.role)) {
+      void clearAuthenticatedState();
+      router.replace("/(auth)");
       return;
     }
 
@@ -493,6 +513,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       startPractitionerLogin,
       verifyPractitionerOtp,
       signUpPractitioner: practitionerRegister,
+      requestPatientPasswordReset: patientForgotPassword,
+      resetPatientPassword: patientResetPassword,
       requestPractitionerPasswordReset: practitionerForgotPassword,
       resetPractitionerPassword: practitionerResetPassword,
       signOut,

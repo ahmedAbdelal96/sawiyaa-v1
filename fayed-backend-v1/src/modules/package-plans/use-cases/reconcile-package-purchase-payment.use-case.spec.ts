@@ -2,9 +2,7 @@ import { PaymentPurpose, PaymentStatus } from '@prisma/client';
 import { ReconcilePackagePurchasePaymentUseCase } from './reconcile-package-purchase-payment.use-case';
 
 describe('ReconcilePackagePurchasePaymentUseCase', () => {
-  function buildUseCase(input?: {
-    paymentStatus?: PaymentStatus;
-  }) {
+  function buildUseCase(input?: { paymentStatus?: PaymentStatus }) {
     const paymentRepository = {
       findById: jest.fn().mockResolvedValue({
         id: 'payment-1',

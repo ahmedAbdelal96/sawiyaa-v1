@@ -54,3 +54,21 @@ fayed-backend-v1/storage/**
 WhatsApp Image *.jpg
 WhatsApp Image *.jpeg
 patient_mobile_app_screen/whatsapp_image_*
+
+# Generated QA / smoke artifacts
+**/artifacts/
+**/*artifacts*/
+**/smokes/
+**/tmp/
+**/*.tmp*
+
+# Generated screenshot files used during debugging
+admin-*.png
+smoke-*.png
+signin*.png
+post-login.png
+tmp-*.png
+tmp-*.exe
+
+# Local upload/runtime folders
+fayed-backend-v1/uploads/

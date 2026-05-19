@@ -40,9 +40,8 @@ export class PublishTrainingUseCase {
       existing.status,
     );
 
-    const scheduleCount = await this.trainingRepository.countSchedulesByCourseId(
-      input.courseId,
-    );
+    const scheduleCount =
+      await this.trainingRepository.countSchedulesByCourseId(input.courseId);
 
     if (scheduleCount === 0) {
       throw new BadRequestException({

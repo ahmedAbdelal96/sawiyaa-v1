@@ -17,7 +17,9 @@ export class ListAdminAuditEventsUseCase {
     const [rows, totalItems] = await this.repository.listAdminAuditEvents({
       page,
       limit,
-      dateFrom: input.query.dateFrom ? new Date(input.query.dateFrom) : undefined,
+      dateFrom: input.query.dateFrom
+        ? new Date(input.query.dateFrom)
+        : undefined,
       dateTo: input.query.dateTo ? new Date(input.query.dateTo) : undefined,
       actorRole: input.query.actorRole,
       eventFamily: input.query.eventFamily,

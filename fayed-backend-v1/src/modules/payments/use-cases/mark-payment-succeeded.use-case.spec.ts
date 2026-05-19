@@ -159,7 +159,9 @@ describe('MarkPaymentSucceededUseCase', () => {
       payload: {},
     });
 
-    expect(setup.postPaymentLedgerEntriesUseCase.execute).not.toHaveBeenCalled();
+    expect(
+      setup.postPaymentLedgerEntriesUseCase.execute,
+    ).not.toHaveBeenCalled();
     expect(
       setup.operationalNotificationService.notifyPaymentSucceeded,
     ).not.toHaveBeenCalled();

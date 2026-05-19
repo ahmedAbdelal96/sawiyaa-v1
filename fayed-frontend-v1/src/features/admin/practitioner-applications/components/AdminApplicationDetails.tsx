@@ -2,35 +2,56 @@
 
 import { useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import {
-  useAdminPractitionerApplicationDetails,
-  useApprovePractitionerApplication,
-  useCreateAdminPractitionerApplicationCredential,
-  useDeleteAdminPractitionerApplicationCredential,
-  useRejectPractitionerApplication,
-  useRequestPractitionerApplicationChanges,
-  useUpdateAdminPractitionerApplicationCredential,
-  useUpdatePractitionerApplicationDraft,
-} from "../hooks/use-practitioner-applications";
-import type { PractitionerApplicationDetailsResponse } from "../types/practitioner-applications.types";
 import { Skeleton } from "@/components/shared/LoadingStates";
 import { cn } from "@/lib/utils";
 import { isAppError } from "@/lib/api/errors";
-import InputField from "@/components/form/input/InputField";
-import TextArea from "@/components/form/input/TextArea";
-import Label from "@/components/form/Label";
-import Select from "@/components/form/Select";
-import MultiSelect from "@/components/form/MultiSelect";
-import { useSpecialties, useSpecialtyCategories } from "@/features/specialties/hooks/use-specialties";
-import { SUPPORTED_COUNTRY_CODE_OPTIONS } from "@/constants/reference-data";
+import { API_BASE_URL } from "@/config/api";
+import { getLocalizedCountryOptions } from "@/features/practitioners/constants/country-options";
+import {
+  getCatalogItemCountryCodes,
+  resolveBankLabel,
+  resolveWalletProviderLabel,
+} from "@/lib/catalogs/payout";
 import type {
   CredentialReviewStatus,
   CredentialType,
   PractitionerApplicationStatus,
-  PractitionerGender,
   PractitionerPayoutMethodType,
   PractitionerType,
 } from "@/features/practitioners/types/practitioners.types";
+import {
+  useAdminPractitionerApplicationDetails,
+  useApprovePractitionerApplication,
+  useRejectPractitionerApplication,
+  useRequestPractitionerApplicationChanges,
+  useUpdateAdminPractitionerApplicationCredential,
+} from "../hooks/use-practitioner-applications";
+import { useAdminPractitioners } from "@/features/admin/practitioners/hooks/use-admin-practitioners";
+import type { PractitionerApplicationDetailsResponse } from "../types/practitioner-applications.types";
+import AdminApplicationReviewHeader from "./AdminApplicationReviewHeader";
+import AdminApplicationReviewWizard from "./AdminApplicationReviewWizard";
+import AdminApplicationStepIdentity from "./AdminApplicationStepIdentity";
+import AdminApplicationStepProfessional from "./AdminApplicationStepProfessional";
+import AdminApplicationStepDocumentsPayout from "./AdminApplicationStepDocumentsPayout";
+import AdminApplicationStepDecision from "./AdminApplicationStepDecision";
+import { deriveAdminReviewDecision } from "../utils/admin-review-decision";
+
+type ReviewReasonItem = {
+  id: string;
+  label: string;
+  helper: string;
+};
+
+type DecisionReasonDraft = {
+  id: string;
+  value: string;
+};
+
+function createDecisionReasonDraft(): DecisionReasonDraft {
+  return { id: crypto.randomUUID(), value: "" };
+}
+
+type Props = { applicationId: string };
 
 const statusColour: Record<PractitionerApplicationStatus, string> = {
   DRAFT: "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300",
@@ -42,336 +63,332 @@ const statusColour: Record<PractitionerApplicationStatus, string> = {
   ARCHIVED: "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-500",
 };
 
-const credStatusColour: Record<CredentialReviewStatus, string> = {
-  PENDING: "bg-yellow-50 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-400",
-  APPROVED: "bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400",
-  REJECTED: "bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400",
-  EXPIRED: "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400",
+
+const ACCOUNT_STATUS_LABELS: Record<string, { ar: string; en: string }> = {
+  ACTIVE: { ar: "نشط", en: "Active" },
+  INACTIVE: { ar: "غير نشط", en: "Inactive" },
+  SUSPENDED: { ar: "معلق", en: "Suspended" },
+  PENDING_VERIFICATION: { ar: "بانتظار التحقق", en: "Pending verification" },
+  PENDING_APPROVAL: { ar: "بانتظار الموافقة", en: "Pending approval" },
+  DELETED: { ar: "محذوف", en: "Deleted" },
 };
 
-const PRACTITIONER_TYPES: PractitionerType[] = [
-  "PSYCHOLOGIST",
-  "PSYCHIATRIST",
-  "NUTRITIONIST",
-  "WEIGHT_LOSS_SPECIALIST",
-  "COUNSELOR",
-  "OTHER",
-];
-
-const PAYOUT_METHODS: PractitionerPayoutMethodType[] = [
-  "BANK_ACCOUNT",
-  "IBAN",
-  "WALLET",
-  "OTHER",
-];
-
-const CREDENTIAL_TYPES: CredentialType[] = [
-  "LICENSE",
-  "DEGREE",
-  "CERTIFICATION",
-  "NATIONAL_ID",
-  "PASSPORT",
-  "MEMBERSHIP",
-  "OTHER",
-];
-
-const CREDENTIAL_REVIEW_STATUSES: CredentialReviewStatus[] = [
-  "PENDING",
-  "APPROVED",
-  "REJECTED",
-  "EXPIRED",
-];
-
-type EditableDraftForm = {
-  displayName: string;
-  practitionerType: PractitionerType;
-  practitionerGender: PractitionerGender | "";
-  professionalTitle: string;
-  bio: string;
-  yearsOfExperience: string;
-  countryCode: string;
-  languageCodes: string[];
-  primarySpecialtyCategoryId: string;
-  specialtyIds: string[];
-  payoutMethodType: PractitionerPayoutMethodType | "";
-  accountHolderName: string;
-  bankName: string;
-  bankAccountNumber: string;
-  iban: string;
-  walletProvider: string;
-  walletIdentifier: string;
-  otherDetails: string;
-};
-
-type EditableCredentialForm = {
-  credentialType: CredentialType;
-  fileUrl: string;
-  reviewStatus: CredentialReviewStatus;
-  reviewNotes: string;
-  expiresAt: string;
-};
-
-type Props = { applicationId: string };
-type ReviewTab = "overview" | "compare" | "credentials" | "decision";
-
-function Section({ heading, children }: { heading: string; children: React.ReactNode }) {
-  return (
-    <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
-      <h2 className="mb-4 text-sm font-semibold text-gray-700 dark:text-gray-300">{heading}</h2>
-      {children}
-    </div>
-  );
-}
-
-function ReviewTabButton({
-  active,
-  label,
-  onClick,
-}: {
-  active: boolean;
-  label: string;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-current={active ? "page" : undefined}
-      className={cn(
-        "rounded-full border px-4 py-2 text-sm font-semibold transition",
-        active
-          ? "border-primary/30 bg-primary text-white shadow-[0_14px_28px_-20px_rgba(68,161,148,0.5)]"
-          : "border-gray-200 bg-white text-gray-600 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800",
-      )}
-    >
-      {label}
-    </button>
-  );
-}
-
-function Field({ label, value }: { label: string; value: React.ReactNode }) {
-  return (
-    <div className="flex flex-col gap-0.5 sm:flex-row sm:gap-4">
-      <dt className="w-full text-xs font-medium text-gray-400 dark:text-gray-500 sm:w-44 sm:shrink-0">
-        {label}
-      </dt>
-      <dd className="text-sm text-gray-700 dark:text-gray-300">{value}</dd>
-    </div>
-  );
+function normalizeAvatarUrl(value: string | null | undefined) {
+  const trimmed = value?.trim();
+  return trimmed ? trimmed : null;
 }
 
 function getReadableValue(value: string | number | null | undefined): string {
-  if (value === null || value === undefined) {
-    return "-";
-  }
-  if (typeof value === "string" && value.trim().length === 0) {
-    return "-";
-  }
+  if (value === null || value === undefined) return "-";
+  if (typeof value === "string" && value.trim().length === 0) return "-";
   return String(value);
 }
 
-function EditField({
-  label,
-  previousLabel,
-  previousValue,
-  children,
-}: {
-  label: string;
-  previousLabel: string;
-  previousValue: string | number | null | undefined;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="space-y-1.5">
-      <Label>{label}</Label>
-      {children}
-      <p className="text-xs text-gray-500 dark:text-gray-400">
-        <span className="font-medium text-gray-600 dark:text-gray-300">{previousLabel}:</span>{" "}
-        {getReadableValue(previousValue)}
-      </p>
-    </div>
-  );
+function normalizeForDiff(value: string | number | null | undefined) {
+  if (value === null || value === undefined) return "";
+  return String(value).trim();
+}
+
+function maskSensitiveValue(value: string | null | undefined) {
+  const trimmed = value?.trim() ?? "";
+  if (!trimmed) return "-";
+  if (trimmed.length <= 8) return trimmed;
+  return `${trimmed.slice(0, 4)}••••${trimmed.slice(-4)}`;
+}
+
+function getLocalizedCountryLabel(locale: string, countryCode?: string | null) {
+  const normalized = countryCode?.trim().toUpperCase() ?? "";
+  if (!normalized) return "-";
+  const options = getLocalizedCountryOptions(locale);
+  return options.find((item) => item.value === normalized)?.label ?? normalized;
+}
+
+function getLocalizedStatusLabel(locale: string, status?: string | null) {
+  const normalized = status?.trim() ?? "";
+  if (!normalized) return "-";
+  const label = ACCOUNT_STATUS_LABELS[normalized];
+  return label ? (locale === "ar" ? label.ar : label.en) : normalized;
+}
+
+function formatLanguageLabel(locale: string, value: string) {
+  const normalized = value.trim().toLowerCase();
+  if (!normalized) return "-";
+  if (normalized === "ar") return locale === "ar" ? "العربية" : "Arabic";
+  if (normalized === "en") return locale === "ar" ? "الإنجليزية" : "English";
+  return value;
+}
+
+function formatLanguageList(locale: string, values: string[]) {
+  if (values.length === 0) return "-";
+  return values.map((value) => formatLanguageLabel(locale, value)).join("، ");
+}
+
+function formatMoneyValue(value: number | null | undefined, locale: string) {
+  if (value === null || value === undefined) return "-";
+  return new Intl.NumberFormat(locale.startsWith("ar") ? "ar-EG" : "en-GB", {
+    maximumFractionDigits: 2,
+  }).format(value);
+}
+
+function formatCredentialStatusLabel(
+  t: ReturnType<typeof useTranslations>,
+  status?: CredentialReviewStatus | null,
+) {
+  if (!status) return t("applicationDetails.review.notVerifiedYet");
+  if (status === "PENDING") return t("applicationDetails.review.pendingManualVerification");
+  if (status === "APPROVED") return t("applicationDetails.review.reviewedApproved");
+  if (status === "REJECTED") return t("applicationDetails.review.reviewedRejected");
+  return t("applicationDetails.review.notVerifiedYet");
+}
+
+function getCredentialStatusTone(status?: CredentialReviewStatus | null) {
+  if (status === "APPROVED") return "success" as const;
+  if (status === "PENDING") return "warning" as const;
+  if (status === "REJECTED" || status === "EXPIRED") return "danger" as const;
+  return "neutral" as const;
+}
+
+function getCredentialTypeLabel(locale: string, type: CredentialType) {
+  const isAr = locale === "ar";
+  const labels: Record<CredentialType, string> = {
+    LICENSE: isAr ? "ترخيص" : "License",
+    DEGREE: isAr ? "شهادة علمية" : "Degree",
+    CERTIFICATION: isAr ? "شهادة اعتماد" : "Certification",
+    NATIONAL_ID_FRONT: isAr ? "بطاقة الهوية - الوجه الأمامي" : "National ID - Front",
+    NATIONAL_ID_BACK: isAr ? "بطاقة الهوية - الوجه الخلفي" : "National ID - Back",
+    NATIONAL_ID: isAr ? "بطاقة رقم قومي" : "National ID",
+    PASSPORT: isAr ? "جواز سفر" : "Passport",
+    MEMBERSHIP: isAr ? "عضوية" : "Membership",
+    OTHER: isAr ? "أخرى" : "Other",
+  };
+  return labels[type];
+}
+
+function formatApplicationStatusLabel(
+  t: ReturnType<typeof useTranslations>,
+  status?: PractitionerApplicationStatus | null,
+) {
+  if (!status) return "-";
+  return t(`status.${status}` as Parameters<typeof t>[0]);
+}
+
+function formatPayoutMethodLabel(
+  t: ReturnType<typeof useTranslations>,
+  methodType?: PractitionerPayoutMethodType | null,
+) {
+  if (!methodType) return "-";
+  return t(`applicationDetails.payout.methodOptions.${methodType}` as Parameters<typeof t>[0]);
 }
 
 function formatSpecialtyList(
   specialties: Array<{ specialtyId: string; slug: string; title: string | null; isPrimary: boolean }>,
   primaryLabel: string,
 ) {
-  if (specialties.length === 0) {
-    return "-";
-  }
-
-  return specialties
-    .map((item) => `${item.title ?? item.slug}${item.isPrimary ? ` (${primaryLabel})` : ""}`)
-    .join(", ");
+  if (specialties.length === 0) return "-";
+  return specialties.map((item) => `${item.title ?? item.slug}${item.isPrimary ? ` (${primaryLabel})` : ""}`).join("، ");
 }
 
-function normalizeForDiff(value: string | number | null | undefined) {
-  if (value === null || value === undefined) {
-    return "";
+function getReadinessRecommendation(
+  readinessSnapshot: PractitionerApplicationDetailsResponse["details"]["readinessSnapshot"],
+  locale: string,
+) {
+  if (!readinessSnapshot.canBeReviewed) {
+    return {
+      title:
+        locale === "ar"
+          ? "الطلب غير قابل للمراجعة بسبب نقص البيانات"
+          : "Application is not reviewable due to missing data",
+      tone: "neutral" as const,
+    };
   }
-  return String(value).trim();
-}
-
-function normalizeTextList(values: string[]) {
-  return values
-    .map((value) => value.trim())
-    .filter(Boolean)
-    .sort((left, right) => left.localeCompare(right))
-    .join(" | ");
-}
-
-function formatMoneyValue(value: number | null | undefined, locale: string) {
-  if (value === null || value === undefined) {
-    return "-";
+  if (readinessSnapshot.canBeApproved) {
+    return {
+      title:
+        locale === "ar"
+          ? "البيانات مكتملة — ما زال يلزم تحقق يدوي من المراجع"
+          : "Data is complete — reviewer verification is still required",
+      tone: "success" as const,
+    };
   }
-
-  try {
-    return new Intl.NumberFormat(locale.startsWith("ar") ? "ar-EG" : "en-GB", {
-      maximumFractionDigits: 2,
-    }).format(value);
-  } catch {
-    return String(value);
-  }
-}
-
-function PayoutValue({ value }: { value: string | null }) {
-  return value || "-";
-}
-
-type DraftIssueMap = Partial<Record<keyof EditableDraftForm, string>>;
-
-function normalizeYearsValue(value: string) {
-  const trimmed = value.trim();
-  if (!trimmed) {
-    return null;
-  }
-
-  const years = Number(trimmed);
-  if (!Number.isFinite(years)) {
-    return null;
-  }
-
-  return years;
-}
-
-function createInitialDraftForm(details: PractitionerApplicationDetailsResponse["details"]): EditableDraftForm {
   return {
-    displayName: details.applicant.displayName ?? "",
-    practitionerType: details.profile.practitionerType,
-    practitionerGender: details.profile.practitionerGender ?? "",
-    professionalTitle: details.profile.professionalTitle ?? "",
-    bio: details.profile.bio ?? "",
-    yearsOfExperience:
-      details.profile.yearsOfExperience != null ? String(details.profile.yearsOfExperience) : "",
-    countryCode: details.applicant.countryCode ?? "",
-    languageCodes: details.profile.languages ?? [],
-    primarySpecialtyCategoryId: details.profile.primarySpecialtyCategoryId ?? "",
-    specialtyIds: details.profile.specialties.map((item) => item.specialtyId),
-    payoutMethodType: details.payoutDestination?.methodType ?? "",
-    accountHolderName: details.payoutDestination?.accountHolderName ?? "",
-    bankName: details.payoutDestination?.bankName ?? "",
-    bankAccountNumber: details.payoutDestination?.bankAccountNumber ?? "",
-    iban: details.payoutDestination?.iban ?? "",
-    walletProvider: details.payoutDestination?.walletProvider ?? "",
-    walletIdentifier: details.payoutDestination?.walletIdentifier ?? "",
-    otherDetails: details.payoutDestination?.otherDetails ?? "",
+    title:
+      locale === "ar"
+        ? "توجد بيانات ناقصة قبل القرار"
+        : "Missing data must be resolved before a decision",
+    tone: "warning" as const,
   };
 }
 
-function createInitialCredentialForm(
-  credential: PractitionerApplicationDetailsResponse["details"]["credentials"][number]
-): EditableCredentialForm {
-  return {
-    credentialType: credential.credentialType,
-    fileUrl: credential.fileUrl,
-    reviewStatus: credential.reviewStatus,
-    reviewNotes: credential.reviewNotes ?? "",
-    expiresAt: credential.expiresAt ? credential.expiresAt.slice(0, 10) : "",
-  };
+function getCompletionIssueLabel(
+  t: ReturnType<typeof useTranslations>,
+  locale: string,
+  code: string,
+) {
+  if (code === "QUALIFICATIONS_ACADEMIC_CERTIFICATE_REQUIRED") {
+    return locale === "ar" ? "شهادة علمية غير مرفوعة" : "Academic certificate is missing";
+  }
+  if (code === "DOCUMENTS_IDENTITY_EVIDENCE_REQUIRED") {
+    return locale === "ar" ? "مستند الهوية غير مكتمل" : "Identity document is incomplete";
+  }
+  if (code === "DOCUMENTS_NATIONAL_ID_FRONT_MISSING") {
+    return locale === "ar" ? "صورة البطاقة الأمامية غير مرفوعة" : "National ID front is missing";
+  }
+  if (code === "DOCUMENTS_NATIONAL_ID_BACK_MISSING") {
+    return locale === "ar" ? "صورة البطاقة الخلفية غير مرفوعة" : "National ID back is missing";
+  }
+  if (code === "PAYOUT_DESTINATION_REQUIRED") {
+    return locale === "ar" ? "بيانات المستحقات غير مكتملة" : "Payout details are missing";
+  }
+  if (code === "PAYOUT_ACCOUNT_HOLDER_REQUIRED") {
+    return locale === "ar" ? "اسم صاحب الحساب غير موجود" : "Account holder name is missing";
+  }
+  if (code === "PAYOUT_BANK_NAME_REQUIRED") {
+    return locale === "ar" ? "اسم البنك غير موجود" : "Bank name is missing";
+  }
+  if (code === "PAYOUT_BANK_ACCOUNT_REQUIRED") {
+    return locale === "ar" ? "رقم الحساب البنكي غير موجود" : "Bank account number is missing";
+  }
+  if (code === "DOCUMENTS_CREDENTIAL_NOT_APPROVED") {
+    return locale === "ar" ? "مستندات مرفوعة وتحتاج مراجعة الإدارة" : "Uploaded documents still need admin review";
+  }
+  return t("applicationDetails.review.missing");
+}
+
+function getCompletionIssueHelper(
+  locale: string,
+  code: string,
+) {
+  if (code === "QUALIFICATIONS_ACADEMIC_CERTIFICATE_REQUIRED") {
+    return locale === "ar"
+      ? "اطلب من المعالج رفع شهادة علمية قبل متابعة الاعتماد."
+      : "Ask the practitioner to upload an academic certificate before approval.";
+  }
+  if (code === "DOCUMENTS_IDENTITY_EVIDENCE_REQUIRED" || code === "DOCUMENTS_NATIONAL_ID_FRONT_MISSING" || code === "DOCUMENTS_NATIONAL_ID_BACK_MISSING") {
+    return locale === "ar"
+      ? "اطلب من المعالج استكمال مستندات الهوية المطلوبة."
+      : "Ask the practitioner to complete the required identity documents.";
+  }
+  if (code.startsWith("PAYOUT_")) {
+    return locale === "ar"
+      ? "اطلب من المعالج استكمال بيانات استلام المستحقات."
+      : "Ask the practitioner to complete the payout details.";
+  }
+  return locale === "ar" ? "اطلب من المعالج استكمال البيانات الناقصة." : "Ask the practitioner to complete the missing information.";
+}
+
+function getCredentialPresenceState(
+  t: ReturnType<typeof useTranslations>,
+  credential?: { reviewStatus: CredentialReviewStatus } | null,
+) {
+  if (!credential) return t("applicationDetails.review.missing");
+  if (credential.reviewStatus === "PENDING") return t("applicationDetails.review.pendingManualVerification");
+  if (credential.reviewStatus === "REJECTED" || credential.reviewStatus === "EXPIRED") {
+    return t("applicationDetails.review.needsCorrection");
+  }
+  return t("applicationDetails.review.reviewed");
 }
 
 export default function AdminApplicationDetails({ applicationId }: Props) {
   const t = useTranslations("admin-area");
   const locale = useLocale();
   const { data, isLoading, isError, refetch } = useAdminPractitionerApplicationDetails(applicationId);
-  const [hasMounted, setHasMounted] = useState(false);
   const { mutate: approve, isPending: isApproving } = useApprovePractitionerApplication();
   const { mutate: reject, isPending: isRejecting } = useRejectPractitionerApplication();
-  const { mutate: requestChanges, isPending: isRequestingChanges } =
-    useRequestPractitionerApplicationChanges();
-  const { mutate: updateDraft, isPending: isUpdatingDraft } =
-    useUpdatePractitionerApplicationDraft();
-  const {
-    mutate: createCredential,
-    isPending: isCreatingCredential,
-  } = useCreateAdminPractitionerApplicationCredential();
-  const {
-    mutate: updateCredential,
-    isPending: isUpdatingCredential,
-  } = useUpdateAdminPractitionerApplicationCredential();
-  const {
-    mutate: deleteCredential,
-    isPending: isDeletingCredential,
-  } = useDeleteAdminPractitionerApplicationCredential();
-  const specialtyCategoriesQuery = useSpecialtyCategories(true);
-  const specialtiesQuery = useSpecialties(undefined, true);
+  const { mutate: requestChanges, isPending: isRequestingChanges } = useRequestPractitionerApplicationChanges();
+  const { mutate: updateCredential, isPending: isUpdatingCredential } = useUpdateAdminPractitionerApplicationCredential();
 
+  const [activeStep, setActiveStep] = useState(0);
   const [approveNote, setApproveNote] = useState("");
   const [approveResult, setApproveResult] = useState<"success" | "error" | null>(null);
   const [approveErrorMessage, setApproveErrorMessage] = useState<string | null>(null);
-  const [rejectReason, setRejectReason] = useState("");
+  const [approveAttemptedBlocked, setApproveAttemptedBlocked] = useState(false);
+  const [rejectReasons, setRejectReasons] = useState<DecisionReasonDraft[]>([createDecisionReasonDraft()]);
   const [rejectNote, setRejectNote] = useState("");
   const [rejectReasonError, setRejectReasonError] = useState(false);
   const [rejectResult, setRejectResult] = useState<"success" | "error" | null>(null);
-
-  const [requestChangesReason, setRequestChangesReason] = useState("");
+  const [requestChangeReasons, setRequestChangeReasons] = useState<DecisionReasonDraft[]>([createDecisionReasonDraft()]);
   const [requestChangesNote, setRequestChangesNote] = useState("");
   const [requestChangesReasonError, setRequestChangesReasonError] = useState(false);
-  const [requestChangesResult, setRequestChangesResult] = useState<
-    "success" | "error" | null
-  >(null);
-  const [draftSavedResult, setDraftSavedResult] = useState<"success" | "error" | null>(null);
-  const [form, setForm] = useState<EditableDraftForm | null>(null);
-  const [editableCredentials, setEditableCredentials] = useState<
-    Record<string, EditableCredentialForm>
-  >({});
-  const [credentialResultById, setCredentialResultById] = useState<
-    Record<string, "success" | "error">
-  >({});
-  const [credentialDeleteResultById, setCredentialDeleteResultById] = useState<
-    Record<string, "success" | "error">
-  >({});
-  const [newCredentialResult, setNewCredentialResult] = useState<
-    "success" | "error" | null
-  >(null);
-  const [newCredentialForm, setNewCredentialForm] = useState<EditableCredentialForm>({
-    credentialType: "OTHER",
-    fileUrl: "",
-    reviewStatus: "PENDING",
-    reviewNotes: "",
-    expiresAt: "",
-  });
-  const [reviewTab, setReviewTab] = useState<ReviewTab>("overview");
-  const [showAllChanges, setShowAllChanges] = useState(false);
+  const [requestChangesResult, setRequestChangesResult] = useState<"success" | "error" | null>(null);
+  const [credentialReviewNotes, setCredentialReviewNotes] = useState<Record<string, string>>({});
+  const [credentialActionMessage, setCredentialActionMessage] = useState<string | null>(null);
+  const [credentialActionError, setCredentialActionError] = useState<string | null>(null);
+
+  const liveApplicantSearch = data?.details.liveApplicant.displayName?.trim() ?? "";
+  const directoryPractitionersQuery = useAdminPractitioners(
+    { search: liveApplicantSearch || undefined, page: 1, limit: 25 },
+    Boolean(liveApplicantSearch),
+  );
 
   useEffect(() => {
-    setHasMounted(true);
-  }, []);
+    if (process.env.NODE_ENV === "production" || !data) {
+      return;
+    }
 
-  if (!hasMounted || isLoading) {
+    const {
+      applicant,
+      profile,
+      liveApplicant,
+      credentials,
+      payoutDestination,
+      livePayoutDestination,
+      application,
+      readinessSnapshot,
+      completion,
+    } = data.details;
+    const directoryPractitioner = directoryPractitionersQuery.data?.items.find((item) => item.id === liveApplicant.practitionerProfileId);
+    const requestedAvatarUrl = normalizeAvatarUrl(applicant.avatarUrl ?? profile.avatarUrl ?? null);
+    const liveAvatarUrl = normalizeAvatarUrl(liveApplicant.avatarUrl ?? directoryPractitioner?.avatarUrl ?? null);
+    const reviewAvatarUrl = requestedAvatarUrl || liveAvatarUrl ? `${API_BASE_URL}/admin/practitioner-applications/${application.applicationId}/avatar` : null;
+    const debugDecision = deriveAdminReviewDecision({
+      locale,
+      application,
+      readinessSnapshot,
+      completion,
+      credentials,
+      payoutDestination,
+      livePayoutDestination,
+      reviewAvatarUrl,
+      applicant,
+      liveApplicant,
+      profile,
+    });
+
+    console.group("[AdminReviewDebug]");
+    console.log({
+      applicationId,
+      applicationStatus: application.status,
+      readinessSnapshot,
+      completionBlockers: completion.blockers,
+      completionWarnings: completion.warnings,
+      completionSteps: completion.steps,
+      credentials: credentials.map((credential) => ({
+        id: credential.credentialId,
+        type: credential.credentialType,
+        status: credential.reviewStatus,
+      })),
+      derivedDecisionGroups: {
+        missingFromPractitioner: debugDecision.missingFromPractitioner.map((item) => item.code),
+        needsAdminReview: debugDecision.needsAdminReview.map((item) => item.code),
+        rejectedOrNeedsCorrection: debugDecision.rejectedOrNeedsCorrection.map((item) => item.code),
+        readyChecks: debugDecision.readyChecks.map((item) => item.code),
+        internalInconsistencies: debugDecision.internalInconsistencies.map((item) => item.code),
+      },
+      approveDisabled: !debugDecision.canApprove,
+      approveDisabledReasons: debugDecision.approveDisabledReasons.map((item) => item.code),
+    });
+    console.groupEnd();
+  }, [applicationId, data, directoryPractitionersQuery.data?.items, locale]);
+
+  if (isLoading) {
     return (
       <div className="space-y-4">
-        {[0, 1, 2].map((i) => (
-          <div
-            key={i}
-            className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900"
-          >
-            <Skeleton className="mb-4 h-4 w-32" />
+        {[0, 1].map((i) => (
+          <div key={i} className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+            <Skeleton className="mb-4 h-4 w-48" />
             <div className="space-y-3">
               <Skeleton className="h-3 w-full" />
               <Skeleton className="h-3 w-3/4" />
-              <Skeleton className="h-3 w-1/2" />
             </div>
           </div>
         ))}
@@ -398,1720 +415,661 @@ export default function AdminApplicationDetails({ applicationId }: Props) {
     );
   }
 
-  const {
-    applicant,
-    profile,
-    liveApplicant,
-    liveProfile,
+  const { applicant, profile, liveApplicant, liveProfile, credentials, payoutDestination, livePayoutDestination, application, readinessSnapshot, completion } = data.details;
+  const directoryPractitioner = directoryPractitionersQuery.data?.items.find((item) => item.id === liveApplicant.practitionerProfileId);
+
+  const requestedAvatarUrl = normalizeAvatarUrl(applicant.avatarUrl ?? profile.avatarUrl ?? null);
+  const liveAvatarUrl = normalizeAvatarUrl(liveApplicant.avatarUrl ?? liveProfile.avatarUrl ?? directoryPractitioner?.avatarUrl ?? null);
+  const hasUploadedAvatar = Boolean(requestedAvatarUrl ?? liveAvatarUrl);
+  // Admin must not use practitioner-only avatar URLs; always proxy via admin-authenticated endpoint when an avatar exists.
+  const reviewAvatarUrl = hasUploadedAvatar ? `${API_BASE_URL}/admin/practitioner-applications/${application.applicationId}/avatar` : null;
+
+  const applicantCountryLabel = getLocalizedCountryLabel(locale, applicant.countryCode);
+  const liveApplicantCountryLabel = getLocalizedCountryLabel(locale, liveApplicant.countryCode);
+  const submittedAtLabel = application.submittedAt ? new Date(application.submittedAt).toLocaleDateString(locale) : t("applicationDetails.application.never");
+  const statusLabel = formatApplicationStatusLabel(t, application.status);
+  const statusBadge = (
+    <span className={cn("inline-flex items-center rounded-full px-3 py-1 text-xs font-medium", statusColour[application.status])}>
+      {statusLabel}
+    </span>
+  );
+
+  const credentialTypeSet = new Set(credentials.map((credential) => credential.credentialType));
+  const hasNationalIdFront =
+    credentialTypeSet.has("NATIONAL_ID_FRONT") || credentialTypeSet.has("NATIONAL_ID");
+  const hasNationalIdBack =
+    credentialTypeSet.has("NATIONAL_ID_BACK") || credentialTypeSet.has("NATIONAL_ID");
+  const hasPassport = credentialTypeSet.has("PASSPORT");
+  const hasIdentityDocument = hasPassport || (hasNationalIdFront && hasNationalIdBack);
+  const hasAcademicCertificate = credentials.some((credential) => credential.credentialType === "DEGREE");
+  const passportCredential = credentials.find((credential) => credential.credentialType === "PASSPORT");
+  const nationalIdFrontCredential =
+    credentials.find((credential) => credential.credentialType === "NATIONAL_ID_FRONT") ??
+    credentials.find((credential) => credential.credentialType === "NATIONAL_ID");
+  const nationalIdBackCredential =
+    credentials.find((credential) => credential.credentialType === "NATIONAL_ID_BACK") ??
+    credentials.find((credential) => credential.credentialType === "NATIONAL_ID");
+  const academicCredential = credentials.find((credential) => credential.credentialType === "DEGREE");
+
+  const missingItems = [
+    !reviewAvatarUrl ? t("applicationDetails.review.missingProfilePhoto") : null,
+    !hasIdentityDocument ? t("applicationDetails.review.missingIdentityDocument") : null,
+    !hasAcademicCertificate ? t("applicationDetails.review.missingAcademicCertificate") : null,
+    !readinessSnapshot.hasPayoutDestination ? t("applicationDetails.review.missingPayoutDetails") : null,
+  ].filter(Boolean) as string[];
+
+  const missingFromPractitioner = completion.blockers
+    .filter((issue) => issue.requirementScope === "SUBMISSION" && issue.code !== "APPLICATION_SUBMITTED")
+    .map<ReviewReasonItem>((issue) => ({
+      id: issue.code,
+      label: getCompletionIssueLabel(t, locale, issue.code),
+      helper: getCompletionIssueHelper(locale, issue.code),
+    }));
+
+  const pendingAdminReview = credentials
+    .filter((credential) => credential.reviewStatus === "PENDING")
+    .map<ReviewReasonItem>((credential) => ({
+      id: credential.credentialId,
+      label:
+        locale === "ar"
+          ? `${getCredentialTypeLabel(locale, credential.credentialType)} مرفوعة وتحتاج مراجعة الإدارة`
+          : `${getCredentialTypeLabel(locale, credential.credentialType)} is uploaded and needs admin review`,
+      helper:
+        locale === "ar"
+          ? "افتح الملف ثم علّم المستند كمُراجع أو يحتاج تصحيح."
+          : "Open the file, then mark the document as reviewed or needing correction.",
+    }));
+
+  const rejectedOrInvalid = credentials
+    .filter((credential) => credential.reviewStatus === "REJECTED" || credential.reviewStatus === "EXPIRED")
+    .map<ReviewReasonItem>((credential) => ({
+      id: credential.credentialId,
+      label:
+        locale === "ar"
+          ? `${getCredentialTypeLabel(locale, credential.credentialType)} يحتاج تصحيح`
+          : `${getCredentialTypeLabel(locale, credential.credentialType)} needs correction`,
+      helper:
+        locale === "ar"
+          ? "اطلب من المعالج تحديث هذا المستند أو ارفض الطلب إذا كان غير صالح."
+          : "Ask the practitioner to update this document, or reject the application if it is invalid.",
+    }));
+
+  const readyForApprovalItems: ReviewReasonItem[] = readinessSnapshot.canBeApproved
+    ? [
+        {
+          id: "ready",
+          label:
+            locale === "ar"
+              ? "كل البيانات المطلوبة موجودة وتمت مراجعة المستندات اللازمة"
+              : "All required data is present and the required documents have been reviewed",
+          helper:
+            locale === "ar"
+              ? "يمكنك اعتماد الطلب الآن إذا كانت المراجعة اليدوية مكتملة."
+              : "You can approve the application now if your manual review is complete.",
+        },
+      ]
+    : [];
+
+  const summaryChips = [
+    ...missingFromPractitioner.map((item) => (locale === "ar" ? `ناقص: ${item.label.replace(/^ناقص:\s*/, "").replace(/ غير مرفوعة$/, "")}` : `Missing: ${item.label}`)),
+    ...pendingAdminReview.map((item) => (locale === "ar" ? `يحتاج مراجعة: ${item.label.replace(" مرفوعة وتحتاج مراجعة الإدارة", "")}` : `Needs review: ${item.label.replace(" is uploaded and needs admin review", "")}`)),
+    ...rejectedOrInvalid.map((item) => (locale === "ar" ? `يحتاج تصحيح: ${item.label.replace(" يحتاج تصحيح", "")}` : `Needs correction: ${item.label.replace(" needs correction", "")}`)),
+  ];
+
+  const derivedDecision = deriveAdminReviewDecision({
+    locale,
+    application,
+    readinessSnapshot,
+    completion,
     credentials,
     payoutDestination,
     livePayoutDestination,
-    application,
-    readinessSnapshot,
-  } = data.details;
-  const effectiveForm = form ?? createInitialDraftForm(data.details);
+    reviewAvatarUrl,
+    applicant,
+    liveApplicant,
+    profile,
+  });
 
-  const categoryOptions = (specialtyCategoriesQuery.data?.categories ?? []).map((item) => ({
-    value: item.id,
-    label: item.name,
-  }));
+  const reviewSummaryChips = derivedDecision.summaryChips;
 
-  const specialtiesForSelectedCategory = (specialtiesQuery.data?.specialties ?? []).filter((item) =>
-    effectiveForm.primarySpecialtyCategoryId
-      ? item.category?.id === effectiveForm.primarySpecialtyCategoryId
-      : false
+  // Step 1 should stay focused on identity/basics; academic certificate belongs to documents/qualifications step.
+  const missingIdentityItems = missingItems.filter(
+    (item) => item !== t("applicationDetails.review.missingAcademicCertificate"),
   );
-  const specialtyOptions = specialtiesForSelectedCategory.map((item) => ({
-    value: item.id,
-    text: item.name ?? item.slug,
-    selected: effectiveForm.specialtyIds.includes(item.id),
-  }));
 
-  const languageOptions = [
-    { value: "ar", text: "Arabic", selected: effectiveForm.languageCodes.includes("ar") },
-    { value: "en", text: "English", selected: effectiveForm.languageCodes.includes("en") },
-  ];
-  const categoryLabelById = new Map(categoryOptions.map((item) => [item.value, item.label] as const));
-  const previousValueLabel = t("applicationDetails.edit.previousValue");
-  const selectedPayoutMethod = effectiveForm.payoutMethodType;
-  const draftFieldIssues: DraftIssueMap = {};
-  const requiredForApprovalLabel = t("applicationDetails.edit.requiredForApproval");
-  const yearsMustBePositiveLabel = t("applicationDetails.edit.yearsMustBePositive");
-  const specialtyRequiredLabel = t("applicationDetails.edit.specialtyRequired");
-  const payoutMethodRequiredLabel = t("applicationDetails.edit.payoutMethodRequired");
-  const payoutFieldRequiredLabel = t("applicationDetails.edit.payoutFieldRequired");
-
-  if (!effectiveForm.displayName.trim()) {
-    draftFieldIssues.displayName = requiredForApprovalLabel;
-  }
-  if (!effectiveForm.practitionerType) {
-    draftFieldIssues.practitionerType = requiredForApprovalLabel;
-  }
-  if (!effectiveForm.professionalTitle.trim()) {
-    draftFieldIssues.professionalTitle = requiredForApprovalLabel;
-  }
-  if (!effectiveForm.bio.trim()) {
-    draftFieldIssues.bio = requiredForApprovalLabel;
-  }
-
-  const parsedYearsOfExperience = normalizeYearsValue(effectiveForm.yearsOfExperience);
-  if (effectiveForm.yearsOfExperience.trim()) {
-    if (parsedYearsOfExperience === null || parsedYearsOfExperience <= 0) {
-      draftFieldIssues.yearsOfExperience = yearsMustBePositiveLabel;
-    }
-  } else {
-    draftFieldIssues.yearsOfExperience = requiredForApprovalLabel;
-  }
-
-  if (!effectiveForm.countryCode.trim()) {
-    draftFieldIssues.countryCode = requiredForApprovalLabel;
-  }
-  if (effectiveForm.languageCodes.length === 0) {
-    draftFieldIssues.languageCodes = requiredForApprovalLabel;
-  }
-  if (!effectiveForm.primarySpecialtyCategoryId.trim()) {
-    draftFieldIssues.primarySpecialtyCategoryId = requiredForApprovalLabel;
-  }
-  if (effectiveForm.specialtyIds.length === 0) {
-    draftFieldIssues.specialtyIds = specialtyRequiredLabel;
-  }
-  if (!selectedPayoutMethod) {
-    draftFieldIssues.payoutMethodType = payoutMethodRequiredLabel;
-  } else {
-    if (!effectiveForm.accountHolderName.trim()) {
-      draftFieldIssues.accountHolderName = payoutFieldRequiredLabel;
-    }
-    if (selectedPayoutMethod === "BANK_ACCOUNT") {
-      if (!effectiveForm.bankName.trim()) {
-        draftFieldIssues.bankName = payoutFieldRequiredLabel;
-      }
-      if (!effectiveForm.bankAccountNumber.trim()) {
-        draftFieldIssues.bankAccountNumber = payoutFieldRequiredLabel;
-      }
-    }
-    if (selectedPayoutMethod === "IBAN" && !effectiveForm.iban.trim()) {
-      draftFieldIssues.iban = payoutFieldRequiredLabel;
-    }
-    if (selectedPayoutMethod === "WALLET") {
-      if (!effectiveForm.walletProvider.trim()) {
-        draftFieldIssues.walletProvider = payoutFieldRequiredLabel;
-      }
-      if (!effectiveForm.walletIdentifier.trim()) {
-        draftFieldIssues.walletIdentifier = payoutFieldRequiredLabel;
-      }
-    }
-    if (selectedPayoutMethod === "OTHER" && !effectiveForm.otherDetails.trim()) {
-      draftFieldIssues.otherDetails = payoutFieldRequiredLabel;
-    }
-  }
-  const reviewTabs: Array<{ id: ReviewTab; label: string }> = [
-    { id: "overview", label: t("applicationDetails.tabs.overview") },
-    { id: "compare", label: t("applicationDetails.tabs.compare") },
-    { id: "credentials", label: t("applicationDetails.tabs.credentials") },
-    { id: "decision", label: t("applicationDetails.tabs.decision") },
-  ];
-  const changeItems = [
+  const identityDifferences = [
     {
       key: "displayName",
       label: t("applicationDetails.applicant.displayName"),
       current: getReadableValue(liveApplicant.displayName),
       requested: getReadableValue(applicant.displayName),
-      comparableCurrent: normalizeForDiff(liveApplicant.displayName),
-      comparableRequested: normalizeForDiff(applicant.displayName),
     },
+    {
+      key: "countryCode",
+      label: t("applicationDetails.applicant.country"),
+      current: liveApplicantCountryLabel,
+      requested: applicantCountryLabel,
+    },
+  ].filter((item) => normalizeForDiff(item.current) !== normalizeForDiff(item.requested));
+
+  const professionalDifferences = [
     {
       key: "practitionerType",
       label: t("applicationDetails.profile.type"),
-      current: liveProfile.practitionerType
-        ? t(`practitionerType.${liveProfile.practitionerType as PractitionerType}`)
-        : "-",
-      requested: profile.practitionerType
-        ? t(`practitionerType.${profile.practitionerType as PractitionerType}`)
-        : "-",
-      comparableCurrent: normalizeForDiff(liveProfile.practitionerType),
-      comparableRequested: normalizeForDiff(profile.practitionerType),
-    },
-    {
-      key: "practitionerGender",
-      label: t("applicationDetails.profile.gender"),
-      current: liveProfile.practitionerGender
-        ? t(`applicationDetails.profile.genderOptions.${liveProfile.practitionerGender}`)
-        : "-",
-      requested: profile.practitionerGender
-        ? t(`applicationDetails.profile.genderOptions.${profile.practitionerGender}`)
-        : "-",
-      comparableCurrent: normalizeForDiff(liveProfile.practitionerGender),
-      comparableRequested: normalizeForDiff(profile.practitionerGender),
+      current: liveProfile.practitionerType ? t(`practitionerType.${liveProfile.practitionerType as PractitionerType}`) : "-",
+      requested: profile.practitionerType ? t(`practitionerType.${profile.practitionerType as PractitionerType}`) : "-",
     },
     {
       key: "professionalTitle",
       label: t("applicationDetails.profile.title"),
       current: getReadableValue(liveProfile.professionalTitle),
       requested: getReadableValue(profile.professionalTitle),
-      comparableCurrent: normalizeForDiff(liveProfile.professionalTitle),
-      comparableRequested: normalizeForDiff(profile.professionalTitle),
-    },
-    {
-      key: "bio",
-      label: t("applicationDetails.profile.bio"),
-      current: getReadableValue(liveProfile.bio),
-      requested: getReadableValue(profile.bio),
-      comparableCurrent: normalizeForDiff(liveProfile.bio),
-      comparableRequested: normalizeForDiff(profile.bio),
-    },
-    {
-      key: "yearsOfExperience",
-      label: t("applicationDetails.profile.years"),
-      current:
-        liveProfile.yearsOfExperience != null ? String(liveProfile.yearsOfExperience) : "-",
-      requested: profile.yearsOfExperience != null ? String(profile.yearsOfExperience) : "-",
-      comparableCurrent: normalizeForDiff(liveProfile.yearsOfExperience),
-      comparableRequested: normalizeForDiff(profile.yearsOfExperience),
     },
     {
       key: "sessionPrice30Egp",
       label: t("applicationDetails.profile.sessionPrice30Egp"),
       current: formatMoneyValue(liveProfile.pricing.session30.egp, locale),
       requested: formatMoneyValue(profile.pricing.session30.egp, locale),
-      comparableCurrent: normalizeForDiff(liveProfile.pricing.session30.egp),
-      comparableRequested: normalizeForDiff(profile.pricing.session30.egp),
-    },
-    {
-      key: "sessionPrice30Usd",
-      label: t("applicationDetails.profile.sessionPrice30Usd"),
-      current: formatMoneyValue(liveProfile.pricing.session30.usd, locale),
-      requested: formatMoneyValue(profile.pricing.session30.usd, locale),
-      comparableCurrent: normalizeForDiff(liveProfile.pricing.session30.usd),
-      comparableRequested: normalizeForDiff(profile.pricing.session30.usd),
     },
     {
       key: "sessionPrice60Egp",
       label: t("applicationDetails.profile.sessionPrice60Egp"),
       current: formatMoneyValue(liveProfile.pricing.session60.egp, locale),
       requested: formatMoneyValue(profile.pricing.session60.egp, locale),
-      comparableCurrent: normalizeForDiff(liveProfile.pricing.session60.egp),
-      comparableRequested: normalizeForDiff(profile.pricing.session60.egp),
     },
-    {
-      key: "sessionPrice60Usd",
-      label: t("applicationDetails.profile.sessionPrice60Usd"),
-      current: formatMoneyValue(liveProfile.pricing.session60.usd, locale),
-      requested: formatMoneyValue(profile.pricing.session60.usd, locale),
-      comparableCurrent: normalizeForDiff(liveProfile.pricing.session60.usd),
-      comparableRequested: normalizeForDiff(profile.pricing.session60.usd),
-    },
-    {
-      key: "countryCode",
-      label: t("applicationDetails.applicant.country"),
-      current: getReadableValue(liveApplicant.countryCode),
-      requested: getReadableValue(applicant.countryCode),
-      comparableCurrent: normalizeForDiff(liveApplicant.countryCode),
-      comparableRequested: normalizeForDiff(applicant.countryCode),
-    },
-    {
-      key: "languages",
-      label: t("applicationDetails.profile.languages"),
-      current: liveProfile.languages.length > 0 ? liveProfile.languages.join(", ") : "-",
-      requested: profile.languages.length > 0 ? profile.languages.join(", ") : "-",
-      comparableCurrent: normalizeTextList(liveProfile.languages),
-      comparableRequested: normalizeTextList(profile.languages),
-    },
-    {
-      key: "primarySpecialtyCategoryId",
-      label: t("applicationDetails.profile.primarySpecialtyCategory"),
-      current: liveProfile.primarySpecialtyCategoryId
-        ? categoryLabelById.get(liveProfile.primarySpecialtyCategoryId) ??
-          liveProfile.primarySpecialtyCategoryId
-        : "-",
-      requested: profile.primarySpecialtyCategoryId
-        ? categoryLabelById.get(profile.primarySpecialtyCategoryId) ??
-          profile.primarySpecialtyCategoryId
-        : "-",
-      comparableCurrent: normalizeForDiff(liveProfile.primarySpecialtyCategoryId),
-      comparableRequested: normalizeForDiff(profile.primarySpecialtyCategoryId),
-    },
-    {
-      key: "specialties",
-      label: t("applicationDetails.profile.subSpecialties"),
-      current: formatSpecialtyList(liveProfile.specialties, t("applicationDetails.profile.primary")),
-      requested: formatSpecialtyList(profile.specialties, t("applicationDetails.profile.primary")),
-      comparableCurrent: normalizeTextList(
-        liveProfile.specialties
-          .map((item) => `${item.specialtyId}:${item.isPrimary ? "1" : "0"}`)
-          .sort()
-      ),
-      comparableRequested: normalizeTextList(
-        profile.specialties
-          .map((item) => `${item.specialtyId}:${item.isPrimary ? "1" : "0"}`)
-          .sort()
-      ),
-    },
-    {
-      key: "payoutMethodType",
-      label: t("applicationDetails.payout.method"),
-      current: livePayoutDestination?.methodType
-        ? t(
-            `applicationDetails.payout.methodOptions.${livePayoutDestination.methodType as PractitionerPayoutMethodType}`
-          )
-        : "-",
-      requested: payoutDestination?.methodType
-        ? t(
-            `applicationDetails.payout.methodOptions.${payoutDestination.methodType as PractitionerPayoutMethodType}`
-          )
-        : "-",
-      comparableCurrent: normalizeForDiff(livePayoutDestination?.methodType),
-      comparableRequested: normalizeForDiff(payoutDestination?.methodType),
-    },
-    {
-      key: "accountHolderName",
-      label: t("applicationDetails.payout.accountHolderName"),
-      current: getReadableValue(livePayoutDestination?.accountHolderName),
-      requested: getReadableValue(payoutDestination?.accountHolderName),
-      comparableCurrent: normalizeForDiff(livePayoutDestination?.accountHolderName),
-      comparableRequested: normalizeForDiff(payoutDestination?.accountHolderName),
-    },
-    {
-      key: "bankName",
-      label: t("applicationDetails.payout.bankName"),
-      current: getReadableValue(livePayoutDestination?.bankName),
-      requested: getReadableValue(payoutDestination?.bankName),
-      comparableCurrent: normalizeForDiff(livePayoutDestination?.bankName),
-      comparableRequested: normalizeForDiff(payoutDestination?.bankName),
-    },
-    {
-      key: "bankAccountNumber",
-      label: t("applicationDetails.payout.bankAccountNumber"),
-      current: getReadableValue(livePayoutDestination?.bankAccountNumber),
-      requested: getReadableValue(payoutDestination?.bankAccountNumber),
-      comparableCurrent: normalizeForDiff(livePayoutDestination?.bankAccountNumber),
-      comparableRequested: normalizeForDiff(payoutDestination?.bankAccountNumber),
-    },
-    {
-      key: "iban",
-      label: "IBAN",
-      current: getReadableValue(livePayoutDestination?.iban),
-      requested: getReadableValue(payoutDestination?.iban),
-      comparableCurrent: normalizeForDiff(livePayoutDestination?.iban),
-      comparableRequested: normalizeForDiff(payoutDestination?.iban),
-    },
-    {
-      key: "walletProvider",
-      label: t("applicationDetails.payout.walletProvider"),
-      current: getReadableValue(livePayoutDestination?.walletProvider),
-      requested: getReadableValue(payoutDestination?.walletProvider),
-      comparableCurrent: normalizeForDiff(livePayoutDestination?.walletProvider),
-      comparableRequested: normalizeForDiff(payoutDestination?.walletProvider),
-    },
-    {
-      key: "walletIdentifier",
-      label: t("applicationDetails.payout.walletIdentifier"),
-      current: getReadableValue(livePayoutDestination?.walletIdentifier),
-      requested: getReadableValue(payoutDestination?.walletIdentifier),
-      comparableCurrent: normalizeForDiff(livePayoutDestination?.walletIdentifier),
-      comparableRequested: normalizeForDiff(payoutDestination?.walletIdentifier),
-    },
-  {
-      key: "otherDetails",
-      label: t("applicationDetails.payout.otherDetails"),
-      current: getReadableValue(livePayoutDestination?.otherDetails),
-      requested: getReadableValue(payoutDestination?.otherDetails),
-      comparableCurrent: normalizeForDiff(livePayoutDestination?.otherDetails),
-      comparableRequested: normalizeForDiff(payoutDestination?.otherDetails),
-    },
-  ].filter((item) => item.comparableCurrent !== item.comparableRequested);
-  const priceChangeItems = changeItems.filter((item) => item.key.startsWith("sessionPrice"));
-  const nonPriceChangeItems = changeItems.filter((item) => !item.key.startsWith("sessionPrice"));
-  const visibleChangeItems = showAllChanges
-    ? changeItems
-    : [
-        ...priceChangeItems,
-        ...nonPriceChangeItems.slice(0, Math.max(4 - priceChangeItems.length, 0)),
-      ];
-  const hiddenChangeCount = Math.max(changeItems.length - visibleChangeItems.length, 0);
-  const hasChangeSummary = changeItems.length > 0;
-  const approvalBlockers = [
-    draftFieldIssues.displayName && t("applicationDetails.applicant.displayName"),
-    draftFieldIssues.practitionerType && t("applicationDetails.profile.type"),
-    draftFieldIssues.professionalTitle && t("applicationDetails.profile.title"),
-    draftFieldIssues.bio && t("applicationDetails.profile.bio"),
-    draftFieldIssues.yearsOfExperience && t("applicationDetails.profile.years"),
-    draftFieldIssues.countryCode && t("applicationDetails.applicant.country"),
-    draftFieldIssues.languageCodes && t("applicationDetails.profile.languages"),
-    draftFieldIssues.primarySpecialtyCategoryId &&
-      t("applicationDetails.profile.primarySpecialtyCategory"),
-    draftFieldIssues.specialtyIds && t("applicationDetails.profile.subSpecialties"),
-    draftFieldIssues.payoutMethodType && t("applicationDetails.payout.method"),
-    draftFieldIssues.accountHolderName && t("applicationDetails.payout.accountHolderName"),
-    draftFieldIssues.bankName && t("applicationDetails.payout.bankName"),
-    draftFieldIssues.bankAccountNumber && t("applicationDetails.payout.bankAccountNumber"),
-    draftFieldIssues.iban && "IBAN",
-    draftFieldIssues.walletProvider && t("applicationDetails.payout.walletProvider"),
-    draftFieldIssues.walletIdentifier && t("applicationDetails.payout.walletIdentifier"),
-    draftFieldIssues.otherDetails && t("applicationDetails.payout.otherDetails"),
-  ].filter(Boolean) as string[];
+  ].filter((item) => normalizeForDiff(item.current) !== normalizeForDiff(item.requested));
 
-  const updateForm = (patch: Partial<EditableDraftForm>) => {
-    setDraftSavedResult(null);
-    setForm((prev) => ({
-      ...(prev ?? effectiveForm),
-      ...patch,
-    }));
-  };
+  const payoutCountryCode =
+    getCatalogItemCountryCodes(payoutDestination?.bankName ?? "").at(0) ??
+    getCatalogItemCountryCodes(payoutDestination?.walletProvider ?? "").at(0) ??
+    getCatalogItemCountryCodes(livePayoutDestination?.bankName ?? "").at(0) ??
+    getCatalogItemCountryCodes(livePayoutDestination?.walletProvider ?? "").at(0) ??
+    "";
+  const payoutCountryLabel = payoutCountryCode ? getLocalizedCountryLabel(locale, payoutCountryCode) : "-";
 
-  const getEditableCredential = (
-    credential: PractitionerApplicationDetailsResponse["details"]["credentials"][number]
-  ): EditableCredentialForm =>
-    editableCredentials[credential.credentialId] ??
-    createInitialCredentialForm(credential);
+  const normalizedRequestChangeReasons = requestChangeReasons
+    .map((item) => item.value.trim())
+    .filter((value) => value.length > 0);
+  const normalizedRejectReasons = rejectReasons
+    .map((item) => item.value.trim())
+    .filter((value) => value.length > 0);
 
-  const updateCredentialForm = (
-    credentialId: string,
-    patch: Partial<EditableCredentialForm>,
-    base?: EditableCredentialForm
-  ) => {
-    setCredentialResultById((prev) => {
-      if (!(credentialId in prev)) {
-        return prev;
-      }
-      const next = { ...prev };
-      delete next[credentialId];
-      return next;
-    });
-    setCredentialDeleteResultById((prev) => {
-      if (!(credentialId in prev)) {
-        return prev;
-      }
-      const next = { ...prev };
-      delete next[credentialId];
-      return next;
-    });
-    setEditableCredentials((prev) => ({
-      ...prev,
-      [credentialId]: {
-        ...(base ?? prev[credentialId]),
-        ...patch,
-      },
-    }));
-  };
+  const approveBlockedReasons = [
+    ...missingFromPractitioner.map((item) =>
+      locale === "ar" ? `لا يمكن اعتماد الطلب قبل استكمال ${item.label.replace(/ غير مرفوعة$/, "").replace(/^ناقص:\s*/, "")}.` : `The application cannot be approved before ${item.label.toLowerCase()} is completed.`,
+    ),
+    ...pendingAdminReview.map((item) =>
+      locale === "ar" ? `لا يمكن اعتماد الطلب قبل مراجعة ${item.label.replace(" مرفوعة وتحتاج مراجعة الإدارة", "")}.` : `The application cannot be approved before reviewing ${item.label.replace(" is uploaded and needs admin review", "").toLowerCase()}.`,
+    ),
+    ...rejectedOrInvalid.map((item) =>
+      locale === "ar" ? `لا يمكن اعتماد الطلب مع وجود ${item.label.replace(" يحتاج تصحيح", "")} يحتاج تصحيح.` : `The application cannot be approved while ${item.label.replace(" needs correction", "").toLowerCase()} still needs correction.`,
+    ),
+  ];
 
-  const handleSaveCredential = (
-    credential: PractitionerApplicationDetailsResponse["details"]["credentials"][number]
-  ) => {
-    const current = getEditableCredential(credential);
-    if (!current.fileUrl.trim()) {
-      setCredentialResultById((prev) => ({
-        ...prev,
-        [credential.credentialId]: "error",
-      }));
-      return;
-    }
+  const derivedApproveBlockedReasons = derivedDecision.approveDisabledReasons;
 
-    updateCredential(
-      {
-        id: applicationId,
-        credentialId: credential.credentialId,
-        data: {
-          credentialType: current.credentialType,
-          fileUrl: current.fileUrl.trim(),
-          reviewStatus: current.reviewStatus,
-          reviewNotes: current.reviewNotes.trim() || null,
-          expiresAt: current.expiresAt.trim() || null,
-        },
-      },
-      {
-        onSuccess: async () => {
-          setCredentialResultById((prev) => ({
-            ...prev,
-            [credential.credentialId]: "success",
-          }));
-          await refetch();
-        },
-        onError: () => {
-          setCredentialResultById((prev) => ({
-            ...prev,
-            [credential.credentialId]: "error",
-          }));
-        },
-      }
-    );
-  };
-
-  const handleCreateCredential = () => {
-    if (!newCredentialForm.fileUrl.trim()) {
-      setNewCredentialResult("error");
-      return;
-    }
-
-    createCredential(
-      {
-        id: applicationId,
-        data: {
-          credentialType: newCredentialForm.credentialType,
-          fileUrl: newCredentialForm.fileUrl.trim(),
-          reviewStatus: newCredentialForm.reviewStatus,
-          reviewNotes: newCredentialForm.reviewNotes.trim() || null,
-          expiresAt: newCredentialForm.expiresAt.trim() || null,
-        },
-      },
-      {
-        onSuccess: async () => {
-          setNewCredentialResult("success");
-          setNewCredentialForm({
-            credentialType: "OTHER",
-            fileUrl: "",
-            reviewStatus: "PENDING",
-            reviewNotes: "",
-            expiresAt: "",
-          });
-          await refetch();
-        },
-        onError: () => {
-          setNewCredentialResult("error");
-        },
-      }
-    );
-  };
-
-  const handleDeleteCredential = (
-    credential: PractitionerApplicationDetailsResponse["details"]["credentials"][number]
-  ) => {
-    const confirmed = window.confirm(
-      t("applicationDetails.credentials.deleteConfirm")
-    );
-    if (!confirmed) {
-      return;
-    }
-
-    deleteCredential(
-      {
-        id: applicationId,
-        credentialId: credential.credentialId,
-      },
-      {
-        onSuccess: async () => {
-          setCredentialDeleteResultById((prev) => ({
-            ...prev,
-            [credential.credentialId]: "success",
-          }));
-          setEditableCredentials((prev) => {
-            const next = { ...prev };
-            delete next[credential.credentialId];
-            return next;
-          });
-          await refetch();
-        },
-        onError: () => {
-          setCredentialDeleteResultById((prev) => ({
-            ...prev,
-            [credential.credentialId]: "error",
-          }));
-        },
-      }
-    );
-  };
-
-  const handleSaveDraft = () => {
-    const trimmedDisplayName = effectiveForm.displayName.trim();
-    const trimmedCategoryId = effectiveForm.primarySpecialtyCategoryId.trim();
-    const specialtyIds = Array.from(new Set(effectiveForm.specialtyIds.filter(Boolean)));
-    const languageCodes = Array.from(
-      new Set(effectiveForm.languageCodes.map((code) => code.trim().toLowerCase()).filter(Boolean))
-    );
-    const yearsOfExperience = normalizeYearsValue(effectiveForm.yearsOfExperience);
-
-    if (
-      effectiveForm.yearsOfExperience.trim().length > 0 &&
-      (yearsOfExperience === null || yearsOfExperience < 0)
-    ) {
-      setDraftSavedResult("error");
-      return;
-    }
-
-    const specialtySelection =
-      trimmedCategoryId && specialtyIds.length > 0
-        ? {
-            primarySpecialtyCategoryId: trimmedCategoryId,
-            specialtyIds,
-          }
-        : undefined;
-
-    const payoutDestination =
-      selectedPayoutMethod &&
-      !draftFieldIssues.payoutMethodType &&
-      !draftFieldIssues.accountHolderName &&
-      !draftFieldIssues.bankName &&
-      !draftFieldIssues.bankAccountNumber &&
-      !draftFieldIssues.iban &&
-      !draftFieldIssues.walletProvider &&
-      !draftFieldIssues.walletIdentifier &&
-      !draftFieldIssues.otherDetails
-        ? {
-            methodType: selectedPayoutMethod,
-            accountHolderName: effectiveForm.accountHolderName.trim() || undefined,
-            bankName: effectiveForm.bankName.trim() || undefined,
-            bankAccountNumber: effectiveForm.bankAccountNumber.trim() || undefined,
-            iban: effectiveForm.iban.trim() || undefined,
-            walletProvider: effectiveForm.walletProvider.trim() || undefined,
-            walletIdentifier: effectiveForm.walletIdentifier.trim() || undefined,
-            otherDetails: effectiveForm.otherDetails.trim() || undefined,
-          }
-        : undefined;
-
-    updateDraft(
-      {
-        id: applicationId,
-        data: {
-          displayName: trimmedDisplayName,
-          practitionerType: effectiveForm.practitionerType,
-          practitionerGender: effectiveForm.practitionerGender || null,
-          professionalTitle: effectiveForm.professionalTitle.trim() || null,
-          bio: effectiveForm.bio.trim() || null,
-          yearsOfExperience,
-          countryCode: effectiveForm.countryCode.trim() || null,
-          languageCodes,
-          specialtySelection,
-          payoutDestination,
-        },
-      },
-      {
-        onSuccess: async () => {
-          setDraftSavedResult("success");
-          setForm(null);
-          await refetch();
-        },
-        onError: () => {
-          setDraftSavedResult("error");
-        },
-      }
-    );
-  };
+  const reviewSteps = [
+    { key: "identity", index: 0, label: t("applicationDetails.review.identityAndSummary") },
+    { key: "professional", index: 1, label: t("applicationDetails.review.professionalProfileAndPricing") },
+    { key: "documents", index: 2, label: t("applicationDetails.review.documentsAndPayout") },
+    { key: "decision", index: 3, label: t("applicationDetails.review.finalDecision") },
+  ];
 
   const handleApprove = () => {
+    if (!derivedDecision.canApprove) {
+      setApproveAttemptedBlocked(true);
+      setApproveResult("error");
+      setApproveErrorMessage(
+        derivedApproveBlockedReasons.length > 0
+          ? derivedApproveBlockedReasons.map((reason) => reason.label).join(" • ")
+          : derivedDecision.statusDescription,
+      );
+      return;
+    }
+
+    setApproveAttemptedBlocked(false);
     setApproveResult(null);
     setApproveErrorMessage(null);
     approve(
       { id: applicationId, data: { note: approveNote || undefined } },
       {
-        onSuccess: () => setApproveResult("success"),
+        onSuccess: async () => {
+          await refetch();
+          setApproveAttemptedBlocked(false);
+          setApproveResult("success");
+        },
         onError: (error) => {
           setApproveResult("error");
-
-          if (!isAppError(error)) {
-            return;
-          }
-
+          if (!isAppError(error)) return;
           const missingRequirements = Array.isArray(error.details?.missingRequirements)
-            ? error.details?.missingRequirements
-                .filter((item): item is string => typeof item === "string")
-                .join(", ")
+            ? error.details?.missingRequirements.filter((item): item is string => typeof item === "string").join(", ")
             : null;
-
           setApproveErrorMessage(
             missingRequirements
               ? `${t("applicationDetails.decision.approve.error")}: ${missingRequirements}`
-              : t("applicationDetails.decision.approve.error")
+              : t("applicationDetails.decision.approve.error"),
           );
         },
-      }
+      },
     );
   };
 
   const handleReject = () => {
-    if (!rejectReason.trim()) {
+    if (normalizedRejectReasons.length === 0) {
       setRejectReasonError(true);
       return;
     }
-    setRejectReasonError(false);
     setRejectResult(null);
     reject(
-      { id: applicationId, data: { reason: rejectReason.trim(), note: rejectNote || undefined } },
+      { id: applicationId, data: { reason: normalizedRejectReasons.join("\n"), note: rejectNote || undefined } },
       {
-        onSuccess: () => setRejectResult("success"),
+        onSuccess: async () => {
+          await refetch();
+          setApproveAttemptedBlocked(false);
+          setRejectResult("success");
+        },
         onError: () => setRejectResult("error"),
-      }
+      },
     );
   };
 
   const handleRequestChanges = () => {
-    if (!requestChangesReason.trim()) {
+    if (normalizedRequestChangeReasons.length === 0) {
       setRequestChangesReasonError(true);
       return;
     }
-    setRequestChangesReasonError(false);
     setRequestChangesResult(null);
     requestChanges(
+      { id: applicationId, data: { reason: normalizedRequestChangeReasons.join("\n"), note: requestChangesNote || undefined } },
       {
-        id: applicationId,
-        data: {
-          reason: requestChangesReason.trim(),
-          note: requestChangesNote || undefined,
+        onSuccess: async () => {
+          await refetch();
+          setApproveAttemptedBlocked(false);
+          setRequestChangesResult("success");
         },
-      },
-      {
-        onSuccess: () => setRequestChangesResult("success"),
         onError: () => setRequestChangesResult("error"),
-      }
+      },
     );
   };
 
-  const statusBadge = (
-    <span
-      className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${statusColour[application.status]}`}
-    >
-      {t(`status.${application.status}`)}
-    </span>
-  );
-
-  const readinessBadge = (
-    <span className="inline-flex items-center rounded-full border border-gray-200 bg-white px-3 py-1 text-xs font-medium text-gray-700 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300">
-      {t("applicationDetails.readiness.canBeReviewed")}:{" "}
-      {readinessSnapshot.canBeReviewed
-        ? t("applicationDetails.readiness.yes")
-        : t("applicationDetails.readiness.no")}
-    </span>
-  );
+  const handleCredentialReview = (
+    credentialId: string,
+    reviewStatus: CredentialReviewStatus,
+  ) => {
+    const reviewNotes = credentialReviewNotes[credentialId]?.trim();
+    setCredentialActionMessage(null);
+    setCredentialActionError(null);
+    updateCredential(
+      {
+        id: applicationId,
+        credentialId,
+        data: {
+          reviewStatus,
+          reviewNotes: reviewNotes ? reviewNotes : undefined,
+        },
+      },
+      {
+        onSuccess: async () => {
+          setApproveAttemptedBlocked(false);
+          setCredentialActionMessage(
+            reviewStatus === "APPROVED"
+              ? locale === "ar"
+                ? "تم تحديث حالة المستند إلى تمت مراجعته."
+                : "The document was marked as reviewed."
+              : locale === "ar"
+                ? "تم تحديث حالة المستند إلى يحتاج تصحيح."
+                : "The document was marked as needing correction.",
+          );
+          await refetch();
+        },
+        onError: (error) => {
+          if (isAppError(error)) {
+            setCredentialActionError(error.message);
+            return;
+          }
+          setCredentialActionError(
+            locale === "ar"
+              ? "تعذر تحديث حالة المستند الآن."
+              : "Could not update the document status right now.",
+          );
+        },
+      },
+    );
+  };
 
   return (
-    <div className="space-y-4">
-      <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-          <div className="space-y-2">
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-primary">
-              {t("applicationDetails.review.title")}
-            </p>
-            <div>
-              <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
-                {liveApplicant.displayName ?? t("applicationDetails.review.fallbackTitle")}
-              </h1>
-              <p className="mt-1 max-w-2xl text-sm leading-6 text-gray-500 dark:text-gray-400">
-                {t("applicationDetails.review.subtitle")}
-              </p>
-            </div>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            {statusBadge}
-            {readinessBadge}
-          </div>
-        </div>
+    <div className="mx-auto w-full max-w-[1180px] space-y-5 px-4 pb-12 lg:px-6">
+      <AdminApplicationReviewHeader
+        avatarUrl={reviewAvatarUrl}
+        name={liveApplicant.displayName ?? t("applicationDetails.review.fallbackTitle")}
+        email={getReadableValue(liveApplicant.email.address)}
+        phone={getReadableValue(liveApplicant.phone.number)}
+        country={applicantCountryLabel}
+        statusBadge={statusBadge}
+        submittedAt={submittedAtLabel}
+        summaryChips={reviewSummaryChips}
+        photoMissingLabel={t("applicationDetails.review.noProfilePhotoUploaded")}
+        previewPhotoLabel={t("applicationDetails.review.previewPhoto")}
+      />
 
-        <div className="mt-4 flex flex-wrap gap-2">
-          {reviewTabs.map((tab) => (
-            <ReviewTabButton
-              key={tab.id}
-              active={reviewTab === tab.id}
-              label={tab.label}
-              onClick={() => setReviewTab(tab.id)}
-            />
-          ))}
-        </div>
-      </div>
+      <AdminApplicationReviewWizard
+        steps={reviewSteps}
+        activeStep={activeStep}
+        onStepChange={setActiveStep}
+        onPrevious={() => setActiveStep((current) => Math.max(current - 1, 0))}
+        onNext={() => setActiveStep((current) => Math.min(current + 1, reviewSteps.length - 1))}
+        onBack={() => {
+          window.location.href = `/${locale}/admin/practitioner-applications`;
+        }}
+        previousLabel={t("applicationDetails.review.previous")}
+        nextLabel={t("applicationDetails.review.next")}
+        backLabel={t("applicationDetails.review.backToList")}
+        previousDisabled={activeStep === 0}
+        nextDisabled={activeStep === reviewSteps.length - 1}
+      >
+        {activeStep === 0 ? (
+          <AdminApplicationStepIdentity
+            avatarUrl={reviewAvatarUrl}
+            name={getReadableValue(applicant.displayName)}
+            email={getReadableValue(liveApplicant.email.address)}
+            phone={getReadableValue(liveApplicant.phone.number)}
+            country={applicantCountryLabel}
+            accountStatus={getLocalizedStatusLabel(locale, liveApplicant.accountStatus)}
+            photoStatus={reviewAvatarUrl ? t("applicationDetails.review.provided") : t("applicationDetails.review.notUploaded")}
+            noPhotoLabel={t("applicationDetails.review.noProfilePhotoUploaded")}
+            guidance={t("applicationDetails.review.identityGuidance")}
+            missingItems={missingIdentityItems}
+            identityDifferences={identityDifferences}
+            liveValueLabel={t("applicationDetails.review.liveValue")}
+            requestedValueLabel={t("applicationDetails.review.requestedValue")}
+            nameLabel={t("applicationDetails.applicant.displayName")}
+            emailLabel={t("applicationDetails.applicant.email")}
+            phoneLabel={t("applicationDetails.applicant.phone")}
+            countryLabel={t("applicationDetails.applicant.country")}
+            accountStatusLabel={t("applicationDetails.applicant.accountStatus")}
+          />
+        ) : null}
 
-      {reviewTab === "compare" ? (
-        <Section heading={t("applicationDetails.sections.profileEdit")}>
-        <p className="mb-4 text-sm text-gray-500 dark:text-gray-400">
-          {t("applicationDetails.edit.comparisonHint")}
-        </p>
-        <div className="grid gap-6 lg:grid-cols-2">
-          <div className="space-y-3">
-            <EditField
-              label={t("applicationDetails.applicant.displayName")}
-              previousLabel={previousValueLabel}
-              previousValue={liveApplicant.displayName}
-            >
-              <InputField
-                type="text"
-                value={effectiveForm.displayName}
-                onChange={(e) => updateForm({ displayName: e.target.value })}
-                error={Boolean(draftFieldIssues.displayName)}
-                hint={draftFieldIssues.displayName}
-              />
-            </EditField>
+        {activeStep === 1 ? (
+          <AdminApplicationStepProfessional
+            profileRows={[
+              { label: t("applicationDetails.profile.type"), value: profile.practitionerType ? t(`practitionerType.${profile.practitionerType as PractitionerType}`) : "-" },
+              { label: t("applicationDetails.profile.title"), value: getReadableValue(profile.professionalTitle) },
+              { label: t("applicationDetails.profile.years"), value: profile.yearsOfExperience != null ? String(profile.yearsOfExperience) : "-" },
+              { label: t("applicationDetails.profile.primarySpecialtyCategory"), value: getReadableValue(profile.primarySpecialtyCategoryId) },
+              { label: t("applicationDetails.profile.specialties"), value: formatSpecialtyList(profile.specialties, t("applicationDetails.profile.primary")) },
+              { label: t("applicationDetails.profile.languages"), value: formatLanguageList(locale, profile.languages) },
+            ]}
+            bio={getReadableValue(profile.bio)}
+            prices={[
+              { label: t("applicationDetails.profile.sessionPrice30Egp"), value: formatMoneyValue(profile.pricing.session30.egp, locale) },
+              { label: t("applicationDetails.profile.sessionPrice60Egp"), value: formatMoneyValue(profile.pricing.session60.egp, locale) },
+              { label: t("applicationDetails.profile.sessionPrice30Usd"), value: formatMoneyValue(profile.pricing.session30.usd, locale) },
+              { label: t("applicationDetails.profile.sessionPrice60Usd"), value: formatMoneyValue(profile.pricing.session60.usd, locale) },
+            ]}
+            differences={professionalDifferences}
+            noDifferencesLabel={t("applicationDetails.review.noImportantDifferences")}
+            liveValueLabel={t("applicationDetails.review.liveValue")}
+            requestedValueLabel={t("applicationDetails.review.requestedValue")}
+            bioLabel={t("applicationDetails.profile.bio")}
+            differencesLabel={t("applicationDetails.review.importantDifferences")}
+          />
+        ) : null}
 
-            <EditField
-              label={t("applicationDetails.profile.type")}
-              previousLabel={previousValueLabel}
-              previousValue={
-                liveProfile.practitionerType
-                  ? t(`practitionerType.${liveProfile.practitionerType as PractitionerType}`)
-                  : "-"
-              }
-            >
-              <Select
-                key={`edit-practitioner-type-${effectiveForm.practitionerType}`}
-                options={PRACTITIONER_TYPES.map((type) => ({
-                  value: type,
-                  label: t(`practitionerType.${type}`),
-                }))}
-                defaultValue={effectiveForm.practitionerType}
-                onChange={(value) =>
-                  updateForm({ practitionerType: value as PractitionerType })
-                }
-                error={Boolean(draftFieldIssues.practitionerType)}
-                hint={draftFieldIssues.practitionerType}
-              />
-            </EditField>
+        {activeStep === 2 ? (
+          <AdminApplicationStepDocumentsPayout
+            credentialsTitle={t("applicationDetails.sections.credentials")}
+            credentialsEmpty={t("applicationDetails.review.noDocumentsUploadedYet")}
+            openFileLabel={t("applicationDetails.credentials.openFile")}
+            reviewCredentialLabel={locale === "ar" ? "مراجعة المستند" : "Review document"}
+            closeReviewLabel={locale === "ar" ? "إغلاق المراجعة" : "Close review"}
+            guidance={t("applicationDetails.review.compareBeforeDecision")}
+            credentials={credentials.map((cred) => ({
+              id: cred.credentialId,
+              typeLabel: getCredentialTypeLabel(locale, cred.credentialType as CredentialType),
+              statusLabel: formatCredentialStatusLabel(t, cred.reviewStatus),
+              statusTone: getCredentialStatusTone(cred.reviewStatus),
+              uploadedAtLabel: t("applicationDetails.credentials.uploadedAt", { date: new Date(cred.uploadedAt).toLocaleDateString(locale) }),
+              expiresAtLabel: cred.expiresAt
+                ? t("applicationDetails.credentials.expiresAt", { date: new Date(cred.expiresAt).toLocaleDateString(locale) })
+                : t("applicationDetails.review.notVerifiedYet"),
+              notesLabel: t("applicationDetails.credentials.reviewNotes"),
+              notesValue: cred.reviewNotes || t("applicationDetails.application.noNotes"),
+              // Credentials are sensitive; open via admin-authenticated endpoint (not raw /uploads).
+              fileUrl: cred.fileUrl ? `${API_BASE_URL}/admin/practitioner-applications/${application.applicationId}/credentials/${cred.credentialId}/file` : null,
+              reviewNoteDraft: credentialReviewNotes[cred.credentialId] ?? cred.reviewNotes ?? "",
+              reviewNotePlaceholder: t("applicationDetails.credentials.reviewNotesPlaceholder"),
+              reviewActionHint:
+                cred.reviewStatus === "PENDING"
+                  ? locale === "ar"
+                    ? "هذا المستند مرفوع ويحتاج مراجعة الإدارة قبل الاعتماد."
+                    : "This document is uploaded and needs admin review before approval."
+                  : cred.reviewStatus === "REJECTED" || cred.reviewStatus === "EXPIRED"
+                    ? locale === "ar"
+                      ? "هذا المستند يحتاج تصحيحًا من المعالج."
+                      : "This document needs correction from the practitioner."
+                    : locale === "ar"
+                      ? "تمت مراجعة هذا المستند."
+                      : "This document has already been reviewed.",
+              reviewedStateLabel:
+                cred.reviewStatus === "APPROVED"
+                  ? locale === "ar"
+                    ? "تمت مراجعته"
+                    : "Reviewed"
+                  : cred.reviewStatus === "REJECTED" || cred.reviewStatus === "EXPIRED"
+                    ? locale === "ar"
+                      ? "يحتاج تصحيح"
+                      : "Needs correction"
+                    : locale === "ar"
+                      ? "بانتظار المراجعة"
+                      : "Pending review",
+              isUpdating: isUpdatingCredential,
+              onReviewNoteChange: (value: string) => {
+                setCredentialReviewNotes((current) => ({
+                  ...current,
+                  [cred.credentialId]: value,
+                }));
+              },
+              onApprove: () => handleCredentialReview(cred.credentialId, "APPROVED"),
+              onReject: () => handleCredentialReview(cred.credentialId, "REJECTED"),
+              canReview: application.status !== "APPROVED" && application.status !== "ARCHIVED",
+            }))}
+            approveCredentialLabel={locale === "ar" ? "تمت مراجعته" : "Mark reviewed"}
+            rejectCredentialLabel={locale === "ar" ? "يحتاج تصحيح" : "Needs correction"}
+            credentialStatusColumnLabel={locale === "ar" ? "الحالة" : "Status"}
+            credentialDatesColumnLabel={locale === "ar" ? "التواريخ" : "Dates"}
+            credentialNotesColumnLabel={locale === "ar" ? "ملاحظات المراجعة" : "Review notes"}
+            credentialActionsColumnLabel={locale === "ar" ? "الإجراءات" : "Actions"}
+            payoutTitle={t("applicationDetails.sections.payout")}
+            payoutRows={[
+              { label: t("applicationDetails.payout.country"), value: payoutCountryLabel },
+              { label: t("applicationDetails.payout.method"), value: formatPayoutMethodLabel(t, livePayoutDestination?.methodType ?? null) },
+              { label: t("applicationDetails.payout.accountHolderName"), value: getReadableValue(livePayoutDestination?.accountHolderName) },
+              { label: t("applicationDetails.payout.bankName"), value: getReadableValue(resolveBankLabel(locale, livePayoutDestination?.bankName)) },
+              { label: t("applicationDetails.payout.walletProvider"), value: getReadableValue(resolveWalletProviderLabel(locale, livePayoutDestination?.walletProvider)) },
+              { label: t("applicationDetails.payout.walletIdentifier"), value: maskSensitiveValue(livePayoutDestination?.walletIdentifier) },
+              { label: "IBAN", value: maskSensitiveValue(livePayoutDestination?.iban) },
+              { label: t("applicationDetails.payout.bankAccountNumber"), value: maskSensitiveValue(livePayoutDestination?.bankAccountNumber) },
+            ]}
+            payoutMissing={!readinessSnapshot.hasPayoutDestination}
+            payoutProvidedLabel={t("applicationDetails.review.payoutDetailsProvided")}
+            payoutMissingLabel={t("applicationDetails.review.missingPayoutDetails")}
+            payoutEmptyLabel={t("applicationDetails.review.payoutDetailsMissing")}
+            identityTitle={locale === "ar" ? "مستندات الهوية الأساسية" : "Required identity documents"}
+            identityHint={locale === "ar" ? "بانتظار التحقق اليدوي" : "Pending manual verification"}
+            identityComplete={hasIdentityDocument}
+            identityEvidenceCompleteLabel={locale === "ar" ? "مكتملة" : "Complete"}
+            identityEvidenceMissingLabel={locale === "ar" ? "ناقصة" : "Incomplete"}
+            identityRows={[
+              {
+                label: locale === "ar" ? "بطاقة الهوية - الوجه الأمامي" : "National ID front",
+                state: getCredentialPresenceState(t, nationalIdFrontCredential),
+              },
+              {
+                label: locale === "ar" ? "بطاقة الهوية - الوجه الخلفي" : "National ID back",
+                state: getCredentialPresenceState(t, nationalIdBackCredential),
+              },
+              {
+                label: locale === "ar" ? "جواز السفر" : "Passport",
+                state: getCredentialPresenceState(t, passportCredential),
+              },
+            ]}
+            qualificationsTitle={t("applicationDetails.sections.qualifications")}
+            qualificationsRows={[
+              {
+                label: locale === "ar" ? "شهادة علمية" : "Academic certificate",
+                state: getCredentialPresenceState(t, academicCredential),
+              },
+            ]}
+            qualificationsStateLabel={getCredentialPresenceState(t, academicCredential)}
+          />
+        ) : null}
 
-            <EditField
-              label={t("applicationDetails.profile.gender")}
-              previousLabel={previousValueLabel}
-              previousValue={
-                liveProfile.practitionerGender
-                  ? t(`applicationDetails.profile.genderOptions.${liveProfile.practitionerGender}`)
-                  : "-"
-              }
-            >
-              <Select
-                key={`edit-practitioner-gender-${effectiveForm.practitionerGender || "none"}`}
-                options={[
-                  {
-                    value: "MALE",
-                    label: t("applicationDetails.profile.genderOptions.MALE"),
-                  },
-                  {
-                    value: "FEMALE",
-                    label: t("applicationDetails.profile.genderOptions.FEMALE"),
-                  },
-                ]}
-                defaultValue={effectiveForm.practitionerGender}
-                onChange={(value) =>
-                  updateForm({ practitionerGender: value as PractitionerGender })
-                }
-              />
-            </EditField>
-
-            <EditField
-              label={t("applicationDetails.profile.title")}
-              previousLabel={previousValueLabel}
-              previousValue={liveProfile.professionalTitle}
-            >
-              <InputField
-                type="text"
-                value={effectiveForm.professionalTitle}
-                onChange={(e) => updateForm({ professionalTitle: e.target.value })}
-                error={Boolean(draftFieldIssues.professionalTitle)}
-                hint={draftFieldIssues.professionalTitle}
-              />
-            </EditField>
-
-            <EditField
-              label={t("applicationDetails.profile.years")}
-              previousLabel={previousValueLabel}
-              previousValue={
-                liveProfile.yearsOfExperience != null ? String(liveProfile.yearsOfExperience) : "-"
-              }
-            >
-              <InputField
-                type="number"
-                min={0}
-                value={effectiveForm.yearsOfExperience}
-                onChange={(e) => updateForm({ yearsOfExperience: e.target.value })}
-                error={Boolean(draftFieldIssues.yearsOfExperience)}
-                hint={draftFieldIssues.yearsOfExperience}
-              />
-            </EditField>
-
-            <EditField
-              label={t("applicationDetails.applicant.country")}
-              previousLabel={previousValueLabel}
-              previousValue={liveApplicant.countryCode}
-            >
-              <Select
-                key={`edit-country-${SUPPORTED_COUNTRY_CODE_OPTIONS.length}-${effectiveForm.countryCode}`}
-                options={SUPPORTED_COUNTRY_CODE_OPTIONS}
-                defaultValue={effectiveForm.countryCode}
-                onChange={(value) => updateForm({ countryCode: value })}
-                error={Boolean(draftFieldIssues.countryCode)}
-                hint={draftFieldIssues.countryCode}
-              />
-            </EditField>
-
-            <EditField
-              label={t("applicationDetails.profile.languages")}
-              previousLabel={previousValueLabel}
-              previousValue={liveProfile.languages.length > 0 ? liveProfile.languages.join(", ") : "-"}
-            >
-              <MultiSelect
-                key={`edit-languages-${effectiveForm.languageCodes.join("-")}`}
-                label=""
-                options={languageOptions}
-                defaultSelected={effectiveForm.languageCodes}
-                onChange={(selected) => updateForm({ languageCodes: selected })}
-                error={Boolean(draftFieldIssues.languageCodes)}
-                hint={draftFieldIssues.languageCodes}
-              />
-            </EditField>
-
-            <EditField
-              label={t("applicationDetails.profile.bio")}
-              previousLabel={previousValueLabel}
-              previousValue={liveProfile.bio}
-            >
-              <TextArea
-                rows={4}
-                value={effectiveForm.bio}
-                onChange={(value) => updateForm({ bio: value })}
-                error={Boolean(draftFieldIssues.bio)}
-                hint={draftFieldIssues.bio}
-              />
-            </EditField>
-          </div>
-
-          <div className="space-y-3">
-            <EditField
-              label={t("applicationDetails.profile.primarySpecialtyCategory")}
-              previousLabel={previousValueLabel}
-              previousValue={
-                liveProfile.primarySpecialtyCategoryId
-                  ? categoryLabelById.get(liveProfile.primarySpecialtyCategoryId) ??
-                    liveProfile.primarySpecialtyCategoryId
-                  : "-"
-              }
-            >
-              <Select
-                key={`edit-category-${effectiveForm.primarySpecialtyCategoryId || "none"}`}
-                options={categoryOptions}
-                defaultValue={effectiveForm.primarySpecialtyCategoryId}
-                onChange={(value) =>
-                  updateForm({
-                    primarySpecialtyCategoryId: value,
-                    specialtyIds: [],
-                  })
-                }
-                error={Boolean(draftFieldIssues.primarySpecialtyCategoryId)}
-                hint={draftFieldIssues.primarySpecialtyCategoryId}
-              />
-            </EditField>
-
-            <EditField
-              label={t("applicationDetails.profile.subSpecialties")}
-              previousLabel={previousValueLabel}
-              previousValue={formatSpecialtyList(
-                liveProfile.specialties,
-                t("applicationDetails.profile.primary"),
-              )}
-            >
-              <MultiSelect
-                key={`edit-specialties-${effectiveForm.primarySpecialtyCategoryId || "none"}`}
-                label=""
-                options={specialtyOptions}
-                defaultSelected={effectiveForm.specialtyIds}
-                disabled={
-                  !effectiveForm.primarySpecialtyCategoryId ||
-                  specialtyOptions.length === 0
-                }
-                onChange={(selected) => updateForm({ specialtyIds: selected })}
-                error={Boolean(draftFieldIssues.specialtyIds)}
-                hint={draftFieldIssues.specialtyIds}
-              />
-            </EditField>
-
-            <EditField
-              label={t("applicationDetails.payout.method")}
-              previousLabel={previousValueLabel}
-              previousValue={
-                livePayoutDestination?.methodType
-                  ? t(
-                      `applicationDetails.payout.methodOptions.${livePayoutDestination.methodType as PractitionerPayoutMethodType}`
-                    )
-                  : "-"
-              }
-            >
-              <Select
-                key={`edit-payout-${selectedPayoutMethod || "none"}`}
-                options={PAYOUT_METHODS.map((method) => ({
-                  value: method,
-                  label: t(`applicationDetails.payout.methodOptions.${method}`),
-                }))}
-                defaultValue={selectedPayoutMethod}
-                onChange={(value) =>
-                  updateForm({
-                    payoutMethodType: value as PractitionerPayoutMethodType,
-                  })
-                }
-                error={Boolean(draftFieldIssues.payoutMethodType)}
-                hint={draftFieldIssues.payoutMethodType}
-              />
-            </EditField>
-
-            {selectedPayoutMethod ? (
-              <div className="grid gap-3 rounded-xl border border-gray-100 p-4 dark:border-gray-800">
-                <EditField
-                  label={t("applicationDetails.payout.accountHolderName")}
-                  previousLabel={previousValueLabel}
-                  previousValue={livePayoutDestination?.accountHolderName}
-                >
-                  <InputField
-                    type="text"
-                    value={effectiveForm.accountHolderName}
-                    onChange={(e) =>
-                      updateForm({ accountHolderName: e.target.value })
+        {activeStep === 3 ? (
+          <div className="space-y-4">
+            <AdminApplicationStepDecision
+              statusLabel={derivedDecision.statusLabel}
+              statusDescription={derivedDecision.statusDescription}
+              statusTone={derivedDecision.statusTone}
+              sections={[
+                {
+                  title: locale === "ar" ? "ناقص من المعالج" : "Missing from practitioner",
+                  tone: "warning",
+                  emptyLabel:
+                    locale === "ar"
+                      ? "لا توجد بيانات ناقصة من جهة المعالج."
+                      : "Nothing is missing from the practitioner.",
+                  items: derivedDecision.missingFromPractitioner,
+                },
+                {
+                  title: locale === "ar" ? "يحتاج مراجعة من الإدارة" : "Needs admin review",
+                  tone: "info",
+                  emptyLabel:
+                    locale === "ar"
+                      ? "لا توجد مستندات بانتظار مراجعة الإدارة."
+                      : "No documents are waiting for admin review.",
+                  items: derivedDecision.needsAdminReview,
+                },
+                {
+                  title: locale === "ar" ? "مرفوض أو يحتاج تصحيح" : "Rejected or needs correction",
+                  tone: "danger",
+                  emptyLabel:
+                    locale === "ar"
+                      ? "لا توجد عناصر مرفوضة أو تحتاج تصحيح."
+                      : "There are no rejected or correction-needed items.",
+                  items: derivedDecision.rejectedOrNeedsCorrection,
+                },
+                {
+                  title: locale === "ar" ? "جاهز للاعتماد" : "Ready for approval",
+                  tone: "success",
+                  emptyLabel:
+                    locale === "ar"
+                      ? "لن يصبح الطلب جاهزًا للاعتماد إلا بعد زوال الأسباب أعلاه."
+                      : "The application becomes ready for approval only after the items above are resolved.",
+                  items: derivedDecision.readyChecks,
+                },
+              ]}
+              approveDisabledReasons={derivedApproveBlockedReasons}
+              decisionNotice={t("applicationDetails.review.finalDecisionNotice")}
+              cannotApproveHint={t("applicationDetails.review.cannotApproveBeforeMissing")}
+              approveAttemptedBlocked={approveAttemptedBlocked}
+              canBeReviewed={readinessSnapshot.canBeReviewed}
+              canBeApproved={derivedDecision.canApprove}
+              canRequestChanges={readinessSnapshot.canRequestChanges}
+              approveNote={approveNote}
+              setApproveNote={setApproveNote}
+              requestChangeReasons={requestChangeReasons}
+              setRequestChangeReasons={setRequestChangeReasons}
+              requestChangesNote={requestChangesNote}
+              setRequestChangesNote={setRequestChangesNote}
+              rejectReasons={rejectReasons}
+              setRejectReasons={setRejectReasons}
+              rejectNote={rejectNote}
+              setRejectNote={setRejectNote}
+              requestChangesReasonError={requestChangesReasonError}
+              rejectReasonError={rejectReasonError}
+              setRequestChangesReasonError={setRequestChangesReasonError}
+              setRejectReasonError={setRejectReasonError}
+              isApproving={isApproving}
+              isRequestingChanges={isRequestingChanges}
+              isRejecting={isRejecting}
+              onApprove={handleApprove}
+              onRequestChanges={handleRequestChanges}
+              onReject={handleReject}
+              approveLabel={t("applicationDetails.decision.approve.submit")}
+              approveSubmittingLabel={t("applicationDetails.decision.approve.submitting")}
+              requestChangesLabel={t("applicationDetails.decision.requestChanges.submit")}
+              requestChangesSubmittingLabel={t("applicationDetails.decision.requestChanges.submitting")}
+              rejectLabel={t("applicationDetails.decision.reject.submit")}
+              rejectSubmittingLabel={t("applicationDetails.decision.reject.submitting")}
+              approveNoteLabel={t("applicationDetails.decision.approve.noteLabel")}
+              approveNotePlaceholder={t("applicationDetails.decision.approve.notePlaceholder")}
+              requestReasonLabel={t("applicationDetails.decision.requestChanges.reasonLabel")}
+              requestReasonPlaceholder={t("applicationDetails.decision.requestChanges.reasonPlaceholder")}
+              requestReasonRequired={t("applicationDetails.decision.requestChanges.reasonRequired")}
+              requestReasonsHelper={t("applicationDetails.decision.requestChanges.reasonHelper")}
+              addReasonLabel={t("applicationDetails.decision.addReason")}
+              removeReasonLabel={t("applicationDetails.decision.removeReason")}
+              requestNotePlaceholder={t("applicationDetails.decision.requestChanges.notePlaceholder")}
+              rejectReasonLabel={t("applicationDetails.decision.reject.reasonLabel")}
+              rejectReasonPlaceholder={t("applicationDetails.decision.reject.reasonPlaceholder")}
+              rejectReasonRequired={t("applicationDetails.decision.reject.reasonRequired")}
+              rejectReasonsHelper={t("applicationDetails.decision.reject.reasonHelper")}
+              rejectNotePlaceholder={t("applicationDetails.decision.reject.notePlaceholder")}
+              debugData={
+                process.env.NODE_ENV !== "production"
+                  ? {
+                      applicationStatus: application.status,
+                      canBeApproved: derivedDecision.canApprove,
+                      canRequestChanges: readinessSnapshot.canRequestChanges,
+                      blockersCount: completion.blockers.length,
+                      blockerCodes: completion.blockers.map((item) => item.code),
+                      credentialStatuses: credentials.map((credential) => ({
+                        id: credential.credentialId,
+                        type: credential.credentialType,
+                        status: credential.reviewStatus,
+                      })),
+                      derivedDecisionGroups: {
+                        missingFromPractitioner: derivedDecision.missingFromPractitioner.map((item) => item.label),
+                        needsAdminReview: derivedDecision.needsAdminReview.map((item) => item.label),
+                        rejectedOrNeedsCorrection: derivedDecision.rejectedOrNeedsCorrection.map((item) => item.label),
+                        readyChecks: derivedDecision.readyChecks.map((item) => item.label),
+                        internalInconsistencies: derivedDecision.internalInconsistencies.map((item) => item.label),
+                      },
                     }
-                    error={Boolean(draftFieldIssues.accountHolderName)}
-                    hint={draftFieldIssues.accountHolderName}
-                  />
-                </EditField>
-                {selectedPayoutMethod === "BANK_ACCOUNT" ? (
-                  <>
-                    <EditField
-                      label={t("applicationDetails.payout.bankName")}
-                      previousLabel={previousValueLabel}
-                      previousValue={livePayoutDestination?.bankName}
-                    >
-                      <InputField
-                        type="text"
-                        value={effectiveForm.bankName}
-                        onChange={(e) => updateForm({ bankName: e.target.value })}
-                        error={Boolean(draftFieldIssues.bankName)}
-                        hint={draftFieldIssues.bankName}
-                      />
-                    </EditField>
-                    <EditField
-                      label={t("applicationDetails.payout.bankAccountNumber")}
-                      previousLabel={previousValueLabel}
-                      previousValue={livePayoutDestination?.bankAccountNumber}
-                    >
-                      <InputField
-                        type="text"
-                        value={effectiveForm.bankAccountNumber}
-                        onChange={(e) =>
-                          updateForm({ bankAccountNumber: e.target.value })
-                        }
-                        error={Boolean(draftFieldIssues.bankAccountNumber)}
-                        hint={draftFieldIssues.bankAccountNumber}
-                      />
-                    </EditField>
-                  </>
-                ) : null}
-                {selectedPayoutMethod === "IBAN" ? (
-                  <EditField
-                    label="IBAN"
-                    previousLabel={previousValueLabel}
-                    previousValue={livePayoutDestination?.iban}
-                  >
-                    <InputField
-                      type="text"
-                      value={effectiveForm.iban}
-                      onChange={(e) => updateForm({ iban: e.target.value })}
-                      error={Boolean(draftFieldIssues.iban)}
-                      hint={draftFieldIssues.iban}
-                    />
-                  </EditField>
-                ) : null}
-                {selectedPayoutMethod === "WALLET" ? (
-                  <>
-                    <EditField
-                      label={t("applicationDetails.payout.walletProvider")}
-                      previousLabel={previousValueLabel}
-                      previousValue={livePayoutDestination?.walletProvider}
-                    >
-                      <InputField
-                        type="text"
-                        value={effectiveForm.walletProvider}
-                        onChange={(e) =>
-                          updateForm({ walletProvider: e.target.value })
-                        }
-                        error={Boolean(draftFieldIssues.walletProvider)}
-                        hint={draftFieldIssues.walletProvider}
-                      />
-                    </EditField>
-                    <EditField
-                      label={t("applicationDetails.payout.walletIdentifier")}
-                      previousLabel={previousValueLabel}
-                      previousValue={livePayoutDestination?.walletIdentifier}
-                    >
-                      <InputField
-                        type="text"
-                        value={effectiveForm.walletIdentifier}
-                        onChange={(e) =>
-                          updateForm({ walletIdentifier: e.target.value })
-                        }
-                        error={Boolean(draftFieldIssues.walletIdentifier)}
-                        hint={draftFieldIssues.walletIdentifier}
-                      />
-                    </EditField>
-                  </>
-                ) : null}
-                {selectedPayoutMethod === "OTHER" ? (
-                  <EditField
-                    label={t("applicationDetails.payout.otherDetails")}
-                    previousLabel={previousValueLabel}
-                    previousValue={livePayoutDestination?.otherDetails}
-                  >
-                    <TextArea
-                      rows={3}
-                      value={effectiveForm.otherDetails}
-                      onChange={(value) => updateForm({ otherDetails: value })}
-                      error={Boolean(draftFieldIssues.otherDetails)}
-                      hint={draftFieldIssues.otherDetails}
-                    />
-                  </EditField>
-                ) : null}
-              </div>
+                  : null
+              }
+            />
+
+            {(approveResult === "success" && application.status === "APPROVED") ||
+            (rejectResult === "success" && application.status === "REJECTED") ||
+            (requestChangesResult === "success" && application.status === "CHANGES_REQUESTED") ? (
+              <p className="text-sm font-medium text-success-600 dark:text-success-400">
+                {approveResult === "success" && application.status === "APPROVED"
+                  ? t("applicationDetails.decision.approve.success")
+                  : rejectResult === "success" && application.status === "REJECTED"
+                    ? t("applicationDetails.decision.reject.success")
+                    : t("applicationDetails.decision.requestChanges.success")}
+              </p>
+            ) : null}
+            {credentialActionMessage ? (
+              <p className="text-xs font-medium text-success-600 dark:text-success-400">{credentialActionMessage}</p>
+            ) : null}
+            {credentialActionError ? (
+              <p className="text-xs text-error-500">{credentialActionError}</p>
+            ) : null}
+            {approveResult === "error" ? (
+              <p className="text-xs font-medium text-error-500">{approveErrorMessage ?? t("applicationDetails.decision.approve.error")}</p>
+            ) : null}
+            {requestChangesResult === "error" ? (
+              <p className="text-xs text-error-500">{t("applicationDetails.decision.requestChanges.error")}</p>
+            ) : null}
+            {rejectResult === "error" ? (
+              <p className="text-xs text-error-500">{t("applicationDetails.decision.reject.error")}</p>
             ) : null}
           </div>
-        </div>
-        <p className="mt-3 text-xs text-gray-500 dark:text-gray-400">
-          {t("applicationDetails.edit.save.note")}
-        </p>
-        <div className="mt-4 flex flex-wrap items-center gap-3">
-          <button
-            type="button"
-            onClick={handleSaveDraft}
-            disabled={isUpdatingDraft}
-            className="inline-flex items-center rounded-xl bg-primary px-4 py-2 text-sm font-medium text-white transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {isUpdatingDraft
-              ? t("applicationDetails.edit.save.submitting")
-              : t("applicationDetails.edit.save.submit")}
-          </button>
-          {draftSavedResult === "success" ? (
-            <span className="text-sm font-medium text-success-600 dark:text-success-400">
-              {t("applicationDetails.edit.save.success")}
-            </span>
-          ) : null}
-          {draftSavedResult === "error" ? (
-            <span className="text-sm font-medium text-error-500">
-              {t("applicationDetails.edit.save.error")}
-            </span>
-          ) : null}
-        </div>
-        </Section>
-      ) : null}
-
-      {reviewTab === "overview" ? (
-        <>
-          <Section heading={t("applicationDetails.review.changesHeading")}>
-            {hasChangeSummary ? (
-              <div className="space-y-3">
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  {t("applicationDetails.review.changesIntro")}
-                </p>
-                <div className="grid gap-2 md:grid-cols-2">
-                  {visibleChangeItems.map((item) => (
-                    <div
-                      key={item.key}
-                      className="flex h-full flex-col rounded-xl border border-orange-100 bg-orange-50/30 px-3 py-3 dark:border-orange-900/40 dark:bg-orange-900/10"
-                    >
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <p className="text-sm font-semibold text-gray-800 dark:text-white">
-                          {item.label}
-                        </p>
-                        <button
-                          type="button"
-                          onClick={() => setReviewTab("compare")}
-                          className="inline-flex items-center rounded-full border border-orange-200 bg-white px-3 py-1 text-xs font-medium text-orange-700 transition hover:bg-orange-100 dark:border-orange-900/40 dark:bg-gray-900 dark:text-orange-300 dark:hover:bg-orange-900/20"
-                        >
-                          {t("applicationDetails.review.openComparison")}
-                        </button>
-                      </div>
-                      <div className="mt-2 flex flex-wrap items-center gap-2 text-sm">
-                        <span className="inline-flex max-w-full items-center rounded-full border border-gray-200 bg-white px-3 py-1 text-gray-600 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300">
-                          <span className="ml-2 text-xs font-medium text-gray-400">
-                            {t("applicationDetails.review.liveValue")}:
-                          </span>
-                          <span className="truncate">{item.current}</span>
-                        </span>
-                        <span className="text-orange-500">→</span>
-                        <span className="inline-flex max-w-full items-center rounded-full border border-orange-200 bg-white px-3 py-1 text-gray-800 dark:border-orange-900/40 dark:bg-gray-900 dark:text-white">
-                          <span className="ml-2 text-xs font-medium text-orange-500">
-                            {t("applicationDetails.review.requestedValue")}:
-                          </span>
-                          <span className="truncate">{item.requested}</span>
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                {hiddenChangeCount > 0 ? (
-                  <button
-                    type="button"
-                    onClick={() => setShowAllChanges((prev) => !prev)}
-                    className="inline-flex items-center rounded-full border border-orange-200 bg-white px-4 py-2 text-xs font-semibold text-orange-700 transition hover:bg-orange-100 dark:border-orange-900/40 dark:bg-gray-900 dark:text-orange-300 dark:hover:bg-orange-900/20"
-                  >
-                    {showAllChanges
-                      ? t("applicationDetails.review.showFewerChanges")
-                      : t("applicationDetails.review.showMoreChanges", { count: hiddenChangeCount })}
-                  </button>
-                ) : null}
-              </div>
-            ) : (
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                {t("applicationDetails.review.noChanges")}
-              </p>
-            )}
-          </Section>
-
-          <Section heading={t("applicationDetails.sections.applicant")}>
-        <dl className="space-y-3">
-          <Field label={t("applicationDetails.applicant.displayName")} value={liveApplicant.displayName ?? "-"} />
-          <Field label={t("applicationDetails.applicant.email")} value={liveApplicant.email.address ?? "-"} />
-          <Field label={t("applicationDetails.applicant.phone")} value={liveApplicant.phone.number ?? "-"} />
-          <Field label={t("applicationDetails.applicant.country")} value={liveApplicant.countryCode ?? "-"} />
-          <Field label={t("applicationDetails.applicant.accountStatus")} value={liveApplicant.accountStatus} />
-          </dl>
-        </Section>
-
-          <Section heading={t("applicationDetails.sections.profile")}>
-        <dl className="space-y-3">
-          <Field label={t("applicationDetails.profile.type")} value={t(`practitionerType.${liveProfile.practitionerType as PractitionerType}`)} />
-          <Field label={t("applicationDetails.profile.profileStatus")} value={liveProfile.profileStatus} />
-          <Field label={t("applicationDetails.profile.title")} value={liveProfile.professionalTitle ?? "-"} />
-          <Field label={t("applicationDetails.profile.bio")} value={liveProfile.bio ?? "-"} />
-          <Field label={t("applicationDetails.profile.years")} value={liveProfile.yearsOfExperience != null ? String(liveProfile.yearsOfExperience) : "-"} />
-          <Field label={t("applicationDetails.profile.languages")} value={liveProfile.languages.length > 0 ? liveProfile.languages.join(", ") : "-"} />
-          <Field
-            label={t("applicationDetails.profile.specialties")}
-            value={
-              liveProfile.specialties.length === 0 ? (
-                t("applicationDetails.profile.noSpecialties")
-              ) : (
-                <ul className="space-y-1">
-                  {liveProfile.specialties.map((s) => (
-                    <li key={s.specialtyId}>
-                      {s.title ?? s.slug}
-                      {s.isPrimary ? ` (${t("applicationDetails.profile.primary")})` : ""}
-                    </li>
-                  ))}
-                </ul>
-              )
-            }
-          />
-        </dl>
-      </Section>
-
-          <Section heading={t("applicationDetails.sections.payout")}>
-        <dl className="space-y-3">
-          <Field
-            label={t("applicationDetails.payout.method")}
-            value={
-              livePayoutDestination?.methodType
-                ? t(
-                    `applicationDetails.payout.methodOptions.${livePayoutDestination.methodType as PractitionerPayoutMethodType}`
-                  )
-                : "-"
-            }
-          />
-          <Field
-            label={t("applicationDetails.payout.accountHolderName")}
-            value={<PayoutValue value={livePayoutDestination?.accountHolderName ?? null} />}
-          />
-          <Field
-            label={t("applicationDetails.payout.bankName")}
-            value={<PayoutValue value={livePayoutDestination?.bankName ?? null} />}
-          />
-          <Field
-            label={t("applicationDetails.payout.bankAccountNumber")}
-            value={<PayoutValue value={livePayoutDestination?.bankAccountNumber ?? null} />}
-          />
-          <Field
-            label="IBAN"
-            value={<PayoutValue value={livePayoutDestination?.iban ?? null} />}
-          />
-          <Field
-            label={t("applicationDetails.payout.walletProvider")}
-            value={<PayoutValue value={livePayoutDestination?.walletProvider ?? null} />}
-          />
-          <Field
-            label={t("applicationDetails.payout.walletIdentifier")}
-            value={<PayoutValue value={livePayoutDestination?.walletIdentifier ?? null} />}
-          />
-          <Field
-            label={t("applicationDetails.payout.otherDetails")}
-            value={<PayoutValue value={livePayoutDestination?.otherDetails ?? null} />}
-          />
-        </dl>
-      </Section>
-
-          <Section heading={t("applicationDetails.sections.application")}>
-        <dl className="space-y-3">
-          <Field
-            label={t("applicationDetails.application.status")}
-            value={statusBadge}
-          />
-          <Field
-            label={t("applicationDetails.application.submittedAt")}
-            value={application.submittedAt ? new Date(application.submittedAt).toLocaleDateString(locale) : "-"}
-          />
-          <Field
-            label={t("applicationDetails.application.reviewedAt")}
-            value={application.reviewedAt ? new Date(application.reviewedAt).toLocaleDateString(locale) : "-"}
-          />
-          <Field
-            label={t("applicationDetails.application.reviewedByUserId")}
-            value={application.reviewedByUserId ?? "-"}
-          />
-          <Field
-            label={t("applicationDetails.application.reviewDecisionReason")}
-            value={application.reviewDecisionReason ?? "-"}
-          />
-          <Field
-            label={t("applicationDetails.application.reviewNotes")}
-            value={application.reviewNotes ?? t("applicationDetails.application.noNotes")}
-          />
-        </dl>
-      </Section>
-
-          <Section heading={t("applicationDetails.sections.readiness")}>
-        <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          {(
-            [
-              ["profileComplete", readinessSnapshot.isProfileCompleted],
-              ["specialties", readinessSnapshot.hasRequiredSpecialties],
-              ["credentials", readinessSnapshot.hasRequiredCredentials],
-              ["payoutDestination", readinessSnapshot.hasPayoutDestination],
-              ["canBeReviewed", readinessSnapshot.canBeReviewed],
-              ["canBeApproved", readinessSnapshot.canBeApproved],
-              ["canRequestChanges", readinessSnapshot.canRequestChanges],
-            ] as [string, boolean][]
-          ).map(([key, value]) => (
-            <div key={key} className="flex items-center justify-between rounded-xl border border-gray-100 px-3 py-2 dark:border-gray-800">
-              <dt className="text-xs font-medium text-gray-500 dark:text-gray-400">
-                {t(`applicationDetails.readiness.${key}`)}
-              </dt>
-              <dd className="text-sm font-semibold">
-                {value
-                  ? t("applicationDetails.readiness.yes")
-                  : t("applicationDetails.readiness.no")}
-              </dd>
-            </div>
-          ))}
-        </dl>
-      </Section>
-        </>
-      ) : null}
-
-      {reviewTab === "credentials" ? (
-        <Section heading={t("applicationDetails.sections.credentials")}>
-        <div className="space-y-4">
-          <div className="rounded-xl border border-dashed border-gray-300 p-4 dark:border-gray-700">
-            <p className="mb-3 text-sm font-semibold text-gray-800 dark:text-white">
-              {t("applicationDetails.credentials.addHeading")}
-            </p>
-            <div className="grid gap-3 md:grid-cols-2">
-              <div>
-                <Label>{t("applicationDetails.credentials.credentialType")}</Label>
-                <Select
-                  key={`new-credential-type-${newCredentialForm.credentialType}`}
-                  options={CREDENTIAL_TYPES.map((type) => ({
-                    value: type,
-                    label: t(`applicationDetails.credentials.type.${type}`),
-                  }))}
-                  defaultValue={newCredentialForm.credentialType}
-                  onChange={(value) =>
-                    setNewCredentialForm((prev) => ({
-                      ...prev,
-                      credentialType: value as CredentialType,
-                    }))
-                  }
-                />
-              </div>
-              <div>
-                <Label>{t("applicationDetails.credentials.reviewStatus")}</Label>
-                <Select
-                  key={`new-credential-status-${newCredentialForm.reviewStatus}`}
-                  options={CREDENTIAL_REVIEW_STATUSES.map((status) => ({
-                    value: status,
-                    label: t(`applicationDetails.credentials.status.${status}`),
-                  }))}
-                  defaultValue={newCredentialForm.reviewStatus}
-                  onChange={(value) =>
-                    setNewCredentialForm((prev) => ({
-                      ...prev,
-                      reviewStatus: value as CredentialReviewStatus,
-                    }))
-                  }
-                />
-              </div>
-              <div className="md:col-span-2">
-                <Label>{t("applicationDetails.credentials.fileUrl")}</Label>
-                <InputField
-                  type="url"
-                  value={newCredentialForm.fileUrl}
-                  onChange={(e) =>
-                    setNewCredentialForm((prev) => ({
-                      ...prev,
-                      fileUrl: e.target.value,
-                    }))
-                  }
-                  placeholder={t("applicationDetails.credentials.fileUrlPlaceholder")}
-                />
-              </div>
-              <div>
-                <Label>{t("applicationDetails.credentials.expiresAtOptional")}</Label>
-                <InputField
-                  type="date"
-                  value={newCredentialForm.expiresAt}
-                  onChange={(e) =>
-                    setNewCredentialForm((prev) => ({
-                      ...prev,
-                      expiresAt: e.target.value,
-                    }))
-                  }
-                />
-              </div>
-              <div>
-                <Label>{t("applicationDetails.credentials.reviewNotes")}</Label>
-                <InputField
-                  type="text"
-                  value={newCredentialForm.reviewNotes}
-                  onChange={(e) =>
-                    setNewCredentialForm((prev) => ({
-                      ...prev,
-                      reviewNotes: e.target.value,
-                    }))
-                  }
-                  placeholder={t("applicationDetails.credentials.reviewNotesPlaceholder")}
-                />
-              </div>
-            </div>
-            <div className="mt-3 flex items-center gap-3">
-              <button
-                type="button"
-                onClick={handleCreateCredential}
-                disabled={isCreatingCredential}
-                className="inline-flex items-center rounded-xl bg-primary px-4 py-2 text-sm font-medium text-white transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {isCreatingCredential
-                  ? t("applicationDetails.credentials.addSubmitting")
-                  : t("applicationDetails.credentials.addSubmit")}
-              </button>
-              {newCredentialResult === "success" ? (
-                <span className="text-sm font-medium text-success-600 dark:text-success-400">
-                  Credential added.
-                </span>
-              ) : null}
-              {newCredentialResult === "error" ? (
-                <span className="text-sm font-medium text-error-500">
-                  {t("applicationDetails.credentials.addError")}
-                </span>
-              ) : null}
-            </div>
-          </div>
-
-          {credentials.length === 0 ? (
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              {t("applicationDetails.credentials.empty")}
-            </p>
-          ) : (
-            <div className="space-y-3">
-              {credentials.map((cred) => {
-                const editable = getEditableCredential(cred);
-                const statusResult = credentialResultById[cred.credentialId];
-                const deleteStatusResult =
-                  credentialDeleteResultById[cred.credentialId];
-                return (
-                  <div
-                    key={cred.credentialId}
-                    className="rounded-xl border border-gray-100 p-4 dark:border-gray-800"
-                  >
-                    <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-                      <p className="text-sm font-medium text-gray-800 dark:text-white">
-                        {t(
-                          `applicationDetails.credentials.type.${cred.credentialType as CredentialType}`
-                        )}
-                      </p>
-                      <span
-                        className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                          credStatusColour[cred.reviewStatus]
-                        }`}
-                      >
-                        {t(
-                          `applicationDetails.credentials.status.${cred.reviewStatus as CredentialReviewStatus}`
-                        )}
-                      </span>
-                    </div>
-                    <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">
-                      {t("applicationDetails.credentials.uploadedAt", {
-                        date: new Date(cred.uploadedAt).toLocaleDateString(locale),
-                      })}{" "}
-                      • Reviewed by: {cred.reviewedByUserId ?? "-"}
-                    </p>
-                    <div className="grid gap-3 md:grid-cols-2">
-                      <div>
-                        <Label>Credential type</Label>
-                        <Select
-                          key={`credential-type-${cred.credentialId}-${editable.credentialType}`}
-                          options={CREDENTIAL_TYPES.map((type) => ({
-                            value: type,
-                            label: t(`applicationDetails.credentials.type.${type}`),
-                          }))}
-                          defaultValue={editable.credentialType}
-                          onChange={(value) =>
-                            updateCredentialForm(
-                              cred.credentialId,
-                              { credentialType: value as CredentialType },
-                              editable
-                            )
-                          }
-                        />
-                      </div>
-                      <div>
-                        <Label>Review status</Label>
-                        <Select
-                          key={`credential-status-${cred.credentialId}-${editable.reviewStatus}`}
-                          options={CREDENTIAL_REVIEW_STATUSES.map((status) => ({
-                            value: status,
-                            label: t(`applicationDetails.credentials.status.${status}`),
-                          }))}
-                          defaultValue={editable.reviewStatus}
-                          onChange={(value) =>
-                            updateCredentialForm(
-                              cred.credentialId,
-                              { reviewStatus: value as CredentialReviewStatus },
-                              editable
-                            )
-                          }
-                        />
-                      </div>
-                      <div className="md:col-span-2">
-                        <Label>File URL</Label>
-                        <InputField
-                          type="url"
-                          value={editable.fileUrl}
-                          onChange={(e) =>
-                            updateCredentialForm(
-                              cred.credentialId,
-                              { fileUrl: e.target.value },
-                              editable
-                            )
-                          }
-                        />
-                      </div>
-                      <div>
-                        <Label>Expires at</Label>
-                        <InputField
-                          type="date"
-                          value={editable.expiresAt}
-                          onChange={(e) =>
-                            updateCredentialForm(
-                              cred.credentialId,
-                              { expiresAt: e.target.value },
-                              editable
-                            )
-                          }
-                        />
-                      </div>
-                      <div>
-                        <Label>Review notes</Label>
-                        <InputField
-                          type="text"
-                          value={editable.reviewNotes}
-                          onChange={(e) =>
-                            updateCredentialForm(
-                              cred.credentialId,
-                              { reviewNotes: e.target.value },
-                              editable
-                            )
-                          }
-                          placeholder="Optional review note"
-                        />
-                      </div>
-                    </div>
-                    <div className="mt-3 flex items-center gap-3">
-                      <button
-                        type="button"
-                        onClick={() => handleSaveCredential(cred)}
-                        disabled={isUpdatingCredential}
-                        className="inline-flex items-center rounded-xl bg-primary px-4 py-2 text-sm font-medium text-white transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
-                      >
-                        {isUpdatingCredential ? "Saving..." : "Save credential"}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleDeleteCredential(cred)}
-                        disabled={isDeletingCredential}
-                        className="inline-flex items-center rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-sm font-medium text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-red-900/40 dark:bg-red-900/20 dark:text-red-300 dark:hover:bg-red-900/30"
-                      >
-                        {isDeletingCredential ? "Deleting..." : "Delete credential"}
-                      </button>
-                      {statusResult === "success" ? (
-                        <span className="text-sm font-medium text-success-600 dark:text-success-400">
-                          Credential updated.
-                        </span>
-                      ) : null}
-                      {statusResult === "error" ? (
-                        <span className="text-sm font-medium text-error-500">
-                          {t("applicationDetails.credentials.updateError")}
-                        </span>
-                      ) : null}
-                      {deleteStatusResult === "success" ? (
-                        <span className="text-sm font-medium text-success-600 dark:text-success-400">
-                          {t("applicationDetails.credentials.deleteSuccess")}
-                        </span>
-                      ) : null}
-                      {deleteStatusResult === "error" ? (
-                        <span className="text-sm font-medium text-error-500">
-                          {t("applicationDetails.credentials.deleteError")}
-                        </span>
-                      ) : null}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      </Section>
-      ) : null}
-
-      {reviewTab === "decision" ? (
-        <Section heading={t("applicationDetails.sections.decision")}>
-        {!readinessSnapshot.canBeReviewed ? (
-          <p className="text-sm text-gray-500 dark:text-gray-400">
-            {t("applicationDetails.decision.notReviewable")}
-          </p>
-        ) : approveResult === "success" ||
-          rejectResult === "success" ||
-          requestChangesResult === "success" ? (
-          <p className="text-sm font-medium text-success-600 dark:text-success-400">
-            {approveResult === "success"
-              ? t("applicationDetails.decision.approve.success")
-              : rejectResult === "success"
-                ? t("applicationDetails.decision.reject.success")
-                : t("applicationDetails.decision.requestChanges.success")}
-          </p>
-        ) : (
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-            <div className="space-y-3">
-              {!readinessSnapshot.canBeApproved ? (
-                <div className="rounded-2xl border border-orange-200 bg-orange-50/70 p-4 text-sm text-orange-900 dark:border-orange-900/40 dark:bg-orange-900/10 dark:text-orange-100">
-                  <p className="font-semibold">
-                    {t("applicationDetails.decision.blockedHeading")}
-                  </p>
-                  <p className="mt-1 text-xs leading-6 text-orange-800/90 dark:text-orange-200/80">
-                    {t("applicationDetails.decision.blockedHint")}
-                  </p>
-                  {approvalBlockers.length > 0 ? (
-                    <ul className="mt-3 space-y-1 text-xs">
-                      {approvalBlockers.map((item) => (
-                        <li key={item} className="flex items-start gap-2">
-                          <span className="mt-1 h-1.5 w-1.5 rounded-full bg-orange-500" />
-                          <span>{item}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  ) : null}
-                </div>
-              ) : null}
-              <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                {t("applicationDetails.decision.approve.title")}
-              </p>
-              <textarea
-                rows={3}
-                value={approveNote}
-                onChange={(e) => setApproveNote(e.target.value)}
-                placeholder={t("applicationDetails.decision.approve.notePlaceholder")}
-                className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
-              />
-              <button
-                type="button"
-                disabled={!readinessSnapshot.canBeApproved || isApproving}
-                onClick={handleApprove}
-                className="inline-flex items-center gap-2 rounded-xl bg-green-600 px-5 py-2 text-sm font-medium text-white transition hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {isApproving ? t("applicationDetails.decision.approve.submitting") : t("applicationDetails.decision.approve.submit")}
-              </button>
-              {approveResult === "error" ? (
-                <p className="text-xs font-medium text-error-500">
-                  {approveErrorMessage ?? t("applicationDetails.decision.approve.error")}
-                </p>
-              ) : null}
-            </div>
-
-            <div className="space-y-3">
-              <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                {t("applicationDetails.decision.requestChanges.title")}
-              </p>
-              <input
-                type="text"
-                value={requestChangesReason}
-                onChange={(e) => {
-                  setRequestChangesReason(e.target.value);
-                  if (requestChangesReasonError) setRequestChangesReasonError(false);
-                }}
-                placeholder={t(
-                  "applicationDetails.decision.requestChanges.reasonPlaceholder"
-                )}
-                className={`w-full rounded-xl border px-3 py-2 text-sm text-gray-800 dark:bg-gray-800 dark:text-white ${
-                  requestChangesReasonError
-                    ? "border-red-400"
-                    : "border-gray-200 dark:border-gray-700"
-                }`}
-              />
-              {requestChangesReasonError ? (
-                <p className="text-xs text-error-500">
-                  {t(
-                    "applicationDetails.decision.requestChanges.reasonRequired"
-                  )}
-                </p>
-              ) : null}
-              <textarea
-                rows={3}
-                value={requestChangesNote}
-                onChange={(e) => setRequestChangesNote(e.target.value)}
-                placeholder={t(
-                  "applicationDetails.decision.requestChanges.notePlaceholder"
-                )}
-                className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
-              />
-              <button
-                type="button"
-                disabled={!readinessSnapshot.canRequestChanges || isRequestingChanges}
-                onClick={handleRequestChanges}
-                className="inline-flex items-center gap-2 rounded-xl bg-orange-600 px-5 py-2 text-sm font-medium text-white transition hover:bg-orange-700 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {isRequestingChanges
-                  ? t("applicationDetails.decision.requestChanges.submitting")
-                  : t("applicationDetails.decision.requestChanges.submit")}
-              </button>
-              {requestChangesResult === "error" ? (
-                <p className="text-xs text-error-500">
-                  {t("applicationDetails.decision.requestChanges.error")}
-                </p>
-              ) : null}
-            </div>
-
-            <div className="space-y-3">
-              <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                {t("applicationDetails.decision.reject.title")}
-              </p>
-              <input
-                type="text"
-                value={rejectReason}
-                onChange={(e) => {
-                  setRejectReason(e.target.value);
-                  if (rejectReasonError) setRejectReasonError(false);
-                }}
-                placeholder={t("applicationDetails.decision.reject.reasonPlaceholder")}
-                className={`w-full rounded-xl border px-3 py-2 text-sm text-gray-800 dark:bg-gray-800 dark:text-white ${
-                  rejectReasonError
-                    ? "border-red-400"
-                    : "border-gray-200 dark:border-gray-700"
-                }`}
-              />
-              {rejectReasonError ? (
-                <p className="text-xs text-error-500">{t("applicationDetails.decision.reject.reasonRequired")}</p>
-              ) : null}
-              <textarea
-                rows={3}
-                value={rejectNote}
-                onChange={(e) => setRejectNote(e.target.value)}
-                placeholder={t("applicationDetails.decision.reject.notePlaceholder")}
-                className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
-              />
-              <button
-                type="button"
-                disabled={isRejecting}
-                onClick={handleReject}
-                className="inline-flex items-center gap-2 rounded-xl bg-red-600 px-5 py-2 text-sm font-medium text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {isRejecting ? t("applicationDetails.decision.reject.submitting") : t("applicationDetails.decision.reject.submit")}
-              </button>
-            </div>
-          </div>
-        )}
-      </Section>
-      ) : null}
+        ) : null}
+      </AdminApplicationReviewWizard>
     </div>
   );
 }

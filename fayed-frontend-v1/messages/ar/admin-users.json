@@ -1,0 +1,444 @@
+{
+  "page": {
+    "eyebrow": "إدارة النظام",
+    "title": "مستخدمو الإدارة",
+    "description": "إدارة المستخدمين الداخليين، والأدوار، والحالات، وتخصيص الصلاحيات، والتحكم في الجلسات."
+  },
+  "actions": {
+    "create": "إنشاء مستخدم إداري",
+    "retry": "إعادة المحاولة",
+    "back": "رجوع",
+    "view": "عرض التفاصيل",
+    "customizePermissions": "تخصيص الصلاحيات",
+    "editProfile": "تعديل الملف",
+    "updateStatus": "تحديث الحالة",
+    "updateRoles": "تحديث الأدوار",
+    "permissionOverrides": "الصلاحيات المخصصة",
+    "manageOverrides": "إدارة الصلاحيات المخصصة",
+    "revokeSessions": "إلغاء الجلسات",
+    "invalidateTokens": "إبطال الرموز"
+  },
+  "filters": {
+    "search": "بحث",
+    "searchPlaceholder": "ابحث بالاسم أو البريد الإلكتروني أو الهاتف",
+    "role": "الدور",
+    "status": "الحالة",
+    "allRoles": "كل الأدوار",
+    "allStatuses": "كل الحالات"
+  },
+  "table": {
+    "noName": "مستخدم بلا اسم",
+    "columns": {
+      "user": "المستخدم",
+      "email": "البريد الإلكتروني",
+      "roles": "الأدوار",
+      "status": "الحالة",
+      "updatedAt": "آخر تحديث",
+      "actions": "الإجراءات"
+    }
+  },
+  "status": {
+    "ACTIVE": "نشط",
+    "INACTIVE": "غير نشط",
+    "SUSPENDED": "موقوف",
+    "PENDING_VERIFICATION": "بانتظار التحقق",
+    "PENDING_APPROVAL": "بانتظار الموافقة",
+    "DELETED": "محذوف"
+  },
+  "roles": {
+    "superAdmin": "مسؤول أعلى",
+    "admin": "مسؤول",
+    "support": "موظف دعم",
+    "financeStaff": "فريق المالية",
+    "marketingStaff": "فريق التسويق",
+    "practitionerReviewer": "مراجع الممارسين",
+    "patientOperations": "عمليات المرضى",
+    "contentReviewer": "مراجع المحتوى"
+  },
+  "empty": {
+    "title": "لا يوجد مستخدمون إداريون",
+    "description": "لا يوجد مستخدمون داخليون يطابقون الفلاتر الحالية.",
+    "filtered": "حاول تعديل الفلاتر أو كلمات البحث.",
+    "clearFilters": "مسح الفلاتر"
+  },
+  "errors": {
+    "title": "تعذر تحميل المستخدمين الإداريين",
+    "loadFailed": "تعذر تحميل بيانات المستخدمين الإداريين الآن.",
+    "notFoundTitle": "المستخدم الإداري غير موجود",
+    "notFound": "تعذر العثور على المستخدم الداخلي المطلوب.",
+    "generic": "حدث خطأ. حاول مرة أخرى."
+  },
+  "dialogs": {
+    "loadingTitle": "جارٍ تحميل تفاصيل المستخدم",
+    "loadingDescription": "جارٍ جلب أحدث بيانات المستخدم قبل فتح هذا الإجراء."
+  },
+  "detail": {
+    "noEmail": "لا يوجد بريد أساسي",
+    "noValue": "غير متوفر",
+    "profile": {
+      "title": "الملف",
+      "description": "بيانات الحساب الأساسية للمستخدم الداخلي.",
+      "displayName": "الاسم المعروض",
+      "email": "البريد الأساسي",
+      "phone": "الهاتف الأساسي",
+      "tokenVersion": "نسخة الرموز",
+      "locale": "اللغة",
+      "timezone": "المنطقة الزمنية",
+      "status": "الحالة",
+      "updatedAt": "آخر تحديث"
+    },
+    "roles": {
+      "title": "الأدوار",
+      "description": "الأدوار الداخلية المرتبطة بهذا الحساب."
+    },
+    "security": {
+      "title": "الأمان",
+      "description": "التغييرات الحساسة يتم تدقيقها وقد تتطلب تأكيدًا إضافيًا.",
+      "selfWarning": "هذا حسابك أنت. تم تقييد الإجراءات الحساسة على الحساب الذاتي."
+    },
+    "permissions": {
+      "title": "الصلاحيات المخصصة",
+      "description": "صلاحيات الدور هي الأساس. يمكنك السماح بصلاحيات إضافية أو منع صلاحيات محددة. المنع يتغلب دائمًا على السماح.",
+      "empty": "لا توجد صلاحيات مخصصة حاليًا.",
+      "noReason": "لا يوجد سبب",
+      "summaryHint": "تعرض الصلاحيات المخصصة في بطاقات مختصرة لاستغلال المساحة في العرض العريض بشكل أفضل."
+    }
+  },
+  "create": {
+    "title": "إنشاء مستخدم إداري",
+    "description": "إنشاء مستخدم داخلي بدور محدد وكلمة مرور قوية.",
+    "submit": "إنشاء المستخدم",
+    "cancel": "إلغاء",
+    "passwordHint": "يجب تسليم كلمة المرور بشكل آمن خارج النظام. الخادم يخزن قيمة مجزأة فقط.",
+    "fields": {
+      "displayName": "الاسم المعروض",
+      "email": "البريد الإلكتروني",
+      "phone": "الهاتف",
+      "status": "الحالة",
+      "roles": "الأدوار",
+      "password": "كلمة المرور",
+      "displayNamePlaceholder": "أدخل الاسم المعروض",
+      "emailPlaceholder": "أدخل البريد الإلكتروني",
+      "phonePlaceholder": "أدخل رقم الهاتف",
+      "passwordPlaceholder": "أدخل كلمة مرور قوية"
+    },
+    "validation": {
+      "displayName": "يجب أن يتكون الاسم من حرفين على الأقل.",
+      "email": "أدخل بريدًا إلكترونيًا صحيحًا.",
+      "roles": "اختر دورًا واحدًا على الأقل.",
+      "password": "يجب أن تكون كلمة المرور 8 أحرف على الأقل.",
+      "phone": "رقم الهاتف طويل جدًا.",
+      "superAdmin": "لا يمكنك إسناد دور المسؤول الأعلى من هذا الحساب."
+    }
+  },
+  "edit": {
+    "title": "تعديل الملف",
+    "description": "تحديث الحقول الآمنة في ملف المستخدم الداخلي.",
+    "submit": "حفظ التغييرات",
+    "cancel": "إلغاء",
+    "fields": {
+      "displayName": "الاسم المعروض",
+      "displayNameHint": "اجعل الاسم واضحًا وسهل التمييز.",
+      "defaultLocale": "اللغة الافتراضية",
+      "defaultLocalePlaceholder": "مثل ar أو en",
+      "timezone": "المنطقة الزمنية",
+      "timezonePlaceholder": "مثل Africa/Cairo"
+    },
+    "validation": {
+      "displayName": "يجب أن يتكون الاسم من حرفين على الأقل."
+    }
+  },
+  "statusModal": {
+    "title": "تحديث الحالة",
+    "description": "تغيير حالة هذا المستخدم الداخلي إلى نشط أو موقوف أو غير نشط.",
+    "submit": "حفظ الحالة",
+    "cancel": "إلغاء",
+    "fields": {
+      "status": "الحالة"
+    }
+  },
+  "rolesModal": {
+    "title": "تحديث الأدوار",
+    "description": "تعديل الأدوار الداخلية المرتبطة بهذا الحساب.",
+    "submit": "حفظ الأدوار",
+    "cancel": "إلغاء",
+    "selfWarning": "راجع التغيير بعناية. الحماية من خفض الدور أو حذف آخر مسؤول أعلى يفرضها الخادم.",
+    "validation": {
+      "roles": "اختر دورًا واحدًا على الأقل.",
+      "superAdmin": "لا يمكنك إسناد دور المسؤول الأعلى من هذا الحساب."
+    }
+  },
+  "overrides": {
+    "title": "الصلاحيات المخصصة",
+    "description": "صلاحيات الدور هي الأساس. يمكنك السماح بصلاحيات إضافية أو منع صلاحيات محددة. المنع يتغلب دائمًا على السماح.",
+    "submit": "حفظ الصلاحيات المخصصة",
+    "cancel": "إلغاء",
+    "explainer": "صلاحيات الدور هي الأساس. ALLOW تضيف استثناءً صريحًا. DENY تتغلب دائمًا.",
+    "fields": {
+      "permissionKey": "مفتاح الصلاحية",
+      "selectPermission": "اختر مفتاح صلاحية",
+      "effect": "الأثر",
+      "reason": "السبب",
+      "reasonPlaceholder": "سبب اختياري"
+    },
+    "effect": {
+      "allow": "ALLOW",
+      "deny": "DENY",
+      "remove": "إزالة"
+    },
+    "addRow": "إضافة تجاوز",
+    "removeRow": "إزالة السطر",
+    "validation": {
+      "operations": "أضف عملية تجاوز واحدة على الأقل."
+    }
+  },
+  "sessions": {
+    "title": "إلغاء الجلسات",
+    "description": "سيؤدي ذلك إلى تسجيل خروج المستخدم من جميع الجلسات النشطة.",
+    "confirm": "إلغاء الجلسات",
+    "cancel": "إلغاء"
+  },
+  "tokenVersion": {
+    "title": "إبطال الرموز",
+    "description": "سيؤدي ذلك إلى زيادة tokenVersion وفرض إعادة تسجيل الدخول.",
+    "confirm": "إبطال الرموز",
+    "cancel": "إلغاء"
+  },
+  "stepUp": {
+    "title": "تأكيد بكلمة المرور",
+    "description": "الإجراءات الحساسة تتطلب تأكيدًا جديدًا لكلمة المرور.",
+    "passwordLabel": "كلمة المرور",
+    "passwordPlaceholder": "أدخل كلمة المرور",
+    "hint": "لن يتم تخزين كلمة المرور أو تسجيلها.",
+    "confirm": "تحقق",
+    "cancel": "إلغاء",
+    "successNote": "تم تأكيد الخطوة الإضافية بنجاح.",
+    "errors": {
+      "passwordRequired": "كلمة المرور مطلوبة.",
+      "invalidPassword": "كلمة المرور غير صحيحة.",
+      "generic": "فشل التحقق. حاول مرة أخرى."
+    }
+  },
+  "permissions": {
+    "search": {
+      "label": "البحث في الصلاحيات",
+      "placeholder": "ابحث باسم الصلاحية أو وصفها"
+    },
+    "moduleCounts": {
+      "total": "{count, plural, one {صلاحية واحدة} other {# صلاحيات}}",
+      "custom": "{count, plural, one {تخصيص واحد} other {# تخصيصات}}"
+    },
+    "validation": {
+      "noChanges": "قم بإجراء تغيير واحد على الأقل."
+    },
+    "states": {
+      "default": "افتراضي",
+      "allow": "سماح",
+      "deny": "منع"
+    },
+    "unknownPermissionDescription": "قاعدة مخصصة من الخادم.",
+    "modules": {
+      "adminUsers": {
+        "title": "مستخدمو الإدارة",
+        "description": "صلاحيات إدارة المستخدمين الداخليين."
+      },
+      "finance": {
+        "title": "المالية",
+        "description": "صلاحيات سير العمل المالي والمحاسبي."
+      },
+      "settlements": {
+        "title": "التسويات",
+        "description": "صلاحيات عمليات التسوية."
+      },
+      "payouts": {
+        "title": "مدفوعات الممارسين",
+        "description": "صلاحيات عمليات مدفوعات الممارسين."
+      },
+      "refunds": {
+        "title": "الاستردادات",
+        "description": "صلاحيات إجراءات الاسترداد والمتابعة."
+      },
+      "sessions": {
+        "title": "الجلسات",
+        "description": "صلاحيات عرض الجلسات وملخصات الدعم."
+      },
+      "careChat": {
+        "title": "دردشة الرعاية",
+        "description": "صلاحيات الوصول إلى دردشة الرعاية واتخاذ القرار فيها."
+      },
+      "patients": {
+        "title": "المرضى",
+        "description": "صلاحيات سجلات المرضى والقراءات الحساسة."
+      },
+      "support": {
+        "title": "الدعم",
+        "description": "صلاحيات سير عمل الدعم الداخلي."
+      },
+      "practitionerApplications": {
+        "title": "طلبات الممارسين",
+        "description": "صلاحيات مراجعة طلبات الممارسين."
+      },
+      "audit": {
+        "title": "سجل التدقيق",
+        "description": "صلاحيات الوصول إلى سجلات التدقيق."
+      },
+      "notifications": {
+        "title": "الإشعارات",
+        "description": "صلاحيات عمليات الإشعارات."
+      },
+      "other": {
+        "title": "أخرى",
+        "description": "صلاحيات إضافية يعرضها الخادم."
+      }
+    },
+    "adminUsers": {
+      "read": {
+        "label": "عرض مستخدمي الإدارة"
+      },
+      "create": {
+        "label": "إنشاء مستخدمي الإدارة"
+      },
+      "update": {
+        "label": "تعديل مستخدمي الإدارة"
+      },
+      "statusUpdate": {
+        "label": "تحديث حالة المستخدم"
+      },
+      "rolesUpdate": {
+        "label": "تحديث أدوار المستخدم"
+      },
+      "permissionOverridesRead": {
+        "label": "عرض الصلاحيات المخصصة"
+      },
+      "permissionOverridesUpdate": {
+        "label": "إدارة الصلاحيات المخصصة"
+      },
+      "sessionsRevoke": {
+        "label": "إلغاء جلسات المستخدم"
+      },
+      "tokenVersionInvalidate": {
+        "label": "إبطال رموز المستخدم"
+      }
+    },
+    "financeEventsRead": {
+      "label": "عرض أحداث المالية"
+    },
+    "accountingRead": {
+      "label": "عرض المحاسبة"
+    },
+    "accountingWrite": {
+      "label": "إدارة المحاسبة"
+    },
+    "settlementsRead": {
+      "label": "عرض التسويات"
+    },
+    "settlementsWrite": {
+      "label": "إدارة التسويات"
+    },
+    "practitionerPayoutsRead": {
+      "label": "عرض مدفوعات الممارسين"
+    },
+    "practitionerPayoutsWrite": {
+      "label": "إدارة مدفوعات الممارسين"
+    },
+    "practitionerStatementsRead": {
+      "label": "عرض كشوف الممارسين"
+    },
+    "refundsApprove": {
+      "label": "الموافقة على الاستردادات"
+    },
+    "refundsRetry": {
+      "label": "إعادة محاولة الاستردادات"
+    },
+    "sessionsReadAdmin": {
+      "label": "عرض جميع الجلسات"
+    },
+    "sessionsReadSupportSummary": {
+      "label": "عرض ملخص جلسات الدعم"
+    },
+    "careChatRequestDecide": {
+      "label": "اتخاذ قرار بشأن طلبات دردشة الرعاية"
+    },
+    "careChatRequestReadAdmin": {
+      "label": "عرض طلبات دردشة الرعاية"
+    },
+    "careChatConversationReadAdmin": {
+      "label": "عرض محادثات دردشة الرعاية"
+    },
+    "patientsReadAdmin": {
+      "label": "عرض سجلات المرضى"
+    },
+    "patientsSensitiveRead": {
+      "label": "عرض بيانات المرضى الحساسة"
+    },
+    "supportTicketNoteInternal": {
+      "label": "إضافة ملاحظات دعم داخلية"
+    },
+    "supportTicketAssign": {
+      "label": "إسناد تذاكر الدعم"
+    },
+    "practitionerApplicationsRead": {
+      "label": "عرض طلبات الممارسين"
+    },
+    "practitionerApplicationsApprove": {
+      "label": "الموافقة على طلبات الممارسين"
+    },
+    "practitionerApplicationsReject": {
+      "label": "رفض طلبات الممارسين"
+    },
+    "practitionerApplicationsRequestChanges": {
+      "label": "طلب تعديلات على الطلب"
+    },
+    "auditLogRead": {
+      "label": "عرض سجلات التدقيق"
+    },
+    "notificationOpsRead": {
+      "label": "عرض عمليات الإشعارات"
+    },
+    "summary": {
+      "description": "صلاحيات الدور هي الأساس. علِّم على الصلاحية لتفعيلها، أو أزل العلامة لإيقافها. تُحفظ التغييرات بعد الضغط على حفظ.",
+      "title": "كيف تعمل الصلاحيات المخصصة"
+    },
+    "matrix": {
+      "title": "مصفوفة الصلاحيات",
+      "headers": {
+        "permission": "القسم / الصلاحية",
+        "permissionHint": "تبقى مفاتيح الصلاحيات مرئية بشكل ثانوي فقط."
+      },
+      "toolbar": {
+        "moduleLabel": "القسم",
+        "allModules": "كل الأقسام",
+        "showChangedOnly": "إظهار التغييرات فقط",
+        "resetChanges": "إعادة ضبط التغييرات"
+      },
+      "description": "يظهر كل قسم كمصفوفة أفقية مضغوطة. تمتد أسماء الصلاحيات عبر الأعلى، وتستخدم كل خلية مربع اختيار بسيط.",
+      "roleRow": "الافتراضي حسب الدور",
+      "roleRowHint": "ما تمنحه الأدوار المعيّنة افتراضيًا.",
+      "userRow": "صلاحيات المستخدم",
+      "userRowHint": "علِّم لمنح الصلاحية، وأزل العلامة لإزالتها.",
+      "custom": "مخصص",
+      "blocked": "محظور",
+      "roleGranted": "ممنوح من الدور",
+      "roleMissing": "غير ممنوح من الدور",
+      "changedCount": "{count, plural, one {تغيّر واحد في الصلاحيات} other {# تغييرات في الصلاحيات}}",
+      "checkedCount": "{count, plural, one {صلاحية مفعلة واحدة} other {# صلاحيات مفعلة}}"
+    },
+    "page": {
+      "saving": "جارٍ الحفظ...",
+      "description": "صلاحيات الدور هي الأساس. علِّم على الصلاحية لتفعيلها، أو أزل العلامة لإيقافها. تُحفظ التغييرات بعد الضغط على حفظ.",
+      "readOnlyNote": "يمكنك عرض الصلاحيات المخصصة، لكن لا تملك صلاحية تعديلها.",
+      "save": "حفظ الصلاحيات المخصصة",
+      "noMatches": "لا توجد صلاحيات تطابق بحثك.",
+      "title": "تخصيص صلاحيات المستخدم",
+      "saved": "تم حفظ الصلاحيات المخصصة بنجاح.",
+      "saveHint": "تُدقَّق هذه التغييرات وقد تتطلب تأكيد كلمة المرور قبل الحفظ.",
+      "backToUser": "العودة إلى تفاصيل المستخدم",
+      "loadingTitle": "جارٍ تحميل الصلاحيات",
+      "loadingDescription": "جارٍ جلب إعدادات الصلاحيات الحالية لهذا المستخدم.",
+      "noChanges": "لا توجد تغييرات غير محفوظة",
+      "unsavedChanges": "{count, plural, one {تغيير غير محفوظ واحد} other {# تغييرات غير محفوظة}}",
+      "changeCount": "التغييرات الحالية",
+      "changeCountValue": "{count, plural, =0 {0 تغييرات} one {تغيير واحد} other {# تغييرات}}"
+    }
+  }
+}

@@ -15,9 +15,7 @@ import {
   PaymentProvider,
 } from '@prisma/client';
 import { PrismaService } from '@common/prisma/prisma.service';
-import {
-  resolveProviderForCurrency,
-} from '@common/payments/payment-region.resolver';
+import { resolveProviderForCurrency } from '@common/payments/payment-region.resolver';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
 import { PaymentRepository } from '@modules/payments/repositories/payment.repository';
 import { PaymentGeoContextService } from '@modules/payments/services/payment-geo-context.service';
@@ -244,9 +242,9 @@ export class CreateTrainingEnrollmentUseCase {
       return createdPayment;
     });
 
-    let providerResult:
-      | Awaited<ReturnType<typeof providerAdapter.initiateSessionPayment>>
-      | null = null;
+    let providerResult: Awaited<
+      ReturnType<typeof providerAdapter.initiateSessionPayment>
+    > | null = null;
     try {
       providerResult = await providerAdapter.initiateSessionPayment({
         paymentId: payment.id,
@@ -258,7 +256,9 @@ export class CreateTrainingEnrollmentUseCase {
       });
     } catch (error) {
       const failureReason =
-        error instanceof Error ? error.message : 'TRAINING_PAYMENT_PROVIDER_ERROR';
+        error instanceof Error
+          ? error.message
+          : 'TRAINING_PAYMENT_PROVIDER_ERROR';
       await this.prisma.$transaction(async (tx) => {
         await this.paymentRepository.updateStatus(
           payment.id,
@@ -340,8 +340,8 @@ export class CreateTrainingEnrollmentUseCase {
             ...(providerResult.metadata ?? {}),
           },
         },
-          tx,
-        );
+        tx,
+      );
 
       await tx.trainingEnrollmentPaymentAttempt.update({
         where: {

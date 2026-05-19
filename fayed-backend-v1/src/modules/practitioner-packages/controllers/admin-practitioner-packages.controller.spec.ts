@@ -3,8 +3,8 @@ import { AdminPractitionerPackagesController } from './admin-practitioner-packag
 
 describe('AdminPractitionerPackagesController routes', () => {
   it('uses the admin practitioner packages route', () => {
-    expect(Reflect.getMetadata(PATH_METADATA, AdminPractitionerPackagesController)).toBe(
-      'admin/practitioner-packages',
-    );
+    expect(
+      Reflect.getMetadata(PATH_METADATA, AdminPractitionerPackagesController),
+    ).toBe('admin/practitioner-packages');
   });
 });

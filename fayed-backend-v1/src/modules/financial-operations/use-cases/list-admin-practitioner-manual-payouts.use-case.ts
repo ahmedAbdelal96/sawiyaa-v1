@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { FinancialOperationsMapper } from '../mappers/financial-operations.mapper';
 import { FinancialOperationsPractitionerRepository } from '../repositories/financial-operations-practitioner.repository';
 import { PractitionerManualPayoutRepository } from '../repositories/practitioner-manual-payout.repository';

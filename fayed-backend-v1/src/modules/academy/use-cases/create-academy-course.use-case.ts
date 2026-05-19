@@ -25,8 +25,12 @@ export class CreateAcademyCourseUseCase {
     const payload = input.payload;
     const slug = await this.resolveUniqueSlug(payload.title);
     const startsAt = this.parseDate(payload.startsAt);
-    const plannedDurationDays = normalizeAcademyPlanValue(payload.plannedDurationDays);
-    const plannedLectureCount = normalizeAcademyPlanValue(payload.plannedLectureCount);
+    const plannedDurationDays = normalizeAcademyPlanValue(
+      payload.plannedDurationDays,
+    );
+    const plannedLectureCount = normalizeAcademyPlanValue(
+      payload.plannedLectureCount,
+    );
     const requestedStatus = payload.status ?? CourseStatus.DRAFT;
 
     const plan = resolveAcademyCoursePlan({

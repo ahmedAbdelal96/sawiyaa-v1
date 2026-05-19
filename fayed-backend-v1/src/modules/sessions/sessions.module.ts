@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
 import { JwtAccessAuthGuard } from '@common/guards/authentication/jwt-access-auth.guard';
+import { PermissionResolverService } from '@common/guards/authorization/permission-resolver.service';
+import { PermissionsGuard } from '@common/guards/authorization/permissions.guard';
 import { RolesGuard } from '@common/guards/authorization/roles.guard';
 import { AvailabilityModule } from '@modules/availability/availability.module';
 import { CustomerWalletsModule } from '@modules/customer-wallets/customer-wallets.module';
@@ -69,7 +71,9 @@ import { UpdateSessionCancellationPolicyUseCase } from './use-cases/update-sessi
   ],
   providers: [
     JwtAccessAuthGuard,
+    PermissionsGuard,
     RolesGuard,
+    PermissionResolverService,
     SessionAccessPolicy,
     PublicPractitionerVisibilityPolicy,
     SessionMapper,

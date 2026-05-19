@@ -1,5 +1,13 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
-import { PractitionerPackageStatus, PractitionerStatus, UserStatus } from '@prisma/client';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import {
+  PractitionerPackageStatus,
+  PractitionerStatus,
+  UserStatus,
+} from '@prisma/client';
 import { PractitionerPackagePresenter } from '../presenters/practitioner-package.presenter';
 import { PractitionerPackageRepository } from '../repositories/practitioner-package.repository';
 
@@ -28,7 +36,9 @@ export class EnablePractitionerPackageUseCase {
       });
     }
 
-    if (packageTemplate.status !== PractitionerPackageStatus.DISABLED_BY_ADMIN) {
+    if (
+      packageTemplate.status !== PractitionerPackageStatus.DISABLED_BY_ADMIN
+    ) {
       throw new ConflictException({
         messageKey: 'packages.errors.packageMustBeDisabledByAdmin',
         error: 'PACKAGE_MUST_BE_DISABLED_BY_ADMIN',
@@ -49,11 +59,9 @@ export class EnablePractitionerPackageUseCase {
 
     if (
       restoreStatus === PractitionerPackageStatus.ACTIVE &&
-      (
-        packageTemplate.practitioner.acceptsPackages !== true ||
+      (packageTemplate.practitioner.acceptsPackages !== true ||
         packageTemplate.practitioner.status !== PractitionerStatus.APPROVED ||
-        packageTemplate.practitioner.user.status !== UserStatus.ACTIVE
-      )
+        packageTemplate.practitioner.user.status !== UserStatus.ACTIVE)
     ) {
       throw new ConflictException({
         messageKey: 'packages.errors.practitionerNotEligibleForActivation',

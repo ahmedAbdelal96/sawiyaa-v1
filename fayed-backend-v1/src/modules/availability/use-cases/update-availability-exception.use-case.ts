@@ -11,6 +11,7 @@ import { AvailabilityExceptionRepository } from '../repositories/availability-ex
 import { AvailabilityPractitionerRepository } from '../repositories/availability-practitioner.repository';
 import { AvailabilitySlotRepository } from '../repositories/availability-slot.repository';
 import { ResolvePractitionerTimezoneService } from '../services/resolve-practitioner-timezone.service';
+import { ValidateAvailabilitySessionConflictsService } from '../services/validate-availability-session-conflicts.service';
 import { ValidateAvailabilityOverlapService } from '../services/validate-availability-overlap.service';
 
 /**
@@ -26,6 +27,7 @@ export class UpdateAvailabilityExceptionUseCase {
     private readonly availabilityExceptionRepository: AvailabilityExceptionRepository,
     private readonly availabilityMapper: AvailabilityMapper,
     private readonly resolvePractitionerTimezoneService: ResolvePractitionerTimezoneService,
+    private readonly validateAvailabilitySessionConflictsService: ValidateAvailabilitySessionConflictsService,
     private readonly validateAvailabilityOverlapService: ValidateAvailabilityOverlapService,
   ) {}
 
@@ -63,17 +65,33 @@ export class UpdateAvailabilityExceptionUseCase {
 
     const startsAtUtc = input.startsAtUtc ?? existing.startsAtUtc;
     const endsAtUtc = input.endsAtUtc ?? existing.endsAtUtc;
+    const type = input.type ?? existing.type;
     this.validateAvailabilityOverlapService.validateExceptionRange(
       startsAtUtc,
       endsAtUtc,
     );
+
+    const shouldValidateSessionConflict =
+      input.startsAtUtc !== undefined ||
+      input.endsAtUtc !== undefined ||
+      (input.type !== undefined && input.type !== existing.type);
+
+    if (shouldValidateSessionConflict) {
+      await this.validateAvailabilitySessionConflictsService.assertNoBlockingSessionConflict(
+        {
+          practitionerId: practitioner.id,
+          startsAtUtc,
+          endsAtUtc,
+        },
+      );
+    }
 
     const updateResult =
       await this.availabilityExceptionRepository.updateException(
         practitioner.id,
         input.exceptionId,
         {
-          type: input.type ?? existing.type,
+          type,
           startsAtUtc,
           endsAtUtc,
           reason:

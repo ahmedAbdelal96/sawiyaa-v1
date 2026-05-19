@@ -128,12 +128,15 @@ export function useAddPractitionerSupportMessage(ticketId: string) {
 
 // Admin support hooks
 
-export function useAdminSupportTickets(params: AdminSupportListParams = {}) {
+export function useAdminSupportTickets(
+  params: AdminSupportListParams = {},
+  options?: { enabled?: boolean },
+) {
   const role = useSessionRole();
   return useQuery({
     queryKey: adminSupportQueryKeys.ticketsList(params),
     queryFn: () => getAdminSupportTickets(params),
-    enabled: isAdminRole(role),
+    enabled: isAdminRole(role) && (options?.enabled ?? true),
     staleTime: 60_000,
   });
 }

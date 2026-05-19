@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import AdminNotificationsListScreen from "@/features/admin/notifications/components/AdminNotificationsListScreen";
+import AdminPermissionGate from "@/components/admin/AdminPermissionGate";
+import { PermissionKey } from "@/lib/auth/permissions";
 
 type Props = {
   params: Promise<{ locale: string }>;
@@ -20,5 +22,9 @@ export default async function AdminNotificationsPage({ params }: Props) {
   const { locale } = await params;
   setRequestLocale(locale);
 
-  return <AdminNotificationsListScreen />;
+  return (
+    <AdminPermissionGate requiredPermissions={[PermissionKey.NOTIFICATION_OPS_READ]}>
+      <AdminNotificationsListScreen />
+    </AdminPermissionGate>
+  );
 }

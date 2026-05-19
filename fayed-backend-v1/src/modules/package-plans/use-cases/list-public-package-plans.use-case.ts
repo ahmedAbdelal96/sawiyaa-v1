@@ -44,10 +44,11 @@ export class ListPublicPackagePlansUseCase {
   }): Promise<PackagePlanQuotedListResultViewModel> {
     await this.packagePlanPolicyService.assertPackagesEnabled();
 
-    const practitioner = await this.publicPractitionerReadRepository.findByPublicSlug(
-      input.practitionerSlug,
-      input.locale,
-    );
+    const practitioner =
+      await this.publicPractitionerReadRepository.findByPublicSlug(
+        input.practitionerSlug,
+        input.locale,
+      );
 
     if (!practitioner) {
       throw new NotFoundException({
@@ -80,34 +81,34 @@ export class ListPublicPackagePlansUseCase {
     const selectedCurrencyCode = patientProfile
       ? null
       : input.requestedCurrencyCode?.trim().toUpperCase() ||
-      this.packagePlanPolicyService.resolveDefaultPreviewCurrency({
-        practitionerCurrencyCode: practitioner.country?.currencyCode ?? null,
-      });
+        this.packagePlanPolicyService.resolveDefaultPreviewCurrency({
+          practitionerCurrencyCode: practitioner.country?.currencyCode ?? null,
+        });
 
     const items = await Promise.all(
       plans.map(async (plan) => {
         try {
-          const pricingPractitioner =
-            practitioner as typeof practitioner & PublicPackagePricingPractitioner;
+          const pricingPractitioner = practitioner as typeof practitioner &
+            PublicPackagePricingPractitioner;
           const quote = await this.packageQuoteCalculatorService.calculate({
-          plan,
-          practitioner: pricingPractitioner,
-          selectedDurationMinutes: durationMinutes,
-          sessionMode,
-          selectedCurrencyCode,
-          patientCountryIsoCode: patientProfile?.country?.isoCode ?? null,
-          operatingCountryIsoCode: practitioner.country?.isoCode ?? null,
-          patient: null,
-          internalBreakdownVisible: false,
-        });
+            plan,
+            practitioner: pricingPractitioner,
+            selectedDurationMinutes: durationMinutes,
+            sessionMode,
+            selectedCurrencyCode,
+            patientCountryIsoCode: patientProfile?.country?.isoCode ?? null,
+            operatingCountryIsoCode: practitioner.country?.isoCode ?? null,
+            patient: null,
+            internalBreakdownVisible: false,
+          });
 
           return this.packagePlanQuotePresenter.toPublicQuotedItem(
             this.packagePlanPresenter.toViewModel(plan),
             quote,
           );
         } catch (error) {
-          const code = (error as { response?: { error?: string } } | null)?.response
-            ?.error;
+          const code = (error as { response?: { error?: string } } | null)
+            ?.response?.error;
 
           if (code === 'PACKAGE_PLAN_CURRENCY_PRICE_UNAVAILABLE') {
             return null;
@@ -119,7 +120,9 @@ export class ListPublicPackagePlansUseCase {
     );
 
     return {
-      items: items.filter((item): item is NonNullable<typeof item> => item !== null),
+      items: items.filter(
+        (item): item is NonNullable<typeof item> => item !== null,
+      ),
     };
   }
 }

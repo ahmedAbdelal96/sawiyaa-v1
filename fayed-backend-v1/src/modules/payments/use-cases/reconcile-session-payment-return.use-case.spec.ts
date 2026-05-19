@@ -36,9 +36,7 @@ describe('ReconcileSessionPaymentReturnUseCase', () => {
         ),
       findLatestActiveBySessionId: jest
         .fn()
-        .mockResolvedValue(
-          input?.resolvedByActive === false ? null : payment,
-        ),
+        .mockResolvedValue(input?.resolvedByActive === false ? null : payment),
       findSuccessfulBySessionId: jest.fn().mockResolvedValue(payment),
       findById: jest.fn().mockResolvedValue(payment),
     };

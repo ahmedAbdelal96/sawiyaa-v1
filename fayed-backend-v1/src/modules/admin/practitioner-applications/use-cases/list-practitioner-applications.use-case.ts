@@ -1,5 +1,8 @@
 import { Injectable } from '@nestjs/common';
-import { PractitionerApplicationStatus, PractitionerStatus } from '@prisma/client';
+import {
+  PractitionerApplicationStatus,
+  PractitionerStatus,
+} from '@prisma/client';
 import { I18nService } from '@common/i18n/services/i18n.service';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
 import { PractitionerApplicationsAdminMapper } from '../mappers/practitioner-applications-admin.mapper';

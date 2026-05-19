@@ -70,7 +70,8 @@ export class PractitionerPackagesController {
   @ApiResponse({ status: 201, type: PractitionerPackageItemSuccessResponseDto })
   @ApiUnauthorizedResponse({ description: 'Access token is required' })
   @ApiForbiddenResponse({
-    description: 'Only approved OTP-verified practitioner accounts may manage packages',
+    description:
+      'Only approved OTP-verified practitioner accounts may manage packages',
   })
   create(
     @CurrentUser() currentUser: AuthenticatedUser,
@@ -89,7 +90,8 @@ export class PractitionerPackagesController {
   @ApiResponse({ status: 200, type: PractitionerPackageListSuccessResponseDto })
   @ApiUnauthorizedResponse({ description: 'Access token is required' })
   @ApiForbiddenResponse({
-    description: 'Only approved OTP-verified practitioner accounts may manage packages',
+    description:
+      'Only approved OTP-verified practitioner accounts may manage packages',
   })
   list(
     @CurrentUser() currentUser: AuthenticatedUser,
@@ -109,7 +111,8 @@ export class PractitionerPackagesController {
   @ApiResponse({ status: 200, type: PractitionerPackageItemSuccessResponseDto })
   @ApiUnauthorizedResponse({ description: 'Access token is required' })
   @ApiForbiddenResponse({
-    description: 'Only approved OTP-verified practitioner accounts may manage packages',
+    description:
+      'Only approved OTP-verified practitioner accounts may manage packages',
   })
   @ApiNotFoundResponse({ description: 'Package was not found' })
   detail(
@@ -131,7 +134,8 @@ export class PractitionerPackagesController {
   @ApiResponse({ status: 200, type: PractitionerPackageItemSuccessResponseDto })
   @ApiUnauthorizedResponse({ description: 'Access token is required' })
   @ApiForbiddenResponse({
-    description: 'Only approved OTP-verified practitioner accounts may manage packages',
+    description:
+      'Only approved OTP-verified practitioner accounts may manage packages',
   })
   @ApiNotFoundResponse({ description: 'Package was not found' })
   update(
@@ -154,10 +158,12 @@ export class PractitionerPackagesController {
   @ApiResponse({ status: 200, type: PractitionerPackageItemSuccessResponseDto })
   @ApiUnauthorizedResponse({ description: 'Access token is required' })
   @ApiForbiddenResponse({
-    description: 'Only approved OTP-verified practitioner accounts may manage packages',
+    description:
+      'Only approved OTP-verified practitioner accounts may manage packages',
   })
   @ApiConflictResponse({
-    description: 'Package cannot be activated because it violates package rules',
+    description:
+      'Package cannot be activated because it violates package rules',
   })
   @ApiNotFoundResponse({ description: 'Package was not found' })
   activate(
@@ -178,7 +184,8 @@ export class PractitionerPackagesController {
   @ApiResponse({ status: 200, type: PractitionerPackageItemSuccessResponseDto })
   @ApiUnauthorizedResponse({ description: 'Access token is required' })
   @ApiForbiddenResponse({
-    description: 'Only approved OTP-verified practitioner accounts may manage packages',
+    description:
+      'Only approved OTP-verified practitioner accounts may manage packages',
   })
   @ApiConflictResponse({
     description: 'Package must be active before it can be paused',
@@ -202,7 +209,8 @@ export class PractitionerPackagesController {
   @ApiResponse({ status: 200, type: PractitionerPackageItemSuccessResponseDto })
   @ApiUnauthorizedResponse({ description: 'Access token is required' })
   @ApiForbiddenResponse({
-    description: 'Only approved OTP-verified practitioner accounts may manage packages',
+    description:
+      'Only approved OTP-verified practitioner accounts may manage packages',
   })
   @ApiNotFoundResponse({ description: 'Package was not found' })
   archive(

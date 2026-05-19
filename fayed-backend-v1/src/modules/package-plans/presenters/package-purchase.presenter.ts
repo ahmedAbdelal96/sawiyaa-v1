@@ -45,8 +45,8 @@ export class PackagePurchasePresenter {
     purchase: PurchaseRecord;
     sessions?: PurchaseRecord['sessions'];
   }): PatientPackagePurchaseViewModel {
-    const linkedSessionItems = (input.sessions ?? input.purchase.sessions).map((session) =>
-      this.toSessionViewModel(session),
+    const linkedSessionItems = (input.sessions ?? input.purchase.sessions).map(
+      (session) => this.toSessionViewModel(session),
     );
 
     return {
@@ -63,7 +63,9 @@ export class PackagePurchasePresenter {
       durationMinutes: input.purchase.sessionDurationMinutesSnapshot,
       sessionMode: input.purchase.sessionModeSnapshot,
       selectedCurrencyCode: input.purchase.selectedCurrencyCode,
-      regionalPricingMode: this.resolveRegionalPricingMode(input.purchase.patient),
+      regionalPricingMode: this.resolveRegionalPricingMode(
+        input.purchase.patient,
+      ),
       resolvedCountryIsoCode: input.purchase.patient?.country?.isoCode ?? null,
       selectedBaseSessionPrice:
         input.purchase.selectedBaseSessionPriceSnapshot === null ||
@@ -99,7 +101,8 @@ export class PackagePurchasePresenter {
   private resolveRegionalPricingMode(
     patient: PurchaseRecord['patient'],
   ): PaymentRegionalPricingMode {
-    const countryIsoCode = patient?.country?.isoCode?.trim().toUpperCase() ?? null;
+    const countryIsoCode =
+      patient?.country?.isoCode?.trim().toUpperCase() ?? null;
     return countryIsoCode === 'EG' || countryIsoCode === 'EGY'
       ? 'EGYPT_LOCAL'
       : 'INTERNATIONAL';

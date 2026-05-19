@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { CourseStatus } from '@prisma/client';
 import { AcademyPresenter } from '../presenters/academy.presenter';
 import { AcademyRepository } from '../repositories/academy.repository';

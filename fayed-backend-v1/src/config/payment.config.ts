@@ -94,9 +94,7 @@ export default registerAs('payment', () => ({
     checkoutBaseUrl: normalizeBaseUrl(
       process.env.PAYMOB_CHECKOUT_BASE_URL ?? 'https://flashapi.paymob.com',
     ),
-    checkoutFlow: normalizePaymobCheckoutFlow(
-      process.env.PAYMOB_CHECKOUT_FLOW,
-    ),
+    checkoutFlow: normalizePaymobCheckoutFlow(process.env.PAYMOB_CHECKOUT_FLOW),
     methodRegistryJson: process.env.PAYMOB_METHOD_REGISTRY_JSON ?? null,
     integrationIdCard:
       process.env.PAYMOB_INTEGRATION_ID_CARD ??

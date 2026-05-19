@@ -9,9 +9,7 @@ export class GetMyPatientSessionSummaryUseCase {
     private readonly sessionRepository: SessionRepository,
   ) {}
 
-  async execute(input: {
-    userId: string;
-  }) {
+  async execute(input: { userId: string }) {
     const patient = await this.sessionPatientRepository.findByUserId(
       input.userId,
     );

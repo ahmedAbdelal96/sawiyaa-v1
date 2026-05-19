@@ -33,7 +33,7 @@ export class PackagePlanPresenter {
       isActive: item.isActive,
       sortOrder: item.sortOrder,
       archivedAt: item.archivedAt?.toISOString() ?? null,
-      metadataJson: item.metadataJson as Prisma.JsonValue | null,
+      metadataJson: item.metadataJson,
       createdAt: item.createdAt.toISOString(),
       updatedAt: item.updatedAt.toISOString(),
       counts: {

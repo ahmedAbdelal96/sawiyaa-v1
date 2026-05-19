@@ -2,418 +2,338 @@
 
 import { useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import {
-  CheckCircle2,
-  ExternalLink,
-  FileBadge2,
-  Info,
-  Loader2,
-  ShieldCheck,
-  TriangleAlert,
-  Upload,
-} from "lucide-react";
+import { Edit3, ExternalLink, FilePlus2, Loader2, TriangleAlert } from "lucide-react";
+import { toast } from "sonner";
+import { API_BASE_URL } from "@/config/api";
+import Button from "@/components/ui/button/Button";
+import { Modal, ModalBody, ModalHeader } from "@/components/ui/modal";
 import DateField from "@/components/form/input/DateField";
-import InputField from "@/components/form/input/InputField";
+import Label from "@/components/form/Label";
 import { ListStateSkeleton, StateCard } from "@/components/shared/ContentStates";
 import { toAppError } from "@/lib/api/errors";
-import {
-  usePractitionerCredentials,
-  usePractitionerProfile,
-  useUploadPractitionerCredential,
-} from "../hooks/use-practitioners";
-import type { CredentialReviewStatus, CredentialType } from "../types/practitioners.types";
+import { usePractitionerCredentials, useUploadPractitionerCredential } from "../hooks/use-practitioners";
+import type { CredentialReviewStatus, CredentialType, PractitionerCredential } from "../types/practitioners.types";
 
-const statusColour: Record<CredentialReviewStatus, string> = {
-  PENDING: "bg-yellow-50 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-400",
-  APPROVED: "bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400",
-  REJECTED: "bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400",
-  EXPIRED: "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400",
+const statusClasses: Record<CredentialReviewStatus, string> = {
+  PENDING: "bg-yellow-50 text-yellow-700",
+  APPROVED: "bg-green-50 text-green-700",
+  REJECTED: "bg-red-50 text-red-700",
+  EXPIRED: "bg-gray-100 text-gray-600",
 };
 
 const credentialTypes: CredentialType[] = [
   "LICENSE",
   "DEGREE",
   "CERTIFICATION",
-  "NATIONAL_ID",
+  "NATIONAL_ID_FRONT",
+  "NATIONAL_ID_BACK",
   "PASSPORT",
   "MEMBERSHIP",
   "OTHER",
 ];
 
-type UploadFormState = {
+type FormState = {
   credentialType: CredentialType;
-  fileUrl: string;
   expiresAt: string;
+  selectedFileName: string;
+  selectedFile: File | null;
 };
 
-const initialFormState: UploadFormState = {
+const initialFormState: FormState = {
   credentialType: "LICENSE",
-  fileUrl: "",
   expiresAt: "",
+  selectedFileName: "",
+  selectedFile: null,
 };
-
-function formatDate(isoString: string, locale: string) {
-  return new Date(isoString).toLocaleDateString(locale);
-}
 
 type PractitionerCredentialsListProps = {
   isEditable?: boolean;
+  compact?: boolean;
 };
+
+function formatDate(iso: string, locale: string) {
+  return new Date(iso).toLocaleDateString(locale);
+}
+
+function resolveFileLink(fileUrl: string) {
+  if (/^https?:\/\//i.test(fileUrl)) return fileUrl;
+  return `${API_BASE_URL}${fileUrl.startsWith("/") ? "" : "/"}${fileUrl}`;
+}
+
+function getCredentialTypeLabel(type: CredentialType, locale: string) {
+  const isAr = locale === "ar";
+  const labels: Record<CredentialType, string> = {
+    LICENSE: isAr ? "ترخيص" : "License",
+    DEGREE: isAr ? "شهادة علمية" : "Degree",
+    CERTIFICATION: isAr ? "شهادة اعتماد" : "Certification",
+    NATIONAL_ID_FRONT: isAr ? "بطاقة الهوية - الوجه الأمامي" : "National ID - Front",
+    NATIONAL_ID_BACK: isAr ? "بطاقة الهوية - الوجه الخلفي" : "National ID - Back",
+    NATIONAL_ID: isAr ? "بطاقة الهوية الوطنية" : "National ID",
+    PASSPORT: isAr ? "جواز سفر" : "Passport",
+    MEMBERSHIP: isAr ? "عضوية" : "Membership",
+    OTHER: isAr ? "أخرى" : "Other",
+  };
+  return labels[type];
+}
 
 export default function PractitionerCredentialsList({
   isEditable = true,
+  compact = false,
 }: PractitionerCredentialsListProps) {
   const t = useTranslations("practitioner-area");
   const locale = useLocale();
-  const dateLocale = locale === "ar" ? "ar-SA" : "en-US";
+  const isArabic = locale === "ar";
+  const dateLocale = isArabic ? "ar-SA" : "en-US";
 
-  const {
-    data,
-    isLoading,
-    isError,
-    refetch,
-  } = usePractitionerCredentials();
-
-  const { data: profileData } = usePractitionerProfile();
+  const query = usePractitionerCredentials();
   const uploadCredential = useUploadPractitionerCredential();
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState<PractitionerCredential | null>(null);
+  const [form, setForm] = useState<FormState>(initialFormState);
+  const [uploadError, setUploadError] = useState("");
 
-  const [form, setForm] = useState<UploadFormState>(initialFormState);
-  const [feedback, setFeedback] = useState<{
-    tone: "success" | "error";
-    message: string;
-  } | null>(null);
-  const [fieldErrors, setFieldErrors] = useState<{
-    fileUrl?: string;
-  }>({});
+  const rows = useMemo(() => query.data?.credentials ?? [], [query.data?.credentials]);
 
-  const credentials = data?.credentials ?? [];
-  const summary = profileData?.profile.credentialSummary;
-
-  const isReadyForSubmission = useMemo(() => {
-    const totalCredentials = summary?.totalCredentials ?? credentials.length;
-    return totalCredentials > 0;
-  }, [credentials.length, summary?.totalCredentials]);
-
-  const resetForm = () => {
-    setForm(initialFormState);
-    setFieldErrors({});
+  const copy = {
+    title: isArabic ? "المستندات" : "Documents",
+    add: isArabic ? "رفع مستند" : "Upload document",
+    edit: isArabic ? "تعديل" : "Edit",
+    modalAddTitle: isArabic ? "رفع مستند" : "Upload document",
+    modalEditTitle: isArabic ? "تعديل المستند" : "Edit document",
+    modalDescription: isArabic ? "اختر ملفًا من جهازك ثم احفظ." : "Choose a file from your device then save.",
+    type: isArabic ? "النوع" : "Type",
+    file: isArabic ? "الملف" : "File",
+    status: isArabic ? "الحالة" : "Status",
+    expiry: isArabic ? "تاريخ الانتهاء" : "Expiry",
+    actions: isArabic ? "الإجراء" : "Action",
+    noRows: isArabic ? "لا يوجد مستندات مضافة بعد." : "No documents added yet.",
+    openFile: isArabic ? "فتح الملف" : "Open file",
+    chooseFile: isArabic ? "اختر ملفًا من جهازك" : "Choose a file from your device",
+    selectedFile: isArabic ? "الملف المختار" : "Selected file",
+    noteUnavailable: isArabic
+      ? "ملاحظات المستند غير متاحة للحفظ حالياً في هذا المسار."
+      : "Document notes are not available for saving in this flow yet.",
+    supportedTypes: isArabic ? "الأنواع المدعومة: PDF أو صورة" : "Supported types: PDF or image",
+    maxSize: isArabic ? "الحد الأقصى لحجم الملف 5 ميجابايت" : "Maximum file size is 5MB",
+    fileRequired: isArabic ? "يرجى اختيار ملف قبل الحفظ." : "Please choose a file before saving.",
+    fileTypeError: isArabic ? "لا يمكن رفع هذا النوع من الملفات." : "This file type is not supported.",
+    fileSizeError: isArabic ? "حجم الملف أكبر من المسموح." : "File is larger than the allowed limit.",
+    success: isArabic ? "تم رفع المستند بنجاح" : "Document uploaded successfully",
+    save: isArabic ? "حفظ" : "Save",
+    saveChanges: isArabic ? "حفظ التعديل" : "Save changes",
+    cancel: isArabic ? "إلغاء" : "Cancel",
   };
 
-  const handleUpload = async () => {
-    if (!isEditable) {
+  const openAddModal = () => {
+    setEditingItem(null);
+    setForm(initialFormState);
+    setUploadError("");
+    setIsModalOpen(true);
+  };
+
+  const openEditModal = (item: PractitionerCredential) => {
+    setEditingItem(item);
+    setForm({
+      credentialType: item.credentialType,
+      expiresAt: item.expiresAt ? item.expiresAt.slice(0, 10) : "",
+      selectedFileName: "",
+      selectedFile: null,
+    });
+    setUploadError("");
+    setIsModalOpen(true);
+  };
+
+  const handleSave = async () => {
+    if (!form.selectedFile) {
+      setUploadError(copy.fileRequired);
       return;
     }
-    const trimmedUrl = form.fileUrl.trim();
 
-    if (!trimmedUrl) {
-      setFieldErrors({
-        fileUrl: t("credentials.form.validation.fileUrlRequired"),
-      });
+    const allowed = new Set(["application/pdf", "image/jpeg", "image/png", "image/webp"]);
+    if (!allowed.has(form.selectedFile.type)) {
+      setUploadError(copy.fileTypeError);
+      return;
+    }
+    if (form.selectedFile.size > 5 * 1024 * 1024) {
+      setUploadError(copy.fileSizeError);
       return;
     }
 
     try {
-      setFeedback(null);
-      setFieldErrors({});
-
+      setUploadError("");
       await uploadCredential.mutateAsync({
+        file: form.selectedFile,
         credentialType: form.credentialType,
-        fileUrl: trimmedUrl,
-        expiresAt: form.expiresAt ? form.expiresAt : null,
+        expiresAt: form.expiresAt || null,
       });
-
-      setFeedback({
-        tone: "success",
-        message: t("credentials.feedback.uploadSuccess"),
-      });
-      resetForm();
+      setIsModalOpen(false);
+      setEditingItem(null);
+      setForm(initialFormState);
+      toast.success(copy.success);
     } catch (error) {
-      const appError = toAppError(error, {
-        requestPath: "/practitioners/me/credentials",
-      });
-
-      if (appError.code === "PRACTITIONER_CREDENTIAL_ALREADY_EXISTS") {
-        setFeedback({
-          tone: "error",
-          message: t("credentials.feedback.duplicateError"),
-        });
-        return;
-      }
-
-      setFeedback({
-        tone: "error",
-        message: t("credentials.feedback.uploadError"),
-      });
+      const appError = toAppError(error, { requestPath: "/practitioners/me/credentials/upload" });
+      toast.error(appError.message || t("credentials.feedback.uploadError"));
     }
   };
 
-  if (isLoading) {
-    return <ListStateSkeleton items={3} heightClass="h-28" />;
+  if (query.isLoading) {
+    return <ListStateSkeleton items={3} heightClass="h-20" />;
   }
 
-  if (isError || !data) {
+  if (query.isError || !query.data) {
     return (
       <StateCard
         icon={<TriangleAlert className="h-8 w-8 text-red-500" />}
         title={t("credentials.feedback.loadError")}
         note={t("credentials.feedback.loadErrorNote")}
-        action={{
-          label: t("credentials.feedback.retry"),
-          onClick: () => refetch(),
-        }}
+        action={{ label: t("credentials.feedback.retry"), onClick: () => query.refetch() }}
       />
     );
   }
 
   return (
-    <div className="space-y-6">
-      {!isEditable ? (
-        <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-700/30 dark:bg-amber-900/10 dark:text-amber-300">
-          {t("application.statusMessage.UNDER_REVIEW")}
-        </div>
-      ) : null}
-      <div className="rounded-2xl border border-border-light bg-surface-primary p-5 dark:bg-white/5">
-        <div className="flex items-start gap-3">
-          <div className="rounded-2xl bg-primary-light p-2.5 text-text-brand dark:bg-primary/15 dark:text-primary-light">
-            <Info className="h-4 w-4" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-sm font-semibold text-text-primary dark:text-white/90">
-              {t("credentials.management.heading")}
-            </p>
-            <p className="mt-1 text-sm leading-6 text-text-secondary">
-              {t("credentials.management.note")}
-            </p>
-            <p className="mt-2 text-xs text-text-muted">
-              {t("credentials.management.scopeNote")}
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {feedback ? (
-        <div
-          className={`rounded-2xl border px-4 py-3 text-sm ${
-            feedback.tone === "success"
-              ? "border-green-200 bg-green-50 text-green-800 dark:border-green-700/30 dark:bg-green-900/10 dark:text-green-300"
-              : "border-red-200 bg-red-50 text-red-700 dark:border-red-700/30 dark:bg-red-900/10 dark:text-red-300"
-          }`}
+    <div className="space-y-4">
+      <div className="flex items-center justify-between gap-3">
+        <h3 className="text-sm font-semibold text-text-primary">{copy.title}</h3>
+        <Button
+          type="button"
+          variant="primary"
+          size="sm"
+          onClick={openAddModal}
+          disabled={!isEditable}
+          startIcon={<FilePlus2 className="h-4 w-4" />}
         >
-          {feedback.message}
-        </div>
-      ) : null}
-
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.3fr)_minmax(320px,0.9fr)]">
-        <section className="space-y-4">
-          <div className="flex items-center gap-2">
-            <FileBadge2 className="h-4 w-4 text-primary dark:text-primary-light" />
-            <h2 className="text-sm font-semibold text-text-primary dark:text-white/90">
-              {t("credentials.current.heading")}
-            </h2>
-          </div>
-
-          {credentials.length === 0 ? (
-            <StateCard
-              icon={<ShieldCheck className="h-8 w-8 text-text-muted" />}
-              title={t("credentials.emptyTitle")}
-              note={t("credentials.empty")}
-              centered={false}
-              className="p-5"
-            />
-          ) : (
-            <div className="space-y-3">
-              {credentials.map((cred) => (
-                <div
-                  key={cred.credentialId}
-                  className="rounded-2xl border border-border-light bg-surface-primary p-4 dark:bg-white/5"
-                >
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <p className="text-sm font-semibold text-text-primary dark:text-white/90">
-                          {t(`credentials.type.${cred.credentialType}`)}
-                        </p>
-                        <span
-                          className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                            statusColour[cred.reviewStatus]
-                          }`}
-                        >
-                          {t(`credentials.status.${cred.reviewStatus}`)}
-                        </span>
-                      </div>
-                      <p className="mt-1 text-xs text-text-secondary">
-                        {t("credentials.uploadedOn", {
-                          date: formatDate(cred.uploadedAt, dateLocale),
-                        })}
-                        {" "}
-                        <span aria-hidden>&middot;</span>
-                        {" "}
-                        {cred.expiresAt
-                          ? t("credentials.expiresOn", {
-                              date: formatDate(cred.expiresAt, dateLocale),
-                            })
-                          : t("credentials.noExpiry")}
-                      </p>
-                    </div>
-
-                    <a
-                      href={cred.fileUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex shrink-0 items-center gap-1 rounded-xl border border-border-light px-3 py-1.5 text-xs font-medium text-text-secondary transition hover:bg-surface-tertiary dark:hover:bg-white/5"
-                    >
-                      <ExternalLink className="h-3.5 w-3.5" />
-                      {t("credentials.actions.openReference")}
-                    </a>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
-
-        <aside className="space-y-4">
-          <div className="rounded-2xl border border-border-light bg-surface-primary p-5 dark:bg-white/5">
-            <div className="mb-4 flex items-center gap-2">
-              <CheckCircle2 className="h-4 w-4 text-primary dark:text-primary-light" />
-              <h2 className="text-sm font-semibold text-text-primary dark:text-white/90">
-                {t("credentials.summary.heading")}
-              </h2>
-            </div>
-
-            <dl className="space-y-2 text-sm text-text-secondary">
-              <div className="flex items-center justify-between gap-3">
-                <dt>{t("credentials.summary.total")}</dt>
-                <dd className="font-semibold text-text-primary dark:text-white/90">
-                  {summary?.totalCredentials ?? credentials.length}
-                </dd>
-              </div>
-              <div className="flex items-center justify-between gap-3">
-                <dt>{t("credentials.summary.pending")}</dt>
-                <dd className="font-semibold text-text-primary dark:text-white/90">
-                  {summary?.pendingCount ?? credentials.filter((item) => item.reviewStatus === "PENDING").length}
-                </dd>
-              </div>
-              <div className="flex items-center justify-between gap-3">
-                <dt>{t("credentials.summary.approved")}</dt>
-                <dd className="font-semibold text-text-primary dark:text-white/90">
-                  {summary?.approvedCount ?? credentials.filter((item) => item.reviewStatus === "APPROVED").length}
-                </dd>
-              </div>
-              <div className="flex items-center justify-between gap-3">
-                <dt>{t("credentials.summary.rejected")}</dt>
-                <dd className="font-semibold text-text-primary dark:text-white/90">
-                  {summary?.rejectedCount ?? credentials.filter((item) => item.reviewStatus === "REJECTED").length}
-                </dd>
-              </div>
-            </dl>
-
-            <p className="mt-4 text-xs leading-6 text-text-secondary">
-              {isReadyForSubmission
-                ? t("credentials.summary.readyNote")
-                : t("credentials.summary.missingNote")}
-            </p>
-          </div>
-
-          <div className="rounded-2xl border border-border-light bg-surface-primary p-5 dark:bg-white/5">
-            <div className="mb-4 flex items-center gap-2">
-              <Upload className="h-4 w-4 text-primary dark:text-primary-light" />
-              <h2 className="text-sm font-semibold text-text-primary dark:text-white/90">
-                {t("credentials.form.heading")}
-              </h2>
-            </div>
-
-            <div className="space-y-4">
-              <div>
-                <label
-                  htmlFor="credential-type"
-                  className="mb-2 block text-xs font-medium text-text-secondary"
-                >
-                  {t("credentials.form.typeLabel")}
-                </label>
-                <select
-                  id="credential-type"
-                  value={form.credentialType}
-                  onChange={(event) =>
-                    setForm((current) => ({
-                      ...current,
-                      credentialType: event.target.value as CredentialType,
-                    }))
-                  }
-                  disabled={!isEditable}
-                  className="h-11 w-full rounded-xl border border-border-light bg-surface-secondary px-4 py-2.5 text-sm text-text-primary outline-none transition focus:border-border-focus focus:ring-3 focus:ring-primary/10 dark:bg-surface-secondary dark:text-white/90"
-                >
-                  {credentialTypes.map((type) => (
-                    <option key={type} value={type}>
-                      {t(`credentials.type.${type}`)}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label
-                  htmlFor="credential-file-url"
-                  className="mb-2 block text-xs font-medium text-text-secondary"
-                >
-                  {t("credentials.form.fileUrlLabel")}
-                </label>
-                <InputField
-                  id="credential-file-url"
-                  type="url"
-                  value={form.fileUrl}
-                  onChange={(event) =>
-                    setForm((current) => ({
-                      ...current,
-                      fileUrl: event.target.value,
-                    }))
-                  }
-                  placeholder={t("credentials.form.fileUrlPlaceholder")}
-                  disabled={!isEditable}
-                  error={Boolean(fieldErrors.fileUrl)}
-                  hint={fieldErrors.fileUrl ?? t("credentials.form.fileUrlHint")}
-                />
-              </div>
-
-              <div>
-                <DateField
-                  label={t("credentials.form.expiresAtLabel")}
-                  placeholder={t("credentials.form.expiresAtPlaceholder")}
-                  value={form.expiresAt}
-                  onChange={(value) =>
-                    setForm((current) => ({
-                      ...current,
-                      expiresAt: value,
-                    }))
-                  }
-                  disabled={!isEditable}
-                />
-              </div>
-
-              <div className="rounded-2xl border border-dashed border-border-light px-4 py-3 text-xs leading-6 text-text-secondary dark:border-white/10">
-                <p>{t("credentials.form.scopeNote")}</p>
-                <p className="mt-1 text-text-muted">{t("credentials.form.duplicateNote")}</p>
-              </div>
-
-              <button
-                type="button"
-                onClick={handleUpload}
-                disabled={uploadCredential.isPending || !isEditable}
-                className="inline-flex items-center justify-center rounded-2xl bg-primary px-4 py-2.5 text-sm font-medium text-white transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {uploadCredential.isPending ? (
-                  <>
-                    <Loader2 className="me-2 h-4 w-4 animate-spin" />
-                    {t("credentials.actions.uploading")}
-                  </>
-                ) : (
-                  t("credentials.actions.upload")
-                )}
-              </button>
-            </div>
-          </div>
-        </aside>
+          {copy.add}
+        </Button>
       </div>
+
+      <div className={`overflow-hidden rounded-2xl border border-border-light bg-white ${compact ? "" : ""}`}>
+        <div className="grid grid-cols-12 gap-2 border-b border-border-light bg-surface-tertiary/60 px-4 py-3 text-xs font-semibold text-text-secondary">
+          <div className="col-span-3">{copy.type}</div>
+          <div className="col-span-3">{copy.file}</div>
+          <div className="col-span-2">{copy.status}</div>
+          <div className="col-span-3">{copy.expiry}</div>
+          <div className="col-span-1">{copy.actions}</div>
+        </div>
+
+        {rows.length === 0 ? (
+          <div className="px-4 py-8 text-sm text-text-secondary">{copy.noRows}</div>
+        ) : (
+          <div className="divide-y divide-border-light">
+            {rows.map((item) => (
+              <div key={item.credentialId} className="grid grid-cols-12 items-center gap-2 px-4 py-3 text-sm">
+                <div className="col-span-3 text-text-primary">{getCredentialTypeLabel(item.credentialType, locale)}</div>
+                <div className="col-span-3">
+                  <a
+                    href={resolveFileLink(item.fileUrl)}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1 text-primary hover:underline"
+                  >
+                    <ExternalLink className="h-3.5 w-3.5" />
+                    {copy.openFile}
+                  </a>
+                </div>
+                <div className="col-span-2">
+                  <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${statusClasses[item.reviewStatus]}`}>
+                    {t(`credentials.status.${item.reviewStatus}`)}
+                  </span>
+                </div>
+                <div className="col-span-3 text-text-secondary">
+                  {item.expiresAt ? formatDate(item.expiresAt, dateLocale) : t("credentials.noExpiry")}
+                </div>
+                <div className="col-span-1">
+                  <button
+                    type="button"
+                    onClick={() => openEditModal(item)}
+                    disabled={!isEditable}
+                    className="inline-flex items-center rounded-lg border border-border-light px-2 py-1 text-xs text-text-secondary hover:bg-surface-tertiary"
+                    aria-label={copy.edit}
+                    title={copy.edit}
+                  >
+                    <Edit3 className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} size="lg" ariaLabel={editingItem ? copy.modalEditTitle : copy.modalAddTitle}>
+        <ModalHeader title={editingItem ? copy.modalEditTitle : copy.modalAddTitle} description={copy.modalDescription} />
+        <ModalBody className="space-y-4">
+          <div>
+            <Label htmlFor="credential-type">{t("credentials.form.typeLabel")}</Label>
+            <select
+              id="credential-type"
+              value={form.credentialType}
+              onChange={(event) => setForm((current) => ({ ...current, credentialType: event.target.value as CredentialType }))}
+              disabled={!isEditable}
+              className="app-control h-11 w-full appearance-none px-4 py-2.5 text-sm"
+            >
+              {credentialTypes.map((type) => (
+                <option key={type} value={type}>
+                  {getCredentialTypeLabel(type, locale)}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <Label htmlFor="credential-file">{copy.chooseFile}</Label>
+            <input
+              id="credential-file"
+              type="file"
+              accept=".pdf,image/jpeg,image/png,image/webp"
+              disabled={!isEditable}
+              onChange={(event) => {
+                const file = event.target.files?.[0] ?? null;
+                setForm((current) => ({ ...current, selectedFile: file, selectedFileName: file?.name ?? "" }));
+                if (uploadError) setUploadError("");
+              }}
+              className="app-control h-11 w-full cursor-pointer px-3 py-2 text-sm"
+            />
+            <p className="mt-1 text-xs text-text-secondary">{copy.supportedTypes}</p>
+            <p className="text-xs text-text-secondary">{copy.maxSize}</p>
+            {form.selectedFileName ? (
+              <p className="mt-1 text-xs text-text-secondary">{copy.selectedFile}: {form.selectedFileName}</p>
+            ) : null}
+          </div>
+
+          <p className="rounded-xl border border-border-light bg-surface-secondary px-3 py-2 text-xs text-text-secondary">
+            {copy.noteUnavailable}
+          </p>
+
+          <DateField
+            label={t("credentials.form.expiresAtLabel")}
+            placeholder={t("credentials.form.expiresAtPlaceholder")}
+            value={form.expiresAt}
+            onChange={(value) => setForm((current) => ({ ...current, expiresAt: value }))}
+            disabled={!isEditable}
+          />
+
+          {uploadError ? (
+            <p className="rounded-xl border border-warning-200 bg-warning-50 px-3 py-2 text-xs text-warning-900">{uploadError}</p>
+          ) : null}
+
+          <div className="flex flex-wrap gap-2 pt-1">
+            <Button
+              type="button"
+              variant="primary"
+              size="sm"
+              onClick={handleSave}
+              disabled={!isEditable || uploadCredential.isPending}
+              startIcon={uploadCredential.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : undefined}
+            >
+              {uploadCredential.isPending ? t("credentials.actions.uploading") : editingItem ? copy.saveChanges : copy.save}
+            </Button>
+            <Button type="button" variant="outline" size="sm" onClick={() => setIsModalOpen(false)}>
+              {copy.cancel}
+            </Button>
+          </div>
+        </ModalBody>
+      </Modal>
     </div>
   );
 }

@@ -169,7 +169,8 @@ export class SessionJoinAvailableNotificationSweeperService
       ? {
           packagePurchaseId: candidate.packagePurchase.id,
           packagePlanCode: candidate.packagePurchase.packagePlan?.code ?? '',
-          packagePlanTitle: candidate.packagePurchase.packagePlan?.title ?? null,
+          packagePlanTitle:
+            candidate.packagePurchase.packagePlan?.title ?? null,
           packageSessionIndex: session.packageSessionIndex ?? null,
           packageSessionCount: session.packageSessionCount ?? null,
           packageDiscountPercent:
@@ -360,16 +361,14 @@ export class SessionJoinAvailableNotificationSweeperService
     routePath: string;
     scheduledStartAt: Date | null;
     joinOpenAt: Date | null;
-    packageContext?:
-      | {
-          packagePurchaseId: string;
-          packagePlanCode: string;
-          packagePlanTitle?: string | null;
-          packageSessionIndex: number | null;
-          packageSessionCount: number | null;
-          packageDiscountPercent?: number | null;
-        }
-      | null;
+    packageContext?: {
+      packagePurchaseId: string;
+      packagePlanCode: string;
+      packagePlanTitle?: string | null;
+      packageSessionIndex: number | null;
+      packageSessionCount: number | null;
+      packageDiscountPercent?: number | null;
+    } | null;
   }): Promise<void> {
     const packageContextText = this.buildPackageContextText(
       input.locale,
@@ -429,16 +428,14 @@ export class SessionJoinAvailableNotificationSweeperService
     routePath: string;
     scheduledStartAt: Date | null;
     joinOpenAt: Date | null;
-    packageContext?:
-      | {
-          packagePurchaseId: string;
-          packagePlanCode: string;
-          packagePlanTitle?: string | null;
-          packageSessionIndex: number | null;
-          packageSessionCount: number | null;
-          packageDiscountPercent?: number | null;
-        }
-      | null;
+    packageContext?: {
+      packagePurchaseId: string;
+      packagePlanCode: string;
+      packagePlanTitle?: string | null;
+      packageSessionIndex: number | null;
+      packageSessionCount: number | null;
+      packageDiscountPercent?: number | null;
+    } | null;
   }): Promise<void> {
     if (!input.email) {
       this.logger.warn(
@@ -518,16 +515,14 @@ export class SessionJoinAvailableNotificationSweeperService
 
   private buildPackageContextText(
     locale: 'en' | 'ar',
-    packageContext?:
-      | {
-          packagePurchaseId: string;
-          packagePlanCode: string;
-          packagePlanTitle?: string | null;
-          packageSessionIndex: number | null;
-          packageSessionCount: number | null;
-          packageDiscountPercent?: number | null;
-        }
-      | null,
+    packageContext?: {
+      packagePurchaseId: string;
+      packagePlanCode: string;
+      packagePlanTitle?: string | null;
+      packageSessionIndex: number | null;
+      packageSessionCount: number | null;
+      packageDiscountPercent?: number | null;
+    } | null,
   ): string {
     if (!packageContext) {
       return '';

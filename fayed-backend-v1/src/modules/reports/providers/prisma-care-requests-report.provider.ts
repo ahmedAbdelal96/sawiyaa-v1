@@ -16,25 +16,36 @@ import {
 export class PrismaCareRequestsReportProvider implements CareRequestsReportProvider {
   constructor(private readonly prisma: PrismaService) {}
 
-  async getOverview(input: CareRequestsReportOverviewInput): Promise<CareRequestsReportOverview> {
+  async getOverview(
+    input: CareRequestsReportOverviewInput,
+  ): Promise<CareRequestsReportOverview> {
     const baseWhere: Prisma.ChatApprovalRequestWhereInput = {
       requestedAt: { gte: input.from, lte: input.to },
       practitionerId: input.practitionerId,
     };
 
-    const [totalRequests, statusGroups, pendingAging, trendRequested, trendApproved, trendRejected] =
-      await Promise.all([
-        this.prisma.chatApprovalRequest.count({ where: baseWhere }),
-        this.prisma.chatApprovalRequest.groupBy({
-          by: ['status'],
-          where: baseWhere,
-          _count: { _all: true },
-        }),
-        this.pendingAgingSnapshot({ to: input.to, practitionerId: input.practitionerId }),
-        this.requestedTrend(input),
-        this.approvedTrend(input),
-        this.rejectedTrend(input),
-      ]);
+    const [
+      totalRequests,
+      statusGroups,
+      pendingAging,
+      trendRequested,
+      trendApproved,
+      trendRejected,
+    ] = await Promise.all([
+      this.prisma.chatApprovalRequest.count({ where: baseWhere }),
+      this.prisma.chatApprovalRequest.groupBy({
+        by: ['status'],
+        where: baseWhere,
+        _count: { _all: true },
+      }),
+      this.pendingAgingSnapshot({
+        to: input.to,
+        practitionerId: input.practitionerId,
+      }),
+      this.requestedTrend(input),
+      this.approvedTrend(input),
+      this.rejectedTrend(input),
+    ]);
 
     const statusBreakdown: Record<string, string> = {};
     let pending = 0;
@@ -47,9 +58,12 @@ export class PrismaCareRequestsReportProvider implements CareRequestsReportProvi
     for (const row of statusGroups) {
       statusBreakdown[row.status] = String(row._count._all);
       if (row.status === ChatApprovalStatus.PENDING) pending += row._count._all;
-      if (row.status === ChatApprovalStatus.APPROVED) approved += row._count._all;
-      if (row.status === ChatApprovalStatus.REJECTED) rejected += row._count._all;
-      if (row.status === ChatApprovalStatus.CANCELLED) cancelled += row._count._all;
+      if (row.status === ChatApprovalStatus.APPROVED)
+        approved += row._count._all;
+      if (row.status === ChatApprovalStatus.REJECTED)
+        rejected += row._count._all;
+      if (row.status === ChatApprovalStatus.CANCELLED)
+        cancelled += row._count._all;
       if (row.status === ChatApprovalStatus.EXPIRED) expired += row._count._all;
       if (row.status === ChatApprovalStatus.REVOKED) revoked += row._count._all;
     }
@@ -61,9 +75,15 @@ export class PrismaCareRequestsReportProvider implements CareRequestsReportProvi
         : ((approved / acceptanceDenominator) * 100).toFixed(2);
 
     const dailyKeys = buildDailyBuckets(input.from, input.to);
-    const requestedMap = new Map(trendRequested.map((row) => [row.dateKey, row.count]));
-    const approvedMap = new Map(trendApproved.map((row) => [row.dateKey, row.count]));
-    const rejectedMap = new Map(trendRejected.map((row) => [row.dateKey, row.count]));
+    const requestedMap = new Map(
+      trendRequested.map((row) => [row.dateKey, row.count]),
+    );
+    const approvedMap = new Map(
+      trendApproved.map((row) => [row.dateKey, row.count]),
+    );
+    const rejectedMap = new Map(
+      trendRejected.map((row) => [row.dateKey, row.count]),
+    );
 
     return {
       generatedAt: new Date().toISOString(),
@@ -144,9 +164,11 @@ export class PrismaCareRequestsReportProvider implements CareRequestsReportProvi
   }
 
   private pendingAgingSnapshot(input: { to: Date; practitionerId?: string }) {
-    return this.prisma.$queryRaw<
-      Array<{ lt1: number; d1to3: number; d3to7: number; gt7: number }>
-    >(Prisma.sql`
+    return this.prisma
+      .$queryRaw<
+        Array<{ lt1: number; d1to3: number; d3to7: number; gt7: number }>
+      >(
+        Prisma.sql`
       select
         sum(case when extract(epoch from (${input.to} - "requestedAt")) < 86400 then 1 else 0 end)::int as "lt1",
         sum(case when extract(epoch from (${input.to} - "requestedAt")) >= 86400 and extract(epoch from (${input.to} - "requestedAt")) < 259200 then 1 else 0 end)::int as "d1to3",
@@ -155,19 +177,23 @@ export class PrismaCareRequestsReportProvider implements CareRequestsReportProvi
       from "ChatApprovalRequest"
       where "status"::text = ${ChatApprovalStatus.PENDING}
         ${input.practitionerId ? Prisma.sql`and "practitionerId" = ${input.practitionerId}` : Prisma.empty}
-    `).then((rows) => {
-      const row = rows[0] ?? { lt1: 0, d1to3: 0, d3to7: 0, gt7: 0 };
-      return {
-        lessThan1d: String(row.lt1 ?? 0),
-        d1to3: String(row.d1to3 ?? 0),
-        d3to7: String(row.d3to7 ?? 0),
-        moreThan7: String(row.gt7 ?? 0),
-      };
-    });
+    `,
+      )
+      .then((rows) => {
+        const row = rows[0] ?? { lt1: 0, d1to3: 0, d3to7: 0, gt7: 0 };
+        return {
+          lessThan1d: String(row.lt1 ?? 0),
+          d1to3: String(row.d1to3 ?? 0),
+          d3to7: String(row.d3to7 ?? 0),
+          moreThan7: String(row.gt7 ?? 0),
+        };
+      });
   }
 
   private requestedTrend(input: CareRequestsReportOverviewInput) {
-    return this.prisma.$queryRaw<Array<{ dateKey: string; count: number }>>(Prisma.sql`
+    return this.prisma.$queryRaw<
+      Array<{ dateKey: string; count: number }>
+    >(Prisma.sql`
       select
         to_char(date_trunc('day', "requestedAt"), 'YYYY-MM-DD') as "dateKey",
         count(*)::int as "count"
@@ -180,7 +206,9 @@ export class PrismaCareRequestsReportProvider implements CareRequestsReportProvi
   }
 
   private approvedTrend(input: CareRequestsReportOverviewInput) {
-    return this.prisma.$queryRaw<Array<{ dateKey: string; count: number }>>(Prisma.sql`
+    return this.prisma.$queryRaw<
+      Array<{ dateKey: string; count: number }>
+    >(Prisma.sql`
       select
         to_char(date_trunc('day', "approvedAt"), 'YYYY-MM-DD') as "dateKey",
         count(*)::int as "count"
@@ -194,7 +222,9 @@ export class PrismaCareRequestsReportProvider implements CareRequestsReportProvi
   }
 
   private rejectedTrend(input: CareRequestsReportOverviewInput) {
-    return this.prisma.$queryRaw<Array<{ dateKey: string; count: number }>>(Prisma.sql`
+    return this.prisma.$queryRaw<
+      Array<{ dateKey: string; count: number }>
+    >(Prisma.sql`
       select
         to_char(date_trunc('day', "rejectedAt"), 'YYYY-MM-DD') as "dateKey",
         count(*)::int as "count"

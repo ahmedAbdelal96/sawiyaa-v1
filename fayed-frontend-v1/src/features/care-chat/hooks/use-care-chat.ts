@@ -127,12 +127,15 @@ export function useSendPractitionerCareChatMessage(conversationId: string) {
   });
 }
 
-export function useAdminCareChatRequests(params: CareChatListParams = {}) {
+export function useAdminCareChatRequests(
+  params: CareChatListParams = {},
+  options?: { enabled?: boolean },
+) {
   const role = useSessionRole();
   return useQuery({
     queryKey: adminCareChatQueryKeys.requestsList(params),
     queryFn: () => getAdminCareChatRequests(params),
-    enabled: isAdminRole(role),
+    enabled: isAdminRole(role) && (options?.enabled ?? true),
     staleTime: 15_000,
   });
 }

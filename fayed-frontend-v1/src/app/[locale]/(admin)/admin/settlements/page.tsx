@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import AdminSettlementBatchesScreen from "@/features/admin/settlements/components/AdminSettlementBatchesScreen";
+import AdminPermissionGate from "@/components/admin/AdminPermissionGate";
+import { PermissionKey } from "@/lib/auth/permissions";
 
 type Props = {
   params: Promise<{ locale: string }>;
@@ -20,5 +22,11 @@ export default async function AdminSettlementsPage({ params }: Props) {
   const { locale } = await params;
   setRequestLocale(locale);
 
-  return <AdminSettlementBatchesScreen />;
+  return (
+    <AdminPermissionGate
+      requiredPermissions={[PermissionKey.SETTLEMENTS_READ, PermissionKey.SETTLEMENTS_WRITE]}
+    >
+      <AdminSettlementBatchesScreen />
+    </AdminPermissionGate>
+  );
 }

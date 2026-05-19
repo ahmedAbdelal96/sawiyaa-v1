@@ -134,15 +134,15 @@ export class CreateOrGetGeneralChatConversationUseCase {
           await this.generalChatRepository.findByConversationRef(
             conversationRef,
           );
-          if (converged) {
-            this.assertGeneralConversationBoundary(
-              converged,
-              input.authenticatedUser.id,
-            );
-            return {
-              item: await this.toReadItem(converged, false),
-            };
-          }
+        if (converged) {
+          this.assertGeneralConversationBoundary(
+            converged,
+            input.authenticatedUser.id,
+          );
+          return {
+            item: await this.toReadItem(converged, false),
+          };
+        }
       }
 
       throw error;

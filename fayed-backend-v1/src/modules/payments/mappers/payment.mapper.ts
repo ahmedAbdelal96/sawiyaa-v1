@@ -1,8 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Payment, Prisma, Refund, RefundStatus } from '@prisma/client';
-import {
-  PaymentRegionalPricingMode,
-} from '@common/payments/payment-region.resolver';
+import { PaymentRegionalPricingMode } from '@common/payments/payment-region.resolver';
 import {
   AdminPaymentOpsViewModel,
   PaymentViewModel,
@@ -52,10 +50,10 @@ export class PaymentMapper {
         typeof metadata.paymobPaymentMethod === 'string'
           ? metadata.paymobPaymentMethod
           : typeof metadata.paymobCheckoutMethod === 'string'
-          ? metadata.paymobCheckoutMethod
-          : typeof metadata.providerMethod === 'string'
-            ? metadata.providerMethod
-            : null,
+            ? metadata.paymobCheckoutMethod
+            : typeof metadata.providerMethod === 'string'
+              ? metadata.providerMethod
+              : null,
       checkoutUrl:
         typeof metadata.checkoutUrl === 'string' ? metadata.checkoutUrl : null,
       clientSecret:
@@ -166,10 +164,10 @@ export class PaymentMapper {
           typeof metadata.paymobPaymentMethod === 'string'
             ? String(metadata.paymobPaymentMethod)
             : typeof metadata.paymobCheckoutMethod === 'string'
-            ? String(metadata.paymobCheckoutMethod)
-            : typeof metadata.providerMethod === 'string'
-              ? String(metadata.providerMethod)
-              : null,
+              ? String(metadata.paymobCheckoutMethod)
+              : typeof metadata.providerMethod === 'string'
+                ? String(metadata.providerMethod)
+                : null,
         createdAt: payment.createdAt.toISOString(),
         initiatedAt: payment.initiatedAt.toISOString(),
         capturedAt: payment.capturedAt?.toISOString() ?? null,

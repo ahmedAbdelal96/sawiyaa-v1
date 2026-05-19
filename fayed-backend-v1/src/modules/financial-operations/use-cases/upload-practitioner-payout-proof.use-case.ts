@@ -65,6 +65,13 @@ export class UploadPractitionerPayoutProofUseCase {
       });
     }
 
+    if (input.file.size <= 0) {
+      throw new BadRequestException({
+        messageKey: 'financialOperations.errors.payoutProofFileRequired',
+        error: FINANCIAL_OPS_ERROR_CODES.payoutProofFileRequired,
+      });
+    }
+
     if (input.file.size > MAX_PAYOUT_PROOF_BYTES) {
       throw new BadRequestException({
         messageKey: 'financialOperations.errors.payoutProofFileTooLarge',

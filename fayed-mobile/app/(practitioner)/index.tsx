@@ -4,6 +4,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { usePathname, useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import {
+  Button,
   Card,
   ErrorState,
   Header,
@@ -177,6 +178,38 @@ export default function PractitionerHomeScreen() {
               value={String(profile.credentialSummary.totalCredentials)}
             />
           </View>
+        </Card>
+
+        <Card variant="outlined" padding="lg" style={styles.promoCard}>
+          <View style={styles.promoTopRow}>
+            <View style={styles.promoIconWrap}>
+              <Ionicons
+                name="pricetag-outline"
+                size={22}
+                color={theme.colors.primary}
+              />
+            </View>
+            <StatusChip
+              label={t("practitioner.promoCodes.cardBadge", "Promo codes")}
+              tone="info"
+              showDot={false}
+            />
+          </View>
+          <Text weight="600" style={styles.promoTitle}>
+            {t("practitioner.promoCodes.title")}
+          </Text>
+          <Text color={theme.colors.textSecondary} style={styles.promoBody}>
+            {t("practitioner.promoCodes.subtitle")}
+          </Text>
+          <Text color={theme.colors.textSecondary} style={styles.promoNote}>
+            {t("practitioner.promoCodes.financialNote")}
+          </Text>
+          <Button
+            title={t("practitioner.promoCodes.openAction", "Open promo codes")}
+            variant="secondary"
+            onPress={() => router.push("/(practitioner)/promo-codes")}
+            style={styles.promoButton}
+          />
         </Card>
 
         {upcomingSession ? (
@@ -564,6 +597,37 @@ const styles = StyleSheet.create({
   },
   heroCard: {
     gap: 16,
+  },
+  promoCard: {
+    gap: 12,
+  },
+  promoTopRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: 12,
+  },
+  promoIconWrap: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#e8f4f2",
+  },
+  promoTitle: {
+    fontSize: 18,
+  },
+  promoBody: {
+    fontSize: 14,
+    lineHeight: 22,
+  },
+  promoNote: {
+    fontSize: 13,
+    lineHeight: 20,
+  },
+  promoButton: {
+    marginTop: 2,
   },
   upcomingSessionCard: {
     gap: 12,

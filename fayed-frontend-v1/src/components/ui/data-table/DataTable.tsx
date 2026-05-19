@@ -21,7 +21,7 @@
 
 "use client";
 
-import { useState, useMemo } from 'react';
+import { useMemo, useState, useSyncExternalStore } from 'react';
 import { ArrowUp, ArrowDown } from 'lucide-react';
 import type { DataTableProps } from './types';
 import { DataTableLoading } from './DataTableLoading';
@@ -139,6 +139,11 @@ export function DataTable<T = any>({
   const sizeClasses = getSizeClasses(size);
   const sortableColumns = useMemo(() => columns.filter((column) => column.sortable), [columns]);
   const defaultSortColumn = useMemo(() => resolveDefaultSortColumn(columns), [columns]);
+  const isHydrated = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
   
   // Local state for uncontrolled features
   const [localSort, setLocalSort] = useState(
@@ -198,7 +203,7 @@ export function DataTable<T = any>({
   };
   
   // Loading state
-  if (loading) {
+  if (loading || !isHydrated) {
     return (
       <DataTableLoading
         rows={loadingRows}
@@ -240,7 +245,7 @@ export function DataTable<T = any>({
   return (
     <div className={`${className}`}>
       {/* Table Container */}
-      <div className="app-panel overflow-hidden rounded-[24px]">
+      <div className="overflow-hidden rounded-[28px] border border-border-light bg-white shadow-[0_18px_36px_-30px_rgba(34,52,56,0.18)]">
         {(exportConfig?.enabled || (pagination && onPageSizeChange)) && (
           <div className="border-b border-border-light px-4 py-3 sm:px-6">
             <div className="flex flex-wrap items-center justify-between gap-3">

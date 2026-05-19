@@ -3,7 +3,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { ReactNode, useState } from "react";
-import { toast } from "sonner";
 import { TIME } from "@/lib/api/hooks/config";
 import { toAppError } from "@/lib/api/errors";
 
@@ -18,7 +17,9 @@ function handleQueryError(error: unknown) {
     return;
   }
 
-  toast.error(appError.message || "حدث خطأ غير متوقع");
+  if (appError.statusCode === 403) {
+    return;
+  }
 }
 
 function shouldRetry(failureCount: number, error: unknown): boolean {

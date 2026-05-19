@@ -23,15 +23,12 @@ describe('PackagePolicyService', () => {
   };
 
   const prisma = {
-    $transaction: jest.fn(async (callback: (client: typeof tx) => Promise<unknown>) =>
-      callback(tx),
+    $transaction: jest.fn(
+      async (callback: (client: typeof tx) => Promise<unknown>) => callback(tx),
     ),
   } as unknown as PrismaService;
 
-  const service = new PackagePolicyService(
-    prisma,
-    configResolverService,
-  );
+  const service = new PackagePolicyService(prisma, configResolverService);
 
   beforeEach(() => {
     jest.clearAllMocks();

@@ -88,10 +88,7 @@ function normalizeIsoDateInput(value: string) {
   return Number.isNaN(date.getTime()) ? undefined : date.toISOString();
 }
 
-function formatCredentialTypeLabel(
-  value: PractitionerCredentialType,
-  t: any,
-) {
+function formatCredentialTypeLabel(value: PractitionerCredentialType, t: any) {
   return t(`practitioner.onboarding.credentialTypes.${value}`, value);
 }
 
@@ -117,7 +114,11 @@ function formatRequirementLabel(value: string) {
     .join(" ");
 }
 
-function specialtyLabel(specialty: { name?: string | null; title?: string | null; slug: string }) {
+function specialtyLabel(specialty: {
+  name?: string | null;
+  title?: string | null;
+  slug: string;
+}) {
   return specialty.title ?? specialty.name ?? specialty.slug;
 }
 
@@ -158,9 +159,13 @@ export default function PractitionerOnboardingWorkspaceScreen() {
     sessionPrice60Usd: "",
     acceptsPackage: false,
   });
-  const [selectedPrimarySpecialtyCategoryId, setSelectedPrimarySpecialtyCategoryId] =
-    useState("");
-  const [selectedSpecialtyIds, setSelectedSpecialtyIds] = useState<string[]>([]);
+  const [
+    selectedPrimarySpecialtyCategoryId,
+    setSelectedPrimarySpecialtyCategoryId,
+  ] = useState("");
+  const [selectedSpecialtyIds, setSelectedSpecialtyIds] = useState<string[]>(
+    [],
+  );
   const [credentialType, setCredentialType] =
     useState<PractitionerCredentialType>("LICENSE");
   const [credentialFileUrl, setCredentialFileUrl] = useState("");
@@ -212,7 +217,13 @@ export default function PractitionerOnboardingWorkspaceScreen() {
     specialtiesInitialized.current = true;
     setSelectedPrimarySpecialtyCategoryId(currentCategoryId);
     setSelectedSpecialtyIds(currentSpecialtyIds);
-  }, [catalogCategories, catalogQuery.data, catalogSpecialties, profile, specialtyItems]);
+  }, [
+    catalogCategories,
+    catalogQuery.data,
+    catalogSpecialties,
+    profile,
+    specialtyItems,
+  ]);
 
   const selectedCategory = catalogCategories.find(
     (item) => item.id === selectedPrimarySpecialtyCategoryId,
@@ -227,7 +238,9 @@ export default function PractitionerOnboardingWorkspaceScreen() {
 
   const selectedSpecialties = useMemo(
     () =>
-      catalogSpecialties.filter((item) => selectedSpecialtyIds.includes(item.id)),
+      catalogSpecialties.filter((item) =>
+        selectedSpecialtyIds.includes(item.id),
+      ),
     [catalogSpecialties, selectedSpecialtyIds],
   );
 
@@ -237,16 +250,20 @@ export default function PractitionerOnboardingWorkspaceScreen() {
   const readinessLabel = readiness?.canSubmitApplication
     ? t("practitioner.account.readiness.ready")
     : t("practitioner.account.readiness.notReady");
-  const applicationStatus = application?.status ?? profile?.applicationStatusSummary.status ?? null;
+  const applicationStatus =
+    application?.status ?? profile?.applicationStatusSummary.status ?? null;
   const applicationLabel = applicationStatus
-    ? t(`practitioner.account.applicationStatuses.${applicationStatus}`, applicationStatus)
+    ? t(
+        `practitioner.account.applicationStatuses.${applicationStatus}`,
+        applicationStatus,
+      )
     : t("practitioner.account.applicationStatuses.NONE");
   const missingRequirements = readiness?.missingRequirements ?? [];
   const canSubmitApplication = Boolean(
     readiness?.canSubmitApplication &&
-      profile &&
-      selectedPrimarySpecialtyCategoryId &&
-      selectedSpecialtyIds.length > 0,
+    profile &&
+    selectedPrimarySpecialtyCategoryId &&
+    selectedSpecialtyIds.length > 0,
   );
   const submitButtonLabel =
     applicationStatus === "SUBMITTED" ||
@@ -258,7 +275,10 @@ export default function PractitionerOnboardingWorkspaceScreen() {
   if (profileQuery.isLoading) {
     return (
       <DetailPageScaffold title={t("practitioner.onboarding.title")} showBack>
-        <LoadingState fullScreen message={t("practitioner.onboarding.loading")} />
+        <LoadingState
+          fullScreen
+          message={t("practitioner.onboarding.loading")}
+        />
       </DetailPageScaffold>
     );
   }
@@ -300,7 +320,10 @@ export default function PractitionerOnboardingWorkspaceScreen() {
   }
 
   async function saveSpecialties() {
-    if (!selectedPrimarySpecialtyCategoryId || selectedSpecialtyIds.length === 0) {
+    if (
+      !selectedPrimarySpecialtyCategoryId ||
+      selectedSpecialtyIds.length === 0
+    ) {
       Alert.alert(
         t("practitioner.onboarding.specialties.invalidTitle"),
         t("practitioner.onboarding.specialties.invalidBody"),
@@ -379,8 +402,10 @@ export default function PractitionerOnboardingWorkspaceScreen() {
       bio: profile.bio ?? undefined,
       countryCode: profile.countryCode ?? undefined,
       yearsOfExperience: profile.yearsOfExperience ?? undefined,
-      practitionerType: profile.practitionerType as SubmitPractitionerApplicationRequest["practitionerType"],
-      practitionerGender: profile.practitionerGender as SubmitPractitionerApplicationRequest["practitionerGender"],
+      practitionerType:
+        profile.practitionerType as SubmitPractitionerApplicationRequest["practitionerType"],
+      practitionerGender:
+        profile.practitionerGender as SubmitPractitionerApplicationRequest["practitionerGender"],
       sessionPrice30Egp: parseCurrencyInput(pricingForm.sessionPrice30Egp),
       sessionPrice30Usd: parseCurrencyInput(pricingForm.sessionPrice30Usd),
       sessionPrice60Egp: parseCurrencyInput(pricingForm.sessionPrice60Egp),
@@ -398,7 +423,8 @@ export default function PractitionerOnboardingWorkspaceScreen() {
       const result = await submitApplication.mutateAsync(payload);
       Alert.alert(
         t("practitioner.onboarding.application.submittedTitle"),
-        result.message || t("practitioner.onboarding.application.submittedBody"),
+        result.message ||
+          t("practitioner.onboarding.application.submittedBody"),
       );
     } catch {
       Alert.alert(
@@ -421,12 +447,18 @@ export default function PractitionerOnboardingWorkspaceScreen() {
             <Text weight="bold" style={styles.heroTitle}>
               {t("practitioner.onboarding.heroTitle")}
             </Text>
-            <Text color={theme.colors.textSecondary} style={styles.heroSubtitle}>
+            <Text
+              color={theme.colors.textSecondary}
+              style={styles.heroSubtitle}
+            >
               {t("practitioner.onboarding.heroBody")}
             </Text>
           </View>
           <StatusChip
-            label={currentProfileStatus ?? t("practitioner.account.applicationStatuses.NONE")}
+            label={
+              currentProfileStatus ??
+              t("practitioner.account.applicationStatuses.NONE")
+            }
             tone={profileTone(profile.profileStatus)}
             showDot={false}
           />
@@ -475,13 +507,19 @@ export default function PractitionerOnboardingWorkspaceScreen() {
           />
           <SummaryRow
             label={t("practitioner.onboarding.summary.specialties")}
-            value={String(selectedSpecialties.length || profile.specialties.length)}
+            value={String(
+              selectedSpecialties.length || profile.specialties.length,
+            )}
           />
         </View>
 
         {missingRequirements.length ? (
           <View style={styles.missingWrap}>
-            <Text weight="600" style={styles.sectionEyebrow} color={theme.colors.textSecondary}>
+            <Text
+              weight="600"
+              style={styles.sectionEyebrow}
+              color={theme.colors.textSecondary}
+            >
               {t("practitioner.onboarding.summary.missingTitle")}
             </Text>
             <View style={styles.chipWrap}>
@@ -528,7 +566,10 @@ export default function PractitionerOnboardingWorkspaceScreen() {
           keyboardType="decimal-pad"
           value={pricingForm.sessionPrice30Egp}
           onChangeText={(value) =>
-            setPricingForm((current) => ({ ...current, sessionPrice30Egp: value }))
+            setPricingForm((current) => ({
+              ...current,
+              sessionPrice30Egp: value,
+            }))
           }
           placeholder="250"
         />
@@ -537,7 +578,10 @@ export default function PractitionerOnboardingWorkspaceScreen() {
           keyboardType="decimal-pad"
           value={pricingForm.sessionPrice30Usd}
           onChangeText={(value) =>
-            setPricingForm((current) => ({ ...current, sessionPrice30Usd: value }))
+            setPricingForm((current) => ({
+              ...current,
+              sessionPrice30Usd: value,
+            }))
           }
           placeholder="8"
         />
@@ -546,7 +590,10 @@ export default function PractitionerOnboardingWorkspaceScreen() {
           keyboardType="decimal-pad"
           value={pricingForm.sessionPrice60Egp}
           onChangeText={(value) =>
-            setPricingForm((current) => ({ ...current, sessionPrice60Egp: value }))
+            setPricingForm((current) => ({
+              ...current,
+              sessionPrice60Egp: value,
+            }))
           }
           placeholder="450"
         />
@@ -555,7 +602,10 @@ export default function PractitionerOnboardingWorkspaceScreen() {
           keyboardType="decimal-pad"
           value={pricingForm.sessionPrice60Usd}
           onChangeText={(value) =>
-            setPricingForm((current) => ({ ...current, sessionPrice60Usd: value }))
+            setPricingForm((current) => ({
+              ...current,
+              sessionPrice60Usd: value,
+            }))
           }
           placeholder="15"
         />
@@ -565,14 +615,20 @@ export default function PractitionerOnboardingWorkspaceScreen() {
             <Text weight="600" style={styles.switchTitle}>
               {t("practitioner.onboarding.pricing.fields.acceptsPackage")}
             </Text>
-            <Text color={theme.colors.textSecondary} style={styles.switchSubtitle}>
+            <Text
+              color={theme.colors.textSecondary}
+              style={styles.switchSubtitle}
+            >
               {t("practitioner.onboarding.pricing.acceptsPackageHint")}
             </Text>
           </View>
           <Switch
             value={pricingForm.acceptsPackage}
             onValueChange={(value) =>
-              setPricingForm((current) => ({ ...current, acceptsPackage: value }))
+              setPricingForm((current) => ({
+                ...current,
+                acceptsPackage: value,
+              }))
             }
           />
         </View>
@@ -582,7 +638,11 @@ export default function PractitionerOnboardingWorkspaceScreen() {
         </Text>
 
         <Button
-          title={profileUpdate.isPending ? t("practitioner.onboarding.actions.saving") : t("practitioner.onboarding.pricing.save")}
+          title={
+            profileUpdate.isPending
+              ? t("practitioner.onboarding.actions.saving")
+              : t("practitioner.onboarding.pricing.save")
+          }
           onPress={() => void savePricing()}
           disabled={profileUpdate.isPending}
         />
@@ -602,7 +662,11 @@ export default function PractitionerOnboardingWorkspaceScreen() {
           </Text>
         ) : (
           <>
-            <Text weight="600" style={styles.sectionEyebrow} color={theme.colors.textSecondary}>
+            <Text
+              weight="600"
+              style={styles.sectionEyebrow}
+              color={theme.colors.textSecondary}
+            >
               {t("practitioner.onboarding.specialties.category")}
             </Text>
             <ScrollView
@@ -611,7 +675,8 @@ export default function PractitionerOnboardingWorkspaceScreen() {
               contentContainerStyle={styles.hScroll}
             >
               {catalogCategories.map((category) => {
-                const selected = selectedPrimarySpecialtyCategoryId === category.id;
+                const selected =
+                  selectedPrimarySpecialtyCategoryId === category.id;
                 return (
                   <TouchableOpacity
                     key={category.id}
@@ -622,7 +687,8 @@ export default function PractitionerOnboardingWorkspaceScreen() {
                         current.filter((itemId) =>
                           catalogSpecialties.some(
                             (item) =>
-                              item.id === itemId && item.category?.id === category.id,
+                              item.id === itemId &&
+                              item.category?.id === category.id,
                           ),
                         ),
                       );
@@ -641,7 +707,11 @@ export default function PractitionerOnboardingWorkspaceScreen() {
                   >
                     <Text
                       weight="600"
-                      color={selected ? theme.colors.textBrand : theme.colors.textPrimary}
+                      color={
+                        selected
+                          ? theme.colors.textBrand
+                          : theme.colors.textPrimary
+                      }
                     >
                       {category.name}
                     </Text>
@@ -650,7 +720,11 @@ export default function PractitionerOnboardingWorkspaceScreen() {
               })}
             </ScrollView>
 
-            <Text weight="600" style={styles.sectionEyebrow} color={theme.colors.textSecondary}>
+            <Text
+              weight="600"
+              style={styles.sectionEyebrow}
+              color={theme.colors.textSecondary}
+            >
               {selectedCategory
                 ? t("practitioner.onboarding.specialties.specialtiesIn", {
                     category: selectedCategory.name,
@@ -686,7 +760,11 @@ export default function PractitionerOnboardingWorkspaceScreen() {
                     >
                       <Text
                         weight="600"
-                        color={selected ? theme.colors.textBrand : theme.colors.textPrimary}
+                        color={
+                          selected
+                            ? theme.colors.textBrand
+                            : theme.colors.textPrimary
+                        }
                       >
                         {specialtyLabel(specialty)}
                       </Text>
@@ -702,7 +780,9 @@ export default function PractitionerOnboardingWorkspaceScreen() {
 
             <View style={styles.selectedSummary}>
               <SummaryRow
-                label={t("practitioner.onboarding.specialties.currentSelection")}
+                label={t(
+                  "practitioner.onboarding.specialties.currentSelection",
+                )}
                 value={
                   selectedSpecialties.length
                     ? selectedSpecialties.map(specialtyLabel).join(", ")
@@ -728,6 +808,144 @@ export default function PractitionerOnboardingWorkspaceScreen() {
               }
             />
           </>
+        )}
+      </Card>
+
+      {/* Required Documents Checklist */}
+      <Card variant="outlined" padding="lg">
+        <SectionHeader
+          title={t("practitioner.onboarding.requiredDocuments.title")}
+          subtitle={t("practitioner.onboarding.requiredDocuments.subtitle")}
+        />
+
+        <View style={styles.checklistContainer}>
+          {/* National ID or Passport */}
+          <View style={styles.checklistItem}>
+            <Ionicons
+              name={
+                credentials.some(
+                  (c) =>
+                    (c.credentialType === "NATIONAL_ID" ||
+                      c.credentialType === "PASSPORT") &&
+                    c.reviewStatus === "APPROVED",
+                )
+                  ? "checkmark-circle"
+                  : "ellipse-outline"
+              }
+              size={24}
+              color={
+                credentials.some(
+                  (c) =>
+                    (c.credentialType === "NATIONAL_ID" ||
+                      c.credentialType === "PASSPORT") &&
+                    c.reviewStatus === "APPROVED",
+                )
+                  ? theme.colors.primary
+                  : theme.colors.textMuted
+              }
+            />
+            <View style={styles.checklistItemContent}>
+              <Text
+                weight="500"
+                color={theme.colors.textPrimary}
+                style={styles.checklistItemLabel}
+              >
+                {t("practitioner.onboarding.requiredDocuments.idOrPassport")}
+              </Text>
+              <Text
+                color={theme.colors.textMuted}
+                style={styles.checklistItemHint}
+              >
+                {t(
+                  "practitioner.onboarding.requiredDocuments.idOrPassportHint",
+                )}
+              </Text>
+              {credentials.find(
+                (c) =>
+                  (c.credentialType === "NATIONAL_ID" ||
+                    c.credentialType === "PASSPORT") &&
+                  c.reviewStatus === "PENDING",
+              ) && (
+                <Text
+                  color={theme.colors.textMuted}
+                  style={styles.checklistItemStatus}
+                >
+                  ⏳{" "}
+                  {t("practitioner.onboarding.requiredDocuments.pendingReview")}
+                </Text>
+              )}
+            </View>
+          </View>
+
+          {/* Degree Certificate */}
+          <View style={styles.checklistItem}>
+            <Ionicons
+              name={
+                credentials.some(
+                  (c) =>
+                    c.credentialType === "DEGREE" &&
+                    c.reviewStatus === "APPROVED",
+                )
+                  ? "checkmark-circle"
+                  : "ellipse-outline"
+              }
+              size={24}
+              color={
+                credentials.some(
+                  (c) =>
+                    c.credentialType === "DEGREE" &&
+                    c.reviewStatus === "APPROVED",
+                )
+                  ? theme.colors.primary
+                  : theme.colors.textMuted
+              }
+            />
+            <View style={styles.checklistItemContent}>
+              <Text
+                weight="500"
+                color={theme.colors.textPrimary}
+                style={styles.checklistItemLabel}
+              >
+                {t("practitioner.onboarding.requiredDocuments.degree")}
+              </Text>
+              <Text
+                color={theme.colors.textMuted}
+                style={styles.checklistItemHint}
+              >
+                {t("practitioner.onboarding.requiredDocuments.degreeHint")}
+              </Text>
+              {credentials.find(
+                (c) =>
+                  c.credentialType === "DEGREE" && c.reviewStatus === "PENDING",
+              ) && (
+                <Text
+                  color={theme.colors.textMuted}
+                  style={styles.checklistItemStatus}
+                >
+                  ⏳{" "}
+                  {t("practitioner.onboarding.requiredDocuments.pendingReview")}
+                </Text>
+              )}
+            </View>
+          </View>
+        </View>
+
+        {!readiness?.isProfileCompleted && (
+          <View
+            style={[
+              styles.warningBanner,
+              { backgroundColor: theme.colors.warning + "15" },
+            ]}
+          >
+            <Ionicons
+              name="alert-circle"
+              size={20}
+              color={theme.colors.warning}
+            />
+            <Text color={theme.colors.warning} style={styles.warningBannerText}>
+              {t("practitioner.onboarding.requiredDocuments.pendingWarning")}
+            </Text>
+          </View>
         )}
       </Card>
 
@@ -759,29 +977,46 @@ export default function PractitionerOnboardingWorkspaceScreen() {
         {credentials.length ? (
           <View style={styles.credentialsList}>
             {credentials.map((item) => (
-              <Card key={item.credentialId} variant="flat" padding="md" style={styles.credentialCard}>
+              <Card
+                key={item.credentialId}
+                variant="flat"
+                padding="md"
+                style={styles.credentialCard}
+              >
                 <View style={styles.credentialHeader}>
                   <View style={styles.credentialCopy}>
                     <Text weight="600" style={styles.credentialTitle}>
                       {formatCredentialTypeLabel(item.credentialType, t)}
                     </Text>
-                    <Text color={theme.colors.textSecondary} style={styles.credentialMeta}>
+                    <Text
+                      color={theme.colors.textSecondary}
+                      style={styles.credentialMeta}
+                    >
                       {item.fileUrl}
                     </Text>
                   </View>
                   <StatusChip
-                    label={t(`practitioner.onboarding.credentials.status.${item.reviewStatus}`, item.reviewStatus)}
+                    label={t(
+                      `practitioner.onboarding.credentials.status.${item.reviewStatus}`,
+                      item.reviewStatus,
+                    )}
                     tone={credentialTone(item.reviewStatus)}
                     showDot={false}
                   />
                 </View>
                 <View style={styles.credentialFooter}>
-                  <Text color={theme.colors.textMuted} style={styles.credentialMeta}>
+                  <Text
+                    color={theme.colors.textMuted}
+                    style={styles.credentialMeta}
+                  >
                     {t("practitioner.onboarding.credentials.uploadedAt", {
                       date: formatDateTime(item.uploadedAt, locale),
                     })}
                   </Text>
-                  <Text color={theme.colors.textMuted} style={styles.credentialMeta}>
+                  <Text
+                    color={theme.colors.textMuted}
+                    style={styles.credentialMeta}
+                  >
                     {item.expiresAt
                       ? t("practitioner.onboarding.credentials.expiresAt", {
                           date: formatDate(item.expiresAt, locale),
@@ -803,7 +1038,11 @@ export default function PractitionerOnboardingWorkspaceScreen() {
             title={t("practitioner.onboarding.credentials.addTitle")}
             subtitle={t("practitioner.onboarding.credentials.addSubtitle")}
           />
-          <Text weight="600" style={styles.sectionEyebrow} color={theme.colors.textSecondary}>
+          <Text
+            weight="600"
+            style={styles.sectionEyebrow}
+            color={theme.colors.textSecondary}
+          >
             {t("practitioner.onboarding.credentials.type")}
           </Text>
           <View style={styles.wrapList}>
@@ -838,7 +1077,11 @@ export default function PractitionerOnboardingWorkspaceScreen() {
                 >
                   <Text
                     weight="600"
-                    color={selected ? theme.colors.textBrand : theme.colors.textPrimary}
+                    color={
+                      selected
+                        ? theme.colors.textBrand
+                        : theme.colors.textPrimary
+                    }
                   >
                     {formatCredentialTypeLabel(item, t)}
                   </Text>
@@ -916,7 +1159,11 @@ export default function PractitionerOnboardingWorkspaceScreen() {
         />
         <SummaryRow
           label={t("practitioner.onboarding.application.specialties")}
-          value={selectedSpecialties.length ? selectedSpecialties.map(specialtyLabel).join(", ") : "-"}
+          value={
+            selectedSpecialties.length
+              ? selectedSpecialties.map(specialtyLabel).join(", ")
+              : "-"
+          }
         />
 
         {application?.submittedAt ? (
@@ -934,10 +1181,17 @@ export default function PractitionerOnboardingWorkspaceScreen() {
 
         {application?.reviewNotes ? (
           <View style={styles.reviewNotes}>
-            <Text weight="600" style={styles.sectionEyebrow} color={theme.colors.textSecondary}>
+            <Text
+              weight="600"
+              style={styles.sectionEyebrow}
+              color={theme.colors.textSecondary}
+            >
               {t("practitioner.onboarding.application.reviewNotes")}
             </Text>
-            <Text color={theme.colors.textSecondary} style={styles.reviewNotesBody}>
+            <Text
+              color={theme.colors.textSecondary}
+              style={styles.reviewNotesBody}
+            >
               {application.reviewNotes}
             </Text>
           </View>
@@ -1101,5 +1355,43 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 20,
   },
+  checklistContainer: {
+    gap: 12,
+    marginBottom: 12,
+  },
+  checklistItem: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 12,
+  },
+  checklistItemContent: {
+    flex: 1,
+    gap: 4,
+  },
+  checklistItemLabel: {
+    fontSize: 15,
+    lineHeight: 20,
+  },
+  checklistItemHint: {
+    fontSize: 12,
+    lineHeight: 18,
+  },
+  checklistItemStatus: {
+    fontSize: 12,
+    lineHeight: 18,
+    marginTop: 2,
+  },
+  warningBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 12,
+  },
+  warningBannerText: {
+    flex: 1,
+    fontSize: 13,
+    lineHeight: 18,
+  },
 });
-

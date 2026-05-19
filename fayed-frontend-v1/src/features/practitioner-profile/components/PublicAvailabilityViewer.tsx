@@ -261,6 +261,7 @@ export default function PublicAvailabilityViewer({ slug }: Props) {
       {
         onSuccess: (response) => {
           setCreatedSession(response.item);
+          void refetch();
           setPhase("success");
         },
         onError: (err) => {
@@ -273,15 +274,16 @@ export default function PublicAvailabilityViewer({ slug }: Props) {
         },
       },
     );
-  }, [selectedSlot, isPatient, slug, duration, createSession, tBook]);
+  }, [selectedSlot, isPatient, slug, duration, createSession, tBook, refetch]);
 
   const handleBookAnother = useCallback(() => {
+    void refetch();
     setPhase("browse");
     setSelectedSlot(null);
     setCreatedSession(null);
     setBookingError(null);
     createSession.reset();
-  }, [createSession]);
+  }, [createSession, refetch]);
 
   if (phase === "success" && createdSession) {
     const payHref = `/patient/sessions/${createdSession.id}/pay` as const;

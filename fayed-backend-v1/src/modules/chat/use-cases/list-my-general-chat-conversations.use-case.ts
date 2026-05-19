@@ -23,11 +23,16 @@ export class ListMyGeneralChatConversationsUseCase {
       });
 
     const participantUserIds = Array.from(
-      new Set(rows.flatMap((row) => row.participants.map((participant) => participant.userId))),
+      new Set(
+        rows.flatMap((row) =>
+          row.participants.map((participant) => participant.userId),
+        ),
+      ),
     );
     const participantDirectoryRecords =
-      (await this.generalChatRepository.loadParticipantIdentityRecords?.(participantUserIds)) ??
-      [];
+      (await this.generalChatRepository.loadParticipantIdentityRecords?.(
+        participantUserIds,
+      )) ?? [];
     const participantDirectory = buildGeneralChatParticipantDirectoryMap(
       participantDirectoryRecords,
     );
@@ -67,12 +72,12 @@ export class ListMyGeneralChatConversationsUseCase {
                 messageType: latestMessage.messageType,
                 previewText: latestMessage.contentText,
                 sentAt: latestMessage.sentAt.toISOString(),
-                senderIdentity:
-                  latestMessage.senderUserId
-                    ? participantSummaries
-                        .find((participant) => participant.userId === latestMessage.senderUserId)
-                        ?.identity ?? null
-                    : null,
+                senderIdentity: latestMessage.senderUserId
+                  ? (participantSummaries.find(
+                      (participant) =>
+                        participant.userId === latestMessage.senderUserId,
+                    )?.identity ?? null)
+                  : null,
               }
             : null,
           unreadCount,

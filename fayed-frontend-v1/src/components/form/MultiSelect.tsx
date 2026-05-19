@@ -9,6 +9,7 @@ interface Option {
 interface MultiSelectProps {
   label: string;
   options: Option[];
+  placeholder?: string;
   defaultSelected?: string[];
   onChange?: (selected: string[]) => void;
   disabled?: boolean;
@@ -19,6 +20,7 @@ interface MultiSelectProps {
 const MultiSelect: React.FC<MultiSelectProps> = ({
   label,
   options,
+  placeholder = "Select option",
   defaultSelected = [],
   onChange,
   disabled = false,
@@ -102,10 +104,10 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
                   ))
                 ) : (
                   <input
-                    placeholder="Select option"
+                    placeholder={placeholder}
                     className="h-full w-full appearance-none border-0 bg-transparent p-1 pr-2 text-sm text-text-primary outline-hidden placeholder:text-text-muted focus:border-0 focus:outline-hidden focus:ring-0"
                     readOnly
-                    value="Select option"
+                    value=""
                   />
                 )}
               </div>

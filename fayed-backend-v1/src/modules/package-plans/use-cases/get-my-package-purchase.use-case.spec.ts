@@ -28,7 +28,9 @@ describe('GetMyPackagePurchaseUseCase', () => {
     (patientProfileRepository.findByUserId as jest.Mock).mockResolvedValue({
       id: 'patient-1',
     });
-    (packagePurchaseRepository.findByIdForPatient as jest.Mock).mockResolvedValue({
+    (
+      packagePurchaseRepository.findByIdForPatient as jest.Mock
+    ).mockResolvedValue({
       id: 'purchase-1',
     });
 
@@ -49,7 +51,9 @@ describe('GetMyPackagePurchaseUseCase', () => {
     (patientProfileRepository.findByUserId as jest.Mock).mockResolvedValue({
       id: 'patient-1',
     });
-    (packagePurchaseRepository.findByIdForPatient as jest.Mock).mockResolvedValue(null);
+    (
+      packagePurchaseRepository.findByIdForPatient as jest.Mock
+    ).mockResolvedValue(null);
 
     await expect(
       useCase.execute({

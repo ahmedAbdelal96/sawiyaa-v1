@@ -127,9 +127,11 @@ export class MarkPaymentFailedUseCase {
       'Payments',
     );
 
-    const paymentMetadata = (payment.metadataJson ?? {}) as Record<string, unknown>;
-    const isAcademyEnrollment =
-      paymentMetadata.source === 'academy-enrollment';
+    const paymentMetadata = (payment.metadataJson ?? {}) as Record<
+      string,
+      unknown
+    >;
+    const isAcademyEnrollment = paymentMetadata.source === 'academy-enrollment';
 
     if (!isAcademyEnrollment && updated.patientId) {
       await this.operationalNotificationService.notifyPaymentFailed({

@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { SessionMode } from '@prisma/client';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
 import { PatientProfileRepository } from '@modules/patients/repositories/patient-profile.repository';
@@ -105,7 +109,8 @@ export class QuotePackagePlanUseCase {
 
     const quote = await this.packageQuoteCalculatorService.calculate({
       plan,
-      practitioner: practitioner as typeof practitioner & PublicPackagePricingPractitioner,
+      practitioner: practitioner as typeof practitioner &
+        PublicPackagePricingPractitioner,
       selectedDurationMinutes: input.durationMinutes,
       sessionMode: input.sessionMode,
       selectedCurrencyCode: null,

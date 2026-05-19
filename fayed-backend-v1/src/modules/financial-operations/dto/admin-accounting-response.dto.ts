@@ -254,7 +254,10 @@ export class JournalEntryDetailDataResponseDto {
       createdAt: { type: 'string' },
       currencyCode: { type: 'string' },
       description: { type: 'string', nullable: true },
-      lines: { type: 'array', items: { $ref: '#/components/schemas/LedgerExplorerRowItemDto' } },
+      lines: {
+        type: 'array',
+        items: { $ref: '#/components/schemas/LedgerExplorerRowItemDto' },
+      },
     },
   })
   item!: {
@@ -334,7 +337,11 @@ export class AccountingReconciliationItemDto {
   @ApiProperty({
     enum: ['MATCHED', 'MISMATCH', 'MISSING_PROOF', 'REQUIRES_ADJUSTMENT'],
   })
-  systemStatus!: 'MATCHED' | 'MISMATCH' | 'MISSING_PROOF' | 'REQUIRES_ADJUSTMENT';
+  systemStatus!:
+    | 'MATCHED'
+    | 'MISMATCH'
+    | 'MISSING_PROOF'
+    | 'REQUIRES_ADJUSTMENT';
 
   @ApiProperty({ enum: ReconciliationReviewStatus, nullable: true })
   reviewStatus!: ReconciliationReviewStatus | null;

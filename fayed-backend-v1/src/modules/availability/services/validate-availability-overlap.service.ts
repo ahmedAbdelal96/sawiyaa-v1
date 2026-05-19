@@ -97,8 +97,7 @@ export class ValidateAvailabilityOverlapService {
       });
     }
 
-    const durationMinutes =
-      slot.endMinuteOfDay - slot.startMinuteOfDay;
+    const durationMinutes = slot.endMinuteOfDay - slot.startMinuteOfDay;
 
     if (durationMinutes !== slot.durationMinutes) {
       throw new BadRequestException({
@@ -113,5 +112,4 @@ export class ValidateAvailabilityOverlapService {
   ): WeeklyAvailabilityDurationMinutes {
     return durationMinutes === undefined ? 30 : durationMinutes;
   }
-
 }

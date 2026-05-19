@@ -1,5 +1,7 @@
 export function toCsvContent(rows: string[][]): string {
-  const csvBody = rows.map((row) => row.map(escapeCsvCell).join(',')).join('\n');
+  const csvBody = rows
+    .map((row) => row.map(escapeCsvCell).join(','))
+    .join('\n');
   return `\uFEFF${csvBody}`;
 }
 

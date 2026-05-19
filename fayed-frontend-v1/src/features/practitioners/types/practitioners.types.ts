@@ -29,10 +29,64 @@ export type PractitionerApplicationStatus =
   | "CHANGES_REQUESTED"
   | "ARCHIVED";
 
+export type PractitionerApplicationCompletionStepKey =
+  | "basicProfile"
+  | "professionalDetails"
+  | "pricing"
+  | "qualifications"
+  | "documents"
+  | "payoutDetails"
+  | "reviewSubmit";
+
+export type PractitionerApplicationCompletionSeverity =
+  | "BLOCKER"
+  | "WARNING"
+  | "INFO";
+
+export type PractitionerApplicationCompletionRequirementScope =
+  | "SUBMISSION"
+  | "APPROVAL"
+  | "OPTIONAL";
+
+export type PractitionerApplicationCompletionStepStatus =
+  | "complete"
+  | "incomplete"
+  | "warning";
+
+export interface PractitionerApplicationCompletionIssue {
+  code: string;
+  field?: string | null;
+  stepKey: PractitionerApplicationCompletionStepKey;
+  severity: PractitionerApplicationCompletionSeverity;
+  requirementScope: PractitionerApplicationCompletionRequirementScope;
+  messageKey: string;
+  metadata?: Record<string, unknown> | null;
+}
+
+export interface PractitionerApplicationCompletionStep {
+  key: PractitionerApplicationCompletionStepKey;
+  titleKey: string;
+  status: PractitionerApplicationCompletionStepStatus;
+  percent: number;
+  requiredCount: number;
+  completedRequiredCount: number;
+  issues: PractitionerApplicationCompletionIssue[];
+}
+
+export interface PractitionerApplicationCompletionViewModel {
+  overallPercent: number;
+  canSubmit: boolean;
+  blockers: PractitionerApplicationCompletionIssue[];
+  warnings: PractitionerApplicationCompletionIssue[];
+  steps: PractitionerApplicationCompletionStep[];
+}
+
 export type CredentialType =
   | "LICENSE"
   | "DEGREE"
   | "CERTIFICATION"
+  | "NATIONAL_ID_FRONT"
+  | "NATIONAL_ID_BACK"
   | "NATIONAL_ID"
   | "PASSPORT"
   | "MEMBERSHIP"
@@ -166,6 +220,7 @@ export interface PractitionerReadiness {
   canSubmitApplication: boolean;
   missingRequirements: string[];
   checks: PractitionerReadinessChecks;
+  completion?: PractitionerApplicationCompletionViewModel;
 }
 
 export interface PractitionerReadinessSuccessResponse {
@@ -185,6 +240,7 @@ export interface PractitionerApplicationStatusResponse {
   isProfileCompleted: boolean;
   canSubmitApplication: boolean;
   missingRequirements: string[];
+  completion?: PractitionerApplicationCompletionViewModel;
 }
 
 export interface PractitionerApplicationStatusSuccessResponse {
@@ -255,8 +311,15 @@ export interface UploadPractitionerCredentialMetadataRequest {
   expiresAt?: string | null;
 }
 
+export interface UploadPractitionerCredentialFileRequest {
+  file: File;
+  credentialType: CredentialType;
+  expiresAt?: string | null;
+}
+
 export interface UpdatePractitionerAvatarRequest {
-  avatarUrl: string;
+  avatarUrl?: string | null;
+  file?: File;
 }
 
 export interface PractitionerAvatarResponse {

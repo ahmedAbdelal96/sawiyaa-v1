@@ -4,10 +4,15 @@ import { JournalEntryDetailViewModel } from '../types/accounting-read.types';
 
 @Injectable()
 export class GetAdminLedgerJournalEntryUseCase {
-  constructor(private readonly accountingReadRepository: AccountingReadRepository) {}
+  constructor(
+    private readonly accountingReadRepository: AccountingReadRepository,
+  ) {}
 
   async execute(journalEntryId: string): Promise<JournalEntryDetailViewModel> {
-    const journal = await this.accountingReadRepository.getJournalEntryWithLines(journalEntryId);
+    const journal =
+      await this.accountingReadRepository.getJournalEntryWithLines(
+        journalEntryId,
+      );
 
     if (!journal) {
       throw new NotFoundException({

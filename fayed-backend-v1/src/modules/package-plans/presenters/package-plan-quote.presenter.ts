@@ -39,9 +39,7 @@ export class PackagePlanQuotePresenter {
 
     return {
       item: plan,
-      quote: internalBreakdownVisible
-        ? quote
-        : this.toPublicQuote(quote),
+      quote: internalBreakdownVisible ? quote : this.toPublicQuote(quote),
     };
   }
 

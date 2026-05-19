@@ -282,7 +282,15 @@
     "cancelError": "تعذّر إلغاء هذه الجلسة. يرجى المحاولة مجددًا.",
     "bookNewSlot": "حجز موعد جديد",
     "bookedAt": "وقت الحجز",
-    "bookingStartedAt": "بدأ الحجز في"
+    "bookingStartedAt": "بدأ الحجز في",
+    "errors": {
+      "forbiddenTitle": "لا يمكنك عرض هذه الجلسة",
+      "forbiddenNote": "هذه الجلسة لا تتاح إلا لحسابك.",
+      "notFoundTitle": "لم يتم العثور على الجلسة",
+      "notFoundNote": "لم نجد هذه الجلسة.",
+      "errorTitle": "تعذّر تحميل تفاصيل الجلسة",
+      "errorNote": "يرجى المحاولة مجددًا بعد لحظات."
+    }
   },
   "practitioner": {
     "meta": {

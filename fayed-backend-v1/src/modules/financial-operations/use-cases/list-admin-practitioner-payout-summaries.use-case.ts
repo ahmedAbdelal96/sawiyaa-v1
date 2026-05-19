@@ -85,8 +85,10 @@ export class ListAdminPractitionerPayoutSummariesUseCase {
           Number(egp.packageReleasedPayableAmount ?? 0) > 0 ||
           Number(usd.packageHeldAmount ?? 0) > 0 ||
           Number(usd.packageReleasedPayableAmount ?? 0) > 0;
-        const lastPayoutAt =
-          this.latestTimestamp(egp.lastPayoutAt, usd.lastPayoutAt);
+        const lastPayoutAt = this.latestTimestamp(
+          egp.lastPayoutAt,
+          usd.lastPayoutAt,
+        );
 
         return {
           candidate,
@@ -99,8 +101,10 @@ export class ListAdminPractitionerPayoutSummariesUseCase {
       })
       .filter((item) => item.hasPayable || item.hasPackage)
       .sort((a, b) => {
-        const payableA = Number(a.egp.totalPayableAmount) + Number(a.usd.totalPayableAmount);
-        const payableB = Number(b.egp.totalPayableAmount) + Number(b.usd.totalPayableAmount);
+        const payableA =
+          Number(a.egp.totalPayableAmount) + Number(a.usd.totalPayableAmount);
+        const payableB =
+          Number(b.egp.totalPayableAmount) + Number(b.usd.totalPayableAmount);
         if (payableA !== payableB) {
           return payableB - payableA;
         }
@@ -119,33 +123,48 @@ export class ListAdminPractitionerPayoutSummariesUseCase {
           return packageB - packageA;
         }
 
-        const nameA = (a.candidate.user?.displayName ?? a.candidate.publicSlug ?? a.candidate.id).toLowerCase();
-        const nameB = (b.candidate.user?.displayName ?? b.candidate.publicSlug ?? b.candidate.id).toLowerCase();
+        const nameA = (
+          a.candidate.user?.displayName ??
+          a.candidate.publicSlug ??
+          a.candidate.id
+        ).toLowerCase();
+        const nameB = (
+          b.candidate.user?.displayName ??
+          b.candidate.publicSlug ??
+          b.candidate.id
+        ).toLowerCase();
         return nameA.localeCompare(nameB);
       });
 
     const totalItems = relevant.length;
-    const items = relevant.slice((page - 1) * limit, (page - 1) * limit + limit);
+    const items = relevant.slice(
+      (page - 1) * limit,
+      (page - 1) * limit + limit,
+    );
 
     return {
-      items: items.map(({ candidate, egp, usd, hasPayable, hasPackage, lastPayoutAt }) =>
-        this.mapper.toPractitionerManualPayoutSummary({
-          practitionerId: candidate.id,
-          practitionerName: candidate.user?.displayName ?? candidate.publicSlug ?? null,
-          practitionerSlug: candidate.publicSlug,
-          egp,
-          usd,
-          hasPayable,
-          hasPackage,
-          lastPayoutAt,
-        }),
+      items: items.map(
+        ({ candidate, egp, usd, hasPayable, hasPackage, lastPayoutAt }) =>
+          this.mapper.toPractitionerManualPayoutSummary({
+            practitionerId: candidate.id,
+            practitionerName:
+              candidate.user?.displayName ?? candidate.publicSlug ?? null,
+            practitionerSlug: candidate.publicSlug,
+            egp,
+            usd,
+            hasPayable,
+            hasPackage,
+            lastPayoutAt,
+          }),
       ),
       pagination: buildPagination({ page, limit, totalItems }),
     };
   }
 
   private latestTimestamp(...values: Array<string | null | undefined>) {
-    const timestamps = values.filter(Boolean).map((value) => new Date(value as string).getTime());
+    const timestamps = values
+      .filter(Boolean)
+      .map((value) => new Date(value as string).getTime());
     if (timestamps.length === 0) return null;
     const latest = Math.max(...timestamps);
     return Number.isFinite(latest) ? new Date(latest).toISOString() : null;

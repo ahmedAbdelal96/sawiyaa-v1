@@ -13,9 +13,7 @@ import {
   Prisma,
 } from '@prisma/client';
 import { PrismaService } from '@common/prisma/prisma.service';
-import {
-  resolveProviderForCurrency,
-} from '@common/payments/payment-region.resolver';
+import { resolveProviderForCurrency } from '@common/payments/payment-region.resolver';
 import { PatientProfileRepository } from '@modules/patients/repositories/patient-profile.repository';
 import { RefundPolicyType } from '@prisma/client';
 import { PaymentGeoContextService } from '@modules/payments/services/payment-geo-context.service';

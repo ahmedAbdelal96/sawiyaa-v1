@@ -69,9 +69,7 @@ export class AdminPractitionerManualPayoutsController {
   })
   @ApiUnauthorizedResponse({ description: 'Access token is required' })
   @ApiForbiddenResponse({ description: 'Admin active account is required' })
-  listPractitioners(
-    @Query() query: ListAdminPractitionerPayoutSummariesDto,
-  ) {
+  listPractitioners(@Query() query: ListAdminPractitionerPayoutSummariesDto) {
     return this.listPractitionerSummariesUseCase.execute({ query });
   }
 

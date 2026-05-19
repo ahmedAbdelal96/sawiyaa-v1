@@ -233,6 +233,10 @@ function resolveRoleRefreshEndpoint(role: string | null): string | null {
 
   if (
     role === "ADMIN" ||
+    role === "FINANCE_STAFF" ||
+    role === "MARKETING_STAFF" ||
+    role === "PRACTITIONER_REVIEWER" ||
+    role === "PATIENT_OPERATIONS" ||
     role === "SUPER_ADMIN" ||
     role === "SUPPORT_AGENT" ||
     role === "CONTENT_REVIEWER"
@@ -256,6 +260,10 @@ export async function getLogoutEndpointForCurrentRole(): Promise<string | null> 
 
   if (
     role === "ADMIN" ||
+    role === "FINANCE_STAFF" ||
+    role === "MARKETING_STAFF" ||
+    role === "PRACTITIONER_REVIEWER" ||
+    role === "PATIENT_OPERATIONS" ||
     role === "SUPER_ADMIN" ||
     role === "SUPPORT_AGENT" ||
     role === "CONTENT_REVIEWER"
@@ -338,7 +346,12 @@ export async function refreshAccessToken(): Promise<boolean> {
 
     return true;
   } catch (error) {
-    console.error("[Auth] Error refreshing token:", error);
+    if (process.env.NODE_ENV === "development") {
+      console.error("[Auth] Error refreshing token:", {
+        name: error instanceof Error ? error.name : "UnknownError",
+        message: error instanceof Error ? error.message : String(error),
+      });
+    }
     return false;
   }
 }

@@ -57,6 +57,18 @@ export class PractitionerCredentialRepository {
     });
   }
 
+  async listTypesByPractitionerId(
+    practitionerId: string,
+    tx?: Prisma.TransactionClient,
+  ): Promise<CredentialType[]> {
+    const rows = await this.getDb(tx).practitionerCredential.findMany({
+      where: { practitionerId },
+      select: { credentialType: true },
+    });
+
+    return rows.map((row) => row.credentialType);
+  }
+
   async getSummary(
     practitionerId: string,
     tx?: Prisma.TransactionClient,

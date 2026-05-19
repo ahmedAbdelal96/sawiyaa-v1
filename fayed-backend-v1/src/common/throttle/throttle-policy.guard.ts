@@ -31,7 +31,7 @@ export class ThrottlePolicyGuard implements CanActivate {
     private readonly store: ThrottleStoreService,
   ) {}
 
-  canActivate(context: ExecutionContext): boolean {
+  async canActivate(context: ExecutionContext): Promise<boolean> {
     const policyKey = this.reflector.getAllAndOverride<string | undefined>(
       THROTTLE_POLICY_KEY,
       [context.getHandler(), context.getClass()],
@@ -45,7 +45,10 @@ export class ThrottlePolicyGuard implements CanActivate {
     const request = context.switchToHttp().getRequest<Record<string, any>>();
     const clientKey = this.resolveClientKey(request, policyKey);
 
-    const { count, resetAt } = this.store.increment(clientKey, policy.windowMs);
+    const { count, resetAt } = await this.store.increment(
+      clientKey,
+      policy.windowMs,
+    );
 
     if (count > policy.limit) {
       const retryAfterSeconds = Math.max(

@@ -5,7 +5,8 @@ import { PractitionerPackagesModule } from './modules/practitioner-packages/prac
 
 describe('AppModule package-plan wiring', () => {
   it('registers package plans and does not register the deprecated practitioner package API', () => {
-    const imports = Reflect.getMetadata(MODULE_METADATA.IMPORTS, AppModule) ?? [];
+    const imports =
+      Reflect.getMetadata(MODULE_METADATA.IMPORTS, AppModule) ?? [];
 
     expect(imports).toContain(PackagePlansModule);
     expect(imports).not.toContain(PractitionerPackagesModule);

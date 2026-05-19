@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useMemo, useState, type FormEvent } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import Button from "@/components/ui/button/Button";
 import { Modal, ModalBody, ModalFooter, ModalHeader } from "@/components/ui/modal";
@@ -73,20 +73,13 @@ function getFieldIssueMessage(
   return null;
 }
 
-export default function AdminAcademyLectureCreateModal({ isOpen, course, onClose, onSuccess }: Props) {
+function AdminAcademyLectureCreateForm({ course, onClose, onSuccess }: Omit<Props, "isOpen">) {
   const t = useTranslations("academy");
   const locale = useLocale();
   const createLecture = useCreateAdminAcademyCourseLecture();
   const [form, setForm] = useState<LectureForm>(() => createInitialForm(course));
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<AcademyLectureFieldKey, string>>>({});
   const [feedback, setFeedback] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!isOpen) return;
-    setForm(createInitialForm(course));
-    setFieldErrors({});
-    setFeedback(null);
-  }, [isOpen, course]);
 
   const startPreview = useMemo(() => inputToIso(form.startsAt), [form.startsAt]);
   const endPreview = useMemo(() => {
@@ -191,7 +184,6 @@ export default function AdminAcademyLectureCreateModal({ isOpen, course, onClose
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={resetAndClose} size="lg">
       <form onSubmit={handleSubmit} className="flex max-h-[calc(100vh-2rem)] flex-col">
         <ModalHeader
           eyebrow={t("admin.detail.lectures.create.eyebrow")}
@@ -325,6 +317,27 @@ export default function AdminAcademyLectureCreateModal({ isOpen, course, onClose
           </div>
         </ModalFooter>
       </form>
+  );
+}
+
+export default function AdminAcademyLectureCreateModal({
+  isOpen,
+  course,
+  onClose,
+  onSuccess,
+}: Props) {
+  const locale = useLocale();
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} size="lg">
+      {isOpen ? (
+        <AdminAcademyLectureCreateForm
+          key={`${locale}:${course?.id ?? "none"}`}
+          course={course}
+          onClose={onClose}
+          onSuccess={onSuccess}
+        />
+      ) : null}
     </Modal>
   );
 }

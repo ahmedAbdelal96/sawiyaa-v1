@@ -375,7 +375,9 @@ describe('SessionJoinAvailableNotificationSweeperService', () => {
         joinOpenAt: '2026-05-01T10:00:00.000Z',
       },
     });
-    expect(patientNotification?.payload).not.toHaveProperty('packagePurchaseId');
+    expect(patientNotification?.payload).not.toHaveProperty(
+      'packagePurchaseId',
+    );
     expect(practitionerNotification).toMatchObject({
       slug: 'sessions.session-join-available',
       userId: 'practitioner-user-1',

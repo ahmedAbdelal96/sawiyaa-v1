@@ -22,7 +22,10 @@ type CategoryWithQuestions = HelpCategory & {
 };
 
 type QuestionWithCategory = HelpQuestion & {
-  category?: Pick<HelpCategory, 'id' | 'slug' | 'titleAr' | 'titleEn' | 'isActive'> | null;
+  category?: Pick<
+    HelpCategory,
+    'id' | 'slug' | 'titleAr' | 'titleEn' | 'isActive'
+  > | null;
 };
 
 function isPrismaUniqueError(error: unknown): error is { code: string } {
@@ -34,7 +37,9 @@ function isPrismaUniqueError(error: unknown): error is { code: string } {
   );
 }
 
-function normalizeOptionalText(value: string | null | undefined): string | null {
+function normalizeOptionalText(
+  value: string | null | undefined,
+): string | null {
   if (value == null) return null;
   const trimmed = value.trim();
   return trimmed.length > 0 ? trimmed : null;
@@ -108,7 +113,9 @@ export class HelpService {
     return category.id;
   }
 
-  private async listCategoriesInternal(includeInactive = true): Promise<CategoryWithQuestions[]> {
+  private async listCategoriesInternal(
+    includeInactive = true,
+  ): Promise<CategoryWithQuestions[]> {
     return this.prisma.helpCategory.findMany({
       where: includeInactive ? undefined : { isActive: true },
       orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
@@ -152,7 +159,9 @@ export class HelpService {
     };
   }
 
-  async createCategory(body: UpsertHelpCategoryDto): Promise<HelpCategoriesResponseDto> {
+  async createCategory(
+    body: UpsertHelpCategoryDto,
+  ): Promise<HelpCategoriesResponseDto> {
     try {
       await this.prisma.helpCategory.create({
         data: {
@@ -178,7 +187,10 @@ export class HelpService {
     return this.listAdminCategories();
   }
 
-  async updateCategory(id: string, body: UpsertHelpCategoryDto): Promise<HelpCategoriesResponseDto> {
+  async updateCategory(
+    id: string,
+    body: UpsertHelpCategoryDto,
+  ): Promise<HelpCategoriesResponseDto> {
     await this.ensureCategoryExists(id);
 
     try {
@@ -213,7 +225,9 @@ export class HelpService {
     return this.listAdminCategories();
   }
 
-  async reorderCategories(body: ReorderHelpCategoriesDto): Promise<HelpCategoriesResponseDto> {
+  async reorderCategories(
+    body: ReorderHelpCategoriesDto,
+  ): Promise<HelpCategoriesResponseDto> {
     const existing = await this.prisma.helpCategory.findMany({
       select: { id: true },
     });
@@ -238,7 +252,9 @@ export class HelpService {
     return this.listAdminCategories();
   }
 
-  async createQuestion(body: UpsertHelpQuestionDto): Promise<HelpQuestionsResponseDto> {
+  async createQuestion(
+    body: UpsertHelpQuestionDto,
+  ): Promise<HelpQuestionsResponseDto> {
     const categoryId = await this.ensureCategoryExists(body.categoryId ?? null);
 
     await this.prisma.helpQuestion.create({
@@ -256,7 +272,10 @@ export class HelpService {
     return this.listAdminQuestions();
   }
 
-  async updateQuestion(id: string, body: UpsertHelpQuestionDto): Promise<HelpQuestionsResponseDto> {
+  async updateQuestion(
+    id: string,
+    body: UpsertHelpQuestionDto,
+  ): Promise<HelpQuestionsResponseDto> {
     const existing = await this.prisma.helpQuestion.findUnique({
       where: { id },
       select: { id: true },
@@ -302,7 +321,9 @@ export class HelpService {
     return this.listAdminQuestions();
   }
 
-  async reorderQuestions(body: ReorderHelpQuestionsDto): Promise<HelpQuestionsResponseDto> {
+  async reorderQuestions(
+    body: ReorderHelpQuestionsDto,
+  ): Promise<HelpQuestionsResponseDto> {
     const existing = await this.prisma.helpQuestion.findMany({
       select: { id: true },
     });
@@ -336,10 +357,7 @@ export class HelpService {
     const questions = await this.prisma.helpQuestion.findMany({
       where: {
         isActive: true,
-        OR: [
-          { categoryId: null },
-          { categoryId: { in: activeCategoryIds } },
-        ],
+        OR: [{ categoryId: null }, { categoryId: { in: activeCategoryIds } }],
       },
       orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
       include: {
@@ -395,10 +413,7 @@ export class HelpService {
     const questions = await this.prisma.helpQuestion.findMany({
       where: {
         isActive: true,
-        OR: [
-          { categoryId: null },
-          { categoryId: { in: activeCategoryIds } },
-        ],
+        OR: [{ categoryId: null }, { categoryId: { in: activeCategoryIds } }],
         AND: [
           {
             OR: [

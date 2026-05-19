@@ -87,7 +87,8 @@ describe('MarkSessionCompletedByPractitionerUseCase', () => {
       (sessionRepository.createEvent as jest.Mock).mock.calls[0][0].eventType,
     ).toBe(SessionEventType.SESSION_COMPLETED);
     expect(
-      (postPackageSessionLedgerEntriesUseCase.execute as jest.Mock).mock.calls[0][0],
+      (postPackageSessionLedgerEntriesUseCase.execute as jest.Mock).mock
+        .calls[0][0],
     ).toEqual(
       expect.objectContaining({
         sessionId: 'session-1',

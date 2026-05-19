@@ -8,6 +8,7 @@ import {
   PractitionerType,
   UserStatus,
 } from '@prisma/client';
+import { PractitionerApplicationCompletionViewModel } from '@modules/practitioners/types/practitioner.types';
 
 /**
  * Shared read-model types for admin practitioner application review.
@@ -60,6 +61,7 @@ export interface AdminPractitionerApplicationDetailsViewModel {
     userId: string;
     practitionerProfileId: string;
     displayName: string | null;
+    avatarUrl: string | null;
     accountStatus: UserStatus;
     email: {
       address: string | null;
@@ -77,6 +79,7 @@ export interface AdminPractitionerApplicationDetailsViewModel {
     userId: string;
     practitionerProfileId: string;
     displayName: string | null;
+    avatarUrl: string | null;
     accountStatus: UserStatus;
     email: {
       address: string | null;
@@ -94,6 +97,7 @@ export interface AdminPractitionerApplicationDetailsViewModel {
     practitionerType: PractitionerType;
     practitionerGender: PractitionerGender | null;
     profileStatus: PractitionerStatus;
+    avatarUrl: string | null;
     professionalTitle: string | null;
     bio: string | null;
     yearsOfExperience: number | null;
@@ -120,6 +124,7 @@ export interface AdminPractitionerApplicationDetailsViewModel {
     practitionerType: PractitionerType;
     practitionerGender: PractitionerGender | null;
     profileStatus: PractitionerStatus;
+    avatarUrl: string | null;
     professionalTitle: string | null;
     bio: string | null;
     yearsOfExperience: number | null;
@@ -190,6 +195,7 @@ export interface AdminPractitionerApplicationDetailsViewModel {
     canBeReviewed: boolean;
     canBeApproved: boolean;
   };
+  completion: PractitionerApplicationCompletionViewModel;
 }
 
 export interface AdminPractitionerApplicationDecisionViewModel {

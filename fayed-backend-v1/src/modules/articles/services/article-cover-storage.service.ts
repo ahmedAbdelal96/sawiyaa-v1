@@ -71,4 +71,3 @@ export class ArticleCoverStorageService {
     return `/api/v1/article-covers/${fileName}`;
   }
 }
-

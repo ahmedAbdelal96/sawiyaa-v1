@@ -13,9 +13,7 @@ import {
   PaymentProvider,
 } from '@prisma/client';
 import { PrismaService } from '@common/prisma/prisma.service';
-import {
-  resolveProviderForCurrency,
-} from '@common/payments/payment-region.resolver';
+import { resolveProviderForCurrency } from '@common/payments/payment-region.resolver';
 import { PaymentRepository } from '@modules/payments/repositories/payment.repository';
 import { PaymentGeoContextService } from '@modules/payments/services/payment-geo-context.service';
 import { PaymentProviderRegistryService } from '@modules/payments/services/payment-provider-registry.service';
@@ -39,11 +37,10 @@ export class CreateAcademyEnrollmentUseCase {
     private readonly academyPresenter: AcademyPresenter,
   ) {}
 
-  async execute(input: {
-    slug: string;
-    payload: CreateAcademyEnrollmentDto;
-  }) {
-    const course = await this.academyRepository.findPublicCourseBySlug(input.slug);
+  async execute(input: { slug: string; payload: CreateAcademyEnrollmentDto }) {
+    const course = await this.academyRepository.findPublicCourseBySlug(
+      input.slug,
+    );
     if (!course) {
       throw new NotFoundException({
         messageKey: 'academy.errors.notFound',
@@ -167,21 +164,23 @@ export class CreateAcademyEnrollmentUseCase {
             academyCourseId: course.id,
             academyEnrollmentId: enrollment.id,
             learnerId: learner.id,
-            countrySnapshot: this.paymentGeoContextService.buildCountrySnapshot({
-              declaredCountryCode: countryResolution.declaredCountryCode,
-              resolvedCountryCode: countryResolution.resolvedCountryCode,
-              countrySource: countryResolution.countrySource,
-              countryMismatch: countryResolution.countryMismatch,
-              phoneCountryCode: countryResolution.phoneCountryCode,
-              operatingCountryCode: null,
-              checkoutCountryCode: countryResolution.resolvedCountryCode,
-              pricingCurrencyCode: pricing.currencyCode,
-              pricingMarketType:
-                pricing.currencyCode === 'EGP'
-                  ? MarketType.LOCAL
-                  : MarketType.CROSS_BORDER,
-              provider,
-            }),
+            countrySnapshot: this.paymentGeoContextService.buildCountrySnapshot(
+              {
+                declaredCountryCode: countryResolution.declaredCountryCode,
+                resolvedCountryCode: countryResolution.resolvedCountryCode,
+                countrySource: countryResolution.countrySource,
+                countryMismatch: countryResolution.countryMismatch,
+                phoneCountryCode: countryResolution.phoneCountryCode,
+                operatingCountryCode: null,
+                checkoutCountryCode: countryResolution.resolvedCountryCode,
+                pricingCurrencyCode: pricing.currencyCode,
+                pricingMarketType:
+                  pricing.currencyCode === 'EGP'
+                    ? MarketType.LOCAL
+                    : MarketType.CROSS_BORDER,
+                provider,
+              },
+            ),
           },
         },
         tx,
@@ -255,21 +254,22 @@ export class CreateAcademyEnrollmentUseCase {
               academyEnrollmentId: enrollment.id,
               academyCourseId: course.id,
               learnerId: learner.id,
-              countrySnapshot: this.paymentGeoContextService.buildCountrySnapshot({
-                declaredCountryCode: countryResolution.declaredCountryCode,
-                resolvedCountryCode: countryResolution.resolvedCountryCode,
-                countrySource: countryResolution.countrySource,
-                countryMismatch: countryResolution.countryMismatch,
-                phoneCountryCode: countryResolution.phoneCountryCode,
-                operatingCountryCode: null,
-                checkoutCountryCode: countryResolution.resolvedCountryCode,
-                pricingCurrencyCode: pricing.currencyCode,
-                pricingMarketType:
-                  pricing.currencyCode === 'EGP'
-                    ? MarketType.LOCAL
-                    : MarketType.CROSS_BORDER,
-                provider,
-              }),
+              countrySnapshot:
+                this.paymentGeoContextService.buildCountrySnapshot({
+                  declaredCountryCode: countryResolution.declaredCountryCode,
+                  resolvedCountryCode: countryResolution.resolvedCountryCode,
+                  countrySource: countryResolution.countrySource,
+                  countryMismatch: countryResolution.countryMismatch,
+                  phoneCountryCode: countryResolution.phoneCountryCode,
+                  operatingCountryCode: null,
+                  checkoutCountryCode: countryResolution.resolvedCountryCode,
+                  pricingCurrencyCode: pricing.currencyCode,
+                  pricingMarketType:
+                    pricing.currencyCode === 'EGP'
+                      ? MarketType.LOCAL
+                      : MarketType.CROSS_BORDER,
+                  provider,
+                }),
               ...(providerResult.metadata ?? {}),
             },
           },
@@ -323,7 +323,9 @@ export class CreateAcademyEnrollmentUseCase {
           await this.academyRepository.updatePaymentAttempt(paymentAttemptId, {
             status: PaymentStatus.FAILED,
             failureReason:
-              error instanceof Error ? error.message.slice(0, 500) : 'Payment initiation failed',
+              error instanceof Error
+                ? error.message.slice(0, 500)
+                : 'Payment initiation failed',
           });
         }
 
@@ -332,7 +334,9 @@ export class CreateAcademyEnrollmentUseCase {
           paymentStatus: PaymentStatus.FAILED,
           failedAt: new Date(),
           failedReason:
-            error instanceof Error ? error.message.slice(0, 500) : 'Payment initiation failed',
+            error instanceof Error
+              ? error.message.slice(0, 500)
+              : 'Payment initiation failed',
         });
       });
 

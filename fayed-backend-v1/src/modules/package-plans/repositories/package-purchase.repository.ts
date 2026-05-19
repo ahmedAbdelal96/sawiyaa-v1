@@ -45,13 +45,11 @@ export class PatientPackagePurchaseRepository {
     ]);
   }
 
-  findByIdForPatient(
-    input: {
-      purchaseId: string;
-      patientId: string;
-      tx?: Prisma.TransactionClient;
-    },
-  ) {
+  findByIdForPatient(input: {
+    purchaseId: string;
+    patientId: string;
+    tx?: Prisma.TransactionClient;
+  }) {
     return this.getDb(input.tx).patientPackagePurchase.findFirst({
       where: {
         id: input.purchaseId,
@@ -61,20 +59,14 @@ export class PatientPackagePurchaseRepository {
     });
   }
 
-  findById(
-    purchaseId: string,
-    tx?: Prisma.TransactionClient,
-  ) {
+  findById(purchaseId: string, tx?: Prisma.TransactionClient) {
     return this.getDb(tx).patientPackagePurchase.findUnique({
       where: { id: purchaseId },
       include: this.purchaseInclude,
     });
   }
 
-  findByPaymentId(
-    paymentId: string,
-    tx?: Prisma.TransactionClient,
-  ) {
+  findByPaymentId(paymentId: string, tx?: Prisma.TransactionClient) {
     return this.getDb(tx).patientPackagePurchase.findFirst({
       where: { paymentId },
       include: this.purchaseInclude,
@@ -116,7 +108,7 @@ export class PatientPackagePurchaseRepository {
     purchaseId: string,
     data: Prisma.PatientPackagePurchaseUncheckedUpdateInput,
     tx?: Prisma.TransactionClient,
-    ) {
+  ) {
     return this.getDb(tx).patientPackagePurchase.update({
       where: { id: purchaseId },
       data,
@@ -204,7 +196,10 @@ export class PatientPackagePurchaseRepository {
       },
     },
     sessions: {
-      orderBy: [{ packageSessionIndex: 'asc' as const }, { scheduledStartAt: 'asc' as const }],
+      orderBy: [
+        { packageSessionIndex: 'asc' as const },
+        { scheduledStartAt: 'asc' as const },
+      ],
       select: {
         id: true,
         sessionCode: true,

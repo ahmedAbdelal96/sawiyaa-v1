@@ -10,8 +10,9 @@ import axios, {
 } from "axios";
 import Cookies from "js-cookie";
 import { API_CONFIG, TOKEN_CONFIG } from "./config";
-import { toAppError } from "./errors";
+import { isStepUpRequiredError, toAppError } from "./errors";
 import { USER_DATA_COOKIE, USER_ROLE_COOKIE } from "@/lib/auth/constants";
+import { requestSensitiveCacheClear } from "@/lib/security/sensitive-cache";
 
 const AUTH_COOKIE_OPTIONS = {
   path: "/",
@@ -37,6 +38,7 @@ const SENSITIVE_AUTH_PATHS = [
   "/auth/practitioner/login/verify-otp",
   "/auth/practitioner/register",
   "/auth/admin/login",
+  "/auth/admin/step-up/verify",
 ] as const;
 
 function isSensitiveAuthPath(url?: string): boolean {
@@ -166,7 +168,12 @@ httpClient.interceptors.request.use(
     return config;
   },
   (error: AxiosError) => {
-    console.error("[Request Error]", error);
+    if (process.env.NODE_ENV === "development") {
+      console.error("[Request Error]", {
+        message: error.message,
+        code: error.code,
+      });
+    }
     return Promise.reject(error);
   }
 );
@@ -231,6 +238,7 @@ httpClient.interceptors.response.use(
         if (!refreshed) {
           if (!refreshFailureHandled) {
             refreshFailureHandled = true;
+            requestSensitiveCacheClear("session-expired");
             handleLogout();
           }
           return Promise.reject(toAppError(error));
@@ -246,12 +254,19 @@ httpClient.interceptors.response.use(
       } catch (refreshError) {
         if (!refreshFailureHandled) {
           refreshFailureHandled = true;
+          requestSensitiveCacheClear("session-expired");
           handleLogout();
         }
         return Promise.reject(toAppError(refreshError));
       }
     }
 
+    // 403 Forbidden: user is authenticated but lacks permission.
+    // Do NOT logout. Surface as AppError with errorType "FORBIDDEN".
+    // Page-level guards and error boundaries will render the appropriate UI.
+    if (error.response?.status === 403 && !isStepUpRequiredError(error)) {
+      requestSensitiveCacheClear("forbidden");
+    }
     return Promise.reject(toAppError(error));
   }
 );

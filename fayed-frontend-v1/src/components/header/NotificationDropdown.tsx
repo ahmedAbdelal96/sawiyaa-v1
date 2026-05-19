@@ -8,6 +8,8 @@ import { ListStateSkeleton, StateCard } from "@/components/shared/ContentStates"
 import { useAdminNotifications } from "@/features/admin/notifications/hooks/use-admin-notifications";
 import { getAdminNotificationStatusTone } from "@/features/admin/notifications/lib/admin-notification-status";
 import { formatAdminNotificationDateTime } from "@/features/admin/notifications/components/admin-notification-utils";
+import { useCurrentUserPermissions } from "@/features/users/hooks/use-users";
+import { PermissionKey } from "@/lib/auth/permissions";
 
 export default function NotificationDropdown() {
   const locale = useLocale();
@@ -22,15 +24,16 @@ export default function NotificationDropdown() {
   }, [locale, pathname]);
 
   const isAdminArea = pathWithoutLocale === "/admin" || pathWithoutLocale.startsWith("/admin/");
-
+  const { data: permissionData } = useCurrentUserPermissions(isAdminArea);
+  const canReadNotifications = permissionData?.permissions.includes(PermissionKey.NOTIFICATION_OPS_READ) ?? false;
   const notifications = useAdminNotifications(
     { page: 1, limit: 5 },
-    { enabled: isAdminArea },
+    { enabled: isAdminArea && canReadNotifications },
   );
   const items = notifications.data?.items ?? [];
   const total = notifications.data?.pagination.totalItems ?? 0;
 
-  if (!isAdminArea) return null;
+  if (!isAdminArea || !canReadNotifications) return null;
 
   return (
     <div className="relative">

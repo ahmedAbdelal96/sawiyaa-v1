@@ -30,15 +30,15 @@ describe('ValidatePackagePurchaseSlotsService', () => {
   });
 
   it('validates exact slot counts and normalizes slots', async () => {
-    (validateSessionScheduleCompatibilityService.assertFitsPractitionerAvailability as jest.Mock).mockResolvedValue(
-      { timezone: 'Africa/Cairo' },
-    );
-    (validateSessionConflictsService.assertNoPractitionerConflict as jest.Mock).mockResolvedValue(
-      undefined,
-    );
-    (validateSessionConflictsService.assertNoPatientConflict as jest.Mock).mockResolvedValue(
-      undefined,
-    );
+    (
+      validateSessionScheduleCompatibilityService.assertFitsPractitionerAvailability as jest.Mock
+    ).mockResolvedValue({ timezone: 'Africa/Cairo' });
+    (
+      validateSessionConflictsService.assertNoPractitionerConflict as jest.Mock
+    ).mockResolvedValue(undefined);
+    (
+      validateSessionConflictsService.assertNoPatientConflict as jest.Mock
+    ).mockResolvedValue(undefined);
 
     const result = await service.validate({
       practitionerId: 'practitioner-1',
@@ -55,9 +55,9 @@ describe('ValidatePackagePurchaseSlotsService', () => {
 
     expect(result.timezone).toBe('Africa/Cairo');
     expect(result.slots).toHaveLength(2);
-    expect(validateSessionConflictsService.assertNoPractitionerConflict).toHaveBeenCalledTimes(
-      2,
-    );
+    expect(
+      validateSessionConflictsService.assertNoPractitionerConflict,
+    ).toHaveBeenCalledTimes(2);
   });
 
   it('rejects duplicate selected slots', async () => {
@@ -95,7 +95,9 @@ describe('ValidatePackagePurchaseSlotsService', () => {
   });
 
   it('rejects unavailable windows from the schedule compatibility service', async () => {
-    (validateSessionScheduleCompatibilityService.assertFitsPractitionerAvailability as jest.Mock).mockRejectedValue(
+    (
+      validateSessionScheduleCompatibilityService.assertFitsPractitionerAvailability as jest.Mock
+    ).mockRejectedValue(
       new BadRequestException({
         messageKey: 'sessions.errors.unavailableTimeWindow',
         error: 'SESSION_UNAVAILABLE_TIME_WINDOW',
@@ -118,10 +120,12 @@ describe('ValidatePackagePurchaseSlotsService', () => {
   });
 
   it('bubbles collision conflicts from the session conflict service', async () => {
-    (validateSessionScheduleCompatibilityService.assertFitsPractitionerAvailability as jest.Mock).mockResolvedValue(
-      { timezone: 'Africa/Cairo' },
-    );
-    (validateSessionConflictsService.assertNoPractitionerConflict as jest.Mock).mockRejectedValue(
+    (
+      validateSessionScheduleCompatibilityService.assertFitsPractitionerAvailability as jest.Mock
+    ).mockResolvedValue({ timezone: 'Africa/Cairo' });
+    (
+      validateSessionConflictsService.assertNoPractitionerConflict as jest.Mock
+    ).mockRejectedValue(
       new ConflictException({
         messageKey: 'sessions.errors.practitionerTimeConflict',
         error: 'SESSION_PRACTITIONER_TIME_CONFLICT',

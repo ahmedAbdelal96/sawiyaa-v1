@@ -24,7 +24,7 @@ describe('PackagePlanAdminService', () => {
       create: jest.fn(),
     },
     $transaction: jest.fn(async (cb: (tx: unknown) => Promise<unknown>) =>
-      cb(prisma as never),
+      cb(prisma),
     ),
   } as never;
 
@@ -154,14 +154,24 @@ describe('PackagePlanAdminService', () => {
       }),
     );
     (prisma.configValue.update as jest.Mock).mockImplementation(
-      async ({ where, data }: { where: { id: string }; data: { isActive: boolean } }) => {
+      async ({
+        where,
+        data,
+      }: {
+        where: { id: string };
+        data: { isActive: boolean };
+      }) => {
         void where;
         void data;
         return {};
       },
     );
     (prisma.configValue.create as jest.Mock).mockImplementation(
-      async ({ data }: { data: { configKeyId: string; valueBoolean: boolean } }) => {
+      async ({
+        data,
+      }: {
+        data: { configKeyId: string; valueBoolean: boolean };
+      }) => {
         configState[data.configKeyId] = data.valueBoolean;
         return {
           id: `${data.configKeyId}-new`,

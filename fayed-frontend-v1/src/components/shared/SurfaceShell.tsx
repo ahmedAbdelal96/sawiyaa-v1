@@ -6,10 +6,10 @@ type SurfaceVariant = "page" | "section" | "compact" | "subtle";
 type SurfaceTone = "neutral" | "brand" | "primary" | "success" | "warning";
 
 const SURFACE_VARIANTS: Record<SurfaceVariant, string> = {
-  page: "app-panel rounded-[30px] p-6 sm:p-7",
-  section: "app-panel rounded-[26px] p-5 sm:p-6",
-  compact: "app-panel rounded-[22px] p-4 sm:p-5",
-  subtle: "app-panel-soft rounded-[22px] p-4 sm:p-5",
+  page: "rounded-[30px] border border-border-light bg-white p-6 shadow-[0_18px_40px_-30px_rgba(34,52,56,0.18)] sm:p-7",
+  section: "rounded-[26px] border border-border-light bg-white p-5 shadow-[0_16px_34px_-30px_rgba(34,52,56,0.16)] sm:p-6",
+  compact: "rounded-[22px] border border-border-light bg-white p-4 shadow-[0_14px_28px_-28px_rgba(34,52,56,0.14)] sm:p-5",
+  subtle: "rounded-[22px] border border-border-light/80 bg-surface-secondary p-4 shadow-none sm:p-5",
 };
 
 const STAT_TONE_CLASSES: Record<
@@ -24,8 +24,7 @@ const STAT_TONE_CLASSES: Record<
   }
 > = {
   neutral: {
-    shell:
-      "border-border-light bg-white text-text-primary shadow-[0_18px_40px_-30px_rgba(34,52,56,0.14)]",
+    shell: "border-border-light bg-white text-text-primary shadow-[0_18px_40px_-30px_rgba(34,52,56,0.14)]",
     label: "text-text-muted/90",
     value: "text-text-primary",
     hint: "text-text-secondary",
@@ -33,8 +32,7 @@ const STAT_TONE_CLASSES: Record<
     iconShell: "bg-primary-light text-text-brand shadow-[0_10px_22px_-14px_rgba(68,161,148,0.2)]",
   },
   brand: {
-    shell:
-      "border-primary/35 bg-primary text-white shadow-[0_22px_48px_-28px_rgba(68,161,148,0.46)]",
+    shell: "border-primary/30 bg-primary text-white shadow-[0_22px_48px_-28px_rgba(68,161,148,0.38)]",
     label: "text-white/74",
     value: "text-white",
     hint: "text-white/70",
@@ -42,8 +40,7 @@ const STAT_TONE_CLASSES: Record<
     iconShell: "bg-white/14 text-white",
   },
   primary: {
-    shell:
-      "border-primary/28 bg-primary-light text-text-brand shadow-[0_22px_48px_-28px_rgba(68,161,148,0.28)]",
+    shell: "border-primary/20 bg-primary-light text-text-brand shadow-[0_22px_48px_-28px_rgba(68,161,148,0.22)]",
     label: "text-text-brand/80",
     value: "text-text-brand",
     hint: "text-text-secondary",
@@ -51,8 +48,7 @@ const STAT_TONE_CLASSES: Record<
     iconShell: "bg-white text-text-brand",
   },
   success: {
-    shell:
-      "border-success-500 bg-success-500 text-white shadow-[0_22px_48px_-28px_rgba(18,183,106,0.36)]",
+    shell: "border-success-500/70 bg-success-500 text-white shadow-[0_22px_48px_-28px_rgba(18,183,106,0.3)]",
     label: "text-white/74",
     value: "text-white",
     hint: "text-white/70",
@@ -60,8 +56,7 @@ const STAT_TONE_CLASSES: Record<
     iconShell: "bg-white/14 text-white",
   },
   warning: {
-    shell:
-      "border-warning-200 bg-warning-50 text-text-primary shadow-[0_20px_42px_-28px_rgba(247,144,9,0.24)]",
+    shell: "border-warning-200 bg-warning-50 text-text-primary shadow-[0_20px_42px_-28px_rgba(247,144,9,0.18)]",
     label: "text-warning-700/90",
     value: "text-text-primary",
     hint: "text-warning-700/74",
@@ -203,7 +198,7 @@ export function SurfaceStatCard({
     >
       <span
         aria-hidden="true"
-        className={cn("pointer-events-none absolute -right-7 -top-7 h-24 w-24 rounded-full", toneStyles.accent)}
+      className={cn("pointer-events-none absolute -right-7 -top-7 h-24 w-24 rounded-full", toneStyles.accent)}
       />
       <span
         aria-hidden="true"

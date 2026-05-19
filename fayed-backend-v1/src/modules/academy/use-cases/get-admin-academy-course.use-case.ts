@@ -18,9 +18,8 @@ export class GetAdminAcademyCourseUseCase {
       });
     }
 
-    const statsByCourseId = await this.academyRepository.countEnrollmentsByCourseIds([
-      course.id,
-    ]);
+    const statsByCourseId =
+      await this.academyRepository.countEnrollmentsByCourseIds([course.id]);
     const enrollments = await this.academyRepository.listEnrollmentsByCourseId(
       course.id,
     );

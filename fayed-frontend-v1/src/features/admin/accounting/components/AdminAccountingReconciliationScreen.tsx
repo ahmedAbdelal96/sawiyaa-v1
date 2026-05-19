@@ -10,6 +10,7 @@ import type { ColumnDef } from "@/components/ui/data-table";
 import { buildUpdatedSearchParams, parsePositiveIntParam, parseTextParam } from "@/components/ui/data-table";
 import Button from "@/components/ui/button/Button";
 import { DEFAULT_PAGE_LIMIT, DEFAULT_PAGE_SIZE_OPTIONS } from "@/constants/pagination";
+import { formatMoney as formatFinanceMoney } from "@/lib/finance-format";
 import {
   useAdminAccountingReconciliationItems,
   useAdminAccountingReconciliationOverview,
@@ -50,15 +51,6 @@ const ANOMALY_CODES: ReconciliationAnomalyCode[] = [
 
 function normalizeLocale(locale: string) {
   return locale === "ar" ? "ar-EG" : "en-US";
-}
-
-function formatMoney(locale: string, value: string, currencyCode: string) {
-  return new Intl.NumberFormat(normalizeLocale(locale), {
-    style: "currency",
-    currency: currencyCode,
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(Number(value || "0"));
 }
 
 function formatDateTime(locale: string, value: string) {
@@ -186,12 +178,16 @@ export default function AdminAccountingReconciliationScreen() {
         cell: (row) => (
           <div className="text-xs text-text-secondary">
             <p className="text-sm font-semibold text-text-primary dark:text-white/95">
-              {formatMoney(locale, row.operationalAmount, row.currencyCode)}
+              {formatFinanceMoney(normalizeLocale(locale), row.operationalAmount, row.currencyCode, {
+                fallbackText: t("common.notAvailable"),
+              })}
             </p>
             <p className="mt-1">
               {t("reconciliation.table.journalAmount")}:{" "}
               {row.journalAmount
-                ? formatMoney(locale, row.journalAmount, row.currencyCode)
+                ? formatFinanceMoney(normalizeLocale(locale), row.journalAmount, row.currencyCode, {
+                    fallbackText: t("common.notAvailable"),
+                  })
                 : t("reconciliation.common.notAvailable")}
             </p>
           </div>
@@ -445,7 +441,9 @@ export default function AdminAccountingReconciliationScreen() {
                 {t("reconciliation.review.fields.operationalAmount")}
               </p>
               <p className="mt-1 font-semibold text-text-primary dark:text-white/95">
-                {formatMoney(locale, selectedItem.operationalAmount, selectedItem.currencyCode)}
+                {formatFinanceMoney(normalizeLocale(locale), selectedItem.operationalAmount, selectedItem.currencyCode, {
+                  fallbackText: t("common.notAvailable"),
+                })}
               </p>
               <p className="mt-1 text-xs text-text-muted">{selectedItem.currencyCode}</p>
             </div>
@@ -455,7 +453,9 @@ export default function AdminAccountingReconciliationScreen() {
               </p>
               <p className="mt-1 font-semibold text-text-primary dark:text-white/95">
                 {selectedItem.journalAmount
-                  ? formatMoney(locale, selectedItem.journalAmount, selectedItem.currencyCode)
+                  ? formatFinanceMoney(normalizeLocale(locale), selectedItem.journalAmount, selectedItem.currencyCode, {
+                      fallbackText: t("common.notAvailable"),
+                    })
                   : t("reconciliation.common.notAvailable")}
               </p>
               <p className="mt-1 text-xs text-text-muted">

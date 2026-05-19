@@ -3,12 +3,22 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { PrismaService } from '@common/prisma/prisma.service';
+import { SessionStatus } from '@prisma/client';
 import { PublicPractitionerVisibilityPolicy } from '@modules/practitioners/policies/public-practitioner-visibility.policy';
 import { AvailabilityExceptionRepository } from '../repositories/availability-exception.repository';
 import { AvailabilityPractitionerRepository } from '../repositories/availability-practitioner.repository';
 import { AvailabilitySlotRepository } from '../repositories/availability-slot.repository';
 import { BuildAvailabilityWindowsService } from '../services/build-availability-windows.service';
 import { ResolvePractitionerTimezoneService } from '../services/resolve-practitioner-timezone.service';
+
+const PUBLIC_AVAILABILITY_BLOCKING_SESSION_STATUSES: SessionStatus[] = [
+  SessionStatus.PENDING_PRACTITIONER_RESPONSE,
+  SessionStatus.CONFIRMED,
+  SessionStatus.UPCOMING,
+  SessionStatus.READY_TO_JOIN,
+  SessionStatus.IN_PROGRESS,
+];
 
 /**
  * Public window listing is the main booking-facing read baseline for Phase 2.
@@ -25,6 +35,7 @@ export class ListPublicPractitionerAvailabilityWindowsUseCase {
     private readonly resolvePractitionerTimezoneService: ResolvePractitionerTimezoneService,
     private readonly buildAvailabilityWindowsService: BuildAvailabilityWindowsService,
     private readonly publicPractitionerVisibilityPolicy: PublicPractitionerVisibilityPolicy,
+    private readonly prisma: PrismaService,
   ) {}
 
   async execute(input: { slug: string; fromUtc: Date; toUtc: Date }) {
@@ -60,13 +71,41 @@ export class ListPublicPractitionerAvailabilityWindowsUseCase {
       });
     }
 
-    const [weeklySlots, exceptions] = await Promise.all([
+    const [weeklySlots, exceptions, bookedSessions] = await Promise.all([
       this.availabilitySlotRepository.listActiveByPractitioner(practitioner.id),
       this.availabilityExceptionRepository.listActiveForRange(
         practitioner.id,
         input.fromUtc,
         input.toUtc,
       ),
+      this.prisma.session.findMany({
+        where: {
+          practitionerId: practitioner.id,
+          OR: [
+            {
+              status: {
+                in: PUBLIC_AVAILABILITY_BLOCKING_SESSION_STATUSES,
+              },
+            },
+            {
+              status: SessionStatus.PENDING_PAYMENT,
+              expiresAt: {
+                gt: new Date(),
+              },
+            },
+          ],
+          scheduledStartAt: {
+            lt: input.toUtc,
+          },
+          scheduledEndAt: {
+            gt: input.fromUtc,
+          },
+        },
+        select: {
+          scheduledStartAt: true,
+          scheduledEndAt: true,
+        },
+      }),
     ]);
 
     const visibility = this.publicPractitionerVisibilityPolicy.evaluate({
@@ -95,6 +134,10 @@ export class ListPublicPractitionerAvailabilityWindowsUseCase {
       timezone,
       weeklySlots,
       exceptions,
+      bookedSessions: bookedSessions.map((session) => ({
+        startsAt: session.scheduledStartAt!,
+        endsAt: session.scheduledEndAt!,
+      })),
       fromUtc: input.fromUtc,
       toUtc: input.toUtc,
     });

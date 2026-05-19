@@ -1,4 +1,8 @@
-import { JournalEntrySourceType, Prisma, ReconciliationReviewStatus } from '@prisma/client';
+import {
+  JournalEntrySourceType,
+  Prisma,
+  ReconciliationReviewStatus,
+} from '@prisma/client';
 import { AccountingReconciliationService } from './accounting-reconciliation.service';
 
 describe('AccountingReconciliationService', () => {
@@ -31,7 +35,9 @@ describe('AccountingReconciliationService', () => {
       evaluation.anomalies,
     );
 
-    expect(evaluation.anomalies.some((item) => item.code === 'MISSING_PAYOUT_PROOF')).toBe(true);
+    expect(
+      evaluation.anomalies.some((item) => item.code === 'MISSING_PAYOUT_PROOF'),
+    ).toBe(true);
     expect(status).toBe('MISSING_PROOF');
   });
 
@@ -55,7 +61,9 @@ describe('AccountingReconciliationService', () => {
       evaluation.anomalies,
     );
 
-    expect(evaluation.anomalies.some((item) => item.code === 'AMOUNT_MISMATCH')).toBe(true);
+    expect(
+      evaluation.anomalies.some((item) => item.code === 'AMOUNT_MISMATCH'),
+    ).toBe(true);
     expect(status).toBe('MISMATCH');
   });
 

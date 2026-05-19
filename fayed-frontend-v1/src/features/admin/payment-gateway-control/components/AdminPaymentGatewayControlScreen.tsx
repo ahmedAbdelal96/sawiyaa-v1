@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import {
   AlertTriangle,
@@ -327,12 +327,14 @@ function ProviderEditModal({
 
   useEffect(() => {
     if (!isOpen || !snapshot) return;
-    setDraft(snapshot.provider === "PAYMOB" ? clonePaymobDraft(snapshot) : cloneStripeDraft(snapshot));
-    setReason("");
-    setStepUpChallengeId("");
-    setStepUpCode("");
-    setFeedback(null);
-    setValidationPreview(null);
+    queueMicrotask(() => {
+      setDraft(snapshot.provider === "PAYMOB" ? clonePaymobDraft(snapshot) : cloneStripeDraft(snapshot));
+      setReason("");
+      setStepUpChallengeId("");
+      setStepUpCode("");
+      setFeedback(null);
+      setValidationPreview(null);
+    });
   }, [isOpen, snapshot]);
 
   if (!provider || !draft) return null;
@@ -634,12 +636,14 @@ function RoutingEditModal({
 
   useEffect(() => {
     if (!isOpen || !snapshot) return;
-    setDraft(cloneRoutingDraft(snapshot));
-    setReason("");
-    setStepUpChallengeId("");
-    setStepUpCode("");
-    setFeedback(null);
-    setValidationPreview(null);
+    queueMicrotask(() => {
+      setDraft(cloneRoutingDraft(snapshot));
+      setReason("");
+      setStepUpChallengeId("");
+      setStepUpCode("");
+      setFeedback(null);
+      setValidationPreview(null);
+    });
   }, [isOpen, snapshot]);
 
   if (!snapshot || !draft) return null;
@@ -861,10 +865,12 @@ function RollbackModal({
 
   useEffect(() => {
     if (!isOpen) return;
-    setReason("");
-    setStepUpChallengeId("");
-    setStepUpCode("");
-    setFeedback(null);
+    queueMicrotask(() => {
+      setReason("");
+      setStepUpChallengeId("");
+      setStepUpCode("");
+      setFeedback(null);
+    });
   }, [isOpen]);
 
   if (!item) return null;
@@ -1044,9 +1050,16 @@ export default function AdminPaymentGatewayControlScreen() {
     [paymobHistory, routingHistory, stripeHistory],
   );
 
-  const latestProviderChange = (provider: PaymentGatewayControlProvider) =>
-    mergedHistory.find((item) => item.provider === provider || (provider === "PAYMOB" && item.provider === "PAYMOB") || (provider === "STRIPE" && item.provider === "STRIPE")) ??
-    null;
+  const latestProviderChange = useCallback(
+    (provider: PaymentGatewayControlProvider) =>
+      mergedHistory.find(
+        (item) =>
+          item.provider === provider ||
+          (provider === "PAYMOB" && item.provider === "PAYMOB") ||
+          (provider === "STRIPE" && item.provider === "STRIPE"),
+      ) ?? null,
+    [mergedHistory],
+  );
 
   const providerColumns = useMemo<ColumnDef<ProviderDraft>[]>(() => [
     {
@@ -1119,7 +1132,7 @@ export default function AdminPaymentGatewayControlScreen() {
         </div>
       ),
     },
-  ], [latestProviderChange, locale]);
+  ], [latestProviderChange, locale, t]);
 
   const routingColumns = useMemo<ColumnDef<PaymentRoutingRuntimeSnapshot>[]>(() => [
     {
@@ -1162,7 +1175,7 @@ export default function AdminPaymentGatewayControlScreen() {
       accessor: (row) => (row.updatedAt ? new Date(row.updatedAt).getTime() : 0),
       cell: (row) => <span className="text-sm text-text-secondary">{formatDateTime(row.updatedAt, locale)}</span>,
     },
-  ], [locale]);
+  ], [locale, t]);
 
   const historyColumns = useMemo<ColumnDef<PaymentGatewayControlHistoryItem>[]>(() => [
     {
@@ -1213,7 +1226,7 @@ export default function AdminPaymentGatewayControlScreen() {
       accessor: (row) => row.actorDisplayName ?? row.actorUserId ?? "-",
       cell: (row) => <span className="text-sm text-text-secondary">{row.actorDisplayName ?? row.actorUserId ?? "-"}</span>,
     },
-  ], [locale]);
+  ], [locale, t]);
 
   const providerLoading = listQuery.isLoading;
   const routingLoading = listQuery.isLoading;

@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
 import { JwtAccessAuthGuard } from '@common/guards/authentication/jwt-access-auth.guard';
+import { PermissionResolverService } from '@common/guards/authorization/permission-resolver.service';
+import { PermissionsGuard } from '@common/guards/authorization/permissions.guard';
 import { RolesGuard } from '@common/guards/authorization/roles.guard';
 import { AssessmentsAuthoringAdminModule } from './admin-authoring/assessments-authoring-admin.module';
 import { AdminPatientAssessmentsController } from './controllers/admin-patient-assessments.controller';
@@ -33,7 +35,9 @@ import { SubmitAssessmentUseCase } from './use-cases/submit-assessment.use-case'
   ],
   providers: [
     JwtAccessAuthGuard,
+    PermissionsGuard,
     RolesGuard,
+    PermissionResolverService,
     AssessmentSubmissionAccessPolicy,
     AssessmentPresenter,
     AssessmentDefinitionRepository,

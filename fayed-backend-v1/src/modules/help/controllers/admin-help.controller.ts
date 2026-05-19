@@ -48,7 +48,9 @@ export class AdminHelpController {
   @ApiOperation({ summary: 'List help categories' })
   @ApiResponse({ status: 200, type: HelpCategoriesResponseDto })
   @ApiUnauthorizedResponse({ description: 'Access token is required' })
-  @ApiForbiddenResponse({ description: 'Only admin active accounts can access this route' })
+  @ApiForbiddenResponse({
+    description: 'Only admin active accounts can access this route',
+  })
   listCategories() {
     return this.helpService.listAdminCategories();
   }
@@ -58,7 +60,9 @@ export class AdminHelpController {
   @ApiBody({ type: UpsertHelpCategoryDto })
   @ApiResponse({ status: 200, type: HelpCategoriesResponseDto })
   @ApiUnauthorizedResponse({ description: 'Access token is required' })
-  @ApiForbiddenResponse({ description: 'Only admin active accounts can access this route' })
+  @ApiForbiddenResponse({
+    description: 'Only admin active accounts can access this route',
+  })
   createCategory(@Body() body: UpsertHelpCategoryDto) {
     return this.helpService.createCategory(body);
   }

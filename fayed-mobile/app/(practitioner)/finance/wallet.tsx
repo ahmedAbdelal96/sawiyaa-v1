@@ -87,7 +87,7 @@ export default function PractitionerWalletScreen() {
               {t("practitioner.finance.wallet.available")}
             </Text>
             <Text weight="bold" style={styles.balanceValue}>
-              {formatMoney(wallet?.availableBalance ?? "0", wallet?.currency ?? "EGP", locale)}
+              {formatMoney(wallet?.availableBalance ?? "0", wallet?.currency ?? null, locale, t("practitioner.finance.common.currencyUnavailable"))}
             </Text>
             <Text color={theme.colors.textSecondary} style={styles.balanceHint}>
               {t("practitioner.finance.wallet.balanceHint")}
@@ -100,11 +100,11 @@ export default function PractitionerWalletScreen() {
             {t("practitioner.finance.wallet.summary")}
           </Text>
           <View style={styles.metricGrid}>
-            <MetricCard label={t("practitioner.finance.wallet.available")} value={formatMoney(wallet?.availableBalance ?? "0", wallet?.currency ?? "EGP", locale)} />
-            <MetricCard label={t("practitioner.finance.wallet.pending")} value={formatMoney(wallet?.pendingBalance ?? "0", wallet?.currency ?? "EGP", locale)} />
-            <MetricCard label={t("practitioner.finance.wallet.reserved")} value={formatMoney(wallet?.reservedBalance ?? "0", wallet?.currency ?? "EGP", locale)} />
-            <MetricCard label={t("practitioner.finance.wallet.totalEarned")} value={formatMoney(wallet?.totalEarned ?? "0", wallet?.currency ?? "EGP", locale)} />
-            <MetricCard label={t("practitioner.finance.wallet.lifetimePaidOut")} value={formatMoney(wallet?.lifetimePaidOut ?? "0", wallet?.currency ?? "EGP", locale)} />
+            <MetricCard label={t("practitioner.finance.wallet.available")} value={formatMoney(wallet?.availableBalance ?? "0", wallet?.currency ?? null, locale, t("practitioner.finance.common.currencyUnavailable"))} />
+            <MetricCard label={t("practitioner.finance.wallet.pending")} value={formatMoney(wallet?.pendingBalance ?? "0", wallet?.currency ?? null, locale, t("practitioner.finance.common.currencyUnavailable"))} />
+            <MetricCard label={t("practitioner.finance.wallet.reserved")} value={formatMoney(wallet?.reservedBalance ?? "0", wallet?.currency ?? null, locale, t("practitioner.finance.common.currencyUnavailable"))} />
+            <MetricCard label={t("practitioner.finance.wallet.totalEarned")} value={formatMoney(wallet?.totalEarned ?? "0", wallet?.currency ?? null, locale, t("practitioner.finance.common.currencyUnavailable"))} />
+            <MetricCard label={t("practitioner.finance.wallet.lifetimePaidOut")} value={formatMoney(wallet?.lifetimePaidOut ?? "0", wallet?.currency ?? null, locale, t("practitioner.finance.common.currencyUnavailable"))} />
             <MetricCard label={t("practitioner.finance.wallet.lastLedgerEntryAt")} value={formatDateTime(wallet?.lastLedgerEntryAt ?? null, locale)} />
             <MetricCard label={t("practitioner.finance.wallet.updatedAt")} value={formatDateTime(wallet?.updatedAt ?? null, locale)} />
           </View>
@@ -145,7 +145,7 @@ export default function PractitionerWalletScreen() {
                       </Text>
                     </View>
                     <Text weight="600" style={styles.settlementAmount}>
-                      {formatMoney(item.amountNet, item.currency, locale)}
+                      {formatMoney(item.amountNet, item.currency, locale, t("practitioner.finance.common.currencyUnavailable"))}
                     </Text>
                   </View>
                   <View style={styles.badgeRow}>

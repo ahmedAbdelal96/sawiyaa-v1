@@ -48,6 +48,16 @@ export class CreateCouponUseCase {
       });
     }
 
+    const slug = normalizeSlug(input.slug);
+    const existingSlug = await this.couponRepository.findBySlug(slug);
+
+    if (existingSlug) {
+      throw new ConflictException({
+        messageKey: 'financialRules.errors.couponSlugExists',
+        error: 'FINANCIAL_RULE_COUPON_SLUG_EXISTS',
+      });
+    }
+
     if (
       input.couponScope === CouponScope.SPECIALTY ||
       input.couponScope === CouponScope.CAMPAIGN
@@ -82,7 +92,7 @@ export class CreateCouponUseCase {
 
     const created = await this.couponRepository.createCoupon({
       code,
-      slug: normalizeSlug(input.slug),
+      slug,
       createdByUserId: input.createdByUserId,
       ownerPractitionerId: input.ownerPractitionerId ?? null,
       approvedByUserId: approvedAt ? input.createdByUserId : null,

@@ -99,7 +99,9 @@ export default function PractitionerLayout() {
       <Tabs.Screen name="finance/wallet" options={{ href: null }} />
       <Tabs.Screen name="finance/ledger" options={{ href: null }} />
       <Tabs.Screen name="finance/settlements" options={{ href: null }} />
+      <Tabs.Screen name="promo-codes" options={{ href: null }} />
       <Tabs.Screen name="sessions/[id]" options={{ href: null }} />
+      <Tabs.Screen name="notifications" options={{ href: null }} />
     </Tabs>
   );
 }

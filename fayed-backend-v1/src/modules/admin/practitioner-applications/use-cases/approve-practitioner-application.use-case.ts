@@ -117,7 +117,8 @@ export class ApprovePractitionerApplicationUseCase {
       });
     }
 
-    const snapshot = (existing.submissionSnapshot ?? null) as SubmissionSnapshot | null;
+    const snapshot = (existing.submissionSnapshot ??
+      null) as SubmissionSnapshot | null;
 
     const requestedDisplayName =
       snapshot?.applicant?.displayName ?? user.displayName;
@@ -132,7 +133,9 @@ export class ApprovePractitionerApplicationUseCase {
       snapshot?.payoutDestination ?? profile.payoutDestination ?? null;
     const requestedLanguageCodes =
       Array.isArray(snapshot?.languageCodes) &&
-      snapshot.languageCodes.some((code) => typeof code === 'string' && code.trim().length > 0)
+      snapshot.languageCodes.some(
+        (code) => typeof code === 'string' && code.trim().length > 0,
+      )
         ? snapshot.languageCodes
             .filter((code): code is string => typeof code === 'string')
             .map((code) => code.trim())
@@ -144,7 +147,7 @@ export class ApprovePractitionerApplicationUseCase {
         ? snapshot.specialtySelection.specialties
             .filter((item) => typeof item?.specialtyId === 'string')
             .map((item) => ({
-              specialtyId: item!.specialtyId!,
+              specialtyId: item.specialtyId!,
               isPrimary: item?.isPrimary === true,
             }))
         : specialtyLinks.map((item) => ({
@@ -180,7 +183,9 @@ export class ApprovePractitionerApplicationUseCase {
       const missingRequirements = [
         !readiness.isProfileCompleted ? 'PROFILE_INCOMPLETE' : null,
         !readiness.hasRequiredSpecialties ? 'SPECIALTIES_REQUIRED' : null,
-        !readiness.hasRequiredCredentials ? 'APPROVED_CREDENTIALS_REQUIRED' : null,
+        !readiness.hasRequiredCredentials
+          ? 'APPROVED_CREDENTIALS_REQUIRED'
+          : null,
         !readiness.hasPayoutDestination ? 'PAYOUT_DESTINATION_REQUIRED' : null,
         !readiness.canBeReviewed ? 'APPLICATION_NOT_REVIEWABLE' : null,
       ].filter((item): item is string => Boolean(item));
@@ -213,23 +218,30 @@ export class ApprovePractitionerApplicationUseCase {
 
         this.transitionPolicy.assertCanApprove(latest.status);
 
-        const applicant = (latest.submissionSnapshot as SubmissionSnapshot | null)
-          ?.applicant;
-        const requestedProfile = (latest.submissionSnapshot as SubmissionSnapshot | null)
-          ?.profile;
-        const requestedPayoutDestination = (latest.submissionSnapshot as SubmissionSnapshot | null)
-          ?.payoutDestination;
+        const applicant = (
+          latest.submissionSnapshot as SubmissionSnapshot | null
+        )?.applicant;
+        const requestedProfile = (
+          latest.submissionSnapshot as SubmissionSnapshot | null
+        )?.profile;
+        const requestedPayoutDestination = (
+          latest.submissionSnapshot as SubmissionSnapshot | null
+        )?.payoutDestination;
 
         if (applicant) {
           await this.userRepository.updateProfilePreferences(
             latest.practitioner.userId,
             {
               displayName:
-                applicant.displayName !== undefined ? applicant.displayName : undefined,
+                applicant.displayName !== undefined
+                  ? applicant.displayName
+                  : undefined,
               defaultLocale:
                 applicant.locale !== undefined ? applicant.locale : undefined,
               timezone:
-                applicant.timezone !== undefined ? applicant.timezone : undefined,
+                applicant.timezone !== undefined
+                  ? applicant.timezone
+                  : undefined,
             },
             tx,
           );
@@ -270,9 +282,7 @@ export class ApprovePractitionerApplicationUseCase {
                 : undefined,
               practitionerGender:
                 requestedProfile.practitionerGender !== undefined
-                  ? (requestedProfile.practitionerGender as
-                      | PractitionerGender
-                      | null)
+                  ? (requestedProfile.practitionerGender as PractitionerGender | null)
                   : undefined,
               professionalTitle:
                 requestedProfile.professionalTitle !== undefined

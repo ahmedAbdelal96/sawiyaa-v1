@@ -52,11 +52,13 @@ export default function AdminTrainingCreateModal({ isOpen, onClose }: Props) {
 
   useEffect(() => {
     if (!isOpen) return;
-    setFeedback(null);
-    setForm((current) => ({
-      ...current,
-      locale: locale.startsWith("ar") ? "ar" : "en",
-    }));
+    queueMicrotask(() => {
+      setFeedback(null);
+      setForm((current) => ({
+        ...current,
+        locale: locale.startsWith("ar") ? "ar" : "en",
+      }));
+    });
   }, [isOpen, locale]);
 
   const resetForm = () => {

@@ -23,7 +23,8 @@ describe('PractitionerManualPayoutService', () => {
         currencyCode: data.currencyCode,
         amountPaid: data.amountPaid.toFixed(2),
         normalSessionAppliedAmount: data.normalSessionAppliedAmount.toFixed(2),
-        packageReleasedAppliedAmount: data.packageReleasedAppliedAmount.toFixed(2),
+        packageReleasedAppliedAmount:
+          data.packageReleasedAppliedAmount.toFixed(2),
         packageHeldAmountSnapshot: data.packageHeldAmountSnapshot.toFixed(2),
         totalPayableSnapshot: data.totalPayableSnapshot.toFixed(2),
         payoutMethod: data.payoutMethod,
@@ -123,7 +124,9 @@ describe('PractitionerManualPayoutService', () => {
       'practitioner-1',
       undefined,
     );
-    expect(setup.accountingJournalPostingService.postPractitionerPayout).toHaveBeenCalled();
+    expect(
+      setup.accountingJournalPostingService.postPractitionerPayout,
+    ).toHaveBeenCalled();
     expect(result.wasAlreadyRecorded).toBe(false);
   });
 
@@ -179,6 +182,8 @@ describe('PractitionerManualPayoutService', () => {
     expect(result.wasAlreadyRecorded).toBe(true);
     expect(setup.manualPayoutRepository.create).not.toHaveBeenCalled();
     expect(setup.ledgerRepository.createLedgerEntry).not.toHaveBeenCalled();
-    expect(setup.refreshPractitionerWalletService.refresh).not.toHaveBeenCalled();
+    expect(
+      setup.refreshPractitionerWalletService.refresh,
+    ).not.toHaveBeenCalled();
   });
 });

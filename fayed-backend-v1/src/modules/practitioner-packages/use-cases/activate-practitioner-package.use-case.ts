@@ -17,9 +17,10 @@ export class ActivatePractitionerPackageUseCase {
   ) {}
 
   async execute(input: { userId: string; packageId: string }) {
-    const profile = await this.practitionerPackageRepository.findPractitionerProfileByUserId(
-      input.userId,
-    );
+    const profile =
+      await this.practitionerPackageRepository.findPractitionerProfileByUserId(
+        input.userId,
+      );
 
     if (!profile) {
       throw new NotFoundException({
@@ -62,7 +63,9 @@ export class ActivatePractitionerPackageUseCase {
       });
     }
 
-    if (packageTemplate.status === PractitionerPackageStatus.DISABLED_BY_ADMIN) {
+    if (
+      packageTemplate.status === PractitionerPackageStatus.DISABLED_BY_ADMIN
+    ) {
       throw new ConflictException({
         messageKey: 'packages.errors.packageDisabledByAdmin',
         error: 'PACKAGE_DISABLED_BY_ADMIN',

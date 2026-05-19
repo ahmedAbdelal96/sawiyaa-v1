@@ -43,10 +43,12 @@ describe('PostPackageSessionLedgerEntriesUseCase', () => {
       practitionerFinalShareSnapshot: 260,
       sessionDurationMinutesSnapshot: 30,
       sessionModeSnapshot: 'VIDEO',
-      sessions: (input?.linkedSessionStatuses ?? [
-        SessionStatus.COMPLETED,
-        SessionStatus.PENDING_PAYMENT,
-      ]).map((status, index) => ({
+      sessions: (
+        input?.linkedSessionStatuses ?? [
+          SessionStatus.COMPLETED,
+          SessionStatus.PENDING_PAYMENT,
+        ]
+      ).map((status, index) => ({
         id: `session-${index + 1}`,
         status,
         packageSessionIndex: index + 1,
@@ -97,7 +99,9 @@ describe('PostPackageSessionLedgerEntriesUseCase', () => {
       tx: setup.prisma as never,
     });
 
-    expect(setup.packageSettlementService.syncFromPurchase).toHaveBeenCalledTimes(1);
+    expect(
+      setup.packageSettlementService.syncFromPurchase,
+    ).toHaveBeenCalledTimes(1);
     expect(setup.prisma.patientPackagePurchase.update).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { id: 'purchase-1' },
@@ -114,7 +118,10 @@ describe('PostPackageSessionLedgerEntriesUseCase', () => {
 
   it('does not post package earnings when the purchase is active but sessions are not completed', async () => {
     const setup = buildUseCase({
-      linkedSessionStatuses: [SessionStatus.CONFIRMED, SessionStatus.PENDING_PAYMENT],
+      linkedSessionStatuses: [
+        SessionStatus.CONFIRMED,
+        SessionStatus.PENDING_PAYMENT,
+      ],
     });
 
     await setup.useCase.execute({
@@ -122,7 +129,9 @@ describe('PostPackageSessionLedgerEntriesUseCase', () => {
       tx: setup.prisma as never,
     });
 
-    expect(setup.packageSettlementService.syncFromPurchase).toHaveBeenCalledTimes(1);
+    expect(
+      setup.packageSettlementService.syncFromPurchase,
+    ).toHaveBeenCalledTimes(1);
     expect(setup.prisma.patientPackagePurchase.update).not.toHaveBeenCalled();
   });
 
@@ -136,7 +145,9 @@ describe('PostPackageSessionLedgerEntriesUseCase', () => {
       tx: setup.prisma as never,
     });
 
-    expect(setup.packageSettlementService.syncFromPurchase).not.toHaveBeenCalled();
+    expect(
+      setup.packageSettlementService.syncFromPurchase,
+    ).not.toHaveBeenCalled();
     expect(result.ledgerEntries).toEqual([]);
     expect(result.wasAlreadyPosted).toBe(true);
   });

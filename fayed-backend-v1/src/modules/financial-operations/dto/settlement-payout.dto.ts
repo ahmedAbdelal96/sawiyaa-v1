@@ -1,8 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import {
-  SettlementPayoutMethod,
-  SettlementPayoutSource,
-} from '@prisma/client';
+import { SettlementPayoutMethod, SettlementPayoutSource } from '@prisma/client';
 import {
   IsDateString,
   IsIn,

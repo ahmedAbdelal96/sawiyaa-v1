@@ -20,10 +20,11 @@ export class ListPublicPractitionerPackagesUseCase {
     locale: SupportedLocale;
     query?: ListPublicPractitionerPackagesDto;
   }) {
-    const practitioner = await this.publicPractitionerReadRepository.findByPublicSlug(
-      input.slug,
-      input.locale,
-    );
+    const practitioner =
+      await this.publicPractitionerReadRepository.findByPublicSlug(
+        input.slug,
+        input.locale,
+      );
 
     if (!practitioner) {
       throw new NotFoundException({

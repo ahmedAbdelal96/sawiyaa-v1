@@ -26,6 +26,9 @@ import { PractitionerUserRepository } from './repositories/practitioner-user.rep
 import { PublicPractitionerReadRepository } from './repositories/public-practitioner-read.repository';
 import { SpecialtyRepository } from './repositories/specialty.repository';
 import { PractitionerApplicationSnapshotService } from './services/practitioner-application-snapshot.service';
+import { PractitionerApplicationCompletionService } from './services/practitioner-application-completion.service';
+import { PractitionerAvatarStorageService } from './services/practitioner-avatar-storage.service';
+import { PractitionerCredentialStorageService } from './services/practitioner-credential-storage.service';
 import { PractitionerPayoutDestinationValidationService } from './services/practitioner-payout-destination-validation.service';
 import { PractitionerSpecialtyIntegrityService } from './services/practitioner-specialty-integrity.service';
 import { CreatePractitionerProfileUseCase } from './use-cases/create-practitioner-profile.use-case';
@@ -42,6 +45,7 @@ import { UpdatePractitionerProfileUseCase } from './use-cases/update-practitione
 import { RemovePractitionerAvatarUseCase } from './use-cases/remove-practitioner-avatar.use-case';
 import { UpdatePractitionerAvatarUseCase } from './use-cases/update-practitioner-avatar.use-case';
 import { UploadPractitionerCredentialMetadataUseCase } from './use-cases/upload-practitioner-credential-metadata.use-case';
+import { UploadPractitionerCredentialFileUseCase } from './use-cases/upload-practitioner-credential-file.use-case';
 
 /**
  * Practitioners Module owns practitioner baseline profile/readiness/specialties/credentials/application self-submission.
@@ -76,6 +80,9 @@ import { UploadPractitionerCredentialMetadataUseCase } from './use-cases/upload-
     PractitionerSpecialtyIntegrityService,
     PractitionerPayoutDestinationValidationService,
     PractitionerApplicationSnapshotService,
+    PractitionerApplicationCompletionService,
+    PractitionerAvatarStorageService,
+    PractitionerCredentialStorageService,
     CreatePractitionerProfileUseCase,
     GetPractitionerProfileUseCase,
     UpdatePractitionerProfileUseCase,
@@ -84,6 +91,7 @@ import { UploadPractitionerCredentialMetadataUseCase } from './use-cases/upload-
     SetPractitionerSpecialtiesUseCase,
     ListPractitionerSpecialtiesUseCase,
     UploadPractitionerCredentialMetadataUseCase,
+    UploadPractitionerCredentialFileUseCase,
     ListPractitionerCredentialsUseCase,
     SubmitPractitionerApplicationUseCase,
     GetPractitionerApplicationStatusUseCase,

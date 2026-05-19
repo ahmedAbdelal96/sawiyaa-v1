@@ -21,50 +21,60 @@ describe('ListAdminPractitionerPayoutSummariesUseCase', () => {
     };
 
     const balanceService = {
-      getBalance: jest.fn().mockImplementation(
-        async ({ practitionerId, currencyCode }: { practitionerId: string; currencyCode: string }) => {
-          if (practitionerId === 'pr_1' && currencyCode === 'EGP') {
+      getBalance: jest
+        .fn()
+        .mockImplementation(
+          async ({
+            practitionerId,
+            currencyCode,
+          }: {
+            practitionerId: string;
+            currencyCode: string;
+          }) => {
+            if (practitionerId === 'pr_1' && currencyCode === 'EGP') {
+              return {
+                practitionerId: 'pr_1',
+                practitionerName: 'Dr. One',
+                currencyCode: 'EGP',
+                normalSessionPayableAmount: '120.00',
+                packageReleasedPayableAmount: '0.00',
+                packageHeldAmount: '0.00',
+                totalPayableAmount: '120.00',
+                lastPayoutAt: '2026-05-05T10:00:00.000Z',
+              };
+            }
+
+            if (practitionerId === 'pr_1' && currencyCode === 'USD') {
+              return {
+                practitionerId: 'pr_1',
+                practitionerName: 'Dr. One',
+                currencyCode: 'USD',
+                normalSessionPayableAmount: '0.00',
+                packageReleasedPayableAmount: '25.00',
+                packageHeldAmount: '50.00',
+                totalPayableAmount: '25.00',
+                lastPayoutAt: '2026-05-06T08:00:00.000Z',
+              };
+            }
+
             return {
-              practitionerId: 'pr_1',
-              practitionerName: 'Dr. One',
-              currencyCode: 'EGP',
-              normalSessionPayableAmount: '120.00',
+              practitionerId: practitionerId,
+              practitionerName: 'Dr. Two',
+              currencyCode,
+              normalSessionPayableAmount: '0.00',
               packageReleasedPayableAmount: '0.00',
               packageHeldAmount: '0.00',
-              totalPayableAmount: '120.00',
-              lastPayoutAt: '2026-05-05T10:00:00.000Z',
+              totalPayableAmount: '0.00',
+              lastPayoutAt: null,
             };
-          }
-
-          if (practitionerId === 'pr_1' && currencyCode === 'USD') {
-            return {
-              practitionerId: 'pr_1',
-              practitionerName: 'Dr. One',
-              currencyCode: 'USD',
-              normalSessionPayableAmount: '0.00',
-              packageReleasedPayableAmount: '25.00',
-              packageHeldAmount: '50.00',
-              totalPayableAmount: '25.00',
-              lastPayoutAt: '2026-05-06T08:00:00.000Z',
-            };
-          }
-
-          return {
-            practitionerId: practitionerId,
-            practitionerName: 'Dr. Two',
-            currencyCode,
-            normalSessionPayableAmount: '0.00',
-            packageReleasedPayableAmount: '0.00',
-            packageHeldAmount: '0.00',
-            totalPayableAmount: '0.00',
-            lastPayoutAt: null,
-          };
-        },
-      ),
+          },
+        ),
     };
 
     const mapper = {
-      toPractitionerManualPayoutSummary: jest.fn().mockImplementation((value) => value),
+      toPractitionerManualPayoutSummary: jest
+        .fn()
+        .mockImplementation((value) => value),
     };
 
     const useCase = new ListAdminPractitionerPayoutSummariesUseCase(
@@ -79,7 +89,9 @@ describe('ListAdminPractitionerPayoutSummariesUseCase', () => {
   it('returns only practitioners with payable or package balances and keeps currencies separate', async () => {
     const setup = buildUseCase();
 
-    const result = await setup.useCase.execute({ query: { page: 1, limit: 10 } as any });
+    const result = await setup.useCase.execute({
+      query: { page: 1, limit: 10 } as any,
+    });
 
     expect(setup.prisma.practitionerProfile.findMany).toHaveBeenCalledTimes(1);
     expect(setup.balanceService.getBalance).toHaveBeenCalledTimes(4);
@@ -93,7 +105,9 @@ describe('ListAdminPractitionerPayoutSummariesUseCase', () => {
   it('supports search filtering before computing balances', async () => {
     const setup = buildUseCase();
 
-    await setup.useCase.execute({ query: { page: 1, limit: 10, search: 'Two' } as any });
+    await setup.useCase.execute({
+      query: { page: 1, limit: 10, search: 'Two' } as any,
+    });
 
     expect(setup.prisma.practitionerProfile.findMany).toHaveBeenCalledWith(
       expect.objectContaining({

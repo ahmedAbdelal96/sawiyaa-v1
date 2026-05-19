@@ -13,7 +13,9 @@
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.fayed.mobile",
@@ -30,6 +32,11 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    "plugins": ["expo-router", "expo-localization", "expo-notifications"]
+    "plugins": [
+      "expo-router",
+      "expo-localization",
+      "expo-notifications",
+      "expo-secure-store"
+    ]
   }
 }

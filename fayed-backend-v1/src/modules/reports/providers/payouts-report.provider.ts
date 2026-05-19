@@ -1,4 +1,7 @@
-import { PayoutsReportOverview, PayoutsReportRow } from '../types/payouts-report.types';
+import {
+  PayoutsReportOverview,
+  PayoutsReportRow,
+} from '../types/payouts-report.types';
 
 export type PayoutsReportOverviewInput = {
   from: Date;
@@ -13,9 +16,12 @@ export type PayoutsReportRowsInput = PayoutsReportOverviewInput & {
 };
 
 export interface PayoutsReportProvider {
-  getOverview(input: PayoutsReportOverviewInput): Promise<PayoutsReportOverview>;
-  listRows(input: PayoutsReportRowsInput): Promise<{ items: PayoutsReportRow[]; totalItems: number }>;
+  getOverview(
+    input: PayoutsReportOverviewInput,
+  ): Promise<PayoutsReportOverview>;
+  listRows(
+    input: PayoutsReportRowsInput,
+  ): Promise<{ items: PayoutsReportRow[]; totalItems: number }>;
 }
 
 export const PAYOUTS_REPORT_PROVIDER = Symbol('PAYOUTS_REPORT_PROVIDER');
-

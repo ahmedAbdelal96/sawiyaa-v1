@@ -4,6 +4,7 @@
 
 import axios, { AxiosError, InternalAxiosRequestConfig } from "axios";
 import { API_BASE_URL } from "@/config/api";
+import { requestSensitiveCacheClear } from "@/lib/security/sensitive-cache";
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
@@ -91,12 +92,20 @@ apiClient.interceptors.response.use(
 
         if (!refreshFailureHandled && typeof window !== "undefined") {
           refreshFailureHandled = true;
+          requestSensitiveCacheClear("session-expired");
           window.location.href = "/signin";
         }
       } catch (refreshError) {
-        console.error("[Auth] Refresh failed:", refreshError);
+        if (process.env.NODE_ENV === "development") {
+          console.error("[Auth] Refresh failed:", {
+            name: refreshError instanceof Error ? refreshError.name : "UnknownError",
+            message:
+              refreshError instanceof Error ? refreshError.message : String(refreshError),
+          });
+        }
         if (!refreshFailureHandled && typeof window !== "undefined") {
           refreshFailureHandled = true;
+          requestSensitiveCacheClear("session-expired");
           window.location.href = "/signin";
         }
       }
@@ -140,11 +149,18 @@ export const logout = async (): Promise<void> => {
     });
 
     if (typeof window !== "undefined") {
+      requestSensitiveCacheClear("logout");
       window.location.href = "/signin";
     }
   } catch (error) {
-    console.error("[Auth] Logout error:", error);
+    if (process.env.NODE_ENV === "development") {
+      console.error("[Auth] Logout error:", {
+        name: error instanceof Error ? error.name : "UnknownError",
+        message: error instanceof Error ? error.message : String(error),
+      });
+    }
     if (typeof window !== "undefined") {
+      requestSensitiveCacheClear("logout");
       window.location.href = "/signin";
     }
   }

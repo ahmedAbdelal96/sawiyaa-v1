@@ -26,4 +26,3 @@ export class ReportRangeDto {
   @Length(3, 3)
   currencyCode?: string;
 }
-

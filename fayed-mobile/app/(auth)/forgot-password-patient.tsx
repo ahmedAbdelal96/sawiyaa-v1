@@ -1,140 +1,197 @@
-import React from "react";
-import { StyleSheet, TouchableOpacity, View } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import React, { useMemo, useState } from "react";
+import {
+  ActivityIndicator,
+  StyleSheet,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { useRouter } from "expo-router";
-import { Button, Screen, Text } from "../../src/components/ui";
+import { AuthScaffold } from "../../src/components/auth/AuthScaffold";
+import { Button, Input, Text } from "../../src/components/ui";
+import { useAuth } from "../../src/providers/AuthProvider";
 import { useTheme } from "../../src/providers/ThemeProvider";
 import { useTranslation } from "react-i18next";
+import { extractApiErrorMessage } from "../../src/lib/api";
+
+function validateEmail(email: string) {
+  return /\S+@\S+\.\S+/.test(email.trim());
+}
 
 export default function PatientForgotPasswordScreen() {
   const router = useRouter();
   const { theme } = useTheme();
   const { t } = useTranslation();
+  const { requestPatientPasswordReset, resetPatientPassword } = useAuth();
+
+  const [email, setEmail] = useState("");
+  const [code, setCode] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [requestSent, setRequestSent] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorText, setErrorText] = useState<string | null>(null);
+  const [successText, setSuccessText] = useState<string | null>(null);
+
+  const emailError = useMemo(() => {
+    if (!email) {
+      return null;
+    }
+    return validateEmail(email) ? null : t("auth.validation.email");
+  }, [email, t]);
+
+  async function submitRequest() {
+    setIsSubmitting(true);
+    setErrorText(null);
+    setSuccessText(null);
+
+    try {
+      const response = await requestPatientPasswordReset({
+        email: email.trim(),
+      });
+      setRequestSent(true);
+      setSuccessText(response.message);
+    } catch (error) {
+      setErrorText(extractApiErrorMessage(error));
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  async function submitReset() {
+    setIsSubmitting(true);
+    setErrorText(null);
+    setSuccessText(null);
+
+    try {
+      const response = await resetPatientPassword({
+        email: email.trim(),
+        code: code.trim(),
+        newPassword,
+      });
+      setSuccessText(response.message);
+      router.replace("/(auth)/signin/patient");
+    } catch (error) {
+      setErrorText(extractApiErrorMessage(error));
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
 
   return (
-    <Screen safeArea bg="background" style={styles.screen}>
-      <View
-        style={[styles.radialTop, { backgroundColor: theme.colors.accent }]}
+    <AuthScaffold
+      eyebrow={t("auth.patientForgotPassword.eyebrow")}
+      title={t("auth.patientForgotPassword.title")}
+      subtitle={t("auth.patientForgotPassword.subtitle")}
+      footer={
+        <TouchableOpacity
+          onPress={() => router.replace("/(auth)/signin/patient")}
+        >
+          <Text color={theme.colors.textMuted} style={styles.backText}>
+            {t("auth.common.backToPatientSignIn")}
+          </Text>
+        </TouchableOpacity>
+      }
+    >
+      <Input
+        autoCapitalize="none"
+        autoComplete="email"
+        keyboardType="email-address"
+        label={t("auth.fields.email")}
+        onChangeText={setEmail}
+        placeholder={t("auth.placeholders.email")}
+        value={email}
+        error={emailError ?? undefined}
+        editable={!requestSent}
       />
 
-      <TouchableOpacity
-        onPress={() => router.replace("/(auth)/signin/patient")}
-        style={styles.backWrap}
-        activeOpacity={0.8}
-      >
-        <Ionicons name="arrow-back" size={18} color={theme.colors.textMuted} />
-        <Text color={theme.colors.textMuted} style={styles.backText}>
-          {t("auth.common.backToPatientSignIn")}
-        </Text>
-      </TouchableOpacity>
-
-      <View style={styles.content}>
-        <View
-          style={[styles.logoCircle, { backgroundColor: theme.colors.surface }]}
+      {!requestSent ? (
+        <Button
+          title={t("auth.patientForgotPassword.sendCode")}
+          onPress={submitRequest}
+          disabled={!email || !!emailError || isSubmitting}
+          style={styles.primaryButton}
         >
-          <Ionicons name="key" size={28} color={theme.colors.primary} />
-        </View>
+          {isSubmitting && <ActivityIndicator size="small" color="white" />}
+        </Button>
+      ) : (
+        <>
+          <Input
+            label={t("auth.fields.code")}
+            onChangeText={setCode}
+            placeholder={t("auth.placeholders.code")}
+            value={code}
+            keyboardType="number-pad"
+            maxLength={8}
+          />
 
-        <Text
-          style={styles.title}
-          color={theme.colors.textPrimary}
-          weight="bold"
-        >
-          {t("auth.patientForgotPassword.title")}
-        </Text>
-        <Text style={styles.subtitle} color={theme.colors.textSecondary}>
-          {t("auth.patientForgotPassword.subtitle")}
-        </Text>
+          <Input
+            label={t("auth.fields.newPassword")}
+            onChangeText={setNewPassword}
+            placeholder={t("auth.placeholders.newPassword")}
+            value={newPassword}
+            secureTextEntry
+          />
 
+          <Button
+            title={t("auth.patientForgotPassword.resetPassword")}
+            onPress={submitReset}
+            disabled={!code || !newPassword || isSubmitting}
+            style={styles.primaryButton}
+          >
+            {isSubmitting && <ActivityIndicator size="small" color="white" />}
+          </Button>
+
+          <TouchableOpacity onPress={() => setRequestSent(false)}>
+            <Text color={theme.colors.textMuted} style={styles.backText}>
+              {t("auth.common.backToPatientSignIn")}
+            </Text>
+          </TouchableOpacity>
+        </>
+      )}
+
+      {errorText && (
         <View
           style={[
-            styles.noticeBox,
-            {
-              backgroundColor: theme.colors.surface,
-              borderColor: theme.colors.borderStrong,
-            },
+            styles.messageBox,
+            { backgroundColor: theme.colors.error + "20" },
           ]}
         >
-          <Text style={styles.noticeText} color={theme.colors.textSecondary}>
-            {t("auth.patientForgotPassword.contractBlocked")}
+          <Text style={styles.messageText} color={theme.colors.error}>
+            {errorText}
           </Text>
         </View>
+      )}
 
-        <Button
-          title={t("auth.patientForgotPassword.backToSignIn")}
-          onPress={() => router.replace("/(auth)/signin/patient")}
-          style={styles.primaryButton}
-        />
-      </View>
-    </Screen>
+      {successText && (
+        <View
+          style={[
+            styles.messageBox,
+            { backgroundColor: theme.colors.success + "20" },
+          ]}
+        >
+          <Text style={styles.messageText} color={theme.colors.success}>
+            {successText}
+          </Text>
+        </View>
+      )}
+    </AuthScaffold>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    paddingHorizontal: 20,
-    paddingTop: 8,
-    paddingBottom: 28,
-  },
-  radialTop: {
-    position: "absolute",
-    width: 360,
-    height: 360,
-    borderRadius: 180,
-    top: -180,
-    left: -120,
-    opacity: 0.5,
-  },
-  backWrap: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    alignSelf: "flex-start",
+  primaryButton: {
+    marginTop: 20,
   },
   backText: {
+    textAlign: "center",
+    marginTop: 16,
+  },
+  messageBox: {
+    marginTop: 12,
+    padding: 12,
+    borderRadius: 8,
+  },
+  messageText: {
     fontSize: 13,
-  },
-  content: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  logoCircle: {
-    width: 86,
-    height: 86,
-    borderRadius: 43,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 18,
-  },
-  title: {
-    fontSize: 34,
-    lineHeight: 42,
-    textAlign: "center",
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 16,
-    lineHeight: 24,
-    textAlign: "center",
-    marginBottom: 16,
-    paddingHorizontal: 8,
-  },
-  noticeBox: {
-    borderWidth: 1,
-    borderRadius: 18,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    marginBottom: 16,
-  },
-  noticeText: {
-    fontSize: 14,
-    lineHeight: 22,
-    textAlign: "center",
-  },
-  primaryButton: {
-    borderRadius: 999,
-    paddingVertical: 15,
-    width: "100%",
+    lineHeight: 18,
   },
 });

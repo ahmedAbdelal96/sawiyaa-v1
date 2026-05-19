@@ -79,9 +79,9 @@ describe('PostPaymentLedgerEntriesUseCase', () => {
     expect(
       setup.ledgerRepository.createManyLedgerEntries,
     ).toHaveBeenCalledTimes(1);
-    expect(setup.refreshPractitionerWalletService.refresh).toHaveBeenCalledTimes(
-      1,
-    );
+    expect(
+      setup.refreshPractitionerWalletService.refresh,
+    ).toHaveBeenCalledTimes(1);
     expect(
       setup.accountingJournalPostingService.postPaymentCaptured,
     ).toHaveBeenCalledTimes(1);
@@ -144,7 +144,9 @@ describe('PostPaymentLedgerEntriesUseCase', () => {
 
     const result = await setup.useCase.execute({ paymentId: 'payment_1' });
 
-    expect(setup.ledgerRepository.createManyLedgerEntries).not.toHaveBeenCalled();
+    expect(
+      setup.ledgerRepository.createManyLedgerEntries,
+    ).not.toHaveBeenCalled();
     expect(
       setup.accountingJournalPostingService.postPaymentCaptured,
     ).not.toHaveBeenCalled();

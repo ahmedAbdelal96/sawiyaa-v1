@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
+  ActivityIndicator,
+  Keyboard,
   Modal,
   ScrollView,
   StyleSheet,
@@ -36,6 +38,10 @@ import { resolveSupportedCurrencyCode } from "../../../../src/lib/currency";
 import { normalizeAllowedExternalUrl } from "../../../../src/lib/external-url";
 import { trackAnalyticsEvent } from "../../../../src/lib/analytics";
 import type { PaymobCheckoutMethod } from "../../../../src/features/patient/payments/types";
+import {
+  classifyCouponError,
+  normalizePromoCodeInput,
+} from "../../../../src/features/patient/payments/coupon-utils";
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -321,6 +327,7 @@ export default function SessionPaymentCheckoutScreen() {
 
   const [couponDraft, setCouponDraft] = useState("");
   const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null);
+  const [couponError, setCouponError] = useState<string | null>(null);
   const [useWalletBalance, setUseWalletBalance] = useState(true);
   const [selectedPaymobMethod, setSelectedPaymobMethod] = useState<
     string | null
@@ -353,6 +360,7 @@ export default function SessionPaymentCheckoutScreen() {
     regionalPricingMode: breakdown?.regionalPricingMode ?? null,
     resolvedCountryIsoCode: breakdown?.resolvedCountryIsoCode ?? null,
   });
+  const normalizedCouponDraft = normalizePromoCodeInput(couponDraft);
   const nativeReturnUrl = useMemo(
     () =>
       id
@@ -479,15 +487,82 @@ export default function SessionPaymentCheckoutScreen() {
   const loading = sessionLoading || breakdownLoading;
   const hasError = sessionError;
   const loadErrorMessage = extractApiErrorMessage(sessionQuery.error);
+  const couponApplyLoading = Boolean(appliedCoupon) && breakdownQuery.isFetching;
+  const couponApplied = Boolean(appliedCoupon) && Boolean(breakdown) && !couponError;
+  const activeCouponCode =
+    appliedCoupon &&
+    normalizedCouponDraft === appliedCoupon &&
+    !couponError
+      ? appliedCoupon
+      : null;
+  const breakdownDisplayError =
+    breakdownQuery.isFetching
+      ? null
+      : couponError || (breakdownQuery.isError ? breakdownErrorMsg : null);
+
+  useEffect(() => {
+    if (!appliedCoupon) {
+      if (couponError) {
+        setCouponError(null);
+      }
+      return;
+    }
+
+    if (!breakdownQuery.isError) {
+      if (couponError) {
+        setCouponError(null);
+      }
+      return;
+    }
+
+    if (isPricingUnavailable) {
+      if (couponError) {
+        setCouponError(null);
+      }
+      return;
+    }
+
+    const mappedCouponError = classifyCouponError(
+      extractApiErrorMessage(breakdownQuery.error),
+    );
+
+    if (mappedCouponError) {
+      setCouponError(
+        t(`patientPaymentsFlow.checkout.coupon.errors.${mappedCouponError}`),
+      );
+      return;
+    }
+
+    setCouponError(
+      t("patientPaymentsFlow.checkout.coupon.errors.generic"),
+    );
+  }, [
+    appliedCoupon,
+    breakdownQuery.error,
+    breakdownQuery.isError,
+    couponError,
+    isPricingUnavailable,
+    t,
+  ]);
 
   const applyCoupon = () => {
-    const value = couponDraft.trim();
-    setAppliedCoupon(value.length ? value : null);
+    const value = normalizedCouponDraft;
+    if (!value.length) {
+      setAppliedCoupon(null);
+      setCouponError(null);
+      return;
+    }
+
+    setCouponError(null);
+    setAppliedCoupon(value);
+    setCouponDraft(value);
+    Keyboard.dismiss();
   };
 
   const removeCoupon = () => {
     setCouponDraft("");
     setAppliedCoupon(null);
+    setCouponError(null);
   };
 
   const navigateToPaymentReturn = (
@@ -593,14 +668,14 @@ export default function SessionPaymentCheckoutScreen() {
       provider: capabilities?.provider || "unknown",
       useWalletBalance,
       gatewayRequired: gatewayPaymentRequired,
-      couponApplied: Boolean(appliedCoupon),
+      couponApplied: Boolean(activeCouponCode),
     });
 
     try {
       const payload = await initiateMutation.mutateAsync({
         sessionId: id,
         input: {
-          couponCode: appliedCoupon ?? undefined,
+          couponCode: activeCouponCode ?? undefined,
           useWalletBalance,
           acceptedRefundPolicyId: refundPolicy.id,
           paymobMethod:
@@ -801,9 +876,19 @@ export default function SessionPaymentCheckoutScreen() {
           <View style={styles.couponRow}>
             <Input
               value={couponDraft}
-              onChangeText={setCouponDraft}
+              onChangeText={(value) => {
+                const normalized = normalizePromoCodeInput(value);
+                setCouponDraft(normalized);
+                setCouponError(null);
+
+                if (appliedCoupon && normalized !== appliedCoupon) {
+                  setAppliedCoupon(null);
+                }
+              }}
               placeholder={t("patientPaymentsFlow.checkout.coupon.placeholder")}
               containerStyle={styles.couponInput}
+              autoCapitalize="characters"
+              autoCorrect={false}
             />
             {!appliedCoupon ? (
               <TouchableOpacity
@@ -812,10 +897,24 @@ export default function SessionPaymentCheckoutScreen() {
                   { backgroundColor: theme.colors.primary },
                 ]}
                 onPress={applyCoupon}
+                disabled={
+                  couponApplyLoading ||
+                  !normalizedCouponDraft ||
+                  (appliedCoupon === normalizedCouponDraft && !couponError)
+                }
               >
-                <Text color="#fff" weight="600" style={styles.couponActionText}>
-                  {t("patientPaymentsFlow.checkout.coupon.apply")}
-                </Text>
+                {couponApplyLoading ? (
+                  <View style={styles.couponActionLoading}>
+                    <ActivityIndicator size="small" color="#fff" />
+                    <Text color="#fff" weight="600" style={styles.couponActionText}>
+                      {t("patientPaymentsFlow.checkout.coupon.applying")}
+                    </Text>
+                  </View>
+                ) : (
+                  <Text color="#fff" weight="600" style={styles.couponActionText}>
+                    {t("patientPaymentsFlow.checkout.coupon.apply")}
+                  </Text>
+                )}
               </TouchableOpacity>
             ) : (
               <TouchableOpacity
@@ -835,11 +934,19 @@ export default function SessionPaymentCheckoutScreen() {
               </TouchableOpacity>
             )}
           </View>
-          {appliedCoupon ? (
+          {couponError ? (
+            <Text color="#ba1a1a" style={styles.couponAppliedText}>
+              {couponError}
+            </Text>
+          ) : couponApplied ? (
             <Text color={theme.colors.primary} style={styles.couponAppliedText}>
               {t("patientPaymentsFlow.checkout.coupon.applied", {
                 code: appliedCoupon,
               })}
+            </Text>
+          ) : couponDraft.trim() && appliedCoupon ? (
+            <Text color={theme.colors.textMuted} style={styles.couponAppliedText}>
+              {t("patientPaymentsFlow.checkout.coupon.reapply")}
             </Text>
           ) : null}
         </Card>
@@ -878,7 +985,7 @@ export default function SessionPaymentCheckoutScreen() {
 
           {breakdownLoading ? (
             <LoadingState />
-          ) : breakdownErrorMsg ? (
+          ) : breakdownDisplayError ? (
             <View
               style={[
                 styles.pricingErrorBox,
@@ -896,7 +1003,7 @@ export default function SessionPaymentCheckoutScreen() {
               >
                 {isPricingUnavailable
                   ? t("patientPaymentsFlow.checkout.pricingUnavailableNote")
-                  : breakdownErrorMsg}
+                  : breakdownDisplayError}
               </Text>
             </View>
           ) : breakdown ? (
@@ -1252,6 +1359,7 @@ export default function SessionPaymentCheckoutScreen() {
               ? t("patientPaymentsFlow.checkout.processing")
               : t("patientPaymentsFlow.checkout.confirmButton")
           }
+          loading={initiateMutation.isPending || isLaunchingCheckout}
           onPress={handleInitiatePayment}
           disabled={
             initiateMutation.isPending ||
@@ -1259,11 +1367,13 @@ export default function SessionPaymentCheckoutScreen() {
             initiateLockRef.current ||
             !breakdown ||
             breakdownLoading ||
+            breakdownQuery.isFetching ||
             refundPolicyQuery.isLoading ||
             !refundPolicy ||
             !acceptedRefundPolicy ||
             capabilitiesLoading ||
             Boolean(capabilitiesErrorMsg) ||
+            Boolean(couponError) ||
             (paymobMethodRequired && !selectedPaymobMethod)
           }
           style={styles.confirmButton}
@@ -1446,6 +1556,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 12,
     borderRadius: 10,
+    minWidth: 84,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  couponActionLoading: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
   },
   couponActionText: { fontSize: 13 },
   couponAppliedText: { fontSize: 12, marginTop: 8 },

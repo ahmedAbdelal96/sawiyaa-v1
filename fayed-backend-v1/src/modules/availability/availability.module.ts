@@ -10,6 +10,7 @@ import { AvailabilityPractitionerRepository } from './repositories/availability-
 import { AvailabilitySlotRepository } from './repositories/availability-slot.repository';
 import { BuildAvailabilityWindowsService } from './services/build-availability-windows.service';
 import { ResolvePractitionerTimezoneService } from './services/resolve-practitioner-timezone.service';
+import { ValidateAvailabilitySessionConflictsService } from './services/validate-availability-session-conflicts.service';
 import { ValidateAvailabilityOverlapService } from './services/validate-availability-overlap.service';
 import { CreateAvailabilityExceptionUseCase } from './use-cases/create-availability-exception.use-case';
 import { DeleteAvailabilityExceptionUseCase } from './use-cases/delete-availability-exception.use-case';
@@ -37,6 +38,7 @@ import { UpdateAvailabilityExceptionUseCase } from './use-cases/update-availabil
     AvailabilitySlotRepository,
     AvailabilityExceptionRepository,
     ValidateAvailabilityOverlapService,
+    ValidateAvailabilitySessionConflictsService,
     ResolvePractitionerTimezoneService,
     BuildAvailabilityWindowsService,
     GetMyAvailabilityUseCase,

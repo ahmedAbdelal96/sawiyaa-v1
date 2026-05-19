@@ -4,7 +4,12 @@
  */
 
 export type AppRole =
+  | "SUPER_ADMIN"
   | "ADMIN"
+  | "FINANCE_STAFF"
+  | "MARKETING_STAFF"
+  | "PRACTITIONER_REVIEWER"
+  | "PATIENT_OPERATIONS"
   | "SUPPORT_AGENT"
   | "CONTENT_REVIEWER"
   | "PATIENT"
@@ -169,4 +174,13 @@ export interface AdminLoginRequest {
   email: string;
   password: string;
   deviceId?: string;
+}
+
+export interface AdminStepUpVerifyRequest {
+  password: string;
+}
+
+export interface AdminStepUpVerifyResponse {
+  message: string;
+  expiresAt: string;
 }

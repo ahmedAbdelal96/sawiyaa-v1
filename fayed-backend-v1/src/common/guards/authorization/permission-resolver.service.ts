@@ -98,6 +98,55 @@ export class PermissionResolverService {
     return true;
   }
 
+  /**
+   * Resolves the complete set of effective permissions for a user.
+   *
+   * - SUPER_ADMIN receives all concrete permission keys.
+   * - All other roles: role-based grants + user overrides (ALLOW adds, DENY removes).
+   *
+   * This is the authoritative source for the /users/me/permissions endpoint.
+   * Do NOT use this to make backend authorization decisions — use hasPermissions() for that.
+   */
+  async resolvePermissions(input: {
+    userId: string;
+    roles: AppRole[];
+  }): Promise<PermissionKey[]> {
+    if (input.roles.includes(AppRole.SUPER_ADMIN)) {
+      return Object.values(PermissionKey);
+    }
+
+    const roleTypes = this.mapAppRolesToUserRoleTypes(input.roles);
+
+    const [rolePermissions, userOverrides] = await Promise.all([
+      this.prisma.rolePermission.findMany({
+        where: { role: { in: roleTypes } },
+        select: { permission: { select: { key: true } } },
+      }),
+      this.prisma.userPermissionOverride.findMany({
+        where: { userId: input.userId },
+        select: {
+          effect: true,
+          permission: { select: { key: true } },
+        },
+      }),
+    ]);
+
+    const granted = new Set<PermissionKey>(
+      rolePermissions.map((e) => e.permission.key as PermissionKey),
+    );
+
+    for (const override of userOverrides) {
+      const key = override.permission.key as PermissionKey;
+      if (override.effect === PermissionOverrideEffect.ALLOW) {
+        granted.add(key);
+      } else if (override.effect === PermissionOverrideEffect.DENY) {
+        granted.delete(key);
+      }
+    }
+
+    return [...granted];
+  }
+
   private mapAppRolesToUserRoleTypes(roles: AppRole[]): UserRoleType[] {
     const roleTypes = new Set<UserRoleType>();
 

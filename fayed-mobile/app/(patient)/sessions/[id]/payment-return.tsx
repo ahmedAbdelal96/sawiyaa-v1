@@ -14,9 +14,7 @@ import {
 import { useTheme } from "../../../../src/providers/ThemeProvider";
 import { usePatientSession } from "../../../../src/features/patient/sessions/hooks";
 import { useReconcileSessionPaymentReturn } from "../../../../src/features/patient/payments/hooks";
-import {
-  normalizePaymentRedirectStatus,
-} from "../../../../src/features/patient/payments/return-utils";
+import { normalizePaymentRedirectStatus } from "../../../../src/features/patient/payments/return-utils";
 import { trackAnalyticsEvent } from "../../../../src/lib/analytics";
 
 const CONFIRMED_SESSION_STATUSES = new Set([
@@ -28,7 +26,7 @@ const CONFIRMED_SESSION_STATUSES = new Set([
 ]);
 
 const POLL_INTERVAL_MS = 3_000;
-const MAX_POLL_DURATION_MS = 15_000;
+const MAX_POLL_DURATION_MS = 45_000; // Extended from 15s to allow for delayed webhook processing
 
 function isConfirmedStatus(status: string | null | undefined) {
   return Boolean(status && CONFIRMED_SESSION_STATUSES.has(status));
@@ -202,28 +200,6 @@ export default function SessionPaymentReturnScreen() {
     ? t("patientPaymentsFlow.return.reconcileErrorNote")
     : null;
 
-  if (!sessionId) {
-    return (
-      <Screen bg="background">
-        <Header
-          showBack
-          onBack={() => router.replace("/(patient)/sessions")}
-          title={t("patientPaymentsFlow.return.title")}
-        />
-        <View style={styles.centerState}>
-          <Text weight="600" style={styles.centerTitle}>
-            {t("patientPaymentsFlow.return.missingSessionNote")}
-          </Text>
-          <Button
-            title={t("patientPaymentsFlow.return.viewSessions")}
-            onPress={() => router.replace("/(patient)/sessions")}
-            style={styles.centerButton}
-          />
-        </View>
-      </Screen>
-    );
-  }
-
   const stateCard = useMemo(() => {
     if (isConfirmed) {
       return {
@@ -303,6 +279,21 @@ export default function SessionPaymentReturnScreen() {
       };
     }
 
+    // Polling completed but still pending - show "check again" option
+    if (isPendingPayment && !pollingActive) {
+      return {
+        icon: (
+          <Ionicons
+            name="hourglass-outline"
+            size={48}
+            color={theme.colors.textMuted}
+          />
+        ),
+        title: t("patientPaymentsFlow.return.pendingStill.heading"),
+        note: t("patientPaymentsFlow.return.pendingStill.note"),
+      };
+    }
+
     return {
       icon: (
         <Ionicons
@@ -326,13 +317,32 @@ export default function SessionPaymentReturnScreen() {
     theme.colors.textMuted,
   ]);
 
-  if (sessionQuery.isLoading && !sessionQuery.data) {
+  if (!sessionId) {
     return (
       <Screen bg="background">
         <Header
           showBack
+          onBack={() => router.replace("/(patient)/sessions")}
           title={t("patientPaymentsFlow.return.title")}
         />
+        <View style={styles.centerState}>
+          <Text weight="600" style={styles.centerTitle}>
+            {t("patientPaymentsFlow.return.missingSessionNote")}
+          </Text>
+          <Button
+            title={t("patientPaymentsFlow.return.viewSessions")}
+            onPress={() => router.replace("/(patient)/sessions")}
+            style={styles.centerButton}
+          />
+        </View>
+      </Screen>
+    );
+  }
+
+  if (sessionQuery.isLoading && !sessionQuery.data) {
+    return (
+      <Screen bg="background">
+        <Header showBack title={t("patientPaymentsFlow.return.title")} />
         <LoadingState fullScreen />
       </Screen>
     );
@@ -341,10 +351,7 @@ export default function SessionPaymentReturnScreen() {
   if (sessionQuery.isError || !sessionQuery.data) {
     return (
       <Screen bg="background">
-        <Header
-          showBack
-          title={t("patientPaymentsFlow.return.title")}
-        />
+        <Header showBack title={t("patientPaymentsFlow.return.title")} />
         <View style={styles.centerState}>
           <Text weight="600" style={styles.centerTitle}>
             {t("patientPaymentsFlow.return.loadErrorNote")}
@@ -362,10 +369,7 @@ export default function SessionPaymentReturnScreen() {
 
   return (
     <Screen bg="background">
-      <Header
-        showBack
-        title={t("patientPaymentsFlow.return.title")}
-      />
+      <Header showBack title={t("patientPaymentsFlow.return.title")} />
 
       <ScrollView contentContainerStyle={styles.content}>
         <Card variant="elevated" padding="md" style={styles.stateCard}>
@@ -397,6 +401,17 @@ export default function SessionPaymentReturnScreen() {
             {t("patientPaymentsFlow.return.actionsTitle")}
           </Text>
           <View style={styles.actionsWrap}>
+            {isPendingPayment && !pollingActive && (
+              <Button
+                title={t("patientPaymentsFlow.return.checkAgain")}
+                onPress={() => {
+                  setPollingActive(true);
+                  void sessionQuery.refetch();
+                }}
+                disabled={sessionQuery.isLoading}
+                style={styles.actionButton}
+              />
+            )}
             <Button
               title={t("patientPaymentsFlow.return.viewSession")}
               onPress={() => router.replace(`/(patient)/sessions/${sessionId}`)}
@@ -478,4 +493,3 @@ const styles = StyleSheet.create({
     width: "100%",
   },
 });
-

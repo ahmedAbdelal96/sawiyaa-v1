@@ -1,5 +1,9 @@
 import { NotFoundException } from '@nestjs/common';
-import { PractitionerStatus, UserStatus, PractitionerPackageStatus } from '@prisma/client';
+import {
+  PractitionerStatus,
+  UserStatus,
+  PractitionerPackageStatus,
+} from '@prisma/client';
 import { PublicPractitionerReadRepository } from '@modules/practitioners/repositories/public-practitioner-read.repository';
 import { PublicPractitionerVisibilityPolicy } from '@modules/practitioners/policies/public-practitioner-visibility.policy';
 import { PractitionerPackagePresenter } from '../presenters/practitioner-package.presenter';
@@ -35,7 +39,9 @@ describe('GetPublicPractitionerPackageUseCase', () => {
   });
 
   it('returns one public package when the practitioner is visible and package is active', async () => {
-    (publicPractitionerReadRepository.findByPublicSlug as jest.Mock).mockResolvedValue({
+    (
+      publicPractitionerReadRepository.findByPublicSlug as jest.Mock
+    ).mockResolvedValue({
       id: 'practitioner-1',
       publicSlug: 'dr-example',
       status: PractitionerStatus.APPROVED,
@@ -53,7 +59,9 @@ describe('GetPublicPractitionerPackageUseCase', () => {
       isVisible: true,
       isVerified: true,
     });
-    (practitionerPackageRepository.findPublicByPractitionerSlugAndPackageSlug as jest.Mock).mockResolvedValue({
+    (
+      practitionerPackageRepository.findPublicByPractitionerSlugAndPackageSlug as jest.Mock
+    ).mockResolvedValue({
       id: 'package-1',
       status: PractitionerPackageStatus.ACTIVE,
     });
@@ -68,7 +76,9 @@ describe('GetPublicPractitionerPackageUseCase', () => {
   });
 
   it('rejects inactive public packages', async () => {
-    (publicPractitionerReadRepository.findByPublicSlug as jest.Mock).mockResolvedValue({
+    (
+      publicPractitionerReadRepository.findByPublicSlug as jest.Mock
+    ).mockResolvedValue({
       id: 'practitioner-1',
       publicSlug: 'dr-example',
       status: PractitionerStatus.APPROVED,
@@ -86,9 +96,9 @@ describe('GetPublicPractitionerPackageUseCase', () => {
       isVisible: true,
       isVerified: true,
     });
-    (practitionerPackageRepository.findPublicByPractitionerSlugAndPackageSlug as jest.Mock).mockResolvedValue(
-      null,
-    );
+    (
+      practitionerPackageRepository.findPublicByPractitionerSlugAndPackageSlug as jest.Mock
+    ).mockResolvedValue(null);
 
     await expect(
       useCase.execute({

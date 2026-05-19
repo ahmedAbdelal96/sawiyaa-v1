@@ -1,0 +1,73 @@
+﻿
+> fayed-frontend@1.0.0 lint
+> npm run i18n:check && eslint .
+
+
+> fayed-frontend@1.0.0 i18n:check
+> node scripts/validate-i18n.mjs
+
+i18n validation passed.
+
+D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\academy\components\AdminAcademyOverviewScreen.tsx
+  97:9  warning  The 'visibleItems' logical expression could make the dependencies of useMemo Hook (at line 112) change on every render. To fix this, wrap the initialization of 'visibleItems' in its own useMemo() Hook  react-hooks/exhaustive-deps
+
+D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\academy\components\PublicAcademyHomeScreen.tsx
+  49:9  warning  The 'items' logical expression could make the dependencies of useMemo Hook (at line 56) change on every render. To fix this, wrap the initialization of 'items' in its own useMemo() Hook  react-hooks/exhaustive-deps
+
+D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\admin\patients\api\admin-patients.api.ts
+  16:5  warning  Unused eslint-disable directive (no problems were reported from 'no-console')
+  27:5  warning  Unused eslint-disable directive (no problems were reported from 'no-console')
+
+D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\admin\patients\components\AdminPatient360Screen.tsx
+  115:5  warning  Unused eslint-disable directive (no problems were reported from 'no-console')
+
+D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\admin\patients\components\AdminPatientsDirectory.tsx
+  95:7  warning  Unused eslint-disable directive (no problems were reported from 'no-console')
+
+D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\admin\payment-gateway-control\components\AdminPaymentGatewayControlScreen.tsx
+  1041:9  warning  The 'paymobHistory' logical expression could make the dependencies of useMemo Hook (at line 1050) change on every render. Move it inside the useMemo callback. Alternatively, wrap the initialization of 'paymobHistory' in its own useMemo() Hook    react-hooks/exhaustive-deps
+  1042:9  warning  The 'stripeHistory' logical expression could make the dependencies of useMemo Hook (at line 1050) change on every render. Move it inside the useMemo callback. Alternatively, wrap the initialization of 'stripeHistory' in its own useMemo() Hook    react-hooks/exhaustive-deps
+  1043:9  warning  The 'routingHistory' logical expression could make the dependencies of useMemo Hook (at line 1050) change on every render. Move it inside the useMemo callback. Alternatively, wrap the initialization of 'routingHistory' in its own useMemo() Hook  react-hooks/exhaustive-deps
+
+D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\admin\practitioner-payouts\components\AdminPractitionerPayoutHistoryScreen.tsx
+  47:9  warning  The 'items' logical expression could make the dependencies of useMemo Hook (at line 65) change on every render. To fix this, wrap the initialization of 'items' in its own useMemo() Hook  react-hooks/exhaustive-deps
+
+D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\articles-public\components\PatientArticleCard.tsx
+  32:11  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\articles-public\components\PatientArticleDetailScreen.tsx
+  63:11  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\articles-public\components\PublicArticleCard.tsx
+  32:11  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\articles-public\components\PublicArticleDetailScreen.tsx
+  70:13  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\chat\components\SessionChatPanel.tsx
+  311:17  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  436:29  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\practitioners\components\PractitionerProfileWorkspace.tsx
+  636:35  warning  Compilation Skipped: Use of incompatible library
+
+This API returns functions which cannot be memoized without leading to stale UI. To prevent this, by default React Compiler will skip memoizing this component/hook. However, you may see issues if values from this API are passed to other components/hooks that are memoized.
+
+D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\practitioners\components\PractitionerProfileWorkspace.tsx:636:35
+  634 |   };
+  635 |
+> 636 |   const watchedPayoutMethodType = watch("payoutMethodType");
+      |                                   ^^^^^ React Hook Form's `useForm()` API returns a `watch()` function which cannot be memoized safely.
+  637 |   const watchedPayoutAccountHolderName = watch("payoutAccountHolderName");
+  638 |   const watchedPayoutBankName = watch("payoutBankName");
+  639 |   const watchedPayoutBankAccountNumber = watch("payoutBankAccountNumber");  react-hooks/incompatible-library
+
+D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\sessions\hooks\use-sessions.ts
+  37:3  warning  Unused eslint-disable directive (no problems were reported from '@typescript-eslint/no-explicit-any')
+
+D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\training\components\AdminTrainingDetailScreen.tsx
+  351:9  warning  The 'scheduleSnapshotItems' logical expression could make the dependencies of useMemo Hook (at line 421) change on every render. To fix this, wrap the initialization of 'scheduleSnapshotItems' in its own useMemo() Hook  react-hooks/exhaustive-deps
+
+✖ 19 problems (0 errors, 19 warnings)
+  0 errors and 5 warnings potentially fixable with the `--fix` option.
+

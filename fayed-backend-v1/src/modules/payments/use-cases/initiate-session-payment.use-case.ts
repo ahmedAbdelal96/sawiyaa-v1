@@ -116,12 +116,12 @@ export class InitiateSessionPaymentUseCase {
       await this.paymentRepository.findLatestActiveBySessionId(session.id);
 
     if (activePayment) {
-        await this.refundPolicyService.ensureAcceptedRefundPolicyForPayment({
-          policyType: RefundPolicyType.SESSION,
-          acceptedRefundPolicyId: input.acceptedRefundPolicyId,
-          acceptedByUserId: input.userId,
-          paymentId: activePayment.id,
-          sessionId: session.id,
+      await this.refundPolicyService.ensureAcceptedRefundPolicyForPayment({
+        policyType: RefundPolicyType.SESSION,
+        acceptedRefundPolicyId: input.acceptedRefundPolicyId,
+        acceptedByUserId: input.userId,
+        paymentId: activePayment.id,
+        sessionId: session.id,
         displayLocale: input.displayLocale,
         userAgent: input.userAgent ?? null,
         ipAddress: input.ipAddress ?? null,

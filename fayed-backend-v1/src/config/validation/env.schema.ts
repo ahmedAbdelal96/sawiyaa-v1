@@ -24,6 +24,16 @@ const baseEnvSchema = z.object({
   LOG_PRETTY: z.enum(['true', 'false']).optional(),
   LOG_HTTP_ENABLED: z.enum(['true', 'false']).default('true'),
 
+  // Throttling / Rate limit store
+  THROTTLE_STORE: z.enum(['memory', 'redis']).default('memory'),
+  REDIS_URL: z.string().url().optional(),
+  THROTTLE_KEY_PREFIX: z.string().default('fayed:throttle'),
+  THROTTLE_KEY_HASH_SECRET: z.string().optional(),
+
+  // Step-up (re-auth) enforcement for sensitive actions
+  STEP_UP_ENABLED: z.enum(['true', 'false']).optional(),
+  STEP_UP_TTL_SECONDS: z.coerce.number().int().min(60).max(3600).default(600),
+
   // Database
   DATABASE_URL: z.string().url(),
 
@@ -54,6 +64,10 @@ const baseEnvSchema = z.object({
     .min(5)
     .max(300)
     .default(30),
+  AUTH_COOKIE_AUTH_ENABLED: z.enum(['true', 'false']).optional(),
+  AUTH_CSRF_ENFORCEMENT_ENABLED: z.enum(['true', 'false']).optional(),
+  AUTH_CSRF_COOKIE_NAME: z.string().default('fayed_csrf_token'),
+  AUTH_CSRF_HEADER_NAME: z.string().default('x-csrf-token'),
   AUTH_PRACTITIONER_LOGIN_OTP_BYPASS_IN_DEV: z
     .enum(['true', 'false'])
     .optional(),
@@ -123,6 +137,23 @@ const baseEnvSchema = z.object({
     .min(1)
     .max(120)
     .default(15),
+
+  // Accounting reconciliation operations
+  ACCOUNTING_RECONCILIATION_ENABLED: z.enum(['true', 'false']).default('false'),
+  ACCOUNTING_RECONCILIATION_LOOKBACK_DAYS: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(90)
+    .default(7),
+  ACCOUNTING_RECONCILIATION_BATCH_SIZE: z.coerce
+    .number()
+    .int()
+    .min(10)
+    .max(1000)
+    .default(100),
+  ACCOUNTING_RECONCILIATION_CRON: z.string().default('0 3 * * *'),
+  ACCOUNTING_RECONCILIATION_ALERTS_ENABLED: z.enum(['true', 'false']).default('false'),
 });
 
 export const envSchema = baseEnvSchema.superRefine((env, ctx) => {
@@ -130,6 +161,18 @@ export const envSchema = baseEnvSchema.superRefine((env, ctx) => {
   const anyProviderEnabled =
     env.PAYMENT_STRIPE_ENABLED === 'true' ||
     env.PAYMENT_PAYMOB_ENABLED === 'true';
+
+  if (env.THROTTLE_STORE === 'redis') {
+    // Prefer fail-fast in prod; ThrottleStoreService also enforces this at runtime.
+    if (effectiveAppEnv === 'production' && !env.REDIS_URL?.trim()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['REDIS_URL'],
+        message:
+          'REDIS_URL is required when THROTTLE_STORE=redis in production',
+      });
+    }
+  }
 
   if (anyProviderEnabled) {
     if (!env.APP_BASE_URL?.trim()) {
@@ -246,9 +289,12 @@ export const envSchema = baseEnvSchema.superRefine((env, ctx) => {
 
     const checkoutFlow = env.PAYMOB_CHECKOUT_FLOW ?? 'legacy';
     const hasLegacyCardIntegration = Boolean(
-      env.PAYMOB_INTEGRATION_ID_CARD?.trim() || env.PAYMOB_INTEGRATION_ID?.trim(),
+      env.PAYMOB_INTEGRATION_ID_CARD?.trim() ||
+      env.PAYMOB_INTEGRATION_ID?.trim(),
     );
-    const hasWalletIntegration = Boolean(env.PAYMOB_INTEGRATION_ID_WALLET?.trim());
+    const hasWalletIntegration = Boolean(
+      env.PAYMOB_INTEGRATION_ID_WALLET?.trim(),
+    );
     const rawRegistry = env.PAYMOB_METHOD_REGISTRY_JSON?.trim();
     const hasRegistryJson = Boolean(rawRegistry);
 
@@ -281,7 +327,11 @@ export const envSchema = baseEnvSchema.superRefine((env, ctx) => {
       }
     }
 
-    if (!hasLegacyCardIntegration && !hasWalletIntegration && !hasRegistryJson) {
+    if (
+      !hasLegacyCardIntegration &&
+      !hasWalletIntegration &&
+      !hasRegistryJson
+    ) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ['PAYMOB_INTEGRATION_ID_CARD'],

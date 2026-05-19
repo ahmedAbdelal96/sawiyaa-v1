@@ -1,7 +1,10 @@
 import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import { FINANCIAL_OPS_ERROR_CODES } from '@modules/financial-operations/types/financial-operations.types';
 import { ListAdminPaymentsRevenueReportRowsDto } from '../dto/admin-payments-revenue-report.dto';
-import { PAYMENTS_REVENUE_REPORT_PROVIDER, PaymentsRevenueReportProvider } from '../providers/payments-revenue-report.provider';
+import {
+  PAYMENTS_REVENUE_REPORT_PROVIDER,
+  PaymentsRevenueReportProvider,
+} from '../providers/payments-revenue-report.provider';
 import { isValidRange, resolveRange } from '../utils/report-date.util';
 import { toPaginationMeta } from '../utils/report-pagination.util';
 
@@ -39,4 +42,3 @@ export class ListAdminPaymentsRevenueReportRowsUseCase {
     };
   }
 }
-

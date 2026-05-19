@@ -1,6 +1,7 @@
 import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '@common/decorators/current-user.decorator';
+import { ThrottlePolicy } from '@common/decorators/throttle-policy.decorator';
 import { AuthenticatedUser } from '@common/interfaces/authenticated-user.interface';
 import { AcademyEnrollmentTokenDto } from '../dto/academy-enrollment-token.dto';
 import { CreateAcademyEnrollmentDto } from '../dto/create-academy-enrollment.dto';
@@ -45,6 +46,7 @@ export class PublicAcademyController {
   }
 
   @Post('courses/:slug/enrollments')
+  @ThrottlePolicy('academy-public-enrollment')
   @ApiOperation({ summary: 'Create a public academy enrollment' })
   createEnrollment(
     @Param('slug') slug: string,

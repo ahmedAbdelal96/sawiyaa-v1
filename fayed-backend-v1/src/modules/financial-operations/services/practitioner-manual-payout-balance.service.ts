@@ -72,14 +72,15 @@ export class PractitionerManualPayoutBalanceService {
       .filter((entry) => entry.referenceType === 'package-settlement-release')
       .reduce((sum, entry) => sum.add(entry.amount), zero);
 
-    const normalPaid = manualPayouts
-      .reduce((sum, payout) => sum.add(payout.normalSessionAppliedAmount), zero);
+    const normalPaid = manualPayouts.reduce(
+      (sum, payout) => sum.add(payout.normalSessionAppliedAmount),
+      zero,
+    );
 
-    const packageReleasedPaid = manualPayouts
-      .reduce(
-        (sum, payout) => sum.add(payout.packageReleasedAppliedAmount),
-        zero,
-      );
+    const packageReleasedPaid = manualPayouts.reduce(
+      (sum, payout) => sum.add(payout.packageReleasedAppliedAmount),
+      zero,
+    );
 
     const packageHeldAmount = packageSettlements.reduce((sum, item) => {
       const held = new Prisma.Decimal(item.heldPractitionerAmount ?? 0);
@@ -89,16 +90,14 @@ export class PractitionerManualPayoutBalanceService {
     }, zero);
 
     const normalSessionPayableAmountRaw = normalCredits.sub(normalPaid);
-    const packageReleasedPayableAmountRaw = packageReleasedCredits.sub(
-      packageReleasedPaid,
-    );
+    const packageReleasedPayableAmountRaw =
+      packageReleasedCredits.sub(packageReleasedPaid);
     const normalSessionPayableAmount = normalSessionPayableAmountRaw.gt(0)
       ? normalSessionPayableAmountRaw
       : zero;
-    const packageReleasedPayableAmount =
-      packageReleasedPayableAmountRaw.gt(0)
-        ? packageReleasedPayableAmountRaw
-        : zero;
+    const packageReleasedPayableAmount = packageReleasedPayableAmountRaw.gt(0)
+      ? packageReleasedPayableAmountRaw
+      : zero;
     const totalPayableAmount = normalSessionPayableAmount.add(
       packageReleasedPayableAmount,
     );

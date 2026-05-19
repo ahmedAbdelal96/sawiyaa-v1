@@ -8,6 +8,7 @@ import { ListStateSkeleton, StateCard } from "@/components/shared/ContentStates"
 import { useSessionFinancialBreakdown } from "@/features/sessions/hooks/use-session-financial";
 import { usePatientSession } from "@/features/sessions/hooks/use-sessions";
 import type { SessionItem, SessionStatus } from "@/features/sessions/types/sessions.types";
+import { formatMoney as formatFinanceMoney } from "@/lib/finance-format";
 import { reconcileSessionPaymentReturn } from "../api/payments-return.api";
 import PatientMoneyClarityPanel from "./PatientMoneyClarityPanel";
 
@@ -34,14 +35,6 @@ function formatDatetime(isoString: string | null, numLocale: string): string {
     minute: "2-digit",
     hour12: !numLocale.startsWith("ar"),
   });
-}
-
-function formatAmount(amount: string, currency: string, numLocale: string): string {
-  return new Intl.NumberFormat(numLocale, {
-    style: "currency",
-    currency: currency.toUpperCase(),
-    minimumFractionDigits: 0,
-  }).format(Number(amount));
 }
 
 type Props = {
@@ -210,18 +203,24 @@ export default function PaymentReturnPanel({
             facts={[
               {
                 label: t("return.moneyStory.facts.gross.label"),
-                value: formatAmount(financialBreakdown.grossAmount, financialBreakdown.currency, numLocale),
+                value: formatFinanceMoney(numLocale, financialBreakdown.grossAmount, financialBreakdown.currency, {
+                  fallbackText: "—",
+                }),
                 helper: t("return.moneyStory.facts.gross.helper"),
               },
               {
                 label: t("return.moneyStory.facts.discount.label"),
-                value: formatAmount(financialBreakdown.discountAmount, financialBreakdown.currency, numLocale),
+                value: formatFinanceMoney(numLocale, financialBreakdown.discountAmount, financialBreakdown.currency, {
+                  fallbackText: "—",
+                }),
                 helper: t("return.moneyStory.facts.discount.helper"),
               },
               {
-                label: t("return.moneyStory.facts.net.label"),
-                value: formatAmount(financialBreakdown.netPaidAmount, financialBreakdown.currency, numLocale),
-                helper: t("return.moneyStory.facts.net.helper"),
+                label: t("return.moneyStory.facts.patientPaid.label"),
+                value: formatFinanceMoney(numLocale, financialBreakdown.netPaidAmount, financialBreakdown.currency, {
+                  fallbackText: "—",
+                }),
+                helper: t("return.moneyStory.facts.patientPaid.helper"),
               },
               {
                 label: t("return.moneyStory.facts.where.label"),

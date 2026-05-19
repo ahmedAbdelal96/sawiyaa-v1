@@ -1,0 +1,6 @@
+﻿Prisma schema loaded from prisma\schema.prisma
+Datasource "db": PostgreSQL database "fayed_db", schema "public" at "localhost:5432"
+
+56 migrations found in prisma/migrations
+
+Database schema is up to date!

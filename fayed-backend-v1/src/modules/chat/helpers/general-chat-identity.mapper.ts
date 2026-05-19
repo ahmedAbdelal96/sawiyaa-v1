@@ -1,4 +1,8 @@
-import { ConversationParticipantRole, PractitionerStatus, UserStatus } from '@prisma/client';
+import {
+  ConversationParticipantRole,
+  PractitionerStatus,
+  UserStatus,
+} from '@prisma/client';
 import { GeneralChatParticipantIdentityDto } from '../dto/general-chat-response.dto';
 
 export type GeneralChatParticipantDirectoryRecord = {
@@ -55,7 +59,9 @@ function resolveSubtitle(
   if (role === ConversationParticipantRole.PRACTITIONER) {
     return (
       normalizeText(record.practitionerProfile?.professionalTitle) ??
-      normalizeText(record.practitionerProfile?.primarySpecialtyCategory?.name) ??
+      normalizeText(
+        record.practitionerProfile?.primarySpecialtyCategory?.name,
+      ) ??
       null
     );
   }
@@ -102,12 +108,15 @@ export function buildGeneralChatParticipantIdentity(
     displayName: resolveDisplayName(record, participant.participantRole),
     avatarUrl:
       participant.participantRole === ConversationParticipantRole.PRACTITIONER
-        ? record.practitionerProfile?.avatarUrl ?? null
+        ? (record.practitionerProfile?.avatarUrl ?? null)
         : null,
     role: participant.participantRole,
     subtitle: resolveSubtitle(record, participant.participantRole),
     status: resolveStatus(record, participant.participantRole),
-    verificationStatus: resolveVerificationStatus(record, participant.participantRole),
+    verificationStatus: resolveVerificationStatus(
+      record,
+      participant.participantRole,
+    ),
   };
 }
 
@@ -137,7 +146,9 @@ export function resolveGeneralChatMessageSenderIdentity(
     return null;
   }
 
-  const participant = participants.find((entry) => entry.userId === senderUserId);
+  const participant = participants.find(
+    (entry) => entry.userId === senderUserId,
+  );
   if (!participant) {
     return null;
   }

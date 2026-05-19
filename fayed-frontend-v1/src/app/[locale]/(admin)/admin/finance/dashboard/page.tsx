@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import AdminAccountingDashboardScreen from "@/features/admin/accounting/components/AdminAccountingDashboardScreen";
+import AdminPermissionGate from "@/components/admin/AdminPermissionGate";
+import { PermissionKey } from "@/lib/auth/permissions";
 
 type Props = {
   params: Promise<{ locale: string }>;
@@ -20,6 +22,12 @@ export default async function AdminFinanceDashboardPage({ params }: Props) {
   const { locale } = await params;
   setRequestLocale(locale);
 
-  return <AdminAccountingDashboardScreen />;
+  return (
+    <AdminPermissionGate
+      requiredPermissions={[PermissionKey.ACCOUNTING_READ, PermissionKey.FINANCE_EVENTS_READ]}
+    >
+      <AdminAccountingDashboardScreen />
+    </AdminPermissionGate>
+  );
 }
 

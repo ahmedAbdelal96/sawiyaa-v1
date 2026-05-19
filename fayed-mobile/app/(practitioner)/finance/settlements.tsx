@@ -157,18 +157,18 @@ function SettlementRow({
           </Text>
         </View>
         <Text weight="600" style={styles.rowAmount}>
-          {formatMoney(item.amountNet, item.currency, locale)}
+          {formatMoney(item.amountNet, item.currency ?? null, locale, t("practitioner.finance.common.currencyUnavailable"))}
         </Text>
       </View>
 
       <View style={styles.amountRow}>
         <AmountPill
           label={locale.startsWith("ar") ? "إجمالي" : "Gross"}
-          value={formatMoney(item.amountGross, item.currency, locale)}
+          value={formatMoney(item.amountGross, item.currency ?? null, locale, t("practitioner.finance.common.currencyUnavailable"))}
         />
         <AmountPill
           label={locale.startsWith("ar") ? "تعديلات" : "Adjustments"}
-          value={formatMoney(item.amountAdjustments, item.currency, locale)}
+          value={formatMoney(item.amountAdjustments, item.currency ?? null, locale, t("practitioner.finance.common.currencyUnavailable"))}
         />
       </View>
 

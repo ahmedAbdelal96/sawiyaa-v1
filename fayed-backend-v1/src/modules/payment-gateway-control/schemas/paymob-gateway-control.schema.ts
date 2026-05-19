@@ -46,13 +46,7 @@ export const paymobGatewayControlDraftSchema = z
   .object({
     enabled: z.boolean(),
     checkoutFlow: paymobCheckoutFlowSchema,
-    defaultMethod: z
-      .string()
-      .trim()
-      .min(1)
-      .max(80)
-      .nullable()
-      .default(null),
+    defaultMethod: z.string().trim().min(1).max(80).nullable().default(null),
     maintenanceMode: z.boolean(),
     allowedCountryIsoCodes: z.array(countryIsoCodeSchema).default([]),
     methodRegistry: z.array(paymobGatewayMethodEntrySchema).default([]),
@@ -78,7 +72,10 @@ export const paymentRoutingDraftSchema = z
   })
   .strict()
   .superRefine((draft, ctx) => {
-    if (draft.defaultProvider && !draft.priorityOrder.includes(draft.defaultProvider)) {
+    if (
+      draft.defaultProvider &&
+      !draft.priorityOrder.includes(draft.defaultProvider)
+    ) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ['defaultProvider'],
@@ -86,7 +83,10 @@ export const paymentRoutingDraftSchema = z
       });
     }
 
-    if (draft.fallbackProvider && !draft.priorityOrder.includes(draft.fallbackProvider)) {
+    if (
+      draft.fallbackProvider &&
+      !draft.priorityOrder.includes(draft.fallbackProvider)
+    ) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ['fallbackProvider'],
@@ -111,7 +111,9 @@ export type StripeGatewayControlDraftNormalized = z.output<
   typeof stripeGatewayControlDraftSchema
 >;
 
-export type PaymentRoutingDraftInput = z.input<typeof paymentRoutingDraftSchema>;
+export type PaymentRoutingDraftInput = z.input<
+  typeof paymentRoutingDraftSchema
+>;
 
 export type PaymentRoutingDraftNormalized = z.output<
   typeof paymentRoutingDraftSchema

@@ -70,4 +70,3 @@ describe('ListAdminLedgerExplorerUseCase', () => {
     ).rejects.toBeInstanceOf(BadRequestException);
   });
 });
-

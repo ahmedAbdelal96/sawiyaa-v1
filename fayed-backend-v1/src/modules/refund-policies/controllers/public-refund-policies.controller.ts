@@ -31,7 +31,8 @@ export class PublicRefundPoliciesController {
   @Get('session')
   @ApiOperation({
     summary: 'Read the current session refund policy',
-    description: 'Returns the current active session refund policy if published.',
+    description:
+      'Returns the current active session refund policy if published.',
   })
   @ApiResponse({ status: 200, type: RefundPolicyDto })
   @ApiNotFoundResponse({ description: 'Active session policy was not found' })
@@ -42,7 +43,8 @@ export class PublicRefundPoliciesController {
   @Get('package')
   @ApiOperation({
     summary: 'Read the current package refund policy',
-    description: 'Returns the current active package refund policy if published.',
+    description:
+      'Returns the current active package refund policy if published.',
   })
   @ApiResponse({ status: 200, type: RefundPolicyDto })
   @ApiNotFoundResponse({ description: 'Active package policy was not found' })
@@ -53,7 +55,8 @@ export class PublicRefundPoliciesController {
   @Get(':policyType')
   @ApiOperation({
     summary: 'Read a current refund policy by type',
-    description: 'Returns the current active refund policy for the requested type.',
+    description:
+      'Returns the current active refund policy for the requested type.',
   })
   @ApiParam({ name: 'policyType', enum: RefundPolicyType })
   @ApiResponse({ status: 200, type: RefundPolicyDto })

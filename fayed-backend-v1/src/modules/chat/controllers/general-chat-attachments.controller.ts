@@ -99,7 +99,7 @@ export class GeneralChatAttachmentsController {
       return { success: true, data: { item: null } } as any;
     }
 
-    if (!file?.buffer || !file.mimetype) {
+    if (!file?.buffer || file.buffer.length <= 0 || !file.mimetype) {
       return { success: true, data: { item: null } } as any;
     }
 

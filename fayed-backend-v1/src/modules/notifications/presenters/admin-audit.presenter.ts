@@ -5,13 +5,20 @@ import {
   NotificationStatus,
   UserRoleType,
 } from '@prisma/client';
-import { AdminAuditSeverity, AdminAuditSource } from '../dto/list-admin-audit-events.dto';
+import {
+  AdminAuditSeverity,
+  AdminAuditSource,
+} from '../dto/list-admin-audit-events.dto';
 
 type ActorRoleRecord = { role: UserRoleType };
 
 @Injectable()
 export class AdminAuditPresenter {
-  presentPagination(input: { page: number; limit: number; totalItems: number }) {
+  presentPagination(input: {
+    page: number;
+    limit: number;
+    totalItems: number;
+  }) {
     return {
       page: input.page,
       limit: input.limit,
@@ -94,6 +101,17 @@ export class AdminAuditPresenter {
   }
 
   private resolveEventFamily(slug: string): string {
+    if (slug.startsWith('security.adminUsers.')) {
+      return 'ADMIN';
+    }
+
+    if (
+      slug.startsWith('security.step_up.') ||
+      slug.startsWith('security.permission.')
+    ) {
+      return 'AUTH';
+    }
+
     const family = slug.split('.')[0] ?? 'system';
     return family.toUpperCase();
   }
@@ -107,14 +125,18 @@ export class AdminAuditPresenter {
   }
 
   private resolveSeverity(status: NotificationStatus): AdminAuditSeverity {
-    if (status === NotificationStatus.FAILED) return AdminAuditSeverity.CRITICAL;
+    if (status === NotificationStatus.FAILED)
+      return AdminAuditSeverity.CRITICAL;
     if (
       status === NotificationStatus.SUPPRESSED ||
       status === NotificationStatus.CANCELLED
     ) {
       return AdminAuditSeverity.HIGH;
     }
-    if (status === NotificationStatus.PENDING || status === NotificationStatus.QUEUED) {
+    if (
+      status === NotificationStatus.PENDING ||
+      status === NotificationStatus.QUEUED
+    ) {
       return AdminAuditSeverity.MEDIUM;
     }
     return AdminAuditSeverity.LOW;

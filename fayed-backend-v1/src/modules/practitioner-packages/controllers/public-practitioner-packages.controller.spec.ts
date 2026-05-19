@@ -3,8 +3,8 @@ import { PublicPractitionerPackagesController } from './public-practitioner-pack
 
 describe('PublicPractitionerPackagesController routes', () => {
   it('uses the public practitioner base route', () => {
-    expect(Reflect.getMetadata(PATH_METADATA, PublicPractitionerPackagesController)).toBe(
-      'public/practitioners',
-    );
+    expect(
+      Reflect.getMetadata(PATH_METADATA, PublicPractitionerPackagesController),
+    ).toBe('public/practitioners');
   });
 });

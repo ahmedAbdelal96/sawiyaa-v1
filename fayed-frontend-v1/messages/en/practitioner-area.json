@@ -6,7 +6,7 @@
       "title": "Sessions",
       "description": "Your session calendar, booking history, and appointment management will be available here.",
       "meta": {
-        "title": "Sessions â€” Practitioner",
+        "title": "Sessions — Practitioner",
         "description": "Manage your practitioner sessions and appointments."
       }
     },
@@ -14,7 +14,7 @@
       "title": "Patients",
       "description": "Your assigned patient roster and care coordination tools will be available here.",
       "meta": {
-        "title": "Patients â€” Practitioner",
+        "title": "Patients — Practitioner",
         "description": "View and manage your patient assignments."
       }
     },
@@ -22,7 +22,7 @@
       "title": "Reviews",
       "description": "Patient feedback, quality signals, and reputation-related summaries will be available here.",
       "meta": {
-        "title": "Reviews â€” Practitioner",
+        "title": "Reviews — Practitioner",
         "description": "View feedback and reviews from your patients."
       }
     },
@@ -30,7 +30,7 @@
       "title": "Articles",
       "description": "Educational resources, practitioner guidance, and curated content will be available here.",
       "meta": {
-        "title": "Articles â€” Practitioner",
+        "title": "Articles — Practitioner",
         "description": "Explore articles and resources for practitioners."
       }
     },
@@ -38,7 +38,7 @@
       "title": "Settings",
       "description": "Account preferences, availability setup, and notification controls will be available here.",
       "meta": {
-        "title": "Settings â€” Practitioner",
+        "title": "Settings — Practitioner",
         "description": "Manage your practitioner account settings."
       },
       "packageAvailability": {
@@ -131,7 +131,7 @@
   },
   "dashboard": {
     "meta": {
-      "title": "Dashboard â€” Practitioner",
+      "title": "Dashboard — Practitioner",
       "description": "Your practitioner overview, application status, and quick navigation."
     },
     "page": {
@@ -349,7 +349,7 @@
       "yearsMax": "Years of experience seems too high",
       "payoutIbanMax": "IBAN must be 191 characters or less",
       "displayNameMax": "Display name must be 80 characters or less",
-      "payoutWalletIdentifierMax": "Wallet identifier must be 191 characters or less",
+      "payoutWalletIdentifierMax": "Wallet number must be 191 characters or less",
       "payoutBankNameMax": "Bank name must be 191 characters or less",
       "sessionPriceInvalid": "Enter a valid price greater than zero."
     },
@@ -413,7 +413,7 @@
     },
     "meta": {
       "description": "Review your live profile, prepare a change request, and submit updates for admin review.",
-      "title": "Profile â€” Practitioner"
+      "title": "Profile — Practitioner"
     },
     "locale": {
       "ar": "Arabic",
@@ -433,40 +433,49 @@
         "label": "Years of experience"
       },
       "payoutOtherDetails": {
-        "placeholder": "Add any extra payout notes",
-        "label": "Other payout details"
+        "label": "Other details",
+        "placeholder": "Add any extra details"
       },
       "locale": {
         "placeholder": "Select language",
         "label": "Language"
       },
       "payoutWalletProvider": {
-        "placeholder": "Enter wallet name",
-        "label": "Wallet name"
+        "label": "Wallet provider",
+        "placeholder": "Choose a wallet provider",
+        "countryPrompt": "Choose a payout country first to see available wallet providers.",
+        "emptyState": "No options are available for this country yet. Contact the admin team to add the bank or wallet provider."
+      },
+      "payoutCountryCode": {
+        "label": "Payout country",
+        "placeholder": "Choose a payout country",
+        "hint": "This country filters the available banks and wallet providers."
       },
       "countryCode": {
         "placeholder": "e.g. SA, EG",
         "label": "Country"
       },
       "payoutWalletIdentifier": {
-        "placeholder": "Enter wallet number",
-        "label": "Wallet number"
+        "label": "Wallet number",
+        "placeholder": "Enter the wallet number"
       },
       "payoutMethodType": {
-        "placeholder": "Select payout method",
-        "label": "Payout method"
+        "label": "Payout method",
+        "placeholder": "Choose a payout method"
       },
       "payoutBankName": {
-        "placeholder": "Enter bank name",
-        "label": "Bank name"
+        "label": "Bank name",
+        "placeholder": "Choose a bank",
+        "countryPrompt": "Choose a payout country first to see available banks.",
+        "emptyState": "No options are available for this country yet. Contact the admin team to add the bank or wallet provider."
       },
       "payoutIban": {
-        "placeholder": "Enter IBAN",
-        "label": "IBAN"
+        "label": "IBAN",
+        "placeholder": "Enter the IBAN"
       },
       "payoutBankAccountNumber": {
-        "placeholder": "Enter bank account number",
-        "label": "Bank account number"
+        "label": "Bank account number",
+        "placeholder": "Enter the bank account number"
       },
       "displayName": {
         "placeholder": "Your full name as shown to patients",
@@ -485,24 +494,24 @@
         "label": "Bio"
       },
       "payoutAccountHolderName": {
-        "placeholder": "Enter account holder name",
-        "label": "Account holder name"
+        "label": "Account holder name",
+        "placeholder": "Enter the account holder name"
       },
       "sessionPrice30Egp": {
-        "label": "30-minute session price in EGP",
-        "placeholder": "e.g. 250"
+        "label": "30-minute price (EGP)",
+        "placeholder": "Enter the Egyptian pound price"
       },
       "sessionPrice30Usd": {
-        "label": "30-minute session price in USD",
-        "placeholder": "e.g. 8"
+        "label": "30-minute price (USD)",
+        "placeholder": "Enter the US dollar price"
       },
       "sessionPrice60Egp": {
-        "label": "60-minute session price in EGP",
-        "placeholder": "e.g. 450"
+        "label": "60-minute price (EGP)",
+        "placeholder": "Enter the Egyptian pound price"
       },
       "sessionPrice60Usd": {
-        "label": "60-minute session price in USD",
-        "placeholder": "e.g. 15"
+        "label": "60-minute price (USD)",
+        "placeholder": "Enter the US dollar price"
       }
     },
     "practitionerType": {
@@ -531,7 +540,7 @@
   },
   "credentials": {
     "meta": {
-      "title": "Credentials â€” Practitioner",
+      "title": "Credentials — Practitioner",
       "description": "View and manage your uploaded credentials."
     },
     "page": {
@@ -605,7 +614,7 @@
   },
   "specialties": {
     "meta": {
-      "title": "Specialties â€” Practitioner",
+      "title": "Specialties — Practitioner",
       "description": "View and manage your linked specialties."
     },
     "page": {
@@ -663,7 +672,7 @@
   },
   "availability": {
     "meta": {
-      "title": "Availability â€” Practitioner",
+      "title": "Availability — Practitioner",
       "description": "Manage your weekly schedule and instant booking settings."
     },
     "page": {
@@ -750,92 +759,639 @@
       "slotCount": "{count, plural, one {# slot} other {# slots}}"
     },
     "exceptions": {
-      "heading": "Temporary blocks",
-      "description": "Pause bookings for today, tomorrow, a full week, or any custom range without changing your weekly schedule.",
-      "empty": "No temporary blocks yet.",
-      "custom": "Custom block",
-      "delete": "Restore availability",
-      "deleteError": "Could not delete exception. Please try again.",
-      "createError": "Could not create exception. Please try again.",
-      "type": {
-        "BLOCK": "Blocked",
-        "OPEN_EXTRA": "Extra open"
+      "heading": "Edit a specific day",
+      "description": "Choose a date to adjust your availability without changing your weekly schedule.",
+      "dateMode": {
+        "eyebrow": "Date",
+        "title": "Edit a specific day",
+        "subtitle": "Choose a date to adjust your availability without changing your weekly schedule.",
+        "today": "Today",
+        "tomorrow": "Tomorrow",
+        "pickDate": "Pick a date",
+        "selectedDate": "Selected date"
       },
-      "quick": {
-        "heading": "Quick actions",
-        "note": "Use one tap to pause bookings for the most common situations.",
-        "today": "Block today",
-        "todayNote": "Pause all bookings for the current day.",
-        "tomorrow": "Block tomorrow",
-        "tomorrowNote": "Pause all bookings for the next day.",
-        "week": "Block 7 days",
-        "weekNote": "Pause bookings for the next seven days."
+      "summary": {
+        "titlePrefix": "Adjust availability for",
+        "weeklySchedule": "Follows weekly schedule",
+        "noWeeklySchedule": "Does not follow weekly schedule",
+        "hasExceptions": "Has existing exceptions",
+        "noExceptionsForDay": "No exceptions for this day"
       },
-      "active": {
-        "heading": "Active blocks",
-        "note": "Remove a block anytime to bring the schedule back.",
-        "count": "{count, plural, one {# active block} other {# active blocks}}"
+      "empty": "No exceptions added yet.",
+      "deleteError": "Could not delete the exception. Please try again.",
+      "createError": "Could not create the exception. Please try again.",
+      "errors": {
+        "create": "Could not create the exception. Please try again.",
+        "delete": "Could not delete the exception. Please try again."
       },
-      "restore": "Restore",
-      "addForm": {
-        "heading": "Custom block",
-        "startsAt": "Starts at (UTC)",
-        "endsAt": "Ends at (UTC)",
-        "reason": "Reason (optional)",
-        "reasonPlaceholder": "e.g. Holiday, conference, emergency",
-        "cancel": "Cancel",
-        "save": "Block",
-        "saving": "Blocking..."
+      "labels": {
+        "blockTime": "Blocked time",
+        "dayOff": "Day off",
+        "extraAvailability": "Extra availability",
+        "active": "Active",
+        "fullDay": "Full day"
       },
-      "customHint": "Use a custom range when the quick options are not enough.",
+      "modes": {
+        "blockTimes": {
+          "title": "Block selected times",
+          "description": "Pick a start and end time to pause bookings within this day.",
+          "helper": "Tap the start slot and then the end slot. The blocked period will be saved directly.",
+          "cta": "Save blocked times"
+        },
+        "dayOff": {
+          "title": "Close the full day",
+          "description": "Make this full day unavailable for bookings.",
+          "helper": "Use this to close the whole day without entering any times.",
+          "cta": "Close this day"
+        },
+        "extraAvailability": {
+          "title": "Add extra times",
+          "description": "Add bookable time outside your usual weekly schedule.",
+          "helper": "Choose an available time range for this day and save it.",
+          "cta": "Add available times"
+        }
+      },
+      "picker": {
+        "title": "Select times",
+        "helper": "Tap the start slot and then the end slot. Invalid values will not be shown.",
+        "selectedRange": "Selected range",
+        "clearSelection": "Clear selection",
+        "selectStart": "Choose a start slot.",
+        "selectEnd": "Then choose an end slot."
+      },
+      "timeGroups": {
+        "night": "Night",
+        "morning": "Morning",
+        "afternoon": "Afternoon",
+        "evening": "Evening"
+      },
+      "form": {
+        "internalNoteLabel": "Internal note",
+        "internalNoteHint": "This note stays private and is not shown to patients.",
+        "addInternalNote": "+ Add internal note",
+        "editInternalNote": "Edit internal note",
+        "hideInternalNote": "Hide internal note",
+        "internalNote": "Internal note (optional)",
+        "internalNotePlaceholder": "Example: personal appointment, meeting, rest",
+        "internalNoteSaved": "Internal note saved.",
+        "saving": "Saving..."
+      },
+      "list": {
+        "heading": "Current exceptions",
+        "note": "Each day is grouped clearly with the right action.",
+        "empty": "No exceptions added yet.",
+        "countSuffix": "exceptions",
+        "type": "Type",
+        "date": "Date",
+        "time": "Time",
+        "internalNote": "Internal note",
+        "status": "Status",
+        "actions": "Action",
+        "noInternalNote": "No internal note provided",
+        "countLabel": "{count, plural, one {# exception} other {# exceptions}}"
+      },
       "validation": {
-        "datesRequired": "Start and end date are required.",
-        "endAfterStart": "End must be after start."
+        "dateRequired": "Date is required.",
+        "slotRequired": "Choose a start and end slot for the range.",
+        "endAfterStart": "End time must be after start time.",
+        "datesRequired": "Date, start time, and end time are required."
+      },
+      "actions": {
+        "remove": "Remove"
       }
-    }
-  },
-  "application": {
-    "meta": {
-      "title": "Application â€” Practitioner",
-      "description": "Review your readiness and submit your practitioner application."
     },
-    "page": {
-      "title": "Application",
-      "subtitle": "Review your readiness and track your application status."
+    "application": {
+      "meta": {
+        "title": "Application — Practitioner",
+        "description": "Review your readiness and submit your practitioner application."
+      },
+      "page": {
+        "title": "Application",
+        "subtitle": "Review your readiness and track your application status."
+      },
+      "status": {
+        "heading": "Application status",
+        "noApplication": "No application submitted yet.",
+        "DRAFT": "Draft",
+        "SUBMITTED": "Submitted",
+        "UNDER_REVIEW": "Under review",
+        "APPROVED": "Approved",
+        "REJECTED": "Rejected",
+        "CHANGES_REQUESTED": "Changes requested",
+        "ARCHIVED": "Archived"
+      },
+      "statusMessage": {
+        "SUBMITTED": "Your application has been submitted and is awaiting review.",
+        "UNDER_REVIEW": "Your application is being reviewed by the Fayed team. You will be notified of any updates.",
+        "APPROVED": "Your application has been approved. You are now an active practitioner on Fayed.",
+        "REJECTED": "Your application was rejected. Please review the note and resubmit if allowed.",
+        "CHANGES_REQUESTED": "The admin team requested changes before approval. Please review the note and update the form.",
+        "ARCHIVED": "This application has been archived and is no longer active."
+      },
+      "readiness": {
+        "heading": "Readiness checks",
+        "allPassed": "All requirements met.",
+        "missing": "Missing requirements:"
+      },
+      "submit": {
+        "label": "Submit application",
+        "submitting": "Submitting...",
+        "notReady": "Complete all requirements before submitting.",
+        "confirmHint": "Once submitted, your application will be reviewed by the Fayed team."
+      },
+      "feedback": {
+        "loadError": "Could not load application status. Please try again.",
+        "retry": "Try again",
+        "submitSuccess": "Your application has been submitted successfully.",
+        "submitError": "Could not submit application. Please try again.",
+        "loadErrorNote": "The application summary could not be loaded right now.",
+        "saveSuccess": "Changes saved successfully.",
+        "saveError": "Could not save changes right now. Please try again."
+      },
+      "completion": {
+        "stepStatus": {
+          "complete": "Complete",
+          "warning": "Warning",
+          "incomplete": "Incomplete"
+        },
+        "severity": {
+          "BLOCKER": "Required",
+          "WARNING": "Warning",
+          "INFO": "Info"
+        }
+      },
+      "wizard": {
+        "eyebrow": "Application wizard",
+        "title": "Complete your application",
+        "subtitle": "Complete your information step by step. You can save and return later before submitting.",
+        "stepCount": "Step {current} of {total}",
+        "canSubmitBadge": "Ready to submit",
+        "cannotSubmitBadge": "Not ready yet",
+        "missingPrefix": "Missing:",
+        "goToDashboard": "Go to dashboard",
+        "reviewProfile": "Review profile",
+        "approvedTitle": "Application approved",
+        "lockedTitle": "Application locked",
+        "changesRequestedTitle": "Changes requested",
+        "rejectedTitle": "Application rejected",
+        "reviewNoteTitle": "Review note",
+        "requestChangesTitle": "Requested changes",
+        "reviewHeading": "What the admin will review",
+        "reviewBody": "This summary shows the profile, credentials, pricing, and payout details the admin will check before making a decision.",
+        "blockedTitle": "Cannot submit yet",
+        "blockedBody": "Complete the blockers above before submitting.",
+        "readyTitle": "Ready to submit",
+        "readyBody": "You can submit now. The team will review the completed application.",
+        "noCompletionData": "Not enough data to calculate completion.",
+        "submitBlocked": "Complete the required information before submitting.",
+        "basicAvatarTitle": "Profile photo",
+        "basicAvatarHint": "Choose a photo from your device. It will be used as your profile photo once the application is approved.",
+        "changeAvatar": "Change photo",
+        "addOptionalAvatar": "Add profile photo",
+        "payoutSummaryTitle": "Payout details",
+        "manageLanguages": "Manage languages",
+        "manageQualificationsDocuments": "Manage qualifications and documents",
+        "threeStep": {
+          "professionalSummaryTitle": "Professional summary",
+          "languagesSummary": "Languages",
+          "specialtiesSummary": "Specialties",
+          "credentialsSummary": "Credentials",
+          "languagesModalDescription": "Choose the languages you can work in. The wizard stays compact while you edit them.",
+          "helpers": {
+            "basic": "Keep your identity details accurate so the review team can recognize your account easily.",
+            "professional": "Describe your practice briefly, then open the focused editors for languages, specialties, and credentials.",
+            "paymentSubmit": "Set the prices and payout details you want reviewed, then check the final readiness summary before submitting."
+          }
+        },
+        "howItWorksTitle": "How this works",
+        "howItWorksLink": "How does the application work?",
+        "howItWorksBody": "Work through the steps in order, save your progress, and return later whenever you need to.",
+        "guide": {
+          "step1": "Complete your basic profile first.",
+          "step2": "Add your professional information and specialties.",
+          "step3": "Enter the session prices you want reviewed.",
+          "step4": "Upload or review your credentials.",
+          "step5": "Check which documents are attached and approved.",
+          "step6": "Add the payout details we should use after approval.",
+          "step7": "Review blockers, warnings, and submit when ready."
+        },
+        "steps": {
+          "basicProfile": "Basic Profile",
+          "professionalDetails": "Professional Details",
+          "pricing": "Pricing",
+          "qualifications": "Qualifications",
+          "documents": "Documents",
+          "payoutDetails": "Payout Details",
+          "reviewSubmit": "Review & Submit"
+        },
+        "professionalSections": {
+          "basics": "Basics",
+          "languages": "Languages",
+          "specialties": "Specialties"
+        },
+        "fields": {
+          "languages": {
+            "label": "Languages",
+            "hint": "Choose the languages you can work in."
+          }
+        },
+        "currentStepLabel": "Current step",
+        "stepNotes": {
+          "basicProfile": "Start with the core identity and account details that make your profile recognizable.",
+          "professionalDetails": "Add the fields that help patients understand your expertise and focus areas.",
+          "pricing": "Set the session prices that will be reviewed before patients see you.",
+          "qualifications": "Use this step to manage credentials and professional proof.",
+          "documents": "Review the documents attached through your uploaded credentials.",
+          "payoutDetails": "Provide the details we will use to transfer your earnings after approval.",
+          "reviewSubmit": "Check the complete application summary before you submit it."
+        },
+        "stepGuidance": {
+          "basicProfile": "Keep these details accurate so the review team can identify you easily.",
+          "professionalDetails": "These fields describe your services, specialties, and language coverage.",
+          "pricing": "Pricing is reviewed by the admin team before you become visible to patients.",
+          "qualifications": "Add or review qualifications that support your professional profile.",
+          "documents": "Documents are reviewed through the credentials you upload.",
+          "payoutDetails": "This information is used only for earnings transfer after approval.",
+          "reviewSubmit": "Make sure every blocker is cleared before you submit."
+        },
+        "helpTitles": {
+          "basicProfile": "Why this step matters",
+          "professionalDetails": "Professional summary"
+        },
+        "helpBody": {
+          "basicProfile": "This step gives the review team a clear identity and contact profile before they inspect the rest of your application.",
+          "professionalDetails": "Use the next fields to describe your practice in a simple way that is easy for patients and admins to review."
+        },
+        "specialtiesHeading": "Specialties",
+        "specialtiesHint": "Manage specialties without leaving the wizard.",
+        "manageSpecialties": "Manage specialties",
+        "specialtiesSummaryHint": "Open the editor in a focused dialog so the wizard stays compact.",
+        "specialtiesModalDescription": "Update the specialties tied to your practitioner profile.",
+        "pricingNote": "Enter the prices you want reviewed. The values remain editable until the application is locked.",
+        "qualificationsNoteTitle": "Qualifications at a glance",
+        "qualificationsNoteBody": "Open the qualifications editor in a focused dialog to keep this step compact.",
+        "manageQualifications": "Manage qualifications",
+        "qualificationsSummaryHint": "Credentials are managed in a separate dialog so the wizard remains focused.",
+        "qualificationsModalDescription": "Add or review the credentials that support your application.",
+        "documentsNote": "{count, plural, one {# credential is attached.} other {# credentials are attached.}}",
+        "documentsHint": "If a document step is empty, upload the missing credential first.",
+        "documentsIssuesTitle": "Document notes",
+        "documentsIssuesHint": "Any document-related issues will appear here in a compact summary.",
+        "payoutNote": "Choose the payout method and complete only the fields that match that method.",
+        "summary": {
+          "completion": "Completion",
+          "canSubmit": "Can submit",
+          "status": "Status",
+          "lastSaved": "Last saved",
+          "blockers": "Blockers",
+          "warnings": "Warnings"
+        },
+        "progressLabel": "Overall progress",
+        "completionUnavailable": "Completion unavailable",
+        "issueCounts": {
+          "blockers": "blockers",
+          "warnings": "warnings",
+          "info": "info items",
+          "clean": "Clean"
+        },
+        "issueGroups": {
+          "blockers": "Required",
+          "blockersHint": "Resolve the blockers for this step before you submit.",
+          "warnings": "Warnings",
+          "info": "Info"
+        },
+        "issueLabels": {
+          "message": "Backend message",
+          "why": "Why it matters",
+          "next": "Recommended next step",
+          "field": "Field"
+        },
+        "stepIssuesTitle": "Issues in this step",
+        "stepIssuesBody": "These are the blockers, warnings, or info items that apply to the step you are viewing.",
+        "footerTitle": "Application actions",
+        "footerStepHint": "Save your progress and move to the next step when you are ready.",
+        "footerReviewHint": "Check the summary one last time before you submit.",
+        "actions": {
+          "previous": "Previous",
+          "next": "Next",
+          "saveDraft": "Save draft",
+          "saving": "Saving...",
+          "submit": "Submit application",
+          "submitting": "Submitting...",
+          "resubmit": "Resubmit"
+        },
+        "yes": "Yes",
+        "no": "No",
+        "noIssues": "No issues on this step."
+      },
+      "completionIssues": {
+        "generic": {
+          "title": "Missing requirement",
+          "description": "One or more required items are missing for this step.",
+          "whyItMatters": "These items are required before the application can be submitted for review.",
+          "recommendedAction": "Complete the missing fields or uploads, then save the step again."
+        },
+        "codes": {
+          "BASIC_PROFILE_DISPLAY_NAME_MISSING": {
+            "title": "Display name is missing",
+            "description": "Add the display name shown to patients and the admin team.",
+            "whyItMatters": "The reviewer needs your name to identify your profile and documents.",
+            "recommendedAction": "Enter your display name in Basic Info, then save."
+          },
+          "BASIC_PROFILE_COUNTRY_MISSING": {
+            "title": "Country is missing",
+            "description": "Select your country so the system can localize your profile and options.",
+            "whyItMatters": "Country is required for profile completeness and review routing.",
+            "recommendedAction": "Choose a country in Basic Info, then save."
+          },
+          "PROFESSIONAL_DETAILS_TITLE_MISSING": {
+            "title": "Professional title is missing",
+            "description": "Choose your professional title from the catalog.",
+            "whyItMatters": "The title helps reviewers and patients understand your role and listing.",
+            "recommendedAction": "Select a professional title in Professional Profile, then save."
+          },
+          "PROFESSIONAL_DETAILS_BIO_MISSING": {
+            "title": "Bio is missing",
+            "description": "Write a short professional bio describing your experience and focus.",
+            "whyItMatters": "The team reviews your bio as part of profile verification.",
+            "recommendedAction": "Fill the bio field, then save."
+          },
+          "PROFESSIONAL_DETAILS_YEARS_MISSING": {
+            "title": "Years of experience is missing",
+            "description": "Enter how many years of experience you have.",
+            "whyItMatters": "This is required for review and eligibility checks.",
+            "recommendedAction": "Enter your years of experience, then save."
+          },
+          "PROFESSIONAL_DETAILS_LANGUAGE_MISSING": {
+            "title": "Languages are missing",
+            "description": "Choose at least one language you can provide sessions in.",
+            "whyItMatters": "Language is required to match patients and review the profile.",
+            "recommendedAction": "Select one or more languages, then save."
+          },
+          "PROFESSIONAL_DETAILS_SPECIALTY_MISSING": {
+            "title": "Specialties are missing",
+            "description": "Choose at least one specialty you provide.",
+            "whyItMatters": "Specialties are required for review and discovery.",
+            "recommendedAction": "Select a main category and sub-specialties, then save."
+          },
+          "PROFESSIONAL_DETAILS_PRIMARY_CATEGORY_MISSING": {
+            "title": "Main specialty category is missing",
+            "description": "Choose the main specialty category that best fits your practice.",
+            "whyItMatters": "The main category is required to structure your specialties and review.",
+            "recommendedAction": "Select a main category, then save."
+          },
+          "QUALIFICATIONS_CREDENTIAL_REQUIRED": {
+            "title": "Qualifications are missing",
+            "description": "Upload at least one qualification document such as a degree or license.",
+            "whyItMatters": "The admin team needs evidence of qualifications before approval.",
+            "recommendedAction": "Upload a qualification document in Documents, then save."
+          },
+          "QUALIFICATIONS_ACADEMIC_CERTIFICATE_REQUIRED": {
+            "title": "Academic certificate is missing",
+            "description": "Upload an academic certificate (degree) before submitting your application.",
+            "whyItMatters": "An academic certificate is required as evidence of qualification for review.",
+            "recommendedAction": "Upload your academic certificate (degree) in Qualifications/Documents, then save."
+          },
+          "DOCUMENTS_CREDENTIAL_REQUIRED": {
+            "title": "Documents are missing",
+            "description": "Upload the required documents for review.",
+            "whyItMatters": "Documents are required before submitting the application.",
+            "recommendedAction": "Upload the required documents, then save."
+          },
+          "DOCUMENTS_CREDENTIAL_NOT_APPROVED": {
+            "title": "Documents are pending review",
+            "description": "Some uploaded documents are still pending admin review.",
+            "whyItMatters": "Approval may require manual verification of uploaded documents.",
+            "recommendedAction": "Wait for admin review or upload clearer documents if requested."
+          },
+          "DOCUMENTS_IDENTITY_EVIDENCE_REQUIRED": {
+            "title": "Identity document is required",
+            "description": "Upload either a passport, or both sides of the national ID.",
+            "whyItMatters": "Identity evidence is mandatory before submission.",
+            "recommendedAction": "Upload passport or national ID front and back, then save."
+          },
+          "DOCUMENTS_NATIONAL_ID_FRONT_MISSING": {
+            "title": "National ID front is missing",
+            "description": "Upload the front side of your national ID.",
+            "whyItMatters": "Both sides of the national ID are required unless a passport is provided.",
+            "recommendedAction": "Upload the national ID front image/file, then save."
+          },
+          "DOCUMENTS_NATIONAL_ID_BACK_MISSING": {
+            "title": "National ID back is missing",
+            "description": "Upload the back side of your national ID.",
+            "whyItMatters": "Both sides of the national ID are required unless a passport is provided.",
+            "recommendedAction": "Upload the national ID back image/file, then save."
+          },
+          "PAYOUT_DESTINATION_REQUIRED": {
+            "title": "Payout method is missing",
+            "description": "Choose how you want to receive payouts after approval.",
+            "whyItMatters": "Payout details are required to complete the application.",
+            "recommendedAction": "Select a payout method, then save."
+          },
+          "PAYOUT_ACCOUNT_HOLDER_REQUIRED": {
+            "title": "Account holder name is missing",
+            "description": "Enter the account holder name for payouts.",
+            "whyItMatters": "The admin team checks payout identity consistency.",
+            "recommendedAction": "Fill the account holder name, then save."
+          },
+          "PAYOUT_BANK_NAME_REQUIRED": {
+            "title": "Bank name is missing",
+            "description": "Choose the bank name from the list.",
+            "whyItMatters": "A valid bank selection is required for payouts.",
+            "recommendedAction": "Select the bank name, then save."
+          },
+          "PAYOUT_BANK_ACCOUNT_REQUIRED": {
+            "title": "Bank account number is missing",
+            "description": "Enter the bank account number for payouts.",
+            "whyItMatters": "This is required to route payouts correctly.",
+            "recommendedAction": "Enter the account number, then save."
+          },
+          "PAYOUT_IBAN_REQUIRED": {
+            "title": "IBAN is missing",
+            "description": "Enter the IBAN for payouts.",
+            "whyItMatters": "IBAN is required for IBAN payout method.",
+            "recommendedAction": "Enter the IBAN, then save."
+          },
+          "PAYOUT_WALLET_PROVIDER_REQUIRED": {
+            "title": "Wallet provider is missing",
+            "description": "Choose the wallet provider from the list.",
+            "whyItMatters": "A valid provider selection is required for wallet payouts.",
+            "recommendedAction": "Select a wallet provider, then save."
+          },
+          "PAYOUT_WALLET_IDENTIFIER_REQUIRED": {
+            "title": "Wallet number is missing",
+            "description": "Enter the wallet number/identifier.",
+            "whyItMatters": "This is required to receive wallet payouts.",
+            "recommendedAction": "Enter the wallet number, then save."
+          },
+          "PAYOUT_OTHER_DETAILS_REQUIRED": {
+            "title": "Payout details are missing",
+            "description": "Add the required payout details for the selected method.",
+            "whyItMatters": "Payout details must be complete before submission.",
+            "recommendedAction": "Complete the payout details fields, then save."
+          },
+          "ACCOUNT_INACTIVE": {
+            "title": "Account is inactive",
+            "description": "Your account is currently inactive and cannot submit the application.",
+            "whyItMatters": "Only active accounts can submit applications for review.",
+            "recommendedAction": "Contact support/admin to activate your account."
+          },
+          "PRACTITIONER_OTP_NOT_VERIFIED": {
+            "title": "OTP verification is missing",
+            "description": "Your practitioner account OTP verification is not completed.",
+            "whyItMatters": "OTP verification is required before submitting.",
+            "recommendedAction": "Complete OTP verification, then return to submit."
+          }
+        }
+      },
+      "issueCopy": {
+        "generic": {
+          "title": "Financial reconciliation issue",
+          "description": "A finance record in this application needs review.",
+          "whyItMatters": "Missing or mismatched accounting data can affect approvals, payouts, or reporting accuracy.",
+          "recommendedAction": "Review the linked record and follow the approved finance process if an update is needed."
+        },
+        "codes": {
+          "MISSING_JOURNAL_ENTRY": {
+            "title": "Missing journal entry",
+            "description": "A related accounting journal entry could not be found.",
+            "whyItMatters": "Without the journal record, the financial event may not be fully auditable.",
+            "recommendedAction": "Check the related payment or settlement and confirm the accounting posting was created."
+          },
+          "MISSING_GATEWAY_FEE_SNAPSHOT": {
+            "title": "Missing gateway fee snapshot",
+            "description": "The payment record is missing the gateway fee snapshot.",
+            "whyItMatters": "Fee snapshots help verify the true collected amount and downstream accounting calculations.",
+            "recommendedAction": "Review the payment record and confirm the gateway fee was stored correctly."
+          },
+          "MISSING_VAT_SNAPSHOT": {
+            "title": "Missing VAT snapshot",
+            "description": "The payment record is missing the VAT snapshot.",
+            "whyItMatters": "Missing tax snapshots can make reporting and revenue reconciliation incomplete.",
+            "recommendedAction": "Review the related payment and confirm the VAT snapshot is stored."
+          },
+          "PAYMENT_COUPON_REDEMPTION_MISSING": {
+            "title": "Coupon redemption missing",
+            "description": "The payment shows a coupon discount but no redemption record was found.",
+            "whyItMatters": "Coupon redemptions keep discounts and settlement sharing traceable.",
+            "recommendedAction": "Review the payment and coupon redemption records together."
+          },
+          "PACKAGE_SETTLEMENT_COMPLETION_MISMATCH": {
+            "title": "Package settlement completion mismatch",
+            "description": "The package settlement state does not match the package completion state.",
+            "whyItMatters": "Package fulfillment should stay aligned with the settlement record before payout actions happen.",
+            "recommendedAction": "Review the package usage and confirm the completion state is correct."
+          },
+          "SETTLEMENT_GROSS_MISMATCH": {
+            "title": "Settlement gross mismatch",
+            "description": "The settlement gross amount does not match the expected source amount.",
+            "whyItMatters": "Gross mismatches can affect the total amount sent to payout reconciliation.",
+            "recommendedAction": "Review the settlement batch and compare it to the source ledger entries."
+          },
+          "SETTLEMENT_NET_MISMATCH": {
+            "title": "Settlement net mismatch",
+            "description": "The settlement net amount does not match the expected amount after adjustments.",
+            "whyItMatters": "Net mismatches can lead to the wrong practitioner payout.",
+            "recommendedAction": "Confirm the adjustment logic and the payout calculation source."
+          },
+          "SETTLEMENT_PAYOUT_LEDGER_MISMATCH": {
+            "title": "Payout ledger mismatch",
+            "description": "The payout record does not line up with the ledger entry.",
+            "whyItMatters": "Payouts must stay in sync with ledger postings to avoid accounting drift.",
+            "recommendedAction": "Review the payout record and the linked ledger entries before any further action."
+          },
+          "WALLET_LEDGER_DRIFT": {
+            "title": "Wallet ledger drift",
+            "description": "The wallet balance differs from the derived ledger value.",
+            "whyItMatters": "Wallets are projections, so any drift should be reviewed before using the balance operationally.",
+            "recommendedAction": "Check the latest ledger entries and the wallet refresh process."
+          },
+          "JOURNAL_NOT_BALANCED": {
+            "title": "Unbalanced journal",
+            "description": "The accounting journal does not balance.",
+            "whyItMatters": "An unbalanced journal is a critical accounting issue that can affect every downstream report.",
+            "recommendedAction": "Review the journal posting source before approving anything tied to this record."
+          },
+          "DUPLICATE_LEDGER_POSTING": {
+            "title": "Duplicate ledger posting",
+            "description": "The same ledger event appears to have been posted more than once.",
+            "whyItMatters": "Duplicate postings can inflate balances or payouts if they are not reviewed.",
+            "recommendedAction": "Review the affected payment or refund flow and confirm idempotency."
+          },
+          "REFUND_REVERSAL_MISSING": {
+            "title": "Refund reversal missing",
+            "description": "A successful refund does not have the expected reversal entries.",
+            "whyItMatters": "Refunds need matching reversals so payouts and reporting stay accurate.",
+            "recommendedAction": "Check the refund flow and confirm the reversal ledger entries were created."
+          },
+          "CROSS_CURRENCY_AGGREGATION_RISK": {
+            "title": "Cross-currency aggregation risk",
+            "description": "This record may be mixing values from different currencies.",
+            "whyItMatters": "Mixed-currency totals can produce incorrect payouts, balances, or settlement sums.",
+            "recommendedAction": "Review each currency separately and do not combine them into one total."
+          }
+        }
+      }
     },
-    "status": {
-      "heading": "Application status",
-      "noApplication": "No application submitted yet.",
-      "DRAFT": "Draft",
-      "SUBMITTED": "Submitted",
-      "UNDER_REVIEW": "Under review",
-      "APPROVED": "Approved",
-      "REJECTED": "Rejected",
-      "CHANGES_REQUESTED": "Changes requested",
-      "ARCHIVED": "Archived"
+    "practitionerApplication": {
+      "steps": {
+        "basicProfile": "Basic Info",
+        "professionalDetails": "Professional Profile",
+        "pricing": "Payment & Submit",
+        "qualifications": "Qualifications",
+        "documents": "Documents",
+        "payoutDetails": "Payout Details",
+        "reviewSubmit": "Review & Submit"
+      }
     },
-    "statusMessage": {
-      "SUBMITTED": "Your application has been submitted and is awaiting review.",
-      "UNDER_REVIEW": "Your application is being reviewed by the Fayed team. You will be notified of any updates.",
-      "APPROVED": "Your application has been approved. You are now an active practitioner on Fayed.",
-      "ARCHIVED": "This application has been archived and is no longer active."
-    },
-    "readiness": {
-      "heading": "Readiness checks",
-      "allPassed": "All requirements met.",
-      "missing": "Missing requirements:"
-    },
-    "submit": {
-      "label": "Submit application",
-      "submitting": "Submitting...",
-      "notReady": "Complete all requirements before submitting.",
-      "confirmHint": "Once submitted, your application will be reviewed by the Fayed team."
-    },
-    "feedback": {
-      "loadError": "Could not load application status. Please try again.",
-      "retry": "Try again",
-      "submitSuccess": "Your application has been submitted successfully.",
-      "submitError": "Could not submit application. Please try again."
+    "practitioners": {
+      "application": {
+        "completion": {
+          "basicProfile": {
+            "displayNameRequired": "Display name is required.",
+            "countryRequired": "Country is required.",
+            "genderOptional": "Gender is optional for submission."
+          },
+          "professionalDetails": {
+            "titleRequired": "Professional title is required.",
+            "bioRequired": "Bio is required.",
+            "yearsRequired": "Years of experience are required.",
+            "yearsMustBePositive": "Years of experience must be greater than zero.",
+            "languageRequired": "At least one language is required.",
+            "specialtyRequired": "At least one specialty is required.",
+            "primarySpecialtyRequired": "A primary specialty is required.",
+            "typeOptional": "Practitioner type is optional."
+          },
+          "pricing": {
+            "session30EgpRecommended": "Add a 30-minute price in EGP if this currency is relevant to your profile.",
+            "session30UsdRecommended": "Add a 30-minute price in USD if this currency is relevant to your profile.",
+            "session60EgpRecommended": "Add a 60-minute price in EGP if this currency is relevant to your profile.",
+            "session60UsdRecommended": "Add a 60-minute price in USD if this currency is relevant to your profile."
+          },
+          "qualifications": {
+            "credentialRequired": "At least one credential is required."
+          },
+          "documents": {
+            "credentialRequired": "At least one credential document is required.",
+            "credentialApprovalRequired": "At least one credential must be approved before approval."
+          },
+          "payout": {
+            "methodRequired": "Payout method is required.",
+            "accountHolderRequired": "Account holder name is required.",
+            "bankNameRequired": "Bank name is required.",
+            "bankAccountRequired": "Bank account number is required.",
+            "ibanRequired": "IBAN is required.",
+            "walletProviderRequired": "Wallet provider is required.",
+            "walletIdentifierRequired": "Wallet number is required.",
+            "otherDetailsRequired": "Payout details are required."
+          },
+          "reviewSubmit": {
+            "accountInactive": "This account is inactive.",
+            "otpNotVerified": "The practitioner account has not completed OTP verification.",
+            "applicationLocked": "This application is locked because it is already under review or approved."
+          }
+        }
+      }
     }
   }
 }

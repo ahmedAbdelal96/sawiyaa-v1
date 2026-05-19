@@ -92,7 +92,9 @@ describe('ExpirePaymentUseCase', () => {
       payload: {},
     });
 
-    expect(setup.orchestrateSessionPaymentStatusService.expireSessionFromPayment).toHaveBeenCalledTimes(1);
+    expect(
+      setup.orchestrateSessionPaymentStatusService.expireSessionFromPayment,
+    ).toHaveBeenCalledTimes(1);
     expect(
       setup.reconcilePackagePurchasePaymentUseCase.execute,
     ).not.toHaveBeenCalled();

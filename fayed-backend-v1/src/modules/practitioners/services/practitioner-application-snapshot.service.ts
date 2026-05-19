@@ -3,7 +3,9 @@ import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class PractitionerApplicationSnapshotService {
-  private toNullableNumber(value: Prisma.Decimal | number | string | null | undefined) {
+  private toNullableNumber(
+    value: Prisma.Decimal | number | string | null | undefined,
+  ) {
     if (value === null || value === undefined) {
       return null;
     }

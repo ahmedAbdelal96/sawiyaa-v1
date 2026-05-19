@@ -49,10 +49,11 @@ export class PackagePurchaseExpirySweeperService
       let expiredCount = 0;
 
       while (true) {
-        const duePurchases = await this.packagePurchaseRepository.listDueForExpiry({
-          now,
-          take: SWEEP_BATCH_SIZE,
-        });
+        const duePurchases =
+          await this.packagePurchaseRepository.listDueForExpiry({
+            now,
+            take: SWEEP_BATCH_SIZE,
+          });
 
         if (duePurchases.length === 0) {
           break;

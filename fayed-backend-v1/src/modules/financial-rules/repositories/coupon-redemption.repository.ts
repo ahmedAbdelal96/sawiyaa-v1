@@ -12,8 +12,12 @@ export class CouponRedemptionRepository {
     return tx ?? this.prisma;
   }
 
-  findByCouponAndSession(couponId: string, sessionId: string) {
-    return this.prisma.couponRedemption.findFirst({
+  findByCouponAndSession(
+    couponId: string,
+    sessionId: string,
+    tx?: Prisma.TransactionClient,
+  ) {
+    return this.getDb(tx).couponRedemption.findFirst({
       where: {
         couponId,
         sessionId,

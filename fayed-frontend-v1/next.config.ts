@@ -1,15 +1,13 @@
 import type { NextConfig } from "next";
-import { dirname } from "path";
-import { fileURLToPath } from "url";
 import createNextIntlPlugin from "next-intl/plugin";
 
 const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
-const frontendRoot = dirname(fileURLToPath(import.meta.url));
+// Turbopack is the default bundler in Next.js 16, so we keep its SVG handling
+// aligned with the icon barrel used throughout the app.
 
 const nextConfig: NextConfig = {
   /* config options here */
   turbopack: {
-    root: frontendRoot,
     rules: {
       "*.svg": {
         loaders: ["@svgr/webpack"],
@@ -20,11 +18,46 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
+        source: "/:locale(en|ar)/admin/:path*",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "private, no-store, no-cache, must-revalidate, max-age=0",
+          },
+        ],
+      },
+      {
+        source: "/:locale(en|ar)/(patient|practitioner)/:path*",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "private, no-store, no-cache, must-revalidate, max-age=0",
+          },
+        ],
+      },
+      {
         source: "/:path*",
         headers: [
           {
             key: "Cross-Origin-Opener-Policy",
             value: "same-origin-allow-popups",
+          },
+          {
+            key: "X-Content-Type-Options",
+            value: "nosniff",
+          },
+          {
+            key: "Referrer-Policy",
+            value: "strict-origin-when-cross-origin",
+          },
+          {
+            key: "X-Frame-Options",
+            value: "DENY",
+          },
+          {
+            key: "Permissions-Policy",
+            value:
+              "camera=(self), microphone=(self), geolocation=(), payment=(self), usb=(), display-capture=(self), fullscreen=(self)",
           },
         ],
       },
@@ -61,13 +94,6 @@ const nextConfig: NextConfig = {
         destination: `${apiTarget}/api/docs/:path*`,
       },
     ];
-  },
-  webpack(config) {
-    config.module.rules.push({
-      test: /\.svg$/,
-      use: ["@svgr/webpack"],
-    });
-    return config;
   },
 };
 

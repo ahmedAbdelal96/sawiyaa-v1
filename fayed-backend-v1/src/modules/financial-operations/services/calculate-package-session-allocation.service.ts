@@ -31,7 +31,9 @@ export type PackageSessionAllocationResult = {
 export class CalculatePackageSessionAllocationService {
   constructor(private readonly moneyAmountService: MoneyAmountService) {}
 
-  allocate(snapshot: PackageSessionAllocationSnapshot): PackageSessionAllocationResult {
+  allocate(
+    snapshot: PackageSessionAllocationSnapshot,
+  ): PackageSessionAllocationResult {
     const sessionCount = snapshot.sessionCount;
     const sessionIndex = snapshot.sessionIndex;
 
@@ -102,9 +104,11 @@ export class CalculatePackageSessionAllocationService {
       platformFinalShareAmount: platformFinalShare.amount.toFixed(2),
       practitionerFinalShareAmount: practitionerFinalShare.amount.toFixed(2),
       platformOriginalShareAmount: platformOriginalShare.amount.toFixed(2),
-      practitionerOriginalShareAmount: practitionerOriginalShare.amount.toFixed(2),
+      practitionerOriginalShareAmount:
+        practitionerOriginalShare.amount.toFixed(2),
       platformDiscountShareAmount: platformDiscountShare.amount.toFixed(2),
-      practitionerDiscountShareAmount: practitionerDiscountShare.amount.toFixed(2),
+      practitionerDiscountShareAmount:
+        practitionerDiscountShare.amount.toFixed(2),
       discountAmountAmount: discountAmount.amount.toFixed(2),
       roundingAdjustmentAmount: roundingAdjustment.toFixed(2),
     };
@@ -115,7 +119,9 @@ export class CalculatePackageSessionAllocationService {
     sessionCount: number,
     sessionIndex: number,
   ) {
-    const decimalTotal = this.moneyAmountService.toDecimal(total).toDecimalPlaces(2);
+    const decimalTotal = this.moneyAmountService
+      .toDecimal(total)
+      .toDecimalPlaces(2);
     const baseShare = decimalTotal
       .div(sessionCount)
       .toDecimalPlaces(2, Prisma.Decimal.ROUND_DOWN);

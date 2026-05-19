@@ -29,7 +29,10 @@ export class PractitionerManualPayoutRepository {
     });
   }
 
-  findByTransferReference(transferReference: string, tx?: Prisma.TransactionClient) {
+  findByTransferReference(
+    transferReference: string,
+    tx?: Prisma.TransactionClient,
+  ) {
     return this.getDb(tx).practitionerManualPayout.findUnique({
       where: { transferReference },
       include: this.include,
@@ -93,7 +96,11 @@ export class PractitionerManualPayoutRepository {
     });
   }
 
-  findLatestPaidAt(practitionerId: string, currencyCode: string, tx?: Prisma.TransactionClient) {
+  findLatestPaidAt(
+    practitionerId: string,
+    currencyCode: string,
+    tx?: Prisma.TransactionClient,
+  ) {
     return this.getDb(tx).practitionerManualPayout.findFirst({
       where: {
         practitionerId,

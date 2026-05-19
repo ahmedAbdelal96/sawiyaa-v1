@@ -93,7 +93,7 @@ export const useSidebarStore = create<SidebarStore>()(
       partialize: (state) => ({
         isExpanded: state.isExpanded,
       }),
-      skipHydration: true, // مهم جداً لتجنب hydration mismatch
+      skipHydration: true, // مهم جدًا لتجنب hydration mismatch
     }
   )
 );

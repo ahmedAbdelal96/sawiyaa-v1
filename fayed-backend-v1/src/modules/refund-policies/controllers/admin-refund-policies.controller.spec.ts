@@ -17,9 +17,18 @@ describe('AdminRefundPoliciesController', () => {
   it('routes list and edit actions through the service', async () => {
     await controller.listPolicies();
     await controller.getPolicy(RefundPolicyType.SESSION);
-    await controller.updatePolicy(RefundPolicyType.SESSION, { titleAr: 'a', titleEn: 'b' });
-    await controller.createClause(RefundPolicyType.SESSION, { bodyAr: 'a', bodyEn: 'b' });
-    await controller.updateClause(RefundPolicyType.SESSION, 'clause_1', { bodyAr: 'a', bodyEn: 'b' });
+    await controller.updatePolicy(RefundPolicyType.SESSION, {
+      titleAr: 'a',
+      titleEn: 'b',
+    });
+    await controller.createClause(RefundPolicyType.SESSION, {
+      bodyAr: 'a',
+      bodyEn: 'b',
+    });
+    await controller.updateClause(RefundPolicyType.SESSION, 'clause_1', {
+      bodyAr: 'a',
+      bodyEn: 'b',
+    });
     await controller.deleteClause(RefundPolicyType.SESSION, 'clause_1');
     await controller.reorderClauses(RefundPolicyType.SESSION, { items: [] });
 

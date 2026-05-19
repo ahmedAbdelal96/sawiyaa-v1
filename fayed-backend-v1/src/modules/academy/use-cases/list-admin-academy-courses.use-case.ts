@@ -18,9 +18,10 @@ export class ListAdminAcademyCoursesUseCase {
       q: query.q?.trim() || undefined,
     });
 
-    const statsByCourseId = await this.academyRepository.countEnrollmentsByCourseIds(
-      items.map((item) => item.id),
-    );
+    const statsByCourseId =
+      await this.academyRepository.countEnrollmentsByCourseIds(
+        items.map((item) => item.id),
+      );
 
     return {
       items: items.map((item) =>

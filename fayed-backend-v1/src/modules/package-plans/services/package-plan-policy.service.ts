@@ -6,7 +6,8 @@ export class PackagePlanPolicyService {
   constructor(private readonly configResolverService: ConfigResolverService) {}
 
   async assertPackagesEnabled(): Promise<void> {
-    const enabled = await this.configResolverService.getBoolean('packages.enabled');
+    const enabled =
+      await this.configResolverService.getBoolean('packages.enabled');
 
     if (enabled === false) {
       throw new ServiceUnavailableException({
@@ -32,7 +33,8 @@ export class PackagePlanPolicyService {
   resolveDefaultPreviewCurrency(input: {
     practitionerCurrencyCode: string | null;
   }): string {
-    const normalized = input.practitionerCurrencyCode?.trim().toUpperCase() ?? '';
+    const normalized =
+      input.practitionerCurrencyCode?.trim().toUpperCase() ?? '';
 
     if (normalized === 'EGP' || normalized === 'USD') {
       return normalized;

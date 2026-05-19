@@ -16,7 +16,11 @@ import { SupportedLocale } from '@common/i18n/types/locale.types';
 import { CreateOtpChallengeUseCase } from '@modules/verification/use-cases/create-otp-challenge.use-case';
 import { SendOtpChallengeUseCase } from '@modules/verification/use-cases/send-otp-challenge.use-case';
 import { VerifyOtpChallengeUseCase } from '@modules/verification/use-cases/verify-otp-challenge.use-case';
-import { PAYMENT_GATEWAY_CONTROL_MANAGED_PROVIDERS, PAYMENT_GATEWAY_CONTROL_PROVIDER_TARGET_ENTITY_TYPE, PAYMENT_GATEWAY_ROUTING_TARGET_ENTITY_TYPE } from '../payment-gateway-control.constants';
+import {
+  PAYMENT_GATEWAY_CONTROL_MANAGED_PROVIDERS,
+  PAYMENT_GATEWAY_CONTROL_PROVIDER_TARGET_ENTITY_TYPE,
+  PAYMENT_GATEWAY_ROUTING_TARGET_ENTITY_TYPE,
+} from '../payment-gateway-control.constants';
 import { PaymentGatewayControlRepository } from '../repositories/payment-gateway-control.repository';
 import {
   PaymentGatewayControlHistoryItem,
@@ -56,7 +60,9 @@ export class PaymentGatewayControlService {
     private readonly verifyOtpChallengeUseCase: VerifyOtpChallengeUseCase,
   ) {}
 
-  async listProviders(): Promise<{ items: PaymentGatewayControlRuntimeSnapshot[] }> {
+  async listProviders(): Promise<{
+    items: PaymentGatewayControlRuntimeSnapshot[];
+  }> {
     return {
       items: [
         this.paymentGatewayControlRuntimeService.getPaymobSnapshot(),
@@ -72,7 +78,9 @@ export class PaymentGatewayControlService {
     const managedProvider = provider as PaymentGatewayControlManagedProvider;
 
     return {
-      item: this.paymentGatewayControlRuntimeService.getProviderSnapshot(managedProvider),
+      item: this.paymentGatewayControlRuntimeService.getProviderSnapshot(
+        managedProvider,
+      ),
     };
   }
 
@@ -98,7 +106,9 @@ export class PaymentGatewayControlService {
     };
   }
 
-  async getRoutingHistory(): Promise<{ items: PaymentGatewayControlHistoryItem[] }> {
+  async getRoutingHistory(): Promise<{
+    items: PaymentGatewayControlHistoryItem[];
+  }> {
     const history = await this.paymentGatewayControlRepository.listHistory({
       scope: 'routing',
       provider: null,
@@ -112,18 +122,24 @@ export class PaymentGatewayControlService {
   async validateProviderDraft(
     provider: PaymentGatewayControlProvider,
     rawDraft: PaymobGatewayControlDraftInput | StripeGatewayControlDraftInput,
-  ): Promise<PaymobGatewayControlValidationResult | StripeGatewayControlValidationResult> {
+  ): Promise<
+    PaymobGatewayControlValidationResult | StripeGatewayControlValidationResult
+  > {
     this.assertSupportedProvider(provider);
 
     if (provider === PaymentProvider.PAYMOB) {
-      const normalized = this.normalizePaymobDraft(rawDraft as PaymobGatewayControlDraftInput);
+      const normalized = this.normalizePaymobDraft(
+        rawDraft as PaymobGatewayControlDraftInput,
+      );
       return this.validatePaymobAgainstCurrent(
         this.paymentGatewayControlRuntimeService.getPaymobSnapshot(),
         normalized,
       );
     }
 
-    const normalized = this.normalizeStripeDraft(rawDraft as StripeGatewayControlDraftInput);
+    const normalized = this.normalizeStripeDraft(
+      rawDraft as StripeGatewayControlDraftInput,
+    );
     return this.validateStripeAgainstCurrent(
       this.paymentGatewayControlRuntimeService.getStripeSnapshot(),
       normalized,
@@ -133,7 +149,9 @@ export class PaymentGatewayControlService {
   async validateDraft(
     provider: PaymentGatewayControlProvider,
     rawDraft: PaymobGatewayControlDraftInput | StripeGatewayControlDraftInput,
-  ): Promise<PaymobGatewayControlValidationResult | StripeGatewayControlValidationResult> {
+  ): Promise<
+    PaymobGatewayControlValidationResult | StripeGatewayControlValidationResult
+  > {
     return this.validateProviderDraft(provider, rawDraft);
   }
 
@@ -189,8 +207,11 @@ export class PaymentGatewayControlService {
     const provider = input.provider as PaymentGatewayControlManagedProvider;
 
     if (input.provider === PaymentProvider.PAYMOB) {
-      const normalized = this.normalizePaymobDraft(input.rawDraft as PaymobGatewayControlDraftInput);
-      const current = this.paymentGatewayControlRuntimeService.getPaymobSnapshot();
+      const normalized = this.normalizePaymobDraft(
+        input.rawDraft as PaymobGatewayControlDraftInput,
+      );
+      const current =
+        this.paymentGatewayControlRuntimeService.getPaymobSnapshot();
       const validation = this.validatePaymobAgainstCurrent(current, normalized);
 
       if (!validation.valid) {
@@ -231,8 +252,11 @@ export class PaymentGatewayControlService {
       };
     }
 
-    const normalized = this.normalizeStripeDraft(input.rawDraft as StripeGatewayControlDraftInput);
-    const current = this.paymentGatewayControlRuntimeService.getStripeSnapshot();
+    const normalized = this.normalizeStripeDraft(
+      input.rawDraft as StripeGatewayControlDraftInput,
+    );
+    const current =
+      this.paymentGatewayControlRuntimeService.getStripeSnapshot();
     const validation = this.validateStripeAgainstCurrent(current, normalized);
 
     if (!validation.valid) {
@@ -286,7 +310,8 @@ export class PaymentGatewayControlService {
     this.assertStepUpPayload(input.stepUpChallengeId, input.stepUpCode);
 
     const normalized = this.normalizeRoutingDraft(input.rawDraft);
-    const current = this.paymentGatewayControlRuntimeService.getRoutingSnapshot();
+    const current =
+      this.paymentGatewayControlRuntimeService.getRoutingSnapshot();
     const validation = this.validateRoutingAgainstCurrent(current, normalized);
 
     if (!validation.valid) {
@@ -340,11 +365,12 @@ export class PaymentGatewayControlService {
     this.assertStepUpPayload(input.stepUpChallengeId, input.stepUpCode);
     const provider = input.provider as PaymentGatewayControlManagedProvider;
 
-    const revision = await this.paymentGatewayControlRepository.findHistoryEvent({
-      scope: 'provider',
-      provider: input.provider,
-      eventId: input.revisionId,
-    });
+    const revision =
+      await this.paymentGatewayControlRepository.findHistoryEvent({
+        scope: 'provider',
+        provider: input.provider,
+        eventId: input.revisionId,
+      });
 
     if (!revision) {
       throw new NotFoundException({
@@ -368,7 +394,9 @@ export class PaymentGatewayControlService {
     if (input.provider === PaymentProvider.PAYMOB) {
       const validation = this.validatePaymobAgainstCurrent(
         this.paymentGatewayControlRuntimeService.getPaymobSnapshot(),
-        this.normalizePaymobDraft(snapshot as PaymobGatewayControlRuntimeSnapshot),
+        this.normalizePaymobDraft(
+          snapshot as PaymobGatewayControlRuntimeSnapshot,
+        ),
       );
 
       if (!validation.valid) {
@@ -381,7 +409,9 @@ export class PaymentGatewayControlService {
     } else {
       const validation = this.validateStripeAgainstCurrent(
         this.paymentGatewayControlRuntimeService.getStripeSnapshot(),
-        this.normalizeStripeDraft(snapshot as StripeGatewayControlRuntimeSnapshot),
+        this.normalizeStripeDraft(
+          snapshot as StripeGatewayControlRuntimeSnapshot,
+        ),
       );
 
       if (!validation.valid) {
@@ -399,9 +429,8 @@ export class PaymentGatewayControlService {
       actorUserId: input.actorUserId,
     });
 
-    const current = this.paymentGatewayControlRuntimeService.getProviderSnapshot(
-      provider,
-    );
+    const current =
+      this.paymentGatewayControlRuntimeService.getProviderSnapshot(provider);
     const result = await this.paymentGatewayControlRepository.applySnapshot({
       scope: 'provider',
       provider,
@@ -440,11 +469,12 @@ export class PaymentGatewayControlService {
     this.assertReason(input.reason);
     this.assertStepUpPayload(input.stepUpChallengeId, input.stepUpCode);
 
-    const revision = await this.paymentGatewayControlRepository.findHistoryEvent({
-      scope: 'routing',
-      provider: null,
-      eventId: input.revisionId,
-    });
+    const revision =
+      await this.paymentGatewayControlRepository.findHistoryEvent({
+        scope: 'routing',
+        provider: null,
+        eventId: input.revisionId,
+      });
 
     if (!revision) {
       throw new NotFoundException({
@@ -454,7 +484,9 @@ export class PaymentGatewayControlService {
     }
 
     const metadata = (revision.metadataJson ?? {}) as Record<string, unknown>;
-    const snapshot = metadata.afterSnapshot as PaymentRoutingRuntimeSnapshot | undefined;
+    const snapshot = metadata.afterSnapshot as
+      | PaymentRoutingRuntimeSnapshot
+      | undefined;
 
     if (!snapshot) {
       throw new BadRequestException({
@@ -482,7 +514,8 @@ export class PaymentGatewayControlService {
       actorUserId: input.actorUserId,
     });
 
-    const current = this.paymentGatewayControlRuntimeService.getRoutingSnapshot();
+    const current =
+      this.paymentGatewayControlRuntimeService.getRoutingSnapshot();
     const result = await this.paymentGatewayControlRepository.applySnapshot({
       scope: 'routing',
       provider: null,
@@ -513,18 +546,20 @@ export class PaymentGatewayControlService {
       return parsed.data;
     }
 
-    const fromSnapshot = 'validation' in input
-      ? {
-          enabled: input.enabled,
-          checkoutFlow: input.checkoutFlow,
-          defaultMethod: input.defaultMethod,
-          maintenanceMode: input.maintenanceMode,
-          allowedCountryIsoCodes: input.allowedCountryIsoCodes,
-          methodRegistry: input.methodRegistry,
-        }
-      : input;
+    const fromSnapshot =
+      'validation' in input
+        ? {
+            enabled: input.enabled,
+            checkoutFlow: input.checkoutFlow,
+            defaultMethod: input.defaultMethod,
+            maintenanceMode: input.maintenanceMode,
+            allowedCountryIsoCodes: input.allowedCountryIsoCodes,
+            methodRegistry: input.methodRegistry,
+          }
+        : input;
 
-    const parsedSnapshot = paymobGatewayControlDraftSchema.safeParse(fromSnapshot);
+    const parsedSnapshot =
+      paymobGatewayControlDraftSchema.safeParse(fromSnapshot);
     if (!parsedSnapshot.success) {
       throw new BadRequestException({
         messageKey: 'payments.errors.invalidPaymentGatewayControl',
@@ -546,15 +581,17 @@ export class PaymentGatewayControlService {
       return parsed.data;
     }
 
-    const fromSnapshot = 'validation' in input
-      ? {
-          enabled: input.enabled,
-          maintenanceMode: input.maintenanceMode,
-          allowedCountryIsoCodes: input.allowedCountryIsoCodes,
-        }
-      : input;
+    const fromSnapshot =
+      'validation' in input
+        ? {
+            enabled: input.enabled,
+            maintenanceMode: input.maintenanceMode,
+            allowedCountryIsoCodes: input.allowedCountryIsoCodes,
+          }
+        : input;
 
-    const parsedSnapshot = stripeGatewayControlDraftSchema.safeParse(fromSnapshot);
+    const parsedSnapshot =
+      stripeGatewayControlDraftSchema.safeParse(fromSnapshot);
     if (!parsedSnapshot.success) {
       throw new BadRequestException({
         messageKey: 'payments.errors.invalidPaymentGatewayControl',
@@ -576,13 +613,14 @@ export class PaymentGatewayControlService {
       return parsed.data;
     }
 
-    const fromSnapshot = 'validation' in input
-      ? {
-          defaultProvider: input.defaultProvider,
-          priorityOrder: input.priorityOrder,
-          fallbackProvider: input.fallbackProvider,
-        }
-      : input;
+    const fromSnapshot =
+      'validation' in input
+        ? {
+            defaultProvider: input.defaultProvider,
+            priorityOrder: input.priorityOrder,
+            fallbackProvider: input.fallbackProvider,
+          }
+        : input;
 
     const parsedSnapshot = paymentRoutingDraftSchema.safeParse(fromSnapshot);
     if (!parsedSnapshot.success) {
@@ -656,7 +694,10 @@ export class PaymentGatewayControlService {
     draft: PaymentRoutingDraftNormalized,
     sourceSnapshot: PaymentRoutingRuntimeSnapshot,
   ): PaymentRoutingRuntimeSnapshot {
-    const validation = this.validateRoutingAgainstCurrent(sourceSnapshot, draft);
+    const validation = this.validateRoutingAgainstCurrent(
+      sourceSnapshot,
+      draft,
+    );
 
     return {
       defaultProvider: draft.defaultProvider,
@@ -684,7 +725,9 @@ export class PaymentGatewayControlService {
     const activeMethods = this.resolveActivePaymobMethods(next);
 
     if (next.enabled && !next.maintenanceMode && activeMethods.length === 0) {
-      issues.push('No usable Paymob methods remain for the active checkout mode.');
+      issues.push(
+        'No usable Paymob methods remain for the active checkout mode.',
+      );
     }
 
     if (
@@ -693,32 +736,56 @@ export class PaymentGatewayControlService {
         (item) => item.key.toUpperCase() === next.defaultMethod?.toUpperCase(),
       )
     ) {
-      issues.push('Configured default Paymob method is not usable for the active snapshot.');
+      issues.push(
+        'Configured default Paymob method is not usable for the active snapshot.',
+      );
     }
 
     for (const method of next.methodRegistry) {
       if (method.enabled && !method.integrationId) {
-        issues.push(`Method ${method.key} is enabled but has no integration reference.`);
+        issues.push(
+          `Method ${method.key} is enabled but has no integration reference.`,
+        );
       }
-      if (method.enabled && !method.supportedCheckoutFlows.includes(next.checkoutFlow)) {
-        issues.push(`Method ${method.key} is not compatible with checkout flow ${next.checkoutFlow}.`);
+      if (
+        method.enabled &&
+        !method.supportedCheckoutFlows.includes(next.checkoutFlow)
+      ) {
+        issues.push(
+          `Method ${method.key} is not compatible with checkout flow ${next.checkoutFlow}.`,
+        );
       }
     }
 
     if (current.enabled !== next.enabled) {
-      warnings.push(next.enabled ? 'Provider will be enabled after save.' : 'Provider will be disabled after save.');
+      warnings.push(
+        next.enabled
+          ? 'Provider will be enabled after save.'
+          : 'Provider will be disabled after save.',
+      );
     }
 
     if (current.checkoutFlow !== next.checkoutFlow) {
-      warnings.push(`Checkout flow will change from ${current.checkoutFlow} to ${next.checkoutFlow}.`);
+      warnings.push(
+        `Checkout flow will change from ${current.checkoutFlow} to ${next.checkoutFlow}.`,
+      );
     }
 
-    if (JSON.stringify(current.methodRegistry) !== JSON.stringify(next.methodRegistry)) {
-      warnings.push('Method registry will be replaced with the submitted snapshot.');
+    if (
+      JSON.stringify(current.methodRegistry) !==
+      JSON.stringify(next.methodRegistry)
+    ) {
+      warnings.push(
+        'Method registry will be replaced with the submitted snapshot.',
+      );
     }
 
     if (current.maintenanceMode !== next.maintenanceMode) {
-      warnings.push(next.maintenanceMode ? 'Maintenance mode will be enabled.' : 'Maintenance mode will be disabled.');
+      warnings.push(
+        next.maintenanceMode
+          ? 'Maintenance mode will be enabled.'
+          : 'Maintenance mode will be disabled.',
+      );
     }
 
     if (!current.validation.healthy) {
@@ -744,12 +811,18 @@ export class PaymentGatewayControlService {
     const warnings: string[] = [];
 
     if (current.enabled !== next.enabled) {
-      warnings.push(next.enabled ? 'Stripe will be enabled after save.' : 'Stripe will be disabled after save.');
+      warnings.push(
+        next.enabled
+          ? 'Stripe will be enabled after save.'
+          : 'Stripe will be disabled after save.',
+      );
     }
 
     if (current.maintenanceMode !== next.maintenanceMode) {
       warnings.push(
-        next.maintenanceMode ? 'Stripe maintenance mode will be enabled.' : 'Stripe maintenance mode will be disabled.',
+        next.maintenanceMode
+          ? 'Stripe maintenance mode will be enabled.'
+          : 'Stripe maintenance mode will be disabled.',
       );
     }
 
@@ -757,7 +830,9 @@ export class PaymentGatewayControlService {
       JSON.stringify(current.allowedCountryIsoCodes) !==
       JSON.stringify(next.allowedCountryIsoCodes)
     ) {
-      warnings.push('Stripe country restrictions will be replaced with the submitted snapshot.');
+      warnings.push(
+        'Stripe country restrictions will be replaced with the submitted snapshot.',
+      );
     }
 
     if (!current.validation.healthy) {
@@ -785,18 +860,27 @@ export class PaymentGatewayControlService {
       this.paymentGatewayControlRuntimeService.getStripeSnapshot(),
     ];
     const usableProviders = providerSnapshots.filter(
-      (item) => item.enabled && !item.maintenanceMode && item.validation.healthy,
+      (item) =>
+        item.enabled && !item.maintenanceMode && item.validation.healthy,
     );
 
     if (next.priorityOrder.length === 0 && usableProviders.length > 0) {
-      issues.push('Priority order must contain at least one provider when runtime providers are available.');
+      issues.push(
+        'Priority order must contain at least one provider when runtime providers are available.',
+      );
     }
 
-    if (next.defaultProvider && !next.priorityOrder.includes(next.defaultProvider)) {
+    if (
+      next.defaultProvider &&
+      !next.priorityOrder.includes(next.defaultProvider)
+    ) {
       issues.push('Default provider must appear in the priority order.');
     }
 
-    if (next.fallbackProvider && !next.priorityOrder.includes(next.fallbackProvider)) {
+    if (
+      next.fallbackProvider &&
+      !next.priorityOrder.includes(next.fallbackProvider)
+    ) {
       issues.push('Fallback provider must appear in the priority order.');
     }
 
@@ -834,8 +918,13 @@ export class PaymentGatewayControlService {
       );
     }
 
-    if (JSON.stringify(current.priorityOrder) !== JSON.stringify(next.priorityOrder)) {
-      warnings.push('Provider priority order will be replaced with the submitted snapshot.');
+    if (
+      JSON.stringify(current.priorityOrder) !==
+      JSON.stringify(next.priorityOrder)
+    ) {
+      warnings.push(
+        'Provider priority order will be replaced with the submitted snapshot.',
+      );
     }
 
     return {
@@ -854,8 +943,12 @@ export class PaymentGatewayControlService {
     );
 
     return [...snapshot.methodRegistry]
-      .filter((method) => method.enabled && Boolean(method.integrationId?.trim()))
-      .filter((method) => method.supportedCheckoutFlows.includes(snapshot.checkoutFlow))
+      .filter(
+        (method) => method.enabled && Boolean(method.integrationId?.trim()),
+      )
+      .filter((method) =>
+        method.supportedCheckoutFlows.includes(snapshot.checkoutFlow),
+      )
       .filter((method) => {
         if (allowedCountries.length === 0) {
           return true;
@@ -1014,23 +1107,32 @@ export class PaymentGatewayControlService {
     const metadata = (event.metadataJson ?? {}) as Record<string, unknown>;
     return {
       id: event.id,
-      scope: typeof metadata.scope === 'string' ? (metadata.scope as 'provider' | 'routing') : 'provider',
+      scope:
+        typeof metadata.scope === 'string'
+          ? (metadata.scope as 'provider' | 'routing')
+          : 'provider',
       provider:
         typeof metadata.provider === 'string'
           ? (metadata.provider as PaymentGatewayControlManagedProvider)
           : null,
-      action: typeof metadata.action === 'string' ? metadata.action : event.typeSlug,
+      action:
+        typeof metadata.action === 'string' ? metadata.action : event.typeSlug,
       reason: typeof metadata.reason === 'string' ? metadata.reason : null,
-      requestId: typeof metadata.requestId === 'string' ? metadata.requestId : null,
+      requestId:
+        typeof metadata.requestId === 'string' ? metadata.requestId : null,
       changedAt: event.occurredAt.toISOString(),
       actorUserId: event.actorUserId,
       actorDisplayName: event.actorUser?.displayName ?? null,
       beforeSnapshot:
-        (metadata.beforeSnapshot as PaymentGatewayControlRuntimeSnapshot | PaymentRoutingRuntimeSnapshot | undefined) ??
-        null,
+        (metadata.beforeSnapshot as
+          | PaymentGatewayControlRuntimeSnapshot
+          | PaymentRoutingRuntimeSnapshot
+          | undefined) ?? null,
       afterSnapshot:
-        (metadata.afterSnapshot as PaymentGatewayControlRuntimeSnapshot | PaymentRoutingRuntimeSnapshot | undefined) ??
-        null,
+        (metadata.afterSnapshot as
+          | PaymentGatewayControlRuntimeSnapshot
+          | PaymentRoutingRuntimeSnapshot
+          | undefined) ?? null,
       validationIssues: Array.isArray(metadata.validationIssues)
         ? (metadata.validationIssues as unknown[]).filter(
             (item): item is string => typeof item === 'string',
@@ -1039,8 +1141,14 @@ export class PaymentGatewayControlService {
     };
   }
 
-  private assertSupportedProvider(provider: PaymentGatewayControlProvider): void {
-    if (!PAYMENT_GATEWAY_CONTROL_MANAGED_PROVIDERS.includes(provider as PaymentGatewayControlManagedProvider)) {
+  private assertSupportedProvider(
+    provider: PaymentGatewayControlProvider,
+  ): void {
+    if (
+      !PAYMENT_GATEWAY_CONTROL_MANAGED_PROVIDERS.includes(
+        provider as PaymentGatewayControlManagedProvider,
+      )
+    ) {
       throw new NotFoundException({
         messageKey: 'payments.errors.paymentGatewayControlProviderUnsupported',
         error: 'PAYMENT_GATEWAY_CONTROL_PROVIDER_UNSUPPORTED',

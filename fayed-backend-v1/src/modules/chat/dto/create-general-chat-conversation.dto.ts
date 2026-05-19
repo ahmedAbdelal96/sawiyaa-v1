@@ -34,7 +34,10 @@ export class GeneralChatParticipantDto {
   @ApiProperty({ enum: ConversationParticipantRole })
   role!: ConversationParticipantRole;
 
-  @ApiProperty({ type: () => GeneralChatParticipantIdentityDto, nullable: true })
+  @ApiProperty({
+    type: () => GeneralChatParticipantIdentityDto,
+    nullable: true,
+  })
   identity!: GeneralChatParticipantIdentityDto | null;
 }
 

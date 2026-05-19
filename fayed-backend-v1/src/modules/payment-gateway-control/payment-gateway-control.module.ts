@@ -17,4 +17,3 @@ import { AdminPaymentGatewayControlController } from './controllers/admin-paymen
   exports: [PaymentGatewayControlRuntimeService, PaymentGatewayControlService],
 })
 export class PaymentGatewayControlModule {}
-

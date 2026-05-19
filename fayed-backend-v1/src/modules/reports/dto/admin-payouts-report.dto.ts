@@ -50,4 +50,3 @@ export class ListAdminPayoutsReportRowsDto extends GetAdminPayoutsReportOverview
   @Max(50)
   limit?: number = 10;
 }
-

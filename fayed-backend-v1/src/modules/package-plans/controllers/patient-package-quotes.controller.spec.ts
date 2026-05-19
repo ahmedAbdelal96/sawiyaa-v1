@@ -3,8 +3,8 @@ import { PatientPackageQuotesController } from './patient-package-quotes.control
 
 describe('PatientPackageQuotesController routes', () => {
   it('uses the patient package purchases route', () => {
-    expect(Reflect.getMetadata(PATH_METADATA, PatientPackageQuotesController)).toBe(
-      'patients/me/package-purchases',
-    );
+    expect(
+      Reflect.getMetadata(PATH_METADATA, PatientPackageQuotesController),
+    ).toBe('patients/me/package-purchases');
   });
 });

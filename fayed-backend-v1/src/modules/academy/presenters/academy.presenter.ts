@@ -125,7 +125,9 @@ export class AcademyPresenter {
       whatsappGroupUrl: null,
       status: course.status,
       visibility: course.visibility,
-      lectures: course.lectures?.map((lecture) => this.presentLectureItem(lecture)) ?? [],
+      lectures:
+        course.lectures?.map((lecture) => this.presentLectureItem(lecture)) ??
+        [],
     };
   }
 
@@ -188,7 +190,9 @@ export class AcademyPresenter {
       updatedAt: course.updatedAt.toISOString(),
       plannedDurationDays: course.plannedDurationDays ?? null,
       plannedLectureCount: course.plannedLectureCount ?? null,
-      lectures: course.lectures?.map((lecture) => this.presentLectureItem(lecture)) ?? [],
+      lectures:
+        course.lectures?.map((lecture) => this.presentLectureItem(lecture)) ??
+        [],
     };
   }
 
@@ -316,11 +320,11 @@ export class AcademyPresenter {
             checkoutUrl:
               typeof paymentMetadata.checkoutUrl === 'string'
                 ? paymentMetadata.checkoutUrl
-                : latestAttempt?.checkoutUrl ?? null,
+                : (latestAttempt?.checkoutUrl ?? null),
             clientSecret:
               typeof paymentMetadata.clientSecret === 'string'
                 ? paymentMetadata.clientSecret
-                : latestAttempt?.clientSecret ?? null,
+                : (latestAttempt?.clientSecret ?? null),
           }
         : latestAttempt
           ? {

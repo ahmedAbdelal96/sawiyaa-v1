@@ -212,7 +212,10 @@ export class PaymentRepository {
     });
   }
 
-  findByProviderPaymentRef(provider: PaymentProvider, providerPaymentRef: string) {
+  findByProviderPaymentRef(
+    provider: PaymentProvider,
+    providerPaymentRef: string,
+  ) {
     return this.prisma.payment.findUnique({
       where: {
         provider_providerPaymentRef: {

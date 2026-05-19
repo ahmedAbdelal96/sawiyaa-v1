@@ -39,7 +39,7 @@ export default async function PatientSessionDetailPage({ params }: Props) {
         </h1>
       </div>
 
-      <PatientSessionDetailPanel sessionId={id} />
+      <PatientSessionDetailPanel key={id} sessionId={id} />
     </div>
   );
 }

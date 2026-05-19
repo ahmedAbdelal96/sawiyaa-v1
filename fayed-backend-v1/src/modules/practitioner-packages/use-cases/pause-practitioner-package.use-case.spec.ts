@@ -25,17 +25,17 @@ describe('PausePractitionerPackageUseCase', () => {
   });
 
   it('pauses an active package', async () => {
-    (practitionerPackageRepository.findPractitionerProfileByUserId as jest.Mock).mockResolvedValue(
-      { id: 'practitioner-1' },
-    );
-    (practitionerPackageRepository.findByIdAndPractitionerId as jest.Mock).mockResolvedValue(
-      {
-        id: 'package-1',
-        practitionerId: 'practitioner-1',
-        status: PractitionerPackageStatus.ACTIVE,
-        archivedAt: null,
-      },
-    );
+    (
+      practitionerPackageRepository.findPractitionerProfileByUserId as jest.Mock
+    ).mockResolvedValue({ id: 'practitioner-1' });
+    (
+      practitionerPackageRepository.findByIdAndPractitionerId as jest.Mock
+    ).mockResolvedValue({
+      id: 'package-1',
+      practitionerId: 'practitioner-1',
+      status: PractitionerPackageStatus.ACTIVE,
+      archivedAt: null,
+    });
     (practitionerPackageRepository.updateById as jest.Mock).mockResolvedValue({
       id: 'package-1',
       status: PractitionerPackageStatus.PAUSED_BY_PRACTITIONER,
@@ -63,17 +63,17 @@ describe('PausePractitionerPackageUseCase', () => {
   });
 
   it('rejects pausing non-active packages', async () => {
-    (practitionerPackageRepository.findPractitionerProfileByUserId as jest.Mock).mockResolvedValue(
-      { id: 'practitioner-1' },
-    );
-    (practitionerPackageRepository.findByIdAndPractitionerId as jest.Mock).mockResolvedValue(
-      {
-        id: 'package-1',
-        practitionerId: 'practitioner-1',
-        status: PractitionerPackageStatus.DRAFT,
-        archivedAt: null,
-      },
-    );
+    (
+      practitionerPackageRepository.findPractitionerProfileByUserId as jest.Mock
+    ).mockResolvedValue({ id: 'practitioner-1' });
+    (
+      practitionerPackageRepository.findByIdAndPractitionerId as jest.Mock
+    ).mockResolvedValue({
+      id: 'package-1',
+      practitionerId: 'practitioner-1',
+      status: PractitionerPackageStatus.DRAFT,
+      archivedAt: null,
+    });
 
     await expect(
       useCase.execute({
@@ -84,17 +84,17 @@ describe('PausePractitionerPackageUseCase', () => {
   });
 
   it('rejects pausing packages disabled by admin', async () => {
-    (practitionerPackageRepository.findPractitionerProfileByUserId as jest.Mock).mockResolvedValue(
-      { id: 'practitioner-1' },
-    );
-    (practitionerPackageRepository.findByIdAndPractitionerId as jest.Mock).mockResolvedValue(
-      {
-        id: 'package-1',
-        practitionerId: 'practitioner-1',
-        status: PractitionerPackageStatus.DISABLED_BY_ADMIN,
-        archivedAt: null,
-      },
-    );
+    (
+      practitionerPackageRepository.findPractitionerProfileByUserId as jest.Mock
+    ).mockResolvedValue({ id: 'practitioner-1' });
+    (
+      practitionerPackageRepository.findByIdAndPractitionerId as jest.Mock
+    ).mockResolvedValue({
+      id: 'package-1',
+      practitionerId: 'practitioner-1',
+      status: PractitionerPackageStatus.DISABLED_BY_ADMIN,
+      archivedAt: null,
+    });
 
     await expect(
       useCase.execute({

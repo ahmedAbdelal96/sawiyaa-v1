@@ -16,9 +16,11 @@ import { CurrentLocale } from '@common/i18n/decorators/current-locale.decorator'
 import { SupportedLocale } from '@common/i18n/types/locale.types';
 import { CurrentUserRolesEnvelopeResponseDto } from '../dto/current-user-roles-response.dto';
 import { CurrentUserProfileLinksEnvelopeResponseDto } from '../dto/current-user-profile-links-response.dto';
+import { CurrentUserPermissionsEnvelopeResponseDto } from '../dto/current-user-permissions-response.dto';
 import { CurrentUserSecurityStateEnvelopeResponseDto } from '../dto/current-user-security-state-response.dto';
 import { CurrentUserSummaryEnvelopeResponseDto } from '../dto/current-user-summary-response.dto';
 import { PatchCurrentUserProfileDto } from '../dto/patch-current-user-profile.dto';
+import { GetCurrentUserPermissionsUseCase } from '../use-cases/get-current-user-permissions.use-case';
 import { GetCurrentUserProfileLinksUseCase } from '../use-cases/get-current-user-profile-links.use-case';
 import { GetCurrentUserSecurityStateUseCase } from '../use-cases/get-current-user-security-state.use-case';
 import { GetCurrentUserSummaryUseCase } from '../use-cases/get-current-user-summary.use-case';
@@ -37,6 +39,7 @@ export class CurrentUserController {
   constructor(
     private readonly getCurrentUserSummaryUseCase: GetCurrentUserSummaryUseCase,
     private readonly listCurrentUserRolesUseCase: ListCurrentUserRolesUseCase,
+    private readonly getCurrentUserPermissionsUseCase: GetCurrentUserPermissionsUseCase,
     private readonly getCurrentUserSecurityStateUseCase: GetCurrentUserSecurityStateUseCase,
     private readonly getCurrentUserProfileLinksUseCase: GetCurrentUserProfileLinksUseCase,
     private readonly patchCurrentUserProfileUseCase: PatchCurrentUserProfileUseCase,
@@ -83,6 +86,30 @@ export class CurrentUserController {
   })
   roles(@CurrentUser() currentUser: AuthenticatedUser) {
     return this.listCurrentUserRolesUseCase.execute(currentUser);
+  }
+
+  /**
+   * Returns the resolved effective permission keys for the current user.
+   * Frontend uses this to gate navigation items and pages.
+   * This does NOT replace backend guards — it is a UX read-only hint.
+   */
+  @Get('me/permissions')
+  @ApiOperation({
+    summary: 'Get current user permissions',
+    description:
+      'Returns the resolved effective permission keys for the current user. ' +
+      'Reflects role-based grants and any user-level overrides. ' +
+      'SUPER_ADMIN receives all concrete permission keys. ' +
+      'Intended for frontend navigation gating only — backend guards remain authoritative.',
+  })
+  @ApiResponse({ status: 200, type: CurrentUserPermissionsEnvelopeResponseDto })
+  @ApiUnauthorizedResponse({ description: 'Access token is required' })
+  @ApiForbiddenResponse({
+    description:
+      'The authenticated session is not allowed to access this route',
+  })
+  permissions(@CurrentUser() currentUser: AuthenticatedUser) {
+    return this.getCurrentUserPermissionsUseCase.execute(currentUser);
   }
 
   /** Profile links are exposed independently so clients can bootstrap current patient/practitioner state with a small payload. */

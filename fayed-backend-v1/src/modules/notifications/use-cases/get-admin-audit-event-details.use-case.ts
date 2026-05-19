@@ -10,7 +10,9 @@ export class GetAdminAuditEventDetailsUseCase {
   ) {}
 
   async execute(input: { eventId: string }) {
-    const notification = await this.repository.findAdminAuditEventById(input.eventId);
+    const notification = await this.repository.findAdminAuditEventById(
+      input.eventId,
+    );
 
     if (!notification) {
       throw new NotFoundException({

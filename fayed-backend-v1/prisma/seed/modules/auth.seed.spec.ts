@@ -39,9 +39,16 @@ describe('auth.seed: role-permission matrix', () => {
     }
   });
 
-  it('ADMIN gets all defined permissions', () => {
+  it('ADMIN gets all defined permissions except permission override management (SUPER_ADMIN-only)', () => {
     const adminPerms = bundleByRole.get(UserRoleType.ADMIN)!;
     for (const p of permissionDefinitions) {
+      if (
+        p.key === 'admin-users.permission-overrides.read' ||
+        p.key === 'admin-users.permission-overrides.update'
+      ) {
+        expect(adminPerms.has(p.key)).toBe(false);
+        continue;
+      }
       expect(adminPerms.has(p.key)).toBe(true);
     }
   });
@@ -79,6 +86,16 @@ describe('auth.seed: role-permission matrix', () => {
 
     it('does NOT have careChat.request.decide', () => {
       expect(perms.has('careChat.request.decide')).toBe(false);
+    });
+
+    it('does NOT have admin user management permissions', () => {
+      expect(perms.has('admin-users.read')).toBe(false);
+      expect(perms.has('admin-users.create')).toBe(false);
+      expect(perms.has('admin-users.update')).toBe(false);
+      expect(perms.has('admin-users.status.update')).toBe(false);
+      expect(perms.has('admin-users.roles.update')).toBe(false);
+      expect(perms.has('admin-users.sessions.revoke')).toBe(false);
+      expect(perms.has('admin-users.token-version.invalidate')).toBe(false);
     });
   });
 
@@ -150,6 +167,16 @@ describe('auth.seed: role-permission matrix', () => {
     it('does NOT have support.ticket.note.internal (admin-only)', () => {
       expect(perms.has('support.ticket.note.internal')).toBe(false);
     });
+
+    it('does NOT have admin user management permissions', () => {
+      expect(perms.has('admin-users.read')).toBe(false);
+      expect(perms.has('admin-users.create')).toBe(false);
+      expect(perms.has('admin-users.update')).toBe(false);
+      expect(perms.has('admin-users.status.update')).toBe(false);
+      expect(perms.has('admin-users.roles.update')).toBe(false);
+      expect(perms.has('admin-users.sessions.revoke')).toBe(false);
+      expect(perms.has('admin-users.token-version.invalidate')).toBe(false);
+    });
   });
 
   describe('PATIENT', () => {
@@ -176,6 +203,16 @@ describe('auth.seed: role-permission matrix', () => {
       expect(perms.has('audit-log.read')).toBe(true);
       expect(perms.has('patients.read.admin')).toBe(false);
       expect(perms.has('finance.events.read')).toBe(false);
+    });
+
+    it('does NOT have admin user management permissions', () => {
+      expect(perms.has('admin-users.read')).toBe(false);
+      expect(perms.has('admin-users.create')).toBe(false);
+      expect(perms.has('admin-users.update')).toBe(false);
+      expect(perms.has('admin-users.status.update')).toBe(false);
+      expect(perms.has('admin-users.roles.update')).toBe(false);
+      expect(perms.has('admin-users.sessions.revoke')).toBe(false);
+      expect(perms.has('admin-users.token-version.invalidate')).toBe(false);
     });
   });
 

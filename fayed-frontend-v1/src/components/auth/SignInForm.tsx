@@ -86,42 +86,144 @@ type SignInFormProps = {
   mode: SignInMode;
 };
 
-const TEST_CREDENTIALS_BY_MODE: Record<
-  SignInMode,
-  {
-    email: string;
-    password: string;
-  }
-> = {
+type CredentialPreset = {
+  label: string;
+  email: string;
+  password: string;
+  note: string;
+};
+
+const TEST_CREDENTIALS_BY_MODE: Record<SignInMode, CredentialPreset> = {
   patient: {
+    label: "الافتراضي: مريض QA مصري",
     email: "ahmed.patient@hesba.local",
     password: "Patient@12345",
+    note: "AHMED / القاهرة",
   },
   practitioner: {
-    email: "dr.mohamed@hesba.local",
-    password: "Practitioner2@12345",
+    label: "الافتراضي: معالج QA مصري",
+    email: "dr.ahmed@hesba.local",
+    password: "Practitioner@12345",
+    note: "DR. AHMED / القاهرة",
   },
   admin: {
+    label: "الافتراضي: مدير النظام",
     email: "admin@hesba.local",
     password: "Admin@12345",
+    note: "SUPER_ADMIN",
   },
 };
 
-const PRACTITIONER_TEST_CREDENTIALS = [
-  { email: "dr.ahmed@hesba.local", password: "Practitioner@12345" },
-  { email: "dr.mohamed@hesba.local", password: "Practitioner2@12345" },
-  { email: "dr.youssef@hesba.local", password: "Practitioner5@12345" },
-  { email: "dr.karim@hesba.local", password: "Practitioner6@12345" },
-  { email: "dr.sara@hesba.local", password: "Practitioner7@12345" },
-  { email: "dr.nour@hesba.local", password: "Practitioner8@12345" },
+const PATIENT_TEST_CREDENTIALS: CredentialPreset[] = [
+  {
+    label: "مريض QA 1",
+    email: "ahmed.patient@hesba.local",
+    password: "Patient@12345",
+    note: "القاهرة",
+  },
+  {
+    label: "مريض QA 2",
+    email: "mohamed.patient@hesba.local",
+    password: "Patient2@12345",
+    note: "دبي",
+  },
+  {
+    label: "مريض QA 3",
+    email: "omar.patient@hesba.local",
+    password: "Patient3@12345",
+    note: "خيار إضافي",
+  },
 ];
 
-const PATIENT_TEST_CREDENTIALS = [
-  { email: "ahmed.patient@hesba.local", password: "Patient@12345" },
-  { email: "mohamed.patient@hesba.local", password: "Patient2@12345" },
+const PRACTITIONER_TEST_CREDENTIALS: CredentialPreset[] = [
+  {
+    label: "معالج QA 1",
+    email: "dr.ahmed@hesba.local",
+    password: "Practitioner@12345",
+    note: "القاهرة",
+  },
+  {
+    label: "معالج QA 2",
+    email: "dr.mohamed@hesba.local",
+    password: "Practitioner2@12345",
+    note: "الرياض",
+  },
+  {
+    label: "معالج QA 3",
+    email: "dr.mahmoud@hesba.local",
+    password: "Practitioner3@12345",
+    note: "خيار إضافي",
+  },
+  {
+    label: "معالج QA 4",
+    email: "dr.abdelfattah@hesba.local",
+    password: "Practitioner4@12345",
+    note: "خيار إضافي",
+  },
 ];
 
-const ADMIN_TEST_CREDENTIALS = [{ email: "admin@hesba.local", password: "Admin@12345" }];
+const ADMIN_TEST_CREDENTIALS: CredentialPreset[] = [
+  {
+    label: "مدير النظام",
+    email: "admin@hesba.local",
+    password: "Admin@12345",
+    note: "SUPER_ADMIN",
+  },
+  {
+    label: "مدير النظام الاحتياطي",
+    email: "qa.super.admin.backup@hesba.local",
+    password: "BackupSuper@12345",
+    note: "SUPER_ADMIN",
+  },
+  {
+    label: "مدير الإدارة",
+    email: "qa.admin@hesba.local",
+    password: "AdminQa@12345",
+    note: "ADMIN",
+  },
+  {
+    label: "المدير الهدف",
+    email: "qa.target.admin@hesba.local",
+    password: "TargetAdmin@12345",
+    note: "ADMIN",
+  },
+  {
+    label: "وكيل الدعم",
+    email: "support@hesba.local",
+    password: "Support@12345",
+    note: "SUPPORT",
+  },
+  {
+    label: "المالية",
+    email: "finance@hesba.local",
+    password: "Finance@12345",
+    note: "FINANCE_STAFF",
+  },
+  {
+    label: "مراجع التطبيقات",
+    email: "practitioner.reviewer@hesba.local",
+    password: "ReviewerQa@12345",
+    note: "PRACTITIONER_REVIEWER",
+  },
+  {
+    label: "مراجع المحتوى",
+    email: "reviewer@hesba.local",
+    password: "Reviewer@12345",
+    note: "CONTENT_REVIEWER",
+  },
+  {
+    label: "عمليات المرضى",
+    email: "patient.ops@hesba.local",
+    password: "PatientOps@12345",
+    note: "PATIENT_OPERATIONS",
+  },
+  {
+    label: "التسويق",
+    email: "marketing@hesba.local",
+    password: "Marketing@12345",
+    note: "MARKETING_STAFF",
+  },
+];
 
 export default function SignInForm({ mode }: SignInFormProps) {
   const t = useTranslations("auth");
@@ -242,17 +344,12 @@ export default function SignInForm({ mode }: SignInFormProps) {
       : mode === "practitioner"
         ? buildAuthHref("/signup", { callbackUrl: normalizedCallbackUrl, mode: "practitioner" })
         : null;
-  const shouldShowTestCredentials = process.env.NODE_ENV !== "production";
+  const shouldShowTestCredentials =
+    process.env.NEXT_PUBLIC_SHOW_TEST_CREDENTIALS === "true";
   const modeConfig = MODE_CONFIG[mode];
   const ModeIcon = modeConfig.icon;
   const testCredentials = TEST_CREDENTIALS_BY_MODE[mode];
-  const quickAccountsByMode: Record<
-    SignInMode,
-    Array<{
-      email: string;
-      password: string;
-    }>
-  > = {
+  const quickAccountsByMode: Record<SignInMode, CredentialPreset[]> = {
     patient: PATIENT_TEST_CREDENTIALS,
     practitioner: PRACTITIONER_TEST_CREDENTIALS,
     admin: ADMIN_TEST_CREDENTIALS,
@@ -363,18 +460,44 @@ export default function SignInForm({ mode }: SignInFormProps) {
                       {testCredentials.password}
                     </span>
                   </div>
+                  <div className="flex items-center justify-between gap-3">
+                    <span>النوع</span>
+                    <span className="font-medium text-text-primary dark:text-text-primary">
+                      {testCredentials.label}
+                    </span>
+                  </div>
                 </div>
 
                 {quickAccounts.length > 0 && (
-                  <div className="mt-4 flex flex-wrap gap-2">
+                  <div className="mt-4 grid gap-2 sm:grid-cols-2">
                     {quickAccounts.map((item) => (
                       <button
                         key={item.email}
                         type="button"
                         onClick={() => applyTestCredentials(item)}
-                        className="rounded-full border border-primary/20 bg-surface px-3 py-1.5 text-xs font-medium text-primary transition hover:border-primary hover:bg-primary hover:text-white dark:bg-surface-tertiary"
+                        className="group rounded-2xl border border-primary/15 bg-surface px-3 py-3 text-left text-xs text-text-secondary transition hover:border-primary hover:bg-primary hover:text-white dark:bg-surface-tertiary dark:text-text-secondary"
                       >
-                        {item.email}
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="space-y-1">
+                            <p className="font-semibold text-text-primary transition group-hover:text-white dark:text-text-primary">
+                              {item.label}
+                            </p>
+                            <p className="text-[11px] leading-5 text-text-secondary transition group-hover:text-white/85 dark:text-text-secondary">
+                              {item.note}
+                            </p>
+                          </div>
+                          <span className="rounded-full border border-current/15 px-2 py-1 text-[10px] font-medium uppercase tracking-[0.16em]">
+                            {t(`modes.${mode}`)}
+                          </span>
+                        </div>
+                        <div className="mt-3 space-y-1 text-[11px] leading-5">
+                          <p className="truncate font-medium text-text-primary transition group-hover:text-white dark:text-text-primary">
+                            {item.email}
+                          </p>
+                          <p className="truncate text-text-secondary transition group-hover:text-white/85 dark:text-text-secondary">
+                            {item.password}
+                          </p>
+                        </div>
                       </button>
                     ))}
                   </div>

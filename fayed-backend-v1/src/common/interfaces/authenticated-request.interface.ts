@@ -12,6 +12,7 @@ export interface AuthenticatedRequest extends Request {
   user?: AuthenticatedUser;
   authToken?: string;
   authTokenType?: 'access' | 'refresh';
+  authTransport?: 'bearer' | 'cookie' | 'body';
   locale?: SupportedLocale;
   resourceOwnerId?: string;
   practitionerApplicationOwnerId?: string;

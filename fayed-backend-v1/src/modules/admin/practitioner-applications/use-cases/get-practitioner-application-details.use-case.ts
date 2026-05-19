@@ -9,6 +9,8 @@ import { AdminPractitionerProfileRepository } from '../repositories/admin-practi
 import { AdminPractitionerSpecialtyRepository } from '../repositories/admin-practitioner-specialty.repository';
 import { AdminSpecialtyRepository } from '../repositories/admin-specialty.repository';
 import { AdminUserRepository } from '../repositories/admin-user.repository';
+import { PractitionerApplicationCompletionService } from '@modules/practitioners/services/practitioner-application-completion.service';
+import { PractitionerAvatarStorageService } from '@modules/practitioners/services/practitioner-avatar-storage.service';
 
 /**
  * Builds one aggregated admin-facing details view for a practitioner application.
@@ -26,6 +28,8 @@ export class GetPractitionerApplicationDetailsUseCase {
     private readonly specialtyRepository: AdminSpecialtyRepository,
     private readonly credentialRepository: AdminPractitionerCredentialRepository,
     private readonly userRepository: AdminUserRepository,
+    private readonly completionService: PractitionerApplicationCompletionService,
+    private readonly avatarStorage: PractitionerAvatarStorageService,
   ) {}
 
   async execute(input: { id: string; locale: SupportedLocale }) {
@@ -55,6 +59,13 @@ export class GetPractitionerApplicationDetailsUseCase {
         error: 'ADMIN_PRACTITIONER_APPLICATION_INVALID_RELATION',
       });
     }
+
+    // If an avatar exists in storage, expose an admin-authenticated proxy URL.
+    // Avatar storage is keyed by user id (same id used by practitioner self-service avatar endpoints).
+    const hasStoredAvatar = Boolean(await this.avatarStorage.getAvatarFile(user.id));
+    const adminAvatarUrl = hasStoredAvatar
+      ? `/api/v1/admin/practitioner-applications/${application.id}/avatar`
+      : null;
 
     const specialtyIds = specialtyLinks.map((item) => item.specialtyId);
     const specialties = await this.specialtyRepository.listByIds(
@@ -96,6 +107,7 @@ export class GetPractitionerApplicationDetailsUseCase {
       userId: user.id,
       practitionerProfileId: profile.id,
       displayName: user.displayName ?? null,
+      avatarUrl: adminAvatarUrl,
       accountStatus: user.status,
       email: {
         address: user.emails[0]?.email ?? null,
@@ -114,18 +126,27 @@ export class GetPractitionerApplicationDetailsUseCase {
       practitionerType: profile.practitionerType,
       practitionerGender: profile.practitionerGender ?? null,
       profileStatus: profile.status,
+      avatarUrl: adminAvatarUrl,
       professionalTitle: profile.professionalTitle ?? null,
       bio: profile.bio ?? null,
       yearsOfExperience: profile.yearsOfExperience ?? null,
       primarySpecialtyCategoryId: profile.primarySpecialtyCategoryId ?? null,
       pricing: {
         session30: {
-          egp: profile.sessionPrice30Egp ? Number(profile.sessionPrice30Egp) : null,
-          usd: profile.sessionPrice30Usd ? Number(profile.sessionPrice30Usd) : null,
+          egp: profile.sessionPrice30Egp
+            ? Number(profile.sessionPrice30Egp)
+            : null,
+          usd: profile.sessionPrice30Usd
+            ? Number(profile.sessionPrice30Usd)
+            : null,
         },
         session60: {
-          egp: profile.sessionPrice60Egp ? Number(profile.sessionPrice60Egp) : null,
-          usd: profile.sessionPrice60Usd ? Number(profile.sessionPrice60Usd) : null,
+          egp: profile.sessionPrice60Egp
+            ? Number(profile.sessionPrice60Egp)
+            : null,
+          usd: profile.sessionPrice60Usd
+            ? Number(profile.sessionPrice60Usd)
+            : null,
         },
       },
       languages: profile.languages.map((item) => item.language.code),
@@ -135,7 +156,8 @@ export class GetPractitionerApplicationDetailsUseCase {
     const livePayoutDestination = profile.payoutDestination
       ? {
           methodType: profile.payoutDestination.methodType,
-          accountHolderName: profile.payoutDestination.accountHolderName ?? null,
+          accountHolderName:
+            profile.payoutDestination.accountHolderName ?? null,
           bankName: profile.payoutDestination.bankName ?? null,
           bankAccountNumber:
             profile.payoutDestination.bankAccountNumber ?? null,
@@ -184,8 +206,7 @@ export class GetPractitionerApplicationDetailsUseCase {
             snapshotPayoutDestination.bankAccountNumber ?? null,
           iban: snapshotPayoutDestination.iban ?? null,
           walletProvider: snapshotPayoutDestination.walletProvider ?? null,
-          walletIdentifier:
-            snapshotPayoutDestination.walletIdentifier ?? null,
+          walletIdentifier: snapshotPayoutDestination.walletIdentifier ?? null,
           otherDetails: snapshotPayoutDestination.otherDetails ?? null,
         }
       : livePayoutDestination;
@@ -275,6 +296,48 @@ export class GetPractitionerApplicationDetailsUseCase {
         reviewNotes: application.reviewNotes ?? null,
       },
       readinessSnapshot: readiness,
+      completion: this.completionService.build({
+        displayName: requestedApplicant.displayName,
+        countryCode: requestedApplicant.countryCode,
+        practitionerType: requestedProfile.practitionerType,
+        practitionerGender: requestedProfile.practitionerGender,
+        professionalTitle: requestedProfile.professionalTitle,
+        bio: requestedProfile.bio,
+        yearsOfExperience: requestedProfile.yearsOfExperience,
+        languageCount: requestedLanguageCodes.length,
+        specialtyCount: requestedSpecialties.length,
+        primarySpecialtyCategoryId:
+          requestedProfile.primarySpecialtyCategoryId ?? null,
+        credentialSummary: {
+          totalCredentials: requestedCredentialsForReadiness.length,
+          approvedCount: requestedCredentialsForReadiness.filter(
+            (item: { reviewStatus?: string }) =>
+              item.reviewStatus === 'APPROVED',
+          ).length,
+          pendingCount: requestedCredentialsForReadiness.filter(
+            (item: { reviewStatus?: string }) =>
+              item.reviewStatus === 'PENDING',
+          ).length,
+          rejectedCount: requestedCredentialsForReadiness.filter(
+            (item: { reviewStatus?: string }) =>
+              item.reviewStatus === 'REJECTED',
+          ).length,
+          expiredCount: requestedCredentialsForReadiness.filter(
+            (item: { reviewStatus?: string }) =>
+              item.reviewStatus === 'EXPIRED',
+          ).length,
+        },
+        credentialTypes: requestedCredentialsForReadiness
+          .map((item: { credentialType?: string | null }) =>
+            item.credentialType ? String(item.credentialType) : null,
+          )
+          .filter((item): item is string => item !== null),
+        payoutDestination: requestedPayoutDestination,
+        isAccountActive: user.status === 'ACTIVE',
+        isPractitionerOtpVerified: null,
+        applicationStatus: application.status,
+        pricing: requestedProfile.pricing,
+      }),
     });
 
     return {

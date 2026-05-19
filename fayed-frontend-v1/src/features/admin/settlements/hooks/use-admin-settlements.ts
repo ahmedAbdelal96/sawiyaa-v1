@@ -37,23 +37,29 @@ import type {
 import { useSessionRole } from "@/lib/auth/use-session-role";
 import { isAdminRole } from "@/lib/auth/roles";
 
-export function useAdminSettlementBatches(params: ListSettlementBatchesParams) {
+export function useAdminSettlementBatches(
+  params: ListSettlementBatchesParams,
+  options?: { enabled?: boolean },
+) {
   const role = useSessionRole();
   return useQuery({
     queryKey: adminSettlementsQueryKeys.list(params),
     queryFn: () => listAdminSettlementBatches(params),
-    enabled: isAdminRole(role),
+    enabled: isAdminRole(role) && (options?.enabled ?? true),
     staleTime: 30_000,
     gcTime: 10 * 60_000,
   });
 }
 
-export function useAdminSettlementDuesDirectory(params: ListSettlementDuesDirectoryParams) {
+export function useAdminSettlementDuesDirectory(
+  params: ListSettlementDuesDirectoryParams,
+  options?: { enabled?: boolean },
+) {
   const role = useSessionRole();
   return useQuery({
     queryKey: adminSettlementsQueryKeys.duesDirectory(params),
     queryFn: () => listAdminSettlementDuesDirectory(params),
-    enabled: isAdminRole(role),
+    enabled: isAdminRole(role) && (options?.enabled ?? true),
     staleTime: 30_000,
     gcTime: 10 * 60_000,
   });

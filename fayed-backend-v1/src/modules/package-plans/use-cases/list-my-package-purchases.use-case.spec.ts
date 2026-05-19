@@ -49,7 +49,9 @@ describe('ListMyPackagePurchasesUseCase', () => {
   });
 
   it('fails when the patient profile is missing', async () => {
-    (patientProfileRepository.findByUserId as jest.Mock).mockResolvedValue(null);
+    (patientProfileRepository.findByUserId as jest.Mock).mockResolvedValue(
+      null,
+    );
 
     await expect(
       useCase.execute({

@@ -1,4 +1,8 @@
-import { NotificationCategory, NotificationStatus, Prisma } from '@prisma/client';
+import {
+  NotificationCategory,
+  NotificationStatus,
+  Prisma,
+} from '@prisma/client';
 
 export const userNotificationFeedSelect = {
   id: true,
@@ -61,4 +65,3 @@ export type UserNotificationFeedItemRow = UserNotificationFeedRow & {
 export type UserNotificationReadableRow = UserNotificationFeedItemRow & {
   status: NotificationStatus;
 };
-

@@ -39,9 +39,7 @@ type PractitionerPackageRecord = {
 
 @Injectable()
 export class PractitionerPackagePresenter {
-  toListItem(
-    item: PractitionerPackageRecord,
-  ): PractitionerPackageViewModel {
+  toListItem(item: PractitionerPackageRecord): PractitionerPackageViewModel {
     return this.toViewModel(item);
   }
 

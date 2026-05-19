@@ -326,43 +326,6 @@ export default function AdminTrainingOverviewScreen() {
           </Button>
         ) : undefined
       }
-      notice={
-        <section className="app-panel-soft rounded-[26px] p-4 sm:p-5">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
-                {t("admin.summary.cards.total")}
-              </p>
-              <p className="mt-2 text-2xl font-semibold tracking-tight text-text-primary dark:text-white/95">
-                {formatCount(locale, summary?.total)}
-              </p>
-              <p className="mt-1 text-sm text-text-secondary">{t("admin.filters.note")}</p>
-            </div>
-
-            <div className="max-w-full sm:max-w-[34rem]">
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
-                {t("admin.filters.search")}
-              </p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                {activeFilterChips.length > 0 ? (
-                  activeFilterChips.map((chip) => (
-                    <span
-                      key={chip.id}
-                      className="app-chip rounded-full px-3 py-1.5 text-xs text-text-secondary dark:text-white/80"
-                    >
-                      {chip.label}
-                    </span>
-                  ))
-                ) : (
-                  <span className="app-chip rounded-full px-3 py-1.5 text-xs text-text-secondary dark:text-white/80">
-                    {t("admin.filters.allStatuses")}
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
-        </section>
-      }
       summaryCards={
         <>
           {statCards.map((card) => (

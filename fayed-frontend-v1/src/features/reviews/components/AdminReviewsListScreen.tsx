@@ -193,44 +193,7 @@ export default function AdminReviewsListScreen() {
     <AdminOperationalListShell
       title={t("admin.list.heading")}
       description={data?.pagination ? t("admin.list.count", { value: data.pagination.totalItems }) : undefined}
-      notice={
-        <section className="app-panel-soft rounded-[26px] p-4 sm:p-5">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
-                {data?.pagination ? t("admin.list.count", { value: data.pagination.totalItems }) : t("admin.list.heading")}
-              </p>
-              <p className="mt-2 text-2xl font-semibold tracking-tight text-text-primary dark:text-white/95">
-                {averageRating}/5
-              </p>
-              <p className="mt-1 text-sm text-text-secondary">{t("admin.list.needsModeration")}</p>
-            </div>
-
-            <div className="max-w-full sm:max-w-[30rem]">
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
-                {t("admin.statuses.all")}
-              </p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                {activeFilterChips.length > 0 ? (
-                  activeFilterChips.map((chip) => (
-                    <span
-                      key={chip.id}
-                      className="app-chip rounded-full px-3 py-1.5 text-xs text-text-secondary dark:text-white/80"
-                    >
-                      {chip.label}
-                    </span>
-                  ))
-                ) : (
-                  <span className="app-chip rounded-full px-3 py-1.5 text-xs text-text-secondary dark:text-white/80">
-                    {t("admin.statuses.all")}
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
-        </section>
-      }
-      summaryCards={
+        summaryCards={
         <>
           <AdminSummaryCard
             label={t("admin.list.heading")}

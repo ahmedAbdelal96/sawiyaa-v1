@@ -11,6 +11,7 @@ import { Modal, ModalBody, ModalFooter, ModalHeader } from "@/components/ui/moda
 import { usePatientSession } from "@/features/sessions/hooks/use-sessions";
 import { useSessionFinancialBreakdown } from "@/features/sessions/hooks/use-session-financial";
 import { resolvePatientCurrencyCode } from "@/features/payments/lib/patient-currency";
+import { formatMoney as formatFinanceMoney } from "@/lib/finance-format";
 import PublicRefundPolicyDocument from "@/features/refund-policies/components/PublicRefundPolicyDocument";
 import { REFUND_POLICY_ERROR_CODES } from "@/features/refund-policies/lib/refund-policy-errors";
 import { useRefundPolicy } from "@/features/refund-policies/hooks/use-refund-policies";
@@ -27,14 +28,6 @@ import type { FinancialBreakdown } from "@/features/sessions/types/financial.typ
 import type { PaymobCheckoutMethod } from "../types/payments.types";
 
 type Phase = "pricing" | "checkout";
-
-function formatAmount(amount: string, currency: string, numLocale: string): string {
-  return new Intl.NumberFormat(numLocale, {
-    style: "currency",
-    currency: currency.toUpperCase(),
-    minimumFractionDigits: 0,
-  }).format(Number(amount));
-}
 
 function formatDatetime(isoString: string | null, numLocale: string): string {
   if (!isoString) return "";
@@ -93,11 +86,12 @@ function PriceBreakdown({ breakdown, walletSplit, numLocale, t }: PriceBreakdown
   const walletUsed = walletSplit?.walletUsed ?? "0";
   const gatewayRemaining = walletSplit?.gatewayRemaining ?? breakdown.netPaidAmount;
   const hasWalletUsage = Number(walletUsed) > 0;
-  const currency = resolvePatientCurrencyCode({
-    currencyCode: breakdown.currency,
-    regionalPricingMode: breakdown.regionalPricingMode,
-    resolvedCountryIsoCode: breakdown.resolvedCountryIsoCode,
-  }) ?? "USD";
+  const currency =
+    resolvePatientCurrencyCode({
+      currencyCode: breakdown.currency,
+      regionalPricingMode: breakdown.regionalPricingMode,
+      resolvedCountryIsoCode: breakdown.resolvedCountryIsoCode,
+    }) ?? breakdown.currency ?? null;
 
   return (
     <div className="rounded-2xl border border-border-light bg-white p-4 shadow-sm dark:border-border-light dark:bg-surface-secondary">
@@ -109,14 +103,18 @@ function PriceBreakdown({ breakdown, walletSplit, numLocale, t }: PriceBreakdown
         <div className="flex items-center justify-between text-sm">
           <span className="text-text-secondary">{t("breakdown.grossAmount")}</span>
           <span className="font-medium text-text-primary dark:text-white/85">
-            {formatAmount(breakdown.grossAmount, currency, numLocale)}
+            {formatFinanceMoney(numLocale, breakdown.grossAmount, currency, {
+              fallbackText: "—",
+            })}
           </span>
         </div>
 
         <div className="flex items-center justify-between text-sm">
           <span className="text-text-secondary">{t("walletCheckout.walletDeductionLabel")}</span>
           <span className={`font-medium ${hasWalletUsage ? "text-text-brand dark:text-primary-light" : "text-text-primary dark:text-white/85"}`}>
-            {formatAmount(walletUsed, currency, numLocale)}
+            {formatFinanceMoney(numLocale, walletUsed, currency, {
+              fallbackText: "—",
+            })}
           </span>
         </div>
 
@@ -127,7 +125,9 @@ function PriceBreakdown({ breakdown, walletSplit, numLocale, t }: PriceBreakdown
               {breakdown.coupon ? breakdown.coupon.code : t("breakdown.discount")}
             </span>
             <span className="font-medium text-text-brand dark:text-primary-light">
-              -{formatAmount(breakdown.discountAmount, currency, numLocale)}
+              -{formatFinanceMoney(numLocale, breakdown.discountAmount, currency, {
+                fallbackText: "—",
+              })}
             </span>
           </div>
         )}
@@ -135,7 +135,9 @@ function PriceBreakdown({ breakdown, walletSplit, numLocale, t }: PriceBreakdown
         <div className="flex items-center justify-between text-sm">
           <span className="text-text-secondary">{t("breakdown.netPaid")}</span>
           <span className="font-medium text-text-primary dark:text-white/85">
-            {formatAmount(breakdown.netPaidAmount, currency, numLocale)}
+            {formatFinanceMoney(numLocale, breakdown.netPaidAmount, currency, {
+              fallbackText: "—",
+            })}
           </span>
         </div>
 
@@ -145,7 +147,9 @@ function PriceBreakdown({ breakdown, walletSplit, numLocale, t }: PriceBreakdown
               {t("walletCheckout.gatewayRemainderLabel")}
             </span>
             <span className="text-base font-bold text-primary">
-              {formatAmount(gatewayRemaining, currency, numLocale)}
+              {formatFinanceMoney(numLocale, gatewayRemaining, currency, {
+                fallbackText: "—",
+              })}
             </span>
           </div>
         </div>
@@ -496,7 +500,8 @@ export default function PaySessionPanel({ sessionId }: Props) {
         countryCode: walletSummary.currencyCode === "EGP" ? "EG" : null,
       })
     : null;
-  const displayCurrency = breakdownCurrency ?? walletCurrency ?? "USD";
+  const displayCurrency = breakdownCurrency ?? walletCurrency ?? null;
+  const paymentCurrency = displayCurrency ?? "USD";
   const walletCurrencyMatchesBreakdown = walletSummary && breakdown
     ? walletCurrency === breakdownCurrency
     : true;
@@ -801,7 +806,9 @@ export default function PaySessionPanel({ sessionId }: Props) {
         {t("page.amountDueHeading")}
       </p>
       <p className="mt-1 text-2xl font-bold text-primary">
-        {formatAmount(walletSplit?.gatewayRemaining ?? "0", displayCurrency, numLocale)}
+        {formatFinanceMoney(numLocale, walletSplit?.gatewayRemaining ?? "0", displayCurrency, {
+          fallbackText: "-",
+        })}
       </p>
       <p className="mt-1 text-xs leading-6 text-text-muted">{t("page.amountDueNote")}</p>
     </>
@@ -959,7 +966,7 @@ export default function PaySessionPanel({ sessionId }: Props) {
           <StripePaymentForm
             clientSecret={clientSecret}
             netPaidAmount={breakdown.netPaidAmount}
-            currency={displayCurrency}
+            currency={paymentCurrency}
             returnUrl={returnUrl}
           />
         </div>
@@ -1020,11 +1027,9 @@ export default function PaySessionPanel({ sessionId }: Props) {
               <p className="mt-2 text-xs text-text-muted">
                 {walletSummaryLoading
                   ? t("walletCheckout.balanceLoading")
-                  : formatAmount(
-                      availableWalletBalance,
-                      displayCurrency,
-                      numLocale,
-                    )}
+                  : formatFinanceMoney(numLocale, availableWalletBalance, displayCurrency, {
+                      fallbackText: "-",
+                    })}
               </p>
             </div>
             <label className="inline-flex items-center gap-2 text-xs font-medium text-text-secondary">

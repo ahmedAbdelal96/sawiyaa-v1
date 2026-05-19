@@ -37,11 +37,9 @@ export interface PractitionerPackageViewModel {
   counts: PractitionerPackageCountsViewModel;
 }
 
-export interface PractitionerPackageListItemViewModel
-  extends PractitionerPackageViewModel {}
+export interface PractitionerPackageListItemViewModel extends PractitionerPackageViewModel {}
 
-export interface PractitionerPackageDetailViewModel
-  extends PractitionerPackageViewModel {}
+export interface PractitionerPackageDetailViewModel extends PractitionerPackageViewModel {}
 
 export interface PractitionerPackageListPaginationViewModel {
   page: number;

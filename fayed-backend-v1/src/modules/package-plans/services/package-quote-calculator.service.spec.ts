@@ -47,27 +47,34 @@ describe('PackageQuoteCalculatorService', () => {
     ['SESSIONS_4', 4, '10.00'],
     ['SESSIONS_6', 6, '15.00'],
     ['SESSIONS_8', 8, '20.00'],
-  ] as const)('calculates %s with the right discount percent', async (code, count, discount) => {
-    const result = await service.calculate({
-      plan: {
-        code,
-        sessionCount: count,
-        discountPercent: discount,
-      },
-      practitioner,
-      selectedDurationMinutes: 60,
-      sessionMode: SessionMode.VIDEO,
-      selectedCurrencyCode: 'EGP',
-      patient: null,
-      internalBreakdownVisible: false,
-    });
+  ] as const)(
+    'calculates %s with the right discount percent',
+    async (code, count, discount) => {
+      const result = await service.calculate({
+        plan: {
+          code,
+          sessionCount: count,
+          discountPercent: discount,
+        },
+        practitioner,
+        selectedDurationMinutes: 60,
+        sessionMode: SessionMode.VIDEO,
+        selectedCurrencyCode: 'EGP',
+        patient: null,
+        internalBreakdownVisible: false,
+      });
 
-    expect(result.discountPercent).toBe(discount);
-    expect(result.sessionCount).toBe(count);
-    expect(result.discountAmount).toBe(
-      new Prisma.Decimal(100).mul(count).mul(new Prisma.Decimal(discount)).div(100).toFixed(2),
-    );
-  });
+      expect(result.discountPercent).toBe(discount);
+      expect(result.sessionCount).toBe(count);
+      expect(result.discountAmount).toBe(
+        new Prisma.Decimal(100)
+          .mul(count)
+          .mul(new Prisma.Decimal(discount))
+          .div(100)
+          .toFixed(2),
+      );
+    },
+  );
 
   it('uses EGP base session price when EGP is selected', async () => {
     const result = await service.calculate({
@@ -199,7 +206,9 @@ describe('PackageQuoteCalculatorService', () => {
   });
 
   it('uses the local 70/30 commission split before discount', async () => {
-    (resolveCommissionRuleService.resolveForSession as jest.Mock).mockResolvedValue({
+    (
+      resolveCommissionRuleService.resolveForSession as jest.Mock
+    ).mockResolvedValue({
       rule: { marketType: MarketType.LOCAL },
       platformRatePercent: '30.00',
       practitionerRatePercent: '70.00',
@@ -225,7 +234,9 @@ describe('PackageQuoteCalculatorService', () => {
   });
 
   it('uses the cross-border 50/50 commission split before discount', async () => {
-    (resolveCommissionRuleService.resolveForSession as jest.Mock).mockResolvedValue({
+    (
+      resolveCommissionRuleService.resolveForSession as jest.Mock
+    ).mockResolvedValue({
       rule: { marketType: MarketType.CROSS_BORDER },
       platformRatePercent: '50.00',
       practitionerRatePercent: '50.00',
@@ -251,7 +262,9 @@ describe('PackageQuoteCalculatorService', () => {
   });
 
   it('splits the package discount equally between platform and practitioner', async () => {
-    (resolveCommissionRuleService.resolveForSession as jest.Mock).mockResolvedValue({
+    (
+      resolveCommissionRuleService.resolveForSession as jest.Mock
+    ).mockResolvedValue({
       rule: { marketType: MarketType.LOCAL },
       platformRatePercent: '30.00',
       practitionerRatePercent: '70.00',
@@ -276,7 +289,9 @@ describe('PackageQuoteCalculatorService', () => {
   });
 
   it('keeps final shares equal to the payable total', async () => {
-    (resolveCommissionRuleService.resolveForSession as jest.Mock).mockResolvedValue({
+    (
+      resolveCommissionRuleService.resolveForSession as jest.Mock
+    ).mockResolvedValue({
       rule: { marketType: MarketType.LOCAL },
       platformRatePercent: '30.00',
       practitionerRatePercent: '70.00',
@@ -307,7 +322,9 @@ describe('PackageQuoteCalculatorService', () => {
   });
 
   it('applies deterministic rounding on non-even decimals', async () => {
-    (resolveCommissionRuleService.resolveForSession as jest.Mock).mockResolvedValue({
+    (
+      resolveCommissionRuleService.resolveForSession as jest.Mock
+    ).mockResolvedValue({
       rule: { marketType: MarketType.LOCAL },
       platformRatePercent: '30.00',
       practitionerRatePercent: '70.00',
@@ -321,7 +338,7 @@ describe('PackageQuoteCalculatorService', () => {
       },
       practitioner: {
         ...practitioner,
-      sessionPrice60Egp: new Prisma.Decimal('33.33'),
+        sessionPrice60Egp: new Prisma.Decimal('33.33'),
       },
       selectedDurationMinutes: 60,
       sessionMode: SessionMode.VIDEO,
@@ -362,7 +379,9 @@ describe('PackageQuoteCalculatorService', () => {
   });
 
   it('does not compute an internal split when patient country is missing', async () => {
-    (resolveCommissionRuleService.resolveForSession as jest.Mock).mockResolvedValue({
+    (
+      resolveCommissionRuleService.resolveForSession as jest.Mock
+    ).mockResolvedValue({
       rule: { marketType: MarketType.LOCAL },
       platformRatePercent: '30.00',
       practitionerRatePercent: '70.00',

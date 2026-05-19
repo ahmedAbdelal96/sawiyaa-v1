@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import Button from "@/components/ui/button/Button";
 import InputField from "@/components/form/input/InputField";
@@ -21,6 +21,12 @@ import type {
 } from "@/features/practitioners/types/practitioners.types";
 import { useSpecialties, useSpecialtyCategories } from "@/features/specialties/hooks/use-specialties";
 import { SUPPORTED_COUNTRY_CODE_OPTIONS } from "@/constants/reference-data";
+import {
+  getLocalizedBankOptions,
+  getLocalizedWalletProviderOptions,
+  normalizeBankValue,
+  normalizeWalletProviderValue,
+} from "@/lib/catalogs/payout";
 
 const PRACTITIONER_TYPES: PractitionerType[] = [
   "PSYCHOLOGIST",
@@ -99,6 +105,7 @@ const INITIAL_FORM: FormState = {
 
 export default function AdminPractitionerCreatePage() {
   const t = useTranslations("admin-area");
+  const locale = useLocale();
   const router = useRouter();
   const createMutation = useCreateAdminPractitionerDirect();
 
@@ -128,6 +135,15 @@ export default function AdminPractitionerCreatePage() {
     [form.primarySpecialtyCategoryId, specialtiesQuery.data?.specialties]
   );
 
+  const payoutBankOptions = useMemo(
+    () => getLocalizedBankOptions(locale, form.countryCode, form.bankName),
+    [form.bankName, form.countryCode, locale],
+  );
+  const payoutWalletProviderOptions = useMemo(
+    () => getLocalizedWalletProviderOptions(locale, form.countryCode, form.walletProvider),
+    [form.countryCode, form.walletProvider, locale],
+  );
+
   const specialtyOptions = useMemo(
     () =>
       specialtiesForCategory.map((item) => ({
@@ -151,10 +167,10 @@ export default function AdminPractitionerCreatePage() {
     return {
       methodType: form.payoutMethodType,
       accountHolderName: form.accountHolderName.trim() || undefined,
-      bankName: form.bankName.trim() || undefined,
+      bankName: normalizeBankValue(form.bankName),
       bankAccountNumber: form.bankAccountNumber.trim() || undefined,
       iban: form.iban.trim() || undefined,
-      walletProvider: form.walletProvider.trim() || undefined,
+      walletProvider: normalizeWalletProviderValue(form.walletProvider),
       walletIdentifier: form.walletIdentifier.trim() || undefined,
       otherDetails: form.otherDetails.trim() || undefined,
     };
@@ -368,7 +384,12 @@ export default function AdminPractitionerCreatePage() {
                 <>
                   <div>
                     <Label>Bank name</Label>
-                    <InputField type="text" value={form.bankName} onChange={(e) => setForm((s) => ({ ...s, bankName: e.target.value }))} />
+                    <Select
+                      key={`create-bank-${form.countryCode || "all"}-${form.bankName || "none"}`}
+                      options={payoutBankOptions}
+                      defaultValue={form.bankName}
+                      onChange={(value) => setForm((s) => ({ ...s, bankName: value }))}
+                    />
                   </div>
                   <div>
                     <Label>Bank account number</Label>
@@ -386,10 +407,15 @@ export default function AdminPractitionerCreatePage() {
                 <>
                   <div>
                     <Label>Wallet provider</Label>
-                    <InputField type="text" value={form.walletProvider} onChange={(e) => setForm((s) => ({ ...s, walletProvider: e.target.value }))} />
+                    <Select
+                      key={`create-wallet-provider-${form.countryCode || "all"}-${form.walletProvider || "none"}`}
+                      options={payoutWalletProviderOptions}
+                      defaultValue={form.walletProvider}
+                      onChange={(value) => setForm((s) => ({ ...s, walletProvider: value }))}
+                    />
                   </div>
                   <div>
-                    <Label>Wallet identifier</Label>
+                    <Label>Wallet number</Label>
                     <InputField type="text" value={form.walletIdentifier} onChange={(e) => setForm((s) => ({ ...s, walletIdentifier: e.target.value }))} />
                   </div>
                 </>

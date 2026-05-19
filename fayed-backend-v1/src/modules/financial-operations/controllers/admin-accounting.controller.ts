@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Get,
@@ -20,6 +21,7 @@ import {
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { RequireAccountStates } from '@common/decorators/account-state.decorator';
+import { RequireStepUp } from '@common/decorators/step-up.decorator';
 import { CurrentUser } from '@common/decorators/current-user.decorator';
 import { Permissions } from '@common/decorators/permissions.decorator';
 import { Roles } from '@common/decorators/roles.decorator';
@@ -57,6 +59,7 @@ import { ListAdminLedgerExplorerUseCase } from '../use-cases/list-admin-ledger-e
 import { UpdateAdminAccountingReconciliationReviewUseCase } from '../use-cases/update-admin-accounting-reconciliation-review.use-case';
 import { SecurityAuditService } from '@common/security-audit/security-audit.service';
 import { SecurityAuditOutcome } from '@prisma/client';
+import { AccountingReconciliationDiagnosticsService } from '../services/accounting-reconciliation-diagnostics.service';
 
 @ApiTags('Admin - Accounting')
 @ApiBearerAuth()
@@ -75,6 +78,7 @@ export class AdminAccountingController {
     private readonly listAdminLedgerExplorerUseCase: ListAdminLedgerExplorerUseCase,
     private readonly exportAdminLedgerExplorerCsvUseCase: ExportAdminLedgerExplorerCsvUseCase,
     private readonly getAdminLedgerJournalEntryUseCase: GetAdminLedgerJournalEntryUseCase,
+    private readonly accountingReconciliationDiagnosticsService: AccountingReconciliationDiagnosticsService,
     private readonly securityAuditService: SecurityAuditService,
   ) {}
 
@@ -178,6 +182,7 @@ export class AdminAccountingController {
   }
 
   @Patch('reconciliation/items/:sourceType/:sourceId/review')
+  @RequireStepUp('finance.accounting.reconciliation.review')
   @Permissions(PermissionKey.ACCOUNTING_WRITE)
   @ApiOperation({
     summary: 'Update accounting reconciliation review',
@@ -215,6 +220,171 @@ export class AdminAccountingController {
       resourceId: sourceId,
       metadata: { sourceType },
     });
+    return {
+      success: true as const,
+      data,
+    };
+  }
+
+  @Get('reconcile/payment/:paymentId')
+  @Permissions(PermissionKey.ACCOUNTING_READ)
+  @ApiOperation({
+    summary: 'Reconcile a payment',
+    description:
+      'Returns a read-only reconciliation result comparing the payment, journal, coupon, and ledger records.',
+  })
+  @ApiResponse({ status: 200, description: 'Payment reconciliation result' })
+  async reconcilePayment(
+    @Param('paymentId', new ParseUUIDPipe()) paymentId: string,
+  ) {
+    const data =
+      await this.accountingReconciliationDiagnosticsService.reconcilePayment(
+        paymentId,
+      );
+    return {
+      success: true as const,
+      data,
+    };
+  }
+
+  @Get('reconcile/practitioner-wallet/:practitionerId')
+  @Permissions(PermissionKey.ACCOUNTING_READ)
+  @ApiOperation({
+    summary: 'Reconcile a practitioner wallet projection',
+    description:
+      'Returns a read-only comparison between practitioner wallet rows and ledger-derived balances.',
+  })
+  @ApiResponse({ status: 200, description: 'Practitioner wallet reconciliation result' })
+  async reconcilePractitionerWallet(
+    @Param('practitionerId', new ParseUUIDPipe()) practitionerId: string,
+    @Query('currencyCode') currencyCode?: string,
+  ) {
+    if (!currencyCode?.trim()) {
+      throw new BadRequestException({
+        messageKey: 'financialOperations.errors.currencyRequired',
+        error: 'FINANCIAL_RECONCILIATION_CURRENCY_REQUIRED',
+      });
+    }
+
+    const data =
+      await this.accountingReconciliationDiagnosticsService.reconcilePractitionerWallet(
+        practitionerId,
+        currencyCode,
+      );
+    return {
+      success: true as const,
+      data,
+    };
+  }
+
+  @Get('reconcile/settlement/:settlementId')
+  @Permissions(PermissionKey.ACCOUNTING_READ)
+  @ApiOperation({
+    summary: 'Reconcile a practitioner settlement',
+    description:
+      'Returns a read-only comparison between a settlement, its batch, payouts, and linked ledger entries.',
+  })
+  @ApiResponse({ status: 200, description: 'Settlement reconciliation result' })
+  async reconcileSettlement(
+    @Param('settlementId', new ParseUUIDPipe()) settlementId: string,
+  ) {
+    const data =
+      await this.accountingReconciliationDiagnosticsService.reconcileSettlement(
+        settlementId,
+      );
+    return {
+      success: true as const,
+      data,
+    };
+  }
+
+  @Get('reconcile/settlement-batch/:batchId')
+  @Permissions(PermissionKey.ACCOUNTING_READ)
+  @ApiOperation({
+    summary: 'Reconcile a settlement batch',
+    description:
+      'Returns a read-only comparison between a settlement batch and its contained settlements.',
+  })
+  @ApiResponse({ status: 200, description: 'Settlement batch reconciliation result' })
+  async reconcileSettlementBatch(
+    @Param('batchId', new ParseUUIDPipe()) batchId: string,
+  ) {
+    const data =
+      await this.accountingReconciliationDiagnosticsService.reconcileSettlementBatch(
+        batchId,
+      );
+    return {
+      success: true as const,
+      data,
+    };
+  }
+
+  @Get('reconcile/refund/:refundId')
+  @Permissions(PermissionKey.ACCOUNTING_READ)
+  @ApiOperation({
+    summary: 'Reconcile a refund',
+    description:
+      'Returns a read-only comparison between the refund, ledger reversals, journal entry, and customer wallet credit if applicable.',
+  })
+  @ApiResponse({ status: 200, description: 'Refund reconciliation result' })
+  async reconcileRefund(
+    @Param('refundId', new ParseUUIDPipe()) refundId: string,
+  ) {
+    const data =
+      await this.accountingReconciliationDiagnosticsService.reconcileRefund(
+        refundId,
+      );
+    return {
+      success: true as const,
+      data,
+    };
+  }
+
+  @Get('reconcile/customer-wallet/:patientId')
+  @Permissions(PermissionKey.ACCOUNTING_READ)
+  @ApiOperation({
+    summary: 'Reconcile a customer wallet projection',
+    description:
+      'Returns a read-only comparison between a customer wallet and the wallet entry / reservation subledger.',
+  })
+  @ApiResponse({ status: 200, description: 'Customer wallet reconciliation result' })
+  async reconcileCustomerWallet(
+    @Param('patientId', new ParseUUIDPipe()) patientId: string,
+    @Query('currencyCode') currencyCode?: string,
+  ) {
+    if (!currencyCode?.trim()) {
+      throw new BadRequestException({
+        messageKey: 'financialOperations.errors.currencyRequired',
+        error: 'FINANCIAL_RECONCILIATION_CURRENCY_REQUIRED',
+      });
+    }
+
+    const data =
+      await this.accountingReconciliationDiagnosticsService.reconcileCustomerWallet(
+        patientId,
+        currencyCode,
+      );
+    return {
+      success: true as const,
+      data,
+    };
+  }
+
+  @Get('reconcile/package-settlement/:packageSettlementId')
+  @Permissions(PermissionKey.ACCOUNTING_READ)
+  @ApiOperation({
+    summary: 'Reconcile a package settlement',
+    description:
+      'Returns a read-only comparison between a package settlement, purchase snapshots, and release ledger entries.',
+  })
+  @ApiResponse({ status: 200, description: 'Package settlement reconciliation result' })
+  async reconcilePackageSettlement(
+    @Param('packageSettlementId', new ParseUUIDPipe()) packageSettlementId: string,
+  ) {
+    const data =
+      await this.accountingReconciliationDiagnosticsService.reconcilePackageSettlement(
+        packageSettlementId,
+      );
     return {
       success: true as const,
       data,

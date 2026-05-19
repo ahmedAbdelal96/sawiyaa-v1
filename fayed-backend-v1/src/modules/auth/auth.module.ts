@@ -25,6 +25,8 @@ import { AuthTokenService } from './services/auth-token.service';
 import { GoogleIdentityService } from './services/google-identity.service';
 import { PasswordHashService } from './services/password-hash.service';
 import { PractitionerOtpChannelService } from './services/practitioner-otp-channel.service';
+import { PatientOtpChannelService } from './services/patient-otp-channel.service';
+import { StepUpService } from './services/step-up.service';
 import { GetCurrentAuthUserUseCase } from './use-cases/get-current-auth-user.use-case';
 import { HashPasswordUseCase } from './use-cases/hash-password.use-case';
 import { IssueAuthTokensUseCase } from './use-cases/issue-auth-tokens.use-case';
@@ -44,7 +46,10 @@ import { RegisterPatientWithGoogleUseCase } from './use-cases/register-patient-w
 import { RegisterPractitionerAccountUseCase } from './use-cases/register-practitioner-account.use-case';
 import { RequestPractitionerPasswordResetUseCase } from './use-cases/request-practitioner-password-reset.use-case';
 import { ResetPractitionerPasswordUseCase } from './use-cases/reset-practitioner-password.use-case';
+import { RequestPatientPasswordResetUseCase } from './use-cases/request-patient-password-reset.use-case';
+import { ResetPatientPasswordUseCase } from './use-cases/reset-patient-password.use-case';
 import { RevokeAuthSessionUseCase } from './use-cases/revoke-auth-session.use-case';
+import { VerifyAdminStepUpUseCase } from './use-cases/verify-admin-step-up.use-case';
 import { VerifyPasswordUseCase } from './use-cases/verify-password.use-case';
 import { VerifyPractitionerLoginOtpUseCase } from './use-cases/verify-practitioner-login-otp.use-case';
 import { PresenceModule } from '../presence/presence.module';
@@ -73,6 +78,8 @@ import { VerificationModule } from '../verification/verification.module';
     AuthSessionService,
     GoogleIdentityService,
     PractitionerOtpChannelService,
+    PatientOtpChannelService,
+    StepUpService,
     AuthRequestContextService,
     AuthRequestContextMiddleware,
     HashPasswordUseCase,
@@ -87,6 +94,8 @@ import { VerificationModule } from '../verification/verification.module';
     LoginPatientWithEmailPasswordUseCase,
     RefreshPatientTokenUseCase,
     LogoutPatientUseCase,
+    RequestPatientPasswordResetUseCase,
+    ResetPatientPasswordUseCase,
     RegisterPractitionerAccountUseCase,
     LoginPractitionerPasswordUseCase,
     VerifyPractitionerLoginOtpUseCase,
@@ -97,12 +106,14 @@ import { VerificationModule } from '../verification/verification.module';
     LoginAdminUseCase,
     RefreshAdminTokenUseCase,
     LogoutAdminUseCase,
+    VerifyAdminStepUpUseCase,
   ],
   exports: [
     JwtAccessAuthGuard,
     JwtRefreshAuthGuard,
     GetCurrentAuthUserUseCase,
     AuthRequestContextService,
+    StepUpService,
   ],
 })
 export class AuthModule implements NestModule {

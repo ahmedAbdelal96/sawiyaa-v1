@@ -8,4 +8,3 @@ describe('AdminPackagePlanSettingsController routes', () => {
     ).toBe('admin/package-plans/settings');
   });
 });
-

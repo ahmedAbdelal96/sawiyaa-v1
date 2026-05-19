@@ -1,34 +1,30 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import type {
-  AuthTokens,
   AuthenticatedUser,
-  MobileRole,
+  MobileSupportedRole,
   PersistedAuthSession,
 } from "./contracts";
+import {
+  clearSecureAuthTokens,
+  getSecureAuthTokens,
+  setSecureAuthTokens,
+} from "./secure-token-storage";
 
-const AUTH_SESSION_KEY = "fayed.mobile.auth.session.v1";
+const AUTH_SESSION_KEY_V1 = "fayed.mobile.auth.session.v1";
+const AUTH_SESSION_KEY_V2 = "fayed.mobile.auth.session.v2";
 const DEVICE_ID_KEY = "fayed.mobile.device.id.v1";
 
 function createDeviceId() {
   return `device_${Date.now()}_${Math.random().toString(36).slice(2, 12)}`;
 }
 
-function isMobileRole(value: unknown): value is MobileRole {
-  return value === "patient" || value === "practitioner" || value === "admin";
-}
-
-function isAuthTokens(value: unknown): value is AuthTokens {
-  if (!value || typeof value !== "object") {
-    return false;
-  }
-
-  const tokens = value as Record<string, unknown>;
-  return (
-    typeof tokens.accessToken === "string" &&
-    typeof tokens.refreshToken === "string" &&
-    typeof tokens.accessTokenExpiresAt === "string" &&
-    typeof tokens.refreshTokenExpiresAt === "string"
-  );
+/**
+ * Runtime validator for the persisted mobile role.
+ * Only "patient" and "practitioner" are accepted — "admin" and any
+ * other string are intentionally rejected.
+ */
+function isMobileSupportedRole(value: unknown): value is MobileSupportedRole {
+  return value === "patient" || value === "practitioner";
 }
 
 function isAuthenticatedUser(value: unknown): value is AuthenticatedUser {
@@ -53,38 +49,106 @@ function isPersistedAuthSession(value: unknown): value is PersistedAuthSession {
 
   const session = value as Record<string, unknown>;
   return (
-    isMobileRole(session.role) &&
+    isMobileSupportedRole(session.role) &&
     isAuthenticatedUser(session.user) &&
-    isAuthTokens(session.tokens)
+    Boolean(session.tokens) &&
+    typeof session.tokens === "object"
   );
 }
 
 export async function getStoredAuthSession() {
-  const raw = await AsyncStorage.getItem(AUTH_SESSION_KEY);
-  if (!raw) {
-    return null;
+  const rawV2 = await AsyncStorage.getItem(AUTH_SESSION_KEY_V2);
+  if (rawV2) {
+    try {
+      const parsed = JSON.parse(rawV2) as unknown;
+      if (
+        !parsed ||
+        typeof parsed !== "object" ||
+        !isMobileSupportedRole((parsed as any).role) ||
+        !isAuthenticatedUser((parsed as any).user)
+      ) {
+        await AsyncStorage.removeItem(AUTH_SESSION_KEY_V2);
+        return null;
+      }
+
+      const tokens = await getSecureAuthTokens();
+      if (!tokens) {
+        // Metadata without tokens => fail closed.
+        await AsyncStorage.removeItem(AUTH_SESSION_KEY_V2);
+        return null;
+      }
+
+      return {
+        role: (parsed as any).role,
+        user: (parsed as any).user,
+        tokens,
+      } as PersistedAuthSession;
+    } catch {
+      await AsyncStorage.removeItem(AUTH_SESSION_KEY_V2);
+      return null;
+    }
   }
 
   try {
-    const parsed = JSON.parse(raw) as unknown;
-    if (!isPersistedAuthSession(parsed)) {
-      await AsyncStorage.removeItem(AUTH_SESSION_KEY);
+    const rawV1 = await AsyncStorage.getItem(AUTH_SESSION_KEY_V1);
+    if (!rawV1) {
       return null;
     }
 
-    return parsed;
+    const parsed = JSON.parse(rawV1) as unknown;
+    if (!isPersistedAuthSession(parsed)) {
+      await AsyncStorage.removeItem(AUTH_SESSION_KEY_V1);
+      return null;
+    }
+
+    // Migrate legacy AsyncStorage token persistence to SecureStore.
+    const legacy = parsed as PersistedAuthSession;
+    try {
+      await setSecureAuthTokens(legacy.tokens);
+      await AsyncStorage.setItem(
+        AUTH_SESSION_KEY_V2,
+        JSON.stringify({ role: legacy.role, user: legacy.user }),
+      );
+      await AsyncStorage.removeItem(AUTH_SESSION_KEY_V1);
+      return legacy;
+    } catch {
+      // Fail closed: clear any legacy/session artifacts.
+      await Promise.all([
+        clearSecureAuthTokens(),
+        AsyncStorage.removeItem(AUTH_SESSION_KEY_V1),
+        AsyncStorage.removeItem(AUTH_SESSION_KEY_V2),
+      ]);
+      return null;
+    }
   } catch {
-    await AsyncStorage.removeItem(AUTH_SESSION_KEY);
+    await AsyncStorage.removeItem(AUTH_SESSION_KEY_V1);
     return null;
   }
 }
 
 export async function storeAuthSession(session: PersistedAuthSession) {
-  await AsyncStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(session));
+  try {
+    await setSecureAuthTokens(session.tokens);
+    await AsyncStorage.setItem(
+      AUTH_SESSION_KEY_V2,
+      JSON.stringify({ role: session.role, user: session.user }),
+    );
+  } catch {
+    // Fail closed: never keep a partially-persisted session.
+    await Promise.all([
+      clearSecureAuthTokens(),
+      AsyncStorage.removeItem(AUTH_SESSION_KEY_V2),
+    ]);
+    throw new Error("Failed to persist auth session securely.");
+  }
 }
 
 export async function clearStoredAuthSession() {
-  await AsyncStorage.removeItem(AUTH_SESSION_KEY);
+  await Promise.all([
+    clearSecureAuthTokens(),
+    AsyncStorage.removeItem(AUTH_SESSION_KEY_V2),
+    AsyncStorage.removeItem(AUTH_SESSION_KEY_V1),
+  ]);
 }
 
 export async function getOrCreateDeviceId() {

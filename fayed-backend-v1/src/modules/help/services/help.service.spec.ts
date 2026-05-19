@@ -20,7 +20,9 @@ describe('HelpService', () => {
       update: jest.fn(),
       delete: jest.fn(),
     },
-    $transaction: jest.fn(async (operations: Promise<unknown>[]) => Promise.all(operations)),
+    $transaction: jest.fn(async (operations: Promise<unknown>[]) =>
+      Promise.all(operations),
+    ),
   } as unknown as PrismaService;
 
   const service = new HelpService(prisma);
@@ -89,54 +91,66 @@ describe('HelpService', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    (prisma.helpCategory.findFirst as jest.Mock).mockResolvedValue({ sortOrder: 2 });
+    (prisma.helpCategory.findFirst as jest.Mock).mockResolvedValue({
+      sortOrder: 2,
+    });
     (prisma.helpCategory.findUnique as jest.Mock).mockResolvedValue(null);
     (prisma.helpCategory.findMany as jest.Mock).mockResolvedValue([]);
-    (prisma.helpCategory.create as jest.Mock).mockImplementation(async ({ data }) => ({
-      id: `cat_${data.slug}`,
-      ...data,
-      createdAt: new Date('2026-05-03T10:00:00.000Z'),
-      updatedAt: new Date('2026-05-03T10:00:00.000Z'),
-      questions: [],
-    }));
-    (prisma.helpCategory.update as jest.Mock).mockImplementation(async ({ where, data }) => ({
-      id: where.id,
-      slug: data.slug ?? 'updated',
-      titleAr: data.titleAr ?? 'updated',
-      titleEn: data.titleEn ?? 'updated',
-      descriptionAr: data.descriptionAr ?? null,
-      descriptionEn: data.descriptionEn ?? null,
-      sortOrder: data.sortOrder ?? 1,
-      isActive: data.isActive ?? true,
-      createdAt: new Date('2026-05-03T10:00:00.000Z'),
-      updatedAt: new Date('2026-05-03T10:00:00.000Z'),
-      questions: [],
-    }));
+    (prisma.helpCategory.create as jest.Mock).mockImplementation(
+      async ({ data }) => ({
+        id: `cat_${data.slug}`,
+        ...data,
+        createdAt: new Date('2026-05-03T10:00:00.000Z'),
+        updatedAt: new Date('2026-05-03T10:00:00.000Z'),
+        questions: [],
+      }),
+    );
+    (prisma.helpCategory.update as jest.Mock).mockImplementation(
+      async ({ where, data }) => ({
+        id: where.id,
+        slug: data.slug ?? 'updated',
+        titleAr: data.titleAr ?? 'updated',
+        titleEn: data.titleEn ?? 'updated',
+        descriptionAr: data.descriptionAr ?? null,
+        descriptionEn: data.descriptionEn ?? null,
+        sortOrder: data.sortOrder ?? 1,
+        isActive: data.isActive ?? true,
+        createdAt: new Date('2026-05-03T10:00:00.000Z'),
+        updatedAt: new Date('2026-05-03T10:00:00.000Z'),
+        questions: [],
+      }),
+    );
     (prisma.helpQuestion.findUnique as jest.Mock).mockResolvedValue(null);
     (prisma.helpQuestion.findMany as jest.Mock).mockResolvedValue([]);
-    (prisma.helpQuestion.create as jest.Mock).mockImplementation(async ({ data }) => ({
-      id: `q_${data.sortOrder}`,
-      ...data,
-      categorySlug: null,
-      categoryTitleAr: null,
-      categoryTitleEn: null,
-      createdAt: new Date('2026-05-03T10:00:00.000Z'),
-      updatedAt: new Date('2026-05-03T10:00:00.000Z'),
-    }));
-    (prisma.helpQuestion.update as jest.Mock).mockImplementation(async ({ where, data }) => ({
-      id: where.id,
-      ...data,
-      categoryId: data.categoryId ?? null,
-      categorySlug: null,
-      categoryTitleAr: null,
-      categoryTitleEn: null,
-      createdAt: new Date('2026-05-03T10:00:00.000Z'),
-      updatedAt: new Date('2026-05-03T10:00:00.000Z'),
-    }));
+    (prisma.helpQuestion.create as jest.Mock).mockImplementation(
+      async ({ data }) => ({
+        id: `q_${data.sortOrder}`,
+        ...data,
+        categorySlug: null,
+        categoryTitleAr: null,
+        categoryTitleEn: null,
+        createdAt: new Date('2026-05-03T10:00:00.000Z'),
+        updatedAt: new Date('2026-05-03T10:00:00.000Z'),
+      }),
+    );
+    (prisma.helpQuestion.update as jest.Mock).mockImplementation(
+      async ({ where, data }) => ({
+        id: where.id,
+        ...data,
+        categoryId: data.categoryId ?? null,
+        categorySlug: null,
+        categoryTitleAr: null,
+        categoryTitleEn: null,
+        createdAt: new Date('2026-05-03T10:00:00.000Z'),
+        updatedAt: new Date('2026-05-03T10:00:00.000Z'),
+      }),
+    );
   });
 
   it('creates categories with normalized slugs', async () => {
-    (prisma.helpCategory.findMany as jest.Mock).mockResolvedValue([categories[0]]);
+    (prisma.helpCategory.findMany as jest.Mock).mockResolvedValue([
+      categories[0],
+    ]);
 
     await service.createCategory({
       slug: 'HELP-CENTER',
@@ -160,8 +174,12 @@ describe('HelpService', () => {
   });
 
   it('updates categories and keeps list shape', async () => {
-    (prisma.helpCategory.findUnique as jest.Mock).mockResolvedValue({ id: 'cat_1' });
-    (prisma.helpCategory.findMany as jest.Mock).mockResolvedValue([categories[0]]);
+    (prisma.helpCategory.findUnique as jest.Mock).mockResolvedValue({
+      id: 'cat_1',
+    });
+    (prisma.helpCategory.findMany as jest.Mock).mockResolvedValue([
+      categories[0],
+    ]);
 
     await service.updateCategory('cat_1', {
       slug: 'account-and-sign-in',
@@ -181,12 +199,18 @@ describe('HelpService', () => {
   });
 
   it('deletes categories and returns refreshed list', async () => {
-    (prisma.helpCategory.findUnique as jest.Mock).mockResolvedValue({ id: 'cat_1' });
-    (prisma.helpCategory.findMany as jest.Mock).mockResolvedValue([categories[0]]);
+    (prisma.helpCategory.findUnique as jest.Mock).mockResolvedValue({
+      id: 'cat_1',
+    });
+    (prisma.helpCategory.findMany as jest.Mock).mockResolvedValue([
+      categories[0],
+    ]);
 
     await service.deleteCategory('cat_1');
 
-    expect(prisma.helpCategory.delete).toHaveBeenCalledWith({ where: { id: 'cat_1' } });
+    expect(prisma.helpCategory.delete).toHaveBeenCalledWith({
+      where: { id: 'cat_1' },
+    });
   });
 
   it('reorders categories with batch updates', async () => {
@@ -204,8 +228,12 @@ describe('HelpService', () => {
   });
 
   it('creates questions with optional category lookup', async () => {
-    (prisma.helpCategory.findUnique as jest.Mock).mockResolvedValue({ id: 'cat_1' });
-    (prisma.helpQuestion.findMany as jest.Mock).mockResolvedValue([questions[0]]);
+    (prisma.helpCategory.findUnique as jest.Mock).mockResolvedValue({
+      id: 'cat_1',
+    });
+    (prisma.helpQuestion.findMany as jest.Mock).mockResolvedValue([
+      questions[0],
+    ]);
 
     await service.createQuestion({
       categoryId: 'cat_1',
@@ -229,9 +257,13 @@ describe('HelpService', () => {
   });
 
   it('updates questions and keeps categories optional', async () => {
-    (prisma.helpQuestion.findUnique as jest.Mock).mockResolvedValue({ id: 'q_1' });
+    (prisma.helpQuestion.findUnique as jest.Mock).mockResolvedValue({
+      id: 'q_1',
+    });
     (prisma.helpCategory.findUnique as jest.Mock).mockResolvedValue(null);
-    (prisma.helpQuestion.findMany as jest.Mock).mockResolvedValue([questions[0]]);
+    (prisma.helpQuestion.findMany as jest.Mock).mockResolvedValue([
+      questions[0],
+    ]);
 
     await service.updateQuestion('q_1', {
       categoryId: null,
@@ -269,12 +301,16 @@ describe('HelpService', () => {
   });
 
   it('returns only active ordered items publicly', async () => {
-    (prisma.helpCategory.findMany as jest.Mock).mockResolvedValue([categories[0]]);
+    (prisma.helpCategory.findMany as jest.Mock).mockResolvedValue([
+      categories[0],
+    ]);
     (prisma.helpQuestion.findMany as jest.Mock).mockResolvedValue(questions);
 
     const result = await service.getPublicHelp();
 
-    expect(result.categories).toEqual([expect.objectContaining({ id: 'cat_1' })]);
+    expect(result.categories).toEqual([
+      expect.objectContaining({ id: 'cat_1' }),
+    ]);
     expect(result.questions).toEqual([
       expect.objectContaining({ id: 'q_1' }),
       expect.objectContaining({ id: 'q_2' }),
@@ -285,7 +321,9 @@ describe('HelpService', () => {
     (prisma.helpCategory.findMany as jest.Mock)
       .mockResolvedValueOnce([categories[0]])
       .mockResolvedValueOnce([categories[0]]);
-    (prisma.helpQuestion.findMany as jest.Mock).mockResolvedValue([questions[0]]);
+    (prisma.helpQuestion.findMany as jest.Mock).mockResolvedValue([
+      questions[0],
+    ]);
 
     const result = await service.searchPublicHelp('account');
 
@@ -307,7 +345,9 @@ describe('HelpService', () => {
   });
 
   it('maps duplicate category slug conflicts', async () => {
-    (prisma.helpCategory.create as jest.Mock).mockRejectedValue({ code: 'P2002' });
+    (prisma.helpCategory.create as jest.Mock).mockRejectedValue({
+      code: 'P2002',
+    });
 
     await expect(
       service.createCategory({
@@ -321,6 +361,8 @@ describe('HelpService', () => {
   it('throws not found when deleting unknown question', async () => {
     (prisma.helpQuestion.findUnique as jest.Mock).mockResolvedValue(null);
 
-    await expect(service.deleteQuestion('missing')).rejects.toBeInstanceOf(NotFoundException);
+    await expect(service.deleteQuestion('missing')).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
   });
 });

@@ -110,6 +110,59 @@ export const permissionDefinitions: Array<{
     key: 'support.ticket.assign',
     description: 'Assign or reassign support tickets to admin/support users',
   },
+  {
+    key: 'practitionerApplications.read',
+    description: 'Read practitioner application list and full review details',
+  },
+  {
+    key: 'practitionerApplications.approve',
+    description:
+      'Approve practitioner applications, update draft data, and manage credentials during review',
+  },
+  {
+    key: 'practitionerApplications.reject',
+    description: 'Reject practitioner applications',
+  },
+  {
+    key: 'practitionerApplications.requestChanges',
+    description: 'Send applications back to practitioner for changes',
+  },
+  {
+    key: 'admin-users.read',
+    description: 'Read internal platform users (admin/staff accounts)',
+  },
+  {
+    key: 'admin-users.create',
+    description: 'Create internal platform users (admin/staff accounts)',
+  },
+  {
+    key: 'admin-users.update',
+    description: 'Update internal platform user profile basics',
+  },
+  {
+    key: 'admin-users.status.update',
+    description: 'Enable/disable/suspend internal platform users',
+  },
+  {
+    key: 'admin-users.roles.update',
+    description: 'Assign or remove roles for internal platform users',
+  },
+  {
+    key: 'admin-users.permission-overrides.read',
+    description: 'Read permission overrides for internal platform users',
+  },
+  {
+    key: 'admin-users.permission-overrides.update',
+    description: 'Update permission overrides for internal platform users',
+  },
+  {
+    key: 'admin-users.sessions.revoke',
+    description: 'Revoke internal platform user sessions (force logout)',
+  },
+  {
+    key: 'admin-users.token-version.invalidate',
+    description: 'Invalidate internal platform user tokens (bump tokenVersion)',
+  },
 ];
 
 export const rolePermissionBundles: Array<{
@@ -122,7 +175,14 @@ export const rolePermissionBundles: Array<{
   },
   {
     role: UserRoleType.ADMIN,
-    permissions: permissionDefinitions.map((permission) => permission.key),
+    // ADMIN retains broad back-office access, but permission override management remains SUPER_ADMIN-only by default.
+    permissions: permissionDefinitions
+      .map((permission) => permission.key)
+      .filter(
+        (key) =>
+          key !== 'admin-users.permission-overrides.read' &&
+          key !== 'admin-users.permission-overrides.update',
+      ),
   },
   {
     role: UserRoleType.FINANCE_STAFF,
@@ -145,7 +205,13 @@ export const rolePermissionBundles: Array<{
   },
   {
     role: UserRoleType.PRACTITIONER_REVIEWER,
-    permissions: ['audit-log.read'],
+    permissions: [
+      'audit-log.read',
+      'practitionerApplications.read',
+      'practitionerApplications.approve',
+      'practitionerApplications.reject',
+      'practitionerApplications.requestChanges',
+    ],
   },
   {
     role: UserRoleType.PATIENT_OPERATIONS,

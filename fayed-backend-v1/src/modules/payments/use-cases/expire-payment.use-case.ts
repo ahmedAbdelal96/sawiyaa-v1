@@ -81,9 +81,11 @@ export class ExpirePaymentUseCase {
       return expired;
     });
 
-    const paymentMetadata = (payment.metadataJson ?? {}) as Record<string, unknown>;
-    const isAcademyEnrollment =
-      paymentMetadata.source === 'academy-enrollment';
+    const paymentMetadata = (payment.metadataJson ?? {}) as Record<
+      string,
+      unknown
+    >;
+    const isAcademyEnrollment = paymentMetadata.source === 'academy-enrollment';
 
     if (payment.paymentPurpose === PaymentPurpose.SESSION_PACKAGE_PURCHASE) {
       await this.reconcilePackagePurchasePaymentUseCase.execute({

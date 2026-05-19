@@ -29,19 +29,19 @@ export function resolveAcademyCoursePricingState(
     priceAmountEgp:
       payload.priceAmountEgp !== undefined
         ? normalizeAcademyPriceValue(payload.priceAmountEgp)
-        : current?.priceAmountEgp ?? null,
+        : (current?.priceAmountEgp ?? null),
     priceAmountUsd:
       payload.priceAmountUsd !== undefined
         ? normalizeAcademyPriceValue(payload.priceAmountUsd)
-        : current?.priceAmountUsd ?? null,
+        : (current?.priceAmountUsd ?? null),
     priceAmount:
       payload.priceAmount !== undefined
         ? normalizeAcademyPriceValue(payload.priceAmount)
-        : current?.priceAmount ?? null,
+        : (current?.priceAmount ?? null),
     currencyCode:
       payload.currencyCode !== undefined
         ? normalizeAcademyCurrencyCode(payload.currencyCode)
-        : current?.currencyCode ?? null,
+        : (current?.currencyCode ?? null),
   };
 
   const legacyAmount = next.priceAmount;
@@ -85,7 +85,8 @@ export function resolveAcademyCheckoutPricing(input: {
   currencyCode: string | null;
   resolvedCountryCode: string | null;
 }) {
-  const resolvedCountryCode = input.resolvedCountryCode?.trim().toUpperCase() ?? null;
+  const resolvedCountryCode =
+    input.resolvedCountryCode?.trim().toUpperCase() ?? null;
   const isEgypt =
     resolvedCountryCode === 'EG' ||
     resolvedCountryCode === 'EGY' ||

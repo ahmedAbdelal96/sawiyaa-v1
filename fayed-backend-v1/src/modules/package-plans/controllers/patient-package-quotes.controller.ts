@@ -41,20 +41,24 @@ export class PatientPackageQuotesController {
   })
   @ApiResponse({ status: 200, type: PackagePlanQuotedItemSuccessResponseDto })
   @ApiUnauthorizedResponse({ description: 'Access token is required' })
-  @ApiForbiddenResponse({ description: 'Only active patient accounts may access this route' })
+  @ApiForbiddenResponse({
+    description: 'Only active patient accounts may access this route',
+  })
   quote(
     @CurrentUser() currentUser: AuthenticatedUser,
     @CurrentLocale() locale: SupportedLocale,
     @Body() body: PackagePlanQuoteRequestDto,
   ) {
-    return this.quotePackagePlanUseCase.execute({
-      userId: currentUser.id,
-      locale,
-      packagePlanCode: body.packagePlanCode,
-      practitionerSlug: body.practitionerSlug,
-      durationMinutes: body.durationMinutes,
-      sessionMode: body.sessionMode,
-      requestedCurrencyCode: body.currencyCode,
-    }).then((data) => ({ success: true as const, data }));
+    return this.quotePackagePlanUseCase
+      .execute({
+        userId: currentUser.id,
+        locale,
+        packagePlanCode: body.packagePlanCode,
+        practitionerSlug: body.practitionerSlug,
+        durationMinutes: body.durationMinutes,
+        sessionMode: body.sessionMode,
+        requestedCurrencyCode: body.currencyCode,
+      })
+      .then((data) => ({ success: true as const, data }));
   }
 }

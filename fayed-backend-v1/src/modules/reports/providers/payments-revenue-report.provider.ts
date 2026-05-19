@@ -10,14 +10,17 @@ export type PaymentsRevenueReportOverviewInput = {
   currencyCode?: string;
 };
 
-export type PaymentsRevenueReportRowsInput = PaymentsRevenueReportOverviewInput & {
-  page: number;
-  limit: number;
-  sourceType?: JournalEntrySourceType;
-};
+export type PaymentsRevenueReportRowsInput =
+  PaymentsRevenueReportOverviewInput & {
+    page: number;
+    limit: number;
+    sourceType?: JournalEntrySourceType;
+  };
 
 export interface PaymentsRevenueReportProvider {
-  getOverview(input: PaymentsRevenueReportOverviewInput): Promise<PaymentsRevenueReportOverview>;
+  getOverview(
+    input: PaymentsRevenueReportOverviewInput,
+  ): Promise<PaymentsRevenueReportOverview>;
   listRows(
     input: PaymentsRevenueReportRowsInput,
   ): Promise<{ items: PaymentsRevenueReportRow[]; totalItems: number }>;
@@ -26,4 +29,3 @@ export interface PaymentsRevenueReportProvider {
 export const PAYMENTS_REVENUE_REPORT_PROVIDER = Symbol(
   'PAYMENTS_REVENUE_REPORT_PROVIDER',
 );
-

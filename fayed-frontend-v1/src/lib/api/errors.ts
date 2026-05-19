@@ -208,3 +208,8 @@ export function isUnauthorizedError(error: unknown): boolean {
 export function isForbiddenError(error: unknown): boolean {
   return toAppError(error).statusCode === 403;
 }
+
+export function isStepUpRequiredError(error: unknown): boolean {
+  const appError = toAppError(error);
+  return appError.statusCode === 403 && appError.code === "STEP_UP_REQUIRED";
+}

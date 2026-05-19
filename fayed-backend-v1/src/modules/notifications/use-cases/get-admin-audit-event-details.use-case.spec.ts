@@ -19,7 +19,9 @@ describe('GetAdminAuditEventDetailsUseCase', () => {
   });
 
   it('returns details when audit event exists', async () => {
-    (repository.findAdminAuditEventById as jest.Mock).mockResolvedValue({ id: 'evt1' });
+    (repository.findAdminAuditEventById as jest.Mock).mockResolvedValue({
+      id: 'evt1',
+    });
 
     const result = await useCase.execute({ eventId: 'evt1' });
 

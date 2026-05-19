@@ -56,9 +56,7 @@ function cloneJson<T>(value: T): T {
 }
 
 function hashSnapshot(input: unknown): string {
-  return createHash('sha256')
-    .update(JSON.stringify(input))
-    .digest('hex');
+  return createHash('sha256').update(JSON.stringify(input)).digest('hex');
 }
 
 function toClauseViewModel(clause: RefundPolicyClause): RefundPolicyClauseDto {
@@ -95,7 +93,9 @@ function toPolicyViewModel(policy: RefundPolicyWithClauses): RefundPolicyDto {
   };
 }
 
-function toPolicyViewModelWithAllClauses(policy: RefundPolicyWithClauses): RefundPolicyDto {
+function toPolicyViewModelWithAllClauses(
+  policy: RefundPolicyWithClauses,
+): RefundPolicyDto {
   const clauses = [...policy.clauses]
     .sort((a, b) => a.sortOrder - b.sortOrder)
     .map((clause) => toClauseViewModel(clause));
@@ -162,9 +162,7 @@ export class RefundPolicyService {
     };
   }
 
-  async getPolicy(
-    policyType: RefundPolicyType,
-  ): Promise<RefundPolicyDto> {
+  async getPolicy(policyType: RefundPolicyType): Promise<RefundPolicyDto> {
     const policy = (await this.refundPolicyRepository.findPolicyByType(
       policyType,
     )) as RefundPolicyWithClauses | null;
@@ -195,7 +193,8 @@ export class RefundPolicyService {
   }
 
   async getPublicCurrent(): Promise<RefundPoliciesListViewModel> {
-    const policies = (await this.refundPolicyRepository.listPolicies()) as RefundPolicyWithClauses[];
+    const policies =
+      (await this.refundPolicyRepository.listPolicies()) as RefundPolicyWithClauses[];
     return {
       items: policies
         .filter((policy) => policy.isActive)
@@ -221,10 +220,9 @@ export class RefundPolicyService {
     policyType: RefundPolicyType,
     body: CreateRefundPolicyClauseDto,
   ): Promise<RefundPolicyDto> {
-    const policy = (await this.ensurePolicyFamily(policyType)) as RefundPolicyWithClauses;
+    const policy = await this.ensurePolicyFamily(policyType);
     const nextSortOrder =
-      body.sortOrder ??
-      ((policy.clauses.at(-1)?.sortOrder ?? 0) + 1);
+      body.sortOrder ?? (policy.clauses.at(-1)?.sortOrder ?? 0) + 1;
 
     await this.refundPolicyRepository.createClause({
       policyId: policy.id,
@@ -244,9 +242,9 @@ export class RefundPolicyService {
     clauseId: string,
     body: CreateRefundPolicyClauseDto,
   ): Promise<RefundPolicyDto> {
-    const clause = (await this.refundPolicyRepository.findClauseById(clauseId)) as
-      | (RefundPolicyClause & { policy: RefundPolicyWithClauses })
-      | null;
+    const clause = (await this.refundPolicyRepository.findClauseById(
+      clauseId,
+    )) as (RefundPolicyClause & { policy: RefundPolicyWithClauses }) | null;
     if (!clause || clause.policy.policyType !== policyType) {
       throw new NotFoundException({
         messageKey: 'refundPolicies.errors.clauseNotFound',
@@ -270,9 +268,9 @@ export class RefundPolicyService {
     policyType: RefundPolicyType,
     clauseId: string,
   ): Promise<RefundPolicyDto> {
-    const clause = (await this.refundPolicyRepository.findClauseById(clauseId)) as
-      | (RefundPolicyClause & { policy: RefundPolicyWithClauses })
-      | null;
+    const clause = (await this.refundPolicyRepository.findClauseById(
+      clauseId,
+    )) as (RefundPolicyClause & { policy: RefundPolicyWithClauses }) | null;
     if (!clause || clause.policy.policyType !== policyType) {
       throw new NotFoundException({
         messageKey: 'refundPolicies.errors.clauseNotFound',
@@ -318,7 +316,10 @@ export class RefundPolicyService {
     return this.getPolicy(policyType);
   }
 
-  async ensureAcceptedRefundPolicyForPayment(input: AcceptanceInput, tx?: Prisma.TransactionClient) {
+  async ensureAcceptedRefundPolicyForPayment(
+    input: AcceptanceInput,
+    tx?: Prisma.TransactionClient,
+  ) {
     if (!input.acceptedRefundPolicyId) {
       throw new BadRequestException({
         messageKey: 'refundPolicies.errors.acceptanceRequired',

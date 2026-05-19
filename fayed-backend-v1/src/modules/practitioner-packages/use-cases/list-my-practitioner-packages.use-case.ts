@@ -16,9 +16,10 @@ export class ListMyPractitionerPackagesUseCase {
     userId: string;
     query: ListMyPractitionerPackagesDto;
   }) {
-    const profile = await this.practitionerPackageRepository.findPractitionerProfileByUserId(
-      input.userId,
-    );
+    const profile =
+      await this.practitionerPackageRepository.findPractitionerProfileByUserId(
+        input.userId,
+      );
 
     if (!profile) {
       throw new NotFoundException({
@@ -30,15 +31,14 @@ export class ListMyPractitionerPackagesUseCase {
     const page = input.query.page ?? 1;
     const limit = input.query.limit ?? 20;
 
-    const [listResult, maxNonArchivedPackages] =
-      await Promise.all([
-        this.practitionerPackageRepository.listByPractitionerId({
-          practitionerId: profile.id,
-          page,
-          limit,
-        }),
-        this.packageLimitPolicy.resolveMaxNonArchivedPackages(profile.id),
-      ]);
+    const [listResult, maxNonArchivedPackages] = await Promise.all([
+      this.practitionerPackageRepository.listByPractitionerId({
+        practitionerId: profile.id,
+        page,
+        limit,
+      }),
+      this.packageLimitPolicy.resolveMaxNonArchivedPackages(profile.id),
+    ]);
 
     const [items, totalItems, currentNonArchivedPackages] = listResult;
 

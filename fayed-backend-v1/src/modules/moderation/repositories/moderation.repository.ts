@@ -324,9 +324,7 @@ export class ModerationRepository {
       },
     });
     if (!row) {
-      this.logger.warn(
-        `findCaseById: report not found (reportId=${reportId})`,
-      );
+      this.logger.warn(`findCaseById: report not found (reportId=${reportId})`);
       return null;
     }
 
@@ -400,7 +398,10 @@ export class ModerationRepository {
         return ticket?.openedByUserId ?? null;
       }
       case ModerationReportTargetType.CARE_CHAT_CONVERSATION: {
-        if (!input.targetSnapshot || input.targetSnapshot.kind !== 'CARE_CHAT_CONVERSATION') {
+        if (
+          !input.targetSnapshot ||
+          input.targetSnapshot.kind !== 'CARE_CHAT_CONVERSATION'
+        ) {
           return null;
         }
 
@@ -414,10 +415,12 @@ export class ModerationRepository {
         }
 
         if (input.reportedByRole === ModerationReporterRole.PRACTITIONER) {
-          const practitioner = await this.prisma.practitionerProfile.findUnique({
-            where: { id: profileId },
-            select: { userId: true },
-          });
+          const practitioner = await this.prisma.practitionerProfile.findUnique(
+            {
+              where: { id: profileId },
+              select: { userId: true },
+            },
+          );
           return practitioner?.userId ?? null;
         }
 

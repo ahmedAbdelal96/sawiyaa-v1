@@ -6,12 +6,17 @@ import {
   Patch,
   Post,
   Put,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
+  Res,
+  StreamableFile,
 } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
   ApiBody,
+  ApiConsumes,
   ApiConflictResponse,
   ApiForbiddenResponse,
   ApiNotFoundResponse,
@@ -20,6 +25,10 @@ import {
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { NotFoundException } from '@nestjs/common';
+import { Response } from 'express';
+import { createReadStream } from 'fs';
 import { RequireAccountStates } from '@common/decorators/account-state.decorator';
 import { CurrentUser } from '@common/decorators/current-user.decorator';
 import { Roles } from '@common/decorators/roles.decorator';
@@ -57,6 +66,11 @@ import { RemovePractitionerAvatarUseCase } from '../use-cases/remove-practitione
 import { UpdatePractitionerAvatarUseCase } from '../use-cases/update-practitioner-avatar.use-case';
 import { UploadPractitionerCredentialMetadataUseCase } from '../use-cases/upload-practitioner-credential-metadata.use-case';
 import { UpsertPractitionerAvatarDto } from '../dto/upsert-practitioner-avatar.dto';
+import { UploadPractitionerCredentialFileDto } from '../dto/upload-practitioner-credential-file.dto';
+import { SecurityAuditService } from '@common/security-audit/security-audit.service';
+import { SecurityAuditOutcome } from '@prisma/client';
+import { UploadPractitionerCredentialFileUseCase } from '../use-cases/upload-practitioner-credential-file.use-case';
+import { PractitionerAvatarStorageService } from '../services/practitioner-avatar-storage.service';
 
 /**
  * Practitioners controller provides only the current practitioner's own baseline profile/readiness/application surfaces.
@@ -78,12 +92,15 @@ export class PractitionerProfileController {
     private readonly setPractitionerSpecialtiesUseCase: SetPractitionerSpecialtiesUseCase,
     private readonly listPractitionerSpecialtiesUseCase: ListPractitionerSpecialtiesUseCase,
     private readonly uploadPractitionerCredentialMetadataUseCase: UploadPractitionerCredentialMetadataUseCase,
+    private readonly uploadPractitionerCredentialFileUseCase: UploadPractitionerCredentialFileUseCase,
     private readonly updatePractitionerAvatarUseCase: UpdatePractitionerAvatarUseCase,
     private readonly removePractitionerAvatarUseCase: RemovePractitionerAvatarUseCase,
     private readonly listPractitionerCredentialsUseCase: ListPractitionerCredentialsUseCase,
     private readonly submitPractitionerApplicationUseCase: SubmitPractitionerApplicationUseCase,
     private readonly getPractitionerApplicationStatusUseCase: GetPractitionerApplicationStatusUseCase,
     private readonly getPractitionerProfileReadinessUseCase: GetPractitionerProfileReadinessUseCase,
+    private readonly practitionerAvatarStorageService: PractitionerAvatarStorageService,
+    private readonly securityAuditService: SecurityAuditService,
   ) {}
 
   /** Returns practitioner product-facing summary for the currently authenticated practitioner. */
@@ -115,12 +132,24 @@ export class PractitionerProfileController {
 
   /** Updates current practitioner avatar URL. */
   @Patch('me/avatar')
+  @UseInterceptors(
+    FileInterceptor('file', { limits: { fileSize: 5 * 1024 * 1024 } }),
+  )
   @ApiOperation({
     summary: 'Update practitioner avatar',
     description:
-      'Stores practitioner profile avatar URL. This endpoint updates metadata only and does not manage binary file storage.',
+      'Stores practitioner profile avatar URL or uploads an avatar image file.',
   })
-  @ApiBody({ type: UpsertPractitionerAvatarDto })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        file: { type: 'string', format: 'binary' },
+        avatarUrl: { type: 'string', format: 'uri' },
+      },
+    },
+  })
   @ApiResponse({ status: 200, type: PractitionerAvatarSuccessResponseDto })
   @ApiBadRequestResponse({ description: 'Validation failed' })
   @ApiUnauthorizedResponse({ description: 'Access token is required' })
@@ -134,13 +163,55 @@ export class PractitionerProfileController {
   updateAvatar(
     @CurrentUser() currentUser: AuthenticatedUser,
     @CurrentLocale() locale: SupportedLocale,
+    @UploadedFile()
+    file:
+      | {
+          buffer: Buffer;
+          mimetype: string;
+          size: number;
+        }
+      | undefined,
     @Body() body: UpsertPractitionerAvatarDto,
   ) {
     return this.updatePractitionerAvatarUseCase.execute({
       userId: currentUser.id,
       locale,
       avatarUrl: body.avatarUrl,
+      file,
     });
+  }
+
+  /** Streams the current practitioner avatar binary. */
+  @Get('me/avatar')
+  @ApiOperation({
+    summary: 'Get practitioner avatar binary',
+    description: 'Returns the current practitioner avatar binary stream.',
+  })
+  @ApiResponse({ status: 200, description: 'Avatar binary stream' })
+  @ApiUnauthorizedResponse({ description: 'Access token is required' })
+  @ApiForbiddenResponse({
+    description:
+      'Route requires practitioner role, active account, and OTP-verified practitioner access',
+  })
+  @ApiNotFoundResponse({ description: 'Avatar does not exist' })
+  async getAvatar(
+    @CurrentUser() currentUser: AuthenticatedUser,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    const avatar = await this.practitionerAvatarStorageService.getAvatarFile(
+      currentUser.id,
+    );
+
+    if (!avatar) {
+      throw new NotFoundException({
+        messageKey: 'practitioners.errors.avatarNotFound',
+        error: 'PRACTITIONER_AVATAR_NOT_FOUND',
+      });
+    }
+
+    response.setHeader('Content-Type', avatar.mimeType);
+    response.setHeader('Cache-Control', 'private, max-age=300');
+    return new StreamableFile(createReadStream(avatar.absolutePath));
   }
 
   /** Removes current practitioner avatar URL. */
@@ -191,29 +262,45 @@ export class PractitionerProfileController {
     @CurrentLocale() locale: SupportedLocale,
     @Body() body: UpdatePractitionerProfileDto,
   ) {
-    return this.updatePractitionerProfileUseCase.execute({
-      userId: currentUser.id,
-      locale,
-      currentUser,
-      data: {
-        displayName: body.displayName,
-        professionalTitle: body.professionalTitle,
-        bio: body.bio,
-        countryCode: body.countryCode,
-        yearsOfExperience: body.yearsOfExperience,
-        practitionerType: body.practitionerType,
-        practitionerGender: body.practitionerGender,
-        sessionPrice30Egp: body.sessionPrice30Egp,
-        sessionPrice30Usd: body.sessionPrice30Usd,
-        sessionPrice60Egp: body.sessionPrice60Egp,
-        sessionPrice60Usd: body.sessionPrice60Usd,
-        acceptsPackage: body.acceptsPackage,
-        locale: body.locale,
-        timezone: body.timezone,
-        languageCodes: body.languageCodes,
-        payoutDestination: body.payoutDestination,
-      },
-    });
+    return this.updatePractitionerProfileUseCase
+      .execute({
+        userId: currentUser.id,
+        locale,
+        currentUser,
+        data: {
+          displayName: body.displayName,
+          professionalTitle: body.professionalTitle,
+          bio: body.bio,
+          countryCode: body.countryCode,
+          yearsOfExperience: body.yearsOfExperience,
+          practitionerType: body.practitionerType,
+          practitionerGender: body.practitionerGender,
+          sessionPrice30Egp: body.sessionPrice30Egp,
+          sessionPrice30Usd: body.sessionPrice30Usd,
+          sessionPrice60Egp: body.sessionPrice60Egp,
+          sessionPrice60Usd: body.sessionPrice60Usd,
+          acceptsPackage: body.acceptsPackage,
+          locale: body.locale,
+          timezone: body.timezone,
+          languageCodes: body.languageCodes,
+          payoutDestination: body.payoutDestination,
+        },
+      })
+      .then((result) => {
+        this.securityAuditService.logAsync({
+          action: 'security.practitioner.application.draft-update',
+          outcome: SecurityAuditOutcome.SUCCESS,
+          actorUserId: currentUser.id,
+          actorRoles: currentUser.roles,
+          resourceType: 'PractitionerApplication',
+          targetUserId: currentUser.id,
+          metadata: {
+            updatedFields: Object.keys(body).sort(),
+            hasPayoutDestination: body.payoutDestination !== undefined,
+          },
+        });
+        return result;
+      });
   }
 
   /** Replaces practitioner specialty links in one deterministic operation. */
@@ -239,12 +326,28 @@ export class PractitionerProfileController {
     @CurrentLocale() locale: SupportedLocale,
     @Body() body: SetPractitionerSpecialtiesDto,
   ) {
-    return this.setPractitionerSpecialtiesUseCase.execute({
-      userId: currentUser.id,
-      locale,
-      primarySpecialtyCategoryId: body.primarySpecialtyCategoryId,
-      specialtyIds: body.specialtyIds,
-    });
+    return this.setPractitionerSpecialtiesUseCase
+      .execute({
+        userId: currentUser.id,
+        locale,
+        primarySpecialtyCategoryId: body.primarySpecialtyCategoryId,
+        specialtyIds: body.specialtyIds,
+      })
+      .then((result) => {
+        this.securityAuditService.logAsync({
+          action: 'security.practitioner.application.specialties-update',
+          outcome: SecurityAuditOutcome.SUCCESS,
+          actorUserId: currentUser.id,
+          actorRoles: currentUser.roles,
+          resourceType: 'PractitionerApplication',
+          targetUserId: currentUser.id,
+          metadata: {
+            specialtyCount: body.specialtyIds.length,
+            primarySpecialtyCategoryId: body.primarySpecialtyCategoryId,
+          },
+        });
+        return result;
+      });
   }
 
   /** Lists currently linked specialties for the current practitioner profile. */
@@ -300,18 +403,115 @@ export class PractitionerProfileController {
     @CurrentLocale() locale: SupportedLocale,
     @Body() body: UploadPractitionerCredentialMetadataDto,
   ) {
-    return this.uploadPractitionerCredentialMetadataUseCase.execute({
-      userId: currentUser.id,
-      locale,
-      credentialType: body.credentialType,
-      fileUrl: body.fileUrl,
-      expiresAt:
-        body.expiresAt === undefined
-          ? undefined
-          : body.expiresAt === null
-            ? null
-            : new Date(body.expiresAt),
-    });
+    return this.uploadPractitionerCredentialMetadataUseCase
+      .execute({
+        userId: currentUser.id,
+        locale,
+        credentialType: body.credentialType,
+        fileUrl: body.fileUrl,
+        expiresAt:
+          body.expiresAt === undefined
+            ? undefined
+            : body.expiresAt === null
+              ? null
+              : new Date(body.expiresAt),
+      })
+      .then((result) => {
+        this.securityAuditService.logAsync({
+          action: 'security.practitioner.application.credential-upload',
+          outcome: SecurityAuditOutcome.SUCCESS,
+          actorUserId: currentUser.id,
+          actorRoles: currentUser.roles,
+          resourceType: 'PractitionerApplication',
+          targetUserId: currentUser.id,
+          metadata: {
+            credentialType: body.credentialType,
+            hasExpiry: body.expiresAt !== undefined && body.expiresAt !== null,
+          },
+        });
+        return result;
+      });
+  }
+
+  /** Uploads practitioner credential file and creates credential record in one request. */
+  @Post('me/credentials/upload')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: { fileSize: 5 * 1024 * 1024 },
+    }),
+  )
+  @ApiOperation({
+    summary: 'Upload practitioner credential file',
+    description:
+      'Uploads a credential file (pdf/image) and creates a credential record with safe storage URL.',
+  })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        file: { type: 'string', format: 'binary' },
+        credentialType: { type: 'string' },
+        expiresAt: { type: 'string', format: 'date-time', nullable: true },
+      },
+      required: ['file', 'credentialType'],
+    },
+  })
+  @ApiResponse({
+    status: 201,
+    type: PractitionerCredentialUploadSuccessResponseDto,
+  })
+  @ApiBadRequestResponse({ description: 'Invalid file, type, or payload' })
+  @ApiConflictResponse({
+    description: 'A duplicate credential record already exists',
+  })
+  @ApiUnauthorizedResponse({ description: 'Access token is required' })
+  @ApiForbiddenResponse({
+    description:
+      'Route requires practitioner role, active account, and OTP-verified practitioner access',
+  })
+  uploadCredentialFile(
+    @CurrentUser() currentUser: AuthenticatedUser,
+    @CurrentLocale() locale: SupportedLocale,
+    @UploadedFile()
+    file:
+      | {
+          buffer: Buffer;
+          mimetype: string;
+          size: number;
+        }
+      | undefined,
+    @Body() body: UploadPractitionerCredentialFileDto,
+  ) {
+    return this.uploadPractitionerCredentialFileUseCase
+      .execute({
+        userId: currentUser.id,
+        locale,
+        credentialType: body.credentialType,
+        expiresAt:
+          body.expiresAt === undefined
+            ? undefined
+            : body.expiresAt === null
+              ? null
+              : new Date(body.expiresAt),
+        file,
+      })
+      .then((result) => {
+        this.securityAuditService.logAsync({
+          action: 'security.practitioner.application.credential-upload',
+          outcome: SecurityAuditOutcome.SUCCESS,
+          actorUserId: currentUser.id,
+          actorRoles: currentUser.roles,
+          resourceType: 'PractitionerApplication',
+          targetUserId: currentUser.id,
+          metadata: {
+            credentialType: body.credentialType,
+            hasExpiry: body.expiresAt !== undefined && body.expiresAt !== null,
+            hasBinaryUpload: true,
+          },
+        });
+        return result;
+      });
   }
 
   /** Lists practitioner credential metadata records for the current practitioner. */
@@ -367,12 +567,27 @@ export class PractitionerProfileController {
     @CurrentLocale() locale: SupportedLocale,
     @Body() body: SubmitPractitionerApplicationDto,
   ) {
-    return this.submitPractitionerApplicationUseCase.execute({
-      userId: currentUser.id,
-      locale,
-      currentUser,
-      data: body,
-    });
+    return this.submitPractitionerApplicationUseCase
+      .execute({
+        userId: currentUser.id,
+        locale,
+        currentUser,
+        data: body,
+      })
+      .then((result) => {
+        this.securityAuditService.logAsync({
+          action: 'security.practitioner.application.submit',
+          outcome: SecurityAuditOutcome.SUCCESS,
+          actorUserId: currentUser.id,
+          actorRoles: currentUser.roles,
+          resourceType: 'PractitionerApplication',
+          targetUserId: currentUser.id,
+          metadata: {
+            applicationId: result.application?.applicationId ?? null,
+          },
+        });
+        return result;
+      });
   }
 
   /** Returns latest application status summary for the current practitioner. */

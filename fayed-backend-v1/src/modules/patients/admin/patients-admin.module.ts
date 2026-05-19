@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
 import { JwtAccessAuthGuard } from '@common/guards/authentication/jwt-access-auth.guard';
+import { PermissionResolverService } from '@common/guards/authorization/permission-resolver.service';
+import { PermissionsGuard } from '@common/guards/authorization/permissions.guard';
 import { RolesGuard } from '@common/guards/authorization/roles.guard';
 import { AdminPatientsController } from './controllers/admin-patients.controller';
 import { AdminPatientDirectoryRepository } from './repositories/admin-patient-directory.repository';
@@ -14,7 +16,9 @@ import { ListAdminPatientsUseCase } from './use-cases/list-admin-patients.use-ca
   controllers: [AdminPatientsController],
   providers: [
     JwtAccessAuthGuard,
+    PermissionsGuard,
     RolesGuard,
+    PermissionResolverService,
     AdminPatientDirectoryRepository,
     ListAdminPatientsUseCase,
     GetAdminPatientDetailsUseCase,

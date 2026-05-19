@@ -1,4 +1,8 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import {
   Payment,
   PatientPackagePurchaseStatus,
@@ -154,9 +158,8 @@ export class HandlePackagePurchasePaymentFailureUseCase {
   }
 
   private async resolvePurchase(payment: Payment) {
-    const purchaseByPayment = await this.packagePurchaseRepository.findByPaymentId(
-      payment.id,
-    );
+    const purchaseByPayment =
+      await this.packagePurchaseRepository.findByPaymentId(payment.id);
 
     if (purchaseByPayment) {
       return purchaseByPayment;

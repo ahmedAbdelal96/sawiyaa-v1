@@ -17,6 +17,8 @@ import { JwtAccessAuthGuard } from '@common/guards/authentication/jwt-access-aut
 import { PermissionsGuard } from '@common/guards/authorization/permissions.guard';
 import { RolesGuard } from '@common/guards/authorization/roles.guard';
 import { AuthenticatedUser } from '@common/interfaces/authenticated-user.interface';
+import { SecurityAuditService } from '@common/security-audit/security-audit.service';
+import { SecurityAuditOutcome } from '@prisma/client';
 import { CurrentLocale } from '@common/i18n/decorators/current-locale.decorator';
 import type { SupportedLocale } from '@common/i18n/types/locale.types';
 import {
@@ -36,6 +38,7 @@ export class AdminPatientsController {
   constructor(
     private readonly listAdminPatientsUseCase: ListAdminPatientsUseCase,
     private readonly getAdminPatientDetailsUseCase: GetAdminPatientDetailsUseCase,
+    private readonly securityAuditService: SecurityAuditService,
   ) {}
 
   @Get()
@@ -81,6 +84,22 @@ export class AdminPatientsController {
     @CurrentLocale() locale: SupportedLocale,
     @Param('patientId') patientId: string,
   ) {
-    return this.getAdminPatientDetailsUseCase.execute({ locale, patientId });
+    return this.getAdminPatientDetailsUseCase
+      .execute({ locale, patientId })
+      .then((result) => {
+        this.securityAuditService.logAsync({
+          action: 'privacy.patient.sensitive.read',
+          outcome: SecurityAuditOutcome.SUCCESS,
+          actorUserId: _currentUser.id,
+          actorRoles: _currentUser.roles,
+          resourceType: 'PatientProfile',
+          resourceId: patientId,
+          targetUserId: patientId,
+          metadata: {
+            scope: 'admin-details',
+          },
+        });
+        return result;
+      });
   }
 }

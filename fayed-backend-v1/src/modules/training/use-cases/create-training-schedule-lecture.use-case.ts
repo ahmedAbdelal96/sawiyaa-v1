@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { CreateTrainingScheduleLectureDto } from '../dto/create-training-schedule-lecture.dto';
 import { TrainingPresenter } from '../presenters/training.presenter';
 import { TrainingRepository } from '../repositories/training.repository';
@@ -24,7 +28,9 @@ export class CreateTrainingScheduleLectureUseCase {
       });
     }
 
-    const schedule = await this.trainingRepository.findScheduleById(input.scheduleId);
+    const schedule = await this.trainingRepository.findScheduleById(
+      input.scheduleId,
+    );
     if (!schedule || schedule.courseId !== input.courseId) {
       throw new NotFoundException({
         messageKey: 'training.errors.scheduleNotFound',
@@ -48,7 +54,8 @@ export class CreateTrainingScheduleLectureUseCase {
         sessionTitle: input.payload.sessionTitle?.trim() || null,
         startsAt,
         endsAt,
-        externalRoomProvider: input.payload.externalRoomProvider?.trim() || null,
+        externalRoomProvider:
+          input.payload.externalRoomProvider?.trim() || null,
         externalRoomJoinUrl: input.payload.externalRoomJoinUrl?.trim() || null,
         externalRoomHostUrl: input.payload.externalRoomHostUrl?.trim() || null,
         attendanceTrackingEnabled:

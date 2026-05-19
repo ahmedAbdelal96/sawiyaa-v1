@@ -10,6 +10,7 @@
 
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
+import { requestSensitiveCacheClear } from "@/lib/security/sensitive-cache";
 import {
   loginAction,
   registerAction,
@@ -187,6 +188,7 @@ export const useAuthStore = create<AuthStore>()(
         try {
           await logoutAction();
         } finally {
+          requestSensitiveCacheClear("logout");
           set({
             user: null,
             tenant: null,

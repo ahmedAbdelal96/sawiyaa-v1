@@ -37,6 +37,10 @@ export const enPractitionersCatalog = {
       'Practitioner application is already submitted or under review',
     credentialAlreadyExists:
       'A credential with the same type and file reference already exists',
+    credentialFileRequired: 'Please choose a credential file before uploading',
+    credentialInvalidType:
+      'Unsupported credential file type. Use PDF, JPG, PNG, or WEBP',
+    credentialFileTooLarge: 'Credential file exceeds the 5MB size limit',
     credentialNotFound: 'Practitioner credential was not found',
     profileAccessDenied:
       'You are not allowed to access this practitioner profile',

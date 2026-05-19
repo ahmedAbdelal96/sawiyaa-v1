@@ -13,7 +13,9 @@ describe('PackageSettlementService', () => {
   }) {
     const tx = {
       packageSettlement: {
-        findUnique: jest.fn().mockResolvedValue(input?.existingSettlement ?? null),
+        findUnique: jest
+          .fn()
+          .mockResolvedValue(input?.existingSettlement ?? null),
         upsert: jest.fn().mockImplementation(async (args) => ({
           id: 'settlement-1',
           ...args.create,
@@ -118,10 +120,30 @@ describe('PackageSettlementService', () => {
       title: '4 Sessions',
     },
     sessions: [
-      { id: 'session-1', status: SessionStatus.COMPLETED, packageSessionIndex: 1, packageSessionCount: 4 },
-      { id: 'session-2', status: SessionStatus.PENDING_PAYMENT, packageSessionIndex: 2, packageSessionCount: 4 },
-      { id: 'session-3', status: SessionStatus.PENDING_PAYMENT, packageSessionIndex: 3, packageSessionCount: 4 },
-      { id: 'session-4', status: SessionStatus.PENDING_PAYMENT, packageSessionIndex: 4, packageSessionCount: 4 },
+      {
+        id: 'session-1',
+        status: SessionStatus.COMPLETED,
+        packageSessionIndex: 1,
+        packageSessionCount: 4,
+      },
+      {
+        id: 'session-2',
+        status: SessionStatus.PENDING_PAYMENT,
+        packageSessionIndex: 2,
+        packageSessionCount: 4,
+      },
+      {
+        id: 'session-3',
+        status: SessionStatus.PENDING_PAYMENT,
+        packageSessionIndex: 3,
+        packageSessionCount: 4,
+      },
+      {
+        id: 'session-4',
+        status: SessionStatus.PENDING_PAYMENT,
+        packageSessionIndex: 4,
+        packageSessionCount: 4,
+      },
     ],
   };
 
@@ -130,7 +152,9 @@ describe('PackageSettlementService', () => {
 
     const settlement = await setup.service.ensureForPurchase(purchase as never);
 
-    expect(setup.packageSettlementRepository.upsertByPurchaseId).toHaveBeenCalledWith(
+    expect(
+      setup.packageSettlementRepository.upsertByPurchaseId,
+    ).toHaveBeenCalledWith(
       'purchase-1',
       expect.objectContaining({
         purchaseId: 'purchase-1',
@@ -160,7 +184,9 @@ describe('PackageSettlementService', () => {
 
     const settlement = await setup.service.ensureForPurchase(purchase as never);
 
-    expect(setup.packageSettlementRepository.upsertByPurchaseId).not.toHaveBeenCalled();
+    expect(
+      setup.packageSettlementRepository.upsertByPurchaseId,
+    ).not.toHaveBeenCalled();
     expect(settlement).toBe(existing);
   });
 
@@ -169,28 +195,32 @@ describe('PackageSettlementService', () => {
 
     const settlement = await setup.service.reconcilePurchase(purchase as never);
 
-    expect(setup.packageSettlementRepository.upsertByPurchaseId).toHaveBeenCalledTimes(1);
-    expect(setup.packageSettlementRepository.updateById).toHaveBeenCalledTimes(1);
+    expect(
+      setup.packageSettlementRepository.upsertByPurchaseId,
+    ).toHaveBeenCalledTimes(1);
+    expect(setup.packageSettlementRepository.updateById).toHaveBeenCalledTimes(
+      1,
+    );
     expect(settlement?.status).toBe('HELD');
   });
 
   it('skips reconciliation for pending unpaid purchases', async () => {
     const setup = buildService();
 
-    const settlement = await setup.service.reconcilePurchase(
-      {
-        ...purchase,
-        status: 'PENDING_PAYMENT',
-        payment: {
-          id: 'payment-1',
-          status: 'PENDING',
-          currencyCode: 'EGP',
-        },
-      } as never,
-    );
+    const settlement = await setup.service.reconcilePurchase({
+      ...purchase,
+      status: 'PENDING_PAYMENT',
+      payment: {
+        id: 'payment-1',
+        status: 'PENDING',
+        currencyCode: 'EGP',
+      },
+    } as never);
 
     expect(settlement).toBeNull();
-    expect(setup.packageSettlementRepository.upsertByPurchaseId).not.toHaveBeenCalled();
+    expect(
+      setup.packageSettlementRepository.upsertByPurchaseId,
+    ).not.toHaveBeenCalled();
     expect(setup.packageSettlementRepository.updateById).not.toHaveBeenCalled();
   });
 
@@ -234,8 +264,12 @@ describe('PackageSettlementService', () => {
       }),
     ).rejects.toThrow();
 
-    expect(setup.ledgerRepository.createManyLedgerEntries).not.toHaveBeenCalled();
-    expect(setup.refreshPractitionerWalletService.refresh).not.toHaveBeenCalled();
+    expect(
+      setup.ledgerRepository.createManyLedgerEntries,
+    ).not.toHaveBeenCalled();
+    expect(
+      setup.refreshPractitionerWalletService.refresh,
+    ).not.toHaveBeenCalled();
   });
 
   it('syncs completed package sessions without refreshing the practitioner wallet', async () => {
@@ -263,7 +297,9 @@ describe('PackageSettlementService', () => {
       }),
       expect.anything(),
     );
-    expect(setup.refreshPractitionerWalletService.refresh).not.toHaveBeenCalled();
+    expect(
+      setup.refreshPractitionerWalletService.refresh,
+    ).not.toHaveBeenCalled();
   });
 
   it('marks a package settlement ready to release when all sessions are complete', async () => {
@@ -300,18 +336,36 @@ describe('PackageSettlementService', () => {
       existingSettlement: null,
     });
 
-    const settlement = await setup.service.reconcilePurchase(
-      {
-        ...purchase,
-        status: 'COMPLETED',
-        sessions: [
-          { id: 'session-1', status: SessionStatus.COMPLETED, packageSessionIndex: 1, packageSessionCount: 4 },
-          { id: 'session-2', status: SessionStatus.COMPLETED, packageSessionIndex: 2, packageSessionCount: 4 },
-          { id: 'session-3', status: SessionStatus.COMPLETED, packageSessionIndex: 3, packageSessionCount: 4 },
-          { id: 'session-4', status: SessionStatus.COMPLETED, packageSessionIndex: 4, packageSessionCount: 4 },
-        ],
-      } as never,
-    );
+    const settlement = await setup.service.reconcilePurchase({
+      ...purchase,
+      status: 'COMPLETED',
+      sessions: [
+        {
+          id: 'session-1',
+          status: SessionStatus.COMPLETED,
+          packageSessionIndex: 1,
+          packageSessionCount: 4,
+        },
+        {
+          id: 'session-2',
+          status: SessionStatus.COMPLETED,
+          packageSessionIndex: 2,
+          packageSessionCount: 4,
+        },
+        {
+          id: 'session-3',
+          status: SessionStatus.COMPLETED,
+          packageSessionIndex: 3,
+          packageSessionCount: 4,
+        },
+        {
+          id: 'session-4',
+          status: SessionStatus.COMPLETED,
+          packageSessionIndex: 4,
+          packageSessionCount: 4,
+        },
+      ],
+    } as never);
 
     expect(setup.packageSettlementRepository.updateById).toHaveBeenCalledWith(
       'settlement-1',
@@ -364,7 +418,9 @@ describe('PackageSettlementService', () => {
       releasedByAdminId: 'admin-1',
     });
 
-    expect(setup.ledgerRepository.createManyLedgerEntries).toHaveBeenCalledTimes(1);
+    expect(
+      setup.ledgerRepository.createManyLedgerEntries,
+    ).toHaveBeenCalledTimes(1);
     expect(setup.refreshPractitionerWalletService.refresh).toHaveBeenCalledWith(
       'practitioner-1',
       expect.anything(),
@@ -426,8 +482,12 @@ describe('PackageSettlementService', () => {
       releasedByAdminId: 'admin-1',
     });
 
-    expect(setup.ledgerRepository.createManyLedgerEntries).not.toHaveBeenCalled();
-    expect(setup.refreshPractitionerWalletService.refresh).not.toHaveBeenCalled();
+    expect(
+      setup.ledgerRepository.createManyLedgerEntries,
+    ).not.toHaveBeenCalled();
+    expect(
+      setup.refreshPractitionerWalletService.refresh,
+    ).not.toHaveBeenCalled();
     expect(result.status).toBe('NEEDS_REVIEW');
     expect(result.decision).toBe('LEGACY_PACKAGE_EARNINGS_ALREADY_POSTED');
   });
@@ -470,7 +530,11 @@ describe('PackageSettlementService', () => {
       releasedByAdminId: 'admin-1',
     });
 
-    expect(setup.ledgerRepository.createManyLedgerEntries).not.toHaveBeenCalled();
-    expect(setup.refreshPractitionerWalletService.refresh).not.toHaveBeenCalled();
+    expect(
+      setup.ledgerRepository.createManyLedgerEntries,
+    ).not.toHaveBeenCalled();
+    expect(
+      setup.refreshPractitionerWalletService.refresh,
+    ).not.toHaveBeenCalled();
   });
 });

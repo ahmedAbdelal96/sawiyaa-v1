@@ -530,9 +530,11 @@ export class FinancialOperationsMapper {
     return {
       id: settlement.id,
       purchaseId: settlement.purchaseId,
-      purchaseStatus: settlement.purchase?.status as PackageSettlementViewModel['purchaseStatus'],
+      purchaseStatus: settlement.purchase
+        ?.status as PackageSettlementViewModel['purchaseStatus'],
       practitionerId: settlement.practitionerId,
-      practitionerDisplayName: settlement.practitioner?.user?.displayName ?? null,
+      practitionerDisplayName:
+        settlement.practitioner?.user?.displayName ?? null,
       practitionerSlug: settlement.practitioner?.publicSlug ?? null,
       patientId: settlement.patientId,
       patientDisplayName: settlement.patient?.user?.displayName ?? null,

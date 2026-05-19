@@ -12,13 +12,14 @@
     "sessions": "الجلسات",
     "wallet": "المحفظة",
     "ledger": "دفتر الحسابات",
+    "promoCodes": "أكواد الخصم",
     "payments": "المدفوعات",
     "paymentsHome": "لوحة المدفوعات",
     "paymentGatewayControl": "التحكم في بوابة الدفع",
     "finance": "المالية",
     "financeDashboard": "لوحة المالية",
     "financeLedger": "مستكشف القيود",
-    "financeReconciliation": "المطابقة والرقابة",
+    "financeReconciliation": "مراجعة الحسابات المالية",
     "reports": "التقارير",
     "reportsHome": "صفحة التقارير",
     "reportsSessions": "تقرير الجلسات",
@@ -91,7 +92,8 @@
     "reviews": "المراجعات",
     "moderationReports": "بلاغات الإشراف",
     "academy": "الأكاديمية",
-    "training": "التدريب"
+    "training": "التدريب",
+    "adminUsers": "مستخدمو الإدارة"
   },
   "settings": {
     "title": "الإعدادات",

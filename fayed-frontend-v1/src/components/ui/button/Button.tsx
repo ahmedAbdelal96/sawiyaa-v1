@@ -6,6 +6,7 @@ type ButtonProps = Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "children
   variant?: "primary" | "outline" | "secondary" | "ghost" | "danger";
   startIcon?: ReactNode;
   endIcon?: ReactNode;
+  "data-testid"?: string;
 };
 
 const Button: React.FC<ButtonProps> = ({

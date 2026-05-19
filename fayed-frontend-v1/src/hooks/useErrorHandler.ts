@@ -10,7 +10,14 @@ export function useErrorHandler() {
   const handleApiError = useCallback(
     (error: unknown, fallbackMessage = "حدث خطأ غير متوقع") => {
       const appError = toAppError(error);
-      console.error("API Error:", appError);
+      if (process.env.NODE_ENV === "development") {
+        console.error("API Error:", {
+          statusCode: appError.statusCode,
+          errorType: appError.errorType,
+          requestPath: appError.requestPath,
+          referenceId: appError.referenceId,
+        });
+      }
 
       const messages = appError.message
         .split(",")

@@ -11,7 +11,13 @@ export default function PractitionersError({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error("[practitioners] unhandled error:", error);
+    if (process.env.NODE_ENV === "development") {
+      console.error("[practitioners] unhandled error:", {
+        name: error.name,
+        message: error.message,
+        stack: error.stack,
+      });
+    }
   }, [error]);
 
   return <AppErrorFallback error={error} reset={reset} homeHref="/practitioners" />;

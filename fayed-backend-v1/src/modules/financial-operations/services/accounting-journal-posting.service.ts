@@ -96,7 +96,9 @@ export class AccountingJournalPostingService {
           )
         : null;
 
-      const practitionerShare = this.toMoney(input.breakdown.practitionerShareAmount);
+      const practitionerShare = this.toMoney(
+        input.breakdown.practitionerShareAmount,
+      );
       const platformCommission = this.toMoney(
         input.breakdown.platformCommissionAmount,
       );
@@ -105,26 +107,31 @@ export class AccountingJournalPostingService {
       const totalAmount = this.toMoney(input.payment.amountTotal);
       const gatewayFees = input.payment.gatewayFeeAmountSnapshot
         ? this.toMoney(input.payment.gatewayFeeAmountSnapshot)
-        : this.readMoneyFromMetadata(input.payment.metadataJson, 'gatewayFeeAmount');
+        : this.readMoneyFromMetadata(
+            input.payment.metadataJson,
+            'gatewayFeeAmount',
+          );
       const vatAmount = input.payment.vatAmountSnapshot
         ? this.toMoney(input.payment.vatAmountSnapshot)
         : this.readMoneyFromMetadata(input.payment.metadataJson, 'vatAmount');
       const vatRatePercent = input.payment.vatRatePercentSnapshot
         ? this.toMoney(input.payment.vatRatePercentSnapshot)
-        : this.readMoneyFromMetadata(input.payment.metadataJson, 'vatRatePercent');
+        : this.readMoneyFromMetadata(
+            input.payment.metadataJson,
+            'vatRatePercent',
+          );
       const gatewayFeeRatePercent = input.payment.gatewayFeeRatePercentSnapshot
         ? this.toMoney(input.payment.gatewayFeeRatePercentSnapshot)
         : this.readMoneyFromMetadata(
             input.payment.metadataJson,
             'gatewayFeeRatePercent',
           );
-      const gatewayFeeFixedAmount =
-        input.payment.gatewayFeeFixedAmountSnapshot
-          ? this.toMoney(input.payment.gatewayFeeFixedAmountSnapshot)
-          : this.readMoneyFromMetadata(
-              input.payment.metadataJson,
-              'gatewayFeeFixedAmount',
-            );
+      const gatewayFeeFixedAmount = input.payment.gatewayFeeFixedAmountSnapshot
+        ? this.toMoney(input.payment.gatewayFeeFixedAmountSnapshot)
+        : this.readMoneyFromMetadata(
+            input.payment.metadataJson,
+            'gatewayFeeFixedAmount',
+          );
 
       const lines: JournalLineDraft[] = [
         {
@@ -244,7 +251,8 @@ export class AccountingJournalPostingService {
               platformRatePercent:
                 input.payment.commissionPlatformRatePercent?.toString() ?? null,
               practitionerRatePercent:
-                input.payment.commissionPractitionerRatePercent?.toString() ?? null,
+                input.payment.commissionPractitionerRatePercent?.toString() ??
+                null,
             },
           },
         },
@@ -318,7 +326,9 @@ export class AccountingJournalPostingService {
       const practitionerRefundAmount = this.toMoney(
         input.split.practitionerRefundAmount,
       );
-      const platformRefundAmount = this.toMoney(input.split.platformRefundAmount);
+      const platformRefundAmount = this.toMoney(
+        input.split.platformRefundAmount,
+      );
       const totalRefundAmount = this.toMoney(input.refund.amount);
 
       const lines: JournalLineDraft[] = [];
@@ -379,8 +389,9 @@ export class AccountingJournalPostingService {
             refundAmount: totalRefundAmount.toFixed(2),
             practitionerRefundAmount: practitionerRefundAmount.toFixed(2),
             platformRefundAmount: platformRefundAmount.toFixed(2),
-            cancellationPolicySnapshot:
-              this.extractCancellationPolicySnapshot(input.refund.metadataJson),
+            cancellationPolicySnapshot: this.extractCancellationPolicySnapshot(
+              input.refund.metadataJson,
+            ),
           },
         },
       });
@@ -405,12 +416,12 @@ export class AccountingJournalPostingService {
   }
 
   async postPractitionerPayout(input: {
-      payout: {
-        payoutId: string;
-        settlementId?: string | null;
-        practitionerId: string;
-        amountPaid: Prisma.Decimal;
-        settlementAppliedAmount: Prisma.Decimal;
+    payout: {
+      payoutId: string;
+      settlementId?: string | null;
+      practitionerId: string;
+      amountPaid: Prisma.Decimal;
+      settlementAppliedAmount: Prisma.Decimal;
       currencyCode: string;
       effectiveAt: Date;
       payoutMethodSnapshot: Prisma.JsonValue | null;
@@ -482,12 +493,10 @@ export class AccountingJournalPostingService {
       ];
 
       if (transferFeeAmount.gt(0)) {
-        if (
-          input.payout.transferFeeTreatment ===
-          'DEDUCT_FROM_PRACTITIONER'
-        ) {
+        if (input.payout.transferFeeTreatment === 'DEDUCT_FROM_PRACTITIONER') {
           lines.push({
-            ledgerAccountId: platformAccounts.transferFeeRecoveryRevenueAccountId,
+            ledgerAccountId:
+              platformAccounts.transferFeeRecoveryRevenueAccountId,
             direction: LedgerDirection.CREDIT,
             amount: transferFeeAmount.toFixed(2),
             memo: 'Recognize transfer fee recovery deducted from practitioner payout.',
@@ -527,9 +536,9 @@ export class AccountingJournalPostingService {
           metadataJson: {
             postingVersion: 2,
             source: 'practitioner-payout',
-              settlementId: input.payout.settlementId ?? null,
-              payoutKind: input.payout.settlementId ? 'SETTLEMENT' : 'MANUAL',
-              amountPaid: amountPaid.toFixed(2),
+            settlementId: input.payout.settlementId ?? null,
+            payoutKind: input.payout.settlementId ? 'SETTLEMENT' : 'MANUAL',
+            amountPaid: amountPaid.toFixed(2),
             settlementAppliedAmount: settlementAppliedAmount.toFixed(2),
             transferFeeAmount: transferFeeAmount.toFixed(2),
             transferFeeTreatment: input.payout.transferFeeTreatment,
@@ -600,10 +609,16 @@ export class AccountingJournalPostingService {
   private assertBalanced(lines: JournalLineDraft[]) {
     const debit = lines
       .filter((line) => line.direction === LedgerDirection.DEBIT)
-      .reduce((sum, line) => sum.add(this.moneyAmountService.toDecimal(line.amount)), this.moneyAmountService.toDecimal(0));
+      .reduce(
+        (sum, line) => sum.add(this.moneyAmountService.toDecimal(line.amount)),
+        this.moneyAmountService.toDecimal(0),
+      );
     const credit = lines
       .filter((line) => line.direction === LedgerDirection.CREDIT)
-      .reduce((sum, line) => sum.add(this.moneyAmountService.toDecimal(line.amount)), this.moneyAmountService.toDecimal(0));
+      .reduce(
+        (sum, line) => sum.add(this.moneyAmountService.toDecimal(line.amount)),
+        this.moneyAmountService.toDecimal(0),
+      );
 
     if (!debit.equals(credit)) {
       throw new BadRequestException({

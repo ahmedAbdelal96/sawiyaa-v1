@@ -1,0 +1,444 @@
+{
+  "page": {
+    "eyebrow": "Admin management",
+    "title": "Admin users",
+    "description": "Manage internal platform users, roles, statuses, permission overrides, and session controls."
+  },
+  "actions": {
+    "create": "Create admin user",
+    "retry": "Retry",
+    "back": "Back",
+    "view": "View details",
+    "customizePermissions": "Customize permissions",
+    "editProfile": "Edit profile",
+    "updateStatus": "Update status",
+    "updateRoles": "Update roles",
+    "permissionOverrides": "Custom permissions",
+    "manageOverrides": "Manage custom permissions",
+    "revokeSessions": "Revoke sessions",
+    "invalidateTokens": "Invalidate tokens"
+  },
+  "filters": {
+    "search": "Search",
+    "searchPlaceholder": "Search by name, email, or phone",
+    "role": "Role",
+    "status": "Status",
+    "allRoles": "All roles",
+    "allStatuses": "All statuses"
+  },
+  "table": {
+    "noName": "Unnamed user",
+    "columns": {
+      "user": "User",
+      "email": "Email",
+      "roles": "Roles",
+      "status": "Status",
+      "updatedAt": "Updated",
+      "actions": "Actions"
+    }
+  },
+  "status": {
+    "ACTIVE": "Active",
+    "INACTIVE": "Inactive",
+    "SUSPENDED": "Suspended",
+    "PENDING_VERIFICATION": "Pending verification",
+    "PENDING_APPROVAL": "Pending approval",
+    "DELETED": "Deleted"
+  },
+  "roles": {
+    "superAdmin": "Super admin",
+    "admin": "Admin",
+    "support": "Support agent",
+    "financeStaff": "Finance staff",
+    "marketingStaff": "Marketing staff",
+    "practitionerReviewer": "Practitioner reviewer",
+    "patientOperations": "Patient operations",
+    "contentReviewer": "Content reviewer"
+  },
+  "empty": {
+    "title": "No admin users found",
+    "description": "No internal users match the current filters.",
+    "filtered": "Try adjusting the filters or search terms.",
+    "clearFilters": "Clear filters"
+  },
+  "errors": {
+    "title": "Unable to load admin users",
+    "loadFailed": "The admin users data could not be loaded right now.",
+    "notFoundTitle": "Admin user not found",
+    "notFound": "The requested internal user could not be found.",
+    "generic": "Something went wrong. Please try again."
+  },
+  "dialogs": {
+    "loadingTitle": "Loading user details",
+    "loadingDescription": "Fetching the selected user's latest data before opening this action."
+  },
+  "detail": {
+    "noEmail": "No primary email",
+    "noValue": "Not provided",
+    "profile": {
+      "title": "Profile",
+      "description": "Basic account metadata for the internal user.",
+      "displayName": "Display name",
+      "email": "Primary email",
+      "phone": "Primary phone",
+      "tokenVersion": "Token version",
+      "locale": "Locale",
+      "timezone": "Timezone",
+      "status": "Status",
+      "updatedAt": "Updated at"
+    },
+    "roles": {
+      "title": "Roles",
+      "description": "Internal platform roles assigned to this account."
+    },
+    "security": {
+      "title": "Security",
+      "description": "Sensitive changes are audited and may require step-up confirmation.",
+      "selfWarning": "This is your own account. Sensitive self-actions are intentionally limited."
+    },
+    "permissions": {
+      "title": "Custom permissions",
+      "description": "Role permissions are the default. You can allow additional permissions or block specific permissions. Deny always takes priority.",
+      "empty": "No custom permissions are currently defined.",
+      "noReason": "No reason provided",
+      "summaryHint": "Custom permissions are shown in compact cards so the available width is used more efficiently."
+    }
+  },
+  "create": {
+    "title": "Create admin user",
+    "description": "Create an internal platform user with the selected role and a secure password.",
+    "submit": "Create user",
+    "cancel": "Cancel",
+    "passwordHint": "Deliver the password securely out of band. The backend stores only a hash.",
+    "fields": {
+      "displayName": "Display name",
+      "email": "Email",
+      "phone": "Phone",
+      "status": "Status",
+      "roles": "Roles",
+      "password": "Password",
+      "displayNamePlaceholder": "Enter display name",
+      "emailPlaceholder": "Enter email address",
+      "phonePlaceholder": "Enter phone number",
+      "passwordPlaceholder": "Enter a strong password"
+    },
+    "validation": {
+      "displayName": "Display name must be at least 2 characters.",
+      "email": "Enter a valid email address.",
+      "roles": "Select at least one role.",
+      "password": "Password must be at least 8 characters.",
+      "phone": "Phone number is too long.",
+      "superAdmin": "You cannot assign the Super admin role from this account."
+    }
+  },
+  "edit": {
+    "title": "Edit profile",
+    "description": "Update safe profile fields for the internal user.",
+    "submit": "Save changes",
+    "cancel": "Cancel",
+    "fields": {
+      "displayName": "Display name",
+      "displayNameHint": "Keep this short and recognizable.",
+      "defaultLocale": "Default locale",
+      "defaultLocalePlaceholder": "e.g. ar or en",
+      "timezone": "Timezone",
+      "timezonePlaceholder": "e.g. Africa/Cairo"
+    },
+    "validation": {
+      "displayName": "Display name must be at least 2 characters."
+    }
+  },
+  "statusModal": {
+    "title": "Update status",
+    "description": "Change whether this internal user is active, suspended, or inactive.",
+    "submit": "Save status",
+    "cancel": "Cancel",
+    "fields": {
+      "status": "Status"
+    }
+  },
+  "rolesModal": {
+    "title": "Update roles",
+    "description": "Modify the internal roles attached to this account.",
+    "submit": "Save roles",
+    "cancel": "Cancel",
+    "selfWarning": "Review this carefully. Self-demotion and last-super-admin protection are enforced by the backend.",
+    "validation": {
+      "roles": "Select at least one role.",
+      "superAdmin": "You cannot assign the Super admin role from this account."
+    }
+  },
+  "overrides": {
+    "title": "Custom permissions",
+    "description": "Role permissions are the default. You can allow additional permissions or block specific permissions. Deny always takes priority.",
+    "submit": "Save custom permissions",
+    "cancel": "Cancel",
+    "explainer": "Role permissions define the default. ALLOW grants an explicit exception. DENY always wins.",
+    "fields": {
+      "permissionKey": "Permission key",
+      "selectPermission": "Select a permission key",
+      "effect": "Effect",
+      "reason": "Reason",
+      "reasonPlaceholder": "Optional reason"
+    },
+    "effect": {
+      "allow": "ALLOW",
+      "deny": "DENY",
+      "remove": "Remove"
+    },
+    "addRow": "Add override",
+    "removeRow": "Remove row",
+    "validation": {
+      "operations": "Add at least one override operation."
+    }
+  },
+  "sessions": {
+    "title": "Revoke sessions",
+    "description": "This will sign the user out from all active sessions.",
+    "confirm": "Revoke sessions",
+    "cancel": "Cancel"
+  },
+  "tokenVersion": {
+    "title": "Invalidate tokens",
+    "description": "This will bump tokenVersion and force the user to re-authenticate.",
+    "confirm": "Invalidate tokens",
+    "cancel": "Cancel"
+  },
+  "stepUp": {
+    "title": "Confirm with password",
+    "description": "Sensitive actions require a fresh password confirmation.",
+    "passwordLabel": "Password",
+    "passwordPlaceholder": "Enter your password",
+    "hint": "Your password is never stored or logged.",
+    "confirm": "Verify",
+    "cancel": "Cancel",
+    "successNote": "Step-up confirmation succeeded.",
+    "errors": {
+      "passwordRequired": "Password is required.",
+      "invalidPassword": "The password is incorrect.",
+      "generic": "Step-up verification failed. Please try again."
+    }
+  },
+  "permissions": {
+    "summary": {
+      "title": "How custom permissions work",
+      "description": "Role permissions are the default. Check a permission to enable it, or uncheck it to disable it. Changes are saved when you click Save."
+    },
+    "matrix": {
+      "title": "Permission matrix",
+      "description": "Each module is shown as a compact horizontal matrix. Permission names run across the top, and each cell uses a simple checkbox.",
+      "headers": {
+        "permission": "Module / permission",
+        "permissionHint": "Permission keys stay available as a muted reference."
+      },
+      "roleRow": "Role default",
+      "roleRowHint": "What the assigned roles grant by default.",
+      "userRow": "User permissions",
+      "userRowHint": "Check to grant, uncheck to remove.",
+      "custom": "Custom",
+      "blocked": "Blocked",
+      "roleGranted": "Granted by role",
+      "roleMissing": "Not granted by role",
+      "changedCount": "{count, plural, one {# permission changed} other {# permissions changed}}",
+      "checkedCount": "{count, plural, one {# permission enabled} other {# permissions enabled}}",
+      "toolbar": {
+        "moduleLabel": "Module",
+        "allModules": "All modules",
+        "showChangedOnly": "Show changed only",
+        "resetChanges": "Reset changes"
+      }
+    },
+    "page": {
+      "title": "Customize user permissions",
+      "description": "Role permissions are the default. Check a permission to enable it, or uncheck it to disable it. Changes are saved when you click Save.",
+      "loadingTitle": "Loading permissions",
+      "loadingDescription": "Fetching the selected user's current permission settings.",
+      "readOnlyNote": "You can view custom permissions for this user, but you do not have permission to edit them.",
+      "saved": "Custom permissions saved successfully.",
+      "save": "Save custom permissions",
+      "saving": "Saving...",
+      "backToUser": "Back to user details",
+      "saveHint": "Changes are audited and may require password step-up before saving.",
+      "unsavedChanges": "{count, plural, one {# unsaved change} other {# unsaved changes}}",
+      "noChanges": "No unsaved changes",
+      "changeCount": "Current changes",
+      "changeCountValue": "{count, plural, =0 {0 changes} one {# change} other {# changes}}",
+      "noMatches": "No permissions match your search."
+    },
+    "search": {
+      "label": "Search permissions",
+      "placeholder": "Search by permission name or description"
+    },
+    "moduleCounts": {
+      "total": "{count, plural, one {# permission} other {# permissions}}",
+      "custom": "{count, plural, one {# custom permission} other {# custom permissions}}"
+    },
+    "validation": {
+      "noChanges": "Make at least one permission change."
+    },
+    "states": {
+      "default": "Default",
+      "allow": "Allow",
+      "deny": "Deny"
+    },
+    "unknownPermissionDescription": "Custom rule provided by the backend.",
+    "modules": {
+      "adminUsers": {
+        "title": "Admin users",
+        "description": "Permissions for managing internal platform users."
+      },
+      "finance": {
+        "title": "Finance",
+        "description": "Permissions for finance and accounting workflows."
+      },
+      "settlements": {
+        "title": "Settlements",
+        "description": "Permissions for settlement operations."
+      },
+      "payouts": {
+        "title": "Payouts",
+        "description": "Permissions for practitioner payout workflows."
+      },
+      "refunds": {
+        "title": "Refunds",
+        "description": "Permissions for refund actions and follow-up."
+      },
+      "sessions": {
+        "title": "Sessions",
+        "description": "Permissions for session visibility and support summaries."
+      },
+      "careChat": {
+        "title": "Care chat",
+        "description": "Permissions for care chat access and decisions."
+      },
+      "patients": {
+        "title": "Patients",
+        "description": "Permissions for patient records and sensitive reads."
+      },
+      "support": {
+        "title": "Support",
+        "description": "Permissions for internal support workflows."
+      },
+      "practitionerApplications": {
+        "title": "Practitioner applications",
+        "description": "Permissions for reviewing practitioner applications."
+      },
+      "audit": {
+        "title": "Audit",
+        "description": "Permissions for audit log access."
+      },
+      "notifications": {
+        "title": "Notifications",
+        "description": "Permissions for notification operations."
+      },
+      "other": {
+        "title": "Other",
+        "description": "Additional permissions returned by the backend."
+      }
+    },
+    "adminUsers": {
+      "read": {
+        "label": "View admin users"
+      },
+      "create": {
+        "label": "Create admin users"
+      },
+      "update": {
+        "label": "Edit admin users"
+      },
+      "statusUpdate": {
+        "label": "Update user status"
+      },
+      "rolesUpdate": {
+        "label": "Update user roles"
+      },
+      "permissionOverridesRead": {
+        "label": "View custom permissions"
+      },
+      "permissionOverridesUpdate": {
+        "label": "Manage custom permissions"
+      },
+      "sessionsRevoke": {
+        "label": "Revoke user sessions"
+      },
+      "tokenVersionInvalidate": {
+        "label": "Invalidate user tokens"
+      }
+    },
+    "financeEventsRead": {
+      "label": "View finance events"
+    },
+    "accountingRead": {
+      "label": "View accounting"
+    },
+    "accountingWrite": {
+      "label": "Manage accounting"
+    },
+    "settlementsRead": {
+      "label": "View settlements"
+    },
+    "settlementsWrite": {
+      "label": "Manage settlements"
+    },
+    "practitionerPayoutsRead": {
+      "label": "View practitioner payouts"
+    },
+    "practitionerPayoutsWrite": {
+      "label": "Manage practitioner payouts"
+    },
+    "practitionerStatementsRead": {
+      "label": "View practitioner statements"
+    },
+    "refundsApprove": {
+      "label": "Approve refunds"
+    },
+    "refundsRetry": {
+      "label": "Retry refunds"
+    },
+    "sessionsReadAdmin": {
+      "label": "View all sessions"
+    },
+    "sessionsReadSupportSummary": {
+      "label": "View support session summary"
+    },
+    "careChatRequestDecide": {
+      "label": "Decide care chat requests"
+    },
+    "careChatRequestReadAdmin": {
+      "label": "View care chat requests"
+    },
+    "careChatConversationReadAdmin": {
+      "label": "View care chat conversations"
+    },
+    "patientsReadAdmin": {
+      "label": "View patient records"
+    },
+    "patientsSensitiveRead": {
+      "label": "View sensitive patient data"
+    },
+    "supportTicketNoteInternal": {
+      "label": "Add internal support notes"
+    },
+    "supportTicketAssign": {
+      "label": "Assign support tickets"
+    },
+    "practitionerApplicationsRead": {
+      "label": "View practitioner applications"
+    },
+    "practitionerApplicationsApprove": {
+      "label": "Approve practitioner applications"
+    },
+    "practitionerApplicationsReject": {
+      "label": "Reject practitioner applications"
+    },
+    "practitionerApplicationsRequestChanges": {
+      "label": "Request application changes"
+    },
+    "auditLogRead": {
+      "label": "View audit logs"
+    },
+    "notificationOpsRead": {
+      "label": "View notification operations"
+    }
+  }
+}

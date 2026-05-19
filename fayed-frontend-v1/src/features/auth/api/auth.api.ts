@@ -4,6 +4,8 @@ import type { ApiPayload } from "@/lib/api/contracts";
 import { clearAuthStore, seedAuthStore } from "@/stores/auth-store";
 import type {
   AdminLoginRequest,
+  AdminStepUpVerifyRequest,
+  AdminStepUpVerifyResponse,
   AuthSuccessResponse,
   CurrentAuthUserResponse,
   MessageResponse,
@@ -235,6 +237,14 @@ export async function adminLogout() {
   } finally {
     clearLocalAuthSession();
   }
+}
+
+export async function verifyAdminStepUp(data: AdminStepUpVerifyRequest) {
+  const response = await httpClient.post<ApiPayload<AdminStepUpVerifyResponse>>(
+    "/auth/admin/step-up/verify",
+    data
+  );
+  return extractData(response.data);
 }
 
 export async function getAuthMe() {

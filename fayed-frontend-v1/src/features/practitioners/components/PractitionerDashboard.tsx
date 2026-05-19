@@ -20,6 +20,7 @@ import {
   DashboardQueueCard,
   DashboardSectionHeader,
 } from "@/components/dashboard";
+import { formatMoney as formatFinanceMoney } from "@/lib/finance-format";
 import { usePractitionerProfile } from "../hooks/use-practitioners";
 import { usePractitionerSessions } from "@/features/sessions/hooks/use-sessions";
 import { usePractitionerSettlements, usePractitionerWallet } from "@/features/financial-operations/hooks/use-financial-operations";
@@ -96,11 +97,11 @@ const COPY: Record<"en" | "ar", LocaleCopy> = {
     kpi: {
       sessionsToday: "Sessions today",
       joinableNow: "Joinable sessions now",
-      walletAvailable: "Available wallet balance",
+      walletAvailable: "Projected wallet balance",
       lastSettlement: "Latest settlement",
       sessionsTodayHelper: "Sessions scheduled for today.",
       joinableNowHelper: "Sessions currently ready to join or in progress.",
-      walletHelper: "Current available amount in your wallet.",
+      walletHelper: "Derived from recorded accounting entries, not a bank balance.",
       lastSettlementHelper: "Most recent settlement amount recorded.",
     },
     charts: {
@@ -133,7 +134,7 @@ const COPY: Record<"en" | "ar", LocaleCopy> = {
       wallet: "Wallet",
       settlements: "Settlements",
     },
-    pendingBalanceLabel: "Pending balance",
+    pendingBalanceLabel: "Pending from ledger",
   },
   ar: {
     pageTitle: "لوحة المعالج",
@@ -149,11 +150,11 @@ const COPY: Record<"en" | "ar", LocaleCopy> = {
     kpi: {
       sessionsToday: "جلسات اليوم",
       joinableNow: "جلسات جاهزة الآن",
-      walletAvailable: "الرصيد المتاح بالمحفظة",
+      walletAvailable: "الرصيد التقديري بالمحفظة",
       lastSettlement: "آخر تسوية",
       sessionsTodayHelper: "عدد الجلسات المقررة اليوم.",
       joinableNowHelper: "جلسات جاهزة للدخول الآن أو قيد التنفيذ.",
-      walletHelper: "المبلغ المتاح حاليًا في محفظتك.",
+      walletHelper: "مستنتج من القيود المالية المسجلة، وليس رصيدًا بنكيًا.",
       lastSettlementHelper: "قيمة آخر تسوية مسجلة.",
     },
     charts: {
@@ -186,7 +187,7 @@ const COPY: Record<"en" | "ar", LocaleCopy> = {
       wallet: "المحفظة",
       settlements: "التسويات",
     },
-    pendingBalanceLabel: "الرصيد المعلق",
+    pendingBalanceLabel: "الرصيد المعلق من الدفتر",
   },
 };
 
@@ -200,19 +201,6 @@ function normalizeLocale(locale: string) {
 
 function formatNumber(locale: string, value: number) {
   return new Intl.NumberFormat(normalizeLocale(locale)).format(value);
-}
-
-function formatMoney(locale: string, value: string | number, currency = "EGP") {
-  const numeric = typeof value === "string" ? Number(value) : value;
-  if (Number.isNaN(numeric)) {
-    return `${value} ${currency}`;
-  }
-  return new Intl.NumberFormat(normalizeLocale(locale), {
-    style: "currency",
-    currency,
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
-  }).format(numeric);
 }
 
 function formatDateTime(locale: string, iso: string | null) {
@@ -297,6 +285,15 @@ function safeText(value: string | null | undefined, fallback: string) {
   return trimmed && trimmed.length > 0 ? trimmed : fallback;
 }
 
+const TERMINAL_SESSION_STATUSES = new Set<SessionListItem["status"]>([
+  "COMPLETED",
+  "CANCELLED",
+  "NO_SHOW",
+  "EXPIRED",
+  "REFUND_PENDING",
+  "REFUNDED",
+]);
+
 export default function PractitionerDashboard() {
   const locale = useLocale();
   const copy = COPY[locale === "ar" ? "ar" : "en"];
@@ -348,14 +345,13 @@ export default function PractitionerDashboard() {
     formatShortDate(locale, item.createdAt),
   );
   const settlementValues = settlements.map((item) => Number(item.amountNet) || 0);
-  const settlementCurrency = settlements[0]?.currency ?? wallet?.currency ?? "EGP";
+  const settlementCurrency = settlements[0]?.currency ?? wallet?.currency ?? null;
   const latestSettlementAmount = settlementValues.at(-1) ?? 0;
 
-  const now = Date.now();
   const upcomingSessions = [...sessions]
     .filter((session) => {
       if (!session.scheduledStartAt) return false;
-      return new Date(session.scheduledStartAt).getTime() >= now;
+      return !TERMINAL_SESSION_STATUSES.has(session.status);
     })
     .sort((a, b) => {
       const aValue = a.scheduledStartAt ? new Date(a.scheduledStartAt).getTime() : 0;
@@ -427,14 +423,14 @@ export default function PractitionerDashboard() {
         />
         <DashboardKpiCard
           label={copy.kpi.walletAvailable}
-          value={formatMoney(locale, availableBalance, wallet?.currency ?? "EGP")}
+          value={formatFinanceMoney(normalizeLocale(locale), availableBalance, wallet?.currency ?? null)}
           helper={copy.kpi.walletHelper}
           accentTone="teal"
           icon={<WalletCards className="h-4 w-4" />}
         />
         <DashboardKpiCard
           label={copy.kpi.lastSettlement}
-          value={formatMoney(locale, latestSettlementAmount, settlementCurrency)}
+          value={formatFinanceMoney(normalizeLocale(locale), latestSettlementAmount, settlementCurrency)}
           helper={copy.kpi.lastSettlementHelper}
           accentTone="orange"
           icon={<Clock3 className="h-4 w-4" />}
@@ -529,7 +525,7 @@ export default function PractitionerDashboard() {
               ))}
             </div>
             <div className="mt-4 rounded-2xl border border-border-light bg-surface-tertiary/50 p-3 text-xs text-text-muted dark:border-white/10 dark:bg-white/[0.04]">
-              {copy.pendingBalanceLabel}: {formatMoney(locale, pendingBalance, wallet?.currency ?? "EGP")}
+              {copy.pendingBalanceLabel}: {formatFinanceMoney(normalizeLocale(locale), pendingBalance, wallet?.currency ?? null)}
             </div>
           </article>
         </div>

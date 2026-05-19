@@ -102,19 +102,19 @@ export default function PractitionerFinanceOverviewScreen() {
           <View style={styles.metricGrid}>
             <MetricCard
               label={t("practitioner.finance.wallet.available")}
-              value={formatMoney(wallet?.availableBalance ?? "0", wallet?.currency ?? "EGP", locale)}
+              value={formatMoney(wallet?.availableBalance ?? "0", wallet?.currency ?? null, locale, t("practitioner.finance.common.currencyUnavailable"))}
             />
             <MetricCard
               label={t("practitioner.finance.wallet.totalEarned")}
-              value={formatMoney(wallet?.totalEarned ?? "0", wallet?.currency ?? "EGP", locale)}
+              value={formatMoney(wallet?.totalEarned ?? "0", wallet?.currency ?? null, locale, t("practitioner.finance.common.currencyUnavailable"))}
             />
             <MetricCard
               label={t("practitioner.finance.wallet.lifetimePaidOut")}
-              value={formatMoney(wallet?.lifetimePaidOut ?? "0", wallet?.currency ?? "EGP", locale)}
+              value={formatMoney(wallet?.lifetimePaidOut ?? "0", wallet?.currency ?? null, locale, t("practitioner.finance.common.currencyUnavailable"))}
             />
             <MetricCard
               label={t("practitioner.finance.wallet.pending")}
-              value={formatMoney(wallet?.pendingBalance ?? "0", wallet?.currency ?? "EGP", locale)}
+              value={formatMoney(wallet?.pendingBalance ?? "0", wallet?.currency ?? null, locale, t("practitioner.finance.common.currencyUnavailable"))}
             />
           </View>
         </Card>
@@ -280,7 +280,7 @@ function LedgerPreviewRow({
   t: TranslateFn;
 }) {
   const { theme } = useTheme();
-  const amount = formatMoney(item.amount, item.currency, locale);
+  const amount = formatMoney(item.amount, item.currency ?? null, locale, t("practitioner.finance.common.currencyUnavailable"));
 
   return (
     <Card variant="flat" padding="md" style={styles.previewRowCard}>
@@ -342,7 +342,7 @@ function SettlementPreviewRow({
           </Text>
         </View>
         <Text weight="600" style={styles.previewAmount}>
-          {formatMoney(item.amountNet, item.currency, locale)}
+          {formatMoney(item.amountNet, item.currency ?? null, locale, t("practitioner.finance.common.currencyUnavailable"))}
         </Text>
       </View>
       <View style={styles.badgeRow}>

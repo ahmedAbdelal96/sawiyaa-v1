@@ -6,12 +6,20 @@
  * - PRACTITIONER       → /practitioner/*
  * - ADMIN              → /admin/*
  * - SUPER_ADMIN        → /admin/*  (same surface as ADMIN)
+ * - FINANCE_STAFF      → /admin/*  (admin-class operational role)
+ * - MARKETING_STAFF    → /admin/*  (admin-class operational role)
+ * - PRACTITIONER_REVIEWER → /admin/* (admin-class operational role)
+ * - PATIENT_OPERATIONS  → /admin/*  (admin-class operational role)
  * - SUPPORT_AGENT      → /admin/*  (operational sub-role)
  * - CONTENT_REVIEWER   → /admin/*  (operational sub-role)
  */
 
 export type AppRole =
   | "ADMIN"
+  | "FINANCE_STAFF"
+  | "MARKETING_STAFF"
+  | "PRACTITIONER_REVIEWER"
+  | "PATIENT_OPERATIONS"
   | "SUPPORT_AGENT"
   | "CONTENT_REVIEWER"
   | "PATIENT"
@@ -57,6 +65,10 @@ export const ADMIN_ROUTE_PREFIXES = [ADMIN_CANONICAL_PREFIX] as const;
 
 export const ADMIN_CLASS_ROLES = [
   "ADMIN",
+  "FINANCE_STAFF",
+  "MARKETING_STAFF",
+  "PRACTITIONER_REVIEWER",
+  "PATIENT_OPERATIONS",
   "SUPPORT_AGENT",
   "CONTENT_REVIEWER",
   "SUPER_ADMIN",
@@ -71,6 +83,10 @@ export function resolveRole(role: string | undefined | null): AppRole | null {
 
   if (
     normalized === "ADMIN" ||
+    normalized === "FINANCE_STAFF" ||
+    normalized === "MARKETING_STAFF" ||
+    normalized === "PRACTITIONER_REVIEWER" ||
+    normalized === "PATIENT_OPERATIONS" ||
     normalized === "PATIENT" ||
     normalized === "PRACTITIONER" ||
     normalized === "SUPPORT_AGENT" ||

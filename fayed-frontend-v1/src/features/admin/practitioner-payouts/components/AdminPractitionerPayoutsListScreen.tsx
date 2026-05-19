@@ -288,45 +288,6 @@ export default function AdminPractitionerPayoutsListScreen() {
             {t("list.actions.history")}
           </SurfaceActionLink>
         }
-        notice={
-          <section className="app-panel-soft rounded-[26px] p-4 sm:p-5">
-            <div className="flex flex-wrap items-start justify-between gap-4">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
-                  {pagination ? t("list.results", { count: visibleRows.length }) : t("list.loading")}
-                </p>
-                <p className="mt-2 text-2xl font-semibold tracking-tight text-text-primary dark:text-white/95">
-                  {formatSettlementMoney(locale, summaryMetrics.egpPayable, "EGP")}
-                </p>
-                <p className="mt-1 text-sm text-text-secondary">
-                  {formatSettlementMoney(locale, summaryMetrics.usdPayable, "USD")}
-                </p>
-              </div>
-
-              <div className="max-w-full sm:max-w-[34rem]">
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
-                  {activeFilterChips.length > 0 ? t("list.filters.all") : t("list.note")}
-                </p>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {activeFilterChips.length > 0 ? (
-                    activeFilterChips.map((chip) => (
-                      <span
-                        key={chip.id}
-                        className="app-chip rounded-full px-3 py-1.5 text-xs text-text-secondary dark:text-white/80"
-                      >
-                        {chip.label}
-                      </span>
-                    ))
-                  ) : (
-                    <span className="app-chip rounded-full px-3 py-1.5 text-xs text-text-secondary dark:text-white/80">
-                      {t("list.note")}
-                    </span>
-                  )}
-                </div>
-              </div>
-            </div>
-          </section>
-        }
         summaryCards={
           <>
             <AdminSummaryCard

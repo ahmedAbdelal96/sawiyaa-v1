@@ -1,4 +1,27 @@
 export const enAdminCatalog = {
+  adminUsers: {
+    success: {
+      usersFetched: 'Internal users fetched successfully',
+      userFetched: 'Internal user details fetched successfully',
+      userCreated: 'Internal user created successfully',
+      userUpdated: 'Internal user updated successfully',
+      statusUpdated: 'Internal user status updated successfully',
+      rolesUpdated: 'Internal user roles updated successfully',
+      permissionOverridesFetched:
+        'Internal user permission overrides fetched successfully',
+      permissionOverridesUpdated:
+        'Internal user permission overrides updated successfully',
+      sessionsRevoked: 'Internal user sessions revoked successfully',
+      tokensInvalidated: 'Internal user tokens invalidated successfully',
+    },
+    errors: {
+      userNotFound: 'Internal user was not found',
+      emailAlreadyExists: 'Email is already in use',
+      permissionNotFound: 'Permission key was not found',
+      lastSuperAdminProtected:
+        'This action is not allowed because it would remove access from the last SUPER_ADMIN',
+    },
+  },
   practitionerApplications: {
     success: {
       applicationsFetched: 'Practitioner applications fetched successfully',

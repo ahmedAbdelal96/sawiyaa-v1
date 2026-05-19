@@ -72,7 +72,8 @@ function addHours(base: Date, hours: number): Date {
 }
 
 function buildSessionCode(seed: string): string {
-  return `QA-${seed.slice(0, 8).toUpperCase()}`;
+  const digest = createHash('sha1').update(seed).digest('hex').slice(0, 10).toUpperCase();
+  return `QA-${digest}`;
 }
 
 function practiceRegionCurrency(countryIsoCode: string | null): {
@@ -1013,9 +1014,21 @@ export const curatedDevSeedModule: SeedModule = {
     ] as const;
 
     for (const session of sessions) {
+      const resolvedPackagePurchaseId = session.packagePurchaseId
+        ? (
+            await prisma.patientPackagePurchase.findUnique({
+              where: { id: session.packagePurchaseId },
+              select: { id: true },
+            })
+          )?.id ?? null
+        : null;
+
       await prisma.session.upsert({
         where: { id: session.id },
-        create: session,
+        create: {
+          ...session,
+          packagePurchaseId: resolvedPackagePurchaseId,
+        },
         update: {
           sessionCode: session.sessionCode,
           patientId: session.patientId,
@@ -1035,7 +1048,7 @@ export const curatedDevSeedModule: SeedModule = {
           providerRoomId: session.providerRoomId,
           providerSessionRef: session.providerSessionRef,
           timezoneSnapshot: session.timezoneSnapshot,
-          packagePurchaseId: session.packagePurchaseId,
+          packagePurchaseId: resolvedPackagePurchaseId,
           packageTemplateId: session.packageTemplateId,
           packageSessionIndex: session.packageSessionIndex,
           packageSessionCount: session.packageSessionCount,
@@ -1765,23 +1778,34 @@ export const curatedDevSeedModule: SeedModule = {
       });
     }
 
+    const notificationTypeSlugs = [
+      'payments.payment-succeeded',
+      'payments.payment-failed',
+      'sessions.session-confirmed',
+      'sessions.session-confirmed-practitioner',
+      'sessions.session-join-available',
+      'training.enrollment-confirmed',
+    ] as const;
+
     const notificationTypeBySlug = new Map(
       (
         await prisma.notificationType.findMany({
           where: {
             slug: {
-              in: [
-                'payments.payment-succeeded',
-                'payments.payment-failed',
-                'sessions.session-confirmed',
-                'sessions.session-join-available',
-                'training.enrollment-confirmed',
-              ],
+              in: [...notificationTypeSlugs],
             },
           },
         })
       ).map((type) => [type.slug, type.id] as const),
     );
+
+    for (const slug of notificationTypeSlugs) {
+      if (!notificationTypeBySlug.get(slug)) {
+        throw new Error(
+          `[seed:curated-dev] missing notification type slug: ${slug}. Ensure notifications.seed runs before curated-dev.`,
+        );
+      }
+    }
 
     const notifications = [
       {
@@ -2085,6 +2109,17 @@ export const curatedDevSeedModule: SeedModule = {
       });
     }
 
+    await prisma.session.updateMany({
+      where: {
+        id: {
+          in: [uuid('curated-session-package-1'), uuid('curated-session-package-2')],
+        },
+      },
+      data: {
+        packagePurchaseId: packagePurchaseActiveId,
+      },
+    });
+
     const packageSettlements = [
       {
         id: packageSettlementHoldId,
@@ -2359,6 +2394,78 @@ export const curatedDevSeedModule: SeedModule = {
       });
     }
 
+    const academyEnrollments = [
+      {
+        id: uuid('curated-academy-enrollment-a'),
+        academyCourseId: academyCourse.id,
+        academyLearnerId: academyLearnerA.id,
+        publicAccessToken: 'academy-access-token-a',
+        enrollmentStatus: AcademyEnrollmentStatus.CONFIRMED,
+        paymentStatus: 'CAPTURED',
+        paymentId: null,
+        registeredAt: daysAgo(5),
+        confirmedAt: daysAgo(4),
+        cancelledAt: null,
+        failedAt: null,
+        failedReason: null,
+        notesInternal: 'QA enrollment for progress and payment visibility.',
+      },
+      {
+        id: uuid('curated-academy-enrollment-b'),
+        academyCourseId: academyCourse.id,
+        academyLearnerId: academyLearnerB.id,
+        publicAccessToken: 'academy-access-token-b',
+        enrollmentStatus: AcademyEnrollmentStatus.PAYMENT_FAILED,
+        paymentStatus: 'FAILED',
+        paymentId: null,
+        registeredAt: daysAgo(6),
+        confirmedAt: null,
+        cancelledAt: null,
+        failedAt: daysAgo(6),
+        failedReason: 'Card declined',
+        notesInternal: 'Failed enrollment kept for QA retry flows.',
+      },
+      {
+        id: uuid('curated-academy-enrollment-c'),
+        academyCourseId: academyCourse.id,
+        academyLearnerId: academyLearnerC.id,
+        publicAccessToken: 'academy-access-token-c',
+        enrollmentStatus: AcademyEnrollmentStatus.PAID,
+        paymentStatus: 'PAID',
+        paymentId: null,
+        registeredAt: daysAgo(1),
+        confirmedAt: null,
+        cancelledAt: null,
+        failedAt: null,
+        failedReason: null,
+        notesInternal: 'Paid but not yet confirmed to test progress states.',
+      },
+    ] as const;
+
+    for (const enrollment of academyEnrollments) {
+      await prisma.academyEnrollment.upsert({
+        where: {
+          academyCourseId_academyLearnerId: {
+            academyCourseId: enrollment.academyCourseId,
+            academyLearnerId: enrollment.academyLearnerId,
+          },
+        },
+        create: enrollment,
+        update: {
+          publicAccessToken: enrollment.publicAccessToken,
+          enrollmentStatus: enrollment.enrollmentStatus,
+          paymentStatus: enrollment.paymentStatus,
+          paymentId: enrollment.paymentId,
+          registeredAt: enrollment.registeredAt,
+          confirmedAt: enrollment.confirmedAt,
+          cancelledAt: enrollment.cancelledAt,
+          failedAt: enrollment.failedAt,
+          failedReason: enrollment.failedReason,
+          notesInternal: enrollment.notesInternal,
+        },
+      });
+    }
+
     const academyPayments = [
       {
         id: uuid('curated-academy-payment-a'),
@@ -2404,10 +2511,7 @@ export const curatedDevSeedModule: SeedModule = {
             payment.id === uuid('curated-academy-payment-a')
               ? uuid('curated-academy-enrollment-a')
               : uuid('curated-academy-enrollment-b'),
-          paymentId:
-            payment.id === uuid('curated-academy-payment-a')
-              ? uuid('curated-academy-payment-a')
-              : uuid('curated-academy-payment-b'),
+          paymentId: null,
           provider: payment.provider,
           status: payment.status,
           amountSubtotal: payment.amountSubtotal,
@@ -2435,78 +2539,6 @@ export const curatedDevSeedModule: SeedModule = {
           checkoutUrl: payment.checkoutUrl,
           clientSecret: payment.clientSecret,
           failureReason: payment.failureReason,
-        },
-      });
-    }
-
-    const academyEnrollments = [
-      {
-        id: uuid('curated-academy-enrollment-a'),
-        academyCourseId: academyCourse.id,
-        academyLearnerId: academyLearnerA.id,
-        publicAccessToken: 'academy-access-token-a',
-        enrollmentStatus: AcademyEnrollmentStatus.CONFIRMED,
-        paymentStatus: 'CAPTURED',
-        paymentId: uuid('curated-academy-payment-a'),
-        registeredAt: daysAgo(5),
-        confirmedAt: daysAgo(4),
-        cancelledAt: null,
-        failedAt: null,
-        failedReason: null,
-        notesInternal: 'QA enrollment for progress and payment visibility.',
-      },
-      {
-        id: uuid('curated-academy-enrollment-b'),
-        academyCourseId: academyCourse.id,
-        academyLearnerId: academyLearnerB.id,
-        publicAccessToken: 'academy-access-token-b',
-        enrollmentStatus: AcademyEnrollmentStatus.PAYMENT_FAILED,
-        paymentStatus: 'FAILED',
-        paymentId: uuid('curated-academy-payment-b'),
-        registeredAt: daysAgo(6),
-        confirmedAt: null,
-        cancelledAt: null,
-        failedAt: daysAgo(6),
-        failedReason: 'Card declined',
-        notesInternal: 'Failed enrollment kept for QA retry flows.',
-      },
-      {
-        id: uuid('curated-academy-enrollment-c'),
-        academyCourseId: academyCourse.id,
-        academyLearnerId: academyLearnerC.id,
-        publicAccessToken: 'academy-access-token-c',
-        enrollmentStatus: AcademyEnrollmentStatus.PAID,
-        paymentStatus: 'PAID',
-        paymentId: null,
-        registeredAt: daysAgo(1),
-        confirmedAt: null,
-        cancelledAt: null,
-        failedAt: null,
-        failedReason: null,
-        notesInternal: 'Paid but not yet confirmed to test progress states.',
-      },
-    ] as const;
-
-    for (const enrollment of academyEnrollments) {
-      await prisma.academyEnrollment.upsert({
-        where: {
-          academyCourseId_academyLearnerId: {
-            academyCourseId: enrollment.academyCourseId,
-            academyLearnerId: enrollment.academyLearnerId,
-          },
-        },
-        create: enrollment,
-        update: {
-          publicAccessToken: enrollment.publicAccessToken,
-          enrollmentStatus: enrollment.enrollmentStatus,
-          paymentStatus: enrollment.paymentStatus,
-          paymentId: enrollment.paymentId,
-          registeredAt: enrollment.registeredAt,
-          confirmedAt: enrollment.confirmedAt,
-          cancelledAt: enrollment.cancelledAt,
-          failedAt: enrollment.failedAt,
-          failedReason: enrollment.failedReason,
-          notesInternal: enrollment.notesInternal,
         },
       });
     }

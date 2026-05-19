@@ -3,15 +3,24 @@ import type {
   PractitionerSettlementStatus,
 } from "./types";
 
+function normalizeLocale(locale: string) {
+  return locale.startsWith("ar") ? "ar-EG" : "en-US";
+}
+
 export function formatMoney(
   amount: string,
-  currency: string,
+  currency: string | null | undefined,
   locale: string,
+  fallbackText = "-",
 ) {
   const numeric = Number(amount || "0");
-  return new Intl.NumberFormat(locale, {
+  const currencyCode = currency?.trim().toUpperCase();
+  if (!currencyCode) {
+    return fallbackText;
+  }
+  return new Intl.NumberFormat(normalizeLocale(locale), {
     style: "currency",
-    currency,
+    currency: currencyCode,
     maximumFractionDigits: 2,
   }).format(Number.isFinite(numeric) ? numeric : 0);
 }

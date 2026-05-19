@@ -1,5 +1,8 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { JournalEntrySourceType, ReconciliationReviewStatus } from '@prisma/client';
+import {
+  JournalEntrySourceType,
+  ReconciliationReviewStatus,
+} from '@prisma/client';
 import { ListAdminAccountingReconciliationDto } from '../dto/list-admin-accounting-reconciliation.dto';
 import { AccountingReconciliationRepository } from '../repositories/accounting-reconciliation.repository';
 import { AccountingReconciliationService } from '../services/accounting-reconciliation.service';
@@ -20,7 +23,9 @@ export class ListAdminAccountingReconciliationUseCase {
     private readonly reconciliationService: AccountingReconciliationService,
   ) {}
 
-  async execute(query: ListAdminAccountingReconciliationDto): Promise<ReconciliationListViewModel> {
+  async execute(
+    query: ListAdminAccountingReconciliationDto,
+  ): Promise<ReconciliationListViewModel> {
     const snapshot = await this.buildSnapshot(query);
     const skip = (snapshot.page - 1) * snapshot.limit;
     const items = snapshot.items.slice(skip, skip + snapshot.limit);
@@ -31,7 +36,10 @@ export class ListAdminAccountingReconciliationUseCase {
         page: snapshot.page,
         limit: snapshot.limit,
         totalItems: snapshot.items.length,
-        totalPages: Math.max(1, Math.ceil(snapshot.items.length / snapshot.limit)),
+        totalPages: Math.max(
+          1,
+          Math.ceil(snapshot.items.length / snapshot.limit),
+        ),
       },
       filters: snapshot.filters,
     };
@@ -45,7 +53,11 @@ export class ListAdminAccountingReconciliationUseCase {
       ? new Date(query.from)
       : new Date(to.getTime() - 29 * 24 * 60 * 60 * 1000);
 
-    if (Number.isNaN(from.getTime()) || Number.isNaN(to.getTime()) || from > to) {
+    if (
+      Number.isNaN(from.getTime()) ||
+      Number.isNaN(to.getTime()) ||
+      from > to
+    ) {
       throw new BadRequestException({
         messageKey: 'financialOperations.errors.invalidFilter',
         error: FINANCIAL_OPS_ERROR_CODES.invalidFilter,
@@ -86,20 +98,22 @@ export class ListAdminAccountingReconciliationUseCase {
           }),
     ]);
 
-    const [paymentJournals, refundJournals, payoutJournals] = await Promise.all([
-      this.repository.listJournalEntriesBySources({
-        sourceType: JournalEntrySourceType.PAYMENT_CAPTURED,
-        sourceIds: payments.map((item) => item.id),
-      }),
-      this.repository.listJournalEntriesBySources({
-        sourceType: JournalEntrySourceType.REFUND_SUCCEEDED,
-        sourceIds: refunds.map((item) => item.id),
-      }),
-      this.repository.listJournalEntriesBySources({
-        sourceType: JournalEntrySourceType.PRACTITIONER_PAYOUT,
-        sourceIds: payouts.map((item) => item.id),
-      }),
-    ]);
+    const [paymentJournals, refundJournals, payoutJournals] = await Promise.all(
+      [
+        this.repository.listJournalEntriesBySources({
+          sourceType: JournalEntrySourceType.PAYMENT_CAPTURED,
+          sourceIds: payments.map((item) => item.id),
+        }),
+        this.repository.listJournalEntriesBySources({
+          sourceType: JournalEntrySourceType.REFUND_SUCCEEDED,
+          sourceIds: refunds.map((item) => item.id),
+        }),
+        this.repository.listJournalEntriesBySources({
+          sourceType: JournalEntrySourceType.PRACTITIONER_PAYOUT,
+          sourceIds: payouts.map((item) => item.id),
+        }),
+      ],
+    );
 
     const [paymentReviews, refundReviews, payoutReviews] = await Promise.all([
       this.repository.listReviewsBySources({
@@ -312,7 +326,9 @@ export class ListAdminAccountingReconciliationUseCase {
     };
   }
 
-  private indexBySourceId<T extends { sourceId: string }>(items: T[]): Map<string, T> {
+  private indexBySourceId<T extends { sourceId: string }>(
+    items: T[],
+  ): Map<string, T> {
     const indexed = new Map<string, T>();
     for (const item of items) {
       indexed.set(item.sourceId, item);

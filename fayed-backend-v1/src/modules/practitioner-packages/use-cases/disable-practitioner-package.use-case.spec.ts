@@ -24,7 +24,9 @@ describe('DisablePractitionerPackageUseCase', () => {
   });
 
   it('disables an active package and preserves prior state', async () => {
-    (practitionerPackageRepository.findAdminById as jest.Mock).mockResolvedValue({
+    (
+      practitionerPackageRepository.findAdminById as jest.Mock
+    ).mockResolvedValue({
       id: 'package-1',
       status: PractitionerPackageStatus.ACTIVE,
       statusBeforeAdminDisable: null,
@@ -60,11 +62,15 @@ describe('DisablePractitionerPackageUseCase', () => {
         statusBeforeAdminDisable: PractitionerPackageStatus.ACTIVE,
       }),
     );
-    expect(result.item.status).toBe(PractitionerPackageStatus.DISABLED_BY_ADMIN);
+    expect(result.item.status).toBe(
+      PractitionerPackageStatus.DISABLED_BY_ADMIN,
+    );
   });
 
   it('rejects archived packages', async () => {
-    (practitionerPackageRepository.findAdminById as jest.Mock).mockResolvedValue({
+    (
+      practitionerPackageRepository.findAdminById as jest.Mock
+    ).mockResolvedValue({
       id: 'package-1',
       status: PractitionerPackageStatus.ARCHIVED,
       archivedAt: new Date(),
@@ -77,8 +83,8 @@ describe('DisablePractitionerPackageUseCase', () => {
       },
     });
 
-    await expect(useCase.execute({ packageId: 'package-1' })).rejects.toBeInstanceOf(
-      ConflictException,
-    );
+    await expect(
+      useCase.execute({ packageId: 'package-1' }),
+    ).rejects.toBeInstanceOf(ConflictException);
   });
 });

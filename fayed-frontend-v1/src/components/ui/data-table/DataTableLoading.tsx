@@ -42,10 +42,10 @@ export function DataTableLoading({
   };
   
   return (
-    <div className="app-panel overflow-hidden">
+    <div className="overflow-hidden rounded-[28px] border border-border-light bg-white shadow-[0_16px_34px_-28px_rgba(34,52,56,0.18)]">
       <div className="overflow-x-auto">
         <table className="w-full">
-          <thead className="border-b border-border-light bg-surface-tertiary/80">
+          <thead className="border-b border-border-light/80 bg-surface-secondary/80">
             <tr>
               {Array.from({ length: columns }).map((_, i) => (
                 <th
@@ -79,7 +79,7 @@ export function DataTableLoading({
       
       {message && (
         <div className="border-t border-border-light bg-surface-secondary/60 px-4 py-3 text-center sm:px-6">
-          <div className="inline-flex items-center gap-2 rounded-full border border-border-light bg-surface px-3 py-1.5 text-xs font-medium text-text-secondary shadow-theme-xs">
+          <div className="inline-flex items-center gap-2 rounded-full border border-border-light bg-white px-3 py-1.5 text-xs font-medium text-text-secondary shadow-theme-xs">
             <span className="inline-flex h-4 w-4 animate-spin rounded-full border-2 border-primary/20 border-t-primary" />
             <span>{message}</span>
           </div>

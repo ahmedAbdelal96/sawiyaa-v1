@@ -1,140 +1,177 @@
 /**
- * Excel Export Utilities
- * 
- * Utilities for exporting table data to Excel format.
- * Supports customizable columns, formatting, and RTL content.
- * 
- * Uses SheetJS (xlsx) library for Excel generation.
- * Install: npm install xlsx
- * 
+ * Data Export Utilities (CSV)
+ *
+ * Utilities for exporting table data from the browser.
+ *
+ * Security note:
+ * - We intentionally avoid SheetJS (xlsx) here because `npm audit` reports high-severity
+ *   vulnerabilities with no upstream fix available at the time of Phase 9A triage.
+ * - This utility exports CSV (which Excel can open) to keep the feature while removing
+ *   the vulnerable runtime dependency.
+ *
  * @author Senior Development Team
  */
 
 import type { ColumnDef } from './types';
 
 /**
- * Export data to Excel file
- * 
- * @param data - Array of data objects to export
- * @param columns - Column definitions for headers and formatting
- * @param filename - Output filename (without extension)
- * @param sheetName - Excel sheet name (default: 'Data')
+ * Export data to a CSV file (Excel-compatible).
+ *
+ * Backwards compatibility:
+ * - This function name is kept as `exportToExcel` to avoid broad refactors in call sites.
+ * - The `sheetName` parameter is ignored for CSV export.
  */
 export async function exportToExcel<T = any>(
   data: T[],
   columns: ColumnDef<T>[],
   filename: string = 'export',
-  sheetName: string = 'Data'
+  sheetName: string = 'Data',
 ): Promise<void> {
   try {
-    // Dynamically import xlsx to reduce bundle size
-    const XLSX = await import('xlsx');
-    
-    // Transform data based on column definitions
+    void sheetName;
+
     const transformedData = data.map((row) => {
       const transformedRow: Record<string, any> = {};
-      
+
       columns.forEach((column) => {
-        // Get header text
-        const header = typeof column.header === 'string' 
-          ? column.header 
-          : column.id;
-        
-        // Get cell value using accessor or direct property
+        const header =
+          typeof column.header === 'string' ? column.header : column.id;
+
         let value: any;
         if (column.accessor) {
           value = column.accessor(row);
         } else {
           value = (row as any)[column.id];
         }
-        
-        // Format value for Excel
+
         transformedRow[header] = formatValueForExcel(value);
       });
-      
+
       return transformedRow;
     });
-    
-    // Create worksheet from data
-    const worksheet = XLSX.utils.json_to_sheet(transformedData);
-    
-    // Set column widths based on content
-    const columnWidths = columns.map((column) => {
-      const header = typeof column.header === 'string' ? column.header : column.id;
-      return { wch: Math.max(header.length, 15) };
-    });
-    worksheet['!cols'] = columnWidths;
-    
-    // Create workbook
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
-    
-    // Set workbook properties for RTL support
-    if (!workbook.Workbook) workbook.Workbook = {};
-    if (!workbook.Workbook.Views) workbook.Workbook.Views = [];
-    workbook.Workbook.Views[0] = { RTL: isRTL() };
-    
-    // Generate filename with timestamp
+
+    const csv = buildCsv(transformedData, columns);
+
     const timestamp = new Date().toISOString().slice(0, 10);
-    const fullFilename = `${filename}_${timestamp}.xlsx`;
-    
-    // Write file
-    XLSX.writeFile(workbook, fullFilename);
-    
-    console.log(`✅ Exported ${data.length} rows to ${fullFilename}`);
+    const fullFilename = `${filename}_${timestamp}.csv`;
+
+    downloadTextFile(fullFilename, csv);
+
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`✅ Exported ${data.length} rows to ${fullFilename}`);
+    }
   } catch (error) {
-    console.error('❌ Export to Excel failed:', error);
-    throw new Error('Failed to export data to Excel');
+    if (process.env.NODE_ENV === 'development') {
+      console.error('❌ Export failed:', {
+        name: error instanceof Error ? error.name : 'UnknownError',
+        message: error instanceof Error ? error.message : String(error),
+      });
+    }
+    throw new Error('Failed to export data');
   }
 }
 
 /**
- * Format value for Excel cell
- * Handles different data types appropriately
+ * Export selected rows only.
  */
+export async function exportSelectedRows<T = any>(
+  data: T[],
+  selectedIds: string[],
+  getRowId: (row: T, index: number) => string,
+  columns: ColumnDef<T>[],
+  filename: string = 'export_selected',
+): Promise<void> {
+  const selectedData = data.filter((row, index) => {
+    const id = getRowId(row, index);
+    return selectedIds.includes(id);
+  });
+
+  await exportToExcel(selectedData, columns, filename);
+}
+
+/**
+ * Export with a custom transformer.
+ */
+export async function exportWithTransformer<T = any>(
+  data: T[],
+  columns: ColumnDef<T>[],
+  transformer: (data: T[]) => any[],
+  filename: string = 'export',
+): Promise<void> {
+  const transformedData = transformer(data);
+  await exportToExcel(transformedData, columns, filename);
+}
+
+function buildCsv<T = any>(
+  rows: Array<Record<string, any>>,
+  columns: ColumnDef<T>[],
+): string {
+  const headers = columns.map((column) =>
+    typeof column.header === 'string' ? column.header : column.id,
+  );
+
+  const lines: string[] = [];
+  // UTF-8 BOM for Excel compatibility with Arabic text.
+  lines.push('\uFEFF' + headers.map(escapeCsvCell).join(','));
+
+  for (const row of rows) {
+    const values = headers.map((h) => escapeCsvCell(row[h]));
+    lines.push(values.join(','));
+  }
+
+  return lines.join('\r\n');
+}
+
+function escapeCsvCell(value: any): string {
+  const str = value === null || value === undefined ? '' : String(value);
+  if (/[",\r\n]/.test(str)) {
+    return `"${str.replaceAll('"', '""')}"`;
+  }
+  return str;
+}
+
+function downloadTextFile(filename: string, content: string): void {
+  if (typeof window === 'undefined') {
+    throw new Error('CSV export is only supported in the browser.');
+  }
+
+  const blob = new Blob([content], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  try {
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    link.rel = 'noopener';
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
 function formatValueForExcel(value: any): any {
-  // Handle null/undefined
-  if (value === null || value === undefined) {
-    return '';
-  }
-  
-  // Handle dates
-  if (value instanceof Date) {
-    return value.toLocaleDateString();
-  }
-  
-  // Handle booleans
-  if (typeof value === 'boolean') {
-    return value ? 'Yes' : 'No';
-  }
-  
-  // Handle arrays
-  if (Array.isArray(value)) {
-    return value.join(', ');
-  }
-  
-  // Handle objects (stringify)
-  if (typeof value === 'object') {
-    return JSON.stringify(value);
-  }
-  
+  if (value === null || value === undefined) return '';
+  if (value instanceof Date) return value.toLocaleDateString();
+  if (typeof value === 'boolean') return value ? 'Yes' : 'No';
+  if (Array.isArray(value)) return value.join(', ');
+
+  // Return as-is for primitives
+  if (typeof value !== 'object') return value;
+
   // Handle React elements (extract text)
-  if (typeof value === 'object' && value?.props) {
+  if ((value as any)?.props) {
     return extractTextFromReactElement(value);
   }
-  
-  // Return as-is for primitives
-  return value;
+
+  return JSON.stringify(value);
 }
 
-/**
- * Extract text content from React element
- */
 function extractTextFromReactElement(element: any): string {
   if (typeof element === 'string' || typeof element === 'number') {
     return String(element);
   }
-  
+
   if (element?.props?.children) {
     const children = element.props.children;
     if (Array.isArray(children)) {
@@ -142,50 +179,6 @@ function extractTextFromReactElement(element: any): string {
     }
     return extractTextFromReactElement(children);
   }
-  
+
   return '';
-}
-
-/**
- * Detect if current locale is RTL
- */
-function isRTL(): boolean {
-  if (typeof window === 'undefined') return false;
-  
-  const html = document.documentElement;
-  const dir = html.getAttribute('dir');
-  const lang = html.getAttribute('lang');
-  
-  return dir === 'rtl' || lang === 'ar' || lang === 'he' || lang === 'fa';
-}
-
-/**
- * Export selected rows only
- */
-export async function exportSelectedRows<T = any>(
-  data: T[],
-  selectedIds: string[],
-  getRowId: (row: T, index: number) => string,
-  columns: ColumnDef<T>[],
-  filename: string = 'export_selected'
-): Promise<void> {
-  const selectedData = data.filter((row, index) => {
-    const id = getRowId(row, index);
-    return selectedIds.includes(id);
-  });
-  
-  await exportToExcel(selectedData, columns, filename);
-}
-
-/**
- * Export with custom transformer
- */
-export async function exportWithTransformer<T = any>(
-  data: T[],
-  columns: ColumnDef<T>[],
-  transformer: (data: T[]) => any[],
-  filename: string = 'export'
-): Promise<void> {
-  const transformedData = transformer(data);
-  await exportToExcel(transformedData, columns, filename);
 }

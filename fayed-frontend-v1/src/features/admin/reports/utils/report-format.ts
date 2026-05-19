@@ -1,21 +1,11 @@
+import { formatMoney as formatFinanceMoney } from "@/lib/finance-format";
+
 export function normalizeLocale(locale: string) {
   return locale === "ar" ? "ar-EG" : "en-US";
 }
 
 export function formatMoney(locale: string, value: string, currencyCode?: string | null) {
-  const parsed = Number(value || "0");
-  if (currencyCode) {
-    return new Intl.NumberFormat(normalizeLocale(locale), {
-      style: "currency",
-      currency: currencyCode,
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(parsed);
-  }
-  return new Intl.NumberFormat(normalizeLocale(locale), {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(parsed);
+  return formatFinanceMoney(normalizeLocale(locale), value, currencyCode);
 }
 
 export function formatCompactNumber(locale: string, value: string) {
@@ -36,4 +26,3 @@ export function formatDateTime(locale: string, value: string) {
     timeStyle: "short",
   }).format(new Date(value));
 }
-

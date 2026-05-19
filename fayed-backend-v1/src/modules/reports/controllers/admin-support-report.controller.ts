@@ -13,7 +13,10 @@ import { AccountStateRequirement } from '@common/enums/account-state-requirement
 import { AppRole } from '@common/enums/app-role.enum';
 import { JwtAccessAuthGuard } from '@common/guards/authentication/jwt-access-auth.guard';
 import { RolesGuard } from '@common/guards/authorization/roles.guard';
-import { GetAdminSupportReportOverviewDto, ListAdminSupportReportRowsDto } from '../dto/admin-support-report.dto';
+import {
+  GetAdminSupportReportOverviewDto,
+  ListAdminSupportReportRowsDto,
+} from '../dto/admin-support-report.dto';
 import { GetAdminSupportReportOverviewUseCase } from '../use-cases/get-admin-support-report-overview.use-case';
 import { ListAdminSupportReportRowsUseCase } from '../use-cases/list-admin-support-report-rows.use-case';
 
@@ -36,7 +39,9 @@ export class AdminSupportReportController {
   })
   @ApiResponse({ status: 200, description: 'Support report overview' })
   @ApiUnauthorizedResponse({ description: 'Access token is required' })
-  @ApiForbiddenResponse({ description: 'Admin or support active account is required' })
+  @ApiForbiddenResponse({
+    description: 'Admin or support active account is required',
+  })
   async overview(@Query() query: GetAdminSupportReportOverviewDto) {
     const data = await this.getOverviewUseCase.execute(query);
     return { success: true as const, data };
@@ -49,10 +54,11 @@ export class AdminSupportReportController {
   })
   @ApiResponse({ status: 200, description: 'Support report rows' })
   @ApiUnauthorizedResponse({ description: 'Access token is required' })
-  @ApiForbiddenResponse({ description: 'Admin or support active account is required' })
+  @ApiForbiddenResponse({
+    description: 'Admin or support active account is required',
+  })
   async rows(@Query() query: ListAdminSupportReportRowsDto) {
     const data = await this.listRowsUseCase.execute(query);
     return { success: true as const, data };
   }
 }
-

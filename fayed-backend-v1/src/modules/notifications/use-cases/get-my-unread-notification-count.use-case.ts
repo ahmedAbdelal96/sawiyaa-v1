@@ -11,10 +11,9 @@ export class GetMyUnreadNotificationCountUseCase {
   ) {}
 
   async execute(input: { authenticatedUser: AuthenticatedUser }) {
-    const unreadCount =
-      await this.repository.countUnreadMyInAppNotifications({
-        userId: input.authenticatedUser.id,
-      });
+    const unreadCount = await this.repository.countUnreadMyInAppNotifications({
+      userId: input.authenticatedUser.id,
+    });
 
     return this.presenter.presentUnreadCount(unreadCount);
   }

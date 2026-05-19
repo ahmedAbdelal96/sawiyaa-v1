@@ -4,11 +4,18 @@ import { LedgerAccountFilterOptionViewModel } from '../types/accounting-read.typ
 
 @Injectable()
 export class ListAdminLedgerAccountOptionsUseCase {
-  constructor(private readonly accountingReadRepository: AccountingReadRepository) {}
+  constructor(
+    private readonly accountingReadRepository: AccountingReadRepository,
+  ) {}
 
-  async execute(query: { currencyCode?: string }): Promise<LedgerAccountFilterOptionViewModel[]> {
+  async execute(query: {
+    currencyCode?: string;
+  }): Promise<LedgerAccountFilterOptionViewModel[]> {
     const currencyCode = query.currencyCode?.trim().toUpperCase();
-    const rows = await this.accountingReadRepository.listLedgerAccountOptions(currencyCode);
+    const rows =
+      await this.accountingReadRepository.listLedgerAccountOptions(
+        currencyCode,
+      );
 
     return rows.map((row) => ({
       id: row.id,

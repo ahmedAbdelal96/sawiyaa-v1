@@ -18,6 +18,7 @@ export const enAuthCatalog = {
     adminLoggedIn: 'Admin logged in successfully',
     adminTokensRefreshed: 'Admin session refreshed successfully',
     adminLoggedOut: 'Admin session logged out successfully',
+    adminStepUpVerified: 'Step-up verification completed successfully',
   },
   notifications: {
     practitionerLoginOtpTitle: 'Practitioner login OTP',
@@ -69,5 +70,8 @@ export const enAuthCatalog = {
     accessTokenRequired: 'An access token is required for this route',
     refreshTokenTypeRequired: 'A refresh token is required for this route',
     authenticationRequired: 'Authentication is required for this route',
+    csrfTokenRequired:
+      'A CSRF token is required for this cookie-authenticated request',
+    stepUpRequired: 'Step-up verification is required for this action',
   },
 };

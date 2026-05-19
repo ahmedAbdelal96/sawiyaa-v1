@@ -1,5 +1,19 @@
 export function resolvePatientNotificationRoute(href: string) {
-  const segments = href.split("/").filter(Boolean);
+  const trimmed = href.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  // Reject absolute URLs and unsafe protocols from notification payloads.
+  // We only accept internal app paths like "/patient/sessions/123".
+  if (!trimmed.startsWith("/") || trimmed.startsWith("//")) {
+    return null;
+  }
+  if (/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(trimmed)) {
+    return null;
+  }
+
+  const segments = trimmed.split("/").filter(Boolean);
   const patientIndex = segments.findIndex((segment) => segment === "patient");
 
   if (patientIndex === -1) {

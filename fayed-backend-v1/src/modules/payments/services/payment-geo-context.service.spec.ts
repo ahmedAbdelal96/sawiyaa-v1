@@ -24,10 +24,9 @@ describe('PaymentGeoContextService', () => {
       { id: '1', isoCode: 'EGY', phoneCode: '+20' },
       { id: '2', isoCode: 'SAU', phoneCode: '+966' },
     ]);
-    findFirst.mockImplementation(async (args: { where: { isoCode: string } }) =>
-      args.where.isoCode === 'SAU'
-        ? { id: '2', isoCode: 'SAU' }
-        : null,
+    findFirst.mockImplementation(
+      async (args: { where: { isoCode: string } }) =>
+        args.where.isoCode === 'SAU' ? { id: '2', isoCode: 'SAU' } : null,
     );
 
     const result = await service.resolveCountryResolution({

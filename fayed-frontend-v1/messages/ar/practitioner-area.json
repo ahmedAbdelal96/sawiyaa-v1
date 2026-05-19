@@ -392,20 +392,20 @@
         "placeholder": "مثال: 5"
       },
       "sessionPrice30Egp": {
-        "label": "سعر جلسة 30 دقيقة بالجنيه المصري",
-        "placeholder": "مثال: 250"
+        "label": "سعر 30 دقيقة (EGP)",
+        "placeholder": "أدخل السعر بالجنيه المصري"
       },
       "sessionPrice30Usd": {
-        "label": "سعر جلسة 30 دقيقة بالدولار",
-        "placeholder": "مثال: 8"
+        "label": "سعر 30 دقيقة (USD)",
+        "placeholder": "أدخل السعر بالدولار الأمريكي"
       },
       "sessionPrice60Egp": {
-        "label": "سعر جلسة 60 دقيقة بالجنيه المصري",
-        "placeholder": "مثال: 450"
+        "label": "سعر 60 دقيقة (EGP)",
+        "placeholder": "أدخل السعر بالجنيه المصري"
       },
       "sessionPrice60Usd": {
-        "label": "سعر جلسة 60 دقيقة بالدولار",
-        "placeholder": "مثال: 15"
+        "label": "سعر 60 دقيقة (USD)",
+        "placeholder": "أدخل السعر بالدولار الأمريكي"
       },
       "practitionerType": {
         "label": "نوع الممارس",
@@ -420,36 +420,45 @@
         "placeholder": "مثال: Asia/Riyadh"
       },
       "payoutOtherDetails": {
-        "label": "تفاصيل أخرى للصرف",
-        "placeholder": "أضف أي ملاحظات إضافية للصرف"
+        "label": "تفاصيل أخرى",
+        "placeholder": "اكتب أي تفاصيل إضافية"
       },
       "locale": {
         "label": "اللغة",
         "placeholder": "اختر اللغة"
       },
       "payoutWalletProvider": {
-        "label": "اسم المحفظة",
-        "placeholder": "أدخل اسم المحفظة"
+        "label": "شركة المحفظة",
+        "placeholder": "اختر شركة المحفظة",
+        "countryPrompt": "اختر دولة استلام المستحقات أولًا لعرض شركات المحافظ المتاحة.",
+        "emptyState": "لا توجد خيارات متاحة لهذه الدولة حاليًا. تواصل مع الإدارة لإضافة البنك أو شركة المحفظة."
+      },
+      "payoutCountryCode": {
+        "label": "دولة استلام المستحقات",
+        "placeholder": "اختر دولة استلام المستحقات",
+        "hint": "تقوم هذه الدولة بتصفية البنوك وشركات المحافظ المتاحة."
       },
       "payoutWalletIdentifier": {
         "label": "رقم المحفظة",
-        "placeholder": "أدخل رقم المحفظة"
+        "placeholder": "اكتب رقم المحفظة"
       },
       "payoutMethodType": {
-        "label": "طريقة الصرف",
-        "placeholder": "اختر طريقة الصرف"
+        "label": "طريقة استلام المستحقات",
+        "placeholder": "اختر طريقة الاستلام"
       },
       "payoutBankName": {
         "label": "اسم البنك",
-        "placeholder": "أدخل اسم البنك"
+        "placeholder": "اختر البنك",
+        "countryPrompt": "اختر دولة استلام المستحقات أولًا لعرض البنوك المتاحة.",
+        "emptyState": "لا توجد خيارات متاحة لهذه الدولة حاليًا. تواصل مع الإدارة لإضافة البنك أو شركة المحفظة."
       },
       "payoutIban": {
-        "label": "IBAN",
-        "placeholder": "أدخل IBAN"
+        "label": "رقم IBAN",
+        "placeholder": "اكتب رقم IBAN"
       },
       "payoutBankAccountNumber": {
         "label": "رقم الحساب البنكي",
-        "placeholder": "أدخل رقم الحساب البنكي"
+        "placeholder": "اكتب رقم الحساب البنكي"
       },
       "practitionerGender": {
         "label": "النوع",
@@ -457,23 +466,7 @@
       },
       "payoutAccountHolderName": {
         "label": "اسم صاحب الحساب",
-        "placeholder": "أدخل اسم صاحب الحساب"
-      },
-      "sessionPrice30Egp": {
-        "label": "??? ???? 30 ????? ??????? ??????",
-        "placeholder": "????: 250"
-      },
-      "sessionPrice30Usd": {
-        "label": "??? ???? 30 ????? ????????",
-        "placeholder": "????: 8"
-      },
-      "sessionPrice60Egp": {
-        "label": "??? ???? 60 ????? ??????? ??????",
-        "placeholder": "????: 450"
-      },
-      "sessionPrice60Usd": {
-        "label": "??? ???? 60 ????? ????????",
-        "placeholder": "????: 15"
+        "placeholder": "اكتب اسم صاحب الحساب"
       }
     },
     "practitionerType": {
@@ -494,7 +487,7 @@
       "bioMax": "يجب ألا تتجاوز النبذة 4000 حرف",
       "timezoneMax": "يجب ألا تتجاوز المنطقة الزمنية 80 حرفًا",
       "payoutDestinationRequired": "أكمل تفاصيل الصرف قبل الإرسال.",
-      "payoutWalletProviderMax": "يجب ألا يتجاوز اسم المحفظة 191 حرفًا",
+      "payoutWalletProviderMax": "يجب ألا يتجاوز اسم شركة المحفظة 191 حرفًا",
       "payoutBankAccountNumberMax": "يجب ألا يتجاوز رقم الحساب البنكي 191 حرفًا",
       "payoutOtherDetailsMax": "يجب ألا تتجاوز تفاصيل الصرف 1000 حرف",
       "professionalTitleMax": "يجب ألا يتجاوز اللقب المهني 191 حرفًا",
@@ -779,94 +772,639 @@
       "slotCount": "{count, plural, one {# فترة} other {# فترات}}"
     },
     "exceptions": {
-      "heading": "استثناءات الجدول",
-      "description": "احجز وقتاً للراحة أو أضف إتاحة إضافية في تواريخ محددة.",
-      "empty": "لا توجد استثناءات.",
-      "add": "إضافة استثناء",
-      "delete": "حذف الاستثناء",
-      "restore": "استعادة التوفر",
-      "deleteError": "تعذّر حذف الاستثناء. يرجى المحاولة مجدداً.",
-      "createError": "تعذّر إنشاء الاستثناء. يرجى المحاولة مجدداً.",
-      "type": {
-        "BLOCK": "محظور",
-        "OPEN_EXTRA": "إتاحة إضافية"
+      "heading": "تعديل يوم محدد",
+      "description": "اختر يومًا لتغيير توفرك فيه بدون تعديل جدولك الأسبوعي.",
+      "dateMode": {
+        "eyebrow": "التاريخ",
+        "title": "تعديل يوم محدد",
+        "subtitle": "اختر يومًا لتغيير توفرك فيه بدون تعديل جدولك الأسبوعي.",
+        "today": "اليوم",
+        "tomorrow": "غدًا",
+        "pickDate": "اختيار تاريخ",
+        "selectedDate": "اختيار التاريخ"
       },
-      "addForm": {
-        "heading": "استثناء جديد",
-        "typeLabel": "النوع",
-        "startsAt": "يبدأ في (UTC)",
-        "endsAt": "ينتهي في (UTC)",
-        "reason": "السبب (اختياري)",
-        "reasonPlaceholder": "مثال: إجازة، مؤتمر",
-        "cancel": "إلغاء",
-        "save": "إنشاء",
-        "saving": "جارٍ الإنشاء..."
+      "summary": {
+        "titlePrefix": "تعديل توفر",
+        "weeklySchedule": "يتبع الجدول الأسبوعي",
+        "noWeeklySchedule": "لا يتبع الجدول الأسبوعي",
+        "hasExceptions": "له استثناءات موجودة",
+        "noExceptionsForDay": "لا توجد استثناءات لهذا اليوم"
+      },
+      "empty": "لا توجد استثناءات مضافة حاليًا.",
+      "deleteError": "تعذر حذف الاستثناء. يرجى المحاولة مرة أخرى.",
+      "createError": "تعذر إنشاء الاستثناء. يرجى المحاولة مرة أخرى.",
+      "errors": {
+        "create": "تعذر إنشاء الاستثناء. حاول مرة أخرى.",
+        "delete": "تعذر حذف الاستثناء. حاول مرة أخرى."
+      },
+      "labels": {
+        "blockTime": "وقت مغلق",
+        "dayOff": "يوم غير متاح",
+        "extraAvailability": "إتاحة إضافية",
+        "active": "نشط",
+        "fullDay": "اليوم كامل"
+      },
+      "modes": {
+        "blockTimes": {
+          "title": "إغلاق أوقات محددة",
+          "description": "اختر بداية ونهاية زمنية لإيقاف الحجز داخل هذا اليوم.",
+          "helper": "اضغط خانة البداية ثم خانة النهاية. سيتم حفظ الفترة المغلقة مباشرة.",
+          "cta": "حفظ الأوقات المغلقة"
+        },
+        "dayOff": {
+          "title": "إغلاق اليوم بالكامل",
+          "description": "اجعل هذا اليوم غير متاح للحجوزات.",
+          "helper": "استخدمه لإغلاق اليوم بالكامل دون إدخال أوقات.",
+          "cta": "إغلاق هذا اليوم"
+        },
+        "extraAvailability": {
+          "title": "إضافة أوقات إضافية",
+          "description": "أضف وقتًا متاحًا خارج جدولك الأسبوعي المعتاد.",
+          "helper": "اختر فترة زمنية متاحة في هذا اليوم ثم احفظها.",
+          "cta": "إضافة الأوقات المتاحة"
+        }
+      },
+      "picker": {
+        "title": "اختر الأوقات",
+        "helper": "اضغط على خانة البداية ثم خانة النهاية. لن تظهر قيمة غير صحيحة.",
+        "selectedRange": "الفترة المختارة",
+        "clearSelection": "مسح الاختيار",
+        "selectStart": "اختر خانة البداية.",
+        "selectEnd": "ثم اختر خانة النهاية."
+      },
+      "timeGroups": {
+        "night": "ليلًا",
+        "morning": "صباحًا",
+        "afternoon": "ظهرًا",
+        "evening": "مساءً"
+      },
+      "form": {
+        "internalNoteLabel": "ملاحظة داخلية",
+        "internalNoteHint": "هذه الملاحظة خاصة بك ولا تظهر للمرضى.",
+        "addInternalNote": "+ إضافة ملاحظة داخلية",
+        "editInternalNote": "تعديل الملاحظة الداخلية",
+        "hideInternalNote": "إخفاء الملاحظة الداخلية",
+        "internalNote": "ملاحظة داخلية (اختياري)",
+        "internalNotePlaceholder": "مثال: موعد شخصي، اجتماع، راحة",
+        "internalNoteSaved": "تم حفظ الملاحظة الداخلية.",
+        "saving": "جارٍ الحفظ..."
+      },
+      "list": {
+        "heading": "الاستثناءات الحالية",
+        "note": "كل يوم يظهر كمجموعة واضحة مع الإجراء المناسب.",
+        "empty": "لا توجد استثناءات مضافة حاليًا.",
+        "countSuffix": "استثناءات",
+        "type": "النوع",
+        "date": "التاريخ",
+        "time": "الوقت",
+        "internalNote": "ملاحظة داخلية",
+        "status": "الحالة",
+        "actions": "الإجراء",
+        "noInternalNote": "لا توجد ملاحظة داخلية",
+        "countLabel": "{count, plural, zero {?? ???? ?????????} one {??????? ????} two {?????????} few {# ?????????} many {# ???????} other {# ???????}}"
       },
       "validation": {
-        "datesRequired": "تاريخا البدء والانتهاء مطلوبان.",
-        "endAfterStart": "يجب أن يكون الانتهاء بعد البدء."
+        "dateRequired": "التاريخ مطلوب.",
+        "slotRequired": "اختر بداية ونهاية للفترة.",
+        "endAfterStart": "وقت النهاية يجب أن يكون بعد وقت البداية.",
+        "datesRequired": "التاريخ ووقت البداية ووقت النهاية مطلوبة."
       },
-      "custom": "حدد فترة مخصتة",
-      "customHint": "من هنا يمكنك منع عدة أو فتح فترة إضافية بشكل مؤقت.",
-      "quick": {
-        "heading": "إجراءات سريعة",
-        "note": "اختر إجراءًا سريعًا لتطبيق حجز مؤقت على الجدول.",
-        "today": "اليوم",
-        "todayNote": "احجز طوال اليوم الحالي.",
-        "tomorrow": "غدًا",
-        "tomorrowNote": "احجز لليوم التالي.",
-        "week": "أسبوع",
-        "weekNote": "احجز لأسبوع كامل."
-      },
-      "active": {
-        "heading": "حجز قيد التطبيق",
-        "note": "لديك أوقات مفعلة حاليًا. أدراج أي تعديلات جديدة بدلاً من الحذف المباشر.",
-        "count": "{count, plural, one {# فترة مفعلة} other {# فترات مفعلة}}"
+      "actions": {
+        "remove": "إزالة"
       }
-    }
-  },
-  "application": {
-    "meta": {
-      "title": "الطلب — الممارس",
-      "description": "راجع جاهزيتك وقدّم طلبك كممارس."
     },
-    "page": {
-      "title": "الطلب",
-      "subtitle": "راجع جاهزيتك وتابع حالة طلبك."
+    "application": {
+      "meta": {
+        "title": "الطلب — الممارس",
+        "description": "راجع جاهزيتك وقدّم طلب انضمامك كممارس."
+      },
+      "page": {
+        "title": "الطلب",
+        "subtitle": "راجع جاهزيتك وتابع حالة طلبك."
+      },
+      "status": {
+        "heading": "حالة الطلب",
+        "noApplication": "لم يتم تقديم أي طلب بعد.",
+        "DRAFT": "مسودة",
+        "SUBMITTED": "مُقدَّم",
+        "UNDER_REVIEW": "قيد المراجعة",
+        "APPROVED": "معتمد",
+        "REJECTED": "مرفوض",
+        "CHANGES_REQUESTED": "مطلوب تعديلات",
+        "ARCHIVED": "مؤرشف"
+      },
+      "statusMessage": {
+        "SUBMITTED": "تم تقديم طلبك وهو الآن بانتظار المراجعة.",
+        "UNDER_REVIEW": "يتم الآن مراجعة طلبك من فريق فايـد. ستصلك أي تحديثات.",
+        "APPROVED": "تم اعتماد طلبك وأصبحت الآن ممارسًا نشطًا على فايـد.",
+        "REJECTED": "تم رفض طلبك. راجع الملاحظة وأعد الإرسال إذا كان ذلك مسموحًا.",
+        "CHANGES_REQUESTED": "طلب فريق الإدارة تعديلات قبل الاعتماد. راجع الملاحظة وحدّث النموذج.",
+        "ARCHIVED": "تمت أرشفة هذا الطلب ولم يعد نشطًا."
+      },
+      "readiness": {
+        "heading": "فحوصات الجاهزية",
+        "allPassed": "تم استيفاء جميع المتطلبات.",
+        "missing": "المتطلبات الناقصة:"
+      },
+      "submit": {
+        "label": "إرسال الطلب",
+        "submitting": "جارٍ الإرسال...",
+        "notReady": "أكمل جميع المتطلبات قبل الإرسال.",
+        "confirmHint": "بمجرد الإرسال سيقوم فريق فايـد بمراجعة طلبك."
+      },
+      "feedback": {
+        "loadError": "تعذّر تحميل حالة الطلب. يرجى المحاولة مرة أخرى.",
+        "retry": "حاول مرة أخرى",
+        "submitSuccess": "تم تقديم طلبك بنجاح.",
+        "submitError": "تعذّر تقديم الطلب. يرجى المحاولة مرة أخرى.",
+        "loadErrorNote": "تعذّر تحميل ملخص الطلب في الوقت الحالي.",
+        "saveSuccess": "تم حفظ التغييرات بنجاح.",
+        "saveError": "تعذّر حفظ التغييرات الآن. يرجى المحاولة مرة أخرى."
+      },
+      "completion": {
+        "stepStatus": {
+          "complete": "مكتمل",
+          "warning": "تنبيه",
+          "incomplete": "غير مكتمل"
+        },
+        "severity": {
+          "BLOCKER": "مطلوب",
+          "WARNING": "تنبيه",
+          "INFO": "معلومة"
+        }
+      },
+      "wizard": {
+        "eyebrow": "معالج الطلب",
+        "title": "إكمال طلب الانضمام",
+        "subtitle": "أكمل بياناتك خطوة بخطوة، ويمكنك الحفظ والعودة لاحقًا قبل الإرسال.",
+        "stepCount": "الخطوة {current} من {total}",
+        "canSubmitBadge": "جاهز للإرسال",
+        "cannotSubmitBadge": "غير جاهز بعد",
+        "missingPrefix": "ناقص:",
+        "goToDashboard": "العودة إلى لوحة التحكم",
+        "reviewProfile": "مراجعة الملف",
+        "approvedTitle": "تم اعتماد الطلب",
+        "lockedTitle": "الطلب مقفول",
+        "changesRequestedTitle": "مطلوب تعديلات",
+        "rejectedTitle": "تم رفض الطلب",
+        "reviewNoteTitle": "ملاحظة المراجعة",
+        "requestChangesTitle": "التعديلات المطلوبة",
+        "reviewHeading": "ما الذي ستراجعه الإدارة",
+        "reviewBody": "هذا الملخص يوضح الملف والمؤهلات والأسعار وبيانات الاستلام التي ستراجعها الإدارة قبل اتخاذ القرار.",
+        "blockedTitle": "لا يمكن الإرسال الآن",
+        "blockedBody": "أكمل عناصر المنع أعلاه قبل الإرسال.",
+        "readyTitle": "جاهز للإرسال",
+        "readyBody": "يمكنك الإرسال الآن. سيقوم الفريق بمراجعة الطلب المكتمل.",
+        "howItWorksTitle": "كيف يعمل هذا؟",
+        "howItWorksLink": "كيف يعمل الطلب؟",
+        "howItWorksBody": "انتقل بين الخطوات بالترتيب، واحفظ تقدمك، وعد لاحقًا كلما احتجت.",
+        "guide": {
+          "step1": "أكمل ملفك الأساسي أولًا.",
+          "step2": "أضف معلوماتك المهنية والتخصصات.",
+          "step3": "أدخل أسعار الجلسات التي تريد مراجعتها.",
+          "step4": "ارفع المؤهلات أو راجعها.",
+          "step5": "تأكد من المستندات المرفقة والمعتمدة.",
+          "step6": "أضف بيانات استلام المستحقات بعد الاعتماد.",
+          "step7": "راجع العناصر المطلوبة والتنبيهات ثم أرسل الطلب."
+        },
+        "steps": {
+          "basicProfile": "الملف الأساسي",
+          "professionalDetails": "البيانات المهنية",
+          "pricing": "الأسعار",
+          "qualifications": "المؤهلات",
+          "documents": "المستندات",
+          "payoutDetails": "بيانات استلام المستحقات",
+          "reviewSubmit": "مراجعة وإرسال"
+        },
+        "currentStepLabel": "الخطوة الحالية",
+        "stepNotes": {
+          "basicProfile": "ابدأ ببيانات الهوية والحساب الأساسية لتكون صفحتك واضحة ومفهومة.",
+          "professionalDetails": "أضف البيانات التي تساعد المرضى على فهم خبرتك ومجالات عملك.",
+          "pricing": "أدخل أسعار الجلسات التي ستخضع للمراجعة قبل ظهورها للمرضى.",
+          "qualifications": "استخدم هذه الخطوة لإدارة المؤهلات والإثباتات المهنية.",
+          "documents": "راجع المستندات المرفقة من خلال المؤهلات التي رفعتها.",
+          "payoutDetails": "أدخل بيانات التحويل التي سنستخدمها بعد الاعتماد.",
+          "reviewSubmit": "راجع الملخص الكامل للطلب قبل الإرسال."
+        },
+        "stepGuidance": {
+          "basicProfile": "حافظ على دقة هذه البيانات حتى تتمكن لجنة المراجعة من التعرف عليك بسهولة.",
+          "professionalDetails": "هذه الحقول تصف خدماتك وتخصصاتك واللغات التي تدعمها.",
+          "pricing": "تتم مراجعة الأسعار من فريق الإدارة قبل أن تصبح مرئية للمرضى.",
+          "qualifications": "أضف أو راجع المؤهلات التي تدعم ملفك المهني.",
+          "documents": "تتم مراجعة المستندات من خلال المؤهلات التي ترفعها.",
+          "payoutDetails": "تستخدم هذه البيانات فقط لتحويل المستحقات بعد الاعتماد.",
+          "reviewSubmit": "تأكد من إزالة كل العناصر المطلوبة قبل الإرسال."
+        },
+        "helpTitles": {
+          "basicProfile": "لماذا هذه الخطوة مهمة",
+          "professionalDetails": "ملخص مهني"
+        },
+        "helpBody": {
+          "basicProfile": "تمنح هذه الخطوة فريق المراجعة هوية واضحة وملف تواصل قبل مراجعة باقي الطلب.",
+          "professionalDetails": "استخدم الحقول التالية لوصف ممارستك بطريقة بسيطة وسهلة للمراجعة."
+        },
+        "specialtiesHeading": "????????",
+        "specialtiesHint": "??? ??????? ?? ???? ???? ???? ???? ??? ??? ??????? ????? ???????.",
+        "pricingNote": "أدخل الأسعار التي تريد مراجعتها. تظل القيم قابلة للتعديل حتى تصبح الحالة مقفلة.",
+        "qualificationsNoteTitle": "المؤهلات بنظرة سريعة",
+        "qualificationsNoteBody": "افتح محرر المؤهلات في نافذة مركزة حتى تبقى هذه الخطوة خفيفة وواضحة.",
+        "documentsNote": "{count, plural, one {تم إرفاق مؤهل واحد.} other {تم إرفاق # مؤهلات.}}",
+        "documentsHint": "إذا كانت خطوة المستندات فارغة، فارفع المؤهل الناقص أولًا.",
+        "payoutNote": "اختر طريقة الاستلام وأكمل فقط الحقول المرتبطة بهذه الطريقة.",
+        "summary": {
+          "completion": "الاكتمال",
+          "canSubmit": "يمكن الإرسال",
+          "status": "الحالة",
+          "lastSaved": "آخر حفظ",
+          "blockers": "العناصر المانعة",
+          "warnings": "التنبيهات"
+        },
+        "progressLabel": "التقدم العام",
+        "completionUnavailable": "نسبة الاكتمال غير متاحة",
+        "issueCounts": {
+          "blockers": "عناصر مانعة",
+          "warnings": "تنبيهات",
+          "info": "عناصر معلوماتية",
+          "clean": "نظيف"
+        },
+        "issueGroups": {
+          "blockers": "مطلوب",
+          "warnings": "تنبيهات",
+          "info": "معلومة",
+          "blockersHint": "عالج العناصر المطلوبة في هذه الخطوة قبل الإرسال."
+        },
+        "issueLabels": {
+          "message": "رسالة النظام",
+          "why": "لماذا هذا مهم؟",
+          "next": "الإجراء المقترح",
+          "field": "الحقل"
+        },
+        "stepIssuesTitle": "المشكلات في هذه الخطوة",
+        "stepIssuesBody": "هذه هي العناصر المانعة أو التنبيهات أو المعلومات المرتبطة بالخطوة المعروضة حاليًا.",
+        "footerTitle": "إجراءات الطلب",
+        "footerStepHint": "احفظ تقدمك وانتقل إلى الخطوة التالية عندما تكون جاهزًا.",
+        "footerReviewHint": "راجع الملخص مرة أخيرة قبل الإرسال.",
+        "actions": {
+          "previous": "السابق",
+          "next": "التالي",
+          "saveDraft": "حفظ المسودة",
+          "saving": "جارٍ الحفظ...",
+          "submit": "إرسال الطلب",
+          "submitting": "جارٍ الإرسال...",
+          "resubmit": "إعادة الإرسال"
+        },
+        "yes": "نعم",
+        "no": "لا",
+        "noIssues": "لا توجد مشكلات في هذه الخطوة.",
+        "manageSpecialties": "إدارة التخصصات",
+        "specialtiesSummaryHint": "يفتح المحرر داخل نافذة مركزة بدلًا من عرض كل شيء داخل الخطوة.",
+        "specialtiesModalDescription": "حدّث التخصصات المرتبطة بملفك المهني.",
+        "manageQualifications": "إدارة المؤهلات",
+        "qualificationsSummaryHint": "تدار المؤهلات في نافذة منفصلة حتى يبقى المعالج مركزًا.",
+        "qualificationsModalDescription": "أضف أو راجع المؤهلات التي تدعم طلبك.",
+        "documentsIssuesTitle": "ملاحظات المستندات",
+        "documentsIssuesHint": "ستظهر أي مشكلة مرتبطة بالمستندات هنا بشكل مختصر وواضح.",
+        "fields": {
+          "languages": {
+            "label": "اللغات",
+            "hint": "اختر اللغات التي يمكنك العمل بها."
+          }
+        },
+        "professionalSections": {
+          "basics": "الأساسيات",
+          "languages": "اللغات",
+          "specialties": "التخصصات"
+        },
+        "noCompletionData": "لا توجد بيانات كافية لحساب الاكتمال.",
+        "submitBlocked": "أكمل البيانات المطلوبة قبل الإرسال.",
+        "basicAvatarTitle": "صورة الملف الشخصي",
+        "basicAvatarHint": "اختر صورة من جهازك لتظهر كصورة الملف الشخصي عند اعتماد الطلب. يمكنك تغييرها لاحقًا.",
+        "changeAvatar": "تغيير الصورة",
+        "addOptionalAvatar": "إضافة صورة الملف الشخصي",
+        "payoutSummaryTitle": "ملخص المستحقات",
+        "manageLanguages": "إدارة اللغات",
+        "manageQualificationsDocuments": "إدارة المؤهلات والمستندات",
+        "threeStep": {
+          "professionalSummaryTitle": "ملخص مهني",
+          "languagesSummary": "اللغات",
+          "specialtiesSummary": "التخصصات",
+          "credentialsSummary": "المؤهلات",
+          "languagesModalDescription": "اختر اللغات التي يمكنك العمل بها. يبقى المعالج مضغوطًا أثناء التعديل.",
+          "helpers": {
+            "basic": "حافظ على بيانات هويتك وحسابك دقيقة حتى يتعرف فريق المراجعة على ملفك بسهولة.",
+            "professional": "صف ممارستك باختصار، ثم افتح المحررات المركزة للغات والتخصصات والمؤهلات.",
+            "paymentSubmit": "اضبط الأسعار وبيانات الاستلام التي تريد مراجعتها، ثم راجع ملخص الجاهزية قبل الإرسال."
+          }
+        }
+      },
+      "completionIssues": {
+        "generic": {
+          "title": "بيانات ناقصة",
+          "description": "هناك عناصر مطلوبة غير مكتملة في هذه الخطوة.",
+          "whyItMatters": "هذه العناصر مطلوبة قبل إرسال الطلب للمراجعة.",
+          "recommendedAction": "أكمل العناصر الناقصة ثم احفظ هذه الخطوة مرة أخرى."
+        },
+        "codes": {
+          "BASIC_PROFILE_DISPLAY_NAME_MISSING": {
+            "title": "الاسم الظاهر ناقص",
+            "description": "أضف الاسم الظاهر الذي سيظهر للمستفيدين ولدى فريق الإدارة.",
+            "whyItMatters": "الاسم مطلوب للتعرف على ملفك ومطابقة المستندات أثناء المراجعة.",
+            "recommendedAction": "اكتب الاسم الظاهر في البيانات الأساسية ثم احفظ."
+          },
+          "BASIC_PROFILE_COUNTRY_MISSING": {
+            "title": "البلد ناقص",
+            "description": "اختر بلدك حتى يتم ضبط الخيارات بشكل صحيح.",
+            "whyItMatters": "البلد مطلوب لاكتمال الملف وتوجيه المراجعة.",
+            "recommendedAction": "اختر البلد في البيانات الأساسية ثم احفظ."
+          },
+          "PROFESSIONAL_DETAILS_TITLE_MISSING": {
+            "title": "اللقب المهني ناقص",
+            "description": "اختر لقبك المهني من القائمة.",
+            "whyItMatters": "يساعد اللقب فريق المراجعة والمستفيدين على فهم دورك.",
+            "recommendedAction": "اختر اللقب المهني في الملف المهني ثم احفظ."
+          },
+          "PROFESSIONAL_DETAILS_BIO_MISSING": {
+            "title": "الملخص المهني ناقص",
+            "description": "اكتب ملخصًا قصيرًا يوضح خبرتك ومجالات اهتمامك.",
+            "whyItMatters": "الملخص جزء أساسي من مراجعة الملف المهني.",
+            "recommendedAction": "أكمل حقل الملخص المهني ثم احفظ."
+          },
+          "PROFESSIONAL_DETAILS_YEARS_MISSING": {
+            "title": "سنوات الخبرة ناقصة",
+            "description": "أدخل عدد سنوات الخبرة لديك.",
+            "whyItMatters": "سنوات الخبرة مطلوبة للمراجعة وتقييم الملف.",
+            "recommendedAction": "أدخل سنوات الخبرة ثم احفظ."
+          },
+          "PROFESSIONAL_DETAILS_LANGUAGE_MISSING": {
+            "title": "اللغات ناقصة",
+            "description": "اختر لغة واحدة على الأقل يمكنك تقديم الجلسات بها.",
+            "whyItMatters": "اللغات مطلوبة للمطابقة وللمراجعة.",
+            "recommendedAction": "اختر لغة أو أكثر ثم احفظ."
+          },
+          "PROFESSIONAL_DETAILS_SPECIALTY_MISSING": {
+            "title": "التخصصات ناقصة",
+            "description": "اختر تخصصًا واحدًا على الأقل.",
+            "whyItMatters": "التخصصات مطلوبة للمراجعة وللاكتشاف.",
+            "recommendedAction": "اختر الفئة الرئيسية والتخصصات الفرعية ثم احفظ."
+          },
+          "PROFESSIONAL_DETAILS_PRIMARY_CATEGORY_MISSING": {
+            "title": "التخصص الرئيسي ناقص",
+            "description": "اختر الفئة/التخصص الرئيسي الذي يناسب مجالك.",
+            "whyItMatters": "التخصص الرئيسي مطلوب لتنظيم التخصصات والمراجعة.",
+            "recommendedAction": "اختر الفئة الرئيسية ثم احفظ."
+          },
+          "QUALIFICATIONS_CREDENTIAL_REQUIRED": {
+            "title": "المؤهلات ناقصة",
+            "description": "ارفع مستند مؤهل واحد على الأقل مثل شهادة أو ترخيص.",
+            "whyItMatters": "تحتاج الإدارة لأدلة مؤهلات قبل الاعتماد.",
+            "recommendedAction": "ارفع مستند مؤهل ثم احفظ."
+          },
+          "QUALIFICATIONS_ACADEMIC_CERTIFICATE_REQUIRED": {
+            "title": "شهادة علمية ناقصة",
+            "description": "ارفع شهادة علمية (درجة/مؤهل) قبل إرسال طلب الانضمام.",
+            "whyItMatters": "الشهادة العلمية مطلوبة كإثبات مؤهل لمراجعة الإدارة.",
+            "recommendedAction": "ارفع الشهادة العلمية في خطوة المؤهلات/المستندات ثم احفظ."
+          },
+          "DOCUMENTS_CREDENTIAL_REQUIRED": {
+            "title": "المستندات ناقصة",
+            "description": "ارفع المستندات المطلوبة للمراجعة.",
+            "whyItMatters": "المستندات مطلوبة قبل إرسال الطلب.",
+            "recommendedAction": "ارفع المستندات المطلوبة ثم احفظ."
+          },
+          "DOCUMENTS_CREDENTIAL_NOT_APPROVED": {
+            "title": "مستندات بانتظار المراجعة",
+            "description": "بعض المستندات المرفوعة ما زالت بانتظار مراجعة الإدارة.",
+            "whyItMatters": "قد يتطلب الاعتماد تحققًا يدويًا من المستندات.",
+            "recommendedAction": "انتظر مراجعة الإدارة أو ارفع مستندًا أوضح إذا طُلب منك."
+          },
+          "DOCUMENTS_IDENTITY_EVIDENCE_REQUIRED": {
+            "title": "مستند الهوية مطلوب",
+            "description": "ارفع جواز السفر أو ارفع صور البطاقة من الوجهين.",
+            "whyItMatters": "إثبات الهوية إلزامي قبل الإرسال.",
+            "recommendedAction": "ارفع جواز السفر أو البطاقة الأمامية والخلفية ثم احفظ."
+          },
+          "DOCUMENTS_NATIONAL_ID_FRONT_MISSING": {
+            "title": "صورة البطاقة الأمامية ناقصة",
+            "description": "ارفع صورة/ملف الوجه الأمامي للبطاقة.",
+            "whyItMatters": "يجب رفع الوجهين للبطاقة ما لم يتم رفع جواز سفر.",
+            "recommendedAction": "ارفع البطاقة الأمامية ثم احفظ."
+          },
+          "DOCUMENTS_NATIONAL_ID_BACK_MISSING": {
+            "title": "صورة البطاقة الخلفية ناقصة",
+            "description": "ارفع صورة/ملف الوجه الخلفي للبطاقة.",
+            "whyItMatters": "يجب رفع الوجهين للبطاقة ما لم يتم رفع جواز سفر.",
+            "recommendedAction": "ارفع البطاقة الخلفية ثم احفظ."
+          },
+          "PAYOUT_DESTINATION_REQUIRED": {
+            "title": "طريقة استلام المستحقات ناقصة",
+            "description": "اختر طريقة استلام المستحقات بعد الاعتماد.",
+            "whyItMatters": "بيانات المستحقات مطلوبة لاكتمال الطلب.",
+            "recommendedAction": "اختر طريقة الاستلام ثم احفظ."
+          },
+          "PAYOUT_ACCOUNT_HOLDER_REQUIRED": {
+            "title": "اسم صاحب الحساب ناقص",
+            "description": "أدخل اسم صاحب الحساب لاستلام المستحقات.",
+            "whyItMatters": "تراجع الإدارة تطابق بيانات المستحقات مع الهوية.",
+            "recommendedAction": "أدخل اسم صاحب الحساب ثم احفظ."
+          },
+          "PAYOUT_BANK_NAME_REQUIRED": {
+            "title": "اسم البنك ناقص",
+            "description": "اختر اسم البنك من القائمة.",
+            "whyItMatters": "اختيار بنك صحيح مطلوب لاستلام المستحقات.",
+            "recommendedAction": "اختر اسم البنك ثم احفظ."
+          },
+          "PAYOUT_BANK_ACCOUNT_REQUIRED": {
+            "title": "رقم الحساب البنكي ناقص",
+            "description": "أدخل رقم الحساب البنكي لاستلام المستحقات.",
+            "whyItMatters": "الرقم مطلوب لإتمام بيانات الاستلام بشكل صحيح.",
+            "recommendedAction": "أدخل رقم الحساب ثم احفظ."
+          },
+          "PAYOUT_IBAN_REQUIRED": {
+            "title": "رقم IBAN ناقص",
+            "description": "أدخل رقم الـ IBAN لاستلام المستحقات.",
+            "whyItMatters": "الـ IBAN مطلوب عند اختيار طريقة IBAN.",
+            "recommendedAction": "أدخل الـ IBAN ثم احفظ."
+          },
+          "PAYOUT_WALLET_PROVIDER_REQUIRED": {
+            "title": "شركة المحفظة ناقصة",
+            "description": "اختر شركة المحفظة من القائمة.",
+            "whyItMatters": "اختيار شركة صحيح مطلوب لطريقة المحفظة.",
+            "recommendedAction": "اختر شركة المحفظة ثم احفظ."
+          },
+          "PAYOUT_WALLET_IDENTIFIER_REQUIRED": {
+            "title": "رقم المحفظة ناقص",
+            "description": "أدخل رقم المحفظة/المعرف.",
+            "whyItMatters": "رقم المحفظة مطلوب لاستلام المستحقات عبر المحفظة.",
+            "recommendedAction": "أدخل رقم المحفظة ثم احفظ."
+          },
+          "PAYOUT_OTHER_DETAILS_REQUIRED": {
+            "title": "تفاصيل المستحقات ناقصة",
+            "description": "أكمل تفاصيل الاستلام المطلوبة للطريقة المختارة.",
+            "whyItMatters": "يجب اكتمال بيانات المستحقات قبل الإرسال.",
+            "recommendedAction": "أكمل الحقول المطلوبة ثم احفظ."
+          },
+          "ACCOUNT_INACTIVE": {
+            "title": "الحساب غير نشط",
+            "description": "حسابك غير نشط حاليًا ولا يمكن إرسال الطلب.",
+            "whyItMatters": "يجب أن يكون الحساب نشطًا لإرسال الطلب للمراجعة.",
+            "recommendedAction": "تواصل مع الدعم/الإدارة لتفعيل الحساب."
+          },
+          "PRACTITIONER_OTP_NOT_VERIFIED": {
+            "title": "رمز التحقق غير مكتمل",
+            "description": "لم يتم إكمال التحقق عبر OTP لحساب الممارس.",
+            "whyItMatters": "التحقق مطلوب قبل إرسال الطلب.",
+            "recommendedAction": "أكمل التحقق ثم عد لإرسال الطلب."
+          }
+        }
+      },
+      "issueCopy": {
+        "generic": {
+          "title": "مشكلة مطابقة مالية",
+          "description": "يوجد سجل مالي في هذا الطلب يحتاج إلى مراجعة.",
+          "whyItMatters": "قد تؤثر البيانات المالية غير المتطابقة أو الناقصة على الاعتماد أو التحويلات أو دقة التقارير.",
+          "recommendedAction": "راجع السجل المرتبط واتبع مسار المالية المعتمد إذا احتجت إلى تعديل."
+        },
+        "codes": {
+          "MISSING_JOURNAL_ENTRY": {
+            "title": "قيد يومية مفقود",
+            "description": "تعذّر العثور على قيد اليومية المالي المرتبط.",
+            "whyItMatters": "من دون القيد المالي قد لا تكون العملية قابلة للتدقيق الكامل.",
+            "recommendedAction": "راجع الدفع أو التسوية المرتبطة وتأكد من إنشاء القيد المالي."
+          },
+          "MISSING_GATEWAY_FEE_SNAPSHOT": {
+            "title": "لقطة رسوم بوابة الدفع مفقودة",
+            "description": "سجل الدفع يفتقد إلى لقطة رسوم بوابة الدفع.",
+            "whyItMatters": "اللقطات تساعد على التحقق من المبلغ المحصل فعليًا والحسابات اللاحقة.",
+            "recommendedAction": "راجع سجل الدفع وتأكد من حفظ رسوم البوابة بشكل صحيح."
+          },
+          "MISSING_VAT_SNAPSHOT": {
+            "title": "لقطة ضريبة القيمة المضافة مفقودة",
+            "description": "سجل الدفع يفتقد إلى لقطة الضريبة.",
+            "whyItMatters": "غياب اللقطات الضريبية يجعل التقارير ومطابقة الإيراد غير مكتملة.",
+            "recommendedAction": "راجع الدفع المرتبط وتأكد من تخزين لقطة الضريبة."
+          },
+          "PAYMENT_COUPON_REDEMPTION_MISSING": {
+            "title": "استرداد كود الخصم مفقود",
+            "description": "الدفع يظهر خصمًا بكود خصم لكن لا يوجد سجل استرداد.",
+            "whyItMatters": "سجلات الاسترداد تجعل الخصومات وتقسيمها قابلة للتتبع.",
+            "recommendedAction": "راجع سجل الدفع وسجل استرداد الكود معًا."
+          },
+          "PACKAGE_SETTLEMENT_COMPLETION_MISMATCH": {
+            "title": "عدم تطابق إكمال تسوية الباقة",
+            "description": "حالة تسوية الباقة لا تطابق حالة الإكمال.",
+            "whyItMatters": "يجب أن تبقى حالة تنفيذ الباقة متسقة مع سجل التسوية قبل أي تحويل.",
+            "recommendedAction": "راجع استخدام الباقة وتأكد من صحة حالة الإكمال."
+          },
+          "SETTLEMENT_GROSS_MISMATCH": {
+            "title": "عدم تطابق إجمالي التسوية",
+            "description": "إجمالي التسوية لا يطابق المبلغ المتوقع من المصدر.",
+            "whyItMatters": "الاختلاف في الإجمالي قد يؤثر على المبلغ النهائي المرسل للتحويل.",
+            "recommendedAction": "راجع دفعة التسوية وقارنها بقيود المصدر."
+          },
+          "SETTLEMENT_NET_MISMATCH": {
+            "title": "عدم تطابق صافي التسوية",
+            "description": "صافي التسوية لا يطابق المبلغ المتوقع بعد التعديلات.",
+            "whyItMatters": "الاختلاف في الصافي قد يؤدي إلى تحويل غير صحيح للمعالج.",
+            "recommendedAction": "تحقق من منطق التعديل ومصدر حساب التحويل."
+          },
+          "SETTLEMENT_PAYOUT_LEDGER_MISMATCH": {
+            "title": "عدم تطابق تحويل المستحقات مع الدفتر",
+            "description": "سجل التحويل لا يطابق قيد الدفتر.",
+            "whyItMatters": "يجب أن تبقى التحويلات متزامنة مع قيود الدفتر لتجنب الانحراف المالي.",
+            "recommendedAction": "راجع سجل التحويل والقيود المرتبطة قبل أي إجراء آخر."
+          },
+          "WALLET_LEDGER_DRIFT": {
+            "title": "انحراف المحفظة عن الدفتر",
+            "description": "رصيد المحفظة يختلف عن القيمة المشتقة من الدفتر.",
+            "whyItMatters": "المحافظ عرض مشتق، وأي انحراف يجب مراجعته قبل استخدام الرصيد تشغيليًا.",
+            "recommendedAction": "راجع أحدث قيود الدفتر وعملية تحديث المحفظة."
+          },
+          "JOURNAL_NOT_BALANCED": {
+            "title": "قيد غير متوازن",
+            "description": "قيد المحاسبة غير متوازن.",
+            "whyItMatters": "القيد غير المتوازن مشكلة مالية حرجة قد تؤثر في كل التقارير اللاحقة.",
+            "recommendedAction": "راجع مصدر القيد قبل اعتماد أي شيء مرتبط به."
+          },
+          "DUPLICATE_LEDGER_POSTING": {
+            "title": "قيد مكرر",
+            "description": "يبدو أن نفس الحدث المالي تم تسجيله أكثر من مرة.",
+            "whyItMatters": "القيود المكررة قد تضخم الأرصدة أو التحويلات إذا لم تتم مراجعتها.",
+            "recommendedAction": "راجع مسار الدفع أو الاسترداد المتأثر وتأكد من idempotency."
+          },
+          "REFUND_REVERSAL_MISSING": {
+            "title": "قيد عكسي للاسترداد مفقود",
+            "description": "الاسترداد الناجح لا يحتوي على قيود عكسية متوقعة.",
+            "whyItMatters": "الاستردادات تحتاج إلى قيود عكسية مطابقة حتى تظل التحويلات والتقارير دقيقة.",
+            "recommendedAction": "راجع مسار الاسترداد وتأكد من إنشاء القيود العكسية."
+          },
+          "CROSS_CURRENCY_AGGREGATION_RISK": {
+            "title": "خطر دمج العملات",
+            "description": "قد يكون هذا السجل يخلط بين قيم من عملات مختلفة.",
+            "whyItMatters": "التجميع بين العملات قد ينتج أرصدة أو تحويلات أو تسويات غير صحيحة.",
+            "recommendedAction": "راجع كل عملة بشكل منفصل ولا تجمعها في إجمالي واحد."
+          }
+        }
+      }
     },
-    "status": {
-      "heading": "حالة الطلب",
-      "noApplication": "لم يُقدَّم أي طلب حتى الآن.",
-      "DRAFT": "مسودة",
-      "SUBMITTED": "مُقدَّم",
-      "UNDER_REVIEW": "قيد المراجعة",
-      "APPROVED": "مقبول",
-      "REJECTED": "مرفوض",
-      "CHANGES_REQUESTED": "يُطلب إجراء تعديلات",
-      "ARCHIVED": "مؤرشف"
+    "practitionerApplication": {
+      "steps": {
+        "basicProfile": "البيانات الأساسية",
+        "professionalDetails": "الملف المهني",
+        "pricing": "الدفع والإرسال",
+        "qualifications": "المؤهلات",
+        "documents": "المستندات",
+        "payoutDetails": "بيانات استلام المستحقات",
+        "reviewSubmit": "مراجعة وإرسال"
+      }
     },
-    "statusMessage": {
-      "SUBMITTED": "تم تقديم طلبك وهو قيد الانتظار للمراجعة.",
-      "UNDER_REVIEW": "طلبك قيد المراجعة من قِبَل فريق فايد. ستتلقى إشعارًا بأي تحديثات.",
-      "APPROVED": "تم قبول طلبك. أنت الآن ممارس نشط على منصة فايد.",
-      "ARCHIVED": "تم أرشفة هذا الطلب وهو لم يعد نشطًا."
-    },
-    "readiness": {
-      "heading": "متطلبات الجاهزية",
-      "allPassed": "تم استيفاء جميع المتطلبات.",
-      "missing": "المتطلبات الناقصة:"
-    },
-    "submit": {
-      "label": "تقديم الطلب",
-      "submitting": "جارٍ التقديم...",
-      "notReady": "أكمل جميع المتطلبات قبل التقديم.",
-      "confirmHint": "بمجرد تقديم الطلب، ستتولى فريق فايد مراجعته."
-    },
-    "feedback": {
-      "loadError": "تعذّر تحميل حالة الطلب. يرجى المحاولة مرة أخرى.",
-      "retry": "حاول مرة أخرى",
-      "submitSuccess": "تم تقديم طلبك بنجاح.",
-      "submitError": "تعذّر تقديم الطلب. يرجى المحاولة مرة أخرى."
+    "practitioners": {
+      "application": {
+        "completion": {
+          "basicProfile": {
+            "displayNameRequired": "الاسم الظاهر مطلوب.",
+            "countryRequired": "البلد مطلوب.",
+            "genderOptional": "النوع اختياري عند الإرسال."
+          },
+          "professionalDetails": {
+            "titleRequired": "اللقب المهني مطلوب.",
+            "bioRequired": "النبذة مطلوبة.",
+            "yearsRequired": "سنوات الخبرة مطلوبة.",
+            "yearsMustBePositive": "سنوات الخبرة يجب أن تكون أكبر من صفر.",
+            "languageRequired": "لغة واحدة على الأقل مطلوبة.",
+            "specialtyRequired": "تخصص واحد على الأقل مطلوب.",
+            "primarySpecialtyRequired": "التخصص الرئيسي مطلوب.",
+            "typeOptional": "نوع المعالج اختياري."
+          },
+          "pricing": {
+            "session30EgpRecommended": "أضف سعر 30 دقيقة بالجنيه المصري إذا كانت هذه العملة مناسبة لملفك.",
+            "session30UsdRecommended": "أضف سعر 30 دقيقة بالدولار إذا كانت هذه العملة مناسبة لملفك.",
+            "session60EgpRecommended": "أضف سعر 60 دقيقة بالجنيه المصري إذا كانت هذه العملة مناسبة لملفك.",
+            "session60UsdRecommended": "أضف سعر 60 دقيقة بالدولار إذا كانت هذه العملة مناسبة لملفك."
+          },
+          "qualifications": {
+            "credentialRequired": "مؤهل واحد على الأقل مطلوب."
+          },
+          "documents": {
+            "credentialRequired": "مستند مؤهل واحد على الأقل مطلوب.",
+            "credentialApprovalRequired": "يجب اعتماد مؤهل واحد على الأقل قبل الاعتماد."
+          },
+          "payout": {
+            "methodRequired": "طريقة استلام المستحقات مطلوبة.",
+            "accountHolderRequired": "اسم صاحب الحساب مطلوب.",
+            "bankNameRequired": "اسم البنك مطلوب.",
+            "bankAccountRequired": "رقم الحساب البنكي مطلوب.",
+            "ibanRequired": "رقم IBAN مطلوب.",
+            "walletProviderRequired": "شركة المحفظة مطلوبة.",
+            "walletIdentifierRequired": "رقم المحفظة مطلوب.",
+            "otherDetailsRequired": "تفاصيل استلام المستحقات مطلوبة."
+          },
+          "reviewSubmit": {
+            "accountInactive": "هذا الحساب غير نشط.",
+            "otpNotVerified": "لم يكتمل التحقق عبر OTP لهذا الحساب.",
+            "applicationLocked": "هذا الطلب مقفول لأنه قيد المراجعة أو معتمد بالفعل."
+          }
+        }
+      }
     }
   }
 }

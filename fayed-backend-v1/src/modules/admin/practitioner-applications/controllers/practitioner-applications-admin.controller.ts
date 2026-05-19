@@ -8,8 +8,12 @@ import {
   ParseUUIDPipe,
   Post,
   Query,
+  Res,
+  StreamableFile,
   UseGuards,
 } from '@nestjs/common';
+import { createReadStream } from 'fs';
+import type { Response } from 'express';
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
@@ -26,9 +30,15 @@ import {
 } from '@nestjs/swagger';
 import { RequireAccountStates } from '@common/decorators/account-state.decorator';
 import { CurrentUser } from '@common/decorators/current-user.decorator';
+import { RequireStepUp } from '@common/decorators/step-up.decorator';
 import { AccountStateRequirement } from '@common/enums/account-state-requirement.enum';
 import { JwtAccessAuthGuard } from '@common/guards/authentication/jwt-access-auth.guard';
-import { AdminGuard } from '@common/guards/authorization/admin.guard';
+import { PermissionsGuard } from '@common/guards/authorization/permissions.guard';
+import { RolesGuard } from '@common/guards/authorization/roles.guard';
+import { Roles } from '@common/decorators/roles.decorator';
+import { AppRole } from '@common/enums/app-role.enum';
+import { Permissions } from '@common/decorators/permissions.decorator';
+import { PermissionKey } from '@common/enums/permission-key.enum';
 import { CurrentLocale } from '@common/i18n/decorators/current-locale.decorator';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
 import { AuthenticatedUser } from '@common/interfaces/authenticated-user.interface';
@@ -58,6 +68,10 @@ import { RequestPractitionerApplicationChangesUseCase } from '../use-cases/reque
 import { UpsertPractitionerApplicationCredentialUseCase } from '../use-cases/upsert-practitioner-application-credential.use-case';
 import { DeletePractitionerApplicationCredentialUseCase } from '../use-cases/delete-practitioner-application-credential.use-case';
 import { UpdatePractitionerApplicationDraftUseCase } from '../use-cases/update-practitioner-application-draft.use-case';
+import { SecurityAuditService } from '@common/security-audit/security-audit.service';
+import { SecurityAuditOutcome } from '@prisma/client';
+import { GetPractitionerApplicationAvatarFileUseCase } from '../use-cases/get-practitioner-application-avatar-file.use-case';
+import { GetPractitionerApplicationCredentialFileUseCase } from '../use-cases/get-practitioner-application-credential-file.use-case';
 
 /**
  * Admin-only controller for practitioner application review decisions.
@@ -65,13 +79,16 @@ import { UpdatePractitionerApplicationDraftUseCase } from '../use-cases/update-p
  */
 @ApiTags('Admin - Practitioner Applications')
 @ApiBearerAuth()
-@UseGuards(JwtAccessAuthGuard, AdminGuard)
+@UseGuards(JwtAccessAuthGuard, RolesGuard, PermissionsGuard)
 @RequireAccountStates(AccountStateRequirement.ACTIVE_ACCOUNT)
+@Roles(AppRole.ADMIN, AppRole.SUPER_ADMIN, AppRole.PRACTITIONER_REVIEWER)
 @Controller('admin/practitioner-applications')
 export class PractitionerApplicationsAdminController {
   constructor(
     private readonly listPractitionerApplicationsUseCase: ListPractitionerApplicationsUseCase,
     private readonly getPractitionerApplicationDetailsUseCase: GetPractitionerApplicationDetailsUseCase,
+    private readonly getPractitionerApplicationAvatarFileUseCase: GetPractitionerApplicationAvatarFileUseCase,
+    private readonly getPractitionerApplicationCredentialFileUseCase: GetPractitionerApplicationCredentialFileUseCase,
     private readonly approvePractitionerApplicationUseCase: ApprovePractitionerApplicationUseCase,
     private readonly rejectPractitionerApplicationUseCase: RejectPractitionerApplicationUseCase,
     private readonly requestPractitionerApplicationChangesUseCase: RequestPractitionerApplicationChangesUseCase,
@@ -79,10 +96,68 @@ export class PractitionerApplicationsAdminController {
     private readonly updatePractitionerApplicationDraftUseCase: UpdatePractitionerApplicationDraftUseCase,
     private readonly upsertPractitionerApplicationCredentialUseCase: UpsertPractitionerApplicationCredentialUseCase,
     private readonly deletePractitionerApplicationCredentialUseCase: DeletePractitionerApplicationCredentialUseCase,
+    private readonly securityAuditService: SecurityAuditService,
   ) {}
+
+  /**
+   * Streams the practitioner's avatar for admin review.
+   * This is intentionally scoped under the application id to avoid exposing raw storage paths.
+   */
+  @Get(':id/avatar')
+  @Permissions(PermissionKey.PRACTITIONER_APPLICATIONS_READ)
+  @ApiOperation({
+    summary: 'Get practitioner avatar file for application review',
+  })
+  @ApiParam({ name: 'id', description: 'Practitioner application id' })
+  @ApiUnauthorizedResponse({ description: 'Access token is required' })
+  @ApiForbiddenResponse({ description: 'Route requires admin permissions' })
+  @ApiNotFoundResponse({ description: 'Avatar or application not found' })
+  async getAvatarFile(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const stored = await this.getPractitionerApplicationAvatarFileUseCase.execute(
+      { applicationId: id },
+    );
+
+    res.setHeader('Content-Type', stored.mimeType);
+    res.setHeader('Cache-Control', 'private, max-age=60');
+    return new StreamableFile(createReadStream(stored.absolutePath));
+  }
+
+  /**
+   * Streams one credential/document file for admin review.
+   * Files are sensitive; this endpoint is authenticated and verified against the application practitioner id.
+   */
+  @Get(':id/credentials/:credentialId/file')
+  @Permissions(PermissionKey.PRACTITIONER_APPLICATIONS_READ)
+  @ApiOperation({
+    summary: 'Get practitioner credential file for application review',
+  })
+  @ApiParam({ name: 'id', description: 'Practitioner application id' })
+  @ApiParam({ name: 'credentialId', description: 'Credential id' })
+  @ApiUnauthorizedResponse({ description: 'Access token is required' })
+  @ApiForbiddenResponse({ description: 'Route requires admin permissions' })
+  @ApiNotFoundResponse({ description: 'Credential or file not found' })
+  async getCredentialFile(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Param('credentialId', new ParseUUIDPipe()) credentialId: string,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const stored =
+      await this.getPractitionerApplicationCredentialFileUseCase.execute({
+        applicationId: id,
+        credentialId,
+      });
+
+    res.setHeader('Content-Type', stored.mimeType);
+    res.setHeader('Cache-Control', 'private, max-age=60');
+    return new StreamableFile(createReadStream(stored.absolutePath));
+  }
 
   /** Lists practitioner applications for admin queues with optional status/search filters. */
   @Get()
+  @Permissions(PermissionKey.PRACTITIONER_APPLICATIONS_READ)
   @ApiOperation({
     summary: 'List practitioner applications for review',
     description:
@@ -118,6 +193,8 @@ export class PractitionerApplicationsAdminController {
 
   /** Creates a practitioner account directly from admin scope without practitioner self-submission. */
   @Post('direct-create')
+  @RequireStepUp('security.practitioner.application.direct-create')
+  @Permissions(PermissionKey.PRACTITIONER_APPLICATIONS_APPROVE)
   @ApiOperation({
     summary: 'Create practitioner directly (admin)',
     description:
@@ -143,13 +220,14 @@ export class PractitionerApplicationsAdminController {
     @CurrentLocale() locale: SupportedLocale,
     @CurrentUser() currentUser: AuthenticatedUser,
   ) {
-    return this.createAdminPractitionerUseCase.execute({
-      locale,
-      adminUserId: currentUser.id,
-      email: body.email,
-      password: body.password,
-      displayName: body.displayName,
-      practitionerType: body.practitionerType,
+    return this.createAdminPractitionerUseCase
+      .execute({
+        locale,
+        adminUserId: currentUser.id,
+        email: body.email,
+        password: body.password,
+        displayName: body.displayName,
+        practitionerType: body.practitionerType,
         practitionerGender: body.practitionerGender,
         professionalTitle: body.professionalTitle,
         bio: body.bio,
@@ -161,14 +239,31 @@ export class PractitionerApplicationsAdminController {
         countryCode: body.countryCode,
         languageCodes: body.languageCodes,
         specialtySelection: body.specialtySelection,
-      payoutDestination: body.payoutDestination,
-      credentials: body.credentials,
-      note: body.note,
-    });
+        payoutDestination: body.payoutDestination,
+        credentials: body.credentials,
+        note: body.note,
+      })
+      .then((result) => {
+        this.securityAuditService.logAsync({
+          action: 'security.practitioner.application.direct-create',
+          outcome: SecurityAuditOutcome.SUCCESS,
+          actorUserId: currentUser.id,
+          actorRoles: currentUser.roles,
+          resourceType: 'PractitionerApplication',
+          targetUserId: currentUser.id,
+          metadata: {
+            applicationId:
+              (result as { application?: { id?: string } }).application?.id ??
+              null,
+          },
+        });
+        return result;
+      });
   }
 
   /** Returns full admin details for one practitioner application. */
   @Get(':id')
+  @Permissions(PermissionKey.PRACTITIONER_APPLICATIONS_READ)
   @ApiOperation({
     summary: 'Get practitioner application details',
     description:
@@ -198,6 +293,7 @@ export class PractitionerApplicationsAdminController {
 
   /** Allows admin to amend practitioner submitted data before final decision. */
   @Patch(':id')
+  @Permissions(PermissionKey.PRACTITIONER_APPLICATIONS_APPROVE)
   @ApiOperation({
     summary: 'Update practitioner application draft data',
     description:
@@ -239,6 +335,7 @@ export class PractitionerApplicationsAdminController {
 
   /** Adds one practitioner credential from admin review details scope. */
   @Post(':id/credentials')
+  @Permissions(PermissionKey.PRACTITIONER_APPLICATIONS_APPROVE)
   @ApiOperation({
     summary: 'Add practitioner credential in application review',
     description:
@@ -280,6 +377,7 @@ export class PractitionerApplicationsAdminController {
 
   /** Updates one practitioner credential from admin review details scope. */
   @Patch(':id/credentials/:credentialId')
+  @Permissions(PermissionKey.PRACTITIONER_APPLICATIONS_APPROVE)
   @ApiOperation({
     summary: 'Update practitioner credential in application review',
     description:
@@ -325,6 +423,7 @@ export class PractitionerApplicationsAdminController {
 
   /** Deletes one practitioner credential from admin review details scope. */
   @Delete(':id/credentials/:credentialId')
+  @Permissions(PermissionKey.PRACTITIONER_APPLICATIONS_APPROVE)
   @ApiOperation({
     summary: 'Delete practitioner credential in application review',
     description:
@@ -364,6 +463,8 @@ export class PractitionerApplicationsAdminController {
 
   /** Approves a practitioner application when transition policy allows it. */
   @Post(':id/approve')
+  @RequireStepUp('security.practitioner.application.approve')
+  @Permissions(PermissionKey.PRACTITIONER_APPLICATIONS_APPROVE)
   @ApiOperation({
     summary: 'Approve practitioner application',
     description:
@@ -395,17 +496,36 @@ export class PractitionerApplicationsAdminController {
     @CurrentLocale() locale: SupportedLocale,
     @CurrentUser() currentUser: AuthenticatedUser,
   ) {
-    return this.approvePractitionerApplicationUseCase.execute({
-      id,
-      locale,
-      adminUserId: currentUser.id,
-      reason: body.reason,
-      note: body.note,
-    });
+    return this.approvePractitionerApplicationUseCase
+      .execute({
+        id,
+        locale,
+        adminUserId: currentUser.id,
+        reason: body.reason,
+        note: body.note,
+      })
+      .then((result) => {
+        this.securityAuditService.logAsync({
+          action: 'security.practitioner.application.approve',
+          outcome: SecurityAuditOutcome.SUCCESS,
+          actorUserId: currentUser.id,
+          actorRoles: currentUser.roles,
+          resourceType: 'PractitionerApplication',
+          resourceId: id,
+          metadata: {
+            applicationId:
+              (result as { application?: { id?: string } }).application?.id ??
+              null,
+          },
+        });
+        return result;
+      });
   }
 
   /** Rejects a practitioner application when transition policy allows it. */
   @Post(':id/reject')
+  @RequireStepUp('security.practitioner.application.reject')
+  @Permissions(PermissionKey.PRACTITIONER_APPLICATIONS_REJECT)
   @ApiOperation({
     summary: 'Reject practitioner application',
     description:
@@ -437,17 +557,36 @@ export class PractitionerApplicationsAdminController {
     @CurrentLocale() locale: SupportedLocale,
     @CurrentUser() currentUser: AuthenticatedUser,
   ) {
-    return this.rejectPractitionerApplicationUseCase.execute({
-      id,
-      locale,
-      adminUserId: currentUser.id,
-      reason: body.reason,
-      note: body.note,
-    });
+    return this.rejectPractitionerApplicationUseCase
+      .execute({
+        id,
+        locale,
+        adminUserId: currentUser.id,
+        reason: body.reason,
+        note: body.note,
+      })
+      .then((result) => {
+        this.securityAuditService.logAsync({
+          action: 'security.practitioner.application.reject',
+          outcome: SecurityAuditOutcome.SUCCESS,
+          actorUserId: currentUser.id,
+          actorRoles: currentUser.roles,
+          resourceType: 'PractitionerApplication',
+          resourceId: id,
+          metadata: {
+            applicationId:
+              (result as { application?: { id?: string } }).application?.id ??
+              null,
+          },
+        });
+        return result;
+      });
   }
 
   /** Requests changes for a practitioner application (editable again). */
   @Post(':id/request-changes')
+  @RequireStepUp('security.practitioner.application.request-changes')
+  @Permissions(PermissionKey.PRACTITIONER_APPLICATIONS_REQUEST_CHANGES)
   @ApiOperation({
     summary: 'Request changes for practitioner application',
     description:
@@ -479,12 +618,29 @@ export class PractitionerApplicationsAdminController {
     @CurrentLocale() locale: SupportedLocale,
     @CurrentUser() currentUser: AuthenticatedUser,
   ) {
-    return this.requestPractitionerApplicationChangesUseCase.execute({
-      id,
-      locale,
-      adminUserId: currentUser.id,
-      reason: body.reason,
-      note: body.note,
-    });
+    return this.requestPractitionerApplicationChangesUseCase
+      .execute({
+        id,
+        locale,
+        adminUserId: currentUser.id,
+        reason: body.reason,
+        note: body.note,
+      })
+      .then((result) => {
+        this.securityAuditService.logAsync({
+          action: 'security.practitioner.application.request-changes',
+          outcome: SecurityAuditOutcome.SUCCESS,
+          actorUserId: currentUser.id,
+          actorRoles: currentUser.roles,
+          resourceType: 'PractitionerApplication',
+          resourceId: id,
+          metadata: {
+            applicationId:
+              (result as { application?: { id?: string } }).application?.id ??
+              null,
+          },
+        });
+        return result;
+      });
   }
 }

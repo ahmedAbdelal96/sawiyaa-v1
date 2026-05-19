@@ -10,9 +10,10 @@ export class GetMyPractitionerPackageUseCase {
   ) {}
 
   async execute(input: { userId: string; packageId: string }) {
-    const profile = await this.practitionerPackageRepository.findPractitionerProfileByUserId(
-      input.userId,
-    );
+    const profile =
+      await this.practitionerPackageRepository.findPractitionerProfileByUserId(
+        input.userId,
+      );
 
     if (!profile) {
       throw new NotFoundException({

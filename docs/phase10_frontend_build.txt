@@ -1,0 +1,183 @@
+﻿
+> fayed-frontend@1.0.0 build
+> npm run i18n:check && next build
+
+
+> fayed-frontend@1.0.0 i18n:check
+> node scripts/validate-i18n.mjs
+
+i18n validation passed.
+▲ Next.js 16.2.6 (Turbopack)
+- Environments: .env.local
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 42s
+  Running TypeScript ...
+  Finished TypeScript in 46s ...
+  Collecting page data using 15 workers ...
+  Generating static pages using 15 workers (0/201) ...
+  Generating static pages using 15 workers (50/201) 
+  Generating static pages using 15 workers (100/201) 
+  Generating static pages using 15 workers (150/201) 
+✓ Generating static pages using 15 workers (201/201) in 1906ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /_not-found
+├ ƒ /[locale]
+├ ƒ /[locale]/academy
+├ ƒ /[locale]/academy/[slug]
+├ ƒ /[locale]/admin
+├ ƒ /[locale]/admin/academy
+├ ƒ /[locale]/admin/academy/[id]
+├ ƒ /[locale]/admin/admin-operations
+├ ƒ /[locale]/admin/admin-operations/[id]
+├ ƒ /[locale]/admin/articles
+├ ƒ /[locale]/admin/assessments
+├ ƒ /[locale]/admin/assessments/[id]
+├ ƒ /[locale]/admin/audit
+├ ƒ /[locale]/admin/audit/[id]
+├ ƒ /[locale]/admin/care-chat
+├ ƒ /[locale]/admin/care-chat/[id]
+├ ƒ /[locale]/admin/care-chat/conversations/[id]
+├ ƒ /[locale]/admin/chat
+├ ƒ /[locale]/admin/dashboard
+├ ƒ /[locale]/admin/finance
+├ ƒ /[locale]/admin/finance/dashboard
+├ ƒ /[locale]/admin/finance/ledger
+├ ƒ /[locale]/admin/finance/ledger/[journalEntryId]
+├ ƒ /[locale]/admin/finance/reconciliation
+├ ƒ /[locale]/admin/help
+├ ƒ /[locale]/admin/help/categories
+├ ƒ /[locale]/admin/help/questions
+├ ƒ /[locale]/admin/moderation/reports
+├ ƒ /[locale]/admin/moderation/reports/[id]
+├ ƒ /[locale]/admin/notifications
+├ ƒ /[locale]/admin/notifications/[id]
+├ ƒ /[locale]/admin/package-plans
+├ ƒ /[locale]/admin/package-plans/[code]
+├ ƒ /[locale]/admin/package-settlements
+├ ƒ /[locale]/admin/package-settlements/[id]
+├ ƒ /[locale]/admin/patients
+├ ƒ /[locale]/admin/patients/[patientId]
+├ ƒ /[locale]/admin/payments
+├ ƒ /[locale]/admin/payments/[id]
+├ ƒ /[locale]/admin/payments/gateway-control
+├ ƒ /[locale]/admin/practitioner-applications
+├ ƒ /[locale]/admin/practitioner-applications/[id]
+├ ƒ /[locale]/admin/practitioner-applications/create
+├ ƒ /[locale]/admin/practitioner-payouts
+├ ƒ /[locale]/admin/practitioner-payouts/[practitionerId]
+├ ƒ /[locale]/admin/practitioner-payouts/history
+├ ƒ /[locale]/admin/practitioners
+├ ƒ /[locale]/admin/refund-policies
+├ ƒ /[locale]/admin/refund-policies/[policyType]
+├ ƒ /[locale]/admin/refund-policies/[policyType]/versions/[versionId]
+├ ƒ /[locale]/admin/reports
+├ ƒ /[locale]/admin/reports/care-requests
+├ ƒ /[locale]/admin/reports/payments-revenue
+├ ƒ /[locale]/admin/reports/payouts
+├ ƒ /[locale]/admin/reports/sessions
+├ ƒ /[locale]/admin/reports/support
+├ ƒ /[locale]/admin/reviews
+├ ƒ /[locale]/admin/reviews/[id]
+├ ƒ /[locale]/admin/sessions
+├ ƒ /[locale]/admin/sessions/cancellation-policies
+├ ƒ /[locale]/admin/sessions/runtime-inspection
+├ ƒ /[locale]/admin/settings
+├ ƒ /[locale]/admin/settings/revenue-share
+├ ƒ /[locale]/admin/settlements
+├ ƒ /[locale]/admin/settlements/[id]
+├ ƒ /[locale]/admin/settlements/dues
+├ ƒ /[locale]/admin/settlements/payouts
+├ ƒ /[locale]/admin/settlements/statement/[practitionerId]
+├ ƒ /[locale]/admin/specialties
+├ ƒ /[locale]/admin/support
+├ ƒ /[locale]/admin/support/[id]
+├ ƒ /[locale]/admin/training
+├ ƒ /[locale]/admin/training/[id]
+├ ƒ /[locale]/articles
+├ ƒ /[locale]/articles/[slug]
+├ ƒ /[locale]/error-404
+├ ƒ /[locale]/help
+├ ƒ /[locale]/help/[categorySlug]
+├ ƒ /[locale]/patient
+├ ƒ /[locale]/patient/articles
+├ ƒ /[locale]/patient/articles/[slug]
+├ ƒ /[locale]/patient/assessments
+├ ƒ /[locale]/patient/assessments/[slug]
+├ ƒ /[locale]/patient/assessments/submissions/[submissionId]
+├ ƒ /[locale]/patient/care-chat
+├ ƒ /[locale]/patient/care-chat/[id]
+├ ƒ /[locale]/patient/care-chat/conversations/[id]
+├ ƒ /[locale]/patient/chat
+├ ƒ /[locale]/patient/dashboard
+├ ƒ /[locale]/patient/help
+├ ƒ /[locale]/patient/matching
+├ ƒ /[locale]/patient/matching/[id]
+├ ƒ /[locale]/patient/package-purchases
+├ ƒ /[locale]/patient/package-purchases/[id]
+├ ƒ /[locale]/patient/payments
+├ ƒ /[locale]/patient/practitioners
+├ ƒ /[locale]/patient/practitioners/[slug]
+├ ƒ /[locale]/patient/profile
+├ ƒ /[locale]/patient/reviews
+├ ƒ /[locale]/patient/reviews/[id]
+├ ƒ /[locale]/patient/sessions
+├ ƒ /[locale]/patient/sessions/[id]
+├ ƒ /[locale]/patient/sessions/[id]/chat
+├ ƒ /[locale]/patient/sessions/[id]/pay
+├ ƒ /[locale]/patient/sessions/[id]/payment-return
+├ ƒ /[locale]/patient/settings
+├ ƒ /[locale]/patient/support
+├ ƒ /[locale]/patient/support/[id]
+├ ƒ /[locale]/patient/training
+├ ƒ /[locale]/patient/training/[id]
+├ ƒ /[locale]/patient/training/[id]/pay
+├ ƒ /[locale]/patient/training/catalog/[slug]
+├ ƒ /[locale]/patient/wallet
+├ ƒ /[locale]/practitioner
+├ ƒ /[locale]/practitioner/application
+├ ƒ /[locale]/practitioner/articles
+├ ƒ /[locale]/practitioner/availability
+├ ƒ /[locale]/practitioner/care-chat
+├ ƒ /[locale]/practitioner/care-chat/[id]
+├ ƒ /[locale]/practitioner/care-chat/conversations/[id]
+├ ƒ /[locale]/practitioner/credentials
+├ ƒ /[locale]/practitioner/dashboard
+├ ƒ /[locale]/practitioner/help
+├ ƒ /[locale]/practitioner/ledger
+├ ƒ /[locale]/practitioner/patients
+├ ƒ /[locale]/practitioner/profile
+├ ƒ /[locale]/practitioner/reviews
+├ ƒ /[locale]/practitioner/sessions
+├ ƒ /[locale]/practitioner/sessions/[id]
+├ ƒ /[locale]/practitioner/sessions/[id]/chat
+├ ƒ /[locale]/practitioner/settings
+├ ƒ /[locale]/practitioner/settlements
+├ ƒ /[locale]/practitioner/specialties
+├ ƒ /[locale]/practitioner/support
+├ ƒ /[locale]/practitioner/support/[id]
+├ ƒ /[locale]/practitioner/wallet
+├ ƒ /[locale]/practitioners
+├ ƒ /[locale]/practitioners/[slug]
+├ ƒ /[locale]/refund-policies
+├ ƒ /[locale]/refund-policies/[policyType]
+├ ƒ /[locale]/signin
+├ ƒ /[locale]/signin/admin
+├ ƒ /[locale]/signin/patient
+├ ƒ /[locale]/signin/practitioner
+├ ƒ /[locale]/signup
+├ ƒ /[locale]/signup/patient
+├ ƒ /[locale]/signup/practitioner
+├ ƒ /[locale]/specialties
+├ ƒ /[locale]/specialties/[slug]
+├ ƒ /api/auth/logout
+└ ƒ /api/auth/refresh
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+

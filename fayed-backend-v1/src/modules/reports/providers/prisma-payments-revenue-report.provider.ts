@@ -18,9 +18,7 @@ import {
 } from '../types/payments-revenue-report.types';
 
 @Injectable()
-export class PrismaPaymentsRevenueReportProvider
-  implements PaymentsRevenueReportProvider
-{
+export class PrismaPaymentsRevenueReportProvider implements PaymentsRevenueReportProvider {
   constructor(private readonly prisma: PrismaService) {}
 
   async getOverview(
@@ -63,12 +61,26 @@ export class PrismaPaymentsRevenueReportProvider
     ]);
 
     const grossInflow = journalEntries
-      .filter((entry) => entry.sourceType === JournalEntrySourceType.PAYMENT_CAPTURED)
-      .reduce((sum, entry) => sum.add(this.toMoney(this.toJson(entry.metadataJson)['amountTotal'])), new Prisma.Decimal(0));
+      .filter(
+        (entry) => entry.sourceType === JournalEntrySourceType.PAYMENT_CAPTURED,
+      )
+      .reduce(
+        (sum, entry) =>
+          sum.add(this.toMoney(this.toJson(entry.metadataJson)['amountTotal'])),
+        new Prisma.Decimal(0),
+      );
 
     const refundsTotal = journalEntries
-      .filter((entry) => entry.sourceType === JournalEntrySourceType.REFUND_SUCCEEDED)
-      .reduce((sum, entry) => sum.add(this.toMoney(this.toJson(entry.metadataJson)['refundAmount'])), new Prisma.Decimal(0));
+      .filter(
+        (entry) => entry.sourceType === JournalEntrySourceType.REFUND_SUCCEEDED,
+      )
+      .reduce(
+        (sum, entry) =>
+          sum.add(
+            this.toMoney(this.toJson(entry.metadataJson)['refundAmount']),
+          ),
+        new Prisma.Decimal(0),
+      );
 
     let platformRevenue = new Prisma.Decimal(0);
     let vatTotal = new Prisma.Decimal(0);
@@ -78,25 +90,30 @@ export class PrismaPaymentsRevenueReportProvider
 
     const practitionerPayableOutstanding = practitionerLiabilityLines.reduce(
       (sum, line) =>
-        line.direction === LedgerDirection.CREDIT ? sum.add(line.amount) : sum.sub(line.amount),
+        line.direction === LedgerDirection.CREDIT
+          ? sum.add(line.amount)
+          : sum.sub(line.amount),
       new Prisma.Decimal(0),
     );
 
     const trendMap = new Map<
       string,
-      { grossInflow: Prisma.Decimal; revenue: Prisma.Decimal; refunds: Prisma.Decimal; fees: Prisma.Decimal }
+      {
+        grossInflow: Prisma.Decimal;
+        revenue: Prisma.Decimal;
+        refunds: Prisma.Decimal;
+        fees: Prisma.Decimal;
+      }
     >();
 
     for (const entry of journalEntries) {
       const bucketKey = toUtcDateKey(entry.occurredAt);
-      const bucket =
-        trendMap.get(bucketKey) ??
-        {
-          grossInflow: new Prisma.Decimal(0),
-          revenue: new Prisma.Decimal(0),
-          refunds: new Prisma.Decimal(0),
-          fees: new Prisma.Decimal(0),
-        };
+      const bucket = trendMap.get(bucketKey) ?? {
+        grossInflow: new Prisma.Decimal(0),
+        revenue: new Prisma.Decimal(0),
+        refunds: new Prisma.Decimal(0),
+        fees: new Prisma.Decimal(0),
+      };
 
       if (entry.sourceType === JournalEntrySourceType.PAYMENT_CAPTURED) {
         bucket.grossInflow = bucket.grossInflow.add(
@@ -113,7 +130,8 @@ export class PrismaPaymentsRevenueReportProvider
       for (const line of entry.lines) {
         const code = line.ledgerAccount.code;
         const amount = line.amount;
-        const signed = line.direction === LedgerDirection.CREDIT ? amount : amount.neg();
+        const signed =
+          line.direction === LedgerDirection.CREDIT ? amount : amount.neg();
 
         if (code === PLATFORM_LEDGER_ACCOUNT_CODES.platformRevenue) {
           platformRevenue = platformRevenue.add(signed);
@@ -150,18 +168,18 @@ export class PrismaPaymentsRevenueReportProvider
       trendMap.set(bucketKey, bucket);
     }
 
-    const feesTotal = gatewayFees.add(transferFees).sub(transferFeeRecoveryRevenue);
+    const feesTotal = gatewayFees
+      .add(transferFees)
+      .sub(transferFeeRecoveryRevenue);
     const dailyKeys = buildDailyBuckets(input.from, input.to);
 
     const trend = dailyKeys.map((date) => {
-      const bucket =
-        trendMap.get(date) ??
-        {
-          grossInflow: new Prisma.Decimal(0),
-          revenue: new Prisma.Decimal(0),
-          refunds: new Prisma.Decimal(0),
-          fees: new Prisma.Decimal(0),
-        };
+      const bucket = trendMap.get(date) ?? {
+        grossInflow: new Prisma.Decimal(0),
+        revenue: new Prisma.Decimal(0),
+        refunds: new Prisma.Decimal(0),
+        fees: new Prisma.Decimal(0),
+      };
       return {
         date,
         grossInflow: bucket.grossInflow.toFixed(2),
@@ -179,7 +197,8 @@ export class PrismaPaymentsRevenueReportProvider
         grossInflow: grossInflow.toFixed(2),
         refundsTotal: refundsTotal.toFixed(2),
         platformRevenue: platformRevenue.toFixed(2),
-        practitionerPayableOutstanding: practitionerPayableOutstanding.toFixed(2),
+        practitionerPayableOutstanding:
+          practitionerPayableOutstanding.toFixed(2),
         vatTotal: vatTotal.toFixed(2),
         feesTotal: feesTotal.toFixed(2),
       },
@@ -220,15 +239,14 @@ export class PrismaPaymentsRevenueReportProvider
         .add(this.toMoney(metadata['refundAmount']))
         .add(this.toMoney(metadata['amountPaid']));
 
-      const amount =
-        amountFromMetadata.gt(0)
-          ? amountFromMetadata
-          : entry.lines.reduce((sum, line) => {
-              if (line.direction === LedgerDirection.DEBIT) {
-                return sum.add(line.amount);
-              }
-              return sum;
-            }, new Prisma.Decimal(0));
+      const amount = amountFromMetadata.gt(0)
+        ? amountFromMetadata
+        : entry.lines.reduce((sum, line) => {
+            if (line.direction === LedgerDirection.DEBIT) {
+              return sum.add(line.amount);
+            }
+            return sum;
+          }, new Prisma.Decimal(0));
 
       return {
         journalEntryId: entry.id,
@@ -244,7 +262,9 @@ export class PrismaPaymentsRevenueReportProvider
     return { items, totalItems };
   }
 
-  private toJson(value: Prisma.JsonValue | null | undefined): Record<string, unknown> {
+  private toJson(
+    value: Prisma.JsonValue | null | undefined,
+  ): Record<string, unknown> {
     if (!value || typeof value !== 'object' || Array.isArray(value)) {
       return {};
     }
@@ -274,4 +294,3 @@ export class PrismaPaymentsRevenueReportProvider
     }
   }
 }
-

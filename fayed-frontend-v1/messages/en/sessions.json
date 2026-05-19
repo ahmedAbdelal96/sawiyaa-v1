@@ -53,6 +53,14 @@
   "detail": {
     "backToSessions": "Back to sessions",
     "heading": "Session Details",
+    "errors": {
+      "forbiddenTitle": "You cannot view this session",
+      "forbiddenNote": "This session is not available to your account.",
+      "notFoundTitle": "Session not found",
+      "notFoundNote": "We couldn't find that session.",
+      "errorTitle": "Could not load session details",
+      "errorNote": "Please try again in a moment."
+    },
     "chatCard": {
       "heading": "Chat",
       "note": "Open a chat with your practitioner for this session.",

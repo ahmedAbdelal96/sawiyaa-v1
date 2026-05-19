@@ -1,8 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import {
-  PackageSchedulePolicy,
-  SessionMode,
-} from '@prisma/client';
+import { PackageSchedulePolicy, SessionMode } from '@prisma/client';
 import { Type } from 'class-transformer';
 import {
   IsEnum,

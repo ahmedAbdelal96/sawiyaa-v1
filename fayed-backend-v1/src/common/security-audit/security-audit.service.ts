@@ -7,7 +7,7 @@ export interface SecurityAuditEntry {
   action: string;
   outcome: SecurityAuditOutcome;
   actorUserId?: string | null;
-  actorRoles?: string[] | null;
+  actorRoles?: string[];
   resourceType?: string | null;
   resourceId?: string | null;
   targetUserId?: string | null;
@@ -49,7 +49,7 @@ export class SecurityAuditService {
         action: entry.action,
         outcome: entry.outcome,
         actorUserId: entry.actorUserId ?? null,
-        actorRolesJson: entry.actorRoles ? entry.actorRoles : undefined,
+        actorRolesJson: entry.actorRoles,
         resourceType: entry.resourceType ?? null,
         resourceId: entry.resourceId ?? null,
         targetUserId: entry.targetUserId ?? null,
@@ -86,11 +86,33 @@ export class SecurityAuditService {
       'apiSecret',
       'authorization',
       'cookie',
+      'set-cookie',
       'credentials',
+      'secretKey',
+      'clientSecret',
+      'providerSecret',
+      'checkoutUrl',
+      'rawBody',
+      'payload',
+      'body',
     ]);
 
-    return Object.fromEntries(
-      Object.entries(raw).filter(([key]) => !BANNED_KEYS.has(key)),
-    );
+    const sanitizeValue = (value: unknown): unknown => {
+      if (Array.isArray(value)) {
+        return value.map((item) => sanitizeValue(item));
+      }
+
+      if (value && typeof value === 'object') {
+        return Object.fromEntries(
+          Object.entries(value as Record<string, unknown>)
+            .filter(([key]) => !BANNED_KEYS.has(key))
+            .map(([key, nested]) => [key, sanitizeValue(nested)]),
+        );
+      }
+
+      return value;
+    };
+
+    return sanitizeValue(raw) as Record<string, unknown>;
   }
 }

@@ -9,7 +9,10 @@ import {
 } from '../types/practitioner-packages.types';
 
 export class ListAdminPractitionerPackagesDto {
-  @ApiPropertyOptional({ minimum: 1, default: PRACTITIONER_PACKAGES_DEFAULT_PAGE })
+  @ApiPropertyOptional({
+    minimum: 1,
+    default: PRACTITIONER_PACKAGES_DEFAULT_PAGE,
+  })
   @Type(() => Number)
   @IsInt()
   @Min(1)

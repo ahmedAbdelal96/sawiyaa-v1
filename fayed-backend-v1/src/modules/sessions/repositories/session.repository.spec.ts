@@ -66,4 +66,63 @@ describe('SessionRepository', () => {
     });
     expect(callArg.take).toBe(50);
   });
+
+  it('filters pending payment reservations by expiry when listing blocking ranges', async () => {
+    findMany.mockResolvedValue([]);
+
+    await repository.listBlockingSessionRangesInRangeForPractitioner(
+      'practitioner-1',
+      new Date('2026-05-19T10:00:00.000Z'),
+      new Date('2026-05-19T09:00:00.000Z'),
+      new Date('2026-05-19T08:30:00.000Z'),
+    );
+
+    const callArg = findMany.mock.calls[0][0] as {
+      where: {
+        practitionerId: string;
+        scheduledStartAt: { lt: Date };
+        scheduledEndAt: { gt: Date };
+        OR: Array<
+          | {
+              status: {
+                in: SessionStatus[];
+              };
+            }
+          | {
+              status: SessionStatus;
+              expiresAt: { gt: Date };
+            }
+        >;
+      };
+    };
+
+    expect(callArg.where.practitionerId).toBe('practitioner-1');
+    expect(callArg.where.scheduledStartAt.lt).toEqual(
+      new Date('2026-05-19T10:00:00.000Z'),
+    );
+    expect(callArg.where.scheduledEndAt.gt).toEqual(
+      new Date('2026-05-19T09:00:00.000Z'),
+    );
+    expect(callArg.where.OR).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          status: SessionStatus.PENDING_PAYMENT,
+          expiresAt: {
+            gt: new Date('2026-05-19T08:30:00.000Z'),
+          },
+        }),
+        expect.objectContaining({
+          status: {
+            in: expect.arrayContaining([
+              SessionStatus.PENDING_PRACTITIONER_RESPONSE,
+              SessionStatus.CONFIRMED,
+              SessionStatus.UPCOMING,
+              SessionStatus.READY_TO_JOIN,
+              SessionStatus.IN_PROGRESS,
+            ]),
+          },
+        }),
+      ]),
+    );
+  });
 });

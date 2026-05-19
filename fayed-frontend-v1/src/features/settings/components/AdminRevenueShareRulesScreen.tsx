@@ -46,12 +46,14 @@ export default function AdminRevenueShareRulesScreen() {
     const item = rulesQuery.data?.item;
     if (!item) return;
 
-    setForm({
+    const nextForm: FormState = {
       localPlatformRatePercent: item.local.platformRatePercent,
       localPractitionerRatePercent: item.local.practitionerRatePercent,
       crossBorderPlatformRatePercent: item.crossBorder.platformRatePercent,
       crossBorderPractitionerRatePercent: item.crossBorder.practitionerRatePercent,
-    });
+    };
+
+    queueMicrotask(() => setForm(nextForm));
   }, [rulesQuery.data?.item]);
 
   const validation = useMemo(() => {
@@ -215,4 +217,3 @@ export default function AdminRevenueShareRulesScreen() {
     </div>
   );
 }
-

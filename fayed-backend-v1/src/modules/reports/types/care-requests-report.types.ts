@@ -42,4 +42,3 @@ export type CareRequestsReportRow = {
   reviewedByUserId: string | null;
   approvalRef: string | null;
 };
-

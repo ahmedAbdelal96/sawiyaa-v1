@@ -32,7 +32,8 @@ describe('QuotePackagePlanUseCase', () => {
   const publicPractitionerReadRepository = {
     findByPublicSlug: jest.fn(),
   } as never;
-  const publicPractitionerVisibilityPolicy = new PublicPractitionerVisibilityPolicy();
+  const publicPractitionerVisibilityPolicy =
+    new PublicPractitionerVisibilityPolicy();
   const patientProfileRepository = {
     findByUserId: jest.fn(),
   } as never;
@@ -60,7 +61,9 @@ describe('QuotePackagePlanUseCase', () => {
       id: 'patient-1',
       countryId: 'country-egy',
     });
-    (publicPractitionerReadRepository.findByPublicSlug as jest.Mock).mockResolvedValue({
+    (
+      publicPractitionerReadRepository.findByPublicSlug as jest.Mock
+    ).mockResolvedValue({
       id: 'practitioner-1',
       status: 'APPROVED',
       user: { status: 'ACTIVE', displayName: 'Doctor Name' },
@@ -129,7 +132,9 @@ describe('QuotePackagePlanUseCase', () => {
       id: 'patient-1',
       countryId: 'country-egy',
     });
-    (publicPractitionerReadRepository.findByPublicSlug as jest.Mock).mockResolvedValue({
+    (
+      publicPractitionerReadRepository.findByPublicSlug as jest.Mock
+    ).mockResolvedValue({
       id: 'practitioner-1',
       status: 'APPROVED',
       user: { status: 'ACTIVE', displayName: 'Doctor Name' },
@@ -161,7 +166,9 @@ describe('QuotePackagePlanUseCase', () => {
       id: 'patient-1',
       countryId: 'country-egy',
     });
-    (publicPractitionerReadRepository.findByPublicSlug as jest.Mock).mockResolvedValue({
+    (
+      publicPractitionerReadRepository.findByPublicSlug as jest.Mock
+    ).mockResolvedValue({
       id: 'practitioner-1',
       status: 'APPROVED',
       user: { status: 'ACTIVE', displayName: 'Doctor Name' },
@@ -205,7 +212,9 @@ describe('QuotePackagePlanUseCase', () => {
       id: 'patient-1',
       countryId: 'country-egy',
     });
-    (publicPractitionerReadRepository.findByPublicSlug as jest.Mock).mockResolvedValue({
+    (
+      publicPractitionerReadRepository.findByPublicSlug as jest.Mock
+    ).mockResolvedValue({
       id: 'practitioner-1',
       status: 'APPROVED',
       user: { status: 'ACTIVE', displayName: 'Doctor Name' },

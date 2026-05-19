@@ -43,4 +43,3 @@ export class ListAdminSupportReportRowsDto extends GetAdminSupportReportOverview
   @IsEnum(SupportTicketStatus)
   status?: SupportTicketStatus;
 }
-

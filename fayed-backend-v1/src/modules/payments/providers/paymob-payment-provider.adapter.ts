@@ -96,11 +96,13 @@ export class PaymobPaymentProviderAdapter implements PaymentProviderAdapter {
     );
     const paymobConfig = this.paymentRuntimeConfigService.getPaymobConfig();
     const paymobBaseUrl = paymobConfig.baseUrl!;
-    const paymobCheckoutFlow = this.paymentRuntimeConfigService.getPaymobCheckoutFlow();
-    const enabledMethods = this.paymentRuntimeConfigService.getPaymobEnabledMethods({
-      checkoutCountryIsoCode: input.checkoutCountryIsoCode ?? null,
-      operatingCountryIsoCode: input.operatingCountryIsoCode ?? null,
-    });
+    const paymobCheckoutFlow =
+      this.paymentRuntimeConfigService.getPaymobCheckoutFlow();
+    const enabledMethods =
+      this.paymentRuntimeConfigService.getPaymobEnabledMethods({
+        checkoutCountryIsoCode: input.checkoutCountryIsoCode ?? null,
+        operatingCountryIsoCode: input.operatingCountryIsoCode ?? null,
+      });
     const selectedMethod =
       paymobCheckoutFlow === 'legacy'
         ? this.paymentRuntimeConfigService.resolvePaymobCheckoutMethod(
@@ -122,7 +124,10 @@ export class PaymobPaymentProviderAdapter implements PaymentProviderAdapter {
           )
         : null;
 
-    if (paymobCheckoutFlow === 'legacy' && (!selectedMethod || !integrationId)) {
+    if (
+      paymobCheckoutFlow === 'legacy' &&
+      (!selectedMethod || !integrationId)
+    ) {
       throw this.providerInitFailed();
     }
 
@@ -171,12 +176,11 @@ export class PaymobPaymentProviderAdapter implements PaymentProviderAdapter {
       currency: input.currency,
       patientEmail: input.patientEmail ?? null,
       redirectionUrl: input.redirectionUrl ?? null,
-      paymentMethodIds: this.paymentRuntimeConfigService.getPaymobIntentionPaymentMethodIds(
-        {
+      paymentMethodIds:
+        this.paymentRuntimeConfigService.getPaymobIntentionPaymentMethodIds({
           checkoutCountryIsoCode: input.checkoutCountryIsoCode ?? null,
           operatingCountryIsoCode: input.operatingCountryIsoCode ?? null,
-        },
-      ),
+        }),
       specialReference: createdOrder.merchantOrderId,
     });
 
@@ -205,11 +209,14 @@ export class PaymobPaymentProviderAdapter implements PaymentProviderAdapter {
               ? String(intention.id)
               : null,
         paymobClientSecret: clientSecret,
-        paymobSpecialReference: intention.special_reference ?? createdOrder.merchantOrderId,
-        paymobAllowedPaymentMethods: intention.payment_methods?.map((method) => ({
-          name: method.name ?? null,
-          live: Boolean(method.live),
-        })),
+        paymobSpecialReference:
+          intention.special_reference ?? createdOrder.merchantOrderId,
+        paymobAllowedPaymentMethods: intention.payment_methods?.map(
+          (method) => ({
+            name: method.name ?? null,
+            live: Boolean(method.live),
+          }),
+        ),
       },
     };
   }

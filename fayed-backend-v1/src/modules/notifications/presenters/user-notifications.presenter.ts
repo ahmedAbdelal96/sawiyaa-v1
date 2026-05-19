@@ -1,5 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { UserNotificationAction, UserNotificationFeedItem, UserNotificationFeedRow } from '../types/user-notifications.types';
+import {
+  UserNotificationAction,
+  UserNotificationFeedItem,
+  UserNotificationFeedRow,
+} from '../types/user-notifications.types';
 
 @Injectable()
 export class UserNotificationsPresenter {
@@ -30,7 +34,9 @@ export class UserNotificationsPresenter {
     };
   }
 
-  presentReadResult(item: UserNotificationFeedRow): { item: UserNotificationFeedItem } {
+  presentReadResult(item: UserNotificationFeedRow): {
+    item: UserNotificationFeedItem;
+  } {
     return {
       item: this.toListItem(item),
     };
@@ -92,7 +98,10 @@ export class UserNotificationsPresenter {
       normalized.sessionId = raw.sessionId;
     }
 
-    if (raw.recipientRole === 'PATIENT' || raw.recipientRole === 'PRACTITIONER') {
+    if (
+      raw.recipientRole === 'PATIENT' ||
+      raw.recipientRole === 'PRACTITIONER'
+    ) {
       normalized.recipientRole = raw.recipientRole;
     }
 
@@ -148,7 +157,11 @@ export class UserNotificationsPresenter {
   ): UserNotificationAction | null {
     const maybeAction = payload.action;
 
-    if (maybeAction && typeof maybeAction === 'object' && !Array.isArray(maybeAction)) {
+    if (
+      maybeAction &&
+      typeof maybeAction === 'object' &&
+      !Array.isArray(maybeAction)
+    ) {
       const action = maybeAction as Record<string, unknown>;
       const type = typeof action.type === 'string' ? action.type : null;
       const href = typeof action.href === 'string' ? action.href : null;
@@ -163,10 +176,11 @@ export class UserNotificationsPresenter {
       }
     }
 
-    const routePath = typeof payload.routePath === 'string' ? payload.routePath : null;
+    const routePath =
+      typeof payload.routePath === 'string' ? payload.routePath : null;
     if (routePath && routePath.startsWith('/')) {
       const label =
-        typeof payload.ctaLabel === 'string' ? (payload.ctaLabel as string) : null;
+        typeof payload.ctaLabel === 'string' ? payload.ctaLabel : null;
       return {
         type: 'INTERNAL_LINK',
         href: routePath,

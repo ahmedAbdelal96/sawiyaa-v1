@@ -12,7 +12,9 @@ export class ListPublicAcademyCoursesUseCase {
     private readonly patientProfileRepository: PatientProfileRepository,
   ) {}
 
-  async execute(input: ListPublicAcademyCoursesDto & { currentUserId?: string | null }) {
+  async execute(
+    input: ListPublicAcademyCoursesDto & { currentUserId?: string | null },
+  ) {
     const patientProfile = input.currentUserId
       ? await this.patientProfileRepository.findByUserId(input.currentUserId)
       : null;
@@ -23,9 +25,10 @@ export class ListPublicAcademyCoursesUseCase {
       q: input.q?.trim() || undefined,
     });
 
-    const statsByCourseId = await this.academyRepository.countEnrollmentsByCourseIds(
-      items.map((item) => item.id),
-    );
+    const statsByCourseId =
+      await this.academyRepository.countEnrollmentsByCourseIds(
+        items.map((item) => item.id),
+      );
 
     return {
       items: items.map((item) =>

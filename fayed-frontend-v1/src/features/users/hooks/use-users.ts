@@ -4,6 +4,7 @@ import {
   getCurrentUser,
   getCurrentUserRoles,
   getCurrentUserSecurityState,
+  getCurrentUserPermissions,
   removeCurrentUserAvatar,
   uploadCurrentUserAvatar,
 } from "../api/users.api";
@@ -47,6 +48,23 @@ export function useCurrentUserSecurityState(enabled = true) {
     queryFn: getCurrentUserSecurityState,
     enabled,
     staleTime: 30_000,
+    gcTime: 10 * 60_000,
+    retry: false,
+  });
+}
+
+/**
+ * Query for /users/me/permissions.
+ * Returns resolved effective permission keys for the current user.
+ * Used by client-side permission checks in admin navigation and page guards.
+ * Backend guards remain authoritative — this is a UX read-hint only.
+ */
+export function useCurrentUserPermissions(enabled = true) {
+  return useQuery({
+    queryKey: usersQueryKeys.mePermissions(),
+    queryFn: getCurrentUserPermissions,
+    enabled,
+    staleTime: 2 * 60_000,
     gcTime: 10 * 60_000,
     retry: false,
   });

@@ -7,7 +7,10 @@ import {
   SessionsReportProvider,
   SessionsReportRowsInput,
 } from './sessions-report.provider';
-import { SessionsReportOverview, SessionsReportRow } from '../types/sessions-report.types';
+import {
+  SessionsReportOverview,
+  SessionsReportRow,
+} from '../types/sessions-report.types';
 
 type Db = PrismaService | Prisma.TransactionClient | PrismaClient;
 
@@ -15,7 +18,9 @@ type Db = PrismaService | Prisma.TransactionClient | PrismaClient;
 export class PrismaSessionsReportProvider implements SessionsReportProvider {
   constructor(private readonly prisma: PrismaService) {}
 
-  async getOverview(input: SessionsReportOverviewInput): Promise<SessionsReportOverview> {
+  async getOverview(
+    input: SessionsReportOverviewInput,
+  ): Promise<SessionsReportOverview> {
     const where: Prisma.SessionWhereInput = {
       scheduledStartAt: {
         gte: input.from,
@@ -51,8 +56,12 @@ export class PrismaSessionsReportProvider implements SessionsReportProvider {
     >();
     for (const row of trendRows) {
       const key = row.dateKey;
-      const bucket =
-        trendMap.get(key) ?? { total: 0, completed: 0, cancelled: 0, noShow: 0 };
+      const bucket = trendMap.get(key) ?? {
+        total: 0,
+        completed: 0,
+        cancelled: 0,
+        noShow: 0,
+      };
       bucket.total += row.total;
       bucket.completed += row.completed;
       bucket.cancelled += row.cancelled;
@@ -61,7 +70,12 @@ export class PrismaSessionsReportProvider implements SessionsReportProvider {
     }
 
     const trend = bucketKeys.map((date) => {
-      const bucket = trendMap.get(date) ?? { total: 0, completed: 0, cancelled: 0, noShow: 0 };
+      const bucket = trendMap.get(date) ?? {
+        total: 0,
+        completed: 0,
+        cancelled: 0,
+        noShow: 0,
+      };
       return {
         date,
         total: String(bucket.total),

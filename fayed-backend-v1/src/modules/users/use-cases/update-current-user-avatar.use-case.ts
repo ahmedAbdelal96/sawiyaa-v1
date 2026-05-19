@@ -38,6 +38,13 @@ export class UpdateCurrentUserAvatarUseCase {
       });
     }
 
+    if (input.file.size <= 0) {
+      throw new BadRequestException({
+        messageKey: 'users.errors.avatarFileRequired',
+        error: 'USER_AVATAR_FILE_REQUIRED',
+      });
+    }
+
     if (input.file.size > MAX_USER_AVATAR_BYTES) {
       throw new BadRequestException({
         messageKey: 'users.errors.avatarFileTooLarge',

@@ -20,7 +20,9 @@ describe('GetAdminAccountingDashboardUseCase', () => {
             {
               direction: 'CREDIT',
               amount: new Prisma.Decimal('20.00'),
-              ledgerAccount: { code: PLATFORM_LEDGER_ACCOUNT_CODES.platformRevenue },
+              ledgerAccount: {
+                code: PLATFORM_LEDGER_ACCOUNT_CODES.platformRevenue,
+              },
             },
             {
               direction: 'CREDIT',
@@ -30,7 +32,9 @@ describe('GetAdminAccountingDashboardUseCase', () => {
             {
               direction: 'DEBIT',
               amount: new Prisma.Decimal('2.00'),
-              ledgerAccount: { code: PLATFORM_LEDGER_ACCOUNT_CODES.gatewayFeesExpense },
+              ledgerAccount: {
+                code: PLATFORM_LEDGER_ACCOUNT_CODES.gatewayFeesExpense,
+              },
             },
             {
               direction: 'CREDIT',

@@ -1,4 +1,8 @@
-import { BadRequestException, ConflictException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+} from '@nestjs/common';
 import {
   PractitionerApplicationStatus,
   PractitionerPayoutMethodType,
@@ -90,44 +94,50 @@ export class SubmitPractitionerApplicationUseCase {
           ? input.data.locale
           : userState.defaultLocale,
       timezone:
-        input.data.timezone !== undefined ? input.data.timezone : userState.timezone,
+        input.data.timezone !== undefined
+          ? input.data.timezone
+          : userState.timezone,
     };
 
     const mergedProfile = {
-      practitionerType: input.data.practitionerType ?? profileState.practitionerType,
+      practitionerType:
+        input.data.practitionerType ?? profileState.practitionerType,
       practitionerGender:
         input.data.practitionerGender !== undefined
           ? input.data.practitionerGender
-          : profileState.practitionerGender ?? null,
+          : (profileState.practitionerGender ?? null),
       professionalTitle:
         input.data.professionalTitle !== undefined
           ? input.data.professionalTitle
-          : profileState.professionalTitle ?? null,
-      bio: input.data.bio !== undefined ? input.data.bio : profileState.bio ?? null,
+          : (profileState.professionalTitle ?? null),
+      bio:
+        input.data.bio !== undefined
+          ? input.data.bio
+          : (profileState.bio ?? null),
       yearsOfExperience:
         input.data.yearsOfExperience !== undefined
           ? input.data.yearsOfExperience
-          : profileState.yearsOfExperience ?? null,
+          : (profileState.yearsOfExperience ?? null),
       countryCode:
         input.data.countryCode !== undefined
           ? input.data.countryCode
-          : profileState.country?.isoCode ?? null,
+          : (profileState.country?.isoCode ?? null),
       sessionPrice30Egp:
         input.data.sessionPrice30Egp !== undefined
           ? input.data.sessionPrice30Egp
-          : profileState.sessionPrice30Egp ?? null,
+          : (profileState.sessionPrice30Egp ?? null),
       sessionPrice30Usd:
         input.data.sessionPrice30Usd !== undefined
           ? input.data.sessionPrice30Usd
-          : profileState.sessionPrice30Usd ?? null,
+          : (profileState.sessionPrice30Usd ?? null),
       sessionPrice60Egp:
         input.data.sessionPrice60Egp !== undefined
           ? input.data.sessionPrice60Egp
-          : profileState.sessionPrice60Egp ?? null,
+          : (profileState.sessionPrice60Egp ?? null),
       sessionPrice60Usd:
         input.data.sessionPrice60Usd !== undefined
           ? input.data.sessionPrice60Usd
-          : profileState.sessionPrice60Usd ?? null,
+          : (profileState.sessionPrice60Usd ?? null),
       primarySpecialtyCategoryId:
         profileState.primarySpecialtyCategoryId ?? null,
     };
@@ -138,20 +148,21 @@ export class SubmitPractitionerApplicationUseCase {
         ? null
         : requestedPayoutDestination !== undefined
           ? {
-              methodType:
-                requestedPayoutDestination.methodType as PractitionerPayoutMethodType,
-              accountHolderName: requestedPayoutDestination.accountHolderName ?? null,
+              methodType: requestedPayoutDestination.methodType,
+              accountHolderName:
+                requestedPayoutDestination.accountHolderName ?? null,
               bankName: requestedPayoutDestination.bankName ?? null,
               bankAccountNumber:
                 requestedPayoutDestination.bankAccountNumber ?? null,
               iban: requestedPayoutDestination.iban ?? null,
               walletProvider: requestedPayoutDestination.walletProvider ?? null,
-              walletIdentifier: requestedPayoutDestination.walletIdentifier ?? null,
+              walletIdentifier:
+                requestedPayoutDestination.walletIdentifier ?? null,
               otherDetails: requestedPayoutDestination.otherDetails ?? null,
             }
           : payoutDestination
             ? {
-                methodType: payoutDestination.methodType as PractitionerPayoutMethodType,
+                methodType: payoutDestination.methodType,
                 accountHolderName: payoutDestination.accountHolderName ?? null,
                 bankName: payoutDestination.bankName ?? null,
                 bankAccountNumber: payoutDestination.bankAccountNumber ?? null,
@@ -194,7 +205,7 @@ export class SubmitPractitionerApplicationUseCase {
         avatarUrl:
           input.data.avatarUrl !== undefined
             ? input.data.avatarUrl
-            : profileState.avatarUrl ?? null,
+            : (profileState.avatarUrl ?? null),
       });
 
     const [readiness, latestApplicationBeforeTx] = await Promise.all([
@@ -211,6 +222,25 @@ export class SubmitPractitionerApplicationUseCase {
           hasPayoutAccountHolderName: Boolean(
             mergedPayoutDestination?.accountHolderName?.trim(),
           ),
+          payoutDestination:
+            mergedPayoutDestination === null
+              ? null
+              : mergedPayoutDestination === undefined
+                ? undefined
+                : {
+                    methodType: mergedPayoutDestination.methodType,
+                    accountHolderName:
+                      mergedPayoutDestination.accountHolderName ?? null,
+                    bankName: mergedPayoutDestination.bankName ?? null,
+                    bankAccountNumber:
+                      mergedPayoutDestination.bankAccountNumber ?? null,
+                    iban: mergedPayoutDestination.iban ?? null,
+                    walletProvider:
+                      mergedPayoutDestination.walletProvider ?? null,
+                    walletIdentifier:
+                      mergedPayoutDestination.walletIdentifier ?? null,
+                    otherDetails: mergedPayoutDestination.otherDetails ?? null,
+                  },
         },
       }),
       this.practitionerApplicationRepository.findLatestByPractitionerId(
@@ -228,7 +258,11 @@ export class SubmitPractitionerApplicationUseCase {
         latestApplicationBeforeTx?.status ===
           PractitionerApplicationStatus.SUBMITTED ||
         latestApplicationBeforeTx?.status ===
-          PractitionerApplicationStatus.UNDER_REVIEW;
+          PractitionerApplicationStatus.UNDER_REVIEW ||
+        latestApplicationBeforeTx?.status ===
+          PractitionerApplicationStatus.APPROVED ||
+        latestApplicationBeforeTx?.status ===
+          PractitionerApplicationStatus.ARCHIVED;
 
       if (alreadySubmitted) {
         throw new ConflictException({
@@ -256,6 +290,8 @@ export class SubmitPractitionerApplicationUseCase {
       const blockedStatuses: PractitionerApplicationStatus[] = [
         PractitionerApplicationStatus.SUBMITTED,
         PractitionerApplicationStatus.UNDER_REVIEW,
+        PractitionerApplicationStatus.APPROVED,
+        PractitionerApplicationStatus.ARCHIVED,
       ];
 
       if (
@@ -272,7 +308,6 @@ export class SubmitPractitionerApplicationUseCase {
         PractitionerApplicationStatus.DRAFT,
         PractitionerApplicationStatus.CHANGES_REQUESTED,
         PractitionerApplicationStatus.REJECTED,
-        PractitionerApplicationStatus.ARCHIVED,
       ];
 
       if (

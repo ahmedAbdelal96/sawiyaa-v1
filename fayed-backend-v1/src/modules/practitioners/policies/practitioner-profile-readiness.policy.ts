@@ -17,6 +17,8 @@ export class PractitionerProfileReadinessPolicy {
     specialtyCount: number;
     primarySpecialtyCategoryId: string | null;
     credentialCount: number;
+    hasIdentityEvidence: boolean;
+    hasAcademicCertificate: boolean;
     hasPayoutDestination: boolean;
     hasPayoutAccountHolderName: boolean;
     isAccountActive: boolean;
@@ -33,6 +35,8 @@ export class PractitionerProfileReadinessPolicy {
       hasSpecialty: input.specialtyCount > 0,
       hasPrimarySpecialty: Boolean(input.primarySpecialtyCategoryId?.trim()),
       hasCredential: input.credentialCount > 0,
+      hasIdentityEvidence: input.hasIdentityEvidence,
+      hasAcademicCertificate: input.hasAcademicCertificate,
       hasPayoutDestination: input.hasPayoutDestination,
       hasPayoutAccountHolderName: input.hasPayoutAccountHolderName,
       isAccountActive: input.isAccountActive,
@@ -68,6 +72,12 @@ export class PractitionerProfileReadinessPolicy {
     if (!checks.hasCredential) {
       missingRequirements.push('credentials');
     }
+    if (!checks.hasIdentityEvidence) {
+      missingRequirements.push('identityDocuments');
+    }
+    if (!checks.hasAcademicCertificate) {
+      missingRequirements.push('academicCertificate');
+    }
     if (!checks.hasPayoutDestination) {
       missingRequirements.push('payoutDestination');
     }
@@ -91,6 +101,8 @@ export class PractitionerProfileReadinessPolicy {
       checks.hasSpecialty &&
       checks.hasPrimarySpecialty &&
       checks.hasCredential &&
+      checks.hasIdentityEvidence &&
+      checks.hasAcademicCertificate &&
       checks.hasPayoutDestination &&
       checks.hasPayoutAccountHolderName;
 

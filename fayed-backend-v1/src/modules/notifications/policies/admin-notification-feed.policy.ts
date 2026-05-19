@@ -18,7 +18,11 @@ export function getAdminNotificationFeedExcludedTypePrefixes(): string[] {
 }
 
 export function isAdminNotificationTypeVisible(slug: string): boolean {
-  if (AUDIT_ONLY_TYPE_SLUGS.includes(slug as (typeof AUDIT_ONLY_TYPE_SLUGS)[number])) {
+  if (
+    AUDIT_ONLY_TYPE_SLUGS.includes(
+      slug as (typeof AUDIT_ONLY_TYPE_SLUGS)[number],
+    )
+  ) {
     return false;
   }
 

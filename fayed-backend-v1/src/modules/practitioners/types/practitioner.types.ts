@@ -93,6 +93,7 @@ export interface PractitionerApplicationStatusViewModel {
   reviewDecisionReason: string | null;
   reviewNotes: string | null;
   submissionSnapshot: Record<string, unknown> | null;
+  completion: PractitionerApplicationCompletionViewModel;
 }
 
 export interface PractitionerReadinessChecks {
@@ -104,6 +105,7 @@ export interface PractitionerReadinessChecks {
   hasLanguage: boolean;
   hasSpecialty: boolean;
   hasCredential: boolean;
+  hasAcademicCertificate: boolean;
   hasPayoutDestination: boolean;
   isAccountActive: boolean;
   isPractitionerOtpVerified: boolean;
@@ -114,6 +116,53 @@ export interface PractitionerReadinessViewModel {
   canSubmitApplication: boolean;
   missingRequirements: string[];
   checks: PractitionerReadinessChecks;
+}
+
+export type PractitionerApplicationCompletionStepKey =
+  | 'basicProfile'
+  | 'professionalDetails'
+  | 'pricing'
+  | 'qualifications'
+  | 'documents'
+  | 'payoutDetails'
+  | 'reviewSubmit';
+
+export type PractitionerApplicationCompletionSeverity =
+  | 'BLOCKER'
+  | 'WARNING'
+  | 'INFO';
+
+export type PractitionerApplicationCompletionRequirementScope =
+  | 'SUBMISSION'
+  | 'APPROVAL'
+  | 'OPTIONAL';
+
+export interface PractitionerApplicationCompletionIssue {
+  code: string;
+  field?: string;
+  stepKey: PractitionerApplicationCompletionStepKey;
+  severity: PractitionerApplicationCompletionSeverity;
+  requirementScope: PractitionerApplicationCompletionRequirementScope;
+  messageKey: string;
+  metadata?: Record<string, unknown>;
+}
+
+export interface PractitionerApplicationCompletionStep {
+  key: PractitionerApplicationCompletionStepKey;
+  titleKey: string;
+  status: 'complete' | 'incomplete' | 'warning';
+  percent: number;
+  requiredCount: number;
+  completedRequiredCount: number;
+  issues: PractitionerApplicationCompletionIssue[];
+}
+
+export interface PractitionerApplicationCompletionViewModel {
+  overallPercent: number;
+  canSubmit: boolean;
+  blockers: PractitionerApplicationCompletionIssue[];
+  warnings: PractitionerApplicationCompletionIssue[];
+  steps: PractitionerApplicationCompletionStep[];
 }
 
 export interface PractitionerProfileViewModel {
@@ -141,6 +190,7 @@ export interface PractitionerProfileViewModel {
   specialties: PractitionerSpecialtyViewModel[];
   isProfileCompleted: boolean;
   canSubmitApplication: boolean;
+  completion: PractitionerApplicationCompletionViewModel;
   applicationStatusSummary: PractitionerApplicationStatusViewModel;
   credentialSummary: PractitionerCredentialSummaryViewModel;
   createdAt: Date;

@@ -182,9 +182,9 @@ describe('ResolveSessionJoinContractUseCase', () => {
       sessionId: 'session_1',
     });
 
-    expect(
-      setup.sessionVideoProviderRegistryService.get,
-    ).toHaveBeenCalledWith(SessionProvider.ZOOM);
+    expect(setup.sessionVideoProviderRegistryService.get).toHaveBeenCalledWith(
+      SessionProvider.ZOOM,
+    );
   });
 
   it('rejects when patient tries to resolve join for another patient session', async () => {

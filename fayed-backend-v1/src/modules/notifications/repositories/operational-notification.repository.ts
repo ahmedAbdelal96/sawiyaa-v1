@@ -5,6 +5,7 @@ import {
   NotificationChannel,
   NotificationStatus,
   Prisma,
+  SecurityAuditOutcome,
   UserRoleType,
 } from '@prisma/client';
 import { PrismaService } from '@common/prisma/prisma.service';
@@ -12,6 +13,30 @@ import {
   AdminAuditSeverity,
   AdminAuditSource,
 } from '../dto/list-admin-audit-events.dto';
+
+type AdminAuditActorSummary = {
+  displayName: string | null;
+  roles: { role: UserRoleType }[];
+};
+
+type AdminAuditTimelineRow = {
+  id: string;
+  typeSlug: string;
+  category: NotificationCategory;
+  status: NotificationStatus;
+  source: AuditEventSource;
+  actorUserId: string | null;
+  targetEntityType: string | null;
+  targetEntityId: string | null;
+  titleSnapshot: string | null;
+  subjectSnapshot: string | null;
+  bodySnapshot: string | null;
+  suppressedReason: string | null;
+  occurredAt: Date;
+  createdAt: Date;
+  updatedAt: Date;
+  actorUser: AdminAuditActorSummary | null;
+};
 
 @Injectable()
 export class OperationalNotificationRepository {
@@ -533,166 +558,184 @@ export class OperationalNotificationRepository {
     limit: number;
   }) {
     const skip = (input.page - 1) * input.limit;
-    const statusFilter = this.resolveStatusFilterForAuditSeverity(input.severity);
+    const statusFilter = this.resolveStatusFilterForAuditSeverity(
+      input.severity,
+    );
+    const normalizedSearch = input.search?.trim() ?? '';
+    const isUuidSearch = this.isUuidSearch(normalizedSearch);
 
-    const andFilters: Prisma.AuditEventWhereInput[] = [];
-
-    if (input.dateFrom || input.dateTo) {
-      andFilters.push({
-        occurredAt: {
-          gte: input.dateFrom,
-          lte: input.dateTo,
-        },
-      });
-    }
-
-    if (input.actorRole) {
-      andFilters.push({
-        actorUser: {
-          roles: {
-            some: {
-              role: input.actorRole,
-            },
+    return this.prisma
+      .$transaction([
+        this.prisma.auditEvent.findMany({
+          where: this.buildAuditEventTimelineWhere(
+            input.dateFrom,
+            input.dateTo,
+          ),
+          orderBy: [{ occurredAt: 'desc' }, { createdAt: 'desc' }],
+          select: {
+            id: true,
+            typeSlug: true,
+            category: true,
+            status: true,
+            source: true,
+            actorUserId: true,
+            targetEntityType: true,
+            targetEntityId: true,
+            titleSnapshot: true,
+            subjectSnapshot: true,
+            bodySnapshot: true,
+            suppressedReason: true,
+            occurredAt: true,
+            createdAt: true,
+            updatedAt: true,
           },
-        },
-      });
-    }
-
-    if (input.eventFamily) {
-      andFilters.push({
-        eventFamily: input.eventFamily.toLowerCase(),
-      });
-    }
-
-    if (input.category) {
-      andFilters.push({
-        category: input.category,
-      });
-    }
-
-    if (input.source) {
-      andFilters.push({
-        source: this.mapAuditSourceToEntity(input.source),
-      });
-    }
-
-    if (input.targetEntityType) {
-      andFilters.push({
-        targetEntityType: input.targetEntityType,
-      });
-    }
-
-    if (statusFilter.length > 0) {
-      andFilters.push({
-        status: {
-          in: statusFilter,
-        },
-      });
-    }
-
-    if (input.search) {
-      const normalizedSearch = input.search.trim();
-      const uuidPattern =
-        /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-      const isUuidSearch = uuidPattern.test(normalizedSearch);
-
-      const searchFilters: Prisma.AuditEventWhereInput[] = [
-        { typeSlug: { contains: normalizedSearch, mode: 'insensitive' } },
-        { targetEntityType: { contains: normalizedSearch, mode: 'insensitive' } },
-        { targetEntityId: { contains: normalizedSearch, mode: 'insensitive' } },
-        { titleSnapshot: { contains: normalizedSearch, mode: 'insensitive' } },
-        { bodySnapshot: { contains: normalizedSearch, mode: 'insensitive' } },
-        { suppressedReason: { contains: normalizedSearch, mode: 'insensitive' } },
-        {
-          actorUser: {
-            displayName: { contains: normalizedSearch, mode: 'insensitive' },
+        }),
+        this.prisma.securityAuditLog.findMany({
+          where: this.buildSecurityAuditTimelineWhere(
+            input.dateFrom,
+            input.dateTo,
+          ),
+          orderBy: [{ occurredAt: 'desc' }, { id: 'desc' }],
+          select: {
+            id: true,
+            action: true,
+            outcome: true,
+            actorUserId: true,
+            resourceType: true,
+            resourceId: true,
+            targetUserId: true,
+            reason: true,
+            metadataJson: true,
+            occurredAt: true,
           },
-        },
-      ];
+        }),
+      ])
+      .then(async ([auditEvents, securityAuditLogs]) => {
+        const allActorIds = new Set<string>();
 
-      if (isUuidSearch) {
-        searchFilters.unshift({ actorUserId: normalizedSearch });
-      }
+        for (const row of auditEvents) {
+          if (row.actorUserId) {
+            allActorIds.add(row.actorUserId);
+          }
+        }
 
-      andFilters.push({
-        OR: searchFilters,
+        for (const row of securityAuditLogs) {
+          if (row.actorUserId) {
+            allActorIds.add(row.actorUserId);
+          }
+        }
+
+        const actorLookup = await this.loadActorLookup([...allActorIds]);
+
+        const timelineRows: AdminAuditTimelineRow[] = [
+          ...auditEvents.map((row) =>
+            this.normalizeAuditEventRow(
+              row,
+              actorLookup.get(row.actorUserId ?? '') ?? null,
+            ),
+          ),
+          ...securityAuditLogs.map((row) =>
+            this.normalizeSecurityAuditLogRow(
+              row,
+              actorLookup.get(row.actorUserId ?? '') ?? null,
+            ),
+          ),
+        ];
+
+        const filteredRows = timelineRows.filter((row) =>
+          this.matchesAuditTimelineFilters(row, {
+            actorRole: input.actorRole,
+            eventFamily: input.eventFamily,
+            category: input.category,
+            severity: input.severity,
+            source: input.source,
+            targetEntityType: input.targetEntityType,
+            search: normalizedSearch,
+            isUuidSearch,
+            statusFilter,
+          }),
+        );
+
+        filteredRows.sort(
+          (left, right) =>
+            right.occurredAt.getTime() - left.occurredAt.getTime() ||
+            right.createdAt.getTime() - left.createdAt.getTime() ||
+            right.id.localeCompare(left.id),
+        );
+
+        return [
+          filteredRows.slice(skip, skip + input.limit),
+          filteredRows.length,
+        ] as const;
       });
-    }
-
-    const where: Prisma.AuditEventWhereInput =
-      andFilters.length > 0 ? { AND: andFilters } : {};
-
-    return this.prisma.$transaction([
-      this.prisma.auditEvent.findMany({
-        where,
-        orderBy: [{ occurredAt: 'desc' }, { createdAt: 'desc' }],
-        skip,
-        take: input.limit,
-        select: {
-          id: true,
-          typeSlug: true,
-          category: true,
-          status: true,
-          source: true,
-          actorUserId: true,
-          targetEntityType: true,
-          targetEntityId: true,
-          titleSnapshot: true,
-          subjectSnapshot: true,
-          bodySnapshot: true,
-          suppressedReason: true,
-          occurredAt: true,
-          createdAt: true,
-          updatedAt: true,
-          actorUser: {
-            select: {
-              displayName: true,
-              roles: {
-                orderBy: { createdAt: 'asc' },
-                select: {
-                  role: true,
-                },
-              },
-            },
-          },
-        },
-      }),
-      this.prisma.auditEvent.count({ where }),
-    ]);
   }
 
   findAdminAuditEventById(eventId: string) {
-    return this.prisma.auditEvent.findUnique({
-      where: { id: eventId },
-      select: {
-        id: true,
-        typeSlug: true,
-        category: true,
-        status: true,
-        source: true,
-        actorUserId: true,
-        targetEntityType: true,
-        targetEntityId: true,
-        titleSnapshot: true,
-        subjectSnapshot: true,
-        bodySnapshot: true,
-        suppressedReason: true,
-        occurredAt: true,
-        createdAt: true,
-        updatedAt: true,
-        actorUser: {
+    return this.prisma
+      .$transaction([
+        this.prisma.auditEvent.findUnique({
+          where: { id: eventId },
           select: {
-            displayName: true,
-            roles: {
-              orderBy: { createdAt: 'asc' },
-              select: {
-                role: true,
-              },
-            },
+            id: true,
+            typeSlug: true,
+            category: true,
+            status: true,
+            source: true,
+            actorUserId: true,
+            targetEntityType: true,
+            targetEntityId: true,
+            titleSnapshot: true,
+            subjectSnapshot: true,
+            bodySnapshot: true,
+            suppressedReason: true,
+            occurredAt: true,
+            createdAt: true,
+            updatedAt: true,
           },
-        },
-      },
-    });
+        }),
+        this.prisma.securityAuditLog.findUnique({
+          where: { id: eventId },
+          select: {
+            id: true,
+            action: true,
+            outcome: true,
+            actorUserId: true,
+            resourceType: true,
+            resourceId: true,
+            targetUserId: true,
+            reason: true,
+            metadataJson: true,
+            occurredAt: true,
+          },
+        }),
+      ])
+      .then(async ([auditEvent, securityAuditLog]) => {
+        const actorId =
+          auditEvent?.actorUserId ?? securityAuditLog?.actorUserId ?? null;
+        const actorLookup = actorId
+          ? await this.loadActorLookup([actorId])
+          : new Map<string, AdminAuditActorSummary>();
+
+        if (auditEvent) {
+          return {
+            ...this.normalizeAuditEventRow(
+              auditEvent,
+              actorLookup.get(auditEvent.actorUserId ?? '') ?? null,
+            ),
+          };
+        }
+
+        if (securityAuditLog) {
+          return {
+            ...this.normalizeSecurityAuditLogRow(
+              securityAuditLog,
+              actorLookup.get(securityAuditLog.actorUserId ?? '') ?? null,
+            ),
+          };
+        }
+
+        return null;
+      });
   }
 
   private resolveStatusFilterForAuditSeverity(
@@ -714,7 +757,295 @@ export class OperationalNotificationRepository {
       return [NotificationStatus.PENDING, NotificationStatus.QUEUED];
     }
 
-    return [NotificationStatus.SENT, NotificationStatus.DELIVERED, NotificationStatus.READ];
+    return [
+      NotificationStatus.SENT,
+      NotificationStatus.DELIVERED,
+      NotificationStatus.READ,
+    ];
+  }
+
+  private buildAuditEventTimelineWhere(
+    dateFrom?: Date,
+    dateTo?: Date,
+  ): Prisma.AuditEventWhereInput {
+    if (!dateFrom && !dateTo) {
+      return {};
+    }
+
+    const occurredAt: Prisma.DateTimeFilter = {};
+    if (dateFrom) {
+      occurredAt.gte = dateFrom;
+    }
+    if (dateTo) {
+      occurredAt.lte = dateTo;
+    }
+
+    return {
+      occurredAt,
+    };
+  }
+
+  private buildSecurityAuditTimelineWhere(
+    dateFrom?: Date,
+    dateTo?: Date,
+  ): Prisma.SecurityAuditLogWhereInput {
+    if (!dateFrom && !dateTo) {
+      return {};
+    }
+
+    const occurredAt: Prisma.DateTimeFilter = {};
+    if (dateFrom) {
+      occurredAt.gte = dateFrom;
+    }
+    if (dateTo) {
+      occurredAt.lte = dateTo;
+    }
+
+    return {
+      occurredAt,
+    };
+  }
+
+  private async loadActorLookup(actorIds: string[]) {
+    if (actorIds.length === 0) {
+      return new Map<string, AdminAuditActorSummary>();
+    }
+
+    const actors = await this.prisma.user.findMany({
+      where: {
+        id: { in: actorIds },
+      },
+      select: {
+        id: true,
+        displayName: true,
+        roles: {
+          orderBy: { createdAt: 'asc' },
+          select: {
+            role: true,
+          },
+        },
+      },
+    });
+
+    return new Map(
+      actors.map((actor) => [
+        actor.id,
+        {
+          displayName: actor.displayName,
+          roles: actor.roles,
+        } satisfies AdminAuditActorSummary,
+      ]),
+    );
+  }
+
+  private normalizeAuditEventRow(
+    row: {
+      id: string;
+      typeSlug: string;
+      category: NotificationCategory;
+      status: NotificationStatus;
+      source: AuditEventSource;
+      actorUserId: string | null;
+      targetEntityType: string | null;
+      targetEntityId: string | null;
+      titleSnapshot: string | null;
+      subjectSnapshot: string | null;
+      bodySnapshot: string | null;
+      suppressedReason: string | null;
+      occurredAt: Date;
+      createdAt: Date;
+      updatedAt: Date;
+    },
+    actorUser: AdminAuditActorSummary | null,
+  ): AdminAuditTimelineRow {
+    return {
+      ...row,
+      actorUser,
+    };
+  }
+
+  private normalizeSecurityAuditLogRow(
+    row: {
+      id: string;
+      action: string;
+      outcome: SecurityAuditOutcome;
+      actorUserId: string | null;
+      resourceType: string | null;
+      resourceId: string | null;
+      targetUserId: string | null;
+      reason: string | null;
+      metadataJson: Prisma.JsonValue | null;
+      occurredAt: Date;
+    },
+    actorUser: AdminAuditActorSummary | null,
+  ): AdminAuditTimelineRow {
+    const targetEntityType =
+      row.resourceType ?? (row.targetUserId ? 'User' : null);
+    const targetEntityId = row.resourceId ?? row.targetUserId ?? null;
+    const metadataSnapshot =
+      row.metadataJson === null
+        ? null
+        : JSON.stringify(row.metadataJson, null, 2);
+
+    return {
+      id: row.id,
+      typeSlug: row.action,
+      category: NotificationCategory.SECURITY,
+      status: this.mapSecurityOutcomeToNotificationStatus(row.outcome),
+      source: AuditEventSource.SYSTEM,
+      actorUserId: row.actorUserId,
+      targetEntityType,
+      targetEntityId,
+      titleSnapshot: row.action,
+      subjectSnapshot:
+        targetEntityType && targetEntityId
+          ? `${targetEntityType}:${targetEntityId}`
+          : targetEntityId,
+      bodySnapshot:
+        metadataSnapshot ??
+        (row.reason
+          ? JSON.stringify(
+              { reason: row.reason, outcome: row.outcome },
+              null,
+              2,
+            )
+          : null),
+      suppressedReason: row.reason,
+      occurredAt: row.occurredAt,
+      createdAt: row.occurredAt,
+      updatedAt: row.occurredAt,
+      actorUser,
+    };
+  }
+
+  private mapSecurityOutcomeToNotificationStatus(
+    outcome: SecurityAuditOutcome,
+  ): NotificationStatus {
+    if (outcome === SecurityAuditOutcome.SUCCESS) {
+      return NotificationStatus.SENT;
+    }
+
+    if (outcome === SecurityAuditOutcome.FAILURE) {
+      return NotificationStatus.FAILED;
+    }
+
+    return NotificationStatus.SUPPRESSED;
+  }
+
+  private matchesAuditTimelineFilters(
+    row: AdminAuditTimelineRow,
+    input: {
+      actorRole?: UserRoleType;
+      eventFamily?: string;
+      category?: NotificationCategory;
+      severity?: AdminAuditSeverity;
+      source?: AdminAuditSource;
+      targetEntityType?: string;
+      search: string;
+      isUuidSearch: boolean;
+      statusFilter: NotificationStatus[];
+    },
+  ): boolean {
+    if (input.actorRole) {
+      const hasRole =
+        row.actorUser?.roles.some((role) => role.role === input.actorRole) ??
+        false;
+      if (!hasRole) {
+        return false;
+      }
+    }
+
+    if (input.eventFamily) {
+      const eventFamily = this.resolveTimelineEventFamily(row.typeSlug);
+      if (eventFamily !== input.eventFamily.toLowerCase()) {
+        return false;
+      }
+    }
+
+    if (input.category && row.category !== input.category) {
+      return false;
+    }
+
+    if (
+      input.source &&
+      row.source !== this.mapAuditSourceToEntity(input.source)
+    ) {
+      return false;
+    }
+
+    if (input.targetEntityType) {
+      const normalizedTargetType = row.targetEntityType?.toLowerCase() ?? '';
+      if (normalizedTargetType !== input.targetEntityType.toLowerCase()) {
+        return false;
+      }
+    }
+
+    if (
+      input.statusFilter.length > 0 &&
+      !input.statusFilter.includes(row.status)
+    ) {
+      return false;
+    }
+
+    if (
+      input.search.length > 0 &&
+      !this.matchesAuditSearch(row, input.search, input.isUuidSearch)
+    ) {
+      return false;
+    }
+
+    return true;
+  }
+
+  private matchesAuditSearch(
+    row: AdminAuditTimelineRow,
+    normalizedSearch: string,
+    isUuidSearch: boolean,
+  ): boolean {
+    const haystacks = [
+      row.typeSlug,
+      row.targetEntityType ?? '',
+      row.targetEntityId ?? '',
+      row.titleSnapshot ?? '',
+      row.subjectSnapshot ?? '',
+      row.bodySnapshot ?? '',
+      row.suppressedReason ?? '',
+      row.actorUser?.displayName ?? '',
+      row.actorUser?.roles.map((role) => role.role).join(' ') ?? '',
+    ];
+
+    if (isUuidSearch && row.actorUserId === normalizedSearch) {
+      return true;
+    }
+
+    return haystacks.some((value) =>
+      value.toLowerCase().includes(normalizedSearch.toLowerCase()),
+    );
+  }
+
+  private isUuidSearch(value: string): boolean {
+    if (!value) {
+      return false;
+    }
+
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+      value,
+    );
+  }
+
+  private resolveTimelineEventFamily(slug: string): string {
+    if (slug.startsWith('security.adminUsers.')) {
+      return 'admin';
+    }
+
+    if (
+      slug.startsWith('security.step_up.') ||
+      slug.startsWith('security.permission.')
+    ) {
+      return 'auth';
+    }
+
+    return (slug.split('.')[0] ?? 'system').toLowerCase();
   }
 
   private async upsertAuditEventFromNotification(
@@ -722,7 +1053,9 @@ export class OperationalNotificationRepository {
     notificationId: string,
   ) {
     const txWithAudit = tx as Prisma.TransactionClient & {
-      auditEvent?: { upsert: (args: Prisma.AuditEventUpsertArgs) => Promise<unknown> };
+      auditEvent?: {
+        upsert: (args: Prisma.AuditEventUpsertArgs) => Promise<unknown>;
+      };
     };
 
     if (!txWithAudit.auditEvent) {

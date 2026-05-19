@@ -38,9 +38,14 @@ export class AdminPaymentsRevenueReportController {
     description:
       'Financial reporting snapshot sourced from accounting journal entries and lines.',
   })
-  @ApiResponse({ status: 200, description: 'Payments & revenue report overview' })
+  @ApiResponse({
+    status: 200,
+    description: 'Payments & revenue report overview',
+  })
   @ApiUnauthorizedResponse({ description: 'Access token is required' })
-  @ApiForbiddenResponse({ description: 'Admin or support active account is required' })
+  @ApiForbiddenResponse({
+    description: 'Admin or support active account is required',
+  })
   async overview(@Query() query: GetAdminPaymentsRevenueReportOverviewDto) {
     const data = await this.getOverviewUseCase.execute(query);
     return { success: true as const, data };
@@ -53,10 +58,11 @@ export class AdminPaymentsRevenueReportController {
   })
   @ApiResponse({ status: 200, description: 'Payments & revenue report rows' })
   @ApiUnauthorizedResponse({ description: 'Access token is required' })
-  @ApiForbiddenResponse({ description: 'Admin or support active account is required' })
+  @ApiForbiddenResponse({
+    description: 'Admin or support active account is required',
+  })
   async rows(@Query() query: ListAdminPaymentsRevenueReportRowsDto) {
     const data = await this.listRowsUseCase.execute(query);
     return { success: true as const, data };
   }
 }
-

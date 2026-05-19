@@ -99,7 +99,12 @@ export default function RegisterBusinessForm() {
         setError(result.error || t("registrationError"));
       }
     } catch (err) {
-      console.error("Registration error:", err);
+      if (process.env.NODE_ENV === "development") {
+        console.error("Registration error:", {
+          name: err instanceof Error ? err.name : "UnknownError",
+          message: err instanceof Error ? err.message : String(err),
+        });
+      }
       setError(t("registrationError"));
     }
   };

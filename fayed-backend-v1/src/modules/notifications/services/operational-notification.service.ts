@@ -542,10 +542,10 @@ export class OperationalNotificationService {
       titleSnapshot: input.title,
       subjectSnapshot: input.title,
       bodySnapshot: input.body,
-        payloadJson: {
-          target: input.email,
-          ...(input.payload ?? {}),
-        },
+      payloadJson: {
+        target: input.email,
+        ...(input.payload ?? {}),
+      },
       relatedEntityType: input.relatedEntityType,
       relatedEntityId: input.relatedEntityId,
       scheduledFor: new Date(),

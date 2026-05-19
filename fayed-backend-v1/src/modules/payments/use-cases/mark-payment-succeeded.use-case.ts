@@ -102,9 +102,11 @@ export class MarkPaymentSucceededUseCase {
       return captured;
     });
 
-    const paymentMetadata = (payment.metadataJson ?? {}) as Record<string, unknown>;
-    const isAcademyEnrollment =
-      paymentMetadata.source === 'academy-enrollment';
+    const paymentMetadata = (payment.metadataJson ?? {}) as Record<
+      string,
+      unknown
+    >;
+    const isAcademyEnrollment = paymentMetadata.source === 'academy-enrollment';
 
     if (payment.paymentPurpose === PaymentPurpose.SESSION_PACKAGE_PURCHASE) {
       await this.reconcilePackagePurchasePaymentUseCase.execute({
@@ -140,6 +142,7 @@ export class MarkPaymentSucceededUseCase {
     if (!isAcademyEnrollment) {
       await this.redeemCouponUseCase.execute({
         couponId: updated.couponId,
+        couponCode: updated.couponCodeSnapshot?.toString() ?? null,
         sessionId: updated.sessionId,
         paymentId: updated.id,
         patientId: updated.patientId ?? '',
@@ -242,7 +245,8 @@ export class MarkPaymentSucceededUseCase {
 
     const source = sourceData as Record<string, unknown>;
     const type = typeof source.type === 'string' ? source.type.trim() : '';
-    const subType = typeof source.sub_type === 'string' ? source.sub_type.trim() : '';
+    const subType =
+      typeof source.sub_type === 'string' ? source.sub_type.trim() : '';
     const candidate = type || subType;
 
     return candidate ? candidate.toUpperCase() : null;

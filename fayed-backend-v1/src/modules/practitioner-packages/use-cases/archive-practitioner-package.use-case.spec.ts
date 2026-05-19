@@ -25,17 +25,17 @@ describe('ArchivePractitionerPackageUseCase', () => {
   });
 
   it('archives an active package softly', async () => {
-    (practitionerPackageRepository.findPractitionerProfileByUserId as jest.Mock).mockResolvedValue(
-      { id: 'practitioner-1' },
-    );
-    (practitionerPackageRepository.findByIdAndPractitionerId as jest.Mock).mockResolvedValue(
-      {
-        id: 'package-1',
-        practitionerId: 'practitioner-1',
-        status: PractitionerPackageStatus.ACTIVE,
-        archivedAt: null,
-      },
-    );
+    (
+      practitionerPackageRepository.findPractitionerProfileByUserId as jest.Mock
+    ).mockResolvedValue({ id: 'practitioner-1' });
+    (
+      practitionerPackageRepository.findByIdAndPractitionerId as jest.Mock
+    ).mockResolvedValue({
+      id: 'package-1',
+      practitionerId: 'practitioner-1',
+      status: PractitionerPackageStatus.ACTIVE,
+      archivedAt: null,
+    });
     (practitionerPackageRepository.updateById as jest.Mock).mockResolvedValue({
       id: 'package-1',
       status: PractitionerPackageStatus.ARCHIVED,
@@ -63,17 +63,17 @@ describe('ArchivePractitionerPackageUseCase', () => {
   });
 
   it('rejects archiving packages disabled by admin', async () => {
-    (practitionerPackageRepository.findPractitionerProfileByUserId as jest.Mock).mockResolvedValue(
-      { id: 'practitioner-1' },
-    );
-    (practitionerPackageRepository.findByIdAndPractitionerId as jest.Mock).mockResolvedValue(
-      {
-        id: 'package-1',
-        practitionerId: 'practitioner-1',
-        status: PractitionerPackageStatus.DISABLED_BY_ADMIN,
-        archivedAt: null,
-      },
-    );
+    (
+      practitionerPackageRepository.findPractitionerProfileByUserId as jest.Mock
+    ).mockResolvedValue({ id: 'practitioner-1' });
+    (
+      practitionerPackageRepository.findByIdAndPractitionerId as jest.Mock
+    ).mockResolvedValue({
+      id: 'package-1',
+      practitionerId: 'practitioner-1',
+      status: PractitionerPackageStatus.DISABLED_BY_ADMIN,
+      archivedAt: null,
+    });
 
     await expect(
       useCase.execute({

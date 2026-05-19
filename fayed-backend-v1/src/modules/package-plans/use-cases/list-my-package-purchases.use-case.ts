@@ -19,7 +19,9 @@ export class ListMyPackagePurchasesUseCase {
     locale: SupportedLocale;
     query: ListMyPackagePurchasesDto;
   }): Promise<PatientPackagePurchasesListResultViewModel> {
-    const patient = await this.patientProfileRepository.findByUserId(input.userId);
+    const patient = await this.patientProfileRepository.findByUserId(
+      input.userId,
+    );
 
     if (!patient) {
       throw new NotFoundException({
@@ -32,13 +34,12 @@ export class ListMyPackagePurchasesUseCase {
     const limit = input.query.limit ?? 20;
     const skip = (page - 1) * limit;
 
-    const [purchases, totalItems] = await this.packagePurchaseRepository.listByPatient(
-      {
+    const [purchases, totalItems] =
+      await this.packagePurchaseRepository.listByPatient({
         patientId: patient.id,
         skip,
         take: limit,
-      },
-    );
+      });
 
     return {
       items: purchases.map((purchase) =>

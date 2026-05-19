@@ -1,5 +1,8 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { PackageSettlementStatus, PatientPackagePurchaseStatus } from '@prisma/client';
+import {
+  PackageSettlementStatus,
+  PatientPackagePurchaseStatus,
+} from '@prisma/client';
 import { PaginationDto } from './financial-operations-response.dto';
 
 export class PackageSettlementItemDto {

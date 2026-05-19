@@ -17,7 +17,10 @@ export class PractitionerPackageRepository {
     return tx ?? this.prisma;
   }
 
-  findPractitionerProfileByUserId(userId: string, tx?: Prisma.TransactionClient) {
+  findPractitionerProfileByUserId(
+    userId: string,
+    tx?: Prisma.TransactionClient,
+  ) {
     return this.getDb(tx).practitionerProfile.findUnique({
       where: { userId },
       select: {
@@ -119,9 +122,7 @@ export class PractitionerPackageRepository {
     const skip = (input.page - 1) * input.limit;
     const db = this.getDb(input.tx);
     const where: Prisma.PractitionerPackageWhereInput = {
-      ...(input.practitionerId
-        ? { practitionerId: input.practitionerId }
-        : {}),
+      ...(input.practitionerId ? { practitionerId: input.practitionerId } : {}),
       ...(input.status ? { status: input.status } : {}),
       ...(input.q
         ? {

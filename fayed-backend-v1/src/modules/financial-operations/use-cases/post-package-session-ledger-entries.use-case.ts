@@ -1,9 +1,9 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import {
-  PaymentStatus,
-  Prisma,
-  SessionStatus,
-} from '@prisma/client';
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { PaymentStatus, Prisma, SessionStatus } from '@prisma/client';
 import { PrismaService } from '@common/prisma/prisma.service';
 import { PackageSettlementService } from '../services/package-settlement.service';
 
@@ -14,10 +14,7 @@ export class PostPackageSessionLedgerEntriesUseCase {
     private readonly packageSettlementService: PackageSettlementService,
   ) {}
 
-  async execute(input: {
-    sessionId: string;
-    tx?: Prisma.TransactionClient;
-  }) {
+  async execute(input: { sessionId: string; tx?: Prisma.TransactionClient }) {
     const db = input.tx ?? this.prisma;
     const session = await db.session.findUnique({
       where: { id: input.sessionId },
@@ -57,7 +54,10 @@ export class PostPackageSessionLedgerEntriesUseCase {
       });
     }
 
-    if (session.paymentCoverageType !== 'PACKAGE' || !session.packagePurchaseId) {
+    if (
+      session.paymentCoverageType !== 'PACKAGE' ||
+      !session.packagePurchaseId
+    ) {
       return {
         wasAlreadyPosted: true,
         ledgerEntries: [],
@@ -119,7 +119,7 @@ export class PostPackageSessionLedgerEntriesUseCase {
       (linkedSession) => linkedSession.status === SessionStatus.COMPLETED,
     );
 
-    await this.packageSettlementService.syncFromPurchase(purchase, db as Prisma.TransactionClient);
+    await this.packageSettlementService.syncFromPurchase(purchase, db);
 
     if (
       completedSessions.length === purchase.sessions.length &&

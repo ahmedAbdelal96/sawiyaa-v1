@@ -1,6 +1,13 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { NotificationCategory, NotificationStatus, UserRoleType } from '@prisma/client';
-import { AdminAuditSeverity, AdminAuditSource } from './list-admin-audit-events.dto';
+import {
+  NotificationCategory,
+  NotificationStatus,
+  UserRoleType,
+} from '@prisma/client';
+import {
+  AdminAuditSeverity,
+  AdminAuditSource,
+} from './list-admin-audit-events.dto';
 
 export class AdminAuditPaginationDto {
   @ApiProperty()

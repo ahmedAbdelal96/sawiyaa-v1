@@ -1,4 +1,8 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '@common/prisma/prisma.service';
 import { SessionEventType, SessionStatus } from '@prisma/client';
 import { SessionRepository } from '@modules/sessions/repositories/session.repository';
@@ -16,7 +20,9 @@ export class ExpirePackagePurchaseUseCase {
 
   async execute(input: { purchaseId: string; now?: Date }) {
     const now = input.now ?? new Date();
-    const purchase = await this.packagePurchaseRepository.findById(input.purchaseId);
+    const purchase = await this.packagePurchaseRepository.findById(
+      input.purchaseId,
+    );
 
     if (!purchase) {
       throw new NotFoundException({
@@ -40,14 +46,15 @@ export class ExpirePackagePurchaseUseCase {
     }
 
     const expired = await this.prisma.$transaction(async (tx) => {
-      const expiredPurchase = await this.packagePurchaseRepository.updateExpiryStatus(
-        purchase.id,
-        {
-          status: 'EXPIRED',
-          expiredAt: now,
-        },
-        tx,
-      );
+      const expiredPurchase =
+        await this.packagePurchaseRepository.updateExpiryStatus(
+          purchase.id,
+          {
+            status: 'EXPIRED',
+            expiredAt: now,
+          },
+          tx,
+        );
 
       const linkedSessions = expiredPurchase.sessions.filter(
         (session) => session.status === SessionStatus.PENDING_PAYMENT,

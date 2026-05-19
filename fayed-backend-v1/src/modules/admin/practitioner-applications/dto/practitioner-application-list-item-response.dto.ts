@@ -9,6 +9,7 @@ import {
   PractitionerType,
   UserStatus,
 } from '@prisma/client';
+import { PractitionerApplicationCompletionResponseDto } from '@modules/practitioners/dto/practitioner-application-completion-response.dto';
 import { AdminPractitionerApplicationKind } from '../types/practitioner-applications-admin.types';
 
 export class AdminSpecialtySummaryResponseDto {
@@ -294,6 +295,8 @@ export class AdminReadinessSnapshotResponseDto {
   canRequestChanges!: boolean;
 }
 
+export class AdminPractitionerApplicationCompletionResponseDto extends PractitionerApplicationCompletionResponseDto {}
+
 export class PractitionerApplicationDetailsResponseDto {
   @ApiProperty({ type: AdminApplicantBasicsResponseDto })
   applicant!: AdminApplicantBasicsResponseDto;
@@ -327,6 +330,9 @@ export class PractitionerApplicationDetailsResponseDto {
 
   @ApiProperty({ type: AdminReadinessSnapshotResponseDto })
   readinessSnapshot!: AdminReadinessSnapshotResponseDto;
+
+  @ApiProperty({ type: AdminPractitionerApplicationCompletionResponseDto })
+  completion!: AdminPractitionerApplicationCompletionResponseDto;
 }
 
 export class PractitionerApplicationDetailsSuccessResponseDto {

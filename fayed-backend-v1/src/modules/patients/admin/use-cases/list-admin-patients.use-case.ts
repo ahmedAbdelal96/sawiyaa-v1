@@ -45,7 +45,8 @@ export class ListAdminPatientsUseCase {
         ? {
             id: rows[0].id,
             userId: rows[0].userId,
-            displayName: rows[0].user.displayName ?? rows[0].displayName ?? null,
+            displayName:
+              rows[0].user.displayName ?? rows[0].displayName ?? null,
           }
         : null,
     });

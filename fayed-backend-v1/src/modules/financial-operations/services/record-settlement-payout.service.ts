@@ -199,20 +199,20 @@ export class RecordSettlementPayoutService {
     );
 
     await this.accountingJournalPostingService.postPractitionerPayout({
-        payout: {
-          payoutId: payoutRecord.id,
-          settlementId: input.settlement.id,
-          practitionerId: input.settlement.practitionerId,
-          amountPaid,
-          settlementAppliedAmount,
-          currencyCode: input.settlement.currencyCode,
-          effectiveAt,
-          payoutMethodSnapshot: payoutMethodSnapshot as Prisma.JsonValue,
-          transferFeeAmount,
-          transferFeeTreatment,
-        },
-        tx,
-      });
+      payout: {
+        payoutId: payoutRecord.id,
+        settlementId: input.settlement.id,
+        practitionerId: input.settlement.practitionerId,
+        amountPaid,
+        settlementAppliedAmount,
+        currencyCode: input.settlement.currencyCode,
+        effectiveAt,
+        payoutMethodSnapshot: payoutMethodSnapshot as Prisma.JsonValue,
+        transferFeeAmount,
+        transferFeeTreatment,
+      },
+      tx,
+    });
 
     return {
       payoutRecord:

@@ -8,7 +8,10 @@ import { AccountingJournalPostingService } from './accounting-journal-posting.se
 
 describe('AccountingJournalPostingService', () => {
   function buildService(input?: {
-    existingSource?: { sourceType: JournalEntrySourceType; sourceId: string } | null;
+    existingSource?: {
+      sourceType: JournalEntrySourceType;
+      sourceId: string;
+    } | null;
   }) {
     const ledgerAccountUpsert = jest
       .fn()
@@ -17,21 +20,24 @@ describe('AccountingJournalPostingService', () => {
         code: where.code_currencyCode.code,
       }));
 
-    const journalEntryFindUnique = jest.fn().mockImplementation(({ where }: any) => {
-      if (
-        input?.existingSource &&
-        where.sourceType_sourceId.sourceType === input.existingSource.sourceType &&
-        where.sourceType_sourceId.sourceId === input.existingSource.sourceId
-      ) {
-        return {
-          id: 'journal_existing',
-          sourceType: where.sourceType_sourceId.sourceType,
-          sourceId: where.sourceType_sourceId.sourceId,
-          lines: [{ id: 'line_existing' }],
-        };
-      }
-      return null;
-    });
+    const journalEntryFindUnique = jest
+      .fn()
+      .mockImplementation(({ where }: any) => {
+        if (
+          input?.existingSource &&
+          where.sourceType_sourceId.sourceType ===
+            input.existingSource.sourceType &&
+          where.sourceType_sourceId.sourceId === input.existingSource.sourceId
+        ) {
+          return {
+            id: 'journal_existing',
+            sourceType: where.sourceType_sourceId.sourceType,
+            sourceId: where.sourceType_sourceId.sourceId,
+            lines: [{ id: 'line_existing' }],
+          };
+        }
+        return null;
+      });
     const journalEntryCreate = jest.fn().mockResolvedValue({
       id: 'journal_1',
     });

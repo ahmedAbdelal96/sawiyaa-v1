@@ -20,4 +20,18 @@ export enum PermissionKey {
   PATIENTS_SENSITIVE_READ = 'patients.sensitive.read',
   SUPPORT_TICKET_NOTE_INTERNAL = 'support.ticket.note.internal',
   SUPPORT_TICKET_ASSIGN = 'support.ticket.assign',
+  PRACTITIONER_APPLICATIONS_READ = 'practitionerApplications.read',
+  PRACTITIONER_APPLICATIONS_APPROVE = 'practitionerApplications.approve',
+  PRACTITIONER_APPLICATIONS_REJECT = 'practitionerApplications.reject',
+  PRACTITIONER_APPLICATIONS_REQUEST_CHANGES = 'practitionerApplications.requestChanges',
+
+  ADMIN_USERS_READ = 'admin-users.read',
+  ADMIN_USERS_CREATE = 'admin-users.create',
+  ADMIN_USERS_UPDATE = 'admin-users.update',
+  ADMIN_USERS_STATUS_UPDATE = 'admin-users.status.update',
+  ADMIN_USERS_ROLES_UPDATE = 'admin-users.roles.update',
+  ADMIN_USERS_PERMISSION_OVERRIDES_READ = 'admin-users.permission-overrides.read',
+  ADMIN_USERS_PERMISSION_OVERRIDES_UPDATE = 'admin-users.permission-overrides.update',
+  ADMIN_USERS_SESSIONS_REVOKE = 'admin-users.sessions.revoke',
+  ADMIN_USERS_TOKEN_VERSION_INVALIDATE = 'admin-users.token-version.invalidate',
 }

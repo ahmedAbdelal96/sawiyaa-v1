@@ -1,6 +1,15 @@
 import { registerAs } from '@nestjs/config';
 
 export default registerAs('auth', () => ({
+  cookieAuthEnabled:
+    process.env.AUTH_COOKIE_AUTH_ENABLED !== undefined
+      ? process.env.AUTH_COOKIE_AUTH_ENABLED === 'true'
+      : (process.env.NODE_ENV ?? 'development') !== 'production',
+  csrf: {
+    enforcementEnabled: process.env.AUTH_CSRF_ENFORCEMENT_ENABLED === 'true',
+    cookieName: process.env.AUTH_CSRF_COOKIE_NAME ?? 'fayed_csrf_token',
+    headerName: process.env.AUTH_CSRF_HEADER_NAME ?? 'x-csrf-token',
+  },
   jwt: {
     accessSecret: process.env.JWT_ACCESS_SECRET,
     refreshSecret: process.env.JWT_REFRESH_SECRET,

@@ -62,7 +62,9 @@ export class AdminArticlesController {
   ) {}
 
   @Post('cover-upload')
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(
+    FileInterceptor('file', { limits: { fileSize: 10 * 1024 * 1024 } }),
+  )
   @ApiOperation({ summary: 'Upload article cover image (admin only)' })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
@@ -78,7 +80,7 @@ export class AdminArticlesController {
     @UploadedFile()
     file: { buffer: Buffer; mimetype: string } | undefined,
   ) {
-    if (!file?.buffer) {
+    if (!file?.buffer || file.buffer.length <= 0) {
       throw new BadRequestException('Missing cover image file');
     }
 

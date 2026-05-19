@@ -33,11 +33,15 @@ import { PatientEmailPasswordLoginDto } from '../dto/patient-email-password-logi
 import { PatientEmailPasswordRegisterDto } from '../dto/patient-email-password-register.dto';
 import { PatientGoogleAuthDto } from '../dto/patient-google-auth.dto';
 import { RefreshTokenDto } from '../dto/refresh-token.dto';
+import { ForgotPasswordDto } from '../dto/forgot-password.dto';
+import { ResetPasswordDto } from '../dto/reset-password.dto';
 import { LoginPatientWithEmailPasswordUseCase } from '../use-cases/login-patient-with-email-password.use-case';
 import { LogoutPatientUseCase } from '../use-cases/logout-patient.use-case';
 import { RefreshPatientTokenUseCase } from '../use-cases/refresh-patient-token.use-case';
 import { RegisterPatientWithEmailPasswordUseCase } from '../use-cases/register-patient-with-email-password.use-case';
 import { RegisterPatientWithGoogleUseCase } from '../use-cases/register-patient-with-google.use-case';
+import { RequestPatientPasswordResetUseCase } from '../use-cases/request-patient-password-reset.use-case';
+import { ResetPatientPasswordUseCase } from '../use-cases/reset-patient-password.use-case';
 import { getRequestDeviceContext } from '../utils/request-device-context.util';
 
 @ApiTags('Auth - Patient')
@@ -50,6 +54,8 @@ export class PatientAuthController {
     private readonly loginPatientWithEmailPasswordUseCase: LoginPatientWithEmailPasswordUseCase,
     private readonly refreshPatientTokenUseCase: RefreshPatientTokenUseCase,
     private readonly logoutPatientUseCase: LogoutPatientUseCase,
+    private readonly requestPatientPasswordResetUseCase: RequestPatientPasswordResetUseCase,
+    private readonly resetPatientPasswordUseCase: ResetPatientPasswordUseCase,
   ) {}
 
   /** Google patient auth acts as register-or-login depending on whether the Google identity already exists. */
@@ -203,5 +209,51 @@ export class PatientAuthController {
     return {
       message: this.i18nService.t('auth.success.patientLoggedOut', locale),
     };
+  }
+
+  /** Forgot-password never reveals whether the patient account exists; it only queues a reset challenge when safe. */
+  @Public()
+  @Post('forgot-password')
+  @HttpCode(200)
+  @ThrottlePolicy('auth-patient-forgot-password')
+  @ApiOperation({ summary: 'Request a patient password reset OTP' })
+  @ApiBody({ type: ForgotPasswordDto })
+  @ApiResponse({ status: 200, type: MessageEnvelopeResponseDto })
+  @ApiBadRequestResponse({ description: 'Validation failed' })
+  async forgotPassword(
+    @Body() dto: ForgotPasswordDto,
+    @CurrentLocale() locale: SupportedLocale,
+  ) {
+    return this.requestPatientPasswordResetUseCase.execute({
+      email: dto.email,
+      locale,
+    });
+  }
+
+  /** Reset-password consumes a reset OTP and rotates the patient password hash. */
+  @Public()
+  @Post('reset-password')
+  @HttpCode(200)
+  @ThrottlePolicy('auth-patient-reset-password')
+  @ApiOperation({ summary: 'Reset a patient password using an OTP code' })
+  @ApiBody({ type: ResetPasswordDto })
+  @ApiResponse({ status: 200, type: MessageEnvelopeResponseDto })
+  @ApiBadRequestResponse({ description: 'Validation failed' })
+  @ApiUnauthorizedResponse({
+    description: 'OTP challenge is invalid or expired',
+  })
+  @ApiForbiddenResponse({
+    description: 'Reset flow is not allowed for the resolved account',
+  })
+  async resetPassword(
+    @Body() dto: ResetPasswordDto,
+    @CurrentLocale() locale: SupportedLocale,
+  ) {
+    return this.resetPatientPasswordUseCase.execute({
+      email: dto.email,
+      code: dto.code,
+      newPassword: dto.newPassword,
+      locale,
+    });
   }
 }

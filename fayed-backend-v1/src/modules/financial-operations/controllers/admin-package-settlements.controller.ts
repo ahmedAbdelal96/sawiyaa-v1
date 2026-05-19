@@ -20,6 +20,7 @@ import {
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { CurrentUser } from '@common/decorators/current-user.decorator';
+import { RequireStepUp } from '@common/decorators/step-up.decorator';
 import { RequireAccountStates } from '@common/decorators/account-state.decorator';
 import { Permissions } from '@common/decorators/permissions.decorator';
 import { Roles } from '@common/decorators/roles.decorator';
@@ -92,6 +93,7 @@ export class AdminPackageSettlementsController {
   }
 
   @Post(':id/release')
+  @RequireStepUp('finance.package-settlement.release')
   @ApiOperation({
     summary: 'Release ready package settlement',
     description:

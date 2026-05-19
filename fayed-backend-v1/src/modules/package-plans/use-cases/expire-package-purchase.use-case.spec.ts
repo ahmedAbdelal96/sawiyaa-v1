@@ -38,7 +38,9 @@ describe('ExpirePackagePurchaseUseCase', () => {
         { id: 'session-2', status: SessionStatus.PENDING_PAYMENT },
       ],
     });
-    (packagePurchaseRepository.updateExpiryStatus as jest.Mock).mockResolvedValue({
+    (
+      packagePurchaseRepository.updateExpiryStatus as jest.Mock
+    ).mockResolvedValue({
       id: 'purchase-1',
       status: 'EXPIRED',
       sessions: [
@@ -86,7 +88,9 @@ describe('ExpirePackagePurchaseUseCase', () => {
         paymentExpiresAt: new Date('2026-01-01T00:00:00.000Z'),
         sessions: [],
       });
-    (packagePurchaseRepository.updateExpiryStatus as jest.Mock).mockResolvedValue({
+    (
+      packagePurchaseRepository.updateExpiryStatus as jest.Mock
+    ).mockResolvedValue({
       id: 'purchase-1',
       status: 'EXPIRED',
       sessions: [],
@@ -102,7 +106,9 @@ describe('ExpirePackagePurchaseUseCase', () => {
     });
 
     expect(second.expired).toBe(false);
-    expect(packagePurchaseRepository.updateExpiryStatus).toHaveBeenCalledTimes(1);
+    expect(packagePurchaseRepository.updateExpiryStatus).toHaveBeenCalledTimes(
+      1,
+    );
     expect(sessionRepository.updateStatus).not.toHaveBeenCalled();
   });
 

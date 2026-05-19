@@ -82,7 +82,6 @@ export class AllExceptionsFilter implements ExceptionFilter {
         errors = Array.isArray(res.message) ? (res.message as unknown[]) : [];
       }
     } else if (exception instanceof Error) {
-      message = exception.message;
       messageKey = this.resolveHttpMessageKey(status);
       errorCode = this.resolveHttpErrorCode(status);
     }

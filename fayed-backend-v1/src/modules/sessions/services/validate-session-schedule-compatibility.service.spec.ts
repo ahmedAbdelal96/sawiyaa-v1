@@ -8,6 +8,9 @@ describe('ValidateSessionScheduleCompatibilityService', () => {
   const availabilityExceptionRepository = {
     listActiveForRange: jest.fn(),
   };
+  const sessionRepository = {
+    listBlockingSessionRangesInRangeForPractitioner: jest.fn(),
+  };
   const resolvePractitionerTimezoneService = {
     resolve: jest.fn().mockReturnValue('UTC'),
   };
@@ -20,6 +23,7 @@ describe('ValidateSessionScheduleCompatibilityService', () => {
     availabilityExceptionRepository as any,
     resolvePractitionerTimezoneService as any,
     buildAvailabilityWindowsService as any,
+    sessionRepository as any,
   );
 
   beforeEach(() => {
@@ -29,6 +33,7 @@ describe('ValidateSessionScheduleCompatibilityService', () => {
   it('accepts a matching weekly window duration', async () => {
     availabilitySlotRepository.listActiveByPractitioner.mockResolvedValue([]);
     availabilityExceptionRepository.listActiveForRange.mockResolvedValue([]);
+    sessionRepository.listBlockingSessionRangesInRangeForPractitioner.mockResolvedValue([]);
     buildAvailabilityWindowsService.buildForRange.mockReturnValue([
       {
         startsAt: '2026-04-05T08:00:00.000Z',
@@ -51,6 +56,7 @@ describe('ValidateSessionScheduleCompatibilityService', () => {
   it('rejects a duration that does not match the available window', async () => {
     availabilitySlotRepository.listActiveByPractitioner.mockResolvedValue([]);
     availabilityExceptionRepository.listActiveForRange.mockResolvedValue([]);
+    sessionRepository.listBlockingSessionRangesInRangeForPractitioner.mockResolvedValue([]);
     buildAvailabilityWindowsService.buildForRange.mockReturnValue([
       {
         startsAt: '2026-04-05T08:00:00.000Z',
@@ -73,6 +79,7 @@ describe('ValidateSessionScheduleCompatibilityService', () => {
   it('allows wildcard extra availability windows for any duration', async () => {
     availabilitySlotRepository.listActiveByPractitioner.mockResolvedValue([]);
     availabilityExceptionRepository.listActiveForRange.mockResolvedValue([]);
+    sessionRepository.listBlockingSessionRangesInRangeForPractitioner.mockResolvedValue([]);
     buildAvailabilityWindowsService.buildForRange.mockReturnValue([
       {
         startsAt: '2026-04-05T08:00:00.000Z',
@@ -90,5 +97,40 @@ describe('ValidateSessionScheduleCompatibilityService', () => {
         requestedDurationMinutes: 60,
       }),
     ).resolves.toEqual({ timezone: 'UTC' });
+  });
+
+  it('passes overlapping blocking sessions into availability calculation', async () => {
+    availabilitySlotRepository.listActiveByPractitioner.mockResolvedValue([]);
+    availabilityExceptionRepository.listActiveForRange.mockResolvedValue([]);
+    sessionRepository.listBlockingSessionRangesInRangeForPractitioner.mockResolvedValue([
+      {
+        scheduledStartAt: new Date('2026-04-05T08:00:00.000Z'),
+        scheduledEndAt: new Date('2026-04-05T08:30:00.000Z'),
+      },
+    ]);
+    buildAvailabilityWindowsService.buildForRange.mockReturnValue([]);
+
+    await expect(
+      service.assertFitsPractitionerAvailability({
+        practitionerId: 'practitioner-1',
+        practitionerTimezone: 'UTC',
+        requestedStartAtUtc: new Date('2026-04-05T08:00:00.000Z'),
+        requestedEndAtUtc: new Date('2026-04-05T08:30:00.000Z'),
+        requestedDurationMinutes: 30,
+      }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+
+    expect(
+      buildAvailabilityWindowsService.buildForRange,
+    ).toHaveBeenCalledWith(
+      expect.objectContaining({
+        bookedSessions: [
+          {
+            startsAt: new Date('2026-04-05T08:00:00.000Z'),
+            endsAt: new Date('2026-04-05T08:30:00.000Z'),
+          },
+        ],
+      }),
+    );
   });
 });

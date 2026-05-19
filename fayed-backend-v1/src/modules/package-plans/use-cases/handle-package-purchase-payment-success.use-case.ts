@@ -1,4 +1,8 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
   Payment,
@@ -94,7 +98,10 @@ export class HandlePackagePurchasePaymentSuccessUseCase {
       !purchase.activatedAt ||
       pendingSessions.length > 0;
 
-    if (purchase.status === PatientPackagePurchaseStatus.ACTIVE && !shouldRepairPurchase) {
+    if (
+      purchase.status === PatientPackagePurchaseStatus.ACTIVE &&
+      !shouldRepairPurchase
+    ) {
       await this.packageSettlementService.reconcilePurchase(purchase);
 
       return {
@@ -103,7 +110,8 @@ export class HandlePackagePurchasePaymentSuccessUseCase {
     }
 
     const now = new Date();
-    const joinLeadMinutes = this.configService.get<number>('session.joinLeadMinutes') ?? 15;
+    const joinLeadMinutes =
+      this.configService.get<number>('session.joinLeadMinutes') ?? 15;
 
     const activated = await this.prisma.$transaction(async (tx) => {
       const updatedPurchase = await this.packagePurchaseRepository.updateStatus(
@@ -205,9 +213,8 @@ export class HandlePackagePurchasePaymentSuccessUseCase {
   }
 
   private async resolvePurchase(payment: Payment) {
-    const purchaseByPayment = await this.packagePurchaseRepository.findByPaymentId(
-      payment.id,
-    );
+    const purchaseByPayment =
+      await this.packagePurchaseRepository.findByPaymentId(payment.id);
 
     if (purchaseByPayment) {
       return purchaseByPayment;

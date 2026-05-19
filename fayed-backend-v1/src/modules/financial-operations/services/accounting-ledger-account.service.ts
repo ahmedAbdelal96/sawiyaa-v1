@@ -1,9 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import {
-  LedgerAccountScope,
-  LedgerAccountType,
-  Prisma,
-} from '@prisma/client';
+import { LedgerAccountScope, LedgerAccountType, Prisma } from '@prisma/client';
 import { PrismaService } from '@common/prisma/prisma.service';
 import {
   PLATFORM_LEDGER_ACCOUNT_CODES,
@@ -24,7 +20,10 @@ export class AccountingLedgerAccountService {
     return `LIABILITY_PRACTITIONER_PAYABLE:${practitionerId}`;
   }
 
-  async ensurePlatformAccounts(currencyCode: string, tx?: Prisma.TransactionClient) {
+  async ensurePlatformAccounts(
+    currencyCode: string,
+    tx?: Prisma.TransactionClient,
+  ) {
     const db = this.getDb(tx);
     const entries = await Promise.all(
       PLATFORM_LEDGER_ACCOUNT_SEEDS.map((seed) =>
@@ -58,7 +57,9 @@ export class AccountingLedgerAccountService {
     const byCode = new Map(entries.map((item) => [item.code, item.id]));
 
     return {
-      platformCashAccountId: byCode.get(PLATFORM_LEDGER_ACCOUNT_CODES.platformCash)!,
+      platformCashAccountId: byCode.get(
+        PLATFORM_LEDGER_ACCOUNT_CODES.platformCash,
+      )!,
       gatewayClearingAccountId: byCode.get(
         PLATFORM_LEDGER_ACCOUNT_CODES.gatewayClearing,
       )!,
@@ -71,7 +72,9 @@ export class AccountingLedgerAccountService {
       customerWalletLiabilityAccountId: byCode.get(
         PLATFORM_LEDGER_ACCOUNT_CODES.customerWalletLiability,
       )!,
-      vatPayableAccountId: byCode.get(PLATFORM_LEDGER_ACCOUNT_CODES.vatPayable)!,
+      vatPayableAccountId: byCode.get(
+        PLATFORM_LEDGER_ACCOUNT_CODES.vatPayable,
+      )!,
       gatewayFeesExpenseAccountId: byCode.get(
         PLATFORM_LEDGER_ACCOUNT_CODES.gatewayFeesExpense,
       )!,

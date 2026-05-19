@@ -119,7 +119,9 @@ export class RecordAdminPractitionerManualPayoutDto {
   @MaxLength(191)
   transferReference?: string;
 
-  @ApiPropertyOptional({ example: 'Paid partially via bank transfer outside the platform.' })
+  @ApiPropertyOptional({
+    example: 'Paid partially via bank transfer outside the platform.',
+  })
   @IsOptional()
   @IsString()
   @MaxLength(500)

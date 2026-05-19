@@ -51,7 +51,9 @@ export class AccountingReconciliationService {
   }) {
     const anomalies: ReconciliationAnomaly[] = [];
     const journalAmount = input.journal
-      ? this.toMoney(this.parseMetadata(input.journal.metadataJson)['amountTotal'])
+      ? this.toMoney(
+          this.parseMetadata(input.journal.metadataJson)['amountTotal'],
+        )
       : null;
 
     if (!input.journal) {
@@ -127,7 +129,8 @@ export class AccountingReconciliationService {
       anomalies.push({
         code: 'MISSING_CANCELLATION_CONTEXT',
         level: 'WARNING',
-        message: 'Refund is linked to cancellation policy without full context snapshot.',
+        message:
+          'Refund is linked to cancellation policy without full context snapshot.',
       });
     }
 
@@ -175,11 +178,15 @@ export class AccountingReconciliationService {
     const transferFeeFromSnapshot = this.toMoney(
       this.parseMetadata(input.payoutMethodSnapshot)['transferFeeAmount'],
     );
-    if (input.transferFeeAmount && !transferFeeFromSnapshot.equals(input.transferFeeAmount)) {
+    if (
+      input.transferFeeAmount &&
+      !transferFeeFromSnapshot.equals(input.transferFeeAmount)
+    ) {
       anomalies.push({
         code: 'MISSING_TRANSFER_FEE_SNAPSHOT',
         level: 'WARNING',
-        message: 'Payout transfer fee snapshot does not match payout transfer fee amount.',
+        message:
+          'Payout transfer fee snapshot does not match payout transfer fee amount.',
       });
     }
 

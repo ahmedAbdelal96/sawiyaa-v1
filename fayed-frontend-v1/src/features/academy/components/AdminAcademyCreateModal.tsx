@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useMemo, useState, type FormEvent } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { Plus } from "lucide-react";
@@ -64,9 +64,14 @@ function localDateTimeToIso(value: string) {
   return Number.isNaN(date.getTime()) ? undefined : date.toISOString();
 }
 
-export default function AdminAcademyCreateModal({ isOpen, onClose }: Props) {
+function AdminAcademyCreateModalForm({
+  locale,
+  onClose,
+}: {
+  locale: string;
+  onClose: () => void;
+}) {
   const t = useTranslations("academy");
-  const locale = useLocale();
   const router = useRouter();
   const createMutation = useCreateAdminAcademyCourse();
 
@@ -101,13 +106,6 @@ export default function AdminAcademyCreateModal({ isOpen, onClose }: Props) {
 
     return t("admin.create.validation.required");
   };
-
-  useEffect(() => {
-    if (!isOpen) return;
-    setFeedback(null);
-    setFieldErrors({});
-    setForm(createInitialForm());
-  }, [isOpen, locale]);
 
   const resetAndClose = () => {
     setForm(createInitialForm());
@@ -225,15 +223,14 @@ export default function AdminAcademyCreateModal({ isOpen, onClose }: Props) {
   }, [form.plannedDurationDays, form.startsAt, locale]);
 
   return (
-    <Modal isOpen={isOpen} onClose={resetAndClose} size="xl">
-      <form onSubmit={handleSubmit} className="flex max-h-[calc(100vh-2rem)] flex-col">
-        <ModalHeader
-          eyebrow={t("admin.create.badge")}
-          title={t("admin.create.title")}
-          description={t("admin.create.note")}
-        />
+    <form onSubmit={handleSubmit} className="flex max-h-[calc(100vh-2rem)] flex-col">
+      <ModalHeader
+        eyebrow={t("admin.create.badge")}
+        title={t("admin.create.title")}
+        description={t("admin.create.note")}
+      />
 
-        <ModalBody>
+      <ModalBody>
           <div className="space-y-4">
             <section className="rounded-3xl border border-border-light bg-surface-secondary/55 p-4 sm:p-5">
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">
@@ -447,21 +444,30 @@ export default function AdminAcademyCreateModal({ isOpen, onClose }: Props) {
               {feedback.message}
             </p>
           ) : null}
-        </ModalBody>
+      </ModalBody>
 
-        <ModalFooter>
-          <Button variant="outline" onClick={resetAndClose} disabled={createMutation.isPending}>
-            {t("admin.create.cancel")}
-          </Button>
-          <Button
-            type="submit"
-            disabled={createMutation.isPending}
-            startIcon={<Plus className="h-4 w-4" />}
-          >
-            {createMutation.isPending ? t("admin.create.saving") : t("admin.create.submit")}
-          </Button>
-        </ModalFooter>
-      </form>
+      <ModalFooter>
+        <Button variant="outline" onClick={resetAndClose} disabled={createMutation.isPending}>
+          {t("admin.create.cancel")}
+        </Button>
+        <Button
+          type="submit"
+          disabled={createMutation.isPending}
+          startIcon={<Plus className="h-4 w-4" />}
+        >
+          {createMutation.isPending ? t("admin.create.saving") : t("admin.create.submit")}
+        </Button>
+      </ModalFooter>
+    </form>
+  );
+}
+
+export default function AdminAcademyCreateModal({ isOpen, onClose }: Props) {
+  const locale = useLocale();
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} size="xl">
+      {isOpen ? <AdminAcademyCreateModalForm key={locale} locale={locale} onClose={onClose} /> : null}
     </Modal>
   );
 }

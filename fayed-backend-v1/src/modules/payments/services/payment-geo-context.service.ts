@@ -2,11 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { MarketType, PaymentProvider } from '@prisma/client';
 import { PrismaService } from '@common/prisma/prisma.service';
 
-export type PaymentCountrySource =
-  | 'ACCOUNT'
-  | 'PHONE'
-  | 'DECLARED'
-  | 'SYSTEM';
+export type PaymentCountrySource = 'ACCOUNT' | 'PHONE' | 'DECLARED' | 'SYSTEM';
 
 export type PaymentCountryResolution = {
   declaredCountryCode: string | null;
@@ -84,8 +80,12 @@ export class PaymentGeoContextService {
     declaredCountryCode?: string | null;
     existingCountryCode?: string | null;
   }): Promise<PaymentCountryResolution> {
-    const declaredCountryCode = this.normalizeIsoCode(input.declaredCountryCode);
-    const existingCountryCode = this.normalizeIsoCode(input.existingCountryCode);
+    const declaredCountryCode = this.normalizeIsoCode(
+      input.declaredCountryCode,
+    );
+    const existingCountryCode = this.normalizeIsoCode(
+      input.existingCountryCode,
+    );
 
     const [phoneCountry, declaredCountry, existingCountry] = await Promise.all([
       this.resolveCountryByPhoneNumber(input.phoneNumber),
@@ -110,7 +110,10 @@ export class PaymentGeoContextService {
     ]);
 
     const resolvedCountryCode =
-      existingCountry?.isoCode ?? phoneCountry?.isoCode ?? declaredCountry?.isoCode ?? null;
+      existingCountry?.isoCode ??
+      phoneCountry?.isoCode ??
+      declaredCountry?.isoCode ??
+      null;
     const countrySource: PaymentCountrySource = existingCountry
       ? 'ACCOUNT'
       : phoneCountry

@@ -4,6 +4,21 @@ import { UserRoleType } from '@prisma/client';
 /**
  * Prisma role enums are mapped into the common authorization layer so guards can stay framework-wide.
  */
+export const ADMIN_AUTH_ROLE_TYPES: readonly UserRoleType[] = [
+  UserRoleType.SUPER_ADMIN,
+  UserRoleType.ADMIN,
+  UserRoleType.FINANCE_STAFF,
+  UserRoleType.MARKETING_STAFF,
+  UserRoleType.PRACTITIONER_REVIEWER,
+  UserRoleType.PATIENT_OPERATIONS,
+  UserRoleType.SUPPORT,
+  UserRoleType.CONTENT_REVIEWER,
+] as const;
+
+export function isAdminAuthRoleType(role: UserRoleType): boolean {
+  return ADMIN_AUTH_ROLE_TYPES.includes(role);
+}
+
 export function mapUserRoleTypeToAppRole(role: UserRoleType): AppRole {
   switch (role) {
     case UserRoleType.PATIENT:

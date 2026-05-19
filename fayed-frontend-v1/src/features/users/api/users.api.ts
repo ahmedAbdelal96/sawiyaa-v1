@@ -4,6 +4,7 @@ import type { ApiPayload } from "@/lib/api/contracts";
 import type {
   CurrentUserRolesResponse,
   CurrentUserSecurityStateResponse,
+  CurrentUserPermissionsResponse,
   CurrentUserSummary,
 } from "../types/users.types";
 
@@ -50,5 +51,17 @@ export async function uploadCurrentUserAvatar(file: File) {
 
 export async function removeCurrentUserAvatar() {
   const response = await httpClient.delete<ApiPayload<{ message: string }>>("/users/me/avatar");
+  return extractData(response.data);
+}
+
+/**
+ * Fetches resolved effective permission keys for the current user.
+ * Used by admin navigation gating and page-level guards.
+ * Backend guards remain authoritative — this is a UX read-hint only.
+ */
+export async function getCurrentUserPermissions() {
+  const response = await httpClient.get<ApiPayload<CurrentUserPermissionsResponse>>(
+    "/users/me/permissions"
+  );
   return extractData(response.data);
 }

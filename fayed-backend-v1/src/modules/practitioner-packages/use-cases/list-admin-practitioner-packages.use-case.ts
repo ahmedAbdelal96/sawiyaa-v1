@@ -13,14 +13,13 @@ export class ListAdminPractitionerPackagesUseCase {
   async execute(input: { query: ListAdminPractitionerPackagesDto }) {
     const page = input.query.page ?? 1;
     const limit = input.query.limit ?? 20;
-    const [items, totalItems] = await this.practitionerPackageRepository.listAdminPackages(
-      {
+    const [items, totalItems] =
+      await this.practitionerPackageRepository.listAdminPackages({
         page,
         limit,
         q: input.query.q,
         status: input.query.status,
-      },
-    );
+      });
 
     return {
       items: items.map((item) => ({

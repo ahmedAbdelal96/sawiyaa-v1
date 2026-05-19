@@ -3,6 +3,7 @@ import { BuildAvailabilityWindowsService } from '@modules/availability/services/
 import { AvailabilityExceptionRepository } from '@modules/availability/repositories/availability-exception.repository';
 import { AvailabilitySlotRepository } from '@modules/availability/repositories/availability-slot.repository';
 import { ResolvePractitionerTimezoneService } from '@modules/availability/services/resolve-practitioner-timezone.service';
+import { SessionRepository } from '../repositories/session.repository';
 
 @Injectable()
 export class ValidateSessionScheduleCompatibilityService {
@@ -11,6 +12,7 @@ export class ValidateSessionScheduleCompatibilityService {
     private readonly availabilityExceptionRepository: AvailabilityExceptionRepository,
     private readonly resolvePractitionerTimezoneService: ResolvePractitionerTimezoneService,
     private readonly buildAvailabilityWindowsService: BuildAvailabilityWindowsService,
+    private readonly sessionRepository: SessionRepository,
   ) {}
 
   async assertFitsPractitionerAvailability(input: {
@@ -20,7 +22,7 @@ export class ValidateSessionScheduleCompatibilityService {
     requestedEndAtUtc: Date;
     requestedDurationMinutes: 30 | 60;
   }): Promise<{ timezone: string }> {
-    const [weeklySlots, exceptions] = await Promise.all([
+    const [weeklySlots, exceptions, bookedSessions] = await Promise.all([
       this.availabilitySlotRepository.listActiveByPractitioner(
         input.practitionerId,
       ),
@@ -28,6 +30,11 @@ export class ValidateSessionScheduleCompatibilityService {
         input.practitionerId,
         input.requestedStartAtUtc,
         input.requestedEndAtUtc,
+      ),
+      this.sessionRepository.listBlockingSessionRangesInRangeForPractitioner(
+        input.practitionerId,
+        input.requestedEndAtUtc,
+        input.requestedStartAtUtc,
       ),
     ]);
 
@@ -39,6 +46,10 @@ export class ValidateSessionScheduleCompatibilityService {
       timezone,
       weeklySlots,
       exceptions,
+      bookedSessions: bookedSessions.map((session) => ({
+        startsAt: session.scheduledStartAt!,
+        endsAt: session.scheduledEndAt!,
+      })),
       fromUtc: input.requestedStartAtUtc,
       toUtc: input.requestedEndAtUtc,
     });

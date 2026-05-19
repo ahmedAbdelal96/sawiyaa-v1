@@ -1,5 +1,10 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { CourseScheduleStatus, EnrollmentAttendanceStatus, EnrollmentStatus, PaymentStatus } from '@prisma/client';
+import {
+  CourseScheduleStatus,
+  EnrollmentAttendanceStatus,
+  EnrollmentStatus,
+  PaymentStatus,
+} from '@prisma/client';
 import { TrainingRepository } from '../repositories/training.repository';
 import { BuildTrainingScheduleSnapshotsService } from '../services/build-training-schedule-snapshots.service';
 
@@ -29,23 +34,40 @@ export class GetAdminTrainingAnalyticsUseCase {
     }
 
     const scheduleIds = course.schedules.map((schedule) => schedule.id);
-    const [allEnrollmentsByScheduleId, occupiedEnrollmentsByScheduleId, activeEnrollmentsByScheduleId, completedEnrollmentsByScheduleId, pendingPaymentEnrollmentsByScheduleId, paidEnrollmentsByScheduleId, lectureCountsByScheduleId, attendanceCountsByScheduleId, paymentAttempts] =
-      await Promise.all([
-        this.trainingRepository.countAllEnrollmentsByScheduleIds(scheduleIds),
-        this.trainingRepository.countEnrollmentsByScheduleIds(scheduleIds),
-        this.trainingRepository.countEnrollmentsByScheduleIds(scheduleIds, [EnrollmentStatus.ACTIVE]),
-        this.trainingRepository.countEnrollmentsByScheduleIds(scheduleIds, [EnrollmentStatus.COMPLETED]),
-        this.trainingRepository.countEnrollmentsByScheduleIds(scheduleIds, [EnrollmentStatus.PENDING_PAYMENT]),
-        this.trainingRepository.countEnrollmentsByScheduleIds(scheduleIds, [
-          EnrollmentStatus.ACTIVE,
-          EnrollmentStatus.COMPLETED,
-          EnrollmentStatus.NO_SHOW,
-          EnrollmentStatus.REFUNDED,
-        ]),
-        this.trainingRepository.countSessionsByScheduleIds(scheduleIds),
-        this.trainingRepository.countAttendanceByScheduleIds(scheduleIds),
-        this.trainingRepository.listPaymentAttemptsByCourseIdForAnalytics(input.courseId),
-      ]);
+    const [
+      allEnrollmentsByScheduleId,
+      occupiedEnrollmentsByScheduleId,
+      activeEnrollmentsByScheduleId,
+      completedEnrollmentsByScheduleId,
+      pendingPaymentEnrollmentsByScheduleId,
+      paidEnrollmentsByScheduleId,
+      lectureCountsByScheduleId,
+      attendanceCountsByScheduleId,
+      paymentAttempts,
+    ] = await Promise.all([
+      this.trainingRepository.countAllEnrollmentsByScheduleIds(scheduleIds),
+      this.trainingRepository.countEnrollmentsByScheduleIds(scheduleIds),
+      this.trainingRepository.countEnrollmentsByScheduleIds(scheduleIds, [
+        EnrollmentStatus.ACTIVE,
+      ]),
+      this.trainingRepository.countEnrollmentsByScheduleIds(scheduleIds, [
+        EnrollmentStatus.COMPLETED,
+      ]),
+      this.trainingRepository.countEnrollmentsByScheduleIds(scheduleIds, [
+        EnrollmentStatus.PENDING_PAYMENT,
+      ]),
+      this.trainingRepository.countEnrollmentsByScheduleIds(scheduleIds, [
+        EnrollmentStatus.ACTIVE,
+        EnrollmentStatus.COMPLETED,
+        EnrollmentStatus.NO_SHOW,
+        EnrollmentStatus.REFUNDED,
+      ]),
+      this.trainingRepository.countSessionsByScheduleIds(scheduleIds),
+      this.trainingRepository.countAttendanceByScheduleIds(scheduleIds),
+      this.trainingRepository.listPaymentAttemptsByCourseIdForAnalytics(
+        input.courseId,
+      ),
+    ]);
 
     const scheduleItems = this.buildTrainingScheduleSnapshotsService.build({
       schedules: course.schedules,
@@ -59,7 +81,9 @@ export class GetAdminTrainingAnalyticsUseCase {
       CourseScheduleStatus.ARCHIVED,
     ];
 
-    const paymentAttemptsByScheduleId = paymentAttempts.reduce<Record<string, { failed: number; abandoned: number }>>((acc, current) => {
+    const paymentAttemptsByScheduleId = paymentAttempts.reduce<
+      Record<string, { failed: number; abandoned: number }>
+    >((acc, current) => {
       const scheduleId = current.enrollment.courseScheduleId;
       if (!acc[scheduleId]) {
         acc[scheduleId] = { failed: 0, abandoned: 0 };
@@ -86,10 +110,14 @@ export class GetAdminTrainingAnalyticsUseCase {
       const occupiedSeats = occupiedEnrollmentsByScheduleId[schedule.id] ?? 0;
       const paidEnrollments = paidEnrollmentsByScheduleId[schedule.id] ?? 0;
       const activeEnrollments = activeEnrollmentsByScheduleId[schedule.id] ?? 0;
-      const completedEnrollments = completedEnrollmentsByScheduleId[schedule.id] ?? 0;
-      const pendingPaymentEnrollments = pendingPaymentEnrollmentsByScheduleId[schedule.id] ?? 0;
-      const failedPaymentAttempts = paymentAttemptsByScheduleId[schedule.id]?.failed ?? 0;
-      const abandonedPaymentAttempts = paymentAttemptsByScheduleId[schedule.id]?.abandoned ?? 0;
+      const completedEnrollments =
+        completedEnrollmentsByScheduleId[schedule.id] ?? 0;
+      const pendingPaymentEnrollments =
+        pendingPaymentEnrollmentsByScheduleId[schedule.id] ?? 0;
+      const failedPaymentAttempts =
+        paymentAttemptsByScheduleId[schedule.id]?.failed ?? 0;
+      const abandonedPaymentAttempts =
+        paymentAttemptsByScheduleId[schedule.id]?.abandoned ?? 0;
       const attendanceCounts = attendanceCountsByScheduleId[schedule.id] ?? {};
       const attendanceCompletedEnrollments =
         (attendanceCounts[EnrollmentAttendanceStatus.ATTENDED] ?? 0) +
@@ -123,18 +151,31 @@ export class GetAdminTrainingAnalyticsUseCase {
     });
 
     const totalSchedules = scheduleItems.length;
-    const openSchedules = scheduleItems.filter((schedule) => schedule.isEnrollmentOpen).length;
+    const openSchedules = scheduleItems.filter(
+      (schedule) => schedule.isEnrollmentOpen,
+    ).length;
     const endedSchedules = scheduleItems.filter((schedule) =>
       endedStatuses.includes(schedule.status),
     ).length;
-    const totalLectures = scheduleItems.reduce((sum, schedule) => sum + (schedule.lectureCount ?? 0), 0);
+    const totalLectures = scheduleItems.reduce(
+      (sum, schedule) => sum + (schedule.lectureCount ?? 0),
+      0,
+    );
     const totalEnrollments = sumRecord(allEnrollmentsByScheduleId);
     const activeEnrollments = sumRecord(activeEnrollmentsByScheduleId);
     const completedEnrollments = sumRecord(completedEnrollmentsByScheduleId);
-    const pendingPaymentEnrollments = sumRecord(pendingPaymentEnrollmentsByScheduleId);
+    const pendingPaymentEnrollments = sumRecord(
+      pendingPaymentEnrollmentsByScheduleId,
+    );
     const paidEnrollments = sumRecord(paidEnrollmentsByScheduleId);
-    const failedPaymentAttempts = cohorts.reduce((sum, cohort) => sum + cohort.failedPaymentAttempts, 0);
-    const abandonedPaymentAttempts = cohorts.reduce((sum, cohort) => sum + cohort.abandonedPaymentAttempts, 0);
+    const failedPaymentAttempts = cohorts.reduce(
+      (sum, cohort) => sum + cohort.failedPaymentAttempts,
+      0,
+    );
+    const abandonedPaymentAttempts = cohorts.reduce(
+      (sum, cohort) => sum + cohort.abandonedPaymentAttempts,
+      0,
+    );
     const attendanceCompletedEnrollments = cohorts.reduce(
       (sum, cohort) => sum + cohort.attendanceCompletedEnrollments,
       0,

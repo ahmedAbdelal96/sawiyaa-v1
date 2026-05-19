@@ -101,7 +101,9 @@ export class AdminPractitionerApplicationRepository {
       where: {
         ...applicationStatusWhere,
         practitioner:
-          Object.keys(practitionerWhere).length > 0 ? practitionerWhere : undefined,
+          Object.keys(practitionerWhere).length > 0
+            ? practitionerWhere
+            : undefined,
       },
       orderBy: [{ submittedAt: 'desc' }, { createdAt: 'desc' }],
       skip: input.skip,
@@ -163,14 +165,26 @@ export class AdminPractitionerApplicationRepository {
       where: {
         ...applicationStatusWhere,
         practitioner:
-          Object.keys(practitionerWhere).length > 0 ? practitionerWhere : undefined,
+          Object.keys(practitionerWhere).length > 0
+            ? practitionerWhere
+            : undefined,
       },
     });
   }
 
   async summary() {
-    const [total, newApplications, editRequests, activeApplications, submittedApplications, underReviewApplications, changesRequestedApplications, approvedApplications, rejectedApplications, archivedApplications] =
-      await Promise.all([
+    const [
+      total,
+      newApplications,
+      editRequests,
+      activeApplications,
+      submittedApplications,
+      underReviewApplications,
+      changesRequestedApplications,
+      approvedApplications,
+      rejectedApplications,
+      archivedApplications,
+    ] = await Promise.all([
       this.prisma.practitionerApplication.count(),
       this.prisma.practitionerApplication.count({
         where: {

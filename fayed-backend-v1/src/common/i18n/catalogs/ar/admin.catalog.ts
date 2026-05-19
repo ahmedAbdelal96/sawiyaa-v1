@@ -1,4 +1,25 @@
 export const arAdminCatalog = {
+  adminUsers: {
+    success: {
+      usersFetched: 'تم جلب المستخدمين الداخليين بنجاح',
+      userFetched: 'تم جلب تفاصيل المستخدم الداخلي بنجاح',
+      userCreated: 'تم إنشاء مستخدم داخلي بنجاح',
+      userUpdated: 'تم تحديث بيانات المستخدم الداخلي بنجاح',
+      statusUpdated: 'تم تحديث حالة المستخدم الداخلي بنجاح',
+      rolesUpdated: 'تم تحديث أدوار المستخدم الداخلي بنجاح',
+      permissionOverridesFetched: 'تم جلب استثناءات الصلاحيات بنجاح',
+      permissionOverridesUpdated: 'تم تحديث استثناءات الصلاحيات بنجاح',
+      sessionsRevoked: 'تم إنهاء جلسات المستخدم الداخلي بنجاح',
+      tokensInvalidated: 'تم إبطال رموز المستخدم الداخلي بنجاح',
+    },
+    errors: {
+      userNotFound: 'تعذر العثور على المستخدم الداخلي',
+      emailAlreadyExists: 'البريد الإلكتروني مستخدم بالفعل',
+      permissionNotFound: 'تعذر العثور على مفتاح الصلاحية',
+      lastSuperAdminProtected:
+        'لا يمكن تنفيذ هذا الإجراء لأنه سيؤدي إلى تعطيل آخر SUPER_ADMIN',
+    },
+  },
   practitionerApplications: {
     success: {
       applicationsFetched: 'تم جلب طلبات الممارسين بنجاح',

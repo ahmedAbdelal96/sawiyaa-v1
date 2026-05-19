@@ -15,6 +15,7 @@ export class PractitionerApplicationMapper {
     reviewDecisionReason: string | null;
     reviewNotes: string | null;
     submissionSnapshot: Record<string, unknown> | null;
+    completion: PractitionerApplicationStatusViewModel['completion'];
   }): PractitionerApplicationStatusViewModel {
     return {
       applicationId: input.id,
@@ -25,6 +26,7 @@ export class PractitionerApplicationMapper {
       reviewDecisionReason: input.reviewDecisionReason,
       reviewNotes: input.reviewNotes,
       submissionSnapshot: input.submissionSnapshot,
+      completion: input.completion,
     };
   }
 
@@ -38,6 +40,13 @@ export class PractitionerApplicationMapper {
       reviewDecisionReason: null,
       reviewNotes: null,
       submissionSnapshot: null,
+      completion: {
+        overallPercent: 0,
+        canSubmit: false,
+        blockers: [],
+        warnings: [],
+        steps: [],
+      },
     };
   }
 }

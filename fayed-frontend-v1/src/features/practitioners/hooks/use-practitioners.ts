@@ -10,7 +10,7 @@ import {
   submitPractitionerApplication,
   updatePractitionerAvatar,
   updatePractitionerProfile,
-  uploadPractitionerCredential,
+  uploadPractitionerCredentialFile,
 } from "../api/practitioners.api";
 import { practitionersQueryKeys } from "../constants/query-keys";
 import type { SubmitPractitionerApplicationRequest } from "../types/practitioners.types";
@@ -127,7 +127,7 @@ export function usePractitionerCredentials(enabled = true) {
 export function useUploadPractitionerCredential() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: uploadPractitionerCredential,
+    mutationFn: uploadPractitionerCredentialFile,
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: practitionersQueryKeys.meCredentials(),

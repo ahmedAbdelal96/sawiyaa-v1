@@ -34,9 +34,7 @@ import { CancelSessionDto } from '../dto/cancel-session.dto';
 import { SessionCancellationPreviewSuccessResponseDto } from '../dto/session-cancellation-preview.dto';
 import { CreateScheduledSessionDto } from '../dto/create-scheduled-session.dto';
 import { ListSessionsDto } from '../dto/list-sessions.dto';
-import {
-  PatientSessionSummarySuccessResponseDto,
-} from '../dto/patient-session-summary-response.dto';
+import { PatientSessionSummarySuccessResponseDto } from '../dto/patient-session-summary-response.dto';
 import {
   SessionItemSuccessResponseDto,
   SessionsListSuccessResponseDto,

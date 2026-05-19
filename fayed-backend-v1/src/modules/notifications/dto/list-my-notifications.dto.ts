@@ -27,4 +27,3 @@ export class ListMyNotificationsDto {
   @Max(20)
   limit?: number;
 }
-

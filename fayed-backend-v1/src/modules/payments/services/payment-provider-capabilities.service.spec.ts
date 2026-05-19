@@ -1,20 +1,22 @@
 import { PaymentProvider } from '@prisma/client';
 import { PaymentProviderCapabilitiesService } from './payment-provider-capabilities.service';
 
-function buildService(overrides?: Partial<{
-  paymobEnabled: boolean;
-  paymobApiKey: string | null;
-  paymobPublicKey: string | null;
-  paymobHmacSecret: string | null;
-  paymobBaseUrl: string | null;
-  paymobIntentionBaseUrl: string | null;
-  paymobCheckoutBaseUrl: string | null;
-  paymobCheckoutFlow: 'legacy' | 'intention';
-  paymobIntegrationIdCard: string | null;
-  paymobIntegrationIdWallet: string | null;
-  paymobIframeId: string | null;
-  paymobDefaultCheckoutMethod: 'CARD' | 'WALLET' | null;
-}>) {
+function buildService(
+  overrides?: Partial<{
+    paymobEnabled: boolean;
+    paymobApiKey: string | null;
+    paymobPublicKey: string | null;
+    paymobHmacSecret: string | null;
+    paymobBaseUrl: string | null;
+    paymobIntentionBaseUrl: string | null;
+    paymobCheckoutBaseUrl: string | null;
+    paymobCheckoutFlow: 'legacy' | 'intention';
+    paymobIntegrationIdCard: string | null;
+    paymobIntegrationIdWallet: string | null;
+    paymobIframeId: string | null;
+    paymobDefaultCheckoutMethod: 'CARD' | 'WALLET' | null;
+  }>,
+) {
   return new PaymentProviderCapabilitiesService({
     getStripeConfig: () => ({
       enabled: false,
@@ -31,7 +33,7 @@ function buildService(overrides?: Partial<{
       publicKey:
         overrides?.paymobPublicKey === null
           ? null
-          : overrides?.paymobPublicKey ?? 'public_key',
+          : (overrides?.paymobPublicKey ?? 'public_key'),
       hmacSecret: overrides?.paymobHmacSecret ?? 'paymob_hmac',
       baseUrl: overrides?.paymobBaseUrl ?? 'https://accept.paymob.com/api',
       intentionBaseUrl:
@@ -42,11 +44,11 @@ function buildService(overrides?: Partial<{
       integrationIdCard:
         overrides?.paymobIntegrationIdCard === null
           ? null
-          : overrides?.paymobIntegrationIdCard ?? 'card_integration',
+          : (overrides?.paymobIntegrationIdCard ?? 'card_integration'),
       integrationIdWallet:
         overrides?.paymobIntegrationIdWallet === null
           ? null
-          : overrides?.paymobIntegrationIdWallet ?? 'wallet_integration',
+          : (overrides?.paymobIntegrationIdWallet ?? 'wallet_integration'),
       iframeId: overrides?.paymobIframeId ?? 'iframe_id',
       defaultCheckoutMethod: overrides?.paymobDefaultCheckoutMethod ?? 'CARD',
     }),
@@ -63,11 +65,11 @@ function buildService(overrides?: Partial<{
       const cardIntegrationId =
         overrides?.paymobIntegrationIdCard === null
           ? null
-          : overrides?.paymobIntegrationIdCard ?? 'card_integration';
+          : (overrides?.paymobIntegrationIdCard ?? 'card_integration');
       const walletIntegrationId =
         overrides?.paymobIntegrationIdWallet === null
           ? null
-          : overrides?.paymobIntegrationIdWallet ?? 'wallet_integration';
+          : (overrides?.paymobIntegrationIdWallet ?? 'wallet_integration');
 
       if (cardIntegrationId) {
         methods.push({
@@ -94,7 +96,7 @@ function buildService(overrides?: Partial<{
     getPaymobDefaultCheckoutMethod: () =>
       overrides?.paymobDefaultCheckoutMethod === null
         ? null
-        : overrides?.paymobDefaultCheckoutMethod ?? 'CARD',
+        : (overrides?.paymobDefaultCheckoutMethod ?? 'CARD'),
   } as never);
 }
 

@@ -38,10 +38,19 @@ import { ListAdminSupportReportRowsUseCase } from './use-cases/list-admin-suppor
   providers: [
     JwtAccessAuthGuard,
     RolesGuard,
-    { provide: SESSIONS_REPORT_PROVIDER, useClass: PrismaSessionsReportProvider },
-    { provide: PAYMENTS_REVENUE_REPORT_PROVIDER, useClass: PrismaPaymentsRevenueReportProvider },
+    {
+      provide: SESSIONS_REPORT_PROVIDER,
+      useClass: PrismaSessionsReportProvider,
+    },
+    {
+      provide: PAYMENTS_REVENUE_REPORT_PROVIDER,
+      useClass: PrismaPaymentsRevenueReportProvider,
+    },
     { provide: SUPPORT_REPORT_PROVIDER, useClass: PrismaSupportReportProvider },
-    { provide: CARE_REQUESTS_REPORT_PROVIDER, useClass: PrismaCareRequestsReportProvider },
+    {
+      provide: CARE_REQUESTS_REPORT_PROVIDER,
+      useClass: PrismaCareRequestsReportProvider,
+    },
     { provide: PAYOUTS_REPORT_PROVIDER, useClass: PrismaPayoutsReportProvider },
     GetAdminSessionsReportOverviewUseCase,
     ListAdminSessionsReportRowsUseCase,
@@ -56,4 +65,3 @@ import { ListAdminSupportReportRowsUseCase } from './use-cases/list-admin-suppor
   ],
 })
 export class ReportsModule {}
-

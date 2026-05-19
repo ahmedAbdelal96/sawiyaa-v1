@@ -32,42 +32,47 @@ describe('HandlePackagePurchasePaymentSuccessUseCase', () => {
       }),
     };
     const packagePurchaseRepository = {
-      findByPaymentId: jest
-        .fn()
-        .mockResolvedValue(
-          input?.resolveByPayment === false
-            ? null
-            : {
-                id: 'purchase-1',
-                patientId: 'patient-1',
-                practitionerId: 'practitioner-1',
-                status: input?.purchaseStatus ?? PatientPackagePurchaseStatus.PENDING_PAYMENT,
-                packagePlanId: 'plan-1',
-                packagePlan: {
-                  code: 'SESSIONS_4',
-                  title: '4 sessions',
-                  discountPercent: 10,
-                },
-                paymentExpiresAt: new Date('2999-01-01T00:00:00.000Z'),
-                paidAt: input?.paidAt ?? null,
-                activatedAt: input?.activatedAt ?? null,
-                sessions: (input?.sessionStatuses ?? [
-                  SessionStatus.PENDING_PAYMENT,
-                  SessionStatus.PENDING_PAYMENT,
-                ]).map((status, index) => ({
-                  id: `session-${index + 1}`,
-                  status,
-                  scheduledStartAt: new Date(`2999-01-01T0${index + 1}:00:00.000Z`),
-                  packageSessionIndex: index + 1,
-                  packageSessionCount: 4,
-                })),
+      findByPaymentId: jest.fn().mockResolvedValue(
+        input?.resolveByPayment === false
+          ? null
+          : {
+              id: 'purchase-1',
+              patientId: 'patient-1',
+              practitionerId: 'practitioner-1',
+              status:
+                input?.purchaseStatus ??
+                PatientPackagePurchaseStatus.PENDING_PAYMENT,
+              packagePlanId: 'plan-1',
+              packagePlan: {
+                code: 'SESSIONS_4',
+                title: '4 sessions',
+                discountPercent: 10,
               },
-        ),
+              paymentExpiresAt: new Date('2999-01-01T00:00:00.000Z'),
+              paidAt: input?.paidAt ?? null,
+              activatedAt: input?.activatedAt ?? null,
+              sessions: (
+                input?.sessionStatuses ?? [
+                  SessionStatus.PENDING_PAYMENT,
+                  SessionStatus.PENDING_PAYMENT,
+                ]
+              ).map((status, index) => ({
+                id: `session-${index + 1}`,
+                status,
+                scheduledStartAt: new Date(
+                  `2999-01-01T0${index + 1}:00:00.000Z`,
+                ),
+                packageSessionIndex: index + 1,
+                packageSessionCount: 4,
+              })),
+            },
+      ),
       findById: jest.fn().mockResolvedValue({
         id: 'purchase-1',
         patientId: 'patient-1',
         practitionerId: 'practitioner-1',
-        status: input?.purchaseStatus ?? PatientPackagePurchaseStatus.PENDING_PAYMENT,
+        status:
+          input?.purchaseStatus ?? PatientPackagePurchaseStatus.PENDING_PAYMENT,
         packagePlanId: 'plan-1',
         packagePlan: {
           code: 'SESSIONS_4',
@@ -77,10 +82,12 @@ describe('HandlePackagePurchasePaymentSuccessUseCase', () => {
         paymentExpiresAt: new Date('2999-01-01T00:00:00.000Z'),
         paidAt: input?.paidAt ?? null,
         activatedAt: input?.activatedAt ?? null,
-        sessions: (input?.sessionStatuses ?? [
-          SessionStatus.PENDING_PAYMENT,
-          SessionStatus.PENDING_PAYMENT,
-        ]).map((status, index) => ({
+        sessions: (
+          input?.sessionStatuses ?? [
+            SessionStatus.PENDING_PAYMENT,
+            SessionStatus.PENDING_PAYMENT,
+          ]
+        ).map((status, index) => ({
           id: `session-${index + 1}`,
           status,
           scheduledStartAt: new Date(`2999-01-01T0${index + 1}:00:00.000Z`),
@@ -153,8 +160,12 @@ describe('HandlePackagePurchasePaymentSuccessUseCase', () => {
       }),
       expect.anything(),
     );
-    expect(setup.operationalNotificationService.notifySessionConfirmed).toHaveBeenCalledTimes(2);
-    expect(setup.operationalNotificationService.notifySessionConfirmed).toHaveBeenCalledWith(
+    expect(
+      setup.operationalNotificationService.notifySessionConfirmed,
+    ).toHaveBeenCalledTimes(2);
+    expect(
+      setup.operationalNotificationService.notifySessionConfirmed,
+    ).toHaveBeenCalledWith(
       expect.objectContaining({
         patientProfileId: 'patient-1',
         practitionerProfileId: 'practitioner-1',
@@ -182,7 +193,9 @@ describe('HandlePackagePurchasePaymentSuccessUseCase', () => {
       payload: {},
     });
 
-    expect(setup.packagePurchaseRepository.updateStatus).toHaveBeenCalledTimes(1);
+    expect(setup.packagePurchaseRepository.updateStatus).toHaveBeenCalledTimes(
+      1,
+    );
     expect(setup.sessionRepository.updateStatus).toHaveBeenCalledTimes(2);
     expect(setup.packageSettlementService.reconcilePurchase).toHaveBeenCalled();
     expect(result.purchase.status).toBe(PatientPackagePurchaseStatus.ACTIVE);
@@ -220,7 +233,9 @@ describe('HandlePackagePurchasePaymentSuccessUseCase', () => {
       payload: {},
     });
 
-    expect(setup.packagePurchaseRepository.updateStatus).toHaveBeenCalledTimes(1);
+    expect(setup.packagePurchaseRepository.updateStatus).toHaveBeenCalledTimes(
+      1,
+    );
     expect(setup.sessionRepository.updateStatus).toHaveBeenCalledTimes(1);
     expect(setup.sessionRepository.createEvent).toHaveBeenCalledTimes(2);
     expect(setup.packageSettlementService.reconcilePurchase).toHaveBeenCalled();
@@ -253,7 +268,9 @@ describe('HandlePackagePurchasePaymentSuccessUseCase', () => {
     });
 
     expect(setup.packagePurchaseRepository.findByPaymentId).toHaveBeenCalled();
-    expect(setup.packagePurchaseRepository.findById).toHaveBeenCalledWith('purchase-1');
+    expect(setup.packagePurchaseRepository.findById).toHaveBeenCalledWith(
+      'purchase-1',
+    );
     expect(result.purchase.status).toBe(PatientPackagePurchaseStatus.ACTIVE);
   });
 });

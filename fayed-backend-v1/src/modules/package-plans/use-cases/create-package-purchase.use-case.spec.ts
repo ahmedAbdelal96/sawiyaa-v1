@@ -1,6 +1,10 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { SessionMode, SessionPaymentCoverageType, SessionStatus } from '@prisma/client';
+import {
+  SessionMode,
+  SessionPaymentCoverageType,
+  SessionStatus,
+} from '@prisma/client';
 import { PublicPractitionerVisibilityPolicy } from '@modules/practitioners/policies/public-practitioner-visibility.policy';
 import { CreatePackagePurchaseUseCase } from './create-package-purchase.use-case';
 
@@ -21,7 +25,8 @@ describe('CreatePackagePurchaseUseCase', () => {
   const publicPractitionerReadRepository = {
     findByPublicSlug: jest.fn(),
   } as never;
-  const publicPractitionerVisibilityPolicy = new PublicPractitionerVisibilityPolicy();
+  const publicPractitionerVisibilityPolicy =
+    new PublicPractitionerVisibilityPolicy();
   const packagePlanRepository = {
     findByCode: jest.fn(),
   } as never;
@@ -82,12 +87,12 @@ describe('CreatePackagePurchaseUseCase', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    (packagePlanPolicyService.assertPackagesEnabled as jest.Mock).mockResolvedValue(
-      undefined,
-    );
-    (packagePlanPolicyService.assertPurchasesEnabled as jest.Mock).mockResolvedValue(
-      undefined,
-    );
+    (
+      packagePlanPolicyService.assertPackagesEnabled as jest.Mock
+    ).mockResolvedValue(undefined);
+    (
+      packagePlanPolicyService.assertPurchasesEnabled as jest.Mock
+    ).mockResolvedValue(undefined);
   });
 
   function setHappyPathMocks() {
@@ -95,25 +100,25 @@ describe('CreatePackagePurchaseUseCase', () => {
       id: 'patient-1',
       countryId: 'country-egy',
     });
-    (publicPractitionerReadRepository.findByPublicSlug as jest.Mock).mockResolvedValue(
-      {
-        id: 'practitioner-1',
-        publicSlug: 'dr-youssef-abdallah',
-        user: { timezone: 'Africa/Cairo', status: 'ACTIVE', displayName: 'Dr Y' },
-        countryId: 'country-egy',
-        country: { currencyCode: 'EGP' },
-        acceptsPackages: true,
-        sessionPrice30Egp: '50.00',
-        sessionPrice30Usd: '20.00',
-        sessionPrice60Egp: '100.00',
-        sessionPrice60Usd: '40.00',
-        status: 'APPROVED',
-        isPublicProfilePublished: true,
-        specialties: [{ specialtyId: 'specialty-1', isPrimary: true }],
-        professionalTitle: 'Therapist',
-        bio: 'Bio',
-      },
-    );
+    (
+      publicPractitionerReadRepository.findByPublicSlug as jest.Mock
+    ).mockResolvedValue({
+      id: 'practitioner-1',
+      publicSlug: 'dr-youssef-abdallah',
+      user: { timezone: 'Africa/Cairo', status: 'ACTIVE', displayName: 'Dr Y' },
+      countryId: 'country-egy',
+      country: { currencyCode: 'EGP' },
+      acceptsPackages: true,
+      sessionPrice30Egp: '50.00',
+      sessionPrice30Usd: '20.00',
+      sessionPrice60Egp: '100.00',
+      sessionPrice60Usd: '40.00',
+      status: 'APPROVED',
+      isPublicProfilePublished: true,
+      specialties: [{ specialtyId: 'specialty-1', isPrimary: true }],
+      professionalTitle: 'Therapist',
+      bio: 'Bio',
+    });
     (packagePlanRepository.findByCode as jest.Mock).mockResolvedValue({
       id: 'plan-1',
       code: 'SESSIONS_4',
@@ -147,7 +152,9 @@ describe('CreatePackagePurchaseUseCase', () => {
       practitionerFinalShare: '260.00',
       roundingAdjustment: '0.00',
     });
-    (validatePackagePurchaseSlotsService.validate as jest.Mock).mockResolvedValue({
+    (
+      validatePackagePurchaseSlotsService.validate as jest.Mock
+    ).mockResolvedValue({
       timezone: 'Africa/Cairo',
       slots: [
         {
@@ -272,25 +279,25 @@ describe('CreatePackagePurchaseUseCase', () => {
       id: 'patient-1',
       countryId: 'country-egy',
     });
-    (publicPractitionerReadRepository.findByPublicSlug as jest.Mock).mockResolvedValue(
-      {
-        id: 'practitioner-1',
-        publicSlug: 'dr-youssef-abdallah',
-        user: { timezone: 'Africa/Cairo', status: 'ACTIVE', displayName: 'Dr Y' },
-        countryId: 'country-egy',
-        country: { currencyCode: 'EGP' },
-        acceptsPackages: true,
-        sessionPrice30Egp: '50.00',
-        sessionPrice30Usd: '20.00',
-        sessionPrice60Egp: '100.00',
-        sessionPrice60Usd: '40.00',
-        status: 'APPROVED',
-        isPublicProfilePublished: true,
-        specialties: [{ specialtyId: 'specialty-1', isPrimary: true }],
-        professionalTitle: 'Therapist',
-        bio: 'Bio',
-      },
-    );
+    (
+      publicPractitionerReadRepository.findByPublicSlug as jest.Mock
+    ).mockResolvedValue({
+      id: 'practitioner-1',
+      publicSlug: 'dr-youssef-abdallah',
+      user: { timezone: 'Africa/Cairo', status: 'ACTIVE', displayName: 'Dr Y' },
+      countryId: 'country-egy',
+      country: { currencyCode: 'EGP' },
+      acceptsPackages: true,
+      sessionPrice30Egp: '50.00',
+      sessionPrice30Usd: '20.00',
+      sessionPrice60Egp: '100.00',
+      sessionPrice60Usd: '40.00',
+      status: 'APPROVED',
+      isPublicProfilePublished: true,
+      specialties: [{ specialtyId: 'specialty-1', isPrimary: true }],
+      professionalTitle: 'Therapist',
+      bio: 'Bio',
+    });
     (packagePlanRepository.findByCode as jest.Mock).mockResolvedValue(null);
 
     await expect(
@@ -313,7 +320,9 @@ describe('CreatePackagePurchaseUseCase', () => {
   });
 
   it('rejects when the package feature is disabled', async () => {
-    (packagePlanPolicyService.assertPackagesEnabled as jest.Mock).mockRejectedValue(
+    (
+      packagePlanPolicyService.assertPackagesEnabled as jest.Mock
+    ).mockRejectedValue(
       new BadRequestException({ error: 'PACKAGE_PLANS_FEATURE_DISABLED' }),
     );
 

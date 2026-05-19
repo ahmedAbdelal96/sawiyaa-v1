@@ -127,8 +127,11 @@ export class GetPractitionerProfileUseCase {
               reviewDecisionReason: latestApp.reviewDecisionReason ?? null,
               reviewNotes: latestApp.reviewNotes ?? null,
               submissionSnapshot:
-                (latestApp.submissionSnapshot as Record<string, unknown> | null) ??
-                null,
+                (latestApp.submissionSnapshot as Record<
+                  string,
+                  unknown
+                > | null) ?? null,
+              completion: readiness.completion,
             })
           : this.practitionerApplicationMapper.empty(),
         credentialSummary,

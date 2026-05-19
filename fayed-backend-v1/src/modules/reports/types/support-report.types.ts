@@ -33,4 +33,3 @@ export type SupportReportRow = {
   patientId: string | null;
   practitionerId: string | null;
 };
-

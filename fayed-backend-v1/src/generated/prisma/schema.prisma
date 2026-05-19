@@ -1258,6 +1258,8 @@ model UserSession {
   userAgent        String?   @db.VarChar(500)
   expiresAt        DateTime?
   revokedAt        DateTime?
+  stepUpVerifiedAt DateTime?
+  stepUpExpiresAt  DateTime?
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 
@@ -1265,6 +1267,7 @@ model UserSession {
 
   @@index([userId, revokedAt])
   @@index([expiresAt])
+  @@index([stepUpExpiresAt])
 }
 
 model OtpChallenge {

@@ -169,7 +169,8 @@ export class TrainingRepository {
       const countByCategoryId = courses.reduce<Record<string, number>>(
         (acc, current) => {
           if (current.primaryCategoryId) {
-            acc[current.primaryCategoryId] = (acc[current.primaryCategoryId] ?? 0) + 1;
+            acc[current.primaryCategoryId] =
+              (acc[current.primaryCategoryId] ?? 0) + 1;
           }
           return acc;
         },
@@ -428,7 +429,8 @@ export class TrainingRepository {
           if (!acc[current.courseScheduleId]) {
             acc[current.courseScheduleId] = {};
           }
-          acc[current.courseScheduleId][current.attendanceStatus] = current._count._all;
+          acc[current.courseScheduleId][current.attendanceStatus] =
+            current._count._all;
           return acc;
         }, {}),
       );

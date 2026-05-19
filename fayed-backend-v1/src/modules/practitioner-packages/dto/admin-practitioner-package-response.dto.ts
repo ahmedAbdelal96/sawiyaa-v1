@@ -1,5 +1,9 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { PractitionerStatus, UserStatus, PractitionerPackageStatus } from '@prisma/client';
+import {
+  PractitionerStatus,
+  UserStatus,
+  PractitionerPackageStatus,
+} from '@prisma/client';
 import {
   PractitionerPackageDetailDto,
   PractitionerPackageItemDto,

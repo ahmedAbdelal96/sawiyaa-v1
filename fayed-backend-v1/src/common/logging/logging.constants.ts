@@ -13,6 +13,12 @@ export const LOGGING_SENSITIVE_KEYS = [
   'secret',
   'webhookSecret',
   'hmac',
+  'clientSecret',
+  'providerSecret',
+  'checkoutUrl',
+  'rawBody',
+  'payload',
+  'body',
 ] as const;
 
 export const REQUEST_ID_HEADER = 'x-request-id';

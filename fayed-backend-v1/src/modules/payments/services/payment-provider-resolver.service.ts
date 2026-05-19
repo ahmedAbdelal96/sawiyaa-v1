@@ -1,8 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { MarketType, PaymentProvider } from '@prisma/client';
-import {
-  resolveProviderForCurrency,
-} from '@common/payments/payment-region.resolver';
+import { resolveProviderForCurrency } from '@common/payments/payment-region.resolver';
 import {
   PaymentRoutingContext,
   PaymentRoutingMarket,
@@ -44,13 +42,17 @@ export class PaymentProviderResolverService {
       operatingCountryIsoCode: normalizedOperatingCountry,
     });
     const routing = this.paymentRuntimeConfigService.getPaymentRoutingConfig();
-    const orderedProviders = this.orderProvidersByRoutingPreference([
-      provider,
-    ], routing);
+    const orderedProviders = this.orderProvidersByRoutingPreference(
+      [provider],
+      routing,
+    );
 
     for (const candidate of orderedProviders) {
       try {
-        this.paymentProviderCapabilitiesService.assertAvailable(candidate, context);
+        this.paymentProviderCapabilitiesService.assertAvailable(
+          candidate,
+          context,
+        );
         return candidate;
       } catch {
         continue;
@@ -142,12 +144,7 @@ export class PaymentProviderResolverService {
     const preferred = routing.defaultProvider ? [routing.defaultProvider] : [];
 
     return Array.from(
-      new Set([
-        ...preferred,
-        ...fallback,
-        ...priority,
-        ...candidates,
-      ]),
+      new Set([...preferred, ...fallback, ...priority, ...candidates]),
     ).filter((provider) => candidates.includes(provider));
   }
 }

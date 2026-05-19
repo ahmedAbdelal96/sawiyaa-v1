@@ -13,10 +13,7 @@ export class PractitionerApplicationEligibilityPolicy {
     latestApplicationStatus: PractitionerApplicationStatus | null;
   }): {
     canSubmit: boolean;
-    reason:
-      | 'READINESS_NOT_MET'
-      | 'APPLICATION_ALREADY_SUBMITTED'
-      | null;
+    reason: 'READINESS_NOT_MET' | 'APPLICATION_ALREADY_SUBMITTED' | null;
   } {
     if (!input.readiness.canSubmitApplication) {
       return {
@@ -29,7 +26,10 @@ export class PractitionerApplicationEligibilityPolicy {
       input.latestApplicationStatus ===
         PractitionerApplicationStatus.SUBMITTED ||
       input.latestApplicationStatus ===
-        PractitionerApplicationStatus.UNDER_REVIEW
+        PractitionerApplicationStatus.UNDER_REVIEW ||
+      input.latestApplicationStatus ===
+        PractitionerApplicationStatus.APPROVED ||
+      input.latestApplicationStatus === PractitionerApplicationStatus.ARCHIVED
     ) {
       return {
         canSubmit: false,

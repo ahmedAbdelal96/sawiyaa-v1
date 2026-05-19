@@ -1,9 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import {
-  AuditEventSource,
-  NotificationChannel,
-  Prisma,
-} from '@prisma/client';
+import { AuditEventSource, NotificationChannel, Prisma } from '@prisma/client';
 import { PrismaService } from '@common/prisma/prisma.service';
 
 /**
@@ -56,7 +52,9 @@ export class VerificationNotificationRepository {
     notificationId: string,
   ) {
     const txWithAudit = tx as Prisma.TransactionClient & {
-      auditEvent?: { upsert: (args: Prisma.AuditEventUpsertArgs) => Promise<unknown> };
+      auditEvent?: {
+        upsert: (args: Prisma.AuditEventUpsertArgs) => Promise<unknown>;
+      };
     };
 
     if (!txWithAudit.auditEvent) {

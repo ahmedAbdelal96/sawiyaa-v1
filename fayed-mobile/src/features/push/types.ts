@@ -1,4 +1,4 @@
-import type { MobileRole } from "../auth/contracts";
+import type { MobileSupportedRole } from "../auth/contracts";
 
 export type NotificationDeviceProvider = "EXPO" | "FCM" | "APNS";
 export type NotificationDevicePlatform = "IOS" | "ANDROID" | "WEB";
@@ -73,7 +73,7 @@ export type PushPermissionStatus =
   | "not-supported";
 
 export function resolveNotificationDeviceRole(
-  role: MobileRole,
+  role: MobileSupportedRole,
 ): NotificationDeviceRole | null {
   if (role === "patient") {
     return "PATIENT";

@@ -1,4 +1,11 @@
-import { Controller, Get, Param, Patch, Query, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiForbiddenResponse,
@@ -45,7 +52,8 @@ export class UserNotificationsController {
   @ApiResponse({ status: 200, type: UserNotificationFeedSuccessResponseDto })
   @ApiUnauthorizedResponse({ description: 'Access token is required' })
   @ApiForbiddenResponse({
-    description: 'The authenticated session is not allowed to access this route',
+    description:
+      'The authenticated session is not allowed to access this route',
   })
   async list(
     @CurrentUser() authenticatedUser: AuthenticatedUser,
@@ -74,7 +82,8 @@ export class UserNotificationsController {
   })
   @ApiUnauthorizedResponse({ description: 'Access token is required' })
   @ApiForbiddenResponse({
-    description: 'The authenticated session is not allowed to access this route',
+    description:
+      'The authenticated session is not allowed to access this route',
   })
   async unreadCount(@CurrentUser() authenticatedUser: AuthenticatedUser) {
     const data = await this.getMyUnreadNotificationCountUseCase.execute({
@@ -97,7 +106,8 @@ export class UserNotificationsController {
   @ApiResponse({ status: 200, type: UserNotificationReadSuccessResponseDto })
   @ApiUnauthorizedResponse({ description: 'Access token is required' })
   @ApiForbiddenResponse({
-    description: 'The requested notification does not belong to the authenticated user',
+    description:
+      'The requested notification does not belong to the authenticated user',
   })
   @ApiNotFoundResponse({ description: 'Notification was not found' })
   async markRead(
@@ -127,7 +137,8 @@ export class UserNotificationsController {
   })
   @ApiUnauthorizedResponse({ description: 'Access token is required' })
   @ApiForbiddenResponse({
-    description: 'The authenticated session is not allowed to access this route',
+    description:
+      'The authenticated session is not allowed to access this route',
   })
   async markAllRead(@CurrentUser() authenticatedUser: AuthenticatedUser) {
     const data = await this.markAllMyNotificationsReadUseCase.execute({

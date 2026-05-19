@@ -21,6 +21,7 @@ import {
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { RequireAccountStates } from '@common/decorators/account-state.decorator';
+import { RequireStepUp } from '@common/decorators/step-up.decorator';
 import { CurrentUser } from '@common/decorators/current-user.decorator';
 import { Permissions } from '@common/decorators/permissions.decorator';
 import { Roles } from '@common/decorators/roles.decorator';
@@ -31,6 +32,8 @@ import { JwtAccessAuthGuard } from '@common/guards/authentication/jwt-access-aut
 import { PermissionsGuard } from '@common/guards/authorization/permissions.guard';
 import { RolesGuard } from '@common/guards/authorization/roles.guard';
 import { AuthenticatedUser } from '@common/interfaces/authenticated-user.interface';
+import { SecurityAuditService } from '@common/security-audit/security-audit.service';
+import { SecurityAuditOutcome } from '@prisma/client';
 import { AdminPaymentOpsSuccessResponseDto } from '../dto/payment-response.dto';
 import {
   RefundListSuccessResponseDto,
@@ -54,6 +57,7 @@ export class AdminPaymentRefundsController {
     private readonly retryPaymentRefundUseCase: RetryPaymentRefundUseCase,
     private readonly listPaymentRefundsUseCase: ListPaymentRefundsUseCase,
     private readonly getAdminPaymentOpsDetailsUseCase: GetAdminPaymentOpsDetailsUseCase,
+    private readonly securityAuditService: SecurityAuditService,
   ) {}
 
   @Get(':id')
@@ -92,6 +96,7 @@ export class AdminPaymentRefundsController {
   }
 
   @Post(':id/refunds')
+  @RequireStepUp('finance.refund.approve')
   @Permissions(PermissionKey.REFUNDS_APPROVE)
   @ApiOperation({
     summary: 'Request a payment refund',
@@ -118,16 +123,34 @@ export class AdminPaymentRefundsController {
     @Param('id') paymentId: string,
     @Body() body: RequestRefundDto,
   ) {
-    return this.requestPaymentRefundUseCase.execute({
-      paymentId,
-      actorUserId: currentUser.id,
-      amount: body.amount !== undefined ? body.amount.toFixed(2) : null,
-      reason: body.reason ?? null,
-      destination: body.destination,
-    });
+    return this.requestPaymentRefundUseCase
+      .execute({
+        paymentId,
+        actorUserId: currentUser.id,
+        amount: body.amount !== undefined ? body.amount.toFixed(2) : null,
+        reason: body.reason ?? null,
+        destination: body.destination,
+      })
+      .then((result) => {
+        this.securityAuditService.logAsync({
+          action: 'finance.refund.request',
+          outcome: SecurityAuditOutcome.SUCCESS,
+          actorUserId: currentUser.id,
+          actorRoles: currentUser.roles,
+          resourceType: 'Payment',
+          resourceId: paymentId,
+          targetUserId: currentUser.id,
+          metadata: {
+            refundId: (result as { item?: { id?: string } }).item?.id ?? null,
+            destination: body.destination ?? null,
+          },
+        });
+        return result;
+      });
   }
 
   @Post(':paymentId/refunds/:refundId/retry')
+  @RequireStepUp('finance.refund.retry')
   @Permissions(PermissionKey.REFUNDS_RETRY)
   @ApiOperation({
     summary: 'Retry a failed refund',
@@ -149,10 +172,26 @@ export class AdminPaymentRefundsController {
     @Param('paymentId') paymentId: string,
     @Param('refundId') refundId: string,
   ) {
-    return this.retryPaymentRefundUseCase.execute({
-      paymentId,
-      refundId,
-      actorUserId: currentUser.id,
-    });
+    return this.retryPaymentRefundUseCase
+      .execute({
+        paymentId,
+        refundId,
+        actorUserId: currentUser.id,
+      })
+      .then((result) => {
+        this.securityAuditService.logAsync({
+          action: 'finance.refund.retry',
+          outcome: SecurityAuditOutcome.SUCCESS,
+          actorUserId: currentUser.id,
+          actorRoles: currentUser.roles,
+          resourceType: 'PaymentRefund',
+          resourceId: refundId,
+          targetUserId: currentUser.id,
+          metadata: {
+            paymentId,
+          },
+        });
+        return result;
+      });
   }
 }

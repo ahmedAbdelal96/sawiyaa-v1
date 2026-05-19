@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { CourseStatus } from '@prisma/client';
 import { UpdateAcademyCourseDto } from '../dto/update-academy-course.dto';
 import { AcademyPresenter } from '../presenters/academy.presenter';
@@ -63,7 +67,10 @@ export class UpdateAcademyCourseUseCase {
     const lectureCount = course.lectures?.length ?? 0;
     const requestedStatus = input.payload.status;
 
-    if (requestedStatus === CourseStatus.PUBLISHED && lectureCount !== nextPlannedLectureCount) {
+    if (
+      requestedStatus === CourseStatus.PUBLISHED &&
+      lectureCount !== nextPlannedLectureCount
+    ) {
       throw new BadRequestException({
         messageKey: 'academy.errors.missingLectureSchedule',
         error: 'ACADEMY_MISSING_LECTURE_SCHEDULE',
@@ -123,16 +130,32 @@ export class UpdateAcademyCourseUseCase {
         ? { thumbnailUrl: input.payload.thumbnailUrl?.trim() || null }
         : {}),
       ...(input.payload.priceAmountEgp !== undefined
-        ? { priceAmountEgp: normalizeAcademyPriceValue(input.payload.priceAmountEgp) }
+        ? {
+            priceAmountEgp: normalizeAcademyPriceValue(
+              input.payload.priceAmountEgp,
+            ),
+          }
         : {}),
       ...(input.payload.priceAmountUsd !== undefined
-        ? { priceAmountUsd: normalizeAcademyPriceValue(input.payload.priceAmountUsd) }
+        ? {
+            priceAmountUsd: normalizeAcademyPriceValue(
+              input.payload.priceAmountUsd,
+            ),
+          }
         : {}),
       ...(input.payload.plannedDurationDays !== undefined
-        ? { plannedDurationDays: normalizeAcademyPlanValue(input.payload.plannedDurationDays) }
+        ? {
+            plannedDurationDays: normalizeAcademyPlanValue(
+              input.payload.plannedDurationDays,
+            ),
+          }
         : {}),
       ...(input.payload.plannedLectureCount !== undefined
-        ? { plannedLectureCount: normalizeAcademyPlanValue(input.payload.plannedLectureCount) }
+        ? {
+            plannedLectureCount: normalizeAcademyPlanValue(
+              input.payload.plannedLectureCount,
+            ),
+          }
         : {}),
       ...(pricingTouched && nextPricing
         ? {

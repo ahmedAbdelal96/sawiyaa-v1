@@ -23,15 +23,17 @@ export class CalculateCouponDiscountService {
       cappedDiscount,
       grossAmount,
     );
+    const platformDiscountShareAmount = this.moneyMathService
+      .percentOf(effectiveDiscount, input.coupon.platformSharePercent)
+      .toFixed(2);
+    const practitionerDiscountShareAmount = this.moneyMathService
+      .subtract(effectiveDiscount, platformDiscountShareAmount)
+      .toFixed(2);
 
     return {
       discountAmount: effectiveDiscount.toFixed(2),
-      platformDiscountShareAmount: this.moneyMathService
-        .percentOf(effectiveDiscount, input.coupon.platformSharePercent)
-        .toFixed(2),
-      practitionerDiscountShareAmount: this.moneyMathService
-        .percentOf(effectiveDiscount, input.coupon.practitionerSharePercent)
-        .toFixed(2),
+      platformDiscountShareAmount,
+      practitionerDiscountShareAmount,
       platformSharePercent: this.moneyMathService
         .toDecimal(input.coupon.platformSharePercent)
         .toFixed(2),

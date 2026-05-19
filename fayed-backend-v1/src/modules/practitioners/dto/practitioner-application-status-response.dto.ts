@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { PractitionerApplicationStatus } from '@prisma/client';
+import { PractitionerApplicationCompletionResponseDto } from './practitioner-application-completion-response.dto';
 
 export class PractitionerApplicationStatusResponseDto {
   @ApiProperty({ nullable: true })
@@ -34,6 +35,9 @@ export class PractitionerApplicationStatusResponseDto {
 
   @ApiProperty({ type: [String] })
   missingRequirements!: string[];
+
+  @ApiProperty({ type: PractitionerApplicationCompletionResponseDto })
+  completion!: PractitionerApplicationCompletionResponseDto;
 }
 
 export class PractitionerApplicationStatusSuccessResponseDto {

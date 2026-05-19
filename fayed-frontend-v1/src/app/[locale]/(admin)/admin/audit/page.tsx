@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import AdminAuditLogListScreen from "@/features/admin/audit/components/AdminAuditLogListScreen";
+import AdminPermissionGate from "@/components/admin/AdminPermissionGate";
+import { PermissionKey } from "@/lib/auth/permissions";
 
 type Props = {
   params: Promise<{ locale: string }>;
@@ -20,5 +22,9 @@ export default async function AdminAuditLogPage({ params }: Props) {
   const { locale } = await params;
   setRequestLocale(locale);
 
-  return <AdminAuditLogListScreen />;
+  return (
+    <AdminPermissionGate requiredPermissions={[PermissionKey.AUDIT_LOG_READ]}>
+      <AdminAuditLogListScreen />
+    </AdminPermissionGate>
+  );
 }

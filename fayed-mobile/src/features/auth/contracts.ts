@@ -1,9 +1,10 @@
-export type AppRole =
-  | "ADMIN"
-  | "SUPPORT_AGENT"
-  | "CONTENT_REVIEWER"
-  | "PATIENT"
-  | "PRACTITIONER";
+/**
+ * Raw role values the backend may return for any user.
+ * This is a superset — the mobile app only acts on PATIENT and PRACTITIONER.
+ * Admin-class roles (ADMIN, SUPER_ADMIN, FINANCE_STAFF, etc.) are intentionally
+ * excluded from this union: the mobile app must never accept or process them.
+ */
+export type AppRole = "PATIENT" | "PRACTITIONER";
 
 export type UserStatus =
   | "ACTIVE"
@@ -21,7 +22,17 @@ export type PractitionerStatus =
   | "SUSPENDED"
   | "INACTIVE";
 
-export type MobileRole = "patient" | "practitioner" | "admin";
+/**
+ * The only roles the mobile app supports at runtime.
+ * Admin-class roles are explicitly excluded; this type must never include "admin".
+ */
+export type MobileSupportedRole = "patient" | "practitioner";
+
+/**
+ * @deprecated Use MobileSupportedRole. Kept as alias so existing usages compile
+ * without a mass rename — will be removed once all callsites are migrated.
+ */
+export type MobileRole = MobileSupportedRole;
 
 export interface AuthTokens {
   accessToken: string;
@@ -105,6 +116,16 @@ export interface PatientLoginRequest {
   deviceId?: string;
 }
 
+export interface PatientForgotPasswordRequest {
+  email: string;
+}
+
+export interface PatientResetPasswordRequest {
+  email: string;
+  code: string;
+  newPassword: string;
+}
+
 export interface PractitionerRegisterRequest {
   email: string;
   otpEmail?: string;
@@ -159,7 +180,7 @@ export interface PractitionerResetPasswordRequest {
 }
 
 export interface PersistedAuthSession {
-  role: MobileRole;
+  role: MobileSupportedRole;
   user: AuthenticatedUser;
   tokens: AuthTokens;
 }

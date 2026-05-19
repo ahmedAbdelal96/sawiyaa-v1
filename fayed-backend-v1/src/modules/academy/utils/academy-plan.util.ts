@@ -6,7 +6,9 @@ type AcademyCoursePlanInput = {
   plannedLectureCount: number | null;
 };
 
-export function normalizeAcademyPlanValue(value: number | string | null | undefined) {
+export function normalizeAcademyPlanValue(
+  value: number | string | null | undefined,
+) {
   if (value === null || value === undefined || value === '') {
     return null;
   }
@@ -20,18 +22,26 @@ export function normalizeAcademyPlanValue(value: number | string | null | undefi
   return rounded > 0 ? rounded : null;
 }
 
-export function assertAcademyCoursePlanCompleteness(input: AcademyCoursePlanInput) {
+export function assertAcademyCoursePlanCompleteness(
+  input: AcademyCoursePlanInput,
+) {
   const missingFields: string[] = [];
 
   if (!input.startsAt) {
     missingFields.push('startsAt');
   }
 
-  if (input.plannedDurationDays === null || input.plannedDurationDays === undefined) {
+  if (
+    input.plannedDurationDays === null ||
+    input.plannedDurationDays === undefined
+  ) {
     missingFields.push('plannedDurationDays');
   }
 
-  if (input.plannedLectureCount === null || input.plannedLectureCount === undefined) {
+  if (
+    input.plannedLectureCount === null ||
+    input.plannedLectureCount === undefined
+  ) {
     missingFields.push('plannedLectureCount');
   }
 
@@ -62,7 +72,9 @@ export function resolveAcademyCoursePlan(input: AcademyCoursePlanInput) {
   assertAcademyCoursePlanCompleteness(input);
 
   const durationDays = input.plannedDurationDays ?? 0;
-  const endsAt = new Date(input.startsAt!.getTime() + durationDays * 24 * 60 * 60 * 1000);
+  const endsAt = new Date(
+    input.startsAt!.getTime() + durationDays * 24 * 60 * 60 * 1000,
+  );
 
   return {
     endsAt,

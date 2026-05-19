@@ -84,7 +84,9 @@ export class ValidatePackagePurchaseSlotsService {
 
       if (index > 0) {
         const previous = normalizedSlots[index - 1];
-        if (slot.scheduledStartAt.getTime() < previous.scheduledEndAt.getTime()) {
+        if (
+          slot.scheduledStartAt.getTime() < previous.scheduledEndAt.getTime()
+        ) {
           throw new BadRequestException({
             messageKey: 'packagePurchases.errors.overlappingSlots',
             error: 'PACKAGE_PURCHASE_OVERLAPPING_SLOTS',

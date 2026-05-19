@@ -3,6 +3,9 @@ export const enFinancialRulesCatalog = {
     commissionRuleCreated: 'Commission rule created successfully.',
     commissionRulesFetched: 'Commission rules fetched successfully.',
     couponCreated: 'Coupon created successfully.',
+    couponUpdated: 'Coupon updated successfully.',
+    couponDisabled: 'Coupon disabled successfully.',
+    couponRedemptionsFetched: 'Coupon redemptions fetched successfully.',
     couponValidated: 'Coupon validated successfully.',
     financialBreakdownCalculated:
       'Session financial breakdown calculated successfully.',
@@ -19,6 +22,19 @@ export const enFinancialRulesCatalog = {
     invalidDateRange: 'The provided date range is invalid.',
     couponNotFound: 'Coupon was not found.',
     couponCodeExists: 'Coupon code already exists.',
+    couponSlugExists: 'Coupon slug already exists.',
+    couponCodeInvalid:
+      'Coupon code may contain only letters, numbers, dashes, and underscores.',
+    practitionerCouponPercentageOnly:
+      'Practitioner promo codes support percentage discounts only.',
+    practitionerCouponDiscountTooHigh:
+      'Practitioner promo code discount cannot exceed 20%.',
+    practitionerCouponImmutableAfterRedemption:
+      'Discount value cannot be changed after redemptions exist.',
+    practitionerCouponInvalidMoney:
+      'The provided discount amount is invalid.',
+    couponUsageLimitBelowCurrentUsage:
+      'Usage limit cannot be set below the current redemption count.',
     couponNotActive: 'Coupon is not active.',
     couponApprovalRequired: 'Coupon approval is required before usage.',
     couponNotStarted: 'Coupon has not started yet.',

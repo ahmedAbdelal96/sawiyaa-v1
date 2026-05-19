@@ -63,7 +63,8 @@ export class PractitionerManualPayoutService {
   }) {
     const currencyCode = this.normalizeCurrency(input.currencyCode);
     const effectiveAt = input.paidAt ?? new Date();
-    const paymentMethod = input.paymentMethod ?? SettlementPayoutMethod.MANUAL_BANK_TRANSFER;
+    const paymentMethod =
+      input.paymentMethod ?? SettlementPayoutMethod.MANUAL_BANK_TRANSFER;
     const transferReference = input.transferReference?.trim() || null;
     const notes = input.notes?.trim() || null;
     const amountPaid = new Prisma.Decimal(input.amountPaid).toDecimalPlaces(2);
@@ -78,17 +79,19 @@ export class PractitionerManualPayoutService {
     const db = this.getDb(input.tx);
 
     if (transferReference) {
-      const existing = await this.manualPayoutRepository.findByTransferReference(
-        transferReference,
-        input.tx,
-      );
+      const existing =
+        await this.manualPayoutRepository.findByTransferReference(
+          transferReference,
+          input.tx,
+        );
       if (existing) {
         if (
           existing.practitionerId !== input.practitionerId ||
           existing.currencyCode !== currencyCode
         ) {
           throw new ConflictException({
-            messageKey: 'financialOperations.errors.manualPayoutAlreadyRecorded',
+            messageKey:
+              'financialOperations.errors.manualPayoutAlreadyRecorded',
             error: FINANCIAL_OPS_ERROR_CODES.manualPayoutAlreadyRecorded,
           });
         }
@@ -106,17 +109,19 @@ export class PractitionerManualPayoutService {
     )}))`;
 
     if (transferReference) {
-      const existing = await this.manualPayoutRepository.findByTransferReference(
-        transferReference,
-        input.tx,
-      );
+      const existing =
+        await this.manualPayoutRepository.findByTransferReference(
+          transferReference,
+          input.tx,
+        );
       if (existing) {
         if (
           existing.practitionerId !== input.practitionerId ||
           existing.currencyCode !== currencyCode
         ) {
           throw new ConflictException({
-            messageKey: 'financialOperations.errors.manualPayoutAlreadyRecorded',
+            messageKey:
+              'financialOperations.errors.manualPayoutAlreadyRecorded',
             error: FINANCIAL_OPS_ERROR_CODES.manualPayoutAlreadyRecorded,
           });
         }

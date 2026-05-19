@@ -8,13 +8,18 @@ import { PublicHelpController } from './public-help.controller';
 
 describe('Help controllers contract', () => {
   it('keeps admin help controller scoped to admin access', () => {
-    const classRoles = Reflect.getMetadata(ROLES_KEY, AdminHelpController) as unknown as AppRole[] | undefined;
+    const classRoles = Reflect.getMetadata(
+      ROLES_KEY,
+      AdminHelpController,
+    ) as unknown as AppRole[] | undefined;
     expect(classRoles).toEqual([AppRole.ADMIN]);
   });
 
   it('enforces auth and role guards for admin help controller', () => {
     const classGuards =
-      (Reflect.getMetadata(GUARDS_METADATA, AdminHelpController) as unknown as unknown[] | undefined) ?? [];
+      (Reflect.getMetadata(GUARDS_METADATA, AdminHelpController) as unknown as
+        | unknown[]
+        | undefined) ?? [];
 
     expect(classGuards).toContain(JwtAccessAuthGuard);
     expect(classGuards).toContain(RolesGuard);

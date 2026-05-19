@@ -84,11 +84,17 @@ export class PaymentGatewayControlRepository {
     afterSnapshot: ProviderSnapshot | RoutingSnapshot;
     rollbackSourceEventId?: string | null;
   }) {
-    const changedKeys = this.getChangedKeys(input.beforeSnapshot, input.afterSnapshot);
+    const changedKeys = this.getChangedKeys(
+      input.beforeSnapshot,
+      input.afterSnapshot,
+    );
 
     if (changedKeys.length === 0) {
       return {
-        revisionNumber: await this.getNextRevisionNumber(input.scope, input.provider),
+        revisionNumber: await this.getNextRevisionNumber(
+          input.scope,
+          input.provider,
+        ),
         auditEventId: null,
         configChangeLogIds: [],
         changedKeys,
@@ -101,7 +107,13 @@ export class PaymentGatewayControlRepository {
           await tx.configKeyCatalog.findMany({
             where: {
               key: {
-                in: changedKeys.map((key) => this.mapControlKeyToConfigKey(input.scope, input.provider, key)),
+                in: changedKeys.map((key) =>
+                  this.mapControlKeyToConfigKey(
+                    input.scope,
+                    input.provider,
+                    key,
+                  ),
+                ),
               },
             },
             select: {
@@ -126,14 +138,23 @@ export class PaymentGatewayControlRepository {
         })) + 1;
 
       for (const key of changedKeys) {
-        const configKeyName = this.mapControlKeyToConfigKey(input.scope, input.provider, key);
+        const configKeyName = this.mapControlKeyToConfigKey(
+          input.scope,
+          input.provider,
+          key,
+        );
         const configKey = configKeyMap.get(configKeyName);
 
         if (!configKey) {
-          throw new Error(`Missing config key catalog entry for payment gateway control key "${configKeyName}"`);
+          throw new Error(
+            `Missing config key catalog entry for payment gateway control key "${configKeyName}"`,
+          );
         }
 
-        const previousValue = this.extractSnapshotValue(input.beforeSnapshot, key);
+        const previousValue = this.extractSnapshotValue(
+          input.beforeSnapshot,
+          key,
+        );
         const nextValue = this.extractSnapshotValue(input.afterSnapshot, key);
 
         const currentValues = await tx.configValue.findMany({
@@ -169,7 +190,9 @@ export class PaymentGatewayControlRepository {
             configValueId: createdValue.id,
             changedByUserId: input.actorUserId,
             changeAction:
-              currentValues.length > 0 ? ConfigChangeAction.UPDATED : ConfigChangeAction.CREATED,
+              currentValues.length > 0
+                ? ConfigChangeAction.UPDATED
+                : ConfigChangeAction.CREATED,
             oldValueSnapshot: previousValue as Prisma.InputJsonValue,
             newValueSnapshot: nextValue as Prisma.InputJsonValue,
             reason: input.reason,
@@ -228,12 +251,18 @@ export class PaymentGatewayControlRepository {
     beforeSnapshot: ProviderSnapshot | RoutingSnapshot,
     afterSnapshot: ProviderSnapshot | RoutingSnapshot,
   ): string[] {
-    if (this.isRoutingSnapshot(beforeSnapshot) && this.isRoutingSnapshot(afterSnapshot)) {
+    if (
+      this.isRoutingSnapshot(beforeSnapshot) &&
+      this.isRoutingSnapshot(afterSnapshot)
+    ) {
       const keys: string[] = [];
       if (beforeSnapshot.defaultProvider !== afterSnapshot.defaultProvider) {
         keys.push('defaultProvider');
       }
-      if (JSON.stringify(beforeSnapshot.priorityOrder) !== JSON.stringify(afterSnapshot.priorityOrder)) {
+      if (
+        JSON.stringify(beforeSnapshot.priorityOrder) !==
+        JSON.stringify(afterSnapshot.priorityOrder)
+      ) {
         keys.push('priorityOrder');
       }
       if (beforeSnapshot.fallbackProvider !== afterSnapshot.fallbackProvider) {
@@ -242,7 +271,10 @@ export class PaymentGatewayControlRepository {
       return keys;
     }
 
-    if (this.isPaymobSnapshot(beforeSnapshot) && this.isPaymobSnapshot(afterSnapshot)) {
+    if (
+      this.isPaymobSnapshot(beforeSnapshot) &&
+      this.isPaymobSnapshot(afterSnapshot)
+    ) {
       const keys: Array<
         | 'enabled'
         | 'checkoutFlow'
@@ -252,25 +284,38 @@ export class PaymentGatewayControlRepository {
         | 'methodRegistry'
       > = [];
 
-      if (beforeSnapshot.enabled !== afterSnapshot.enabled) keys.push('enabled');
-      if (beforeSnapshot.checkoutFlow !== afterSnapshot.checkoutFlow) keys.push('checkoutFlow');
-      if (beforeSnapshot.defaultMethod !== afterSnapshot.defaultMethod) keys.push('defaultMethod');
-      if (beforeSnapshot.maintenanceMode !== afterSnapshot.maintenanceMode) keys.push('maintenanceMode');
+      if (beforeSnapshot.enabled !== afterSnapshot.enabled)
+        keys.push('enabled');
+      if (beforeSnapshot.checkoutFlow !== afterSnapshot.checkoutFlow)
+        keys.push('checkoutFlow');
+      if (beforeSnapshot.defaultMethod !== afterSnapshot.defaultMethod)
+        keys.push('defaultMethod');
+      if (beforeSnapshot.maintenanceMode !== afterSnapshot.maintenanceMode)
+        keys.push('maintenanceMode');
       if (
         JSON.stringify(beforeSnapshot.allowedCountryIsoCodes) !==
         JSON.stringify(afterSnapshot.allowedCountryIsoCodes)
       ) {
         keys.push('allowedCountryIsoCodes');
       }
-      if (JSON.stringify(beforeSnapshot.methodRegistry) !== JSON.stringify(afterSnapshot.methodRegistry)) {
+      if (
+        JSON.stringify(beforeSnapshot.methodRegistry) !==
+        JSON.stringify(afterSnapshot.methodRegistry)
+      ) {
         keys.push('methodRegistry');
       }
       return keys;
     }
 
-    if (this.isStripeSnapshot(beforeSnapshot) && this.isStripeSnapshot(afterSnapshot)) {
-      const keys: Array<'enabled' | 'maintenanceMode' | 'allowedCountryIsoCodes'> = [];
-      if (beforeSnapshot.enabled !== afterSnapshot.enabled) keys.push('enabled');
+    if (
+      this.isStripeSnapshot(beforeSnapshot) &&
+      this.isStripeSnapshot(afterSnapshot)
+    ) {
+      const keys: Array<
+        'enabled' | 'maintenanceMode' | 'allowedCountryIsoCodes'
+      > = [];
+      if (beforeSnapshot.enabled !== afterSnapshot.enabled)
+        keys.push('enabled');
       if (beforeSnapshot.maintenanceMode !== afterSnapshot.maintenanceMode) {
         keys.push('maintenanceMode');
       }
@@ -291,7 +336,7 @@ export class PaymentGatewayControlRepository {
     key: string,
   ): Prisma.JsonValue {
     if (this.isRoutingSnapshot(snapshot)) {
-      const routingSnapshot = snapshot as RoutingSnapshot;
+      const routingSnapshot = snapshot;
       switch (key) {
         case 'defaultProvider':
           return routingSnapshot.defaultProvider;
@@ -305,7 +350,7 @@ export class PaymentGatewayControlRepository {
     }
 
     if (this.isStripeSnapshot(snapshot)) {
-      const stripeSnapshot = snapshot as StripeGatewayControlRuntimeSnapshot;
+      const stripeSnapshot = snapshot;
       switch (key) {
         case 'enabled':
           return stripeSnapshot.enabled;
@@ -318,7 +363,7 @@ export class PaymentGatewayControlRepository {
       }
     }
 
-    const paymobSnapshot = snapshot as PaymobGatewayControlRuntimeSnapshot;
+    const paymobSnapshot = snapshot;
     switch (key) {
       case 'enabled':
         return paymobSnapshot.enabled;
@@ -337,7 +382,10 @@ export class PaymentGatewayControlRepository {
     }
   }
 
-  private buildConfigValueCreateData(configKeyId: string, value: Prisma.JsonValue) {
+  private buildConfigValueCreateData(
+    configKeyId: string,
+    value: Prisma.JsonValue,
+  ) {
     if (typeof value === 'boolean') {
       return {
         configKeyId,
@@ -439,19 +487,27 @@ export class PaymentGatewayControlRepository {
   private isPaymobSnapshot(
     snapshot: ProviderSnapshot | RoutingSnapshot,
   ): snapshot is PaymobGatewayControlRuntimeSnapshot {
-    return (snapshot as PaymobGatewayControlRuntimeSnapshot).provider === PaymentProvider.PAYMOB;
+    return (
+      (snapshot as PaymobGatewayControlRuntimeSnapshot).provider ===
+      PaymentProvider.PAYMOB
+    );
   }
 
   private isStripeSnapshot(
     snapshot: ProviderSnapshot | RoutingSnapshot,
   ): snapshot is StripeGatewayControlRuntimeSnapshot {
-    return (snapshot as StripeGatewayControlRuntimeSnapshot).provider === PaymentProvider.STRIPE;
+    return (
+      (snapshot as StripeGatewayControlRuntimeSnapshot).provider ===
+      PaymentProvider.STRIPE
+    );
   }
 
   private isRoutingSnapshot(
     snapshot: ProviderSnapshot | RoutingSnapshot,
   ): snapshot is RoutingSnapshot {
-    return typeof (snapshot as RoutingSnapshot).defaultProvider !== 'undefined' &&
-      Array.isArray((snapshot as RoutingSnapshot).priorityOrder);
+    return (
+      typeof (snapshot as RoutingSnapshot).defaultProvider !== 'undefined' &&
+      Array.isArray((snapshot as RoutingSnapshot).priorityOrder)
+    );
   }
 }

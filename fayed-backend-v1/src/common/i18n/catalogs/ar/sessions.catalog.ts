@@ -18,7 +18,8 @@ export const arSessionsCatalog = {
     sessionCancelledPractitionerTitle: 'تم إلغاء الجلسة بواسطة المريض',
     sessionCancelledPractitionerBody:
       'قام المريض بإلغاء جلسة مجدولة في {{sessionAt}}.',
-    packageSessionContext: ' الجلسة {{packageSessionIndex}} من أصل {{packageSessionCount}} ضمن الباقة الخاصة بك.',
+    packageSessionContext:
+      ' الجلسة {{packageSessionIndex}} من أصل {{packageSessionCount}} ضمن الباقة الخاصة بك.',
   },
   errors: {
     patientNotFound: 'لم يتم العثور على ملف المريض',

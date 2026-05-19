@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import {
@@ -21,9 +21,9 @@ import {
   useCancelPatientSession,
   usePreviewPatientSessionCancellation,
   usePreparePatientSessionRuntime,
-  usePatientSession,
   useResolvePatientSessionJoinContract,
 } from "../hooks/use-sessions";
+import { getPatientSession } from "../api/sessions.api";
 import {
   buildProviderLaunchUrl,
   canPrepareSessionRuntime,
@@ -45,6 +45,7 @@ import SessionStatusBadge from "./SessionStatusBadge";
 import type {
   SessionJoinItem,
   SessionRuntimeItem,
+  SessionItem,
   SessionStatus,
 } from "../types/sessions.types";
 
@@ -73,18 +74,65 @@ type Props = {
   sessionId: string;
 };
 
+type SessionLoadState =
+  | {
+      status: "loading";
+      session: null;
+      error: null;
+    }
+  | {
+      status: "loaded";
+      session: SessionItem;
+      error: null;
+    }
+  | {
+      status: "error";
+      session: null;
+      error: ReturnType<typeof toAppError>;
+    };
+
 export default function PatientSessionDetailPanel({ sessionId }: Props) {
   const t = useTranslations("sessions");
   const tPayments = useTranslations("payments");
   const locale = useLocale();
   const numLocale = locale === "ar" ? "ar-SA" : "en-US";
 
-  const { data: session, isLoading, isError } = usePatientSession(sessionId);
   const { data: paymentsData } = usePatientPayments({ limit: 20 });
   const cancelMutation = useCancelPatientSession();
   const previewCancellationMutation = usePreviewPatientSessionCancellation();
   const prepareMutation = usePreparePatientSessionRuntime();
   const joinMutation = useResolvePatientSessionJoinContract();
+  const [sessionState, setSessionState] = useState<SessionLoadState>({
+    status: "loading",
+    session: null,
+    error: null,
+  });
+
+  useEffect(() => {
+    let cancelled = false;
+
+    void getPatientSession(sessionId)
+      .then((loadedSession) => {
+        if (cancelled) return;
+        setSessionState({
+          status: "loaded",
+          session: loadedSession,
+          error: null,
+        });
+      })
+      .catch((cause) => {
+        if (cancelled) return;
+        setSessionState({
+          status: "error",
+          session: null,
+          error: toAppError(cause),
+        });
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [sessionId]);
 
   const [confirmingCancel, setConfirmingCancel] = useState(false);
   const [cancellationReasonDraft, setCancellationReasonDraft] = useState("");
@@ -94,27 +142,63 @@ export default function PatientSessionDetailPanel({ sessionId }: Props) {
   const [cancelPreviewError, setCancelPreviewError] = useState(false);
   const [joinResult, setJoinResult] = useState<SessionJoinItem | null>(null);
   const [prepareResult, setPrepareResult] = useState<SessionRuntimeItem | null>(null);
+  const session = sessionState.session;
+  const sessionError = sessionState.error;
+  const activeSessionError = sessionError;
+  const isForbidden = activeSessionError?.statusCode === 403;
+  const isNotFound = activeSessionError?.statusCode === 404;
+  const errorTitle = isForbidden
+    ? t("detail.errors.forbiddenTitle")
+    : isNotFound
+      ? t("detail.errors.notFoundTitle")
+      : t("detail.errors.errorTitle");
+  const errorNote = isForbidden
+    ? t("detail.errors.forbiddenNote")
+    : isNotFound
+      ? t("detail.errors.notFoundNote")
+      : t("detail.errors.errorNote");
 
-  if (isLoading) {
-    return (
-    <div className="app-max-content mx-auto">
-        <ListStateSkeleton items={3} heightClass="h-32" />
-      </div>
-    );
-  }
-
-  if (isError || !session) {
+  if (activeSessionError) {
     return (
       <StateCard
         icon={<AlertCircle size={36} className="text-primary" />}
-        title={t("list.errorHeading")}
-        note={t("list.errorNote")}
+        title={errorTitle}
+        note={errorNote}
         action={{
           label: t("detail.backToSessions"),
           href: (
             <Link
               href="/patient/sessions"
-              className="inline-flex items-center justify-center rounded-2xl border border-border-light px-5 py-2 text-sm text-text-secondary hover:bg-surface-tertiary dark:hover:bg-white/5"
+              className="inline-flex items-center justify-center rounded-2xl border border-border-light bg-white px-5 py-2 text-sm font-medium text-text-secondary transition hover:border-primary/30 hover:text-primary dark:bg-white/5 dark:hover:bg-white/10"
+            >
+              {t("detail.backToSessions")}
+            </Link>
+          ),
+        }}
+      />
+    );
+  }
+
+  if (sessionState.status === "loading") {
+    return (
+      <div className="app-max-content mx-auto">
+        <ListStateSkeleton items={3} heightClass="h-32" />
+      </div>
+    );
+  }
+
+  if (!session) {
+    return (
+      <StateCard
+        icon={<AlertCircle size={36} className="text-primary" />}
+        title={t("detail.errors.errorTitle")}
+        note={t("detail.errors.errorNote")}
+        action={{
+          label: t("detail.backToSessions"),
+          href: (
+            <Link
+              href="/patient/sessions"
+              className="inline-flex items-center justify-center rounded-2xl border border-border-light bg-white px-5 py-2 text-sm font-medium text-text-secondary transition hover:border-primary/30 hover:text-primary dark:bg-white/5 dark:hover:bg-white/10"
             >
               {t("detail.backToSessions")}
             </Link>

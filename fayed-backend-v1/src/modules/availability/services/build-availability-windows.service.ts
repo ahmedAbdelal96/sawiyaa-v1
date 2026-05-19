@@ -21,6 +21,11 @@ interface WindowRange {
   durationMinutes: number | null;
 }
 
+interface BookedSessionRange {
+  startsAt: Date;
+  endsAt: Date;
+}
+
 /**
  * Window builder derives concrete UTC availability windows from recurring schedule plus exceptions.
  * V1 stops at "available windows" and intentionally does not reserve, lock, or create sessions.
@@ -31,6 +36,7 @@ export class BuildAvailabilityWindowsService {
     timezone: string;
     weeklySlots: AvailabilitySlot[];
     exceptions: AvailabilityException[];
+    bookedSessions?: BookedSessionRange[];
     fromUtc: Date;
     toUtc: Date;
   }): AvailabilityWindow[] {
@@ -70,8 +76,16 @@ export class BuildAvailabilityWindowsService {
       mergedBase,
       blockWindows,
     );
+    const availableAfterBookings = this.subtractBlockedRanges(
+      availableAfterBlocks,
+      (input.bookedSessions ?? []).map((session) => ({
+        startsAt: session.startsAt,
+        endsAt: session.endsAt,
+        durationMinutes: null,
+      })),
+    );
 
-    return availableAfterBlocks
+    return availableAfterBookings
       .sort(
         (left, right) =>
           left.startsAt.getTime() - right.startsAt.getTime() ||

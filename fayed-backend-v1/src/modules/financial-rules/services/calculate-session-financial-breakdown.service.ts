@@ -1,9 +1,7 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { PaymentPurpose } from '@prisma/client';
 import { CouponRepository } from '../repositories/coupon.repository';
-import {
-  resolvePaymentRegionalResolution,
-} from '@common/payments/payment-region.resolver';
+import { resolvePaymentRegionalResolution } from '@common/payments/payment-region.resolver';
 import {
   PaymentFinancialResolution,
   SessionFinancialBreakdownViewModel,
@@ -143,18 +141,18 @@ export class CalculateSessionFinancialBreakdownService {
     const amountFromPractitioner =
       currencyCode === 'EGP'
         ? session.durationMinutes === 30
-          ? session.practitioner.sessionPrice30Egp ??
-            session.practitioner.sessionPrice30
+          ? (session.practitioner.sessionPrice30Egp ??
+            session.practitioner.sessionPrice30)
           : session.durationMinutes === 60
-            ? session.practitioner.sessionPrice60Egp ??
-              session.practitioner.sessionPrice60
+            ? (session.practitioner.sessionPrice60Egp ??
+              session.practitioner.sessionPrice60)
             : null
         : session.durationMinutes === 30
-          ? session.practitioner.sessionPrice30Usd ??
-            session.practitioner.sessionPrice30
+          ? (session.practitioner.sessionPrice30Usd ??
+            session.practitioner.sessionPrice30)
           : session.durationMinutes === 60
-            ? session.practitioner.sessionPrice60Usd ??
-              session.practitioner.sessionPrice60
+            ? (session.practitioner.sessionPrice60Usd ??
+              session.practitioner.sessionPrice60)
             : null;
 
     if (amountFromPractitioner) {

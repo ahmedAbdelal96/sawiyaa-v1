@@ -113,6 +113,8 @@ enum CredentialType {
   LICENSE
   DEGREE
   CERTIFICATION
+  NATIONAL_ID_FRONT
+  NATIONAL_ID_BACK
   NATIONAL_ID
   PASSPORT
   MEMBERSHIP
@@ -344,21 +346,21 @@ enum RefundStatus {
   CANCELLED
 }
 
-  enum RefundDestination {
-    ORIGINAL_METHOD
-    CUSTOMER_WALLET
-  }
+enum RefundDestination {
+  ORIGINAL_METHOD
+  CUSTOMER_WALLET
+}
 
-  enum RefundPolicyType {
-    SESSION
-    PACKAGE
-  }
+enum RefundPolicyType {
+  SESSION
+  PACKAGE
+}
 
-  enum RefundPolicyVersionStatus {
-    DRAFT
-    ACTIVE
-    ARCHIVED
-  }
+enum RefundPolicyVersionStatus {
+  DRAFT
+  ACTIVE
+  ARCHIVED
+}
 
 enum PractitionerPackageStatus {
   DRAFT
@@ -397,8 +399,8 @@ enum SessionPaymentCoverageType {
   PACKAGE
 }
 
-  model PackagePlan {
-    id              String    @id @default(uuid()) @db.Uuid
+model PackagePlan {
+  id              String    @id @default(uuid()) @db.Uuid
   code            String    @unique @db.VarChar(100)
   sessionCount    Int
   discountPercent Decimal   @db.Decimal(5, 2)
@@ -414,110 +416,110 @@ enum SessionPaymentCoverageType {
   purchases PatientPackagePurchase[]
 
   @@index([isActive, sortOrder])
-    @@index([archivedAt, isActive])
-    @@index([sessionCount, discountPercent])
-  }
+  @@index([archivedAt, isActive])
+  @@index([sessionCount, discountPercent])
+}
 
-  model RefundPolicy {
-    id              String               @id @default(uuid()) @db.Uuid
-    policyType      RefundPolicyType     @unique
-    key             String               @unique @db.VarChar(191)
-    isPublic        Boolean              @default(true)
-    titleAr         String?              @db.VarChar(500)
-    titleEn         String?              @db.VarChar(500)
-    isActive        Boolean              @default(true)
-    activeVersionId String?              @unique @db.Uuid
-    createdAt       DateTime             @default(now())
-    updatedAt       DateTime             @updatedAt
+model RefundPolicy {
+  id              String           @id @default(uuid()) @db.Uuid
+  policyType      RefundPolicyType @unique
+  key             String           @unique @db.VarChar(191)
+  isPublic        Boolean          @default(true)
+  titleAr         String?          @db.VarChar(500)
+  titleEn         String?          @db.VarChar(500)
+  isActive        Boolean          @default(true)
+  activeVersionId String?          @unique @db.Uuid
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
 
-      activeVersion RefundPolicyVersion? @relation("RefundPolicyActiveVersion", fields: [activeVersionId], references: [id], onDelete: SetNull)
-      clauses       RefundPolicyClause[]
-      acceptances   RefundPolicyAcceptance[]
-      versions      RefundPolicyVersion[]
-    }
+  activeVersion RefundPolicyVersion?     @relation("RefundPolicyActiveVersion", fields: [activeVersionId], references: [id], onDelete: SetNull)
+  clauses       RefundPolicyClause[]
+  acceptances   RefundPolicyAcceptance[]
+  versions      RefundPolicyVersion[]
+}
 
-  model RefundPolicyClause {
-    id            String   @id @default(uuid()) @db.Uuid
-    policyId      String   @db.Uuid
-    titleAr       String?  @db.VarChar(1000)
-    titleEn       String?  @db.VarChar(1000)
-    bodyAr        String   @db.VarChar(4000)
-    bodyEn        String   @db.VarChar(4000)
-    sortOrder     Int
-    isActive      Boolean  @default(true)
-    createdAt     DateTime @default(now())
-    updatedAt     DateTime @updatedAt
+model RefundPolicyClause {
+  id        String   @id @default(uuid()) @db.Uuid
+  policyId  String   @db.Uuid
+  titleAr   String?  @db.VarChar(1000)
+  titleEn   String?  @db.VarChar(1000)
+  bodyAr    String   @db.VarChar(4000)
+  bodyEn    String   @db.VarChar(4000)
+  sortOrder Int
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-    policy RefundPolicy @relation(fields: [policyId], references: [id], onDelete: Cascade)
+  policy RefundPolicy @relation(fields: [policyId], references: [id], onDelete: Cascade)
 
-    @@index([policyId, sortOrder])
-    @@index([policyId, isActive, sortOrder])
-  }
+  @@index([policyId, sortOrder])
+  @@index([policyId, isActive, sortOrder])
+}
 
-  model RefundPolicyVersion {
-    id                    String                     @id @default(uuid()) @db.Uuid
-    refundPolicyId        String                     @db.Uuid
-    versionNumber         Int
-    titleByLocaleJson     Json
-    summaryByLocaleJson   Json
-    localizedContentJson  Json
-    clausesJson           Json
-    rulesJson             Json
-    contentHash           String                     @db.VarChar(64)
-    status                RefundPolicyVersionStatus  @default(DRAFT)
-    effectiveFrom         DateTime?
-    publishedAt           DateTime?
-    publishedByAdminId    String?                    @db.Uuid
-    archivedAt            DateTime?
-    createdAt             DateTime                   @default(now())
-    updatedAt             DateTime                   @updatedAt
+model RefundPolicyVersion {
+  id                   String                    @id @default(uuid()) @db.Uuid
+  refundPolicyId       String                    @db.Uuid
+  versionNumber        Int
+  titleByLocaleJson    Json
+  summaryByLocaleJson  Json
+  localizedContentJson Json
+  clausesJson          Json
+  rulesJson            Json
+  contentHash          String                    @db.VarChar(64)
+  status               RefundPolicyVersionStatus @default(DRAFT)
+  effectiveFrom        DateTime?
+  publishedAt          DateTime?
+  publishedByAdminId   String?                   @db.Uuid
+  archivedAt           DateTime?
+  createdAt            DateTime                  @default(now())
+  updatedAt            DateTime                  @updatedAt
 
-    policy     RefundPolicy            @relation(fields: [refundPolicyId], references: [id], onDelete: Cascade)
-    activeFor  RefundPolicy?           @relation("RefundPolicyActiveVersion")
-    acceptances RefundPolicyAcceptance[]
+  policy      RefundPolicy             @relation(fields: [refundPolicyId], references: [id], onDelete: Cascade)
+  activeFor   RefundPolicy?            @relation("RefundPolicyActiveVersion")
+  acceptances RefundPolicyAcceptance[]
 
-    @@unique([refundPolicyId, versionNumber])
-    @@index([refundPolicyId, status, versionNumber])
-    @@index([refundPolicyId, publishedAt])
-  }
+  @@unique([refundPolicyId, versionNumber])
+  @@index([refundPolicyId, status, versionNumber])
+  @@index([refundPolicyId, publishedAt])
+}
 
-  model RefundPolicyAcceptance {
-    id                        String    @id @default(uuid()) @db.Uuid
-    policyId                  String    @db.Uuid
-    refundPolicyVersionId      String?   @db.Uuid
-    refundPolicyType           RefundPolicyType
-    acceptedAt                 DateTime  @default(now())
-    acceptedByUserId           String    @db.Uuid
-    paymentId                  String?   @unique @db.Uuid
-    sessionId                  String?   @db.Uuid
-    packagePurchaseId          String?   @db.Uuid
-    policyVersionNumberSnapshot Int
-    policyTypeSnapshot         RefundPolicyType?
-    policyTitleArSnapshot      String?   @db.VarChar(500)
-    policyTitleEnSnapshot      String?   @db.VarChar(500)
-    policyTitleSnapshotJson    Json
-    policySummarySnapshotJson  Json
-    clausesSnapshotJson        Json
-    rulesSnapshotJson          Json
-    contentHashSnapshot        String    @db.VarChar(64)
-    displayLocale              String    @db.VarChar(20)
-    userAgent                  String?   @db.VarChar(500)
-    ipAddress                  String?   @db.VarChar(100)
-    consentTextHash            String?   @db.VarChar(64)
-    metadataJson               Json?
-    createdAt                  DateTime  @default(now())
+model RefundPolicyAcceptance {
+  id                          String            @id @default(uuid()) @db.Uuid
+  policyId                    String            @db.Uuid
+  refundPolicyVersionId       String?           @db.Uuid
+  refundPolicyType            RefundPolicyType
+  acceptedAt                  DateTime          @default(now())
+  acceptedByUserId            String            @db.Uuid
+  paymentId                   String?           @unique @db.Uuid
+  sessionId                   String?           @db.Uuid
+  packagePurchaseId           String?           @db.Uuid
+  policyVersionNumberSnapshot Int
+  policyTypeSnapshot          RefundPolicyType?
+  policyTitleArSnapshot       String?           @db.VarChar(500)
+  policyTitleEnSnapshot       String?           @db.VarChar(500)
+  policyTitleSnapshotJson     Json
+  policySummarySnapshotJson   Json
+  clausesSnapshotJson         Json
+  rulesSnapshotJson           Json
+  contentHashSnapshot         String            @db.VarChar(64)
+  displayLocale               String            @db.VarChar(20)
+  userAgent                   String?           @db.VarChar(500)
+  ipAddress                   String?           @db.VarChar(100)
+  consentTextHash             String?           @db.VarChar(64)
+  metadataJson                Json?
+  createdAt                   DateTime          @default(now())
 
-    refundPolicy         RefundPolicy         @relation(fields: [policyId], references: [id], onDelete: Restrict)
-    refundPolicyVersion RefundPolicyVersion? @relation(fields: [refundPolicyVersionId], references: [id], onDelete: SetNull)
-    acceptedByUser      User               @relation(fields: [acceptedByUserId], references: [id], onDelete: Restrict)
+  refundPolicy        RefundPolicy         @relation(fields: [policyId], references: [id], onDelete: Restrict)
+  refundPolicyVersion RefundPolicyVersion? @relation(fields: [refundPolicyVersionId], references: [id], onDelete: SetNull)
+  acceptedByUser      User                 @relation(fields: [acceptedByUserId], references: [id], onDelete: Restrict)
 
-    @@index([policyId, acceptedAt])
-    @@index([refundPolicyVersionId, acceptedAt])
-    @@index([refundPolicyType, acceptedAt])
-    @@index([paymentId])
-    @@index([sessionId])
-    @@index([packagePurchaseId])
-  }
+  @@index([policyId, acceptedAt])
+  @@index([refundPolicyVersionId, acceptedAt])
+  @@index([refundPolicyType, acceptedAt])
+  @@index([paymentId])
+  @@index([sessionId])
+  @@index([packagePurchaseId])
+}
 
 enum LedgerEntryType {
   SESSION_GROSS
@@ -569,6 +571,43 @@ enum ReconciliationReviewStatus {
   MISSING_PROOF
   REQUIRES_ADJUSTMENT
   RESOLVED
+}
+
+enum AccountingReconciliationScope {
+  PAYMENTS
+  WALLETS
+  SETTLEMENTS
+  REFUNDS
+  PACKAGE_SETTLEMENTS
+  FULL
+}
+
+enum AccountingReconciliationRunTrigger {
+  MANUAL
+  ADMIN
+  SCHEDULED
+  SYSTEM
+}
+
+enum AccountingReconciliationRunStatus {
+  RUNNING
+  COMPLETED
+  COMPLETED_WITH_ISSUES
+  FAILED
+}
+
+enum AccountingReconciliationIssueStatus {
+  OPEN
+  ACKNOWLEDGED
+  RESOLVED
+  IGNORED
+}
+
+enum AccountingReconciliationSeverity {
+  INFO
+  WARNING
+  ERROR
+  CRITICAL
 }
 
 enum WalletBalanceBucket {
@@ -1130,25 +1169,29 @@ model User {
   patientProfile      PatientProfile?
   practitionerProfile PractitionerProfile?
 
-  authoredArticles               Article[]                      @relation("ArticleAuthorUser")
-  configChanges                  ConfigChangeLog[]              @relation("ConfigChangeByUser")
-  auditEvents                    AuditEvent[]                   @relation("AuditEventActorUser")
-  notificationPreferences        NotificationPreference[]
-  notifications                  Notification[]
-  notificationDevices            NotificationDevice[]
-  refundPolicyAcceptances        RefundPolicyAcceptance[]
-  inAppNotificationFeedStates    InAppNotificationFeedState[]
-  trainingInstructors            TrainingInstructor[]
-  trainingCoursesCreated         Course[]                       @relation("TrainingCourseCreatedByUser")
-  trainingCoursesPublished       Course[]                       @relation("TrainingCoursePublishedByUser")
-  trainingCourseSchedulesCreated CourseSchedule[]               @relation("TrainingCourseScheduleCreatedByUser")
-  trainingCourseSessionsCreated  CourseSession[]                @relation("TrainingCourseSessionCreatedByUser")
-  academyCoursesLecturesCreated  AcademyCourseLecture[]         @relation("AcademyCourseLectureCreatedByUser")
-  enrollments                    Enrollment[]
-  settlementPayouts              PractitionerSettlementPayout[]
-  recordedManualPayouts          PractitionerManualPayout[]
-  financeReconciliationReviews   FinanceReconciliationReview[]
-  sessionCancellationRecords     SessionCancellationRecord[]    @relation("SessionCancellationRecordCancelledByUser")
+  authoredArticles                              Article[]                       @relation("ArticleAuthorUser")
+  configChanges                                 ConfigChangeLog[]               @relation("ConfigChangeByUser")
+  auditEvents                                   AuditEvent[]                    @relation("AuditEventActorUser")
+  notificationPreferences                       NotificationPreference[]
+  notifications                                 Notification[]
+  notificationDevices                           NotificationDevice[]
+  refundPolicyAcceptances                       RefundPolicyAcceptance[]
+  inAppNotificationFeedStates                   InAppNotificationFeedState[]
+  trainingInstructors                           TrainingInstructor[]
+  trainingCoursesCreated                        Course[]                        @relation("TrainingCourseCreatedByUser")
+  trainingCoursesPublished                      Course[]                        @relation("TrainingCoursePublishedByUser")
+  trainingCourseSchedulesCreated                CourseSchedule[]                @relation("TrainingCourseScheduleCreatedByUser")
+  trainingCourseSessionsCreated                 CourseSession[]                 @relation("TrainingCourseSessionCreatedByUser")
+  academyCoursesLecturesCreated                 AcademyCourseLecture[]          @relation("AcademyCourseLectureCreatedByUser")
+  enrollments                                   Enrollment[]
+  settlementPayouts                             PractitionerSettlementPayout[]
+  recordedManualPayouts                         PractitionerManualPayout[]
+  financeReconciliationReviews                  FinanceReconciliationReview[]
+  accountingReconciliationRuns                  AccountingReconciliationRun[]
+  accountingReconciliationIssueAcknowledgements AccountingReconciliationIssue[] @relation("AccountingReconciliationIssueAcknowledgedBy")
+  accountingReconciliationIssueResolutions      AccountingReconciliationIssue[] @relation("AccountingReconciliationIssueResolvedBy")
+  accountingReconciliationIssueIgnores          AccountingReconciliationIssue[] @relation("AccountingReconciliationIssueIgnoredBy")
+  sessionCancellationRecords                    SessionCancellationRecord[]     @relation("SessionCancellationRecordCancelledByUser")
 }
 
 model UserEmail {
@@ -1258,6 +1301,8 @@ model UserSession {
   userAgent        String?   @db.VarChar(500)
   expiresAt        DateTime?
   revokedAt        DateTime?
+  stepUpVerifiedAt DateTime?
+  stepUpExpiresAt  DateTime?
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 
@@ -1265,6 +1310,7 @@ model UserSession {
 
   @@index([userId, revokedAt])
   @@index([expiresAt])
+  @@index([stepUpExpiresAt])
 }
 
 model OtpChallenge {
@@ -1570,12 +1616,12 @@ model PatientPackagePurchase {
   createdAt                         DateTime                     @default(now())
   updatedAt                         DateTime                     @updatedAt
 
-  package      PractitionerPackage? @relation(fields: [packageId], references: [id], onDelete: SetNull)
-  packagePlan  PackagePlan?         @relation(fields: [packagePlanId], references: [id], onDelete: SetNull)
-  practitioner PractitionerProfile  @relation(fields: [practitionerId], references: [id], onDelete: Restrict)
-  patient      PatientProfile       @relation(fields: [patientId], references: [id], onDelete: Restrict)
-  payment      Payment?             @relation("PatientPackagePurchasePayment", fields: [paymentId], references: [id], onDelete: SetNull)
-  sessions     Session[]            @relation("SessionPackagePurchase")
+  package           PractitionerPackage? @relation(fields: [packageId], references: [id], onDelete: SetNull)
+  packagePlan       PackagePlan?         @relation(fields: [packagePlanId], references: [id], onDelete: SetNull)
+  practitioner      PractitionerProfile  @relation(fields: [practitionerId], references: [id], onDelete: Restrict)
+  patient           PatientProfile       @relation(fields: [patientId], references: [id], onDelete: Restrict)
+  payment           Payment?             @relation("PatientPackagePurchasePayment", fields: [paymentId], references: [id], onDelete: SetNull)
+  sessions          Session[]            @relation("SessionPackagePurchase")
   packageSettlement PackageSettlement?
 
   @@index([packagePlanId, status, createdAt])
@@ -1586,33 +1632,33 @@ model PatientPackagePurchase {
 }
 
 model PackageSettlement {
-  id                        String                  @id @default(uuid()) @db.Uuid
-  purchaseId                String                  @unique @db.Uuid
-  practitionerId            String                  @db.Uuid
-  patientId                 String                  @db.Uuid
-  currencyCode              String                  @db.VarChar(3)
-  status                    PackageSettlementStatus @default(HELD)
-  sessionCount              Int
-  completedSessionsCount    Int                     @default(0)
-  heldPractitionerAmount    Decimal                 @default(0) @db.Decimal(18, 2)
-  heldPlatformAmount        Decimal                 @default(0) @db.Decimal(18, 2)
-  releasablePractitionerAmount Decimal               @default(0) @db.Decimal(18, 2)
-  releasedPractitionerAmount Decimal                 @default(0) @db.Decimal(18, 2)
-  normalEquivalentUsedAmount  Decimal                @default(0) @db.Decimal(18, 2)
-  discountAppliedAmount     Decimal                 @default(0) @db.Decimal(18, 2)
-  reviewedAt                DateTime?
-  reviewedByAdminId         String?                 @db.Uuid
-  releasedAt                DateTime?
-  releasedByAdminId         String?                 @db.Uuid
-  decision                  String?                 @db.VarChar(100)
-  notes                     String?                 @db.VarChar(1000)
-  metadataJson              Json?
-  createdAt                 DateTime                @default(now())
-  updatedAt                 DateTime                @updatedAt
+  id                           String                  @id @default(uuid()) @db.Uuid
+  purchaseId                   String                  @unique @db.Uuid
+  practitionerId               String                  @db.Uuid
+  patientId                    String                  @db.Uuid
+  currencyCode                 String                  @db.VarChar(3)
+  status                       PackageSettlementStatus @default(HELD)
+  sessionCount                 Int
+  completedSessionsCount       Int                     @default(0)
+  heldPractitionerAmount       Decimal                 @default(0) @db.Decimal(18, 2)
+  heldPlatformAmount           Decimal                 @default(0) @db.Decimal(18, 2)
+  releasablePractitionerAmount Decimal                 @default(0) @db.Decimal(18, 2)
+  releasedPractitionerAmount   Decimal                 @default(0) @db.Decimal(18, 2)
+  normalEquivalentUsedAmount   Decimal                 @default(0) @db.Decimal(18, 2)
+  discountAppliedAmount        Decimal                 @default(0) @db.Decimal(18, 2)
+  reviewedAt                   DateTime?
+  reviewedByAdminId            String?                 @db.Uuid
+  releasedAt                   DateTime?
+  releasedByAdminId            String?                 @db.Uuid
+  decision                     String?                 @db.VarChar(100)
+  notes                        String?                 @db.VarChar(1000)
+  metadataJson                 Json?
+  createdAt                    DateTime                @default(now())
+  updatedAt                    DateTime                @updatedAt
 
-  purchase      PatientPackagePurchase @relation(fields: [purchaseId], references: [id], onDelete: Restrict)
-  practitioner  PractitionerProfile    @relation(fields: [practitionerId], references: [id], onDelete: Restrict)
-  patient       PatientProfile         @relation(fields: [patientId], references: [id], onDelete: Restrict)
+  purchase     PatientPackagePurchase @relation(fields: [purchaseId], references: [id], onDelete: Restrict)
+  practitioner PractitionerProfile    @relation(fields: [practitionerId], references: [id], onDelete: Restrict)
+  patient      PatientProfile         @relation(fields: [patientId], references: [id], onDelete: Restrict)
 
   @@index([practitionerId, status, createdAt])
   @@index([patientId, status, createdAt])
@@ -2453,6 +2499,77 @@ model FinanceReconciliationReview {
   @@index([reviewedByUserId, reviewedAt])
 }
 
+model AccountingReconciliationRun {
+  id                String                             @id @default(uuid()) @db.Uuid
+  scope             AccountingReconciliationScope
+  trigger           AccountingReconciliationRunTrigger
+  status            AccountingReconciliationRunStatus  @default(RUNNING)
+  entityType        String?                            @db.VarChar(100)
+  entityId          String?                            @db.VarChar(191)
+  currencyCode      String?                            @db.VarChar(3)
+  startedAt         DateTime                           @default(now())
+  completedAt       DateTime?
+  totalChecked      Int                                @default(0)
+  totalPassed       Int                                @default(0)
+  totalFailed       Int                                @default(0)
+  totalWarnings     Int                                @default(0)
+  totalCritical     Int                                @default(0)
+  summaryJson       Json?
+  metadataJson      Json?
+  triggeredByUserId String?                            @db.Uuid
+  createdAt         DateTime                           @default(now())
+  updatedAt         DateTime                           @updatedAt
+
+  triggeredByUser User?                           @relation(fields: [triggeredByUserId], references: [id], onDelete: SetNull)
+  issues          AccountingReconciliationIssue[]
+
+  @@index([scope, startedAt])
+  @@index([status, startedAt])
+  @@index([trigger, startedAt])
+  @@index([currencyCode, startedAt])
+  @@index([entityType, entityId])
+  @@index([triggeredByUserId, startedAt])
+}
+
+model AccountingReconciliationIssue {
+  id                   String                              @id @default(uuid()) @db.Uuid
+  runId                String                              @db.Uuid
+  scope                AccountingReconciliationScope
+  entityType           String                              @db.VarChar(100)
+  entityId             String                              @db.VarChar(191)
+  currencyCode         String                              @db.VarChar(3)
+  issueCode            String                              @db.VarChar(100)
+  severity             AccountingReconciliationSeverity
+  status               AccountingReconciliationIssueStatus @default(OPEN)
+  message              String                              @db.VarChar(1000)
+  expectedValue        String?                             @db.VarChar(191)
+  actualValue          String?                             @db.VarChar(191)
+  metadataJson         Json?
+  firstDetectedAt      DateTime                            @default(now())
+  lastDetectedAt       DateTime                            @default(now())
+  acknowledgedAt       DateTime?
+  acknowledgedByUserId String?                             @db.Uuid
+  resolvedAt           DateTime?
+  resolvedByUserId     String?                             @db.Uuid
+  ignoredAt            DateTime?
+  ignoredByUserId      String?                             @db.Uuid
+  resolutionNote       String?                             @db.VarChar(1000)
+  createdAt            DateTime                            @default(now())
+  updatedAt            DateTime                            @updatedAt
+
+  run                AccountingReconciliationRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+  acknowledgedByUser User?                       @relation("AccountingReconciliationIssueAcknowledgedBy", fields: [acknowledgedByUserId], references: [id], onDelete: SetNull)
+  resolvedByUser     User?                       @relation("AccountingReconciliationIssueResolvedBy", fields: [resolvedByUserId], references: [id], onDelete: SetNull)
+  ignoredByUser      User?                       @relation("AccountingReconciliationIssueIgnoredBy", fields: [ignoredByUserId], references: [id], onDelete: SetNull)
+
+  @@unique([scope, entityType, entityId, issueCode, currencyCode], map: "uq_accounting_reconciliation_issue")
+  @@index([runId])
+  @@index([scope, status, severity, currencyCode])
+  @@index([entityType, entityId])
+  @@index([issueCode, status])
+  @@index([lastDetectedAt])
+}
+
 model PractitionerWallet {
   id             String @id @default(uuid()) @db.Uuid
   practitionerId String @db.Uuid
@@ -2528,8 +2645,8 @@ model PractitionerSettlement {
   @@index([paidAt])
 }
 
-  model PractitionerSettlementPayout {
-    id                   String                     @id @default(uuid()) @db.Uuid
+model PractitionerSettlementPayout {
+  id                   String                     @id @default(uuid()) @db.Uuid
   batchId              String                     @db.Uuid
   settlementId         String                     @db.Uuid
   practitionerId       String                     @db.Uuid
@@ -2555,35 +2672,35 @@ model PractitionerSettlement {
 
   @@index([practitionerId, effectiveAt])
   @@index([batchId, effectiveAt])
-    @@index([settlementId, createdAt])
-    @@index([payoutSource, payoutMethod])
-  }
+  @@index([settlementId, createdAt])
+  @@index([payoutSource, payoutMethod])
+}
 
-  model PractitionerManualPayout {
-    id                          String                @id @default(uuid()) @db.Uuid
-    practitionerId              String                @db.Uuid
-    currencyCode                String                @db.VarChar(3)
-    amountPaid                  Decimal               @db.Decimal(18, 2)
-    normalSessionAppliedAmount  Decimal               @default(0) @db.Decimal(18, 2)
-    packageReleasedAppliedAmount Decimal               @default(0) @db.Decimal(18, 2)
-    packageHeldAmountSnapshot   Decimal               @default(0) @db.Decimal(18, 2)
-    totalPayableSnapshot        Decimal               @default(0) @db.Decimal(18, 2)
-    payoutMethod                SettlementPayoutMethod
-    transferReference           String?               @unique @db.VarChar(191)
-    paidAt                      DateTime
-    notes                       String?               @db.VarChar(500)
-    recordedByUserId            String?               @db.Uuid
-    createdAt                   DateTime              @default(now())
-    updatedAt                   DateTime              @updatedAt
+model PractitionerManualPayout {
+  id                           String                 @id @default(uuid()) @db.Uuid
+  practitionerId               String                 @db.Uuid
+  currencyCode                 String                 @db.VarChar(3)
+  amountPaid                   Decimal                @db.Decimal(18, 2)
+  normalSessionAppliedAmount   Decimal                @default(0) @db.Decimal(18, 2)
+  packageReleasedAppliedAmount Decimal                @default(0) @db.Decimal(18, 2)
+  packageHeldAmountSnapshot    Decimal                @default(0) @db.Decimal(18, 2)
+  totalPayableSnapshot         Decimal                @default(0) @db.Decimal(18, 2)
+  payoutMethod                 SettlementPayoutMethod
+  transferReference            String?                @unique @db.VarChar(191)
+  paidAt                       DateTime
+  notes                        String?                @db.VarChar(500)
+  recordedByUserId             String?                @db.Uuid
+  createdAt                    DateTime               @default(now())
+  updatedAt                    DateTime               @updatedAt
 
-    practitioner PractitionerProfile @relation(fields: [practitionerId], references: [id], onDelete: Restrict)
-    recordedByUser User?             @relation(fields: [recordedByUserId], references: [id], onDelete: SetNull)
+  practitioner   PractitionerProfile @relation(fields: [practitionerId], references: [id], onDelete: Restrict)
+  recordedByUser User?               @relation(fields: [recordedByUserId], references: [id], onDelete: SetNull)
 
-    @@index([practitionerId, currencyCode, paidAt])
-  }
+  @@index([practitionerId, currencyCode, paidAt])
+}
 
-  model PractitionerSettlementPayoutProof {
-    id               String   @id @default(uuid()) @db.Uuid
+model PractitionerSettlementPayoutProof {
+  id               String   @id @default(uuid()) @db.Uuid
   payoutId         String   @unique @db.Uuid
   storedFileName   String   @db.VarChar(191)
   storagePath      String   @db.VarChar(500)
@@ -3115,24 +3232,24 @@ model HelpCategory {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  questions     HelpQuestion[]
+  questions HelpQuestion[]
 
   @@index([isActive, sortOrder])
 }
 
 model HelpQuestion {
-  id          String   @id @default(uuid()) @db.Uuid
-  categoryId  String?  @db.Uuid
-  questionAr  String   @db.VarChar(500)
-  questionEn  String   @db.VarChar(500)
-  answerAr    String   @db.Text
-  answerEn    String   @db.Text
-  sortOrder   Int      @default(0)
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id         String   @id @default(uuid()) @db.Uuid
+  categoryId String?  @db.Uuid
+  questionAr String   @db.VarChar(500)
+  questionEn String   @db.VarChar(500)
+  answerAr   String   @db.Text
+  answerEn   String   @db.Text
+  sortOrder  Int      @default(0)
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
-  category    HelpCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  category HelpCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
 
   @@index([categoryId, sortOrder])
   @@index([categoryId, isActive, sortOrder])
@@ -4240,20 +4357,20 @@ enum SecurityAuditOutcome {
 /// Fire-and-forget writes: service never throws on persistence failure.
 /// Never log: raw JWTs, passwords, OTP codes, refresh tokens, or secrets.
 model SecurityAuditLog {
-  id            String               @id @default(uuid()) @db.Uuid
-  action        String               @db.VarChar(120)
-  outcome       SecurityAuditOutcome
-  actorUserId   String?              @db.Uuid
+  id             String               @id @default(uuid()) @db.Uuid
+  action         String               @db.VarChar(120)
+  outcome        SecurityAuditOutcome
+  actorUserId    String?              @db.Uuid
   actorRolesJson Json?
-  resourceType  String?              @db.VarChar(100)
-  resourceId    String?              @db.VarChar(191)
-  targetUserId  String?              @db.Uuid
-  ipAddress     String?              @db.VarChar(64)
-  userAgent     String?              @db.VarChar(500)
-  correlationId String?              @db.VarChar(191)
-  reason        String?              @db.VarChar(500)
-  metadataJson  Json?
-  occurredAt    DateTime             @default(now())
+  resourceType   String?              @db.VarChar(100)
+  resourceId     String?              @db.VarChar(191)
+  targetUserId   String?              @db.Uuid
+  ipAddress      String?              @db.VarChar(64)
+  userAgent      String?              @db.VarChar(500)
+  correlationId  String?              @db.VarChar(191)
+  reason         String?              @db.VarChar(500)
+  metadataJson   Json?
+  occurredAt     DateTime             @default(now())
 
   @@index([action, occurredAt])
   @@index([actorUserId, occurredAt])

@@ -9,10 +9,7 @@ export class ListAdminTrainingScheduleLecturesUseCase {
     private readonly trainingPresenter: TrainingPresenter,
   ) {}
 
-  async execute(input: {
-    courseId: string;
-    scheduleId: string;
-  }) {
+  async execute(input: { courseId: string; scheduleId: string }) {
     const course = await this.trainingRepository.findCourseById(input.courseId);
     if (!course) {
       throw new NotFoundException({

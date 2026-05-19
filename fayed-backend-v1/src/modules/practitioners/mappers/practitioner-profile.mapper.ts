@@ -39,6 +39,7 @@ export class PractitionerProfileMapper {
     readiness: {
       isProfileCompleted: boolean;
       canSubmitApplication: boolean;
+      completion: PractitionerProfileViewModel['completion'];
     };
     applicationStatusSummary: PractitionerProfileViewModel['applicationStatusSummary'];
     credentialSummary: PractitionerProfileViewModel['credentialSummary'];
@@ -90,6 +91,7 @@ export class PractitionerProfileMapper {
       specialties: input.specialties,
       isProfileCompleted: input.readiness.isProfileCompleted,
       canSubmitApplication: input.readiness.canSubmitApplication,
+      completion: input.readiness.completion,
       applicationStatusSummary: input.applicationStatusSummary,
       credentialSummary: input.credentialSummary,
       createdAt: input.profile.createdAt,

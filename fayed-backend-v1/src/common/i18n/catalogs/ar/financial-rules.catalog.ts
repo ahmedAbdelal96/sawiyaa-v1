@@ -3,6 +3,9 @@ export const arFinancialRulesCatalog = {
     commissionRuleCreated: 'تم إنشاء قاعدة العمولة بنجاح.',
     commissionRulesFetched: 'تم جلب قواعد العمولة بنجاح.',
     couponCreated: 'تم إنشاء الكوبون بنجاح.',
+    couponUpdated: 'تم تحديث الكوبون بنجاح.',
+    couponDisabled: 'تم تعطيل الكوبون بنجاح.',
+    couponRedemptionsFetched: 'تم جلب سجل استخدامات الكوبون بنجاح.',
     couponValidated: 'تم التحقق من الكوبون بنجاح.',
     financialBreakdownCalculated: 'تم حساب التفصيل المالي للجلسة بنجاح.',
   },
@@ -17,6 +20,18 @@ export const arFinancialRulesCatalog = {
     invalidDateRange: 'نطاق التاريخ المدخل غير صالح.',
     couponNotFound: 'لم يتم العثور على الكوبون.',
     couponCodeExists: 'كود الكوبون مستخدم بالفعل.',
+    couponSlugExists: 'معرف الكوبون مستخدم بالفعل.',
+    couponCodeInvalid:
+      'يمكن أن يتضمن كود الخصم أحرفًا وأرقامًا وشرطات وشرطات سفلية فقط.',
+    practitionerCouponPercentageOnly:
+      'أكواد خصم الممارس تدعم النسبة المئوية فقط.',
+    practitionerCouponDiscountTooHigh:
+      'خصم بروموكود الممارس لن يتجاوز 20%.',
+    practitionerCouponImmutableAfterRedemption:
+      'لا يمكن تغيير قيمة الخصم بعد وجود استخدامات سابقة.',
+    practitionerCouponInvalidMoney: 'قيمة الخصم المدخلة غير صالحة.',
+    couponUsageLimitBelowCurrentUsage:
+      'لا يمكن تعيين حد استخدام أقل من عدد الاستخدامات الحالي.',
     couponNotActive: 'الكوبون غير نشط.',
     couponApprovalRequired: 'يجب اعتماد الكوبون قبل استخدامه.',
     couponNotStarted: 'لم يبدأ الكوبون بعد.',

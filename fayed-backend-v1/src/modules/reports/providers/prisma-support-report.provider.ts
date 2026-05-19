@@ -7,13 +7,18 @@ import {
   SupportReportProvider,
   SupportReportRowsInput,
 } from './support-report.provider';
-import { SupportReportOverview, SupportReportRow } from '../types/support-report.types';
+import {
+  SupportReportOverview,
+  SupportReportRow,
+} from '../types/support-report.types';
 
 @Injectable()
 export class PrismaSupportReportProvider implements SupportReportProvider {
   constructor(private readonly prisma: PrismaService) {}
 
-  async getOverview(input: SupportReportOverviewInput): Promise<SupportReportOverview> {
+  async getOverview(
+    input: SupportReportOverviewInput,
+  ): Promise<SupportReportOverview> {
     const baseWhere: Prisma.SupportTicketWhereInput = {
       createdAt: { gte: input.from, lte: input.to },
     };
@@ -25,26 +30,34 @@ export class PrismaSupportReportProvider implements SupportReportProvider {
       SupportTicketStatus.ESCALATED,
     ];
 
-    const overdueThreshold = new Date(input.to.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const overdueThreshold = new Date(
+      input.to.getTime() - 7 * 24 * 60 * 60 * 1000,
+    );
 
-    const [totalTickets, statusGroups, overdueOpenTickets, avgCloseHours, trendCreated, trendResolved] =
-      await Promise.all([
-        this.prisma.supportTicket.count({ where: baseWhere }),
-        this.prisma.supportTicket.groupBy({
-          by: ['status'],
-          where: baseWhere,
-          _count: { _all: true },
-        }),
-        this.prisma.supportTicket.count({
-          where: {
-            status: { in: openStatuses },
-            createdAt: { lt: overdueThreshold },
-          },
-        }),
-        this.avgCloseHoursInRange(input),
-        this.createdTrend(input),
-        this.resolvedTrend(input),
-      ]);
+    const [
+      totalTickets,
+      statusGroups,
+      overdueOpenTickets,
+      avgCloseHours,
+      trendCreated,
+      trendResolved,
+    ] = await Promise.all([
+      this.prisma.supportTicket.count({ where: baseWhere }),
+      this.prisma.supportTicket.groupBy({
+        by: ['status'],
+        where: baseWhere,
+        _count: { _all: true },
+      }),
+      this.prisma.supportTicket.count({
+        where: {
+          status: { in: openStatuses },
+          createdAt: { lt: overdueThreshold },
+        },
+      }),
+      this.avgCloseHoursInRange(input),
+      this.createdTrend(input),
+      this.resolvedTrend(input),
+    ]);
 
     const statusBreakdown: Record<string, string> = {};
     let openTickets = 0;
@@ -53,13 +66,19 @@ export class PrismaSupportReportProvider implements SupportReportProvider {
     for (const row of statusGroups) {
       statusBreakdown[row.status] = String(row._count._all);
       if (openStatuses.includes(row.status)) openTickets += row._count._all;
-      if (row.status === SupportTicketStatus.RESOLVED) resolvedTickets += row._count._all;
-      if (row.status === SupportTicketStatus.CLOSED) closedTickets += row._count._all;
+      if (row.status === SupportTicketStatus.RESOLVED)
+        resolvedTickets += row._count._all;
+      if (row.status === SupportTicketStatus.CLOSED)
+        closedTickets += row._count._all;
     }
 
     const dailyKeys = buildDailyBuckets(input.from, input.to);
-    const createdMap = new Map(trendCreated.map((row) => [row.dateKey, row.count]));
-    const resolvedMap = new Map(trendResolved.map((row) => [row.dateKey, row.count]));
+    const createdMap = new Map(
+      trendCreated.map((row) => [row.dateKey, row.count]),
+    );
+    const resolvedMap = new Map(
+      trendResolved.map((row) => [row.dateKey, row.count]),
+    );
 
     return {
       generatedAt: new Date().toISOString(),
@@ -150,7 +169,9 @@ export class PrismaSupportReportProvider implements SupportReportProvider {
   }
 
   private createdTrend(input: SupportReportOverviewInput) {
-    return this.prisma.$queryRaw<Array<{ dateKey: string; count: number }>>(Prisma.sql`
+    return this.prisma.$queryRaw<
+      Array<{ dateKey: string; count: number }>
+    >(Prisma.sql`
       select
         to_char(date_trunc('day', "createdAt"), 'YYYY-MM-DD') as "dateKey",
         count(*)::int as "count"
@@ -162,7 +183,9 @@ export class PrismaSupportReportProvider implements SupportReportProvider {
   }
 
   private resolvedTrend(input: SupportReportOverviewInput) {
-    return this.prisma.$queryRaw<Array<{ dateKey: string; count: number }>>(Prisma.sql`
+    return this.prisma.$queryRaw<
+      Array<{ dateKey: string; count: number }>
+    >(Prisma.sql`
       select
         to_char(date_trunc('day', coalesce("closedAt", "resolvedAt")), 'YYYY-MM-DD') as "dateKey",
         count(*)::int as "count"
@@ -175,4 +198,3 @@ export class PrismaSupportReportProvider implements SupportReportProvider {
     `);
   }
 }
-

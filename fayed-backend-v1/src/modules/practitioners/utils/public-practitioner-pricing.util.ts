@@ -24,7 +24,8 @@ export function resolvePublicPractitionerPricing(input: {
 }) {
   const currencyCode = input.regionalResolution.currencyCode;
   const regionalPricingMode = input.regionalResolution.regionalPricingMode;
-  const resolvedCountryIsoCode = input.regionalResolution.resolvedCountryIsoCode;
+  const resolvedCountryIsoCode =
+    input.regionalResolution.resolvedCountryIsoCode;
 
   const useEgyptianPrices = currencyCode === 'EGP';
 
@@ -33,18 +34,10 @@ export function resolvePublicPractitionerPricing(input: {
     regionalPricingMode,
     resolvedCountryIsoCode,
     displaySessionPrice30: useEgyptianPrices
-      ? resolveDisplayPrice(
-          input.sessionPrice30Egp,
-        )
-      : resolveDisplayPrice(
-          input.sessionPrice30Usd,
-        ),
+      ? resolveDisplayPrice(input.sessionPrice30Egp)
+      : resolveDisplayPrice(input.sessionPrice30Usd),
     displaySessionPrice60: useEgyptianPrices
-      ? resolveDisplayPrice(
-          input.sessionPrice60Egp,
-        )
-      : resolveDisplayPrice(
-          input.sessionPrice60Usd,
-        ),
+      ? resolveDisplayPrice(input.sessionPrice60Egp)
+      : resolveDisplayPrice(input.sessionPrice60Usd),
   };
 }

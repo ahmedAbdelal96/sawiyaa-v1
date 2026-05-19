@@ -40,7 +40,13 @@ describe('GetPublicPractitionerDetailsUseCase', () => {
       practitionerGender: null,
       country: { isoCode: 'EG', currencyCode: 'EGP' },
       languages: [{ language: { code: 'en' } }],
-      specialties: [{ specialtyId: 'specialty-1', specialty: { slug: 'therapy', translations: [] }, isPrimary: true }],
+      specialties: [
+        {
+          specialtyId: 'specialty-1',
+          specialty: { slug: 'therapy', translations: [] },
+          isPrimary: true,
+        },
+      ],
       ratingSummary: { averageRating: null, publishedReviewsCount: 0 },
       _count: { credentials: 1 },
       sessionPrice30: new Prisma.Decimal('111.00'),
@@ -53,7 +59,9 @@ describe('GetPublicPractitionerDetailsUseCase', () => {
       yearsOfExperience: 7,
       acceptsPackages: true,
     });
-    (publicReadRepository.countApprovedCredentials as jest.Mock).mockResolvedValue(1);
+    (
+      publicReadRepository.countApprovedCredentials as jest.Mock
+    ).mockResolvedValue(1);
 
     const result = await useCase.execute({
       slug: 'dr-youssef-abdallah',

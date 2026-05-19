@@ -40,7 +40,15 @@ export class ExportPractitionerStatementPackageCsvUseCase {
       ['Last activity at', statement.summary.lastActivityAt ?? ''],
       [],
       ['Currency summaries'],
-      ['Currency', 'Rows', 'Earning rows', 'Payout rows', 'Earning total', 'Payout total', 'Net total'],
+      [
+        'Currency',
+        'Rows',
+        'Earning rows',
+        'Payout rows',
+        'Earning total',
+        'Payout total',
+        'Net total',
+      ],
       ...statement.summary.currencySummaries.map((item) => [
         item.currency,
         String(item.rowCount),

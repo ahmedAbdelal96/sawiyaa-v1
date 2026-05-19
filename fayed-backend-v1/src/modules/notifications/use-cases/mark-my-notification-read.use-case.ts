@@ -1,4 +1,8 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { NotificationStatus } from '@prisma/client';
 import { AuthenticatedUser } from '@common/interfaces/authenticated-user.interface';
 import { UserNotificationsPresenter } from '../presenters/user-notifications.presenter';

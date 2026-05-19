@@ -1,4 +1,8 @@
-import { SessionEventType, SessionStatus, PatientPackagePurchaseStatus } from '@prisma/client';
+import {
+  SessionEventType,
+  SessionStatus,
+  PatientPackagePurchaseStatus,
+} from '@prisma/client';
 import { HandlePackagePurchasePaymentFailureUseCase } from './handle-package-purchase-payment-failure.use-case';
 
 describe('HandlePackagePurchasePaymentFailureUseCase', () => {
@@ -20,53 +24,58 @@ describe('HandlePackagePurchasePaymentFailureUseCase', () => {
       }),
     };
     const packagePurchaseRepository = {
-      findByPaymentId: jest
-        .fn()
-        .mockResolvedValue(
-          input?.resolveByPayment === false
-            ? null
-            : {
-                id: 'purchase-1',
-                status: input?.purchaseStatus ?? PatientPackagePurchaseStatus.PENDING_PAYMENT,
-                paymentExpiresAt:
-                  input?.paymentExpiresAt ?? new Date('2999-01-01T00:00:00.000Z'),
-                packagePlanId: 'plan-1',
-                sessions: (input?.sessionStatuses ?? [
+      findByPaymentId: jest.fn().mockResolvedValue(
+        input?.resolveByPayment === false
+          ? null
+          : {
+              id: 'purchase-1',
+              status:
+                input?.purchaseStatus ??
+                PatientPackagePurchaseStatus.PENDING_PAYMENT,
+              paymentExpiresAt:
+                input?.paymentExpiresAt ?? new Date('2999-01-01T00:00:00.000Z'),
+              packagePlanId: 'plan-1',
+              sessions: (
+                input?.sessionStatuses ?? [
                   SessionStatus.PENDING_PAYMENT,
                   SessionStatus.PENDING_PAYMENT,
-                ]).map((status, index) => ({
-                  id: `session-${index + 1}`,
-                  status,
-                  scheduledStartAt: new Date(`2999-01-01T0${index + 1}:00:00.000Z`),
-                  packageSessionIndex: index + 1,
-                })),
-              },
-        ),
+                ]
+              ).map((status, index) => ({
+                id: `session-${index + 1}`,
+                status,
+                scheduledStartAt: new Date(
+                  `2999-01-01T0${index + 1}:00:00.000Z`,
+                ),
+                packageSessionIndex: index + 1,
+              })),
+            },
+      ),
       findById: jest.fn().mockResolvedValue({
         id: 'purchase-1',
-        status: input?.purchaseStatus ?? PatientPackagePurchaseStatus.PENDING_PAYMENT,
+        status:
+          input?.purchaseStatus ?? PatientPackagePurchaseStatus.PENDING_PAYMENT,
         paymentExpiresAt:
           input?.paymentExpiresAt ?? new Date('2999-01-01T00:00:00.000Z'),
         packagePlanId: 'plan-1',
-        sessions: (input?.sessionStatuses ?? [
-          SessionStatus.PENDING_PAYMENT,
-          SessionStatus.PENDING_PAYMENT,
-        ]).map((status, index) => ({
+        sessions: (
+          input?.sessionStatuses ?? [
+            SessionStatus.PENDING_PAYMENT,
+            SessionStatus.PENDING_PAYMENT,
+          ]
+        ).map((status, index) => ({
           id: `session-${index + 1}`,
           status,
           scheduledStartAt: new Date(`2999-01-01T0${index + 1}:00:00.000Z`),
           packageSessionIndex: index + 1,
         })),
       }),
-      updateStatus: jest
-        .fn()
-        .mockImplementation(async (_purchaseId, data) => ({
-          id: 'purchase-1',
-          status:
-            typeof data.status === 'string'
-              ? data.status
-              : PatientPackagePurchaseStatus.CANCELLED,
-        })),
+      updateStatus: jest.fn().mockImplementation(async (_purchaseId, data) => ({
+        id: 'purchase-1',
+        status:
+          typeof data.status === 'string'
+            ? data.status
+            : PatientPackagePurchaseStatus.CANCELLED,
+      })),
     };
     const sessionRepository = {
       updateStatus: jest.fn().mockResolvedValue({}),
@@ -154,7 +163,9 @@ describe('HandlePackagePurchasePaymentFailureUseCase', () => {
       terminalOutcome: 'FAILED',
     });
 
-    expect(setup.packagePurchaseRepository.updateStatus).toHaveBeenCalledTimes(1);
+    expect(setup.packagePurchaseRepository.updateStatus).toHaveBeenCalledTimes(
+      1,
+    );
     expect(setup.sessionRepository.updateStatus).toHaveBeenCalledTimes(1);
     expect(setup.sessionRepository.createEvent).toHaveBeenCalledTimes(1);
     expect(result.purchase.status).toBe(PatientPackagePurchaseStatus.CANCELLED);
@@ -207,7 +218,9 @@ describe('HandlePackagePurchasePaymentFailureUseCase', () => {
     });
 
     expect(setup.packagePurchaseRepository.findByPaymentId).toHaveBeenCalled();
-    expect(setup.packagePurchaseRepository.findById).toHaveBeenCalledWith('purchase-1');
+    expect(setup.packagePurchaseRepository.findById).toHaveBeenCalledWith(
+      'purchase-1',
+    );
     expect(result.purchase.status).toBe(PatientPackagePurchaseStatus.CANCELLED);
   });
 });

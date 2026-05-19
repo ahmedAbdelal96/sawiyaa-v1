@@ -35,10 +35,7 @@ import { UpdateTrainingUseCase } from './use-cases/update-training.use-case';
 
 @Module({
   imports: [PaymentsModule],
-  controllers: [
-    AdminTrainingsController,
-    PatientTrainingEnrollmentsController,
-  ],
+  controllers: [AdminTrainingsController, PatientTrainingEnrollmentsController],
   providers: [
     JwtAccessAuthGuard,
     RolesGuard,

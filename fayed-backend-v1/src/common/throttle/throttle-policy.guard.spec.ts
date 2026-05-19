@@ -37,7 +37,7 @@ describe('ThrottlePolicyGuard', () => {
   const getAllAndOverride = jest.fn();
 
   beforeEach(() => {
-    store = new ThrottleStoreService();
+    store = new ThrottleStoreService({ get: jest.fn() } as any);
     getAllAndOverride.mockReset();
   });
 
@@ -48,45 +48,45 @@ describe('ThrottlePolicyGuard', () => {
     );
   }
 
-  it('is a no-op when no @ThrottlePolicy metadata is present', () => {
+  it('is a no-op when no @ThrottlePolicy metadata is present', async () => {
     getAllAndOverride.mockReturnValue(undefined);
     const guard = makeGuard();
     const { context } = buildContext({});
-    expect(guard.canActivate(context)).toBe(true);
+    await expect(guard.canActivate(context)).resolves.toBe(true);
   });
 
-  it('is a no-op when policy key does not exist in config', () => {
+  it('is a no-op when policy key does not exist in config', async () => {
     getAllAndOverride.mockReturnValue('unknown-policy-key');
     const guard = makeGuard();
     const { context } = buildContext({});
-    expect(guard.canActivate(context)).toBe(true);
+    await expect(guard.canActivate(context)).resolves.toBe(true);
   });
 
-  it('allows requests within the limit', () => {
+  it('allows requests within the limit', async () => {
     getAllAndOverride.mockReturnValue('auth-patient-login'); // limit: 10
     const guard = makeGuard();
     const { context } = buildContext({ ip: '10.0.0.1' });
     for (let i = 0; i < 10; i++) {
-      expect(guard.canActivate(context)).toBe(true);
+      await expect(guard.canActivate(context)).resolves.toBe(true);
     }
   });
 
-  it('throws 429 when limit is exceeded and sets Retry-After header', () => {
+  it('throws 429 when limit is exceeded and sets Retry-After header', async () => {
     getAllAndOverride.mockReturnValue('auth-patient-register'); // limit: 5
     const guard = makeGuard();
     const { context, setHeader } = buildContext({ ip: '10.0.0.2' });
 
     for (let i = 0; i < 5; i++) {
-      guard.canActivate(context);
+      await guard.canActivate(context);
     }
 
-    expect(() => guard.canActivate(context)).toThrow(
+    await expect(guard.canActivate(context)).rejects.toEqual(
       new HttpException('Too Many Requests', HttpStatus.TOO_MANY_REQUESTS),
     );
     expect(setHeader).toHaveBeenCalledWith('Retry-After', expect.any(Number));
   });
 
-  it('keys authenticated users by user ID, not IP', () => {
+  it('keys authenticated users by user ID, not IP', async () => {
     getAllAndOverride.mockReturnValue('auth-patient-login'); // limit: 10
     const guard = makeGuard();
     const { context: contextA } = buildContext({
@@ -100,24 +100,26 @@ describe('ThrottlePolicyGuard', () => {
 
     // Fill user-1's budget
     for (let i = 0; i < 10; i++) {
-      guard.canActivate(contextA);
+      await guard.canActivate(contextA);
     }
     // user-2 starts fresh even though same IP
-    expect(guard.canActivate(contextB)).toBe(true);
+    await expect(guard.canActivate(contextB)).resolves.toBe(true);
   });
 
-  it('reads IP from x-forwarded-for header', () => {
+  it('reads IP from x-forwarded-for header', async () => {
     getAllAndOverride.mockReturnValue('auth-admin-login'); // limit: 10
     const guard = makeGuard();
     const { context } = buildContext({ forwardedFor: '203.0.113.5, 10.0.0.1' });
 
-    expect(guard.canActivate(context)).toBe(true);
+    await expect(guard.canActivate(context)).resolves.toBe(true);
     // Fill remaining budget
-    for (let i = 1; i < 10; i++) guard.canActivate(context);
+    for (let i = 1; i < 10; i++) await guard.canActivate(context);
 
     const { context: context2 } = buildContext({
       forwardedFor: '203.0.113.5, 10.0.0.1',
     });
-    expect(() => guard.canActivate(context2)).toThrow(HttpException);
+    await expect(guard.canActivate(context2)).rejects.toBeInstanceOf(
+      HttpException,
+    );
   });
 });

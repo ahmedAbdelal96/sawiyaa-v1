@@ -89,17 +89,17 @@ describe('UpdatePractitionerProfileUseCase', () => {
     (createPractitionerProfileUseCase.execute as jest.Mock).mockResolvedValue(
       baseProfile,
     );
-    (practitionerProfileRepository.updateByUserId as jest.Mock).mockResolvedValue(
-      baseProfile,
-    );
-    (practitionerUserRepository.updateProfilePreferences as jest.Mock).mockResolvedValue(
-      {
-        id: 'user-1',
-        displayName: 'Dr. Yara',
-        defaultLocale: 'ar',
-        timezone: 'Africa/Cairo',
-      },
-    );
+    (
+      practitionerProfileRepository.updateByUserId as jest.Mock
+    ).mockResolvedValue(baseProfile);
+    (
+      practitionerUserRepository.updateProfilePreferences as jest.Mock
+    ).mockResolvedValue({
+      id: 'user-1',
+      displayName: 'Dr. Yara',
+      defaultLocale: 'ar',
+      timezone: 'Africa/Cairo',
+    });
     (getPractitionerProfileUseCase.execute as jest.Mock).mockResolvedValue({
       profile: { acceptsPackage: true },
     });

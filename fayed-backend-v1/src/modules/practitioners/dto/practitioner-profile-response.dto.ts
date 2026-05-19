@@ -5,6 +5,7 @@ import {
   PractitionerStatus,
   PractitionerType,
 } from '@prisma/client';
+import { PractitionerApplicationCompletionResponseDto } from './practitioner-application-completion-response.dto';
 import { PractitionerPayoutDestinationResponseDto } from './practitioner-payout-destination.dto';
 
 export class PractitionerPricingCurrencyResponseDto {
@@ -78,6 +79,9 @@ export class PractitionerApplicationSummaryResponseDto {
 
   @ApiProperty({ nullable: true })
   reviewNotes!: string | null;
+
+  @ApiProperty({ type: PractitionerApplicationCompletionResponseDto })
+  completion!: PractitionerApplicationCompletionResponseDto;
 }
 
 export class PractitionerProfileResponseDto {
@@ -146,6 +150,9 @@ export class PractitionerProfileResponseDto {
 
   @ApiProperty()
   canSubmitApplication!: boolean;
+
+  @ApiProperty({ type: PractitionerApplicationCompletionResponseDto })
+  completion!: PractitionerApplicationCompletionResponseDto;
 
   @ApiProperty({ type: PractitionerApplicationSummaryResponseDto })
   applicationStatusSummary!: PractitionerApplicationSummaryResponseDto;

@@ -1,8 +1,5 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import {
-  PackageSchedulePolicy,
-  SessionMode,
-} from '@prisma/client';
+import { PackageSchedulePolicy, SessionMode } from '@prisma/client';
 import { ValidateSessionDurationService } from '@modules/sessions/services/validate-session-duration.service';
 
 @Injectable()

@@ -7,13 +7,18 @@ import {
   PayoutsReportProvider,
   PayoutsReportRowsInput,
 } from './payouts-report.provider';
-import { PayoutsReportOverview, PayoutsReportRow } from '../types/payouts-report.types';
+import {
+  PayoutsReportOverview,
+  PayoutsReportRow,
+} from '../types/payouts-report.types';
 
 @Injectable()
 export class PrismaPayoutsReportProvider implements PayoutsReportProvider {
   constructor(private readonly prisma: PrismaService) {}
 
-  async getOverview(input: PayoutsReportOverviewInput): Promise<PayoutsReportOverview> {
+  async getOverview(
+    input: PayoutsReportOverviewInput,
+  ): Promise<PayoutsReportOverview> {
     const currencyCode = input.currencyCode?.trim().toUpperCase();
 
     const payoutWhere: Prisma.PractitionerSettlementPayoutWhereInput = {
@@ -22,26 +27,36 @@ export class PrismaPayoutsReportProvider implements PayoutsReportProvider {
       practitionerId: input.practitionerId,
     };
 
-    const [paidAgg, payoutCount, transferFeeAgg, missingProofCount, dueSnapshot, trendRows] =
-      await Promise.all([
-        this.prisma.practitionerSettlementPayout.aggregate({
-          where: payoutWhere,
-          _sum: { amountPaid: true },
-        }),
-        this.prisma.practitionerSettlementPayout.count({ where: payoutWhere }),
-        this.prisma.practitionerSettlementPayout.aggregate({
-          where: payoutWhere,
-          _sum: { transferFeeAmount: true },
-        }),
-        this.prisma.practitionerSettlementPayout.count({
-          where: {
-            ...payoutWhere,
-            proof: { is: null },
-          },
-        }),
-        this.dueOutstandingAsOf({ to: input.to, currencyCode, practitionerId: input.practitionerId }),
-        this.payoutTrendRows(payoutWhere),
-      ]);
+    const [
+      paidAgg,
+      payoutCount,
+      transferFeeAgg,
+      missingProofCount,
+      dueSnapshot,
+      trendRows,
+    ] = await Promise.all([
+      this.prisma.practitionerSettlementPayout.aggregate({
+        where: payoutWhere,
+        _sum: { amountPaid: true },
+      }),
+      this.prisma.practitionerSettlementPayout.count({ where: payoutWhere }),
+      this.prisma.practitionerSettlementPayout.aggregate({
+        where: payoutWhere,
+        _sum: { transferFeeAmount: true },
+      }),
+      this.prisma.practitionerSettlementPayout.count({
+        where: {
+          ...payoutWhere,
+          proof: { is: null },
+        },
+      }),
+      this.dueOutstandingAsOf({
+        to: input.to,
+        currencyCode,
+        practitionerId: input.practitionerId,
+      }),
+      this.payoutTrendRows(payoutWhere),
+    ]);
 
     const dailyKeys = buildDailyBuckets(input.from, input.to);
     const trendMap = new Map(trendRows.map((row) => [row.dateKey, row]));
@@ -60,9 +75,13 @@ export class PrismaPayoutsReportProvider implements PayoutsReportProvider {
       currencyCode: currencyCode ?? null,
       practitionerId: input.practitionerId ?? null,
       totals: {
-        paidAmountInRange: (paidAgg._sum.amountPaid ?? new Prisma.Decimal(0)).toFixed(2),
+        paidAmountInRange: (
+          paidAgg._sum.amountPaid ?? new Prisma.Decimal(0)
+        ).toFixed(2),
         payoutCountInRange: String(payoutCount),
-        transferFeesInRange: (transferFeeAgg._sum.transferFeeAmount ?? new Prisma.Decimal(0)).toFixed(2),
+        transferFeesInRange: (
+          transferFeeAgg._sum.transferFeeAmount ?? new Prisma.Decimal(0)
+        ).toFixed(2),
         missingProofCountInRange: String(missingProofCount),
         dueOutstandingAsOfTo: dueSnapshot.dueAmount.toFixed(2),
         settlementsWithDueCount: String(dueSnapshot.settlementCount),
@@ -100,7 +119,11 @@ export class PrismaPayoutsReportProvider implements PayoutsReportProvider {
           processedByUserId: true,
           proof: { select: { id: true } },
         },
-        orderBy: [{ effectiveAt: 'desc' }, { createdAt: 'desc' }, { id: 'asc' }],
+        orderBy: [
+          { effectiveAt: 'desc' },
+          { createdAt: 'desc' },
+          { id: 'asc' },
+        ],
         skip,
         take: input.limit,
       }),
@@ -153,17 +176,26 @@ export class PrismaPayoutsReportProvider implements PayoutsReportProvider {
         ${input.practitionerId ? Prisma.sql`and "practitionerId" = ${input.practitionerId}` : Prisma.empty}
     `);
 
-    const row = rows[0] ?? { dueAmount: new Prisma.Decimal(0), settlementCount: 0 };
+    const row = rows[0] ?? {
+      dueAmount: new Prisma.Decimal(0),
+      settlementCount: 0,
+    };
     return {
-      dueAmount: row.dueAmount ? new Prisma.Decimal(row.dueAmount) : new Prisma.Decimal(0),
+      dueAmount: row.dueAmount
+        ? new Prisma.Decimal(row.dueAmount)
+        : new Prisma.Decimal(0),
       settlementCount: row.settlementCount ?? 0,
     };
   }
 
-  private payoutTrendRows(where: Prisma.PractitionerSettlementPayoutWhereInput) {
+  private payoutTrendRows(
+    where: Prisma.PractitionerSettlementPayoutWhereInput,
+  ) {
     // Prisma can't group by day on DateTime, so we use a tiny date_trunc query here.
-    const practitionerFilter = (where.practitionerId as string | undefined) ?? undefined;
-    const currencyFilter = (where.currencyCode as string | undefined) ?? undefined;
+    const practitionerFilter =
+      (where.practitionerId as string | undefined) ?? undefined;
+    const currencyFilter =
+      (where.currencyCode as string | undefined) ?? undefined;
     const from = (where.effectiveAt as any)?.gte as Date;
     const to = (where.effectiveAt as any)?.lte as Date;
 

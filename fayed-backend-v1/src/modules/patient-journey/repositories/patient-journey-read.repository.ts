@@ -90,7 +90,11 @@ export class PatientJourneyReadRepository {
     });
   }
 
-  findPendingPayment(patientId: string, nowUtc: Date, upcomingSessionId?: string) {
+  findPendingPayment(
+    patientId: string,
+    nowUtc: Date,
+    upcomingSessionId?: string,
+  ) {
     return this.prisma.payment.findFirst({
       where: {
         patientId,

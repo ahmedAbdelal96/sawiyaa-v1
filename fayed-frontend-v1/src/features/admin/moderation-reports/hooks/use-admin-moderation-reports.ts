@@ -12,12 +12,15 @@ import type {
 import { useSessionRole } from "@/lib/auth/use-session-role";
 import { isAdminRole } from "@/lib/auth/roles";
 
-export function useAdminModerationReports(params: ListModerationReportsParams) {
+export function useAdminModerationReports(
+  params: ListModerationReportsParams,
+  options?: { enabled?: boolean },
+) {
   const role = useSessionRole();
   return useQuery({
     queryKey: adminModerationReportsQueryKeys.list(params),
     queryFn: () => listAdminModerationReports(params),
-    enabled: isAdminRole(role),
+    enabled: isAdminRole(role) && (options?.enabled ?? true),
     staleTime: 30_000,
     gcTime: 10 * 60_000,
   });

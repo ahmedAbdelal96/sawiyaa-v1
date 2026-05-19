@@ -18,4 +18,3 @@ export class ReportPaginationDto {
   @Max(50)
   limit?: number = 10;
 }
-

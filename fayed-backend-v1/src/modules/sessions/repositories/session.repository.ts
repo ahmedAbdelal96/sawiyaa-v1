@@ -466,18 +466,37 @@ export class SessionRepository {
   ) {
     return this.getDb(tx).session.findMany({
       where: {
-        practitionerId,
-        scheduledStartAt: {
-          lt: startsBefore,
-        },
-        scheduledEndAt: {
-          gt: endsAfter,
-        },
-        status: {
-          in: this.blockingStatuses,
-        },
+        ...this.buildBlockingSessionWhere({
+          practitionerId,
+          startsBefore,
+          endsAfter,
+          now: new Date(),
+        }),
       },
       include: this.sessionInclude,
+    });
+  }
+
+  listBlockingSessionRangesInRangeForPractitioner(
+    practitionerId: string,
+    startsBefore: Date,
+    endsAfter: Date,
+    now: Date = new Date(),
+    tx?: Prisma.TransactionClient,
+  ) {
+    return this.getDb(tx).session.findMany({
+      where: {
+        ...this.buildBlockingSessionWhere({
+          practitionerId,
+          startsBefore,
+          endsAfter,
+          now,
+        }),
+      },
+      select: {
+        scheduledStartAt: true,
+        scheduledEndAt: true,
+      },
     });
   }
 
@@ -517,16 +536,12 @@ export class SessionRepository {
   ) {
     return this.getDb(tx).session.findMany({
       where: {
-        patientId,
-        scheduledStartAt: {
-          lt: startsBefore,
-        },
-        scheduledEndAt: {
-          gt: endsAfter,
-        },
-        status: {
-          in: this.blockingStatuses,
-        },
+        ...this.buildBlockingSessionWhere({
+          patientId,
+          startsBefore,
+          endsAfter,
+          now: new Date(),
+        }),
       },
       include: this.sessionInclude,
     });
@@ -638,6 +653,40 @@ export class SessionRepository {
     SessionStatus.READY_TO_JOIN,
     SessionStatus.IN_PROGRESS,
   ];
+
+  private buildBlockingSessionWhere(input: {
+    practitionerId?: string;
+    patientId?: string;
+    startsBefore: Date;
+    endsAfter: Date;
+    now: Date;
+  }): Prisma.SessionWhereInput {
+    return {
+      ...(input.practitionerId ? { practitionerId: input.practitionerId } : {}),
+      ...(input.patientId ? { patientId: input.patientId } : {}),
+      scheduledStartAt: {
+        lt: input.startsBefore,
+      },
+      scheduledEndAt: {
+        gt: input.endsAfter,
+      },
+      OR: [
+        {
+          status: {
+            in: this.blockingStatuses.filter(
+              (status) => status !== SessionStatus.PENDING_PAYMENT,
+            ),
+          },
+        },
+        {
+          status: SessionStatus.PENDING_PAYMENT,
+          expiresAt: {
+            gt: input.now,
+          },
+        },
+      ],
+    };
+  }
 
   private readonly lateCandidateStatuses: SessionStatus[] = [
     SessionStatus.PENDING_PRACTITIONER_RESPONSE,

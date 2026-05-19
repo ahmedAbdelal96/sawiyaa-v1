@@ -1,4 +1,8 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PractitionerPackageStatus } from '@prisma/client';
 import { PractitionerPackagePresenter } from '../presenters/practitioner-package.presenter';
 import { PractitionerPackageRepository } from '../repositories/practitioner-package.repository';
@@ -28,7 +32,9 @@ export class DisablePractitionerPackageUseCase {
       });
     }
 
-    if (packageTemplate.status === PractitionerPackageStatus.DISABLED_BY_ADMIN) {
+    if (
+      packageTemplate.status === PractitionerPackageStatus.DISABLED_BY_ADMIN
+    ) {
       return {
         item: {
           ...this.practitionerPackagePresenter.toDetail(packageTemplate),

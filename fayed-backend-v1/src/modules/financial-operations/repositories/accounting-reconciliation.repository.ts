@@ -46,7 +46,9 @@ export class AccountingReconciliationRepository {
         },
         currencyCode: input.currencyCode,
         practitionerId: input.practitionerId,
-        ...(paymentSearchFilters.length > 0 ? { OR: paymentSearchFilters } : {}),
+        ...(paymentSearchFilters.length > 0
+          ? { OR: paymentSearchFilters }
+          : {}),
       },
       select: {
         id: true,
@@ -136,13 +138,14 @@ export class AccountingReconciliationRepository {
   }) {
     const query = input.query?.trim();
     const queryMode: Prisma.QueryMode = 'insensitive';
-    const payoutSearchFilters: Prisma.PractitionerSettlementPayoutWhereInput[] = query
-      ? [
-          ...(isUuid(query) ? [{ id: query }, { settlementId: query }] : []),
-          { externalPayoutRef: { contains: query, mode: queryMode } },
-          { notes: { contains: query, mode: queryMode } },
-        ]
-      : [];
+    const payoutSearchFilters: Prisma.PractitionerSettlementPayoutWhereInput[] =
+      query
+        ? [
+            ...(isUuid(query) ? [{ id: query }, { settlementId: query }] : []),
+            { externalPayoutRef: { contains: query, mode: queryMode } },
+            { notes: { contains: query, mode: queryMode } },
+          ]
+        : [];
 
     return this.prisma.practitionerSettlementPayout.findMany({
       where: {

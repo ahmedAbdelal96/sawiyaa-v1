@@ -41,7 +41,7 @@ export default function PractitionerShell({ children }: PractitionerShellProps) 
   const { data, isLoading: profileLoading } = usePractitionerProfile(shouldLoadProfile);
   const profile = data?.profile;
 
-  const pathWithoutLocale = pathname.replace(`/${locale}`, "") || "/";
+  const pathWithoutLocale = pathname.replace(/^\/[a-z]{2}(?=\/|$)/, "") || "/";
   const approved = profile?.profileStatus === "APPROVED";
   const onboardingOnlyMode = Boolean(profile && !approved);
   const onboardingPathActive = isOnboardingPath(pathWithoutLocale);
@@ -68,6 +68,7 @@ export default function PractitionerShell({ children }: PractitionerShellProps) 
         basePathPrefix="/practitioner"
         layoutVariant="practitioner"
         messagingRole="practitioner"
+        contentMode={onboardingPathActive ? "full" : "constrained"}
       >
         <div className="rounded-2xl border border-border-light bg-surface-primary p-6 dark:bg-white/5">
           <p className="text-sm text-text-secondary">
@@ -87,6 +88,7 @@ export default function PractitionerShell({ children }: PractitionerShellProps) 
         basePathPrefix="/practitioner"
         layoutVariant="practitioner"
         messagingRole="practitioner"
+        contentMode={onboardingPathActive ? "full" : "constrained"}
       >
         <div className="rounded-2xl border border-border-light bg-surface-primary p-6 dark:bg-white/5">
           <p className="text-sm font-semibold text-text-primary dark:text-white">
@@ -112,6 +114,7 @@ export default function PractitionerShell({ children }: PractitionerShellProps) 
       basePathPrefix="/practitioner"
       layoutVariant="practitioner"
       messagingRole="practitioner"
+      contentMode={onboardingPathActive ? "full" : "constrained"}
     >
       {children}
     </DashboardLayout>

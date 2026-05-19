@@ -11,7 +11,10 @@ describe('PractitionerManualPayoutBalanceService', () => {
     manualPayouts?: Array<Record<string, unknown>>;
     manualPayoutsByCurrency?: Record<string, Array<Record<string, unknown>>>;
     packageSettlements?: Array<Record<string, unknown>>;
-    packageSettlementsByCurrency?: Record<string, Array<Record<string, unknown>>>;
+    packageSettlementsByCurrency?: Record<
+      string,
+      Array<Record<string, unknown>>
+    >;
   }) {
     const prisma = {
       ledgerEntry: {
@@ -49,12 +52,14 @@ describe('PractitionerManualPayoutBalanceService', () => {
     } as unknown as FinancialOperationsPractitionerRepository;
 
     const manualPayoutRepository = {
-      listForBalance: jest.fn().mockImplementation(async (_practitionerId, currencyCode) => {
-        if (currencyCode && input?.manualPayoutsByCurrency?.[currencyCode]) {
-          return input.manualPayoutsByCurrency[currencyCode];
-        }
-        return input?.manualPayouts ?? [];
-      }),
+      listForBalance: jest
+        .fn()
+        .mockImplementation(async (_practitionerId, currencyCode) => {
+          if (currencyCode && input?.manualPayoutsByCurrency?.[currencyCode]) {
+            return input.manualPayoutsByCurrency[currencyCode];
+          }
+          return input?.manualPayouts ?? [];
+        }),
     } as unknown as PractitionerManualPayoutRepository;
 
     const service = new PractitionerManualPayoutBalanceService(

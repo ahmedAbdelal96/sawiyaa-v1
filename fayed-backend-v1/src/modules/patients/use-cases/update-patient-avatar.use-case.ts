@@ -41,6 +41,13 @@ export class UpdatePatientAvatarUseCase {
       });
     }
 
+    if (input.file.size <= 0) {
+      throw new BadRequestException({
+        messageKey: 'patients.errors.avatarFileRequired',
+        error: 'PATIENT_AVATAR_FILE_REQUIRED',
+      });
+    }
+
     if (input.file.size > MAX_PATIENT_AVATAR_BYTES) {
       throw new BadRequestException({
         messageKey: 'patients.errors.avatarFileTooLarge',

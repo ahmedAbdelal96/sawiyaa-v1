@@ -248,7 +248,9 @@ export class AdminTrainingsController {
   }
 
   @Post(':id/schedules/:scheduleId/lectures')
-  @ApiOperation({ summary: 'Create lecture for a training schedule (owner/admin)' })
+  @ApiOperation({
+    summary: 'Create lecture for a training schedule (owner/admin)',
+  })
   @ApiBody({ type: CreateTrainingScheduleLectureDto })
   @ApiResponse({
     status: 201,

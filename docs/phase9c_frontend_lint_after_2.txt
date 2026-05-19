@@ -1,0 +1,840 @@
+﻿
+> fayed-frontend@1.0.0 lint
+> npm run i18n:check && eslint .
+
+
+> fayed-frontend@1.0.0 i18n:check
+> node scripts/validate-i18n.mjs
+
+i18n validation passed.
+
+D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\academy\components\AdminAcademyOverviewScreen.tsx
+  97:9  warning  The 'visibleItems' logical expression could make the dependencies of useMemo Hook (at line 112) change on every render. To fix this, wrap the initialization of 'visibleItems' in its own useMemo() Hook  react-hooks/exhaustive-deps
+
+D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\academy\components\PublicAcademyHomeScreen.tsx
+  49:9  warning  The 'items' logical expression could make the dependencies of useMemo Hook (at line 56) change on every render. To fix this, wrap the initialization of 'items' in its own useMemo() Hook  react-hooks/exhaustive-deps
+
+D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\admin\patients\api\admin-patients.api.ts
+  16:5  warning  Unused eslint-disable directive (no problems were reported from 'no-console')
+  27:5  warning  Unused eslint-disable directive (no problems were reported from 'no-console')
+
+D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\admin\patients\components\AdminPatient360Screen.tsx
+  115:5  warning  Unused eslint-disable directive (no problems were reported from 'no-console')
+
+D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\admin\patients\components\AdminPatientsDirectory.tsx
+  95:7  warning  Unused eslint-disable directive (no problems were reported from 'no-console')
+
+D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\admin\payment-gateway-control\components\AdminPaymentGatewayControlScreen.tsx
+   330:5   error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\admin\payment-gateway-control\components\AdminPaymentGatewayControlScreen.tsx:330:5
+  328 |   useEffect(() => {
+  329 |     if (!isOpen || !snapshot) return;
+> 330 |     setDraft(snapshot.provider === "PAYMOB" ? clonePaymobDraft(snapshot) : cloneStripeDraft(snapshot));
+      |     ^^^^^^^^ Avoid calling setState() directly within an effect
+  331 |     setReason("");
+  332 |     setStepUpChallengeId("");
+  333 |     setStepUpCode("");  react-hooks/set-state-in-effect
+   637:5   error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\admin\payment-gateway-control\components\AdminPaymentGatewayControlScreen.tsx:637:5
+  635 |   useEffect(() => {
+  636 |     if (!isOpen || !snapshot) return;
+> 637 |     setDraft(cloneRoutingDraft(snapshot));
+      |     ^^^^^^^^ Avoid calling setState() directly within an effect
+  638 |     setReason("");
+  639 |     setStepUpChallengeId("");
+  640 |     setStepUpCode("");                                                               react-hooks/set-state-in-effect
+   864:5   error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\admin\payment-gateway-control\components\AdminPaymentGatewayControlScreen.tsx:864:5
+  862 |   useEffect(() => {
+  863 |     if (!isOpen) return;
+> 864 |     setReason("");
+      |     ^^^^^^^^^ Avoid calling setState() directly within an effect
+  865 |     setStepUpChallengeId("");
+  866 |     setStepUpCode("");
+  867 |     setFeedback(null);                                                                                               react-hooks/set-state-in-effect
+  1035:9   warning  The 'paymobHistory' logical expression could make the dependencies of useMemo Hook (at line 1044) change on every render. Move it inside the useMemo callback. Alternatively, wrap the initialization of 'paymobHistory' in its own useMemo() Hook                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  react-hooks/exhaustive-deps
+  1036:9   warning  The 'stripeHistory' logical expression could make the dependencies of useMemo Hook (at line 1044) change on every render. Move it inside the useMemo callback. Alternatively, wrap the initialization of 'stripeHistory' in its own useMemo() Hook                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  react-hooks/exhaustive-deps
+  1037:9   warning  The 'routingHistory' logical expression could make the dependencies of useMemo Hook (at line 1044) change on every render. Move it inside the useMemo callback. Alternatively, wrap the initialization of 'routingHistory' in its own useMemo() Hook                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                react-hooks/exhaustive-deps
+  1051:63  error    Compilation Skipped: Existing memoization could not be preserved
+
+React Compiler has skipped optimizing this component because the existing manual memoization could not be preserved. The inferred dependencies did not match the manually specified dependencies, which could cause the value to change more or less frequently than expected. The inferred dependency was `t`, but the source dependencies were [latestProviderChange, locale]. Inferred different dependency than source.
+
+D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\admin\payment-gateway-control\components\AdminPaymentGatewayControlScreen.tsx:1051:63
+  1049 |     null;
+  1050 |
+> 1051 |   const providerColumns = useMemo<ColumnDef<ProviderDraft>[]>(() => [
+       |                                                               ^^^^^^^
+> 1052 |     {
+       | ^^^^^
+> 1053 |       id: "provider",
+       …
+       | ^^^^^
+> 1121 |     },
+       | ^^^^^
+> 1122 |   ], [latestProviderChange, locale]);
+       | ^^^^ Could not preserve existing manual memoization
+  1123 |
+  1124 |   const routingColumns = useMemo<ColumnDef<PaymentRoutingRuntimeSnapshot>[]>(() => [
+  1125 |     {                                      react-hooks/preserve-manual-memoization
+  1051:63  error    Compilation Skipped: Existing memoization could not be preserved
+
+React Compiler has skipped optimizing this component because the existing manual memoization could not be preserved. The inferred dependencies did not match the manually specified dependencies, which could cause the value to change more or less frequently than expected. The inferred dependency was `t`, but the source dependencies were [latestProviderChange, locale]. Inferred different dependency than source.
+
+D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\admin\payment-gateway-control\components\AdminPaymentGatewayControlScreen.tsx:1051:63
+  1049 |     null;
+  1050 |
+> 1051 |   const providerColumns = useMemo<ColumnDef<ProviderDraft>[]>(() => [
+       |                                                               ^^^^^^^
+> 1052 |     {
+       | ^^^^^
+> 1053 |       id: "provider",
+       …
+       | ^^^^^
+> 1121 |     },
+       | ^^^^^
+> 1122 |   ], [latestProviderChange, locale]);
+       | ^^^^ Could not preserve existing manual memoization
+  1123 |
+  1124 |   const routingColumns = useMemo<ColumnDef<PaymentRoutingRuntimeSnapshot>[]>(() => [
+  1125 |     {                                      react-hooks/preserve-manual-memoization
+  1051:63  error    Compilation Skipped: Existing memoization could not be preserved
+
+React Compiler has skipped optimizing this component because the existing manual memoization could not be preserved. The inferred dependencies did not match the manually specified dependencies, which could cause the value to change more or less frequently than expected. The inferred dependency was `t`, but the source dependencies were [latestProviderChange, locale]. Inferred different dependency than source.
+
+D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\admin\payment-gateway-control\components\AdminPaymentGatewayControlScreen.tsx:1051:63
+  1049 |     null;
+  1050 |
+> 1051 |   const providerColumns = useMemo<ColumnDef<ProviderDraft>[]>(() => [
+       |                                                               ^^^^^^^
+> 1052 |     {
+       | ^^^^^
+> 1053 |       id: "provider",
+       …
+       | ^^^^^
+> 1121 |     },
+       | ^^^^^
+> 1122 |   ], [latestProviderChange, locale]);
+       | ^^^^ Could not preserve existing manual memoization
+  1123 |
+  1124 |   const routingColumns = useMemo<ColumnDef<PaymentRoutingRuntimeSnapshot>[]>(() => [
+  1125 |     {                                      react-hooks/preserve-manual-memoization
+  1051:63  error    Compilation Skipped: Existing memoization could not be preserved
+
+React Compiler has skipped optimizing this component because the existing manual memoization could not be preserved. The inferred dependencies did not match the manually specified dependencies, which could cause the value to change more or less frequently than expected. The inferred dependency was `t`, but the source dependencies were [latestProviderChange, locale]. Inferred different dependency than source.
+
+D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\admin\payment-gateway-control\components\AdminPaymentGatewayControlScreen.tsx:1051:63
+  1049 |     null;
+  1050 |
+> 1051 |   const providerColumns = useMemo<ColumnDef<ProviderDraft>[]>(() => [
+       |                                                               ^^^^^^^
+> 1052 |     {
+       | ^^^^^
+> 1053 |       id: "provider",
+       …
+       | ^^^^^
+> 1121 |     },
+       | ^^^^^
+> 1122 |   ], [latestProviderChange, locale]);
+       | ^^^^ Could not preserve existing manual memoization
+  1123 |
+  1124 |   const routingColumns = useMemo<ColumnDef<PaymentRoutingRuntimeSnapshot>[]>(() => [
+  1125 |     {                                      react-hooks/preserve-manual-memoization
+  1051:63  error    Compilation Skipped: Existing memoization could not be preserved
+
+React Compiler has skipped optimizing this component because the existing manual memoization could not be preserved. The inferred dependencies did not match the manually specified dependencies, which could cause the value to change more or less frequently than expected. The inferred dependency was `t`, but the source dependencies were [latestProviderChange, locale]. Inferred different dependency than source.
+
+D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\admin\payment-gateway-control\components\AdminPaymentGatewayControlScreen.tsx:1051:63
+  1049 |     null;
+  1050 |
+> 1051 |   const providerColumns = useMemo<ColumnDef<ProviderDraft>[]>(() => [
+       |                                                               ^^^^^^^
+> 1052 |     {
+       | ^^^^^
+> 1053 |       id: "provider",
+       …
+       | ^^^^^
+> 1121 |     },
+       | ^^^^^
+> 1122 |   ], [latestProviderChange, locale]);
+       | ^^^^ Could not preserve existing manual memoization
+  1123 |
+  1124 |   const routingColumns = useMemo<ColumnDef<PaymentRoutingRuntimeSnapshot>[]>(() => [
+  1125 |     {                                      react-hooks/preserve-manual-memoization
+  1051:63  error    Compilation Skipped: Existing memoization could not be preserved
+
+React Compiler has skipped optimizing this component because the existing manual memoization could not be preserved. The inferred dependencies did not match the manually specified dependencies, which could cause the value to change more or less frequently than expected. The inferred dependency was `t`, but the source dependencies were [latestProviderChange, locale]. Inferred different dependency than source.
+
+D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\admin\payment-gateway-control\components\AdminPaymentGatewayControlScreen.tsx:1051:63
+  1049 |     null;
+  1050 |
+> 1051 |   const providerColumns = useMemo<ColumnDef<ProviderDraft>[]>(() => [
+       |                                                               ^^^^^^^
+> 1052 |     {
+       | ^^^^^
+> 1053 |       id: "provider",
+       …
+       | ^^^^^
+> 1121 |     },
+       | ^^^^^
+> 1122 |   ], [latestProviderChange, locale]);
+       | ^^^^ Could not preserve existing manual memoization
+  1123 |
+  1124 |   const routingColumns = useMemo<ColumnDef<PaymentRoutingRuntimeSnapshot>[]>(() => [
+  1125 |     {                                      react-hooks/preserve-manual-memoization
+  1051:63  error    Compilation Skipped: Existing memoization could not be preserved
+
+React Compiler has skipped optimizing this component because the existing manual memoization could not be preserved. The inferred dependencies did not match the manually specified dependencies, which could cause the value to change more or less frequently than expected. The inferred dependency was `t`, but the source dependencies were [latestProviderChange, locale]. Inferred different dependency than source.
+
+D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\admin\payment-gateway-control\components\AdminPaymentGatewayControlScreen.tsx:1051:63
+  1049 |     null;
+  1050 |
+> 1051 |   const providerColumns = useMemo<ColumnDef<ProviderDraft>[]>(() => [
+       |                                                               ^^^^^^^
+> 1052 |     {
+       | ^^^^^
+> 1053 |       id: "provider",
+       …
+       | ^^^^^
+> 1121 |     },
+       | ^^^^^
+> 1122 |   ], [latestProviderChange, locale]);
+       | ^^^^ Could not preserve existing manual memoization
+  1123 |
+  1124 |   const routingColumns = useMemo<ColumnDef<PaymentRoutingRuntimeSnapshot>[]>(() => [
+  1125 |     {                                      react-hooks/preserve-manual-memoization
+  1051:63  error    Compilation Skipped: Existing memoization could not be preserved
+
+React Compiler has skipped optimizing this component because the existing manual memoization could not be preserved. The inferred dependencies did not match the manually specified dependencies, which could cause the value to change more or less frequently than expected. The inferred dependency was `t`, but the source dependencies were [latestProviderChange, locale]. Inferred different dependency than source.
+
+D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\admin\payment-gateway-control\components\AdminPaymentGatewayControlScreen.tsx:1051:63
+  1049 |     null;
+  1050 |
+> 1051 |   const providerColumns = useMemo<ColumnDef<ProviderDraft>[]>(() => [
+       |                                                               ^^^^^^^
+> 1052 |     {
+       | ^^^^^
+> 1053 |       id: "provider",
+       …
+       | ^^^^^
+> 1121 |     },
+       | ^^^^^
+> 1122 |   ], [latestProviderChange, locale]);
+       | ^^^^ Could not preserve existing manual memoization
+  1123 |
+  1124 |   const routingColumns = useMemo<ColumnDef<PaymentRoutingRuntimeSnapshot>[]>(() => [
+  1125 |     {                                      react-hooks/preserve-manual-memoization
+  1051:63  error    Compilation Skipped: Existing memoization could not be preserved
+
+React Compiler has skipped optimizing this component because the existing manual memoization could not be preserved. The inferred dependencies did not match the manually specified dependencies, which could cause the value to change more or less frequently than expected. The inferred dependency was `t`, but the source dependencies were [latestProviderChange, locale]. Inferred different dependency than source.
+
+D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\admin\payment-gateway-control\components\AdminPaymentGatewayControlScreen.tsx:1051:63
+  1049 |     null;
+  1050 |
+> 1051 |   const providerColumns = useMemo<ColumnDef<ProviderDraft>[]>(() => [
+       |                                                               ^^^^^^^
+> 1052 |     {
+       | ^^^^^
+> 1053 |       id: "provider",
+       …
+       | ^^^^^
+> 1121 |     },
+       | ^^^^^
+> 1122 |   ], [latestProviderChange, locale]);
+       | ^^^^ Could not preserve existing manual memoization
+  1123 |
+  1124 |   const routingColumns = useMemo<ColumnDef<PaymentRoutingRuntimeSnapshot>[]>(() => [
+  1125 |     {                                      react-hooks/preserve-manual-memoization
+  1051:63  error    Compilation Skipped: Existing memoization could not be preserved
+
+React Compiler has skipped optimizing this component because the existing manual memoization could not be preserved. The inferred dependencies did not match the manually specified dependencies, which could cause the value to change more or less frequently than expected. The inferred dependency was `t`, but the source dependencies were [latestProviderChange, locale]. Inferred different dependency than source.
+
+D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\admin\payment-gateway-control\components\AdminPaymentGatewayControlScreen.tsx:1051:63
+  1049 |     null;
+  1050 |
+> 1051 |   const providerColumns = useMemo<ColumnDef<ProviderDraft>[]>(() => [
+       |                                                               ^^^^^^^
+> 1052 |     {
+       | ^^^^^
+> 1053 |       id: "provider",
+       …
+       | ^^^^^
+> 1121 |     },
+       | ^^^^^
+> 1122 |   ], [latestProviderChange, locale]);
+       | ^^^^ Could not preserve existing manual memoization
+  1123 |
+  1124 |   const routingColumns = useMemo<ColumnDef<PaymentRoutingRuntimeSnapshot>[]>(() => [
+  1125 |     {                                      react-hooks/preserve-manual-memoization
+  1122:6   warning  React Hook useMemo has a missing dependency: 't'. Either include it or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  react-hooks/exhaustive-deps
+  1124:78  error    Compilation Skipped: Existing memoization could not be preserved
+
+React Compiler has skipped optimizing this component because the existing manual memoization could not be preserved. The inferred dependencies did not match the manually specified dependencies, which could cause the value to change more or less frequently than expected. The inferred dependency was `t`, but the source dependencies were [locale]. Inferred different dependency than source.
+
+D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\admin\payment-gateway-control\components\AdminPaymentGatewayControlScreen.tsx:1124:78
+  1122 |   ], [latestProviderChange, locale]);
+  1123 |
+> 1124 |   const routingColumns = useMemo<ColumnDef<PaymentRoutingRuntimeSnapshot>[]>(() => [
+       |                                                                              ^^^^^^^
+> 1125 |     {
+       | ^^^^^
+> 1126 |       id: "defaultProvider",
+       …
+       | ^^^^^
+> 1164 |     },
+       | ^^^^^
+> 1165 |   ], [locale]);
+       | ^^^^ Could not preserve existing manual memoization
+  1166 |
+  1167 |   const historyColumns = useMemo<ColumnDef<PaymentGatewayControlHistoryItem>[]>(() => [
+  1168 |     {              react-hooks/preserve-manual-memoization
+  1124:78  error    Compilation Skipped: Existing memoization could not be preserved
+
+React Compiler has skipped optimizing this component because the existing manual memoization could not be preserved. The inferred dependencies did not match the manually specified dependencies, which could cause the value to change more or less frequently than expected. The inferred dependency was `t`, but the source dependencies were [locale]. Inferred different dependency than source.
+
+D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\admin\payment-gateway-control\components\AdminPaymentGatewayControlScreen.tsx:1124:78
+  1122 |   ], [latestProviderChange, locale]);
+  1123 |
+> 1124 |   const routingColumns = useMemo<ColumnDef<PaymentRoutingRuntimeSnapshot>[]>(() => [
+       |                                                                              ^^^^^^^
+> 1125 |     {
+       | ^^^^^
+> 1126 |       id: "defaultProvider",
+       …
+       | ^^^^^
+> 1164 |     },
+       | ^^^^^
+> 1165 |   ], [locale]);
+       | ^^^^ Could not preserve existing manual memoization
+  1166 |
+  1167 |   const historyColumns = useMemo<ColumnDef<PaymentGatewayControlHistoryItem>[]>(() => [
+  1168 |     {              react-hooks/preserve-manual-memoization
+  1124:78  error    Compilation Skipped: Existing memoization could not be preserved
+
+React Compiler has skipped optimizing this component because the existing manual memoization could not be preserved. The inferred dependencies did not match the manually specified dependencies, which could cause the value to change more or less frequently than expected. The inferred dependency was `t`, but the source dependencies were [locale]. Inferred different dependency than source.
+
+D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\admin\payment-gateway-control\components\AdminPaymentGatewayControlScreen.tsx:1124:78
+  1122 |   ], [latestProviderChange, locale]);
+  1123 |
+> 1124 |   const routingColumns = useMemo<ColumnDef<PaymentRoutingRuntimeSnapshot>[]>(() => [
+       |                                                                              ^^^^^^^
+> 1125 |     {
+       | ^^^^^
+> 1126 |       id: "defaultProvider",
+       …
+       | ^^^^^
+> 1164 |     },
+       | ^^^^^
+> 1165 |   ], [locale]);
+       | ^^^^ Could not preserve existing manual memoization
+  1166 |
+  1167 |   const historyColumns = useMemo<ColumnDef<PaymentGatewayControlHistoryItem>[]>(() => [
+  1168 |     {              react-hooks/preserve-manual-memoization
+  1124:78  error    Compilation Skipped: Existing memoization could not be preserved
+
+React Compiler has skipped optimizing this component because the existing manual memoization could not be preserved. The inferred dependencies did not match the manually specified dependencies, which could cause the value to change more or less frequently than expected. The inferred dependency was `t`, but the source dependencies were [locale]. Inferred different dependency than source.
+
+D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\admin\payment-gateway-control\components\AdminPaymentGatewayControlScreen.tsx:1124:78
+  1122 |   ], [latestProviderChange, locale]);
+  1123 |
+> 1124 |   const routingColumns = useMemo<ColumnDef<PaymentRoutingRuntimeSnapshot>[]>(() => [
+       |                                                                              ^^^^^^^
+> 1125 |     {
+       | ^^^^^
+> 1126 |       id: "defaultProvider",
+       …
+       | ^^^^^
+> 1164 |     },
+       | ^^^^^
+> 1165 |   ], [locale]);
+       | ^^^^ Could not preserve existing manual memoization
+  1166 |
+  1167 |   const historyColumns = useMemo<ColumnDef<PaymentGatewayControlHistoryItem>[]>(() => [
+  1168 |     {              react-hooks/preserve-manual-memoization
+  1124:78  error    Compilation Skipped: Existing memoization could not be preserved
+
+React Compiler has skipped optimizing this component because the existing manual memoization could not be preserved. The inferred dependencies did not match the manually specified dependencies, which could cause the value to change more or less frequently than expected. The inferred dependency was `t`, but the source dependencies were [locale]. Inferred different dependency than source.
+
+D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\admin\payment-gateway-control\components\AdminPaymentGatewayControlScreen.tsx:1124:78
+  1122 |   ], [latestProviderChange, locale]);
+  1123 |
+> 1124 |   const routingColumns = useMemo<ColumnDef<PaymentRoutingRuntimeSnapshot>[]>(() => [
+       |                                                                              ^^^^^^^
+> 1125 |     {
+       | ^^^^^
+> 1126 |       id: "defaultProvider",
+       …
+       | ^^^^^
+> 1164 |     },
+       | ^^^^^
+> 1165 |   ], [locale]);
+       | ^^^^ Could not preserve existing manual memoization
+  1166 |
+  1167 |   const historyColumns = useMemo<ColumnDef<PaymentGatewayControlHistoryItem>[]>(() => [
+  1168 |     {              react-hooks/preserve-manual-memoization
+  1124:78  error    Compilation Skipped: Existing memoization could not be preserved
+
+React Compiler has skipped optimizing this component because the existing manual memoization could not be preserved. The inferred dependencies did not match the manually specified dependencies, which could cause the value to change more or less frequently than expected. The inferred dependency was `t`, but the source dependencies were [locale]. Inferred different dependency than source.
+
+D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\admin\payment-gateway-control\components\AdminPaymentGatewayControlScreen.tsx:1124:78
+  1122 |   ], [latestProviderChange, locale]);
+  1123 |
+> 1124 |   const routingColumns = useMemo<ColumnDef<PaymentRoutingRuntimeSnapshot>[]>(() => [
+       |                                                                              ^^^^^^^
+> 1125 |     {
+       | ^^^^^
+> 1126 |       id: "defaultProvider",
+       …
+       | ^^^^^
+> 1164 |     },
+       | ^^^^^
+> 1165 |   ], [locale]);
+       | ^^^^ Could not preserve existing manual memoization
+  1166 |
+  1167 |   const historyColumns = useMemo<ColumnDef<PaymentGatewayControlHistoryItem>[]>(() => [
+  1168 |     {              react-hooks/preserve-manual-memoization
+  1124:78  error    Compilation Skipped: Existing memoization could not be preserved
+
+React Compiler has skipped optimizing this component because the existing manual memoization could not be preserved. The inferred dependencies did not match the manually specified dependencies, which could cause the value to change more or less frequently than expected. The inferred dependency was `t`, but the source dependencies were [locale]. Inferred different dependency than source.
+
+D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\admin\payment-gateway-control\components\AdminPaymentGatewayControlScreen.tsx:1124:78
+  1122 |   ], [latestProviderChange, locale]);
+  1123 |
+> 1124 |   const routingColumns = useMemo<ColumnDef<PaymentRoutingRuntimeSnapshot>[]>(() => [
+       |                                                                              ^^^^^^^
+> 1125 |     {
+       | ^^^^^
+> 1126 |       id: "defaultProvider",
+       …
+       | ^^^^^
+> 1164 |     },
+       | ^^^^^
+> 1165 |   ], [locale]);
+       | ^^^^ Could not preserve existing manual memoization
+  1166 |
+  1167 |   const historyColumns = useMemo<ColumnDef<PaymentGatewayControlHistoryItem>[]>(() => [
+  1168 |     {              react-hooks/preserve-manual-memoization
+  1124:78  error    Compilation Skipped: Existing memoization could not be preserved
+
+React Compiler has skipped optimizing this component because the existing manual memoization could not be preserved. The inferred dependencies did not match the manually specified dependencies, which could cause the value to change more or less frequently than expected. The inferred dependency was `t`, but the source dependencies were [locale]. Inferred different dependency than source.
+
+D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\admin\payment-gateway-control\components\AdminPaymentGatewayControlScreen.tsx:1124:78
+  1122 |   ], [latestProviderChange, locale]);
+  1123 |
+> 1124 |   const routingColumns = useMemo<ColumnDef<PaymentRoutingRuntimeSnapshot>[]>(() => [
+       |                                                                              ^^^^^^^
+> 1125 |     {
+       | ^^^^^
+> 1126 |       id: "defaultProvider",
+       …
+       | ^^^^^
+> 1164 |     },
+       | ^^^^^
+> 1165 |   ], [locale]);
+       | ^^^^ Could not preserve existing manual memoization
+  1166 |
+  1167 |   const historyColumns = useMemo<ColumnDef<PaymentGatewayControlHistoryItem>[]>(() => [
+  1168 |     {              react-hooks/preserve-manual-memoization
+  1165:6   warning  React Hook useMemo has a missing dependency: 't'. Either include it or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  react-hooks/exhaustive-deps
+  1167:81  error    Compilation Skipped: Existing memoization could not be preserved
+
+React Compiler has skipped optimizing this component because the existing manual memoization could not be preserved. The inferred dependencies did not match the manually specified dependencies, which could cause the value to change more or less frequently than expected. The inferred dependency was `t`, but the source dependencies were [locale]. Inferred different dependency than source.
+
+D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\admin\payment-gateway-control\components\AdminPaymentGatewayControlScreen.tsx:1167:81
+  1165 |   ], [locale]);
+  1166 |
+> 1167 |   const historyColumns = useMemo<ColumnDef<PaymentGatewayControlHistoryItem>[]>(() => [
+       |                                                                                 ^^^^^^^
+> 1168 |     {
+       | ^^^^^
+> 1169 |       id: "changedAt",
+       …
+       | ^^^^^
+> 1215 |     },
+       | ^^^^^
+> 1216 |   ], [locale]);
+       | ^^^^ Could not preserve existing manual memoization
+  1217 |
+  1218 |   const providerLoading = listQuery.isLoading;
+  1219 |   const routingLoading = listQuery.isLoading;                                     react-hooks/preserve-manual-memoization
+  1167:81  error    Compilation Skipped: Existing memoization could not be preserved
+
+React Compiler has skipped optimizing this component because the existing manual memoization could not be preserved. The inferred dependencies did not match the manually specified dependencies, which could cause the value to change more or less frequently than expected. The inferred dependency was `t`, but the source dependencies were [locale]. Inferred different dependency than source.
+
+D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\admin\payment-gateway-control\components\AdminPaymentGatewayControlScreen.tsx:1167:81
+  1165 |   ], [locale]);
+  1166 |
+> 1167 |   const historyColumns = useMemo<ColumnDef<PaymentGatewayControlHistoryItem>[]>(() => [
+       |                                                                                 ^^^^^^^
+> 1168 |     {
+       | ^^^^^
+> 1169 |       id: "changedAt",
+       …
+       | ^^^^^
+> 1215 |     },
+       | ^^^^^
+> 1216 |   ], [locale]);
+       | ^^^^ Could not preserve existing manual memoization
+  1217 |
+  1218 |   const providerLoading = listQuery.isLoading;
+  1219 |   const routingLoading = listQuery.isLoading;                                     react-hooks/preserve-manual-memoization
+  1167:81  error    Compilation Skipped: Existing memoization could not be preserved
+
+React Compiler has skipped optimizing this component because the existing manual memoization could not be preserved. The inferred dependencies did not match the manually specified dependencies, which could cause the value to change more or less frequently than expected. The inferred dependency was `t`, but the source dependencies were [locale]. Inferred different dependency than source.
+
+D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\admin\payment-gateway-control\components\AdminPaymentGatewayControlScreen.tsx:1167:81
+  1165 |   ], [locale]);
+  1166 |
+> 1167 |   const historyColumns = useMemo<ColumnDef<PaymentGatewayControlHistoryItem>[]>(() => [
+       |                                                                                 ^^^^^^^
+> 1168 |     {
+       | ^^^^^
+> 1169 |       id: "changedAt",
+       …
+       | ^^^^^
+> 1215 |     },
+       | ^^^^^
+> 1216 |   ], [locale]);
+       | ^^^^ Could not preserve existing manual memoization
+  1217 |
+  1218 |   const providerLoading = listQuery.isLoading;
+  1219 |   const routingLoading = listQuery.isLoading;                                     react-hooks/preserve-manual-memoization
+  1167:81  error    Compilation Skipped: Existing memoization could not be preserved
+
+React Compiler has skipped optimizing this component because the existing manual memoization could not be preserved. The inferred dependencies did not match the manually specified dependencies, which could cause the value to change more or less frequently than expected. The inferred dependency was `t`, but the source dependencies were [locale]. Inferred different dependency than source.
+
+D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\admin\payment-gateway-control\components\AdminPaymentGatewayControlScreen.tsx:1167:81
+  1165 |   ], [locale]);
+  1166 |
+> 1167 |   const historyColumns = useMemo<ColumnDef<PaymentGatewayControlHistoryItem>[]>(() => [
+       |                                                                                 ^^^^^^^
+> 1168 |     {
+       | ^^^^^
+> 1169 |       id: "changedAt",
+       …
+       | ^^^^^
+> 1215 |     },
+       | ^^^^^
+> 1216 |   ], [locale]);
+       | ^^^^ Could not preserve existing manual memoization
+  1217 |
+  1218 |   const providerLoading = listQuery.isLoading;
+  1219 |   const routingLoading = listQuery.isLoading;                                     react-hooks/preserve-manual-memoization
+  1167:81  error    Compilation Skipped: Existing memoization could not be preserved
+
+React Compiler has skipped optimizing this component because the existing manual memoization could not be preserved. The inferred dependencies did not match the manually specified dependencies, which could cause the value to change more or less frequently than expected. The inferred dependency was `t`, but the source dependencies were [locale]. Inferred different dependency than source.
+
+D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\admin\payment-gateway-control\components\AdminPaymentGatewayControlScreen.tsx:1167:81
+  1165 |   ], [locale]);
+  1166 |
+> 1167 |   const historyColumns = useMemo<ColumnDef<PaymentGatewayControlHistoryItem>[]>(() => [
+       |                                                                                 ^^^^^^^
+> 1168 |     {
+       | ^^^^^
+> 1169 |       id: "changedAt",
+       …
+       | ^^^^^
+> 1215 |     },
+       | ^^^^^
+> 1216 |   ], [locale]);
+       | ^^^^ Could not preserve existing manual memoization
+  1217 |
+  1218 |   const providerLoading = listQuery.isLoading;
+  1219 |   const routingLoading = listQuery.isLoading;                                     react-hooks/preserve-manual-memoization
+  1167:81  error    Compilation Skipped: Existing memoization could not be preserved
+
+React Compiler has skipped optimizing this component because the existing manual memoization could not be preserved. The inferred dependencies did not match the manually specified dependencies, which could cause the value to change more or less frequently than expected. The inferred dependency was `t`, but the source dependencies were [locale]. Inferred different dependency than source.
+
+D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\admin\payment-gateway-control\components\AdminPaymentGatewayControlScreen.tsx:1167:81
+  1165 |   ], [locale]);
+  1166 |
+> 1167 |   const historyColumns = useMemo<ColumnDef<PaymentGatewayControlHistoryItem>[]>(() => [
+       |                                                                                 ^^^^^^^
+> 1168 |     {
+       | ^^^^^
+> 1169 |       id: "changedAt",
+       …
+       | ^^^^^
+> 1215 |     },
+       | ^^^^^
+> 1216 |   ], [locale]);
+       | ^^^^ Could not preserve existing manual memoization
+  1217 |
+  1218 |   const providerLoading = listQuery.isLoading;
+  1219 |   const routingLoading = listQuery.isLoading;                                     react-hooks/preserve-manual-memoization
+  1167:81  error    Compilation Skipped: Existing memoization could not be preserved
+
+React Compiler has skipped optimizing this component because the existing manual memoization could not be preserved. The inferred dependencies did not match the manually specified dependencies, which could cause the value to change more or less frequently than expected. The inferred dependency was `t`, but the source dependencies were [locale]. Inferred different dependency than source.
+
+D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\admin\payment-gateway-control\components\AdminPaymentGatewayControlScreen.tsx:1167:81
+  1165 |   ], [locale]);
+  1166 |
+> 1167 |   const historyColumns = useMemo<ColumnDef<PaymentGatewayControlHistoryItem>[]>(() => [
+       |                                                                                 ^^^^^^^
+> 1168 |     {
+       | ^^^^^
+> 1169 |       id: "changedAt",
+       …
+       | ^^^^^
+> 1215 |     },
+       | ^^^^^
+> 1216 |   ], [locale]);
+       | ^^^^ Could not preserve existing manual memoization
+  1217 |
+  1218 |   const providerLoading = listQuery.isLoading;
+  1219 |   const routingLoading = listQuery.isLoading;                                     react-hooks/preserve-manual-memoization
+  1216:6   warning  React Hook useMemo has a missing dependency: 't'. Either include it or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  react-hooks/exhaustive-deps
+
+D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\admin\practitioner-applications\components\AdminApplicationDetails.tsx
+  359:5  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\admin\practitioner-applications\components\AdminApplicationDetails.tsx:359:5
+  357 |
+  358 |   useEffect(() => {
+> 359 |     setHasMounted(true);
+      |     ^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  360 |   }, []);
+  361 |
+  362 |   if (!hasMounted || isLoading) {  react-hooks/set-state-in-effect
+
+D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\admin\practitioner-payouts\components\AdminPractitionerPayoutHistoryScreen.tsx
+  47:9  warning  The 'items' logical expression could make the dependencies of useMemo Hook (at line 65) change on every render. To fix this, wrap the initialization of 'items' in its own useMemo() Hook  react-hooks/exhaustive-deps
+
+D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\admin\settlements\components\AdminSettlementsDuesScreen.tsx
+  83:5  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\admin\settlements\components\AdminSettlementsDuesScreen.tsx:83:5
+  81 |     if (!pagination) return;
+  82 |     if (page <= pagination.totalPages) return;
+> 83 |     setPage(1);
+     |     ^^^^^^^ Avoid calling setState() directly within an effect
+  84 |   }, [page, pagination?.totalPages]); // eslint-disable-line react-hooks/exhaustive-deps
+  85 |
+  86 |   const rows = useMemo<DuesDirectoryRow[]>(() => {  react-hooks/set-state-in-effect
+
+D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\articles-public\components\PatientArticleCard.tsx
+  32:11  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\articles-public\components\PatientArticleDetailScreen.tsx
+  63:11  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\articles-public\components\PublicArticleCard.tsx
+  32:11  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\articles-public\components\PublicArticleDetailScreen.tsx
+  70:13  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\availability\components\AvailabilityExceptionsList.tsx
+  147:7  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\availability\components\AvailabilityExceptionsList.tsx:147:7
+  145 |   useEffect(() => {
+  146 |     if (isOpen) {
+> 147 |       setForm({
+      |       ^^^^^^^ Avoid calling setState() directly within an effect
+  148 |         startsAt: "",
+  149 |         endsAt: "",
+  150 |         reason: "",  react-hooks/set-state-in-effect
+
+D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\chat\components\SessionChatPanel.tsx
+  311:17  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  436:29  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\messages-shell\components\UnifiedMessagesLauncher.tsx
+  396:7  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\messages-shell\components\UnifiedMessagesLauncher.tsx:396:7
+  394 |     const snapshot = loadMessagesShellContinuitySnapshot(continuityStorageKey);
+  395 |     if (snapshot) {
+> 396 |       setActiveLane(snapshot.activeLane);
+      |       ^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  397 |       setSelectedSessionId(snapshot.selectedSessionId);
+  398 |       setSelectedSupportTicketId(snapshot.selectedSupportTicketId);
+  399 |       setSelectedPractitionerRequestId(snapshot.selectedPractitionerRequestId);  react-hooks/set-state-in-effect
+
+D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\practitioners\components\PractitionerDashboard.tsx
+  354:15  error  Error: Cannot call impure function during render
+
+`Date.now` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).
+
+D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\practitioners\components\PractitionerDashboard.tsx:354:15
+  352 |   const latestSettlementAmount = settlementValues.at(-1) ?? 0;
+  353 |
+> 354 |   const now = Date.now();
+      |               ^^^^^^^^^^ Cannot call impure function
+  355 |   const upcomingSessions = [...sessions]
+  356 |     .filter((session) => {
+  357 |       if (!session.scheduledStartAt) return false;  react-hooks/purity
+
+D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\practitioners\components\PractitionerProfileWorkspace.tsx
+  636:35  warning  Compilation Skipped: Use of incompatible library
+
+This API returns functions which cannot be memoized without leading to stale UI. To prevent this, by default React Compiler will skip memoizing this component/hook. However, you may see issues if values from this API are passed to other components/hooks that are memoized.
+
+D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\practitioners\components\PractitionerProfileWorkspace.tsx:636:35
+  634 |   };
+  635 |
+> 636 |   const watchedPayoutMethodType = watch("payoutMethodType");
+      |                                   ^^^^^ React Hook Form's `useForm()` API returns a `watch()` function which cannot be memoized safely.
+  637 |   const watchedPayoutAccountHolderName = watch("payoutAccountHolderName");
+  638 |   const watchedPayoutBankName = watch("payoutBankName");
+  639 |   const watchedPayoutBankAccountNumber = watch("payoutBankAccountNumber");  react-hooks/incompatible-library
+
+D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\sessions\hooks\use-sessions.ts
+  37:3  warning  Unused eslint-disable directive (no problems were reported from '@typescript-eslint/no-explicit-any')
+
+D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\settings\components\AdminRevenueShareRulesScreen.tsx
+  49:5  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\settings\components\AdminRevenueShareRulesScreen.tsx:49:5
+  47 |     if (!item) return;
+  48 |
+> 49 |     setForm({
+     |     ^^^^^^^ Avoid calling setState() directly within an effect
+  50 |       localPlatformRatePercent: item.local.platformRatePercent,
+  51 |       localPractitionerRatePercent: item.local.practitionerRatePercent,
+  52 |       crossBorderPlatformRatePercent: item.crossBorder.platformRatePercent,  react-hooks/set-state-in-effect
+
+D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\training\components\AdminTrainingCreateModal.tsx
+  55:5  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\training\components\AdminTrainingCreateModal.tsx:55:5
+  53 |   useEffect(() => {
+  54 |     if (!isOpen) return;
+> 55 |     setFeedback(null);
+     |     ^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  56 |     setForm((current) => ({
+  57 |       ...current,
+  58 |       locale: locale.startsWith("ar") ? "ar" : "en",  react-hooks/set-state-in-effect
+
+D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\training\components\AdminTrainingDetailScreen.tsx
+  351:9  warning  The 'scheduleSnapshotItems' logical expression could make the dependencies of useMemo Hook (at line 421) change on every render. To fix this, wrap the initialization of 'scheduleSnapshotItems' in its own useMemo() Hook  react-hooks/exhaustive-deps
+
+D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\training\components\AdminTrainingScheduleLectureCreateModal.tsx
+  73:5  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\training\components\AdminTrainingScheduleLectureCreateModal.tsx:73:5
+  71 |   useEffect(() => {
+  72 |     if (!isOpen) return;
+> 73 |     setFeedback(null);
+     |     ^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  74 |     setForm(createInitialForm(schedule));
+  75 |   }, [isOpen, schedule]);
+  76 |  react-hooks/set-state-in-effect
+
+D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\training\components\AdminTrainingScheduleUpdateModal.tsx
+  62:5  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\training\components\AdminTrainingScheduleUpdateModal.tsx:62:5
+  60 |   useEffect(() => {
+  61 |     if (!isOpen) return;
+> 62 |     setFeedback(null);
+     |     ^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  63 |     setForm(createInitialForm(schedule));
+  64 |   }, [isOpen, schedule]);
+  65 |  react-hooks/set-state-in-effect
+
+D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\training\components\AdminTrainingUpdateModal.tsx
+  66:5  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\training\components\AdminTrainingUpdateModal.tsx:66:5
+  64 |   useEffect(() => {
+  65 |     if (!isOpen || !training) return;
+> 66 |     setFeedback(null);
+     |     ^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  67 |     setForm(createInitialForm(training, locale));
+  68 |   }, [isOpen, training, locale]);
+  69 |  react-hooks/set-state-in-effect
+
+D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\training\components\PatientTrainingHomeScreen.tsx
+  223:9   warning  The 'enrollments' logical expression could make the dependencies of useMemo Hook (at line 241) change on every render. To fix this, wrap the initialization of 'enrollments' in its own useMemo() Hook                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 react-hooks/exhaustive-deps
+  241:35  error    Compilation Skipped: Existing memoization could not be preserved
+
+React Compiler has skipped optimizing this component because the existing manual memoization could not be preserved. This dependency may be mutated later, which could cause the value to change unexpectedly.
+
+D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\training\components\PatientTrainingHomeScreen.tsx:241:35
+  239 |       pending: enrollments.filter((enrollment) => enrollment.enrollmentStatus === "PENDING_PAYMENT").length,
+  240 |     }),
+> 241 |     [data?.pagination.totalItems, enrollments],
+      |                                   ^^^^^^^^^^^ This dependency may be modified later
+  242 |   );
+  243 |
+  244 |   return (  react-hooks/preserve-manual-memoization
+
+✖ 62 problems (39 errors, 23 warnings)
+  0 errors and 5 warnings potentially fixable with the `--fix` option.
+

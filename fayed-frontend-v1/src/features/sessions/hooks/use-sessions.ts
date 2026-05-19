@@ -34,6 +34,8 @@ export const patientSessionQueryKeys = {
 
 type PatientSessionExtraOptions = {
   staleTime?: number;
+  retry?: boolean | number | ((failureCount: number, error: unknown) => boolean);
+  meta?: Record<string, unknown>;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   refetchInterval?: number | false | ((query: any) => number | false);
   refetchIntervalInBackground?: boolean;

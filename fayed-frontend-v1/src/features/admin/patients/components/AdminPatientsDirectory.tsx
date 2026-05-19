@@ -171,43 +171,6 @@ export default function AdminPatientsDirectory() {
         eyebrow={tNav("main.title")}
         title={tNav("main.patients")}
         description={t("description")}
-        notice={
-          <section className="app-panel-soft rounded-[26px] p-4 sm:p-5">
-            <div className="flex flex-wrap items-start justify-between gap-4">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
-                  {t("cards.total")}
-                </p>
-                <p className="mt-2 text-2xl font-semibold tracking-tight text-text-primary dark:text-white/95">
-                  {pagination?.totalItems ?? 0}
-                </p>
-                <p className="mt-1 text-sm text-text-secondary">{t("description")}</p>
-              </div>
-
-              <div className="max-w-full sm:max-w-[34rem]">
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
-                  {hasActiveFilters ? t("filters.search") : t("filters.status")}
-                </p>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {activeFilterChips.length > 0 ? (
-                    activeFilterChips.map((chip) => (
-                      <span
-                        key={chip.id}
-                        className="app-chip rounded-full px-3 py-1.5 text-xs text-text-secondary dark:text-white/80"
-                      >
-                        {chip.label}
-                      </span>
-                    ))
-                  ) : (
-                    <span className="app-chip rounded-full px-3 py-1.5 text-xs text-text-secondary dark:text-white/80">
-                      {t("filters.statusAll")}
-                    </span>
-                  )}
-                </div>
-              </div>
-            </div>
-          </section>
-        }
         summaryCards={
           stats ? (
             <>
@@ -236,62 +199,19 @@ export default function AdminPatientsDirectory() {
           ) : null
         }
         filters={
-          <div className="space-y-4">
-            <div className="grid flex-1 grid-cols-1 gap-3 sm:grid-cols-3">
-              <div className="min-w-0">
-                <Label>{t("filters.search")}</Label>
-                <div className="relative">
-                  <span className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-text-muted">
-                    <Search className="h-4 w-4" aria-hidden="true" />
-                  </span>
-                  <InputField
-                    value={search}
-                    onChange={(e) => {
-                      setSearch(e.target.value);
-                      resetToFirstPage();
-                    }}
-                    placeholder={t("filters.searchPlaceholder")}
-                    className="ps-10"
-                  />
-                </div>
-              </div>
+          <div className="flex flex-col gap-6">
+            <div className="flex flex-wrap items-center justify-end gap-2 border-b border-border-light/70 pb-5">
+              {activeFilterChips.length > 0
+                ? activeFilterChips.map((chip) => (
+                    <span
+                      key={chip.id}
+                      className="app-chip rounded-full px-3 py-1.5 text-xs text-text-secondary dark:text-white/80"
+                    >
+                      {chip.label}
+                    </span>
+                  ))
+                : null}
 
-              <div className="min-w-0">
-                <Label>{t("filters.status")}</Label>
-                <select
-                  className="app-control h-11 w-full px-3"
-                  value={status}
-                  onChange={(e) => {
-                    setStatus(e.target.value as any);
-                    resetToFirstPage();
-                  }}
-                >
-                  <option value="">{t("filters.statusAll")}</option>
-                  <option value="active">{t("filters.statusActive")}</option>
-                  <option value="pending">{t("filters.statusPending")}</option>
-                  <option value="suspended">{t("filters.statusSuspended")}</option>
-                  <option value="inactive">{t("filters.statusInactive")}</option>
-                </select>
-              </div>
-
-              <div className="min-w-0">
-                <Label>{t("filters.onboarding")}</Label>
-                <select
-                  className="app-control h-11 w-full px-3"
-                  value={onboarding}
-                  onChange={(e) => {
-                    setOnboarding(e.target.value as any);
-                    resetToFirstPage();
-                  }}
-                >
-                  <option value="all">{t("filters.onboardingAll")}</option>
-                  <option value="completed">{t("filters.onboardingCompleted")}</option>
-                  <option value="incomplete">{t("filters.onboardingIncomplete")}</option>
-                </select>
-              </div>
-            </div>
-
-            <div className="flex flex-wrap items-center justify-end gap-2">
               {hasActiveFilters ? (
                 <FilterClearButton
                   disabled={false}
@@ -313,6 +233,60 @@ export default function AdminPatientsDirectory() {
                   {t("actions.retry")}
                 </button>
               ) : null}
+            </div>
+
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+              <div className="flex flex-col gap-2">
+                <Label>{t("filters.search")}</Label>
+                <div className="relative">
+                  <span className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-text-muted">
+                    <Search className="h-4 w-4" aria-hidden="true" />
+                  </span>
+                  <InputField
+                    value={search}
+                    onChange={(e) => {
+                      setSearch(e.target.value);
+                      resetToFirstPage();
+                    }}
+                    placeholder={t("filters.searchPlaceholder")}
+                    className="ps-10"
+                  />
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <Label>{t("filters.status")}</Label>
+                <select
+                  className="app-control h-11 w-full rounded-2xl px-3"
+                  value={status}
+                  onChange={(e) => {
+                    setStatus(e.target.value as any);
+                    resetToFirstPage();
+                  }}
+                >
+                  <option value="">{t("filters.statusAll")}</option>
+                  <option value="active">{t("filters.statusActive")}</option>
+                  <option value="pending">{t("filters.statusPending")}</option>
+                  <option value="suspended">{t("filters.statusSuspended")}</option>
+                  <option value="inactive">{t("filters.statusInactive")}</option>
+                </select>
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <Label>{t("filters.onboarding")}</Label>
+                <select
+                  className="app-control h-11 w-full rounded-2xl px-3"
+                  value={onboarding}
+                  onChange={(e) => {
+                    setOnboarding(e.target.value as any);
+                    resetToFirstPage();
+                  }}
+                >
+                  <option value="all">{t("filters.onboardingAll")}</option>
+                  <option value="completed">{t("filters.onboardingCompleted")}</option>
+                  <option value="incomplete">{t("filters.onboardingIncomplete")}</option>
+                </select>
+              </div>
             </div>
           </div>
         }

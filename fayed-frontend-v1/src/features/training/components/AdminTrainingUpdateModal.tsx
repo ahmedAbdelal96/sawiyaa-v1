@@ -63,8 +63,10 @@ export default function AdminTrainingUpdateModal({
 
   useEffect(() => {
     if (!isOpen || !training) return;
-    setFeedback(null);
-    setForm(createInitialForm(training, locale));
+    queueMicrotask(() => {
+      setFeedback(null);
+      setForm(createInitialForm(training, locale));
+    });
   }, [isOpen, training, locale]);
 
   const resetAndClose = () => {

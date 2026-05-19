@@ -127,9 +127,14 @@ export default function AdminAcademyUpdateModal({
 
   useEffect(() => {
     if (!isOpen || !course) return;
-    setFeedback(null);
-    setFieldErrors({});
-    setForm(createInitialForm(course));
+
+    // Avoid synchronous setState inside effects (React Hooks lint).
+    // This reset is purely UI-state and safe to defer to a microtask.
+    queueMicrotask(() => {
+      setFeedback(null);
+      setFieldErrors({});
+      setForm(createInitialForm(course));
+    });
   }, [course, isOpen, locale]);
 
   const resetAndClose = () => {

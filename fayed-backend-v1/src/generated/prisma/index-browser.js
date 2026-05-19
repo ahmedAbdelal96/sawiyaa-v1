@@ -292,6 +292,8 @@ exports.Prisma.UserSessionScalarFieldEnum = {
   userAgent: 'userAgent',
   expiresAt: 'expiresAt',
   revokedAt: 'revokedAt',
+  stepUpVerifiedAt: 'stepUpVerifiedAt',
+  stepUpExpiresAt: 'stepUpExpiresAt',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };
@@ -1047,6 +1049,55 @@ exports.Prisma.FinanceReconciliationReviewScalarFieldEnum = {
   note: 'note',
   reviewedByUserId: 'reviewedByUserId',
   reviewedAt: 'reviewedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.AccountingReconciliationRunScalarFieldEnum = {
+  id: 'id',
+  scope: 'scope',
+  trigger: 'trigger',
+  status: 'status',
+  entityType: 'entityType',
+  entityId: 'entityId',
+  currencyCode: 'currencyCode',
+  startedAt: 'startedAt',
+  completedAt: 'completedAt',
+  totalChecked: 'totalChecked',
+  totalPassed: 'totalPassed',
+  totalFailed: 'totalFailed',
+  totalWarnings: 'totalWarnings',
+  totalCritical: 'totalCritical',
+  summaryJson: 'summaryJson',
+  metadataJson: 'metadataJson',
+  triggeredByUserId: 'triggeredByUserId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.AccountingReconciliationIssueScalarFieldEnum = {
+  id: 'id',
+  runId: 'runId',
+  scope: 'scope',
+  entityType: 'entityType',
+  entityId: 'entityId',
+  currencyCode: 'currencyCode',
+  issueCode: 'issueCode',
+  severity: 'severity',
+  status: 'status',
+  message: 'message',
+  expectedValue: 'expectedValue',
+  actualValue: 'actualValue',
+  metadataJson: 'metadataJson',
+  firstDetectedAt: 'firstDetectedAt',
+  lastDetectedAt: 'lastDetectedAt',
+  acknowledgedAt: 'acknowledgedAt',
+  acknowledgedByUserId: 'acknowledgedByUserId',
+  resolvedAt: 'resolvedAt',
+  resolvedByUserId: 'resolvedByUserId',
+  ignoredAt: 'ignoredAt',
+  ignoredByUserId: 'ignoredByUserId',
+  resolutionNote: 'resolutionNote',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };
@@ -2342,6 +2393,8 @@ exports.CredentialType = exports.$Enums.CredentialType = {
   LICENSE: 'LICENSE',
   DEGREE: 'DEGREE',
   CERTIFICATION: 'CERTIFICATION',
+  NATIONAL_ID_FRONT: 'NATIONAL_ID_FRONT',
+  NATIONAL_ID_BACK: 'NATIONAL_ID_BACK',
   NATIONAL_ID: 'NATIONAL_ID',
   PASSPORT: 'PASSPORT',
   MEMBERSHIP: 'MEMBERSHIP',
@@ -2611,6 +2664,43 @@ exports.ReconciliationReviewStatus = exports.$Enums.ReconciliationReviewStatus =
   MISSING_PROOF: 'MISSING_PROOF',
   REQUIRES_ADJUSTMENT: 'REQUIRES_ADJUSTMENT',
   RESOLVED: 'RESOLVED'
+};
+
+exports.AccountingReconciliationScope = exports.$Enums.AccountingReconciliationScope = {
+  PAYMENTS: 'PAYMENTS',
+  WALLETS: 'WALLETS',
+  SETTLEMENTS: 'SETTLEMENTS',
+  REFUNDS: 'REFUNDS',
+  PACKAGE_SETTLEMENTS: 'PACKAGE_SETTLEMENTS',
+  FULL: 'FULL'
+};
+
+exports.AccountingReconciliationRunTrigger = exports.$Enums.AccountingReconciliationRunTrigger = {
+  MANUAL: 'MANUAL',
+  ADMIN: 'ADMIN',
+  SCHEDULED: 'SCHEDULED',
+  SYSTEM: 'SYSTEM'
+};
+
+exports.AccountingReconciliationRunStatus = exports.$Enums.AccountingReconciliationRunStatus = {
+  RUNNING: 'RUNNING',
+  COMPLETED: 'COMPLETED',
+  COMPLETED_WITH_ISSUES: 'COMPLETED_WITH_ISSUES',
+  FAILED: 'FAILED'
+};
+
+exports.AccountingReconciliationSeverity = exports.$Enums.AccountingReconciliationSeverity = {
+  INFO: 'INFO',
+  WARNING: 'WARNING',
+  ERROR: 'ERROR',
+  CRITICAL: 'CRITICAL'
+};
+
+exports.AccountingReconciliationIssueStatus = exports.$Enums.AccountingReconciliationIssueStatus = {
+  OPEN: 'OPEN',
+  ACKNOWLEDGED: 'ACKNOWLEDGED',
+  RESOLVED: 'RESOLVED',
+  IGNORED: 'IGNORED'
 };
 
 exports.SettlementBatchStatus = exports.$Enums.SettlementBatchStatus = {
@@ -3191,6 +3281,8 @@ exports.Prisma.ModelName = {
   JournalEntry: 'JournalEntry',
   JournalLine: 'JournalLine',
   FinanceReconciliationReview: 'FinanceReconciliationReview',
+  AccountingReconciliationRun: 'AccountingReconciliationRun',
+  AccountingReconciliationIssue: 'AccountingReconciliationIssue',
   PractitionerWallet: 'PractitionerWallet',
   SettlementBatch: 'SettlementBatch',
   PractitionerSettlement: 'PractitionerSettlement',

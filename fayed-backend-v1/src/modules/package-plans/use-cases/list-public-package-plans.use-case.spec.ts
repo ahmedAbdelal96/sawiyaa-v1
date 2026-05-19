@@ -30,7 +30,8 @@ describe('ListPublicPackagePlansUseCase', () => {
   const publicPractitionerReadRepository = {
     findByPublicSlug: jest.fn(),
   } as never;
-  const publicPractitionerVisibilityPolicy = new PublicPractitionerVisibilityPolicy();
+  const publicPractitionerVisibilityPolicy =
+    new PublicPractitionerVisibilityPolicy();
   const packageQuoteCalculatorService = {
     calculate: jest.fn(),
   } as never;
@@ -50,7 +51,9 @@ describe('ListPublicPackagePlansUseCase', () => {
   });
 
   it('returns public-safe plan quotes without internal splits', async () => {
-    (publicPractitionerReadRepository.findByPublicSlug as jest.Mock).mockResolvedValue({
+    (
+      publicPractitionerReadRepository.findByPublicSlug as jest.Mock
+    ).mockResolvedValue({
       id: 'practitioner-1',
       status: 'APPROVED',
       user: { status: 'ACTIVE', displayName: 'Doctor Name' },
@@ -113,7 +116,9 @@ describe('ListPublicPackagePlansUseCase', () => {
   });
 
   it('returns an empty list for practitioners that are not package eligible', async () => {
-    (publicPractitionerReadRepository.findByPublicSlug as jest.Mock).mockResolvedValue({
+    (
+      publicPractitionerReadRepository.findByPublicSlug as jest.Mock
+    ).mockResolvedValue({
       id: 'practitioner-1',
       status: 'APPROVED',
       user: { status: 'ACTIVE', displayName: 'Doctor Name' },

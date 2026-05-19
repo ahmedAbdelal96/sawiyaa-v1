@@ -28,10 +28,15 @@ function resolveBaseUrl() {
   const publicEnv = process.env as Record<string, string | undefined>;
   const configured = publicEnv.EXPO_PUBLIC_API_URL?.trim();
   if (configured) {
+    let parsed: URL;
     try {
-      new URL(configured);
+      parsed = new URL(configured);
     } catch {
       throw new Error("EXPO_PUBLIC_API_URL must be a valid absolute URL.");
+    }
+
+    if (!(typeof __DEV__ !== "undefined" && __DEV__) && parsed.protocol !== "https:") {
+      throw new Error("EXPO_PUBLIC_API_URL must use https:// in production builds.");
     }
 
     return configured;

@@ -6,9 +6,13 @@ import { FINANCIAL_OPS_ERROR_CODES } from '../types/financial-operations.types';
 
 @Injectable()
 export class ListAdminLedgerExplorerUseCase {
-  constructor(private readonly accountingReadRepository: AccountingReadRepository) {}
+  constructor(
+    private readonly accountingReadRepository: AccountingReadRepository,
+  ) {}
 
-  async execute(query: ListAdminLedgerExplorerDto): Promise<LedgerExplorerResultViewModel> {
+  async execute(
+    query: ListAdminLedgerExplorerDto,
+  ): Promise<LedgerExplorerResultViewModel> {
     const page = query.page ?? 1;
     const limit = query.limit ?? 20;
     const from = query.from ? new Date(query.from) : undefined;
@@ -22,18 +26,19 @@ export class ListAdminLedgerExplorerUseCase {
     }
 
     const currencyCode = query.currencyCode?.trim().toUpperCase();
-    const [items, totalItems] = await this.accountingReadRepository.listLedgerLines({
-      page,
-      limit,
-      from,
-      to,
-      ledgerAccountId: query.ledgerAccountId,
-      sourceType: query.sourceType,
-      practitionerId: query.practitionerId,
-      currencyCode,
-      journalEntryId: query.journalEntryId,
-      query: query.query?.trim() || undefined,
-    });
+    const [items, totalItems] =
+      await this.accountingReadRepository.listLedgerLines({
+        page,
+        limit,
+        from,
+        to,
+        ledgerAccountId: query.ledgerAccountId,
+        sourceType: query.sourceType,
+        practitionerId: query.practitionerId,
+        currencyCode,
+        journalEntryId: query.journalEntryId,
+        query: query.query?.trim() || undefined,
+      });
 
     return {
       items: items.map((item) => ({

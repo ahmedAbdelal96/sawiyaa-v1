@@ -3,17 +3,20 @@ import { Prisma } from '@prisma/client';
 import { I18nService } from '@common/i18n/services/i18n.service';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
 import { PractitionerProfileRepository } from '../repositories/practitioner-profile.repository';
+import { PractitionerAvatarStorageService } from '../services/practitioner-avatar-storage.service';
 
 @Injectable()
 export class RemovePractitionerAvatarUseCase {
   constructor(
     private readonly i18nService: I18nService,
     private readonly practitionerProfileRepository: PractitionerProfileRepository,
+    private readonly practitionerAvatarStorageService: PractitionerAvatarStorageService,
   ) {}
 
   async execute(input: { userId: string; locale: SupportedLocale }) {
     let updated: { id: string; avatarUrl: string | null };
     try {
+      await this.practitionerAvatarStorageService.deleteAvatar(input.userId);
       updated = await this.practitionerProfileRepository.updateAvatarByUserId(
         input.userId,
         null,

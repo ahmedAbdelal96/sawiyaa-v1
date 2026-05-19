@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { CourseStatus } from '@prisma/client';
 import { CreateAcademyCourseLectureDto } from '../dto/create-academy-course-lecture.dto';
 import { AcademyPresenter } from '../presenters/academy.presenter';
@@ -74,8 +78,8 @@ export class CreateAcademyCourseLectureUseCase {
       });
     }
 
-    const overlaps = currentLectures.some((lecture) =>
-      startsAt < lecture.endsAt && endsAt > lecture.startsAt,
+    const overlaps = currentLectures.some(
+      (lecture) => startsAt < lecture.endsAt && endsAt > lecture.startsAt,
     );
     if (overlaps) {
       throw new BadRequestException({

@@ -22,6 +22,7 @@ export class ValidateCouponEligibilityService {
   async validateForSession(input: {
     coupon: Coupon | null;
     session: SessionFinancialContext;
+    tx?: Prisma.TransactionClient;
   }) {
     const coupon = input.coupon;
 
@@ -78,6 +79,7 @@ export class ValidateCouponEligibilityService {
       const patientUsage = await this.couponRepository.countPatientRedemptions(
         coupon.id,
         input.session.patient.id,
+        input.tx,
       );
 
       if (patientUsage >= coupon.usageLimitPerPatient) {

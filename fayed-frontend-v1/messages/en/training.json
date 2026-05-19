@@ -256,7 +256,7 @@
     "fallbackDescription": "This screen focuses on real backend training items without overbuilding the admin scope.",
     "cards": {
       "scheduleCount": "Cohorts",
-      "schedulesValue": "{value, number} total â€¢ {open, number} open now",
+      "schedulesValue": "{value, number} total • {open, number} open now",
       "lastPublished": "Published",
       "notPublished": "Not published yet",
       "upcomingHeading": "Visible cohorts",

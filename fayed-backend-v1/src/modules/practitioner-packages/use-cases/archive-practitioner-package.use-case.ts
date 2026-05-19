@@ -11,9 +11,10 @@ export class ArchivePractitionerPackageUseCase {
   ) {}
 
   async execute(input: { userId: string; packageId: string }) {
-    const profile = await this.practitionerPackageRepository.findPractitionerProfileByUserId(
-      input.userId,
-    );
+    const profile =
+      await this.practitionerPackageRepository.findPractitionerProfileByUserId(
+        input.userId,
+      );
 
     if (!profile) {
       throw new NotFoundException({
@@ -35,7 +36,9 @@ export class ArchivePractitionerPackageUseCase {
       });
     }
 
-    if (packageTemplate.status === PractitionerPackageStatus.DISABLED_BY_ADMIN) {
+    if (
+      packageTemplate.status === PractitionerPackageStatus.DISABLED_BY_ADMIN
+    ) {
       throw new NotFoundException({
         messageKey: 'packages.errors.packageNotFound',
         error: 'PACKAGE_NOT_FOUND',

@@ -392,14 +392,16 @@ export default function UnifiedMessagesLauncher({
     // Avoid hydration mismatches: the server cannot read localStorage, so we always start from a
     // deterministic default and restore continuity after the component hydrates.
     const snapshot = loadMessagesShellContinuitySnapshot(continuityStorageKey);
-    if (snapshot) {
-      setActiveLane(snapshot.activeLane);
-      setSelectedSessionId(snapshot.selectedSessionId);
-      setSelectedSupportTicketId(snapshot.selectedSupportTicketId);
-      setSelectedPractitionerRequestId(snapshot.selectedPractitionerRequestId);
-      setLocalSessionReads(snapshot.localSessionReads ?? {});
-    }
-    setContinuityReady(true);
+    queueMicrotask(() => {
+      if (snapshot) {
+        setActiveLane(snapshot.activeLane);
+        setSelectedSessionId(snapshot.selectedSessionId);
+        setSelectedSupportTicketId(snapshot.selectedSupportTicketId);
+        setSelectedPractitionerRequestId(snapshot.selectedPractitionerRequestId);
+        setLocalSessionReads(snapshot.localSessionReads ?? {});
+      }
+      setContinuityReady(true);
+    });
   }, [continuityStorageKey]);
 
   useEffect(() => {

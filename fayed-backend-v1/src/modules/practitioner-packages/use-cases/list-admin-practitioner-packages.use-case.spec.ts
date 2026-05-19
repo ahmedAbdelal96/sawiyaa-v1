@@ -21,7 +21,9 @@ describe('ListAdminPractitionerPackagesUseCase', () => {
   });
 
   it('passes admin filters through and maps practitioner context', async () => {
-    (practitionerPackageRepository.listAdminPackages as jest.Mock).mockResolvedValue([
+    (
+      practitionerPackageRepository.listAdminPackages as jest.Mock
+    ).mockResolvedValue([
       [
         {
           id: 'package-1',
@@ -45,7 +47,9 @@ describe('ListAdminPractitionerPackagesUseCase', () => {
       } as never,
     });
 
-    expect(practitionerPackageRepository.listAdminPackages).toHaveBeenCalledWith(
+    expect(
+      practitionerPackageRepository.listAdminPackages,
+    ).toHaveBeenCalledWith(
       expect.objectContaining({
         q: 'starter',
       }),

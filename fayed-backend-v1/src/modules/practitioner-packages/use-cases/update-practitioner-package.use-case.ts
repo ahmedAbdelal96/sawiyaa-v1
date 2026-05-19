@@ -27,9 +27,10 @@ export class UpdatePractitionerPackageUseCase {
     packageId: string;
     payload: UpdatePractitionerPackageDto;
   }) {
-    const profile = await this.practitionerPackageRepository.findPractitionerProfileByUserId(
-      input.userId,
-    );
+    const profile =
+      await this.practitionerPackageRepository.findPractitionerProfileByUserId(
+        input.userId,
+      );
 
     if (!profile) {
       throw new NotFoundException({
@@ -58,7 +59,9 @@ export class UpdatePractitionerPackageUseCase {
       });
     }
 
-    if (packageTemplate.status === PractitionerPackageStatus.DISABLED_BY_ADMIN) {
+    if (
+      packageTemplate.status === PractitionerPackageStatus.DISABLED_BY_ADMIN
+    ) {
       throw new ConflictException({
         messageKey: 'packages.errors.packageDisabledByAdmin',
         error: 'PACKAGE_DISABLED_BY_ADMIN',
@@ -131,12 +134,14 @@ export class UpdatePractitionerPackageUseCase {
         input.payload.sessionDurationMinutes ??
         input.current.sessionDurationMinutes,
       sessionMode: input.payload.sessionMode ?? input.current.sessionMode,
-      priceEgp: input.payload.priceEgp !== undefined
-        ? new Prisma.Decimal(input.payload.priceEgp)
-        : input.current.priceEgp,
-      priceUsd: input.payload.priceUsd !== undefined
-        ? new Prisma.Decimal(input.payload.priceUsd)
-        : input.current.priceUsd,
+      priceEgp:
+        input.payload.priceEgp !== undefined
+          ? new Prisma.Decimal(input.payload.priceEgp)
+          : input.current.priceEgp,
+      priceUsd:
+        input.payload.priceUsd !== undefined
+          ? new Prisma.Decimal(input.payload.priceUsd)
+          : input.current.priceUsd,
       schedulePolicy:
         input.payload.schedulePolicy ?? input.current.schedulePolicy,
     };

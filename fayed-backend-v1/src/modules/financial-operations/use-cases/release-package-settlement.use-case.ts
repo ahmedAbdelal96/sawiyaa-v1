@@ -9,16 +9,12 @@ export class ReleasePackageSettlementUseCase {
     private readonly financialOperationsMapper: FinancialOperationsMapper,
   ) {}
 
-  async execute(input: {
-    settlementId: string;
-    releasedByAdminId: string;
-  }) {
-    const settlement = await this.packageSettlementService.releaseReadySettlement(
-      {
+  async execute(input: { settlementId: string; releasedByAdminId: string }) {
+    const settlement =
+      await this.packageSettlementService.releaseReadySettlement({
         settlementId: input.settlementId,
         releasedByAdminId: input.releasedByAdminId,
-      },
-    );
+      });
 
     return {
       item: this.financialOperationsMapper.toPackageSettlement(settlement),

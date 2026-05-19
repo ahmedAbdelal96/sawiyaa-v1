@@ -1,5 +1,8 @@
 import { SupportTicketStatus } from '@prisma/client';
-import { SupportReportOverview, SupportReportRow } from '../types/support-report.types';
+import {
+  SupportReportOverview,
+  SupportReportRow,
+} from '../types/support-report.types';
 
 export type SupportReportOverviewInput = {
   from: Date;
@@ -13,9 +16,12 @@ export type SupportReportRowsInput = SupportReportOverviewInput & {
 };
 
 export interface SupportReportProvider {
-  getOverview(input: SupportReportOverviewInput): Promise<SupportReportOverview>;
-  listRows(input: SupportReportRowsInput): Promise<{ items: SupportReportRow[]; totalItems: number }>;
+  getOverview(
+    input: SupportReportOverviewInput,
+  ): Promise<SupportReportOverview>;
+  listRows(
+    input: SupportReportRowsInput,
+  ): Promise<{ items: SupportReportRow[]; totalItems: number }>;
 }
 
 export const SUPPORT_REPORT_PROVIDER = Symbol('SUPPORT_REPORT_PROVIDER');
-

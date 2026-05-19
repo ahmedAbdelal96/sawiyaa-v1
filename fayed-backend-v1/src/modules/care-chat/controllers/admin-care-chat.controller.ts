@@ -27,6 +27,8 @@ import { JwtAccessAuthGuard } from '@common/guards/authentication/jwt-access-aut
 import { PermissionsGuard } from '@common/guards/authorization/permissions.guard';
 import { RolesGuard } from '@common/guards/authorization/roles.guard';
 import { AuthenticatedUser } from '@common/interfaces/authenticated-user.interface';
+import { SecurityAuditService } from '@common/security-audit/security-audit.service';
+import { SecurityAuditOutcome } from '@prisma/client';
 import {
   AdminCareChatRequestItemSuccessResponseDto,
   AdminCareChatRequestListSuccessResponseDto,
@@ -55,6 +57,7 @@ export class AdminCareChatController {
     private readonly decideCareChatRequestUseCase: DecideCareChatRequestUseCase,
     private readonly revokeCareChatRequestUseCase: RevokeCareChatRequestUseCase,
     private readonly getCareChatConversationUseCase: GetCareChatConversationUseCase,
+    private readonly securityAuditService: SecurityAuditService,
   ) {}
 
   @Get('requests')
@@ -149,6 +152,20 @@ export class AdminCareChatController {
         userId: currentUser.id,
         conversationId,
       })
-      .then((data) => ({ success: true as const, data }));
+      .then((data) => {
+        this.securityAuditService.logAsync({
+          action: 'privacy.care_chat.conversation.read.admin',
+          outcome: SecurityAuditOutcome.SUCCESS,
+          actorUserId: currentUser.id,
+          actorRoles: currentUser.roles,
+          resourceType: 'CareChatConversation',
+          resourceId: conversationId,
+          targetUserId: null,
+          metadata: {
+            actorType: 'ADMIN',
+          },
+        });
+        return { success: true as const, data };
+      });
   }
 }

@@ -28,14 +28,14 @@ export class PaymentProviderCapabilitiesService {
         const paymob = this.paymentRuntimeConfigService.getPaymobConfig();
         const enabledMethods =
           this.paymentRuntimeConfigService.getPaymobEnabledMethods(context);
-        const isIntentionFlow =
-          paymob.checkoutFlow === 'intention';
-        const requirements: Array<[key: string, value: string | undefined | null]> =
-          [
-            ['PAYMOB_API_KEY', paymob.apiKey],
-            ['PAYMOB_HMAC_SECRET', paymob.hmacSecret],
-            ['PAYMOB_BASE_URL', paymob.baseUrl],
-          ];
+        const isIntentionFlow = paymob.checkoutFlow === 'intention';
+        const requirements: Array<
+          [key: string, value: string | undefined | null]
+        > = [
+          ['PAYMOB_API_KEY', paymob.apiKey],
+          ['PAYMOB_HMAC_SECRET', paymob.hmacSecret],
+          ['PAYMOB_BASE_URL', paymob.baseUrl],
+        ];
 
         if (isIntentionFlow) {
           requirements.push(
@@ -47,23 +47,21 @@ export class PaymentProviderCapabilitiesService {
           requirements.push(['PAYMOB_IFRAME_ID', paymob.iframeId]);
         }
 
-        return this.buildCapability(
-          provider,
-          paymob.enabled,
-          requirements,
-          {
-            checkoutFlow: paymob.checkoutFlow,
-            maintenanceMode: paymob.maintenanceMode,
-            methods: enabledMethods.map((item) => ({
-              key: item.key,
-              label: item.label,
-              type: item.type,
-              enabled: item.enabled,
-            })),
-            supportedMethods: enabledMethods.map((item) => item.key),
-            defaultMethod: this.paymentRuntimeConfigService.getPaymobDefaultCheckoutMethod(context),
-          },
-        );
+        return this.buildCapability(provider, paymob.enabled, requirements, {
+          checkoutFlow: paymob.checkoutFlow,
+          maintenanceMode: paymob.maintenanceMode,
+          methods: enabledMethods.map((item) => ({
+            key: item.key,
+            label: item.label,
+            type: item.type,
+            enabled: item.enabled,
+          })),
+          supportedMethods: enabledMethods.map((item) => item.key),
+          defaultMethod:
+            this.paymentRuntimeConfigService.getPaymobDefaultCheckoutMethod(
+              context,
+            ),
+        });
       }
       default:
         return {

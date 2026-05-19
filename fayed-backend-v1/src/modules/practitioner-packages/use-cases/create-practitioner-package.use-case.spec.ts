@@ -1,5 +1,9 @@
 import { ConflictException } from '@nestjs/common';
-import { SessionMode, PackageSchedulePolicy, PractitionerPackageStatus } from '@prisma/client';
+import {
+  SessionMode,
+  PackageSchedulePolicy,
+  PractitionerPackageStatus,
+} from '@prisma/client';
 import { CreatePractitionerPackageDto } from '../dto/create-practitioner-package.dto';
 import { PractitionerPackagePresenter } from '../presenters/practitioner-package.presenter';
 import { PackageLimitPolicy } from '../policies/package-limit.policy';
@@ -39,20 +43,20 @@ describe('CreatePractitionerPackageUseCase', () => {
   });
 
   it('creates a draft package', async () => {
-    (practitionerPackageRepository.findPractitionerProfileByUserId as jest.Mock).mockResolvedValue(
-      {
-        id: 'practitioner-1',
-        status: 'APPROVED',
-        acceptsPackages: true,
-      },
-    );
+    (
+      practitionerPackageRepository.findPractitionerProfileByUserId as jest.Mock
+    ).mockResolvedValue({
+      id: 'practitioner-1',
+      status: 'APPROVED',
+      acceptsPackages: true,
+    });
     (packageLimitPolicy.assertCanCreatePackage as jest.Mock).mockResolvedValue({
       maxNonArchivedPackages: 4,
       currentNonArchivedPackages: 1,
     });
-    (practitionerPackageRepository.findByPractitionerIdAndSlug as jest.Mock).mockResolvedValue(
-      null,
-    );
+    (
+      practitionerPackageRepository.findByPractitionerIdAndSlug as jest.Mock
+    ).mockResolvedValue(null);
     (practitionerPackageRepository.createDraft as jest.Mock).mockResolvedValue({
       id: 'package-1',
       practitionerId: 'practitioner-1',
@@ -89,8 +93,7 @@ describe('CreatePractitionerPackageUseCase', () => {
         sessionMode: SessionMode.VIDEO,
         priceEgp: 1200,
         priceUsd: 40,
-        schedulePolicy:
-          PackageSchedulePolicy.REQUIRE_ALL_SESSIONS_AT_PURCHASE,
+        schedulePolicy: PackageSchedulePolicy.REQUIRE_ALL_SESSIONS_AT_PURCHASE,
       } as CreatePractitionerPackageDto,
     });
 
@@ -107,13 +110,13 @@ describe('CreatePractitionerPackageUseCase', () => {
   });
 
   it('blocks creation when the limit is reached', async () => {
-    (practitionerPackageRepository.findPractitionerProfileByUserId as jest.Mock).mockResolvedValue(
-      {
-        id: 'practitioner-1',
-        status: 'APPROVED',
-        acceptsPackages: true,
-      },
-    );
+    (
+      practitionerPackageRepository.findPractitionerProfileByUserId as jest.Mock
+    ).mockResolvedValue({
+      id: 'practitioner-1',
+      status: 'APPROVED',
+      acceptsPackages: true,
+    });
     (packageLimitPolicy.assertCanCreatePackage as jest.Mock).mockRejectedValue(
       new ConflictException(),
     );

@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import AdminCareChatRequestsScreen from "@/features/care-chat/components/AdminCareChatRequestsScreen";
+import AdminPermissionGate from "@/components/admin/AdminPermissionGate";
+import { PermissionKey } from "@/lib/auth/permissions";
 
 type Props = {
   params: Promise<{ locale: string }>;
@@ -18,5 +20,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function AdminCareChatPage({ params }: Props) {
   const { locale } = await params;
   setRequestLocale(locale);
-  return <AdminCareChatRequestsScreen />;
+  return (
+    <AdminPermissionGate
+      requiredPermissions={[
+        PermissionKey.CARE_CHAT_REQUEST_READ_ADMIN,
+        PermissionKey.CARE_CHAT_CONVERSATION_READ_ADMIN,
+        PermissionKey.CARE_CHAT_REQUEST_DECIDE,
+      ]}
+    >
+      <AdminCareChatRequestsScreen />
+    </AdminPermissionGate>
+  );
 }

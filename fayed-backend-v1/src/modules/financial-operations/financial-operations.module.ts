@@ -4,6 +4,7 @@ import { PermissionResolverService } from '@common/guards/authorization/permissi
 import { PermissionsGuard } from '@common/guards/authorization/permissions.guard';
 import { RolesGuard } from '@common/guards/authorization/roles.guard';
 import { AdminFinanceOperationsController } from './controllers/admin-finance-operations.controller';
+import { AdminAccountingReconciliationOperationsController } from './controllers/admin-accounting-reconciliation-operations.controller';
 import { AdminPractitionerManualPayoutsController } from './controllers/admin-practitioner-manual-payouts.controller';
 import { AdminPayoutsController } from './controllers/admin-payouts.controller';
 import { AdminPackageSettlementsController } from './controllers/admin-package-settlements.controller';
@@ -28,6 +29,10 @@ import { ExtractPaymentLedgerBreakdownService } from './services/extract-payment
 import { CalculatePackageSessionAllocationService } from './services/calculate-package-session-allocation.service';
 import { AccountingJournalPostingService } from './services/accounting-journal-posting.service';
 import { AccountingLedgerAccountService } from './services/accounting-ledger-account.service';
+import { AccountingReconciliationDiagnosticsService } from './services/accounting-reconciliation-diagnostics.service';
+import { AccountingReconciliationAlertService } from './services/accounting-reconciliation-alert.service';
+import { AccountingReconciliationOperationsService } from './services/accounting-reconciliation-operations.service';
+import { AccountingReconciliationSchedulerService } from './services/accounting-reconciliation-scheduler.service';
 import { AccountingReconciliationService } from './services/accounting-reconciliation.service';
 import { MoneyAmountService } from './services/money-amount.service';
 import { SettlementPayoutProofStorageService } from './services/settlement-payout-proof-storage.service';
@@ -96,6 +101,7 @@ import { UpdateAdminAccountingReconciliationReviewUseCase } from './use-cases/up
     AdminFinanceOperationsController,
     AdminPayoutsController,
     AdminAccountingController,
+    AdminAccountingReconciliationOperationsController,
   ],
   providers: [
     JwtAccessAuthGuard,
@@ -119,6 +125,10 @@ import { UpdateAdminAccountingReconciliationReviewUseCase } from './use-cases/up
     SettlementPayoutProofStorageService,
     ExtractPaymentLedgerBreakdownService,
     AccountingLedgerAccountService,
+    AccountingReconciliationDiagnosticsService,
+    AccountingReconciliationAlertService,
+    AccountingReconciliationOperationsService,
+    AccountingReconciliationSchedulerService,
     AccountingReconciliationService,
     AccountingJournalPostingService,
     RecordSettlementPayoutService,

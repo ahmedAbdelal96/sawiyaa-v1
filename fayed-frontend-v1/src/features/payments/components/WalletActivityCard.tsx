@@ -2,6 +2,7 @@
 
 import { useLocale, useTranslations } from "next-intl";
 import { ArrowDownLeft, ArrowUpRight } from "lucide-react";
+import { formatMoney as formatFinanceMoney } from "@/lib/finance-format";
 import type { CustomerWalletEntryItem, CustomerWalletEntryType } from "../types/payments.types";
 
 function formatDate(isoString: string, numLocale: string): string {
@@ -10,14 +11,6 @@ function formatDate(isoString: string, numLocale: string): string {
     month: "short",
     day: "numeric",
   });
-}
-
-function formatAmount(amount: string, currency: string, numLocale: string): string {
-  return new Intl.NumberFormat(numLocale, {
-    style: "currency",
-    currency: currency.toUpperCase(),
-    minimumFractionDigits: 0,
-  }).format(Number(amount));
 }
 
 function resolveWalletEntryLabelKey(entryType: CustomerWalletEntryType): string {
@@ -60,7 +53,9 @@ export default function WalletActivityCard({ entry }: { entry: CustomerWalletEnt
         }`}
       >
         {isCredit ? "+" : "-"}
-        {formatAmount(entry.amount, entry.currencyCode, numLocale)}
+        {formatFinanceMoney(numLocale, entry.amount, entry.currencyCode, {
+          fallbackText: "—",
+        })}
       </p>
     </div>
   );

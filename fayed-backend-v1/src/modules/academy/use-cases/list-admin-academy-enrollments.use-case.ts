@@ -11,16 +11,19 @@ export class ListAdminAcademyEnrollmentsUseCase {
   ) {}
 
   async execute(query: ListAdminAcademyEnrollmentsDto) {
-    const [items, totalItems] = await this.academyRepository.listAdminEnrollments({
-      skip: (query.page - 1) * query.limit,
-      take: query.limit,
-      status: query.status,
-      courseId: query.courseId?.trim() || undefined,
-      q: query.q?.trim() || undefined,
-    });
+    const [items, totalItems] =
+      await this.academyRepository.listAdminEnrollments({
+        skip: (query.page - 1) * query.limit,
+        take: query.limit,
+        status: query.status,
+        courseId: query.courseId?.trim() || undefined,
+        q: query.q?.trim() || undefined,
+      });
 
     return {
-      items: items.map((item) => this.academyPresenter.presentEnrollmentItem(item)),
+      items: items.map((item) =>
+        this.academyPresenter.presentEnrollmentItem(item),
+      ),
       pagination: this.academyPresenter.presentPagination({
         page: query.page,
         limit: query.limit,

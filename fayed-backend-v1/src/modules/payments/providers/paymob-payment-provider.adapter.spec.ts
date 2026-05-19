@@ -27,7 +27,10 @@ describe('PaymobPaymentProviderAdapter', () => {
     const paymobConfig = { ...baseConfig, ...(overrides ?? {}) };
     const supportedMethods = [
       paymobConfig.integrationIdCard
-        ? { method: 'CARD' as const, integrationId: paymobConfig.integrationIdCard }
+        ? {
+            method: 'CARD' as const,
+            integrationId: paymobConfig.integrationIdCard,
+          }
         : null,
       paymobConfig.integrationIdWallet
         ? {
@@ -74,7 +77,8 @@ describe('PaymobPaymentProviderAdapter', () => {
           provider === PaymentProvider.PAYMOB &&
           (!paymobConfig.apiKey ||
             !paymobConfig.iframeId ||
-            (!paymobConfig.integrationIdCard && !paymobConfig.integrationIdWallet))
+            (!paymobConfig.integrationIdCard &&
+              !paymobConfig.integrationIdWallet))
         ) {
           throw new ServiceUnavailableException();
         }
@@ -125,11 +129,11 @@ describe('PaymobPaymentProviderAdapter', () => {
     expect(result.checkoutUrl).toContain('/acceptance/iframes/7777');
     expect(result.checkoutUrl).toContain('payment_token=payment_token');
     expect(result.providerMethod).toBe('CARD');
-      expect(result.metadata).toMatchObject({
-        paymobCheckoutMethod: 'CARD',
-        paymobIntegrationId: '12345',
-        paymobCheckoutFlow: 'legacy',
-      });
+    expect(result.metadata).toMatchObject({
+      paymobCheckoutMethod: 'CARD',
+      paymobIntegrationId: '12345',
+      paymobCheckoutFlow: 'legacy',
+    });
   });
 
   it('initiates a paymob wallet checkout when requested', async () => {

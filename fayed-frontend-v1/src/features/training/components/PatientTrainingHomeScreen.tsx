@@ -220,7 +220,7 @@ export default function PatientTrainingHomeScreen() {
     limit: 10,
   });
 
-  const enrollments = data?.items ?? [];
+  const enrollments = useMemo(() => (data?.items ?? []).slice(), [data?.items]);
   const nextActionCount = enrollments.filter(
     (enrollment) =>
       enrollment.enrollmentStatus === "PENDING_PAYMENT" ||

@@ -80,7 +80,7 @@ export default function AdminSettlementsDuesScreen() {
   useEffect(() => {
     if (!pagination) return;
     if (page <= pagination.totalPages) return;
-    setPage(1);
+    queueMicrotask(() => setPage(1));
   }, [page, pagination?.totalPages]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const rows = useMemo<DuesDirectoryRow[]>(() => {

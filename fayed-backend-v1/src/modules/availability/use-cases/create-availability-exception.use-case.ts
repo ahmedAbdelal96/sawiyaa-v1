@@ -7,6 +7,7 @@ import { AvailabilityExceptionRepository } from '../repositories/availability-ex
 import { AvailabilityPractitionerRepository } from '../repositories/availability-practitioner.repository';
 import { AvailabilitySlotRepository } from '../repositories/availability-slot.repository';
 import { ResolvePractitionerTimezoneService } from '../services/resolve-practitioner-timezone.service';
+import { ValidateAvailabilitySessionConflictsService } from '../services/validate-availability-session-conflicts.service';
 import { ValidateAvailabilityOverlapService } from '../services/validate-availability-overlap.service';
 
 /**
@@ -22,6 +23,7 @@ export class CreateAvailabilityExceptionUseCase {
     private readonly availabilityExceptionRepository: AvailabilityExceptionRepository,
     private readonly availabilityMapper: AvailabilityMapper,
     private readonly resolvePractitionerTimezoneService: ResolvePractitionerTimezoneService,
+    private readonly validateAvailabilitySessionConflictsService: ValidateAvailabilitySessionConflictsService,
     private readonly validateAvailabilityOverlapService: ValidateAvailabilityOverlapService,
   ) {}
 
@@ -47,6 +49,12 @@ export class CreateAvailabilityExceptionUseCase {
       input.startsAtUtc,
       input.endsAtUtc,
     );
+
+    await this.validateAvailabilitySessionConflictsService.assertNoBlockingSessionConflict({
+      practitionerId: practitioner.id,
+      startsAtUtc: input.startsAtUtc,
+      endsAtUtc: input.endsAtUtc,
+    });
 
     await this.availabilityExceptionRepository.createException(
       practitioner.id,

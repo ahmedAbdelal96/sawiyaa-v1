@@ -10,7 +10,8 @@ export class ExportAdminAccountingDashboardCsvUseCase {
   ) {}
 
   async execute(query: GetAdminAccountingDashboardDto) {
-    const snapshot = await this.getAdminAccountingDashboardUseCase.execute(query);
+    const snapshot =
+      await this.getAdminAccountingDashboardUseCase.execute(query);
 
     const rows: string[][] = [
       ['Report', 'Admin accounting dashboard summary'],
@@ -22,12 +23,22 @@ export class ExportAdminAccountingDashboardCsvUseCase {
       ['KPI', 'Value'],
       ['Gross inflow', snapshot.kpis.grossInflow],
       ['Platform revenue', snapshot.kpis.platformRevenue],
-      ['Practitioner payable outstanding', snapshot.kpis.practitionerPayableOutstanding],
+      [
+        'Practitioner payable outstanding',
+        snapshot.kpis.practitionerPayableOutstanding,
+      ],
       ['Refund total', snapshot.kpis.refundsTotal],
       ['VAT total', snapshot.kpis.vatTotal],
       ['Fees total', snapshot.kpis.feesTotal],
       [],
-      ['Trend date', 'Revenue', 'Payable increments', 'Payouts', 'Refunds', 'Fees'],
+      [
+        'Trend date',
+        'Revenue',
+        'Payable increments',
+        'Payouts',
+        'Refunds',
+        'Fees',
+      ],
       ...snapshot.trends.map((point) => [
         point.date,
         point.revenue,
@@ -37,7 +48,15 @@ export class ExportAdminAccountingDashboardCsvUseCase {
         point.fees,
       ]),
       [],
-      ['Recent journal entry id', 'Source type', 'Source id', 'Occurred at', 'Currency', 'Amount', 'Summary'],
+      [
+        'Recent journal entry id',
+        'Source type',
+        'Source id',
+        'Occurred at',
+        'Currency',
+        'Amount',
+        'Summary',
+      ],
       ...snapshot.recentEvents.map((event) => [
         event.journalEntryId,
         event.sourceType,

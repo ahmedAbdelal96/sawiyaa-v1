@@ -26,6 +26,10 @@ export const arPractitionersCatalog = {
       'لا يمكن إرسال طلب الممارس قبل استكمال متطلبات الجاهزية',
     applicationAlreadySubmitted: 'طلب الممارس مُرسل بالفعل أو قيد المراجعة',
     credentialAlreadyExists: 'ملف المؤهل مسجل مسبقًا لنفس النوع ومرجع الملف',
+    credentialFileRequired: 'يرجى اختيار ملف مستند قبل الرفع',
+    credentialInvalidType:
+      'نوع الملف غير مدعوم. استخدم PDF أو JPG أو PNG أو WEBP',
+    credentialFileTooLarge: 'حجم ملف المستند أكبر من الحد المسموح (5MB)',
     credentialNotFound: 'تعذر العثور على مؤهل الممارس',
     profileAccessDenied: 'غير مسموح لك بالوصول إلى ملف هذا الممارس',
     publicProfileNotFound: 'تعذر العثور على ملف الممارس العام',

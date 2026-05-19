@@ -28,10 +28,14 @@ describe('PackagePlanPolicyService', () => {
 
   it('resolves a safe default preview currency', () => {
     expect(
-      service.resolveDefaultPreviewCurrency({ practitionerCurrencyCode: 'usd' }),
+      service.resolveDefaultPreviewCurrency({
+        practitionerCurrencyCode: 'usd',
+      }),
     ).toBe('USD');
     expect(
-      service.resolveDefaultPreviewCurrency({ practitionerCurrencyCode: 'aed' }),
+      service.resolveDefaultPreviewCurrency({
+        practitionerCurrencyCode: 'aed',
+      }),
     ).toBe('EGP');
   });
 });

@@ -1,4 +1,9 @@
-import { MarketType, PaymentProvider, Prisma, SessionMode } from '@prisma/client';
+import {
+  MarketType,
+  PaymentProvider,
+  Prisma,
+  SessionMode,
+} from '@prisma/client';
 
 export interface PackagePlanCountsViewModel {
   purchaseCount: number;
