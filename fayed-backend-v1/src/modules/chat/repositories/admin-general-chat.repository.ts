@@ -262,9 +262,9 @@ export class AdminGeneralChatRepository {
           count(ma.id)::int as "attachmentsCount"
         from "Message" m
         left join "MessageAttachment" ma on ma."messageId" = m.id
-        where m."conversationId" in (${Prisma.join(uniqueConversationIds)})
+        where m."conversationId"::text in (${Prisma.join(uniqueConversationIds)})
           and m."deletedAt" is null
-          and m."visibility" = ${MessageVisibility.NORMAL}
+          and m."visibility"::text = ${MessageVisibility.NORMAL}
         group by m."conversationId"
       `)
       .then((rows) => {

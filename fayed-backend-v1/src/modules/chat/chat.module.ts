@@ -1,5 +1,10 @@
 import { Module } from '@nestjs/common';
 import { JwtAccessAuthGuard } from '@common/guards/authentication/jwt-access-auth.guard';
+import { PermissionResolverService } from '@common/guards/authorization/permission-resolver.service';
+import { PermissionsGuard } from '@common/guards/authorization/permissions.guard';
+import { RolesGuard } from '@common/guards/authorization/roles.guard';
+import { PrismaModule } from '@common/prisma/prisma.module';
+import { SecurityAuditModule } from '@common/security-audit/security-audit.module';
 import { AuthModule } from '@modules/auth/auth.module';
 import { CareChatModule } from '@modules/care-chat/care-chat.module';
 import { ModerationModule } from '@modules/moderation/moderation.module';
@@ -35,7 +40,14 @@ import { SendGeneralChatMessageUseCase } from './use-cases/send-general-chat-mes
 import { ConversationAccessPolicy } from './policies/conversation-access.policy';
 
 @Module({
-  imports: [ModerationModule, AuthModule, SupportModule, CareChatModule],
+  imports: [
+    PrismaModule,
+    SecurityAuditModule,
+    ModerationModule,
+    AuthModule,
+    SupportModule,
+    CareChatModule,
+  ],
   controllers: [
     AdminGeneralChatConversationsController,
     GeneralChatConversationsController,
@@ -45,6 +57,9 @@ import { ConversationAccessPolicy } from './policies/conversation-access.policy'
   providers: [
     ConversationAccessPolicy,
     JwtAccessAuthGuard,
+    RolesGuard,
+    PermissionsGuard,
+    PermissionResolverService,
     GeneralChatRepository,
     AdminGeneralChatRepository,
     GeneralChatActorRepository,
