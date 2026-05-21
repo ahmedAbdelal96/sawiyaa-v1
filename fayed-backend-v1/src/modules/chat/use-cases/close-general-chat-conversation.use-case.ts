@@ -58,9 +58,23 @@ export class CloseGeneralChatConversationUseCase {
       });
     }
 
+    const now = new Date();
     await this.generalChatRepository.updateConversationStatus({
       conversationId: conversation.id,
-      status: ConversationStatus.CLOSED,
+      data: {
+        status: ConversationStatus.CLOSED,
+        ...(isAdmin
+          ? {
+              adminSendingDisabledAt: now,
+              adminSendingDisabledByUserId: input.authenticatedUser.id,
+              adminSendingDisabledReason: null,
+            }
+          : {
+              practitionerSendingDisabledAt: now,
+              practitionerSendingDisabledByUserId: input.authenticatedUser.id,
+              practitionerSendingDisabledReason: null,
+            }),
+      },
     });
 
     return { closed: true };

@@ -5,16 +5,14 @@ import {
 } from '@nestjs/common';
 import { ConversationParticipantRole } from '@prisma/client';
 import { AuthenticatedUser } from '@common/interfaces/authenticated-user.interface';
-import {
-  GENERAL_CHAT_ALLOWED_CONVERSATION_STATUS,
-  GENERAL_CHAT_ERROR_CODES,
-} from '../types/general-chat.types';
+import { GENERAL_CHAT_ERROR_CODES } from '../types/general-chat.types';
 import { SendGeneralChatMessageDto } from '../dto/send-general-chat-message.dto';
 import {
   buildGeneralChatParticipantIdentity,
   buildGeneralChatParticipantDirectoryMap,
 } from '../helpers/general-chat-identity.mapper';
 import { GeneralChatRepository } from '../repositories/general-chat.repository';
+import { GeneralChatModerationStateService } from '../services/general-chat-moderation-state.service';
 import { ConversationAccessPolicy } from '../policies/conversation-access.policy';
 import { ValidateGeneralChatMessagePayloadService } from '../services/validate-general-chat-message-payload.service';
 
@@ -22,6 +20,7 @@ import { ValidateGeneralChatMessagePayloadService } from '../services/validate-g
 export class SendGeneralChatMessageUseCase {
   constructor(
     private readonly generalChatRepository: GeneralChatRepository,
+    private readonly generalChatModerationStateService: GeneralChatModerationStateService,
     private readonly validateGeneralChatMessagePayloadService: ValidateGeneralChatMessagePayloadService,
     private readonly conversationAccessPolicy: ConversationAccessPolicy,
   ) {}
@@ -48,10 +47,30 @@ export class SendGeneralChatMessageUseCase {
       requesterId: input.authenticatedUser.id,
     });
 
-    const statusAllowed = GENERAL_CHAT_ALLOWED_CONVERSATION_STATUS.includes(
-      conversation.status as (typeof GENERAL_CHAT_ALLOWED_CONVERSATION_STATUS)[number],
-    );
-    if (!statusAllowed) {
+    const moderationState =
+      this.generalChatModerationStateService.resolveConversationState({
+        status: conversation.status,
+        closedAt: conversation.closedAt ?? null,
+        adminLock: {
+          disabledAt: conversation.adminSendingDisabledAt ?? null,
+          disabledByUserId: conversation.adminSendingDisabledByUserId ?? null,
+          disabledReason: conversation.adminSendingDisabledReason ?? null,
+          enabledAt: conversation.adminSendingEnabledAt ?? null,
+          enabledByUserId: conversation.adminSendingEnabledByUserId ?? null,
+        },
+        practitionerLock: {
+          disabledAt: conversation.practitionerSendingDisabledAt ?? null,
+          disabledByUserId:
+            conversation.practitionerSendingDisabledByUserId ?? null,
+          disabledReason:
+            conversation.practitionerSendingDisabledReason ?? null,
+          enabledAt: conversation.practitionerSendingEnabledAt ?? null,
+          enabledByUserId:
+            conversation.practitionerSendingEnabledByUserId ?? null,
+        },
+      });
+
+    if (!moderationState.canSendMessage) {
       throw new BadRequestException({
         messageKey: 'chat.errors.conversationNotSendable',
         errorCode: GENERAL_CHAT_ERROR_CODES.conversationNotSendable,

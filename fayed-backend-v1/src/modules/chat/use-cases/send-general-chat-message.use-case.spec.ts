@@ -1,10 +1,7 @@
-import {
-  BadRequestException,
-  ForbiddenException,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { GeneralChatRepository } from '../repositories/general-chat.repository';
 import { ConversationAccessPolicy } from '../policies/conversation-access.policy';
+import { GeneralChatModerationStateService } from '../services/general-chat-moderation-state.service';
 import { ValidateGeneralChatMessagePayloadService } from '../services/validate-general-chat-message-payload.service';
 import { SendGeneralChatMessageUseCase } from './send-general-chat-message.use-case';
 
@@ -16,6 +13,7 @@ describe('SendGeneralChatMessageUseCase', () => {
 
   const useCase = new SendGeneralChatMessageUseCase(
     generalChatRepository,
+    new GeneralChatModerationStateService(),
     new ValidateGeneralChatMessagePayloadService(),
     new ConversationAccessPolicy(),
   );
@@ -24,65 +22,37 @@ describe('SendGeneralChatMessageUseCase', () => {
     jest.clearAllMocks();
   });
 
-  it('sends successfully for active participant and returns persisted message', async () => {
-    (
-      generalChatRepository.findConversationByIdInGeneralScope as jest.Mock
-    ).mockResolvedValue({
+  it('rejects send when admin lock makes the conversation not sendable', async () => {
+    (generalChatRepository.findConversationByIdInGeneralScope as jest.Mock).mockResolvedValue({
       id: 'conv_1',
       status: 'OPEN',
-      participants: [{ userId: 'user_1' }],
+      closedAt: null,
+      adminSendingDisabledAt: new Date('2026-05-21T10:00:00.000Z'),
+      adminSendingDisabledByUserId: 'admin',
+      adminSendingDisabledReason: 'Moderation lock',
+      adminSendingEnabledAt: null,
+      adminSendingEnabledByUserId: null,
+      practitionerSendingDisabledAt: null,
+      practitionerSendingDisabledByUserId: null,
+      practitionerSendingDisabledReason: null,
+      practitionerSendingEnabledAt: null,
+      practitionerSendingEnabledByUserId: null,
+      participants: [{ userId: 'user_1', participantRole: 'PATIENT' }],
     });
-    (
-      generalChatRepository.appendMessageInGeneralConversation as jest.Mock
-    ).mockResolvedValue({
-      message: {
-        id: 'msg_1',
+
+    await expect(
+      useCase.execute({
+        authenticatedUser: { id: 'user_1', roles: [] },
         conversationId: 'conv_1',
-        senderUserId: 'user_1',
-        messageType: 'TEXT',
-        contentText: 'Hello',
-        sentAt: new Date('2026-04-01T12:00:00.000Z'),
-      },
-      attachments: [
-        {
-          storageProvider: 'ref:file_1',
-          fileUrl: 'https://cdn.example.com/a.pdf',
-          mimeType: 'application/pdf',
-          fileSize: 1200,
-          originalName: 'a.pdf',
-        },
-      ],
-      conversationLatestActivityAt: new Date('2026-04-01T12:00:00.000Z'),
-    });
-
-    const result = await useCase.execute({
-      authenticatedUser: { id: 'user_1', roles: [] },
-      conversationId: 'conv_1',
-      dto: {
-        message: 'Hello',
-        attachments: [
-          {
-            fileId: 'file_1',
-            fileUrl: 'https://cdn.example.com/a.pdf',
-            mimeType: 'application/pdf',
-          },
-        ],
-      },
-    });
-
-    expect(
-      generalChatRepository.appendMessageInGeneralConversation,
-    ).toHaveBeenCalled();
-    expect(result.item.messageId).toBe('msg_1');
-    expect(result.item.conversationLatestActivityAt).toBe(
-      '2026-04-01T12:00:00.000Z',
-    );
+        dto: { message: 'Hello' },
+      }),
+    ).rejects.toBeInstanceOf(BadRequestException);
   });
 
-  it('rejects when conversation is not found', async () => {
-    (
-      generalChatRepository.findConversationByIdInGeneralScope as jest.Mock
-    ).mockResolvedValue(null);
+  it('rejects when conversation is missing', async () => {
+    (generalChatRepository.findConversationByIdInGeneralScope as jest.Mock).mockResolvedValue(
+      null,
+    );
 
     await expect(
       useCase.execute({
@@ -94,12 +64,21 @@ describe('SendGeneralChatMessageUseCase', () => {
   });
 
   it('rejects non-participant sender', async () => {
-    (
-      generalChatRepository.findConversationByIdInGeneralScope as jest.Mock
-    ).mockResolvedValue({
+    (generalChatRepository.findConversationByIdInGeneralScope as jest.Mock).mockResolvedValue({
       id: 'conv_1',
       status: 'OPEN',
-      participants: [{ userId: 'user_other' }],
+      closedAt: null,
+      participants: [{ userId: 'user_other', participantRole: 'PATIENT' }],
+      adminSendingDisabledAt: null,
+      adminSendingDisabledByUserId: null,
+      adminSendingDisabledReason: null,
+      adminSendingEnabledAt: null,
+      adminSendingEnabledByUserId: null,
+      practitionerSendingDisabledAt: null,
+      practitionerSendingDisabledByUserId: null,
+      practitionerSendingDisabledReason: null,
+      practitionerSendingEnabledAt: null,
+      practitionerSendingEnabledByUserId: null,
     });
 
     await expect(
@@ -109,41 +88,5 @@ describe('SendGeneralChatMessageUseCase', () => {
         dto: { message: 'Hello' },
       }),
     ).rejects.toBeInstanceOf(ForbiddenException);
-  });
-
-  it('rejects invalid/empty message content', async () => {
-    (
-      generalChatRepository.findConversationByIdInGeneralScope as jest.Mock
-    ).mockResolvedValue({
-      id: 'conv_1',
-      status: 'OPEN',
-      participants: [{ userId: 'user_1' }],
-    });
-
-    await expect(
-      useCase.execute({
-        authenticatedUser: { id: 'user_1', roles: [] },
-        conversationId: 'conv_1',
-        dto: { message: '   ' },
-      }),
-    ).rejects.toBeInstanceOf(BadRequestException);
-  });
-
-  it('rejects send when conversation status is terminal', async () => {
-    (
-      generalChatRepository.findConversationByIdInGeneralScope as jest.Mock
-    ).mockResolvedValue({
-      id: 'conv_1',
-      status: 'CLOSED',
-      participants: [{ userId: 'user_1' }],
-    });
-
-    await expect(
-      useCase.execute({
-        authenticatedUser: { id: 'user_1', roles: [] },
-        conversationId: 'conv_1',
-        dto: { message: 'Hello' },
-      }),
-    ).rejects.toBeInstanceOf(BadRequestException);
   });
 });

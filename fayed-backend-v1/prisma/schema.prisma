@@ -3036,6 +3036,16 @@ model Conversation {
 
   startedAt DateTime  @default(now())
   closedAt  DateTime?
+  adminSendingDisabledAt        DateTime?
+  adminSendingDisabledByUserId   String?   @db.Uuid
+  adminSendingDisabledReason     String?   @db.VarChar(500)
+  adminSendingEnabledAt         DateTime?
+  adminSendingEnabledByUserId   String?   @db.Uuid
+  practitionerSendingDisabledAt      DateTime?
+  practitionerSendingDisabledByUserId String?   @db.Uuid
+  practitionerSendingDisabledReason   String?   @db.VarChar(500)
+  practitionerSendingEnabledAt        DateTime?
+  practitionerSendingEnabledByUserId   String?   @db.Uuid
   expiresAt DateTime?
 
   createdAt DateTime @default(now())

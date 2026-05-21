@@ -94,6 +94,18 @@ export const permissionDefinitions: Array<{
     description: 'Read care-chat conversation threads in admin/support context',
   },
   {
+    key: 'chat.conversations.read',
+    description: 'Read session chat conversations in admin/support context',
+  },
+  {
+    key: 'chat.conversations.moderate',
+    description: 'Moderate session chat sending state in admin context',
+  },
+  {
+    key: 'chat.attachments.read',
+    description: 'Read session chat attachments in admin/support context',
+  },
+  {
     key: 'patients.read.admin',
     description: 'Read patient profile list and basic details in back-office',
   },
@@ -233,6 +245,8 @@ export const rolePermissionBundles: Array<{
       'patients.read.admin',
       'careChat.request.read.admin',
       'careChat.conversation.read.admin',
+      'chat.conversations.read',
+      'chat.attachments.read',
       'support.ticket.assign',
     ],
   },

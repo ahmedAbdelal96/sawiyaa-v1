@@ -17,6 +17,17 @@ const generalConversationReadSelect =
     conversationRef: true,
     status: true,
     sessionId: true,
+    closedAt: true,
+    adminSendingDisabledAt: true,
+    adminSendingDisabledByUserId: true,
+    adminSendingDisabledReason: true,
+    adminSendingEnabledAt: true,
+    adminSendingEnabledByUserId: true,
+    practitionerSendingDisabledAt: true,
+    practitionerSendingDisabledByUserId: true,
+    practitionerSendingDisabledReason: true,
+    practitionerSendingEnabledAt: true,
+    practitionerSendingEnabledByUserId: true,
     createdAt: true,
     updatedAt: true,
     participants: {
@@ -479,11 +490,11 @@ export class GeneralChatRepository {
 
   updateConversationStatus(input: {
     conversationId: string;
-    status: ConversationStatus;
+    data: Prisma.ConversationUpdateInput | Prisma.ConversationUncheckedUpdateInput;
   }) {
     return this.prisma.conversation.update({
       where: { id: input.conversationId },
-      data: { status: input.status },
+      data: input.data,
       select: {
         id: true,
         status: true,
