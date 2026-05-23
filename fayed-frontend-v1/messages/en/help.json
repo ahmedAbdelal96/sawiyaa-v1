@@ -57,5 +57,22 @@
   "badges": {
     "active": "Active",
     "inactive": "Inactive"
+  },
+  "document": {
+    "eyebrow": "Frequently asked questions",
+    "title": "Frequently asked questions",
+    "subtitle": "Browse questions by category and jump to the right answer quickly.",
+    "intro": "Choose a category or use search to quickly reach clear answers.",
+    "sectionHeading": "Help details"
+  },
+  "summary": {
+    "title": "Categories"
+  },
+  "notice": {
+    "title": "Important note",
+    "body": "The actual answer appears inside the question content before it is applied, based on the category and search.",
+    "supportTitle": "Need help?",
+    "supportBody": "If you think your case needs special review, you can contact support.",
+    "supportCta": "Contact support"
   }
 }

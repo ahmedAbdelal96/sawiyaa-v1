@@ -48,6 +48,10 @@ export const ADMIN_ROUTE_PERMISSIONS: AdminRoutePermissionConfig[] = [
       PK.CARE_CHAT_REQUEST_DECIDE,
     ],
   },
+  {
+    path: "/chat-conversations",
+    requiresAny: [PK.CHAT_CONVERSATIONS_READ],
+  },
   { path: "/assessments", requiresAny: [] },
   { path: "/articles", requiresAny: [] },
   { path: "/academy", requiresAny: [] },

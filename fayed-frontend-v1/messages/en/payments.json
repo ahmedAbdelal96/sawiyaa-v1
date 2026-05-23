@@ -208,6 +208,40 @@
   },
   "history": {
     "heading": "Payment History",
+    "eyebrow": "Payments",
+    "summary": {
+      "heading": "Totals",
+      "egp": "Total payments (EGP)",
+      "usd": "Total payments (USD)",
+      "refundsLabel": "Refunds",
+      "refundsHeading": "Refund operations"
+    },
+    "filters": {
+      "searchPlaceholder": "Search by practitioner or session...",
+      "allStatuses": "All statuses",
+      "allCurrencies": "Currency: all",
+      "dateRangeLabel": "Date range",
+      "fromDate": "From date",
+      "toDate": "To date"
+    },
+    "table": {
+      "heading": "Latest payment history",
+      "note": "Review the latest financial operations linked to your sessions.",
+      "columns": {
+        "sessionPractitioner": "Session / practitioner",
+        "date": "Date",
+        "method": "Payment method",
+        "amount": "Amount",
+        "status": "Status",
+        "action": "Action"
+      }
+    },
+    "pagination": {
+      "previous": "Previous",
+      "next": "Next"
+    },
+    "unknownSession": "Unknown session",
+    "unknownPractitioner": "Unknown practitioner",
     "emptyHeading": "No payments yet",
     "emptyNote": "Your payments will appear here after you book and pay for a session.",
     "emptyAction": "View my sessions",
@@ -314,14 +348,73 @@
         "wallet": "Open wallet",
         "sessions": "View sessions"
       }
+    },
+    "method": {
+      "card": "Bank card",
+      "paymob": "Paymob",
+      "wallet": "Wallet",
+      "stripe": "Stripe",
+      "gateway": "Payment gateway"
+    },
+    "actions": {
+      "wallet": "Open wallet",
+      "sessions": "View sessions"
     }
   },
   "walletPage": {
     "eyebrow": "Wallet",
-    "heading": "Your wallet, balance, and activity",
-    "note": "Use this page to understand what is available, what is reserved, and how your wallet changed over time.",
-    "backToPayments": "Payment history",
-    "backToSessions": "Go to sessions",
+    "heading": "Wallet",
+    "note": "Track your balance and wallet activity clearly.",
+    "actions": {
+      "payments": "Payment history"
+    },
+    "profileCard": {
+      "badge": "Account",
+      "walletLabel": "Wallet",
+      "availableLabel": "Available balance",
+      "reservedLabel": "Reserved balance",
+      "lastActivityLabel": "Last activity",
+      "fallbackName": "Patient"
+    },
+    "currencyLabels": {
+      "local": "Local currency",
+      "international": "International currency"
+    },
+    "balanceTitle": "Available balance",
+    "balanceReserved": "Reserved balance",
+    "balanceLastActivity": "Last activity:",
+    "balanceNoActivity": "No wallet activity recorded yet",
+    "activityHeading": "Wallet activity",
+    "activityNote": "These entries show how your wallet moved over time.",
+    "activityColumns": {
+      "type": "Operation type",
+      "date": "Date",
+      "amount": "Value",
+      "status": "Status"
+    },
+    "activityStatus": {
+      "completed": "Completed",
+      "processing": "Processing",
+      "refunded": "Refunded"
+    },
+    "activityEmpty": {
+      "heading": "No wallet activity yet",
+      "note": "Your wallet activity will appear here after refunds, credits, or wallet-based payments.",
+      "action": "Open payment history"
+    },
+    "states": {
+      "error": {
+        "heading": "Wallet is not available right now",
+        "note": "We could not load your wallet summary. Please try again.",
+        "retry": "Try again"
+      },
+      "empty": {
+        "heading": "No wallet yet",
+        "note": "Your wallet will appear when your account has wallet activity.",
+        "action": "Open payment history"
+      }
+    },
+    "retry": "Try again",
     "metrics": {
       "available": "Available",
       "availableHint": "Can be used for eligible payments",
@@ -331,13 +424,6 @@
       "creditedHint": "Total money added to the wallet",
       "debited": "Debited",
       "debitedHint": "Total money used or deducted"
-    },
-    "activityHeading": "Wallet activity",
-    "activityNote": "These entries show how your wallet moved over time.",
-    "activityEmpty": {
-      "heading": "No wallet activity yet",
-      "note": "Your wallet activity will appear here after refunds, credits, or wallet-based payments.",
-      "action": "Open payment history"
     },
     "sidebar": {
       "heading": "What this page means",
@@ -369,20 +455,7 @@
         "payments": "Open payment history",
         "sessions": "View sessions"
       }
-    },
-    "states": {
-      "error": {
-        "heading": "Wallet is not available right now",
-        "note": "We could not load your wallet summary. Please try again.",
-        "retry": "Try again"
-      },
-      "empty": {
-        "heading": "No wallet yet",
-        "note": "Your wallet will appear when your account has wallet activity.",
-        "action": "Open payment history"
-      }
-    },
-    "retry": "Try again"
+    }
   },
   "walletCheckout": {
     "heading": "How this payment will be split",

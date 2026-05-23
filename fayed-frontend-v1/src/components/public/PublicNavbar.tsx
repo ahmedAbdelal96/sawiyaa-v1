@@ -19,8 +19,8 @@ export default function PublicNavbar() {
     { href: "/", label: t("home") },
     { href: "/specialties", label: t("specialties") },
     { href: "/practitioners", label: t("practitioners") },
-    { href: "/academy", label: t("academy") },
     { href: "/articles", label: t("articles") },
+    { href: "/refund-policies", label: t("policies") },
   ];
 
   return (
@@ -32,7 +32,7 @@ export default function PublicNavbar() {
             href="/"
             className="text-2xl font-bold tracking-tight text-primary"
           >
-            فايد
+            Fayed
           </Link>
           <ul className="hidden items-center gap-1 md:flex">
             {NAV_LINKS.map((link) => {

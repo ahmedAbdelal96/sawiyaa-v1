@@ -4,56 +4,35 @@ import { Link } from "@/i18n/navigation";
 export default async function PublicFooter() {
   const t = await getTranslations("home.footer");
 
-  const sections = [
-    {
-      title: t("sectionPlatform"),
-      links: [
-        { href: "/", label: t("linkHome") },
-        { href: "/specialties", label: t("linkSpecialties") },
-        { href: "/practitioners", label: t("linkPractitioners") },
-        { href: "/articles", label: t("linkArticles") },
-      ],
-    },
-  ];
-
   return (
     <footer className="border-t border-border-light bg-background dark:border-border-light dark:bg-background">
-      <div className="app-max-shell-public mx-auto px-6 py-14">
-        <div className="grid grid-cols-2 gap-8 md:grid-cols-3">
-          {/* Brand */}
-          <div className="col-span-2 md:col-span-1">
-            <Link href="/" className="text-xl font-bold text-primary">
-              فايد
+      <div className="app-max-shell-public mx-auto px-6 py-10">
+        <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
+          <div className="max-w-md">
+            <Link href="/" className="text-xl font-bold tracking-tight text-primary">
+              Fayed
             </Link>
-            <p className="mt-3 max-w-xs text-sm leading-relaxed text-text-secondary">
-              {t("tagline")}
-            </p>
+            <p className="mt-3 text-sm leading-relaxed text-text-secondary">{t("tagline")}</p>
           </div>
 
-          {/* Link columns */}
-          {sections.map((section) => (
-            <div key={section.title}>
-              <h4 className="mb-4 text-sm font-semibold text-text-primary dark:text-white/80">
-                {section.title}
-              </h4>
-              <ul className="flex flex-col gap-2.5">
-                {section.links.map((link) => (
-                  <li key={link.href}>
-                    <Link
-                      href={link.href}
-                      className="text-sm text-text-secondary transition-colors hover:text-primary"
-                    >
-                      {link.label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-3 text-sm text-text-secondary">
+            <Link href="/help" className="transition-colors hover:text-primary">
+              {t("linkAccessibility")}
+            </Link>
+            <Link href="/help" className="transition-colors hover:text-primary">
+              {t("linkCookiePolicy")}
+            </Link>
+            <Link href="/help" className="transition-colors hover:text-primary">
+              {t("linkTerms")}
+            </Link>
+            <Link href="/help" className="transition-colors hover:text-primary">
+              {t("linkPrivacy")}
+            </Link>
+          </div>
         </div>
 
-        <div className="mt-10 border-t border-border-light pt-6">
-          <p className="text-center text-xs text-text-muted">
+        <div className="mt-8 border-t border-border-light pt-4">
+          <p className="text-sm text-text-muted">
             © {new Date().getFullYear()} {t("copyright")}
           </p>
         </div>

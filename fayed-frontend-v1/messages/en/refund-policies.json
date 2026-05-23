@@ -101,5 +101,134 @@
         "adminReview": "Admin review"
       }
     }
+  },
+  "sessionPage": {
+    "fallback": {
+      "title": "Session refund policy is unavailable right now",
+      "note": "We could not load the session refund policy page right now. Please try again.",
+      "back": "Back to all policies"
+    },
+    "hero": {
+      "eyebrow": "Public policies",
+      "activeBadge": "Active",
+      "inactiveBadge": "Inactive",
+      "versionLabel": "Version {version}",
+      "title": "Session Refund Policy",
+      "subtitle": "Review cancellation and refund rules before the session and how the cancellation outcome is calculated.",
+      "updatedAt": "Last updated: {date}",
+      "back": "Back to all policies"
+    },
+    "document": {
+      "eyebrow": "Official document",
+      "subBadge": "Current policy",
+      "title": "Single Session Cancellation and Refund Policy",
+      "subtitle": "This policy applies to individual session bookings on Fayed.",
+      "intro": "This policy explains the cancellation rules, refund results, and the cases that may require manual review by the platform team."
+    },
+    "timeline": {
+      "summary": {
+        "full": {
+          "label": "48 hours or more",
+          "result": "Possible full refund"
+        },
+        "partial": {
+          "label": "24 - 48 hours",
+          "result": "Partial refund"
+        },
+        "limited": {
+          "label": "12 - 24 hours",
+          "result": "Limited refund"
+        },
+        "late": {
+          "label": "Less than 12 hours",
+          "result": "Refund may not be available"
+        },
+        "manual": {
+          "label": "After session start",
+          "result": "Manual review"
+        }
+      }
+    },
+    "accordion": {
+      "heading": "Policy details",
+      "scope": {
+        "title": "Policy scope",
+        "items": {
+          "0": "This policy applies to individual session bookings.",
+          "1": "It does not cover packages or subscriptions unless their own terms state otherwise.",
+          "2": "Cancellation results are calculated from session time, payment status, and the active policy."
+        }
+      },
+      "eligibility": {
+        "title": "How eligibility is calculated",
+        "items": {
+          "0": "Refund eligibility depends on the time left before the scheduled session.",
+          "1": "Cancellation results may vary based on payment status or whether the session has started.",
+          "2": "The final result is shown to the user before cancellation is confirmed."
+        }
+      },
+      "full": {
+        "title": "48 hours or more",
+        "items": {
+          "0": "The session may be eligible for a full refund if cancellation is requested at least 48 hours before the session."
+        }
+      },
+      "partial": {
+        "title": "From 24 to less than 48 hours",
+        "items": {
+          "0": "The session may be eligible for a partial refund according to the active policy."
+        }
+      },
+      "limited": {
+        "title": "From 12 to less than 24 hours",
+        "items": {
+          "0": "The session may be eligible for a smaller partial refund."
+        }
+      },
+      "late": {
+        "title": "Less than 12 hours",
+        "items": {
+          "0": "Refund requests may be rejected if they are too close to the session time."
+        }
+      },
+      "manualAfterStart": {
+        "title": "After session start or no-show",
+        "items": {
+          "0": "There may be no refund after the session starts or in case of a no-show unless the platform team approves an exceptional review."
+        }
+      },
+      "exceptions": {
+        "title": "Exceptional cases",
+        "items": {
+          "0": "The platform team may review exceptional cases such as technical issues or urgent circumstances.",
+          "1": "Manual review does not guarantee refund approval."
+        }
+      },
+      "manualReview": {
+        "title": "Manual review",
+        "items": {
+          "0": "The team may review a case manually when unusual circumstances are present.",
+          "1": "Manual review helps handle cases not fully covered by the base policy."
+        }
+      },
+      "result": {
+        "title": "How the cancellation result appears",
+        "items": {
+          "0": "When a session is cancelled, the platform shows the result before confirmation.",
+          "1": "The result includes whether cancellation is available, the refund percentage, the expected amount, and the refund destination.",
+          "2": "Cancellation is completed only after the user accepts the shown result."
+        }
+      }
+    },
+    "notice": {
+      "title": "Important note",
+      "body": "The actual cancellation result is shown inside the cancellation confirmation window before confirmation, based on session time, payment status, and the active policy."
+    },
+    "support": {
+      "eyebrow": "Need help?",
+      "title": "If you need a special review",
+      "body": "If you believe your case needs a special review, you can contact support.",
+      "cta": "Contact support"
+    }
   }
 }

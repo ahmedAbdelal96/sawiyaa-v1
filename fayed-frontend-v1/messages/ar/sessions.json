@@ -53,16 +53,29 @@
   "detail": {
     "backToSessions": "العودة إلى الجلسات",
     "heading": "تفاصيل الجلسة",
+    "summary": {
+      "eyebrow": "نظرة سريعة",
+      "heading": "ملخص الجلسة",
+      "note": "كل المعلومات المهمة في مكان واحد.",
+      "practitioner": "المعالج",
+      "sessionCode": "كود الجلسة",
+      "scheduledAt": "الموعد",
+      "duration": "المدة",
+      "mode": "نوع الجلسة",
+      "status": "الحالة"
+    },
     "chatCard": {
       "heading": "المحادثة",
-      "note": "افتح محادثة مع المعالج لهذه الجلسة.",
-      "disabledNote": "تتاح المحادثة عند جاهزية الجلسة للانضمام أو أثناءها.",
+      "note": "افتح صفحة المحادثة الكاملة لإرسال الرسائل والملفات مع المعالج.",
+      "disabledNote": "تفتح المحادثة قبل موعد الجلسة بوقت محدد.",
       "open": "فتح المحادثة"
     },
     "chat": {
       "eyebrow": "محادثة الجلسة",
       "back": "العودة للجلسات",
       "fallbackName": "المعالج",
+      "you": "أنت",
+      "youSubtitle": "أنت",
       "title": "محادثة مع {name}",
       "note": "تواصل وشارك ملفات مرتبطة بهذه الجلسة.",
       "thread": {
@@ -85,7 +98,12 @@
         "notAvailable": {
           "heading": "المحادثة غير متاحة بعد",
           "note": "تُفتح المحادثة عند جاهزية الجلسة للانضمام أو أثناءها.",
-          "back": "عودة"
+          "back": "عودة",
+          "backToSession": "العودة إلى تفاصيل الجلسة"
+        },
+        "readOnly": {
+          "heading": "المحادثة مفتوحة للقراءة فقط",
+          "note": "يمكنك مراجعة الرسائل السابقة، لكن الإرسال غير متاح الآن."
         },
         "sessionError": {
           "heading": "تعذّر تحميل الجلسة",
@@ -239,13 +257,73 @@
     "cancelAction": "إلغاء الجلسة",
     "cancelConfirm": {
       "heading": "هل تريد إلغاء هذه الجلسة؟",
-      "note": "لا يمكن التراجع عن هذا الإجراء. سيتم تقييم نتيجة الإلغاء والاسترداد حسب السياسة النشطة.",
+      "note": "راجع النتيجة قبل التأكيد.",
+      "summaryHeading": "ملخص الجلسة",
+      "summaryNote": "هذه هي تفاصيل الجلسة التي سيتأثر بها الإلغاء.",
+      "summaryFields": {
+        "practitioner": "المعالج",
+        "sessionTime": "موعد الجلسة",
+        "duration": "المدة",
+        "mode": "نوع الجلسة",
+        "status": "الحالة",
+        "sessionCode": "كود الجلسة"
+      },
+      "eligibilityHeading": "هل يمكن إلغاء الجلسة؟",
+      "eligibility": {
+        "availableBadge": "الإلغاء متاح",
+        "blockedBadge": "الإلغاء غير متاح",
+        "availableNote": "يمكنك إلغاء الجلسة الآن وفقًا للسياسة الحالية.",
+        "blockedReason": {
+          "policyWindowEnded": "انتهت نافذة الإلغاء المسموح بها",
+          "sessionTooClose": "موعد الجلسة قريب جدًا",
+          "policyRestricted": "السياسة النشطة لا تسمح بالإلغاء الآن",
+          "paymentRestricted": "حالة الدفع الحالية لا تسمح بالإلغاء",
+          "unsupportedRefundDestination": "جهة الاسترداد هذه غير مدعومة"
+        },
+        "blockedExplanation": {
+          "policyWindowEnded": "حسب السياسة الحالية، أصبحت نافذة الإلغاء مغلقة بالفعل.",
+          "sessionTooClose": "الوقت المتبقي قبل بدء الجلسة قصير جدًا للسماح بالإلغاء.",
+          "policyRestricted": "وفقًا لقاعدة السياسة النشطة، لم يعد الإلغاء مسموحًا في هذه النافذة.",
+          "paymentRestricted": "حالة الدفع الحالية تمنع تكوين نتيجة استرداد جديدة.",
+          "unsupportedRefundDestination": "السياسة النشطة تشير إلى جهة استرداد غير مدعومة حاليًا."
+        },
+        "policyWindow": "نافذة السياسة",
+        "policyRule": "القاعدة المطبقة",
+        "hoursBeforeStart": "قبل البدء بـ {hours} ساعة",
+        "ruleAllowed": "الإلغاء متاح في هذه النافذة. نسبة الاسترداد: {percent}%.",
+        "ruleBlocked": "السياسة النشطة لا تسمح بالإلغاء في هذه النافذة."
+      },
+      "financialHeading": "نتيجة الإلغاء المالية",
+      "financialSummary": {
+        "blocked": "لن يتم تنفيذ الإلغاء، لذلك لا يوجد استرداد في هذه الحالة.",
+        "noPayment": "لا توجد دفعة مرتبطة بهذه الجلسة، لذلك لن يوجد استرداد عند الإلغاء.",
+        "allowedRefund": "سيتم رد المبلغ المستحق بعد تأكيد الإلغاء.",
+        "allowedRefundWithAmount": "سيتم رد {amount} إلى {destination} بعد تأكيد الإلغاء.",
+        "allowedRelease": "سيتم تحرير المبلغ المحجوز بعد تأكيد الإلغاء.",
+        "allowedNoRefund": "يمكن إلغاء الجلسة، لكن لن يتم استرداد أي مبلغ وفقًا للسياسة الحالية."
+      },
+      "financialFields": {
+        "refundPercent": "نسبة الاسترداد",
+        "refundAmount": "المبلغ المسترد",
+        "refundDestination": "وسيلة الاسترداد",
+        "reservationReleaseAmount": "المبلغ المحجوز الذي سيتم تحريره",
+        "nonRefundedAmount": "المبلغ غير المسترد",
+        "walletCreditAmount": "مبلغ إضافة المحفظة"
+      },
+      "policyAccessHeading": "سياسة الإلغاء",
+      "policyAccessNote": "تمت الموافقة على سياسة الإلغاء أثناء الدفع.",
+      "policyAccessAction": "عرض سياسة الإلغاء",
+      "policyAccessHelper": "سيفتح ذلك صفحة سياسة استرداد الجلسة.",
+      "noteLabel": "ملاحظة قصيرة (اختياري)",
+      "notePlaceholder": "اكتب سبب الإلغاء هنا...",
       "policyHeading": "سياسة الإلغاء والاسترداد",
       "policyNote": "إذا كان الإلغاء مسموحاً في نافذة الوقت الحالية فسيتم إرجاع أي مبلغ مستحق إلى محفظتك حسب السياسة. إذا لم يكن مسموحاً فسيتم رفض الطلب.",
-      "reasonLabel": "ملاحظة الإلغاء (اختياري)",
-      "reasonPlaceholder": "اكتب ملاحظة قصيرة لسبب الإلغاء",
-      "confirm": "نعم، إلغاء",
-      "back": "الإبقاء على الجلسة",
+      "reasonLabel": "ملاحظة قصيرة",
+      "reasonPlaceholder": "سبب مختصر لإلغاء الجلسة (اختياري)",
+      "confirmDisabled": "لا يمكن إلغاء هذه الجلسة الآن.",
+      "backToSession": "الرجوع للجلسة",
+      "confirm": "تأكيد إلغاء الجلسة",
+      "back": "الرجوع",
       "previewHeading": "النتيجة المالية قبل التأكيد",
       "previewLoading": "جارٍ حساب النتيجة المالية الدقيقة للإلغاء...",
       "previewLoadFailed": "تعذر تحميل المعاينة المالية للإلغاء حاليًا.",
@@ -282,15 +360,7 @@
     "cancelError": "تعذّر إلغاء هذه الجلسة. يرجى المحاولة مجددًا.",
     "bookNewSlot": "حجز موعد جديد",
     "bookedAt": "وقت الحجز",
-    "bookingStartedAt": "بدأ الحجز في",
-    "errors": {
-      "forbiddenTitle": "لا يمكنك عرض هذه الجلسة",
-      "forbiddenNote": "هذه الجلسة لا تتاح إلا لحسابك.",
-      "notFoundTitle": "لم يتم العثور على الجلسة",
-      "notFoundNote": "لم نجد هذه الجلسة.",
-      "errorTitle": "تعذّر تحميل تفاصيل الجلسة",
-      "errorNote": "يرجى المحاولة مجددًا بعد لحظات."
-    }
+    "bookingStartedAt": "بدأ الحجز في"
   },
   "practitioner": {
     "meta": {

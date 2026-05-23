@@ -53,6 +53,13 @@ export const adminNavigation: NavigationConfig = [
           PK.CARE_CHAT_REQUEST_DECIDE,
         ],
       },
+      {
+        key: "chatConversations",
+        icon: <NavigationIcons.chat />,
+        path: "/chat-conversations",
+        namespace: "workspace",
+        requiredPermissions: [PK.CHAT_CONVERSATIONS_READ],
+      },
       { key: "assessments", icon: <NavigationIcons.reports />, path: "/assessments" },
       {
         key: "notifications",

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
+import SessionRefundPolicyPageScreen from "@/features/refund-policies/components/SessionRefundPolicyPageScreen";
 import PublicRefundPolicyPageScreen from "@/features/refund-policies/components/PublicRefundPolicyPageScreen";
 import { normalizeRefundPolicyType } from "@/features/refund-policies/lib/refund-policy-public";
 
@@ -37,6 +38,10 @@ export default async function RefundPolicyPage({ params }: Props) {
 
   if (!normalized) {
     notFound();
+  }
+
+  if (normalized === "SESSION") {
+    return <SessionRefundPolicyPageScreen />;
   }
 
   return <PublicRefundPolicyPageScreen policyType={normalized} />;

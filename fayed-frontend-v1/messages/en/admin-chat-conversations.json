@@ -1,0 +1,177 @@
+{
+  "page": {
+    "eyebrow": "Admin workspace",
+    "title": "Chat conversations",
+    "description": "Review session conversations, manage sending locks, and audit therapy chat activity.",
+    "detailTitle": "Conversation details",
+    "detailDescription": "Read the transcript, review attachments, and manage moderation for this conversation."
+  },
+  "actions": {
+    "viewDetails": "View details",
+    "disableSending": "Disable sending",
+    "enableSending": "Enable sending",
+    "back": "Back to list"
+  },
+  "columns": {
+    "patient": "Patient",
+    "practitioner": "Practitioner",
+    "sessionDate": "Session date",
+    "lastActivity": "Last activity",
+    "lastMessageType": "Last message type",
+    "messages": "Messages",
+    "attachments": "Attachments",
+    "status": "Status",
+    "actions": "Actions"
+  },
+  "filters": {
+    "search": "Search",
+    "searchPlaceholder": "Search by patient, practitioner, session code, or conversation id",
+    "status": "Status",
+    "allStatuses": "All statuses",
+    "fromDate": "From date",
+    "toDate": "To date",
+    "datePlaceholder": "YYYY-MM-DD",
+    "hasAttachmentsOnly": "Has attachments only",
+    "sort": "Sort",
+    "sortNewest": "Newest first",
+    "sortOldest": "Oldest first"
+  },
+  "list": {
+    "count": "{value, number} conversations",
+    "countLoading": "Loading conversations..."
+  },
+  "states": {
+    "empty": {
+      "title": "No conversations found",
+      "description": "Try widening your filters or searching a different session code."
+    }
+  },
+  "errors": {
+    "title": "Could not load conversations",
+    "loadFailed": "We could not load chat conversations right now.",
+    "retry": "Retry",
+    "detail": {
+      "title": "Could not load conversation details",
+      "description": "We could not load this conversation right now."
+    },
+    "messages": {
+      "title": "Could not load messages",
+      "description": "We could not load the transcript right now."
+    }
+  },
+  "common": {
+    "unknownPatient": "Unknown patient",
+    "unknownPractitioner": "Unknown practitioner",
+    "noEmail": "No email available",
+    "yes": "Yes",
+    "no": "No",
+    "notApplicable": "Not applicable"
+  },
+  "status": {
+    "ACTIVE": "Active",
+    "SENDING_DISABLED": "Sending disabled",
+    "CLOSED_BY_PRACTITIONER": "Closed by practitioner",
+    "ARCHIVED": "Archived"
+  },
+  "previewType": {
+    "NO_MESSAGES": "No messages",
+    "TEXT_MESSAGE": "Text message",
+    "ATTACHMENT": "Attachment",
+    "TEXT_WITH_ATTACHMENT": "Text with attachment"
+  },
+  "senderRole": {
+    "PATIENT": "Patient",
+    "PRACTITIONER": "Practitioner",
+    "SYSTEM": "System"
+  },
+  "closedBy": {
+    "ADMIN": "Admin",
+    "PRACTITIONER": "Practitioner"
+  },
+  "summary": {
+    "patient": "Patient",
+    "practitioner": "Practitioner",
+    "session": "Session",
+    "sending": "Sending",
+    "sendingAllowed": "Sending allowed",
+    "sendingBlocked": "Sending disabled"
+  },
+  "detail": {
+    "title": "Conversation details",
+    "description": "Read the complete session transcript and review attachments safely.",
+    "sections": {
+      "moderation": "Moderation",
+      "transcript": "Transcript",
+      "history": "History"
+    },
+    "moderation": {
+      "title": "Sending lock",
+      "description": "Track who closed or reopened sending for this conversation.",
+      "canSend": "Can send messages",
+      "adminLock": "Admin lock",
+      "practitionerLock": "Practitioner lock",
+      "closedBy": "Closed by",
+      "disabledAt": "Disabled at: {value}",
+      "disabledBy": "Disabled by: {value}",
+      "practitionerLockNote": "The practitioner lock remains active until the practitioner reopens it."
+    },
+    "transcript": {
+      "title": "Messages",
+      "description": "{value, number} messages in this conversation"
+    },
+    "empty": {
+      "title": "No messages yet",
+      "description": "This conversation has not received any messages yet."
+    },
+    "pagination": {
+      "note": "Showing {value, number} messages in total."
+    },
+    "history": {
+      "title": "Conversation history",
+      "description": "Metadata and preview classification for this conversation.",
+      "lastMessageAt": "Last activity",
+      "createdAt": "Created at",
+      "updatedAt": "Updated at",
+      "preview": "Last message type"
+    },
+    "message": {
+      "deleted": "Deleted",
+      "edited": "Edited",
+      "deletedAt": "Deleted at: {value}",
+      "editedAt": "Edited at: {value}"
+    },
+    "sender": {
+      "system": "System"
+    },
+    "attachment": {
+      "heading": "Attachments",
+      "restricted": "Attachment available to authorized admins only",
+      "fallbackName": "Attachment",
+      "restrictedHint": "This file can only be viewed by authorized admins."
+    },
+    "noText": "No text message"
+  },
+  "modals": {
+    "common": {
+      "cancel": "Back"
+    },
+    "disable": {
+      "title": "Disable sending",
+      "description": "Stop new messages in this conversation without deleting its history.",
+      "warning": "This action keeps all previous messages and files readable.",
+      "reason": "Reason",
+      "reasonPlaceholder": "Explain why sending should be disabled",
+      "note": "Note",
+      "notePlaceholder": "Optional internal note",
+      "submit": "Disable sending"
+    },
+    "enable": {
+      "title": "Enable sending",
+      "description": "Restore sending if the conversation policy allows it.",
+      "practitionerLockNote": "Re-enabling admin lock does not remove a practitioner lock.",
+      "note": "Note",
+      "notePlaceholder": "Optional internal note",
+      "submit": "Enable sending"
+    }
+  }
+}

@@ -1,4 +1,4 @@
-export type FinanceMoneyFormatOptions = {
+﻿export type FinanceMoneyFormatOptions = {
   fallbackText?: string;
   minimumFractionDigits?: number;
   maximumFractionDigits?: number;
@@ -63,3 +63,4 @@ export function groupAmountsByCurrency<T>(
     .map(([currencyCode, amount]) => ({ currencyCode, amount }))
     .sort((a, b) => a.currencyCode.localeCompare(b.currencyCode));
 }
+

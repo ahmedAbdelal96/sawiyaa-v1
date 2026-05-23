@@ -40,6 +40,7 @@ export default getRequestConfig(async ({ requestLocale }) => {
     "admin-area",
     "admin-articles",
     "admin-notifications",
+    "admin-chat-conversations",
     "notifications",
     "admin-audit",
     "admin-finance-operations",

@@ -213,3 +213,90 @@ All colors invert appropriately with increased contrast and opacity-based transp
 - **Don't** use gradient text for decoration (use weight/size for emphasis).
 - **Don't** create "hero metric" templates with big numbers and gradient accents.
 - **Don't** make it feel like generic SaaS - this is healthcare, not a productivity tool.
+
+## 7. Practical Page Patterns
+
+These rules are the default implementation style for the whole project. When a screen is unclear, follow the patterns below instead of inventing a new visual language.
+
+### Public Policy Pages
+- Use a centered page shell with a calm gray background and a white document surface.
+- Prefer a compact hero with:
+  - eyebrow / category
+  - status and version badges
+  - title
+  - short subtitle
+  - last updated text
+- Keep the primary document content in one centered card or document container.
+- Use accordions for long legal or policy content instead of large wall-of-text sections.
+- Keep the active policy section open by default when the page has multiple sections.
+- Use short summary cards or chips to preview the structure of the policy.
+- Avoid black accordion headers; use brand-tinted neutral headers that fit the Fayed palette.
+- Public header and footer should be separated from content with clear vertical spacing.
+- Public pages must work in both RTL and LTR without duplicated layouts.
+
+### Help / FAQ Pages
+- Make the hero feel like a policy page, not a dashboard.
+- Keep search inside the hero or immediately below it.
+- Show content as grouped sections with counts and short descriptions.
+- Use accordion items for questions.
+- Avoid large empty spaces inside the hero.
+- Remove any misplaced “back” button from the center of the hero; actions should sit naturally at the edge of the layout.
+
+### Patient Session Detail Pages
+- The page should answer five questions quickly:
+  - who is the practitioner?
+  - when is the session?
+  - what is the session status?
+  - when can the patient enter?
+  - can the patient open chat or cancel?
+- Use a compact header and a clear session summary card.
+- Keep financial information in one dedicated section.
+- Cancellation actions must be visually explicit, but the page must not feel cluttered.
+- Any cancel modal must explain eligibility, policy, and financial outcome with labels and short copy.
+- If cancellation is not allowed, the confirm action must be disabled and the reason must be visible.
+
+### Admin Chat Detail Pages
+- Design the transcript area as the primary surface.
+- Messages should read like a chat application, not a report:
+  - patient on the right
+  - practitioner on the left
+  - short metadata
+  - clear attachment rows with explicit download affordance
+- Do not repeat the sender name and role on every bubble unless the group changes.
+- Give the transcript enough width and scrolling room to handle long conversations.
+- Use compact side panels for moderation metadata; never let them dominate the transcript.
+- Keep safe previews in lists; do not expose raw message text in table views.
+
+### Modals
+- Confirmation modals should be centered, calm, and sized for readability.
+- Use a modal width that feels substantial but not oversized.
+- Avoid inner scrollbars on desktop unless the content truly requires it.
+- Every destructive action needs:
+  - a short title
+  - a short explanatory subtitle
+  - a visible reason when the action is disabled
+  - a clear danger button
+  - a calm secondary cancel button
+- Destructive buttons should look dangerous, but the rest of the modal should stay neutral.
+
+### Supportive UI Copy
+- Prefer short, direct labels over long paragraphs.
+- If a user needs to understand a restriction, explain the policy result in plain language.
+- Never show raw route fragments, raw enums, or technical keys to end users.
+- Do not write Arabic text through shell if it risks mojibake; use translation files or safe Unicode-aware editing.
+
+## 8. Shared Layout Rules
+
+- The app background should usually be `#edf1f5` or its design-token equivalent.
+- Data-carrying cards should usually be white (`--surface`).
+- Section containers should use generous radius and breathing room.
+- Avoid too many stacked cards with identical heights unless they serve a clear scanning purpose.
+- Keep public navigation, admin navigation, and patient navigation visually consistent, but do not force them to use the same information density.
+- Use brand teal for key actions, active states, and important accents. Do not overuse it.
+
+## 9. Verification Mindset
+
+- When polishing UI, verify the page in a browser after meaningful layout changes.
+- Prefer fixing the actual layout over adding more copy.
+- If a screen feels wrong, first check spacing, alignment, hierarchy, and width before changing behavior.
+- Keep screenshots for notable UI milestones so future changes can compare against them.

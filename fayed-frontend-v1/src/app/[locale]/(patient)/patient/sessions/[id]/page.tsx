@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
-import { PatientQuickNav } from "@/components/patient/PatientSectionFrame";
 import PatientSessionDetailPanel from "@/features/sessions/components/PatientSessionDetailPanel";
 
 type Props = {
@@ -22,11 +21,7 @@ export default async function PatientSessionDetailPage({ params }: Props) {
   const t = await getTranslations({ locale, namespace: "sessions" });
 
   return (
-    <div className="mx-auto max-w-4xl space-y-5 px-4 py-8 sm:space-y-6">
-      <section className="app-panel-soft rounded-[28px] p-4 sm:p-5">
-        <PatientQuickNav />
-      </section>
-
+    <div className="mx-auto max-w-7xl px-4 py-8">
       <div className="mb-6">
         <Link
           href="/patient/sessions"
@@ -37,9 +32,12 @@ export default async function PatientSessionDetailPage({ params }: Props) {
         <h1 className="mt-4 text-xl font-bold text-text-primary dark:text-white/95">
           {t("detail.heading")}
         </h1>
+        <p className="mt-2 max-w-2xl text-sm leading-6 text-text-secondary">
+          {t("detail.summary.note")}
+        </p>
       </div>
 
-      <PatientSessionDetailPanel key={id} sessionId={id} />
+      <PatientSessionDetailPanel sessionId={id} />
     </div>
   );
 }

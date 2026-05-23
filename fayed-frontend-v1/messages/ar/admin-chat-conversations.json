@@ -1,0 +1,177 @@
+{
+  "page": {
+    "eyebrow": "مساحة الإدارة",
+    "title": "محادثات الجلسات",
+    "description": "راجع محادثات الجلسات وأدر قفل الإرسال وسجل نشاط المحادثات العلاجية.",
+    "detailTitle": "تفاصيل المحادثة",
+    "detailDescription": "اقرأ المحادثة كاملة وراجع المرفقات وأدر إجراءات الإشراف."
+  },
+  "actions": {
+    "viewDetails": "عرض التفاصيل",
+    "disableSending": "إيقاف الإرسال",
+    "enableSending": "إعادة تشغيل الإرسال",
+    "back": "العودة للقائمة"
+  },
+  "columns": {
+    "patient": "المريض",
+    "practitioner": "المعالج",
+    "sessionDate": "تاريخ الجلسة",
+    "lastActivity": "آخر نشاط",
+    "lastMessageType": "نوع آخر رسالة",
+    "messages": "الرسائل",
+    "attachments": "الملفات",
+    "status": "الحالة",
+    "actions": "الإجراءات"
+  },
+  "filters": {
+    "search": "بحث",
+    "searchPlaceholder": "ابحث باسم المريض أو المعالج أو كود الجلسة أو معرّف المحادثة",
+    "status": "الحالة",
+    "allStatuses": "كل الحالات",
+    "fromDate": "من تاريخ",
+    "toDate": "إلى تاريخ",
+    "datePlaceholder": "YYYY-MM-DD",
+    "hasAttachmentsOnly": "يحتوي على ملفات فقط",
+    "sort": "الترتيب",
+    "sortNewest": "الأحدث أولًا",
+    "sortOldest": "الأقدم أولًا"
+  },
+  "list": {
+    "count": "{value, number} محادثة",
+    "countLoading": "جارٍ تحميل المحادثات..."
+  },
+  "states": {
+    "empty": {
+      "title": "لا توجد محادثات",
+      "description": "جرّب توسيع الفلاتر أو البحث بكود جلسة مختلف."
+    }
+  },
+  "errors": {
+    "title": "تعذر تحميل المحادثات",
+    "loadFailed": "لم نتمكن من تحميل محادثات الجلسات الآن.",
+    "retry": "إعادة المحاولة",
+    "detail": {
+      "title": "تعذر تحميل تفاصيل المحادثة",
+      "description": "لم نتمكن من تحميل هذه المحادثة الآن."
+    },
+    "messages": {
+      "title": "تعذر تحميل الرسائل",
+      "description": "لم نتمكن من تحميل سجل المحادثة الآن."
+    }
+  },
+  "common": {
+    "unknownPatient": "مريض غير معروف",
+    "unknownPractitioner": "معالج غير معروف",
+    "noEmail": "لا يوجد بريد إلكتروني",
+    "yes": "نعم",
+    "no": "لا",
+    "notApplicable": "غير متاح"
+  },
+  "status": {
+    "ACTIVE": "نشطة",
+    "SENDING_DISABLED": "الإرسال موقوف",
+    "CLOSED_BY_PRACTITIONER": "مغلقة بواسطة المعالج",
+    "ARCHIVED": "مؤرشفة"
+  },
+  "previewType": {
+    "NO_MESSAGES": "لا توجد رسائل",
+    "TEXT_MESSAGE": "رسالة نصية",
+    "ATTACHMENT": "مرفق",
+    "TEXT_WITH_ATTACHMENT": "رسالة ومرفق"
+  },
+  "senderRole": {
+    "PATIENT": "مريض",
+    "PRACTITIONER": "معالج",
+    "SYSTEM": "النظام"
+  },
+  "closedBy": {
+    "ADMIN": "الإدارة",
+    "PRACTITIONER": "المعالج"
+  },
+  "summary": {
+    "patient": "المريض",
+    "practitioner": "المعالج",
+    "session": "الجلسة",
+    "sending": "الإرسال",
+    "sendingAllowed": "الإرسال متاح",
+    "sendingBlocked": "الإرسال موقوف"
+  },
+  "detail": {
+    "title": "تفاصيل المحادثة",
+    "description": "اقرأ سجل الجلسة بالكامل وراجع المرفقات بأمان.",
+    "sections": {
+      "moderation": "الإشراف",
+      "transcript": "الرسائل",
+      "history": "السجل"
+    },
+    "moderation": {
+      "title": "قفل الإرسال",
+      "description": "تابع من أوقف الإرسال أو أعاده لهذه المحادثة.",
+      "canSend": "هل الإرسال متاح",
+      "adminLock": "قفل الإدارة",
+      "practitionerLock": "قفل المعالج",
+      "closedBy": "أُغلقت بواسطة",
+      "disabledAt": "تاريخ الإيقاف: {value}",
+      "disabledBy": "أوقفها: {value}",
+      "practitionerLockNote": "قفل المعالج يظل قائمًا حتى يعيده المعالج بنفسه."
+    },
+    "transcript": {
+      "title": "سجل المحادثة",
+      "description": "{value, number} رسالة داخل هذه المحادثة"
+    },
+    "empty": {
+      "title": "لا توجد رسائل بعد",
+      "description": "هذه المحادثة لم تستقبل أي رسالة حتى الآن."
+    },
+    "pagination": {
+      "note": "إجمالي الرسائل المعروضة {value, number}."
+    },
+    "history": {
+      "title": "سجل المحادثة",
+      "description": "بيانات وصفية وتصنيف آخر رسالة لهذه المحادثة.",
+      "lastMessageAt": "آخر نشاط",
+      "createdAt": "تاريخ الإنشاء",
+      "updatedAt": "آخر تحديث",
+      "preview": "نوع آخر رسالة"
+    },
+    "message": {
+      "deleted": "محذوفة",
+      "edited": "معدلة",
+      "deletedAt": "وقت الحذف: {value}",
+      "editedAt": "وقت التعديل: {value}"
+    },
+    "sender": {
+      "system": "النظام"
+    },
+    "attachment": {
+      "heading": "المرفقات",
+      "restricted": "المرفق متاح للمسؤولين المخولين فقط",
+      "fallbackName": "مرفق",
+      "restrictedHint": "لا يمكن عرض هذا الملف إلا للمسؤولين المخولين."
+    },
+    "noText": "لا توجد رسالة نصية"
+  },
+  "modals": {
+    "common": {
+      "cancel": "رجوع"
+    },
+    "disable": {
+      "title": "إيقاف إرسال الرسائل",
+      "description": "أوقف الرسائل الجديدة في هذه المحادثة دون حذف التاريخ السابق.",
+      "warning": "سيظل بإمكان الطرفين قراءة الرسائل والملفات السابقة.",
+      "reason": "سبب الإيقاف",
+      "reasonPlaceholder": "اشرح سبب إيقاف الإرسال",
+      "note": "ملاحظة",
+      "notePlaceholder": "ملاحظة داخلية اختيارية",
+      "submit": "إيقاف الإرسال"
+    },
+    "enable": {
+      "title": "إعادة تشغيل الإرسال",
+      "description": "أعد الإرسال إذا كانت قواعد المحادثة تسمح بذلك.",
+      "practitionerLockNote": "إعادة تشغيل قفل الإدارة لا تلغي قفل المعالج.",
+      "note": "ملاحظة",
+      "notePlaceholder": "ملاحظة داخلية اختيارية",
+      "submit": "إعادة تشغيل الإرسال"
+    }
+  }
+}

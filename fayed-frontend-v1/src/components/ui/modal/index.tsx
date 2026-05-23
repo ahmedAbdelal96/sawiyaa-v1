@@ -86,6 +86,7 @@ interface ConfirmModalProps extends Omit<ModalProps, "children" | "className"> {
   onConfirm: () => void;
   onCancel?: () => void;
   loading?: boolean;
+  confirmDisabled?: boolean;
   confirmVariant?: "primary" | "outline" | "danger";
   footer?: React.ReactNode;
   children?: React.ReactNode;
@@ -419,6 +420,7 @@ export function ConfirmModal({
   onConfirm,
   onCancel,
   loading = false,
+  confirmDisabled = false,
   confirmVariant = "primary",
   footer,
   children,
@@ -437,7 +439,7 @@ export function ConfirmModal({
             <Button variant="outline" onClick={onCancel ?? modalProps.onClose} disabled={loading}>
               {cancelLabel ?? "Cancel"}
             </Button>
-            <Button variant={confirmVariant} onClick={onConfirm} disabled={loading}>
+            <Button variant={confirmVariant} onClick={onConfirm} disabled={loading || confirmDisabled}>
               {confirmLabel}
             </Button>
           </ModalFooter>

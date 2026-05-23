@@ -61,24 +61,18 @@ function getBucket(status: SessionStatus) {
   return "archive";
 }
 
-function sortSessions(items: SessionListItem[]) {
+function sortSessions(items: SessionListItem[], sortOrder: "newest" | "oldest") {
   return [...items].sort((left, right) => {
-    const bucketRank = { action: 0, live: 1, archive: 2 } as const;
-    const leftBucket = getBucket(left.status);
-    const rightBucket = getBucket(right.status);
+    const leftTime = new Date(left.scheduledStartAt ?? left.createdAt).getTime();
+    const rightTime = new Date(right.scheduledStartAt ?? right.createdAt).getTime();
 
-    if (bucketRank[leftBucket] !== bucketRank[rightBucket]) {
-      return bucketRank[leftBucket] - bucketRank[rightBucket];
+    if (leftTime !== rightTime) {
+      return sortOrder === "newest" ? rightTime - leftTime : leftTime - rightTime;
     }
 
-    const leftTime = left.scheduledStartAt ? new Date(left.scheduledStartAt).getTime() : 0;
-    const rightTime = right.scheduledStartAt ? new Date(right.scheduledStartAt).getTime() : 0;
-
-    if (leftBucket === "archive") {
-      return rightTime - leftTime;
-    }
-
-    return leftTime - rightTime;
+    return sortOrder === "newest"
+      ? right.sessionCode.localeCompare(left.sessionCode)
+      : left.sessionCode.localeCompare(right.sessionCode);
   });
 }
 
@@ -88,10 +82,13 @@ function getCopy(locale: string) {
       eyebrow: "جدول الجلسات",
       title: "جلساتي",
       note:
-        "ترتيب واضح يبرز الحالات التي تحتاج إجراء أولًا، ثم الجلسات النشطة، ثم الأرشيف من الأحدث إلى الأقدم.",
+        "\u0627\u0644\u062a\u0631\u062a\u064a\u0628 \u0627\u0644\u0627\u0641\u062a\u0631\u0627\u0636\u064a \u064a\u0638\u0647\u0631 \u0627\u0644\u062c\u0644\u0633\u0627\u062a \u0627\u0644\u0623\u062d\u062f\u062b \u0623\u0648\u0644\u0627\u064b\u060c \u0648\u064a\u0645\u0643\u0646\u0643 \u062a\u063a\u064a\u064a\u0631 \u0627\u0644\u062a\u0631\u062a\u064a\u0628 \u0645\u0646 \u0627\u0644\u0642\u0627\u0626\u0645\u0629.",
       paymentExpiredNote:
         "الجلسات التي انتهت مهلة دفعها تظهر كحالة مستقلة، وليست جلسات منتهية.",
-      summaryLabel: "إجمالي الجلسات",
+      summaryLabel: "\u0625\u062c\u0645\u0627\u0644\u064a \u0627\u0644\u062c\u0644\u0633\u0627\u062a",
+      sortLabel: "\u062a\u0631\u062a\u064a\u0628 \u0627\u0644\u062c\u0644\u0633\u0627\u062a",
+      sortNewest: "\u0627\u0644\u0623\u062d\u062f\u062b \u0623\u0648\u0644\u0627\u064b",
+      sortOldest: "\u0627\u0644\u0623\u0642\u062f\u0645 \u0623\u0648\u0644\u0627\u064b",
       pageLabel: (page: number, totalPages: number) => `الصفحة ${page} من ${totalPages}`,
       loading: "جارٍ تحميل الجلسات...",
       emptyTitle: "لا توجد جلسات بعد",
@@ -142,10 +139,13 @@ function getCopy(locale: string) {
     eyebrow: "Session dashboard",
     title: "My Sessions",
     note:
-      "A clear layout that puts action-needed sessions first, then active sessions, then the archive from newest to oldest.",
+      "A clear layout that defaults to newest sessions first, while letting you change the order from the toolbar.",
     paymentExpiredNote:
       "Sessions with expired payment windows appear as their own state, not as finished sessions.",
     summaryLabel: "Total sessions",
+    sortLabel: "Sort sessions",
+    sortNewest: "Newest first",
+    sortOldest: "Oldest first",
     pageLabel: (page: number, totalPages: number) => `Page ${page} of ${totalPages}`,
     loading: "Loading sessions...",
     emptyTitle: "No sessions yet",
@@ -453,6 +453,7 @@ export default function PatientSessionsPanel() {
   const copy = useMemo(() => getCopy(locale), [locale]);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_LIMIT);
+  const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
 
   const { data: summary } = usePatientSessionSummary();
   const { data, isLoading, isError, refetch } = usePatientSessions({
@@ -460,7 +461,10 @@ export default function PatientSessionsPanel() {
     limit: pageSize,
   });
 
-  const sessions = useMemo(() => sortSessions(data?.items ?? []), [data?.items]);
+  const sessions = useMemo(
+    () => sortSessions(data?.items ?? [], sortOrder),
+    [data?.items, sortOrder],
+  );
   const pagination = data?.pagination;
 
   const pageSummary = useMemo(
@@ -564,26 +568,46 @@ export default function PatientSessionsPanel() {
           </div>
         </div>
 
-        <label className="flex w-full flex-col gap-1 sm:w-auto">
-          <span className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
-            {copy.rowsPerPage}
-          </span>
-          <select
-            value={pageSize}
-            onChange={(event) => {
-              setPageSize(Number(event.target.value));
-              setPage(1);
-            }}
-            className="app-control h-11 min-w-[120px] px-3 py-2"
-            aria-label={copy.rowsPerPage}
-          >
-            {[10, 20, 50].map((option) => (
-              <option key={option} value={option}>
-                {option}
-              </option>
-            ))}
-          </select>
-        </label>
+        <div className="flex w-full flex-wrap items-end gap-3 sm:w-auto">
+          <label className="flex w-full flex-col gap-1 sm:w-auto">
+            <span className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
+              {copy.sortLabel}
+            </span>
+            <select
+              value={sortOrder}
+              onChange={(event) => {
+                setSortOrder(event.target.value as "newest" | "oldest");
+                setPage(1);
+              }}
+              className="app-control h-11 min-w-[170px] px-3 py-2"
+              aria-label={copy.sortLabel}
+            >
+              <option value="newest">{copy.sortNewest}</option>
+              <option value="oldest">{copy.sortOldest}</option>
+            </select>
+          </label>
+
+          <label className="flex w-full flex-col gap-1 sm:w-auto">
+            <span className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
+              {copy.rowsPerPage}
+            </span>
+            <select
+              value={pageSize}
+              onChange={(event) => {
+                setPageSize(Number(event.target.value));
+                setPage(1);
+              }}
+              className="app-control h-11 min-w-[120px] px-3 py-2"
+              aria-label={copy.rowsPerPage}
+            >
+              {[10, 20, 50].map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
       </SurfaceToolbar>
 
       <section className="overflow-hidden rounded-[28px] border border-border-light bg-white shadow-theme-xs dark:bg-white/5">

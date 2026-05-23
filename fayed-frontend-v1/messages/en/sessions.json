@@ -53,24 +53,29 @@
   "detail": {
     "backToSessions": "Back to sessions",
     "heading": "Session Details",
-    "errors": {
-      "forbiddenTitle": "You cannot view this session",
-      "forbiddenNote": "This session is not available to your account.",
-      "notFoundTitle": "Session not found",
-      "notFoundNote": "We couldn't find that session.",
-      "errorTitle": "Could not load session details",
-      "errorNote": "Please try again in a moment."
+    "summary": {
+      "eyebrow": "Session overview",
+      "heading": "Session summary",
+      "note": "Everything you need to know at a glance.",
+      "practitioner": "Practitioner",
+      "sessionCode": "Session code",
+      "scheduledAt": "Scheduled for",
+      "duration": "Duration",
+      "mode": "Session type",
+      "status": "Status"
     },
     "chatCard": {
       "heading": "Chat",
-      "note": "Open a chat with your practitioner for this session.",
-      "disabledNote": "Chat becomes available when the session is ready to join or live.",
+      "note": "Open the full chat page to send messages and files with your practitioner.",
+      "disabledNote": "This chat opens shortly before the session starts.",
       "open": "Open chat"
     },
     "chat": {
       "eyebrow": "Session chat",
       "back": "Back to sessions",
       "fallbackName": "Practitioner",
+      "you": "You",
+      "youSubtitle": "You",
       "title": "Chat with {name}",
       "note": "Send messages and share files related to this session.",
       "thread": {
@@ -93,7 +98,12 @@
         "notAvailable": {
           "heading": "Chat is not available yet",
           "note": "This chat opens when the session is ready to join or live.",
-          "back": "Back"
+          "back": "Back",
+          "backToSession": "Back to session details"
+        },
+        "readOnly": {
+          "heading": "Chat is read-only for now",
+          "note": "You can review previous messages, but sending is not available right now."
         },
         "sessionError": {
           "heading": "Could not load the session",
@@ -247,7 +257,67 @@
     "cancelAction": "Cancel session",
     "cancelConfirm": {
       "heading": "Cancel this session?",
-      "note": "This action cannot be undone. Cancellation and refund outcome are evaluated by the active cancellation policy.",
+      "note": "Review the result before confirming.",
+      "summaryHeading": "Session summary",
+      "summaryNote": "These are the session details affected by cancellation.",
+      "summaryFields": {
+        "practitioner": "Practitioner",
+        "sessionTime": "Session time",
+        "duration": "Duration",
+        "mode": "Session type",
+        "status": "Status",
+        "sessionCode": "Session code"
+      },
+      "eligibilityHeading": "Can this session be cancelled?",
+      "eligibility": {
+        "availableBadge": "Cancellation available",
+        "blockedBadge": "Cancellation not available",
+        "availableNote": "You can cancel this session now under the current policy.",
+        "blockedReason": {
+          "policyWindowEnded": "The cancellation window has ended",
+          "sessionTooClose": "The session is too close to start",
+          "policyRestricted": "The active policy does not allow cancellation right now",
+          "paymentRestricted": "The current payment state does not allow cancellation",
+          "unsupportedRefundDestination": "This refund destination is not supported"
+        },
+        "blockedExplanation": {
+          "policyWindowEnded": "According to the current policy, the cancellation window has already closed.",
+          "sessionTooClose": "The remaining time before the session start is too short for cancellation.",
+          "policyRestricted": "According to the active policy rule, cancellation is no longer allowed in this window.",
+          "paymentRestricted": "The current payment state prevents a new cancellation refund outcome.",
+          "unsupportedRefundDestination": "The active policy points to a refund destination that is not supported right now."
+        },
+        "policyWindow": "Policy window",
+        "policyRule": "Matched policy rule",
+        "hoursBeforeStart": "{hours} hours before start",
+        "ruleAllowed": "Cancellation is allowed in this window. Refund: {percent}%.",
+        "ruleBlocked": "The active policy does not allow cancellation in this window."
+      },
+      "financialHeading": "Cancellation financial outcome",
+      "financialSummary": {
+        "blocked": "Cancellation will not be executed, so no refund applies in this case.",
+        "noPayment": "No payment is linked to this session, so no refund will be issued.",
+        "allowedRefund": "An eligible refund will be credited after cancellation.",
+        "allowedRefundWithAmount": "A refund of {amount} will be credited to {destination} after cancellation.",
+        "allowedRelease": "The reserved amount will be released after cancellation.",
+        "allowedNoRefund": "Cancellation is allowed, but no refund is due under the current policy."
+      },
+      "financialFields": {
+        "refundPercent": "Refund percentage",
+        "refundAmount": "Refund amount",
+        "refundDestination": "Refund method",
+        "reservationReleaseAmount": "Reserved wallet amount to release",
+        "nonRefundedAmount": "Non-refunded amount",
+        "walletCreditAmount": "Wallet credit amount"
+      },
+      "policyAccessHeading": "Cancellation policy",
+      "policyAccessNote": "You accepted the cancellation policy during payment.",
+      "policyAccessAction": "View cancellation policy",
+      "policyAccessHelper": "This opens the live session refund policy page.",
+      "noteLabel": "Short note (optional)",
+      "notePlaceholder": "Write the cancellation reason here...",
+      "confirmDisabled": "This session cannot be cancelled right now.",
+      "backToSession": "Back to session",
       "policyHeading": "Cancellation and refund policy",
       "policyNote": "If cancellation is allowed for this session window, any eligible refund is returned to your wallet according to policy. If cancellation is not allowed, the request will be rejected.",
       "previewHeading": "Financial outcome before confirmation",
@@ -279,8 +349,8 @@
       },
       "reasonLabel": "Cancellation note (optional)",
       "reasonPlaceholder": "Write a short note for this cancellation",
-      "confirm": "Yes, cancel it",
-      "back": "Keep session"
+      "confirm": "Confirm session cancellation",
+      "back": "Back"
     },
     "cancelResult": {
       "success": "Session cancelled successfully. Any eligible refund will be credited to your wallet based on policy.",

@@ -1,8 +1,18 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import { ArrowLeft, BookOpen, ChevronDown, Search } from "lucide-react";
+import {
+  BadgeInfo,
+  BookOpen,
+  ChevronDown,
+  CircleCheckBig,
+  Clock3,
+  HelpCircle,
+  Search,
+  ShieldAlert,
+  TimerReset,
+} from "lucide-react";
 import { Link, useRouter } from "@/i18n/navigation";
 import Badge from "@/components/ui/badge/Badge";
 import InputField from "@/components/form/input/InputField";
@@ -11,7 +21,6 @@ import { SurfaceCard } from "@/components/shared/SurfaceShell";
 import { toAppError } from "@/lib/api/errors";
 import { usePublicHelp } from "../hooks/use-help";
 import {
-  formatHelpDate,
   getLocalizedHelpCategoryDescription,
   getLocalizedHelpCategoryTitle,
   getLocalizedHelpQuestionBody,
@@ -24,6 +33,24 @@ import type { HelpCategory, HelpQuestion } from "../types/help.types";
 type Props = {
   categorySlug?: string;
 };
+
+type SummaryTone = "brand" | "success" | "warning" | "neutral";
+
+type SummaryCardItem = {
+  label: string;
+  result: string;
+  icon: ReactNode;
+  tone: SummaryTone;
+};
+
+function formatHelpMonthLabel(value: string | null, locale: string) {
+  if (!value) return "—";
+
+  return new Intl.DateTimeFormat(locale.startsWith("ar") ? "ar-EG" : "en-US", {
+    month: "long",
+    year: "numeric",
+  }).format(new Date(value));
+}
 
 function SearchField({
   value,
@@ -50,7 +77,47 @@ function SearchField({
   );
 }
 
-function FaqAccordionItem({
+function SummaryGrid({
+  items,
+}: {
+  items: SummaryCardItem[];
+}) {
+  return (
+    <section className="space-y-3">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+        {items.map((item) => {
+          const accentClass =
+            item.tone === "brand"
+              ? "border-primary/20 bg-primary-light/30 text-text-brand dark:border-primary/25 dark:bg-primary/15 dark:text-primary-light"
+              : item.tone === "success"
+                ? "border-success-200 bg-success-50/85 text-success-700 dark:border-success-500/20 dark:bg-success-500/10 dark:text-success-300"
+                : item.tone === "warning"
+                  ? "border-warning-200 bg-warning-50/85 text-warning-700 dark:border-warning-500/20 dark:bg-warning-500/10 dark:text-warning-300"
+                  : "border-border-light bg-white text-text-primary dark:border-border-light dark:bg-surface-secondary/95 dark:text-text-primary";
+
+          return (
+            <div
+              key={item.label}
+              className={`rounded-[20px] border px-4 py-4 shadow-[0_16px_34px_-30px_rgba(34,52,56,0.16)] ${accentClass}`}
+            >
+              <div className="flex items-start gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white/80 text-current shadow-sm dark:bg-white/10">
+                  {item.icon}
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold leading-6 text-current">{item.label}</p>
+                  <p className="mt-1 text-sm leading-6 text-current/78 dark:text-current/82">{item.result}</p>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+function QuestionAccordionItem({
   question,
   locale,
 }: {
@@ -62,23 +129,135 @@ function FaqAccordionItem({
   const body = getLocalizedHelpQuestionBody(question, locale);
 
   return (
-    <details className="group rounded-[22px] border border-border-light bg-white shadow-sm transition open:shadow-md dark:bg-surface-secondary">
+    <details className="group overflow-hidden rounded-[22px] border border-border-light bg-white shadow-[0_14px_28px_-24px_rgba(34,52,56,0.12)] transition open:shadow-[0_20px_36px_-28px_rgba(34,52,56,0.14)] dark:border-border-light dark:bg-surface-secondary/95">
       <summary className="flex cursor-pointer list-none items-start justify-between gap-4 px-4 py-4 marker:hidden sm:px-5">
         <div className="min-w-0 space-y-1 text-start">
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">
+            {t("faq.showAnswer")}
+          </p>
           <h3 className="text-base font-semibold leading-7 text-text-primary">{title}</h3>
-          <p className="text-xs font-medium uppercase tracking-wide text-text-muted">
+          <p className="text-xs font-medium text-text-muted">
             <span className="group-open:hidden">{t("faq.showAnswer")}</span>
             <span className="hidden group-open:inline">{t("faq.hideAnswer")}</span>
           </p>
         </div>
-        <span className="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-border-light text-text-secondary transition group-open:rotate-180 group-open:text-primary">
+        <span className="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-border-light bg-surface-secondary text-text-secondary transition group-open:rotate-180 group-open:border-primary/25 group-open:bg-primary group-open:text-white">
           <ChevronDown className="h-4 w-4" />
         </span>
       </summary>
-      <div className="border-t border-border-light px-4 pb-4 pt-3 sm:px-5">
+      <div className="border-t border-border-light bg-surface/55 px-4 pb-4 pt-4 sm:px-5">
         <p className="text-sm leading-7 text-text-primary">{body}</p>
       </div>
     </details>
+  );
+}
+
+function HelpSectionCard({
+  section,
+  locale,
+  defaultOpen = false,
+}: {
+  section: { category: HelpCategory | null; questions: HelpQuestion[] };
+  locale: string;
+  defaultOpen?: boolean;
+}) {
+  const t = useTranslations("help");
+  const title = section.category
+    ? getLocalizedHelpCategoryTitle(section.category, locale)
+    : t("questions.uncategorized");
+  const description = section.category
+    ? getLocalizedHelpCategoryDescription(section.category, locale)
+    : "";
+
+  return (
+    <details
+      className="group overflow-hidden rounded-[24px] border border-border-light bg-white shadow-[0_16px_34px_-30px_rgba(34,52,56,0.18)] dark:border-border-light dark:bg-surface-secondary/95 dark:shadow-[0_16px_34px_-30px_rgba(0,0,0,0.42)]"
+      open={defaultOpen}
+    >
+      <summary className="flex list-none cursor-pointer items-center justify-between gap-4 border-b border-primary/10 bg-primary-light/70 px-5 py-4 text-text-primary outline-none transition hover:bg-primary-light/90 dark:border-primary/15 dark:bg-primary/12 dark:text-text-primary dark:hover:bg-primary/18">
+        <div className="min-w-0">
+          <p className="text-sm font-semibold leading-6 sm:text-base">{title}</p>
+          {description ? (
+            <p className="mt-1 text-xs font-medium text-text-secondary">{description}</p>
+          ) : null}
+        </div>
+        <div className="flex items-center gap-2">
+          <Badge variant="light" color="info" size="sm">
+            {t("public.questionCount", { count: section.questions.length })}
+          </Badge>
+          <ChevronDown className="h-5 w-5 shrink-0 transition duration-200 group-open:rotate-180" />
+        </div>
+      </summary>
+
+      <div className="space-y-3 px-4 py-4 sm:px-5">
+        {section.questions.map((question) => (
+          <QuestionAccordionItem key={question.id} question={question} locale={locale} />
+        ))}
+      </div>
+    </details>
+  );
+}
+
+function PolicyNotice({ title, body }: { title: string; body: string }) {
+  return (
+    <section className="rounded-[22px] border border-primary/10 bg-primary-light/35 px-5 py-4 dark:border-primary/20 dark:bg-primary/10">
+      <div className="flex items-start gap-3">
+        <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-white text-text-brand shadow-sm dark:bg-surface-secondary dark:text-primary-light">
+          <BadgeInfo className="h-4 w-4" />
+        </div>
+        <div>
+          <p className="text-sm font-semibold text-text-primary">{title}</p>
+          <p className="mt-2 text-sm leading-7 text-text-secondary">{body}</p>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function HelpSupportCard({
+  eyebrow,
+  title,
+  body,
+  cta,
+}: {
+  eyebrow: string;
+  title: string;
+  body: string;
+  cta: string;
+}) {
+  return (
+    <SurfaceCard
+      as="section"
+      variant="section"
+      className="border-primary/10 bg-primary-light/35 dark:border-primary/20 dark:bg-primary/10"
+    >
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="space-y-2">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">
+            {eyebrow}
+          </p>
+          <h2 className="text-2xl font-semibold text-text-primary">{title}</h2>
+          <p className="max-w-2xl text-sm leading-7 text-text-secondary">{body}</p>
+        </div>
+
+        <Link
+          href="/patient/support"
+          className="inline-flex items-center justify-center rounded-2xl bg-primary px-6 py-3 text-sm font-semibold text-white shadow-[0_12px_24px_-16px_rgba(68,161,148,0.34)] transition hover:bg-primary-hover dark:shadow-[0_12px_24px_-16px_rgba(68,161,148,0.22)]"
+        >
+          {cta}
+        </Link>
+      </div>
+    </SurfaceCard>
+  );
+}
+
+function HelpScreenSkeleton() {
+  return (
+    <div className="space-y-6">
+      <div className="h-56 rounded-[30px] bg-white/80 shadow-[0_18px_40px_-34px_rgba(34,52,56,0.16)]" />
+      <div className="h-72 rounded-[30px] bg-white/80 shadow-[0_18px_40px_-34px_rgba(34,52,56,0.16)]" />
+      <div className="h-44 rounded-[30px] bg-white/80 shadow-[0_18px_40px_-34px_rgba(34,52,56,0.16)]" />
+    </div>
   );
 }
 
@@ -88,7 +267,6 @@ export default function PublicHelpScreen({ categorySlug }: Props) {
   const router = useRouter();
   const helpQuery = usePublicHelp("");
   const [searchValue, setSearchValue] = useState("");
-  const [manualActiveCategorySlug, setManualActiveCategorySlug] = useState(categorySlug ?? "");
   const appError = helpQuery.error ? toAppError(helpQuery.error) : null;
 
   const categories = useMemo(
@@ -156,20 +334,56 @@ export default function PublicHelpScreen({ categorySlug }: Props) {
     return ordered;
   }, [categories, selectedCategory, visibleQuestions]);
 
-  const activeCategorySlug = useMemo(() => {
-    if (categorySlug) return categorySlug;
-    if (
-      manualActiveCategorySlug &&
-      visibleSections.some((section) => (section.category?.slug ?? "uncategorized") === manualActiveCategorySlug)
-    ) {
-      return manualActiveCategorySlug;
-    }
-    const firstSection = visibleSections[0];
-    return firstSection?.category?.slug ?? (firstSection ? "uncategorized" : "");
-  }, [categorySlug, manualActiveCategorySlug, visibleSections]);
+  const totalQuestions = questions.length;
+  const updatedAtLabel = formatHelpMonthLabel(
+    [...categories, ...questions].reduce<string | null>((latest, item) => {
+      const updatedAt = item.updatedAt;
+      if (!updatedAt) return latest;
+      if (!latest) return updatedAt;
+      return new Date(updatedAt).getTime() > new Date(latest).getTime() ? updatedAt : latest;
+    }, null),
+    locale,
+  );
+
+  const summaryItems = useMemo<SummaryCardItem[]>(() => {
+    const sourceSections =
+      selectedCategory && visibleSections.length > 0
+        ? visibleSections
+        : visibleSections.slice(0, 5);
+
+    return sourceSections.slice(0, 5).map((section, index) => {
+      const category = section.category;
+      const label = category ? getLocalizedHelpCategoryTitle(category, locale) : t("questions.uncategorized");
+      const description = category
+        ? getLocalizedHelpCategoryDescription(category, locale)
+        : t("public.categoriesNote");
+      const countLabel = t("public.questionCount", { count: section.questions.length });
+      const tone: SummaryTone =
+        index === 0 ? "brand" : index === 1 ? "success" : index === 2 ? "neutral" : index === 3 ? "warning" : "neutral";
+      const icon =
+        index === 0 ? (
+          <CircleCheckBig className="h-5 w-5" />
+        ) : index === 1 ? (
+          <Clock3 className="h-5 w-5" />
+        ) : index === 2 ? (
+          <BadgeInfo className="h-5 w-5" />
+        ) : index === 3 ? (
+          <TimerReset className="h-5 w-5" />
+        ) : (
+          <HelpCircle className="h-5 w-5" />
+        );
+
+      return {
+        label,
+        result: `${countLabel}${description ? ` · ${description}` : ""}`,
+        icon,
+        tone,
+      };
+    });
+  }, [locale, selectedCategory, t, visibleSections]);
 
   if (helpQuery.isLoading && !helpQuery.data) {
-    return <div className="h-64 rounded-[28px] bg-white/80 dark:bg-surface-secondary/60" />;
+    return <HelpScreenSkeleton />;
   }
 
   if (helpQuery.isError && !helpQuery.data) {
@@ -243,44 +457,46 @@ export default function PublicHelpScreen({ categorySlug }: Props) {
   }
 
   const showingSearchNoResults = normalizedSearch.length > 0 && visibleSections.length === 0;
+  const heroTitle = selectedCategory ? getLocalizedHelpCategoryTitle(selectedCategory, locale) : t("public.title");
+  const heroDescription = selectedCategory
+    ? getLocalizedHelpCategoryDescription(selectedCategory, locale) || t("public.description")
+    : t("public.description");
 
   return (
-    <div className="space-y-5">
-      <SurfaceCard as="section" variant="page" className="space-y-5">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-          <div className="space-y-3">
+    <div className="mx-auto max-w-6xl space-y-6 text-text-primary dark:text-text-primary">
+      <SurfaceCard
+        as="section"
+        variant="page"
+        className="space-y-5 dark:border-border-light dark:bg-surface-secondary/95 dark:shadow-[0_18px_40px_-30px_rgba(0,0,0,0.45)]"
+      >
+        <div className="flex flex-col gap-5 md:flex-row md:items-start">
+          <div className="flex-1 space-y-4">
             <div className="flex flex-wrap items-center gap-2">
-              {categorySlug ? (
-                <Link
-                  href={"/help" as never}
-                  className="inline-flex items-center gap-2 rounded-full border border-border-light bg-white px-3 py-1.5 text-sm font-medium text-text-primary shadow-sm transition hover:border-primary/30 hover:text-primary dark:bg-surface-secondary"
-                >
-                  <ArrowLeft className="h-4 w-4" />
-                  {t("actions.backToOverview")}
-                </Link>
-              ) : (
-                <Badge variant="solid" color="primary" size="sm">
-                  {t("public.eyebrow")}
-                </Badge>
-              )}
+              <Badge variant="solid" color="success" size="sm">
+                {t("badges.active")}
+              </Badge>
+              <Badge variant="light" color="info" size="sm">
+                {t("public.questionCount", { count: totalQuestions })}
+              </Badge>
+              <Badge variant="light" color="light" size="sm">
+                {t("public.updatedAt", { date: updatedAtLabel })}
+              </Badge>
             </div>
 
-            <div className="space-y-2">
-              <h1 className="text-3xl font-semibold tracking-tight text-text-primary sm:text-4xl">
-                {selectedCategory
-                  ? getLocalizedHelpCategoryTitle(selectedCategory, locale)
-                  : t("public.title")}
+            <div className="space-y-3 text-start">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">
+                {t("public.eyebrow")}
+              </p>
+              <h1 className="text-3xl font-semibold tracking-tight text-text-primary dark:text-text-primary sm:text-4xl">
+                {heroTitle}
               </h1>
-              <p className="max-w-3xl text-sm leading-7 text-text-secondary sm:text-base">
-                {selectedCategory
-                  ? getLocalizedHelpCategoryDescription(selectedCategory, locale) ||
-                    t("public.description")
-                  : t("public.description")}
+              <p className="max-w-3xl text-sm leading-7 text-text-secondary dark:text-text-secondary sm:text-base">
+                {heroDescription}
               </p>
             </div>
           </div>
 
-          <div className="w-full max-w-xl">
+          <div className="flex w-full flex-col gap-3 md:max-w-xl md:justify-end">
             <SearchField
               value={searchValue}
               onChange={setSearchValue}
@@ -288,42 +504,6 @@ export default function PublicHelpScreen({ categorySlug }: Props) {
             />
           </div>
         </div>
-
-        {!categorySlug && visibleSections.length > 1 ? (
-          <div className="space-y-3">
-            <h2 className="text-sm font-semibold text-text-primary">{t("navigation.categories")}</h2>
-            <div className="flex gap-2 overflow-x-auto pb-1">
-              {visibleSections.map((section) => {
-                const slug = section.category?.slug ?? "uncategorized";
-                const isActive = activeCategorySlug === slug || (!activeCategorySlug && slug === "uncategorized");
-                const label = section.category
-                  ? getLocalizedHelpCategoryTitle(section.category, locale)
-                  : t("questions.uncategorized");
-                return (
-                  <button
-                    key={slug}
-                    type="button"
-                    onClick={() => {
-                      setManualActiveCategorySlug(slug);
-                      const element = document.getElementById(`help-category-${slug}`);
-                      element?.scrollIntoView({ behavior: "smooth", block: "start" });
-                    }}
-                    className={`inline-flex shrink-0 items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition ${
-                      isActive
-                        ? "border-primary/30 bg-primary/10 text-primary"
-                        : "border-border-light bg-white text-text-secondary hover:border-primary/20 hover:text-text-primary dark:bg-surface-secondary"
-                    }`}
-                  >
-                    <span>{label}</span>
-                    <span className="rounded-full bg-surface px-2 py-0.5 text-xs text-text-muted">
-                      {section.questions.length}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        ) : null}
       </SurfaceCard>
 
       {showingSearchNoResults ? (
@@ -337,49 +517,63 @@ export default function PublicHelpScreen({ categorySlug }: Props) {
       ) : null}
 
       {!showingSearchNoResults ? (
-        <div className="space-y-5">
-          {visibleSections.map((section) => {
-            const category = section.category;
-            const title = category ? getLocalizedHelpCategoryTitle(category, locale) : t("questions.uncategorized");
-            const description = category ? getLocalizedHelpCategoryDescription(category, locale) : "";
-            const sectionSlug = category?.slug ?? "uncategorized";
-            return (
-              <SurfaceCard
-                key={sectionSlug}
-                as="section"
-                variant="section"
-                id={`help-category-${sectionSlug}`}
-                className="scroll-mt-28 space-y-4"
-              >
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                  <div className="space-y-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <h2 className="text-xl font-semibold text-text-primary">{title}</h2>
-                      <Badge variant="solid" color="primary" size="sm">
-                        {t("public.questionCount", { count: section.questions.length })}
-                      </Badge>
-                    </div>
-                    {description ? (
-                      <p className="max-w-3xl text-sm leading-6 text-text-secondary">{description}</p>
-                    ) : null}
-                  </div>
-                  {category ? (
-                    <span className="text-xs font-medium text-text-muted">
-                      {t("public.updatedAt", { date: formatHelpDate(category.updatedAt, locale) })}
-                    </span>
-                  ) : null}
-                </div>
+        <SurfaceCard
+          as="section"
+          variant="page"
+          className="space-y-6 dark:border-border-light dark:bg-surface-secondary/95 dark:shadow-[0_18px_40px_-30px_rgba(0,0,0,0.45)]"
+        >
+          <header className="space-y-3 border-b border-border-light pb-5 dark:border-border-light/70">
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge variant="light" color="primary" size="sm">
+                {t("document.eyebrow")}
+              </Badge>
+              <Badge variant="light" color="success" size="sm">
+                {t("summary.title")}
+              </Badge>
+            </div>
+            <h2 className="text-2xl font-semibold text-text-primary dark:text-text-primary sm:text-3xl">
+              {t("document.title")}
+            </h2>
+            <p className="max-w-4xl text-sm leading-7 text-text-secondary dark:text-text-secondary sm:text-base">
+              {t("document.subtitle")}
+            </p>
+          </header>
 
-                <div className="space-y-3">
-                  {section.questions.map((question) => (
-                    <FaqAccordionItem key={question.id} question={question} locale={locale} />
-                  ))}
-                </div>
-              </SurfaceCard>
-            );
-          })}
-        </div>
+          <div className="rounded-[24px] border border-primary/10 bg-primary-light/25 px-5 py-4 dark:border-primary/20 dark:bg-primary/10">
+            <p className="text-sm leading-7 text-text-primary dark:text-text-primary">{t("document.intro")}</p>
+          </div>
+
+          <SummaryGrid items={summaryItems} />
+
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-text-primary dark:text-text-primary">
+                {t("document.sectionHeading")}
+              </h3>
+            </div>
+
+            <div className="space-y-3">
+              {visibleSections.map((section, index) => (
+                <HelpSectionCard
+                  key={section.category?.slug ?? "uncategorized"}
+                  section={section}
+                  locale={locale}
+                  defaultOpen={index === 0}
+                />
+              ))}
+            </div>
+          </div>
+
+          <PolicyNotice title={t("notice.title")} body={t("notice.body")} />
+        </SurfaceCard>
       ) : null}
+
+      <HelpSupportCard
+        eyebrow={t("notice.supportTitle")}
+        title={t("notice.supportTitle")}
+        body={t("notice.supportBody")}
+        cta={t("notice.supportCta")}
+      />
     </div>
   );
 }

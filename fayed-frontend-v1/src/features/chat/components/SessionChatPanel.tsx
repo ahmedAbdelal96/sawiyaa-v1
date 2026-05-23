@@ -173,11 +173,19 @@ export default function SessionChatPanel({ sessionId, scope }: Props) {
       : session?.patient?.displayName ?? null;
 
   const backHref = scope === "patient" ? "/patient/sessions" : "/practitioner/sessions";
+  const sessionDetailsHref =
+    scope === "patient"
+      ? (`/patient/sessions/${sessionId}` as never)
+      : (`/practitioner/sessions/${sessionId}` as never);
+  const conversationIsReadOnly = Boolean(
+    conversationIdentity && conversationIdentity.status !== "OPEN",
+  );
 
   const canSend =
     Boolean(conversationId) &&
     !isSending &&
-    !closeMutation.isPending;
+    !closeMutation.isPending &&
+    !conversationIsReadOnly;
 
   const handlePickFiles = () => {
     fileInputRef.current?.click();
@@ -278,8 +286,15 @@ export default function SessionChatPanel({ sessionId, scope }: Props) {
         title={t("detail.chat.states.notAvailable.heading")}
         note={t("detail.chat.states.notAvailable.note")}
         action={{
-          label: t("detail.chat.states.notAvailable.back"),
-          href: backHref,
+          label: t("detail.chat.states.notAvailable.backToSession"),
+          href: (
+            <Link
+              href={sessionDetailsHref}
+              className="inline-flex items-center justify-center rounded-2xl border border-border-light px-5 py-2 text-sm text-text-secondary hover:bg-surface-tertiary dark:hover:bg-white/5"
+            >
+              {t("detail.chat.states.notAvailable.backToSession")}
+            </Link>
+          ),
         }}
       />
     );
@@ -533,6 +548,15 @@ export default function SessionChatPanel({ sessionId, scope }: Props) {
 
         <div className="shrink-0 border-t border-border-light px-3 py-3 sm:px-4">
           <form onSubmit={handleSend} className="space-y-2">
+            {conversationIsReadOnly ? (
+              <div className="rounded-2xl border border-border-light bg-surface-tertiary px-4 py-3 text-xs leading-6 text-text-secondary dark:bg-white/5">
+                <p className="font-semibold text-text-primary dark:text-white/90">
+                  {t("detail.chat.states.readOnly.heading")}
+                </p>
+                <p className="mt-1">{t("detail.chat.states.readOnly.note")}</p>
+              </div>
+            ) : null}
+
             {attachments.length > 0 ? (
               <div className="flex flex-wrap gap-2">
                 {attachments.map((att) => (
@@ -567,7 +591,7 @@ export default function SessionChatPanel({ sessionId, scope }: Props) {
                   realtimeThread.reportTypingActivity(next.trim().length > 0);
                 }}
                 maxLength={4000}
-                disabled={!conversationId || isSending}
+                disabled={!conversationId || isSending || conversationIsReadOnly}
                 placeholder={t("detail.chat.compose.placeholder")}
                 className="app-control max-h-20 min-h-9 flex-1 resize-none rounded-md border-border-strong bg-white px-2 py-1.5 text-xs shadow-[inset_0_1px_0_rgba(255,255,255,0.8),0_8px_14px_-14px_rgba(68,161,148,0.35)] focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-60 dark:border-white/15 dark:bg-white/8 dark:text-white"
               />
@@ -581,7 +605,12 @@ export default function SessionChatPanel({ sessionId, scope }: Props) {
               <button
                 type="button"
                 onClick={handlePickFiles}
-                disabled={!conversationId || uploadMutation.isPending || attachments.length >= 5}
+                disabled={
+                  !conversationId ||
+                  uploadMutation.isPending ||
+                  attachments.length >= 5 ||
+                  conversationIsReadOnly
+                }
                 className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-border-light bg-white text-text-secondary transition hover:border-primary/35 hover:text-primary disabled:cursor-not-allowed disabled:opacity-60 dark:border-white/12 dark:bg-white/5 dark:text-white/75"
                 aria-label={t("detail.chat.actions.attach")}
                 title={t("detail.chat.actions.attach")}

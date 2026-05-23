@@ -26,6 +26,7 @@ import {
   Settings,
   Sparkles,
   Stethoscope,
+  Wallet,
   User,
   X,
 } from "lucide-react";
@@ -116,6 +117,11 @@ export default function PatientAppShell({ children }: PatientAppShellProps) {
       icon: <GraduationCap className="h-4 w-4" />,
     },
     {
+      key: "wallet",
+      href: "/patient/wallet",
+      icon: <Wallet className="h-4 w-4" />,
+    },
+    {
       key: "payments",
       href: "/patient/payments",
       icon: <CreditCard className="h-4 w-4" />,
@@ -150,6 +156,7 @@ export default function PatientAppShell({ children }: PatientAppShellProps) {
     if (key === "support") return tArea("shell.support");
     if (key === "articles") return tNav("main.articles");
     if (key === "training") return tNav("workspace.training");
+    if (key === "wallet") return tNav("main.wallet");
     if (key === "payments") return tNav("main.payments");
     if (key === "profile") return tNav("settings.profile");
     if (key === "settings") return tCommon("settings");
