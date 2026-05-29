@@ -1,0 +1,147 @@
+{
+  "meta": {
+    "title": "Featured specialists",
+    "description": "Manage specialists who appear as featured picks on home and discovery."
+  },
+  "eyebrow": "Featured management",
+  "title": "Featured specialists",
+  "subtitle": "Manage specialists who appear as featured picks on home and discovery.",
+  "summary": {
+    "total": "Total placements",
+    "active": "Active now"
+  },
+  "table": {
+    "practitioner": "Specialist",
+    "surface": "Surface",
+    "status": "Status",
+    "startsAt": "Start date",
+    "endsAt": "End date",
+    "priority": "Priority",
+    "reason": "Reason",
+    "badge": "Badge",
+    "campaign": "Campaign",
+    "updatedAt": "Last update"
+  },
+  "filters": {
+    "all": "All",
+    "status": "Status",
+    "surface": "Surface",
+    "reason": "Reason",
+    "practitionerSearch": "Search specialist",
+    "practitionerSearchPlaceholder": "Search by name, title, or slug",
+    "startsFrom": "Starts from",
+    "endsTo": "Ends to"
+  },
+  "actions": {
+    "add": "Add featured specialist",
+    "edit": "Edit",
+    "pause": "Pause",
+    "resume": "Resume",
+    "history": "History",
+    "clearFilters": "Clear filters"
+  },
+  "editor": {
+    "createTitle": "Add featured specialist",
+    "editTitle": "Edit featured specialist",
+    "description": "Set placement surface, time window, and marketing reason clearly.",
+    "saving": "Saving...",
+    "createAction": "Create",
+    "saveAction": "Save changes",
+    "cancelAction": "Cancel",
+    "loadingDetails": "Loading details..."
+  },
+  "pause": {
+    "title": "Pause featured placement",
+    "description": "Are you sure you want to pause this placement now?",
+    "confirm": "Confirm pause",
+    "submitting": "Pausing...",
+    "cancel": "Cancel"
+  },
+  "resume": {
+    "title": "Resume featured placement",
+    "description": "Are you sure you want to resume this placement now?",
+    "confirm": "Confirm resume",
+    "submitting": "Resuming...",
+    "cancel": "Cancel"
+  },
+  "history": {
+    "title": "Placement history",
+    "loading": "Loading history...",
+    "unknownActor": "Unknown actor",
+    "actions": {
+      "CREATED": "Created",
+      "UPDATED": "Updated",
+      "PAUSED": "Paused",
+      "RESUMED": "Resumed",
+      "EXPIRED": "Expired",
+      "DELETED": "Deleted",
+      "PRIORITY_CHANGED": "Priority changed",
+      "DATE_CHANGED": "Date window changed"
+    }
+  },
+  "fields": {
+    "practitionerId": "Specialist ID",
+    "practitionerIdPlaceholder": "Enter practitionerId (temporary)",
+    "practitionerSlug": "Specialist slug",
+    "practitionerSlugPlaceholder": "Enter practitioner slug (temporary)",
+    "surface": "Surface",
+    "status": "Status",
+    "startsAt": "Start date",
+    "endsAt": "End date",
+    "priority": "Priority",
+    "badgeLabelAr": "Arabic badge label",
+    "badgeLabelEn": "English badge label",
+    "reason": "Reason",
+    "campaignName": "Campaign name",
+    "notesInternal": "Internal notes",
+    "noteOptional": "Optional note"
+  },
+  "status": {
+    "ACTIVE": "Active",
+    "PAUSED": "Paused",
+    "EXPIRED": "Expired"
+  },
+  "surface": {
+    "HOME": "Home",
+    "DISCOVERY": "Discovery",
+    "ALL": "All"
+  },
+  "reason": {
+    "FEATURED": "Featured",
+    "SPONSORED": "Sponsored",
+    "DISCOUNT": "Discount",
+    "NEW_SPECIALIST": "New specialist",
+    "HIGH_AVAILABILITY": "High availability",
+    "EDITORIAL_PICK": "Fayed editorial pick"
+  },
+  "states": {
+    "emptyTitle": "No featured placements yet",
+    "emptyDescription": "Add a featured specialist to show records here.",
+    "listErrorTitle": "Unable to load data",
+    "listErrorDescription": "An error occurred while loading featured specialists.",
+    "retry": "Retry",
+    "readOnlyTitle": "Read only",
+    "readOnlyDescription": "You do not have permission to edit this page.",
+    "ok": "OK"
+  },
+  "validation": {
+    "practitionerRequired": "Provide practitioner ID or slug.",
+    "startsAtRequired": "Start date is required.",
+    "priorityPositive": "Priority must be a positive number.",
+    "endsAtAfterStartsAt": "End date must be after start date."
+  },
+  "feedback": {
+    "createSuccess": "Featured specialist was created successfully.",
+    "updateSuccess": "Placement updated successfully.",
+    "pauseSuccess": "Placement paused successfully.",
+    "resumeSuccess": "Placement resumed successfully."
+  },
+  "errors": {
+    "notFound": "Requested placement was not found.",
+    "invalidDateRange": "Invalid date range.",
+    "invalidPriority": "Invalid priority value.",
+    "resumeExpired": "Cannot resume an expired placement.",
+    "invalidPractitioner": "Invalid or unavailable specialist.",
+    "generic": "Something went wrong. Please try again."
+  }
+}

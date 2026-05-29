@@ -12,6 +12,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import {
   Screen,
+  Header,
   Text,
   Card,
   LoadingState,
@@ -19,7 +20,6 @@ import {
   EmptyState,
 } from "../../../src/components/ui";
 import { useTheme } from "../../../src/providers/ThemeProvider";
-import { useAuth } from "../../../src/providers/AuthProvider";
 import {
   fetchAssessmentDefinition,
   useGetMyAssessmentsHistory,
@@ -66,12 +66,11 @@ export default function PatientAssessmentsListScreen() {
   const router = useRouter();
   const { t, i18n } = useTranslation();
   const { theme } = useTheme();
-  const { user } = useAuth();
   const [selectedFilter, setSelectedFilter] = useState<ListFilter>("current");
   const isRTL = I18nManager.isRTL;
 
   const assessmentsQuery = useGetPublicAssessments();
-  const historyQuery = useGetMyAssessmentsHistory({ page: 1, limit: 50 });
+  const historyQuery = useGetMyAssessmentsHistory({ page: 1, limit: 20 });
 
   const assessmentItems = assessmentsQuery.data?.data.items ?? [];
   const historyItems = historyQuery.data?.data.items ?? [];
@@ -167,12 +166,18 @@ export default function PatientAssessmentsListScreen() {
   ).length;
 
   if (assessmentsQuery.isLoading || historyQuery.isLoading) {
-    return <LoadingState fullScreen message={t("assessments.list.loading")} />;
+    return (
+      <Screen bg="background">
+        <Header title={t("assessments.list.heroTitle")} showBack />
+        <LoadingState fullScreen message={t("assessments.list.loading")} />
+      </Screen>
+    );
   }
 
   if (assessmentsQuery.isError || historyQuery.isError) {
     return (
       <Screen bg="background">
+        <Header title={t("assessments.list.heroTitle")} showBack />
         <ErrorState
           fullScreen
           title={t("assessments.list.errorTitle")}
@@ -186,37 +191,10 @@ export default function PatientAssessmentsListScreen() {
     );
   }
 
-  const userInitial =
-    (user?.displayName ?? user?.primaryEmail ?? "U")
-      .trim()
-      .charAt(0)
-      .toUpperCase() || "U";
-
   return (
     <Screen bg="background">
+      <Header title={t("assessments.list.heroTitle")} showBack />
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={styles.topBar}>
-          <View style={styles.topBarLeft}>
-            <View
-              style={[
-                styles.avatar,
-                { backgroundColor: theme.colors.surfaceSecondary },
-              ]}
-            >
-              <Text weight="bold">{userInitial}</Text>
-            </View>
-            <Text weight="bold" style={styles.brandText}>
-              Clinical Sanctuary
-            </Text>
-          </View>
-
-          <Ionicons
-            name="notifications-outline"
-            size={24}
-            color={theme.colors.primary}
-          />
-        </View>
-
         <Card
           variant="elevated"
           style={[
@@ -436,27 +414,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 18,
     paddingBottom: 128,
-  },
-  topBar: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 22,
-  },
-  topBarLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-  },
-  avatar: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  brandText: {
-    fontSize: 18,
   },
   heroCard: {
     borderRadius: 28,

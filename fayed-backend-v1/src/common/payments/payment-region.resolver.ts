@@ -23,11 +23,13 @@ const SUPPORTED_CURRENCY_CODES = new Set(['EGP', 'USD']);
 export function resolvePaymentRegionalResolution(
   input: PaymentRegionalResolutionInput,
 ): PaymentRegionalResolution {
+  // Country resolution is patient/checkout-account centric by design.
+  // We intentionally do not fallback to operating country here so an
+  // unknown patient country never implicitly routes to Egypt.
   const resolvedCountryIsoCode = normalizeCountryIsoCode(
     input.patientCountryIsoCode ??
       input.accountCountryIsoCode ??
       input.checkoutCountryIsoCode ??
-      input.operatingCountryIsoCode ??
       null,
   );
   const regionalPricingMode = isEgyptCountryCode(resolvedCountryIsoCode)

@@ -55,6 +55,7 @@ export default getRequestConfig(async ({ requestLocale }) => {
     "admin-practitioner-payouts",
     "admin-package-settlements",
     "admin-refund-policies",
+    "admin-featured-practitioners",
     "admin-patients",
     "admin-users",
     "payment-gateway-control",

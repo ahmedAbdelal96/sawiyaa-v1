@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Image, ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -8,6 +8,7 @@ import {
   Card,
   DetailPageScaffold,
   EmptyState,
+  ScreenHeading,
   SectionHeader,
   StatusChip,
   SummaryRow,
@@ -19,7 +20,9 @@ import { resolveMediaUrl } from "../../../../lib/resolve-media-url";
 import { extractApiErrorMessage } from "../../../../lib/api";
 import { useCreatePackagePurchase, usePublicPractitionerPackagePlans } from "../hooks";
 import { usePublicAvailabilityWindows } from "../../sessions/hooks";
-import { resolveSupportedCurrencyCode } from "../../../../lib/currency";
+import { getPatientPreferredCurrency } from "../../../../lib/currency";
+import { usePatientProfile } from "../../profile/hooks";
+import { useGetPublicPractitionerDetails } from "../../discovery/api";
 import {
   buildSlotsFromWindows,
   formatLocalizedDateRange,
@@ -75,6 +78,7 @@ export default function PackagePurchaseCreateScreen() {
     durationMinutes?: string;
     sessionMode?: string;
     currencyCode?: string;
+    preselectedSlots?: string;
   }>();
 
   const durationMinutes = Number(params.durationMinutes) >= 60 ? 60 : 30;
@@ -94,14 +98,22 @@ export default function PackagePurchaseCreateScreen() {
   const [weekOffset, setWeekOffset] = useState(0);
   const [selectedStartsAt, setSelectedStartsAt] = useState<string[]>([]);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [prefillNotice, setPrefillNotice] = useState<string | null>(null);
+  const hasProcessedPrefillRef = useRef(false);
   const createMutation = useCreatePackagePurchase();
 
+  const profileQuery = usePatientProfile();
+  const practitionerSlug = params.practitionerSlug ?? null;
+  const practitionerQuery = useGetPublicPractitionerDetails(practitionerSlug);
+  const practitioner = practitionerQuery.data?.data.item ?? null;
+  const patientCountryCode = profileQuery.data?.profile.countryCode ?? null;
+
   const packagePlansQuery = usePublicPractitionerPackagePlans(
-    params.practitionerSlug ?? null,
+    practitionerSlug,
     {
       durationMinutes,
       sessionMode,
-      currencyCode,
+      currencyCode: getPatientPreferredCurrency(patientCountryCode, practitioner ?? {}),
     },
     {
       cacheScopeKey: authScopeKey,
@@ -110,7 +122,7 @@ export default function PackagePurchaseCreateScreen() {
   const plan = packagePlansQuery.data?.items.find(
     (item) => item.item.code === params.packagePlanCode,
   );
-  const quoteCurrency = resolveSupportedCurrencyCode({
+  const quoteCurrency = getPatientPreferredCurrency(patientCountryCode, {
     currencyCode: plan?.quote.selectedCurrencyCode ?? null,
     regionalPricingMode: plan?.quote.regionalPricingMode ?? null,
     resolvedCountryIsoCode: plan?.quote.resolvedCountryIsoCode ?? null,
@@ -139,19 +151,66 @@ export default function PackagePurchaseCreateScreen() {
     [availableSlots, selectedStartsAt],
   );
 
+  const preselectedSlotsFromParams = useMemo(() => {
+    const raw = params.preselectedSlots;
+    if (!raw || typeof raw !== "string") {
+      return [] as string[];
+    }
+
+    try {
+      const parsed = JSON.parse(raw);
+      if (!Array.isArray(parsed)) {
+        return [] as string[];
+      }
+      return parsed
+        .map((item) =>
+          typeof item?.scheduledStartAt === "string" ? item.scheduledStartAt : null,
+        )
+        .filter((value): value is string => Boolean(value));
+    } catch {
+      return [] as string[];
+    }
+  }, [params.preselectedSlots]);
+
   useEffect(() => {
-    if (!groupedSlots.length) {
-      setSelectedStartsAt([]);
+    if (hasProcessedPrefillRef.current) {
       return;
     }
 
-    if (selectedStartsAt.length === 0) {
-      const firstSlot = groupedSlots[0]?.slots[0] ?? null;
-      if (firstSlot) {
-        setSelectedStartsAt([firstSlot.startsAt]);
-      }
+    if (preselectedSlotsFromParams.length === 0) {
+      hasProcessedPrefillRef.current = true;
+      return;
     }
-  }, [groupedSlots, selectedStartsAt.length]);
+
+    if (availabilityQuery.isLoading) {
+      return;
+    }
+
+    const validStarts = preselectedSlotsFromParams
+      .filter((startsAt) =>
+        availableSlots.some((slot) => slot.startsAt === startsAt),
+      )
+      .slice(0, sessionCount);
+
+    setSelectedStartsAt([...validStarts].sort());
+
+    if (validStarts.length !== preselectedSlotsFromParams.length) {
+      setPrefillNotice(
+        t(
+          "packagePurchases.create.prefillAdjusted",
+          "تم تحديث المواعيد المحددة تلقائيًا لأن بعض الاختيارات لم تعد متاحة.",
+        ),
+      );
+    }
+
+    hasProcessedPrefillRef.current = true;
+  }, [
+    availabilityQuery.isLoading,
+    availableSlots,
+    preselectedSlotsFromParams,
+    sessionCount,
+    t,
+  ]);
 
   const toggleSlot = (startsAt: string) => {
     setSubmitError(null);
@@ -174,7 +233,6 @@ export default function PackagePurchaseCreateScreen() {
   if (!params.practitionerSlug || !params.packagePlanCode) {
     return (
       <DetailPageScaffold
-        title={t("packagePurchases.create.title", "Buy package")}
         showBack
       >
         <EmptyState
@@ -193,7 +251,6 @@ export default function PackagePurchaseCreateScreen() {
   if (packagePlansQuery.isError || !plan) {
     return (
       <DetailPageScaffold
-        title={t("packagePurchases.create.title", "Buy package")}
         showBack
         error={packagePlansQuery.isError}
         errorTitle={t("packagePurchases.create.errorTitle", "We could not load the package")}
@@ -213,11 +270,15 @@ export default function PackagePurchaseCreateScreen() {
 
   return (
     <DetailPageScaffold
-      title={t("packagePurchases.create.title", "Buy package")}
       showBack
       contentContainerStyle={styles.scaffold}
     >
       <View style={styles.stack}>
+        <ScreenHeading
+          title={t("packagePurchases.create.headingTitle")}
+          subtitle={t("packagePurchases.create.headingSubtitle")}
+          titleVariant="h2"
+        />
         <Card variant="elevated" padding="none" style={styles.heroCard}>
           <View style={styles.heroTop}>
             <View style={styles.heroCopy}>
@@ -441,6 +502,11 @@ export default function PackagePurchaseCreateScreen() {
               <Text color="#ba1a1a">{submitError}</Text>
             </Card>
           ) : null}
+          {prefillNotice ? (
+            <Card variant="flat" padding="sm" style={styles.noticeCard}>
+              <Text color={theme.colors.textSecondary}>{prefillNotice}</Text>
+            </Card>
+          ) : null}
 
           <Button
             title={createMutation.isPending ? t("packagePurchases.create.creating", "Creating...") : t("packagePurchases.create.continue", "Continue to payment")}
@@ -466,7 +532,7 @@ export default function PackagePurchaseCreateScreen() {
                   selectedSessionSlots: selectedStartsAt.map((startsAt) => ({ scheduledStartAt: startsAt })),
                 });
 
-                router.replace({
+                router.push({
                   pathname: "/(patient)/package-purchases/[id]/pay",
                   params: { id: created.item.id },
                 } as never);
@@ -507,8 +573,8 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   title: {
-    fontSize: 22,
-    lineHeight: 30,
+    fontSize: 18,
+    lineHeight: 24,
   },
   subtitle: {
     fontSize: 14,

@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsISO8601 } from 'class-validator';
+import { Transform } from 'class-transformer';
+import { IsBoolean, IsISO8601, IsOptional } from 'class-validator';
 
 /**
  * Public window reads require an explicit UTC range to avoid vague "next available" semantics in V1.
@@ -19,4 +20,15 @@ export class ListPublicPractitionerAvailabilityWindowsDto {
   })
   @IsISO8601()
   to!: string;
+
+  @ApiProperty({
+    required: false,
+    default: false,
+    description:
+      'When true, include public-safe booked/reserved occupied slots for schedule rendering',
+  })
+  @IsOptional()
+  @Transform(({ value }) => value === true || value === 'true')
+  @IsBoolean()
+  includeBooked?: boolean;
 }

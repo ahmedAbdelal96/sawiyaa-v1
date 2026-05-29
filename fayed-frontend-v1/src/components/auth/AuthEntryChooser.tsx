@@ -4,12 +4,7 @@ import { useTranslations } from "next-intl";
 import { useSearchParams } from "next/navigation";
 import { Link } from "@/i18n/navigation";
 import { normalizeCallbackPath } from "@/lib/auth/callback-url";
-import {
-  ChevronLeftIcon,
-  GridIcon,
-  GroupIcon,
-  UserCircleIcon,
-} from "@/icons";
+import { ChevronLeft, ShieldCheck, Stethoscope, UserRound } from "lucide-react";
 
 const ENTRY_OPTIONS = [
   {
@@ -17,21 +12,21 @@ const ENTRY_OPTIONS = [
     href: "/signin?mode=patient",
     signupHref: "/signup?mode=patient",
     showSignup: true,
-    icon: UserCircleIcon,
+    icon: UserRound,
   },
   {
     key: "practitioner",
     href: "/signin?mode=practitioner",
     signupHref: "/signup?mode=practitioner",
     showSignup: true,
-    icon: GroupIcon,
+    icon: Stethoscope,
   },
   {
     key: "admin",
     href: "/signin?mode=admin",
     signupHref: null,
     showSignup: false,
-    icon: GridIcon,
+    icon: ShieldCheck,
   },
 ] as const;
 
@@ -61,7 +56,7 @@ export default function AuthEntryChooser() {
           href="/"
           className="inline-flex items-center gap-2 text-sm text-text-secondary transition-colors hover:text-text-primary dark:text-text-secondary dark:hover:text-text-primary"
         >
-          <ChevronLeftIcon />
+          <ChevronLeft className="h-4 w-4" />
           {t("backToHome")}
         </Link>
 

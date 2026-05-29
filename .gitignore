@@ -69,6 +69,34 @@ signin*.png
 post-login.png
 tmp-*.png
 tmp-*.exe
+qa_*.png
+.tmp_*.png
 
 # Local upload/runtime folders
 fayed-backend-v1/uploads/
+
+# Local AI/tooling folders
+.agents/
+.claude/
+.codex/
+.cursor/
+.gemini/
+.kiro/
+.opencode/
+.qodo/
+.qoder/
+.rovodev/
+.trae/
+.trae-cn/
+
+# Local app/browser artifacts
+.artifacts/
+artifacts/
+tmp/
+smokes/
+stitch_*/
+button-list.json
+.tmp-generate-matrices.js
+
+# External reference apps
+shezlong/

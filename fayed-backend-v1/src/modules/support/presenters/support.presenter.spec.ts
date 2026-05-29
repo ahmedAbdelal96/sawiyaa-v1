@@ -1,4 +1,4 @@
-import { SupportTicketPriority } from '@prisma/client';
+import { SupportTicketPriority, MessageStatus } from '@prisma/client';
 import { SupportPresenter } from './support.presenter';
 
 describe('SupportPresenter', () => {
@@ -34,6 +34,9 @@ describe('SupportPresenter', () => {
             senderUserId: 'user-1',
             contentText: 'hello',
             sentAt: new Date('2026-01-01T00:00:00.000Z'),
+            status: MessageStatus.SENT,
+            deliveredAt: null,
+            readAt: null,
           },
         ],
       },

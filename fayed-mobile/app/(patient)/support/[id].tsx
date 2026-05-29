@@ -8,17 +8,15 @@ import {
   TouchableOpacity,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
 import { useTranslation } from "react-i18next";
 import {
   Screen,
   Header,
   Text,
-  Card,
   LoadingState,
   ErrorState,
   Input,
-  Button,
 } from "../../../src/components/ui";
 import { useTheme } from "../../../src/providers/ThemeProvider";
 import {
@@ -34,10 +32,19 @@ import { useAuth } from "../../../src/providers/AuthProvider";
 
 const CLOSED_STATUSES: SupportTicketStatus[] = ["RESOLVED", "CLOSED"];
 
+const STATUS_LABELS: Record<SupportTicketStatus, { ar: string; en: string }> = {
+  OPEN: { ar: "مفتوحة", en: "Open" },
+  IN_PROGRESS: { ar: "قيد المعالجة", en: "In progress" },
+  WAITING_FOR_USER: { ar: "في انتظار الرد", en: "Waiting for reply" },
+  ESCALATED: { ar: "عالية الأولوية", en: "Escalated" },
+  RESOLVED: { ar: "تم الحل", en: "Resolved" },
+  CLOSED: { ar: "مغلقة", en: "Closed" },
+};
+
 function statusColor(
   status: SupportTicketStatus,
   theme: ReturnType<typeof useTheme>["theme"],
-) {
+): string {
   switch (status) {
     case "OPEN":
       return theme.colors.primary;
@@ -57,17 +64,12 @@ function statusColor(
 }
 
 export default function SupportTicketDetailScreen() {
-  const router = useRouter();
   const { theme } = useTheme();
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
-  const isRtl = i18n.language?.startsWith("ar") ?? false;
+  const isRTL = i18n.language?.startsWith("ar") ?? false;
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { returnTo } = useLocalSearchParams<{ returnTo?: string }>();
-  const returnToRoute =
-    typeof returnTo === "string" && returnTo.trim().length > 0
-      ? returnTo
-      : null;
+  useLocalSearchParams<{ returnTo?: string }>();
 
   const ticketQuery = usePatientSupportTicket(id ?? null);
   const addMessage = useAddSupportMessage(id ?? "");
@@ -80,17 +82,10 @@ export default function SupportTicketDetailScreen() {
   const isClosed = ticket ? CLOSED_STATUSES.includes(ticket.status) : false;
   const canReply = ticket && !isClosed;
 
-  function formatTime(dateStr: string) {
+  function formatTime(dateStr: string): string {
     return new Date(dateStr).toLocaleTimeString(
       i18n.language?.startsWith("ar") ? "ar-SA" : "en-US",
       { hour: "2-digit", minute: "2-digit" },
-    );
-  }
-
-  function formatDate(dateStr: string) {
-    return new Date(dateStr).toLocaleDateString(
-      i18n.language?.startsWith("ar") ? "ar-SA" : "en-US",
-      { day: "numeric", month: "short", year: "numeric" },
     );
   }
 
@@ -101,7 +96,7 @@ export default function SupportTicketDetailScreen() {
     setDraft("");
     try {
       await addMessage.mutateAsync(text);
-      setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
+      setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 120);
     } catch (err) {
       setSendError(extractApiErrorMessage(err));
       setDraft(text);
@@ -112,41 +107,48 @@ export default function SupportTicketDetailScreen() {
     const isPatient =
       msg.senderRole === "PATIENT" ||
       (msg.senderUserId && msg.senderUserId === user?.id);
+
     return (
       <View
         key={msg.id ?? idx}
         style={[
           styles.messageRow,
-          isPatient ? styles.messageRowRight : styles.messageRowLeft,
+          isRTL
+            ? isPatient
+              ? styles.rowLtr
+              : styles.rowRtl
+            : isPatient
+            ? styles.rowRtl
+            : styles.rowLtr,
         ]}
       >
         <View
           style={[
-            styles.messageBubble,
+            styles.bubble,
             isPatient
-              ? [
-                  styles.bubblePatient,
-                  { backgroundColor: theme.colors.primary },
-                ]
-              : [styles.bubbleAgent, { backgroundColor: theme.colors.surface }],
+              ? [styles.bubbleMine, { backgroundColor: theme.colors.primary }]
+              : [
+                  styles.bubbleTheirs,
+                  {
+                    backgroundColor: theme.colors.surface,
+                    borderColor: theme.colors.borderLight,
+                  },
+                ],
           ]}
         >
           <Text
             style={[
-              styles.messageText,
+              styles.bubbleText,
               { color: isPatient ? "#fff" : theme.colors.textPrimary },
+              isRTL && !isPatient ? styles.bubbleTextRtl : null,
             ]}
           >
             {msg.message}
           </Text>
           <Text
             style={[
-              styles.messageTime,
-              {
-                color: isPatient
-                  ? "rgba(255,255,255,0.7)"
-                  : theme.colors.textMuted,
-              },
+              styles.bubbleTime,
+              { color: isPatient ? "rgba(255,255,255,0.65)" : theme.colors.textMuted },
             ]}
           >
             {formatTime(msg.createdAt)}
@@ -159,18 +161,7 @@ export default function SupportTicketDetailScreen() {
   if (ticketQuery.isLoading) {
     return (
       <Screen bg="background">
-        <Header
-          showBack
-          onBack={
-            returnToRoute
-              ? () =>
-                  router.replace({
-                    pathname: "/(patient)/support",
-                    params: { returnTo: returnToRoute },
-                  } as any)
-              : undefined
-          }
-        />
+        <Header showBack />
         <LoadingState fullScreen />
       </Screen>
     );
@@ -179,92 +170,66 @@ export default function SupportTicketDetailScreen() {
   if (ticketQuery.isError || !ticket) {
     return (
       <Screen bg="background">
-        <Header
-          showBack
-          onBack={
-            returnToRoute
-              ? () =>
-                  router.replace({
-                    pathname: "/(patient)/support",
-                    params: { returnTo: returnToRoute },
-                  } as any)
-              : undefined
-          }
-        />
+        <Header showBack />
         <ErrorState fullScreen onRetry={ticketQuery.refetch} />
       </Screen>
     );
   }
 
+  const statusLabel = STATUS_LABELS[ticket.status]?.[isRTL ? "ar" : "en"] ?? ticket.status;
+  const statusClr = statusColor(ticket.status, theme);
+
   return (
     <Screen bg="background">
-      <Header
-        title={t("support.detail.title")}
-        showBack
-        onBack={
-          returnToRoute
-            ? () =>
-                router.replace({
-                  pathname: "/(patient)/support",
-                  params: { returnTo: returnToRoute },
-                } as any)
-            : undefined
-        }
-      />
+      <Header title={t("support.detail.title")} showBack />
 
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         keyboardVerticalOffset={90}
       >
-        {/* Ticket info card */}
-        <View style={styles.infoCard}>
-          <Text weight="bold" style={styles.ticketSubject} numberOfLines={2}>
+        {/* Conversation info strip */}
+        <View style={styles.infoStrip}>
+          <Text
+            weight="600"
+            style={[styles.subjectText, isRTL ? styles.textRtl : null]}
+            numberOfLines={1}
+          >
             {ticket.subject}
           </Text>
-          <View style={styles.infoRow}>
-            <View
-              style={[
-                styles.statusPill,
-                {
-                  backgroundColor: statusColor(ticket.status, theme) + "20",
-                },
-              ]}
-            >
-              <Text
-                style={[
-                  styles.statusPillText,
-                  { color: statusColor(ticket.status, theme) },
-                ]}
-              >
-                {t(`support.statuses.${ticket.status}`, ticket.status)}
-              </Text>
-            </View>
-            <Text color={theme.colors.textMuted} style={styles.dateLabel}>
-              {formatDate(ticket.createdAt)}
+          <View
+            style={[
+              styles.statusBadge,
+              { backgroundColor: statusClr + "18" },
+            ]}
+          >
+            <Text style={[styles.statusBadgeText, { color: statusClr }]}>
+              {statusLabel}
             </Text>
           </View>
-          {ticket.description ? (
-            <Text color={theme.colors.textSecondary} style={styles.description}>
-              {ticket.description}
-            </Text>
-          ) : null}
         </View>
 
-        {/* Messages */}
+        {/* Message thread */}
         <ScrollView
           ref={scrollRef}
-          style={styles.messagesArea}
-          contentContainerStyle={styles.messagesContent}
+          style={styles.thread}
+          contentContainerStyle={styles.threadContent}
           showsVerticalScrollIndicator={false}
           onContentSizeChange={() =>
             scrollRef.current?.scrollToEnd({ animated: false })
           }
         >
           {(ticket.messages ?? []).length === 0 ? (
-            <Text color={theme.colors.textMuted} style={styles.noMessagesText}>
-              {t("support.detail.noMessages")}
-            </Text>
+            <View style={styles.emptyThread}>
+              <Ionicons
+                name="chatbubbles-outline"
+                size={28}
+                color={theme.colors.textMuted}
+              />
+              <Text color={theme.colors.textMuted} style={styles.emptyText}>
+                {t("support.detail.noMessages")}
+              </Text>
+            </View>
           ) : (
             ticket.messages.map((msg, idx) => renderMessage(msg, idx))
           )}
@@ -274,8 +239,8 @@ export default function SupportTicketDetailScreen() {
         {isClosed ? (
           <View
             style={[
-              styles.closedNotice,
-              { backgroundColor: theme.colors.textMuted + "15" },
+              styles.closedBanner,
+              { backgroundColor: theme.colors.textMuted + "12" },
             ]}
           >
             <Text color={theme.colors.textMuted} style={styles.closedText}>
@@ -284,48 +249,63 @@ export default function SupportTicketDetailScreen() {
           </View>
         ) : null}
 
-        {/* Reply input */}
+        {/* Composer */}
         {canReply ? (
           <View
             style={[
-              styles.replyBar,
+              styles.composer,
               {
                 borderTopColor: theme.colors.borderLight,
-                backgroundColor: theme.colors.background,
+                backgroundColor: theme.colors.surface,
+                flexDirection: isRTL ? "row-reverse" : "row",
               },
             ]}
           >
-            {sendError ? (
-              <Text style={[styles.sendError, { color: theme.colors.error }]}>
-                {sendError}
-              </Text>
-            ) : null}
-            <View style={styles.replyRow}>
+            <View style={styles.composerInputWrap}>
               <Input
                 value={draft}
                 onChangeText={setDraft}
                 placeholder={t("support.detail.replyPlaceholder")}
+                placeholderTextColor={theme.colors.textMuted}
                 multiline
-                style={styles.replyInput}
-                containerStyle={styles.replyInputContainer}
+                style={[styles.composerInput, isRTL ? styles.composerInputRtl : null]}
+                containerStyle={styles.composerInputContainer}
                 maxLength={4000}
               />
-              <TouchableOpacity
-                onPress={handleSend}
-                disabled={addMessage.isPending || !draft.trim()}
-                style={[
-                  styles.sendBtn,
-                  { backgroundColor: theme.colors.primary },
-                  (!draft.trim() || addMessage.isPending) &&
-                    styles.sendBtnDisabled,
-                ]}
-                activeOpacity={0.8}
-                accessibilityRole="button"
-                accessibilityLabel={t("support.detail.sendMessage")}
-              >
-                <Ionicons name="send" size={18} color="#fff" />
-              </TouchableOpacity>
             </View>
+            <TouchableOpacity
+              onPress={handleSend}
+              disabled={addMessage.isPending || !draft.trim()}
+              style={[
+                styles.sendBtn,
+                {
+                  backgroundColor: theme.colors.primary,
+                  opacity: !draft.trim() || addMessage.isPending ? 0.45 : 1,
+                },
+              ]}
+              activeOpacity={0.8}
+              accessibilityLabel={t("support.detail.sendMessage", "Send message")}
+            >
+              <Ionicons name="send" size={17} color="#fff" />
+            </TouchableOpacity>
+          </View>
+        ) : null}
+
+        {/* Send error */}
+        {sendError ? (
+          <View
+            style={[
+              styles.sendErrorBar,
+              {
+                backgroundColor: theme.colors.error + "12",
+                flexDirection: isRTL ? "row-reverse" : "row",
+              },
+            ]}
+          >
+            <Ionicons name="warning" size={13} color={theme.colors.error} />
+            <Text style={[styles.sendErrorText, { color: theme.colors.error }]}>
+              {sendError}
+            </Text>
           </View>
         ) : null}
       </KeyboardAvoidingView>
@@ -337,127 +317,142 @@ const styles = StyleSheet.create({
   flex: {
     flex: 1,
   },
-  infoCard: {
-    marginHorizontal: 14,
-    marginTop: 10,
-    marginBottom: 6,
-    padding: 14,
-    borderRadius: 12,
-    backgroundColor: "transparent",
-    gap: 6,
-  },
-  ticketSubject: {
-    fontSize: 16,
-  },
-  infoRow: {
+  infoStrip: {
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center",
     gap: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(0,0,0,0.04)",
   },
-  statusPill: {
+  subjectText: {
+    fontSize: 14,
+    fontWeight: "600",
+    flex: 1,
+  },
+  textRtl: {
+    textAlign: "right",
+  },
+  statusBadge: {
     paddingHorizontal: 10,
-    paddingVertical: 3,
+    paddingVertical: 4,
     borderRadius: 20,
+    flexShrink: 0,
   },
-  statusPillText: {
-    fontSize: 12,
+  statusBadgeText: {
+    fontSize: 11,
     fontWeight: "600",
   },
-  dateLabel: {
-    fontSize: 12,
-  },
-  description: {
-    fontSize: 13,
-    lineHeight: 20,
-  },
-  messagesArea: {
+  thread: {
     flex: 1,
+  },
+  threadContent: {
     paddingHorizontal: 14,
+    paddingTop: 12,
+    paddingBottom: 8,
+    gap: 6,
   },
-  messagesContent: {
-    paddingTop: 8,
-    paddingBottom: 16,
-    gap: 8,
+  emptyThread: {
+    alignItems: "center",
+    paddingTop: 48,
+    gap: 10,
   },
-  noMessagesText: {
+  emptyText: {
+    fontSize: 13,
     textAlign: "center",
-    marginTop: 40,
-    fontSize: 14,
   },
   messageRow: {
     flexDirection: "row",
+    alignItems: "flex-end",
   },
-  messageRowRight: {
+  rowRtl: {
     justifyContent: "flex-end",
   },
-  messageRowLeft: {
+  rowLtr: {
     justifyContent: "flex-start",
   },
-  messageBubble: {
-    maxWidth: "78%",
-    padding: 10,
-    borderRadius: 14,
+  bubble: {
+    maxWidth: "82%",
+    paddingHorizontal: 13,
+    paddingVertical: 9,
+    borderRadius: 16,
     gap: 4,
   },
-  bubblePatient: {
-    borderBottomEndRadius: 4,
+  bubbleMine: {
+    borderBottomRightRadius: 4,
   },
-  bubbleAgent: {
-    borderBottomStartRadius: 4,
+  bubbleTheirs: {
+    borderWidth: 1,
+    borderBottomLeftRadius: 4,
   },
-  messageText: {
+  bubbleText: {
     fontSize: 14,
     lineHeight: 20,
   },
-  messageTime: {
-    fontSize: 11,
+  bubbleTextRtl: {
     textAlign: "right",
   },
-  closedNotice: {
+  bubbleTime: {
+    fontSize: 10,
+    lineHeight: 14,
+  },
+  closedBanner: {
     marginHorizontal: 14,
-    marginBottom: 8,
-    padding: 10,
-    borderRadius: 8,
+    marginBottom: 6,
+    paddingVertical: 9,
+    paddingHorizontal: 14,
+    borderRadius: 10,
   },
   closedText: {
-    fontSize: 13,
+    fontSize: 12,
     textAlign: "center",
   },
-  replyBar: {
+  composer: {
     borderTopWidth: 1,
+    alignItems: "center",
     paddingHorizontal: 12,
-    paddingTop: 8,
-    paddingBottom: 10,
-  },
-  sendError: {
-    fontSize: 12,
-    marginBottom: 6,
-  },
-  replyRow: {
-    flexDirection: "row",
-    alignItems: "flex-end",
+    paddingVertical: 8,
     gap: 8,
   },
-  replyInputContainer: {
+  composerInputWrap: {
+    flex: 1,
+    minHeight: 44,
+    maxHeight: 80,
+  },
+  composerInputContainer: {
     flex: 1,
     marginBottom: 0,
-    minWidth: 0,
   },
-  replyInput: {
+  composerInput: {
+    flex: 1,
     minHeight: 44,
-    maxHeight: 120,
+    maxHeight: 80,
+    paddingTop: 10,
+    paddingHorizontal: 12,
+    fontSize: 15,
+    lineHeight: 21,
+  },
+  composerInputRtl: {
+    textAlign: "right",
   },
   sendBtn: {
-    width: 48,
-    height: 48,
-    borderRadius: 16,
+    width: 44,
+    height: 44,
+    borderRadius: 14,
     alignItems: "center",
     justifyContent: "center",
     flexShrink: 0,
   },
-  sendBtnDisabled: {
-    opacity: 0.5,
+  sendErrorBar: {
+    alignItems: "center",
+    gap: 7,
+    paddingHorizontal: 16,
+    paddingVertical: 7,
+  },
+  sendErrorText: {
+    fontSize: 12,
+    flex: 1,
   },
 });
-
-

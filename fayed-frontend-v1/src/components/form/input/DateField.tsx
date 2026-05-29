@@ -27,7 +27,7 @@ import { useEffect, useId, useRef } from "react";
 import flatpickr from "flatpickr";
 import "flatpickr/dist/flatpickr.css";
 import { useLocale } from "next-intl";
-import { CalenderIcon } from "@/icons";
+import { CalendarDays } from "lucide-react";
 import Label from "../Label";
 
 // ---------------------------------------------------------------------------
@@ -148,7 +148,7 @@ export default function DateField({
           className={inputClasses}
         />
         <span className="pointer-events-none absolute end-3 top-1/2 -translate-y-1/2 text-text-secondary">
-          <CalenderIcon className="size-5" />
+          <CalendarDays className="size-5" />
         </span>
       </div>
       {error && <p className="mt-1.5 text-xs text-error-500">{error}</p>}

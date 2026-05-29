@@ -175,6 +175,51 @@ export const permissionDefinitions: Array<{
     key: 'admin-users.token-version.invalidate',
     description: 'Invalidate internal platform user tokens (bump tokenVersion)',
   },
+  // Corporate Voucher Sponsorship
+  {
+    key: 'corporate.organizations.read',
+    description: 'Read corporate organization list and details',
+  },
+  {
+    key: 'corporate.organizations.manage',
+    description: 'Create and update corporate organizations',
+  },
+  {
+    key: 'corporate.contracts.manage',
+    description: 'Create and update corporate contracts',
+  },
+  {
+    key: 'corporate.plans.manage',
+    description: 'Create and update corporate benefit plans',
+  },
+  {
+    key: 'corporate.codes.generate',
+    description: 'Generate corporate benefit code batches',
+  },
+  {
+    key: 'corporate.codes.export',
+    description: 'Export corporate benefit codes as CSV',
+  },
+  {
+    key: 'corporate.codes.revoke',
+    description: 'Revoke corporate benefit codes',
+  },
+  {
+    key: 'corporate.reports.read',
+    description: 'Read corporate usage and financial reports',
+  },
+  {
+    key: 'corporate.ledger.read',
+    description: 'Read corporate ledger entries',
+  },
+  {
+    key: 'featured-practitioners.read',
+    description: 'Read featured practitioners placements and history',
+  },
+  {
+    key: 'featured-practitioners.manage',
+    description: 'Create and manage featured practitioners placements',
+  },
 ];
 
 export const rolePermissionBundles: Array<{
@@ -213,7 +258,11 @@ export const rolePermissionBundles: Array<{
   },
   {
     role: UserRoleType.MARKETING_STAFF,
-    permissions: ['notification-ops.read'],
+    permissions: [
+      'notification-ops.read',
+      'featured-practitioners.read',
+      'featured-practitioners.manage',
+    ],
   },
   {
     role: UserRoleType.PRACTITIONER_REVIEWER,
@@ -248,6 +297,8 @@ export const rolePermissionBundles: Array<{
       'chat.conversations.read',
       'chat.attachments.read',
       'support.ticket.assign',
+      'corporate.organizations.read',
+      'corporate.reports.read',
     ],
   },
   {

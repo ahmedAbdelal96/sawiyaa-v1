@@ -56,7 +56,7 @@ export default function CareChatListScreen() {
   const { t, i18n } = useTranslation();
   const [tab, setTab] = useState<TabFilter>("active");
 
-  const query = useMyCareChatRequests({ page: 1, limit: 50 });
+  const query = useMyCareChatRequests({ page: 1, limit: 20 });
   const allItems = query.data?.items ?? [];
 
   const filtered = allItems.filter((req) => {

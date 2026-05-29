@@ -474,4 +474,22 @@ describe('InitiatePackagePurchasePaymentUseCase', () => {
       }),
     ).rejects.toBeInstanceOf(ConflictException);
   });
+
+  it('does not fallback to practitioner country for EGP when patient country is unknown', async () => {
+    (patientProfileRepository.findByUserId as jest.Mock).mockResolvedValueOnce({
+      ...basePatient,
+      country: null,
+    });
+
+    await expect(
+      useCase.execute({
+        userId: 'user-1',
+        purchaseId: 'purchase-1',
+        acceptedRefundPolicyId: 'refund-policy-version-1',
+        displayLocale: 'en',
+      }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+
+    expect(paymentProviderResolverService.resolveProvider).not.toHaveBeenCalled();
+  });
 });

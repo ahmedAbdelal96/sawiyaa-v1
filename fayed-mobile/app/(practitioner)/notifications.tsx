@@ -48,7 +48,7 @@ export default function PractitionerNotificationsScreen() {
   const [showUnreadOnly, setShowUnreadOnly] = React.useState(false);
 
   const notificationsQuery = usePractitionerNotifications(
-    { page: 1, limit: 50 },
+    { page: 1, limit: 20 },
     { enabled: !!user },
   );
   const unreadCountQuery = usePractitionerUnreadNotificationCount({

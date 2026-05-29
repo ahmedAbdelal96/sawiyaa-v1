@@ -21,6 +21,7 @@ import {
   Input,
   LoadingState,
   Screen,
+  ScreenHeading,
   Text,
 } from "../../../../src/components/ui";
 import { useTheme } from "../../../../src/providers/ThemeProvider";
@@ -37,7 +38,10 @@ import { extractApiErrorMessage } from "../../../../src/lib/api";
 import { resolveSupportedCurrencyCode } from "../../../../src/lib/currency";
 import { normalizeAllowedExternalUrl } from "../../../../src/lib/external-url";
 import { trackAnalyticsEvent } from "../../../../src/lib/analytics";
-import type { PaymobCheckoutMethod } from "../../../../src/features/patient/payments/types";
+import type {
+  PaymobCheckoutMethod,
+  SessionPaymentCapabilityMethod,
+} from "../../../../src/features/patient/payments/types";
 import {
   classifyCouponError,
   normalizePromoCodeInput,
@@ -117,6 +121,41 @@ function getRefundPolicyTitle(
   return isArabic ? policy.titleAr ?? policy.titleEn ?? policy.key : policy.titleEn ?? policy.titleAr ?? policy.key;
 }
 
+function getProviderDisplayName(provider: string | null | undefined): string {
+  if (provider === "PAYMOB") return "Paymob";
+  if (provider === "STRIPE") return "Stripe";
+  if (provider === "INTERNAL_WALLET") return "Wallet";
+  return "-";
+}
+
+function normalizeCapabilityMethods(
+  capabilities: {
+    normalizedMethods?: SessionPaymentCapabilityMethod[];
+    methods: SessionPaymentCapabilityMethod[];
+    supportedMethods: string[];
+  } | null,
+) {
+  if (!capabilities) return [];
+
+  const source =
+    capabilities.normalizedMethods && capabilities.normalizedMethods.length > 0
+      ? capabilities.normalizedMethods
+      : capabilities.methods;
+
+  const supported = new Set(capabilities.supportedMethods);
+  return source.filter((method) => {
+    if (!method.enabled) return false;
+    // Product decision: hide postponed/unconfirmed methods.
+    if (method.key === "MEEZA" || method.key === "FAWRY") return false;
+    if (method.key === "FAYED_WALLET") return false;
+    return supported.size === 0 || supported.has(method.key);
+  });
+}
+
+function isPaymobMethodKey(value: string | null | undefined): value is PaymobCheckoutMethod {
+  return value === "CARD" || value === "WALLET";
+}
+
 function RefundPolicyModal({
   visible,
   policy,
@@ -144,6 +183,7 @@ function RefundPolicyModal({
   onAccept: () => void;
   t: ReturnType<typeof useTranslation>["t"];
 }) {
+  const { theme } = useTheme();
   const [scrolledToEnd, setScrolledToEnd] = useState(false);
   const [agreed, setAgreed] = useState(false);
   const [scrollViewportHeight, setScrollViewportHeight] = useState(0);
@@ -250,8 +290,8 @@ function RefundPolicyModal({
               style={[
                 styles.modalAcceptRow,
                 {
-                  backgroundColor: scrolledToEnd ? "#eaf2ff" : "#f3f4f6",
-                  borderColor: scrolledToEnd ? "#3b82f6" : "#d1d5db",
+                  backgroundColor: scrolledToEnd ? theme.colors.primaryLight : "#f3f4f6",
+                  borderColor: scrolledToEnd ? theme.colors.primary : "#d9e0e6",
                 },
               ]}
             >
@@ -259,8 +299,8 @@ function RefundPolicyModal({
                 style={[
                   styles.modalCheckbox,
                   {
-                    borderColor: scrolledToEnd ? "#3b82f6" : "#d1d5db",
-                    backgroundColor: agreed ? "#3b82f6" : "#fff",
+                    borderColor: scrolledToEnd ? theme.colors.primary : "#d9e0e6",
+                    backgroundColor: agreed ? theme.colors.primary : "#fff",
                   },
                 ]}
               >
@@ -329,7 +369,7 @@ export default function SessionPaymentCheckoutScreen() {
   const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null);
   const [couponError, setCouponError] = useState<string | null>(null);
   const [useWalletBalance, setUseWalletBalance] = useState(true);
-  const [selectedPaymobMethod, setSelectedPaymobMethod] = useState<
+  const [selectedExternalMethodKey, setSelectedExternalMethodKey] = useState<
     string | null
   >(null);
   const [flowMessage, setFlowMessage] = useState<string | null>(null);
@@ -408,61 +448,36 @@ export default function SessionPaymentCheckoutScreen() {
     setPolicyModalVisible(true);
   }, [acceptedRefundPolicy, refundPolicy?.id]);
 
-  const supportedGatewayMethods = useMemo(() => {
-    if (!capabilities) return [];
-
-    const supportedKeys = new Set(capabilities.supportedMethods);
-    const enabledMethods = capabilities.methods.filter(
-      (method) => method.enabled && supportedKeys.has(method.key),
-    );
-
-    if (enabledMethods.length > 0) {
-      return enabledMethods;
-    }
-
-    return capabilities.supportedMethods.map((method) => ({
-      key: method,
-      label: method,
-      type: method,
-      enabled: true,
-    }));
-  }, [capabilities]);
+  const supportedGatewayMethods = useMemo(
+    () => normalizeCapabilityMethods(capabilities),
+    [capabilities],
+  );
 
   const defaultGatewayMethod = useMemo(() => {
     if (!capabilities) return null;
-
-    if (
-      capabilities.defaultMethod &&
-      capabilities.supportedMethods.includes(capabilities.defaultMethod)
-    ) {
+    if (capabilities.defaultMethod && supportedGatewayMethods.some((m) => m.key === capabilities.defaultMethod)) {
       return capabilities.defaultMethod;
     }
 
-    return capabilities.supportedMethods[0] ?? null;
-  }, [capabilities]);
-
-  const paymobMethodRequired =
-    gatewayPaymentRequired &&
-    capabilities?.provider === "PAYMOB" &&
-    capabilities.checkoutFlow === "legacy" &&
-    capabilities.supportedMethods.length > 1;
+    return supportedGatewayMethods[0]?.key ?? null;
+  }, [capabilities, supportedGatewayMethods]);
 
   useEffect(() => {
     if (!gatewayPaymentRequired) {
-      setSelectedPaymobMethod(null);
+      setSelectedExternalMethodKey(null);
       return;
     }
 
     if (!defaultGatewayMethod) return;
 
-    setSelectedPaymobMethod((current) => {
-      if (current && capabilities?.supportedMethods.includes(current)) {
+    setSelectedExternalMethodKey((current) => {
+      if (current && supportedGatewayMethods.some((method) => method.key === current)) {
         return current;
       }
 
       return defaultGatewayMethod;
     });
-  }, [capabilities, defaultGatewayMethod, gatewayPaymentRequired]);
+  }, [defaultGatewayMethod, gatewayPaymentRequired, supportedGatewayMethods]);
 
   const sessionLoading = sessionQuery.isLoading;
   const sessionError = sessionQuery.isError;
@@ -488,6 +503,10 @@ export default function SessionPaymentCheckoutScreen() {
   const hasError = sessionError;
   const loadErrorMessage = extractApiErrorMessage(sessionQuery.error);
   const couponApplyLoading = Boolean(appliedCoupon) && breakdownQuery.isFetching;
+  const walletCapability = capabilities?.wallet ?? null;
+  const walletCapabilityEnabled = walletCapability?.enabled === true;
+  const walletCapabilityCurrency = walletCapability?.currencyCode ?? paymentCurrency;
+  const walletCapabilityBalance = walletCapability?.availableBalance ?? walletBalance;
   const couponApplied = Boolean(appliedCoupon) && Boolean(breakdown) && !couponError;
   const activeCouponCode =
     appliedCoupon &&
@@ -544,6 +563,12 @@ export default function SessionPaymentCheckoutScreen() {
     isPricingUnavailable,
     t,
   ]);
+
+  useEffect(() => {
+    if (walletCapability && !walletCapabilityEnabled && useWalletBalance) {
+      setUseWalletBalance(false);
+    }
+  }, [walletCapability, walletCapabilityEnabled, useWalletBalance]);
 
   const applyCoupon = () => {
     const value = normalizedCouponDraft;
@@ -645,6 +670,24 @@ export default function SessionPaymentCheckoutScreen() {
     }
   };
 
+  const providerDisplayName = getProviderDisplayName(
+    capabilities?.provider ?? breakdown?.paymentProvider ?? null,
+  );
+  const selectedExternalMethod = supportedGatewayMethods.find(
+    (method) => method.key === selectedExternalMethodKey,
+  );
+  const hasExternalMethods = supportedGatewayMethods.length > 0;
+  const externalMethodSelectionRequired =
+    gatewayPaymentRequired && hasExternalMethods;
+  const missingRequiredExternalMethod =
+    externalMethodSelectionRequired && !selectedExternalMethod;
+  const paymobSelectedMethod =
+    capabilities?.provider === "PAYMOB" && isPaymobMethodKey(selectedExternalMethod?.key)
+      ? selectedExternalMethod.key
+      : undefined;
+  const isWalletToggleEnabled =
+    walletCapabilityEnabled && toNumber(walletCapabilityBalance) > 0;
+
   const handleInitiatePayment = async () => {
     if (!id || isLaunchingCheckout || initiateLockRef.current) return;
     setFlowMessage(null);
@@ -680,9 +723,7 @@ export default function SessionPaymentCheckoutScreen() {
           acceptedRefundPolicyId: refundPolicy.id,
           paymobMethod:
             gatewayPaymentRequired && capabilities?.provider === "PAYMOB"
-              ? ((selectedPaymobMethod ?? defaultGatewayMethod ?? undefined) as
-                | PaymobCheckoutMethod
-                | undefined)
+              ? paymobSelectedMethod
               : undefined,
           returnUrl:
             gatewayPaymentRequired && capabilities?.provider === "PAYMOB"
@@ -766,10 +807,7 @@ export default function SessionPaymentCheckoutScreen() {
   if (loading) {
     return (
       <Screen bg="background">
-        <Header
-          showBack
-          title={t("patientPaymentsFlow.checkout.title")}
-        />
+        <Header showBack />
         <LoadingState fullScreen />
       </Screen>
     );
@@ -778,10 +816,7 @@ export default function SessionPaymentCheckoutScreen() {
   if (hasError || !session) {
     return (
       <Screen bg="background">
-        <Header
-          showBack
-          title={t("patientPaymentsFlow.checkout.title")}
-        />
+        <Header showBack />
         <View style={styles.centerState}>
           <Text weight="600" style={styles.centerTitle}>
             {loadErrorMessage || t("patientPaymentsFlow.checkout.errorNote")}
@@ -804,10 +839,7 @@ export default function SessionPaymentCheckoutScreen() {
   if (!payableSession) {
     return (
       <Screen bg="background">
-        <Header
-          showBack
-          title={t("patientPaymentsFlow.checkout.title")}
-        />
+        <Header showBack />
         <View style={styles.centerState}>
           <Text weight="600" style={styles.centerTitle}>
             {t(resolveBlockedMessageKey(session.status, session.expiresAt))}
@@ -824,30 +856,22 @@ export default function SessionPaymentCheckoutScreen() {
 
   return (
     <Screen bg="background">
-      <Header
-        showBack
-        title={t("patientPaymentsFlow.checkout.title")}
-      />
+      <Header showBack />
 
       <ScrollView contentContainerStyle={styles.content}>
+        <ScreenHeading
+          title={t("patientPaymentsFlow.checkout.screenTitle")}
+          subtitle={t("patientPaymentsFlow.checkout.headingSubtitle")}
+          titleVariant="h2"
+        />
         <Card
           variant="elevated"
           padding="md"
-          style={[
-            styles.sessionCard,
-            isRtl
-              ? {
-                  borderLeftWidth: 3,
-                  borderLeftColor: theme.colors.primary,
-                  borderRightWidth: 0,
-                }
-              : {
-                  borderRightWidth: 3,
-                  borderRightColor: theme.colors.primary,
-                  borderLeftWidth: 0,
-                },
-          ]}
+          style={styles.sessionCard}
         >
+          <Text weight="bold" style={styles.sectionTitle}>
+            {t("patientPaymentsFlow.checkout.sessionSummaryTitle")}
+          </Text>
           <Text weight="bold" style={styles.practitionerName}>
             {session.practitioner.displayName ?? "-"}
           </Text>
@@ -865,6 +889,24 @@ export default function SessionPaymentCheckoutScreen() {
             />
             <Text color={theme.colors.textMuted} style={styles.sessionMetaText}>
               {formatDateTime(session.scheduledStartAt, locale)}
+            </Text>
+          </View>
+          <View style={styles.sessionMetaRow}>
+            <Ionicons name="hourglass-outline" size={14} color={theme.colors.textMuted} />
+            <Text color={theme.colors.textMuted} style={styles.sessionMetaText}>
+              {t("patientSessionsFlow.detail.durationValue", { minutes: session.durationMinutes })}
+            </Text>
+          </View>
+          <View style={styles.sessionMetaRow}>
+            <Ionicons name="videocam-outline" size={14} color={theme.colors.textMuted} />
+            <Text color={theme.colors.textMuted} style={styles.sessionMetaText}>
+              {session.sessionMode}
+            </Text>
+          </View>
+          <View style={styles.sessionMetaRow}>
+            <Ionicons name="globe-outline" size={14} color={theme.colors.textMuted} />
+            <Text color={theme.colors.textMuted} style={styles.sessionMetaText}>
+              {paymentCurrency} · {providerDisplayName}
             </Text>
           </View>
         </Card>
@@ -958,17 +1000,20 @@ export default function SessionPaymentCheckoutScreen() {
                 {t("patientPaymentsFlow.checkout.walletToggle.label")}
               </Text>
               <Text color={theme.colors.textMuted} style={styles.toggleHint}>
-                {toNumber(walletBalance) > 0
+                {isWalletToggleEnabled
                   ? t("patientPaymentsFlow.checkout.walletToggle.available", {
-                      amount: formatMoney(walletBalance, paymentCurrency),
+                      amount: formatMoney(
+                        walletCapabilityBalance,
+                        walletCapabilityCurrency,
+                      ),
                     })
                   : t("patientPaymentsFlow.checkout.walletToggle.noBalance")}
               </Text>
             </View>
             <Switch
-              value={useWalletBalance && toNumber(walletBalance) > 0}
+              value={useWalletBalance && isWalletToggleEnabled}
               onValueChange={setUseWalletBalance}
-              disabled={toNumber(walletBalance) <= 0}
+              disabled={!isWalletToggleEnabled}
               thumbColor="#ffffff"
               trackColor={{
                 false: theme.colors.borderStrong,
@@ -1121,89 +1166,103 @@ export default function SessionPaymentCheckoutScreen() {
             <Text color="#ba1a1a" style={styles.methodHint}>
               {capabilitiesErrorMsg}
             </Text>
-          ) : (
-            <>
-              <View style={styles.methodRow}>
-                <Ionicons
-                  name="card-outline"
-                  size={18}
-                  color={theme.colors.primary}
-                />
-                <View style={styles.methodTextWrap}>
-                  <Text weight="600">
-                    {t(
-                      "patientPaymentsFlow.checkout.paymentMethod.onlinePayment",
-                    )}
-                  </Text>
-                  <Text
-                    color={theme.colors.textMuted}
-                    style={styles.methodHint}
-                  >
-                    {paymobMethodRequired
-                      ? t("patientPaymentsFlow.checkout.paymentMethod.methodRequired")
-                      : t(
-                          "patientPaymentsFlow.checkout.paymentMethod.gatewayHint",
-                        )}
-                  </Text>
-                </View>
-              </View>
-
-              {paymobMethodRequired ? (
-                <View style={styles.methodOptionsWrap}>
-                  {supportedGatewayMethods.map((method) => {
-                    const isSelected = selectedPaymobMethod === method.key;
-
-                    return (
-                      <TouchableOpacity
-                        key={method.key}
-                        activeOpacity={0.85}
-                        onPress={() => setSelectedPaymobMethod(method.key)}
-                        style={[
-                          styles.methodOption,
-                          {
-                            backgroundColor: isSelected
-                              ? theme.colors.primaryLight
-                              : theme.colors.surfaceSecondary,
-                            borderColor: isSelected
-                              ? theme.colors.primary
-                              : theme.colors.borderLight,
-                          },
-                        ]}
-                      >
-                        <Text
-                          weight="600"
-                          color={
-                            isSelected
-                              ? theme.colors.primary
-                              : theme.colors.textPrimary
-                          }
-                        >
-                          {method.label}
-                        </Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-              ) : defaultGatewayMethod ? (
-                <Text
-                  color={theme.colors.textMuted}
-                  style={styles.methodSelected}
-                >
-                  {t("patientPaymentsFlow.checkout.paymentMethod.selected", {
-                    method:
-                      supportedGatewayMethods.find(
-                        (method) => method.key === defaultGatewayMethod,
-                      )?.label ?? defaultGatewayMethod,
-                  })}
-                </Text>
-              ) : (
-                <Text color="#ba1a1a" style={styles.methodHint}>
-                  {t(
-                    "patientPaymentsFlow.checkout.paymentMethod.methodUnavailable",
-                  )}
-                </Text>
+          ) : !hasExternalMethods ? (
+            <Text color="#ba1a1a" style={styles.methodHint}>
+              {t(
+                "patientPaymentsFlow.checkout.paymentMethod.methodUnavailable",
               )}
-            </>
+            </Text>
+          ) : (
+            <View style={styles.methodOptionsWrap}>
+              {supportedGatewayMethods.map((method) => {
+                const isSelected = selectedExternalMethodKey === method.key;
+                const isCard = method.key === "CARD";
+                const isPaymobWallet = method.key === "WALLET";
+                const isStripeHosted =
+                  method.key === "STRIPE_CHECKOUT" ||
+                  method.type === "PROVIDER_HOSTED" ||
+                  capabilities?.provider === "STRIPE";
+
+                let subtitle = t(
+                  "patientPaymentsFlow.checkout.paymentMethod.gatewayHint",
+                );
+                if (isCard) {
+                  subtitle = t(
+                    "patientPaymentsFlow.checkout.paymentMethod.paymobCardHint",
+                    { defaultValue: "ادفع ببطاقتك عبر Paymob" },
+                  );
+                } else if (isPaymobWallet) {
+                  subtitle = t(
+                    "patientPaymentsFlow.checkout.paymentMethod.paymobWalletHint",
+                    {
+                      defaultValue:
+                        "ادفع من محفظتك الإلكترونية عبر Paymob",
+                    },
+                  );
+                } else if (isStripeHosted) {
+                  subtitle = t(
+                    "patientPaymentsFlow.checkout.paymentMethod.stripeHostedHint",
+                    {
+                      defaultValue: "سيتم إكمال الدفع في صفحة آمنة.",
+                    },
+                  );
+                }
+
+                return (
+                  <TouchableOpacity
+                    key={method.key}
+                    activeOpacity={0.9}
+                    onPress={() => setSelectedExternalMethodKey(method.key)}
+                    style={[
+                      styles.methodOptionCard,
+                      {
+                        backgroundColor: isSelected
+                          ? theme.colors.primaryLight
+                          : theme.colors.surface,
+                        borderColor: isSelected
+                          ? theme.colors.primary
+                          : theme.colors.borderLight,
+                      },
+                    ]}
+                  >
+                    <View style={styles.methodOptionHeader}>
+                      <Ionicons
+                        name={
+                          isPaymobWallet
+                            ? "phone-portrait-outline"
+                            : isStripeHosted
+                              ? "shield-checkmark-outline"
+                              : "card-outline"
+                        }
+                        size={16}
+                        color={
+                          isSelected
+                            ? theme.colors.primary
+                            : theme.colors.textSecondary
+                        }
+                      />
+                      <Text
+                        weight="600"
+                        color={
+                          isSelected
+                            ? theme.colors.primary
+                            : theme.colors.textPrimary
+                        }
+                        style={styles.methodOptionTitle}
+                      >
+                        {method.label}
+                      </Text>
+                    </View>
+                    <Text
+                      color={theme.colors.textMuted}
+                      style={styles.methodOptionSubtitle}
+                    >
+                      {subtitle}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
           )}
 
           <View style={styles.trustRow}>
@@ -1343,7 +1402,7 @@ export default function SessionPaymentCheckoutScreen() {
             color={theme.colors.textMuted}
             style={styles.bottomSummaryLabel}
           >
-            {t("patientPaymentsFlow.checkout.confirmButton")}
+            {t("patientPaymentsFlow.checkout.breakdown.total")}
           </Text>
           <Text weight="bold" style={styles.bottomSummaryAmount}>
             {breakdown
@@ -1351,6 +1410,9 @@ export default function SessionPaymentCheckoutScreen() {
               : breakdownErrorMsg
                 ? t("patientPaymentsFlow.checkout.pricingUnavailableShort")
                 : "-"}
+          </Text>
+          <Text color={theme.colors.textMuted} style={styles.bottomTrustNote}>
+            {t("patientPaymentsFlow.checkout.footerTrustNote")}
           </Text>
         </View>
         <Button
@@ -1374,7 +1436,7 @@ export default function SessionPaymentCheckoutScreen() {
             capabilitiesLoading ||
             Boolean(capabilitiesErrorMsg) ||
             Boolean(couponError) ||
-            (paymobMethodRequired && !selectedPaymobMethod)
+            missingRequiredExternalMethod
           }
           style={styles.confirmButton}
         />
@@ -1401,7 +1463,7 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     overflow: "hidden",
     borderWidth: 1,
-    borderColor: "#dbe4f0",
+    borderColor: "#d9e0e6",
   },
   modalHeader: {
     flexDirection: "row",
@@ -1412,7 +1474,7 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: "#e6edf5",
+    borderBottomColor: "#d9e0e6",
   },
   modalHeaderText: {
     flex: 1,
@@ -1420,7 +1482,7 @@ const styles = StyleSheet.create({
   },
   modalEyebrow: {
     fontSize: 12,
-    color: "#3b82f6",
+    color: "#006B60",
     textTransform: "uppercase",
     letterSpacing: 0.6,
   },
@@ -1437,7 +1499,7 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#f3f7fd",
+    backgroundColor: "#f7f9fa",
   },
   modalScroll: {
     flexGrow: 0,
@@ -1458,9 +1520,9 @@ const styles = StyleSheet.create({
   modalClauseItem: {
     padding: 14,
     borderRadius: 16,
-    backgroundColor: "#f8fbff",
+    backgroundColor: "#f7f9fa",
     borderWidth: 1,
-    borderColor: "#e1ebf7",
+    borderColor: "#d9e0e6",
     gap: 6,
   },
   modalClauseTitle: {
@@ -1473,7 +1535,7 @@ const styles = StyleSheet.create({
   },
   modalFooter: {
     borderTopWidth: 1,
-    borderTopColor: "#e6edf5",
+    borderTopColor: "#d9e0e6",
     padding: 16,
     gap: 12,
   },
@@ -1530,7 +1592,7 @@ const styles = StyleSheet.create({
   sessionCard: {
     marginBottom: 0,
   },
-  practitionerName: { fontSize: 20, marginBottom: 4 },
+  practitionerName: { fontSize: 17, lineHeight: 23, marginBottom: 4 },
   practitionerSubtitle: { fontSize: 13, marginBottom: 8 },
   sessionMetaRow: {
     flexDirection: "row",
@@ -1539,7 +1601,7 @@ const styles = StyleSheet.create({
   },
   sessionMetaText: { fontSize: 12 },
   sectionCard: { marginBottom: 0 },
-  sectionTitle: { fontSize: 15, marginBottom: 8 },
+  sectionTitle: { fontSize: 16, lineHeight: 22, marginBottom: 8 },
   couponRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -1584,12 +1646,12 @@ const styles = StyleSheet.create({
   },
   totalRow: {
     borderTopWidth: 1,
-    borderTopColor: "#d8dee8",
+    borderTopColor: "#d9e0e6",
     paddingTop: 10,
     marginTop: 2,
     marginBottom: 8,
   },
-  totalAmount: { fontSize: 20 },
+  totalAmount: { fontSize: 17, lineHeight: 23 },
   clarityBox: {
     borderRadius: 10,
     padding: 10,
@@ -1606,10 +1668,29 @@ const styles = StyleSheet.create({
   methodTextWrap: { flex: 1 },
   methodHint: { fontSize: 12, marginTop: 2 },
   methodOptionsWrap: {
-    flexDirection: "row",
-    flexWrap: "wrap",
+    flexDirection: "column",
     gap: 8,
     marginTop: 12,
+  },
+  methodOptionCard: {
+    borderWidth: 1,
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    gap: 4,
+  },
+  methodOptionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  methodOptionTitle: {
+    flex: 1,
+    fontSize: 14,
+  },
+  methodOptionSubtitle: {
+    fontSize: 12,
+    lineHeight: 18,
   },
   refundPolicyBox: {
     gap: 10,
@@ -1679,7 +1760,8 @@ const styles = StyleSheet.create({
   },
   bottomSummary: { flex: 1 },
   bottomSummaryLabel: { fontSize: 11 },
-  bottomSummaryAmount: { fontSize: 18 },
+  bottomSummaryAmount: { fontSize: 16, lineHeight: 22 },
+  bottomTrustNote: { fontSize: 11, marginTop: 2 },
   confirmButton: { flex: 1.1 },
   pricingErrorBox: {
     flexDirection: "row",

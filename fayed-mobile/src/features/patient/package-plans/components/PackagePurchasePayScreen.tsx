@@ -8,6 +8,7 @@ import {
   Card,
   DetailPageScaffold,
   EmptyState,
+  ScreenHeading,
   SectionHeader,
   StatusChip,
   SummaryRow,
@@ -66,7 +67,6 @@ export default function PackagePurchasePayScreen({
   if (purchaseQuery.isLoading) {
     return (
       <DetailPageScaffold
-        title={t("packagePurchases.pay.title", "Payment")}
         showBack
         loading
         loadingMessage={t("packagePurchases.pay.loading", "Loading payment...")}
@@ -79,7 +79,6 @@ export default function PackagePurchasePayScreen({
   if (purchaseQuery.isError || !purchase) {
     return (
       <DetailPageScaffold
-        title={t("packagePurchases.pay.title", "Payment")}
         showBack
         error={purchaseQuery.isError}
         errorTitle={t("packagePurchases.pay.errorTitle", "We could not load the payment")}
@@ -170,11 +169,15 @@ export default function PackagePurchasePayScreen({
 
   return (
     <DetailPageScaffold
-      title={t("packagePurchases.pay.title", "Payment")}
       showBack
       contentContainerStyle={styles.scaffold}
     >
       <View style={styles.stack}>
+        <ScreenHeading
+          title={t("packagePurchases.pay.headingTitle")}
+          subtitle={t("packagePurchases.pay.headingSubtitle")}
+          titleVariant="h2"
+        />
         <Card variant="elevated" padding="lg" style={styles.heroCard}>
           <View style={styles.heroTopRow}>
             <View style={styles.heroMeta}>
@@ -317,8 +320,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   heroTitle: {
-    fontSize: 22,
-    lineHeight: 30,
+    fontSize: 18,
+    lineHeight: 24,
   },
   heroSubtitle: {
     fontSize: 14,

@@ -165,15 +165,6 @@ export default function PractitionerSupportDetailScreen() {
       <Screen bg="background">
         <Header
           showBack
-          onBack={
-            returnToRoute
-              ? () =>
-                  router.replace({
-                    pathname: "/(practitioner)/support",
-                    params: { returnTo: returnToRoute },
-                  } as never)
-              : undefined
-          }
         />
         <LoadingState fullScreen />
       </Screen>
@@ -185,15 +176,6 @@ export default function PractitionerSupportDetailScreen() {
       <Screen bg="background">
         <Header
           showBack
-          onBack={
-            returnToRoute
-              ? () =>
-                  router.replace({
-                    pathname: "/(practitioner)/support",
-                    params: { returnTo: returnToRoute },
-                  } as never)
-              : undefined
-          }
         />
         <ErrorState fullScreen onRetry={ticketQuery.refetch} />
       </Screen>
@@ -213,15 +195,6 @@ export default function PractitionerSupportDetailScreen() {
       <Header
         title={t("practitioner.support.detail.title")}
         showBack
-        onBack={
-          returnToRoute
-            ? () =>
-                router.replace({
-                  pathname: "/(practitioner)/support",
-                  params: { returnTo: returnToRoute },
-                } as never)
-            : undefined
-        }
       />
 
       <KeyboardAvoidingView

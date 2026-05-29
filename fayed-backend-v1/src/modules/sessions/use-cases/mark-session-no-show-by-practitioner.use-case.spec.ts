@@ -50,7 +50,7 @@ describe('MarkSessionNoShowByPractitionerUseCase', () => {
     } as unknown as ValidateSessionStatusTransitionService;
 
     const prisma = {
-      $transaction: jest.fn().mockImplementation(async (fn: never) => fn({})),
+      $transaction: jest.fn().mockImplementation(async (fn: (...args: any[]) => any) => fn({})),
     } as never;
 
     const useCase = new MarkSessionNoShowByPractitionerUseCase(

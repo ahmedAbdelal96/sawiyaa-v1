@@ -1,48 +1,35 @@
-import React, { useEffect, useMemo, useRef } from "react";
-import { View, StyleSheet, ScrollView, Image } from "react-native";
-import { useRouter, useLocalSearchParams } from "expo-router";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  Screen,
-  Header,
-  Text,
-  Button,
+  I18nManager,
+  Image,
+  ScrollView,
+  StyleSheet,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTranslation } from "react-i18next";
+import {
   Card,
-  LoadingState,
   ErrorState,
-  Section,
-  StatusChip,
+  Header,
+  LoadingState,
+  Screen,
+  Text,
 } from "../../../src/components/ui";
 import { useTheme } from "../../../src/providers/ThemeProvider";
 import {
   useGetPublicPractitionerDetails,
   useGetPublicPractitionerPresence,
 } from "../../../src/features/patient/discovery/api";
-import { Ionicons } from "@expo/vector-icons";
-import { useTranslation } from "react-i18next";
-import { useAuth } from "../../../src/providers/AuthProvider";
-import { usePublicAvailabilityWindows } from "../../../src/features/patient/sessions/hooks";
-import {
-  buildSlotsFromWindows,
-  formatLocalizedDateTime,
-  getWeekRange,
-} from "../../../src/features/patient/sessions/slot-utils";
+import { useTrackPractitionerView } from "../../../src/features/patient/journey/hooks";
 import { trackAnalyticsEvent } from "../../../src/lib/analytics";
-import { usePublicPractitionerPackagePlans } from "../../../src/features/patient/package-plans/hooks";
-import { resolveSupportedCurrencyCode } from "../../../src/lib/currency";
+import { getPatientPreferredCurrency, getPriceForPatientCurrency } from "../../../src/lib/currency";
+import { usePatientProfile } from "../../../src/features/patient/profile/hooks";
 
-function resolvePresenceMeta(status?: string | null) {
-  switch (status) {
-    case "ONLINE":
-      return { icon: "radio-outline" as const, label: "Online now" };
-    case "AWAY":
-      return { icon: "time-outline" as const, label: "Away right now" };
-    case "BUSY":
-      return { icon: "pause-circle-outline" as const, label: "Currently busy" };
-    case "OFFLINE":
-    default:
-      return { icon: "moon-outline" as const, label: "Offline right now" };
-  }
-}
+const FALLBACK_AVATAR = require("../../../assets/user.avif");
 
 function formatCurrencyAmount(
   amount: number | string | null | undefined,
@@ -53,127 +40,227 @@ function formatCurrencyAmount(
     return null;
   }
 
-  if (typeof amount !== "number") {
-    const numeric = Number(amount);
-    if (!Number.isFinite(numeric)) {
-      return null;
-    }
-    amount = numeric;
+  const value = typeof amount === "number" ? amount : Number(amount);
+  if (!Number.isFinite(value)) {
+    return null;
   }
 
   return new Intl.NumberFormat(locale, {
     style: "currency",
     currency,
     maximumFractionDigits: 0,
-  }).format(amount);
+  }).format(value);
+}
+
+type CountryLabel = { ar: string; en: string };
+
+const COUNTRY_LABELS: Record<string, CountryLabel> = {
+  EG: { ar: "مصر", en: "Egypt" },
+  SA: { ar: "المملكة العربية السعودية", en: "Saudi Arabia" },
+  AE: { ar: "الإمارات العربية المتحدة", en: "United Arab Emirates" },
+  KW: { ar: "الكويت", en: "Kuwait" },
+  JO: { ar: "الأردن", en: "Jordan" },
+};
+
+const LANGUAGE_LABELS: Record<string, { ar: string; en: string }> = {
+  ar: { ar: "العربية", en: "Arabic" },
+  en: { ar: "الإنجليزية", en: "English" },
+  fr: { ar: "الفرنسية", en: "French" },
+};
+
+function resolveCountryLabel(
+  code: string | null | undefined,
+  isArabicUi: boolean,
+) {
+  const normalized = (code ?? "").trim().toUpperCase();
+  if (!normalized) {
+    return null;
+  }
+
+  const match = COUNTRY_LABELS[normalized];
+  if (match) {
+    return isArabicUi ? match.ar : match.en;
+  }
+
+  return normalized;
+}
+
+function resolveLanguageLabel(code: string, isArabicUi: boolean) {
+  const normalized = code.trim().toLowerCase();
+  const match = LANGUAGE_LABELS[normalized];
+  if (match) {
+    return isArabicUi ? match.ar : match.en;
+  }
+
+  return code;
+}
+
+function SectionHeader({
+  title,
+  icon,
+  iconBg,
+  isRtl,
+}: {
+  title: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  iconBg: "primary" | "soft";
+  isRtl: boolean;
+}) {
+  const { theme } = useTheme();
+
+  return (
+    <View style={styles.sectionHeaderRow}>
+      {/* Icon container — always on the leading side */}
+      <View
+        style={[
+          styles.sectionIconWrap,
+          {
+            backgroundColor:
+              iconBg === "primary"
+                ? theme.colors.primaryLight
+                : theme.colors.surfaceTertiary,
+            borderColor: theme.colors.borderLight,
+          },
+        ]}
+      >
+        <Ionicons name={icon} size={18} color={theme.colors.primary} />
+      </View>
+
+      {/* Title — aligned opposite side, text direction-aware */}
+      <Text
+        weight="600"
+        style={[
+          styles.sectionTitle,
+          isRtl ? { textAlign: "right", marginStart: 0, marginEnd: "auto" } : { textAlign: "left", marginStart: "auto", marginEnd: 0 },
+        ]}
+      >
+        {title}
+      </Text>
+    </View>
+  );
 }
 
 export default function TherapistProfileScreen() {
   const router = useRouter();
-  const { slug, source, intent, matchScore, matchReason } =
-    useLocalSearchParams<{
-      slug: string;
-      source?: string;
-      intent?: string;
-      matchScore?: string;
-      matchReason?: string;
-    }>();
+  const insets = useSafeAreaInsets();
   const { theme } = useTheme();
   const { t, i18n } = useTranslation();
-  const { user, role, isLoading: isAuthLoading } = useAuth();
-  const locale = i18n.language?.startsWith("ar") ? "ar-SA" : "en-US";
+  const isArabicUi = i18n.language?.startsWith("ar") ?? false;
+  const locale = isArabicUi ? "ar-SA" : "en-US";
+  const isRtl = I18nManager.isRTL;
+
+  const { slug, source, intent } = useLocalSearchParams<{
+    slug: string;
+    source?: string;
+    intent?: string;
+  }>();
+
   const bookingNavigationLockRef = useRef(false);
   const profileViewedRef = useRef(false);
-  const weekRange = getWeekRange(0);
-  const authScopeKey = useMemo(() => {
-    if (isAuthLoading) {
-      return "bootstrapping";
-    }
-
-    if (!user) {
-      return "guest";
-    }
-
-    return `auth:${user.id}:${role}`;
-  }, [isAuthLoading, role, user]);
+  const trackedProfileViewRef = useRef<string | null>(null);
+  const [bioExpanded, setBioExpanded] = useState(false);
+  const [avatarFailed, setAvatarFailed] = useState(false);
+  const trackPractitionerViewMutation = useTrackPractitionerView();
+  const profileQuery = usePatientProfile();
 
   const { data, isLoading, isError, refetch } = useGetPublicPractitionerDetails(
     slug || null,
   );
   const presenceQuery = useGetPublicPractitionerPresence(slug || null);
-  const availabilityQuery = usePublicAvailabilityWindows(
-    slug || null,
-    weekRange.fromIso,
-    weekRange.toIso,
-  );
 
   const practitioner = data?.data.item ?? null;
-  const presence = presenceQuery.data?.data.presence;
-  const presenceMeta = resolvePresenceMeta(presence?.status ?? null);
-  const futureSlots = buildSlotsFromWindows(
-    availabilityQuery.data?.windows ?? [],
-  );
-  const nextSlot = futureSlots[0] ?? null;
-  const weekSlotCount = futureSlots.length;
-  const matchingScore = Number(matchScore);
-  const isRecommendedFromMatching = source === "matching";
+  const presence = presenceQuery.data?.data.presence ?? null;
+  const isPresenceAvailable = presence?.status === "ONLINE";
+
+  // Egyptian patients always see EGP; non-Egyptian see practitioner's USD setting
+  const patientCountryCode = profileQuery.data?.profile.countryCode ?? null;
   const displayCurrencyCode = practitioner
-    ? resolveSupportedCurrencyCode({
-        currencyCode: practitioner.currencyCode,
-        regionalPricingMode: practitioner.regionalPricingMode,
-        resolvedCountryIsoCode: practitioner.resolvedCountryIsoCode,
-        countryCode: practitioner.countryCode,
-      })
-    : "USD";
+    ? getPatientPreferredCurrency(patientCountryCode, practitioner)
+    : null;
 
-  const thirtyMinutePriceLabel =
-    practitioner
-      ? formatCurrencyAmount(
-          practitioner.displaySessionPrice30,
-          displayCurrencyCode,
-          locale,
-        )
-      : null;
-  const sixtyMinutePriceLabel =
-    practitioner
-      ? formatCurrencyAmount(
-          practitioner.displaySessionPrice60,
-          displayCurrencyCode,
-          locale,
-        )
-      : null;
+  // Use the raw price for the patient's currency (not displaySessionPrice30/60 which may be practitioner-perspective)
+  const thirtyMinutePrice = practitioner
+    ? getPriceForPatientCurrency(displayCurrencyCode ?? "USD", practitioner, 30)
+    : null;
 
-  const packageBrowseDefaults = useMemo(() => {
-    if (!practitioner) {
-      return {
-        durationMinutes: 60 as const,
-        sessionMode: "VIDEO" as const,
-        currencyCode: "EGP" as const,
-      };
+  const sixtyMinutePrice = practitioner
+    ? getPriceForPatientCurrency(displayCurrencyCode ?? "USD", practitioner, 60)
+    : null;
+
+  const thirtyMinutePriceLabel = thirtyMinutePrice != null
+    ? formatCurrencyAmount(thirtyMinutePrice, displayCurrencyCode ?? "USD", locale)
+    : null;
+
+  const sixtyMinutePriceLabel = sixtyMinutePrice != null
+    ? formatCurrencyAmount(sixtyMinutePrice, displayCurrencyCode ?? "USD", locale)
+    : null;
+
+  const countryLabel = resolveCountryLabel(
+    practitioner?.countryCode ?? null,
+    isArabicUi,
+  );
+
+  const languagesLabel = useMemo(() => {
+    const languages = practitioner?.languages ?? [];
+    const resolved = languages
+      .map((code) => resolveLanguageLabel(code, isArabicUi))
+      .filter((value) => value && value.trim().length > 0);
+
+    if (resolved.length === 0) {
+      return null;
     }
 
-    const currencyCode = displayCurrencyCode;
-    const hasSixtyMinutePrice = practitioner.displaySessionPrice60 != null;
-    const hasThirtyMinutePrice = practitioner.displaySessionPrice30 != null;
+    return resolved.join(isArabicUi ? "، " : ", ");
+  }, [isArabicUi, practitioner?.languages]);
 
-    return {
-      durationMinutes:
-        hasSixtyMinutePrice || !hasThirtyMinutePrice
-          ? (60 as const)
-          : (30 as const),
-      sessionMode: "VIDEO" as const,
-      currencyCode,
-    };
-  }, [displayCurrencyCode, practitioner]);
+  const handleChooseTime = useCallback(() => {
+    if (!slug || !practitioner) {
+      return;
+    }
 
-  const packagePlansQuery = usePublicPractitionerPackagePlans(
-    slug || null,
-    packageBrowseDefaults,
-    {
-      cacheScopeKey: authScopeKey,
-    },
-  );
-  const packagePlans = packagePlansQuery.data?.items ?? [];
+    if (bookingNavigationLockRef.current) {
+      return;
+    }
+
+    bookingNavigationLockRef.current = true;
+    trackAnalyticsEvent("booking_started", {
+      practitionerSlug: practitioner.slug,
+      source: "practitioner_profile",
+      intent: intent || "view",
+    });
+
+    router.push({
+      pathname: "/(patient)/sessions/select-time",
+      params: {
+        slug,
+        practitionerName: practitioner.displayName || practitioner.slug,
+        practitionerTitle:
+          practitioner.professionalTitle ||
+          t("discovery.profile.professionalFallback"),
+        practitionerAvatarUrl: practitioner.avatarUrl || "",
+      },
+    });
+  }, [intent, practitioner, router, slug, t]);
+
+  useEffect(() => {
+    if (!slug || typeof slug !== "string") {
+      return;
+    }
+
+    if (!practitioner || trackedProfileViewRef.current === slug) {
+      return;
+    }
+
+    trackedProfileViewRef.current = slug;
+    trackPractitionerViewMutation.mutate(slug, {
+      onError: (error) => {
+        if (__DEV__) {
+          // Silent in production by product requirement.
+          console.warn("Failed to track practitioner view", error);
+        }
+      },
+    });
+  }, [practitioner, slug, trackPractitionerViewMutation]);
 
   useEffect(() => {
     if (profileViewedRef.current || !practitioner) {
@@ -185,24 +272,19 @@ export default function TherapistProfileScreen() {
       practitionerSlug: practitioner.slug,
       source: source || "browse",
       intent: intent || "view",
-      availabilityVisible: weekSlotCount > 0,
       specialtiesCount: practitioner.specialties.length,
-    hasPricing: Boolean(thirtyMinutePriceLabel || sixtyMinutePriceLabel),
+      hasPricing: Boolean(thirtyMinutePriceLabel || sixtyMinutePriceLabel),
+    });
+  }, [intent, practitioner, source, sixtyMinutePriceLabel, thirtyMinutePriceLabel]);
+
+  const headerTitle = t("discovery.profile.screenTitle", {
+    defaultValue: isArabicUi ? "ملف المختص" : "Practitioner Profile",
   });
-  }, [
-    intent,
-    practitioner?.slug,
-    practitioner?.specialties.length,
-    source,
-    sixtyMinutePriceLabel,
-    thirtyMinutePriceLabel,
-    weekSlotCount,
-  ]);
 
   if (isLoading) {
     return (
-      <Screen bg="background">
-        <Header showBack />
+      <Screen bg="background" style={styles.screen} edges={["top", "left", "right"]}>
+        <Header showBack title={headerTitle} />
         <LoadingState fullScreen />
       </Screen>
     );
@@ -210,863 +292,817 @@ export default function TherapistProfileScreen() {
 
   if (isError || !practitioner) {
     return (
-      <Screen bg="background">
-        <Header showBack />
+      <Screen bg="background" style={styles.screen} edges={["top", "left", "right"]}>
+        <Header showBack title={headerTitle} />
         <ErrorState fullScreen onRetry={refetch} />
       </Screen>
     );
   }
 
+  const displayName = practitioner.displayName || practitioner.slug;
+  const displayTitle =
+    practitioner.professionalTitle || t("discovery.profile.professionalFallback");
+
+  const verified = Boolean(practitioner.isVerified);
+
+  const averageRating = practitioner.ratingSummary?.averageRating ?? null;
+  const totalReviews = practitioner.ratingSummary?.totalReviews ?? null;
+  const yearsExperience = practitioner.yearsExperience ?? null;
+  const approvedCredentials = practitioner.credentialsSummary?.approvedCredentials ?? null;
+
+  const specialties = practitioner.specialties ?? [];
+  const primarySpecialties = specialties.filter((spec) => spec.isPrimary);
+  const orderedSpecialties = primarySpecialties.length > 0 ? primarySpecialties : specialties;
+  const visibleSpecialties = orderedSpecialties.slice(0, 4);
+  const remainingSpecialtiesCount = Math.max(orderedSpecialties.length - visibleSpecialties.length, 0);
+
+  const fullBio = practitioner.fullBio?.trim() ?? "";
+  const bioPreview = fullBio.length > 260 ? `${fullBio.slice(0, 260).trim()}…` : fullBio;
+  const bioToShow = bioExpanded ? fullBio : bioPreview;
+  const hasLongBio = fullBio.length > 260;
+
   return (
-    <Screen bg="background">
-      <Header
-        showBack
-        rightElement={
-          <Ionicons
-            name="share-outline"
-            size={24}
-            color={theme.colors.textPrimary}
+    <Screen bg="background" style={styles.screen} edges={["top", "left", "right"]}>
+      <Header showBack title={headerTitle} />
+
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingBottom: Math.max(insets.bottom, 16) + 118 },
+        ]}
+      >
+        <Card variant="elevated" padding="md" style={styles.identityCard}>
+          <View
+            pointerEvents="none"
+            style={[
+              styles.avatarHalo,
+              { backgroundColor: theme.colors.surfaceTertiary },
+              isRtl ? { left: 18 } : { right: 18 },
+            ]}
           />
-        }
-      />
-
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        <Card
-          variant="elevated"
-          padding="lg"
-          style={[
-            styles.headerCard,
-            { borderRightColor: theme.colors.primary },
-          ]}
-        >
-          <View style={styles.headerBlock}>
-            <View
-              style={[
-                styles.avatarContainer,
-                { backgroundColor: theme.colors.surfaceTertiary },
-              ]}
-            >
-                {practitioner.avatarUrl ? (
-                <Image
-                  source={{ uri: practitioner.avatarUrl }}
-                  style={styles.avatar}
+          <View style={[styles.identityTopRow, isRtl ? styles.identityTopRowRtl : null]}>
+            <View style={styles.presenceRow}>
+              <View
+                style={[
+                  styles.presencePill,
+                  {
+                    backgroundColor: isPresenceAvailable
+                      ? theme.colors.successLight
+                      : theme.colors.surface,
+                    borderColor: isPresenceAvailable
+                      ? theme.colors.success
+                      : theme.colors.borderLight,
+                  },
+                ]}
+              >
+                <View
+                  style={[
+                    styles.presenceDot,
+                    {
+                      backgroundColor: isPresenceAvailable
+                        ? theme.colors.success
+                        : theme.colors.textMuted,
+                    },
+                  ]}
                 />
-              ) : (
-                <Ionicons
-                  name="person"
-                  size={44}
-                  color={theme.colors.textMuted}
-                />
-              )}
-            </View>
-
-            <View style={styles.headerTextCol}>
-              <Text weight="bold" style={styles.name}>
-                {practitioner.displayName || practitioner.slug}
-              </Text>
-              <Text color={theme.colors.textSecondary} style={styles.title}>
-                {practitioner.professionalTitle ||
-                  t("discovery.profile.professionalFallback")}
-              </Text>
-
-              <View style={styles.metaInlineRow}>
-                {practitioner.isVerified ? (
-                  <View
-                    style={[
-                      styles.verifiedPill,
-                      { backgroundColor: theme.colors.primaryLight },
-                    ]}
-                  >
-                    <Ionicons
-                      name="checkmark-circle"
-                      size={14}
-                      color={theme.colors.primary}
-                    />
-                    <Text
-                      color={theme.colors.primary}
-                      weight="600"
-                      style={styles.verifiedText}
-                    >
-                      {t(
-                        "discovery.profile.verifiedProfessional",
-                        "Verified professional",
-                      )}
-                    </Text>
-                  </View>
-                ) : null}
                 <Text
-                  color={theme.colors.textSecondary}
-                  style={styles.locationText}
+                  weight="600"
+                  color={isPresenceAvailable ? theme.colors.success : theme.colors.textSecondary}
+                  style={styles.presenceText}
                 >
-                  {practitioner.countryCode ||
-                    t("discovery.profile.countryFallback")}
+                  {isPresenceAvailable
+                    ? t("discovery.profile.statusAvailable", {
+                        defaultValue: isArabicUi ? "متاح الآن" : "Available now",
+                      })
+                    : t("discovery.profile.statusUnavailable", {
+                        defaultValue: isArabicUi ? "غير متاح الآن" : "Unavailable right now",
+                      })}
                 </Text>
               </View>
             </View>
-          </View>
 
-          <View style={styles.statsRow}>
             <View
               style={[
-                styles.statTile,
+                styles.avatarWrap,
                 {
-                  backgroundColor: theme.colors.surfaceSecondary,
-                  borderColor: theme.colors.borderLight,
+                  backgroundColor: theme.colors.surfaceTertiary,
+                  borderColor: theme.colors.surface,
                 },
               ]}
             >
-              <Text weight="bold" style={styles.statTileValue}>
-                {practitioner.yearsExperience
-                  ? `${practitioner.yearsExperience}+`
-                  : "--"}
+              {practitioner.avatarUrl && practitioner.avatarUrl.trim() && !avatarFailed ? (
+                <Image
+                  source={{ uri: practitioner.avatarUrl }}
+                  style={styles.avatar}
+                  onError={() => setAvatarFailed(true)}
+                />
+              ) : (
+                <Image source={FALLBACK_AVATAR} style={styles.avatar} />
+              )}
+            </View>
+          </View>
+
+          <View style={styles.identityNameRow}>
+            <View style={[styles.nameLine, isRtl ? styles.nameLineRtl : null]}>
+              <Text weight="bold" style={styles.displayName} numberOfLines={1}>
+                {displayName}
               </Text>
-              <Text
-                color={theme.colors.textSecondary}
-                style={styles.statTileLabel}
-              >
+              {verified ? (
+                <View
+                  style={[
+                    styles.verifiedBadge,
+                    { backgroundColor: theme.colors.primaryLight },
+                  ]}
+                >
+                  <Ionicons
+                    name="checkmark"
+                    size={14}
+                    color={theme.colors.primary}
+                  />
+                </View>
+              ) : null}
+            </View>
+            <Text
+              color={theme.colors.textSecondary}
+              style={styles.professionalTitle}
+              numberOfLines={2}
+            >
+              {displayTitle}
+            </Text>
+          </View>
+
+          <View
+            style={[
+              styles.statsStrip,
+              {
+                backgroundColor: theme.colors.surface,
+                borderColor: theme.colors.borderLight,
+                flexDirection: isRtl ? "row-reverse" : "row",
+              },
+            ]}
+          >
+            <View style={styles.statCell}>
+              <View style={styles.statTopRow}>
+                <Ionicons
+                  name="briefcase-outline"
+                  size={16}
+                  color={theme.colors.textMuted}
+                />
+                <Text weight="bold" style={styles.statValue}>
+                  {yearsExperience ? `+${yearsExperience}` : "--"}
+                </Text>
+              </View>
+              <Text color={theme.colors.textSecondary} style={styles.statLabel}>
                 {t("discovery.profile.yearsExp")}
               </Text>
             </View>
 
             <View
               style={[
-                styles.statTile,
-                {
-                  backgroundColor: theme.colors.surfaceSecondary,
-                  borderColor: theme.colors.borderLight,
-                },
+                styles.statDivider,
+                { backgroundColor: theme.colors.borderLight },
               ]}
-            >
-              <Text weight="bold" style={styles.statTileValue}>
-                {practitioner.ratingSummary.averageRating
-                  ? practitioner.ratingSummary.averageRating.toFixed(1)
-                  : "--"}
-              </Text>
-              <Text
-                color={theme.colors.textSecondary}
-                style={styles.statTileLabel}
-              >
-                {t("discovery.profile.reviews", {
-                  count: practitioner.ratingSummary.totalReviews,
-                })}
-              </Text>
-            </View>
+            />
 
-            <View
-              style={[
-                styles.statTile,
-                {
-                  backgroundColor: theme.colors.surfaceSecondary,
-                  borderColor: theme.colors.borderLight,
-                },
-              ]}
-            >
-              <Text weight="bold" style={styles.statTileValue}>
-                {practitioner.credentialsSummary.approvedCredentials}
-              </Text>
-              <Text
-                color={theme.colors.textSecondary}
-                style={styles.statTileLabel}
-              >
-                {t("discovery.profile.credentials", "Credentials")}
-              </Text>
-            </View>
-          </View>
-
-          <View style={styles.trustRow}>
-            <View
-              style={[
-                styles.trustPill,
-                { backgroundColor: theme.colors.surfaceSecondary },
-              ]}
-            >
-              <Ionicons
-                name={presenceMeta.icon}
-                size={14}
-                color={theme.colors.primary}
-              />
-              <Text color={theme.colors.textSecondary} style={styles.trustText}>
-                {t(
-                  `discovery.profile.presence.${(presence?.status ?? "OFFLINE").toLowerCase()}`,
-                  presenceMeta.label,
-                )}
-              </Text>
-            </View>
-
-            <View
-              style={[
-                styles.trustPill,
-                { backgroundColor: theme.colors.surfaceSecondary },
-              ]}
-            >
-              <Ionicons
-                name="flash-outline"
-                size={14}
-                color={theme.colors.primary}
-              />
-              <Text color={theme.colors.textSecondary} style={styles.trustText}>
-                {presence?.isInstantBookingEnabled
-                  ? t(
-                      "discovery.profile.instantEnabled",
-                      "Instant booking is enabled",
-                    )
-                  : t(
-                      "discovery.profile.instantDisabled",
-                      "Standard booking applies",
-                    )}
-              </Text>
-            </View>
-          </View>
-
-          {isRecommendedFromMatching ? (
-            <Card variant="flat" padding="md" style={styles.recommendationCard}>
-              <View style={styles.recommendationHeader}>
-                <View
-                  style={[
-                    styles.recommendationIconWrap,
-                    { backgroundColor: theme.colors.primaryLight },
-                  ]}
-                >
-                  <Ionicons
-                    name="sparkles-outline"
-                    size={16}
-                    color={theme.colors.primary}
-                  />
-                </View>
-                <View style={styles.recommendationTextWrap}>
-                  <Text weight="600" style={styles.recommendationTitle}>
-                    {t(
-                      "discovery.profile.matchingRecommendationTitle",
-                      "Recommended from your matching results",
-                    )}
-                  </Text>
-                  <Text
-                    color={theme.colors.textSecondary}
-                    style={styles.recommendationBody}
-                  >
-                    {intent === "book"
-                      ? t(
-                          "discovery.profile.matchingRecommendationBookBody",
-                          "You came here ready to book. Review the profile, confirm a visible time, then check the final payment breakdown before paying.",
-                        )
-                      : t(
-                          "discovery.profile.matchingRecommendationViewBody",
-                          "This therapist was suggested from your matching answers. Review the fit signals below before choosing a time.",
-                        )}
-                  </Text>
-                </View>
-              </View>
-
-              {Number.isFinite(matchingScore) ? (
-                <View style={styles.recommendationScoreRow}>
-                  <Text color={theme.colors.textSecondary}>
-                    {t("discovery.profile.matchScoreLabel", "Match score")}
-                  </Text>
-                  <Text weight="600" color={theme.colors.primary}>
-                    {t("matching.results.score", { score: matchingScore })}
-                  </Text>
-                </View>
-              ) : null}
-
-              {matchReason ? (
-                <Text
-                  color={theme.colors.textSecondary}
-                  style={styles.recommendationReason}
-                >
-                  {matchReason}
+            <View style={styles.statCell}>
+              <View style={styles.statTopRow}>
+                <Ionicons
+                  name="star"
+                  size={16}
+                  color={theme.colors.secondary}
+                />
+                <Text weight="bold" style={styles.statValue}>
+                  {averageRating != null ? averageRating.toFixed(1) : "--"}
                 </Text>
-              ) : null}
-            </Card>
-          ) : null}
+              </View>
+              <Text color={theme.colors.textSecondary} style={styles.statLabel}>
+                {totalReviews != null
+                  ? t("discovery.profile.reviews", { count: totalReviews })
+                  : t("discovery.profile.reviews", { count: 0 })}
+              </Text>
+            </View>
+
+            <View
+              style={[
+                styles.statDivider,
+                { backgroundColor: theme.colors.borderLight },
+              ]}
+            />
+
+            <View style={styles.statCell}>
+              <View style={styles.statTopRow}>
+                <Ionicons
+                  name="shield-checkmark-outline"
+                  size={16}
+                  color={theme.colors.textMuted}
+                />
+                <Text weight="bold" style={styles.statValue}>
+                  {typeof approvedCredentials === "number"
+                    ? approvedCredentials.toString()
+                    : "--"}
+                </Text>
+              </View>
+              <Text color={theme.colors.textSecondary} style={styles.statLabel}>
+                {t("discovery.profile.credentials")}
+              </Text>
+            </View>
+          </View>
         </Card>
 
-        <Section
-          title={t("discovery.profile.bookingConfidence", "Booking confidence")}
-        >
-          <View style={styles.bookingConfidenceGrid}>
-            <Card variant="flat" padding="md" style={styles.confidenceCard}>
-              <Text
-                color={theme.colors.textMuted}
-                style={styles.confidenceLabel}
-              >
-                {t("discovery.profile.nextAvailable", "Next available")}
-              </Text>
-              <Text weight="600" style={styles.confidenceValue}>
-                {nextSlot
-                  ? formatLocalizedDateTime(nextSlot.startsAt, locale)
-                  : t(
-                      "discovery.profile.noUpcomingSlots",
-                      "No open time found this week",
-                    )}
-              </Text>
-            </Card>
+        <Card variant="elevated" padding="md" style={styles.sectionCard}>
+          <SectionHeader
+            title={t("discovery.profile.specialties", {
+              defaultValue: isArabicUi ? "التخصصات" : "Specialties",
+            })}
+            icon="ribbon-outline"
+            iconBg="primary"
+            isRtl={isRtl}
+          />
 
-            <Card variant="flat" padding="md" style={styles.confidenceCard}>
-              <Text
-                color={theme.colors.textMuted}
-                style={styles.confidenceLabel}
-              >
-                {t("discovery.profile.thisWeekAvailability", "This week")}
-              </Text>
-              <Text weight="600" style={styles.confidenceValue}>
-                {availabilityQuery.isLoading
-                  ? t("patientSessionsFlow.common.loading")
-                  : t("discovery.profile.slotsThisWeek", {
-                      count: weekSlotCount,
-                      defaultValue:
-                        weekSlotCount === 1
-                          ? "1 visible start time"
-                          : `${weekSlotCount} visible start times`,
-                    })}
-              </Text>
-            </Card>
-          </View>
-        </Section>
-
-        <Section title={t("discovery.profile.pricing", "Session pricing")}>
-          <View style={styles.bookingConfidenceGrid}>
-            <Card variant="flat" padding="md" style={styles.confidenceCard}>
-              <Text
-                color={theme.colors.textMuted}
-                style={styles.confidenceLabel}
-              >
-                {t("discovery.profile.duration30", "30 minutes")}
-              </Text>
-              <Text weight="600" style={styles.confidenceValue}>
-                {thirtyMinutePriceLabel ??
-                  t(
-                    "discovery.profile.pricingUnavailable",
-                    "Pricing unavailable",
-                  )}
-              </Text>
-            </Card>
-            <Card variant="flat" padding="md" style={styles.confidenceCard}>
-              <Text
-                color={theme.colors.textMuted}
-                style={styles.confidenceLabel}
-              >
-                {t("discovery.profile.duration60", "60 minutes")}
-              </Text>
-              <Text weight="600" style={styles.confidenceValue}>
-                {sixtyMinutePriceLabel ??
-                  t(
-                    "discovery.profile.pricingUnavailable",
-                    "Pricing unavailable",
-                  )}
-              </Text>
-            </Card>
-          </View>
-        </Section>
-
-        {packagePlansQuery.isLoading || packagePlansQuery.isError || packagePlans.length > 0 ? (
-          <Section title={t("discovery.profile.packagePlans", "Package plans")}>
-            <View style={styles.packagePlansStack}>
-              {packagePlansQuery.isLoading ? (
-                <Card variant="flat" padding="md">
-                  <Text color={theme.colors.textSecondary} style={styles.packagePlansNote}>
-                    {t(
-                      "discovery.profile.packagePlansLoading",
-                      "Loading package plans...",
-                    )}
-                  </Text>
-                </Card>
-              ) : packagePlansQuery.isError ? (
-                <Card variant="flat" padding="md">
-                  <Text color={theme.colors.textSecondary} style={styles.packagePlansNote}>
-                    {t(
-                      "discovery.profile.packagePlansError",
-                      "We could not load the package plans right now.",
-                    )}
-                  </Text>
-                  <Button
-                    title={t("discovery.profile.packagePlansRetry", "Try again")}
-                    onPress={() => packagePlansQuery.refetch()}
-                    style={styles.packagePlansButton}
-                  />
-                </Card>
-              ) : (
-                packagePlans.map((plan) => {
-                  const isActive = Boolean(plan.item.isActive && !plan.item.archivedAt);
-                  const quoteCurrency = resolveSupportedCurrencyCode({
-                    currencyCode: plan.quote.selectedCurrencyCode,
-                    regionalPricingMode: plan.quote.regionalPricingMode,
-                    resolvedCountryIsoCode: plan.quote.resolvedCountryIsoCode,
-                  });
-                  const totalLabel = formatCurrencyAmount(
-                    plan.quote.patientPayableTotal,
-                    quoteCurrency,
-                    locale,
-                  );
-                  return (
-                    <Card key={plan.item.code} variant="elevated" padding="lg" style={styles.packagePlanCard}>
-                      <View style={styles.packagePlanTopRow}>
-                        <View style={styles.packagePlanTopCopy}>
-                          <Text weight="bold" style={styles.packagePlanTitle}>
-                            {plan.item.title}
-                          </Text>
-                          {plan.item.description ? (
-                            <Text color={theme.colors.textSecondary} style={styles.packagePlanDescription}>
-                              {plan.item.description}
-                            </Text>
-                          ) : null}
-                        </View>
-                        <StatusChip
-                          label={isActive ? t("discovery.profile.packagePlansActive", "Active") : t("discovery.profile.packagePlansInactive", "Unavailable")}
-                          tone={isActive ? "success" : "default"}
-                          showDot={false}
-                        />
-                      </View>
-
-                      <View style={styles.packagePlanMetaRow}>
-                        <Text color={theme.colors.textMuted} style={styles.packagePlanMetaText}>
-                          {t("discovery.profile.packagePlansSessions", {
-                            count: plan.quote.sessionCount,
-                            defaultValue:
-                              plan.quote.sessionCount === 1
-                                ? "1 session"
-                                : `${plan.quote.sessionCount} sessions`,
-                          })}
-                        </Text>
-                        <Text color={theme.colors.textMuted} style={styles.packagePlanMetaText}>
-                          {t("discovery.profile.packagePlansDiscount", {
-                            count: Number(plan.quote.discountPercent),
-                            defaultValue: `${plan.quote.discountPercent}% off`,
-                          })}
-                        </Text>
-                      </View>
-
-                      <View style={styles.packagePlanStatsRow}>
-                        <Card variant="flat" padding="sm" style={styles.packagePlanStatCard}>
-                          <Text color={theme.colors.textMuted} style={styles.packagePlanStatLabel}>
-                            {t("discovery.profile.packagePlansTotal", "Total")}
-                          </Text>
-                          <Text weight="600" style={styles.packagePlanStatValue}>
-                            {totalLabel ?? plan.quote.patientPayableTotal}
-                          </Text>
-                        </Card>
-                        <Card variant="flat" padding="sm" style={styles.packagePlanStatCard}>
-                          <Text color={theme.colors.textMuted} style={styles.packagePlanStatLabel}>
-                            {t("discovery.profile.packagePlansMode", "Mode")}
-                          </Text>
-                          <Text weight="600" style={styles.packagePlanStatValue}>
-                            {plan.quote.sessionMode}
-                          </Text>
-                        </Card>
-                      </View>
-
-                      <Button
-                        title={t("discovery.profile.packagePlansPurchase", "Purchase package")}
-                        onPress={() =>
-                          router.push({
-                            pathname: "/(patient)/package-purchases/create",
-                            params: {
-                              practitionerSlug: practitioner.slug,
-                              practitionerName:
-                                practitioner.displayName || practitioner.slug,
-                              practitionerAvatarUrl: practitioner.avatarUrl || "",
-                              packagePlanCode: plan.item.code,
-                              durationMinutes: String(plan.quote.durationMinutes),
-                              sessionMode: plan.quote.sessionMode,
-                              currencyCode: quoteCurrency,
-                            },
-                          } as any)
-                        }
-                        style={styles.packagePlansButton}
-                      />
-                    </Card>
-                  );
-                })
-              )}
-            </View>
-          </Section>
-        ) : null}
-        {practitioner.fullBio ? (
-          <Section title={t("discovery.profile.about")}>
-            <Card variant="flat" padding="md">
-              <Text color={theme.colors.textSecondary} style={styles.bioText}>
-                {practitioner.fullBio}
-              </Text>
-            </Card>
-          </Section>
-        ) : null}
-
-        {practitioner.specialties.length > 0 ? (
-          <Section title={t("discovery.profile.specialties")}>
-            <View style={styles.tagsContainer}>
-              {practitioner.specialties.map((spec) => (
+          {visibleSpecialties.length > 0 ? (
+            <View style={[styles.chipsRow, isRtl ? styles.chipsRowRtl : null]}>
+              {visibleSpecialties.map((spec) => (
                 <View
                   key={spec.specialtyId}
                   style={[
-                    styles.tag,
+                    styles.chip,
                     { backgroundColor: theme.colors.primaryLight },
                   ]}
                 >
-                  <Text color={theme.colors.primary} style={styles.tagText}>
+                  <Text
+                    color={theme.colors.textBrand}
+                    weight="600"
+                    style={styles.chipText}
+                    numberOfLines={1}
+                  >
                     {spec.title || spec.slug}
                   </Text>
                 </View>
               ))}
+              {remainingSpecialtiesCount > 0 ? (
+                <View
+                  style={[
+                    styles.chip,
+                    { backgroundColor: theme.colors.surfaceTertiary },
+                  ]}
+                >
+                  <Text
+                    color={theme.colors.textSecondary}
+                    weight="600"
+                    style={styles.chipText}
+                  >
+                    +{remainingSpecialtiesCount}
+                  </Text>
+                </View>
+              ) : null}
             </View>
-          </Section>
-        ) : null}
+          ) : (
+            <Text color={theme.colors.textMuted} style={styles.emptyNote}>
+              {t("discovery.profile.specialtiesEmpty", {
+                defaultValue: isArabicUi
+                  ? "لا توجد تخصصات منشورة بعد."
+                  : "No specialties have been published yet.",
+              })}
+            </Text>
+          )}
+        </Card>
 
-        <Section title={t("discovery.profile.credentials")}>
-          <Card variant="elevated" padding="md" style={styles.credentialsCard}>
-            <Ionicons
-              name="shield-checkmark-outline"
-              size={24}
-              color="#22c55e"
-              style={styles.credentialIcon}
-            />
-            <View style={styles.credentialText}>
-              <Text weight="600">
-                {t("discovery.profile.verifiedProfessional")}
-              </Text>
-              <Text
-                color={theme.colors.textSecondary}
-                style={styles.credentialMeta}
-              >
-                {t("discovery.profile.credentialCount", {
-                  count: practitioner.credentialsSummary.approvedCredentials,
+        <Card variant="elevated" padding="md" style={styles.sectionCard}>
+          <SectionHeader
+            title={t("discovery.profile.languages", {
+              defaultValue: isArabicUi ? "اللغات" : "Languages",
+            })}
+            icon="globe-outline"
+            iconBg="soft"
+            isRtl={isRtl}
+          />
+
+          <Text style={[styles.valueText, isRtl ? styles.valueTextRtl : null]}>
+            {languagesLabel ?? t("discovery.profile.languagesFallback")}
+          </Text>
+
+          <View
+            style={[
+              styles.metaRow,
+              isRtl ? styles.metaRowRtl : null,
+              { borderTopColor: theme.colors.borderLight },
+            ]}
+          >
+            <View style={styles.metaTextColumn}>
+              <Text color={theme.colors.textMuted} style={styles.metaLabel}>
+                {t("discovery.profile.countryLabel", {
+                  defaultValue: isArabicUi ? "البلد" : "Country",
                 })}
               </Text>
+              <Text style={[styles.valueText, isRtl ? styles.valueTextRtl : null]}>
+                {countryLabel ?? t("discovery.profile.countryFallback")}
+              </Text>
             </View>
-          </Card>
-        </Section>
-
-        <Section title={t("discovery.profile.languages")}>
-          <Card variant="flat" padding="md">
-            <Text color={theme.colors.textSecondary} style={styles.bioText}>
-              {practitioner.languages.length > 0
-                ? practitioner.languages.join(" ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ ")
-                : t("discovery.profile.languagesFallback")}
-            </Text>
-          </Card>
-        </Section>
-
-        <Section title={t("discovery.profile.availability")}>
-          <Card variant="elevated" padding="lg">
-            <Text
-              color={theme.colors.textSecondary}
-              style={styles.availabilityLead}
+            <View
+              style={[
+                styles.metaIconWrap,
+                {
+                  backgroundColor: theme.colors.surfaceTertiary,
+                  borderColor: theme.colors.borderLight,
+                },
+              ]}
             >
-              {nextSlot
-                ? t(
-                    "discovery.profile.availabilityLead",
-                    "Choose a visible time first, then review the final payment breakdown before you continue to pay.",
-                  )
-                : t(
-                    "discovery.profile.availabilityEmptyLead",
-                    "No concrete booking window is open in the next week yet. You can still review the profile and check again later.",
-                  )}
-            </Text>
+              <Ionicons
+                name="location-outline"
+                size={18}
+                color={theme.colors.primary}
+              />
+            </View>
+          </View>
+        </Card>
 
-            {nextSlot ? (
-              <Card variant="flat" padding="md" style={styles.nextSlotCard}>
-                <Text
-                  color={theme.colors.textMuted}
-                  style={styles.confidenceLabel}
+        <Card variant="elevated" padding="md" style={styles.sectionCard}>
+          <SectionHeader
+            title={t("discovery.profile.aboutPractitioner", {
+              defaultValue: isArabicUi ? "عن المختص" : "About",
+            })}
+            icon="document-text-outline"
+            iconBg="primary"
+            isRtl={isRtl}
+          />
+
+          {fullBio ? (
+            <>
+              <Text
+                color={theme.colors.textSecondary}
+                style={[styles.bioText, isRtl ? styles.bioTextRtl : null]}
+              >
+                {bioToShow}
+              </Text>
+
+              {hasLongBio ? (
+                <TouchableOpacity
+                  onPress={() => setBioExpanded((current) => !current)}
+                  activeOpacity={0.85}
+                  style={[
+                    styles.readMoreButton,
+                    { borderColor: theme.colors.borderLight },
+                  ]}
                 >
-                  {t("discovery.profile.nextVisibleSlot", "Next visible slot")}
-                </Text>
-                <Text weight="600" style={styles.confidenceValue}>
-                  {formatLocalizedDateTime(nextSlot.startsAt, locale)}
-                </Text>
-              </Card>
-            ) : null}
+                  <Text
+                    color={theme.colors.textBrand}
+                    weight="600"
+                    style={styles.readMoreText}
+                  >
+                    {bioExpanded
+                      ? t("discovery.profile.showLess", {
+                          defaultValue: isArabicUi ? "عرض أقل" : "Show less",
+                        })
+                      : t("discovery.profile.showMore", {
+                          defaultValue: isArabicUi ? "عرض المزيد" : "Show more",
+                        })}
+                  </Text>
+                </TouchableOpacity>
+              ) : null}
+            </>
+          ) : (
+            <Text color={theme.colors.textMuted} style={styles.emptyNote}>
+              {t("discovery.profile.aboutEmpty", {
+                defaultValue: isArabicUi
+                  ? "لم يضف المختص نبذة بعد."
+                  : "This practitioner has not added a bio yet.",
+              })}
+            </Text>
+          )}
+        </Card>
 
-            <Button
-              title={
-                nextSlot
-                  ? t(
-                      "discovery.profile.reviewTimes",
-                      "Review times and continue",
-                    )
-                  : t("discovery.profile.bookSession")
-              }
-              onPress={() => {
-                if (bookingNavigationLockRef.current) {
-                  return;
-                }
+        <Card variant="elevated" padding="md" style={styles.sectionCard}>
+          <SectionHeader
+            title={t("discovery.profile.pricing", {
+              defaultValue: isArabicUi ? "أسعار الجلسات" : "Session prices",
+            })}
+            icon="pricetag-outline"
+            iconBg="soft"
+            isRtl={isRtl}
+          />
 
-                bookingNavigationLockRef.current = true;
-                trackAnalyticsEvent("booking_started", {
-                  practitionerSlug: practitioner.slug,
-                  source: "practitioner_profile",
-                  intent: intent || "view",
-                });
-                router.push({
-                  pathname: "/(patient)/sessions/select-time",
-                  params: {
-                    slug,
-                    practitionerName:
-                      practitioner.displayName || practitioner.slug,
-                    practitionerTitle:
-                      practitioner.professionalTitle ||
-                      t("discovery.profile.professionalFallback"),
-                    practitionerAvatarUrl: practitioner.avatarUrl || "",
-                  },
-                });
-              }}
-              disabled={!slug}
-            />
-          </Card>
-        </Section>
+          <View style={styles.pricesStack}>
+            <View
+              style={[
+                styles.priceRow,
+                isRtl ? styles.priceRowRtl : null,
+                { borderColor: theme.colors.borderLight },
+              ]}
+            >
+              <View style={styles.priceRightBlock}>
+                <View
+                  style={[
+                    styles.priceIconWrap,
+                    {
+                      backgroundColor: theme.colors.surfaceTertiary,
+                      borderColor: theme.colors.borderLight,
+                    },
+                  ]}
+                >
+                  <Ionicons
+                    name="time-outline"
+                    size={18}
+                    color={theme.colors.primary}
+                  />
+                </View>
+                <Text weight="600" style={styles.priceLabel}>
+                  {t("discovery.profile.duration30", {
+                    defaultValue: isArabicUi ? "جلسة 30 دقيقة" : "30-minute session",
+                  })}
+                </Text>
+              </View>
+
+              <Text
+                weight="bold"
+                color={theme.colors.textBrand}
+                style={styles.priceValue}
+                numberOfLines={1}
+              >
+                {thirtyMinutePriceLabel ??
+                  t("discovery.profile.pricingUnavailable", {
+                    defaultValue: isArabicUi ? "غير متاح حاليًا" : "Unavailable right now",
+                  })}
+              </Text>
+            </View>
+
+            <View
+              style={[
+                styles.priceRow,
+                isRtl ? styles.priceRowRtl : null,
+                { borderColor: theme.colors.borderLight },
+              ]}
+            >
+              <View style={styles.priceRightBlock}>
+                <View
+                  style={[
+                    styles.priceIconWrap,
+                    {
+                      backgroundColor: theme.colors.surfaceTertiary,
+                      borderColor: theme.colors.borderLight,
+                    },
+                  ]}
+                >
+                  <Ionicons
+                    name="hourglass-outline"
+                    size={18}
+                    color={theme.colors.primary}
+                  />
+                </View>
+                <Text weight="600" style={styles.priceLabel}>
+                  {t("discovery.profile.duration60", {
+                    defaultValue: isArabicUi ? "جلسة 60 دقيقة" : "60-minute session",
+                  })}
+                </Text>
+              </View>
+
+              <Text
+                weight="bold"
+                color={theme.colors.textBrand}
+                style={styles.priceValue}
+                numberOfLines={1}
+              >
+                {sixtyMinutePriceLabel ??
+                  t("discovery.profile.pricingUnavailable", {
+                    defaultValue: isArabicUi ? "غير متاح حاليًا" : "Unavailable right now",
+                  })}
+              </Text>
+            </View>
+          </View>
+        </Card>
       </ScrollView>
+
+      <View
+        style={[
+          styles.bottomBar,
+          {
+            paddingBottom: Math.max(insets.bottom, 12),
+          },
+        ]}
+      >
+        <TouchableOpacity
+          activeOpacity={0.9}
+          onPress={handleChooseTime}
+          disabled={!slug}
+          style={[
+            styles.bottomCta,
+            {
+              backgroundColor: theme.colors.primary,
+              opacity: slug ? 1 : 0.6,
+              flexDirection: isRtl ? "row-reverse" : "row",
+            },
+          ]}
+        >
+          <Ionicons
+            name="calendar-outline"
+            size={20}
+            color={theme.colors.surface}
+          />
+          <Text
+            color={theme.colors.surface}
+            weight="600"
+            style={styles.bottomCtaText}
+          >
+            {t("discovery.profile.chooseTimeCta", {
+              defaultValue: isArabicUi ? "اختر موعدًا" : "Choose a time",
+            })}
+          </Text>
+          <Ionicons
+            name={isRtl ? "arrow-back" : "arrow-forward"}
+            size={18}
+            color={theme.colors.surface}
+          />
+        </TouchableOpacity>
+      </View>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
+  screen: {
+    paddingHorizontal: 0,
+  },
   scrollContent: {
-    paddingHorizontal: 18,
+    paddingHorizontal: 14,
     paddingTop: 12,
-    paddingBottom: 130,
+    gap: 10,
   },
-  headerCard: {
-    marginBottom: 14,
-    borderRightWidth: 4,
+  identityCard: {
+    borderRadius: 20,
   },
-  headerBlock: {
+  avatarHalo: {
+    position: "absolute",
+    top: 12,
+    width: 80,
+    height: 80,
+    borderRadius: 999,
+    opacity: 0.45,
+  },
+  identityTopRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 14,
+    justifyContent: "space-between",
+    marginBottom: 8,
   },
-  avatarContainer: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
-    justifyContent: "center",
+  presenceRow: {
+    flex: 1,
+  },
+  presencePill: {
+    alignSelf: "flex-start",
+    flexDirection: "row",
     alignItems: "center",
-    borderWidth: 3,
-    borderColor: "#ffffff",
-    marginRight: 14,
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 999,
+    borderWidth: 1,
+  },
+  presenceDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 999,
+  },
+  presenceText: {
+    fontSize: 11,
+  },
+  avatarWrap: {
+    width: 66,
+    height: 66,
+    borderRadius: 999,
+    overflow: "hidden",
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 0,
   },
   avatar: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
-  },
-  headerTextCol: {
-    flex: 1,
-  },
-  name: {
-    fontSize: 34,
-    lineHeight: 38,
-    marginBottom: 4,
-  },
-  title: {
-    fontSize: 16,
-    marginBottom: 4,
-  },
-  locationText: {
-    fontSize: 13,
-    textTransform: "uppercase",
-  },
-  metaInlineRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    flexWrap: "wrap",
-    gap: 10,
-  },
-  verifiedPill: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
+    width: 66,
+    height: 66,
     borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
   },
-  verifiedText: {
-    fontSize: 12,
+  identityNameRow: {
+    marginBottom: 0,
   },
-  statsRow: {
+  nameLine: {
     flexDirection: "row",
+    alignItems: "center",
     gap: 8,
   },
-  statTile: {
+  displayName: {
+    fontSize: 22,
+    lineHeight: 28,
     flex: 1,
-    alignItems: "center",
-    borderRadius: 14,
-    borderWidth: 1,
-    paddingHorizontal: 10,
-    paddingVertical: 12,
   },
-  statTileValue: {
-    fontSize: 20,
-    marginBottom: 3,
-  },
-  statTileLabel: {
-    fontSize: 12,
-    textAlign: "center",
-  },
-  trustRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-    marginTop: 14,
-  },
-  trustPill: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
+  verifiedBadge: {
+    width: 22,
+    height: 22,
     borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 7,
-  },
-  trustText: {
-    fontSize: 12,
-  },
-  recommendationCard: {
-    marginTop: 14,
-  },
-  recommendationHeader: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 10,
-  },
-  recommendationIconWrap: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
     alignItems: "center",
     justifyContent: "center",
   },
-  recommendationTextWrap: {
-    flex: 1,
-  },
-  recommendationTitle: {
-    fontSize: 15,
-    marginBottom: 4,
-  },
-  recommendationBody: {
+  professionalTitle: {
+    marginTop: 4,
     fontSize: 13,
+    lineHeight: 18,
+  },
+  statsStrip: {
+    borderWidth: 1,
+    borderRadius: 14,
+    overflow: "hidden",
+    marginTop: 10,
+  },
+  statCell: {
+    flex: 1,
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  statTopRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+  },
+  statValue: {
+    fontSize: 15,
     lineHeight: 20,
   },
-  recommendationScoreRow: {
+  statLabel: {
+    fontSize: 11,
+    marginTop: 4,
+  },
+  statDivider: {
+    width: 1,
+    alignSelf: "stretch",
+  },
+  sectionCard: {
+    borderRadius: 18,
+  },
+  sectionHeaderRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginTop: 12,
-    gap: 12,
+    gap: 10,
+    marginBottom: 10,
   },
-  recommendationReason: {
-    marginTop: 8,
-    fontSize: 13,
+  sectionTitle: {
+    fontSize: 15,
     lineHeight: 20,
   },
-  packagePlansStack: {
-    gap: 12,
+  sectionIconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 999,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
   },
-  packagePlansNote: {
-    fontSize: 13,
-    lineHeight: 20,
-  },
-  packagePlansButton: {
-    marginTop: 10,
-  },
-  packagePlanCard: {
-    gap: 10,
-  },
-  packagePlanTopRow: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    justifyContent: "space-between",
-    gap: 12,
-  },
-  packagePlanTopCopy: {
-    flex: 1,
-  },
-  packagePlanTitle: {
-    fontSize: 18,
-    lineHeight: 24,
-  },
-  packagePlanDescription: {
-    fontSize: 14,
-    lineHeight: 22,
-    marginTop: 4,
-  },
-  packagePlanMetaRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 10,
-  },
-  packagePlanMetaText: {
-    fontSize: 12,
-  },
-  packagePlanStatsRow: {
-    flexDirection: "row",
-    gap: 10,
-  },
-  packagePlanStatCard: {
-    flex: 1,
-    marginHorizontal: 0,
-  },
-  packagePlanStatLabel: {
-    fontSize: 11,
-    textTransform: "uppercase",
-    letterSpacing: 0.12,
-  },
-  packagePlanStatValue: {
-    fontSize: 14,
-    marginTop: 4,
-  },  bookingConfidenceGrid: {
-    gap: 10,
-  },
-  confidenceCard: {
-    minHeight: 88,
-  },
-  confidenceLabel: {
-    fontSize: 12,
-    marginBottom: 6,
-  },
-  confidenceValue: {
-    fontSize: 15,
-    lineHeight: 22,
-  },
-  bioText: {
-    fontSize: 15,
-    lineHeight: 24,
-  },
-  tagsContainer: {
+  chipsRow: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 8,
   },
-  tag: {
+  chip: {
+    borderRadius: 999,
     paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
+    paddingVertical: 7,
+    maxWidth: "100%",
   },
-  tagText: {
+  chipText: {
+    fontSize: 12,
+  },
+  valueText: {
     fontSize: 14,
-    fontWeight: "500",
+    lineHeight: 20,
   },
-  credentialsCard: {
+  emptyNote: {
+    fontSize: 13,
+    lineHeight: 20,
+  },
+  metaRow: {
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "space-between",
+    gap: 10,
   },
-  credentialIcon: {
-    marginRight: 16,
-  },
-  credentialText: {
+  metaTextColumn: {
     flex: 1,
   },
-  credentialMeta: {
-    fontSize: 14,
+  metaLabel: {
+    fontSize: 11,
+    marginBottom: 3,
   },
-  availabilityLead: {
+  metaIconWrap: {
+    width: 38,
+    height: 38,
+    borderRadius: 999,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+  },
+  bioText: {
+    fontSize: 13,
+    lineHeight: 21,
+  },
+  readMoreButton: {
+    marginTop: 10,
+    alignSelf: "flex-start",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 999,
+    borderWidth: 1,
+  },
+  readMoreText: {
+    fontSize: 12,
+  },
+  pricesStack: {
+    gap: 8,
+  },
+  priceRow: {
+    borderWidth: 1,
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 11,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 10,
+  },
+  priceRightBlock: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    flex: 1,
+  },
+  priceIconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 999,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+  },
+  priceLabel: {
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  priceValue: {
+    fontSize: 17,
+  },
+  bottomBar: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    paddingHorizontal: 14,
+    paddingTop: 10,
+  },
+  bottomCta: {
+    borderRadius: 20,
+    minHeight: 52,
+    paddingHorizontal: 16,
+    gap: 10,
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.10,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  bottomCtaText: {
+    fontSize: 15,
+    flex: 1,
     textAlign: "center",
-    marginBottom: 16,
-    fontSize: 14,
-    lineHeight: 22,
   },
-  nextSlotCard: {
-    marginBottom: 14,
+  // ── RTL variants ──────────────────────────────────────────────────
+  sectionHeaderRowRtl: {
+    flexDirection: "row-reverse",
+  },
+  sectionTitleRtl: {
+    textAlign: "right",
+  },
+  identityTopRowRtl: {
+    flexDirection: "row-reverse",
+  },
+  chipsRowRtl: {
+    flexDirection: "row-reverse",
+  },
+  metaRowRtl: {
+    flexDirection: "row-reverse",
+  },
+  priceRowRtl: {
+    flexDirection: "row-reverse",
+  },
+  bioTextRtl: {
+    textAlign: "right",
+  },
+  valueTextRtl: {
+    textAlign: "right",
+  },
+  nameLineRtl: {
+    flexDirection: "row-reverse",
   },
 });
-
-
-
-
-

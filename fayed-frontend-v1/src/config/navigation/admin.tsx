@@ -30,6 +30,12 @@ export const adminNavigation: NavigationConfig = [
       },
       { key: "practitioners", icon: <NavigationIcons.practitioners />, path: "/practitioners" },
       {
+        key: "featuredPractitioners",
+        icon: <NavigationIcons.practitioners />,
+        path: "/practitioners/featured",
+        requiredPermissions: [PK.FEATURED_PRACTITIONERS_READ],
+      },
+      {
         key: "practitionerApplications",
         icon: <NavigationIcons.practitioners />,
         path: "/practitioner-applications",

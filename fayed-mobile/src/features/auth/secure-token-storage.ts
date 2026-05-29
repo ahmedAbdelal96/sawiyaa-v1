@@ -1,5 +1,6 @@
 import { Platform } from "react-native";
 import * as SecureStore from "expo-secure-store";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import type { AuthTokens } from "./contracts";
 
 const ACCESS_TOKEN_KEY = "fayed.mobile.auth.tokens.access.v1";
@@ -26,14 +27,29 @@ function isAuthTokens(value: unknown): value is AuthTokens {
 }
 
 /**
- * Secure token storage for mobile.
+ * Token storage — platform-aware.
  *
- * - Uses Keychain (iOS) / Keystore (Android) via Expo SecureStore.
- * - On web, SecureStore is not supported; we fail closed and return null.
+ * - Native (iOS/Android): Keychain / Keystore via Expo SecureStore.
+ * - Web/Expo web: AsyncStorage (browser-compatible, no Keychain on web).
  */
 export async function getSecureAuthTokens(): Promise<AuthTokens | null> {
   if (Platform.OS === "web") {
-    return null;
+    const [accessToken, refreshToken, accessTokenExpiresAt, refreshTokenExpiresAt] =
+      await Promise.all([
+        AsyncStorage.getItem(ACCESS_TOKEN_KEY),
+        AsyncStorage.getItem(REFRESH_TOKEN_KEY),
+        AsyncStorage.getItem(ACCESS_EXPIRES_AT_KEY),
+        AsyncStorage.getItem(REFRESH_EXPIRES_AT_KEY),
+      ]);
+
+    const candidate = {
+      accessToken,
+      refreshToken,
+      accessTokenExpiresAt,
+      refreshTokenExpiresAt,
+    };
+
+    return isAuthTokens(candidate) ? (candidate as AuthTokens) : null;
   }
 
   const [accessToken, refreshToken, accessTokenExpiresAt, refreshTokenExpiresAt] =
@@ -56,11 +72,15 @@ export async function getSecureAuthTokens(): Promise<AuthTokens | null> {
 
 export async function setSecureAuthTokens(tokens: AuthTokens): Promise<void> {
   if (Platform.OS === "web") {
-    // Explicitly do not persist tokens on web.
+    await Promise.all([
+      AsyncStorage.setItem(ACCESS_TOKEN_KEY, tokens.accessToken),
+      AsyncStorage.setItem(REFRESH_TOKEN_KEY, tokens.refreshToken),
+      AsyncStorage.setItem(ACCESS_EXPIRES_AT_KEY, tokens.accessTokenExpiresAt),
+      AsyncStorage.setItem(REFRESH_EXPIRES_AT_KEY, tokens.refreshTokenExpiresAt),
+    ]);
     return;
   }
 
-  // Best-effort atomic: write access+refresh+expiries, then validate on restore.
   await Promise.all([
     SecureStore.setItemAsync(ACCESS_TOKEN_KEY, tokens.accessToken),
     SecureStore.setItemAsync(REFRESH_TOKEN_KEY, tokens.refreshToken),
@@ -71,6 +91,12 @@ export async function setSecureAuthTokens(tokens: AuthTokens): Promise<void> {
 
 export async function clearSecureAuthTokens(): Promise<void> {
   if (Platform.OS === "web") {
+    await Promise.all([
+      AsyncStorage.removeItem(ACCESS_TOKEN_KEY),
+      AsyncStorage.removeItem(REFRESH_TOKEN_KEY),
+      AsyncStorage.removeItem(ACCESS_EXPIRES_AT_KEY),
+      AsyncStorage.removeItem(REFRESH_EXPIRES_AT_KEY),
+    ]);
     return;
   }
 

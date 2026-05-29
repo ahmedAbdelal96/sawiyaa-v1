@@ -63,6 +63,7 @@ import { AcademyModule } from './modules/academy/academy.module';
 import { TrainingModule } from './modules/training/training.module';
 import { UsersModule } from './modules/users/users.module';
 import { ReportsModule } from './modules/reports/reports.module';
+import { CorporateSponsorshipModule } from './modules/corporate-sponsorship/corporate-sponsorship.module';
 
 @Module({
   imports: [
@@ -123,6 +124,7 @@ import { ReportsModule } from './modules/reports/reports.module';
     TrainingModule,
     UsersModule,
     ReportsModule,
+    CorporateSponsorshipModule,
   ],
   providers: [
     AllExceptionsFilter,

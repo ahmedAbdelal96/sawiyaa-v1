@@ -17,7 +17,13 @@ describe('GetPublicPractitionerTrustSummaryUseCase', () => {
   );
 
   beforeEach(() => {
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date('2026-03-20T00:00:00.000Z'));
     jest.clearAllMocks();
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
   });
 
   it('throws when practitioner is not publicly visible', async () => {

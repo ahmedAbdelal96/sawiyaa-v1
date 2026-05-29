@@ -5,7 +5,27 @@ describe('MarkPaymentSucceededUseCase', () => {
   function buildUseCase(input?: {
     sessionStatus?: string | null;
     paymentPurpose?: string;
+    sponsorshipId?: string | null;
   }) {
+    const basePayment = {
+      id: 'payment_1',
+      paymentPurpose: input?.paymentPurpose ?? 'SESSION_BOOKING',
+      provider: PaymentProvider.STRIPE,
+      status: PaymentStatus.PENDING,
+      sessionId: 'session_1',
+      patientId: 'patient_1',
+      practitionerId: 'pr_1',
+      couponId: null,
+      currencyCode: 'USD',
+      amountFromWallet: { gt: () => false, toString: () => '0.00' },
+      amountSubtotal: { toString: () => '100.00' },
+      amountDiscount: { toString: () => '0.00' },
+      couponPlatformShareSnapshot: null,
+      couponPractitionerShareSnapshot: null,
+      metadataJson: input?.sponsorshipId
+        ? { sponsorshipId: input.sponsorshipId }
+        : {},
+    };
     const prisma = {
       $transaction: jest.fn().mockImplementation(async (fn) => fn({})),
       session: {
@@ -19,39 +39,12 @@ describe('MarkPaymentSucceededUseCase', () => {
       },
     };
     const paymentRepository = {
-      findById: jest.fn().mockResolvedValue({
-        id: 'payment_1',
-        paymentPurpose: input?.paymentPurpose ?? 'SESSION_BOOKING',
-        provider: PaymentProvider.STRIPE,
-        status: PaymentStatus.PENDING,
-        sessionId: 'session_1',
-        patientId: 'patient_1',
-        practitionerId: 'pr_1',
-        couponId: null,
-        currencyCode: 'USD',
-        amountFromWallet: { gt: () => false, toString: () => '0.00' },
-        amountSubtotal: { toString: () => '100.00' },
-        amountDiscount: { toString: () => '0.00' },
-        couponPlatformShareSnapshot: null,
-        couponPractitionerShareSnapshot: null,
-      }),
+      findById: jest.fn().mockResolvedValue(basePayment),
       createEvent: jest.fn().mockResolvedValue({}),
       updateStatus: jest.fn().mockResolvedValue({
-        id: 'payment_1',
-        paymentPurpose: input?.paymentPurpose ?? 'SESSION_BOOKING',
-        provider: PaymentProvider.STRIPE,
+        ...basePayment,
         status: PaymentStatus.CAPTURED,
-        sessionId: 'session_1',
-        patientId: 'patient_1',
-        practitionerId: 'pr_1',
-        couponId: null,
-        currencyCode: 'USD',
-        amountFromWallet: { gt: () => false, toString: () => '0.00' },
-        amountTotal: { toString: () => '100.00' },
-        amountSubtotal: { toString: () => '100.00' },
-        amountDiscount: { toString: () => '0.00' },
-        couponPlatformShareSnapshot: null,
-        couponPractitionerShareSnapshot: null,
+        amountTotal: { toFixed: () => '100.00', toString: () => '100.00' },
       }),
     };
     const validatePaymentStatusTransitionService = {
@@ -81,6 +74,18 @@ describe('MarkPaymentSucceededUseCase', () => {
     const reconcilePackagePurchasePaymentUseCase = {
       execute: jest.fn().mockResolvedValue({}),
     };
+    const corporateSponsorshipConsumeService = {
+      consumeAfterPayment: jest.fn().mockResolvedValue({
+        consumed: true,
+        sponsorshipId: 'sponsorship-1',
+        codeId: 'code-1',
+        idempotent: false,
+      }),
+    };
+    const corporateLedgerRepository = {
+      findBySponsorshipIdAndEvent: jest.fn().mockResolvedValue(null),
+      createCodeConsumedEntry: jest.fn().mockResolvedValue({}),
+    };
     const logger = {
       info: jest.fn(),
     };
@@ -97,6 +102,7 @@ describe('MarkPaymentSucceededUseCase', () => {
       redeemCouponUseCase as never,
       operationalNotificationService as never,
       reconcilePackagePurchasePaymentUseCase as never,
+      corporateSponsorshipConsumeService as never,
       logger as never,
     );
 
@@ -108,6 +114,7 @@ describe('MarkPaymentSucceededUseCase', () => {
       postPaymentLedgerEntriesUseCase,
       operationalNotificationService,
       reconcilePackagePurchasePaymentUseCase,
+      corporateSponsorshipConsumeService,
     };
   }
 
@@ -175,5 +182,141 @@ describe('MarkPaymentSucceededUseCase', () => {
     ).not.toHaveBeenCalled();
     expect(setup.paymentRepository.findById).toHaveBeenCalledTimes(1);
     expect(setup.paymentRepository.updateStatus).toHaveBeenCalledTimes(1);
+  });
+
+  describe('Corporate Sponsorship Consume', () => {
+    it('does not call consume service when payment has no sponsorship metadata', async () => {
+      const setup = buildUseCase({ sessionStatus: 'PENDING_PAYMENT' });
+
+      await setup.useCase.execute({
+        paymentId: 'payment_1',
+        providerEventRef: 'evt_1',
+        payload: {},
+      });
+
+      expect(
+        setup.corporateSponsorshipConsumeService.consumeAfterPayment,
+      ).not.toHaveBeenCalled();
+    });
+
+    it('calls consumeAfterPayment when payment has sponsorship metadata', async () => {
+      const setup = buildUseCase({
+        sessionStatus: 'PENDING_PAYMENT',
+        sponsorshipId: 'sponsorship-uuid',
+      });
+
+      await setup.useCase.execute({
+        paymentId: 'payment_1',
+        providerEventRef: 'evt_1',
+        payload: {},
+      });
+
+      expect(
+        setup.corporateSponsorshipConsumeService.consumeAfterPayment,
+      ).toHaveBeenCalledTimes(1);
+      expect(
+        setup.corporateSponsorshipConsumeService.consumeAfterPayment,
+      ).toHaveBeenCalledWith(
+        expect.objectContaining({
+          sponsorshipId: 'sponsorship-uuid',
+          sessionId: 'session_1',
+          paymentId: 'payment_1',
+          paidAmount: '100.00',
+          currency: 'USD',
+        }),
+        expect.anything(),
+      );
+    });
+
+    it('continues success when consume returns idempotent result', async () => {
+      const setup = buildUseCase({
+        sessionStatus: 'PENDING_PAYMENT',
+        sponsorshipId: 'sponsorship-uuid',
+      });
+      setup.corporateSponsorshipConsumeService.consumeAfterPayment.mockResolvedValueOnce({
+        consumed: false,
+        sponsorshipId: 'sponsorship-uuid',
+        codeId: 'code-1',
+        idempotent: true,
+      });
+
+      const result = await setup.useCase.execute({
+        paymentId: 'payment_1',
+        providerEventRef: 'evt_1',
+        payload: {},
+      });
+
+      expect(result).toBeDefined();
+      expect(
+        setup.orchestrateSessionPaymentStatusService
+          .markSessionConfirmedFromPayment,
+      ).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not require codeHash or codeId in payment metadata to consume', async () => {
+      const setup = buildUseCase({
+        sessionStatus: 'PENDING_PAYMENT',
+        sponsorshipId: 'sponsorship-uuid',
+      });
+
+      const paymentWithMinimalMetadata = {
+        id: 'payment_1',
+        paymentPurpose: 'SESSION_BOOKING',
+        provider: PaymentProvider.STRIPE,
+        status: PaymentStatus.PENDING,
+        sessionId: 'session_1',
+        patientId: 'patient_1',
+        practitionerId: 'pr_1',
+        couponId: null,
+        currencyCode: 'USD',
+        amountFromWallet: { gt: () => false, toString: () => '0.00' },
+        amountSubtotal: { toString: () => '100.00' },
+        amountDiscount: { toString: () => '0.00' },
+        couponPlatformShareSnapshot: null,
+        couponPractitionerShareSnapshot: null,
+        metadataJson: { sponsorshipId: 'sponsorship-uuid' },
+      };
+      setup.paymentRepository.findById.mockResolvedValueOnce(
+        paymentWithMinimalMetadata as never,
+      );
+
+      await setup.useCase.execute({
+        paymentId: 'payment_1',
+        providerEventRef: 'evt_1',
+        payload: {},
+      });
+
+      expect(
+        setup.corporateSponsorshipConsumeService.consumeAfterPayment,
+      ).toHaveBeenCalledWith(
+        expect.objectContaining({
+          sponsorshipId: 'sponsorship-uuid',
+        }),
+        expect.anything(),
+      );
+    });
+
+    it('rejects when consume service throws', async () => {
+      const setup = buildUseCase({
+        sessionStatus: 'PENDING_PAYMENT',
+        sponsorshipId: 'sponsorship-uuid',
+      });
+      setup.corporateSponsorshipConsumeService.consumeAfterPayment.mockRejectedValueOnce(
+        new Error('consume failed'),
+      );
+
+      await expect(
+        setup.useCase.execute({
+          paymentId: 'payment_1',
+          providerEventRef: 'evt_1',
+          payload: {},
+        }),
+      ).rejects.toThrow('consume failed');
+
+      expect(
+        setup.orchestrateSessionPaymentStatusService
+          .markSessionConfirmedFromPayment,
+      ).not.toHaveBeenCalled();
+    });
   });
 });

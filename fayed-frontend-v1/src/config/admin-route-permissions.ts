@@ -34,6 +34,10 @@ export const ADMIN_ROUTE_PERMISSIONS: AdminRoutePermissionConfig[] = [
     path: "/patients",
     requiresAny: [PK.PATIENTS_READ_ADMIN, PK.PATIENTS_SENSITIVE_READ],
   },
+  {
+    path: "/practitioners/featured",
+    requiresAny: [PK.FEATURED_PRACTITIONERS_READ],
+  },
   { path: "/practitioners", requiresAny: [] },
   { path: "/practitioner-applications", requiresAny: [PK.PRACTITIONER_APPLICATIONS_READ] },
   {

@@ -27,22 +27,36 @@ const patientSessionsQueryKeys = {
     [...patientSessionsQueryKeys.all, "details", sessionId] as const,
   cancelPreview: (sessionId: string) =>
     [...patientSessionsQueryKeys.all, "cancel-preview", sessionId] as const,
-  availabilityWindows: (slug: string, from: string, to: string) =>
-    [...patientSessionsQueryKeys.all, "availability", slug, from, to] as const,
+  availabilityWindows: (
+    slug: string,
+    from: string,
+    to: string,
+    includeBooked: boolean,
+  ) =>
+    [
+      ...patientSessionsQueryKeys.all,
+      "availability",
+      slug,
+      from,
+      to,
+      includeBooked,
+    ] as const,
 };
 
 export function usePublicAvailabilityWindows(
   slug: string | null,
   from: string,
   to: string,
+  includeBooked = false,
 ) {
   return useQuery({
     queryKey: patientSessionsQueryKeys.availabilityWindows(
       slug ?? "",
       from,
       to,
+      includeBooked,
     ),
-    queryFn: () => getPublicAvailabilityWindows(slug!, from, to),
+    queryFn: () => getPublicAvailabilityWindows(slug!, from, to, includeBooked),
     enabled: Boolean(slug),
     staleTime: 60_000,
   });

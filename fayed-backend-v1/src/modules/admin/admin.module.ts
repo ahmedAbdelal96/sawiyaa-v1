@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { FeaturedPractitionersAdminModule } from './featured-practitioners/featured-practitioners-admin.module';
 import { PractitionerApplicationsAdminModule } from './practitioner-applications/practitioner-applications-admin.module';
 import { AdminUsersAdminModule } from './users/admin-users-admin.module';
 
@@ -7,6 +8,10 @@ import { AdminUsersAdminModule } from './users/admin-users-admin.module';
  * In Phase 1, it only exposes practitioner application review/decision APIs.
  */
 @Module({
-  imports: [PractitionerApplicationsAdminModule, AdminUsersAdminModule],
+  imports: [
+    PractitionerApplicationsAdminModule,
+    AdminUsersAdminModule,
+    FeaturedPractitionersAdminModule,
+  ],
 })
 export class AdminModule {}

@@ -1,9 +1,9 @@
 import React, { useMemo, useRef, useState } from "react";
-import { Image, ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
+import { Image, ScrollView, StyleSheet, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
-import { Header, Screen, Text, Card, Button } from "../../../src/components/ui";
+import { Header, Screen, ScreenHeading, Text, Card, Button } from "../../../src/components/ui";
 import { useTheme } from "../../../src/providers/ThemeProvider";
 import { useCreateScheduledSession } from "../../../src/features/patient/sessions/hooks";
 import { useSessionFinancialBreakdown } from "../../../src/features/patient/payments/hooks";
@@ -11,6 +11,9 @@ import { formatLocalizedDateTime } from "../../../src/features/patient/sessions/
 import { extractApiErrorMessage } from "../../../src/lib/api";
 import { trackAnalyticsEvent } from "../../../src/lib/analytics";
 import { resolveSupportedCurrencyCode } from "../../../src/lib/currency";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+
+const FALLBACK_AVATAR = require("../../../assets/user.avif");
 
 function formatMoney(amount: string, currencyCode: string): string {
   const value = Number(amount);
@@ -29,8 +32,10 @@ export default function BookingConfirmationScreen() {
   const router = useRouter();
   const { theme } = useTheme();
   const { t, i18n } = useTranslation();
+  const insets = useSafeAreaInsets();
   const isRtl = i18n.language?.startsWith("ar") ?? false;
   const locale = i18n.language?.startsWith("ar") ? "ar-SA" : "en-US";
+  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
   const params = useLocalSearchParams<{
     slug: string;
@@ -41,10 +46,7 @@ export default function BookingConfirmationScreen() {
     maxDuration: string;
   }>();
 
-  const maxDuration = (Number(params.maxDuration) >= 60 ? 60 : 30) as 30 | 60;
-  const [duration, setDuration] = useState<30 | 60>(
-    maxDuration >= 60 ? 60 : 30,
-  );
+  const duration = (Number(params.maxDuration) >= 60 ? 60 : 30) as 30 | 60;
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [createdSession, setCreatedSession] = useState<{
     id: string;
@@ -78,6 +80,22 @@ export default function BookingConfirmationScreen() {
     resolvedCountryIsoCode: breakdown?.resolvedCountryIsoCode ?? null,
   });
   const canContinueToPayment = Boolean(createdSession?.id && breakdown);
+  const hasRequiredParams = Boolean(params.slug && params.selectedStartAt);
+  const footerSummary = useMemo(() => {
+    if (!params.selectedStartAt) return "";
+    const when = new Date(params.selectedStartAt);
+    const weekday = new Intl.DateTimeFormat(locale, { weekday: "long" }).format(when);
+    const date = new Intl.DateTimeFormat(locale, {
+      day: "numeric",
+      month: "long",
+    }).format(when);
+    const time = new Intl.DateTimeFormat(locale, {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: !locale.startsWith("ar"),
+    }).format(when);
+    return `${weekday}، ${date} · ${time}`;
+  }, [locale, params.selectedStartAt]);
 
   const handleConfirm = async () => {
     if (confirmLockRef.current || createMutation.isPending) {
@@ -85,11 +103,11 @@ export default function BookingConfirmationScreen() {
     }
 
     if (createdSession?.id) {
-      router.replace(`/(patient)/sessions/${createdSession.id}/pay` as any);
+      router.push(`/(patient)/sessions/${createdSession.id}/pay` as any);
       return;
     }
 
-    if (!params.slug || !params.selectedStartAt) {
+    if (!hasRequiredParams) {
       return;
     }
 
@@ -125,41 +143,39 @@ export default function BookingConfirmationScreen() {
 
   return (
     <Screen bg="background">
-      <Header
-        showBack
-        title={t("patientSessionsFlow.confirmation.title")}
-      />
+      <Header showBack />
 
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={styles.heroBlock}>
-          <Text weight="bold" style={styles.heroTitle}>
-            {t("patientSessionsFlow.confirmation.heading")}
-          </Text>
-          <Text color={theme.colors.textSecondary} style={styles.heroSubtitle}>
-            {t("patientSessionsFlow.confirmation.subtitle")}
-          </Text>
-        </View>
+      <ScrollView
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingBottom: 140 + Math.max(insets.bottom, 10) },
+        ]}
+      >
+        <ScreenHeading
+          title={t("patientSessionsFlow.confirmation.reviewTitle")}
+          subtitle={t("patientSessionsFlow.confirmation.reviewSubtitle")}
+          titleVariant="h2"
+        />
 
-        <Card
-          variant="elevated"
-          padding="lg"
-          style={[
-            styles.sectionCard,
-            isRtl
-              ? {
-                  borderLeftWidth: 3,
-                  borderLeftColor: theme.colors.primary,
-                  borderRightWidth: 0,
-                }
-              : { borderRightColor: theme.colors.primary },
-          ]}
-        >
-          <View style={styles.sectionTitleRow}>
-            <Ionicons
-              name="calendar-outline"
-              size={20}
-              color={theme.colors.primary}
+        {!hasRequiredParams ? (
+          <Card variant="elevated" padding="lg" style={styles.sectionCard}>
+            <Text weight="600" style={styles.sectionTitle}>
+              {t("patientSessionsFlow.confirmation.missingParamsTitle")}
+            </Text>
+            <Text color={theme.colors.textSecondary} style={styles.noteText}>
+              {t("patientSessionsFlow.confirmation.missingParamsBody")}
+            </Text>
+            <Button
+              title={t("patientSessionsFlow.confirmation.backToSelectTime")}
+              onPress={() => router.back()}
+              style={styles.actionButton}
             />
+          </Card>
+        ) : null}
+
+        <Card variant="elevated" padding="lg" style={styles.sectionCard}>
+          <View style={styles.sectionTitleRow}>
+            <Ionicons name="calendar-outline" size={18} color={theme.colors.primary} />
             <Text weight="600" style={styles.sectionTitle}>
               {t("patientSessionsFlow.confirmation.sessionDetails")}
             </Text>
@@ -182,39 +198,18 @@ export default function BookingConfirmationScreen() {
                   t("patientSessionsFlow.common.professionalFallback")}
               </Text>
             </View>
-            <View
-              style={[
-                styles.avatarPlaceholder,
-                { backgroundColor: theme.colors.surfaceTertiary },
-              ]}
-            >
+            <View style={[styles.avatarPlaceholder, { backgroundColor: theme.colors.surfaceTertiary }]}>
               {params.practitionerAvatarUrl ? (
-                <Image
-                  source={{ uri: params.practitionerAvatarUrl }}
-                  style={styles.avatarImage}
-                />
+                <Image source={{ uri: params.practitionerAvatarUrl }} style={styles.avatarImage} />
               ) : (
-                <Ionicons
-                  name="person"
-                  size={26}
-                  color={theme.colors.textMuted}
-                />
+                <Image source={FALLBACK_AVATAR} style={styles.avatarImage} />
               )}
             </View>
           </View>
 
           <View style={styles.infoRow}>
-            <View
-              style={[
-                styles.infoIconWrap,
-                { backgroundColor: theme.colors.surfaceSecondary },
-              ]}
-            >
-              <Ionicons
-                name="calendar-clear-outline"
-                size={18}
-                color={theme.colors.primary}
-              />
+            <View style={[styles.infoIconWrap, { backgroundColor: theme.colors.surfaceTertiary }]}>
+              <Ionicons name="calendar-clear-outline" size={16} color={theme.colors.primary} />
             </View>
             <View style={styles.infoTextWrap}>
               <Text color={theme.colors.textMuted} style={styles.metaLabel}>
@@ -226,81 +221,38 @@ export default function BookingConfirmationScreen() {
             </View>
           </View>
 
-          <View style={styles.durationWrap}>
-            <Text color={theme.colors.textMuted} style={styles.metaLabel}>
-              {t("patientSessionsFlow.confirmation.selectDuration")}
-            </Text>
-            <View style={styles.durationButtonsRow}>
-              <TouchableOpacity
-                style={[
-                  styles.durationButton,
-                  {
-                    backgroundColor:
-                      duration === 30
-                        ? theme.colors.primaryLight
-                        : theme.colors.surface,
-                    borderColor:
-                      duration === 30
-                        ? theme.colors.primary
-                        : theme.colors.borderLight,
-                    opacity: createdSession ? 0.55 : 1,
-                  },
-                ]}
-                onPress={() => setDuration(30)}
-                disabled={Boolean(createdSession)}
-              >
-                <Text
-                  weight={duration === 30 ? "600" : "normal"}
-                  color={
-                    duration === 30
-                      ? theme.colors.primary
-                      : theme.colors.textPrimary
-                  }
-                >
-                  {t("patientSessionsFlow.confirmation.duration30")}
-                </Text>
-              </TouchableOpacity>
+          <View style={styles.infoRow}>
+            <View style={[styles.infoIconWrap, { backgroundColor: theme.colors.surfaceTertiary }]}>
+              <Ionicons name="hourglass-outline" size={16} color={theme.colors.primary} />
+            </View>
+            <View style={styles.infoTextWrap}>
+              <Text color={theme.colors.textMuted} style={styles.metaLabel}>
+                {t("patientSessionsFlow.common.duration")}
+              </Text>
+              <Text weight="600" style={styles.metaValueSmall}>
+                {totalLabel}
+              </Text>
+            </View>
+          </View>
 
-              <TouchableOpacity
-                style={[
-                  styles.durationButton,
-                  {
-                    backgroundColor:
-                      duration === 60
-                        ? theme.colors.primaryLight
-                        : theme.colors.surface,
-                    borderColor:
-                      duration === 60
-                        ? theme.colors.primary
-                        : theme.colors.borderLight,
-                    opacity: maxDuration >= 60 && !createdSession ? 1 : 0.35,
-                  },
-                ]}
-                disabled={maxDuration < 60 || Boolean(createdSession)}
-                onPress={() => setDuration(60)}
-              >
-                <Text
-                  weight={duration === 60 ? "600" : "normal"}
-                  color={
-                    duration === 60
-                      ? theme.colors.primary
-                      : theme.colors.textPrimary
-                  }
-                >
-                  {t("patientSessionsFlow.confirmation.duration60")}
-                </Text>
-              </TouchableOpacity>
+          <View style={styles.infoRow}>
+            <View style={[styles.infoIconWrap, { backgroundColor: theme.colors.surfaceTertiary }]}>
+              <Ionicons name="videocam-outline" size={16} color={theme.colors.primary} />
+            </View>
+            <View style={styles.infoTextWrap}>
+              <Text color={theme.colors.textMuted} style={styles.metaLabel}>
+                {t("patientSessionsFlow.common.videoSession")}
+              </Text>
+              <Text weight="600" style={styles.metaValueSmall}>
+                {timezone}
+              </Text>
             </View>
           </View>
         </Card>
 
         <Card variant="elevated" padding="lg" style={styles.sectionCard}>
           <View style={styles.sectionTitleRow}>
-            <Ionicons
-              name="card-outline"
-              size={20}
-              color={theme.colors.primary}
-            />
+            <Ionicons name="card-outline" size={18} color={theme.colors.primary} />
             <Text weight="600" style={styles.sectionTitle}>
               {t("patientSessionsFlow.confirmation.paymentSummary")}
             </Text>
@@ -405,25 +357,16 @@ export default function BookingConfirmationScreen() {
             </Card>
           ) : null}
 
-          <Card variant="flat" padding="sm" style={styles.securityNote}>
-            <Text
-              color={theme.colors.textSecondary}
-              style={styles.securityText}
-            >
-              {createdSession
-                ? t(
-                    "patientSessionsFlow.confirmation.reviewBeforePaymentNotice",
-                    "Your session is now pending payment. Review this final breakdown before you continue to checkout.",
-                  )
-                : t(
-                    "patientSessionsFlow.confirmation.reviewBeforeCreateNotice",
-                    "We will create a pending-payment session first, then show the final backend payment breakdown before you continue to checkout.",
-                  )}
-            </Text>
-          </Card>
+          {!createdSession ? (
+            <Card variant="flat" padding="sm" style={styles.securityNote}>
+              <Text color={theme.colors.textSecondary} style={styles.securityText}>
+                {t("patientSessionsFlow.confirmation.previewNotice")}
+              </Text>
+            </Card>
+          ) : null}
         </Card>
 
-        <Card variant="flat" padding="md" style={styles.policyCard}>
+        <Card variant="elevated" padding="md" style={styles.policyCard}>
           <View style={styles.sectionTitleRow}>
             <Ionicons
               name="information-circle-outline"
@@ -452,9 +395,15 @@ export default function BookingConfirmationScreen() {
           {
             backgroundColor: theme.colors.surface,
             borderTopColor: theme.colors.borderLight,
+            paddingBottom: Math.max(10, insets.bottom + 4),
           },
         ]}
       >
+        {footerSummary ? (
+          <Text style={styles.footerSummary} color={theme.colors.textSecondary}>
+            {footerSummary}
+          </Text>
+        ) : null}
         <Button
           title={
             createMutation.isPending
@@ -473,20 +422,11 @@ export default function BookingConfirmationScreen() {
           disabled={
             createMutation.isPending ||
             confirmLockRef.current ||
-            (!createdSession && (!params.slug || !params.selectedStartAt)) ||
+            (!createdSession && !hasRequiredParams) ||
             (Boolean(createdSession) && !canContinueToPayment)
           }
           style={styles.confirmButton}
         />
-
-        {createdSession ? (
-          <Button
-            title={t("patientSessionsFlow.success.goToSessions")}
-            variant="secondary"
-            onPress={() => router.replace("/(patient)/sessions")}
-            style={styles.secondaryButton}
-          />
-        ) : null}
       </View>
     </Screen>
   );
@@ -494,41 +434,23 @@ export default function BookingConfirmationScreen() {
 
 const styles = StyleSheet.create({
   scrollContent: {
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 170,
-    gap: 14,
+    paddingHorizontal: 14,
+    paddingTop: 10,
+    gap: 10,
   },
-  heroBlock: {
-    alignItems: "center",
-    marginBottom: 4,
-  },
-  heroTitle: {
-    fontSize: 34,
-    marginBottom: 4,
-  },
-  heroSubtitle: {
-    fontSize: 16,
-    textAlign: "center",
-  },
-  sectionCard: {
-    borderRightWidth: 3,
-    borderRightColor: "#3f7dcf",
-  },
+  sectionCard: { borderRadius: 14 },
   sectionTitleRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    marginBottom: 14,
+    marginBottom: 10,
   },
-  sectionTitle: {
-    fontSize: 20,
-  },
+  sectionTitle: { fontSize: 16, lineHeight: 22 },
   practitionerRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 14,
+    marginBottom: 10,
   },
   practitionerMetaCol: {
     flex: 1,
@@ -538,55 +460,37 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginBottom: 2,
   },
-  metaValue: {
-    fontSize: 24,
-  },
-  metaSubValue: {
-    fontSize: 16,
-  },
+  metaValue: { fontSize: 16, lineHeight: 22 },
+  metaValueSmall: { fontSize: 14, lineHeight: 20 },
+  metaSubValue: { fontSize: 13, lineHeight: 19 },
   avatarPlaceholder: {
-    width: 70,
-    height: 70,
-    borderRadius: 16,
+    width: 58,
+    height: 58,
+    borderRadius: 14,
     alignItems: "center",
     justifyContent: "center",
     overflow: "hidden",
   },
   avatarImage: {
-    width: 70,
-    height: 70,
-    borderRadius: 16,
+    width: 58,
+    height: 58,
+    borderRadius: 14,
   },
   infoRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 14,
+    marginBottom: 10,
   },
   infoIconWrap: {
-    width: 42,
-    height: 42,
-    borderRadius: 12,
+    width: 34,
+    height: 34,
+    borderRadius: 10,
     alignItems: "center",
     justifyContent: "center",
-    marginEnd: 10,
+    marginEnd: 8,
   },
   infoTextWrap: {
     flex: 1,
-  },
-  durationWrap: {
-    marginTop: 4,
-  },
-  durationButtonsRow: {
-    flexDirection: "row",
-    gap: 10,
-    marginTop: 6,
-  },
-  durationButton: {
-    flex: 1,
-    borderWidth: 1,
-    borderRadius: 12,
-    paddingVertical: 12,
-    alignItems: "center",
   },
   moneyRow: {
     flexDirection: "row",
@@ -607,10 +511,11 @@ const styles = StyleSheet.create({
   },
   policyCard: {
     marginBottom: 4,
+    borderRadius: 14,
   },
   policyText: {
-    fontSize: 14,
-    lineHeight: 22,
+    fontSize: 13,
+    lineHeight: 20,
   },
   bottomBar: {
     position: "absolute",
@@ -618,15 +523,21 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     borderTopWidth: 1,
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    gap: 10,
+    paddingHorizontal: 14,
+    paddingTop: 8,
+    gap: 8,
   },
+  footerSummary: { fontSize: 12 },
   confirmButton: {
     borderRadius: 12,
   },
-  secondaryButton: {
-    borderRadius: 12,
+  noteText: {
+    fontSize: 13,
+    lineHeight: 20,
+    marginTop: 6,
+  },
+  actionButton: {
+    marginTop: 10,
   },
 });
 

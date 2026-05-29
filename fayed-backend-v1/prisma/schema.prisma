@@ -362,14 +362,6 @@ enum RefundPolicyVersionStatus {
   ARCHIVED
 }
 
-enum PractitionerPackageStatus {
-  DRAFT
-  ACTIVE
-  PAUSED_BY_PRACTITIONER
-  DISABLED_BY_ADMIN
-  ARCHIVED
-}
-
 enum PatientPackagePurchaseStatus {
   PENDING_PAYMENT
   ACTIVE
@@ -397,6 +389,82 @@ enum PackageSchedulePolicy {
 enum SessionPaymentCoverageType {
   DIRECT_PAYMENT
   PACKAGE
+}
+
+//////////////////////////////
+// Corporate Benefits — Voucher Sponsorship
+//////////////////////////////
+
+enum CorporateOrganizationStatus {
+  ACTIVE
+  SUSPENDED
+  INACTIVE
+}
+
+enum CorporateContractStatus {
+  DRAFT
+  ACTIVE
+  EXPIRED
+  TERMINATED
+}
+
+enum CorporateBillingMode {
+  PREPAID
+  POSTPAID
+  HYBRID
+}
+
+enum CorporateMarket {
+  EGYPT
+  INTERNATIONAL
+}
+
+enum CorporateCoverageType {
+  FREE_SESSION
+  DISCOUNT_PERCENT
+  FIXED_AMOUNT
+}
+
+enum CorporateBenefitPlanStatus {
+  ACTIVE
+  SUSPENDED
+  EXPIRED
+}
+
+enum CorporateBatchStatus {
+  GENERATING
+  ACTIVE
+  EXPIRED
+  REVOKED
+  FAILED
+}
+
+enum CorporateCodeStatus {
+  AVAILABLE
+  RESERVED
+  USED
+  REVOKED
+  EXPIRED
+}
+
+enum CorporateSponsorshipStatus {
+  RESERVED
+  CONSUMED
+  RELEASED
+  REFUNDED
+}
+
+enum CorporateLedgerEventType {
+  CODE_GENERATED
+  CODE_RESERVED
+  CODE_CONSUMED
+  CODE_RELEASED
+  CODE_EXPIRED
+  CODE_REVOKED
+  CODE_EXPORTED
+  POSTPAID_SESSION_CHARGE
+  PREPAID_CONSUMPTION
+  MANUAL_ADJUSTMENT
 }
 
 model PackagePlan {
@@ -1063,6 +1131,38 @@ enum ReviewModerationAction {
   ARCHIVED
 }
 
+enum PractitionerMarketingPlacementSurface {
+  HOME
+  DISCOVERY
+  ALL
+}
+
+enum PractitionerMarketingPlacementStatus {
+  ACTIVE
+  PAUSED
+  EXPIRED
+}
+
+enum PractitionerMarketingPlacementReason {
+  FEATURED
+  SPONSORED
+  DISCOUNT
+  NEW_SPECIALIST
+  HIGH_AVAILABILITY
+  EDITORIAL_PICK
+}
+
+enum PractitionerMarketingPlacementHistoryAction {
+  CREATED
+  UPDATED
+  PAUSED
+  RESUMED
+  EXPIRED
+  DELETED
+  PRIORITY_CHANGED
+  DATE_CHANGED
+}
+
 enum InstructorType {
   OWNER
   PRACTITIONER
@@ -1192,6 +1292,9 @@ model User {
   accountingReconciliationIssueResolutions      AccountingReconciliationIssue[] @relation("AccountingReconciliationIssueResolvedBy")
   accountingReconciliationIssueIgnores          AccountingReconciliationIssue[] @relation("AccountingReconciliationIssueIgnoredBy")
   sessionCancellationRecords                    SessionCancellationRecord[]     @relation("SessionCancellationRecordCancelledByUser")
+  createdMarketingPlacements                    PractitionerMarketingPlacement[] @relation("PractitionerMarketingPlacementCreatedByAdmin")
+  pausedMarketingPlacements                     PractitionerMarketingPlacement[] @relation("PractitionerMarketingPlacementPausedByAdmin")
+  marketingPlacementHistoryEntries              PractitionerMarketingPlacementHistory[]
 }
 
 model UserEmail {
@@ -1411,6 +1514,7 @@ model PatientProfile {
   sessionReviews         SessionReview[]
   matchingSessions       MatchingSession[]
   assessmentSubmissions  AssessmentSubmission[]
+  practitionerViews      PatientPractitionerView[]
 
   @@index([countryId])
 }
@@ -1424,10 +1528,11 @@ model Specialty {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
-  category          SpecialtyCategory?      @relation(fields: [categoryId], references: [id], onDelete: SetNull)
-  translations      SpecialtyTranslation[]
-  practitionerLinks PractitionerSpecialty[]
-  commissionRules   CommissionRule[]
+  category              SpecialtyCategory?              @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  translations          SpecialtyTranslation[]
+  practitionerLinks     PractitionerSpecialty[]
+  commissionRules       CommissionRule[]
+  corporateBenefitPlans CorporateBenefitPlanSpecialty[]
 
   @@index([categoryId, isActive, sortOrder])
   @@index([isActive, sortOrder])
@@ -1508,7 +1613,6 @@ model PractitionerProfile {
   sessions                Session[]
   instantBookingRequests  InstantBookingRequest[]
   payments                Payment[]
-  packages                PractitionerPackage[]
   packagePurchases        PatientPackagePurchase[]
   packageSettlements      PackageSettlement[]
   wallets                 PractitionerWallet[]
@@ -1517,15 +1621,18 @@ model PractitionerProfile {
   settlementPayouts       PractitionerSettlementPayout[]
   manualPayouts           PractitionerManualPayout[]
   coupons                 Coupon[]
-  articles                Article[]                      @relation("ArticleAuthorPractitioner")
-  conversations           Conversation[]                 @relation("ConversationPractitioner")
-  supportTickets          SupportTicket[]                @relation("SupportTicketPractitioner")
+  articles                Article[]                          @relation("ArticleAuthorPractitioner")
+  conversations           Conversation[]                     @relation("ConversationPractitioner")
+  supportTickets          SupportTicket[]                    @relation("SupportTicketPractitioner")
   chatApprovalRequests    ChatApprovalRequest[]
   couponRedemptions       CouponRedemption[]
   sessionReviews          SessionReview[]
   ratingSummary           PractitionerRatingSummary?
   coursesAsInstructor     TrainingInstructor[]
   matchingRecommendations MatchingRecommendation[]
+  corporateBenefitPlans   CorporateBenefitPlanPractitioner[]
+  patientViews            PatientPractitionerView[]
+  marketingPlacements     PractitionerMarketingPlacement[]
 
   @@index([status, practitionerType])
   @@index([practitionerGender, status])
@@ -1533,43 +1640,72 @@ model PractitionerProfile {
   @@index([primarySpecialtyCategoryId, status])
 }
 
-model PractitionerPackage {
-  id                       String                     @id @default(uuid()) @db.Uuid
-  practitionerId           String                     @db.Uuid
-  slug                     String                     @db.VarChar(191)
-  title                    String                     @db.VarChar(191)
-  description              String?                    @db.VarChar(4000)
-  sessionCount             Int
-  sessionDurationMinutes   Int
-  sessionMode              SessionMode
-  priceEgp                 Decimal                    @db.Decimal(18, 2)
-  priceUsd                 Decimal                    @db.Decimal(18, 2)
-  status                   PractitionerPackageStatus  @default(DRAFT)
-  schedulePolicy           PackageSchedulePolicy      @default(REQUIRE_ALL_SESSIONS_AT_PURCHASE)
-  version                  Int                        @default(1)
-  activatedAt              DateTime?
-  pausedAt                 DateTime?
-  disabledAt               DateTime?
-  disabledReason           String?                    @db.VarChar(500)
-  statusBeforeAdminDisable PractitionerPackageStatus?
-  archivedAt               DateTime?
-  createdAt                DateTime                   @default(now())
-  updatedAt                DateTime                   @updatedAt
+model PatientPractitionerView {
+  id             String   @id @default(uuid()) @db.Uuid
+  patientId      String   @db.Uuid
+  practitionerId String   @db.Uuid
+  firstViewedAt  DateTime @default(now())
+  lastViewedAt   DateTime @default(now())
+  viewCount      Int      @default(1)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
-  practitioner PractitionerProfile      @relation(fields: [practitionerId], references: [id], onDelete: Cascade)
-  purchases    PatientPackagePurchase[]
-  sessions     Session[]                @relation("PractitionerPackageSessions")
+  patient      PatientProfile      @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  practitioner PractitionerProfile @relation(fields: [practitionerId], references: [id], onDelete: Cascade)
 
-  @@unique([practitionerId, slug])
-  @@index([practitionerId, status])
-  @@index([practitionerId, archivedAt])
-  @@index([status, archivedAt])
-  @@index([practitionerId, version])
+  @@unique([patientId, practitionerId])
+  @@index([patientId, lastViewedAt])
+  @@index([practitionerId])
+}
+
+model PractitionerMarketingPlacement {
+  id            String                                @id @default(uuid()) @db.Uuid
+  practitionerId String                               @db.Uuid
+  surface       PractitionerMarketingPlacementSurface
+  status        PractitionerMarketingPlacementStatus  @default(ACTIVE)
+  startsAt      DateTime
+  endsAt        DateTime?
+  priority      Int                                   @default(100)
+  badgeLabelAr  String?                               @db.VarChar(191)
+  badgeLabelEn  String?                               @db.VarChar(191)
+  reason        PractitionerMarketingPlacementReason  @default(FEATURED)
+  campaignName  String?                               @db.VarChar(191)
+  notesInternal String?                               @db.VarChar(2000)
+  createdByAdminId String?                            @db.Uuid
+  pausedByAdminId  String?                            @db.Uuid
+  pausedAt      DateTime?
+  createdAt     DateTime                              @default(now())
+  updatedAt     DateTime                              @updatedAt
+
+  practitioner PractitionerProfile                   @relation(fields: [practitionerId], references: [id], onDelete: Cascade)
+  createdByAdmin User?                               @relation("PractitionerMarketingPlacementCreatedByAdmin", fields: [createdByAdminId], references: [id], onDelete: SetNull)
+  pausedByAdmin  User?                               @relation("PractitionerMarketingPlacementPausedByAdmin", fields: [pausedByAdminId], references: [id], onDelete: SetNull)
+  historyEntries PractitionerMarketingPlacementHistory[]
+
+  @@index([surface, status, startsAt, endsAt, priority])
+  @@index([practitionerId])
+  @@index([status, startsAt, endsAt])
+}
+
+model PractitionerMarketingPlacementHistory {
+  id          String                                      @id @default(uuid()) @db.Uuid
+  placementId String                                      @db.Uuid
+  action      PractitionerMarketingPlacementHistoryAction
+  actorUserId String?                                     @db.Uuid
+  beforeSnapshot Json?
+  afterSnapshot  Json?
+  note        String?                                     @db.VarChar(1000)
+  createdAt   DateTime                                    @default(now())
+
+  placement PractitionerMarketingPlacement @relation(fields: [placementId], references: [id], onDelete: Cascade)
+  actorUser  User?                        @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([placementId, createdAt])
+  @@index([actorUserId, createdAt])
 }
 
 model PatientPackagePurchase {
   id                                String                       @id @default(uuid()) @db.Uuid
-  packageId                         String?                      @db.Uuid
   packagePlanId                     String?                      @db.Uuid
   practitionerId                    String                       @db.Uuid
   patientId                         String                       @db.Uuid
@@ -1616,16 +1752,14 @@ model PatientPackagePurchase {
   createdAt                         DateTime                     @default(now())
   updatedAt                         DateTime                     @updatedAt
 
-  package           PractitionerPackage? @relation(fields: [packageId], references: [id], onDelete: SetNull)
-  packagePlan       PackagePlan?         @relation(fields: [packagePlanId], references: [id], onDelete: SetNull)
-  practitioner      PractitionerProfile  @relation(fields: [practitionerId], references: [id], onDelete: Restrict)
-  patient           PatientProfile       @relation(fields: [patientId], references: [id], onDelete: Restrict)
-  payment           Payment?             @relation("PatientPackagePurchasePayment", fields: [paymentId], references: [id], onDelete: SetNull)
-  sessions          Session[]            @relation("SessionPackagePurchase")
+  packagePlan       PackagePlan?        @relation(fields: [packagePlanId], references: [id], onDelete: SetNull)
+  practitioner      PractitionerProfile @relation(fields: [practitionerId], references: [id], onDelete: Restrict)
+  patient           PatientProfile      @relation(fields: [patientId], references: [id], onDelete: Restrict)
+  payment           Payment?            @relation("PatientPackagePurchasePayment", fields: [paymentId], references: [id], onDelete: SetNull)
+  sessions          Session[]           @relation("SessionPackagePurchase")
   packageSettlement PackageSettlement?
 
   @@index([packagePlanId, status, createdAt])
-  @@index([packageId, status, createdAt])
   @@index([practitionerId, status, createdAt])
   @@index([patientId, status, createdAt])
   @@index([status, paymentExpiresAt])
@@ -2011,7 +2145,6 @@ model Session {
   providerSessionRef  String?                    @db.VarChar(191)
   notesInternal       String?                    @db.VarChar(1000)
   packagePurchaseId   String?                    @db.Uuid
-  packageTemplateId   String?                    @db.Uuid
   packageSessionIndex Int?
   packageSessionCount Int?
   paymentCoverageType SessionPaymentCoverageType @default(DIRECT_PAYMENT)
@@ -2019,22 +2152,23 @@ model Session {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  patient               PatientProfile             @relation(fields: [patientId], references: [id], onDelete: Restrict)
-  practitioner          PractitionerProfile        @relation(fields: [practitionerId], references: [id], onDelete: Restrict)
-  packagePurchase       PatientPackagePurchase?    @relation("SessionPackagePurchase", fields: [packagePurchaseId], references: [id], onDelete: SetNull)
-  packageTemplate       PractitionerPackage?       @relation("PractitionerPackageSessions", fields: [packageTemplateId], references: [id], onDelete: SetNull)
-  events                SessionEvent[]
-  instantBookingRequest InstantBookingRequest?
-  payments              Payment[]
-  refunds               Refund[]
-  customerWalletEntries CustomerWalletEntry[]
-  conversations         Conversation[]
-  chatApprovalRequests  ChatApprovalRequest[]
-  reviews               SessionReview[]
-  ledgerEntries         LedgerEntry[]
-  couponRedemptions     CouponRedemption[]
-  attendanceEvents      SessionAttendanceEvent[]
-  cancellationRecord    SessionCancellationRecord?
+  patient                PatientProfile               @relation(fields: [patientId], references: [id], onDelete: Restrict)
+  practitioner           PractitionerProfile          @relation(fields: [practitionerId], references: [id], onDelete: Restrict)
+  packagePurchase        PatientPackagePurchase?      @relation("SessionPackagePurchase", fields: [packagePurchaseId], references: [id], onDelete: SetNull)
+  events                 SessionEvent[]
+  instantBookingRequest  InstantBookingRequest?
+  payments               Payment[]
+  refunds                Refund[]
+  customerWalletEntries  CustomerWalletEntry[]
+  conversations          Conversation[]
+  chatApprovalRequests   ChatApprovalRequest[]
+  reviews                SessionReview[]
+  ledgerEntries          LedgerEntry[]
+  couponRedemptions      CouponRedemption[]
+  attendanceEvents       SessionAttendanceEvent[]
+  cancellationRecord     SessionCancellationRecord?
+  corporateSponsorship   CorporateSessionSponsorship?
+  corporateLedgerEntries CorporateLedger[]
 
   @@unique([packagePurchaseId, packageSessionIndex])
   @@index([patientId, status])
@@ -2043,7 +2177,6 @@ model Session {
   @@index([scheduledEndAt])
   @@index([flowType, status])
   @@index([provider, providerRoomId])
-  @@index([packageTemplateId, status, scheduledStartAt])
   @@index([paymentCoverageType, status])
 }
 
@@ -3034,19 +3167,19 @@ model Conversation {
 
   conversationRef String? @unique @db.VarChar(64)
 
-  startedAt DateTime  @default(now())
-  closedAt  DateTime?
-  adminSendingDisabledAt        DateTime?
-  adminSendingDisabledByUserId   String?   @db.Uuid
-  adminSendingDisabledReason     String?   @db.VarChar(500)
-  adminSendingEnabledAt         DateTime?
-  adminSendingEnabledByUserId   String?   @db.Uuid
-  practitionerSendingDisabledAt      DateTime?
+  startedAt                           DateTime  @default(now())
+  closedAt                            DateTime?
+  adminSendingDisabledAt              DateTime?
+  adminSendingDisabledByUserId        String?   @db.Uuid
+  adminSendingDisabledReason          String?   @db.VarChar(500)
+  adminSendingEnabledAt               DateTime?
+  adminSendingEnabledByUserId         String?   @db.Uuid
+  practitionerSendingDisabledAt       DateTime?
   practitionerSendingDisabledByUserId String?   @db.Uuid
   practitionerSendingDisabledReason   String?   @db.VarChar(500)
   practitionerSendingEnabledAt        DateTime?
-  practitionerSendingEnabledByUserId   String?   @db.Uuid
-  expiresAt DateTime?
+  practitionerSendingEnabledByUserId  String?   @db.Uuid
+  expiresAt                           DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -4387,4 +4520,246 @@ model SecurityAuditLog {
   @@index([outcome, occurredAt])
   @@index([resourceType, resourceId])
   @@index([occurredAt])
+}
+
+//////////////////////////////
+// Corporate Voucher Sponsorship
+//////////////////////////////
+
+model CorporateOrganization {
+  id             String                      @id @default(uuid()) @db.Uuid
+  name           String                      @db.VarChar(255)
+  companyCode    String                      @unique @db.VarChar(50)
+  countryIsoCode String?                     @db.VarChar(3)
+  status         CorporateOrganizationStatus @default(ACTIVE)
+  billingEmail   String                      @db.VarChar(255)
+  contactName    String?                     @db.VarChar(255)
+  contactPhone   String?                     @db.VarChar(50)
+  createdAt      DateTime                    @default(now())
+  updatedAt      DateTime                    @updatedAt
+
+  contracts    CorporateContract[]
+  batches      CorporateCodeBatch[]
+  codes        CorporateBenefitCode[]
+  ledger       CorporateLedger[]
+  sponsorships CorporateSessionSponsorship[]
+
+  @@index([status])
+}
+
+model CorporateContract {
+  id             String                  @id @default(uuid()) @db.Uuid
+  organizationId String                  @db.Uuid
+  startDate      DateTime
+  endDate        DateTime
+  status         CorporateContractStatus @default(DRAFT)
+  billingMode    CorporateBillingMode
+  currency       String                  @db.VarChar(3)
+  market         CorporateMarket
+  notes          Json?
+  createdAt      DateTime                @default(now())
+  updatedAt      DateTime                @updatedAt
+
+  organization CorporateOrganization         @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  plans        CorporateBenefitPlan[]
+  batches      CorporateCodeBatch[]
+  codes        CorporateBenefitCode[]
+  ledger       CorporateLedger[]
+  sponsorships CorporateSessionSponsorship[]
+
+  @@index([organizationId, status])
+  @@index([status, endDate])
+}
+
+model CorporateBenefitPlan {
+  id                        String                     @id @default(uuid()) @db.Uuid
+  contractId                String                     @db.Uuid
+  name                      String                     @db.VarChar(255)
+  coverageType              CorporateCoverageType
+  coveragePercent           Int?
+  maxCoverageAmount         Decimal?                   @db.Decimal(12, 2)
+  maxTotalCoverage          Decimal?                   @db.Decimal(14, 2)
+  currency                  String                     @db.VarChar(3)
+  codeUsageLimit            Int                        @default(1)
+  codeReservationTtlMinutes Int                        @default(15)
+  status                    CorporateBenefitPlanStatus @default(ACTIVE)
+  createdAt                 DateTime                   @default(now())
+  updatedAt                 DateTime                   @updatedAt
+
+  contract      CorporateContract                  @relation(fields: [contractId], references: [id], onDelete: Restrict)
+  specialties   CorporateBenefitPlanSpecialty[]
+  practitioners CorporateBenefitPlanPractitioner[]
+  batches       CorporateCodeBatch[]
+  codes         CorporateBenefitCode[]
+  sponsorships  CorporateSessionSponsorship[]
+
+  @@index([contractId, status])
+}
+
+model CorporateBenefitPlanSpecialty {
+  id          String @id @default(uuid()) @db.Uuid
+  planId      String @db.Uuid
+  specialtyId String @db.Uuid
+
+  plan      CorporateBenefitPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  specialty Specialty            @relation(fields: [specialtyId], references: [id], onDelete: Cascade)
+
+  @@unique([planId, specialtyId])
+  @@index([specialtyId])
+}
+
+model CorporateBenefitPlanPractitioner {
+  id             String @id @default(uuid()) @db.Uuid
+  planId         String @db.Uuid
+  practitionerId String @db.Uuid
+
+  plan         CorporateBenefitPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  practitioner PractitionerProfile  @relation(fields: [practitionerId], references: [id], onDelete: Cascade)
+
+  @@unique([planId, practitionerId])
+  @@index([practitionerId])
+}
+
+model CorporateCodeBatch {
+  id                String               @id @default(uuid()) @db.Uuid
+  organizationId    String               @db.Uuid
+  contractId        String               @db.Uuid
+  benefitPlanId     String               @db.Uuid
+  name              String               @db.VarChar(255)
+  totalCodes        Int
+  generatedCount    Int                  @default(0)
+  expiresAt         DateTime?
+  status            CorporateBatchStatus @default(GENERATING)
+  createdByAdminId  String               @db.Uuid
+  exportedAt        DateTime?
+  exportedByAdminId String?              @db.Uuid
+  revokedAt         DateTime?
+  revokedByAdminId  String?              @db.Uuid
+  revokeReason      String?              @db.VarChar(500)
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+
+  organization CorporateOrganization  @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  contract     CorporateContract      @relation(fields: [contractId], references: [id], onDelete: Restrict)
+  benefitPlan  CorporateBenefitPlan   @relation(fields: [benefitPlanId], references: [id], onDelete: Restrict)
+  codes        CorporateBenefitCode[]
+
+  @@index([organizationId, status])
+  @@index([contractId, status])
+  @@index([benefitPlanId, status])
+}
+
+model CorporateBenefitCode {
+  id             String @id @default(uuid()) @db.Uuid
+  organizationId String @db.Uuid
+  contractId     String @db.Uuid
+  benefitPlanId  String @db.Uuid
+  batchId        String @db.Uuid
+
+  codeHash      String @unique @db.VarChar(64)
+  codePrefix    String @db.VarChar(8)
+  codeLast4     String @db.VarChar(4)
+  pepperVersion Int    @default(1)
+
+  status     CorporateCodeStatus @default(AVAILABLE)
+  usageLimit Int                 @default(1)
+  usedCount  Int                 @default(0)
+
+  reservedByUserId  String?   @db.Uuid
+  reservedSessionId String?   @db.Uuid
+  reservedUntil     DateTime?
+
+  usedByUserId  String?   @db.Uuid
+  usedSessionId String?   @db.Uuid
+  usedAt        DateTime?
+
+  expiresAt        DateTime?
+  revokedAt        DateTime?
+  revokedByAdminId String?   @db.Uuid
+  revokeReason     String?   @db.VarChar(500)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  organization CorporateOrganization         @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  contract     CorporateContract             @relation(fields: [contractId], references: [id], onDelete: Restrict)
+  benefitPlan  CorporateBenefitPlan          @relation(fields: [benefitPlanId], references: [id], onDelete: Restrict)
+  batch        CorporateCodeBatch            @relation(fields: [batchId], references: [id], onDelete: Restrict)
+  sponsorships CorporateSessionSponsorship[]
+  ledger       CorporateLedger[]
+
+  @@index([organizationId, status])
+  @@index([batchId, status])
+  @@index([status, expiresAt])
+  @@index([status, reservedUntil])
+  @@index([reservedUntil])
+  @@index([usedByUserId])
+  @@index([usedSessionId])
+  @@index([reservedSessionId])
+  @@index([organizationId, createdAt])
+  @@index([benefitPlanId, status])
+}
+
+model CorporateSessionSponsorship {
+  id             String @id @default(uuid()) @db.Uuid
+  sessionId      String @unique @db.Uuid
+  organizationId String @db.Uuid
+  contractId     String @db.Uuid
+  benefitPlanId  String @db.Uuid
+  codeId         String @db.Uuid
+
+  coverageType     CorporateCoverageType
+  billingMode      CorporateBillingMode
+  market           CorporateMarket?
+  originalAmount   Decimal               @db.Decimal(12, 2)
+  coveredAmount    Decimal               @db.Decimal(12, 2)
+  patientPayAmount Decimal               @db.Decimal(12, 2)
+  currency         String                @db.VarChar(3)
+
+  snapshotJson Json
+  status       CorporateSponsorshipStatus @default(RESERVED)
+  createdAt    DateTime                   @default(now())
+  updatedAt    DateTime                   @updatedAt
+
+  organization  CorporateOrganization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  contract      CorporateContract     @relation(fields: [contractId], references: [id], onDelete: Restrict)
+  benefitPlan   CorporateBenefitPlan  @relation(fields: [benefitPlanId], references: [id], onDelete: Restrict)
+  code          CorporateBenefitCode  @relation(fields: [codeId], references: [id], onDelete: Restrict)
+  session       Session               @relation(fields: [sessionId], references: [id], onDelete: Restrict)
+  ledgerEntries CorporateLedger[]
+
+  @@index([organizationId, createdAt])
+  @@index([contractId, createdAt])
+  @@index([benefitPlanId, status])
+  @@index([status, createdAt])
+  @@index([codeId])
+}
+
+model CorporateLedger {
+  id             String  @id @default(uuid()) @db.Uuid
+  organizationId String  @db.Uuid
+  contractId     String? @db.Uuid
+  sessionId      String? @db.Uuid
+  codeId         String? @db.Uuid
+  sponsorshipId  String? @db.Uuid
+
+  eventType CorporateLedgerEventType
+  amount    Decimal?                 @db.Decimal(14, 2)
+  currency  String?                  @db.VarChar(3)
+  quantity  Int?
+
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  organization CorporateOrganization        @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  contract     CorporateContract?           @relation(fields: [contractId], references: [id], onDelete: SetNull)
+  session      Session?                     @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+  code         CorporateBenefitCode?        @relation(fields: [codeId], references: [id], onDelete: SetNull)
+  sponsorship  CorporateSessionSponsorship? @relation(fields: [sponsorshipId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, createdAt])
+  @@index([contractId, createdAt])
+  @@index([sessionId])
+  @@index([codeId])
+  @@index([sponsorshipId])
+  @@index([organizationId, eventType, createdAt])
 }

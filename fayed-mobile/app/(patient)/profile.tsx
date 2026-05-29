@@ -1,6 +1,6 @@
 import React from "react";
 import { Image, ScrollView, StyleSheet, View } from "react-native";
-import { usePathname, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
 import {
   Screen,
   Header,
@@ -27,7 +27,6 @@ import { useGeneralChatUnreadSummary } from "../../src/features/messages/hooks";
 
 export default function PatientProfileScreen() {
   const router = useRouter();
-  const pathname = usePathname();
   const { signOut, user } = useAuth();
   const { theme } = useTheme();
   const { t, i18n } = useTranslation();
@@ -472,12 +471,7 @@ export default function PatientProfileScreen() {
                 />
               }
               onPress={() =>
-                router.push(
-                  {
-                    pathname: "/(patient)/support",
-                    params: { returnTo: pathname },
-                  } as any,
-                )
+                router.push("/(patient)/messages?tab=support" as any)
               }
               showChevron
             />

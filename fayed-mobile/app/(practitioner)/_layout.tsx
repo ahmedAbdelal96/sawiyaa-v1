@@ -7,6 +7,10 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "../../src/providers/AuthProvider";
 import { usePractitionerPresenceHeartbeat } from "../../src/features/practitioner/presence/hooks";
 import { useTheme } from "../../src/providers/ThemeProvider";
+import {
+  MOBILE_TAB_BAR_HEIGHT,
+  MOBILE_TAB_ICON_SIZE,
+} from "../../src/components/mobile-shell";
 
 const TabIcon = ({
   name,
@@ -14,7 +18,7 @@ const TabIcon = ({
 }: {
   name: keyof typeof Ionicons.glyphMap;
   color: string;
-}) => <Ionicons name={name} size={24} color={color} />;
+}) => <Ionicons name={name} size={MOBILE_TAB_ICON_SIZE} color={color} />;
 
 export default function PractitionerLayout() {
   const { t } = useTranslation();
@@ -32,26 +36,28 @@ export default function PractitionerLayout() {
         tabBarHideOnKeyboard: true,
         tabBarActiveTintColor: theme.colors.primary,
         tabBarInactiveTintColor: theme.colors.textMuted,
+        tabBarActiveBackgroundColor: theme.colors.primaryLight,
+        tabBarInactiveBackgroundColor: theme.colors.surface,
         tabBarStyle: {
           backgroundColor: theme.colors.surface,
           borderTopColor: theme.colors.borderLight,
           borderTopWidth: 1,
-          elevation: 16,
-          shadowColor: "#0f172a",
-          shadowOpacity: 0.08,
-          shadowRadius: 16,
-          shadowOffset: { width: 0, height: -2 },
-          height: 74 + insets.bottom,
-          paddingBottom: Math.max(12, insets.bottom),
-          paddingTop: 12,
-          paddingHorizontal: 18,
+          elevation: 12,
+          shadowColor: "#000",
+          shadowOffset: { width: 0, height: -8 },
+          shadowOpacity: 0.04,
+          shadowRadius: 14,
+          height: MOBILE_TAB_BAR_HEIGHT + insets.bottom,
+          paddingBottom: Math.max(10, insets.bottom),
+          paddingTop: 10,
+          paddingHorizontal: 12,
         },
         tabBarItemStyle: {
           paddingVertical: 8,
           borderRadius: 16,
         },
         tabBarLabelStyle: {
-          fontSize: 12,
+          fontSize: 11,
           fontWeight: "600",
         },
       }}

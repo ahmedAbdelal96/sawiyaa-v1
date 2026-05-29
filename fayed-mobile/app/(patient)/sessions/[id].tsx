@@ -17,6 +17,7 @@ import {
   usePatientSession,
   useResolvePatientSessionJoinContract,
 } from "../../../src/features/patient/sessions/hooks";
+import { useMyCareChatRequests } from "../../../src/features/patient/care-chat/hooks";
 import type {
   SessionJoinBlockedReason,
   SessionStatus,
@@ -44,6 +45,7 @@ export default function SessionDetailScreen() {
   const [joinError, setJoinError] = useState<string | null>(null);
   const [messagesError, setMessagesError] = useState<string | null>(null);
   const [isOpeningMessages, setIsOpeningMessages] = useState(false);
+  const [isOpeningFollowUp, setIsOpeningFollowUp] = useState(false);
 
   const canAttemptJoin = useMemo(() => {
     const status = sessionQuery.data?.status;
@@ -142,6 +144,8 @@ export default function SessionDetailScreen() {
     session.status === "READY_TO_JOIN" ||
     session.status === "IN_PROGRESS" ||
     session.status === "COMPLETED";
+
+  const canRequestFollowUp = Boolean(session.practitioner?.slug);
 
   return (
     <Screen bg="background">
@@ -341,6 +345,27 @@ export default function SessionDetailScreen() {
           disabled={!canOpenMessages || isOpeningMessages}
           style={styles.secondaryAction}
         />
+
+        {canRequestFollowUp ? (
+          <Button
+            title={t("patientSessionsFlow.detail.requestFollowUp")}
+            onPress={() => {
+              const params = new URLSearchParams();
+              params.set("practitionerSlug", session.practitioner.slug);
+              params.set("relatedSessionId", session.id);
+              if (session.practitioner.id) {
+                params.set("practitionerId", session.practitioner.id);
+              }
+              if (session.practitioner.displayName) {
+                params.set("practitionerName", session.practitioner.displayName);
+              }
+              router.push(`/(patient)/care-chat/new?${params.toString()}` as any);
+            }}
+            variant="secondary"
+            disabled={isOpeningFollowUp}
+            style={styles.secondaryAction}
+          />
+        ) : null}
       </View>
     </Screen>
   );

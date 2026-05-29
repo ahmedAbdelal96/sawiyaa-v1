@@ -422,33 +422,50 @@ exports.Prisma.PractitionerProfileScalarFieldEnum = {
   updatedAt: 'updatedAt'
 };
 
-exports.Prisma.PractitionerPackageScalarFieldEnum = {
+exports.Prisma.PatientPractitionerViewScalarFieldEnum = {
   id: 'id',
+  patientId: 'patientId',
   practitionerId: 'practitionerId',
-  slug: 'slug',
-  title: 'title',
-  description: 'description',
-  sessionCount: 'sessionCount',
-  sessionDurationMinutes: 'sessionDurationMinutes',
-  sessionMode: 'sessionMode',
-  priceEgp: 'priceEgp',
-  priceUsd: 'priceUsd',
-  status: 'status',
-  schedulePolicy: 'schedulePolicy',
-  version: 'version',
-  activatedAt: 'activatedAt',
-  pausedAt: 'pausedAt',
-  disabledAt: 'disabledAt',
-  disabledReason: 'disabledReason',
-  statusBeforeAdminDisable: 'statusBeforeAdminDisable',
-  archivedAt: 'archivedAt',
+  firstViewedAt: 'firstViewedAt',
+  lastViewedAt: 'lastViewedAt',
+  viewCount: 'viewCount',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };
 
+exports.Prisma.PractitionerMarketingPlacementScalarFieldEnum = {
+  id: 'id',
+  practitionerId: 'practitionerId',
+  surface: 'surface',
+  status: 'status',
+  startsAt: 'startsAt',
+  endsAt: 'endsAt',
+  priority: 'priority',
+  badgeLabelAr: 'badgeLabelAr',
+  badgeLabelEn: 'badgeLabelEn',
+  reason: 'reason',
+  campaignName: 'campaignName',
+  notesInternal: 'notesInternal',
+  createdByAdminId: 'createdByAdminId',
+  pausedByAdminId: 'pausedByAdminId',
+  pausedAt: 'pausedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.PractitionerMarketingPlacementHistoryScalarFieldEnum = {
+  id: 'id',
+  placementId: 'placementId',
+  action: 'action',
+  actorUserId: 'actorUserId',
+  beforeSnapshot: 'beforeSnapshot',
+  afterSnapshot: 'afterSnapshot',
+  note: 'note',
+  createdAt: 'createdAt'
+};
+
 exports.Prisma.PatientPackagePurchaseScalarFieldEnum = {
   id: 'id',
-  packageId: 'packageId',
   packagePlanId: 'packagePlanId',
   practitionerId: 'practitionerId',
   patientId: 'patientId',
@@ -758,7 +775,6 @@ exports.Prisma.SessionScalarFieldEnum = {
   providerSessionRef: 'providerSessionRef',
   notesInternal: 'notesInternal',
   packagePurchaseId: 'packagePurchaseId',
-  packageTemplateId: 'packageTemplateId',
   packageSessionIndex: 'packageSessionIndex',
   packageSessionCount: 'packageSessionCount',
   paymentCoverageType: 'paymentCoverageType',
@@ -2186,6 +2202,143 @@ exports.Prisma.SecurityAuditLogScalarFieldEnum = {
   occurredAt: 'occurredAt'
 };
 
+exports.Prisma.CorporateOrganizationScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  companyCode: 'companyCode',
+  countryIsoCode: 'countryIsoCode',
+  status: 'status',
+  billingEmail: 'billingEmail',
+  contactName: 'contactName',
+  contactPhone: 'contactPhone',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.CorporateContractScalarFieldEnum = {
+  id: 'id',
+  organizationId: 'organizationId',
+  startDate: 'startDate',
+  endDate: 'endDate',
+  status: 'status',
+  billingMode: 'billingMode',
+  currency: 'currency',
+  market: 'market',
+  notes: 'notes',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.CorporateBenefitPlanScalarFieldEnum = {
+  id: 'id',
+  contractId: 'contractId',
+  name: 'name',
+  coverageType: 'coverageType',
+  coveragePercent: 'coveragePercent',
+  maxCoverageAmount: 'maxCoverageAmount',
+  maxTotalCoverage: 'maxTotalCoverage',
+  currency: 'currency',
+  codeUsageLimit: 'codeUsageLimit',
+  codeReservationTtlMinutes: 'codeReservationTtlMinutes',
+  status: 'status',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.CorporateBenefitPlanSpecialtyScalarFieldEnum = {
+  id: 'id',
+  planId: 'planId',
+  specialtyId: 'specialtyId'
+};
+
+exports.Prisma.CorporateBenefitPlanPractitionerScalarFieldEnum = {
+  id: 'id',
+  planId: 'planId',
+  practitionerId: 'practitionerId'
+};
+
+exports.Prisma.CorporateCodeBatchScalarFieldEnum = {
+  id: 'id',
+  organizationId: 'organizationId',
+  contractId: 'contractId',
+  benefitPlanId: 'benefitPlanId',
+  name: 'name',
+  totalCodes: 'totalCodes',
+  generatedCount: 'generatedCount',
+  expiresAt: 'expiresAt',
+  status: 'status',
+  createdByAdminId: 'createdByAdminId',
+  exportedAt: 'exportedAt',
+  exportedByAdminId: 'exportedByAdminId',
+  revokedAt: 'revokedAt',
+  revokedByAdminId: 'revokedByAdminId',
+  revokeReason: 'revokeReason',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.CorporateBenefitCodeScalarFieldEnum = {
+  id: 'id',
+  organizationId: 'organizationId',
+  contractId: 'contractId',
+  benefitPlanId: 'benefitPlanId',
+  batchId: 'batchId',
+  codeHash: 'codeHash',
+  codePrefix: 'codePrefix',
+  codeLast4: 'codeLast4',
+  pepperVersion: 'pepperVersion',
+  status: 'status',
+  usageLimit: 'usageLimit',
+  usedCount: 'usedCount',
+  reservedByUserId: 'reservedByUserId',
+  reservedSessionId: 'reservedSessionId',
+  reservedUntil: 'reservedUntil',
+  usedByUserId: 'usedByUserId',
+  usedSessionId: 'usedSessionId',
+  usedAt: 'usedAt',
+  expiresAt: 'expiresAt',
+  revokedAt: 'revokedAt',
+  revokedByAdminId: 'revokedByAdminId',
+  revokeReason: 'revokeReason',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.CorporateSessionSponsorshipScalarFieldEnum = {
+  id: 'id',
+  sessionId: 'sessionId',
+  organizationId: 'organizationId',
+  contractId: 'contractId',
+  benefitPlanId: 'benefitPlanId',
+  codeId: 'codeId',
+  coverageType: 'coverageType',
+  billingMode: 'billingMode',
+  market: 'market',
+  originalAmount: 'originalAmount',
+  coveredAmount: 'coveredAmount',
+  patientPayAmount: 'patientPayAmount',
+  currency: 'currency',
+  snapshotJson: 'snapshotJson',
+  status: 'status',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.CorporateLedgerScalarFieldEnum = {
+  id: 'id',
+  organizationId: 'organizationId',
+  contractId: 'contractId',
+  sessionId: 'sessionId',
+  codeId: 'codeId',
+  sponsorshipId: 'sponsorshipId',
+  eventType: 'eventType',
+  amount: 'amount',
+  currency: 'currency',
+  quantity: 'quantity',
+  metadata: 'metadata',
+  createdAt: 'createdAt'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -2307,23 +2460,36 @@ exports.PractitionerStatus = exports.$Enums.PractitionerStatus = {
   INACTIVE: 'INACTIVE'
 };
 
-exports.SessionMode = exports.$Enums.SessionMode = {
-  VIDEO: 'VIDEO',
-  AUDIO: 'AUDIO',
-  CHAT: 'CHAT'
+exports.PractitionerMarketingPlacementSurface = exports.$Enums.PractitionerMarketingPlacementSurface = {
+  HOME: 'HOME',
+  DISCOVERY: 'DISCOVERY',
+  ALL: 'ALL'
 };
 
-exports.PractitionerPackageStatus = exports.$Enums.PractitionerPackageStatus = {
-  DRAFT: 'DRAFT',
+exports.PractitionerMarketingPlacementStatus = exports.$Enums.PractitionerMarketingPlacementStatus = {
   ACTIVE: 'ACTIVE',
-  PAUSED_BY_PRACTITIONER: 'PAUSED_BY_PRACTITIONER',
-  DISABLED_BY_ADMIN: 'DISABLED_BY_ADMIN',
-  ARCHIVED: 'ARCHIVED'
+  PAUSED: 'PAUSED',
+  EXPIRED: 'EXPIRED'
 };
 
-exports.PackageSchedulePolicy = exports.$Enums.PackageSchedulePolicy = {
-  REQUIRE_ALL_SESSIONS_AT_PURCHASE: 'REQUIRE_ALL_SESSIONS_AT_PURCHASE',
-  ALLOW_SCHEDULE_LATER: 'ALLOW_SCHEDULE_LATER'
+exports.PractitionerMarketingPlacementReason = exports.$Enums.PractitionerMarketingPlacementReason = {
+  FEATURED: 'FEATURED',
+  SPONSORED: 'SPONSORED',
+  DISCOUNT: 'DISCOUNT',
+  NEW_SPECIALIST: 'NEW_SPECIALIST',
+  HIGH_AVAILABILITY: 'HIGH_AVAILABILITY',
+  EDITORIAL_PICK: 'EDITORIAL_PICK'
+};
+
+exports.PractitionerMarketingPlacementHistoryAction = exports.$Enums.PractitionerMarketingPlacementHistoryAction = {
+  CREATED: 'CREATED',
+  UPDATED: 'UPDATED',
+  PAUSED: 'PAUSED',
+  RESUMED: 'RESUMED',
+  EXPIRED: 'EXPIRED',
+  DELETED: 'DELETED',
+  PRIORITY_CHANGED: 'PRIORITY_CHANGED',
+  DATE_CHANGED: 'DATE_CHANGED'
 };
 
 exports.PatientPackagePurchaseStatus = exports.$Enums.PatientPackagePurchaseStatus = {
@@ -2334,6 +2500,17 @@ exports.PatientPackagePurchaseStatus = exports.$Enums.PatientPackagePurchaseStat
   CANCELLED: 'CANCELLED',
   REFUND_PENDING: 'REFUND_PENDING',
   REFUNDED: 'REFUNDED'
+};
+
+exports.SessionMode = exports.$Enums.SessionMode = {
+  VIDEO: 'VIDEO',
+  AUDIO: 'AUDIO',
+  CHAT: 'CHAT'
+};
+
+exports.PackageSchedulePolicy = exports.$Enums.PackageSchedulePolicy = {
+  REQUIRE_ALL_SESSIONS_AT_PURCHASE: 'REQUIRE_ALL_SESSIONS_AT_PURCHASE',
+  ALLOW_SCHEDULE_LATER: 'ALLOW_SCHEDULE_LATER'
 };
 
 exports.PackageSettlementStatus = exports.$Enums.PackageSettlementStatus = {
@@ -3229,6 +3406,78 @@ exports.SecurityAuditOutcome = exports.$Enums.SecurityAuditOutcome = {
   DENIED: 'DENIED'
 };
 
+exports.CorporateOrganizationStatus = exports.$Enums.CorporateOrganizationStatus = {
+  ACTIVE: 'ACTIVE',
+  SUSPENDED: 'SUSPENDED',
+  INACTIVE: 'INACTIVE'
+};
+
+exports.CorporateContractStatus = exports.$Enums.CorporateContractStatus = {
+  DRAFT: 'DRAFT',
+  ACTIVE: 'ACTIVE',
+  EXPIRED: 'EXPIRED',
+  TERMINATED: 'TERMINATED'
+};
+
+exports.CorporateBillingMode = exports.$Enums.CorporateBillingMode = {
+  PREPAID: 'PREPAID',
+  POSTPAID: 'POSTPAID',
+  HYBRID: 'HYBRID'
+};
+
+exports.CorporateMarket = exports.$Enums.CorporateMarket = {
+  EGYPT: 'EGYPT',
+  INTERNATIONAL: 'INTERNATIONAL'
+};
+
+exports.CorporateCoverageType = exports.$Enums.CorporateCoverageType = {
+  FREE_SESSION: 'FREE_SESSION',
+  DISCOUNT_PERCENT: 'DISCOUNT_PERCENT',
+  FIXED_AMOUNT: 'FIXED_AMOUNT'
+};
+
+exports.CorporateBenefitPlanStatus = exports.$Enums.CorporateBenefitPlanStatus = {
+  ACTIVE: 'ACTIVE',
+  SUSPENDED: 'SUSPENDED',
+  EXPIRED: 'EXPIRED'
+};
+
+exports.CorporateBatchStatus = exports.$Enums.CorporateBatchStatus = {
+  GENERATING: 'GENERATING',
+  ACTIVE: 'ACTIVE',
+  EXPIRED: 'EXPIRED',
+  REVOKED: 'REVOKED',
+  FAILED: 'FAILED'
+};
+
+exports.CorporateCodeStatus = exports.$Enums.CorporateCodeStatus = {
+  AVAILABLE: 'AVAILABLE',
+  RESERVED: 'RESERVED',
+  USED: 'USED',
+  REVOKED: 'REVOKED',
+  EXPIRED: 'EXPIRED'
+};
+
+exports.CorporateSponsorshipStatus = exports.$Enums.CorporateSponsorshipStatus = {
+  RESERVED: 'RESERVED',
+  CONSUMED: 'CONSUMED',
+  RELEASED: 'RELEASED',
+  REFUNDED: 'REFUNDED'
+};
+
+exports.CorporateLedgerEventType = exports.$Enums.CorporateLedgerEventType = {
+  CODE_GENERATED: 'CODE_GENERATED',
+  CODE_RESERVED: 'CODE_RESERVED',
+  CODE_CONSUMED: 'CODE_CONSUMED',
+  CODE_RELEASED: 'CODE_RELEASED',
+  CODE_EXPIRED: 'CODE_EXPIRED',
+  CODE_REVOKED: 'CODE_REVOKED',
+  CODE_EXPORTED: 'CODE_EXPORTED',
+  POSTPAID_SESSION_CHARGE: 'POSTPAID_SESSION_CHARGE',
+  PREPAID_CONSUMPTION: 'PREPAID_CONSUMPTION',
+  MANUAL_ADJUSTMENT: 'MANUAL_ADJUSTMENT'
+};
+
 exports.Prisma.ModelName = {
   PackagePlan: 'PackagePlan',
   RefundPolicy: 'RefundPolicy',
@@ -3253,7 +3502,9 @@ exports.Prisma.ModelName = {
   SpecialtyCategory: 'SpecialtyCategory',
   SpecialtyTranslation: 'SpecialtyTranslation',
   PractitionerProfile: 'PractitionerProfile',
-  PractitionerPackage: 'PractitionerPackage',
+  PatientPractitionerView: 'PatientPractitionerView',
+  PractitionerMarketingPlacement: 'PractitionerMarketingPlacement',
+  PractitionerMarketingPlacementHistory: 'PractitionerMarketingPlacementHistory',
   PatientPackagePurchase: 'PatientPackagePurchase',
   PackageSettlement: 'PackageSettlement',
   MatchingSession: 'MatchingSession',
@@ -3363,7 +3614,16 @@ exports.Prisma.ModelName = {
   AcademyEnrollment: 'AcademyEnrollment',
   AcademyPaymentAttempt: 'AcademyPaymentAttempt',
   AcademyEnrollmentActivityLog: 'AcademyEnrollmentActivityLog',
-  SecurityAuditLog: 'SecurityAuditLog'
+  SecurityAuditLog: 'SecurityAuditLog',
+  CorporateOrganization: 'CorporateOrganization',
+  CorporateContract: 'CorporateContract',
+  CorporateBenefitPlan: 'CorporateBenefitPlan',
+  CorporateBenefitPlanSpecialty: 'CorporateBenefitPlanSpecialty',
+  CorporateBenefitPlanPractitioner: 'CorporateBenefitPlanPractitioner',
+  CorporateCodeBatch: 'CorporateCodeBatch',
+  CorporateBenefitCode: 'CorporateBenefitCode',
+  CorporateSessionSponsorship: 'CorporateSessionSponsorship',
+  CorporateLedger: 'CorporateLedger'
 };
 
 /**

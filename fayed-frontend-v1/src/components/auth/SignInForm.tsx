@@ -1,22 +1,16 @@
 "use client";
 
 import { useState } from "react";
+import type { ComponentType } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useTranslations } from "next-intl";
 import { useSearchParams } from "next/navigation";
+import { ChevronLeft, Eye, EyeOff, LayoutGrid, Stethoscope, UserRound } from "lucide-react";
 import { Link, useRouter } from "@/i18n/navigation";
 import Input from "@/components/form/input/InputField";
 import Label from "@/components/form/Label";
-import {
-  ChevronLeftIcon,
-  EyeCloseIcon,
-  EyeIcon,
-  GridIcon,
-  GroupIcon,
-  UserCircleIcon,
-} from "@/icons";
 import PatientGoogleAuthButton from "@/components/auth/PatientGoogleAuthButton";
 import {
   useAdminLogin,
@@ -59,13 +53,13 @@ type PractitionerChallengeState = {
 type PractitionerLoginResponse = OtpChallengeResponse | AuthSuccessResponse;
 
 type ModeConfig = {
-  icon: typeof UserCircleIcon;
+  icon: ComponentType<{ className?: string }>;
 };
 
 const MODE_CONFIG: Record<SignInMode, ModeConfig> = {
-  patient: { icon: UserCircleIcon },
-  practitioner: { icon: GroupIcon },
-  admin: { icon: GridIcon },
+  patient: { icon: UserRound },
+  practitioner: { icon: Stethoscope },
+  admin: { icon: LayoutGrid },
 };
 
 function buildAuthHref(basePath: string, params: Record<string, string | null>) {
@@ -377,7 +371,7 @@ export default function SignInForm({ mode }: SignInFormProps) {
           href="/"
           className="inline-flex items-center gap-2 text-sm text-text-secondary transition-colors hover:text-text-primary dark:text-text-secondary dark:hover:text-text-primary"
         >
-          <ChevronLeftIcon />
+          <ChevronLeft className="h-4 w-4" />
           {t("backToHome")}
         </Link>
 
@@ -556,9 +550,9 @@ export default function SignInForm({ mode }: SignInFormProps) {
                           className="absolute right-4 top-1/2 z-10 -translate-y-1/2 text-text-secondary transition hover:text-text-primary"
                         >
                           {showPassword ? (
-                            <EyeIcon className="fill-current" />
+                            <Eye className="h-4 w-4" />
                           ) : (
-                            <EyeCloseIcon className="fill-current" />
+                            <EyeOff className="h-4 w-4" />
                           )}
                         </button>
                       </div>

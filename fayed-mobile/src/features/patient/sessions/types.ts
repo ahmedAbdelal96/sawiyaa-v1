@@ -46,6 +46,13 @@ export interface AvailabilityWindow {
   durationMinutes: number | null;
 }
 
+export interface BookedAvailabilitySlot {
+  startsAt: string;
+  endsAt: string;
+  durationMinutes: number | null;
+  statusType: "BOOKED" | "RESERVED";
+}
+
 export interface PublicAvailabilityWindowsData {
   timezone: string;
   range: {
@@ -53,6 +60,7 @@ export interface PublicAvailabilityWindowsData {
     to: string;
   };
   windows: AvailabilityWindow[];
+  bookedSlots?: BookedAvailabilitySlot[];
 }
 
 export interface SessionPractitionerSummary {

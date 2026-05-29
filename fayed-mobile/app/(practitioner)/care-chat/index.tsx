@@ -60,7 +60,7 @@ export default function PractitionerCareChatListScreen() {
   const { t, i18n } = useTranslation();
   const [tab, setTab] = useState<TabFilter>("active");
 
-  const query = usePractitionerCareChatRequests({ page: 1, limit: 50 });
+  const query = usePractitionerCareChatRequests({ page: 1, limit: 20 });
   const allItems = query.data?.items ?? [];
 
   const filtered = allItems.filter((item) => {

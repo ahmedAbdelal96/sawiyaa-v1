@@ -67,7 +67,7 @@ export default function PractitionerSupportListScreen() {
       ? returnTo
       : null;
 
-  const query = usePractitionerSupportTickets({ page: 1, limit: 50 });
+  const query = usePractitionerSupportTickets({ page: 1, limit: 20 });
   const allTickets = query.data?.items ?? [];
 
   const filtered = allTickets.filter((ticket) => {
@@ -174,11 +174,6 @@ export default function PractitionerSupportListScreen() {
       <Header
         title={t("practitioner.support.title")}
         showBack
-        onBack={
-          returnToRoute
-            ? () => router.replace(returnToRoute as never)
-            : undefined
-        }
       />
 
       {query.isLoading ? <LoadingState fullScreen /> : null}

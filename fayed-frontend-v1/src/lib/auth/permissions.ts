@@ -45,6 +45,8 @@ export const PermissionKey = {
   PRACTITIONER_APPLICATIONS_APPROVE: "practitionerApplications.approve",
   PRACTITIONER_APPLICATIONS_REJECT: "practitionerApplications.reject",
   PRACTITIONER_APPLICATIONS_REQUEST_CHANGES: "practitionerApplications.requestChanges",
+  FEATURED_PRACTITIONERS_READ: "featured-practitioners.read",
+  FEATURED_PRACTITIONERS_MANAGE: "featured-practitioners.manage",
   ADMIN_USERS_READ: "admin-users.read",
   ADMIN_USERS_CREATE: "admin-users.create",
   ADMIN_USERS_UPDATE: "admin-users.update",

@@ -63,6 +63,12 @@ export class PublicPractitionerAvailabilityController {
     name: 'to',
     description: 'Exclusive UTC range end',
   })
+  @ApiQuery({
+    name: 'includeBooked',
+    required: false,
+    description:
+      'Include public-safe booked/reserved occupied slots for schedule display',
+  })
   @ApiResponse({
     status: 200,
     type: PublicPractitionerAvailabilityWindowsSuccessResponseDto,
@@ -81,6 +87,7 @@ export class PublicPractitionerAvailabilityController {
       slug,
       fromUtc: new Date(query.from),
       toUtc: new Date(query.to),
+      includeBooked: query.includeBooked,
     });
   }
 }

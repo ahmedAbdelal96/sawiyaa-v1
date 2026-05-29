@@ -2,6 +2,7 @@ import React from 'react';
 import { View, ViewProps, StyleSheet, I18nManager } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../providers/ThemeProvider';
+import { MOBILE_HORIZONTAL_PADDING } from '../mobile-shell';
 
 export interface ScreenProps extends ViewProps {
   safeArea?: boolean;
@@ -44,6 +45,6 @@ export const Screen = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingHorizontal: 20,
+    paddingHorizontal: MOBILE_HORIZONTAL_PADDING,
   },
 });

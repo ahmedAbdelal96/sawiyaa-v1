@@ -35,30 +35,25 @@ const DEV_ACCOUNTS = [
 export default function PatientSignInScreen() {
   const router = useRouter();
   const { theme } = useTheme();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const isRtl = i18n.language?.startsWith("ar") ?? false;
   const { signInPatient, signInPatientWithGoogle } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [errorText, setErrorText] = useState<string | null>(null);
 
   const emailError = useMemo(() => {
-    if (!email) {
-      return null;
-    }
-
+    if (!email) return null;
     return validateEmail(email) ? null : t("auth.validation.email");
   }, [email, t]);
 
   async function handleSubmit() {
     setIsSubmitting(true);
     setErrorText(null);
-
     try {
-      await signInPatient({
-        email: email.trim(),
-        password,
-      });
+      await signInPatient({ email: email.trim(), password });
     } catch (error) {
       setErrorText(extractApiErrorMessage(error));
     } finally {
@@ -66,66 +61,146 @@ export default function PatientSignInScreen() {
     }
   }
 
+  const labelAlign = isRtl ? "right" : "left";
+
   return (
     <Screen safeArea bg="background" style={styles.screen}>
-      <View
-        style={[styles.radialTop, { backgroundColor: theme.colors.accent }]}
-      />
-
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        <TouchableOpacity
-          onPress={() => router.replace("/(auth)")}
-          style={styles.backWrap}
-          activeOpacity={0.8}
-        >
-          <Ionicons
-            name="arrow-back"
-            size={18}
-            color={theme.colors.textMuted}
-          />
-          <Text color={theme.colors.textMuted} style={styles.backText}>
-            {t("auth.common.backToEntry")}
-          </Text>
-        </TouchableOpacity>
-
-        <View style={styles.hero}>
-          <View
-            style={[
-              styles.logoCircle,
-              { backgroundColor: theme.colors.surface },
-            ]}
-          >
-            <Ionicons name="water" size={30} color={theme.colors.primary} />
+        {/* Brand Row */}
+        <View style={styles.brandRow}>
+          <View style={[styles.brandIcon, { backgroundColor: theme.colors.primaryLight }]}>
+            <Ionicons name="water" size={16} color={theme.colors.primary} />
           </View>
-          <Text
-            style={styles.title}
-            color={theme.colors.textPrimary}
-            weight="bold"
-          >
-            {t("auth.patientSignIn.title")}
-          </Text>
-          <Text style={styles.subtitle} color={theme.colors.textSecondary}>
-            {t("auth.patientSignIn.subtitle")}
+          <Text style={[styles.brandName, { color: theme.colors.primary }]} weight="600">
+            Fayed
           </Text>
         </View>
 
-        {__DEV__ && (
-          <View style={styles.devBox}>
-            <Text style={styles.devLabel} color={theme.colors.textMuted}>
-              DEV - TEST ACCOUNTS
+        {/* Card */}
+        <View style={[styles.card, { backgroundColor: theme.colors.surface }]}>
+          {/* Header */}
+          <View style={styles.header}>
+            <Text
+              style={styles.title}
+              color={theme.colors.textPrimary}
+              weight="bold"
+            >
+              {t("auth.patientSignIn.title")}
             </Text>
-            <View style={styles.devRow}>
+            <Text
+              style={styles.subtitle}
+              color={theme.colors.textSecondary}
+            >
+              {t("auth.patientSignIn.subtitle")}
+            </Text>
+          </View>
+
+          {/* Form */}
+          <Input
+            autoCapitalize="none"
+            autoComplete="email"
+            keyboardType="email-address"
+            label={t("auth.fields.email")}
+            labelDirection={labelAlign}
+            onChangeText={setEmail}
+            placeholder={t("auth.placeholders.email")}
+            placeholderDirection="left"
+            value={email}
+            error={emailError ?? undefined}
+          />
+          <Input
+            autoCapitalize="none"
+            autoComplete="password"
+            label={t("auth.fields.password")}
+            labelDirection={labelAlign}
+            placeholder={t("auth.placeholders.password")}
+            placeholderDirection="left"
+            secureTextEntry={!showPassword}
+            onChangeText={setPassword}
+            value={password}
+            rightElement={
+              <TouchableOpacity onPress={() => setShowPassword((v) => !v)} style={styles.eyeButton}>
+                <Ionicons
+                  name={showPassword ? "eye-off" : "eye"}
+                  size={20}
+                  color={theme.colors.textMuted}
+                />
+              </TouchableOpacity>
+            }
+          />
+
+          {/* Forgot */}
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={() => router.push("/(auth)/forgot-password-patient")}
+            style={styles.forgotWrap}
+          >
+            <Text
+              color={theme.colors.primary}
+              style={[styles.forgotText, { textAlign: isRtl ? "right" : "left" }]}
+            >
+              {t("auth.patientSignIn.forgotPassword")}
+            </Text>
+          </TouchableOpacity>
+
+          {/* Error */}
+          {errorText ? (
+            <View style={[styles.errorBox, { backgroundColor: theme.colors.errorLight }]}>
+              <Ionicons name="alert-circle" size={16} color={theme.colors.error} />
+              <Text style={[styles.errorText, { textAlign: labelAlign }]} color={theme.colors.error}>
+                {errorText}
+              </Text>
+            </View>
+          ) : null}
+
+          {/* Primary Button */}
+          <Button
+            title={isSubmitting ? t("auth.common.pleaseWait") : t("auth.patientSignIn.submit")}
+            onPress={() => void handleSubmit()}
+            disabled={isSubmitting || !email || !password || Boolean(emailError)}
+            style={styles.primaryButton}
+          />
+
+          {/* Google */}
+          <PatientGoogleSignInButton
+            title={t("auth.patientSignIn.googleButton")}
+            unavailableText={t("auth.patientSignIn.googleUnavailable")}
+            onTokenReceived={signInPatientWithGoogle}
+          />
+
+          {/* Bottom Link */}
+          <View style={styles.rowWrap}>
+            <Text color={theme.colors.textSecondary}>
+              {t("auth.patientSignIn.noAccount")}
+            </Text>
+            <TouchableOpacity onPress={() => router.push("/(auth)/signup/patient")}>
+              <Text color={theme.colors.primary} weight="600">
+                {t("auth.patientSignIn.createAccount")}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Dev Accounts */}
+        {__DEV__ && (
+          <View style={styles.devSection}>
+            <TouchableOpacity
+              style={styles.devToggle}
+              onPress={() => {}}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.devToggleText}>DEV TEST ACCOUNTS</Text>
+              <Ionicons name="chevron-down" size={12} color={theme.colors.textMuted} />
+            </TouchableOpacity>
+            <View style={styles.devChipsRow}>
               {DEV_ACCOUNTS.map((a) => (
                 <TouchableOpacity
                   key={a.email}
-                  style={[
-                    styles.devChip,
-                    { borderColor: theme.colors.primary },
-                  ]}
+                  style={[styles.devChip, { borderColor: theme.colors.primary + "60" }]}
                   onPress={() => {
                     setEmail(a.email);
                     setPassword(a.password);
@@ -141,79 +216,9 @@ export default function PatientSignInScreen() {
           </View>
         )}
 
-        <Input
-          autoCapitalize="none"
-          autoComplete="email"
-          keyboardType="email-address"
-          label={t("auth.fields.email")}
-          onChangeText={setEmail}
-          placeholder={t("auth.placeholders.email")}
-          value={email}
-          error={emailError ?? undefined}
-        />
-        <Input
-          autoCapitalize="none"
-          autoComplete="password"
-          label={t("auth.fields.password")}
-          onChangeText={setPassword}
-          placeholder={t("auth.placeholders.password")}
-          secureTextEntry
-          value={password}
-        />
-
-        <TouchableOpacity
-          activeOpacity={0.8}
-          onPress={() => router.push("/(auth)/forgot-password-patient")}
-          style={styles.forgotWrap}
-        >
-          <Text color={theme.colors.textMuted} style={styles.forgotText}>
-            {t("auth.patientSignIn.forgotPassword")}
-          </Text>
-        </TouchableOpacity>
-
-        {errorText ? (
-          <Text style={styles.errorText} color="#dc2626">
-            {errorText}
-          </Text>
-        ) : null}
-
-        <Button
-          title={
-            isSubmitting
-              ? t("auth.common.pleaseWait")
-              : t("auth.patientSignIn.submit")
-          }
-          onPress={() => void handleSubmit()}
-          disabled={isSubmitting || !email || !password || Boolean(emailError)}
-          style={styles.primaryButton}
-        />
-
-        <PatientGoogleSignInButton
-          title={t("auth.patientSignIn.googleButton")}
-          helperText={t("auth.patientSignIn.googleHelper")}
-          unavailableText={t("auth.patientSignIn.googleUnavailable")}
-          onTokenReceived={signInPatientWithGoogle}
-        />
-
-        <View style={styles.rowWrap}>
-          <Text color={theme.colors.textSecondary}>
-            {t("auth.patientSignIn.noAccount")}
-          </Text>
-          <TouchableOpacity
-            onPress={() => router.push("/(auth)/signup/patient")}
-          >
-            <Text color={theme.colors.textBrand} weight="600">
-              {t("auth.patientSignIn.createAccount")}
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        {isSubmitting ? (
-          <ActivityIndicator
-            style={styles.loader}
-            color={theme.colors.primary}
-          />
-        ) : null}
+        {isSubmitting && (
+          <ActivityIndicator style={styles.loader} color={theme.colors.primary} />
+        )}
       </ScrollView>
     </Screen>
   );
@@ -221,109 +226,121 @@ export default function PatientSignInScreen() {
 
 const styles = StyleSheet.create({
   screen: {
-    paddingHorizontal: 20,
-  },
-  radialTop: {
-    position: "absolute",
-    width: 360,
-    height: 360,
-    borderRadius: 180,
-    top: -180,
-    left: -120,
-    opacity: 0.5,
+    paddingHorizontal: 24,
   },
   scrollContent: {
-    paddingTop: 8,
-    paddingBottom: 28,
+    flexGrow: 1,
+    justifyContent: "center",
+    paddingVertical: 24,
+    gap: 12,
   },
-  backWrap: {
+  brandRow: {
     flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    marginBottom: 14,
-    alignSelf: "flex-start",
-  },
-  hero: {
-    alignItems: "center",
-    marginBottom: 18,
-  },
-  logoCircle: {
-    width: 86,
-    height: 86,
-    borderRadius: 43,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 18,
+    gap: 8,
+    marginBottom: 4,
+  },
+  brandIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  brandName: {
+    fontSize: 18,
+  },
+  card: {
+    borderRadius: 20,
+    paddingHorizontal: 22,
+    paddingVertical: 24,
+    gap: 0,
+  },
+  header: {
+    marginBottom: 20,
   },
   title: {
-    fontSize: 34,
-    lineHeight: 42,
+    fontSize: 22,
+    lineHeight: 28,
+    marginBottom: 6,
     textAlign: "center",
-    marginBottom: 8,
   },
   subtitle: {
-    fontSize: 16,
-    lineHeight: 24,
+    fontSize: 14,
+    lineHeight: 20,
     textAlign: "center",
-    paddingHorizontal: 8,
-  },
-  devBox: {
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#3f7dcf33",
-    backgroundColor: "#3f7dcf0a",
-    padding: 12,
-    marginBottom: 16,
-  },
-  devLabel: {
-    fontSize: 10,
-    fontWeight: "700",
-    letterSpacing: 1,
-    marginBottom: 8,
-    textTransform: "uppercase",
-  },
-  devRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-  },
-  devChip: {
-    borderWidth: 1,
-    borderRadius: 20,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-  },
-  devChipText: {
-    fontSize: 12,
-    fontWeight: "600",
   },
   forgotWrap: {
-    marginTop: -4,
-    marginBottom: 12,
     alignSelf: "flex-end",
+    marginBottom: 16,
   },
   forgotText: {
-    fontSize: 12,
+    fontSize: 13,
   },
-  primaryButton: {
+  errorBox: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 8,
     marginBottom: 12,
-    borderRadius: 999,
-    paddingVertical: 15,
   },
   errorText: {
     fontSize: 13,
+    flex: 1,
+  },
+  primaryButton: {
     marginBottom: 12,
+    borderRadius: 12,
+    paddingVertical: 16,
   },
   rowWrap: {
     flexDirection: "row",
     justifyContent: "center",
-    gap: 6,
+    alignItems: "center",
+    gap: 4,
     marginTop: 8,
   },
-  backText: {
-    fontSize: 13,
-  },
   loader: {
-    marginTop: 12,
+    marginTop: 8,
+  },
+  devSection: {
+    marginTop: 4,
+    paddingHorizontal: 4,
+  },
+  devToggle: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 4,
+    paddingVertical: 4,
+  },
+  devToggleText: {
+    fontSize: 10,
+    fontWeight: "700",
+    letterSpacing: 1,
+    color: "#7a8891",
+  },
+  devChipsRow: {
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 8,
+  },
+  devChip: {
+    borderWidth: 1,
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+  },
+  devChipText: {
+    fontSize: 11,
+    fontWeight: "600",
+  },
+  eyeButton: {
+    paddingHorizontal: 16,
+    justifyContent: "center",
+    alignItems: "center",
   },
 });

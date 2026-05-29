@@ -12,6 +12,7 @@ import { NotificationsModule } from '@modules/notifications/notifications.module
 import { RefundPoliciesModule } from '@modules/refund-policies/refund-policies.module';
 import { SessionsModule } from '@modules/sessions/sessions.module';
 import { CustomerWalletsModule } from '@modules/customer-wallets/customer-wallets.module';
+import { CorporateSponsorshipModule } from '@modules/corporate-sponsorship/corporate-sponsorship.module';
 import { PatientPaymentsController } from './controllers/patient-payments.controller';
 import { PaymentWebhooksController } from './controllers/payment-webhooks.controller';
 import { AdminPaymentRefundsController } from './controllers/admin-payment-refunds.controller';
@@ -65,6 +66,7 @@ import { RetryPaymentRefundUseCase } from './use-cases/retry-payment-refund.use-
     NotificationsModule,
     CustomerWalletsModule,
     RefundPoliciesModule,
+    CorporateSponsorshipModule,
   ],
   controllers: [
     PatientPaymentsController,

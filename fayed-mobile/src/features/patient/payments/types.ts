@@ -87,6 +87,24 @@ export interface SessionPaymentCapabilitiesItem {
   methods: SessionPaymentCapabilityMethod[];
   supportedMethods: string[];
   defaultMethod: string | null;
+  currency?: string | null;
+  regionalPricingMode?: "EGYPT_LOCAL" | "INTERNATIONAL" | null;
+  resolvedCountryIsoCode?: string | null;
+  normalizedMethods?: Array<{
+    key: string;
+    type: string;
+    label: string;
+    enabled: boolean;
+    description?: string | null;
+    brands?: string[];
+  }>;
+  wallet?: {
+    enabled: boolean;
+    availableBalance: string | null;
+    currencyCode: string | null;
+    canUseFullAmount: boolean;
+    canUsePartialAmount: boolean;
+  } | null;
 }
 
 export interface PaymentReconcileSessionReturnInput {

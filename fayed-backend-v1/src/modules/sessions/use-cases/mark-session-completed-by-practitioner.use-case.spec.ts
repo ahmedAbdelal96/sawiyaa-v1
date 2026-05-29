@@ -60,7 +60,7 @@ describe('MarkSessionCompletedByPractitionerUseCase', () => {
     } as unknown as PostPackageSessionLedgerEntriesUseCase;
 
     const prisma = {
-      $transaction: jest.fn().mockImplementation(async (fn: never) => fn({})),
+      $transaction: jest.fn().mockImplementation(async (fn: (...args: any[]) => any) => fn({})),
     } as never;
 
     const useCase = new MarkSessionCompletedByPractitionerUseCase(

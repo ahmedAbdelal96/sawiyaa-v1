@@ -22,7 +22,13 @@ describe('ListPublicPractitionerReviewsUseCase', () => {
   );
 
   beforeEach(() => {
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date('2026-03-20T00:00:00.000Z'));
     jest.clearAllMocks();
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
   });
 
   it('throws not found when practitioner is not public-visible', async () => {

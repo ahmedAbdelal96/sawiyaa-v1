@@ -56,5 +56,15 @@ describe('UpdatePractitionerRatingSummaryService', () => {
       SessionReviewStatus.PUBLISHED,
       undefined,
     );
+    expect(reviewRepository.aggregateAverageRating).toHaveBeenCalledWith(
+      'practitioner-1',
+      [SessionReviewStatus.PUBLISHED],
+      undefined,
+    );
+    expect(reviewRepository.groupRatingHistogram).toHaveBeenCalledWith(
+      'practitioner-1',
+      [SessionReviewStatus.PUBLISHED],
+      undefined,
+    );
   });
 });

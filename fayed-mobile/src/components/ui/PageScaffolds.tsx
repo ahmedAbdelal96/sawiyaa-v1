@@ -180,12 +180,12 @@ export function DetailPageScaffold({
 const styles = StyleSheet.create({
   listContent: {
     flex: 1,
-    paddingTop: 20,
+    paddingTop: 16,
     paddingBottom: 28,
   },
   detailContent: {
     flexGrow: 1,
-    paddingTop: 20,
+    paddingTop: 16,
     paddingBottom: 32,
   },
   footer: {

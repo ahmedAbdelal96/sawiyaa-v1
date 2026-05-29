@@ -201,8 +201,17 @@
       "invalidBirthDateBody": "Use the date format YYYY-MM-DD.",
       "avatar": {
         "title": "Profile photo",
-        "body": "Your current photo can be shown here, but secure photo upload and removal are not supported in this mobile build yet.",
-        "updatedAt": "Last profile update: {{date}}"
+        "body": "Tap the camera icon to change or remove your profile photo.",
+        "updatedAt": "Last profile update: {{date}}",
+        "changePhoto": "Change photo",
+        "removePhoto": "Remove photo",
+        "choosePhoto": "Choose photo",
+        "imageTooLarge": "Image is too large. Maximum size is 5MB.",
+        "unsupportedType": "Image type is not supported. Use JPG, PNG, or WebP.",
+        "uploadFailed": "Could not upload photo. Please try again.",
+        "photoUpdated": "Profile photo updated.",
+        "permissionDenied": "Permission was denied. You can change it from device settings.",
+        "permissionNeeded": "We need photo access to choose a profile picture."
       },
       "readOnly": {
         "email": "Email",
@@ -222,7 +231,9 @@
         "countryCode": "Country code",
         "countryCodePlaceholder": "EG",
         "timezone": "Timezone"
-      }
+      },
+      "personalSectionTitle": "Personal information",
+      "editButton": "Edit information"
     },
     "preferences": {
       "screenTitle": "Preferences & language",
@@ -279,6 +290,38 @@
       "save": "Save",
       "apply": "Apply",
       "saving": "Saving..."
+    },
+    "edit": {
+      "screenTitle": "Edit profile",
+      "sectionTitle": "Personal details",
+      "avatarHint": "Profile photo is shown here",
+      "fields": {
+        "displayName": "Display name",
+        "displayNamePlaceholder": "Your full name",
+        "displayNameRequired": "Display name is required.",
+        "dateOfBirth": "Birth date",
+        "dateOfBirthPlaceholder": "YYYY-MM-DD",
+        "dateOfBirthRequired": "Birth date is required.",
+        "invalidDateFormat": "Use the format YYYY-MM-DD.",
+        "futureDateError": "Birth date cannot be in the future.",
+        "genderRequired": "Gender is required.",
+        "countryRequired": "Country is required.",
+        "gender": "Gender",
+        "countryCode": "Country"
+      },
+      "datePicker": {
+        "placeholder": "Select birth date",
+        "cancel": "Cancel",
+        "confirm": "Confirm"
+      },
+      "countryPicker": {
+        "placeholder": "Select country",
+        "searchPlaceholder": "Search country"
+      },
+      "contactNote": "Email and phone are managed through account settings and cannot be changed here.",
+      "cancel": "Cancel",
+      "save": "Save changes",
+      "saveFailedBody": "Could not save your profile changes right now."
     }
   },
   "patientNotifications": {
@@ -660,19 +703,45 @@
     },
     "selectTime": {
       "title": "Choose session time",
+      "headingSubtitle": "Select a date and time for your session",
       "morning": "Morning",
       "afternoon": "Afternoon",
       "evening": "Evening",
       "noSlots": "No available slots in this week. Try another week.",
+      "noSlotsThisDay": "No available slots on this day.",
       "selectedSlot": "Selected slot",
       "noSelectedSlot": "No time selected",
+      "loadError": "Could not load available times.",
+      "showBookedToggle": "Show booked slots",
+      "bookedSlotsUnavailable": "Booked slots cannot be selected.",
+      "bookingTypeTitle": "Booking type",
+      "bookingTypeNow": "Book now",
+      "bookingTypePackage": "Use package",
+      "packagesUnavailable": "No available packages for this practitioner.",
+      "packageIntro": "You have a package that covers this session.",
+      "packagePlansTitle": "Select a package",
+      "packageDurationUnavailable": "This package does not cover the selected duration.",
+      "quoteTitle": "Price quote",
+      "quoteDiscount": "Package discount",
+      "quotePayable": "Amount due",
+      "quoteRegularTotal": "Regular total",
+      "packageProgressTitle": "Package progress",
+      "packageQuoteError": "Could not calculate package quote.",
+      "packageSessionsLabel": "{{count}} sessions remaining",
+      "packageLoadError": "Could not load package details.",
       "continue": "Continue",
+      "continueToPackagePayment": "Continue to payment",
       "timezoneHint": "All times are shown in {{timezone}} timezone."
     },
     "confirmation": {
       "title": "Booking confirmation",
       "heading": "Review session details",
       "subtitle": "Please verify the information below before proceeding.",
+      "reviewTitle": "Review your booking",
+      "reviewSubtitle": "Please review the details before confirming.",
+      "missingParamsTitle": "Missing information",
+      "missingParamsBody": "Some required information is missing. Please go back and select a time.",
+      "backToSelectTime": "Back to time selection",
       "sessionDetails": "Session details",
       "selectDuration": "Session duration",
       "duration30": "30 minutes",
@@ -691,6 +760,7 @@
       "honestPaymentNotice": "Payment is 100% secure. Charges are only applied after the practitioner confirms the appointment.",
       "reviewBeforeCreateNotice": "We will create a pending-payment session first, then show the final backend payment breakdown before you continue to checkout.",
       "reviewBeforePaymentNotice": "Your session is now pending payment. Review this final breakdown before you continue to checkout.",
+      "previewNotice": "This is a preview. The final charges will be confirmed after the practitioner approves the booking.",
       "cancellationPolicy": "Cancellation policy",
       "policyHint": "You can cancel or reschedule free of charge up to 24 hours before the session.",
       "reviewBreakdownCta": "Create booking and review payment",
@@ -1084,6 +1154,16 @@
       }
     }
   },
+  "packagePurchases": {
+    "create": {
+      "headingTitle": "Purchase a package",
+      "headingSubtitle": "Select a package plan and complete your purchase to unlock discounted sessions."
+    },
+    "pay": {
+      "headingTitle": "Package payment",
+      "headingSubtitle": "Review your package purchase and complete the payment."
+    }
+  },
   "support": {
     "title": "Support Center",
     "tabs": {
@@ -1131,7 +1211,8 @@
       "title": "Ticket Details",
       "noMessages": "No messages yet. Start the conversation with our support team.",
       "replyPlaceholder": "Write your reply here...",
-      "closedNotice": "This ticket is closed and no longer accepts replies."
+      "closedNotice": "This ticket is closed and no longer accepts replies.",
+      "sendMessage": "Send message"
     }
   },
   "careChat": {
@@ -1194,10 +1275,39 @@
     },
     "systemMessages": {
       "approvalNotice": "This conversation is now available while active."
+    },
+    "sessionFollowUp": {
+      "title": "Follow up after session",
+      "practitionerLabel": "Practitioner",
+      "approvalNote": "Your follow-up request will be reviewed by our team.",
+      "reasonLabel": "Reason for follow-up",
+      "reasonPlaceholder": "Briefly explain what you'd like to follow up on...",
+      "submit": "Submit follow-up request",
+      "submitting": "Submitting...",
+      "existing": {
+        "pending": {
+          "title": "Pending follow-up",
+          "body": "You already have a pending follow-up request for this session.",
+          "action": "View request"
+        },
+        "approvedWithConv": {
+          "title": "Follow-up approved",
+          "body": "Your follow-up request was approved. Open the conversation to continue.",
+          "action": "Open conversation"
+        },
+        "approvedNoConv": {
+          "title": "Approved - no conversation yet",
+          "body": "Your follow-up was approved but the conversation is not available yet.",
+          "action": "View details"
+        }
+      }
     }
   },
   "home": {
     "tabLabel": "Home",
+    "sessionsTab": "Sessions",
+    "notificationsTab": "Notifications",
+    "moreTab": "More",
     "journey": {
       "pendingPayment": "Pending Payment",
       "completePaymentTitle": "Complete Payment",
@@ -1206,10 +1316,38 @@
     },
     "quickActions": {
       "title": "Quick Actions",
+      "findDoctor": "Find doctor",
       "findTherapist": "Find therapist",
+      "mySessions": "My sessions",
       "assessments": "Assessments",
+      "payments": "Payments",
       "support": "Support",
       "careChat": "Care Chat"
+    },
+    "matching": {
+      "title": "Get matched with a therapist",
+      "body": "Answer a few questions and we'll recommend the best fit for you.",
+      "cta": "Start matching"
+    },
+    "featured": {
+      "title": "Featured practitioners",
+      "badge": "Featured"
+    },
+    "mostBookedToday": {
+      "title": "Most booked today"
+    },
+    "topRated": {
+      "title": "Top rated",
+      "trustScore": "{{score}}% would recommend"
+    },
+    "recentlyVisited": {
+      "title": "Recently visited",
+      "badge": "Visited"
+    },
+    "support": {
+      "title": "Need support?",
+      "body": "Our support team is here to help with any questions.",
+      "cta": "Contact support"
     },
     "nextSession": {
       "badge": "Confirmed",
@@ -1224,6 +1362,36 @@
     "enabled": "Enabled",
     "disabled": "Disabled",
     "notSet": "Not set"
+  },
+  "messages": {
+    "common": {
+      "errorBanner": "Something went wrong. Please try again.",
+      "loading": "Loading messages..."
+    },
+    "inbox": {
+      "title": "Messages",
+      "tabEmpty": "No messages yet.",
+      "tabEmptySessions": "No session messages yet.",
+      "tabEmptyFollowup": "No follow-up messages yet.",
+      "sourceSession": "Session",
+      "sourceSupport": "Support",
+      "sourceFollowup": "Follow-up",
+      "supportCtaTitle": "Need support?",
+      "supportCtaDesc": "Open a support ticket and our team will help you.",
+      "supportCtaBtn": "Open support ticket",
+      "statuses": {
+        "session": {
+          "OPEN": "Open",
+          "READ": "Read"
+        }
+      }
+    },
+    "tabs": {
+      "all": "All",
+      "sessions": "Sessions",
+      "support": "Support",
+      "followup": "Follow-up"
+    }
   },
   "practitioner": {
     "tab": {
@@ -1487,6 +1655,16 @@
           "MEMBERSHIP": "Membership",
           "OTHER": "Other"
         }
+      },
+      "requiredDocuments": {
+        "title": "Required documents",
+        "subtitle": "Upload and track the documents needed for your practitioner application.",
+        "idOrPassport": "ID or passport",
+        "pendingReview": "Pending review",
+        "degree": "Degree certificate",
+        "degreeHint": "Your primary medical or psychology degree.",
+        "pendingWarning": "This document is still under review.",
+        "catalogLoading": "Loading document requirements..."
       },
       "application": {
         "title": "Application review",

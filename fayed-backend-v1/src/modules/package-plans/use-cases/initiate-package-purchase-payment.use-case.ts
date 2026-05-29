@@ -391,14 +391,18 @@ export class InitiatePackagePurchasePaymentUseCase {
     }
 
     if (provider === PaymentProvider.PAYMOB) {
-      const resolvedCountry =
-        input.patientCountryIsoCode ?? input.practitionerCountryIsoCode;
+      if (!input.patientCountryIsoCode) {
+        throw new BadRequestException({
+          messageKey: 'payments.errors.paymentRoutingAmbiguous',
+          error: 'PAYMENT_ROUTING_AMBIGUOUS',
+        });
+      }
 
       return this.paymentProviderResolverService.resolveProvider({
         currencyCode: 'EGP',
         commissionMarketType: MarketType.LOCAL,
-        operatingCountryIsoCode: resolvedCountry,
-        checkoutCountryIsoCode: resolvedCountry,
+        operatingCountryIsoCode: input.patientCountryIsoCode,
+        checkoutCountryIsoCode: input.patientCountryIsoCode,
       });
     }
 

@@ -5,6 +5,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import {
   Screen,
+  Header,
   Text,
   Card,
   Button,
@@ -12,7 +13,6 @@ import {
   ErrorState,
 } from "../../../../src/components/ui";
 import { useTheme } from "../../../../src/providers/ThemeProvider";
-import { useAuth } from "../../../../src/providers/AuthProvider";
 import { useGetMyAssessmentSubmission } from "../../../../src/features/patient/assessments/api";
 import { AssessmentScoreRing } from "../../../../src/features/patient/assessments/components/AssessmentScoreRing";
 
@@ -31,19 +31,22 @@ export default function AssessmentSubmissionResultScreen() {
   const { submissionId } = useLocalSearchParams<{ submissionId: string }>();
   const { t } = useTranslation();
   const { theme } = useTheme();
-  const { user } = useAuth();
 
   const query = useGetMyAssessmentSubmission(submissionId ?? null);
 
   if (query.isLoading) {
     return (
-      <LoadingState fullScreen message={t("assessments.result.loading")} />
+      <Screen bg="background">
+        <Header title={t("assessments.result.title")} showBack />
+        <LoadingState fullScreen message={t("assessments.result.loading")} />
+      </Screen>
     );
   }
 
   if (query.isError || !query.data?.data) {
     return (
       <Screen bg="background">
+        <Header title={t("assessments.result.title")} showBack />
         <ErrorState
           fullScreen
           title={t("assessments.result.errorTitle")}
@@ -56,15 +59,10 @@ export default function AssessmentSubmissionResultScreen() {
 
   const submission = query.data.data;
   const result = submission.result;
-  const userInitial =
-    (user?.displayName ?? user?.primaryEmail ?? "U")
-      .trim()
-      .charAt(0)
-      .toUpperCase() || "U";
-
   if (!result) {
     return (
       <Screen bg="background">
+        <Header title={t("assessments.result.title")} showBack />
         <ErrorState
           fullScreen
           title={t("assessments.result.unavailableTitle")}
@@ -77,29 +75,8 @@ export default function AssessmentSubmissionResultScreen() {
 
   return (
     <Screen bg="background">
+      <Header title={t("assessments.result.title")} showBack />
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={styles.topBar}>
-          <View style={styles.brandWrap}>
-            <Text weight="bold" style={styles.brandName}>
-              Sanctuary
-            </Text>
-            <View
-              style={[
-                styles.avatar,
-                { backgroundColor: theme.colors.surfaceSecondary },
-              ]}
-            >
-              <Text weight="bold">{userInitial}</Text>
-            </View>
-          </View>
-
-          <Ionicons
-            name="notifications-outline"
-            size={24}
-            color={theme.colors.primary}
-          />
-        </View>
-
         <View style={styles.headerSection}>
           <Text weight="bold" style={styles.headerTitle}>
             {t("assessments.result.title")}
@@ -273,27 +250,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 18,
     paddingBottom: 40,
-  },
-  topBar: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 26,
-  },
-  brandWrap: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-  },
-  brandName: {
-    fontSize: 18,
-  },
-  avatar: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    alignItems: "center",
-    justifyContent: "center",
   },
   headerSection: {
     marginBottom: 20,

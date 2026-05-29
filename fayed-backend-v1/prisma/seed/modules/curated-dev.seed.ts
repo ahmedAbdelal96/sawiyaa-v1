@@ -25,7 +25,6 @@ import {
   PaymentStatus,
   PractitionerApplicationStatus,
   PractitionerGender,
-  PractitionerPackageStatus,
   PractitionerStatus,
   PractitionerType,
   PresenceStatus,
@@ -106,7 +105,6 @@ type CuratedSessionSeed = {
   providerSessionRef: string | null;
   timezoneSnapshot: string | null;
   packagePurchaseId: string | null;
-  packageTemplateId: string | null;
   packageSessionIndex: number | null;
   packageSessionCount: number | null;
   paymentCoverageType: SessionPaymentCoverageType;
@@ -691,80 +689,6 @@ export const curatedDevSeedModule: SeedModule = {
     const activePackagePractitionerId = seedIds.practitionerProfiles.practitionerB;
     const backupPackagePractitionerId = seedIds.practitionerProfiles.practitionerD;
 
-    const packageBlue = {
-      id: uuid('curated-package-blue'),
-      practitionerId: activePackagePractitionerId,
-      slug: 'mindset-starter',
-      title: 'Mindset Starter',
-      description: 'Four focused sessions for a practical mental health reset.',
-      sessionCount: 4,
-      sessionDurationMinutes: 45,
-      sessionMode: SessionMode.VIDEO,
-      priceEgp: '1400',
-      priceUsd: '85',
-      status: PractitionerPackageStatus.ACTIVE,
-      schedulePolicy: PackageSchedulePolicy.REQUIRE_ALL_SESSIONS_AT_PURCHASE,
-      version: 1,
-      activatedAt: daysAgo(12),
-      pausedAt: null,
-      disabledAt: null,
-      disabledReason: null,
-      statusBeforeAdminDisable: null,
-      archivedAt: null,
-    } as const;
-
-    const packageGray = {
-      id: uuid('curated-package-gray'),
-      practitionerId: backupPackagePractitionerId,
-      slug: 'weight-reset',
-      title: 'Weight Reset',
-      description: 'Six-session package for structured nutrition and habit change.',
-      sessionCount: 6,
-      sessionDurationMinutes: 50,
-      sessionMode: SessionMode.VIDEO,
-      priceEgp: '1800',
-      priceUsd: '110',
-      status: PractitionerPackageStatus.PAUSED_BY_PRACTITIONER,
-      schedulePolicy: PackageSchedulePolicy.REQUIRE_ALL_SESSIONS_AT_PURCHASE,
-      version: 1,
-      activatedAt: daysAgo(18),
-      pausedAt: daysAgo(2),
-      disabledAt: null,
-      disabledReason: null,
-      statusBeforeAdminDisable: null,
-      archivedAt: null,
-    } as const;
-
-    for (const pkg of [packageBlue, packageGray]) {
-      await prisma.practitionerPackage.upsert({
-        where: {
-          practitionerId_slug: {
-            practitionerId: pkg.practitionerId,
-            slug: pkg.slug,
-          },
-        },
-        create: pkg,
-        update: {
-          title: pkg.title,
-          description: pkg.description,
-          sessionCount: pkg.sessionCount,
-          sessionDurationMinutes: pkg.sessionDurationMinutes,
-          sessionMode: pkg.sessionMode,
-          priceEgp: pkg.priceEgp,
-          priceUsd: pkg.priceUsd,
-          status: pkg.status,
-          schedulePolicy: pkg.schedulePolicy,
-          version: pkg.version,
-          activatedAt: pkg.activatedAt,
-          pausedAt: pkg.pausedAt,
-          disabledAt: pkg.disabledAt,
-          disabledReason: pkg.disabledReason,
-          statusBeforeAdminDisable: pkg.statusBeforeAdminDisable,
-          archivedAt: pkg.archivedAt,
-        },
-      });
-    }
-
     const packagePlan6 = await prisma.packagePlan.findUniqueOrThrow({
       where: { code: 'SESSIONS_6' },
     });
@@ -803,7 +727,6 @@ export const curatedDevSeedModule: SeedModule = {
         providerSessionRef: 'qa-provider-eg-upcoming',
         timezoneSnapshot: 'Africa/Cairo',
         packagePurchaseId: null,
-        packageTemplateId: null,
         packageSessionIndex: null,
         packageSessionCount: null,
         paymentCoverageType: SessionPaymentCoverageType.DIRECT_PAYMENT,
@@ -828,7 +751,6 @@ export const curatedDevSeedModule: SeedModule = {
         providerSessionRef: 'qa-provider-eg-active',
         timezoneSnapshot: 'Africa/Cairo',
         packagePurchaseId: null,
-        packageTemplateId: null,
         packageSessionIndex: null,
         packageSessionCount: null,
         paymentCoverageType: SessionPaymentCoverageType.DIRECT_PAYMENT,
@@ -853,7 +775,6 @@ export const curatedDevSeedModule: SeedModule = {
         providerSessionRef: 'qa-provider-intl-ready',
         timezoneSnapshot: 'Asia/Dubai',
         packagePurchaseId: null,
-        packageTemplateId: null,
         packageSessionIndex: null,
         packageSessionCount: null,
         paymentCoverageType: SessionPaymentCoverageType.DIRECT_PAYMENT,
@@ -879,7 +800,6 @@ export const curatedDevSeedModule: SeedModule = {
         providerSessionRef: 'qa-provider-intl-completed',
         timezoneSnapshot: 'Asia/Dubai',
         packagePurchaseId: null,
-        packageTemplateId: null,
         packageSessionIndex: null,
         packageSessionCount: null,
         paymentCoverageType: SessionPaymentCoverageType.DIRECT_PAYMENT,
@@ -904,7 +824,6 @@ export const curatedDevSeedModule: SeedModule = {
         providerSessionRef: null,
         timezoneSnapshot: 'Asia/Dubai',
         packagePurchaseId: null,
-        packageTemplateId: null,
         packageSessionIndex: null,
         packageSessionCount: null,
         paymentCoverageType: SessionPaymentCoverageType.DIRECT_PAYMENT,
@@ -930,7 +849,6 @@ export const curatedDevSeedModule: SeedModule = {
         providerSessionRef: 'qa-provider-package-1',
         timezoneSnapshot: 'Africa/Cairo',
         packagePurchaseId: uuid('curated-purchase-active'),
-        packageTemplateId: packageBlue.id,
         packageSessionIndex: 1,
         packageSessionCount: 4,
         paymentCoverageType: SessionPaymentCoverageType.PACKAGE,
@@ -955,7 +873,6 @@ export const curatedDevSeedModule: SeedModule = {
         providerSessionRef: 'qa-provider-package-2',
         timezoneSnapshot: 'Africa/Cairo',
         packagePurchaseId: uuid('curated-purchase-active'),
-        packageTemplateId: packageBlue.id,
         packageSessionIndex: 2,
         packageSessionCount: 4,
         paymentCoverageType: SessionPaymentCoverageType.PACKAGE,
@@ -980,7 +897,6 @@ export const curatedDevSeedModule: SeedModule = {
         providerSessionRef: null,
         timezoneSnapshot: 'Asia/Dubai',
         packagePurchaseId: null,
-        packageTemplateId: null,
         packageSessionIndex: null,
         packageSessionCount: null,
         paymentCoverageType: SessionPaymentCoverageType.DIRECT_PAYMENT,
@@ -1006,7 +922,6 @@ export const curatedDevSeedModule: SeedModule = {
         providerSessionRef: 'qa-provider-refunded',
         timezoneSnapshot: 'Asia/Dubai',
         packagePurchaseId: null,
-        packageTemplateId: null,
         packageSessionIndex: null,
         packageSessionCount: null,
         paymentCoverageType: SessionPaymentCoverageType.DIRECT_PAYMENT,
@@ -1049,7 +964,6 @@ export const curatedDevSeedModule: SeedModule = {
           providerSessionRef: session.providerSessionRef,
           timezoneSnapshot: session.timezoneSnapshot,
           packagePurchaseId: resolvedPackagePurchaseId,
-          packageTemplateId: session.packageTemplateId,
           packageSessionIndex: session.packageSessionIndex,
           packageSessionCount: session.packageSessionCount,
           paymentCoverageType: session.paymentCoverageType,
@@ -1956,7 +1870,6 @@ export const curatedDevSeedModule: SeedModule = {
     const packagePurchases = [
       {
         id: packagePurchaseActiveId,
-        packageId: packageBlue.id,
         packagePlanId: packagePlan6.id,
         practitionerId: activePackagePractitionerId,
         patientId: seedIds.patientProfiles.patientA,
@@ -2004,7 +1917,6 @@ export const curatedDevSeedModule: SeedModule = {
       },
       {
         id: packagePurchaseRefundedId,
-        packageId: packageGray.id,
         packagePlanId: packagePlan4.id,
         practitionerId: backupPackagePractitionerId,
         patientId: seedIds.patientProfiles.patientB,
@@ -2057,7 +1969,6 @@ export const curatedDevSeedModule: SeedModule = {
         where: { id: purchase.id },
         create: purchase,
         update: {
-          packageId: purchase.packageId,
           packagePlanId: purchase.packagePlanId,
           practitionerId: purchase.practitionerId,
           patientId: purchase.patientId,

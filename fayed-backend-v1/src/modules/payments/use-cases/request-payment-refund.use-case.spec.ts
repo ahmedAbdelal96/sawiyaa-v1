@@ -14,6 +14,24 @@ describe('RequestPaymentRefundUseCase', () => {
     succeededRefundTotal?: string;
     providerOutcome?: 'SUCCEEDED' | 'PROCESSING' | 'FAILED';
   }) {
+    const latestRefund = {
+      id: 'refund_1',
+      paymentId: 'payment_1',
+      sessionId: 'session_1',
+      refundType: 'PARTIAL',
+      status: 'SUCCEEDED',
+      destination: RefundDestination.CUSTOMER_WALLET,
+      refundReason: 'reason',
+      amount: new Prisma.Decimal('100.00'),
+      currencyCode: 'USD',
+      providerRefundRef: 're_1',
+      requestedAt: new Date(),
+      processedAt: new Date(),
+      failedAt: null,
+      createdAt: new Date(),
+      customerWalletCreditedAt: new Date(),
+    };
+
     const paymentRepository = {
       findById: jest.fn().mockResolvedValue({
         id: 'payment_1',
@@ -35,22 +53,24 @@ describe('RequestPaymentRefundUseCase', () => {
           amount: new Prisma.Decimal(overrides?.succeededRefundTotal ?? '0.00'),
         },
       }),
-      createRefund: jest.fn().mockResolvedValue({
-        id: 'refund_1',
-        paymentId: 'payment_1',
-        sessionId: 'session_1',
-        refundType: 'PARTIAL',
-        status: 'REQUESTED',
-        destination: RefundDestination.CUSTOMER_WALLET,
-        refundReason: 'reason',
-        amount: new Prisma.Decimal('100.00'),
-        currencyCode: 'USD',
-        providerRefundRef: null,
-        requestedAt: new Date(),
-        processedAt: null,
-        failedAt: null,
-        createdAt: new Date(),
-      }),
+      createRefund: jest.fn().mockImplementation((input) =>
+        Promise.resolve({
+          id: 'refund_1',
+          paymentId: 'payment_1',
+          sessionId: 'session_1',
+          refundType: 'PARTIAL',
+          status: 'REQUESTED',
+          destination: input.destination,
+          refundReason: 'reason',
+          amount: new Prisma.Decimal('100.00'),
+          currencyCode: 'USD',
+          providerRefundRef: null,
+          requestedAt: new Date(),
+          processedAt: null,
+          failedAt: null,
+          createdAt: new Date(),
+        }),
+      ),
       createEvent: jest.fn().mockResolvedValue({}),
       updateStatus: jest.fn().mockResolvedValue({}),
       updateRefund: jest.fn().mockResolvedValue({
@@ -69,7 +89,7 @@ describe('RequestPaymentRefundUseCase', () => {
         failedAt: null,
         createdAt: new Date(),
       }),
-      findRefundById: jest.fn().mockResolvedValue(null),
+      findRefundById: jest.fn().mockResolvedValue(latestRefund),
       findLatestProviderWebhookEventByPaymentId: jest
         .fn()
         .mockResolvedValue(null),

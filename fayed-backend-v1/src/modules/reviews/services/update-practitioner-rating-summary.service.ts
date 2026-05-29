@@ -14,33 +14,29 @@ export class UpdatePractitionerRatingSummaryService {
     practitionerId: string;
     tx?: Prisma.TransactionClient;
   }) {
-    const [
-      totalSubmittedReviews,
-      totalPublishedReviews,
-      averageAggregate,
-      histogram,
-    ] = await Promise.all([
-      this.reviewRepository.countByPractitionerAndStatuses(
-        input.practitionerId,
-        REVIEW_COUNTABLE_STATUSES,
-        input.tx,
-      ),
+    const [totalSubmittedReviews, totalPublishedReviews, averageAggregate, histogram] =
+      await Promise.all([
+        this.reviewRepository.countByPractitionerAndStatuses(
+          input.practitionerId,
+          REVIEW_COUNTABLE_STATUSES,
+          input.tx,
+        ),
       this.reviewRepository.countByPractitionerAndStatus(
         input.practitionerId,
         REVIEW_PUBLIC_STATUS,
         input.tx,
-      ),
-      this.reviewRepository.aggregateAverageRating(
-        input.practitionerId,
-        REVIEW_COUNTABLE_STATUSES,
-        input.tx,
-      ),
-      this.reviewRepository.groupRatingHistogram(
-        input.practitionerId,
-        REVIEW_COUNTABLE_STATUSES,
-        input.tx,
-      ),
-    ]);
+        ),
+        this.reviewRepository.aggregateAverageRating(
+          input.practitionerId,
+          [REVIEW_PUBLIC_STATUS],
+          input.tx,
+        ),
+        this.reviewRepository.groupRatingHistogram(
+          input.practitionerId,
+          [REVIEW_PUBLIC_STATUS],
+          input.tx,
+        ),
+      ]);
 
     const histogramMap = new Map<number, number>();
     for (const item of histogram) {

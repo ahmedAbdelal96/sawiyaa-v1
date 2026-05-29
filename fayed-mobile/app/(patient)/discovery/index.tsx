@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect, useRef } from "react";
+import React, { useMemo, useState, useEffect, useRef, useCallback } from "react";
 import {
   View,
   StyleSheet,
@@ -17,7 +17,7 @@ import {
   Button,
   Text,
 } from "../../../src/components/ui";
-import { TherapistCard } from "../../../src/features/patient/discovery/components/TherapistCard";
+import { PractitionerCompactCard } from "../../../src/features/patient/discovery/components/PractitionerCompactCard";
 import {
   useGetPublicPractitionersInfinite,
 } from "../../../src/features/patient/discovery/api";
@@ -26,6 +26,15 @@ import { Ionicons } from "@expo/vector-icons";
 import { ListPublicPractitionersFilters } from "../../../src/features/patient/discovery/types";
 import { useTranslation } from "react-i18next";
 import { trackAnalyticsEvent } from "../../../src/lib/analytics";
+
+function useDebounce<T>(value: T, delay: number): T {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+  useEffect(() => {
+    const handler = setTimeout(() => setDebouncedValue(value), delay);
+    return () => clearTimeout(handler);
+  }, [value, delay]);
+  return debouncedValue;
+}
 
 function parseBoolean(value: string | undefined): boolean | undefined {
   if (value === "true") {
@@ -108,12 +117,30 @@ export default function DiscoveryListScreen() {
   );
 
   const [searchInput, setSearchInput] = useState(flatParams.search || "");
+  const debouncedSearch = useDebounce(searchInput, 400);
+  const initialSearchDone = useRef(false);
 
   useEffect(() => {
     setSearchInput(flatParams.search || "");
   }, [flatParams.search]);
 
-  const practitionersQuery = useGetPublicPractitionersInfinite(filters);
+  useEffect(() => {
+    if (!initialSearchDone.current) {
+      initialSearchDone.current = true;
+      return;
+    }
+    if (debouncedSearch === flatParams.search) return;
+    router.replace({
+      pathname: "/(patient)/discovery",
+      params: { ...flatParams, page: "1", search: debouncedSearch || undefined },
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSearch]);
+
+  const practitionersQuery = useGetPublicPractitionersInfinite({
+    ...filters,
+    search: debouncedSearch || undefined,
+  });
   const practitioners = useMemo(
     () =>
       practitionersQuery.data?.pages.flatMap((page) => page.data.items) ?? [],
@@ -121,7 +148,8 @@ export default function DiscoveryListScreen() {
   );
   const pagination = practitionersQuery.data?.pages.at(-1)?.data.pagination;
 
-  const handleSearchSubmit = () => {
+  const handleSearchSubmit = useCallback(() => {
+    if (searchInput.trim() === (flatParams.search || "")) return;
     router.replace({
       pathname: "/(patient)/discovery",
       params: {
@@ -130,19 +158,11 @@ export default function DiscoveryListScreen() {
         search: searchInput.trim() || undefined,
       },
     });
-  };
+  }, [flatParams, searchInput, router]);
 
-  const clearSearch = () => {
+  const clearSearch = useCallback(() => {
     setSearchInput("");
-    router.replace({
-      pathname: "/(patient)/discovery",
-      params: {
-        ...flatParams,
-        page: "1",
-        search: undefined,
-      },
-    });
-  };
+  }, []);
 
   const activeFilterCount = useMemo(() => {
     const keys = [
@@ -256,18 +276,6 @@ export default function DiscoveryListScreen() {
       />
 
       <View style={styles.searchContainer}>
-        <View style={styles.introBlock}>
-          <Text weight="bold" style={styles.introTitle}>
-            {t("discovery.list.header")}
-          </Text>
-          <Text color={theme.colors.textSecondary} style={styles.introSubtitle}>
-            {t(
-              "discovery.list.introSubtitle",
-              "Find a specialist who fits your goals and preferences.",
-            )}
-          </Text>
-        </View>
-
         <View
           style={[
             styles.searchPanel,
@@ -364,8 +372,9 @@ export default function DiscoveryListScreen() {
         <FlatList
           data={practitioners}
           keyExtractor={(item) => item.id}
-          renderItem={({ item }) => <TherapistCard practitioner={item} />}
+          renderItem={({ item }) => <PractitionerCompactCard practitioner={item} />}
           contentContainerStyle={styles.listContent}
+          style={styles.flatList}
           showsVerticalScrollIndicator={false}
           refreshing={practitionersQuery.isRefetching}
           onRefresh={() => practitionersQuery.refetch()}
@@ -381,14 +390,20 @@ export default function DiscoveryListScreen() {
           }}
           onEndReachedThreshold={0.45}
           ListHeaderComponent={
-            <Text
-              color={theme.colors.textSecondary}
-              style={styles.resultsCount}
-            >
-              {t("discovery.list.resultsCount", {
-                count: pagination?.totalItems ?? practitioners.length,
-              })}
-            </Text>
+            pagination != null && pagination.totalItems != null ? (
+              <Text color={theme.colors.textSecondary} style={styles.resultsCount}>
+                {t("discovery.list.resultsCount", {
+                  count: pagination.totalItems,
+                })}
+              </Text>
+            ) : (
+              <Text color={theme.colors.textSecondary} style={styles.resultsCount}>
+                {t("discovery.list.resultsCountShown", {
+                  shown: practitioners.length,
+                  total: pagination?.totalItems ?? practitioners.length,
+                })}
+              </Text>
+            )
           }
           ListFooterComponent={renderListFooter}
         />
@@ -399,26 +414,14 @@ export default function DiscoveryListScreen() {
 
 const styles = StyleSheet.create({
   searchContainer: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 20,
-  },
-  introBlock: {
-    marginBottom: 18,
-  },
-  introTitle: {
-    fontSize: 40,
-    lineHeight: 44,
-    marginBottom: 6,
-  },
-  introSubtitle: {
-    fontSize: 15,
-    lineHeight: 22,
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 12,
   },
   searchPanel: {
     borderWidth: 1,
-    borderRadius: 18,
-    padding: 10,
+    borderRadius: 14,
+    padding: 8,
   },
   searchRow: {
     flexDirection: "row",
@@ -428,15 +431,15 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   searchBarWrapperLtr: {
-    marginRight: 12,
+    marginRight: 10,
   },
   searchBarWrapperRtl: {
-    marginLeft: 12,
+    marginLeft: 10,
   },
   filterButton: {
-    width: 50,
-    height: 50,
-    borderRadius: 12,
+    width: 44,
+    height: 44,
+    borderRadius: 10,
     borderWidth: 1,
     justifyContent: "center",
     alignItems: "center",
@@ -457,8 +460,12 @@ const styles = StyleSheet.create({
     fontSize: 11,
   },
   listContent: {
-    paddingHorizontal: 24,
+    paddingHorizontal: 16,
     paddingBottom: 136,
+    flexGrow: 1,
+  },
+  flatList: {
+    flex: 1,
   },
   resultsCount: {
     fontSize: 14,

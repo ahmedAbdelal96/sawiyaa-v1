@@ -38,7 +38,12 @@ export class ListPublicPractitionerAvailabilityWindowsUseCase {
     private readonly prisma: PrismaService,
   ) {}
 
-  async execute(input: { slug: string; fromUtc: Date; toUtc: Date }) {
+  async execute(input: {
+    slug: string;
+    fromUtc: Date;
+    toUtc: Date;
+    includeBooked?: boolean;
+  }) {
     if (input.toUtc.getTime() <= input.fromUtc.getTime()) {
       throw new BadRequestException({
         messageKey: 'availability.errors.invalidRange',
@@ -104,6 +109,8 @@ export class ListPublicPractitionerAvailabilityWindowsUseCase {
         select: {
           scheduledStartAt: true,
           scheduledEndAt: true,
+          durationMinutes: true,
+          status: true,
         },
       }),
     ]);
@@ -142,6 +149,24 @@ export class ListPublicPractitionerAvailabilityWindowsUseCase {
       toUtc: input.toUtc,
     });
 
+    const bookedSlots = bookedSessions
+      .filter((session) => session.scheduledStartAt && session.scheduledEndAt)
+      .map((session) => ({
+        startsAt: session.scheduledStartAt!.toISOString(),
+        endsAt: session.scheduledEndAt!.toISOString(),
+        durationMinutes: session.durationMinutes ?? null,
+        statusType:
+          session.status === SessionStatus.PENDING_PAYMENT ||
+          session.status === SessionStatus.PENDING_PRACTITIONER_RESPONSE
+            ? ('RESERVED' as const)
+            : ('BOOKED' as const),
+      }))
+      .sort(
+        (a, b) =>
+          new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime() ||
+          new Date(a.endsAt).getTime() - new Date(b.endsAt).getTime(),
+      );
+
     return {
       timezone,
       range: {
@@ -149,6 +174,7 @@ export class ListPublicPractitionerAvailabilityWindowsUseCase {
         to: input.toUtc.toISOString(),
       },
       windows,
+      bookedSlots: input.includeBooked ? bookedSlots : undefined,
     };
   }
 }

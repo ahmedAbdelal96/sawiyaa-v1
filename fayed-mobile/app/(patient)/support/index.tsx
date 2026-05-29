@@ -64,7 +64,7 @@ export default function SupportListScreen() {
       ? returnTo
       : null;
 
-  const query = usePatientSupportTickets({ page: 1, limit: 50 });
+  const query = usePatientSupportTickets({ page: 1, limit: 20 });
   const allTickets = query.data?.items ?? [];
 
   const filtered = allTickets.filter((ticket) => {
@@ -154,11 +154,6 @@ export default function SupportListScreen() {
       <Header
         title={t("support.title")}
         showBack
-        onBack={
-          returnToRoute
-            ? () => router.replace(returnToRoute as any)
-            : undefined
-        }
         rightElement={
           <TouchableOpacity
             onPress={() =>

@@ -37,4 +37,19 @@ export enum PermissionKey {
   ADMIN_USERS_PERMISSION_OVERRIDES_UPDATE = 'admin-users.permission-overrides.update',
   ADMIN_USERS_SESSIONS_REVOKE = 'admin-users.sessions.revoke',
   ADMIN_USERS_TOKEN_VERSION_INVALIDATE = 'admin-users.token-version.invalidate',
+
+  // Corporate Voucher Sponsorship
+  CORPORATE_ORGANIZATIONS_READ = 'corporate.organizations.read',
+  CORPORATE_ORGANIZATIONS_MANAGE = 'corporate.organizations.manage',
+  CORPORATE_CONTRACTS_MANAGE = 'corporate.contracts.manage',
+  CORPORATE_PLANS_MANAGE = 'corporate.plans.manage',
+  CORPORATE_CODES_GENERATE = 'corporate.codes.generate',
+  CORPORATE_CODES_EXPORT = 'corporate.codes.export',
+  CORPORATE_CODES_REVOKE = 'corporate.codes.revoke',
+  CORPORATE_REPORTS_READ = 'corporate.reports.read',
+  CORPORATE_LEDGER_READ = 'corporate.ledger.read',
+
+  // Featured Practitioner Placements
+  FEATURED_PRACTITIONERS_READ = 'featured-practitioners.read',
+  FEATURED_PRACTITIONERS_MANAGE = 'featured-practitioners.manage',
 }

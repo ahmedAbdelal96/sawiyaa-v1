@@ -3,7 +3,12 @@ import { useAuthenticatedQueryEnabled } from "../../auth/query-auth";
 import { paymentQueryKeys } from "../payments/hooks";
 import { packagePlanQueryKeys, packagePurchaseQueryKeys } from "../package-plans/hooks";
 import { academyQueryKeys } from "../academy/hooks";
-import { getPatientProfile, patchPatientProfile } from "./api";
+import {
+  getPatientProfile,
+  patchPatientProfile,
+  removePatientAvatar,
+  uploadPatientAvatar,
+} from "./api";
 
 const patientProfileQueryKeys = {
   all: ["patient-profile"] as const,
@@ -34,6 +39,29 @@ export function usePatchPatientProfile() {
       queryClient.invalidateQueries({ queryKey: academyQueryKeys.all });
       queryClient.invalidateQueries({ queryKey: ["public-practitioners"] });
       queryClient.invalidateQueries({ queryKey: ["public-practitioner"] });
+    },
+  });
+}
+
+export function useUploadPatientAvatar() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (file: { uri: string; name: string; type: string }) =>
+      uploadPatientAvatar(file),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: patientProfileQueryKeys.all });
+      queryClient.invalidateQueries({ queryKey: ["auth"] });
+    },
+  });
+}
+
+export function useRemovePatientAvatar() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: removePatientAvatar,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: patientProfileQueryKeys.all });
+      queryClient.invalidateQueries({ queryKey: ["auth"] });
     },
   });
 }

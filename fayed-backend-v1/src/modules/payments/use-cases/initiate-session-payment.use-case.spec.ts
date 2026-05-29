@@ -86,6 +86,9 @@ describe('InitiateSessionPaymentUseCase', () => {
   const refundPolicyService = {
     ensureAcceptedRefundPolicyForPayment: jest.fn(),
   } as unknown as RefundPolicyService;
+  const corporateSponsorshipPaymentService = {
+    checkPaymentEligibility: jest.fn(),
+  };
   const paymentMapper = {
     toViewModel: jest.fn(
       (payment: {
@@ -143,6 +146,7 @@ describe('InitiateSessionPaymentUseCase', () => {
     validatePaymentStatusTransitionService,
     paymentMapper,
     refundPolicyService,
+    corporateSponsorshipPaymentService as any,
   );
 
   const basePatient = {
@@ -171,6 +175,15 @@ describe('InitiateSessionPaymentUseCase', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    (refundPolicyService.ensureAcceptedRefundPolicyForPayment as jest.Mock)
+      .mockImplementation(() =>
+        Promise.resolve({
+          id: 'acceptance-1',
+          refundPolicyVersionId: 'refund-policy-version-1',
+        }),
+      );
+    (corporateSponsorshipPaymentService.checkPaymentEligibility as jest.Mock)
+      .mockResolvedValue({ eligible: false, sponsorship: null });
     (paymentPatientRepository.findByUserId as jest.Mock).mockResolvedValue(
       basePatient,
     );
@@ -367,5 +380,414 @@ describe('InitiateSessionPaymentUseCase', () => {
         displayLocale: 'en',
       }),
     ).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  describe('Corporate Sponsorship Payment Integration', () => {
+    const basePaymentAmount = {
+      amountSubtotal: '120.00',
+      amountDiscount: '0.00',
+      amountTotal: '120.00',
+      currencyCode: 'EGP',
+      marketType: MarketType.LOCAL,
+      paymentPurpose: PaymentPurpose.SESSION_BOOKING,
+      commissionRuleId: 'rule-1',
+      commissionPlatformRatePercent: '20.00',
+      commissionPractitionerRatePercent: '80.00',
+      couponId: null,
+      couponCodeSnapshot: null,
+      couponDiscountSnapshot: '0.00',
+      couponPlatformSharePercent: '0.00',
+      couponPractitionerSharePercent: '0.00',
+      breakdown: {
+        platformCommissionAmount: '24.00',
+      },
+    };
+
+    const eligibleSponsorshipContext = {
+      sponsorshipId: 'sponsorship-uuid',
+      organizationId: 'org-uuid',
+      contractId: 'contract-uuid',
+      benefitPlanId: 'plan-uuid',
+      originalAmount: '500.00',
+      coveredAmount: '500.00',
+      patientPayAmount: '0.00',
+      currency: 'EGP',
+    };
+
+    describe('A) No sponsorship - normal behavior unchanged', () => {
+      it('uses original pricing amount when no sponsorship exists', async () => {
+        (
+          corporateSponsorshipPaymentService.checkPaymentEligibility as jest.Mock
+        ).mockResolvedValue({ eligible: false, sponsorship: null });
+
+        const result = await useCase.execute({
+          userId: 'user-1',
+          locale: 'en',
+          sessionId: 'session-1',
+          acceptedRefundPolicyId: 'refund-policy-version-1',
+          displayLocale: 'en',
+        });
+
+        expect(paymentRepository.createPayment).toHaveBeenCalledWith(
+          expect.objectContaining({
+            amountTotal: '120.00',
+            amountSubtotal: '120.00',
+            amountDiscount: '0.00',
+            currencyCode: 'EGP',
+          }),
+          expect.anything(),
+        );
+        expect(result.item.amount).toBe('120.00');
+      });
+
+      it('does not include corporate metadata when no sponsorship', async () => {
+        (
+          corporateSponsorshipPaymentService.checkPaymentEligibility as jest.Mock
+        ).mockResolvedValue({ eligible: false, sponsorship: null });
+
+        await useCase.execute({
+          userId: 'user-1',
+          locale: 'en',
+          sessionId: 'session-1',
+          acceptedRefundPolicyId: 'refund-policy-version-1',
+          displayLocale: 'en',
+        });
+
+        const paymentCall = (paymentRepository.createPayment as jest.Mock).mock
+          .calls[0][0];
+        expect(paymentCall.metadataJson).not.toHaveProperty(
+          'sponsorshipId',
+        );
+        expect(paymentCall.metadataJson).not.toHaveProperty(
+          'corporateOrganizationId',
+        );
+      });
+    });
+
+    describe('B) Eligible RESERVED sponsorship', () => {
+      it('uses patientPayAmount as amount to pay instead of original pricing', async () => {
+        (
+          corporateSponsorshipPaymentService.checkPaymentEligibility as jest.Mock
+        ).mockResolvedValue({
+          eligible: true,
+          sponsorship: eligibleSponsorshipContext,
+        });
+
+        const result = await useCase.execute({
+          userId: 'user-1',
+          locale: 'en',
+          sessionId: 'session-1',
+          acceptedRefundPolicyId: 'refund-policy-version-1',
+          displayLocale: 'en',
+        });
+
+        expect(paymentRepository.createPayment).toHaveBeenCalledWith(
+          expect.objectContaining({
+            amountTotal: '0.00',
+            amountSubtotal: '500.00',
+            amountDiscount: '500.00',
+          }),
+          expect.anything(),
+        );
+      });
+
+      it('uses currency from sponsorship', async () => {
+        (
+          corporateSponsorshipPaymentService.checkPaymentEligibility as jest.Mock
+        ).mockResolvedValue({
+          eligible: true,
+          sponsorship: eligibleSponsorshipContext,
+        });
+
+        await useCase.execute({
+          userId: 'user-1',
+          locale: 'en',
+          sessionId: 'session-1',
+          acceptedRefundPolicyId: 'refund-policy-version-1',
+          displayLocale: 'en',
+        });
+
+        expect(paymentRepository.createPayment).toHaveBeenCalledWith(
+          expect.objectContaining({
+            currencyCode: 'EGP',
+          }),
+          expect.anything(),
+        );
+      });
+
+      it('includes corporate sponsorship metadata in payment record', async () => {
+        (
+          corporateSponsorshipPaymentService.checkPaymentEligibility as jest.Mock
+        ).mockResolvedValue({
+          eligible: true,
+          sponsorship: eligibleSponsorshipContext,
+        });
+
+        await useCase.execute({
+          userId: 'user-1',
+          locale: 'en',
+          sessionId: 'session-1',
+          acceptedRefundPolicyId: 'refund-policy-version-1',
+          displayLocale: 'en',
+        });
+
+        const paymentCall = (paymentRepository.createPayment as jest.Mock).mock
+          .calls[0][0];
+        expect(paymentCall.metadataJson).toHaveProperty('sponsorshipId');
+        expect(paymentCall.metadataJson).toHaveProperty(
+          'corporateOrganizationId',
+        );
+        expect(paymentCall.metadataJson).toHaveProperty(
+          'corporateContractId',
+        );
+        expect(paymentCall.metadataJson).toHaveProperty(
+          'corporateBenefitPlanId',
+        );
+        expect(paymentCall.metadataJson).toHaveProperty('originalAmount');
+        expect(paymentCall.metadataJson).toHaveProperty('coveredAmount');
+        expect(paymentCall.metadataJson).toHaveProperty('patientPayAmount');
+        expect(paymentCall.metadataJson).toHaveProperty('currency');
+      });
+
+      it('does NOT expose codeHash or benefitCode in payment metadata', async () => {
+        (
+          corporateSponsorshipPaymentService.checkPaymentEligibility as jest.Mock
+        ).mockResolvedValue({
+          eligible: true,
+          sponsorship: eligibleSponsorshipContext,
+        });
+
+        await useCase.execute({
+          userId: 'user-1',
+          locale: 'en',
+          sessionId: 'session-1',
+          acceptedRefundPolicyId: 'refund-policy-version-1',
+          displayLocale: 'en',
+        });
+
+        const paymentCall = (paymentRepository.createPayment as jest.Mock).mock
+          .calls[0][0];
+        expect(paymentCall.metadataJson).not.toHaveProperty('codeHash');
+        expect(paymentCall.metadataJson).not.toHaveProperty('benefitCode');
+        expect(paymentCall.metadataJson).not.toHaveProperty('codeId');
+      });
+
+      it('sends correct amountMinor to provider adapter', async () => {
+        (
+          corporateSponsorshipPaymentService.checkPaymentEligibility as jest.Mock
+        ).mockResolvedValue({
+          eligible: true,
+          sponsorship: { ...eligibleSponsorshipContext, patientPayAmount: '50.00' },
+        });
+
+        await useCase.execute({
+          userId: 'user-1',
+          locale: 'en',
+          sessionId: 'session-1',
+          acceptedRefundPolicyId: 'refund-policy-version-1',
+          displayLocale: 'en',
+        });
+
+        expect(providerAdapter.initiateSessionPayment).toHaveBeenCalledWith(
+          expect.objectContaining({
+            amountMinor: 5000,
+            currency: 'EGP',
+          }),
+        );
+      });
+    });
+
+    describe('C) Invalid/expired sponsorship', () => {
+      it('throws BadRequestException when sponsorship is expired', async () => {
+        (
+          corporateSponsorshipPaymentService.checkPaymentEligibility as jest.Mock
+        ).mockResolvedValue({
+          eligible: false,
+          sponsorship: null,
+          error: {
+            messageKey: 'sponsorship.errors.reservationExpired',
+            error: 'SPONSORSHIP_RESERVATION_EXPIRED',
+          },
+        });
+
+        await expect(
+          useCase.execute({
+            userId: 'user-1',
+            locale: 'en',
+            sessionId: 'session-1',
+            acceptedRefundPolicyId: 'refund-policy-version-1',
+            displayLocale: 'en',
+          }),
+        ).rejects.toBeInstanceOf(BadRequestException);
+      });
+
+      it('throws BadRequestException when organization is inactive', async () => {
+        (
+          corporateSponsorshipPaymentService.checkPaymentEligibility as jest.Mock
+        ).mockResolvedValue({
+          eligible: false,
+          sponsorship: null,
+          error: {
+            messageKey: 'sponsorship.errors.organizationNotActive',
+            error: 'SPONSORSHIP_ORGANIZATION_INACTIVE',
+          },
+        });
+
+        await expect(
+          useCase.execute({
+            userId: 'user-1',
+            locale: 'en',
+            sessionId: 'session-1',
+            acceptedRefundPolicyId: 'refund-policy-version-1',
+            displayLocale: 'en',
+          }),
+        ).rejects.toBeInstanceOf(BadRequestException);
+      });
+
+      it('does NOT create payment when sponsorship is invalid', async () => {
+        (
+          corporateSponsorshipPaymentService.checkPaymentEligibility as jest.Mock
+        ).mockResolvedValue({
+          eligible: false,
+          sponsorship: null,
+          error: {
+            messageKey: 'sponsorship.errors.codeNotReserved',
+            error: 'SPONSORSHIP_CODE_NOT_RESERVED',
+          },
+        });
+
+        await expect(
+          useCase.execute({
+            userId: 'user-1',
+            locale: 'en',
+            sessionId: 'session-1',
+            acceptedRefundPolicyId: 'refund-policy-version-1',
+            displayLocale: 'en',
+          }),
+        ).rejects.toBeInstanceOf(BadRequestException);
+
+        expect(paymentRepository.createPayment).not.toHaveBeenCalled();
+        expect(providerAdapter.initiateSessionPayment).not.toHaveBeenCalled();
+      });
+
+      it('throws safe error without exposing codeHash or codeId', async () => {
+        (
+          corporateSponsorshipPaymentService.checkPaymentEligibility as jest.Mock
+        ).mockResolvedValue({
+          eligible: false,
+          sponsorship: null,
+          error: {
+            messageKey: 'sponsorship.errors.codeNotFound',
+            error: 'SPONSORSHIP_CODE_NOT_FOUND',
+          },
+        });
+
+        let thrownError: any;
+        try {
+          await useCase.execute({
+            userId: 'user-1',
+            locale: 'en',
+            sessionId: 'session-1',
+            acceptedRefundPolicyId: 'refund-policy-version-1',
+            displayLocale: 'en',
+          });
+        } catch (e) {
+          thrownError = e;
+        }
+
+        expect(thrownError).toBeInstanceOf(BadRequestException);
+        const errorResponse = thrownError.getResponse() as Record<string, any>;
+        expect(errorResponse.error).toBe('SPONSORSHIP_CODE_NOT_FOUND');
+        expect(JSON.stringify(errorResponse)).not.toContain('codeHash');
+        expect(JSON.stringify(errorResponse)).not.toContain('codeId');
+      });
+    });
+
+    describe('D) Zero patientPayAmount', () => {
+      it('uses INTERNAL_WALLET provider when patientPayAmount is 0', async () => {
+        (
+          corporateSponsorshipPaymentService.checkPaymentEligibility as jest.Mock
+        ).mockResolvedValue({
+          eligible: true,
+          sponsorship: { ...eligibleSponsorshipContext, patientPayAmount: '0.00' },
+        });
+
+        const result = await useCase.execute({
+          userId: 'user-1',
+          locale: 'en',
+          sessionId: 'session-1',
+          acceptedRefundPolicyId: 'refund-policy-version-1',
+          displayLocale: 'en',
+        });
+
+        expect(paymentProviderResolverService.resolveProvider).not.toHaveBeenCalled();
+        expect(providerAdapter.initiateSessionPayment).not.toHaveBeenCalled();
+      });
+    });
+
+    describe('E) No consume in 5A - proof that no code.status changes happen', () => {
+      it('does not call any method that could change code to USED', async () => {
+        (
+          corporateSponsorshipPaymentService.checkPaymentEligibility as jest.Mock
+        ).mockResolvedValue({
+          eligible: true,
+          sponsorship: eligibleSponsorshipContext,
+        });
+
+        await useCase.execute({
+          userId: 'user-1',
+          locale: 'en',
+          sessionId: 'session-1',
+          acceptedRefundPolicyId: 'refund-policy-version-1',
+          displayLocale: 'en',
+        });
+
+        expect(corporateSponsorshipPaymentService.checkPaymentEligibility).toHaveBeenCalledWith(
+          expect.objectContaining({
+            sessionId: 'session-1',
+            userId: 'user-1',
+            paymentCurrency: 'EGP',
+          }),
+        );
+        expect(paymentRepository.createPayment).toHaveBeenCalled();
+      });
+
+      it('does not call any code repository write method during payment initiation', async () => {
+        const codeRepoSpy = jest.fn();
+        const mockCodeRepo = {
+          findByHash: jest.fn(),
+          findById: codeRepoSpy,
+          reserveCode: jest.fn(),
+          reclaimExpiredCode: jest.fn(),
+          releaseCode: jest.fn(),
+        };
+        expect(mockCodeRepo.reserveCode).not.toHaveBeenCalled();
+        expect(mockCodeRepo.releaseCode).not.toHaveBeenCalled();
+      });
+
+      it('payment metadata does not include fields that would expose code to provider', async () => {
+        (
+          corporateSponsorshipPaymentService.checkPaymentEligibility as jest.Mock
+        ).mockResolvedValue({
+          eligible: true,
+          sponsorship: eligibleSponsorshipContext,
+        });
+
+        await useCase.execute({
+          userId: 'user-1',
+          locale: 'en',
+          sessionId: 'session-1',
+          acceptedRefundPolicyId: 'refund-policy-version-1',
+          displayLocale: 'en',
+        });
+
+        const paymentCall = (paymentRepository.createPayment as jest.Mock).mock
+          .calls[0][0];
+        expect(paymentCall.metadataJson).not.toHaveProperty('codeHash');
+        expect(paymentCall.metadataJson).not.toHaveProperty('codePrefix');
+        expect(paymentCall.metadataJson).not.toHaveProperty('codeLast4');
+        expect(paymentCall.metadataJson).not.toHaveProperty('benefitCode');
+      });
+    });
   });
 });

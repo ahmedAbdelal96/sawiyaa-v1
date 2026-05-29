@@ -2,324 +2,319 @@ import React, { useState } from "react";
 import {
   View,
   StyleSheet,
-  ScrollView,
   TouchableOpacity,
-  Modal,
-  FlatList,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
-import {
-  Screen,
-  Header,
-  Text,
-  Card,
-  Button,
-  Input,
-} from "../../../src/components/ui";
+import { Screen, Header, Text, Input } from "../../../src/components/ui";
 import { useTheme } from "../../../src/providers/ThemeProvider";
 import { useCreateSupportTicket } from "../../../src/features/patient/support/hooks";
 import { extractApiErrorMessage } from "../../../src/lib/api";
 import type { SupportTicketType } from "../../../src/features/patient/support/types";
 
-const CATEGORIES: SupportTicketType[] = [
-  "BOOKING",
-  "PAYMENT",
-  "SESSION",
-  "TECHNICAL",
-  "ACCOUNT",
-  "MATCHING",
-  "GENERAL",
-  "OTHER",
-];
-
-export default function NewSupportTicketScreen() {
+export default function NewSupportChatScreen() {
   const router = useRouter();
   const { returnTo } = useLocalSearchParams<{ returnTo?: string }>();
   const { theme } = useTheme();
-  const { t } = useTranslation();
-  const returnToRoute =
-    typeof returnTo === "string" && returnTo.trim().length > 0
-      ? returnTo
-      : null;
+  const { t, i18n } = useTranslation();
+  const isRTL = i18n.language?.startsWith("ar") ?? false;
 
+  const [message, setMessage] = useState("");
   const [category, setCategory] = useState<SupportTicketType>("GENERAL");
-  const [subject, setSubject] = useState("");
-  const [description, setDescription] = useState("");
-  const [categoryModalOpen, setCategoryModalOpen] = useState(false);
+  const [showCategory, setShowCategory] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const createMutation = useCreateSupportTicket();
 
-  async function handleSubmit() {
+  async function handleSend() {
     setError(null);
-    if (!subject.trim() || subject.trim().length < 4) {
-      setError(t("support.new.subjectRequired"));
-      return;
-    }
-    if (!description.trim() || description.trim().length < 10) {
+    if (!message.trim() || message.trim().length < 10) {
       setError(t("support.new.descriptionRequired"));
       return;
     }
 
     try {
+      const subjectText = message.trim().slice(0, 60);
       const res = await createMutation.mutateAsync({
         category,
-        subject: subject.trim(),
-        description: description.trim(),
+        subject: subjectText,
+        description: message.trim(),
       });
       router.replace({
         pathname: "/(patient)/support/[id]",
-        params: {
-          id: res.item.id,
-          returnTo: returnToRoute ?? "",
-        },
+        params: { id: res.item.id, returnTo: returnTo ?? "" },
       } as any);
     } catch (err) {
       setError(extractApiErrorMessage(err));
     }
   }
 
+  const CATEGORIES: SupportTicketType[] = [
+    "GENERAL",
+    "BOOKING",
+    "PAYMENT",
+    "SESSION",
+    "TECHNICAL",
+    "ACCOUNT",
+    "CHAT",
+    "OTHER",
+  ];
+
   return (
     <Screen bg="background">
       <Header
-        title={t("support.new.title")}
+        title={t("messages.inbox.newSupportTitle", "Message Support")}
         showBack
-        onBack={
-          returnToRoute
-            ? () => router.replace(returnToRoute as any)
-            : undefined
-        }
       />
 
-      <ScrollView
-        contentContainerStyle={styles.scroll}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={90}
       >
-        <Card style={styles.form}>
-          {/* Category picker */}
-          <View style={styles.field}>
-            <Text weight="600" style={styles.label}>
-              {t("support.new.categoryLabel")}
-            </Text>
-            <TouchableOpacity
-              style={[
-                styles.picker,
-                {
-                  borderColor: theme.colors.borderLight,
-                  backgroundColor: theme.colors.surface,
-                },
-              ]}
-              onPress={() => setCategoryModalOpen(true)}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.pickerText}>
-                {t(`support.categories.${category}`, category)}
-              </Text>
-              <Ionicons
-                name="chevron-down"
-                size={18}
-                color={theme.colors.textMuted}
-              />
-            </TouchableOpacity>
-          </View>
+        {/* Body: empty chat-like area */}
+        <View style={styles.body}>
+          <Text
+            color={theme.colors.textSecondary}
+            style={[styles.subtitle, isRTL ? styles.subtitleRtl : null]}
+          >
+            {t(
+              "messages.inbox.newSupportCardDesc",
+              "Describe your issue and we will get back to you shortly.",
+            )}
+          </Text>
 
-          {/* Subject */}
-          <View style={styles.field}>
-            <Text weight="600" style={styles.label}>
-              {t("support.new.subjectLabel")}
-            </Text>
-            <Input
-              value={subject}
-              onChangeText={setSubject}
-              placeholder={t("support.new.subjectPlaceholder")}
-              maxLength={191}
+          {/* Category selector — compact, hidden by default */}
+          <TouchableOpacity
+            onPress={() => setShowCategory((v) => !v)}
+            style={[
+              styles.categoryToggle,
+              {
+                backgroundColor: theme.colors.surface,
+                borderColor: theme.colors.borderLight,
+                flexDirection: isRTL ? "row-reverse" : "row",
+              },
+            ]}
+            activeOpacity={0.7}
+          >
+            <Ionicons
+              name="folder-outline"
+              size={14}
+              color={theme.colors.textMuted}
             />
-          </View>
-
-          {/* Description */}
-          <View style={styles.field}>
-            <Text weight="600" style={styles.label}>
-              {t("support.new.descriptionLabel")}
+            <Text style={[styles.categoryToggleText, { color: theme.colors.textSecondary }]}>
+              {t(`support.categories.${category}`, category)}
             </Text>
-            <Input
-              value={description}
-              onChangeText={setDescription}
-              placeholder={t("support.new.descriptionPlaceholder")}
-              multiline
-              numberOfLines={5}
-              style={styles.textArea}
-              maxLength={2000}
+            <Ionicons
+              name={showCategory ? "chevron-up" : "chevron-down"}
+              size={13}
+              color={theme.colors.textMuted}
             />
-            <Text color={theme.colors.textMuted} style={styles.charCount}>
-              {description.length} / 2000
-            </Text>
-          </View>
+          </TouchableOpacity>
 
-          {error ? (
+          {showCategory ? (
             <View
               style={[
-                styles.errorBox,
-                { backgroundColor: theme.colors.error + "15" },
+                styles.categorySheet,
+                {
+                  backgroundColor: theme.colors.surface,
+                  borderColor: theme.colors.borderLight,
+                  flexDirection: isRTL ? "row-reverse" : "row",
+                },
               ]}
             >
-              <Text style={{ color: theme.colors.error, fontSize: 14 }}>
-                {error}
-              </Text>
-            </View>
-          ) : null}
-
-          <Button
-            title={t("support.new.submit")}
-            onPress={handleSubmit}
-            disabled={createMutation.isPending}
-            style={styles.submitBtn}
-          />
-        </Card>
-      </ScrollView>
-
-      {/* Category modal */}
-      <Modal
-        visible={categoryModalOpen}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setCategoryModalOpen(false)}
-      >
-        <TouchableOpacity
-          style={styles.modalOverlay}
-          activeOpacity={1}
-          onPress={() => setCategoryModalOpen(false)}
-        >
-          <View
-            style={[
-              styles.modalSheet,
-              { backgroundColor: theme.colors.surface },
-            ]}
-          >
-            <View style={styles.modalHandle} />
-            <Text weight="bold" style={styles.modalTitle}>
-              {t("support.new.categoryLabel")}
-            </Text>
-            <FlatList
-              data={CATEGORIES}
-              keyExtractor={(item) => item}
-              renderItem={({ item }) => (
+              {CATEGORIES.map((cat) => (
                 <TouchableOpacity
+                  key={cat}
+                  onPress={() => {
+                    setCategory(cat);
+                    setShowCategory(false);
+                  }}
                   style={[
-                    styles.categoryOption,
-                    item === category && {
+                    styles.categoryItem,
+                    cat === category && {
                       backgroundColor: theme.colors.primary + "15",
                     },
                   ]}
-                  onPress={() => {
-                    setCategory(item);
-                    setCategoryModalOpen(false);
-                  }}
+                  activeOpacity={0.7}
                 >
                   <Text
                     style={[
-                      styles.categoryOptionText,
-                      item === category && { color: theme.colors.primary },
+                      styles.categoryItemText,
+                      { color: cat === category ? theme.colors.primary : theme.colors.textSecondary },
                     ]}
                   >
-                    {t(`support.categories.${item}`, item)}
+                    {t(`support.categories.${cat}`, cat)}
                   </Text>
-                  {item === category && (
-                    <Ionicons
-                      name="checkmark"
-                      size={18}
-                      color={theme.colors.primary}
-                    />
-                  )}
                 </TouchableOpacity>
-              )}
+              ))}
+            </View>
+          ) : null}
+        </View>
+
+        {/* Error */}
+        {error ? (
+          <View
+            style={[
+              styles.errorBox,
+              {
+                backgroundColor: theme.colors.error + "15",
+                marginHorizontal: 16,
+                flexDirection: isRTL ? "row-reverse" : "row",
+              },
+            ]}
+          >
+            <Ionicons name="warning" size={14} color={theme.colors.error} />
+            <Text style={[styles.errorText, { color: theme.colors.error }]}>
+              {error}
+            </Text>
+          </View>
+        ) : null}
+
+        {/* Composer */}
+        <View
+          style={[
+            styles.composer,
+            {
+              borderTopColor: theme.colors.borderLight,
+              backgroundColor: theme.colors.surface,
+              flexDirection: isRTL ? "row-reverse" : "row",
+            },
+          ]}
+        >
+          <View style={styles.inputWrap}>
+            <Input
+              value={message}
+              onChangeText={setMessage}
+              placeholder={t("messages.inbox.composerPlaceholder", "اكتب رسالتك...")}
+              placeholderTextColor={theme.colors.textMuted}
+              multiline
+              style={[
+                styles.input,
+                isRTL ? styles.inputRtl : null,
+              ]}
+              containerStyle={styles.inputContainer}
+              maxLength={2000}
             />
           </View>
-        </TouchableOpacity>
-      </Modal>
+          <TouchableOpacity
+            onPress={handleSend}
+            disabled={!message.trim() || createMutation.isPending}
+            style={[
+              styles.sendBtn,
+              {
+                backgroundColor: theme.colors.primary,
+                opacity: !message.trim() || createMutation.isPending ? 0.45 : 1,
+              },
+            ]}
+            activeOpacity={0.8}
+            accessibilityLabel={t("support.detail.sendMessage", "Send message")}
+          >
+            <Ionicons name="send" size={18} color="#fff" />
+          </TouchableOpacity>
+        </View>
+      </KeyboardAvoidingView>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  scroll: {
-    padding: 16,
-    paddingBottom: 40,
+  flex: {
+    flex: 1,
   },
-  form: {
-    padding: 16,
-    gap: 16,
+  body: {
+    flex: 1,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 8,
+    gap: 10,
   },
-  field: {
-    gap: 6,
+  subtitle: {
+    fontSize: 13,
+    lineHeight: 19,
   },
-  label: {
-    fontSize: 14,
-  },
-  picker: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    borderWidth: 1,
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-  },
-  pickerText: {
-    fontSize: 15,
-  },
-  textArea: {
-    minHeight: 120,
-    textAlignVertical: "top",
-  },
-  charCount: {
-    fontSize: 12,
+  subtitleRtl: {
     textAlign: "right",
   },
-  errorBox: {
-    borderRadius: 8,
-    padding: 12,
-  },
-  submitBtn: {
-    marginTop: 4,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.4)",
-    justifyContent: "flex-end",
-  },
-  modalSheet: {
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    padding: 16,
-    maxHeight: "70%",
-  },
-  modalHandle: {
-    width: 40,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: "#d1d5db",
-    alignSelf: "center",
-    marginBottom: 16,
-  },
-  modalTitle: {
-    fontSize: 17,
-    marginBottom: 12,
-    textAlign: "center",
-  },
-  categoryOption: {
+  categoryToggle: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderRadius: 10,
-    marginBottom: 2,
+    gap: 6,
+    alignSelf: "flex-start",
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 20,
+    borderWidth: 1,
   },
-  categoryOptionText: {
+  categoryToggleText: {
+    fontSize: 12,
+  },
+  categorySheet: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  categoryItem: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+  },
+  categoryItemText: {
+    fontSize: 12,
+    fontWeight: "500",
+  },
+  errorBox: {
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 8,
+    borderRadius: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  errorText: {
+    fontSize: 13,
+    flex: 1,
+  },
+  composer: {
+    borderTopWidth: 1,
+    alignItems: "flex-end",
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    gap: 8,
+  },
+  inputWrap: {
+    flex: 1,
+    minHeight: 44,
+    maxHeight: 120,
+  },
+  inputContainer: {
+    flex: 1,
+    marginBottom: 0,
+  },
+  input: {
+    flex: 1,
+    minHeight: 44,
+    maxHeight: 120,
+    paddingTop: 10,
+    paddingHorizontal: 12,
     fontSize: 15,
+    lineHeight: 21,
+  },
+  inputRtl: {
+    textAlign: "right",
+  },
+  sendBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
   },
 });
-

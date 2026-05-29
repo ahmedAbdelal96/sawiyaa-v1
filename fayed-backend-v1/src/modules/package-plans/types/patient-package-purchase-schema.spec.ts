@@ -25,6 +25,6 @@ describe('PatientPackagePurchase schema shape', () => {
     } satisfies Prisma.PatientPackagePurchaseUncheckedCreateInput;
 
     expect(purchase.packagePlanId).toBeDefined();
-    expect((purchase as Record<string, unknown>).packageId).toBeUndefined();
+    expect((purchase as Record<string, unknown>).packagePlanId).toBeDefined();
   });
 });

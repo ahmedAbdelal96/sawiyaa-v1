@@ -148,26 +148,43 @@ export default function PractitionerCareChatRequestDetailScreen() {
         </Card>
 
         {request.status === "PENDING" ? (
-          <View
-            style={[
-              styles.notice,
-              { backgroundColor: theme.colors.warning + "10" },
-            ]}
-          >
-            <Ionicons
-              name="time-outline"
-              size={18}
-              color={theme.colors.warning ?? "#f59e0b"}
-            />
-            <Text
+          <>
+            <View
               style={[
-                styles.noticeText,
-                { color: theme.colors.warning ?? "#f59e0b" },
+                styles.notice,
+                { backgroundColor: theme.colors.warning + "10" },
               ]}
             >
-              {t("practitioner.careChat.requestDetail.pendingNotice")}
-            </Text>
-          </View>
+              <Ionicons
+                name="time-outline"
+                size={18}
+                color={theme.colors.warning ?? "#f59e0b"}
+              />
+              <Text
+                style={[
+                  styles.noticeText,
+                  { color: theme.colors.warning ?? "#f59e0b" },
+                ]}
+              >
+                {t("practitioner.careChat.requestDetail.pendingNotice")}
+              </Text>
+            </View>
+            <View
+              style={[
+                styles.notice,
+                { backgroundColor: theme.colors.primary + "10" },
+              ]}
+            >
+              <Ionicons
+                name="information-circle-outline"
+                size={18}
+                color={theme.colors.primary}
+              />
+              <Text style={[styles.noticeText, { color: theme.colors.primary }]}>
+                {t("practitioner.careChat.requestDetail.pendingReviewerNote")}
+              </Text>
+            </View>
+          </>
         ) : null}
 
         {request.status === "REJECTED" ? (

@@ -186,7 +186,6 @@ export class CreatePackagePurchaseUseCase {
 
       const purchase = await this.packagePurchaseRepository.create(
         {
-          packageId: null,
           packagePlanId: packagePlan.id,
           practitionerId: practitioner.id,
           patientId: patientProfile.id,
@@ -265,7 +264,6 @@ export class CreatePackagePurchaseUseCase {
             expiresAt: paymentExpiresAt,
             timezoneSnapshot: validatedSlots.timezone,
             packagePurchaseId: purchase.id,
-            packageTemplateId: null,
             packageSessionIndex: index + 1,
             packageSessionCount: packagePlan.sessionCount,
             paymentCoverageType: SessionPaymentCoverageType.PACKAGE,

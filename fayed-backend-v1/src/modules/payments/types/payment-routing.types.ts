@@ -27,3 +27,20 @@ export interface PaymentProviderCapability {
   supportedMethods?: string[];
   defaultMethod?: string | null;
 }
+
+export interface PaymentCapabilityMethodViewModel {
+  key: string;
+  type: string;
+  label: string;
+  enabled: boolean;
+  description?: string | null;
+  brands?: string[];
+}
+
+export interface PaymentWalletCapabilityViewModel {
+  enabled: boolean;
+  availableBalance: string | null;
+  currencyCode: string | null;
+  canUseFullAmount: boolean;
+  canUsePartialAmount: boolean;
+}

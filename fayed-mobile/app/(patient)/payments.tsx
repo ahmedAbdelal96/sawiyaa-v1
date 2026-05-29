@@ -10,6 +10,7 @@ import {
   ErrorState,
   Header,
   LoadingState,
+  ScreenHeading,
   Screen,
   StatusBadge,
   Text,
@@ -329,7 +330,7 @@ export default function PatientPaymentsScreen() {
   if (isLoading) {
     return (
       <Screen bg="background">
-        <Header title={t("patientPaymentsFlow.wallet.title")} />
+        <Header showBack />
         <LoadingState fullScreen />
       </Screen>
     );
@@ -337,12 +338,17 @@ export default function PatientPaymentsScreen() {
 
   return (
     <Screen bg="background">
-      <Header title={t("patientPaymentsFlow.wallet.title")} />
+      <Header showBack />
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
         {/* ── Balance hero ── */}
+        <ScreenHeading
+          title={t("patientPaymentsFlow.wallet.title")}
+          subtitle={t("patientPaymentsFlow.wallet.subtitle")}
+          titleVariant="h2"
+        />
         <Card
           variant="elevated"
           padding="lg"
@@ -685,9 +691,9 @@ const styles = StyleSheet.create({
     gap: 8,
     marginBottom: 8,
   },
-  heroBalanceLabel: { fontSize: 14 },
-  heroAmount: { fontSize: 40, letterSpacing: -1, marginBottom: 4 },
-  heroHint: { fontSize: 12, marginBottom: 8 },
+  heroBalanceLabel: { fontSize: 13, lineHeight: 19 },
+  heroAmount: { fontSize: 30, lineHeight: 36, letterSpacing: -0.5, marginBottom: 4 },
+  heroHint: { fontSize: 12, lineHeight: 17, marginBottom: 8 },
   heroStatsRow: {
     flexDirection: "row",
     gap: 8,
@@ -703,8 +709,8 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   heroStatLabel: { fontSize: 11 },
-  heroStatValue: { fontSize: 15 },
-  noWalletNote: { fontSize: 13, marginTop: 8 },
+  heroStatValue: { fontSize: 14, lineHeight: 20 },
+  noWalletNote: { fontSize: 12, lineHeight: 18, marginTop: 8 },
   reservedText: { fontSize: 12, marginBottom: 8 },
   section: { marginBottom: 0 },
   statusCard: { marginBottom: 0 },
@@ -714,9 +720,9 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     marginBottom: 10,
   },
-  sectionTitle: { fontSize: 15 },
-  blockerNote: { fontSize: 13 },
-  viewAllText: { fontSize: 13 },
+  sectionTitle: { fontSize: 16, lineHeight: 22 },
+  blockerNote: { fontSize: 13, lineHeight: 19 },
+  viewAllText: { fontSize: 13, lineHeight: 19 },
   paymentStatusBody: { gap: 12 },
   actionablePaymentCard: {
     borderRadius: 14,
@@ -746,8 +752,8 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingTop: 2,
   },
-  methodNoteText: { fontSize: 12, flex: 1 },
-  methodFootnote: { fontSize: 12, lineHeight: 18 },
+  methodNoteText: { fontSize: 12, lineHeight: 17, flex: 1 },
+  methodFootnote: { fontSize: 12, lineHeight: 17 },
   entryList: { gap: 12 },
   entryRow: {
     flexDirection: "row",
@@ -763,12 +769,12 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   entryTextWrap: { flex: 1 },
-  entryTypeText: { fontSize: 14 },
-  entryDate: { fontSize: 12, marginTop: 2 },
-  entryDescription: { fontSize: 12, marginTop: 2 },
-  entryAmount: { fontSize: 14, textAlign: "right" },
-  emptyNote: { fontSize: 13, marginTop: 4 },
-  paymentsTitle: { fontSize: 15, marginBottom: 10 },
+  entryTypeText: { fontSize: 13, lineHeight: 19 },
+  entryDate: { fontSize: 12, lineHeight: 17, marginTop: 2 },
+  entryDescription: { fontSize: 12, lineHeight: 17, marginTop: 2 },
+  entryAmount: { fontSize: 13, lineHeight: 19, textAlign: "right" },
+  emptyNote: { fontSize: 13, lineHeight: 19, marginTop: 4 },
+  paymentsTitle: { fontSize: 15, lineHeight: 21, marginBottom: 10 },
   paymentList: { gap: 12 },
   historyCard: { marginBottom: 0 },
   historyHeader: {
@@ -778,7 +784,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   historyHeaderText: { flex: 1, gap: 4 },
-  historySubtitle: { fontSize: 12, lineHeight: 18 },
+  historySubtitle: { fontSize: 12, lineHeight: 17 },
   historyBody: { gap: 12, marginTop: 12 },
   viewAllHistory: { alignSelf: "flex-start" },
   paymentCard: { marginBottom: 0 },
@@ -788,10 +794,10 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
     marginBottom: 10,
   },
-  paymentAmount: { fontSize: 18 },
-  paymentProvider: { fontSize: 12, marginTop: 2 },
+  paymentAmount: { fontSize: 17, lineHeight: 24 },
+  paymentProvider: { fontSize: 12, lineHeight: 17, marginTop: 2 },
   divider: { height: 1, marginBottom: 8 },
-  paymentDate: { fontSize: 12, marginBottom: 6 },
+  paymentDate: { fontSize: 12, lineHeight: 17, marginBottom: 6 },
   splitRow: { flexDirection: "row", gap: 8, flexWrap: "wrap", marginBottom: 8 },
   splitChip: {
     flexDirection: "row",
@@ -801,7 +807,7 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: 8,
   },
-  splitChipText: { fontSize: 11 },
+  splitChipText: { fontSize: 11, lineHeight: 15 },
   paymentActions: {
     flexDirection: "row",
     alignItems: "center",
@@ -813,8 +819,8 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 10,
   },
-  payActionText: { fontSize: 13 },
-  viewSessionLink: { fontSize: 13 },
+  payActionText: { fontSize: 13, lineHeight: 19 },
+  viewSessionLink: { fontSize: 13, lineHeight: 19 },
   secureRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -822,6 +828,6 @@ const styles = StyleSheet.create({
     gap: 6,
     marginTop: 8,
   },
-  secureText: { fontSize: 12 },
-  retryText: { fontSize: 13, marginTop: 4 },
+  secureText: { fontSize: 12, lineHeight: 17 },
+  retryText: { fontSize: 13, lineHeight: 19, marginTop: 4 },
 });

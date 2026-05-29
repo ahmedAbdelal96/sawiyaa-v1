@@ -151,3 +151,53 @@ export interface PatientJourneyResponseDto {
   support: JourneySupportDto;
   nextSteps: PatientJourneyNextStepDto[];
 }
+
+export type PatientHomeModuleStatus =
+  | "READY"
+  | "NOT_IMPLEMENTED"
+  | "IMPLEMENTED";
+
+export interface PatientHomePractitionerItemDto {
+  practitionerId: string;
+  slug: string;
+  displayName: string | null;
+  professionalTitle: string | null;
+  avatarUrl: string | null;
+  primarySpecialty: string | null;
+  averageRating: number | null;
+  totalReviews: number;
+  displaySessionPrice30: number | null;
+  displaySessionPrice60: number | null;
+  isVerified: boolean;
+  badgeLabel?: string | null;
+  lastViewedAt?: string;
+}
+
+export interface PatientHomePractitionerModuleDto {
+  label: string;
+  status?: PatientHomeModuleStatus;
+  items: PatientHomePractitionerItemDto[];
+}
+
+export type PatientHomeCardCtaKey = "MATCHING_INTRO" | "SUPPORT_HOME";
+
+export interface PatientHomeCardDto {
+  label: string;
+  title: string;
+  description: string;
+  ctaKey: PatientHomeCardCtaKey;
+}
+
+export interface PatientHomeResponseDto {
+  featuredPractitioners: PatientHomePractitionerModuleDto;
+  recentlyVisitedPractitioners: PatientHomePractitionerModuleDto;
+  mostBookedTodayPractitioners: PatientHomePractitionerModuleDto;
+  topRatedPractitioners: PatientHomePractitionerModuleDto;
+  matchingCard: PatientHomeCardDto;
+  supportCard: PatientHomeCardDto;
+}
+
+export interface TrackPractitionerViewResponseDto {
+  slug: string;
+  trackedAt: string;
+}

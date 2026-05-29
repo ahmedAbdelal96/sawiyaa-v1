@@ -1,5 +1,5 @@
 import { BadRequestException } from '@nestjs/common';
-import { MarketType, Prisma, SessionMode } from '@prisma/client';
+import { MarketType, PaymentProvider, Prisma, SessionMode } from '@prisma/client';
 import { MoneyMathService } from '@modules/financial-rules/services/money-math.service';
 import { ValidateSessionDurationService } from '@modules/sessions/services/validate-session-duration.service';
 import { ValidatePackagePlanService } from './validate-package-plan.service';
@@ -143,22 +143,24 @@ describe('PackageQuoteCalculatorService', () => {
     expect(result.baseSessionPriceEgp).toBe('50.00');
   });
 
-  it('rejects unsupported currencies', async () => {
-    await expect(
-      service.calculate({
-        plan: {
-          code: 'SESSIONS_4',
-          sessionCount: 4,
-          discountPercent: '10',
-        },
-        practitioner,
-        selectedDurationMinutes: 60,
-        sessionMode: SessionMode.VIDEO,
-        selectedCurrencyCode: 'AED',
-        patient: null,
-        internalBreakdownVisible: false,
-      }),
-    ).rejects.toBeInstanceOf(BadRequestException);
+  it('normalizes unsupported direct currency input through regional resolution', async () => {
+    const result = await service.calculate({
+      plan: {
+        code: 'SESSIONS_4',
+        sessionCount: 4,
+        discountPercent: '10',
+      },
+      practitioner,
+      selectedDurationMinutes: 60,
+      sessionMode: SessionMode.VIDEO,
+      selectedCurrencyCode: 'AED',
+      patient: null,
+      internalBreakdownVisible: false,
+    });
+
+    expect(result.selectedCurrencyCode).toBe('USD');
+    expect(result.regionalPricingMode).toBe('INTERNATIONAL');
+    expect(result.provider).toBe(PaymentProvider.STRIPE);
   });
 
   it('rejects EGP quotes when the EGP price is missing', async () => {

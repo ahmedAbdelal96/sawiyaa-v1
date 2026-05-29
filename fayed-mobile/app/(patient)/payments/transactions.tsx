@@ -213,8 +213,8 @@ export default function TransactionHistoryScreen() {
 
   const [activeFilter, setActiveFilter] = useState<FilterTab>("all");
 
-  // Load up to 50 entries; the approved design is a flat paginated list
-  const entriesQuery = usePatientWalletEntries({ limit: 50 });
+  // Load up to 20 entries; the approved design is a flat paginated list
+  const entriesQuery = usePatientWalletEntries({ limit: 20 });
   const walletQuery = usePatientWalletSummary();
 
   const wallet = walletQuery.data?.item ?? null;

@@ -1,27 +1,149 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Image, ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { I18nManager, ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
-import { Header, Screen, Text, Card, Button } from "../../../src/components/ui";
+import { Button, Card, Header, Screen, ScreenHeading, Text } from "../../../src/components/ui";
 import { useTheme } from "../../../src/providers/ThemeProvider";
-import { usePublicAvailabilityWindows } from "../../../src/features/patient/sessions/hooks";
-import {
-  buildSlotsFromWindows,
-  formatLocalizedDateRange,
-  formatLocalizedTime,
-  getWeekRange,
-  groupSlotsByDay,
-  splitDaySlotsByPart,
-} from "../../../src/features/patient/sessions/slot-utils";
+import { useGetPublicPractitionerDetails } from "../../../src/features/patient/discovery/api";
+import { getPatientPreferredCurrency } from "../../../src/lib/currency";
+import { usePatientProfile } from "../../../src/features/patient/profile/hooks";
 import { trackAnalyticsEvent } from "../../../src/lib/analytics";
+import { usePublicPractitionerPackagePlans, usePackagePlanQuote } from "../../../src/features/patient/package-plans/hooks";
+import { usePublicAvailabilityWindows } from "../../../src/features/patient/sessions/hooks";
+import type {
+  AvailabilityWindow,
+  BookedAvailabilitySlot,
+} from "../../../src/features/patient/sessions/types";
+import type { PackagePlanQuotedItem } from "../../../src/features/patient/package-plans/types";
+import {
+  BookingTypeTabs,
+  DurationSegment,
+  type BookingTypeValue,
+  type DurationValue,
+  PackagePlanSelector,
+  PractitionerSummaryCard,
+  RollingDateScheduleTable,
+  type SelectTimeDateColumn,
+} from "../../../src/features/patient/sessions/components/SelectTimePanels";
+
+const VISIBLE_DATE_COLUMNS = 5;
+type ScheduleSlot = {
+  startsAt: string;
+  kind: "AVAILABLE" | "BOOKED" | "RESERVED";
+};
+
+function toDayKey(date: Date) {
+  return `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
+}
+
+function buildSlotsFromDurationWindows(
+  windows: AvailabilityWindow[],
+  bookedSlots: BookedAvailabilitySlot[],
+  durationMinutes: DurationValue,
+): ScheduleSlot[] {
+  const durationMs = durationMinutes * 60 * 1000;
+  const earliestAllowedStart = Date.now() + 60 * 1000;
+  const slots: ScheduleSlot[] = [];
+
+  for (const window of windows) {
+    if (window.durationMinutes !== durationMinutes) continue;
+    const startMs = new Date(window.startsAt).getTime();
+    const endMs = new Date(window.endsAt).getTime();
+
+    for (let cursor = startMs; cursor + durationMs <= endMs; cursor += durationMs) {
+      if (cursor <= earliestAllowedStart) continue;
+      slots.push({
+        startsAt: new Date(cursor).toISOString(),
+        kind: "AVAILABLE",
+      });
+    }
+  }
+
+  for (const booked of bookedSlots) {
+    if (
+      booked.durationMinutes !== null &&
+      booked.durationMinutes !== durationMinutes
+    ) {
+      continue;
+    }
+    if (new Date(booked.startsAt).getTime() <= earliestAllowedStart) continue;
+    slots.push({
+      startsAt: booked.startsAt,
+      kind: booked.statusType,
+    });
+  }
+
+  const deduped = new Map<string, ScheduleSlot>();
+  for (const slot of slots) {
+    const existing = deduped.get(slot.startsAt);
+    if (!existing) {
+      deduped.set(slot.startsAt, slot);
+      continue;
+    }
+
+    if (existing.kind === "AVAILABLE" && slot.kind !== "AVAILABLE") {
+      deduped.set(slot.startsAt, slot);
+    }
+  }
+
+  const merged = Array.from(deduped.values());
+  merged.sort((a, b) => a.startsAt.localeCompare(b.startsAt));
+  return merged;
+}
+
+function toDateColumns(
+  from: Date,
+  locale: string,
+  slots: ScheduleSlot[],
+): SelectTimeDateColumn[] {
+  const map = new Map<string, ScheduleSlot[]>();
+  for (const slot of slots) {
+    const date = new Date(slot.startsAt);
+    const dayKey = toDayKey(date);
+    const list = map.get(dayKey);
+    if (list) list.push(slot);
+    else map.set(dayKey, [slot]);
+  }
+
+  const dayNameFormatter = new Intl.DateTimeFormat(locale, { weekday: "short" });
+  const dayNumberFormatter = new Intl.DateTimeFormat(locale, { day: "numeric" });
+  const columns: SelectTimeDateColumn[] = [];
+  for (let idx = 0; idx < VISIBLE_DATE_COLUMNS; idx += 1) {
+    const date = new Date(from);
+    date.setDate(from.getDate() + idx);
+    const dayKey = toDayKey(date);
+    columns.push({
+      dayKey,
+      dayLabelShort: dayNameFormatter.format(date),
+      dayNumber: dayNumberFormatter.format(date),
+      slots: map.get(dayKey) ?? [],
+    });
+  }
+  return columns;
+}
+
+function formatMoney(amount: string | null | undefined, currency: string, locale: string) {
+  if (!amount) return null;
+  const num = Number(amount);
+  if (!Number.isFinite(num)) return null;
+  return new Intl.NumberFormat(locale, {
+    style: "currency",
+    currency,
+    maximumFractionDigits: 0,
+  }).format(num);
+}
 
 export default function SelectSessionTimeScreen() {
   const router = useRouter();
   const { theme } = useTheme();
   const { t, i18n } = useTranslation();
-  const isRtl = i18n.language?.startsWith("ar") ?? false;
-  const locale = i18n.language?.startsWith("ar") ? "ar-SA" : "en-US";
+  const insets = useSafeAreaInsets();
+  const isArabicUi = i18n.language?.startsWith("ar") ?? false;
+  const isRtl = isArabicUi || I18nManager.isRTL;
+  const locale = isArabicUi ? "ar-SA" : "en-US";
+  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
   const params = useLocalSearchParams<{
     slug: string;
     practitionerName?: string;
@@ -29,569 +151,534 @@ export default function SelectSessionTimeScreen() {
     practitionerAvatarUrl?: string;
   }>();
 
-  const [weekOffset, setWeekOffset] = useState(0);
-  const [selectedDayKey, setSelectedDayKey] = useState<string | null>(null);
-  const [selectedSlotStartAt, setSelectedSlotStartAt] = useState<string | null>(
-    null,
-  );
-  const [selectedSlotMaxDuration, setSelectedSlotMaxDuration] = useState<
-    30 | 60
-  >(60);
+  const [bookingType, setBookingType] = useState<BookingTypeValue>("appointment");
+  const [appointmentDuration, setAppointmentDuration] = useState<DurationValue>(30);
+  const [packageDuration, setPackageDuration] = useState<DurationValue>(30);
+  const [dateWindowOffsetDays, setDateWindowOffsetDays] = useState(0);
+  const [avatarFailed, setAvatarFailed] = useState(false);
+  const [showBooked, setShowBooked] = useState(false);
+  const [footerHeight, setFooterHeight] = useState(96);
+
+  const [selectedAppointmentSlot, setSelectedAppointmentSlot] = useState<string | null>(null);
+  const [selectedPackagePlanCode, setSelectedPackagePlanCode] = useState<string | null>(null);
+  const [selectedPackageSlots, setSelectedPackageSlots] = useState<string[]>([]);
+
   const continueLockRef = useRef(false);
+  const canShowBookedSlots = true;
 
-  const weekRange = useMemo(() => getWeekRange(weekOffset), [weekOffset]);
-  const windowsQuery = usePublicAvailabilityWindows(
+  const practitionerQuery = useGetPublicPractitionerDetails(params.slug ?? null);
+  const profileQuery = usePatientProfile();
+  const practitioner = practitionerQuery.data?.data.item ?? null;
+
+  // Egyptian patients always see EGP; non-Egyptian see practitioner's USD setting
+  const patientCountryCode = profileQuery.data?.profile.countryCode ?? null;
+  const packageCurrency = practitioner
+    ? getPatientPreferredCurrency(patientCountryCode, practitioner)
+    : "USD";
+  const packageSupport30Query = usePublicPractitionerPackagePlans(
     params.slug ?? null,
-    weekRange.fromIso,
-    weekRange.toIso,
+    {
+      durationMinutes: 30,
+      sessionMode: "VIDEO",
+      currencyCode: packageCurrency,
+    },
+    { enabled: Boolean(params.slug) },
   );
-
-  const dayGroups = useMemo(() => {
-    const windows = windowsQuery.data?.windows ?? [];
-    const slots = buildSlotsFromWindows(windows);
-    return groupSlotsByDay(slots, locale);
-  }, [windowsQuery.data, locale]);
+  const packageSupport60Query = usePublicPractitionerPackagePlans(
+    params.slug ?? null,
+    {
+      durationMinutes: 60,
+      sessionMode: "VIDEO",
+      currencyCode: packageCurrency,
+    },
+    { enabled: Boolean(params.slug) },
+  );
+  const supportsPackages30 = (packageSupport30Query.data?.items?.length ?? 0) > 0;
+  const supportsPackages60 = (packageSupport60Query.data?.items?.length ?? 0) > 0;
+  const supportsPackagesByPlans = supportsPackages30 || supportsPackages60;
+  const isPackageSupportChecking =
+    Boolean(params.slug) &&
+    !supportsPackagesByPlans &&
+    (packageSupport30Query.isLoading || packageSupport60Query.isLoading);
+  const practitionerAcceptsPackages =
+    (practitioner as { acceptsPackage?: boolean; acceptsPackages?: boolean } | null)
+      ?.acceptsPackage ??
+    (practitioner as { acceptsPackage?: boolean; acceptsPackages?: boolean } | null)
+      ?.acceptsPackages ??
+    null;
+  const supportsPackages =
+    practitionerAcceptsPackages === false ? false : supportsPackagesByPlans;
 
   useEffect(() => {
-    if (dayGroups.length === 0) {
-      if (selectedDayKey !== null) {
-        setSelectedDayKey(null);
-      }
-      if (selectedSlotStartAt !== null) {
-        setSelectedSlotStartAt(null);
-      }
-      return;
+    if (!supportsPackages && bookingType === "package") {
+      setBookingType("appointment");
     }
+  }, [supportsPackages, bookingType]);
 
-    const currentDay = dayGroups.find(
-      (group) => group.dayKey === selectedDayKey,
+  const dateWindow = useMemo(() => {
+    const today = new Date();
+    const from = new Date(
+      today.getFullYear(),
+      today.getMonth(),
+      today.getDate() + dateWindowOffsetDays,
+      0,
+      0,
+      0,
+      0,
     );
+    const to = new Date(from);
+    to.setDate(to.getDate() + VISIBLE_DATE_COLUMNS);
+    return { from, to, fromIso: from.toISOString(), toIso: to.toISOString() };
+  }, [dateWindowOffsetDays]);
 
-    if (!currentDay) {
-      const firstDay = dayGroups[0];
-      const firstSlot = firstDay.slots[0] ?? null;
-      setSelectedDayKey(firstDay.dayKey);
-      setSelectedSlotStartAt(firstSlot?.startsAt ?? null);
-      if (firstSlot) {
-        setSelectedSlotMaxDuration(firstSlot.maxDuration);
-      }
-      return;
-    }
-
-    if (
-      !selectedSlotStartAt ||
-      !currentDay.slots.some((slot) => slot.startsAt === selectedSlotStartAt)
-    ) {
-      const firstSlot = currentDay.slots[0] ?? null;
-      setSelectedSlotStartAt(firstSlot?.startsAt ?? null);
-      if (firstSlot) {
-        setSelectedSlotMaxDuration(firstSlot.maxDuration);
-      }
-    }
-  }, [dayGroups, selectedDayKey, selectedSlotStartAt]);
-
-  const selectedDay =
-    dayGroups.find((group) => group.dayKey === selectedDayKey) ??
-    dayGroups[0] ??
-    null;
-
-  const selectedSlot = selectedDay?.slots.find(
-    (slot) => slot.startsAt === selectedSlotStartAt,
+  const effectiveDuration = bookingType === "appointment" ? appointmentDuration : packageDuration;
+  const windowsQuery = usePublicAvailabilityWindows(
+    params.slug ?? null,
+    dateWindow.fromIso,
+    dateWindow.toIso,
+    showBooked,
+  );
+  const windows = windowsQuery.data?.windows ?? [];
+  const bookedSlots = showBooked ? windowsQuery.data?.bookedSlots ?? [] : [];
+  const durationSlots = useMemo(
+    () =>
+      buildSlotsFromDurationWindows(windows, bookedSlots, effectiveDuration),
+    [bookedSlots, effectiveDuration, windows],
+  );
+  const dateColumns = useMemo(
+    () => toDateColumns(dateWindow.from, locale, durationSlots),
+    [dateWindow.from, durationSlots, locale],
   );
 
-  const parts = splitDaySlotsByPart(selectedDay?.slots ?? []);
+  const packagePlansQuery = usePublicPractitionerPackagePlans(
+    params.slug ?? null,
+    {
+      durationMinutes: packageDuration,
+      sessionMode: "VIDEO",
+      currencyCode: packageCurrency,
+    },
+    { enabled: bookingType === "package" && supportsPackages },
+  );
+  const packagePlans = packagePlansQuery.data?.items ?? [];
 
-  const selectedSlotLabel = selectedSlot
-    ? `${selectedDay?.dayLabel ?? ""} • ${formatLocalizedTime(selectedSlot.startsAt, locale)}`
-    : t("patientSessionsFlow.selectTime.noSelectedSlot");
-
-  const continueToConfirmation = () => {
-    if (continueLockRef.current || !selectedDay || !selectedSlot) {
+  useEffect(() => {
+    if (!packagePlans.length) {
+      setSelectedPackagePlanCode(null);
       return;
     }
+    const exists = selectedPackagePlanCode
+      ? packagePlans.some((plan) => plan.item.code === selectedPackagePlanCode)
+      : false;
+    if (!exists) {
+      setSelectedPackagePlanCode(packagePlans[0]?.item.code ?? null);
+    }
+  }, [packagePlans, selectedPackagePlanCode]);
 
+  const selectedPackagePlan = useMemo<PackagePlanQuotedItem | null>(() => {
+    if (!selectedPackagePlanCode) return null;
+    return packagePlans.find((plan) => plan.item.code === selectedPackagePlanCode) ?? null;
+  }, [packagePlans, selectedPackagePlanCode]);
+
+  const packageQuoteQuery = usePackagePlanQuote(
+    bookingType === "package" && selectedPackagePlanCode && params.slug
+      ? {
+          packagePlanCode: selectedPackagePlanCode,
+          practitionerSlug: params.slug,
+          durationMinutes: packageDuration,
+          sessionMode: "VIDEO",
+          currencyCode: packageCurrency,
+        }
+      : null,
+  );
+  const packageQuote = packageQuoteQuery.data?.item?.quote ?? selectedPackagePlan?.quote ?? null;
+  const requiredPackageSlots = packageQuote?.sessionCount ?? selectedPackagePlan?.item.sessionCount ?? 0;
+
+  useEffect(() => {
+    setSelectedAppointmentSlot(null);
+    setSelectedPackageSlots([]);
+  }, [bookingType]);
+
+  useEffect(() => {
+    setSelectedAppointmentSlot(null);
+  }, [appointmentDuration]);
+
+  useEffect(() => {
+    setSelectedPackageSlots([]);
+  }, [packageDuration, selectedPackagePlanCode, dateWindowOffsetDays]);
+
+  useEffect(() => {
+    if (selectedAppointmentSlot) {
+      const stillExists = dateColumns.some((day) =>
+        day.slots.some((slot) => slot.startsAt === selectedAppointmentSlot),
+      );
+      if (!stillExists) setSelectedAppointmentSlot(null);
+    }
+  }, [dateColumns, selectedAppointmentSlot]);
+
+  const practitionerName =
+    params.practitionerName ??
+    practitioner?.displayName ??
+    t("patientSessionsFlow.common.practitionerFallback");
+  const practitionerTitle =
+    params.practitionerTitle ??
+    practitioner?.professionalTitle ??
+    t("patientSessionsFlow.common.professionalFallback");
+  const practitionerAvatarUrl = params.practitionerAvatarUrl ?? practitioner?.avatarUrl ?? "";
+
+  const selectedAppointmentLabel = selectedAppointmentSlot
+    ? (() => {
+        const day = dateColumns.find((col) =>
+          col.slots.some((slot) => slot.startsAt === selectedAppointmentSlot),
+        );
+        if (!day) return t("patientSessionsFlow.selectTime.noSelectedSlot");
+        return `${day.dayLabelShort} ${day.dayNumber}${isArabicUi ? "ØŒ " : ", "}${new Intl.DateTimeFormat(locale, {
+          hour: "numeric",
+          minute: "2-digit",
+          hour12: !locale.startsWith("ar"),
+        }).format(new Date(selectedAppointmentSlot))}`;
+      })()
+    : t("patientSessionsFlow.selectTime.noSelectedSlot");
+
+  const packageSelectedSummary =
+    selectedPackageSlots.length === 0
+      ? t("patientSessionsFlow.selectTime.packageProgress", {
+          selected: 0,
+          total: requiredPackageSlots || 0,
+        })
+      : t("patientSessionsFlow.selectTime.packageProgress", {
+          selected: selectedPackageSlots.length,
+          total: requiredPackageSlots || 0,
+        });
+
+  const canContinueAppointment = Boolean(selectedAppointmentSlot && params.slug);
+  const canContinuePackage =
+    Boolean(params.slug) &&
+    Boolean(selectedPackagePlanCode) &&
+    Boolean(packageQuote) &&
+    requiredPackageSlots > 0 &&
+    selectedPackageSlots.length === requiredPackageSlots &&
+    !packageQuoteQuery.isLoading &&
+    !packageQuoteQuery.isError;
+
+  const packageCtaEnabled = canContinuePackage;
+
+  const onToggleAppointmentSlot = (slot: string) => {
+    setSelectedAppointmentSlot(slot);
+    trackAnalyticsEvent("slot_selected", {
+      practitionerSlug: params.slug || undefined,
+      selectedStartAt: slot,
+      durationMinutes: appointmentDuration,
+      bookingType: "appointment",
+    });
+  };
+
+  const onTogglePackageSlot = (slot: string) => {
+    setSelectedPackageSlots((current) => {
+      if (current.includes(slot)) return current.filter((value) => value !== slot);
+      if (current.length >= requiredPackageSlots) return current;
+      return [...current, slot].sort();
+    });
+    trackAnalyticsEvent("slot_selected", {
+      practitionerSlug: params.slug || undefined,
+      selectedStartAt: slot,
+      durationMinutes: packageDuration,
+      bookingType: "package",
+    });
+  };
+
+  const onContinueAppointment = () => {
+    if (continueLockRef.current || !selectedAppointmentSlot) return;
     continueLockRef.current = true;
-
     router.push({
       pathname: "/(patient)/sessions/confirm",
       params: {
         slug: params.slug,
-        practitionerName: params.practitionerName,
-        practitionerTitle: params.practitionerTitle,
-        practitionerAvatarUrl: params.practitionerAvatarUrl,
-        selectedStartAt: selectedSlot.startsAt,
-        maxDuration: String(selectedSlot.maxDuration),
+        practitionerName: practitionerName,
+        practitionerTitle: practitionerTitle,
+        practitionerAvatarUrl: practitionerAvatarUrl,
+        selectedStartAt: selectedAppointmentSlot,
+        maxDuration: String(appointmentDuration),
       },
     });
   };
 
-  const handleSelectSlot = (
-    startAt: string,
-    maxDuration: 30 | 60,
-  ) => {
-    trackAnalyticsEvent("slot_selected", {
-      practitionerSlug: params.slug || undefined,
-      dayKey: selectedDay?.dayKey || undefined,
-      selectedStartAt: startAt,
-      maxDuration,
-      weekOffset,
+  const onContinuePackage = () => {
+    if (!canContinuePackage || !selectedPackagePlanCode) return;
+    const preselectedSlots = JSON.stringify(
+      selectedPackageSlots.map((scheduledStartAt) => ({ scheduledStartAt })),
+    );
+    router.push({
+      pathname: "/(patient)/package-purchases/create",
+      params: {
+        practitionerSlug: params.slug,
+        practitionerName,
+        practitionerTitle,
+        practitionerAvatarUrl,
+        packagePlanCode: selectedPackagePlanCode,
+        durationMinutes: String(packageDuration),
+        sessionMode: "VIDEO",
+        currencyCode: packageQuote?.selectedCurrencyCode ?? packageCurrency,
+        preselectedSlots,
+      },
     });
-    setSelectedSlotStartAt(startAt);
-    setSelectedSlotMaxDuration(maxDuration);
   };
 
   return (
-    <Screen bg="background">
-      <Header
-        showBack
-        title={t("patientSessionsFlow.selectTime.title")}
-      />
+    <Screen bg="background" style={styles.screen} edges={["top", "left", "right"]}>
+      <Header showBack />
 
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        <Card
-          variant="elevated"
-          padding="md"
-          style={[
-            styles.practitionerCard,
-            isRtl
-              ? {
-                  borderLeftWidth: 3,
-                  borderLeftColor: theme.colors.primary,
-                  borderRightWidth: 0,
-                }
-              : { borderRightColor: theme.colors.primary },
-          ]}
-        >
-          <View style={styles.practitionerHeaderRow}>
-            <View
-              style={[
-                styles.avatarWrap,
-                { backgroundColor: theme.colors.surfaceTertiary },
-              ]}
-            >
-              {params.practitionerAvatarUrl ? (
-                <Image
-                  source={{ uri: params.practitionerAvatarUrl }}
-                  style={styles.avatar}
-                />
-              ) : (
-                <Ionicons
-                  name="person"
-                  size={28}
-                  color={theme.colors.textMuted}
-                />
-              )}
-            </View>
-            <View style={styles.practitionerTextCol}>
-              <Text weight="600" style={styles.practitionerName}>
-                {params.practitionerName ??
-                  t("patientSessionsFlow.common.practitionerFallback")}
-              </Text>
-              <Text
-                color={theme.colors.textSecondary}
-                style={styles.practitionerTitle}
-              >
-                {params.practitionerTitle ??
-                  t("patientSessionsFlow.common.professionalFallback")}
-              </Text>
-            </View>
-          </View>
-        </Card>
+      <ScrollView
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingBottom: footerHeight + Math.max(insets.bottom, 12) + 16 },
+        ]}
+      >
+        <ScreenHeading
+          title={t("patientSessionsFlow.selectTime.title")}
+          subtitle={t("patientSessionsFlow.selectTime.headingSubtitle")}
+          titleVariant="h2"
+        />
 
-        <View style={styles.monthRow}>
-          <Text weight="600" style={styles.monthLabel}>
-            {formatLocalizedDateRange(
-              weekRange.fromIso,
-              weekRange.toIso,
-              locale,
-            )}
-          </Text>
-          <View style={styles.weekNavRow}>
-            <TouchableOpacity
-              disabled={weekOffset === 0}
-              onPress={() => setWeekOffset((prev) => Math.max(0, prev - 1))}
-              style={[
-                styles.navButton,
-                { opacity: weekOffset === 0 ? 0.35 : 1 },
-              ]}
-            >
-              <Ionicons
-                name={isRtl ? "chevron-forward" : "chevron-back"}
-                size={20}
-                color={theme.colors.textSecondary}
+        <PractitionerSummaryCard
+          theme={theme}
+          isRtl={isRtl}
+          practitionerName={practitionerName}
+          practitionerTitle={practitionerTitle}
+          practitionerAvatarUrl={practitionerAvatarUrl}
+          avatarFailed={avatarFailed}
+          setAvatarFailed={setAvatarFailed}
+        />
+
+        <BookingTypeTabs
+          theme={theme}
+          isRtl={isRtl}
+          value={bookingType}
+          onChange={setBookingType}
+          showPackageTab={supportsPackages}
+          isPackageSupportChecking={isPackageSupportChecking}
+        />
+
+        {bookingType === "appointment" ? (
+          <>
+            <Card variant="elevated" padding="sm" style={styles.compactCard}>
+              <DurationSegment
+                theme={theme}
+                isRtl={isRtl}
+                title={t("patientSessionsFlow.selectTime.durationTitle")}
+                value={appointmentDuration}
+                onChange={setAppointmentDuration}
               />
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => setWeekOffset((prev) => prev + 1)}
-              style={styles.navButton}
-            >
-              <Ionicons
-                name={isRtl ? "chevron-back" : "chevron-forward"}
-                size={20}
-                color={theme.colors.textSecondary}
-              />
-            </TouchableOpacity>
-          </View>
-        </View>
+            </Card>
 
-        {windowsQuery.isLoading ? (
-          <Card variant="flat" padding="md">
-            <Text color={theme.colors.textSecondary}>
-              {t("patientSessionsFlow.common.loading")}
-            </Text>
-          </Card>
-        ) : windowsQuery.isError ? (
-          <Card variant="flat" padding="md">
-            <Text color={theme.colors.textSecondary}>
-              {t("patientSessionsFlow.common.loadError")}
-            </Text>
-            <Button
-              title={t("patientSessionsFlow.common.retry")}
-              onPress={() => windowsQuery.refetch()}
-              style={styles.retryButton}
+            <RollingDateScheduleTable
+              theme={theme}
+              locale={locale}
+              isRtl={isRtl}
+              fromIso={dateWindow.fromIso}
+              toIso={dateWindow.toIso}
+              dateColumns={dateColumns}
+              onPrevWindow={() => setDateWindowOffsetDays((prev) => prev - VISIBLE_DATE_COLUMNS)}
+              onNextWindow={() => setDateWindowOffsetDays((prev) => prev + VISIBLE_DATE_COLUMNS)}
+              selectedSlots={selectedAppointmentSlot ? [selectedAppointmentSlot] : []}
+              onToggleSlot={onToggleAppointmentSlot}
+              maxSelectedCount={1}
+              isLoading={windowsQuery.isLoading}
+              isError={windowsQuery.isError}
+              onRetry={() => windowsQuery.refetch()}
+              showBooked={showBooked}
+              onToggleShowBooked={setShowBooked}
+              canShowBookedSlots={canShowBookedSlots}
+              timezone={timezone}
             />
-          </Card>
-        ) : dayGroups.length === 0 ? (
-          <Card variant="flat" padding="md">
-            <Text color={theme.colors.textSecondary}>
-              {t("patientSessionsFlow.selectTime.noSlots")}
-            </Text>
-          </Card>
+          </>
         ) : (
           <>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.daysRow}
-            >
-              {dayGroups.map((group) => {
-                const selected = selectedDay?.dayKey === group.dayKey;
-                return (
-                  <TouchableOpacity
-                    key={group.dayKey}
-                    onPress={() => {
-                      setSelectedDayKey(group.dayKey);
-                      const firstSlot = group.slots[0] ?? null;
-                      setSelectedSlotStartAt(firstSlot?.startsAt ?? null);
-                      if (firstSlot) {
-                        setSelectedSlotMaxDuration(firstSlot.maxDuration);
-                      }
-                    }}
-                    style={[
-                      styles.dayCard,
-                      {
-                        backgroundColor: selected
-                          ? theme.colors.primary
-                          : theme.colors.surface,
-                        borderColor: selected
-                          ? theme.colors.primary
-                          : theme.colors.borderLight,
-                      },
-                    ]}
-                  >
-                    <Text
-                      color={selected ? "#ffffff" : theme.colors.textSecondary}
-                      style={styles.dayLabel}
-                    >
-                      {group.dayLabel}
-                    </Text>
-                    <Text
-                      weight="600"
-                      color={selected ? "#ffffff" : theme.colors.textPrimary}
-                      style={styles.dayCount}
-                    >
-                      {group.slots.length}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
+            <Card variant="elevated" padding="sm" style={styles.compactCard}>
+              <Text color={theme.colors.textSecondary} style={styles.packageIntro}>
+                {t("patientSessionsFlow.selectTime.packageIntro")}
+              </Text>
 
-            <View style={styles.slotSectionsWrap}>
-              <SlotSection
-                title={t("patientSessionsFlow.selectTime.morning")}
-                icon="sunny-outline"
-                slots={parts.morning}
-                selectedSlotStartAt={selectedSlotStartAt}
-                locale={locale}
-                onSelectSlot={handleSelectSlot}
+              <DurationSegment
+                theme={theme}
+                isRtl={isRtl}
+                title={t("patientSessionsFlow.selectTime.durationTitle")}
+                value={packageDuration}
+                onChange={setPackageDuration}
               />
-              <SlotSection
-                title={t("patientSessionsFlow.selectTime.afternoon")}
-                icon="partly-sunny-outline"
-                slots={parts.afternoon}
-                selectedSlotStartAt={selectedSlotStartAt}
-                locale={locale}
-                onSelectSlot={handleSelectSlot}
-              />
-              <SlotSection
-                title={t("patientSessionsFlow.selectTime.evening")}
-                icon="moon-outline"
-                slots={parts.evening}
-                selectedSlotStartAt={selectedSlotStartAt}
-                locale={locale}
-                onSelectSlot={handleSelectSlot}
-              />
-            </View>
 
-            <Text color={theme.colors.textMuted} style={styles.timezoneHint}>
-              {t("patientSessionsFlow.selectTime.timezoneHint", {
-                timezone:
-                  windowsQuery.data?.timezone ??
-                  t("patientSessionsFlow.common.unknown"),
-              })}
-            </Text>
-            <Text color={theme.colors.textMuted} style={styles.selectionHint}>
-              {selectedSlot
-                ? t("patientSessionsFlow.selectTime.selectedSlot")
-                : t("patientSessionsFlow.selectTime.noSelectedSlot")}
-            </Text>
+              <Text weight="600" style={[styles.blockTitle, styles.blockTitleSpaced]}>
+                {t("patientSessionsFlow.selectTime.packagePlansTitle")}
+              </Text>
+              <PackagePlanSelector
+                theme={theme}
+                isRtl={isRtl}
+                plans={packagePlans}
+                selectedPlanCode={selectedPackagePlanCode}
+                onSelectPlan={setSelectedPackagePlanCode}
+                isLoading={packagePlansQuery.isLoading}
+                isError={packagePlansQuery.isError}
+                onRetry={() => packagePlansQuery.refetch()}
+              />
+              {!packagePlansQuery.isLoading &&
+              !packagePlansQuery.isError &&
+              packagePlans.length === 0 ? (
+                <Text color={theme.colors.textMuted} style={styles.noPlansText}>
+                  {t("patientSessionsFlow.selectTime.packageDurationUnavailable")}
+                </Text>
+              ) : null}
+            </Card>
+
+            <Card variant="elevated" padding="sm" style={styles.compactCard}>
+              <Text weight="600" style={styles.blockTitle}>
+                {t("patientSessionsFlow.selectTime.quoteTitle")}
+              </Text>
+              {packageQuoteQuery.isLoading ? (
+                <Text color={theme.colors.textSecondary} style={styles.quoteText}>
+                  {t("patientSessionsFlow.common.loading")}
+                </Text>
+              ) : packageQuoteQuery.isError || !packageQuote ? (
+                <View style={styles.inlineState}>
+                  <Text color={theme.colors.textSecondary}>{t("patientSessionsFlow.selectTime.packageQuoteError")}</Text>
+                  <Button title={t("patientSessionsFlow.common.retry")} onPress={() => packageQuoteQuery.refetch()} style={styles.retryButton} />
+                </View>
+              ) : (
+                <View style={styles.quoteStack}>
+                  <Text style={styles.quoteText}>
+                    {t("patientSessionsFlow.selectTime.quoteRegularTotal")}:{" "}
+                    {formatMoney(packageQuote.undiscountedTotal, packageQuote.selectedCurrencyCode, locale) ?? "-"}
+                  </Text>
+                  <Text style={styles.quoteText}>
+                    {t("patientSessionsFlow.selectTime.quoteDiscount")}:{" "}
+                    {formatMoney(packageQuote.discountAmount, packageQuote.selectedCurrencyCode, locale) ?? "-"} ({Number(packageQuote.discountPercent)}%)
+                  </Text>
+                  <Text weight="600" style={styles.quoteText}>
+                    {t("patientSessionsFlow.selectTime.quotePayable")}:{" "}
+                    {formatMoney(packageQuote.patientPayableTotal, packageQuote.selectedCurrencyCode, locale) ?? "-"}
+                  </Text>
+                </View>
+              )}
+            </Card>
+
+            <Card variant="elevated" padding="sm" style={styles.compactCard}>
+              <Text weight="600" style={styles.blockTitle}>
+                {t("patientSessionsFlow.selectTime.packageProgressTitle")}
+              </Text>
+              <Text style={styles.quoteText} color={theme.colors.textSecondary}>
+                {packageSelectedSummary}
+              </Text>
+            </Card>
+
+            <RollingDateScheduleTable
+              theme={theme}
+              locale={locale}
+              isRtl={isRtl}
+              fromIso={dateWindow.fromIso}
+              toIso={dateWindow.toIso}
+              dateColumns={dateColumns}
+              onPrevWindow={() => setDateWindowOffsetDays((prev) => prev - VISIBLE_DATE_COLUMNS)}
+              onNextWindow={() => setDateWindowOffsetDays((prev) => prev + VISIBLE_DATE_COLUMNS)}
+              selectedSlots={selectedPackageSlots}
+              onToggleSlot={onTogglePackageSlot}
+              maxSelectedCount={requiredPackageSlots || 0}
+              isLoading={windowsQuery.isLoading}
+              isError={windowsQuery.isError}
+              onRetry={() => windowsQuery.refetch()}
+              showBooked={showBooked}
+              onToggleShowBooked={setShowBooked}
+              canShowBookedSlots={canShowBookedSlots}
+              timezone={timezone}
+            />
           </>
         )}
       </ScrollView>
 
       <View
+        onLayout={(event) => {
+          const height = Math.ceil(event.nativeEvent.layout.height);
+          if (height > 0 && height !== footerHeight) {
+            setFooterHeight(height);
+          }
+        }}
         style={[
-          styles.bottomBar,
+          styles.footer,
           {
             backgroundColor: theme.colors.surface,
             borderTopColor: theme.colors.borderLight,
+            paddingBottom: Math.max(10, insets.bottom + 4),
           },
         ]}
       >
-        <Text color={theme.colors.textSecondary} style={styles.bottomLabel}>
-          {t("patientSessionsFlow.selectTime.selectedSlot")}
-        </Text>
-        <Text
-          weight="600"
-          color={theme.colors.primary}
-          style={styles.bottomValue}
-        >
-          {selectedSlotLabel}
-        </Text>
-        <Button
-          title={t("patientSessionsFlow.selectTime.continue")}
-          onPress={continueToConfirmation}
-          disabled={!selectedSlot || !selectedDay || !params.slug}
-          style={styles.ctaButton}
-        />
+        {bookingType === "appointment" ? (
+          <Text style={styles.footerTopText} color={theme.colors.textSecondary}>
+            {selectedAppointmentLabel}
+          </Text>
+        ) : (
+          <Text style={styles.footerTopText} color={theme.colors.textSecondary}>
+            {packageSelectedSummary}
+          </Text>
+        )}
+        {bookingType === "appointment" ? (
+          <Button
+            title={t("patientSessionsFlow.selectTime.continue")}
+            onPress={onContinueAppointment}
+            disabled={!canContinueAppointment}
+            style={styles.footerButton}
+          />
+        ) : (
+          <TouchableOpacity
+            activeOpacity={packageCtaEnabled ? 0.85 : 1}
+            onPress={onContinuePackage}
+            disabled={!packageCtaEnabled}
+            style={[
+              styles.packageFooterButton,
+              {
+                backgroundColor: packageCtaEnabled ? theme.colors.primary : theme.colors.borderStrong,
+              },
+            ]}
+          >
+            <Text
+              weight="600"
+              color={theme.colors.surface}
+              style={styles.packageFooterButtonText}
+            >
+              {t("patientSessionsFlow.selectTime.continueToPackagePayment")}
+            </Text>
+          </TouchableOpacity>
+        )}
       </View>
     </Screen>
   );
 }
 
-type SlotSectionProps = {
-  title: string;
-  icon: keyof typeof Ionicons.glyphMap;
-  slots: Array<{ startsAt: string; maxDuration: 30 | 60 }>;
-  selectedSlotStartAt: string | null;
-  locale: string;
-  onSelectSlot: (startAt: string, maxDuration: 30 | 60) => void;
-};
-
-function SlotSection({
-  title,
-  icon,
-  slots,
-  selectedSlotStartAt,
-  locale,
-  onSelectSlot,
-}: SlotSectionProps) {
-  const { theme } = useTheme();
-
-  if (slots.length === 0) {
-    return null;
-  }
-
-  return (
-    <View style={styles.slotSection}>
-      <View style={styles.slotSectionTitleRow}>
-        <Ionicons name={icon} size={18} color={theme.colors.textSecondary} />
-        <Text
-          color={theme.colors.textSecondary}
-          weight="600"
-          style={styles.slotSectionTitle}
-        >
-          {title}
-        </Text>
-      </View>
-      <View style={styles.slotGrid}>
-        {slots.map((slot) => {
-          const selected = selectedSlotStartAt === slot.startsAt;
-          return (
-            <TouchableOpacity
-              key={slot.startsAt}
-              onPress={() => onSelectSlot(slot.startsAt, slot.maxDuration)}
-              style={[
-                styles.slotButton,
-                {
-                  backgroundColor: selected
-                    ? theme.colors.primaryLight
-                    : theme.colors.surface,
-                  borderColor: selected
-                    ? theme.colors.primary
-                    : theme.colors.borderLight,
-                },
-              ]}
-            >
-              <Text
-                weight={selected ? "600" : "normal"}
-                color={
-                  selected ? theme.colors.primary : theme.colors.textPrimary
-                }
-                style={styles.slotText}
-              >
-                {formatLocalizedTime(slot.startsAt, locale)}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
-  scrollContent: {
-    paddingHorizontal: 20,
-    paddingTop: 14,
-    paddingBottom: 170,
-    gap: 16,
-  },
-  practitionerCard: {
-    borderRightWidth: 3,
-    borderRightColor: "#3f7dcf",
-  },
-  practitionerHeaderRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-  },
-  avatarWrap: {
-    width: 54,
-    height: 54,
-    borderRadius: 27,
-    alignItems: "center",
-    justifyContent: "center",
-    overflow: "hidden",
-  },
-  avatar: {
-    width: 54,
-    height: 54,
-    borderRadius: 27,
-  },
-  practitionerTextCol: {
-    flex: 1,
-  },
-  practitionerName: {
-    fontSize: 28,
-    marginBottom: 4,
-  },
-  practitionerTitle: {
-    fontSize: 16,
-  },
-  monthRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  monthLabel: {
-    fontSize: 22,
-  },
-  weekNavRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  navButton: {
-    width: 34,
-    height: 34,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  retryButton: {
-    marginTop: 10,
-  },
-  daysRow: {
-    gap: 10,
-    paddingVertical: 4,
-  },
-  dayCard: {
-    minWidth: 94,
-    borderRadius: 14,
-    borderWidth: 1,
-    paddingVertical: 12,
-    paddingHorizontal: 12,
-    alignItems: "center",
-  },
-  dayLabel: {
-    fontSize: 13,
-    marginBottom: 4,
-  },
-  dayCount: {
-    fontSize: 24,
-  },
-  slotSectionsWrap: {
-    gap: 16,
-  },
-  slotSection: {
-    gap: 10,
-  },
-  slotSectionTitleRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  slotSectionTitle: {
-    fontSize: 18,
-  },
-  slotGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 10,
-  },
-  slotButton: {
-    width: "31%",
-    minWidth: 98,
-    borderWidth: 1,
-    borderRadius: 10,
-    paddingVertical: 14,
-    alignItems: "center",
-  },
-  slotText: {
-    fontSize: 18,
-  },
-  timezoneHint: {
-    fontSize: 12,
-    marginTop: 6,
-  },
-  selectionHint: {
-    fontSize: 12,
-    marginTop: -8,
-  },
-  bottomBar: {
+  screen: { paddingHorizontal: 0 },
+  scrollContent: { paddingHorizontal: 10, paddingTop: 8, paddingBottom: 170, gap: 8 },
+  compactCard: { borderRadius: 12 },
+  packageIntro: { fontSize: 12, lineHeight: 18 },
+  blockTitle: { fontSize: 15, lineHeight: 21 },
+  blockTitleSpaced: { marginTop: 8 },
+  quoteStack: { gap: 6, marginTop: 8 },
+  quoteText: { fontSize: 12 },
+  noPlansText: { marginTop: 8, fontSize: 12 },
+  inlineState: { paddingVertical: 10 },
+  retryButton: { marginTop: 6, borderRadius: 10 },
+  footer: {
     position: "absolute",
     left: 0,
     right: 0,
     bottom: 0,
     borderTopWidth: 1,
-    paddingHorizontal: 20,
-    paddingTop: 12,
-    paddingBottom: 22,
+    paddingHorizontal: 10,
+    paddingTop: 8,
   },
-  bottomLabel: {
-    fontSize: 13,
-    marginBottom: 2,
-  },
-  bottomValue: {
-    fontSize: 20,
-    marginBottom: 10,
-  },
-  ctaButton: {
+  footerTopText: { fontSize: 12, marginBottom: 6 },
+  footerButton: { borderRadius: 12, minHeight: 44 },
+  packageFooterButton: {
+    width: "100%",
+    minHeight: 52,
     borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
   },
+  packageFooterButtonText: { fontSize: 15, lineHeight: 20, textAlign: "center" },
 });
-
-
-
-

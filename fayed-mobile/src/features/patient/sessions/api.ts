@@ -14,11 +14,12 @@ export async function getPublicAvailabilityWindows(
   practitionerSlug: string,
   from: string,
   to: string,
+  includeBooked = false,
 ) {
   const response = await apiClient.get(
     `/public/practitioners/${practitionerSlug}/availability/windows`,
     {
-      params: { from, to },
+      params: { from, to, includeBooked },
     },
   );
   return extractApiData<PublicAvailabilityWindowsData>(response);

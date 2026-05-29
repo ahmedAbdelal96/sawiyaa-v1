@@ -28,8 +28,6 @@ export default function MatchingResultsScreen() {
     refetch,
   } = useGetMatchingSession(sessionId || null);
 
-  const handleBackToHome = () => router.replace("/(patient)/matching/intro");
-
   const openPractitionerProfile = (
     slug: string,
     score: number,
@@ -54,7 +52,6 @@ export default function MatchingResultsScreen() {
         <Header
           title={t("matching.results.header")}
           showBack
-          onBack={handleBackToHome}
         />
         <LoadingState fullScreen message={t("matching.results.loading")} />
       </Screen>
@@ -67,7 +64,6 @@ export default function MatchingResultsScreen() {
         <Header
           title={t("matching.results.header")}
           showBack
-          onBack={handleBackToHome}
         />
         <ErrorState fullScreen onRetry={refetch} />
       </Screen>
@@ -81,7 +77,6 @@ export default function MatchingResultsScreen() {
       <Header
         title={t("matching.results.header")}
         showBack
-        onBack={handleBackToHome}
       />
 
       <ScrollView contentContainerStyle={styles.scrollContent}>

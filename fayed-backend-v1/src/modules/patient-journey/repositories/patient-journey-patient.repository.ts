@@ -12,6 +12,11 @@ export class PatientJourneyPatientRepository {
       },
       select: {
         id: true,
+        user: {
+          select: {
+            timezone: true,
+          },
+        },
       },
     });
   }

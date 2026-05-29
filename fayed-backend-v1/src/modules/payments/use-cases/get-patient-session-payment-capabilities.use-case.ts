@@ -1,13 +1,22 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { PaymentProvider } from '@prisma/client';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { PaymentProvider, Prisma } from '@prisma/client';
+import { CustomerWalletAccountingService } from '@modules/customer-wallets/services/customer-wallet-accounting.service';
 import { PaymentSessionRepository } from '../repositories/payment-session.repository';
 import { PaymentRuntimeConfigService } from '../services/payment-runtime-config.service';
+import { ResolveSessionPaymentPricingService } from '../services/resolve-session-payment-pricing.service';
+import { PaymobCheckoutFlow } from '../types/paymob-payment.types';
+import {
+  PaymentCapabilityMethodViewModel,
+  PaymentWalletCapabilityViewModel,
+} from '../types/payment-routing.types';
 
 @Injectable()
 export class GetPatientSessionPaymentCapabilitiesUseCase {
   constructor(
     private readonly paymentSessionRepository: PaymentSessionRepository,
     private readonly paymentRuntimeConfigService: PaymentRuntimeConfigService,
+    private readonly resolveSessionPaymentPricingService: ResolveSessionPaymentPricingService,
+    private readonly customerWalletAccountingService: CustomerWalletAccountingService,
   ) {}
 
   async execute(input: { userId: string; sessionId: string }) {
@@ -23,14 +32,36 @@ export class GetPatientSessionPaymentCapabilitiesUseCase {
       });
     }
 
+    const pricing = await this.resolveSessionPaymentPricingService.resolve({
+      session,
+      couponCode: null,
+    });
+
+    const checkoutCountryIsoCode = session.patient.country?.isoCode ?? null;
     const context = {
-      checkoutCountryIsoCode: session.patient.country?.isoCode ?? null,
+      checkoutCountryIsoCode,
       operatingCountryIsoCode: session.practitioner.country?.isoCode ?? null,
     };
-    const supportedMethods = this.paymentRuntimeConfigService
-      .getPaymobEnabledMethods(context)
-      .map((item) => item.key);
-    const methods = this.paymentRuntimeConfigService
+
+    const availableWalletBalance =
+      await this.customerWalletAccountingService.getAvailableBalance({
+        patientId: session.patient.id,
+        currencyCode: pricing.currencyCode,
+      });
+
+    const totalAmountDecimal = new Prisma.Decimal(pricing.amountTotal);
+    const walletEnabled = availableWalletBalance.gt(0);
+    const walletCapability: PaymentWalletCapabilityViewModel = {
+      enabled: walletEnabled,
+      availableBalance: availableWalletBalance.toFixed(2),
+      currencyCode: pricing.currencyCode,
+      canUseFullAmount:
+        walletEnabled && availableWalletBalance.gte(totalAmountDecimal),
+      canUsePartialAmount:
+        walletEnabled && availableWalletBalance.lt(totalAmountDecimal),
+    };
+
+    const paymobMethods = this.paymentRuntimeConfigService
       .getPaymobEnabledMethods(context)
       .map((item) => ({
         key: item.key,
@@ -39,16 +70,78 @@ export class GetPatientSessionPaymentCapabilitiesUseCase {
         enabled: item.enabled,
       }));
 
+    const buildStripeMethods = (): PaymentCapabilityMethodViewModel[] => [
+      {
+        key: 'STRIPE_CHECKOUT',
+        type: 'PROVIDER_HOSTED',
+        label: 'Stripe',
+        enabled: true,
+        description: 'Provider-side payment method selection via Stripe.',
+      },
+    ];
+
+    let methods = paymobMethods;
+    let supportedMethods = paymobMethods.map((item) => item.key);
+    let defaultMethod =
+      this.paymentRuntimeConfigService.getPaymobDefaultCheckoutMethod(context);
+    let checkoutFlow = this.paymentRuntimeConfigService.getPaymobCheckoutFlow();
+    let normalizedMethods: PaymentCapabilityMethodViewModel[] = paymobMethods;
+    const provider = pricing.provider;
+
+    if (provider === PaymentProvider.STRIPE) {
+      const stripeMethods = buildStripeMethods();
+      methods = stripeMethods.map((item) => ({
+        key: item.key,
+        label: item.label,
+        type: item.type,
+        enabled: item.enabled,
+      }));
+      supportedMethods = stripeMethods.map((item) => item.key);
+      defaultMethod = stripeMethods[0]?.key ?? null;
+      checkoutFlow = PaymobCheckoutFlow.INTENTION;
+      normalizedMethods = stripeMethods;
+    } else if (provider === PaymentProvider.PAYMOB) {
+      normalizedMethods = paymobMethods;
+    } else {
+      normalizedMethods = [
+        {
+          key: 'FAYED_WALLET',
+          type: 'INTERNAL_WALLET',
+          label: 'Fayed Wallet',
+          enabled: true,
+          description: 'Internal wallet payment within Fayed balance.',
+        },
+      ];
+      methods = normalizedMethods.map((item) => ({
+        key: item.key,
+        label: item.label,
+        type: item.type,
+        enabled: item.enabled,
+      }));
+      supportedMethods = normalizedMethods.map((item) => item.key);
+      defaultMethod = 'FAYED_WALLET';
+      checkoutFlow = PaymobCheckoutFlow.INTENTION;
+    }
+
+    if (!checkoutCountryIsoCode && pricing.currencyCode === 'EGP') {
+      throw new BadRequestException({
+        messageKey: 'payments.errors.paymentRoutingAmbiguous',
+        error: 'PAYMENT_ROUTING_AMBIGUOUS',
+      });
+    }
+
     return {
       item: {
-        provider: PaymentProvider.PAYMOB,
-        checkoutFlow: this.paymentRuntimeConfigService.getPaymobCheckoutFlow(),
+        provider,
+        checkoutFlow,
         methods,
         supportedMethods,
-        defaultMethod:
-          this.paymentRuntimeConfigService.getPaymobDefaultCheckoutMethod(
-            context,
-          ),
+        defaultMethod,
+        currency: pricing.currencyCode,
+        regionalPricingMode: pricing.regionalPricingMode,
+        resolvedCountryIsoCode: pricing.resolvedCountryIsoCode,
+        normalizedMethods,
+        wallet: walletCapability,
       },
     };
   }

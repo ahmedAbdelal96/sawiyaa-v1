@@ -18,6 +18,8 @@ export interface InputProps extends TextInputProps {
   leftElement?: React.ReactNode;
   rightElement?: React.ReactNode;
   containerStyle?: StyleProp<ViewStyle>;
+  labelDirection?: "left" | "right";
+  placeholderDirection?: "left" | "right";
 }
 
 export const Input = ({
@@ -30,11 +32,15 @@ export const Input = ({
   rightElement,
   onFocus,
   onBlur,
+  labelDirection,
+  placeholderDirection,
   ...props
 }: InputProps) => {
   const { theme } = useTheme();
   const [isFocused, setIsFocused] = useState(false);
   const isRTL = I18nManager.isRTL;
+  const resolvedLabelDir = labelDirection ?? (isRTL ? "right" : "left");
+  const resolvedPlaceholderDir = placeholderDirection ?? (isRTL ? "right" : "left");
 
   const handleFocus = (e: any) => {
     setIsFocused(true);
@@ -57,7 +63,7 @@ export const Input = ({
   return (
     <View style={[styles.container, containerStyle]}>
       {label && (
-        <Text weight="500" style={styles.label} color={theme.colors.textSecondary}>
+        <Text weight="500" style={[styles.label, { textAlign: resolvedLabelDir }]} color={theme.colors.textSecondary}>
           {label}
         </Text>
       )}
@@ -77,7 +83,7 @@ export const Input = ({
             styles.input,
             {
               color: theme.colors.textPrimary,
-              textAlign: isRTL ? 'right' : 'left',
+              textAlign: resolvedPlaceholderDir,
             },
             style,
           ]}
@@ -89,11 +95,11 @@ export const Input = ({
         {rightElement && <View style={styles.rightElement}>{rightElement}</View>}
       </View>
       {error ? (
-        <Text style={styles.errorText} color="#ef4444">
+        <Text style={[styles.errorText, { textAlign: resolvedLabelDir }]} color="#ef4444">
           {error}
         </Text>
       ) : helperText ? (
-        <Text style={styles.helperText} color={theme.colors.textMuted}>
+        <Text style={[styles.helperText, { textAlign: resolvedLabelDir }]} color={theme.colors.textMuted}>
           {helperText}
         </Text>
       ) : null}

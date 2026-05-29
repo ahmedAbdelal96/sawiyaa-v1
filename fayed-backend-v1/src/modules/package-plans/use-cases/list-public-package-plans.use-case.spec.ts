@@ -27,6 +27,9 @@ describe('ListPublicPackagePlansUseCase', () => {
     assertPackagesEnabled: jest.fn(),
     resolveDefaultPreviewCurrency: jest.fn().mockReturnValue('EGP'),
   } as never;
+  const patientProfileRepository = {
+    findByUserId: jest.fn(),
+  } as never;
   const publicPractitionerReadRepository = {
     findByPublicSlug: jest.fn(),
   } as never;
@@ -41,6 +44,7 @@ describe('ListPublicPackagePlansUseCase', () => {
     packagePlanPresenter,
     packagePlanQuotePresenter,
     packagePlanPolicyService,
+    patientProfileRepository,
     publicPractitionerReadRepository,
     publicPractitionerVisibilityPolicy,
     packageQuoteCalculatorService,

@@ -29,6 +29,7 @@ import { PaymentRuntimeConfigService } from '../services/payment-runtime-config.
 import { ResolveSessionPaymentPricingService } from '../services/resolve-session-payment-pricing.service';
 import { ValidatePaymentStatusTransitionService } from '../services/validate-payment-status-transition.service';
 import { RefundPolicyService } from '@modules/refund-policies/services/refund-policy.service';
+import { CorporateSponsorshipPaymentService } from '@modules/corporate-sponsorship/services/corporate-sponsorship-payment.service';
 import {
   PaymentProviderAdapter,
   PaymentProviderInitiationResult,
@@ -50,6 +51,7 @@ export class InitiateSessionPaymentUseCase {
     private readonly validatePaymentStatusTransitionService: ValidatePaymentStatusTransitionService,
     private readonly paymentMapper: PaymentMapper,
     private readonly refundPolicyService: RefundPolicyService,
+    private readonly corporateSponsorshipPaymentService: CorporateSponsorshipPaymentService,
   ) {}
 
   async execute(input: {
@@ -140,15 +142,58 @@ export class InitiateSessionPaymentUseCase {
       session,
       couponCode: input.couponCode ?? null,
     });
+
+    // Check corporate sponsorship eligibility
+    const sponsorshipEligibility =
+      await this.corporateSponsorshipPaymentService.checkPaymentEligibility({
+        sessionId: session.id,
+        userId: input.userId,
+        paymentCurrency: pricing.currencyCode,
+      });
+
+    let effectiveAmountTotal = pricing.amountTotal;
+    let effectiveAmountSubtotal = pricing.amountSubtotal;
+    let effectiveAmountDiscount = pricing.amountDiscount;
+    let effectiveBreakdown = pricing.breakdown;
+    let corporateSponsorshipMetadata: Record<string, unknown> | null = null;
+
+    if (sponsorshipEligibility.eligible && sponsorshipEligibility.sponsorship) {
+      const sp = sponsorshipEligibility.sponsorship;
+      effectiveAmountTotal = sp.patientPayAmount;
+      effectiveAmountSubtotal = sp.originalAmount;
+      effectiveAmountDiscount = sp.coveredAmount;
+      effectiveBreakdown = {
+        ...pricing.breakdown,
+        grossAmount: sp.originalAmount,
+        discountAmount: sp.coveredAmount,
+        netPaidAmount: sp.patientPayAmount,
+      };
+      corporateSponsorshipMetadata = {
+        sponsorshipId: sp.sponsorshipId,
+        corporateOrganizationId: sp.organizationId,
+        corporateContractId: sp.contractId,
+        corporateBenefitPlanId: sp.benefitPlanId,
+        coveredAmount: sp.coveredAmount,
+        originalAmount: sp.originalAmount,
+        patientPayAmount: sp.patientPayAmount,
+        currency: sp.currency,
+      };
+    } else if (sponsorshipEligibility.error) {
+      throw new BadRequestException({
+        messageKey: sponsorshipEligibility.error.messageKey,
+        error: sponsorshipEligibility.error.error,
+      });
+    }
+
     const accountingConfig =
       this.paymentRuntimeConfigService.getAccountingConfig();
     const appBaseUrl = this.paymentRuntimeConfigService.getAppBaseUrl();
-    const totalAmountDecimal = new Prisma.Decimal(pricing.amountTotal);
+    const totalAmountDecimal = new Prisma.Decimal(effectiveAmountTotal);
     const useWalletBalance = input.useWalletBalance === true;
     const availableWalletBalance = useWalletBalance
       ? await this.customerWalletAccountingService.getAvailableBalance({
           patientId: patient.id,
-          currencyCode: pricing.currencyCode,
+          currencyCode: effectiveBreakdown.currency ?? pricing.currencyCode,
         })
       : new Prisma.Decimal(0);
     const amountFromWallet = useWalletBalance
@@ -277,12 +322,12 @@ export class InitiateSessionPaymentUseCase {
           paymentPurpose: pricing.paymentPurpose,
           provider,
           status: PaymentStatus.CREATED,
-          amountSubtotal: pricing.amountSubtotal,
-          amountDiscount: pricing.amountDiscount,
-          amountTotal: pricing.amountTotal,
+          amountSubtotal: effectiveAmountSubtotal,
+          amountDiscount: effectiveAmountDiscount,
+          amountTotal: effectiveAmountTotal,
           amountFromWallet: amountFromWallet.toFixed(2),
           amountFromGateway: amountFromGateway.toFixed(2),
-          currencyCode: pricing.currencyCode,
+          currencyCode: effectiveBreakdown.currency ?? pricing.currencyCode,
           commissionRuleId: pricing.commissionRuleId,
           commissionPlatformRatePercent: pricing.commissionPlatformRatePercent,
           commissionPractitionerRatePercent:
@@ -314,13 +359,14 @@ export class InitiateSessionPaymentUseCase {
             pricingCurrencyCode: pricing.currencyCode,
             countrySnapshot,
             financialBreakdown: {
-              ...pricing.breakdown,
+              ...effectiveBreakdown,
               vatRatePercent: vatRatePercentDecimal.toFixed(2),
               vatAmount: vatAmountDecimal.toFixed(2),
               gatewayFeeRatePercent: gatewayFeeRatePercentDecimal.toFixed(2),
               gatewayFeeFixedAmount: gatewayFeeFixedAmountDecimal.toFixed(2),
               gatewayFeeAmount: gatewayFeeAmountDecimal.toFixed(2),
             },
+            ...(corporateSponsorshipMetadata ?? {}),
           },
         },
         tx,
@@ -331,7 +377,7 @@ export class InitiateSessionPaymentUseCase {
           patientId: patient.id,
           paymentId: created.id,
           sessionId: session.id,
-          currencyCode: pricing.currencyCode,
+          currencyCode: effectiveBreakdown.currency ?? pricing.currencyCode,
           amount: amountFromWallet.toFixed(2),
           expiresAt: session.expiresAt ?? null,
           tx,
@@ -352,6 +398,7 @@ export class InitiateSessionPaymentUseCase {
             paymentPurpose: PaymentPurpose.SESSION_BOOKING,
             sessionId: session.id,
             policyType: RefundPolicyType.SESSION,
+            ...(corporateSponsorshipMetadata ?? {}),
           },
         },
         tx,
@@ -395,7 +442,7 @@ export class InitiateSessionPaymentUseCase {
       providerResult = await providerAdapter!.initiateSessionPayment({
         paymentId: payment.id,
         amountMinor,
-        currency: pricing.currencyCode,
+        currency: effectiveBreakdown.currency ?? pricing.currencyCode,
         description: `Session payment for ${session.practitioner.user.displayName ?? session.practitioner.publicSlug}`,
         sessionId: session.id,
         patientEmail: patient.user.emails[0]?.email ?? null,

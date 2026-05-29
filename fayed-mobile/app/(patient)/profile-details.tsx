@@ -1,134 +1,97 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useMemo } from "react";
 import {
-  Alert,
   Image,
   ScrollView,
   StyleSheet,
   TouchableOpacity,
   View,
 } from "react-native";
+import { useRouter } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 import {
   Header,
   Screen,
   Card,
   Text,
-  Input,
   Button,
 } from "../../src/components/ui";
 import { useAuth } from "../../src/providers/AuthProvider";
 import { useTheme } from "../../src/providers/ThemeProvider";
 import { useTranslation } from "react-i18next";
-import {
-  usePatchPatientProfile,
-  usePatientProfile,
-} from "../../src/features/patient/profile/hooks";
+import { usePatientProfile } from "../../src/features/patient/profile/hooks";
 import {
   formatProfileDate,
   getInitials,
-  isValidCountryCode,
-  isValidDateOfBirth,
-  normalizeCountryCode,
-  normalizeDateOfBirth,
 } from "../../src/features/patient/profile/account-utils";
-import { extractApiErrorMessage } from "../../src/lib/api";
+import {
+  getCountryLabel,
+} from "../../src/features/patient/profile/country-utils";
 
-type GenderValue = "male" | "female" | "";
+
+function InfoRow({
+  label,
+  value,
+  isRtl,
+}: {
+  label: string;
+  value: string;
+  isRtl: boolean;
+}) {
+  const { theme } = useTheme();
+
+  return (
+    <View style={[styles.infoRow, isRtl ? styles.infoRowRtl : null]}>
+      <Text color={theme.colors.textSecondary} style={styles.infoLabel}>
+        {label}
+      </Text>
+      <Text weight="600" style={styles.infoValue}>
+        {value}
+      </Text>
+    </View>
+  );
+}
 
 export default function PatientProfileDetailsScreen() {
+  const router = useRouter();
   const { user } = useAuth();
   const { theme } = useTheme();
   const { t, i18n } = useTranslation();
+  const isRtl = i18n.language?.startsWith("ar") ?? false;
+  const isArabic = isRtl;
+
   const profileQuery = usePatientProfile();
-  const patchProfile = usePatchPatientProfile();
   const profile = profileQuery.data?.profile;
 
-  const [form, setForm] = useState({
-    displayName: "",
-    dateOfBirth: "",
-    gender: "" as GenderValue,
-    countryCode: "",
-  });
-
-  useEffect(() => {
-    if (!profile) {
-      return;
-    }
-
-    setForm({
-      displayName: profile.displayName ?? user?.displayName ?? "",
-      dateOfBirth: profile.dateOfBirth ? profile.dateOfBirth.slice(0, 10) : "",
-      gender: (profile.gender as GenderValue | null) ?? "",
-      countryCode: profile.countryCode ?? "",
-    });
-  }, [profile, user?.displayName]);
-
-  const avatarUri = profile?.avatarDataUrl ?? profile?.avatarUrl ?? null;
   const displayName =
-    form.displayName.trim() ||
-    user?.displayName ||
+    profile?.displayName?.trim() ||
+    user?.displayName?.trim() ||
     t("profileScreen.fallbackName");
   const initials = useMemo(() => getInitials(displayName), [displayName]);
+  const avatarUri = profile?.avatarDataUrl ?? profile?.avatarUrl ?? null;
 
-  const save = async () => {
-    const normalizedCountryCode = normalizeCountryCode(form.countryCode);
-    const normalizedDateOfBirth = normalizeDateOfBirth(form.dateOfBirth);
+  const birthDateLabel = formatProfileDate(profile?.dateOfBirth, i18n.language)
+    ?? t("profileScreen.none");
 
-    if (!isValidCountryCode(normalizedCountryCode)) {
-      Alert.alert(
-        t("profileScreen.details.invalidCountryTitle"),
-        t("profileScreen.details.invalidCountryBody"),
-      );
-      return;
-    }
+  const genderLabel = profile?.gender
+    ? t(`profileScreen.details.genderOptions.${profile.gender}` as const)
+    : t("profileScreen.none");
 
-    if (!isValidDateOfBirth(normalizedDateOfBirth)) {
-      Alert.alert(
-        t("profileScreen.details.invalidBirthDateTitle"),
-        t("profileScreen.details.invalidBirthDateBody"),
-      );
-      return;
-    }
-
-    try {
-      const allCoreFieldsFilled = Boolean(
-        form.displayName.trim() && normalizedDateOfBirth && form.gender,
-      );
-
-      await patchProfile.mutateAsync({
-        displayName: form.displayName.trim() || undefined,
-        dateOfBirth: normalizedDateOfBirth,
-        gender: form.gender || null,
-        countryCode: normalizedCountryCode,
-        ...(allCoreFieldsFilled && !profile?.isOnboardingCompleted
-          ? { completeOnboarding: true }
-          : {}),
-      });
-
-      Alert.alert(
-        t("profileScreen.details.savedTitle"),
-        t("profileScreen.details.savedBody"),
-      );
-    } catch (error) {
-      Alert.alert(
-        t("profileScreen.common.saveFailedTitle"),
-        extractApiErrorMessage(error) ||
-          t("profileScreen.details.saveFailedBody"),
-      );
-    }
-  };
+  const countryLabel = getCountryLabel(profile?.countryCode ?? null, i18n.language);
 
   return (
     <Screen bg="background">
       <Header title={t("profileScreen.details.screenTitle")} showBack />
+
       <ScrollView contentContainerStyle={styles.scrollContent}>
+        {/* Avatar card */}
         <Card
           variant="elevated"
           style={[
             styles.card,
-            { borderWidth: 1, borderColor: theme.colors.borderLight },
+            { borderColor: theme.colors.borderLight },
           ]}
         >
-          <View style={styles.heroRow}>
+          <View style={[styles.avatarRow, isRtl ? styles.avatarRowRtl : null]}>
             {avatarUri ? (
               <Image source={{ uri: avatarUri }} style={styles.avatarImage} />
             ) : (
@@ -146,173 +109,118 @@ export default function PatientProfileDetailsScreen() {
                 </Text>
               </View>
             )}
-            <View style={styles.heroTextWrap}>
-              <Text weight="bold" style={styles.cardTitle}>
+            <View style={styles.avatarMeta}>
+              <Text weight="bold" style={styles.avatarName}>
+                {displayName}
+              </Text>
+              <Text color={theme.colors.textSecondary} style={styles.avatarHint}>
                 {t("profileScreen.details.avatar.title")}
               </Text>
-              <Text color={theme.colors.textSecondary} style={styles.bodyText}>
-                {t("profileScreen.details.avatar.body")}
-              </Text>
-              <Text color={theme.colors.textSecondary} style={styles.metaText}>
-                {formatProfileDate(profile?.updatedAt, i18n.language)
-                  ? t("profileScreen.details.avatar.updatedAt", {
-                      date: formatProfileDate(
-                        profile?.updatedAt,
-                        i18n.language,
-                      ),
-                    })
-                  : t("profileScreen.none")}
-              </Text>
+              {profile?.updatedAt ? (
+                <Text color={theme.colors.textMuted} style={styles.updatedAt}>
+                  {t("profileScreen.details.avatar.updatedAt", {
+                    date: formatProfileDate(profile.updatedAt, i18n.language) ?? "",
+                  })}
+                </Text>
+              ) : null}
             </View>
-          </View>
-        </Card>
-
-        <Card
-          variant="elevated"
-          style={[
-            styles.card,
-            { borderWidth: 1, borderColor: theme.colors.borderLight },
-          ]}
-        >
-          <Text weight="bold" style={styles.cardTitle}>
-            {t("profileScreen.details.formTitle")}
-          </Text>
-          <Text color={theme.colors.textSecondary} style={styles.bodyText}>
-            {t("profileScreen.details.formBody")}
-          </Text>
-          <View style={styles.formSpacer}>
-            <Input
-              label={t("profileScreen.details.fields.displayName")}
-              value={form.displayName}
-              onChangeText={(displayName) =>
-                setForm((current) => ({ ...current, displayName }))
-              }
-            />
-            <Input
-              label={t("profileScreen.details.fields.dateOfBirth")}
-              value={form.dateOfBirth}
-              placeholder={t(
-                "profileScreen.details.fields.dateOfBirthPlaceholder",
-              )}
-              onChangeText={(dateOfBirth) =>
-                setForm((current) => ({ ...current, dateOfBirth }))
-              }
-            />
-            <Text
-              weight="500"
-              color={theme.colors.textSecondary}
-              style={styles.fieldLabel}
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={() => router.push("/(patient)/profile-details/edit" as any)}
+              style={isRtl ? styles.editButtonRtl : styles.editButtonLtr}
             >
-              {t("profileScreen.details.fields.gender")}
-            </Text>
-            <View style={styles.choiceWrap}>
-              {(["male", "female", ""] as const).map((value) => {
-                const selected = form.gender === value;
-                const label =
-                  value === "male"
-                    ? t("profileScreen.details.genderOptions.male")
-                    : value === "female"
-                      ? t("profileScreen.details.genderOptions.female")
-                      : t("profileScreen.details.genderOptions.unspecified");
-
-                return (
-                  <TouchableOpacity
-                    key={value || "unspecified"}
-                    activeOpacity={0.85}
-                    style={[
-                      styles.choiceButton,
-                      {
-                        borderColor: selected
-                          ? theme.colors.primary
-                          : theme.colors.borderLight,
-                        backgroundColor: selected
-                          ? theme.colors.primaryLight
-                          : theme.colors.surface,
-                      },
-                    ]}
-                    onPress={() =>
-                      setForm((current) => ({ ...current, gender: value }))
-                    }
-                  >
-                    <Text
-                      weight={selected ? "600" : "500"}
-                      color={
-                        selected
-                          ? theme.colors.primary
-                          : theme.colors.textPrimary
-                      }
-                    >
-                      {label}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-            <Input
-              label={t("profileScreen.details.fields.countryCode")}
-              value={form.countryCode}
-              placeholder={t(
-                "profileScreen.details.fields.countryCodePlaceholder",
-              )}
-              autoCapitalize="characters"
-              maxLength={3}
-              onChangeText={(countryCode) =>
-                setForm((current) => ({ ...current, countryCode }))
-              }
-            />
+              <Ionicons
+                name="camera-outline"
+                size={18}
+                color={theme.colors.primary}
+              />
+            </TouchableOpacity>
           </View>
         </Card>
 
+        {/* Personal information card */}
         <Card
           variant="elevated"
           style={[
             styles.card,
-            { borderWidth: 1, borderColor: theme.colors.borderLight },
+            { borderColor: theme.colors.borderLight },
           ]}
         >
-          <Text weight="bold" style={styles.cardTitle}>
-            {t("profileScreen.details.accountTitle")}
-          </Text>
-          <Text color={theme.colors.textSecondary} style={styles.bodyText}>
-            {t("profileScreen.details.accountBody")}
-          </Text>
-          <View style={styles.accountRow}>
-            <View style={styles.accountItem}>
-              <Text
-                color={theme.colors.textSecondary}
-                style={styles.accountLabel}
-              >
-                {t("profileScreen.details.readOnly.email")}
-              </Text>
-              <Text weight="600">
-                {user?.primaryEmail || t("profileScreen.fallbackEmail")}
-              </Text>
-            </View>
-            <View style={styles.accountItem}>
-              <Text
-                color={theme.colors.textSecondary}
-                style={styles.accountLabel}
-              >
-                {t("profileScreen.details.readOnly.phone")}
-              </Text>
-              <Text weight="600">
-                {user?.primaryPhone || t("profileScreen.none")}
-              </Text>
-            </View>
+          <View style={[styles.sectionHeader, isRtl ? styles.sectionHeaderRtl : null]}>
+            <Text weight="bold" style={styles.sectionTitle}>
+              {t("profileScreen.details.personalSectionTitle")}
+            </Text>
           </View>
-          <Text color={theme.colors.textSecondary} style={styles.metaText}>
+
+          <InfoRow
+            label={t("profileScreen.details.fields.displayName")}
+            value={displayName !== t("profileScreen.fallbackName") ? displayName : t("profileScreen.none")}
+            isRtl={isRtl}
+          />
+
+          <View style={[styles.divider, { backgroundColor: theme.colors.borderLight }]} />
+
+          <InfoRow
+            label={t("profileScreen.details.fields.dateOfBirth")}
+            value={birthDateLabel}
+            isRtl={isRtl}
+          />
+
+          <View style={[styles.divider, { backgroundColor: theme.colors.borderLight }]} />
+
+          <InfoRow
+            label={t("profileScreen.details.fields.gender")}
+            value={genderLabel}
+            isRtl={isRtl}
+          />
+
+          <View style={[styles.divider, { backgroundColor: theme.colors.borderLight }]} />
+
+          <InfoRow
+            label={t("profileScreen.details.fields.countryCode")}
+            value={countryLabel || t("profileScreen.none")}
+            isRtl={isRtl}
+          />
+        </Card>
+
+        {/* Account contact card */}
+        <Card
+          variant="elevated"
+          style={[
+            styles.card,
+            { borderColor: theme.colors.borderLight },
+          ]}
+        >
+          <View style={[styles.sectionHeader, isRtl ? styles.sectionHeaderRtl : null]}>
+            <Text weight="bold" style={styles.sectionTitle}>
+              {t("profileScreen.details.accountTitle")}
+            </Text>
+          </View>
+
+          <InfoRow
+            label={t("profileScreen.details.readOnly.email")}
+            value={user?.primaryEmail || t("profileScreen.fallbackEmail")}
+            isRtl={isRtl}
+          />
+
+          <View style={[styles.divider, { backgroundColor: theme.colors.borderLight }]} />
+
+          <InfoRow
+            label={t("profileScreen.details.readOnly.phone")}
+            value={user?.primaryPhone || t("profileScreen.none")}
+            isRtl={isRtl}
+          />
+
+          <Text color={theme.colors.textSecondary} style={styles.contactNote}>
             {t("profileScreen.details.readOnly.note")}
           </Text>
         </Card>
 
+        {/* Edit button */}
         <Button
-          title={
-            patchProfile.isPending
-              ? t("profileScreen.common.saving")
-              : t("profileScreen.common.save")
-          }
-          onPress={save}
-          disabled={patchProfile.isPending || profileQuery.isLoading}
+          title={t("profileScreen.details.editButton")}
+          onPress={() => router.push("/(patient)/profile-details/edit" as any)}
+          variant="secondary"
         />
       </ScrollView>
     </Screen>
@@ -327,14 +235,15 @@ const styles = StyleSheet.create({
     gap: 14,
   },
   card: {
-    gap: 10,
+    borderWidth: 1,
   },
-  heroRow: {
+  avatarRow: {
     flexDirection: "row",
+    alignItems: "center",
     gap: 14,
   },
-  heroTextWrap: {
-    flex: 1,
+  avatarRowRtl: {
+    flexDirection: "row-reverse",
   },
   avatarImage: {
     width: 72,
@@ -349,49 +258,63 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   avatarText: {
-    fontSize: 24,
+    fontSize: 26,
   },
-  cardTitle: {
-    fontSize: 18,
-    marginBottom: 4,
+  avatarMeta: {
+    flex: 1,
+    gap: 4,
   },
-  bodyText: {
+  avatarName: {
+    fontSize: 20,
+  },
+  avatarHint: {
     fontSize: 13,
-    lineHeight: 20,
   },
-  metaText: {
-    marginTop: 8,
+  updatedAt: {
+    fontSize: 11,
+    marginTop: 2,
+  },
+  sectionHeader: {
+    marginBottom: 12,
+  },
+  sectionHeaderRtl: {
+    alignItems: "flex-end",
+  },
+  sectionTitle: {
+    fontSize: 16,
+  },
+  infoRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 10,
+  },
+  infoRowRtl: {
+    flexDirection: "row-reverse",
+  },
+  infoLabel: {
+    fontSize: 13,
+    flex: 1,
+  },
+  infoValue: {
+    fontSize: 15,
+    flex: 2,
+    textAlign: "right",
+  },
+  divider: {
+    height: 1,
+  },
+  contactNote: {
+    marginTop: 12,
     fontSize: 12,
     lineHeight: 18,
   },
-  formSpacer: {
-    marginTop: 12,
-    gap: 16,
+  editButtonLtr: {
+    marginLeft: 8,
+    padding: 6,
   },
-  fieldLabel: {
-    marginBottom: 8,
-    fontSize: 14,
-  },
-  choiceWrap: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 10,
-    marginBottom: 16,
-  },
-  choiceButton: {
-    borderWidth: 1,
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-  },
-  accountRow: {
-    gap: 12,
-    marginTop: 10,
-  },
-  accountItem: {
-    gap: 4,
-  },
-  accountLabel: {
-    fontSize: 12,
+  editButtonRtl: {
+    marginRight: 8,
+    padding: 6,
   },
 });

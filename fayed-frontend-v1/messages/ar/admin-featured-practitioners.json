@@ -1,0 +1,147 @@
+{
+  "meta": {
+    "title": "مختصين مميزين",
+    "description": "إدارة المختصين الذين يظهرون كاختيارات مميزة في الصفحة الرئيسية أو صفحة المختصين."
+  },
+  "eyebrow": "إدارة العروض المميزة",
+  "title": "مختصين مميزين",
+  "subtitle": "إدارة المختصين الذين يظهرون كاختيارات مميزة في الصفحة الرئيسية أو صفحة المختصين.",
+  "summary": {
+    "total": "إجمالي العناصر",
+    "active": "نشط الآن"
+  },
+  "table": {
+    "practitioner": "المختص",
+    "surface": "مكان الظهور",
+    "status": "الحالة",
+    "startsAt": "تاريخ البداية",
+    "endsAt": "تاريخ النهاية",
+    "priority": "الترتيب",
+    "reason": "السبب",
+    "badge": "الشارة",
+    "campaign": "الحملة",
+    "updatedAt": "آخر تحديث"
+  },
+  "filters": {
+    "all": "الكل",
+    "status": "الحالة",
+    "surface": "مكان الظهور",
+    "reason": "السبب",
+    "practitionerSearch": "بحث عن مختص",
+    "practitionerSearchPlaceholder": "ابحث بالاسم أو اللقب أو الـ slug",
+    "startsFrom": "يبدأ من",
+    "endsTo": "ينتهي إلى"
+  },
+  "actions": {
+    "add": "إضافة مختص مميز",
+    "edit": "تعديل",
+    "pause": "إيقاف",
+    "resume": "استئناف",
+    "history": "التاريخ",
+    "clearFilters": "مسح الفلاتر"
+  },
+  "editor": {
+    "createTitle": "إضافة مختص مميز",
+    "editTitle": "تعديل المختص المميز",
+    "description": "حدّد إعدادات الظهور والمدة والسبب بشكل واضح لفريق التسويق.",
+    "saving": "جارٍ الحفظ...",
+    "createAction": "إضافة",
+    "saveAction": "حفظ التعديلات",
+    "cancelAction": "إلغاء",
+    "loadingDetails": "جارٍ تحميل التفاصيل..."
+  },
+  "pause": {
+    "title": "إيقاف الظهور المميز",
+    "description": "هل تريد إيقاف هذا الظهور الآن؟",
+    "confirm": "تأكيد الإيقاف",
+    "submitting": "جارٍ الإيقاف...",
+    "cancel": "إلغاء"
+  },
+  "resume": {
+    "title": "استئناف الظهور المميز",
+    "description": "هل تريد إعادة تفعيل هذا الظهور الآن؟",
+    "confirm": "تأكيد الاستئناف",
+    "submitting": "جارٍ الاستئناف...",
+    "cancel": "إلغاء"
+  },
+  "history": {
+    "title": "تاريخ التعديلات",
+    "loading": "جارٍ تحميل السجل...",
+    "unknownActor": "مستخدم غير معروف",
+    "actions": {
+      "CREATED": "إنشاء",
+      "UPDATED": "تعديل",
+      "PAUSED": "إيقاف",
+      "RESUMED": "استئناف",
+      "EXPIRED": "منتهي",
+      "DELETED": "حذف",
+      "PRIORITY_CHANGED": "تغيير الترتيب",
+      "DATE_CHANGED": "تغيير المدة"
+    }
+  },
+  "fields": {
+    "practitionerId": "معرف المختص",
+    "practitionerIdPlaceholder": "أدخل practitionerId (مؤقتًا)",
+    "practitionerSlug": "Slug المختص",
+    "practitionerSlugPlaceholder": "أدخل slug المختص (مؤقتًا)",
+    "surface": "مكان الظهور",
+    "startsAt": "تاريخ البداية",
+    "endsAt": "تاريخ النهاية",
+    "priority": "الترتيب",
+    "badgeLabelAr": "الشارة بالعربي",
+    "badgeLabelEn": "الشارة بالإنجليزي",
+    "reason": "السبب",
+    "campaignName": "اسم الحملة",
+    "notesInternal": "ملاحظات داخلية",
+    "status": "الحالة",
+    "noteOptional": "ملاحظة اختيارية"
+  },
+  "status": {
+    "ACTIVE": "نشط",
+    "PAUSED": "متوقف",
+    "EXPIRED": "منتهي"
+  },
+  "surface": {
+    "HOME": "الصفحة الرئيسية",
+    "DISCOVERY": "صفحة المختصين",
+    "ALL": "الكل"
+  },
+  "reason": {
+    "FEATURED": "مميز",
+    "SPONSORED": "برعاية",
+    "DISCOUNT": "خصم",
+    "NEW_SPECIALIST": "مختص جديد",
+    "HIGH_AVAILABILITY": "متاح بكثافة",
+    "EDITORIAL_PICK": "اختيار Fayed"
+  },
+  "states": {
+    "emptyTitle": "لا توجد عناصر مميزة حاليًا",
+    "emptyDescription": "ابدأ بإضافة مختص مميز ليظهر هنا.",
+    "listErrorTitle": "تعذر تحميل البيانات",
+    "listErrorDescription": "حدث خطأ أثناء جلب قائمة المختصين المميزين.",
+    "retry": "إعادة المحاولة",
+    "readOnlyTitle": "عرض فقط",
+    "readOnlyDescription": "ليس لديك صلاحية لإجراء تعديلات على هذه الصفحة.",
+    "ok": "حسنًا"
+  },
+  "validation": {
+    "practitionerRequired": "أدخل معرف المختص أو الـ slug.",
+    "startsAtRequired": "تاريخ البداية مطلوب.",
+    "priorityPositive": "الترتيب يجب أن يكون رقمًا موجبًا.",
+    "endsAtAfterStartsAt": "تاريخ النهاية يجب أن يكون بعد تاريخ البداية."
+  },
+  "feedback": {
+    "createSuccess": "تمت إضافة المختص المميز بنجاح.",
+    "updateSuccess": "تم تحديث البيانات بنجاح.",
+    "pauseSuccess": "تم إيقاف الظهور بنجاح.",
+    "resumeSuccess": "تم استئناف الظهور بنجاح."
+  },
+  "errors": {
+    "notFound": "العنصر المطلوب غير موجود.",
+    "invalidDateRange": "مدة الظهور غير صحيحة.",
+    "invalidPriority": "الترتيب غير صحيح.",
+    "resumeExpired": "لا يمكن استئناف عنصر منتهي الصلاحية.",
+    "invalidPractitioner": "المختص غير صالح أو غير متاح.",
+    "generic": "حدث خطأ غير متوقع. حاول مرة أخرى."
+  }
+}

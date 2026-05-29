@@ -9,17 +9,23 @@ import { CareSignalContextRepository } from '@modules/care-experience-intelligen
 import { BuildAssessmentDerivedRecommendationsService } from '@modules/care-experience-intelligence/services/build-assessment-derived-recommendations.service';
 import { BuildNormalizedCareSignalContextService } from '@modules/care-experience-intelligence/services/build-normalized-care-signal-context.service';
 import { InterpretAssessmentCareIntentService } from '@modules/care-experience-intelligence/services/interpret-assessment-care-intent.service';
+import { MarketingPractitionerPlacementsModule } from '@modules/marketing-practitioner-placements/marketing-practitioner-placements.module';
 import { RecommendationPrecedenceService } from '@modules/care-experience-intelligence/services/recommendation-precedence.service';
+import { PatientHomeController } from './controllers/patient-home.controller';
 import { PatientJourneyController } from './controllers/patient-journey.controller';
 import { PatientJourneyMapper } from './mappers/patient-journey.mapper';
+import { PatientHomeRepository } from './repositories/patient-home.repository';
 import { PatientJourneyPatientRepository } from './repositories/patient-journey-patient.repository';
 import { PatientJourneyReadRepository } from './repositories/patient-journey-read.repository';
 import { BuildPatientJourneyLinkedContentService } from './services/build-patient-journey-linked-content.service';
 import { BuildPatientJourneyNextStepsService } from './services/build-patient-journey-next-steps.service';
+import { GetMyPatientHomeUseCase } from './use-cases/get-my-patient-home.use-case';
 import { GetMyPatientJourneyUseCase } from './use-cases/get-my-patient-journey.use-case';
+import { TrackPatientPractitionerViewUseCase } from './use-cases/track-patient-practitioner-view.use-case';
 
 @Module({
-  controllers: [PatientJourneyController],
+  imports: [MarketingPractitionerPlacementsModule],
+  controllers: [PatientJourneyController, PatientHomeController],
   providers: [
     JwtAccessAuthGuard,
     RolesGuard,
@@ -33,11 +39,14 @@ import { GetMyPatientJourneyUseCase } from './use-cases/get-my-patient-journey.u
     BuildNormalizedCareSignalContextService,
     BuildAssessmentDerivedRecommendationsService,
     PatientJourneyMapper,
+    PatientHomeRepository,
     PatientJourneyPatientRepository,
     PatientJourneyReadRepository,
     BuildPatientJourneyLinkedContentService,
     BuildPatientJourneyNextStepsService,
+    GetMyPatientHomeUseCase,
     GetMyPatientJourneyUseCase,
+    TrackPatientPractitionerViewUseCase,
   ],
 })
 export class PatientJourneyModule {}

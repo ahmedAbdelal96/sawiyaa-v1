@@ -20,6 +20,7 @@ import { OrchestrateSessionPaymentStatusService } from '../services/orchestrate-
 import { OrchestrateTrainingEnrollmentPaymentStatusService } from '../services/orchestrate-training-enrollment-payment-status.service';
 import { ValidatePaymentStatusTransitionService } from '../services/validate-payment-status-transition.service';
 import { ReconcilePackagePurchasePaymentUseCase } from '@modules/package-plans/use-cases/reconcile-package-purchase-payment.use-case';
+import { CorporateSponsorshipConsumeService } from '@modules/corporate-sponsorship/services/corporate-sponsorship-consume.service';
 
 @Injectable()
 export class MarkPaymentSucceededUseCase {
@@ -35,6 +36,7 @@ export class MarkPaymentSucceededUseCase {
     private readonly redeemCouponUseCase: RedeemCouponUseCase,
     private readonly operationalNotificationService: OperationalNotificationService,
     private readonly reconcilePackagePurchasePaymentUseCase: ReconcilePackagePurchasePaymentUseCase,
+    private readonly corporateSponsorshipConsumeService: CorporateSponsorshipConsumeService,
     private readonly logger: AppLoggerService,
   ) {}
 
@@ -98,6 +100,24 @@ export class MarkPaymentSucceededUseCase {
         },
         tx,
       );
+
+      const sponsorshipId = (payment.metadataJson as Record<string, unknown>)?.sponsorshipId as string | undefined;
+      const hasValidSponsorshipMetadata =
+        typeof sponsorshipId === 'string' &&
+        sponsorshipId.length > 0 &&
+        typeof payment.sessionId === 'string';
+      if (hasValidSponsorshipMetadata) {
+        await this.corporateSponsorshipConsumeService.consumeAfterPayment(
+          {
+            sponsorshipId,
+            sessionId: payment.sessionId!,
+            paymentId: payment.id,
+            paidAmount: captured.amountTotal.toFixed(2),
+            currency: captured.currencyCode,
+          },
+          tx,
+        );
+      }
 
       return captured;
     });

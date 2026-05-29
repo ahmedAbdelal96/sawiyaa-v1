@@ -71,6 +71,20 @@ export class AvailabilityWindowResponseDto {
   durationMinutes!: number | null;
 }
 
+export class PublicBookedSlotResponseDto {
+  @ApiProperty()
+  startsAt!: string;
+
+  @ApiProperty()
+  endsAt!: string;
+
+  @ApiProperty({ enum: [30, 60], nullable: true, required: false })
+  durationMinutes!: number | null;
+
+  @ApiProperty({ enum: ['BOOKED', 'RESERVED'] })
+  statusType!: 'BOOKED' | 'RESERVED';
+}
+
 export class MyAvailabilityDataResponseDto {
   @ApiProperty()
   message!: string;
@@ -124,6 +138,13 @@ export class PublicPractitionerAvailabilityWindowsDataResponseDto {
 
   @ApiProperty({ type: AvailabilityWindowResponseDto, isArray: true })
   windows!: AvailabilityWindowResponseDto[];
+
+  @ApiProperty({
+    type: PublicBookedSlotResponseDto,
+    isArray: true,
+    required: false,
+  })
+  bookedSlots?: PublicBookedSlotResponseDto[];
 }
 
 export class MyAvailabilitySuccessResponseDto {

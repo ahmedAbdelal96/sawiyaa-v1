@@ -53,7 +53,7 @@ export default function PatientNotificationsScreen() {
   const locale = i18n.language?.startsWith("ar") ? "ar-SA" : "en-US";
 
   const unreadCountQuery = usePatientUnreadNotificationCount();
-  const listQuery = usePatientNotifications({ page: 1, limit: 50 });
+  const listQuery = usePatientNotifications({ page: 1, limit: 20 });
   const markReadMutation = useMarkPatientNotificationRead();
   const markAllReadMutation = useMarkAllPatientNotificationsRead();
 
@@ -92,7 +92,6 @@ export default function PatientNotificationsScreen() {
     <Screen bg="background">
       <Header
         title={t("patientNotifications.title")}
-        showBack
         rightElement={
           unreadCount > 0 ? (
             <TouchableOpacity
