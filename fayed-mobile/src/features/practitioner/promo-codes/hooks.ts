@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuthenticatedQueryEnabled } from "../../auth/query-auth";
 import {
+  activatePractitionerCoupon,
   createPractitionerCoupon,
   disablePractitionerCoupon,
   getPractitionerCoupon,
@@ -113,3 +114,13 @@ export function useDisablePractitionerCoupon() {
   });
 }
 
+export function useActivatePractitionerCoupon() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (couponId: string) => activatePractitionerCoupon(couponId),
+    onSuccess: () => {
+      invalidateCouponQueries(queryClient);
+    },
+  });
+}

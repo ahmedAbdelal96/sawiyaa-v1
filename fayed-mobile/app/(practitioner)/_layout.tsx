@@ -25,9 +25,12 @@ export default function PractitionerLayout() {
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
   const isRTL = I18nManager.isRTL;
-  const { role, isLoading } = useAuth();
+  const { role, user, isLoading } = useAuth();
+  const isApprovedPractitioner = user?.practitionerStatus === "APPROVED";
 
-  usePractitionerPresenceHeartbeat(!isLoading && role === "practitioner");
+  usePractitionerPresenceHeartbeat(
+    !isLoading && role === "practitioner" && isApprovedPractitioner,
+  );
 
   return (
     <Tabs
@@ -62,9 +65,11 @@ export default function PractitionerLayout() {
         },
       }}
     >
+      {/* Primary tabs */}
       <Tabs.Screen
         name="index"
         options={{
+          href: isApprovedPractitioner ? undefined : null,
           title: t("practitioner.tab.dashboard"),
           tabBarIcon: ({ color }) => (
             <TabIcon name="grid-outline" color={color} />
@@ -74,6 +79,7 @@ export default function PractitionerLayout() {
       <Tabs.Screen
         name="sessions/index"
         options={{
+          href: isApprovedPractitioner ? undefined : null,
           title: t("practitioner.tab.sessions"),
           tabBarIcon: ({ color }) => (
             <TabIcon name="calendar-outline" color={color} />
@@ -83,6 +89,7 @@ export default function PractitionerLayout() {
       <Tabs.Screen
         name="availability/index"
         options={{
+          href: isApprovedPractitioner ? undefined : null,
           title: t("practitioner.tab.availability"),
           tabBarIcon: ({ color }) => (
             <TabIcon
@@ -92,22 +99,90 @@ export default function PractitionerLayout() {
           ),
         }}
       />
-      <Tabs.Screen name="support/index" options={{ href: null }} />
-      <Tabs.Screen name="support/[id]" options={{ href: null }} />
-      <Tabs.Screen name="account" options={{ href: null }} />
-      <Tabs.Screen name="onboarding" options={{ href: null }} />
-      <Tabs.Screen name="messages/index" options={{ href: null }} />
-      <Tabs.Screen name="messages/[id]" options={{ href: null }} />
-      <Tabs.Screen name="care-chat/index" options={{ href: null }} />
-      <Tabs.Screen name="care-chat/request/[id]" options={{ href: null }} />
-      <Tabs.Screen name="care-chat/[id]" options={{ href: null }} />
-      <Tabs.Screen name="finance/index" options={{ href: null }} />
-      <Tabs.Screen name="finance/wallet" options={{ href: null }} />
-      <Tabs.Screen name="finance/ledger" options={{ href: null }} />
-      <Tabs.Screen name="finance/settlements" options={{ href: null }} />
-      <Tabs.Screen name="promo-codes" options={{ href: null }} />
-      <Tabs.Screen name="sessions/[id]" options={{ href: null }} />
-      <Tabs.Screen name="notifications" options={{ href: null }} />
+      <Tabs.Screen
+        name="more"
+        options={{
+          href: isApprovedPractitioner ? undefined : null,
+          title: t("practitioner.tab.more"),
+          tabBarIcon: ({ color }) => (
+            <TabIcon name="grid-outline" color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="application-status"
+        options={{
+          href: isApprovedPractitioner ? null : undefined,
+        }}
+      />
+      <Tabs.Screen
+        name="support/index"
+        options={{ href: null }}
+      />
+      <Tabs.Screen
+        name="support/new"
+        options={{ href: null }}
+      />
+      <Tabs.Screen
+        name="support/[id]"
+        options={{ href: null }}
+      />
+      <Tabs.Screen
+        name="account"
+        options={{ href: null }}
+      />
+      <Tabs.Screen
+        name="onboarding"
+        options={{ href: null }}
+      />
+      <Tabs.Screen
+        name="messages/index"
+        options={{ href: null }}
+      />
+      <Tabs.Screen
+        name="messages/[id]"
+        options={{ href: null }}
+      />
+      <Tabs.Screen
+        name="care-chat/index"
+        options={{ href: null }}
+      />
+      <Tabs.Screen
+        name="care-chat/request/[id]"
+        options={{ href: null }}
+      />
+      <Tabs.Screen
+        name="care-chat/[id]"
+        options={{ href: null }}
+      />
+      <Tabs.Screen
+        name="finance/index"
+        options={{ href: null }}
+      />
+      <Tabs.Screen
+        name="finance/wallet"
+        options={{ href: null }}
+      />
+      <Tabs.Screen
+        name="finance/ledger"
+        options={{ href: null }}
+      />
+      <Tabs.Screen
+        name="finance/settlements"
+        options={{ href: null }}
+      />
+      <Tabs.Screen
+        name="promo-codes"
+        options={{ href: null }}
+      />
+      <Tabs.Screen
+        name="sessions/[id]"
+        options={{ href: null }}
+      />
+      <Tabs.Screen
+        name="notifications"
+        options={{ href: null }}
+      />
     </Tabs>
   );
 }

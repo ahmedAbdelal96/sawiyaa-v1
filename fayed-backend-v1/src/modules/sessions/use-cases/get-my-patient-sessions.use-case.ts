@@ -23,6 +23,7 @@ export class GetMyPatientSessionsUseCase {
     locale: SupportedLocale;
     query: ListSessionsDto;
   }) {
+    const now = new Date();
     const patient = await this.sessionPatientRepository.findByUserId(
       input.userId,
     );
@@ -42,12 +43,14 @@ export class GetMyPatientSessionsUseCase {
       await this.sessionRepository.listPatientSessions({
         patientId: patient.id,
         status: input.query.status,
+        presentationFilter: input.query.presentationFilter,
+        now,
         skip,
         take: limit,
       });
 
     return {
-      items: sessions.map((session) => this.sessionMapper.toListItem(session)),
+      items: sessions.map((session) => this.sessionMapper.toListItem(session, now)),
       pagination: {
         page,
         limit,

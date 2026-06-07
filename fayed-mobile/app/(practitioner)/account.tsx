@@ -1,21 +1,12 @@
-import React, { useEffect, useState } from "react";
-import {
-  Alert,
-  Image,
-  ScrollView,
-  StyleSheet,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import React, { useMemo, useState } from "react";
+import { Image, ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import {
-  Button,
   Card,
   ErrorState,
   Header,
-  Input,
   LoadingState,
   ListRow,
   Screen,
@@ -24,60 +15,24 @@ import {
 } from "../../src/components/ui";
 import { useAuth } from "../../src/providers/AuthProvider";
 import { useTheme } from "../../src/providers/ThemeProvider";
+import { CompactSectionHeader, resolvePractitionerTone } from "../../src/features/practitioner/ui/compact";
 import {
   usePractitionerApplicationStatus,
   usePractitionerProfile,
   usePractitionerReadiness,
-  useUpdatePractitionerProfile,
 } from "../../src/features/practitioner/profile/hooks";
-import type { PractitionerProfile, UpdatePractitionerProfileRequest } from "../../src/features/practitioner/profile/types";
 import {
-  applicationTone,
   formatDate,
   formatDateTime,
   getInitials,
-  payoutSummary,
+  languageCodeLabel,
+  payoutMethodLabel,
+  practitionerAccountStatusLabel,
+  practitionerApplicationStatusLabel,
+  practitionerMissingRequirementLabel,
   profileTone,
-  readinessTone,
 } from "../../src/features/practitioner/profile/utils";
 import { useGeneralChatUnreadSummary } from "../../src/features/messages/hooks";
-
-type FormState = {
-  displayName: string;
-  professionalTitle: string;
-  bio: string;
-  countryCode: string;
-  yearsOfExperience: string;
-  practitionerType: string;
-  practitionerGender: string;
-  locale: string;
-  timezone: string;
-  languageCodes: string;
-};
-
-const PRACTITIONER_TYPES = [
-  "PSYCHOLOGIST",
-  "PSYCHIATRIST",
-  "NUTRITIONIST",
-  "WEIGHT_LOSS_SPECIALIST",
-  "COUNSELOR",
-  "OTHER",
-] as const;
-
-const GENDERS = ["MALE", "FEMALE"] as const;
-const LANGUAGES = ["ar", "en"] as const;
-
-function formatStatusLabel(value: string | null | undefined) {
-  if (!value) {
-    return "-";
-  }
-
-  return value
-    .split("_")
-    .filter(Boolean)
-    .map((part) => part[0] + part.slice(1).toLowerCase())
-    .join(" ");
-}
 
 export default function PractitionerAccountScreen() {
   const router = useRouter();
@@ -88,7 +43,6 @@ export default function PractitionerAccountScreen() {
   const profileQuery = usePractitionerProfile();
   const readinessQuery = usePractitionerReadiness();
   const applicationQuery = usePractitionerApplicationStatus();
-  const updateProfile = useUpdatePractitionerProfile();
   const messagesSummaryQuery = useGeneralChatUnreadSummary("practitioner");
 
   const profile = profileQuery.data?.profile ?? null;
@@ -96,52 +50,24 @@ export default function PractitionerAccountScreen() {
   const application = applicationQuery.data?.application ?? null;
 
   const locale = i18n.language?.startsWith("ar") ? "ar-SA" : "en-US";
-
-  const [form, setForm] = useState<FormState>({
-    displayName: "",
-    professionalTitle: "",
-    bio: "",
-    countryCode: "",
-    yearsOfExperience: "",
-    practitionerType: "",
-    practitionerGender: "",
-    locale: "",
-    timezone: "",
-    languageCodes: "",
-  });
-  const [showAdvancedFields, setShowAdvancedFields] = useState(false);
   const [showMoreDetails, setShowMoreDetails] = useState(false);
 
-  useEffect(() => {
-    if (!profile) {
-      return;
-    }
-
-    setForm({
-      displayName: profile.displayName ?? "",
-      professionalTitle: profile.professionalTitle ?? "",
-      bio: profile.bio ?? "",
-      countryCode: profile.countryCode ?? "",
-      yearsOfExperience:
-        profile.yearsOfExperience !== null && profile.yearsOfExperience !== undefined
-          ? String(profile.yearsOfExperience)
-          : "",
-      practitionerType: profile.practitionerType ?? "",
-      practitionerGender: profile.practitionerGender ?? "",
-      locale: profile.locale ?? "",
-      timezone: profile.timezone ?? "",
-      languageCodes: profile.languages.join(", "),
-    });
-    setShowAdvancedFields(false);
-    setShowMoreDetails(false);
-  }, [profile]);
-
-  const displayName =
-    profile?.displayName?.trim() || user?.displayName?.trim() || t("practitioner.account.fallbackName");
-  const title = profile?.professionalTitle?.trim() || t("practitioner.account.fallbackTitle");
+  const displayName = useMemo(
+    () =>
+      profile?.displayName?.trim() ||
+      user?.displayName?.trim() ||
+      t("practitioner.account.fallbackName"),
+    [profile?.displayName, t, user?.displayName],
+  );
+  const professionalTitle = profile?.professionalTitle?.trim() || t("practitioner.account.fallbackTitle");
   const initials = getInitials(displayName);
-  const isBusy =
-    profileQuery.isLoading || readinessQuery.isLoading || applicationQuery.isLoading;
+  const primarySpecialty =
+    profile?.specialties.find((item) => item.isPrimary) ?? profile?.specialties[0] ?? null;
+  const messagesTone = resolvePractitionerTone(theme, "messages");
+  const supportTone = resolvePractitionerTone(theme, "support");
+  const dangerTone = resolvePractitionerTone(theme, "danger");
+
+  const isBusy = profileQuery.isLoading || readinessQuery.isLoading || applicationQuery.isLoading;
 
   if (isBusy) {
     return (
@@ -180,61 +106,19 @@ export default function PractitionerAccountScreen() {
     );
   }
 
-  const saveProfile = async () => {
-    const payload = buildPayload(form, profile);
-
-    if (!payload.displayName?.trim()) {
-      Alert.alert(
-        t("practitioner.account.validation.titleRequired"),
-        t("practitioner.account.validation.titleRequiredBody"),
-      );
-      return;
-    }
-
-    if (payload.yearsOfExperience !== undefined && payload.yearsOfExperience !== null) {
-      if (payload.yearsOfExperience < 0 || payload.yearsOfExperience > 80) {
-        Alert.alert(
-          t("practitioner.account.validation.yearsTitle"),
-          t("practitioner.account.validation.yearsBody"),
-        );
-        return;
-      }
-    }
-
-    try {
-      await updateProfile.mutateAsync(payload);
-      Alert.alert(
-        t("practitioner.account.common.savedTitle"),
-        t("practitioner.account.common.savedBody"),
-      );
-    } catch {
-      Alert.alert(
-        t("practitioner.account.common.saveFailedTitle"),
-        t("practitioner.account.common.saveFailedBody"),
-      );
-    }
-  };
-
-  const currentPayout = payoutSummary(profile.payoutDestination);
-  const currentStatusLabel = t(`practitioner.profileStatus.${profile.profileStatus}`);
-  const applicationStatusLabel = application?.status
-    ? t(`practitioner.account.applicationStatuses.${application.status}`, application.status)
-    : t("practitioner.account.applicationStatuses.NONE");
-  const readinessLabel = readiness?.canSubmitApplication
-    ? t("practitioner.account.readiness.ready")
-    : t("practitioner.account.readiness.notReady");
-  const missingRequirementsCount = readiness?.missingRequirements.length ?? 0;
-  const unreadMessagesCount =
-    messagesSummaryQuery.data?.item.totalUnreadMessages ?? 0;
-  const nextStepLabel = readiness?.canSubmitApplication
-    ? t("practitioner.account.nextStepReady")
-    : missingRequirementsCount > 0
-      ? t("practitioner.account.nextStepMissing", { count: missingRequirementsCount })
-      : t("practitioner.account.nextStepNotReady");
-  const primarySpecialty =
-    profile.specialties.find((item) => item.isPrimary) ?? profile.specialties[0] ?? null;
-  const accountStatusLabel = formatStatusLabel(user?.status);
-
+  const profileStatusLabel = t(`practitioner.profileStatus.${profile.profileStatus}`);
+  const accountStatusLabel = practitionerAccountStatusLabel(user?.status, t);
+  const applicationStatusLabel = practitionerApplicationStatusLabel(application?.status ?? null, t);
+  const payoutDataStatusLabel = profile.payoutDestination?.methodType
+    ? t("practitioner.account.statusCard.payoutReady")
+    : t("practitioner.account.statusCard.payoutMissing");
+  const unreadMessagesCount = messagesSummaryQuery.data?.item.totalUnreadMessages ?? 0;
+  const isApproved = profile.profileStatus === "APPROVED";
+  const missingRequirements = readiness?.missingRequirements ?? [];
+  const missingRequirementLabels = missingRequirements.map((item) =>
+    practitionerMissingRequirementLabel(item, t),
+  );
+  const hasNotes = missingRequirementLabels.length > 0;
   return (
     <Screen bg="background">
       <Header
@@ -246,77 +130,172 @@ export default function PractitionerAccountScreen() {
         }
       />
 
-      <ScrollView contentContainerStyle={styles.content}>
-        <Card variant="elevated" padding="lg" style={styles.heroCard}>
-          <View style={styles.heroTopRow}>
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <Card variant="outlined" padding="sm" style={styles.summaryCard}>
+          <CompactSectionHeader
+            title={t("practitioner.account.sections.overview")}
+            subtitle={t("practitioner.account.sections.overviewSubtitle")}
+          />
+
+          <View style={styles.summaryTopRow}>
             <View style={styles.avatarWrap}>
               {profile.avatarUrl ? (
                 <Image source={{ uri: profile.avatarUrl }} style={styles.avatarImage} />
               ) : (
                 <View style={[styles.avatar, { backgroundColor: theme.colors.primaryLight }]}>
-                  <Text weight="bold" style={[styles.avatarText, { color: theme.colors.primary }]}>
+                  <Text weight="700" style={[styles.avatarText, { color: theme.colors.primary }]}>
                     {initials}
                   </Text>
                 </View>
               )}
             </View>
-            <View style={styles.heroTextWrap}>
-              <Text weight="bold" style={styles.heroTitle}>
+
+            <View style={styles.summaryCopy}>
+              <Text weight="700" style={styles.displayName} color={theme.colors.textPrimary}>
                 {displayName}
               </Text>
-              <Text color={theme.colors.textSecondary} style={styles.heroSubtitle}>
-                {title}
+              <Text color={theme.colors.textSecondary} style={styles.professionalTitle}>
+                {professionalTitle}
               </Text>
-              <Text color={theme.colors.textMuted} style={styles.heroMeta}>
-                {primarySpecialty?.title ?? primarySpecialty?.slug ?? t("practitioner.account.specialtyFallback")}
+              <Text color={theme.colors.textMuted} style={styles.specialtyText}>
+                {primarySpecialty?.title ?? t("practitioner.account.specialtyFallback")}
               </Text>
             </View>
           </View>
 
           <View style={styles.badgeRow}>
-            <StatusBadge label={currentStatusLabel} status={profileTone(profile.profileStatus)} />
-            <StatusBadge label={readinessLabel} status={readinessTone(readiness)} />
-            <StatusBadge label={applicationStatusLabel} status={applicationTone(application)} />
+            <StatusBadge label={profileStatusLabel} status={profileTone(profile.profileStatus)} />
           </View>
 
-          <View style={styles.heroSummary}>
-            <SummaryRow label={t("practitioner.account.summary.nextStep")} value={nextStepLabel} />
-            <SummaryRow label={t("practitioner.account.summary.payout")} value={currentPayout} />
-            <SummaryRow label={t("practitioner.account.summary.account")} value={accountStatusLabel} />
+          <Text color={theme.colors.textSecondary} style={styles.helperText}>
+            {t("practitioner.account.summary.helper")}
+          </Text>
+        </Card>
+
+        <Card variant="outlined" padding="sm" style={styles.sectionCard}>
+          <CompactSectionHeader
+            title={t("practitioner.account.statusCard.title")}
+            subtitle={t("practitioner.account.statusCard.subtitle")}
+          />
+
+          <View style={styles.readOnlyList}>
+            <InfoRow label={t("practitioner.account.statusCard.rows.account")} value={accountStatusLabel} />
+            <InfoRow
+              label={t("practitioner.account.statusCard.rows.approval")}
+              value={profileStatusLabel}
+            />
+            {!isApproved ? (
+              <InfoRow
+                label={t("practitioner.account.statusCard.rows.applicationStatus")}
+                value={applicationStatusLabel}
+              />
+            ) : null}
+            <InfoRow
+              label={t("practitioner.account.statusCard.rows.lastUpdated")}
+              value={formatDateTime(profile.updatedAt, locale)}
+            />
+          </View>
+
+          {isApproved ? (
+            <View style={styles.approvedNoteBox}>
+              <Ionicons name="shield-checkmark-outline" size={18} color={theme.colors.success} />
+              <Text color={theme.colors.textPrimary} style={styles.approvedNoteText}>
+                {t("practitioner.account.statusCard.approvedNote")}
+              </Text>
+            </View>
+          ) : null}
+        </Card>
+
+        <Card variant="outlined" padding="sm" style={styles.sectionCard}>
+          <CompactSectionHeader
+            title={t("practitioner.account.sections.professional")}
+            subtitle={t("practitioner.account.sections.professionalSubtitle")}
+          />
+          <View style={styles.compactGrid}>
+            <CompactField
+              label={t("practitioner.account.fields.displayName")}
+              value={profile.displayName?.trim() || t("practitioner.account.unknown")}
+            />
+            <CompactField
+              label={t("practitioner.account.fields.professionalTitle")}
+              value={profile.professionalTitle?.trim() || t("practitioner.account.unknown")}
+            />
+            <CompactField
+              label={t("practitioner.account.fields.specialty")}
+              value={primarySpecialty?.title ?? t("practitioner.account.specialtyFallback")}
+            />
+            <CompactField
+              label={t("practitioner.account.fields.yearsOfExperience")}
+              value={
+                profile.yearsOfExperience !== null && profile.yearsOfExperience !== undefined
+                  ? String(profile.yearsOfExperience)
+                  : t("practitioner.account.unknown")
+              }
+            />
+            <CompactField
+              label={t("practitioner.account.fields.languages")}
+              value={
+                profile.languages.length
+                  ? profile.languages.map((item) => languageCodeLabel(item, t)).join(", ")
+                  : t("practitioner.account.unknown")
+              }
+            />
+            <CompactField
+              label={t("practitioner.account.fields.timezone")}
+              value={profile.timezone?.trim() || t("practitioner.account.unknown")}
+            />
+            <CompactField
+              label={t("practitioner.account.fields.countryCode")}
+              value={profile.countryCode?.trim() || t("practitioner.account.unknown")}
+            />
           </View>
         </Card>
 
-        <Card
-          variant="elevated"
-          padding="none"
-          style={[
-            styles.sectionCard,
-            { borderWidth: 1, borderColor: theme.colors.borderLight },
-          ]}
-        >
-          <View style={styles.rowPad}>
+        <Card variant="outlined" padding="sm" style={styles.bioCard}>
+          <Text weight="600" style={styles.bioTitle} color={theme.colors.textPrimary}>
+            {t("practitioner.account.fields.bio")}
+          </Text>
+          <Text color={theme.colors.textSecondary} style={styles.bioBody} numberOfLines={3}>
+            {profile.bio?.trim() || t("practitioner.account.unknown")}
+          </Text>
+        </Card>
+
+        <Card variant="outlined" padding="sm" style={styles.sectionCard}>
+          <CompactSectionHeader
+            title={t("practitioner.account.sections.financial")}
+            subtitle={t("practitioner.account.sections.financialSubtitle")}
+          />
+          <View style={styles.readOnlyList}>
+            <InfoRow
+              label={t("practitioner.account.fields.payoutMethodType")}
+              value={payoutMethodLabel(profile.payoutDestination?.methodType, t) ?? t("practitioner.account.unknown")}
+            />
+            <InfoRow
+              label={t("practitioner.account.statusCard.rows.payoutStatus")}
+              value={payoutDataStatusLabel}
+            />
+            <InfoRow label={t("practitioner.account.statusCard.rows.lastUpdated")} value={formatDateTime(profile.updatedAt, locale)} />
+          </View>
+        </Card>
+
+        <Card variant="outlined" padding="sm" style={styles.sectionCard}>
+          <CompactSectionHeader
+            title={t("practitioner.account.sections.communication")}
+            subtitle={t("practitioner.account.sections.communicationSubtitle")}
+          />
+          <View style={styles.actionList}>
             <ListRow
-              title={t("practitioner.account.messages.title", "Messages")}
-              subtitle={t(
-                "practitioner.account.messages.subtitle",
-                "Open conversations with patients and sessions",
-              )}
+              title={t("practitioner.account.actions.messages")}
+              subtitle={t("practitioner.account.actions.messagesSubtitle")}
               leftElement={
-                <Ionicons
-                  name="chatbubbles-outline"
-                  size={22}
-                  color={theme.colors.primary}
-                />
+                <View style={[styles.actionIcon, { backgroundColor: messagesTone.iconBackground }]}>
+                  <Ionicons name="chatbubbles-outline" size={18} color={messagesTone.iconColor} />
+                </View>
               }
               rightElement={
                 unreadMessagesCount > 0 ? (
-                  <View
-                    style={[
-                      styles.inlineBadge,
-                      { backgroundColor: theme.colors.primaryLight },
-                    ]}
-                  >
-                    <Text color={theme.colors.primary} weight="600">
+                  <View style={[styles.inlineBadge, { backgroundColor: messagesTone.iconBackground }]}>
+                    <Text color={messagesTone.iconColor} weight="600">
                       {unreadMessagesCount > 99 ? "99+" : String(unreadMessagesCount)}
                     </Text>
                   </View>
@@ -325,147 +304,44 @@ export default function PractitionerAccountScreen() {
               onPress={() => router.push("/(practitioner)/messages" as any)}
               showChevron
             />
-          </View>
-        </Card>
-
-        <Card variant="outlined" padding="lg">
-          <View style={styles.sectionHeaderBlock}>
-            <Text weight="600" style={styles.sectionTitle}>
-              {t("practitioner.account.editTitle")}
-            </Text>
-            <Text color={theme.colors.textSecondary} style={styles.sectionSubtitle}>
-              {t("practitioner.account.editSubtitle")}
-            </Text>
-          </View>
-
-          <Input
-            label={t("practitioner.account.fields.displayName")}
-            value={form.displayName}
-            onChangeText={(value) => setForm((current) => ({ ...current, displayName: value }))}
-            placeholder={t("practitioner.account.placeholders.displayName")}
-          />
-          <Input
-            label={t("practitioner.account.fields.professionalTitle")}
-            value={form.professionalTitle}
-            onChangeText={(value) => setForm((current) => ({ ...current, professionalTitle: value }))}
-            placeholder={t("practitioner.account.placeholders.professionalTitle")}
-          />
-          <Input
-            label={t("practitioner.account.fields.bio")}
-            value={form.bio}
-            onChangeText={(value) => setForm((current) => ({ ...current, bio: value }))}
-            placeholder={t("practitioner.account.placeholders.bio")}
-            multiline
-            numberOfLines={4}
-            style={styles.bioInput}
-          />
-          <Input
-            label={t("practitioner.account.fields.timezone")}
-            value={form.timezone}
-            onChangeText={(value) => setForm((current) => ({ ...current, timezone: value }))}
-            placeholder="Africa/Cairo"
-          />
-          <Input
-            label={t("practitioner.account.fields.countryCode")}
-            value={form.countryCode}
-            onChangeText={(value) =>
-              setForm((current) => ({ ...current, countryCode: value.toUpperCase() }))
-            }
-            placeholder="EG"
-            autoCapitalize="characters"
-            maxLength={3}
-          />
-          <Input
-            label={t("practitioner.account.fields.yearsOfExperience")}
-            value={form.yearsOfExperience}
-            onChangeText={(value) =>
-              setForm((current) => ({ ...current, yearsOfExperience: value.replace(/[^0-9]/g, "") }))
-            }
-            placeholder="10"
-            keyboardType="number-pad"
-          />
-
-          <TouchableOpacity
-            style={styles.secondaryToggle}
-            activeOpacity={0.85}
-            onPress={() => setShowAdvancedFields((current) => !current)}
-          >
-            <View style={styles.secondaryToggleCopy}>
-              <Text weight="600" style={styles.secondaryToggleTitle}>
-                {showAdvancedFields
-                  ? t("practitioner.account.moreFields.hide")
-                  : t("practitioner.account.moreFields.show")}
-              </Text>
-              <Text color={theme.colors.textSecondary} style={styles.secondaryToggleSubtitle}>
-                {t("practitioner.account.moreFields.subtitle")}
-              </Text>
-            </View>
-            <Ionicons
-              name={showAdvancedFields ? "chevron-up" : "chevron-down"}
-              size={20}
-              color={theme.colors.textSecondary}
+            <ListRow
+              title={t("practitioner.account.actions.support")}
+              subtitle={t("practitioner.account.actions.supportSubtitle")}
+              leftElement={
+                <View style={[styles.actionIcon, { backgroundColor: supportTone.iconBackground }]}>
+                  <Ionicons name="headset-outline" size={18} color={supportTone.iconColor} />
+                </View>
+              }
+              onPress={() =>
+                router.push({
+                  pathname: "/(practitioner)/messages",
+                  params: { tab: "support" },
+                } as any)
+              }
+              showChevron
             />
-          </TouchableOpacity>
-
-          {showAdvancedFields ? (
-            <View style={styles.advancedFields}>
-              <ChoiceGroup
-                label={t("practitioner.account.fields.locale")}
-                value={form.locale}
-                options={LANGUAGES.map((item) => ({
-                  value: item,
-                  label: t(`practitioner.account.language.${item}`),
-                }))}
-                onChange={(value) => setForm((current) => ({ ...current, locale: value }))}
-              />
-
-              <ChoiceGroup
-                label={t("practitioner.account.fields.practitionerType")}
-                value={form.practitionerType}
-                options={PRACTITIONER_TYPES.map((item) => ({
-                  value: item,
-                  label: t(`practitioner.account.types.${item}`),
-                }))}
-                onChange={(value) => setForm((current) => ({ ...current, practitionerType: value }))}
-              />
-
-              <ChoiceGroup
-                label={t("practitioner.account.fields.practitionerGender")}
-                value={form.practitionerGender}
-                options={GENDERS.map((item) => ({
-                  value: item,
-                  label: t(`practitioner.account.genders.${item}`),
-                }))}
-                onChange={(value) => setForm((current) => ({ ...current, practitionerGender: value }))}
-              />
-
-              <Input
-                label={t("practitioner.account.fields.languageCodes")}
-                value={form.languageCodes}
-                onChangeText={(value) => setForm((current) => ({ ...current, languageCodes: value }))}
-                placeholder={t("practitioner.account.placeholders.languageCodes")}
-                helperText={t("practitioner.account.languageCodesHint")}
-              />
-            </View>
-          ) : null}
-
-          <View style={styles.payoutActions}>
-            <Button
-              title={t("practitioner.account.actions.save")}
-              onPress={saveProfile}
-              disabled={updateProfile.isPending}
+            <ListRow
+              title={t("practitioner.account.actions.logout")}
+              subtitle={t("practitioner.account.actions.logoutSubtitle")}
+              leftElement={
+                <View style={[styles.actionIcon, { backgroundColor: dangerTone.iconBackground }]}>
+                  <Ionicons name="log-out-outline" size={18} color={dangerTone.iconColor} />
+                </View>
+              }
+              onPress={() => void signOut()}
+              showChevron
             />
           </View>
         </Card>
 
-        <Card variant="outlined" padding="lg">
+        <Card variant="outlined" padding="sm" style={styles.sectionCard}>
           <TouchableOpacity
             onPress={() => setShowMoreDetails((current) => !current)}
             activeOpacity={0.85}
-            style={styles.moreDetailsToggle}
+            style={styles.moreToggle}
           >
-            <View style={styles.sectionHeaderTextBlock}>
-              <Text weight="600" style={styles.sectionTitle}>
+            <View style={styles.moreToggleCopy}>
+              <Text weight="600" style={styles.sectionTitle} color={theme.colors.textPrimary}>
                 {t("practitioner.account.moreDetails.title")}
               </Text>
               <Text color={theme.colors.textSecondary} style={styles.sectionSubtitle}>
@@ -481,48 +357,32 @@ export default function PractitionerAccountScreen() {
 
           {showMoreDetails ? (
             <View style={styles.moreDetailsBody}>
-              <View style={styles.detailBlock}>
-                <Text weight="600" style={styles.subsectionTitle}>
-                  {t("practitioner.account.moreDetails.profileTitle")}
+              <View style={styles.detailGroup}>
+                <Text weight="600" style={styles.subsectionTitle} color={theme.colors.textPrimary}>
+                  {t("practitioner.account.moreDetails.credentialsTitle")}
                 </Text>
-                <View style={styles.detailList}>
-                  <ListItem label={t("practitioner.account.fields.locale")} value={profile.locale} />
-                  <ListItem
-                    label={t("practitioner.account.fields.practitionerType")}
-                    value={profile.practitionerType}
+                <View style={styles.readOnlyList}>
+                  <InfoRow
+                    label={t("practitioner.account.fields.credentialSummary")}
+                    value={t("practitioner.account.credentialsSummary", {
+                      total: profile.credentialSummary.totalCredentials,
+                      approved: profile.credentialSummary.approvedCount,
+                      pending: profile.credentialSummary.pendingCount,
+                    })}
                   />
-                  <ListItem
-                    label={t("practitioner.account.fields.practitionerGender")}
-                    value={profile.practitionerGender}
+                  <InfoRow
+                    label={t("practitioner.account.fields.createdAt")}
+                    value={formatDate(profile.createdAt, locale)}
                   />
-                  <ListItem
-                    label={t("practitioner.account.fields.languages")}
-                    value={profile.languages.length ? profile.languages.join(", ") : null}
+                  <InfoRow
+                    label={t("practitioner.account.fields.updatedAt")}
+                    value={formatDateTime(profile.updatedAt, locale)}
                   />
                 </View>
               </View>
 
-              <View style={styles.detailBlock}>
-                <Text weight="600" style={styles.subsectionTitle}>
-                  {t("practitioner.account.moreDetails.payoutTitle")}
-                </Text>
-                <View style={styles.detailList}>
-                  <ListItem
-                    label={t("practitioner.account.fields.payoutMethodType")}
-                    value={profile.payoutDestination?.methodType ?? null}
-                  />
-                  <ListItem
-                    label={t("practitioner.account.fields.payoutDestination")}
-                    value={currentPayout}
-                  />
-                </View>
-                <Text color={theme.colors.textMuted} style={styles.noteText}>
-                  {t("practitioner.account.payoutReadOnlyNote")}
-                </Text>
-              </View>
-
-              <View style={styles.detailBlock}>
-                <Text weight="600" style={styles.subsectionTitle}>
+              <View style={styles.detailGroup}>
+                <Text weight="600" style={styles.subsectionTitle} color={theme.colors.textPrimary}>
                   {t("practitioner.account.moreDetails.verificationTitle")}
                 </Text>
                 <View style={styles.badgeRow}>
@@ -559,36 +419,34 @@ export default function PractitionerAccountScreen() {
                     status={readiness?.checks?.isAccountActive ? "success" : "warning"}
                   />
                 </View>
-                <View style={[styles.detailList, styles.detailListTopGap]}>
-                  <ListItem
-                    label={t("practitioner.account.fields.credentialSummary")}
-                    value={t("practitioner.account.credentialsSummary", {
-                      total: profile.credentialSummary.totalCredentials,
-                      approved: profile.credentialSummary.approvedCount,
-                      pending: profile.credentialSummary.pendingCount,
-                    })}
-                  />
-                  <ListItem
-                    label={t("practitioner.account.fields.createdAt")}
-                    value={formatDate(profile.createdAt, locale)}
-                  />
-                  <ListItem
-                    label={t("practitioner.account.fields.updatedAt")}
-                    value={formatDateTime(profile.updatedAt, locale)}
-                  />
-                </View>
               </View>
 
-              <View style={styles.detailBlock}>
-                <Text weight="600" style={styles.subsectionTitle}>
-                  {t("practitioner.account.specialtiesTitle")}
+              {hasNotes ? (
+                <View style={styles.detailGroup}>
+                  <Text weight="600" style={styles.subsectionTitle} color={theme.colors.textPrimary}>
+                    {t("practitioner.account.statusCard.missingTitle")}
+                  </Text>
+                  <View style={styles.chipRow}>
+                    {missingRequirementLabels.slice(0, 4).map((item) => (
+                      <StatusBadge key={item} label={item} status="default" />
+                    ))}
+                    {missingRequirementLabels.length > 4 ? (
+                      <StatusBadge label={t("practitioner.account.statusCard.moreNotes", { count: missingRequirementLabels.length - 4 })} status="default" />
+                    ) : null}
+                  </View>
+                </View>
+              ) : null}
+
+              <View style={styles.detailGroup}>
+                <Text weight="600" style={styles.subsectionTitle} color={theme.colors.textPrimary}>
+                  {t("practitioner.account.moreDetails.specialtiesTitle")}
                 </Text>
                 <View style={styles.chipRow}>
                   {profile.specialties.length ? (
                     profile.specialties.map((item) => (
                       <StatusBadge
                         key={item.specialtyId}
-                        label={`${item.title ?? item.slug}${item.isPrimary ? ` · ${t("practitioner.account.primary")}` : ""}`}
+                        label={`${item.title ?? t("practitioner.account.specialtyFallback")}${item.isPrimary ? ` · ${t("practitioner.account.primary")}` : ""}`}
                         status={item.isPrimary ? "success" : "default"}
                       />
                     ))
@@ -602,6 +460,45 @@ export default function PractitionerAccountScreen() {
                   {t("practitioner.account.specialtiesNote")}
                 </Text>
               </View>
+
+              <View style={styles.detailGroup}>
+                <Text weight="600" style={styles.subsectionTitle} color={theme.colors.textPrimary}>
+                  {t("practitioner.account.moreDetails.applicationTitle")}
+                </Text>
+                <View style={styles.readOnlyList}>
+                  <InfoRow
+                    label={t("practitioner.account.statusCard.rows.applicationStatus")}
+                    value={applicationStatusLabel}
+                  />
+                  <InfoRow
+                    label={t("practitioner.account.fields.applicationSubmittedAt")}
+                    value={application?.submittedAt ? formatDateTime(application.submittedAt, locale) : t("practitioner.account.unknown")}
+                  />
+                  <InfoRow
+                    label={t("practitioner.account.fields.applicationReviewedAt")}
+                    value={application?.reviewedAt ? formatDateTime(application.reviewedAt, locale) : t("practitioner.account.unknown")}
+                  />
+                </View>
+              </View>
+
+              <View style={styles.detailGroup}>
+                <Text weight="600" style={styles.subsectionTitle} color={theme.colors.textPrimary}>
+                  {t("practitioner.account.moreDetails.payoutTitle")}
+                </Text>
+                <View style={styles.readOnlyList}>
+                  <InfoRow
+                    label={t("practitioner.account.fields.payoutMethodType")}
+                    value={payoutMethodLabel(profile.payoutDestination?.methodType, t) ?? t("practitioner.account.unknown")}
+                  />
+                  <InfoRow
+                    label={t("practitioner.account.statusCard.rows.payoutStatus")}
+                    value={payoutDataStatusLabel}
+                  />
+                </View>
+                <Text color={theme.colors.textMuted} style={styles.noteText}>
+                  {t("practitioner.account.payoutReadOnlyNote")}
+                </Text>
+              </View>
             </View>
           ) : null}
         </Card>
@@ -610,116 +507,46 @@ export default function PractitionerAccountScreen() {
   );
 }
 
-function buildPayload(form: FormState, profile: PractitionerProfile): UpdatePractitionerProfileRequest {
-  const languages = form.languageCodes
-    .split(",")
-    .map((item) => item.trim().toLowerCase())
-    .filter(Boolean);
-
-  const years = form.yearsOfExperience.trim();
-
-  return {
-    displayName: form.displayName.trim() || profile.displayName || undefined,
-    professionalTitle: form.professionalTitle.trim() || undefined,
-    bio: form.bio.trim() || undefined,
-    countryCode: form.countryCode.trim().toUpperCase() || undefined,
-    yearsOfExperience: years ? Number(years) : undefined,
-    practitionerType: (form.practitionerType || undefined) as UpdatePractitionerProfileRequest["practitionerType"],
-    practitionerGender: (form.practitionerGender || undefined) as UpdatePractitionerProfileRequest["practitionerGender"],
-    locale: (form.locale || undefined) as "ar" | "en" | undefined,
-    timezone: form.timezone.trim() || undefined,
-    languageCodes: languages.length ? languages : undefined,
-  };
-}
-
-function ListItem({
+function InfoRow({
   label,
   value,
+  multiline = false,
 }: {
   label: string;
-  value: string | number | null | undefined;
+  value: string;
+  multiline?: boolean;
 }) {
   const { theme } = useTheme();
+  const { t } = useTranslation();
 
   return (
-    <View style={styles.listItem}>
-      <Text color={theme.colors.textMuted} style={styles.listLabel}>
+    <View style={styles.infoRow}>
+      <Text color={theme.colors.textMuted} style={styles.infoLabel}>
         {label}
       </Text>
-      <Text weight="600" style={styles.listValue}>
-        {value && String(value).trim() ? String(value) : "-"}
+      <Text
+        weight="600"
+        style={[styles.infoValue, multiline ? styles.infoValueMultiline : null]}
+        numberOfLines={multiline ? undefined : 2}
+      >
+        {value && String(value).trim() ? value : t("practitioner.account.unknown")}
       </Text>
     </View>
   );
 }
 
-function SummaryRow({
-  label,
-  value,
-}: {
-  label: string;
-  value: string;
-}) {
+function CompactField({ label, value }: { label: string; value: string }) {
   const { theme } = useTheme();
+  const { t } = useTranslation();
 
   return (
-    <View style={styles.summaryRow}>
-      <Text color={theme.colors.textMuted} style={styles.summaryLabel}>
+    <View style={styles.compactField}>
+      <Text color={theme.colors.textMuted} style={styles.compactFieldLabel}>
         {label}
       </Text>
-      <Text weight="600" style={styles.summaryValue}>
-        {value}
+      <Text weight="600" color={theme.colors.textPrimary} style={styles.compactFieldValue} numberOfLines={2}>
+        {value && String(value).trim() ? value : t("practitioner.account.unknown")}
       </Text>
-    </View>
-  );
-}
-
-function ChoiceGroup({
-  label,
-  value,
-  options,
-  onChange,
-}: {
-  label: string;
-  value: string;
-  options: Array<{ value: string; label: string }>;
-  onChange: (value: string) => void;
-}) {
-  const { theme } = useTheme();
-
-  return (
-    <View style={styles.choiceSection}>
-      <Text color={theme.colors.textSecondary} style={styles.choiceLabel}>
-        {label}
-      </Text>
-      <View style={styles.choiceRow}>
-        {options.map((option) => {
-          const selected = value === option.value;
-
-          return (
-            <TouchableOpacity
-              key={option.value}
-              style={[
-                styles.choicePill,
-                {
-                  backgroundColor: selected ? theme.colors.primaryLight : theme.colors.surfaceSecondary,
-                  borderColor: selected ? theme.colors.primary : theme.colors.borderLight,
-                },
-              ]}
-              onPress={() => onChange(option.value)}
-              activeOpacity={0.85}
-            >
-              <Text
-                weight="600"
-                style={styles.choiceText}
-                color={selected ? theme.colors.primary : theme.colors.textPrimary}
-              >
-                {option.label}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
     </View>
   );
 }
@@ -729,68 +556,181 @@ const styles = StyleSheet.create({
     padding: 6,
   },
   content: {
-    paddingHorizontal: 24,
-    paddingTop: 18,
-    paddingBottom: 28,
-    gap: 14,
+    paddingHorizontal: 20,
+    paddingTop: 14,
+    paddingBottom: 24,
+    gap: 12,
   },
-  heroCard: {
-    gap: 14,
+  summaryCard: {
+    gap: 10,
   },
-  sectionCard: {
-    gap: 2,
-  },
-  heroTopRow: {
+  summaryTopRow: {
     flexDirection: "row",
     alignItems: "flex-start",
     gap: 12,
   },
   avatarWrap: {
-    width: 56,
+    width: 52,
     alignItems: "center",
     justifyContent: "center",
   },
   avatar: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
     alignItems: "center",
     justifyContent: "center",
   },
   avatarImage: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
   },
   avatarText: {
-    fontSize: 18,
+    fontSize: 17,
   },
-  heroTextWrap: {
+  summaryCopy: {
     flex: 1,
-    gap: 3,
+    gap: 2,
   },
-  heroTitle: {
-    fontSize: 22,
+  displayName: {
+    fontSize: 20,
+    lineHeight: 26,
   },
-  heroSubtitle: {
-    fontSize: 14,
-    lineHeight: 20,
+  professionalTitle: {
+    fontSize: 13,
+    lineHeight: 19,
   },
-  heroMeta: {
+  specialtyText: {
     fontSize: 12,
     lineHeight: 18,
   },
   badgeRow: {
     flexDirection: "row",
     flexWrap: "wrap",
+    gap: 6,
+  },
+  helperText: {
+    fontSize: 12,
+    lineHeight: 18,
+  },
+  sectionCard: {
     gap: 8,
   },
-  heroSummary: {
-    gap: 10,
-    marginTop: 2,
+  compactGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
   },
-  rowPad: {
-    paddingHorizontal: 16,
+  compactField: {
+    width: "48%",
+    gap: 3,
+    paddingVertical: 2,
+  },
+  compactFieldLabel: {
+    fontSize: 11,
+    lineHeight: 16,
+  },
+  compactFieldValue: {
+    fontSize: 13,
+    lineHeight: 19,
+  },
+  readOnlyList: {
+    gap: 8,
+  },
+  infoRow: {
+    gap: 3,
+    paddingVertical: 1,
+  },
+  infoLabel: {
+    fontSize: 12,
+    lineHeight: 17,
+  },
+  infoValue: {
+    fontSize: 14,
+    lineHeight: 21,
+  },
+  infoValueMultiline: {
+    lineHeight: 22,
+  },
+  approvedNoteBox: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    borderWidth: 1,
+    borderColor: "#d1fae5",
+    backgroundColor: "#f0fdf4",
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  approvedNoteText: {
+    flex: 1,
+    fontSize: 12,
+    lineHeight: 18,
+  },
+  notesBlock: {
+    gap: 8,
+  },
+  subsectionTitle: {
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  chipRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  actionList: {
+    gap: 0,
+    overflow: "hidden",
+  },
+  actionIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  moreToggle: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+  },
+  moreToggleCopy: {
+    flex: 1,
+    gap: 4,
+  },
+  sectionTitle: {
+    fontSize: 15,
+    lineHeight: 21,
+  },
+  sectionSubtitle: {
+    fontSize: 12,
+    lineHeight: 18,
+  },
+  moreDetailsBody: {
+    marginTop: 14,
+    gap: 12,
+  },
+  detailGroup: {
+    gap: 10,
+  },
+  noteText: {
+    fontSize: 12,
+    lineHeight: 18,
+  },
+  bioCard: {
+    gap: 8,
+  },
+  bioTitle: {
+    fontSize: 15,
+    lineHeight: 21,
+  },
+  bioBody: {
+    fontSize: 13,
+    lineHeight: 20,
   },
   inlineBadge: {
     minWidth: 28,
@@ -798,125 +738,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
     alignItems: "center",
-  },
-  summaryRow: {
-    gap: 4,
-  },
-  summaryLabel: {
-    fontSize: 12,
-  },
-  summaryValue: {
-    fontSize: 15,
-    lineHeight: 22,
-  },
-  sectionHeaderBlock: {
-    gap: 4,
-    marginBottom: 12,
-  },
-  sectionHeaderTextBlock: {
-    gap: 4,
-  },
-  sectionTitle: {
-    fontSize: 18,
-  },
-  sectionSubtitle: {
-    fontSize: 13,
-    lineHeight: 20,
-  },
-  bioInput: {
-    minHeight: 100,
-    textAlignVertical: "top",
-    paddingTop: 14,
-  },
-  secondaryToggle: {
-    marginTop: 8,
-    paddingVertical: 12,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 12,
-  },
-  secondaryToggleCopy: {
-    flex: 1,
-    gap: 4,
-  },
-  secondaryToggleTitle: {
-    fontSize: 14,
-  },
-  secondaryToggleSubtitle: {
-    fontSize: 12,
-    lineHeight: 18,
-  },
-  advancedFields: {
-    gap: 4,
-    marginTop: 4,
-  },
-  payoutActions: {
-    gap: 10,
-    marginTop: 10,
-  },
-  moreDetailsToggle: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 12,
-  },
-  moreDetailsBody: {
-    marginTop: 16,
-    gap: 18,
-  },
-  detailBlock: {
-    gap: 12,
-  },
-  subsectionTitle: {
-    fontSize: 15,
-  },
-  detailList: {
-    gap: 12,
-  },
-  detailListTopGap: {
-    marginTop: 10,
-  },
-  listItem: {
-    gap: 4,
-    paddingVertical: 2,
-  },
-  listLabel: {
-    fontSize: 12,
-  },
-  listValue: {
-    fontSize: 15,
-    lineHeight: 21,
-  },
-  chipRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-  },
-  noteText: {
-    marginTop: 8,
-    fontSize: 12,
-    lineHeight: 18,
-  },
-  choiceSection: {
-    marginBottom: 16,
-    gap: 12,
-  },
-  choiceLabel: {
-    fontSize: 13,
-  },
-  choiceRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-  },
-  choicePill: {
-    borderWidth: 1,
-    borderRadius: 16,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-  },
-  choiceText: {
-    fontSize: 13,
   },
 });

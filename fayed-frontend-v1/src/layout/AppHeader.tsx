@@ -61,8 +61,8 @@ const AppHeader: React.FC<AppHeaderProps> = ({ messagingRole }) => {
           <LanguageSwitcher />
           <ThemeToggleButton />
           {messagingRole ? <MessagesHeaderButton role={messagingRole} /> : null}
-          {messagingRole === "practitioner" ? (
-            <UserNotificationDropdown role="practitioner" />
+          {messagingRole && messagingRole !== "admin" ? (
+            <UserNotificationDropdown role={messagingRole} />
           ) : null}
           <NotificationDropdown />
           <div className="ml-1.5 shrink-0">

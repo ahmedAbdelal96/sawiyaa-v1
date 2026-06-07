@@ -69,16 +69,9 @@ export class ListFeaturedPractitionersPlacementsDto {
 }
 
 export class CreateFeaturedPractitionerPlacementDto {
-  @ApiPropertyOptional({ format: 'uuid' })
-  @IsOptional()
+  @ApiProperty({ format: 'uuid' })
   @IsUUID()
-  practitionerId?: string;
-
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsString()
-  @MaxLength(191)
-  practitionerSlug?: string;
+  practitionerId: string;
 
   @ApiProperty({ enum: PractitionerMarketingPlacementSurface })
   @IsEnum(PractitionerMarketingPlacementSurface)
@@ -204,4 +197,3 @@ export class PlacementActionNoteDto {
   @MaxLength(1000)
   note?: string;
 }
-

@@ -59,7 +59,7 @@ import { RetryPaymentRefundUseCase } from './use-cases/retry-payment-refund.use-
 @Module({
   imports: [
     forwardRef(() => PackagePlansModule),
-    SessionsModule,
+    forwardRef(() => SessionsModule),
     FinancialRulesModule,
     FinancialOperationsModule,
     PaymentGatewayControlModule,

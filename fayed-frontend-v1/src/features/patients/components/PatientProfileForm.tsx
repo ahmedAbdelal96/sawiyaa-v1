@@ -28,7 +28,6 @@ type ProfileFormData = {
   dateOfBirth?: string;
   gender?: "male" | "female" | "";
   locale?: "ar" | "en" | "";
-  countryCode?: string;
   timezone?: string;
 };
 
@@ -136,7 +135,6 @@ export default function PatientProfileForm() {
         dateOfBirth: z.string().optional(),
         gender: z.enum(["male", "female", ""]).optional(),
         locale: z.enum(["ar", "en", ""]).optional(),
-        countryCode: z.string().max(10, { message: t("validation.countryCodeMax") }).optional(),
         timezone: z.string().max(60, { message: t("validation.timezoneMax") }).optional(),
       }),
     [t]
@@ -155,7 +153,6 @@ export default function PatientProfileForm() {
       dateOfBirth: "",
       gender: "",
       locale: "",
-      countryCode: "",
       timezone: "",
     },
   });
@@ -170,7 +167,6 @@ export default function PatientProfileForm() {
       dateOfBirth: profile.dateOfBirth ?? "",
       gender: (profile.gender as "male" | "female" | "") ?? "",
       locale: (profile.locale as "ar" | "en" | "") ?? "",
-      countryCode: profile.countryCode ?? "",
       timezone: profile.timezone ?? "",
     });
   }, [profile, reset]);
@@ -186,7 +182,6 @@ export default function PatientProfileForm() {
       dateOfBirth: profile.dateOfBirth ?? "",
       gender: (profile.gender as "male" | "female" | "") ?? "",
       locale: (profile.locale as "ar" | "en" | "") ?? "",
-      countryCode: profile.countryCode ?? "",
       timezone: profile.timezone ?? "",
     });
     setIsEditModalOpen(true);
@@ -212,9 +207,6 @@ export default function PatientProfileForm() {
     }
     if (formData.locale === "ar" || formData.locale === "en") {
       payload.locale = formData.locale;
-    }
-    if (formData.countryCode !== undefined) {
-      payload.countryCode = formData.countryCode || null;
     }
     if (formData.timezone !== undefined) {
       payload.timezone = formData.timezone || undefined;
@@ -559,20 +551,7 @@ export default function PatientProfileForm() {
             </select>
           </div>
 
-          <div>
-            <Label htmlFor="countryCode">{t("fields.countryCode.label")}</Label>
-            <Input
-              id="countryCode"
-              type="text"
-              placeholder={t("fields.countryCode.placeholder")}
-              error={!!errors.countryCode}
-              {...register("countryCode")}
-            />
-            {errors.countryCode ? (
-              <p className="mt-1.5 text-xs text-error-500">{errors.countryCode.message}</p>
-            ) : null}
-          </div>
-
+          
           <div className="sm:col-span-2">
             <Label htmlFor="timezone">{t("fields.timezone.label")}</Label>
             <Input

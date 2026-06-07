@@ -21,8 +21,10 @@ export type FeaturedPlacementHistoryAction =
 export interface AdminFeaturedPractitionerSummary {
   id: string;
   slug: string;
+  status: string;
   displayName: string | null;
   professionalTitle: string | null;
+  avatarUrl: string | null;
 }
 
 export interface AdminFeaturedActorSummary {
@@ -71,8 +73,7 @@ export interface ListAdminFeaturedPlacementsParams {
 }
 
 export interface CreateAdminFeaturedPlacementInput {
-  practitionerId?: string;
-  practitionerSlug?: string;
+  practitionerId: string;
   surface: FeaturedPlacementSurface;
   startsAt: string;
   endsAt?: string;

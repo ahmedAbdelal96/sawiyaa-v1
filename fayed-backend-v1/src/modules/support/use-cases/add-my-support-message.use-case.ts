@@ -5,6 +5,7 @@ import { SupportTicketAccessPolicy } from '../policies/support-ticket-access.pol
 import { SupportPresenter } from '../presenters/support.presenter';
 import { SupportActorRepository } from '../repositories/support-actor.repository';
 import { SupportTicketRepository } from '../repositories/support-ticket.repository';
+import { OperationalNotificationService } from '@modules/notifications/services/operational-notification.service';
 import { SupportActorKind } from '../types/support.types';
 
 @Injectable()
@@ -16,6 +17,7 @@ export class AddMySupportMessageUseCase {
     private readonly supportTicketRepository: SupportTicketRepository,
     private readonly supportTicketAccessPolicy: SupportTicketAccessPolicy,
     private readonly supportPresenter: SupportPresenter,
+    private readonly operationalNotificationService: OperationalNotificationService,
   ) {}
 
   async execute(input: {
@@ -35,6 +37,19 @@ export class AddMySupportMessageUseCase {
           : ConversationParticipantRole.PRACTITIONER,
       message: input.payload.message.trim(),
     });
+
+    const messageId =
+      updated.conversation.messages[updated.conversation.messages.length - 1]
+        ?.id;
+    if (messageId) {
+      await this.operationalNotificationService.notifyConversationMessage({
+        lane: 'SUPPORT',
+        threadId: input.ticketId,
+        messageId,
+        senderUserId: input.userId,
+        participants: updated.conversation.participants,
+      });
+    }
 
     this.logger.log(
       `Support message added by ${input.actorKind} (ticket=${ticket.id}, user=${input.userId})`,

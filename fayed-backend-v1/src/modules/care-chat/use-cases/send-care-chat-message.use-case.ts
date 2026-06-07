@@ -5,6 +5,7 @@ import { CareChatPresenter } from '../presenters/care-chat.presenter';
 import { CareChatActorRepository } from '../repositories/care-chat-actor.repository';
 import { CareChatConversationRepository } from '../repositories/care-chat-conversation.repository';
 import { ValidateCareChatSendMessageService } from '../services/validate-care-chat-send-message.service';
+import { OperationalNotificationService } from '@modules/notifications/services/operational-notification.service';
 
 @Injectable()
 export class SendCareChatMessageUseCase {
@@ -15,6 +16,7 @@ export class SendCareChatMessageUseCase {
     private readonly careChatConversationRepository: CareChatConversationRepository,
     private readonly validateCareChatSendMessageService: ValidateCareChatSendMessageService,
     private readonly careChatPresenter: CareChatPresenter,
+    private readonly operationalNotificationService: OperationalNotificationService,
   ) {}
 
   async execute(input: {
@@ -67,6 +69,17 @@ export class SendCareChatMessageUseCase {
       senderRole,
       message: input.payload.message.trim(),
     });
+
+    const messageId = updated.messages[updated.messages.length - 1]?.id;
+    if (messageId) {
+      await this.operationalNotificationService.notifyConversationMessage({
+        lane: 'CARE_CHAT',
+        threadId: input.conversationId,
+        messageId,
+        senderUserId: input.userId,
+        participants: updated.participants,
+      });
+    }
 
     await this.careChatConversationRepository.markRead({
       conversationId: updated.id,

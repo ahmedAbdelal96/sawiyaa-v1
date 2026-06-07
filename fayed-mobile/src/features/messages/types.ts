@@ -21,6 +21,22 @@ export type GeneralChatConversationStatus =
   | "SUSPENDED"
   | string;
 
+export type GeneralChatAvailabilityReason =
+  | "ALLOWED"
+  | "SESSION_NOT_STARTED"
+  | "SESSION_ENDED"
+  | "SESSION_CANCELLED"
+  | "CONVERSATION_CLOSED"
+  | "MODERATION_LOCKED"
+  | "NOT_PARTICIPANT";
+
+export interface GeneralChatAvailability {
+  canRead: boolean;
+  canSend: boolean;
+  readOnly: boolean;
+  reason: GeneralChatAvailabilityReason;
+}
+
 export type GeneralChatMessageType =
   | "TEXT"
   | "SYSTEM"
@@ -66,6 +82,7 @@ export interface GeneralChatConversationListItemDto {
   hasUnread: boolean;
   lastReadMessageId: string | null;
   lastReadAt: string | null;
+  chatAvailability: GeneralChatAvailability;
 }
 
 export interface GeneralChatConversationDetailItemDto
@@ -185,6 +202,7 @@ export interface GeneralChatConversationIdentityDto {
   linkedSessionId: string | null;
   participants: GeneralChatParticipantSummaryDto[];
   wasCreated: boolean;
+  chatAvailability: GeneralChatAvailability;
 }
 
 export interface GeneralChatOpenSessionResponse {

@@ -6,7 +6,12 @@ import {
 } from '@nestjs/common';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { AuthenticatedUser } from '@common/interfaces/authenticated-user.interface';
-import { ConversationParticipantRole } from '@prisma/client';
+import {
+  ConversationParticipantRole,
+  SessionMode,
+  SessionProvider,
+  SessionStatus,
+} from '@prisma/client';
 import { createHash } from 'crypto';
 import { CreateGeneralChatConversationDto } from '../dto/create-general-chat-conversation.dto';
 import {
@@ -15,6 +20,7 @@ import {
 } from '../helpers/general-chat-identity.mapper';
 import { GeneralChatActorRepository } from '../repositories/general-chat-actor.repository';
 import { GeneralChatRepository } from '../repositories/general-chat.repository';
+import { GeneralChatAvailabilityService } from '../services/general-chat-availability.service';
 import {
   GENERAL_CHAT_ERROR_CODES,
   GENERAL_CHAT_ALLOWED_CONVERSATION_STATUS,
@@ -27,6 +33,7 @@ export class CreateOrGetGeneralChatConversationUseCase {
   constructor(
     private readonly generalChatRepository: GeneralChatRepository,
     private readonly generalChatActorRepository: GeneralChatActorRepository,
+    private readonly generalChatAvailabilityService: GeneralChatAvailabilityService,
     private readonly validateGeneralChatParticipantPolicyService: ValidateGeneralChatParticipantPolicyService,
   ) {}
 
@@ -200,8 +207,30 @@ export class CreateOrGetGeneralChatConversationUseCase {
       id: string;
       conversationType: string;
       status: string;
+      closedAt: Date | null;
+      adminSendingDisabledAt: Date | null;
+      adminSendingDisabledByUserId: string | null;
+      adminSendingDisabledReason: string | null;
+      adminSendingEnabledAt: Date | null;
+      adminSendingEnabledByUserId: string | null;
+      practitionerSendingDisabledAt: Date | null;
+      practitionerSendingDisabledByUserId: string | null;
+      practitionerSendingDisabledReason: string | null;
+      practitionerSendingEnabledAt: Date | null;
+      practitionerSendingEnabledByUserId: string | null;
       supportTicket: { id: string } | null;
       chatApprovalRequest: { id: string } | null;
+      session:
+        | {
+            status: string;
+            sessionMode: string;
+            scheduledStartAt: Date | null;
+            scheduledEndAt: Date | null;
+            provider: string;
+            providerRoomId: string | null;
+            providerSessionRef: string | null;
+          }
+        | null;
       participants: Array<{ userId: string }>;
     },
     actorUserId: string,
@@ -246,6 +275,33 @@ export class CreateOrGetGeneralChatConversationUseCase {
       conversationType: string;
       status: string;
       sessionId: string | null;
+      closedAt: Date | null;
+      adminSendingDisabledAt: Date | null;
+      adminSendingDisabledByUserId: string | null;
+      adminSendingDisabledReason: string | null;
+      adminSendingEnabledAt: Date | null;
+      adminSendingEnabledByUserId: string | null;
+      practitionerSendingDisabledAt: Date | null;
+      practitionerSendingDisabledByUserId: string | null;
+      practitionerSendingDisabledReason: string | null;
+      practitionerSendingEnabledAt: Date | null;
+      practitionerSendingEnabledByUserId: string | null;
+      supportTicket: { id: string } | null;
+      chatApprovalRequest: { id: string } | null;
+      session:
+        | {
+            id: string;
+            status: SessionStatus;
+            sessionMode: SessionMode;
+            scheduledStartAt: Date | null;
+            scheduledEndAt: Date | null;
+            provider: SessionProvider;
+            providerRoomId: string | null;
+            providerSessionRef: string | null;
+          }
+        | null;
+      createdAt: Date;
+      updatedAt: Date;
       participants: Array<{
         userId: string;
         participantRole: ConversationParticipantRole;
@@ -260,6 +316,38 @@ export class CreateOrGetGeneralChatConversationUseCase {
     const participantDirectory = buildGeneralChatParticipantDirectoryMap(
       participantDirectoryRecords,
     );
+    const chatAvailability =
+      this.generalChatAvailabilityService.resolveAvailability({
+        conversation: {
+          status: conversation.status as never,
+          closedAt: conversation.closedAt,
+          adminLock: {
+            disabledAt: conversation.adminSendingDisabledAt,
+            disabledByUserId: conversation.adminSendingDisabledByUserId,
+            disabledReason: conversation.adminSendingDisabledReason,
+            enabledAt: conversation.adminSendingEnabledAt,
+            enabledByUserId: conversation.adminSendingEnabledByUserId,
+          },
+          practitionerLock: {
+            disabledAt: conversation.practitionerSendingDisabledAt,
+            disabledByUserId: conversation.practitionerSendingDisabledByUserId,
+            disabledReason: conversation.practitionerSendingDisabledReason,
+            enabledAt: conversation.practitionerSendingEnabledAt,
+            enabledByUserId: conversation.practitionerSendingEnabledByUserId,
+          },
+        },
+        linkedSession: conversation.session
+          ? {
+              status: conversation.session.status,
+              sessionMode: conversation.session.sessionMode,
+              scheduledStartAt: conversation.session.scheduledStartAt,
+              scheduledEndAt: conversation.session.scheduledEndAt,
+              provider: conversation.session.provider,
+              providerRoomId: conversation.session.providerRoomId,
+              providerSessionRef: conversation.session.providerSessionRef,
+            }
+          : null,
+      });
 
     return {
       conversationId: conversation.id,
@@ -271,6 +359,7 @@ export class CreateOrGetGeneralChatConversationUseCase {
         buildGeneralChatParticipantSummary(participant, participantDirectory),
       ),
       wasCreated,
+      chatAvailability,
     };
   }
 }

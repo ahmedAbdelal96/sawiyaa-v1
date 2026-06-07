@@ -19,7 +19,9 @@ export function presentPlacement(item: {
   practitioner?: {
     id: string;
     publicSlug: string;
+    status: string;
     professionalTitle: string | null;
+    avatarUrl: string | null;
     user: { id: string; displayName: string | null };
   } | null;
   createdByAdmin?: { id: string; displayName: string | null } | null;
@@ -31,8 +33,10 @@ export function presentPlacement(item: {
       ? {
           id: item.practitioner.id,
           slug: item.practitioner.publicSlug,
+          status: item.practitioner.status,
           displayName: item.practitioner.user.displayName,
           professionalTitle: item.practitioner.professionalTitle,
+          avatarUrl: item.practitioner.avatarUrl,
         }
       : null,
     practitionerId: item.practitionerId,
@@ -63,4 +67,3 @@ export function presentPlacement(item: {
     updatedAt: item.updatedAt.toISOString(),
   };
 }
-

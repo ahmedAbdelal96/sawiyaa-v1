@@ -1,4 +1,5 @@
 import SignUpForm, { type SignUpMode } from "@/components/auth/SignUpForm";
+import PatientSignUpForm from "@/components/auth/PatientSignUpForm";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import type { Metadata } from "next";
 
@@ -22,5 +23,8 @@ export default async function SignUp({ params, searchParams }: Props) {
   setRequestLocale(locale);
 
   const signUpMode: SignUpMode = mode === "practitioner" ? "practitioner" : "patient";
+  if (signUpMode === "patient") {
+    return <PatientSignUpForm callbackUrl={callbackUrl} />;
+  }
   return <SignUpForm mode={signUpMode} />;
 }

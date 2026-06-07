@@ -12,7 +12,10 @@ import { useAuth } from "../../../src/providers/AuthProvider";
 import { useTheme } from "../../../src/providers/ThemeProvider";
 import { useTranslation } from "react-i18next";
 import { extractApiErrorMessage } from "../../../src/lib/api";
-import type { OtpChallengeResponse } from "../../../src/features/auth/contracts";
+import type {
+  OtpChallengeResponse,
+  PractitionerLoginResponse,
+} from "../../../src/features/auth/contracts";
 
 function validateEmail(email: string) {
   return /\S+@\S+\.\S+/.test(email.trim());
@@ -49,7 +52,7 @@ const DEV_ACCOUNTS = [
 export default function PractitionerSignInScreen() {
   const router = useRouter();
   const { theme } = useTheme();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { startPractitionerLogin, verifyPractitionerOtp } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -58,6 +61,13 @@ export default function PractitionerSignInScreen() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorText, setErrorText] = useState<string | null>(null);
   const [infoText, setInfoText] = useState<string | null>(null);
+
+  const isArabic = i18n.language?.startsWith("ar");
+  const practitionerEyebrow = isArabic ? "دخول المختص" : t("auth.practitionerSignIn.eyebrow");
+  const practitionerTitle = isArabic ? "ادخل إلى مساحة عملك كمختص" : t("auth.practitionerSignIn.title");
+  const practitionerSubtitle = isArabic
+    ? "في وضع التطوير الحالي، إذا رجع السيرفر جلسة مباشرة سيتم الدخول فورًا بدون OTP."
+    : t("auth.practitionerSignIn.subtitle");
 
   const emailError = useMemo(() => {
     if (!email) {
@@ -77,7 +87,12 @@ export default function PractitionerSignInScreen() {
         email: email.trim(),
         password,
       });
-      setChallenge(response);
+      if (isOtpChallengeResponse(response)) {
+        setChallenge(response);
+      } else {
+        // Dev compatibility: backend may return direct authenticated session.
+        setChallenge(null);
+      }
       setInfoText(response.message);
     } catch (error) {
       setErrorText(extractApiErrorMessage(error));
@@ -108,9 +123,9 @@ export default function PractitionerSignInScreen() {
 
   return (
     <AuthScaffold
-      eyebrow={t("auth.practitionerSignIn.eyebrow")}
-      title={t("auth.practitionerSignIn.title")}
-      subtitle={t("auth.practitionerSignIn.subtitle")}
+      eyebrow={practitionerEyebrow}
+      title={practitionerTitle}
+      subtitle={practitionerSubtitle}
       footer={
         <TouchableOpacity onPress={() => router.replace("/(auth)")}>
           <Text color={theme.colors.textMuted} style={styles.backText}>
@@ -194,7 +209,9 @@ export default function PractitionerSignInScreen() {
             title={
               isSubmitting
                 ? t("auth.common.pleaseWait")
-                : t("auth.practitionerSignIn.submit")
+                : isArabic
+                  ? "دخول المختص"
+                  : t("auth.practitionerSignIn.submit")
             }
             onPress={() => void submitCredentials()}
             disabled={
@@ -205,13 +222,13 @@ export default function PractitionerSignInScreen() {
 
           <View style={styles.rowWrap}>
             <Text color={theme.colors.textSecondary}>
-              {t("auth.practitionerSignIn.noAccount")}
+              {isArabic ? "ليس لديك حساب مختص؟" : t("auth.practitionerSignIn.noAccount")}
             </Text>
             <TouchableOpacity
               onPress={() => router.push("/(auth)/signup/practitioner")}
             >
               <Text color={theme.colors.textBrand} weight="600">
-                {t("auth.practitionerSignIn.createAccount")}
+                {isArabic ? "سجل عبر الويب" : t("auth.practitionerSignIn.createAccount")}
               </Text>
             </TouchableOpacity>
           </View>
@@ -245,7 +262,9 @@ export default function PractitionerSignInScreen() {
             </Text>
             <Text color={theme.colors.textMuted} style={styles.challengeMeta}>
               {t("auth.practitionerSignIn.challengeExpires", {
-                expiresAt: new Date(challenge.expiresAt).toLocaleString(),
+                expiresAt: challenge.expiresAt
+                  ? new Date(challenge.expiresAt).toLocaleString()
+                  : "—",
               })}
             </Text>
           </View>
@@ -290,6 +309,7 @@ export default function PractitionerSignInScreen() {
               setErrorText(null);
               setInfoText(null);
             }}
+            style={styles.primaryButton}
           />
         </>
       )}
@@ -301,43 +321,57 @@ export default function PractitionerSignInScreen() {
   );
 }
 
+function isOtpChallengeResponse(
+  response: PractitionerLoginResponse,
+): response is OtpChallengeResponse {
+  return (
+    typeof response === "object" &&
+    response !== null &&
+    "challengeId" in response
+  );
+}
+
 const styles = StyleSheet.create({
   devBox: {
     borderRadius: 12,
     borderWidth: 1,
     borderColor: "#3f7dcf33",
     backgroundColor: "#3f7dcf0a",
-    padding: 12,
-    marginBottom: 16,
+    padding: 9,
+    marginBottom: 12,
   },
   devLabel: {
     fontSize: 10,
     fontWeight: "700",
     letterSpacing: 1,
-    marginBottom: 8,
+    marginBottom: 6,
     textTransform: "uppercase",
   },
   devRow: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 8,
+    gap: 6,
   },
   devChip: {
     borderWidth: 1,
-    borderRadius: 20,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    borderRadius: 18,
+    paddingHorizontal: 9,
+    paddingVertical: 4,
   },
   devChipText: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: "600",
   },
   inlineLink: {
-    fontSize: 13,
-    marginBottom: 14,
+    fontSize: 12,
+    marginBottom: 10,
   },
   primaryButton: {
-    marginBottom: 14,
+    minHeight: 46,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    marginBottom: 10,
   },
   rowWrap: {
     flexDirection: "row",
@@ -347,35 +381,35 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: 13,
-    marginBottom: 12,
+    marginBottom: 8,
   },
   infoText: {
     fontSize: 13,
-    marginBottom: 12,
+    marginBottom: 8,
   },
   challengeCard: {
     borderWidth: 1,
-    borderRadius: 18,
-    padding: 14,
-    marginBottom: 16,
+    borderRadius: 16,
+    padding: 11,
+    marginBottom: 12,
   },
   challengeTitle: {
-    fontSize: 16,
-    marginBottom: 6,
+    fontSize: 14,
+    marginBottom: 4,
   },
   challengeBody: {
-    fontSize: 14,
-    lineHeight: 22,
-    marginBottom: 6,
+    fontSize: 12,
+    lineHeight: 18,
+    marginBottom: 4,
   },
   challengeMeta: {
-    fontSize: 12,
+    fontSize: 10,
   },
   backText: {
-    fontSize: 13,
+    fontSize: 12,
     textAlign: "center",
   },
   loader: {
-    marginTop: 12,
+    marginTop: 10,
   },
 });

@@ -1,66 +1,87 @@
 {
   "meta": {
-    "title": "Featured specialists",
-    "description": "Manage specialists who appear as featured picks on home and discovery."
+    "title": "Featured practitioners",
+    "description": "Choose existing practitioners for marketing placements and manage their visibility windows."
   },
   "eyebrow": "Featured management",
-  "title": "Featured specialists",
-  "subtitle": "Manage specialists who appear as featured picks on home and discovery.",
+  "title": "Featured practitioners",
+  "subtitle": "Choose existing practitioners for marketing placements and manage their visibility windows.",
   "summary": {
-    "total": "Total placements",
-    "active": "Active now"
+    "total": "Total items",
+    "active": "Active now",
+    "scheduled": "Scheduled",
+    "inactive": "Expired / inactive"
   },
   "table": {
-    "practitioner": "Specialist",
-    "surface": "Surface",
+    "practitioner": "Practitioner",
+    "surface": "Placement",
     "status": "Status",
-    "startsAt": "Start date",
-    "endsAt": "End date",
-    "priority": "Priority",
+    "startsAt": "Starts at",
+    "endsAt": "Ends at",
+    "priority": "Order",
     "reason": "Reason",
     "badge": "Badge",
     "campaign": "Campaign",
-    "updatedAt": "Last update"
+    "updatedAt": "Updated"
   },
   "filters": {
     "all": "All",
+    "search": "Search practitioner",
+    "searchPlaceholder": "Search by name, slug, email, or title",
     "status": "Status",
-    "surface": "Surface",
-    "reason": "Reason",
-    "practitionerSearch": "Search specialist",
-    "practitionerSearchPlaceholder": "Search by name, title, or slug",
+    "surface": "Placement",
     "startsFrom": "Starts from",
     "endsTo": "Ends to"
   },
   "actions": {
-    "add": "Add featured specialist",
+    "add": "Add featured practitioner",
     "edit": "Edit",
-    "pause": "Pause",
+    "end": "End visibility",
     "resume": "Resume",
     "history": "History",
+    "openProfile": "Open profile",
     "clearFilters": "Clear filters"
   },
   "editor": {
-    "createTitle": "Add featured specialist",
-    "editTitle": "Edit featured specialist",
-    "description": "Set placement surface, time window, and marketing reason clearly.",
+    "createTitle": "Add featured practitioner",
+    "editTitle": "Edit featured placement",
+    "description": "Select a practitioner, then adjust the placement settings and time window.",
     "saving": "Saving...",
-    "createAction": "Create",
+    "createAction": "Add",
     "saveAction": "Save changes",
-    "cancelAction": "Cancel",
-    "loadingDetails": "Loading details..."
+    "cancelAction": "Cancel"
   },
-  "pause": {
-    "title": "Pause featured placement",
-    "description": "Are you sure you want to pause this placement now?",
-    "confirm": "Confirm pause",
-    "submitting": "Pausing...",
+  "picker": {
+    "searchLabel": "Choose practitioner",
+    "searchPlaceholder": "Search by name, slug, email, or title",
+    "searchHint": "Pick one existing practitioner. Identity is filled in automatically.",
+    "loading": "Loading...",
+    "resultsTitle": "Matches",
+    "resultsHint": "Select one practitioner to continue.",
+    "noResults": "No matching practitioners found.",
+    "emptySelection": "No practitioner selected yet.",
+    "clear": "Clear",
+    "verified": "Verified",
+    "notVerified": "Not verified",
+    "statusUnknown": "Unknown status",
+    "previewTitle": "Selected practitioner",
+    "previewSlug": "Slug",
+    "previewProfile": "Profile",
+    "eligibleNotice": "This practitioner looks eligible for featuring.",
+    "ineligibleWarning": "This practitioner may not be eligible. The backend will block invalid saves.",
+    "noSelection": "No selection"
+  },
+  "end": {
+    "title": "End visibility",
+    "description": "This will pause the featured placement. You can resume it later if needed.",
+    "confirm": "End visibility",
+    "submitting": "Ending...",
     "cancel": "Cancel"
   },
   "resume": {
-    "title": "Resume featured placement",
-    "description": "Are you sure you want to resume this placement now?",
-    "confirm": "Confirm resume",
+    "title": "Resume visibility",
+    "description": "Bring this placement back online if it is still valid.",
+    "confirm": "Resume",
     "submitting": "Resuming...",
     "cancel": "Cancel"
   },
@@ -80,15 +101,11 @@
     }
   },
   "fields": {
-    "practitionerId": "Specialist ID",
-    "practitionerIdPlaceholder": "Enter practitionerId (temporary)",
-    "practitionerSlug": "Specialist slug",
-    "practitionerSlugPlaceholder": "Enter practitioner slug (temporary)",
-    "surface": "Surface",
+    "surface": "Placement",
     "status": "Status",
     "startsAt": "Start date",
     "endsAt": "End date",
-    "priority": "Priority",
+    "priority": "Order",
     "badgeLabelAr": "Arabic badge label",
     "badgeLabelEn": "English badge label",
     "reason": "Reason",
@@ -101,10 +118,24 @@
     "PAUSED": "Paused",
     "EXPIRED": "Expired"
   },
+  "lifecycle": {
+    "ACTIVE": "Active",
+    "SCHEDULED": "Scheduled",
+    "EXPIRED": "Expired",
+    "PAUSED": "Paused"
+  },
+  "practitionerStatus": {
+    "APPROVED": "Approved",
+    "PENDING_REVIEW": "Pending review",
+    "REJECTED": "Rejected",
+    "SUSPENDED": "Suspended",
+    "INACTIVE": "Inactive",
+    "DRAFT": "Draft"
+  },
   "surface": {
-    "HOME": "Home",
+    "HOME": "Homepage",
     "DISCOVERY": "Discovery",
-    "ALL": "All"
+    "ALL": "All placements"
   },
   "reason": {
     "FEATURED": "Featured",
@@ -112,36 +143,37 @@
     "DISCOUNT": "Discount",
     "NEW_SPECIALIST": "New specialist",
     "HIGH_AVAILABILITY": "High availability",
-    "EDITORIAL_PICK": "Fayed editorial pick"
+    "EDITORIAL_PICK": "Editorial pick"
   },
   "states": {
-    "emptyTitle": "No featured placements yet",
-    "emptyDescription": "Add a featured specialist to show records here.",
+    "emptyTitle": "No featured items yet",
+    "emptyDescription": "Select a practitioner from the system and set the visibility window.",
     "listErrorTitle": "Unable to load data",
-    "listErrorDescription": "An error occurred while loading featured specialists.",
+    "listErrorDescription": "We could not load featured practitioner placements.",
     "retry": "Retry",
     "readOnlyTitle": "Read only",
-    "readOnlyDescription": "You do not have permission to edit this page.",
-    "ok": "OK"
+    "readOnlyDescription": "You do not have permission to edit this page."
   },
   "validation": {
-    "practitionerRequired": "Provide practitioner ID or slug.",
+    "practitionerRequired": "Select one practitioner.",
     "startsAtRequired": "Start date is required.",
-    "priorityPositive": "Priority must be a positive number.",
+    "priorityPositive": "Order must be a positive number.",
     "endsAtAfterStartsAt": "End date must be after start date."
   },
   "feedback": {
-    "createSuccess": "Featured specialist was created successfully.",
+    "createSuccess": "Featured practitioner added successfully.",
     "updateSuccess": "Placement updated successfully.",
-    "pauseSuccess": "Placement paused successfully.",
-    "resumeSuccess": "Placement resumed successfully."
+    "endSuccess": "Visibility ended successfully.",
+    "resumeSuccess": "Visibility resumed successfully."
   },
   "errors": {
-    "notFound": "Requested placement was not found.",
-    "invalidDateRange": "Invalid date range.",
-    "invalidPriority": "Invalid priority value.",
-    "resumeExpired": "Cannot resume an expired placement.",
-    "invalidPractitioner": "Invalid or unavailable specialist.",
+    "notFound": "The requested placement was not found.",
+    "invalidDateRange": "The date range is invalid.",
+    "invalidPriority": "The order value is invalid.",
+    "resumeExpired": "An expired placement cannot be resumed.",
+    "invalidPractitioner": "The selected practitioner is not eligible.",
+    "overlap": "Another active placement already exists for this practitioner and time window.",
+    "practitionerRequired": "Select a practitioner first.",
     "generic": "Something went wrong. Please try again."
   }
 }

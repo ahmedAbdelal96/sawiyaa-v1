@@ -101,7 +101,7 @@ export class GeneralChatModerationStateService {
   }
 
   resolveLockState(input: ModerationLockInput) {
-    const isActive = Boolean(input.disabledAt);
+    const isActive = this.isLockActive(input);
 
     return {
       isActive,
@@ -111,6 +111,18 @@ export class GeneralChatModerationStateService {
       enabledAt: input.enabledAt,
       enabledByUserId: input.enabledByUserId,
     };
+  }
+
+  private isLockActive(input: ModerationLockInput) {
+    if (!input.disabledAt) {
+      return false;
+    }
+
+    if (!input.enabledAt) {
+      return true;
+    }
+
+    return input.enabledAt < input.disabledAt;
   }
 
   private resolveStatus(input: {

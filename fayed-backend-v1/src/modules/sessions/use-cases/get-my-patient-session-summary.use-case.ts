@@ -1,6 +1,8 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { SessionStatus } from '@prisma/client';
 import { SessionPatientRepository } from '../repositories/session-patient.repository';
 import { SessionRepository } from '../repositories/session.repository';
+import { summarizeSessionPresentations } from '../utils/session-join-policy.util';
 
 @Injectable()
 export class GetMyPatientSessionSummaryUseCase {
@@ -21,10 +23,55 @@ export class GetMyPatientSessionSummaryUseCase {
       });
     }
 
-    const summary = await this.sessionRepository.summarizePatientSessions(
-      patient.id,
-    );
+    const sessions =
+      await this.sessionRepository.listPatientSessionSummaryCandidates(
+        patient.id,
+      );
 
-    return summary;
+    const presentationSummary = summarizeSessionPresentations(sessions);
+    const counts = sessions.reduce<Record<SessionStatus, number>>(
+      (acc, session) => {
+        acc[session.status] = (acc[session.status] ?? 0) + 1;
+        return acc;
+      },
+      {} as Record<SessionStatus, number>,
+    );
+    const getCount = (...statuses: SessionStatus[]) =>
+      statuses.reduce((sum, status) => sum + (counts[status] ?? 0), 0);
+
+    return {
+      totalItems: presentationSummary.totalItems,
+      pendingPayment: counts[SessionStatus.PENDING_PAYMENT] ?? 0,
+      pendingPractitionerResponse:
+        counts[SessionStatus.PENDING_PRACTITIONER_RESPONSE] ?? 0,
+      confirmed: counts[SessionStatus.CONFIRMED] ?? 0,
+      upcoming: presentationSummary.upcoming,
+      readyToJoin: presentationSummary.joinable,
+      inProgress: presentationSummary.inProgress,
+      completed: counts[SessionStatus.COMPLETED] ?? 0,
+      cancelled: counts[SessionStatus.CANCELLED] ?? 0,
+      noShow: counts[SessionStatus.NO_SHOW] ?? 0,
+      expired: counts[SessionStatus.EXPIRED] ?? 0,
+      refundPending: counts[SessionStatus.REFUND_PENDING] ?? 0,
+      refunded: counts[SessionStatus.REFUNDED] ?? 0,
+      actionRequired: getCount(
+        SessionStatus.PENDING_PAYMENT,
+        SessionStatus.PENDING_PRACTITIONER_RESPONSE,
+      ) + presentationSummary.joinable,
+      active:
+        presentationSummary.upcoming +
+        presentationSummary.unavailable +
+        presentationSummary.joinable +
+        presentationSummary.inProgress,
+      history: getCount(
+        SessionStatus.COMPLETED,
+        SessionStatus.CANCELLED,
+        SessionStatus.NO_SHOW,
+        SessionStatus.EXPIRED,
+        SessionStatus.REFUND_PENDING,
+        SessionStatus.REFUNDED,
+      ),
+      paymentExpired: counts[SessionStatus.EXPIRED] ?? 0,
+    };
   }
 }

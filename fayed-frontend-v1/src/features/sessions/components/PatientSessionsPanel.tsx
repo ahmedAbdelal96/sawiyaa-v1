@@ -21,7 +21,11 @@ import {
   usePatientSessions,
 } from "../hooks/use-sessions";
 import SessionStatusBadge from "./SessionStatusBadge";
-import type { SessionListItem, SessionStatus } from "../types/sessions.types";
+import type {
+  SessionListItem,
+  SessionPresentationStatus,
+  SessionStatus,
+} from "../types/sessions.types";
 import { StateCard } from "@/components/shared/ContentStates";
 import {
   SurfaceCard,
@@ -29,19 +33,6 @@ import {
   SurfaceStatCard,
   SurfaceToolbar,
 } from "@/components/shared/SurfaceShell";
-
-const ACTION_REQUIRED_STATUSES = new Set<SessionStatus>([
-  "PENDING_PAYMENT",
-  "PENDING_PRACTITIONER_RESPONSE",
-  "READY_TO_JOIN",
-  "EXPIRED",
-]);
-
-const LIVE_STATUSES = new Set<SessionStatus>([
-  "CONFIRMED",
-  "UPCOMING",
-  "IN_PROGRESS",
-]);
 
 function formatScheduledAt(isoString: string | null, numLocale: string): string {
   if (!isoString) return "";
@@ -55,10 +46,18 @@ function formatScheduledAt(isoString: string | null, numLocale: string): string 
   });
 }
 
-function getBucket(status: SessionStatus) {
-  if (ACTION_REQUIRED_STATUSES.has(status)) return "action";
-  if (LIVE_STATUSES.has(status)) return "live";
+function getBucket(presentationStatus: SessionPresentationStatus) {
+  if (presentationStatus === "JOINABLE" || presentationStatus === "IN_PROGRESS") return "live";
+  if (presentationStatus === "UPCOMING" || presentationStatus === "UNAVAILABLE") return "action";
   return "archive";
+}
+
+function countPresentationStatuses(
+  items: SessionListItem[],
+  statuses: SessionPresentationStatus[],
+) {
+  const statusSet = new Set(statuses);
+  return items.filter((item) => statusSet.has(item.presentationStatus)).length;
 }
 
 function sortSessions(items: SessionListItem[], sortOrder: "newest" | "oldest") {
@@ -471,7 +470,7 @@ export default function PatientSessionsPanel() {
     () => ({
       pendingPayment: countStatuses(sessions, ["PENDING_PAYMENT"]),
       pendingPractitionerResponse: countStatuses(sessions, ["PENDING_PRACTITIONER_RESPONSE"]),
-      readyToJoin: countStatuses(sessions, ["READY_TO_JOIN"]),
+      readyToJoin: countPresentationStatuses(sessions, ["JOINABLE"]),
       confirmed: countStatuses(sessions, ["CONFIRMED"]),
       upcoming: countStatuses(sessions, ["UPCOMING"]),
       inProgress: countStatuses(sessions, ["IN_PROGRESS"]),
@@ -637,9 +636,9 @@ export default function PatientSessionsPanel() {
             </thead>
             <tbody className="divide-y divide-border-light">
               {sessions.map((session) => {
-                const bucket = getBucket(session.status);
+                const bucket = getBucket(session.presentationStatus);
                 const rowTone =
-                  session.status === "EXPIRED"
+                  session.presentationStatus === "UNAVAILABLE"
                     ? "bg-warning-50/50 dark:bg-warning-500/10"
                     : bucket === "action"
                       ? "bg-warning-50/40 dark:bg-warning-500/5"
@@ -686,12 +685,15 @@ export default function PatientSessionsPanel() {
                     <td className="px-4 py-4 align-top">
                       <SessionStatusBadge
                         status={session.status}
+                        presentationStatus={session.presentationStatus}
                         labelOverride={
                           session.status === "EXPIRED" ? copy.expiredPaymentBadge : undefined
                         }
                       />
                       <div className="mt-2 text-xs leading-5 text-text-secondary">
-                        {t(`list.runtimeHints.${session.status}` as Parameters<typeof t>[0])}
+                        {t(
+                          `list.presentationHints.${session.presentationStatus}` as Parameters<typeof t>[0],
+                        )}
                       </div>
                     </td>
                     <td className="px-4 py-4 align-top">

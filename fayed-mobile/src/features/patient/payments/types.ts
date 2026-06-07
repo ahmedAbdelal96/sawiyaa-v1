@@ -22,6 +22,23 @@ export type PaymentStatus =
   | "PARTIALLY_REFUNDED"
   | "REFUNDED";
 
+export type PaymentActionReason =
+  | 'PAYABLE'
+  | 'SESSION_EXPIRED'
+  | 'PROCESSING'
+  | 'COMPLETED'
+  | 'FAILED'
+  | 'CANCELLED'
+  | 'REFUNDED'
+  | 'UNAVAILABLE';
+
+export interface PaymentAction {
+  canPay: boolean;
+  reason: PaymentActionReason;
+  sessionStatus?: string;
+  sessionExpiresAt?: string | null;
+}
+
 export interface PaymentItem {
   id: string;
   sessionId: string | null;
@@ -52,6 +69,8 @@ export interface PaymentItem {
   expiredAt: string | null;
   refundedAt: string | null;
   createdAt: string;
+  /** Backend-computed payment action guidance — use this for UI, not status alone */
+  paymentAction: PaymentAction;
 }
 
 export interface PaymentsPagination {
@@ -90,14 +109,14 @@ export interface SessionPaymentCapabilitiesItem {
   currency?: string | null;
   regionalPricingMode?: "EGYPT_LOCAL" | "INTERNATIONAL" | null;
   resolvedCountryIsoCode?: string | null;
-  normalizedMethods?: Array<{
+  normalizedMethods?: {
     key: string;
     type: string;
     label: string;
     enabled: boolean;
     description?: string | null;
     brands?: string[];
-  }>;
+  }[];
   wallet?: {
     enabled: boolean;
     availableBalance: string | null;

@@ -2,7 +2,10 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { IsEnum, IsOptional, IsUUID } from 'class-validator';
 import { ConversationParticipantRole } from '@prisma/client';
-import { GeneralChatParticipantIdentityDto } from './general-chat-response.dto';
+import {
+  GeneralChatAvailabilityDto,
+  GeneralChatParticipantIdentityDto,
+} from './general-chat-response.dto';
 
 export enum GeneralChatTargetRoleDto {
   PATIENT = 'PATIENT',
@@ -62,6 +65,9 @@ export class GeneralChatConversationIdentityDto {
 
   @ApiProperty()
   wasCreated!: boolean;
+
+  @ApiProperty({ type: GeneralChatAvailabilityDto })
+  chatAvailability!: GeneralChatAvailabilityDto;
 }
 
 export class GeneralChatConversationDataDto {

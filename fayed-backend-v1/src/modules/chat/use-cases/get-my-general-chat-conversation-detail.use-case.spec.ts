@@ -1,5 +1,8 @@
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
+import { ConversationAccessPolicy } from '../policies/conversation-access.policy';
 import { GeneralChatRepository } from '../repositories/general-chat.repository';
+import { GeneralChatAvailabilityService } from '../services/general-chat-availability.service';
+import { GeneralChatModerationStateService } from '../services/general-chat-moderation-state.service';
 import { GetMyGeneralChatConversationDetailUseCase } from './get-my-general-chat-conversation-detail.use-case';
 
 describe('GetMyGeneralChatConversationDetailUseCase', () => {
@@ -10,6 +13,8 @@ describe('GetMyGeneralChatConversationDetailUseCase', () => {
 
   const useCase = new GetMyGeneralChatConversationDetailUseCase(
     generalChatRepository,
+    new ConversationAccessPolicy(),
+    new GeneralChatAvailabilityService(new GeneralChatModerationStateService()),
   );
 
   beforeEach(() => {
@@ -32,11 +37,23 @@ describe('GetMyGeneralChatConversationDetailUseCase', () => {
   it('throws when requester is not an active participant', async () => {
     (
       generalChatRepository.findConversationByIdInGeneralScope as jest.Mock
-    ).mockResolvedValue({
+      ).mockResolvedValue({
       id: 'conv_1',
       conversationRef: 'gc_1',
       status: 'OPEN',
       sessionId: null,
+      closedAt: null,
+      adminSendingDisabledAt: null,
+      adminSendingDisabledByUserId: null,
+      adminSendingDisabledReason: null,
+      adminSendingEnabledAt: null,
+      adminSendingEnabledByUserId: null,
+      practitionerSendingDisabledAt: null,
+      practitionerSendingDisabledByUserId: null,
+      practitionerSendingDisabledReason: null,
+      practitionerSendingEnabledAt: null,
+      practitionerSendingEnabledByUserId: null,
+      session: null,
       createdAt: new Date('2026-04-01T09:00:00.000Z'),
       updatedAt: new Date('2026-04-01T09:10:00.000Z'),
       participants: [
@@ -61,11 +78,23 @@ describe('GetMyGeneralChatConversationDetailUseCase', () => {
   it('returns safe empty message state when no messages exist yet', async () => {
     (
       generalChatRepository.findConversationByIdInGeneralScope as jest.Mock
-    ).mockResolvedValue({
+      ).mockResolvedValue({
       id: 'conv_1',
       conversationRef: 'gc_1',
       status: 'OPEN',
       sessionId: null,
+      closedAt: null,
+      adminSendingDisabledAt: null,
+      adminSendingDisabledByUserId: null,
+      adminSendingDisabledReason: null,
+      adminSendingEnabledAt: null,
+      adminSendingEnabledByUserId: null,
+      practitionerSendingDisabledAt: null,
+      practitionerSendingDisabledByUserId: null,
+      practitionerSendingDisabledReason: null,
+      practitionerSendingEnabledAt: null,
+      practitionerSendingEnabledByUserId: null,
+      session: null,
       createdAt: new Date('2026-04-01T09:00:00.000Z'),
       updatedAt: new Date('2026-04-01T09:10:00.000Z'),
       participants: [
@@ -93,5 +122,11 @@ describe('GetMyGeneralChatConversationDetailUseCase', () => {
     expect(result.item.hasUnread).toBe(false);
     expect(result.item.lastReadMessageId).toBeNull();
     expect(result.item.lastReadAt).toBeNull();
+    expect(result.item.chatAvailability).toEqual({
+      canRead: true,
+      canSend: true,
+      readOnly: false,
+      reason: 'ALLOWED',
+    });
   });
 });

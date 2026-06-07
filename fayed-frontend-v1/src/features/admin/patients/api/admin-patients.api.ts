@@ -29,3 +29,43 @@ export async function getAdminPatientDetails(patientId: string) {
   }
   return extractData(response.data).item;
 }
+
+export interface CountryListItem {
+  id: string;
+  isoCode: string;
+  name: string;
+  nativeName: string | null;
+}
+
+export interface AdminPatientCountryChangeResponse {
+  patientId: string;
+  patientProfileId: string;
+  country: {
+    id: string;
+    isoCode: string;
+    name: string;
+  } | null;
+  updatedAt: string;
+}
+
+export interface AdminPatientCountryChangeParams {
+  patientId: string;
+  countryCode: string;
+  reason: string;
+}
+
+export async function listAdminCountries(): Promise<CountryListItem[]> {
+  const response = await httpClient.get<ApiPayload<CountryListItem[]>>("/admin/countries");
+  return extractData(response.data);
+}
+
+export async function changePatientCountry(params: AdminPatientCountryChangeParams): Promise<AdminPatientCountryChangeResponse> {
+  const response = await httpClient.patch<ApiPayload<AdminPatientCountryChangeResponse>>(
+    `/admin/patients/${params.patientId}/country`,
+    {
+      countryCode: params.countryCode,
+      reason: params.reason,
+    },
+  );
+  return extractData(response.data);
+}

@@ -11,12 +11,22 @@ import {
   MaxLength,
   Min,
 } from 'class-validator';
+import { SessionPresentationFilter } from '../types/session-video.types';
 
 export class ListSessionsDto {
   @ApiPropertyOptional({ enum: SessionStatus })
   @IsOptional()
   @IsEnum(SessionStatus)
   status?: SessionStatus;
+
+  @ApiPropertyOptional({
+    enum: SessionPresentationFilter,
+    description:
+      'Optional presentation-safe session filter for scalable user-facing session lists.',
+  })
+  @IsOptional()
+  @IsEnum(SessionPresentationFilter)
+  presentationFilter?: SessionPresentationFilter;
 
   @ApiPropertyOptional({
     description:

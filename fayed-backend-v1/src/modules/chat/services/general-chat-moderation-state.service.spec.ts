@@ -29,6 +29,31 @@ describe('GeneralChatModerationStateService', () => {
     expect(result.closedBy).toBe('ADMIN');
   });
 
+  it('treats admin lock as inactive after a later enable event', () => {
+    const result = service.resolveConversationState({
+      status: ConversationStatus.OPEN,
+      closedAt: null,
+      adminLock: {
+        disabledAt: new Date('2026-05-21T10:00:00.000Z'),
+        disabledByUserId: 'admin',
+        disabledReason: 'Stop sending',
+        enabledAt: new Date('2026-05-21T10:05:00.000Z'),
+        enabledByUserId: 'admin',
+      },
+      practitionerLock: {
+        disabledAt: null,
+        disabledByUserId: null,
+        disabledReason: null,
+        enabledAt: null,
+        enabledByUserId: null,
+      },
+    });
+
+    expect(result.status).toBe('ACTIVE');
+    expect(result.canSendMessage).toBe(true);
+    expect(result.closedBy).toBeNull();
+  });
+
   it('keeps practitioner closure active even when admin lock is absent', () => {
     const result = service.resolveConversationState({
       status: ConversationStatus.OPEN,

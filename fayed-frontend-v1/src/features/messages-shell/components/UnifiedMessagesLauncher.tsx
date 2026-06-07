@@ -23,6 +23,7 @@ import {
 } from "../lib/messages-shell-continuity";
 import {
   listenOpenSessionChatInShell,
+  listenOpenMessagesShell,
   listenToggleMessagesShell,
 } from "../lib/messages-shell-events";
 import type { ToggleMessagesShellEventPayload } from "../lib/messages-shell-events";
@@ -61,6 +62,9 @@ type CopyPack = {
   sessionReadyBanner: string;
   threadHeading: string;
   threadHint: string;
+  sessionReadOnlyHint: string;
+  sessionReadOnlyReview: string;
+  sessionReadOnlySendBlocked: string;
   composerPlaceholder: string;
   send: string;
   activeSessionStripLabel: string;
@@ -118,6 +122,9 @@ function getCopy(locale: string): CopyPack {
       sessionReadyBanner: "هناك جلسة جاهزة للانضمام",
       threadHeading: "محادثة الجلسة",
       threadHint: "هذه المحادثة اليومية الأساسية. العرض الكامل اختياري.",
+      sessionReadOnlyHint: "هذه المحادثة للقراءة فقط الآن.",
+      sessionReadOnlyReview: "يمكنك مراجعة رسائل الجلسة بعد انتهائها.",
+      sessionReadOnlySendBlocked: "لا يمكن إرسال رسائل جديدة بعد انتهاء الجلسة.",
       composerPlaceholder: "اكتب رسالة واضحة ومختصرة",
       send: "إرسال",
       activeSessionStripLabel: "الجلسة الأهم الآن",
@@ -169,6 +176,9 @@ function getCopy(locale: string): CopyPack {
     sessionReadyBanner: "A session is ready to join",
     threadHeading: "Session conversation",
     threadHint: "This is your primary daily conversation surface.",
+    sessionReadOnlyHint: "This session chat is read-only now.",
+    sessionReadOnlyReview: "You can review session messages after the session ends.",
+    sessionReadOnlySendBlocked: "New messages cannot be sent after the session ends.",
     composerPlaceholder: "Write a short, clear message",
     send: "Send",
     activeSessionStripLabel: "Most relevant session now",
@@ -499,6 +509,33 @@ export default function UnifiedMessagesLauncher({
       setIsMinimized(false);
     });
   }, []);
+
+  useEffect(() => {
+    return listenOpenMessagesShell((payload) => {
+      if (payload?.lane) {
+        setActiveLane(payload.lane);
+      }
+      if (payload?.lane === "session" && payload.threadId) {
+        setSelectedSessionId(payload.threadId);
+      }
+      if (payload?.lane === "support" && payload.threadId) {
+        setSelectedSupportTicketId(payload.threadId);
+      }
+      if (payload?.lane === "practitioner" && payload.threadId) {
+        setSelectedPractitionerRequestId(payload.threadId);
+      }
+      if (!showFloatingTrigger && payload?.anchorRect) {
+        setHeaderAnchorRect({
+          top: payload.anchorRect.top,
+          left: payload.anchorRect.left,
+          right: payload.anchorRect.right,
+          bottom: payload.anchorRect.bottom,
+        });
+      }
+      setIsOpen(true);
+      setIsMinimized(false);
+    });
+  }, [showFloatingTrigger]);
 
   useEffect(() => {
     return listenToggleMessagesShell((payload?: ToggleMessagesShellEventPayload) => {
@@ -854,6 +891,9 @@ export default function UnifiedMessagesLauncher({
                 copy={{
                   threadHeading: copy.threadHeading,
                   threadHint: copy.threadHint,
+                  sessionReadOnlyHint: copy.sessionReadOnlyHint,
+                  sessionReadOnlyReview: copy.sessionReadOnlyReview,
+                  sessionReadOnlySendBlocked: copy.sessionReadOnlySendBlocked,
                   openFullChat: copy.sessionOpenFull,
                   composerPlaceholder: copy.composerPlaceholder,
                   send: copy.send,

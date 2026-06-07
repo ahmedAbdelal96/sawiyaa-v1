@@ -1,14 +1,12 @@
 import React, { useRef, useState } from "react";
 import {
-  View,
-  StyleSheet,
-  ScrollView,
   KeyboardAvoidingView,
   Platform,
-  TouchableOpacity,
+  ScrollView,
+  StyleSheet,
+  View,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
 import { useTranslation } from "react-i18next";
 import {
   Screen,
@@ -16,7 +14,6 @@ import {
   Text,
   LoadingState,
   ErrorState,
-  Input,
 } from "../../../src/components/ui";
 import { useTheme } from "../../../src/providers/ThemeProvider";
 import {
@@ -27,13 +24,16 @@ import { extractApiErrorMessage } from "../../../src/lib/api";
 import { useAuth } from "../../../src/providers/AuthProvider";
 import { localizeCareChatMessageText } from "../../../src/features/care-chat/message-utils";
 import type { CareChatMessageDto } from "../../../src/features/patient/care-chat/types";
+import {
+  ConversationBubble,
+  ConversationComposer,
+  ConversationEmptyState,
+} from "../../../src/features/messages/components/ConversationPrimitives";
 
 export default function CareChatConversationScreen() {
-  const router = useRouter();
   const { theme } = useTheme();
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
-  const isRtl = i18n.language?.startsWith("ar") ?? false;
   const { id } = useLocalSearchParams<{ id: string }>();
 
   const convQuery = useCareChatConversation(id ?? null);
@@ -67,54 +67,13 @@ export default function CareChatConversationScreen() {
     }
   }
 
-  function renderMessage(msg: CareChatMessageDto, idx: number) {
-    const isMe =
-      msg.senderRole === "PATIENT" ||
-      (msg.senderUserId && msg.senderUserId === user?.id);
-
-    return (
-      <View
-        key={msg.id ?? idx}
-        style={[
-          styles.messageRow,
-          isMe ? styles.messageRowRight : styles.messageRowLeft,
-        ]}
-      >
-        <View
-          style={[
-            styles.messageBubble,
-            isMe
-              ? [styles.bubbleMe, { backgroundColor: theme.colors.primary }]
-              : [styles.bubbleThem, { backgroundColor: theme.colors.surface }],
-          ]}
-        >
-          <Text
-            style={[
-              styles.messageText,
-              { color: isMe ? "#fff" : theme.colors.textPrimary },
-            ]}
-          >
-            {localizeCareChatMessageText(msg, t)}
-          </Text>
-          <Text
-            style={[
-              styles.messageTime,
-              {
-                color: isMe ? "rgba(255,255,255,0.7)" : theme.colors.textMuted,
-              },
-            ]}
-          >
-            {formatTime(msg.createdAt)}
-          </Text>
-        </View>
-      </View>
-    );
-  }
-
   if (convQuery.isLoading) {
     return (
       <Screen bg="background">
-        <Header showBack  />
+        <Header
+          showBack
+          title={t("messages.inbox.sourceFollowup", "المتابعة")}
+        />
         <LoadingState fullScreen />
       </Screen>
     );
@@ -123,35 +82,32 @@ export default function CareChatConversationScreen() {
   if (convQuery.isError || !conversation) {
     return (
       <Screen bg="background">
-        <Header showBack  />
+        <Header
+          showBack
+          title={t("messages.inbox.sourceFollowup", "المتابعة")}
+        />
         <ErrorState fullScreen onRetry={convQuery.refetch} />
       </Screen>
     );
   }
 
-  const practitionerName =
-    conversation.practitioner.displayName ?? t("careChat.unknownPractitioner");
-  const activityStateLabel = t(
-    `careChat.activityState.${conversation.activityState}`,
-    conversation.activityState,
-  );
-  const headerTitle = `${practitionerName} — ${activityStateLabel}`;
-
   return (
     <Screen bg="background">
-      <Header title={headerTitle} showBack  />
+      <Header
+        title={t("messages.inbox.sourceFollowup", "المتابعة")}
+        showBack
+      />
 
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         keyboardVerticalOffset={90}
       >
-        {/* Expiry notice if available */}
         {conversation.activityState === "ACTIVE" && conversation.expiresAt ? (
           <View
             style={[
               styles.expiryBar,
-              { backgroundColor: theme.colors.warning ?? "#f59e0b" + "15" },
+              { backgroundColor: `${theme.colors.warning ?? "#f59e0b"}15` },
             ]}
           >
             <Text
@@ -170,7 +126,6 @@ export default function CareChatConversationScreen() {
           </View>
         ) : null}
 
-        {/* Inactive state notice */}
         {conversation.activityState !== "ACTIVE" ? (
           <View
             style={[
@@ -187,7 +142,6 @@ export default function CareChatConversationScreen() {
           </View>
         ) : null}
 
-        {/* Messages */}
         <ScrollView
           ref={scrollRef}
           style={styles.messagesArea}
@@ -198,60 +152,34 @@ export default function CareChatConversationScreen() {
           }
         >
           {conversation.messages.length === 0 ? (
-            <Text color={theme.colors.textMuted} style={styles.emptyText}>
-              {t("careChat.conversation.empty")}
-            </Text>
+            <ConversationEmptyState title={t("careChat.conversation.empty")} />
           ) : (
-            conversation.messages.map((msg: CareChatMessageDto, idx: number) =>
-              renderMessage(msg, idx),
-            )
+            conversation.messages.map((msg: CareChatMessageDto, idx: number) => {
+              const isMine =
+                msg.senderRole === "PATIENT" ||
+                (msg.senderUserId && msg.senderUserId === user?.id);
+
+              return (
+                <ConversationBubble
+                  key={msg.id ?? idx}
+                  isMine={Boolean(isMine)}
+                  text={localizeCareChatMessageText(msg, t)}
+                  timeLabel={formatTime(msg.createdAt)}
+                />
+              );
+            })
           )}
         </ScrollView>
 
-        {/* Input */}
         {canSend ? (
-          <View
-            style={[
-              styles.inputBar,
-              {
-                borderTopColor: theme.colors.borderLight,
-                backgroundColor: theme.colors.background,
-              },
-            ]}
-          >
-            {sendError ? (
-              <Text style={[styles.sendError, { color: theme.colors.error }]}>
-                {sendError}
-              </Text>
-            ) : null}
-            <View style={styles.inputRow}>
-              <Input
-                value={draft}
-                onChangeText={setDraft}
-                placeholder={t("careChat.conversation.inputPlaceholder")}
-                multiline
-                style={styles.input}
-                maxLength={4000}
-              />
-              <TouchableOpacity
-                onPress={handleSend}
-                disabled={sendMessage.isPending || !draft.trim()}
-                style={[
-                  styles.sendBtn,
-                  { backgroundColor: theme.colors.primary },
-                  (!draft.trim() || sendMessage.isPending) &&
-                    styles.sendBtnDisabled,
-                ]}
-                activeOpacity={0.8}
-              >
-                <Ionicons
-                  name={isRtl ? "arrow-back" : "arrow-forward"}
-                  size={20}
-                  color="#fff"
-                />
-              </TouchableOpacity>
-            </View>
-          </View>
+          <ConversationComposer
+            value={draft}
+            onChangeText={setDraft}
+            onSend={() => void handleSend()}
+            disabled={sendMessage.isPending || !draft.trim()}
+            placeholder={t("careChat.conversation.inputPlaceholder")}
+            error={sendError}
+          />
         ) : null}
       </KeyboardAvoidingView>
     </Screen>
@@ -280,76 +208,10 @@ const styles = StyleSheet.create({
   },
   messagesArea: {
     flex: 1,
-    paddingHorizontal: 14,
   },
   messagesContent: {
+    paddingHorizontal: 14,
     paddingTop: 12,
     paddingBottom: 16,
-    gap: 8,
-  },
-  emptyText: {
-    textAlign: "center",
-    marginTop: 40,
-    fontSize: 14,
-  },
-  messageRow: {
-    flexDirection: "row",
-  },
-  messageRowRight: {
-    justifyContent: "flex-end",
-  },
-  messageRowLeft: {
-    justifyContent: "flex-start",
-  },
-  messageBubble: {
-    maxWidth: "78%",
-    padding: 10,
-    borderRadius: 14,
-    gap: 4,
-  },
-  bubbleMe: {
-    borderBottomEndRadius: 4,
-  },
-  bubbleThem: {
-    borderBottomStartRadius: 4,
-  },
-  messageText: {
-    fontSize: 14,
-    lineHeight: 20,
-  },
-  messageTime: {
-    fontSize: 11,
-    textAlign: "right",
-  },
-  inputBar: {
-    borderTopWidth: 1,
-    paddingHorizontal: 12,
-    paddingTop: 8,
-    paddingBottom: 12,
-  },
-  sendError: {
-    fontSize: 12,
-    marginBottom: 6,
-  },
-  inputRow: {
-    flexDirection: "row",
-    alignItems: "flex-end",
-    gap: 8,
-  },
-  input: {
-    flex: 1,
-    minHeight: 44,
-    maxHeight: 120,
-  },
-  sendBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  sendBtnDisabled: {
-    opacity: 0.5,
   },
 });
-

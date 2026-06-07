@@ -42,27 +42,28 @@ export type WhyFeature = {
   icon: LucideIcon;
   iconColor: string;
   bgColor: string;
+  ringColor: string;
 };
 
 export const HOW_IT_WORKS_STEPS: HowItWorksStep[] = [
   {
     id: 1,
     icon: Search,
-    iconBg: "bg-primary-light",
-    iconColor: "text-primary",
+    iconBg: "bg-sky-50",
+    iconColor: "text-sky-600",
   },
   {
     id: 2,
     icon: CalendarCheck,
-    iconBg: "bg-secondary/20",
-    iconColor: "text-text-primary",
+    iconBg: "bg-indigo-50",
+    iconColor: "text-indigo-600",
     offset: true,
   },
   {
     id: 3,
     icon: Video,
-    iconBg: "bg-accent/20",
-    iconColor: "text-accent",
+    iconBg: "bg-violet-50",
+    iconColor: "text-violet-600",
   },
 ];
 
@@ -101,10 +102,50 @@ export const ARTICLES: Article[] = [
 ];
 
 export const WHY_FEATURES: WhyFeature[] = [
-  { id: "privacy", icon: Lock, iconColor: "text-primary", bgColor: "bg-primary/10" },
-  { id: "certified", icon: BadgeCheck, iconColor: "text-secondary", bgColor: "bg-secondary/15" },
-  { id: "flexible", icon: Clock, iconColor: "text-accent", bgColor: "bg-accent/15" },
-  { id: "arabic", icon: Globe2, iconColor: "text-primary", bgColor: "bg-surface-tertiary" },
+  { id: "privacy", icon: Lock, iconColor: "text-emerald-600", bgColor: "bg-emerald-50", ringColor: "ring-emerald-200" },
+  { id: "certified", icon: BadgeCheck, iconColor: "text-sky-600", bgColor: "bg-sky-50", ringColor: "ring-sky-200" },
+  { id: "flexible", icon: Clock, iconColor: "text-indigo-600", bgColor: "bg-indigo-50", ringColor: "ring-indigo-200" },
+  { id: "arabic", icon: Globe2, iconColor: "text-amber-600", bgColor: "bg-amber-50", ringColor: "ring-amber-200" },
 ];
 
+/** Semantic icon color tokens for homepage components */
+export const SEMANTIC_ICONS = {
+  /** Guided care / matching — emerald/sage */
+  guided: {
+    bg: "bg-emerald-50",
+    icon: "text-emerald-600",
+    ring: "ring-emerald-200",
+  },
+  /** Booking / payment — sky blue */
+  booking: {
+    bg: "bg-sky-50",
+    icon: "text-sky-600",
+    ring: "ring-sky-200",
+  },
+  /** Sessions / video / care flow — indigo */
+  session: {
+    bg: "bg-indigo-50",
+    icon: "text-indigo-600",
+    ring: "ring-indigo-200",
+  },
+  /** Support / help / reassurance — amber/warm */
+  support: {
+    bg: "bg-amber-50",
+    icon: "text-amber-600",
+    ring: "ring-amber-200",
+  },
+  /** Trust / verified / privacy — teal */
+  trust: {
+    bg: "bg-teal-50",
+    icon: "text-teal-600",
+    ring: "ring-teal-200",
+  },
+  /** Content / academy — violet */
+  content: {
+    bg: "bg-violet-50",
+    icon: "text-violet-600",
+    ring: "ring-violet-200",
+  },
+} as const;
 
+export type SemanticIconKey = keyof typeof SEMANTIC_ICONS;

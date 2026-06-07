@@ -22,6 +22,38 @@ export class CountryRepository {
     });
   }
 
+  findByIsoCodeWithName(isoCode: string) {
+    return this.prisma.country.findFirst({
+      where: {
+        isoCode: isoCode.toUpperCase(),
+        isActive: true,
+      },
+      select: {
+        id: true,
+        isoCode: true,
+        name: true,
+      },
+    });
+  }
+
+  findAllActive() {
+    return this.prisma.country.findMany({
+      where: { isActive: true },
+      select: {
+        id: true,
+        isoCode: true,
+        name: true,
+        nativeName: true,
+      },
+      orderBy: { name: 'asc' },
+    });
+  }
+
+  findByIsoCodeNullable(isoCode: string | null | undefined) {
+    if (!isoCode) return null;
+    return this.findByIsoCode(isoCode);
+  }
+
   async findByPhoneNumber(phoneNumber: string) {
     const normalizedPhoneDigits = this.normalizeDigits(phoneNumber);
     if (!normalizedPhoneDigits) {

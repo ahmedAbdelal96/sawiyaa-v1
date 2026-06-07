@@ -11,6 +11,7 @@ import { enFinancialRulesCatalog } from './financial-rules.catalog';
 import { enInstantBookingCatalog } from './instant-booking.catalog';
 import { enMatchingCatalog } from './matching.catalog';
 import { enModerationCatalog } from './moderation.catalog';
+import { enMessagesCatalog } from './messages.catalog';
 import { enPatientJourneyCatalog } from './patient-journey.catalog';
 import { enPatientsCatalog } from './patients.catalog';
 import { enPaymentsCatalog } from './payments.catalog';
@@ -41,6 +42,7 @@ export const enCatalog = {
   instantBooking: enInstantBookingCatalog,
   matching: enMatchingCatalog,
   moderation: enModerationCatalog,
+  messages: enMessagesCatalog,
   patientJourney: enPatientJourneyCatalog,
   patients: enPatientsCatalog,
   payments: enPaymentsCatalog,

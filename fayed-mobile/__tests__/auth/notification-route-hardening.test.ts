@@ -26,5 +26,16 @@ describe("patient notification route hardening", () => {
       "/(patient)/support",
     );
   });
-});
 
+  it("routes message notifications to the unified messages tabs", () => {
+    expect(
+      resolvePatientNotificationRoute("/patient/support/123", "messages.support-message-received"),
+    ).toBe("/(patient)/messages?tab=support");
+    expect(
+      resolvePatientNotificationRoute("/patient/care-chat/123", "messages.follow-up-message-received"),
+    ).toBe("/(patient)/messages?tab=followup");
+    expect(
+      resolvePatientNotificationRoute("/patient/messages/123", "messages.session-message-received"),
+    ).toBe("/(patient)/messages?tab=sessions");
+  });
+});

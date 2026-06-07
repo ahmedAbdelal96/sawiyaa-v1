@@ -11,6 +11,10 @@ import {
   SessionMode,
 } from '@prisma/client';
 import type { PaymentRegionalPricingMode } from '@common/payments/payment-region.resolver';
+import {
+  COUPON_EFFECTIVE_STATUSES,
+  COUPON_EFFECTIVE_STATUS_REASONS,
+} from '../utils/coupon-effective-status.util';
 
 export class CommissionRuleItemDto {
   @ApiProperty()
@@ -86,6 +90,16 @@ export class CouponItemDto {
 
   @ApiProperty({ enum: CouponStatus })
   status!: CouponStatus;
+
+  @ApiProperty({ enum: COUPON_EFFECTIVE_STATUSES })
+  effectiveStatus!: (typeof COUPON_EFFECTIVE_STATUSES)[number];
+
+  @ApiProperty({
+    enum: COUPON_EFFECTIVE_STATUS_REASONS,
+    nullable: true,
+    required: false,
+  })
+  effectiveStatusReason!: (typeof COUPON_EFFECTIVE_STATUS_REASONS)[number] | null;
 
   @ApiProperty({ enum: DiscountType })
   discountType!: DiscountType;

@@ -7,6 +7,7 @@ describe('PractitionerMarketingPlacementManagementService', () => {
     list: jest.fn(),
     findById: jest.fn(),
     findEligiblePractitioner: jest.fn(),
+    findActiveOverlappingPlacement: jest.fn(),
     create: jest.fn(),
     update: jest.fn(),
     createHistory: jest.fn(),
@@ -60,7 +61,10 @@ describe('PractitionerMarketingPlacementManagementService', () => {
 
   it('creates placement with defaults and writes CREATED history', async () => {
     repository.findEligiblePractitioner.mockResolvedValue({ id: 'pr1' });
-    repository.create.mockResolvedValue(buildPlacement({ practitionerId: 'pr1' }));
+    repository.findActiveOverlappingPlacement.mockResolvedValue(null);
+    repository.create.mockResolvedValue(
+      buildPlacement({ practitionerId: 'pr1' }),
+    );
 
     await service.create({
       actorUserId: 'admin-1',
@@ -83,6 +87,22 @@ describe('PractitionerMarketingPlacementManagementService', () => {
     );
   });
 
+  it('rejects create when an overlapping active placement already exists', async () => {
+    repository.findEligiblePractitioner.mockResolvedValue({ id: 'pr1' });
+    repository.findActiveOverlappingPlacement.mockResolvedValue(
+      buildPlacement({ practitionerId: 'pr1' }),
+    );
+
+    await expect(
+      service.create({
+        actorUserId: 'admin-1',
+        practitionerId: 'pr1',
+        surface: 'HOME',
+        startsAt: '2026-05-28T10:00:00.000Z',
+      }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+  });
+
   it('rejects create when date range is invalid', async () => {
     await expect(
       service.create({
@@ -97,6 +117,7 @@ describe('PractitionerMarketingPlacementManagementService', () => {
 
   it('updates placement and writes change history', async () => {
     repository.findById.mockResolvedValue(buildPlacement({ id: 'pl-1' }));
+    repository.findActiveOverlappingPlacement.mockResolvedValue(null);
     repository.update.mockResolvedValue(
       buildPlacement({ id: 'pl-1', priority: 2 }),
     );
@@ -218,7 +239,9 @@ function buildPlacement(input?: {
     practitioner: {
       id: 'pr-1',
       publicSlug: 'dr-a',
+      status: 'APPROVED',
       professionalTitle: 'Title',
+      avatarUrl: null,
       user: {
         id: 'u-1',
         displayName: 'Dr A',
@@ -231,4 +254,3 @@ function buildPlacement(input?: {
     pausedByAdmin: null,
   };
 }
-

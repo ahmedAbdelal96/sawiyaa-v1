@@ -54,6 +54,7 @@ import { VerifyPasswordUseCase } from './use-cases/verify-password.use-case';
 import { VerifyPractitionerLoginOtpUseCase } from './use-cases/verify-practitioner-login-otp.use-case';
 import { PresenceModule } from '../presence/presence.module';
 import { VerificationModule } from '../verification/verification.module';
+import { CountryRepository } from '../patients/repositories/country.repository';
 
 @Module({
   imports: [JwtModule.register({}), VerificationModule, PresenceModule],
@@ -85,6 +86,7 @@ import { VerificationModule } from '../verification/verification.module';
     HashPasswordUseCase,
     VerifyPasswordUseCase,
     IssueAuthTokensUseCase,
+    CountryRepository,
     InvalidateUserTokensUseCase,
     RefreshAuthSessionUseCase,
     RevokeAuthSessionUseCase,

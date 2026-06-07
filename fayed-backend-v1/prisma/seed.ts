@@ -1,3 +1,4 @@
+import { articlesSeedModule } from './seed/modules/articles.seed';
 import { adminSeedModule } from './seed/modules/admin.seed';
 import { accountingSeedModule } from './seed/modules/accounting.seed';
 import { assessmentsSeedModule } from './seed/modules/assessments.seed';
@@ -43,6 +44,7 @@ const curatedSeedModules: SeedModule[] = [
   configSeedModule,
   financialRulesSeedModule,
   curatedDevSeedModule,
+  articlesSeedModule,
 ];
 
 const bulkSeedModules: SeedModule[] =

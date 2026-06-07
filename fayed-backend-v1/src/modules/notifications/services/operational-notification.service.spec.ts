@@ -6,6 +6,7 @@ import { OperationalNotificationService } from './operational-notification.servi
 describe('OperationalNotificationService', () => {
   function buildService(input?: {
     emailEnabled?: boolean;
+    pushEnabled?: boolean;
     locale?: 'en' | 'ar';
   }) {
     const findPatientRecipient = jest.fn().mockResolvedValue({
@@ -24,24 +25,30 @@ describe('OperationalNotificationService', () => {
         emails: [{ email: 'pr@example.com', isVerified: true }],
       },
     });
-    const findUserRecipient = jest.fn().mockResolvedValue({
-      id: 'user_3',
-      displayName: 'Training User',
-      defaultLocale: input?.locale ?? 'en',
-      emails: [{ email: 'training@example.com', isVerified: true }],
-    });
+    const findUserRecipient = jest
+      .fn()
+      .mockImplementation((userId: string) => ({
+        id: userId,
+        displayName: `User ${userId}`,
+        defaultLocale: input?.locale ?? 'en',
+        emails: [{ email: `${userId}@example.com`, isVerified: true }],
+      }));
     const findTypeBySlug = jest.fn().mockResolvedValue({
       id: 'type_1',
       supportsInApp: true,
       supportsEmail: input?.emailEnabled ?? true,
+      supportsPush: input?.pushEnabled ?? false,
       templates: [
         { id: 'tpl_in', channel: NotificationChannel.IN_APP },
         { id: 'tpl_email', channel: NotificationChannel.EMAIL },
+        { id: 'tpl_push', channel: NotificationChannel.PUSH },
       ],
     });
     const findPreference = jest.fn().mockResolvedValue(null);
     const createNotification = jest.fn().mockResolvedValue({ id: 'notif_1' });
     const updateNotificationStatus = jest.fn().mockResolvedValue({});
+    const scheduleMany = jest.fn().mockResolvedValue({ count: 4 });
+    const cancelFutureBySessionId = jest.fn().mockResolvedValue({ count: 1 });
 
     const repository = {
       findPatientRecipient,
@@ -52,18 +59,28 @@ describe('OperationalNotificationService', () => {
       createNotification,
       updateNotificationStatus,
     } as unknown as OperationalNotificationRepository;
+    const sessionReminderQueueRepository = {
+      scheduleMany,
+      cancelFutureBySessionId,
+    } as unknown as import('../repositories/session-reminder-queue.repository').SessionReminderQueueRepository;
 
     const i18nService = {
       t: jest.fn((key: string) => key),
     } as unknown as I18nService;
 
-    const service = new OperationalNotificationService(repository, i18nService);
+    const service = new OperationalNotificationService(
+      repository,
+      sessionReminderQueueRepository,
+      i18nService,
+    );
 
     return {
       service,
       findPreference,
       createNotification,
       updateNotificationStatus,
+      scheduleMany,
+      cancelFutureBySessionId,
     };
   }
 
@@ -92,6 +109,122 @@ describe('OperationalNotificationService', () => {
       }),
     );
     expect(setup.updateNotificationStatus).not.toHaveBeenCalled();
+  });
+
+  it('queues session chat notifications for the other conversation participant only', async () => {
+    const setup = buildService({ emailEnabled: false, pushEnabled: true });
+
+    await setup.service.notifyConversationMessage({
+      lane: 'SESSION_CHAT',
+      threadId: 'conv_1',
+      messageId: 'msg_1',
+      senderUserId: 'user_1',
+      participants: [
+        { userId: 'user_1', participantRole: 'PATIENT' },
+        { userId: 'user_2', participantRole: 'PRACTITIONER' },
+      ],
+    });
+
+    expect(setup.createNotification).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: 'user_2',
+        channel: NotificationChannel.IN_APP,
+        relatedEntityType: 'GENERAL_CHAT_MESSAGE',
+        relatedEntityId: 'msg_1',
+        idempotencyKey: 'messages.session-message:msg_1:user_2:in-app',
+        payloadJson: expect.objectContaining({
+          routePath: '/en/practitioner/messages/conv_1',
+          threadId: 'conv_1',
+          targetRole: 'PRACTITIONER',
+          relatedEntityType: 'GENERAL_CHAT_MESSAGE',
+          relatedEntityId: 'msg_1',
+          category: 'CHAT',
+        }),
+      }),
+    );
+    expect(setup.createNotification).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: 'user_2',
+        channel: NotificationChannel.PUSH,
+        relatedEntityType: 'GENERAL_CHAT_MESSAGE',
+        relatedEntityId: 'msg_1',
+        idempotencyKey: 'messages.session-message:msg_1:user_2:push',
+        payloadJson: expect.objectContaining({
+          routePath: '/en/practitioner/messages/conv_1',
+          targetRole: 'PRACTITIONER',
+        }),
+      }),
+    );
+    expect(setup.createNotification).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: 'user_1',
+        relatedEntityId: 'msg_1',
+      }),
+    );
+  });
+
+  it('queues support notifications without notifying the sender', async () => {
+    const setup = buildService({ emailEnabled: false, pushEnabled: true });
+
+    await setup.service.notifyConversationMessage({
+      lane: 'SUPPORT',
+      threadId: 'ticket_1',
+      messageId: 'msg_2',
+      senderUserId: 'support_1',
+      participants: [
+        { userId: 'support_1', participantRole: 'PATIENT' },
+        { userId: 'user_3', participantRole: 'PRACTITIONER' },
+      ],
+    });
+
+    expect(setup.createNotification).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: 'user_3',
+        channel: NotificationChannel.IN_APP,
+        relatedEntityType: 'SUPPORT_MESSAGE',
+        relatedEntityId: 'msg_2',
+        idempotencyKey: 'messages.support-message:msg_2:user_3:in-app',
+        payloadJson: expect.objectContaining({
+          routePath: '/en/practitioner/support/ticket_1',
+          targetRole: 'PRACTITIONER',
+        }),
+      }),
+    );
+    expect(setup.createNotification).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: 'support_1',
+        relatedEntityId: 'msg_2',
+      }),
+    );
+  });
+
+  it('queues follow-up chat notifications for the other participant only', async () => {
+    const setup = buildService({ emailEnabled: false, pushEnabled: true });
+
+    await setup.service.notifyConversationMessage({
+      lane: 'CARE_CHAT',
+      threadId: 'care_1',
+      messageId: 'msg_3',
+      senderUserId: 'user_4',
+      participants: [
+        { userId: 'user_4', participantRole: 'PATIENT' },
+        { userId: 'user_5', participantRole: 'PRACTITIONER' },
+      ],
+    });
+
+    expect(setup.createNotification).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: 'user_5',
+        channel: NotificationChannel.IN_APP,
+        relatedEntityType: 'CARE_CHAT_MESSAGE',
+        relatedEntityId: 'msg_3',
+        idempotencyKey: 'messages.follow-up-message:msg_3:user_5:in-app',
+        payloadJson: expect.objectContaining({
+          routePath: '/en/practitioner/care-chat/care_1',
+          targetRole: 'PRACTITIONER',
+        }),
+      }),
+    );
   });
 
   it('suppresses email when user preference disables the channel', async () => {
@@ -135,7 +268,7 @@ describe('OperationalNotificationService', () => {
   });
 
   it('sends session confirmation notifications to patient and practitioner', async () => {
-    const setup = buildService({ emailEnabled: false });
+    const setup = buildService({ emailEnabled: false, pushEnabled: true });
 
     await setup.service.notifySessionConfirmed({
       patientProfileId: 'patient_1',
@@ -144,7 +277,7 @@ describe('OperationalNotificationService', () => {
       scheduledStartAt: new Date('2026-04-02T10:00:00.000Z'),
     });
 
-    expect(setup.createNotification).toHaveBeenCalledTimes(2);
+    expect(setup.createNotification).toHaveBeenCalledTimes(4);
     expect(setup.createNotification).toHaveBeenCalledWith(
       expect.objectContaining({
         channel: NotificationChannel.IN_APP,
@@ -152,6 +285,183 @@ describe('OperationalNotificationService', () => {
         relatedEntityId: 'session_1',
       }),
     );
+    expect(setup.createNotification).toHaveBeenCalledWith(
+      expect.objectContaining({
+        channel: NotificationChannel.PUSH,
+        relatedEntityType: 'SESSION',
+        relatedEntityId: 'session_1',
+      }),
+    );
+  });
+
+  it('attaches route paths and idempotency keys to confirmed session notifications', async () => {
+    const setup = buildService({ emailEnabled: false, pushEnabled: true });
+
+    await setup.service.notifySessionConfirmed({
+      patientProfileId: 'patient_1',
+      practitionerProfileId: 'pr_1',
+      sessionId: 'session_1',
+      scheduledStartAt: new Date('2026-08-02T10:00:00.000Z'),
+    });
+
+    expect(setup.createNotification).toHaveBeenCalledWith(
+      expect.objectContaining({
+        idempotencyKey: 'sessions.session-confirmed:session_1:user_1:in-app',
+        payloadJson: expect.objectContaining({
+          routePath: '/en/patient/sessions/session_1',
+          targetRole: 'PATIENT',
+        }),
+      }),
+    );
+    expect(setup.createNotification).toHaveBeenCalledWith(
+      expect.objectContaining({
+        idempotencyKey:
+          'sessions.session-confirmed-practitioner:session_1:user_2:in-app',
+        payloadJson: expect.objectContaining({
+          routePath: '/en/practitioner/sessions/session_1',
+          targetRole: 'PRACTITIONER',
+        }),
+      }),
+    );
+    expect(setup.createNotification).toHaveBeenCalledWith(
+      expect.objectContaining({
+        idempotencyKey: 'sessions.session-confirmed:session_1:user_1:push',
+        payloadJson: expect.objectContaining({
+          routePath: '/en/patient/sessions/session_1',
+          targetRole: 'PATIENT',
+        }),
+      }),
+    );
+    expect(setup.createNotification).toHaveBeenCalledWith(
+      expect.objectContaining({
+        idempotencyKey:
+          'sessions.session-confirmed-practitioner:session_1:user_2:push',
+        payloadJson: expect.objectContaining({
+          routePath: '/en/practitioner/sessions/session_1',
+          targetRole: 'PRACTITIONER',
+        }),
+      }),
+    );
+  });
+
+  it('schedules 60 and 15 minute session reminders exactly once per recipient', async () => {
+    const setup = buildService({ emailEnabled: false, pushEnabled: true });
+
+    await setup.service.queueSessionReminders({
+      patientProfileId: 'patient_1',
+      practitionerProfileId: 'pr_1',
+      sessionId: 'session_1',
+      scheduledStartAt: new Date('2026-08-02T12:00:00.000Z'),
+    });
+
+    expect(setup.scheduleMany).toHaveBeenCalledTimes(4);
+    expect(setup.scheduleMany).toHaveBeenCalledWith([
+      expect.objectContaining({
+        sessionId: 'session_1',
+        recipientUserId: 'user_1',
+        recipientRole: 'PATIENT',
+        reminderType: 'REMINDER_60',
+        dueAt: new Date('2026-08-02T11:00:00.000Z'),
+        idempotencyKey: 'sessions.session-reminder-60:session_1:user_1',
+      }),
+    ]);
+    expect(setup.scheduleMany).toHaveBeenCalledWith([
+      expect.objectContaining({
+        sessionId: 'session_1',
+        recipientUserId: 'user_1',
+        recipientRole: 'PATIENT',
+        reminderType: 'REMINDER_15',
+        dueAt: new Date('2026-08-02T11:45:00.000Z'),
+        idempotencyKey: 'sessions.session-reminder-15:session_1:user_1',
+      }),
+    ]);
+    expect(setup.scheduleMany).toHaveBeenCalledWith([
+      expect.objectContaining({
+        sessionId: 'session_1',
+        recipientUserId: 'user_2',
+        recipientRole: 'PRACTITIONER',
+        reminderType: 'REMINDER_60',
+        dueAt: new Date('2026-08-02T11:00:00.000Z'),
+        idempotencyKey: 'sessions.session-reminder-60:session_1:user_2',
+      }),
+    ]);
+    expect(setup.scheduleMany).toHaveBeenCalledWith([
+      expect.objectContaining({
+        sessionId: 'session_1',
+        recipientUserId: 'user_2',
+        recipientRole: 'PRACTITIONER',
+        reminderType: 'REMINDER_15',
+        dueAt: new Date('2026-08-02T11:45:00.000Z'),
+        idempotencyKey: 'sessions.session-reminder-15:session_1:user_2',
+      }),
+    ]);
+  });
+
+  it('skips reminders that are already past due at scheduling time', async () => {
+    const setup = buildService({ emailEnabled: false });
+
+    await setup.service.queueSessionReminders({
+      patientProfileId: 'patient_1',
+      practitionerProfileId: 'pr_1',
+      sessionId: 'session_1',
+      scheduledStartAt: new Date('2026-01-01T00:05:00.000Z'),
+    });
+
+    expect(setup.scheduleMany).not.toHaveBeenCalled();
+  });
+
+  it('attaches route paths and idempotency keys to cancelled session notifications', async () => {
+    const setup = buildService({ emailEnabled: false, pushEnabled: true });
+
+    await setup.service.notifySessionCancelledByPatient({
+      patientProfileId: 'patient_1',
+      practitionerProfileId: 'pr_1',
+      sessionId: 'session_1',
+      scheduledStartAt: new Date('2026-08-02T10:00:00.000Z'),
+    });
+
+    expect(setup.createNotification).toHaveBeenCalledWith(
+      expect.objectContaining({
+        idempotencyKey: 'sessions.session-cancelled:session_1:user_1:in-app',
+        payloadJson: expect.objectContaining({
+          routePath: '/en/patient/sessions/session_1',
+          targetRole: 'PATIENT',
+        }),
+      }),
+    );
+    expect(setup.createNotification).toHaveBeenCalledWith(
+      expect.objectContaining({
+        idempotencyKey:
+          'sessions.session-cancelled-practitioner:session_1:user_2:in-app',
+        payloadJson: expect.objectContaining({
+          routePath: '/en/practitioner/sessions/session_1',
+          targetRole: 'PRACTITIONER',
+        }),
+      }),
+    );
+    expect(setup.createNotification).toHaveBeenCalledWith(
+      expect.objectContaining({
+        idempotencyKey: 'sessions.session-cancelled:session_1:user_1:push',
+        payloadJson: expect.objectContaining({
+          routePath: '/en/patient/sessions/session_1',
+          targetRole: 'PATIENT',
+        }),
+      }),
+    );
+    expect(setup.createNotification).toHaveBeenCalledWith(
+      expect.objectContaining({
+        idempotencyKey:
+          'sessions.session-cancelled-practitioner:session_1:user_2:push',
+        payloadJson: expect.objectContaining({
+          routePath: '/en/practitioner/sessions/session_1',
+          targetRole: 'PRACTITIONER',
+        }),
+      }),
+    );
+    expect(setup.cancelFutureBySessionId).toHaveBeenCalledWith({
+      sessionId: 'session_1',
+      cancelledAt: expect.any(Date),
+    });
   });
 
   it('includes package context in session confirmation payloads when provided', async () => {

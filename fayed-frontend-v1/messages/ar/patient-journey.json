@@ -5,86 +5,93 @@
   },
   "hero": {
     "eyebrow": "رحلتك",
-    "title": "كل ما يهمك الآن في مكان واحد",
-    "note": "راجع جلستك القادمة، والدفع، والدعم بسرعة."
+    "title": "ابدأ من الخطوة الأقرب لك",
+    "note": "راجع جلستك القادمة والدفع والدعم من مكان واحد."
   },
   "summary": {
     "suggested": {
       "COMPLETE_PAYMENT": "دفعة معلقة",
       "JOIN_UPCOMING_SESSION": "جلسة قادمة",
       "VIEW_SUPPORT_TICKET": "دعم مفتوح",
-      "TAKE_ASSESSMENT": "اختبار مبدئي مقترح",
+      "TAKE_ASSESSMENT": "اختبار مقترح",
       "START_GUIDED_MATCHING": "مطابقة مقترحة",
       "BOOK_NEXT_SESSION": "احجز جلستك التالية"
     },
     "chips": {
-      "pendingPayment": "يوجد دفع يحتاج متابعة",
+      "pendingPayment": "دفعة تحتاج متابعة",
       "nextSessionAt": "الجلسة القادمة: {date}",
-      "supportOpen": "فريق الدعم يتابع معك",
-      "lastAssessment": "آخر اختبار مبدئي: {date}"
+      "supportOpen": "الدعم يتابع معك",
+      "lastAssessment": "آخر اختبار: {date}"
     }
   },
   "primaryAction": {
-    "eyebrow": "الخطوة المقترحة الآن"
+    "eyebrow": "الخطوة المقترحة"
   },
   "upcoming": {
     "pendingPayment": {
       "heading": "دفعة معلقة",
-      "cta": "أكمل الدفع"
+      "cta": "أكمل الدفع",
+      "noPayment": "لا توجد مدفوعات معلقة",
+      "zeroHint": "لا توجد مدفوعات معلقة"
     },
     "session": {
-      "heading": "جلسة قادمة",
-      "cta": "افتح تفاصيل الجلسة"
+      "heading": "الجلسة القادمة",
+      "cta": "افتح تفاصيل الجلسة",
+      "noSession": "لا توجد جلسات قادمة"
     },
     "instantBooking": {
-      "heading": "طلب حجز فوري ما زال نشطًا",
-      "note": "لا يزال هناك طلب نشط مع {practitioner}.",
+      "heading": "طلب حجز فوري نشط",
+      "note": "طلب نشط مع {practitioner}.",
       "duration": "{n} دقيقة",
       "expiresAt": "ينتهي {date}"
     },
     "empty": {
-      "heading": "لا يوجد شيء عاجل الآن",
-      "note": "عندما يكون هناك شيء يحتاج إلى انتباهك سيظهر هنا."
+      "heading": "لا توجد جلسات قادمة الآن",
+      "note": "عندما تحجز جلسة، ستظهر هنا مع عنوانها وخطوة الدخول.",
+      "noSession": "لا توجد جلسات قادمة"
     }
   },
   "recent": {
-    "heading": "آخر نشاطاتك",
-    "note": "ملخص سريع لآخر نشاطاتك.",
+    "heading": "آخر الأنشطة",
+    "note": "رجع للأنشطة الأخيرة بسرعة.",
     "sessions": {
-      "heading": "الجلسات الأخيرة",
-      "viewAll": "عرض الكل"
+      "heading": "الجلسات",
+      "viewAll": "عرض الكل",
+      "zeroHint": "لم تبدأ جلسات بعد"
     },
     "payments": {
-      "heading": "المدفوعات الأخيرة",
+      "heading": "المدفوعات",
       "viewAll": "عرض الكل",
       "viewSession": "عرض الجلسة"
     },
     "assessments": {
-      "heading": "نتائج الاختبارات المبدئية",
-      "completedAt": "اكتمل في {date}",
+      "heading": "الاختبارات",
+      "completedAt": "أُنجز {date}",
       "score": "النتيجة: {score}",
-      "viewResult": "عرض النتيجة"
+      "viewResult": "عرض النتيجة",
+      "viewAll": "عرض الكل"
     },
     "matching": {
-      "heading": "آخر المطابقات",
+      "heading": "المطابقات",
       "recommendation": "المختص المقترح: {practitioner}",
-      "noRecommendation": "لا يوجد اقتراح واضح في هذه المطابقة بعد.",
-      "completedAt": "اكتملت في {date}",
-      "viewMatching": "عرض نتيجة المطابقة",
-      "viewPractitioner": "عرض المختص"
+      "noRecommendation": "لا يوجد اقتراح بعد.",
+      "completedAt": "أُنجز {date}",
+      "viewMatching": "عرض النتيجة",
+      "viewPractitioner": "عرض المختص",
+      "viewAll": "عرض الكل"
     },
     "empty": {
-      "heading": "ستظهر هنا آخر نشاطاتك",
-      "note": "بعد أي حجز أو دفع أو اختبار، ستجده هنا."
+      "heading": "لا توجد أنشطة بعد",
+      "note": "عندما تحجز أو تستخدم الدعم، ستظهر التفاصيل هنا."
     }
   },
   "support": {
     "heading": "الدعم",
-    "openTicket": "لا يزال لديك طلب دعم مفتوح مرتبط بحسابك.",
-    "viewTicket": "فتح تذكرة الدعم",
+    "openTicket": "لديك طلب دعم مفتوح مرتبط بحسابك.",
+    "viewTicket": "فتح التذكرة",
     "updatedAt": "آخر تحديث {date}",
-    "empty": "إذا احتجت مساعدة، يمكنك فتح الدعم من هنا.",
-    "chatCta": "فتح الدعم",
+    "empty": "لو عندك مشكلة في الحجز أو الدفع أو دخول الجلسة، الدعم يساعدك.",
+    "chatCta": "تواصل مع الدعم",
     "categories": {
       "BOOKING": "الحجز",
       "PAYMENT": "الدفع",
@@ -104,13 +111,16 @@
       "ESCALATED": "تم التصعيد",
       "RESOLVED": "تم الحل",
       "CLOSED": "مغلقة"
-    }
+    },
+    "zeroHint": "لا توجد طلبات مفتوحة",
+    "openTicketBody": "لديك طلب دعم مفتوح. يمكنك متابعة آخر تحديث من هنا.",
+    "sectionTitle": "الدعم يتابع طلبك"
   },
   "quickLinks": {
     "careHeading": "واصل رحلتك",
-    "careNote": "ابدأ من الخطوة التي تساعدك على التقدم بجهد أقل.",
-    "utilityHeading": "اختصارات مفيدة",
-    "utilityNote": "الأدوات المهمة قريبة منك وقت الحاجة.",
+    "careNote": "ابدأ من الخطوة التي تنقلك للأمام.",
+    "utilityHeading": "اختصارات سريعة",
+    "utilityNote": "أدوات مهمة في مكان واحد.",
     "sessions": "الجلسات",
     "payments": "المدفوعات",
     "practitioners": "المختصون",
@@ -118,17 +128,17 @@
     "support": "الدعم"
   },
   "nextSteps": {
-    "moreHeading": "خطوات أخرى مفيدة",
+    "moreHeading": "خطوات أخرى",
     "unavailable": "هذه الخطوة غير متاحة على الويب الآن.",
     "types": {
       "COMPLETE_PAYMENT": {
         "title": "أكمل الدفعة المعلقة",
-        "note": "أكمل الدفع لتأكيد الجلسة.",
+        "note": "أتم الدفع لتأكيد الجلسة.",
         "cta": "أكمل الدفع"
       },
       "JOIN_UPCOMING_SESSION": {
         "title": "استعد للجلسة القادمة",
-        "note": "راجع تفاصيل الجلسة وحالتها الحالية.",
+        "note": "راجع تفاصيل الجلسة وحالتها.",
         "cta": "افتح تفاصيل الجلسة"
       },
       "VIEW_SUPPORT_TICKET": {
@@ -138,24 +148,25 @@
       },
       "TAKE_ASSESSMENT": {
         "title": "ابدأ اختبارًا مبدئيًا",
-        "note": "اختبار قصير يساعدك تفهم احتياجك الآن.",
-        "cta": "اختبارات مبدئية"
+        "note": "اختبار قصير يساعدك على فهم احتياجك.",
+        "cta": "اختبار قصير"
       },
       "START_GUIDED_MATCHING": {
-        "title": "توصل للمعالج المناسب",
+        "title": "توصل للمختص المناسب",
         "note": "المطابقة الموجهة تساعدك على الوصول إلى مختص مناسب.",
-        "cta": "توصل للمعالج المناسب"
+        "cta": "ساعدني أختار"
       },
       "BOOK_NEXT_SESSION": {
         "title": "احجز جلستك التالية",
-        "note": "استعرض المختصين واختر الموعد المناسب.",
+        "note": "تصفح المختصين واختر الموعد المناسب.",
         "cta": "تصفح المختصين"
       }
     }
   },
   "states": {
     "error": {
-      "heading": "تعذّر تحميل رحلتك الآن",
+      "eyebrow": "خطأ في التحميل",
+      "heading": "تعذّر تحميل رحلتك",
       "note": "يرجى المحاولة مرة أخرى.",
       "retry": "إعادة المحاولة"
     }

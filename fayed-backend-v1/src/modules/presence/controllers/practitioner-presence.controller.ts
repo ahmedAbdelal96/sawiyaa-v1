@@ -37,6 +37,7 @@ import { SetMyPresenceStatusUseCase } from '../use-cases/set-my-presence-status.
 @RequireAccountStates(
   AccountStateRequirement.ACTIVE_ACCOUNT,
   AccountStateRequirement.PRACTITIONER_OTP_VERIFIED,
+  AccountStateRequirement.PRACTITIONER_APPROVED,
 )
 @Roles(AppRole.PRACTITIONER)
 @Controller('practitioners/me/presence')

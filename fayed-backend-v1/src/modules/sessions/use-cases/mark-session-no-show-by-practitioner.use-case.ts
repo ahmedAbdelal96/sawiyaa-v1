@@ -10,6 +10,7 @@ import { SessionMapper } from '../mappers/session.mapper';
 import { SessionPractitionerRepository } from '../repositories/session-practitioner.repository';
 import { SessionRepository } from '../repositories/session.repository';
 import { ValidateSessionStatusTransitionService } from '../services/validate-session-status-transition.service';
+import { OperationalNotificationService } from '@modules/notifications/services/operational-notification.service';
 
 @Injectable()
 export class MarkSessionNoShowByPractitionerUseCase {
@@ -19,6 +20,7 @@ export class MarkSessionNoShowByPractitionerUseCase {
     private readonly sessionRepository: SessionRepository,
     private readonly sessionMapper: SessionMapper,
     private readonly validateSessionStatusTransitionService: ValidateSessionStatusTransitionService,
+    private readonly operationalNotificationService: OperationalNotificationService,
   ) {}
 
   async execute(input: {
@@ -82,6 +84,11 @@ export class MarkSessionNoShowByPractitionerUseCase {
       );
 
       return noShowSession;
+    });
+
+    await this.operationalNotificationService.cancelSessionReminders({
+      sessionId: updatedSession.id,
+      cancelledAt: new Date(),
     });
 
     return {

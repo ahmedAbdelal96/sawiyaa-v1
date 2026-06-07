@@ -1,19 +1,127 @@
 import { Injectable } from '@nestjs/common';
-import { Payment, Prisma, Refund, RefundStatus } from '@prisma/client';
+import { Payment, PaymentStatus, Prisma, Refund, RefundStatus, SessionStatus } from '@prisma/client';
 import { PaymentRegionalPricingMode } from '@common/payments/payment-region.resolver';
 import {
   AdminPaymentOpsViewModel,
+  PaymentAction,
+  PaymentActionReason,
   PaymentViewModel,
   RefundViewModel,
 } from '../types/payments.types';
 
-type PaymentWithRefunds = Payment & {
+type PaymentWithRefundsAndSession = Payment & {
   refunds?: Array<Pick<Refund, 'processedAt'>>;
+  session?: {
+    id: string;
+    status: SessionStatus;
+    expiresAt: Date | null;
+  } | null;
 };
 
 @Injectable()
 export class PaymentMapper {
-  toViewModel(payment: PaymentWithRefunds): PaymentViewModel {
+  private computePaymentAction(
+    payment: PaymentWithRefundsAndSession,
+  ): PaymentAction {
+    const now = new Date();
+
+    // ── A. Terminal/completed payment statuses ──────────────────────────
+    switch (payment.status) {
+      case PaymentStatus.CAPTURED:
+        return { canPay: false, reason: 'COMPLETED' };
+      case PaymentStatus.REFUNDED:
+      case PaymentStatus.PARTIALLY_REFUNDED:
+        return { canPay: false, reason: 'REFUNDED' };
+      case PaymentStatus.FAILED:
+        return { canPay: false, reason: 'FAILED' };
+      case PaymentStatus.CANCELLED:
+        return { canPay: false, reason: 'CANCELLED' };
+      case PaymentStatus.EXPIRED:
+        return { canPay: false, reason: 'SESSION_EXPIRED' };
+      case PaymentStatus.REFUND_PENDING:
+        return { canPay: false, reason: 'PROCESSING' };
+    }
+
+    // ── B. Session-dependent logic — always check session BEFORE payment status ──
+
+    if (!payment.session) {
+      // Payment has no session link — cannot be paid via session flow
+      return { canPay: false, reason: 'UNAVAILABLE' };
+    }
+
+    const session = payment.session;
+
+    // Session is expired
+    if (session.status === SessionStatus.EXPIRED) {
+      return {
+        canPay: false,
+        reason: 'SESSION_EXPIRED',
+        sessionStatus: session.status,
+        sessionExpiresAt: session.expiresAt?.toISOString() ?? null,
+      };
+    }
+
+    // Session is not PENDING_PAYMENT — cannot be paid right now
+    if (session.status !== SessionStatus.PENDING_PAYMENT) {
+      return {
+        canPay: false,
+        reason: 'UNAVAILABLE',
+        sessionStatus: session.status,
+        sessionExpiresAt: session.expiresAt?.toISOString() ?? null,
+      };
+    }
+
+    // ── C. session.status === PENDING_PAYMENT ────────────────────────────
+
+    // Payment window has closed
+    if (session.expiresAt && session.expiresAt < now) {
+      return {
+        canPay: false,
+        reason: 'SESSION_EXPIRED',
+        sessionStatus: session.status,
+        sessionExpiresAt: session.expiresAt.toISOString(),
+      };
+    }
+
+    // session is PENDING_PAYMENT and not expired — evaluate by payment status
+    switch (payment.status) {
+      case PaymentStatus.CREATED:
+      case PaymentStatus.REQUIRES_ACTION:
+        // Patient still needs to complete an action (hosted checkout, etc.)
+        return {
+          canPay: true,
+          reason: 'PAYABLE',
+          sessionStatus: session.status,
+          sessionExpiresAt: session.expiresAt?.toISOString() ?? null,
+        };
+      case PaymentStatus.PENDING:
+        // Provider has not yet confirmed — waiting on provider side
+        return {
+          canPay: false,
+          reason: 'PROCESSING',
+          sessionStatus: session.status,
+          sessionExpiresAt: session.expiresAt?.toISOString() ?? null,
+        };
+      case PaymentStatus.AUTHORIZED:
+        // Auth holds exist — awaiting capture (should not reach here for new sessions,
+        // but AUTHORIZED without capture means payment window is still valid)
+        return {
+          canPay: true,
+          reason: 'PAYABLE',
+          sessionStatus: session.status,
+          sessionExpiresAt: session.expiresAt?.toISOString() ?? null,
+        };
+      default:
+        return {
+          canPay: false,
+          reason: 'UNAVAILABLE',
+          sessionStatus: session.status,
+          sessionExpiresAt: session.expiresAt?.toISOString() ?? null,
+        };
+    }
+  }
+
+  toViewModel(payment: PaymentWithRefundsAndSession): PaymentViewModel {
     const metadata = (payment.metadataJson ?? {}) as Record<string, unknown>;
     const refundedAt =
       payment.refunds?.find((refund) => refund.processedAt)?.processedAt ??
@@ -65,6 +173,7 @@ export class PaymentMapper {
       expiredAt: payment.expiredAt?.toISOString() ?? null,
       refundedAt: refundedAt?.toISOString() ?? null,
       createdAt: payment.createdAt.toISOString(),
+      paymentAction: this.computePaymentAction(payment),
     };
   }
 

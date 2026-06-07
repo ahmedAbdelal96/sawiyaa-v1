@@ -90,7 +90,9 @@ export default function PatientProfileScreen() {
   const birthDateLabel =
     formatProfileDate(profile?.dateOfBirth, i18n.language) ??
     t("profileScreen.none");
-  const genderLabel = profile?.gender?.trim() || t("profileScreen.none");
+  const genderLabel = profile?.gender?.trim()
+    ? t(`profileScreen.details.genderOptions.${profile.gender?.trim()}` as const)
+    : t("profileScreen.none");
 
   return (
     <Screen bg="background">
@@ -275,11 +277,8 @@ export default function PatientProfileScreen() {
         </Card>
 
         <SectionHeader
-          title={t("profileScreen.moreSections.account", "Account")}
-          subtitle={t(
-            "profileScreen.moreSections.accountSubtitle",
-            "Manage identity, balance, and preferences",
-          )}
+          title={t("profileScreen.moreSections.account")}
+          subtitle={t("profileScreen.moreSections.accountSubtitle")}
         />
 
         <Card
@@ -366,11 +365,8 @@ export default function PatientProfileScreen() {
         </Card>
 
         <SectionHeader
-          title={t("profileScreen.moreSections.contentSupport", "Content & Support")}
-          subtitle={t(
-            "profileScreen.moreSections.contentSupportSubtitle",
-            "Quick access to updates, help, and alerts",
-          )}
+          title={t("profileScreen.moreSections.contentSupport")}
+          subtitle={t("profileScreen.moreSections.contentSupportSubtitle")}
         />
 
         <Card
@@ -383,8 +379,11 @@ export default function PatientProfileScreen() {
         >
           <View style={styles.rowPad}>
             <ListRow
-              title="Articles"
-              subtitle="Browse health content and guidance"
+              title={t("profileScreen.hub.rows.articles.title", "Articles")}
+              subtitle={t(
+                "profileScreen.hub.rows.articles.subtitle",
+                "Browse health content and guidance",
+              )}
               leftElement={
                 <Ionicons
                   name="newspaper-outline"
@@ -479,11 +478,8 @@ export default function PatientProfileScreen() {
         </Card>
 
         <SectionHeader
-          title={t("profileScreen.moreSections.learningPurchases", "Learning & Purchases")}
-          subtitle={t(
-            "profileScreen.moreSections.learningPurchasesSubtitle",
-            "Browse programs and track package plans",
-          )}
+          title={t("profileScreen.moreSections.learningPurchases")}
+          subtitle={t("profileScreen.moreSections.learningPurchasesSubtitle")}
         />
 
         <Card
@@ -496,11 +492,8 @@ export default function PatientProfileScreen() {
         >
           <View style={styles.rowPad}>
             <ListRow
-              title={t("profileScreen.more.rows.academy.title", "Academy")}
-              subtitle={t(
-                "profileScreen.more.rows.academy.subtitle",
-                "Browse self-paced learning programs",
-              )}
+              title={t("profileScreen.more.rows.academy.title")}
+              subtitle={t("profileScreen.more.rows.academy.subtitle")}
               leftElement={
                 <Ionicons
                   name="school-outline"
@@ -514,11 +507,8 @@ export default function PatientProfileScreen() {
           </View>
           <View style={styles.rowPad}>
             <ListRow
-              title={t("profileScreen.more.rows.packages.title", "Package purchases")}
-              subtitle={t(
-                "profileScreen.more.rows.packages.subtitle",
-                "Track package progress and payments",
-              )}
+              title={t("profileScreen.more.rows.packages.title")}
+              subtitle={t("profileScreen.more.rows.packages.subtitle")}
               leftElement={
                 <Ionicons
                   name="layers-outline"
@@ -533,11 +523,8 @@ export default function PatientProfileScreen() {
         </Card>
 
         <SectionHeader
-          title={t("profileScreen.hub.sections.account")}
-          subtitle={t(
-            "profileScreen.moreSections.accountLogoutSubtitle",
-            "Sign out when you are done using this device",
-          )}
+          title={t("profileScreen.moreSections.account")}
+          subtitle={t("profileScreen.moreSections.accountLogoutSubtitle")}
         />
 
         <Card
@@ -584,54 +571,54 @@ const styles = StyleSheet.create({
   },
   headerBlock: {
     alignItems: "center",
-    paddingVertical: 18,
+    paddingVertical: 14,
   },
   heroCard: {
     borderRightWidth: 4,
   },
   avatar: {
-    width: 92,
-    height: 92,
-    borderRadius: 46,
-    marginBottom: 14,
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    marginBottom: 10,
     alignItems: "center",
     justifyContent: "center",
   },
   avatarText: {
-    fontSize: 28,
+    fontSize: 22,
   },
   avatarImage: {
-    width: 92,
-    height: 92,
-    borderRadius: 46,
-    marginBottom: 14,
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    marginBottom: 10,
   },
   name: {
-    fontSize: 34,
-    lineHeight: 38,
-    marginBottom: 6,
+    fontSize: 24,
+    lineHeight: 30,
+    marginBottom: 4,
   },
   email: {
-    fontSize: 15,
-  },
-  secondaryLine: {
-    marginTop: 4,
     fontSize: 13,
   },
+  secondaryLine: {
+    marginTop: 2,
+    fontSize: 12,
+  },
   profileIdPill: {
-    marginTop: 10,
+    marginTop: 8,
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
     borderRadius: 10,
     paddingHorizontal: 10,
-    paddingVertical: 6,
+    paddingVertical: 5,
   },
   profileIdText: {
-    fontSize: 13,
+    fontSize: 12,
   },
   heroMetaWrap: {
-    marginTop: 14,
+    marginTop: 10,
     flexDirection: "row",
     flexWrap: "wrap",
     justifyContent: "center",
@@ -639,17 +626,17 @@ const styles = StyleSheet.create({
   },
   heroMetaPill: {
     borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
   },
   heroMetaText: {
-    fontSize: 12,
+    fontSize: 11,
   },
   heroCaption: {
-    marginTop: 12,
+    marginTop: 8,
     textAlign: "center",
-    fontSize: 13,
-    lineHeight: 20,
+    fontSize: 12,
+    lineHeight: 18,
   },
   inlineBadge: {
     minWidth: 28,

@@ -62,7 +62,7 @@ export default async function WhyFayedSection() {
                 }`}
               >
                 <div
-                  className={`mb-5 inline-flex h-12 w-12 items-center justify-center rounded-2xl ring-1 ring-inset ring-black/4 ${feature.bgColor}`}
+                  className={`mb-5 inline-flex h-12 w-12 items-center justify-center rounded-2xl ring-1 ring-inset ring-black/4 ${feature.bgColor} ${feature.ringColor}`}
                 >
                   <Icon size={22} className={feature.iconColor} />
                 </div>

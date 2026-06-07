@@ -110,3 +110,31 @@ export class AdminPatientDetailsSuccessResponseDto {
   @ApiProperty({ type: AdminPatientDetailsDto })
   item!: AdminPatientDetailsDto;
 }
+
+export class AdminPatientCountryChangeCountryDto {
+  @ApiProperty()
+  id!: string;
+
+  @ApiProperty()
+  isoCode!: string;
+
+  @ApiProperty()
+  name!: string;
+}
+
+export class AdminPatientCountryChangeSuccessResponseDto {
+  @ApiProperty()
+  message!: string;
+
+  @ApiProperty()
+  patientId!: string;
+
+  @ApiProperty()
+  patientProfileId!: string;
+
+  @ApiProperty({ type: AdminPatientCountryChangeCountryDto, nullable: true })
+  country!: AdminPatientCountryChangeCountryDto | null;
+
+  @ApiProperty()
+  updatedAt!: string;
+}

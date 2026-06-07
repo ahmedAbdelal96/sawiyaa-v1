@@ -30,6 +30,13 @@ export class PatientProfileRepository {
     });
   }
 
+  findCountryIdByUserId(userId: string, tx?: Prisma.TransactionClient) {
+    return this.getDb(tx).patientProfile.findUnique({
+      where: { userId },
+      select: { countryId: true },
+    });
+  }
+
   create(
     data: Prisma.PatientProfileUncheckedCreateInput,
     tx?: Prisma.TransactionClient,
@@ -60,6 +67,26 @@ export class PatientProfileRepository {
           select: {
             id: true,
             isoCode: true,
+          },
+        },
+      },
+    });
+  }
+
+  updateCountry(
+    userId: string,
+    countryId: string,
+    tx?: Prisma.TransactionClient,
+  ) {
+    return this.getDb(tx).patientProfile.update({
+      where: { userId },
+      data: { countryId },
+      include: {
+        country: {
+          select: {
+            id: true,
+            isoCode: true,
+            name: true,
           },
         },
       },

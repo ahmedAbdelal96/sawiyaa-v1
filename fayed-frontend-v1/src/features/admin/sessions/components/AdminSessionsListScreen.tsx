@@ -627,7 +627,7 @@ export default function AdminSessionsListScreen() {
                         allSessionsQuery.refetch();
                       }
                     }}
-                    className="mt-5 inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-primary/90"
+                    className="mt-5 inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary/90"
                   >
                     <RefreshCw className="h-4 w-4" />
                     {t("states.error.retry")}

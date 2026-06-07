@@ -179,6 +179,11 @@ export class CancelSessionUseCase {
       scheduledStartAt: updatedSession.scheduledStartAt,
     });
 
+    await this.operationalNotificationService.cancelSessionReminders({
+      sessionId: updatedSession.id,
+      cancelledAt,
+    });
+
     return {
       item: this.sessionMapper.toDetails(updatedSession),
     };

@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Query, Req, UseGuards } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiForbiddenResponse,
@@ -8,6 +8,7 @@ import {
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
+import { Request } from 'express';
 import { CurrentUser } from '@common/decorators/current-user.decorator';
 import { Permissions } from '@common/decorators/permissions.decorator';
 import { Roles } from '@common/decorators/roles.decorator';
@@ -24,10 +25,13 @@ import type { SupportedLocale } from '@common/i18n/types/locale.types';
 import {
   AdminPatientDetailsSuccessResponseDto,
   AdminPatientsListSuccessResponseDto,
+  AdminPatientCountryChangeSuccessResponseDto,
 } from '../dto/admin-patients-response.dto';
 import { ListAdminPatientsDto } from '../dto/list-admin-patients.dto';
+import { AdminPatientCountryChangeDto } from '../dto/admin-patient-country-change.dto';
 import { GetAdminPatientDetailsUseCase } from '../use-cases/get-admin-patient-details.use-case';
 import { ListAdminPatientsUseCase } from '../use-cases/list-admin-patients.use-case';
+import { AdminPatientCountryChangeUseCase } from '../use-cases/admin-patient-country-change.use-case';
 
 @ApiTags('Admin - Patients')
 @ApiBearerAuth()
@@ -38,6 +42,7 @@ export class AdminPatientsController {
   constructor(
     private readonly listAdminPatientsUseCase: ListAdminPatientsUseCase,
     private readonly getAdminPatientDetailsUseCase: GetAdminPatientDetailsUseCase,
+    private readonly adminPatientCountryChangeUseCase: AdminPatientCountryChangeUseCase,
     private readonly securityAuditService: SecurityAuditService,
   ) {}
 
@@ -101,5 +106,36 @@ export class AdminPatientsController {
         });
         return result;
       });
+  }
+
+  @Patch(':patientId/country')
+  @Permissions(PermissionKey.PATIENTS_UPDATE_ADMIN)
+  @ApiOperation({
+    summary: 'Change patient country (admin/support only)',
+    description:
+      'Updates the country stored against a patient profile. Used for pricing correction after identity verification. Requires a reason for audit trail.',
+  })
+  @ApiParam({ name: 'patientId', description: 'Patient user ID' })
+  @ApiResponse({ status: 200, type: AdminPatientCountryChangeSuccessResponseDto })
+  @ApiUnauthorizedResponse({ description: 'Access token is required' })
+  @ApiForbiddenResponse({
+    description: 'Only admin/support roles with patients.update.admin permission may access this route',
+  })
+  changeCountry(
+    @CurrentUser() currentUser: AuthenticatedUser,
+    @CurrentLocale() locale: SupportedLocale,
+    @Param('patientId') patientId: string,
+    @Body() body: AdminPatientCountryChangeDto,
+    @Req() request: Request,
+  ) {
+    return this.adminPatientCountryChangeUseCase.execute({
+      actorId: currentUser.id,
+      actorRoles: currentUser.roles,
+      patientId,
+      locale,
+      data: body,
+      ipAddress: request.ip ?? null,
+      userAgent: request.headers['user-agent'] ?? null,
+    });
   }
 }

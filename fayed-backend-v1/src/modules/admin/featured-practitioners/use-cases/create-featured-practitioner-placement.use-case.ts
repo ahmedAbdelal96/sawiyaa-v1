@@ -16,7 +16,6 @@ export class CreateFeaturedPractitionerPlacementUseCase {
     const created = await this.managementService.create({
       actorUserId: input.actorUserId,
       practitionerId: input.payload.practitionerId,
-      practitionerSlug: input.payload.practitionerSlug,
       surface: input.payload.surface,
       startsAt: input.payload.startsAt,
       endsAt: input.payload.endsAt,
@@ -32,4 +31,3 @@ export class CreateFeaturedPractitionerPlacementUseCase {
     return presentPlacement(created);
   }
 }
-

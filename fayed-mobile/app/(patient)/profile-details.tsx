@@ -1,13 +1,15 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import {
   Image,
   ScrollView,
   StyleSheet,
   TouchableOpacity,
   View,
+  Alert,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import * as ImagePicker from "expo-image-picker";
 import {
   Header,
   Screen,
@@ -18,7 +20,11 @@ import {
 import { useAuth } from "../../src/providers/AuthProvider";
 import { useTheme } from "../../src/providers/ThemeProvider";
 import { useTranslation } from "react-i18next";
-import { usePatientProfile } from "../../src/features/patient/profile/hooks";
+import {
+  usePatientProfile,
+  useRemovePatientAvatar,
+  useUploadPatientAvatar,
+} from "../../src/features/patient/profile/hooks";
 import {
   formatProfileDate,
   getInitials,
@@ -26,6 +32,7 @@ import {
 import {
   getCountryLabel,
 } from "../../src/features/patient/profile/country-utils";
+import { extractApiErrorMessage } from "../../src/lib/api";
 
 
 function InfoRow({
@@ -57,10 +64,13 @@ export default function PatientProfileDetailsScreen() {
   const { theme } = useTheme();
   const { t, i18n } = useTranslation();
   const isRtl = i18n.language?.startsWith("ar") ?? false;
-  const isArabic = isRtl;
 
   const profileQuery = usePatientProfile();
+  const uploadAvatar = useUploadPatientAvatar();
+  const removeAvatar = useRemovePatientAvatar();
   const profile = profileQuery.data?.profile;
+
+  const [avatarActionSheetVisible, setAvatarActionSheetVisible] = useState(false);
 
   const displayName =
     profile?.displayName?.trim() ||
@@ -78,6 +88,70 @@ export default function PatientProfileDetailsScreen() {
 
   const countryLabel = getCountryLabel(profile?.countryCode ?? null, i18n.language);
 
+  const pickImage = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert(
+        t("profileScreen.details.avatar.permissionNeeded"),
+        t("profileScreen.details.avatar.permissionDenied"),
+      );
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+
+    if (result.canceled || !result.assets?.[0]) return;
+
+    const asset = result.assets[0];
+    const fileSizeMB = (asset.fileSize ?? 0) / (1024 * 1024);
+    if (fileSizeMB > 5) {
+      Alert.alert(t("profileScreen.details.avatar.imageTooLarge"));
+      return;
+    }
+
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
+    if (!allowedTypes.includes(asset.mimeType ?? "")) {
+      Alert.alert(t("profileScreen.details.avatar.unsupportedType"));
+      return;
+    }
+
+    try {
+      setAvatarActionSheetVisible(false);
+      await uploadAvatar.mutateAsync({
+        uri: asset.uri,
+        fileName: `avatar.${asset.uri.split(".").pop()?.toLowerCase() ?? "jpg"}`,
+        mimeType: asset.mimeType ?? "image/jpeg",
+        fileSize: asset.fileSize,
+      });
+    } catch (error) {
+      Alert.alert(
+        t("profileScreen.common.saveFailedTitle"),
+        extractApiErrorMessage(error) ||
+          t("profileScreen.details.avatar.uploadFailed"),
+      );
+    }
+  };
+
+  const handleRemoveAvatar = async () => {
+    try {
+      setAvatarActionSheetVisible(false);
+      await removeAvatar.mutateAsync();
+    } catch (error) {
+      Alert.alert(
+        t("profileScreen.common.saveFailedTitle"),
+        extractApiErrorMessage(error) ||
+          t("profileScreen.details.avatar.uploadFailed"),
+      );
+    }
+  };
+
+  const isAvatarLoading = uploadAvatar.isPending || removeAvatar.isPending;
+
   return (
     <Screen bg="background">
       <Header title={t("profileScreen.details.screenTitle")} showBack />
@@ -92,7 +166,21 @@ export default function PatientProfileDetailsScreen() {
           ]}
         >
           <View style={[styles.avatarRow, isRtl ? styles.avatarRowRtl : null]}>
-            {avatarUri ? (
+            {isAvatarLoading ? (
+              <View
+                style={[
+                  styles.avatarFallback,
+                  styles.avatarLoading,
+                  { backgroundColor: theme.colors.primaryLight },
+                ]}
+              >
+                <Ionicons
+                  name="cloud-upload-outline"
+                  size={24}
+                  color={theme.colors.primary}
+                />
+              </View>
+            ) : avatarUri ? (
               <Image source={{ uri: avatarUri }} style={styles.avatarImage} />
             ) : (
               <View
@@ -126,13 +214,14 @@ export default function PatientProfileDetailsScreen() {
             </View>
             <TouchableOpacity
               activeOpacity={0.7}
-              onPress={() => router.push("/(patient)/profile-details/edit" as any)}
+              onPress={() => setAvatarActionSheetVisible(true)}
+              disabled={isAvatarLoading}
               style={isRtl ? styles.editButtonRtl : styles.editButtonLtr}
             >
               <Ionicons
                 name="camera-outline"
                 size={18}
-                color={theme.colors.primary}
+                color={isAvatarLoading ? theme.colors.textMuted : theme.colors.primary}
               />
             </TouchableOpacity>
           </View>
@@ -223,6 +312,17 @@ export default function PatientProfileDetailsScreen() {
           variant="secondary"
         />
       </ScrollView>
+
+      <AvatarActionSheet
+        visible={avatarActionSheetVisible}
+        onClose={() => setAvatarActionSheetVisible(false)}
+        onPickImage={pickImage}
+        onRemove={handleRemoveAvatar}
+        hasAvatar={!!(profile?.avatarUrl || profile?.avatarDataUrl)}
+        isRtl={isRtl}
+        theme={theme}
+        t={t}
+      />
     </Screen>
   );
 }
@@ -317,4 +417,121 @@ const styles = StyleSheet.create({
     marginRight: 8,
     padding: 6,
   },
+  avatarLoading: {
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  avatarActionBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.4)",
+    justifyContent: "flex-end",
+  },
+  avatarActionSheet: {
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingBottom: 40,
+    paddingTop: 10,
+    paddingHorizontal: 20,
+  },
+  avatarActionHandle: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    alignSelf: "center",
+    marginBottom: 16,
+  },
+  avatarActionItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+    paddingVertical: 16,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  avatarActionLabel: {
+    fontSize: 16,
+  },
 });
+
+function AvatarActionSheet({
+  visible,
+  onClose,
+  onPickImage,
+  onRemove,
+  hasAvatar,
+  isRtl,
+  theme,
+  t,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  onPickImage: () => void;
+  onRemove: () => void;
+  hasAvatar: boolean;
+  isRtl: boolean;
+  theme: ReturnType<typeof useTheme>["theme"];
+  t: (key: string) => string;
+}) {
+  if (!visible) return null;
+
+  return (
+    <View style={styles.avatarActionBackdrop}>
+      <TouchableOpacity
+        style={StyleSheet.absoluteFill}
+        activeOpacity={1}
+        onPress={onClose}
+      />
+      <View
+        style={[
+          styles.avatarActionSheet,
+          { backgroundColor: theme.colors.surface },
+        ]}
+      >
+        <View
+          style={[
+            styles.avatarActionHandle,
+            { backgroundColor: theme.colors.borderLight },
+          ]}
+        />
+        <TouchableOpacity
+          activeOpacity={0.7}
+          onPress={onPickImage}
+          style={[
+            styles.avatarActionItem,
+            { borderBottomColor: theme.colors.borderLight },
+          ]}
+        >
+          <Ionicons
+            name="image-outline"
+            size={22}
+            color={theme.colors.primary}
+          />
+          <Text
+            weight="500"
+            style={[styles.avatarActionLabel, { color: theme.colors.textPrimary }]}
+          >
+            {t("profileScreen.details.avatar.choosePhoto")}
+          </Text>
+        </TouchableOpacity>
+        {hasAvatar && (
+          <TouchableOpacity
+            activeOpacity={0.7}
+            onPress={onRemove}
+            style={styles.avatarActionItem}
+          >
+            <Ionicons
+              name="trash-outline"
+              size={22}
+              color="#ef4444"
+            />
+            <Text
+              weight="500"
+              style={[styles.avatarActionLabel, { color: "#ef4444" }]}
+            >
+              {t("profileScreen.details.avatar.removePhoto")}
+            </Text>
+          </TouchableOpacity>
+        )}
+      </View>
+    </View>
+  );
+}

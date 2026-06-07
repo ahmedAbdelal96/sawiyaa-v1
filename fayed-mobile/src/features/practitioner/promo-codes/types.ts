@@ -7,6 +7,18 @@ export type PractitionerCouponStatus =
   | "EXPIRED"
   | "DISABLED";
 
+export type PractitionerCouponEffectiveStatus =
+  | PractitionerCouponStatus
+  | "NOT_STARTED"
+  | "USAGE_LIMIT_REACHED";
+
+export type PractitionerCouponEffectiveStatusReason =
+  | "ENDED"
+  | "NOT_STARTED"
+  | "DISABLED"
+  | "USAGE_LIMIT_REACHED"
+  | null;
+
 export type PractitionerCouponScope =
   | "PRACTITIONER_SESSIONS"
   | "PLATFORM_WIDE"
@@ -21,6 +33,8 @@ export interface PractitionerCouponItem {
   slug: string;
   couponScope: PractitionerCouponScope;
   status: PractitionerCouponStatus;
+  effectiveStatus: PractitionerCouponEffectiveStatus;
+  effectiveStatusReason: PractitionerCouponEffectiveStatusReason;
   discountType: PractitionerCouponDiscountType;
   discountValue: string;
   maxDiscountAmount: string | null;
@@ -105,4 +119,3 @@ export interface UpdatePractitionerCouponRequest {
   endsAt?: string;
   isActive?: boolean;
 }
-

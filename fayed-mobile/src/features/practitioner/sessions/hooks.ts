@@ -8,6 +8,7 @@ import { useAuthenticatedQueryEnabled } from "../../auth/query-auth";
 import {
   getPractitionerSession,
   getPractitionerSessions,
+  getPractitionerSessionSummary,
   markPractitionerSessionCompleted,
   markPractitionerSessionNoShow,
   preparePractitionerSessionRuntime,
@@ -21,6 +22,7 @@ export const practitionerSessionQueryKeys = {
     [...practitionerSessionQueryKeys.all, "list", params ?? {}] as const,
   infiniteList: (params?: Omit<ListSessionsQuery, "page">) =>
     [...practitionerSessionQueryKeys.all, "infinite-list", params ?? {}] as const,
+  summary: () => [...practitionerSessionQueryKeys.all, "summary"] as const,
   detail: (sessionId: string) =>
     [...practitionerSessionQueryKeys.all, "detail", sessionId] as const,
 };
@@ -31,6 +33,20 @@ export function usePractitionerSessions(params?: ListSessionsQuery) {
   return useQuery({
     queryKey: practitionerSessionQueryKeys.list(params),
     queryFn: () => getPractitionerSessions(params),
+    enabled,
+    staleTime: 30_000,
+  });
+}
+
+export function usePractitionerSessionSummary() {
+  const enabled = useAuthenticatedQueryEnabled("practitioner");
+
+  return useQuery({
+    queryKey: practitionerSessionQueryKeys.summary(),
+    queryFn: async () => {
+      const response = await getPractitionerSessionSummary();
+      return response.item;
+    },
     enabled,
     staleTime: 30_000,
   });

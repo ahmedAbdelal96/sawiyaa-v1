@@ -56,6 +56,7 @@ import { UpdateAvailabilityExceptionUseCase } from '../use-cases/update-availabi
 @RequireAccountStates(
   AccountStateRequirement.ACTIVE_ACCOUNT,
   AccountStateRequirement.PRACTITIONER_OTP_VERIFIED,
+  AccountStateRequirement.PRACTITIONER_APPROVED,
 )
 @Roles(AppRole.PRACTITIONER)
 @Controller('practitioners/me/availability')

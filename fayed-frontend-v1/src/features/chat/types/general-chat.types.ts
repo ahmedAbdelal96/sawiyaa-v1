@@ -5,6 +5,22 @@ export type GeneralChatConversationStatus =
   | "EXPIRED"
   | "SUSPENDED";
 
+export type GeneralChatAvailabilityReason =
+  | "ALLOWED"
+  | "SESSION_NOT_STARTED"
+  | "SESSION_ENDED"
+  | "SESSION_CANCELLED"
+  | "CONVERSATION_CLOSED"
+  | "MODERATION_LOCKED"
+  | "NOT_PARTICIPANT";
+
+export type GeneralChatAvailability = {
+  canRead: boolean;
+  canSend: boolean;
+  readOnly: boolean;
+  reason: GeneralChatAvailabilityReason;
+};
+
 export type GeneralChatConversationParticipantRole =
   | "PATIENT"
   | "PRACTITIONER"
@@ -37,6 +53,7 @@ export type GeneralChatConversationIdentity = {
   linkedSessionId: string | null;
   participants: GeneralChatConversationParticipant[];
   wasCreated: boolean;
+  chatAvailability: GeneralChatAvailability;
 };
 
 export type GeneralChatOpenSessionResponse = {

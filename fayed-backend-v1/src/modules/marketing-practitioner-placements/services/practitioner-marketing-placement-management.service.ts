@@ -11,8 +11,7 @@ import { PractitionerMarketingPlacementManagementRepository } from '../repositor
 
 type CreatePlacementInput = {
   actorUserId: string;
-  practitionerId?: string;
-  practitionerSlug?: string;
+  practitionerId: string;
   surface: 'HOME' | 'DISCOVERY' | 'ALL';
   startsAt: string;
   endsAt?: string;
@@ -94,11 +93,23 @@ export class PractitionerMarketingPlacementManagementService {
 
     const practitioner = await this.repository.findEligiblePractitioner({
       id: input.practitionerId,
-      slug: input.practitionerSlug,
     });
     if (!practitioner) {
       throw new BadRequestException({
         error: 'FEATURED_PLACEMENT_INVALID_PRACTITIONER',
+      });
+    }
+
+    const overlappingPlacement =
+      await this.repository.findActiveOverlappingPlacement({
+        practitionerId: practitioner.id,
+        surface: input.surface,
+        startsAt,
+        endsAt,
+      });
+    if (overlappingPlacement) {
+      throw new BadRequestException({
+        error: 'FEATURED_PLACEMENT_OVERLAPPING_ACTIVE',
       });
     }
 
@@ -140,6 +151,20 @@ export class PractitionerMarketingPlacementManagementService {
           : null
         : existing.endsAt;
     this.assertValidDateRange(startsAt, endsAt);
+
+    const overlappingPlacement =
+      await this.repository.findActiveOverlappingPlacement({
+        practitionerId: existing.practitionerId,
+        surface: input.surface ?? existing.surface,
+        startsAt,
+        endsAt,
+        excludePlacementId: existing.id,
+      });
+    if (overlappingPlacement) {
+      throw new BadRequestException({
+        error: 'FEATURED_PLACEMENT_OVERLAPPING_ACTIVE',
+      });
+    }
 
     const before = this.repository.toSnapshot(existing);
     const updated = await this.repository.update(input.id, {
@@ -216,6 +241,20 @@ export class PractitionerMarketingPlacementManagementService {
       return existing;
     }
 
+    const overlappingPlacement =
+      await this.repository.findActiveOverlappingPlacement({
+        practitionerId: existing.practitionerId,
+        surface: existing.surface,
+        startsAt: existing.startsAt,
+        endsAt: existing.endsAt,
+        excludePlacementId: existing.id,
+      });
+    if (overlappingPlacement) {
+      throw new BadRequestException({
+        error: 'FEATURED_PLACEMENT_OVERLAPPING_ACTIVE',
+      });
+    }
+
     const before = this.repository.toSnapshot(existing);
     const updated = await this.repository.update(input.id, {
       status: PractitionerMarketingPlacementStatus.ACTIVE,
@@ -241,7 +280,7 @@ export class PractitionerMarketingPlacementManagementService {
   }
 
   private validateCreateInput(input: CreatePlacementInput) {
-    if (!input.practitionerId && !input.practitionerSlug) {
+    if (!input.practitionerId) {
       throw new BadRequestException({
         error: 'FEATURED_PLACEMENT_PRACTITIONER_REQUIRED',
       });
@@ -280,4 +319,3 @@ export class PractitionerMarketingPlacementManagementService {
     return PractitionerMarketingPlacementHistoryAction.UPDATED;
   }
 }
-

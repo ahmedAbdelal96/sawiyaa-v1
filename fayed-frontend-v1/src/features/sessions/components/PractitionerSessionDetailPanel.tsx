@@ -37,90 +37,24 @@ import {
   hasSessionRuntimeAccess,
   isJoinWindowOpen,
 } from "../lib/session-runtime";
+import { canOpenSessionChatFromPresentationStatus } from "../lib/session-presentation";
 import { dispatchOpenSessionChatInShell } from "@/features/messages-shell/lib/messages-shell-events";
 import SessionStatusBadge from "./SessionStatusBadge";
 import type {
   SessionJoinItem,
   SessionRuntimeItem,
-  SessionStatus,
+  SessionPresentationStatus,
 } from "../types/sessions.types";
 
-const ACTIVE_STATUSES: SessionStatus[] = [
-  "PENDING_PAYMENT",
-  "PENDING_PRACTITIONER_RESPONSE",
-  "CONFIRMED",
-  "UPCOMING",
-  "READY_TO_JOIN",
+const COMPLETE_ALLOWED_PRESENTATION_STATUSES: SessionPresentationStatus[] = [
+  "JOINABLE",
   "IN_PROGRESS",
 ];
-
-const COMPLETE_ALLOWED_STATUSES: SessionStatus[] = ["READY_TO_JOIN", "IN_PROGRESS"];
-const NO_SHOW_ALLOWED_STATUSES: SessionStatus[] = [
+const NO_SHOW_ALLOWED_PRESENTATION_STATUSES: SessionPresentationStatus[] = [
   "UPCOMING",
-  "READY_TO_JOIN",
+  "JOINABLE",
   "IN_PROGRESS",
 ];
-
-function getHandlingNowKey(status: SessionStatus): string {
-  switch (status) {
-    case "PENDING_PAYMENT":
-      return "awaitingPayment";
-    case "PENDING_PRACTITIONER_RESPONSE":
-      return "awaitingPractitionerResponse";
-    case "CONFIRMED":
-      return "confirmedWaiting";
-    case "UPCOMING":
-      return "prepareSoon";
-    case "READY_TO_JOIN":
-      return "readyToOpen";
-    case "IN_PROGRESS":
-      return "liveNow";
-    case "COMPLETED":
-      return "completed";
-    case "NO_SHOW":
-      return "noShow";
-    case "CANCELLED":
-      return "cancelled";
-    case "EXPIRED":
-      return "expired";
-    case "REFUND_PENDING":
-      return "refundPending";
-    case "REFUNDED":
-      return "refunded";
-    default:
-      return "inactive";
-  }
-}
-
-function getCloseoutStateKey(status: SessionStatus): string {
-  if (COMPLETE_ALLOWED_STATUSES.includes(status) || NO_SHOW_ALLOWED_STATUSES.includes(status)) {
-    return "available";
-  }
-
-  switch (status) {
-    case "COMPLETED":
-      return "completed";
-    case "NO_SHOW":
-      return "noShow";
-    case "CANCELLED":
-      return "cancelled";
-    case "EXPIRED":
-      return "expired";
-    case "REFUND_PENDING":
-      return "refundPending";
-    case "REFUNDED":
-      return "refunded";
-    case "PENDING_PAYMENT":
-      return "awaitingPayment";
-    case "PENDING_PRACTITIONER_RESPONSE":
-      return "awaitingPractitionerResponse";
-    case "CONFIRMED":
-    case "UPCOMING":
-      return "notOpenYet";
-    default:
-      return "notAvailable";
-  }
-}
 
 function formatDatetime(isoString: string | null, numLocale: string): string {
   if (!isoString) return "";
@@ -186,10 +120,17 @@ export default function PractitionerSessionDetailPanel({ sessionId }: Props) {
     );
   }
 
-  const isActive = ACTIVE_STATUSES.includes(session.status);
+  const isActive =
+    session.presentationStatus !== "COMPLETED" &&
+    session.presentationStatus !== "CANCELLED" &&
+    session.presentationStatus !== "ENDED";
   const hasRuntimeAccess = hasSessionRuntimeAccess(session.status);
-  const canMarkCompleted = COMPLETE_ALLOWED_STATUSES.includes(session.status);
-  const canMarkNoShow = NO_SHOW_ALLOWED_STATUSES.includes(session.status);
+  const canMarkCompleted = COMPLETE_ALLOWED_PRESENTATION_STATUSES.includes(
+    session.presentationStatus,
+  );
+  const canMarkNoShow = NO_SHOW_ALLOWED_PRESENTATION_STATUSES.includes(
+    session.presentationStatus,
+  );
   const isBusy =
     completeMutation.isPending || noShowMutation.isPending || joinMutation.isPending;
   const joinUrl = buildProviderLaunchUrl(joinResult);
@@ -199,23 +140,30 @@ export default function PractitionerSessionDetailPanel({ sessionId }: Props) {
   const runtimeProviderLabel = formatProviderDisplayName(runtimeProvider);
   const prepareAllowed = hasRuntimeAccess && !runtimePrepared && canPrepareSessionRuntime(session);
   const joinWindowOpen = isJoinWindowOpen(session);
-  const handlingNowKey = getHandlingNowKey(session.status);
-  const closeoutStateKey = getCloseoutStateKey(session.status);
+  const canJoinNow = session.joinAvailability?.canJoin === true;
+  const canOpenSessionChat = canOpenSessionChatFromPresentationStatus(
+    session.presentationStatus,
+  );
+  const presentationTitle = t(
+    `detail.presentation.${session.presentationStatus}.title` as Parameters<typeof t>[0],
+  );
+  const presentationNote = t(
+    `detail.presentation.${session.presentationStatus}.note` as Parameters<typeof t>[0],
+  );
+  const presentationCloseout = t(
+    `detail.presentation.${session.presentationStatus}.closeout` as Parameters<typeof t>[0],
+  );
   const shouldShowJoinCheck =
     hasRuntimeAccess &&
     !(joinResult?.canJoin && canLaunchProviderRuntime(joinResult)) &&
-    (joinWindowOpen ||
-      session.status === "READY_TO_JOIN" ||
-      session.status === "IN_PROGRESS" ||
-      runtimePrepared ||
-      Boolean(joinResult));
+    canJoinNow;
   const openInMessagesLabel = locale.startsWith("ar")
     ? "فتح داخل الرسائل"
     : "Open in messages";
 
   const liveFlowKey = !hasRuntimeAccess
     ? "unavailable"
-    : session.status === "IN_PROGRESS"
+    : session.presentationStatus === "IN_PROGRESS"
       ? "liveNow"
       : joinResult?.canJoin && canLaunchProviderRuntime(joinResult)
         ? "readyToJoin"
@@ -276,7 +224,10 @@ export default function PractitionerSessionDetailPanel({ sessionId }: Props) {
               </h2>
               <p className="mt-1 font-mono text-xs text-text-muted">{session.sessionCode}</p>
             </div>
-            <SessionStatusBadge status={session.status} />
+            <SessionStatusBadge
+              status={session.status}
+              presentationStatus={session.presentationStatus}
+            />
           </div>
 
           <div className="space-y-1.5 text-sm text-text-secondary">
@@ -318,9 +269,7 @@ export default function PractitionerSessionDetailPanel({ sessionId }: Props) {
               {t("detail.runtime.heading")}
             </h3>
             <p className="mt-1 text-sm text-text-secondary">
-              {t(
-                `detail.runtime.status.${session.status}` as Parameters<typeof t>[0],
-              )}
+              {t(`detail.presentation.${session.presentationStatus}.note` as Parameters<typeof t>[0])}
             </p>
           </div>
 
@@ -376,16 +325,11 @@ export default function PractitionerSessionDetailPanel({ sessionId }: Props) {
                           <Loader2 size={14} className="animate-spin" />
                           {t("detail.runtime.actions.checking")}
                         </>
-                      ) : session.status === "READY_TO_JOIN" ||
-                        session.status === "IN_PROGRESS" ? (
-                        t("detail.runtime.actions.joinNow")
-                      ) : (
-                        t("detail.runtime.actions.checkAccess")
-                      )}
-                    </Button>
-                  )}
-                </div>
-              )}
+                    ) : canJoinNow ? t("detail.runtime.actions.joinNow") : t("detail.runtime.actions.checkAccess")}
+                  </Button>
+                )}
+              </div>
+            )}
 
               {prepareResult?.isPrepared && !joinResult?.canJoin && (
                 <div className="rounded-2xl border border-primary/15 bg-primary-light px-4 py-3 text-sm text-text-primary dark:border-primary/20 dark:bg-primary/10 dark:text-white/90">
@@ -424,9 +368,8 @@ export default function PractitionerSessionDetailPanel({ sessionId }: Props) {
         <h3 className="mb-2 text-sm font-semibold text-text-primary dark:text-white/90">
           {t("detail.currentStateHeading")}
         </h3>
-        <p className="text-sm text-text-secondary">
-          {t(`detail.${session.status}.note` as Parameters<typeof t>[0])}
-        </p>
+        <p className="text-sm font-medium text-text-primary dark:text-white/90">{presentationTitle}</p>
+        <p className="mt-1 text-sm text-text-secondary">{presentationNote}</p>
         {session.status === "CANCELLED" && session.cancellationReason && (
           <p className="mt-1 text-xs text-text-muted">
             {t("detail.CANCELLED.reason", {
@@ -440,12 +383,8 @@ export default function PractitionerSessionDetailPanel({ sessionId }: Props) {
         <h3 className="mb-2 text-sm font-semibold text-text-primary dark:text-white/90">
           {t("detail.handlingNow.heading")}
         </h3>
-        <p className="text-sm font-medium text-text-primary dark:text-white/90">
-          {t(`detail.handlingNow.states.${handlingNowKey}.title` as Parameters<typeof t>[0])}
-        </p>
-        <p className="mt-1 text-sm text-text-secondary">
-          {t(`detail.handlingNow.states.${handlingNowKey}.note` as Parameters<typeof t>[0])}
-        </p>
+        <p className="text-sm font-medium text-text-primary dark:text-white/90">{presentationTitle}</p>
+        <p className="mt-1 text-sm text-text-secondary">{presentationNote}</p>
 
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
           <div className="rounded-2xl bg-surface-tertiary px-4 py-3 text-sm dark:bg-white/5">
@@ -463,9 +402,7 @@ export default function PractitionerSessionDetailPanel({ sessionId }: Props) {
               {t("detail.handlingNow.facts.closeout")}
             </p>
             <p className="mt-1 text-sm font-medium text-text-primary dark:text-white/90">
-              {t(
-                `detail.handlingNow.closeout.${closeoutStateKey}` as Parameters<typeof t>[0],
-              )}
+              {presentationCloseout}
             </p>
           </div>
         </div>
@@ -522,7 +459,9 @@ export default function PractitionerSessionDetailPanel({ sessionId }: Props) {
           {joinUrl && (
             <p>{t("detail.liveFlow.notes.openInNewTab")}</p>
           )}
-          {(session.status === "IN_PROGRESS" || session.status === "COMPLETED") && (
+          {(session.presentationStatus === "IN_PROGRESS" ||
+            session.presentationStatus === "COMPLETED" ||
+            session.presentationStatus === "ENDED") && (
             <p>{t("detail.liveFlow.notes.closeoutAfterSession")}</p>
           )}
         </div>
@@ -532,7 +471,7 @@ export default function PractitionerSessionDetailPanel({ sessionId }: Props) {
         <h3 className="mb-2 text-sm font-semibold text-text-primary dark:text-white/90">
           {t("detail.chatCard.heading")}
         </h3>
-        {["READY_TO_JOIN", "IN_PROGRESS", "COMPLETED"].includes(session.status) ? (
+        {canOpenSessionChat ? (
           <p className="text-sm text-text-secondary">{t("detail.chatCard.note")}</p>
         ) : (
           <p className="text-sm text-text-secondary">
@@ -540,7 +479,7 @@ export default function PractitionerSessionDetailPanel({ sessionId }: Props) {
           </p>
         )}
         <div className="mt-4 flex flex-wrap gap-3">
-          {["READY_TO_JOIN", "IN_PROGRESS", "COMPLETED"].includes(session.status) ? (
+          {canOpenSessionChat ? (
             <>
               <button
                 type="button"
@@ -638,9 +577,7 @@ export default function PractitionerSessionDetailPanel({ sessionId }: Props) {
           </div>
         ) : (
           <div className="rounded-2xl bg-surface-tertiary px-4 py-3 text-sm text-text-secondary dark:bg-white/5">
-            {t(
-              `detail.actions.availability.${closeoutStateKey}` as Parameters<typeof t>[0],
-            )}
+            {t("detail.actions.availability.notAvailable")}
           </div>
         )}
       </div>

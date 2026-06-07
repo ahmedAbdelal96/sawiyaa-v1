@@ -9,12 +9,12 @@ import {
   StyleSheet,
   View,
 } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import {
   Button,
   Card,
-  CompactActionRow,
   ListPageScaffold,
   SectionHeader,
   StatusChip,
@@ -24,46 +24,31 @@ import {
 } from "../../src/components/ui";
 import {
   useInfinitePatientSessions,
+  usePatientSessionSummary,
   useResolvePatientSessionJoinContract,
 } from "../../src/features/patient/sessions/hooks";
 import type {
   SessionJoinContract,
   SessionListItem,
-  SessionStatus,
+  SessionPresentationStatus,
 } from "../../src/features/patient/sessions/types";
+import { getAppDirection } from "../../src/i18n/direction";
 import { useTheme } from "../../src/providers/ThemeProvider";
 import { extractApiErrorMessage } from "../../src/lib/api";
 import { normalizeAllowedExternalUrl } from "../../src/lib/external-url";
 import { trackAnalyticsEvent } from "../../src/lib/analytics";
-
-const UPCOMING_STATUSES: SessionStatus[] = [
-  "DRAFT",
-  "PENDING_PAYMENT",
-  "PENDING_PRACTITIONER_RESPONSE",
-  "CONFIRMED",
-  "UPCOMING",
-];
-
-const ACTIVE_STATUSES: SessionStatus[] = ["READY_TO_JOIN", "IN_PROGRESS"];
-
-const RECENT_STATUSES: SessionStatus[] = [
-  "COMPLETED",
-  "CANCELLED",
-  "NO_SHOW",
-  "EXPIRED",
-  "REFUND_PENDING",
-  "REFUNDED",
-];
 
 export default function PatientSessionsScreen() {
   const { t, i18n } = useTranslation();
   const { theme } = useTheme();
   const router = useRouter();
   const joinMutation = useResolvePatientSessionJoinContract();
+  const summaryQuery = usePatientSessionSummary();
   const [joiningSessionId, setJoiningSessionId] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
 
   const locale = i18n.language?.startsWith("ar") ? "ar-SA" : "en-US";
+  const direction = getAppDirection(i18n.language);
   const sessionsQuery = useInfinitePatientSessions({ limit: 20 });
   const sessions = useMemo(() => {
     const seen = new Set<string>();
@@ -80,7 +65,10 @@ export default function PatientSessionsScreen() {
     });
   }, [sessionsQuery.data?.pages]);
   const sections = useMemo(() => buildWorkspaceSections(sessions), [sessions]);
-  const overview = useMemo(() => buildOverview(sessions), [sessions]);
+  const overview = useMemo(
+    () => summaryQuery.data ?? buildOverview(sessions),
+    [summaryQuery.data, sessions],
+  );
   const loadMoreGuardRef = useRef(false);
   const contentHeightRef = useRef(0);
   const layoutHeightRef = useRef(0);
@@ -149,7 +137,7 @@ export default function PatientSessionsScreen() {
   };
 
   const handleJoinSession = async (session: SessionListItem) => {
-    if (!isJoinCandidate(session)) {
+    if (!isSessionJoinableNow(session)) {
       handleViewDetails(session.id);
       return;
     }
@@ -279,16 +267,17 @@ export default function PatientSessionsScreen() {
             />
 
             <View style={styles.sectionCards}>
-              {section.items.map((session) => (
-                <SessionCard
-                  key={session.id}
-                  session={session}
-                  locale={locale}
-                  joiningSessionId={joiningSessionId}
-                  onJoin={handleJoinSession}
-                  onContinuePayment={handleContinuePayment}
-                  onViewDetails={handleViewDetails}
-                />
+        {section.items.map((session) => (
+          <SessionCard
+            key={session.id}
+            session={session}
+            locale={locale}
+            direction={direction}
+            joiningSessionId={joiningSessionId}
+            onJoin={handleJoinSession}
+            onContinuePayment={handleContinuePayment}
+            onViewDetails={handleViewDetails}
+          />
               ))}
             </View>
           </View>
@@ -368,6 +357,7 @@ function renderSessionsFooter({
 function SessionCard({
   session,
   locale,
+  direction,
   joiningSessionId,
   onJoin,
   onContinuePayment,
@@ -375,6 +365,7 @@ function SessionCard({
 }: {
   session: SessionListItem;
   locale: string;
+  direction: "rtl" | "ltr";
   joiningSessionId: string | null;
   onJoin: (session: SessionListItem) => void;
   onContinuePayment: (sessionId: string) => void;
@@ -382,17 +373,29 @@ function SessionCard({
 }) {
   const { theme } = useTheme();
   const { t } = useTranslation();
-  const tone = mapSessionTone(session.status);
-  const isJoinable = isJoinCandidate(session);
+  const tone = mapSessionPresentationTone(session.presentationStatus);
+  const isJoinable = isSessionJoinableNow(session);
   const isJoining = joiningSessionId === session.id;
+  const practitionerName =
+    session.practitioner.displayName ??
+    t("patientSessionsFlow.common.practitionerFallback");
 
   return (
-    <Card variant="outlined" padding="lg" style={styles.sessionCard}>
+    <Card
+      variant="outlined"
+      padding="lg"
+      onPress={() => onViewDetails(session.id)}
+      accessibilityRole="button"
+      accessibilityLabel={t(
+        "patientSessionsFlow.list.workspace.viewDetailsWithName",
+        { name: practitionerName },
+      )}
+      style={styles.sessionCard}
+    >
       <View style={styles.cardTopRow}>
         <View style={styles.cardTextWrap}>
           <Text weight="600" style={styles.sessionTitle} color={theme.colors.textPrimary}>
-            {session.practitioner.displayName ??
-              t("patientSessionsFlow.common.practitionerFallback")}
+            {practitionerName}
           </Text>
           <Text color={theme.colors.textMuted} style={styles.sessionCode}>
             {session.sessionCode}
@@ -400,7 +403,9 @@ function SessionCard({
         </View>
 
         <StatusChip
-          label={t(`patientSessionsFlow.statuses.${session.status}`)}
+          label={t(
+            `patientSessionsFlow.presentationStatus.${session.presentationStatus}`,
+          )}
           tone={tone}
         />
       </View>
@@ -439,11 +444,22 @@ function SessionCard({
           />
         ) : null}
 
-        <CompactActionRow
-          label={t("patientSessionsFlow.list.workspace.viewDetails")}
-          onPress={() => onViewDetails(session.id)}
-          accessibilityLabel={t("patientSessionsFlow.list.workspace.viewDetails")}
-        />
+        <View
+          style={[
+            styles.detailsRow,
+            direction === "rtl" ? styles.detailsRowRtl : styles.detailsRowLtr,
+          ]}
+          accessible={false}
+        >
+          <Text color={theme.colors.textBrand} style={styles.detailsHint}>
+            {t("patientSessionsFlow.list.workspace.viewDetails")}
+          </Text>
+          <Ionicons
+            name={direction === "rtl" ? "chevron-back" : "chevron-forward"}
+            size={16}
+            color={theme.colors.primary}
+          />
+        </View>
       </View>
     </Card>
   );
@@ -455,12 +471,12 @@ function buildWorkspaceSections(sessions: SessionListItem[]) {
   const recent: SessionListItem[] = [];
 
   for (const session of sessions) {
-    if (ACTIVE_STATUSES.includes(session.status)) {
+    if (session.presentationStatus === "JOINABLE" || session.presentationStatus === "IN_PROGRESS") {
       active.push(session);
       continue;
     }
 
-    if (UPCOMING_STATUSES.includes(session.status)) {
+    if (session.presentationStatus === "UPCOMING" || session.presentationStatus === "UNAVAILABLE") {
       upcoming.push(session);
       continue;
     }
@@ -491,15 +507,13 @@ function buildWorkspaceSections(sessions: SessionListItem[]) {
 }
 
 function buildOverview(sessions: SessionListItem[]) {
-  const actionRequired = sessions.filter((session) =>
-    ["PENDING_PAYMENT", "PENDING_PRACTITIONER_RESPONSE", "READY_TO_JOIN"].includes(
-      session.status,
-    ),
+  const actionRequired = sessions.filter(
+    (session) => session.presentationStatus === "JOINABLE",
   ).length;
-  const active = sessions.filter((session) =>
-    ["CONFIRMED", "UPCOMING", "READY_TO_JOIN", "IN_PROGRESS"].includes(
-      session.status,
-    ),
+  const active = sessions.filter(
+    (session) =>
+      session.presentationStatus === "JOINABLE" ||
+      session.presentationStatus === "IN_PROGRESS",
   ).length;
 
   return {
@@ -542,30 +556,23 @@ function getSessionTimestamp(session: SessionListItem) {
   return Number.isNaN(date.getTime()) ? null : date.getTime();
 }
 
-function isJoinCandidate(session: SessionListItem) {
-  return (
-    session.sessionMode === "VIDEO" &&
-    (session.status === "READY_TO_JOIN" || session.status === "IN_PROGRESS")
-  );
+function isSessionJoinableNow(session: SessionListItem) {
+  return session.joinAvailability?.canJoin === true;
 }
 
-function mapSessionTone(status: SessionStatus) {
+function mapSessionPresentationTone(status: SessionPresentationStatus) {
   switch (status) {
-    case "READY_TO_JOIN":
+    case "JOINABLE":
     case "IN_PROGRESS":
       return "success" as const;
     case "UPCOMING":
-    case "CONFIRMED":
-    case "PENDING_PRACTITIONER_RESPONSE":
-    case "PENDING_PAYMENT":
-    case "DRAFT":
+    case "UNAVAILABLE":
       return "warning" as const;
-    case "NO_SHOW":
+    case "COMPLETED":
+      return "default" as const;
     case "CANCELLED":
-    case "EXPIRED":
+    case "ENDED":
       return "error" as const;
-    case "REFUND_PENDING":
-      return "info" as const;
     default:
       return "default" as const;
   }
@@ -639,6 +646,24 @@ const styles = StyleSheet.create({
   },
   actionsBlock: {
     gap: 10,
+  },
+  detailsRow: {
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 8,
+    paddingTop: 2,
+    minHeight: 44,
+    paddingHorizontal: 2,
+  },
+  detailsRowLtr: {
+    flexDirection: "row",
+  },
+  detailsRowRtl: {
+    flexDirection: "row-reverse",
+  },
+  detailsHint: {
+    fontSize: 12,
+    lineHeight: 16,
   },
   paginationCard: {
     alignItems: "center",

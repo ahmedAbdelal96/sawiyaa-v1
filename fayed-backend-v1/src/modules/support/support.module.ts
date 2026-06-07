@@ -3,6 +3,7 @@ import { JwtAccessAuthGuard } from '@common/guards/authentication/jwt-access-aut
 import { PermissionResolverService } from '@common/guards/authorization/permission-resolver.service';
 import { PermissionsGuard } from '@common/guards/authorization/permissions.guard';
 import { RolesGuard } from '@common/guards/authorization/roles.guard';
+import { NotificationsModule } from '@modules/notifications/notifications.module';
 import { AdminSupportController } from './controllers/admin-support.controller';
 import { PatientSupportController } from './controllers/patient-support.controller';
 import { PractitionerSupportController } from './controllers/practitioner-support.controller';
@@ -32,6 +33,7 @@ import { UpdateSupportTicketStatusUseCase } from './use-cases/update-support-tic
     PractitionerSupportController,
     AdminSupportController,
   ],
+  imports: [NotificationsModule],
   providers: [
     JwtAccessAuthGuard,
     RolesGuard,

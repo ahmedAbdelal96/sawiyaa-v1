@@ -26,54 +26,104 @@ import {
   useInfiniteGeneralChatConversations,
   useGeneralChatResumeRefresh,
 } from "../hooks";
-import {
-  usePatientSupportTickets,
-} from "../../patient/support/hooks";
-import {
-  useMyCareChatRequests,
-} from "../../patient/care-chat/hooks";
-import {
-  usePractitionerSupportTickets,
-} from "../../practitioner/support/hooks";
-import {
-  usePractitionerCareChatRequests,
-} from "../../practitioner/care-chat/hooks";
+import { usePatientSupportTickets } from "../../patient/support/hooks";
+import { useMyCareChatRequests } from "../../patient/care-chat/hooks";
+import { usePractitionerSupportTickets } from "../../practitioner/support/hooks";
+import { usePractitionerCareChatRequests } from "../../practitioner/care-chat/hooks";
 
 type InboxTab = "all" | "sessions" | "support" | "followup";
 
 const TAB_ORDER: InboxTab[] = ["all", "sessions", "support", "followup"];
 
 function statusColor(status: string, theme: any): string {
-  if (status === "OPEN" || status === "PENDING" || status === "APPROVED")
+  if (status === "OPEN" || status === "PENDING" || status === "APPROVED") {
     return theme.colors.success ?? "#22c55e";
-  if (status === "IN_PROGRESS" || status === "WAITING_FOR_USER")
+  }
+  if (status === "IN_PROGRESS" || status === "WAITING_FOR_USER") {
     return theme.colors.warning ?? "#f59e0b";
-  if (status === "ESCALATED" || status === "REJECTED")
+  }
+  if (status === "ESCALATED" || status === "REJECTED") {
     return theme.colors.error;
+  }
   return theme.colors.textMuted;
 }
 
 type SourceType = "session" | "support" | "care";
 
+function getHumanStatusFallback(
+  sourceType: SourceType,
+  status: string,
+  locale: string,
+) {
+  const isArabic = locale.startsWith("ar");
+  const value = status.trim().toUpperCase();
+
+  if (
+    value === "OPEN" ||
+    value === "PENDING" ||
+    value === "ACTIVE"
+  ) {
+    return isArabic ? "مفتوح" : "Open";
+  }
+
+  if (
+    value === "IN_PROGRESS" ||
+    value === "WAITING_FOR_USER" ||
+    value === "FOLLOW_UP"
+  ) {
+    return isArabic ? "قيد المتابعة" : "In progress";
+  }
+
+  if (value === "READ") {
+    return isArabic ? "مقروء" : "Read";
+  }
+
+  if (
+    value === "CLOSED" ||
+    value === "RESOLVED" ||
+    value === "EXPIRED" ||
+    value === "SUSPENDED"
+  ) {
+    return isArabic ? "مغلق" : "Closed";
+  }
+
+  if (sourceType === "support") {
+    return isArabic ? "محادثة الدعم" : "Support conversation";
+  }
+
+  if (sourceType === "care") {
+    return isArabic ? "متابعة" : "Follow-up";
+  }
+
+  return value.replaceAll("_", " ");
+}
+
 function getInboxStatusLabel(
   sourceType: SourceType,
   status: string,
   t: (key: string, options?: Record<string, unknown>) => string,
+  locale: string,
 ): string {
   if (sourceType === "support") {
     const key = `support.statuses.${status}`;
     const translated = t(key);
-    return translated !== key ? translated : status;
+    return translated !== key
+      ? translated
+      : getHumanStatusFallback(sourceType, status, locale);
   }
   if (sourceType === "care") {
     const key = `careChat.requestStatus.${status}`;
     const translated = t(key);
-    return translated !== key ? translated : status;
+    return translated !== key
+      ? translated
+      : getHumanStatusFallback(sourceType, status, locale);
   }
-  // session
+
   const key = `messages.inbox.statuses.session.${status}`;
   const translated = t(key);
-  return translated !== key ? translated : t("messages.inbox.statuses.session.OPEN");
+  return translated !== key
+    ? translated
+    : getHumanStatusFallback(sourceType, status, locale);
 }
 
 function StatusPill({
@@ -81,33 +131,23 @@ function StatusPill({
   status,
   theme,
   t,
+  locale,
 }: {
   sourceType: SourceType;
   status: string;
   theme: any;
   t: (key: string, options?: Record<string, unknown>) => string;
+  locale: string;
 }) {
   const color = statusColor(status, theme);
-  const label = getInboxStatusLabel(sourceType, status, t);
+  const label = getInboxStatusLabel(sourceType, status, t, locale);
 
   return (
-    <View style={[stylesPill.pill, { backgroundColor: color + "18" }]}>
-      <Text style={[stylesPill.pillText, { color }]}>{label}</Text>
+    <View style={[styles.statusPill, { backgroundColor: color + "18" }]}>
+      <Text style={[styles.statusPillText, { color }]}>{label}</Text>
     </View>
   );
 }
-
-const stylesPill = StyleSheet.create({
-  pill: {
-    paddingHorizontal: 10,
-    paddingVertical: 3,
-    borderRadius: 999,
-  },
-  pillText: {
-    fontSize: 11,
-    fontWeight: "600",
-  },
-});
 
 export function MessagesInboxScreen({
   role,
@@ -120,6 +160,7 @@ export function MessagesInboxScreen({
   const { t, i18n } = useTranslation();
   const { theme } = useTheme();
   const isRTL = i18n.language?.startsWith("ar") ?? I18nManager.isRTL;
+  const locale = i18n.language || "en";
   const isPatient = role === "patient";
 
   const validTabs: InboxTab[] = ["all", "sessions", "support", "followup"];
@@ -127,53 +168,48 @@ export function MessagesInboxScreen({
     initialTab && validTabs.includes(initialTab) ? initialTab : "all",
   );
 
-  // ── Session conversations ───────────────────────────────────────────────
   const sessionsQuery = useInfiniteGeneralChatConversations(role, { pageSize: 20 }, true);
   useGeneralChatResumeRefresh(role);
 
-  // ── Support tickets ─────────────────────────────────────────────────────
   const patientSupportQuery = usePatientSupportTickets({ page: 1, limit: 20 });
   const practitionerSupportQuery = usePractitionerSupportTickets({ page: 1, limit: 20 });
   const supportQuery = isPatient ? patientSupportQuery : practitionerSupportQuery;
 
-  // ── Care chat requests ──────────────────────────────────────────────────
   const patientCareQuery = useMyCareChatRequests({ page: 1, limit: 20 });
   const practitionerCareQuery = usePractitionerCareChatRequests({ page: 1, limit: 20 });
   const careQuery = isPatient ? patientCareQuery : practitionerCareQuery;
 
-  // ── Normalize all items ────────────────────────────────────────────────
   const allItems = useMemo(() => {
     const sessionItems: NormalizedInboxItem[] =
-      sessionsQuery.data?.pages.flatMap((p) => p.items).map((c) =>
-        buildSessionInboxItem(c, role)
+      sessionsQuery.data?.pages.flatMap((page) => page.items).map((conversation) =>
+        buildSessionInboxItem(conversation, role, locale),
       ) ?? [];
 
     const supportItems: NormalizedInboxItem[] = (supportQuery.data?.items ?? []).map((ticket) =>
-      buildSupportInboxItem(ticket, role)
+      buildSupportInboxItem(ticket, role, locale),
     );
 
     const careItems: NormalizedInboxItem[] = (careQuery.data?.items ?? [])
-      .filter((req) => req.status === "APPROVED" || req.status === "PENDING")
-      .map((req) => buildCareInboxItem(req, role));
+      .filter((request) => request.status === "APPROVED" || request.status === "PENDING")
+      .map((request) => buildCareInboxItem(request, role, locale));
 
     return sortInboxItemsByActivity([...sessionItems, ...supportItems, ...careItems]);
   }, [
+    careQuery.data?.items,
+    locale,
+    role,
     sessionsQuery.data?.pages,
     supportQuery.data?.items,
-    careQuery.data?.items,
-    role,
   ]);
 
-  // ── Tab filtering ───────────────────────────────────────────────────────
   const tabItems = useMemo(() => {
     if (activeTab === "all") return allItems;
-    if (activeTab === "sessions") return allItems.filter((i) => i.sourceType === "session");
-    if (activeTab === "support") return allItems.filter((i) => i.sourceType === "support");
-    if (activeTab === "followup") return allItems.filter((i) => i.sourceType === "care");
+    if (activeTab === "sessions") return allItems.filter((item) => item.sourceType === "session");
+    if (activeTab === "support") return allItems.filter((item) => item.sourceType === "support");
+    if (activeTab === "followup") return allItems.filter((item) => item.sourceType === "care");
     return allItems;
   }, [allItems, activeTab]);
 
-  // ── States ─────────────────────────────────────────────────────────────
   const isLoadingAny =
     sessionsQuery.isLoading || supportQuery.isLoading || careQuery.isLoading;
   const hasErrorAny =
@@ -196,18 +232,24 @@ export function MessagesInboxScreen({
   };
 
   const handleStartSupport = () => {
-    if (isPatient) {
-      router.push("/(patient)/support/new" as any);
-    } else {
-      router.push("/(practitioner)/support" as any);
-    }
+    const pathname = isPatient
+      ? "/(patient)/support/new"
+      : "/(practitioner)/support/new";
+    router.push(
+      {
+        pathname,
+        params: {
+          returnTo: isPatient
+            ? "/(patient)/messages?tab=support"
+            : "/(practitioner)/messages?tab=support",
+        },
+      } as any,
+    );
   };
 
-  const locale = i18n.language || "en";
-
-  // ── Per-tab empty state ────────────────────────────────────────────────
   const emptyStateKey = useMemo(() => {
     if (activeTab === "sessions") return "messages.inbox.tabEmptySessions";
+    if (activeTab === "support") return "messages.inbox.tabEmptySupport";
     if (activeTab === "followup") return "messages.inbox.tabEmptyFollowup";
     return "messages.inbox.tabEmpty";
   }, [activeTab]);
@@ -216,7 +258,37 @@ export function MessagesInboxScreen({
     <Screen bg="background">
       <Header title={t("messages.inbox.title", "Messages")} showBack />
 
-      {/* ── Tabs (always visible) ── */}
+      {role === "practitioner" ? (
+        <Card
+          variant="outlined"
+          padding="sm"
+          style={[
+            styles.introCard,
+            {
+              borderColor: theme.colors.borderLight,
+              backgroundColor: theme.colors.surface,
+            },
+          ]}
+        >
+          <View style={styles.introRow}>
+            <View style={[styles.introIconWrap, { backgroundColor: theme.colors.primaryLight }]}>
+              <Ionicons name="chatbubbles-outline" size={16} color={theme.colors.primary} />
+            </View>
+            <View style={styles.introCopy}>
+              <Text weight="700" style={styles.introTitle} color={theme.colors.textPrimary}>
+                {t("messages.inbox.practitionerIntroTitle", "التواصل")}
+              </Text>
+              <Text color={theme.colors.textSecondary} style={styles.introSubtitle}>
+                {t(
+                  "messages.inbox.practitionerIntroSubtitle",
+                  "كل محادثات الجلسات والدعم والمتابعة في مكان واحد.",
+                )}
+              </Text>
+            </View>
+          </View>
+        </Card>
+      ) : null}
+
       <View
         style={[
           styles.tabsBar,
@@ -227,50 +299,88 @@ export function MessagesInboxScreen({
           },
         ]}
       >
-        {TAB_ORDER.map((tab) => (
-          <TouchableOpacity
-            key={tab}
-            onPress={() => setActiveTab(tab)}
-            style={[
-              styles.tabBtn,
-              activeTab === tab
-                ? { borderBottomColor: theme.colors.primary, borderBottomWidth: 2 }
-                : {},
-            ]}
-            activeOpacity={0.7}
-          >
-            <Text
-              weight={activeTab === tab ? "700" : "400"}
+        {TAB_ORDER.map((tab) => {
+          const active = activeTab === tab;
+
+          return (
+            <TouchableOpacity
+              key={tab}
+              onPress={() => setActiveTab(tab)}
+              activeOpacity={0.78}
               style={[
-                styles.tabLabel,
+                styles.tabBtn,
                 {
-                  color:
-                    activeTab === tab
-                      ? theme.colors.primary
-                      : theme.colors.textMuted,
+                  borderColor: active ? theme.colors.primary : theme.colors.borderLight,
+                  backgroundColor: active ? theme.colors.primaryLight : theme.colors.surface,
                 },
               ]}
             >
-              {tab === "all"
-                ? t("messages.tabs.all")
-                : tab === "sessions"
-                ? t("messages.tabs.sessions")
-                : tab === "support"
-                ? t("messages.tabs.support")
-                : t("messages.tabs.followup")}
-            </Text>
-          </TouchableOpacity>
-        ))}
+              <Text
+                weight={active ? "700" : "500"}
+                style={[
+                  styles.tabLabel,
+                  {
+                    color: active ? theme.colors.primary : theme.colors.textMuted,
+                  },
+                ]}
+              >
+                {tab === "all"
+                  ? t("messages.tabs.all")
+                  : tab === "sessions"
+                  ? t("messages.tabs.sessions")
+                  : tab === "support"
+                  ? t("messages.tabs.support")
+                  : t("messages.tabs.followup")}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
       </View>
 
-      {/* ── Content area ── */}
+      {activeTab === "support" ? (
+        <View
+          style={[
+            styles.supportActionRow,
+            {
+              flexDirection: isRTL ? "row-reverse" : "row",
+            },
+          ]}
+        >
+          <Text
+            weight="600"
+            style={[styles.supportActionTitle, isRTL ? styles.textRtl : null]}
+            color={theme.colors.textPrimary}
+          >
+            {t("messages.tabs.support")}
+          </Text>
+          <TouchableOpacity
+            onPress={handleStartSupport}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            accessibilityRole="button"
+            accessibilityLabel={t("messages.inbox.supportCtaBtn")}
+            style={[
+              styles.supportActionButton,
+              { backgroundColor: theme.colors.primaryLight },
+            ]}
+          >
+            <Ionicons name="add" size={16} color={theme.colors.primary} />
+            <Text
+              weight="600"
+              style={styles.supportActionButtonText}
+              color={theme.colors.primary}
+            >
+              {t("messages.inbox.supportCtaBtn")}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      ) : null}
+
       <View style={styles.contentArea}>
-        {/* Error banner */}
         {hasErrorAny && tabItems.length > 0 ? (
           <TouchableOpacity
             style={[
               styles.errorBanner,
-              { backgroundColor: (theme.colors.error ?? "#ef4444") + "15" },
+              { backgroundColor: (theme.colors.error ?? "#ef4444") + "12" },
             ]}
             onPress={handleRefresh}
             activeOpacity={0.85}
@@ -291,14 +401,10 @@ export function MessagesInboxScreen({
           </TouchableOpacity>
         ) : null}
 
-        {/* Loading */}
         {isInitialLoading ? (
           <View style={styles.centerState}>
             <ActivityIndicator color={theme.colors.primary} size="large" />
-            <Text
-              color={theme.colors.textSecondary}
-              style={styles.loadingText}
-            >
+            <Text color={theme.colors.textSecondary} style={styles.loadingText}>
               {t("messages.common.loading")}
             </Text>
           </View>
@@ -315,13 +421,12 @@ export function MessagesInboxScreen({
                 colors={[theme.colors.primary]}
               />
             }
-            onScrollBeginDrag={() => {}}
             showsVerticalScrollIndicator={false}
             ListHeaderComponent={
               activeTab === "support" && tabItems.length === 0 ? (
                 <Card
                   variant="elevated"
-                  padding="md"
+                  padding="sm"
                   style={[
                     styles.supportCtaCard,
                     {
@@ -334,17 +439,14 @@ export function MessagesInboxScreen({
                   <View style={styles.supportCtaIcon}>
                     <Ionicons
                       name="chatbubbles"
-                      size={24}
+                      size={20}
                       color={theme.colors.primary}
                     />
                   </View>
                   <Text weight="600" style={styles.supportCtaTitle}>
                     {t("messages.inbox.supportCtaTitle")}
                   </Text>
-                  <Text
-                    color={theme.colors.textSecondary}
-                    style={styles.supportCtaDesc}
-                  >
+                  <Text color={theme.colors.textSecondary} style={styles.supportCtaDesc}>
                     {t("messages.inbox.supportCtaDesc")}
                   </Text>
                   <TouchableOpacity
@@ -357,7 +459,7 @@ export function MessagesInboxScreen({
                   >
                     <Ionicons
                       name="chatbubble-ellipses-outline"
-                      size={17}
+                      size={16}
                       color="#fff"
                     />
                     <Text weight="600" style={styles.supportCtaBtnText}>
@@ -380,7 +482,7 @@ export function MessagesInboxScreen({
                         ? "chatbubbles-outline"
                         : "chatbubbles-outline"
                     }
-                    size={28}
+                    size={26}
                     color={theme.colors.textMuted}
                   />
                   <Text color={theme.colors.textMuted} style={styles.tabEmptyText}>
@@ -431,8 +533,8 @@ function InboxCard({
     item.sourceType === "session"
       ? theme.colors.primaryLight
       : item.sourceType === "support"
-      ? ((theme.colors.warning ?? "#f59e0b") + "20")
-      : ((theme.colors.info ?? "#6366f1") + "20");
+      ? `${theme.colors.warning ?? "#f59e0b"}20`
+      : `${theme.colors.info ?? "#6366f1"}20`;
 
   const avatarIcon =
     item.sourceType === "session"
@@ -445,8 +547,8 @@ function InboxCard({
     item.sourceType === "session"
       ? theme.colors.primary
       : item.sourceType === "support"
-      ? (theme.colors.warning ?? "#f59e0b")
-      : (theme.colors.info ?? "#6366f1");
+      ? theme.colors.warning ?? "#f59e0b"
+      : theme.colors.info ?? "#6366f1";
 
   const sourceLabel =
     item.sourceType === "session"
@@ -482,24 +584,14 @@ function InboxCard({
             <Text weight="600" style={styles.cardTitle} numberOfLines={1}>
               {item.title}
             </Text>
-            <View
-              style={[
-                styles.sourceBadge,
-                { backgroundColor: avatarBg },
-              ]}
-            >
+            <View style={[styles.sourceBadge, { backgroundColor: avatarBg }]}>
               <Text style={[styles.sourceBadgeText, { color: avatarColor }]}>
                 {sourceLabel}
               </Text>
             </View>
           </View>
           {item.unreadCount > 0 ? (
-            <View
-              style={[
-                styles.badge,
-                { backgroundColor: avatarColor + "22" },
-              ]}
-            >
+            <View style={[styles.badge, { backgroundColor: `${avatarColor}22` }]}>
               <Text weight="600" style={[styles.badgeText, { color: avatarColor }]}>
                 {item.unreadCount > 99 ? "99+" : item.unreadCount}
               </Text>
@@ -518,7 +610,13 @@ function InboxCard({
         ) : null}
 
         <View style={[styles.cardBottomRow, isRTL ? styles.cardBottomRowRtl : null]}>
-          <StatusPill sourceType={item.sourceType} status={item.status} theme={theme} t={t} />
+              <StatusPill
+                sourceType={item.sourceType}
+                status={item.status}
+                theme={theme}
+                t={t}
+                locale={locale}
+              />
           <Text color={theme.colors.textMuted} style={styles.cardTime}>
             {activityValue}
           </Text>
@@ -536,25 +634,58 @@ function InboxCard({
 }
 
 const styles = StyleSheet.create({
+  introCard: {
+    marginHorizontal: 14,
+    marginTop: 12,
+    marginBottom: 8,
+  },
+  introRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  introIconWrap: {
+    width: 34,
+    height: 34,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  introCopy: {
+    flex: 1,
+  },
+  introTitle: {
+    fontSize: 15,
+    lineHeight: 20,
+  },
+  introSubtitle: {
+    fontSize: 11,
+    lineHeight: 16,
+    marginTop: 2,
+  },
   tabsBar: {
     flexDirection: "row",
-    borderBottomWidth: 1,
-    paddingHorizontal: 16,
+    flexWrap: "wrap",
+    gap: 8,
+    paddingHorizontal: 14,
+    paddingTop: 10,
+    paddingBottom: 2,
   },
   tabBtn: {
-    paddingVertical: 12,
-    paddingHorizontal: 10,
-    marginEnd: 4,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderWidth: 1,
+    borderRadius: 999,
   },
   tabLabel: {
-    fontSize: 14,
+    fontSize: 12,
   },
   contentArea: {
     flex: 1,
   },
   listContent: {
     paddingHorizontal: 14,
-    paddingTop: 10,
+    paddingTop: 8,
     paddingBottom: 24,
     gap: 10,
   },
@@ -584,73 +715,88 @@ const styles = StyleSheet.create({
   },
   tabEmptyState: {
     alignItems: "center",
-    paddingVertical: 40,
+    paddingVertical: 32,
     gap: 10,
   },
   tabEmptyText: {
-    fontSize: 13,
+    fontSize: 12,
     textAlign: "center",
     paddingHorizontal: 32,
     lineHeight: 20,
   },
   supportCtaCard: {
-    padding: 18,
-    gap: 10,
+    padding: 14,
+    gap: 8,
     alignItems: "center",
     marginBottom: 4,
   },
   supportCtaIcon: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: "rgba(68, 161, 148, 0.1)",
+    width: 40,
+    height: 40,
+    borderRadius: 14,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 2,
   },
   supportCtaTitle: {
-    fontSize: 15,
-    textAlign: "center",
+    fontSize: 14,
   },
   supportCtaDesc: {
-    fontSize: 13,
-    lineHeight: 18,
+    fontSize: 11,
     textAlign: "center",
   },
   supportCtaBtn: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    borderRadius: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    marginTop: 6,
+    gap: 6,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 999,
   },
   supportCtaBtnText: {
-    color: "#fff",
-    fontSize: 15,
+    fontSize: 11,
   },
-  paginationLoader: {
-    paddingVertical: 12,
+  supportActionRow: {
     alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 14,
+    paddingTop: 8,
+    paddingBottom: 2,
+    gap: 10,
+  },
+  supportActionTitle: {
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  supportActionButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+  },
+  supportActionButtonText: {
+    fontSize: 11,
   },
   card: {
+    flexDirection: "row",
+    alignItems: "center",
     borderWidth: 1,
-    borderRadius: 14,
-    padding: 13,
+    borderRadius: 18,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
     gap: 10,
   },
   cardAvatar: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
+    width: 40,
+    height: 40,
+    borderRadius: 14,
     alignItems: "center",
     justifyContent: "center",
   },
   cardBody: {
     flex: 1,
-    gap: 4,
+    gap: 6,
   },
   cardTopRow: {
     flexDirection: "row",
@@ -660,36 +806,23 @@ const styles = StyleSheet.create({
   },
   cardTitleRow: {
     flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 7,
-    flexWrap: "wrap",
+    gap: 6,
   },
   cardTitleRowRtl: {
-    flexDirection: "row-reverse",
+    alignItems: "flex-end",
   },
   cardTitle: {
-    fontSize: 15,
-    lineHeight: 20,
+    fontSize: 13,
+    flexShrink: 1,
   },
   sourceBadge: {
+    alignSelf: "flex-start",
     paddingHorizontal: 8,
-    paddingVertical: 2,
+    paddingVertical: 3,
     borderRadius: 999,
   },
   sourceBadgeText: {
-    fontSize: 10,
-    fontWeight: "600",
-  },
-  badge: {
-    minWidth: 24,
-    borderRadius: 999,
-    paddingHorizontal: 7,
-    paddingVertical: 3,
-    alignItems: "center",
-  },
-  badgeText: {
-    fontSize: 11,
+    fontSize: 9,
   },
   cardMeta: {
     fontSize: 11,
@@ -700,19 +833,40 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     gap: 8,
-    marginTop: 2,
   },
   cardBottomRowRtl: {
     flexDirection: "row-reverse",
   },
+  cardTime: {
+    fontSize: 10,
+  },
+  statusPill: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 999,
+  },
+  statusPillText: {
+    fontSize: 9,
+    fontWeight: "600",
+  },
+  badge: {
+    minWidth: 22,
+    height: 22,
+    borderRadius: 999,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 6,
+  },
+  badgeText: {
+    fontSize: 9,
+  },
+  cardChevron: {
+    marginStart: 2,
+  },
   textRtl: {
     textAlign: "right",
   },
-  cardTime: {
-    fontSize: 11,
-    flexShrink: 0,
-  },
-  cardChevron: {
-    marginTop: 10,
+  paginationLoader: {
+    paddingVertical: 14,
   },
 });

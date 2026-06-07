@@ -1,4 +1,28 @@
-export function resolvePatientNotificationRoute(href: string) {
+function resolvePatientMessagesLaneRoute(typeSlug: string | null | undefined) {
+  if (typeSlug === "messages.session-message-received") {
+    return "/(patient)/messages?tab=sessions";
+  }
+
+  if (typeSlug === "messages.support-message-received") {
+    return "/(patient)/messages?tab=support";
+  }
+
+  if (typeSlug === "messages.follow-up-message-received") {
+    return "/(patient)/messages?tab=followup";
+  }
+
+  return null;
+}
+
+export function resolvePatientNotificationRoute(
+  href: string,
+  typeSlug?: string | null,
+) {
+  const messageLaneRoute = resolvePatientMessagesLaneRoute(typeSlug);
+  if (messageLaneRoute) {
+    return messageLaneRoute;
+  }
+
   const trimmed = href.trim();
   if (!trimmed) {
     return null;

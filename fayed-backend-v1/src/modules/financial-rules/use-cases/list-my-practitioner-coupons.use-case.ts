@@ -3,6 +3,7 @@ import { CouponStatus } from '@prisma/client';
 import { FinancialRulesMapper } from '../mappers/financial-rules.mapper';
 import { CouponRepository } from '../repositories/coupon.repository';
 import { normalizeCouponCode } from '../utils/normalize-financial-identifiers.util';
+import { resolveCouponEffectiveStatus } from '../utils/coupon-effective-status.util';
 
 @Injectable()
 export class ListMyPractitionerCouponsUseCase {
@@ -29,21 +30,33 @@ export class ListMyPractitionerCouponsUseCase {
       });
     }
 
-    const [items, total] = await this.couponRepository.listOwnedCoupons({
+    const items = await this.couponRepository.listOwnedCouponsRaw({
       practitionerId: practitioner.id,
-      page: input.page,
-      limit: input.limit,
       q: input.q?.trim() ? normalizeCouponCode(input.q) : null,
-      status: input.status ?? null,
     });
 
+    const resolvedItems = items
+      .map((coupon) => ({
+        coupon,
+        resolvedStatus: resolveCouponEffectiveStatus(coupon),
+      }))
+      .filter((item) =>
+        input.status ? item.resolvedStatus.effectiveStatus === input.status : true,
+      );
+
+    const totalItems = resolvedItems.length;
+    const skip = (input.page - 1) * input.limit;
+    const pagedItems = resolvedItems.slice(skip, skip + input.limit);
+
     return {
-      items: items.map((coupon) => this.financialRulesMapper.toCoupon(coupon)),
+      items: pagedItems.map(({ coupon, resolvedStatus }) =>
+        this.financialRulesMapper.toCoupon(coupon, resolvedStatus),
+      ),
       pagination: {
         page: input.page,
         limit: input.limit,
-        total,
-        totalPages: total === 0 ? 0 : Math.ceil(total / input.limit),
+        total: totalItems,
+        totalPages: totalItems === 0 ? 0 : Math.ceil(totalItems / input.limit),
       },
     };
   }

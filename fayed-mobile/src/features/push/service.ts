@@ -149,6 +149,10 @@ export function extractNotificationHref(data: unknown) {
   }
 
   const payload = data as Record<string, unknown>;
+  if (typeof payload.routePath === "string" && payload.routePath.trim()) {
+    return payload.routePath;
+  }
+
   if (typeof payload.href === "string" && payload.href.trim()) {
     return payload.href;
   }

@@ -1,5 +1,6 @@
 import { apiClient, extractApiData } from "../../../lib/api";
 import type {
+  CreateSupportTicketPayload,
   ListSupportTicketsQuery,
   SupportTicketDetailsDto,
   SupportTicketListResponseData,
@@ -10,6 +11,11 @@ export async function listMySupportTickets(query?: ListSupportTicketsQuery) {
     params: query,
   });
   return extractApiData<SupportTicketListResponseData>(response);
+}
+
+export async function createSupportTicket(payload: CreateSupportTicketPayload) {
+  const response = await apiClient.post("/practitioners/me/support/tickets", payload);
+  return extractApiData<{ item: SupportTicketDetailsDto }>(response);
 }
 
 export async function getMySupportTicket(ticketId: string) {
@@ -26,4 +32,3 @@ export async function addSupportMessage(ticketId: string, message: string) {
   );
   return extractApiData<{ item: SupportTicketDetailsDto }>(response);
 }
-

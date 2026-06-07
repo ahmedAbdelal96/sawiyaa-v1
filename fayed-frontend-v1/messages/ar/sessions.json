@@ -27,6 +27,15 @@
       "EXPIRED": "انتهت مهلة الدفع قبل تأكيد هذه الجلسة.",
       "REFUND_PENDING": "يجري الآن معالجة استرداد مبلغ هذه الجلسة.",
       "REFUNDED": "تم استرداد مبلغ هذه الجلسة."
+    },
+    "presentationHints": {
+      "UPCOMING": "الجلسة قريبة. يمكنك الاستعداد مبكرًا، لكن الانضمام ليس متاحًا الآن.",
+      "JOINABLE": "يمكنك الانضمام الآن إلى الجلسة.",
+      "IN_PROGRESS": "الجلسة مستمرة الآن.",
+      "COMPLETED": "تمت الجلسة بنجاح.",
+      "CANCELLED": "تم إلغاء هذه الجلسة.",
+      "ENDED": "انتهت الجلسة.",
+      "UNAVAILABLE": "الجلسة غير متاحة للانضمام الآن."
     }
   },
   "card": {
@@ -37,18 +46,30 @@
   },
   "status": {
     "DRAFT": "مسودة",
-    "PENDING_PAYMENT": "في انتظار الدفع",
-    "PENDING_PRACTITIONER_RESPONSE": "في انتظار المختص",
+    "PENDING_PAYMENT": "بانتظار الدفع",
+    "PENDING_PRACTITIONER_RESPONSE": "بانتظار رد المختص",
     "CONFIRMED": "مؤكدة",
     "UPCOMING": "قادمة",
     "READY_TO_JOIN": "جاهزة للانضمام",
-    "IN_PROGRESS": "جارية",
+    "JOINABLE": "جاهزة للانضمام",
+    "IN_PROGRESS": "قيد التنفيذ",
     "COMPLETED": "مكتملة",
     "CANCELLED": "ملغاة",
-    "NO_SHOW": "غياب",
+    "NO_SHOW": "لم يحضر",
     "EXPIRED": "منتهية",
-    "REFUND_PENDING": "استرداد قيد المعالجة",
-    "REFUNDED": "تم الاسترداد"
+    "ENDED": "منتهية",
+    "UNAVAILABLE": "غير متاحة",
+    "REFUND_PENDING": "قيد استرداد المبلغ",
+    "REFUNDED": "تم رد المبلغ"
+  },
+  "presentationStatus": {
+    "UPCOMING": "قادمة",
+    "JOINABLE": "جاهزة للانضمام",
+    "IN_PROGRESS": "قيد التنفيذ",
+    "COMPLETED": "مكتملة",
+    "CANCELLED": "ملغاة",
+    "ENDED": "منتهية",
+    "UNAVAILABLE": "غير متاحة"
   },
   "detail": {
     "backToSessions": "العودة إلى الجلسات",
@@ -63,6 +84,43 @@
       "duration": "المدة",
       "mode": "نوع الجلسة",
       "status": "الحالة"
+    },
+    "presentation": {
+      "UPCOMING": {
+        "title": "الجلسة قريبة",
+        "note": "الجلسة لم تدخل نافذة الانضمام بعد.",
+        "closeout": "انتظر حتى يحين وقت الدخول."
+      },
+      "JOINABLE": {
+        "title": "يمكنك الانضمام الآن",
+        "note": "أصبحت الجلسة جاهزة للدخول.",
+        "closeout": "افتح الجلسة وابدأ الآن."
+      },
+      "IN_PROGRESS": {
+        "title": "الجلسة جارية الآن",
+        "note": "الجلسة مفتوحة حاليًا.",
+        "closeout": "تابع الجلسة وسجّل النتيجة بعد انتهائها."
+      },
+      "COMPLETED": {
+        "title": "الجلسة مكتملة",
+        "note": "تمت الجلسة بنجاح.",
+        "closeout": "راجع التفاصيل النهائية عند الحاجة."
+      },
+      "CANCELLED": {
+        "title": "الجلسة ملغاة",
+        "note": "تم إلغاء هذه الجلسة.",
+        "closeout": "لا توجد خطوات متابعة لهذه الجلسة."
+      },
+      "ENDED": {
+        "title": "الجلسة انتهت",
+        "note": "انتهت الجلسة.",
+        "closeout": "أغلق السجل النهائي بعد انتهاء الجلسة."
+      },
+      "UNAVAILABLE": {
+        "title": "الجلسة غير متاحة",
+        "note": "الجلسة غير متاحة للانضمام الآن.",
+        "closeout": "انتظر حتى تصبح متاحة من جديد."
+      }
     },
     "chatCard": {
       "heading": "المحادثة",
@@ -103,7 +161,13 @@
         },
         "readOnly": {
           "heading": "المحادثة مفتوحة للقراءة فقط",
-          "note": "يمكنك مراجعة الرسائل السابقة، لكن الإرسال غير متاح الآن."
+          "note": "يمكنك مراجعة الرسائل السابقة، لكن الإرسال غير متاح الآن.",
+          "review": "يمكنك مراجعة رسائل الجلسة بعد انتهائها.",
+          "sendBlocked": "لا يمكن إرسال رسائل جديدة بعد انتهاء الجلسة."
+        },
+        "availabilityLoading": {
+          "heading": "جارٍ تحميل حالة المحادثة",
+          "note": "لن يظهر مربع الكتابة حتى تصل حالة الإرسال من الخادم."
         },
         "sessionError": {
           "heading": "تعذّر تحميل الجلسة",
@@ -403,6 +467,13 @@
         "searchPlaceholder": "ابحث برمز الجلسة أو اسم المريض",
         "statusLabel": "الحالة",
         "statusAll": "كل الحالات",
+        "presentationLabel": "العرض",
+        "presentationAll": "كل الجلسات",
+        "presentationJoinable": "جاهزة للدخول",
+        "presentationLive": "جارية الآن",
+        "presentationUpcoming": "قريبة",
+        "presentationFinished": "منتهية",
+        "presentationUnavailable": "غير متاحة",
         "fromLabel": "من تاريخ",
         "toLabel": "إلى تاريخ",
         "clear": "مسح المرشحات"

@@ -37,6 +37,7 @@ import { RejectInstantBookingRequestUseCase } from '../use-cases/reject-instant-
 @RequireAccountStates(
   AccountStateRequirement.ACTIVE_ACCOUNT,
   AccountStateRequirement.PRACTITIONER_OTP_VERIFIED,
+  AccountStateRequirement.PRACTITIONER_APPROVED,
 )
 @Roles(AppRole.PRACTITIONER)
 @Controller('practitioners/me/instant-booking-requests')

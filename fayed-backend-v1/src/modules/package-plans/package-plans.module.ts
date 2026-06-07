@@ -49,7 +49,7 @@ import { UpdatePackagePlanSettingsUseCase } from './use-cases/update-package-pla
     ConfigModule,
     PractitionersModule,
     PatientsModule,
-    SessionsModule,
+    forwardRef(() => SessionsModule),
     NotificationsModule,
     FinancialRulesModule,
     RefundPoliciesModule,

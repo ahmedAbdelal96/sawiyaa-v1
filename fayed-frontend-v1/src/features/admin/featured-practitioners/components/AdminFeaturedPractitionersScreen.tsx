@@ -3,10 +3,19 @@
 import { useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { toast } from "sonner";
-import { Loader2, PauseCircle, PlayCircle, Plus, ScrollText, SquarePen } from "lucide-react";
+import {
+  ExternalLink,
+  Loader2,
+  PauseCircle,
+  PlayCircle,
+  Plus,
+  ScrollText,
+  SquarePen,
+} from "lucide-react";
 import { DataTable } from "@/components/ui/data-table";
 import type { ColumnDef } from "@/components/ui/data-table";
 import ActionIconButton from "@/components/ui/action-icon-button/ActionIconButton";
+import ActionIconLink from "@/components/ui/action-icon-button/ActionIconLink";
 import Button from "@/components/ui/button/Button";
 import DateField from "@/components/form/input/DateField";
 import Label from "@/components/form/Label";
@@ -15,14 +24,21 @@ import TextArea from "@/components/form/input/TextArea";
 import AdminOperationalListShell, {
   AdminSummaryCard,
 } from "@/components/shared/admin/AdminOperationalListShell";
+import {
+  AdminStatusBadge,
+  AdminSectionCard,
+} from "@/components/shared/admin/AdminDashboardKit";
 import { Drawer, FormModal, ModalBody, ModalHeader } from "@/components/ui/modal";
 import { useCurrentUserPermissions } from "@/features/users/hooks/use-users";
 import { toAppError } from "@/lib/api/errors";
 import { PermissionKey, hasPermission } from "@/lib/auth/permissions";
-import { DEFAULT_PAGE_LIMIT, DEFAULT_PAGE_SIZE_OPTIONS } from "@/constants/pagination";
 import {
-  useAdminFeaturedPlacementHistory,
+  DEFAULT_PAGE_LIMIT,
+  DEFAULT_PAGE_SIZE_OPTIONS,
+} from "@/constants/pagination";
+import {
   useAdminFeaturedPlacements,
+  useAdminFeaturedPlacementHistory,
   useCreateAdminFeaturedPlacement,
   usePauseAdminFeaturedPlacement,
   useResumeAdminFeaturedPlacement,
@@ -34,27 +50,38 @@ import type {
   FeaturedPlacementStatus,
   FeaturedPlacementSurface,
 } from "../types/admin-featured-practitioners.types";
+import FeaturedPractitionerPicker, {
+  type FeaturedPractitionerCandidate,
+} from "./FeaturedPractitionerPicker";
 
 const PAGE_SIZE_OPTIONS = DEFAULT_PAGE_SIZE_OPTIONS;
 
 type EditorMode = "create" | "edit";
+type LifecycleStatus = "ACTIVE" | "SCHEDULED" | "EXPIRED" | "PAUSED";
 
 type FormState = {
-  practitionerId: string;
-  practitionerSlug: string;
+  practitioner: FeaturedPractitionerCandidate | null;
   surface: FeaturedPlacementSurface;
   startsAt: string;
   endsAt: string;
   priority: string;
-  badgeLabelAr: string;
-  badgeLabelEn: string;
   reason: FeaturedPlacementReason;
   campaignName: string;
   notesInternal: string;
+  status: FeaturedPlacementStatus;
 };
 
-const STATUS_OPTIONS: FeaturedPlacementStatus[] = ["ACTIVE", "PAUSED", "EXPIRED"];
-const SURFACE_OPTIONS: FeaturedPlacementSurface[] = ["HOME", "DISCOVERY", "ALL"];
+const STATUS_OPTIONS: Array<FeaturedPlacementStatus | "ALL"> = [
+  "ALL",
+  "ACTIVE",
+  "PAUSED",
+  "EXPIRED",
+];
+const SURFACE_OPTIONS: Array<FeaturedPlacementSurface | "ALL"> = [
+  "ALL",
+  "HOME",
+  "DISCOVERY",
+];
 const REASON_OPTIONS: FeaturedPlacementReason[] = [
   "FEATURED",
   "SPONSORED",
@@ -69,12 +96,11 @@ function toDateTimeLocalInput(value: string | null): string {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "";
   const pad = (n: number) => String(n).padStart(2, "0");
-  const year = date.getFullYear();
-  const month = pad(date.getMonth() + 1);
-  const day = pad(date.getDate());
-  const hours = pad(date.getHours());
-  const mins = pad(date.getMinutes());
-  return `${year}-${month}-${day}T${hours}:${mins}`;
+  return [
+    date.getFullYear(),
+    pad(date.getMonth() + 1),
+    pad(date.getDate()),
+  ].join("-") + `T${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
 
 function toIsoOrUndefined(value: string): string | undefined {
@@ -86,7 +112,7 @@ function toIsoOrUndefined(value: string): string | undefined {
 
 function formatDateTime(value: string | null, locale: string) {
   if (!value) return "-";
-  return new Date(value).toLocaleString(locale === "ar" ? "ar-SA" : "en-US", {
+  return new Date(value).toLocaleString(locale === "ar" ? "ar-EG" : "en-US", {
     year: "numeric",
     month: "short",
     day: "numeric",
@@ -94,6 +120,30 @@ function formatDateTime(value: string | null, locale: string) {
     minute: "2-digit",
     hour12: !locale.startsWith("ar"),
   });
+}
+
+function getPlacementLifecycle(placement: AdminFeaturedPlacement): LifecycleStatus {
+  if (placement.status === "PAUSED") return "PAUSED";
+  if (placement.endsAt && new Date(placement.endsAt).getTime() < Date.now()) {
+    return "EXPIRED";
+  }
+  if (new Date(placement.startsAt).getTime() > Date.now()) {
+    return "SCHEDULED";
+  }
+  return "ACTIVE";
+}
+
+function getLifecycleTone(status: LifecycleStatus) {
+  switch (status) {
+    case "ACTIVE":
+      return "success" as const;
+    case "SCHEDULED":
+      return "info" as const;
+    case "EXPIRED":
+    case "PAUSED":
+      return "neutral" as const;
+  }
+  return "neutral" as const;
 }
 
 function mapActionLabel(action: string, t: ReturnType<typeof useTranslations>) {
@@ -113,8 +163,6 @@ function getChangedFields(
     { key: "priority", labelKey: "fields.priority" },
     { key: "startsAt", labelKey: "fields.startsAt" },
     { key: "endsAt", labelKey: "fields.endsAt" },
-    { key: "badgeLabelAr", labelKey: "fields.badgeLabelAr" },
-    { key: "badgeLabelEn", labelKey: "fields.badgeLabelEn" },
     { key: "reason", labelKey: "fields.reason" },
     { key: "campaignName", labelKey: "fields.campaignName" },
     { key: "notesInternal", labelKey: "fields.notesInternal" },
@@ -138,16 +186,20 @@ function getChangedFields(
 function featuredErrorKey(error: unknown) {
   const appError = toAppError(error);
   switch (appError.code) {
-    case "FEATURED_PRACTITIONER_PLACEMENT_NOT_FOUND":
+    case "FEATURED_PLACEMENT_NOT_FOUND":
       return "errors.notFound";
-    case "FEATURED_PRACTITIONER_INVALID_DATE_RANGE":
+    case "FEATURED_PLACEMENT_INVALID_DATE_RANGE":
       return "errors.invalidDateRange";
-    case "FEATURED_PRACTITIONER_INVALID_PRIORITY":
+    case "FEATURED_PLACEMENT_INVALID_PRIORITY":
       return "errors.invalidPriority";
-    case "FEATURED_PRACTITIONER_RESUME_EXPIRED":
+    case "FEATURED_PLACEMENT_EXPIRED_CANNOT_RESUME":
       return "errors.resumeExpired";
-    case "FEATURED_PRACTITIONER_INVALID_PRACTITIONER":
+    case "FEATURED_PLACEMENT_INVALID_PRACTITIONER":
       return "errors.invalidPractitioner";
+    case "FEATURED_PLACEMENT_OVERLAPPING_ACTIVE":
+      return "errors.overlap";
+    case "FEATURED_PLACEMENT_PRACTITIONER_REQUIRED":
+      return "errors.practitionerRequired";
     default:
       return "errors.generic";
   }
@@ -155,34 +207,44 @@ function featuredErrorKey(error: unknown) {
 
 function createDefaultFormState(): FormState {
   return {
-    practitionerId: "",
-    practitionerSlug: "",
+    practitioner: null,
     surface: "HOME",
     startsAt: "",
     endsAt: "",
-    priority: "1",
-    badgeLabelAr: "مميز",
-    badgeLabelEn: "Featured",
+    priority: "100",
     reason: "FEATURED",
     campaignName: "",
     notesInternal: "",
+    status: "ACTIVE",
   };
 }
 
 function toFormStateFromPlacement(placement: AdminFeaturedPlacement): FormState {
   return {
-    practitionerId: placement.practitionerId,
-    practitionerSlug: placement.practitioner?.slug ?? "",
+    practitioner: placement.practitioner
+      ? {
+          id: placement.practitioner.id,
+          slug: placement.practitioner.slug,
+          displayName: placement.practitioner.displayName,
+          avatarUrl: placement.practitioner.avatarUrl,
+          professionalTitle: placement.practitioner.professionalTitle,
+          status: placement.practitioner.status,
+          isVerified: placement.practitioner.status === "APPROVED",
+        }
+      : null,
     surface: placement.surface,
     startsAt: toDateTimeLocalInput(placement.startsAt),
     endsAt: toDateTimeLocalInput(placement.endsAt),
     priority: String(placement.priority),
-    badgeLabelAr: placement.badgeLabelAr ?? "مميز",
-    badgeLabelEn: placement.badgeLabelEn ?? "Featured",
     reason: placement.reason,
     campaignName: placement.campaignName ?? "",
     notesInternal: placement.notesInternal ?? "",
+    status: placement.status,
   };
+}
+
+function statusLabelKey(status: LifecycleStatus) {
+  return `lifecycle.${status}` as const;
 }
 
 export default function AdminFeaturedPractitionersScreen() {
@@ -196,7 +258,6 @@ export default function AdminFeaturedPractitionersScreen() {
 
   const [statusFilter, setStatusFilter] = useState<FeaturedPlacementStatus | "ALL">("ALL");
   const [surfaceFilter, setSurfaceFilter] = useState<FeaturedPlacementSurface | "ALL">("ALL");
-  const [reasonFilter, setReasonFilter] = useState<FeaturedPlacementReason | "ALL">("ALL");
   const [practitionerSearch, setPractitionerSearch] = useState("");
   const [startsFrom, setStartsFrom] = useState("");
   const [endsTo, setEndsTo] = useState("");
@@ -212,26 +273,23 @@ export default function AdminFeaturedPractitionersScreen() {
   const [pauseTarget, setPauseTarget] = useState<AdminFeaturedPlacement | null>(null);
   const [resumeTarget, setResumeTarget] = useState<AdminFeaturedPlacement | null>(null);
   const [actionNote, setActionNote] = useState("");
-
   const [historyTarget, setHistoryTarget] = useState<AdminFeaturedPlacement | null>(null);
 
   const listParams = useMemo(
     () => ({
       status: statusFilter === "ALL" ? undefined : statusFilter,
       surface: surfaceFilter === "ALL" ? undefined : surfaceFilter,
-      reason: reasonFilter === "ALL" ? undefined : reasonFilter,
       practitionerSearch: practitionerSearch.trim() || undefined,
       startsFrom: startsFrom || undefined,
       endsTo: endsTo || undefined,
       page,
       limit,
     }),
-    [statusFilter, surfaceFilter, reasonFilter, practitionerSearch, startsFrom, endsTo, page, limit],
+    [statusFilter, surfaceFilter, practitionerSearch, startsFrom, endsTo, page, limit],
   );
 
   const placementsQuery = useAdminFeaturedPlacements(listParams);
   const historyQuery = useAdminFeaturedPlacementHistory(historyTarget?.id ?? null);
-
   const createMutation = useCreateAdminFeaturedPlacement();
   const updateMutation = useUpdateAdminFeaturedPlacement();
   const pauseMutation = usePauseAdminFeaturedPlacement();
@@ -239,7 +297,24 @@ export default function AdminFeaturedPractitionersScreen() {
 
   const items = placementsQuery.data?.items ?? [];
   const pagination = placementsQuery.data;
-  const activeCount = items.filter((item) => item.status === "ACTIVE").length;
+
+  const derivedStats = useMemo(() => {
+    const totals = {
+      total: pagination?.total ?? 0,
+      active: 0,
+      scheduled: 0,
+      expired: 0,
+      paused: 0,
+    };
+    for (const item of items) {
+      const lifecycle = getPlacementLifecycle(item);
+      if (lifecycle === "ACTIVE") totals.active += 1;
+      if (lifecycle === "SCHEDULED") totals.scheduled += 1;
+      if (lifecycle === "EXPIRED") totals.expired += 1;
+      if (lifecycle === "PAUSED") totals.paused += 1;
+    }
+    return totals;
+  }, [items, pagination?.total]);
 
   const columns = useMemo<ColumnDef<AdminFeaturedPlacement>[]>(
     () => [
@@ -248,13 +323,30 @@ export default function AdminFeaturedPractitionersScreen() {
         header: t("table.practitioner"),
         accessor: (row) => row.practitioner?.displayName ?? row.practitionerId,
         cell: (row) => (
-          <div className="min-w-0">
-            <p className="truncate text-sm font-semibold text-text-primary">
-              {row.practitioner?.displayName ?? "-"}
-            </p>
-            <p className="truncate text-xs text-text-muted">
-              {row.practitioner?.professionalTitle ?? row.practitioner?.slug ?? row.practitionerId}
-            </p>
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-border-light bg-surface-secondary">
+              {row.practitioner?.avatarUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={row.practitioner.avatarUrl}
+                  alt={row.practitioner.displayName ?? "-"}
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <span className="text-xs font-semibold text-text-muted">
+                  {(row.practitioner?.displayName ?? "?").slice(0, 2).toUpperCase()}
+                </span>
+              )}
+            </div>
+
+            <div className="min-w-0">
+              <p className="truncate text-sm font-semibold text-text-primary">
+                {row.practitioner?.displayName ?? "-"}
+              </p>
+              <p className="truncate text-xs text-text-muted">
+                {row.practitioner?.professionalTitle ?? row.practitioner?.slug ?? row.practitionerId}
+              </p>
+            </div>
           </div>
         ),
       },
@@ -266,7 +358,15 @@ export default function AdminFeaturedPractitionersScreen() {
       {
         id: "status",
         header: t("table.status"),
-        accessor: (row) => t(`status.${row.status}` as Parameters<typeof t>[0]),
+        accessor: (row) => t(statusLabelKey(getPlacementLifecycle(row)) as Parameters<typeof t>[0]),
+        cell: (row) => {
+          const lifecycle = getPlacementLifecycle(row);
+          return (
+            <AdminStatusBadge tone={getLifecycleTone(lifecycle)}>
+              {t(statusLabelKey(lifecycle) as Parameters<typeof t>[0])}
+            </AdminStatusBadge>
+          );
+        },
       },
       {
         id: "startsAt",
@@ -292,11 +392,6 @@ export default function AdminFeaturedPractitionersScreen() {
         hideOnMobile: true,
       },
       {
-        id: "badge",
-        header: t("table.badge"),
-        accessor: (row) => row.badgeLabelAr ?? row.badgeLabelEn ?? "مميز",
-      },
-      {
         id: "campaignName",
         header: t("table.campaign"),
         accessor: (row) => row.campaignName ?? "-",
@@ -312,55 +407,6 @@ export default function AdminFeaturedPractitionersScreen() {
     [locale, t],
   );
 
-  const rowActions = (row: AdminFeaturedPlacement) => (
-    <div className="flex items-center gap-2">
-      <ActionIconButton
-        intent="view"
-        label={t("actions.history")}
-        icon={<ScrollText className="h-4 w-4" />}
-        onClick={() => setHistoryTarget(row)}
-      />
-
-      {canManage ? (
-        <>
-          <ActionIconButton
-            intent="edit"
-            label={t("actions.edit")}
-            icon={<SquarePen className="h-4 w-4" />}
-            onClick={() => {
-              setEditorMode("edit");
-              setEditingId(row.id);
-              setFormState(toFormStateFromPlacement(row));
-              setFormError(null);
-              setEditorOpen(true);
-            }}
-          />
-          {row.status === "PAUSED" ? (
-            <ActionIconButton
-              intent="publish"
-              label={t("actions.resume")}
-              icon={<PlayCircle className="h-4 w-4" />}
-              onClick={() => {
-                setActionNote("");
-                setResumeTarget(row);
-              }}
-            />
-          ) : (
-            <ActionIconButton
-              intent="deactivate"
-              label={t("actions.pause")}
-              icon={<PauseCircle className="h-4 w-4" />}
-              onClick={() => {
-                setActionNote("");
-                setPauseTarget(row);
-              }}
-            />
-          )}
-        </>
-      ) : null}
-    </div>
-  );
-
   const resetAndCloseEditor = () => {
     setEditorOpen(false);
     setEditingId(null);
@@ -369,7 +415,7 @@ export default function AdminFeaturedPractitionersScreen() {
   };
 
   const validateForm = (mode: EditorMode) => {
-    if (mode === "create" && !formState.practitionerId.trim() && !formState.practitionerSlug.trim()) {
+    if (mode === "create" && !formState.practitioner) {
       return t("validation.practitionerRequired");
     }
     if (!formState.startsAt.trim()) {
@@ -381,7 +427,11 @@ export default function AdminFeaturedPractitionersScreen() {
     if (formState.endsAt.trim()) {
       const starts = new Date(formState.startsAt);
       const ends = new Date(formState.endsAt);
-      if (Number.isNaN(starts.getTime()) || Number.isNaN(ends.getTime()) || ends <= starts) {
+      if (
+        Number.isNaN(starts.getTime()) ||
+        Number.isNaN(ends.getTime()) ||
+        ends <= starts
+      ) {
         return t("validation.endsAtAfterStartsAt");
       }
     }
@@ -394,59 +444,68 @@ export default function AdminFeaturedPractitionersScreen() {
       setFormError(validationError);
       return;
     }
+
+    if (!formState.practitioner && editorMode === "create") {
+      setFormError(t("validation.practitionerRequired"));
+      return;
+    }
+
     setFormError(null);
 
     try {
-      if (editorMode === "create") {
+      if (editorMode === "create" && formState.practitioner) {
         await createMutation.mutateAsync({
-          practitionerId: formState.practitionerId.trim() || undefined,
-          practitionerSlug: formState.practitionerSlug.trim() || undefined,
+          practitionerId: formState.practitioner.id,
           surface: formState.surface,
           startsAt: toIsoOrUndefined(formState.startsAt)!,
           endsAt: toIsoOrUndefined(formState.endsAt),
           priority: Number(formState.priority),
-          badgeLabelAr: formState.badgeLabelAr.trim() || undefined,
-          badgeLabelEn: formState.badgeLabelEn.trim() || undefined,
           reason: formState.reason,
           campaignName: formState.campaignName.trim() || undefined,
           notesInternal: formState.notesInternal.trim() || undefined,
         });
         toast.success(t("feedback.createSuccess"));
       } else if (editingId) {
-        const payload: Record<string, unknown> = {
-          surface: formState.surface,
-          startsAt: toIsoOrUndefined(formState.startsAt),
-          priority: Number(formState.priority),
-          reason: formState.reason,
-        };
-        const endsIso = toIsoOrUndefined(formState.endsAt);
-        if (formState.endsAt.trim()) payload.endsAt = endsIso;
-        if (formState.badgeLabelAr.trim()) payload.badgeLabelAr = formState.badgeLabelAr.trim();
-        if (formState.badgeLabelEn.trim()) payload.badgeLabelEn = formState.badgeLabelEn.trim();
-        payload.campaignName = formState.campaignName.trim() || "";
-        payload.notesInternal = formState.notesInternal.trim() || "";
-
         await updateMutation.mutateAsync({
           id: editingId,
-          payload,
+          payload: {
+            surface: formState.surface,
+            startsAt: toIsoOrUndefined(formState.startsAt),
+            endsAt: toIsoOrUndefined(formState.endsAt),
+            priority: Number(formState.priority),
+            reason: formState.reason,
+            campaignName: formState.campaignName.trim() || undefined,
+            notesInternal: formState.notesInternal.trim() || undefined,
+            status: formState.status,
+          },
         });
         toast.success(t("feedback.updateSuccess"));
       }
 
       resetAndCloseEditor();
     } catch (error) {
-      setFormError(t(featuredErrorKey(error) as Parameters<typeof t>[0]));
-      toast.error(t(featuredErrorKey(error) as Parameters<typeof t>[0]));
+      const messageKey = featuredErrorKey(error);
+      setFormError(t(messageKey as Parameters<typeof t>[0]));
+      toast.error(t(messageKey as Parameters<typeof t>[0]));
     }
   };
 
   const hasFilters =
     statusFilter !== "ALL" ||
     surfaceFilter !== "ALL" ||
-    reasonFilter !== "ALL" ||
     Boolean(practitionerSearch.trim()) ||
     Boolean(startsFrom) ||
     Boolean(endsTo);
+
+  const readOnlyNotice = !canManage ? (
+    <AdminSectionCard
+      eyebrow={t("states.readOnlyTitle")}
+      title={t("states.readOnlyTitle")}
+      description={t("states.readOnlyDescription")}
+    >
+      <p className="text-sm text-text-secondary">{t("states.readOnlyDescription")}</p>
+    </AdminSectionCard>
+  ) : null;
 
   return (
     <div className="space-y-5">
@@ -454,6 +513,7 @@ export default function AdminFeaturedPractitionersScreen() {
         eyebrow={t("eyebrow")}
         title={t("title")}
         description={t("subtitle")}
+        notice={readOnlyNotice}
         actions={
           canManage ? (
             <Button
@@ -473,13 +533,23 @@ export default function AdminFeaturedPractitionersScreen() {
           <>
             <AdminSummaryCard
               label={t("summary.total")}
-              value={pagination?.total ?? 0}
+              value={derivedStats.total}
               tone="primary"
             />
             <AdminSummaryCard
               label={t("summary.active")}
-              value={activeCount}
+              value={derivedStats.active}
               tone="success"
+            />
+            <AdminSummaryCard
+              label={t("summary.scheduled")}
+              value={derivedStats.scheduled}
+              tone="primary"
+            />
+            <AdminSummaryCard
+              label={t("summary.inactive")}
+              value={derivedStats.expired + derivedStats.paused}
+              tone="neutral"
             />
           </>
         }
@@ -487,26 +557,25 @@ export default function AdminFeaturedPractitionersScreen() {
           <div className="space-y-4">
             <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
               <label className="block">
-                <span className="mb-2 block text-xs font-semibold text-text-muted">{t("filters.status")}</span>
-                <select
-                  value={statusFilter}
+                <span className="mb-2 block text-xs font-semibold text-text-muted">
+                  {t("filters.search")}
+                </span>
+                <input
+                  type="text"
+                  value={practitionerSearch}
                   onChange={(event) => {
-                    setStatusFilter(event.target.value as FeaturedPlacementStatus | "ALL");
+                    setPractitionerSearch(event.target.value);
                     setPage(1);
                   }}
+                  placeholder={t("filters.searchPlaceholder")}
                   className="app-control h-11 w-full rounded-[18px] px-4"
-                >
-                  <option value="ALL">{t("filters.all")}</option>
-                  {STATUS_OPTIONS.map((status) => (
-                    <option key={status} value={status}>
-                      {t(`status.${status}` as Parameters<typeof t>[0])}
-                    </option>
-                  ))}
-                </select>
+                />
               </label>
 
               <label className="block">
-                <span className="mb-2 block text-xs font-semibold text-text-muted">{t("filters.surface")}</span>
+                <span className="mb-2 block text-xs font-semibold text-text-muted">
+                  {t("filters.surface")}
+                </span>
                 <select
                   value={surfaceFilter}
                   onChange={(event) => {
@@ -515,47 +584,50 @@ export default function AdminFeaturedPractitionersScreen() {
                   }}
                   className="app-control h-11 w-full rounded-[18px] px-4"
                 >
-                  <option value="ALL">{t("filters.all")}</option>
                   {SURFACE_OPTIONS.map((surface) => (
-                    <option key={surface} value={surface}>
-                      {t(`surface.${surface}` as Parameters<typeof t>[0])}
+                    <option key={`${surface}`} value={surface}>
+                      {surface === "ALL" ? t("filters.all") : t(`surface.${surface}` as Parameters<typeof t>[0])}
                     </option>
                   ))}
                 </select>
               </label>
 
               <label className="block">
-                <span className="mb-2 block text-xs font-semibold text-text-muted">{t("filters.reason")}</span>
+                <span className="mb-2 block text-xs font-semibold text-text-muted">
+                  {t("filters.status")}
+                </span>
                 <select
-                  value={reasonFilter}
+                  value={statusFilter}
                   onChange={(event) => {
-                    setReasonFilter(event.target.value as FeaturedPlacementReason | "ALL");
+                    setStatusFilter(event.target.value as FeaturedPlacementStatus | "ALL");
                     setPage(1);
                   }}
                   className="app-control h-11 w-full rounded-[18px] px-4"
                 >
-                  <option value="ALL">{t("filters.all")}</option>
-                  {REASON_OPTIONS.map((reason) => (
-                    <option key={reason} value={reason}>
-                      {t(`reason.${reason}` as Parameters<typeof t>[0])}
+                  {STATUS_OPTIONS.map((status) => (
+                    <option key={status} value={status}>
+                      {status === "ALL" ? t("filters.all") : t(`status.${status}` as Parameters<typeof t>[0])}
                     </option>
                   ))}
                 </select>
               </label>
 
-              <label className="block">
-                <span className="mb-2 block text-xs font-semibold text-text-muted">{t("filters.practitionerSearch")}</span>
-                <input
-                  type="text"
-                  value={practitionerSearch}
-                  onChange={(event) => {
-                    setPractitionerSearch(event.target.value);
+              <div className="flex items-end justify-end">
+                <Button
+                  variant="outline"
+                  disabled={!hasFilters}
+                  onClick={() => {
+                    setStatusFilter("ALL");
+                    setSurfaceFilter("ALL");
+                    setPractitionerSearch("");
+                    setStartsFrom("");
+                    setEndsTo("");
                     setPage(1);
                   }}
-                  placeholder={t("filters.practitionerSearchPlaceholder")}
-                  className="app-control h-11 w-full rounded-[18px] px-4"
-                />
-              </label>
+                >
+                  {t("actions.clearFilters")}
+                </Button>
+              </div>
             </div>
 
             <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
@@ -578,24 +650,6 @@ export default function AdminFeaturedPractitionersScreen() {
                 placeholder="2026-05-30"
               />
             </div>
-
-            <div className="flex justify-end">
-              <Button
-                variant="outline"
-                disabled={!hasFilters}
-                onClick={() => {
-                  setStatusFilter("ALL");
-                  setSurfaceFilter("ALL");
-                  setReasonFilter("ALL");
-                  setPractitionerSearch("");
-                  setStartsFrom("");
-                  setEndsTo("");
-                  setPage(1);
-                }}
-              >
-                {t("actions.clearFilters")}
-              </Button>
-            </div>
           </div>
         }
       >
@@ -610,7 +664,63 @@ export default function AdminFeaturedPractitionersScreen() {
             description: t("states.listErrorDescription"),
             action: { label: t("states.retry"), onClick: () => placementsQuery.refetch() },
           }}
-          rowActions={rowActions}
+          rowActions={(row) => (
+            <div className="flex items-center gap-2">
+              <ActionIconButton
+                intent="view"
+                label={t("actions.history")}
+                icon={<ScrollText className="h-4 w-4" />}
+                onClick={() => setHistoryTarget(row)}
+              />
+
+              {row.practitioner?.slug ? (
+                <ActionIconLink
+                  intent="view"
+                  href={`/${locale}/practitioners/${row.practitioner.slug}`}
+                  label={t("actions.openProfile")}
+                  icon={<ExternalLink className="h-4 w-4" />}
+                />
+              ) : null}
+
+              {canManage ? (
+                <>
+                  <ActionIconButton
+                    intent="edit"
+                    label={t("actions.edit")}
+                    icon={<SquarePen className="h-4 w-4" />}
+                    onClick={() => {
+                      setEditorMode("edit");
+                      setEditingId(row.id);
+                      setFormState(toFormStateFromPlacement(row));
+                      setFormError(null);
+                      setEditorOpen(true);
+                    }}
+                  />
+                  {row.status === "PAUSED" ? (
+                    <ActionIconButton
+                      intent="publish"
+                      label={t("actions.resume")}
+                      icon={<PlayCircle className="h-4 w-4" />}
+                      onClick={() => {
+                        setActionNote("");
+                        setResumeTarget(row);
+                      }}
+                    />
+                  ) : row.status === "ACTIVE" ? (
+                    <ActionIconButton
+                      intent="deactivate"
+                      label={t("actions.end")}
+                      icon={<PauseCircle className="h-4 w-4" />}
+                      onClick={() => {
+                        setActionNote("");
+                        setPauseTarget(row);
+                      }}
+                    />
+                  ) : null}
+                </>
+              ) : null}
+            </div>
+          )}
           pagination={
             pagination
               ? {
@@ -659,159 +769,153 @@ export default function AdminFeaturedPractitionersScreen() {
         onSubmit={submitEditor}
         loading={createMutation.isPending || updateMutation.isPending}
       >
-        <div className="grid gap-4 md:grid-cols-2">
-          {editorMode === "create" ? (
-            <>
-              <div>
-                <Label htmlFor="featuredPractitionerId">{t("fields.practitionerId")}</Label>
-                <InputField
-                  id="featuredPractitionerId"
-                  value={formState.practitionerId}
-                  onChange={(event) =>
-                    setFormState((prev) => ({ ...prev, practitionerId: event.target.value }))
-                  }
-                  placeholder={t("fields.practitionerIdPlaceholder")}
-                />
-              </div>
-              <div>
-                <Label htmlFor="featuredPractitionerSlug">{t("fields.practitionerSlug")}</Label>
-                <InputField
-                  id="featuredPractitionerSlug"
-                  value={formState.practitionerSlug}
-                  onChange={(event) =>
-                    setFormState((prev) => ({ ...prev, practitionerSlug: event.target.value }))
-                  }
-                  placeholder={t("fields.practitionerSlugPlaceholder")}
-                />
-              </div>
-            </>
-          ) : null}
-
-          <label className="block">
-            <span className="mb-2 block text-xs font-semibold text-text-muted">{t("fields.surface")}</span>
-            <select
-              value={formState.surface}
-              onChange={(event) =>
-                setFormState((prev) => ({ ...prev, surface: event.target.value as FeaturedPlacementSurface }))
-              }
-              className="app-control h-11 w-full rounded-[18px] px-4"
-            >
-              {SURFACE_OPTIONS.map((surface) => (
-                <option key={surface} value={surface}>
-                  {t(`surface.${surface}` as Parameters<typeof t>[0])}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label className="block">
-            <span className="mb-2 block text-xs font-semibold text-text-muted">{t("fields.reason")}</span>
-            <select
-              value={formState.reason}
-              onChange={(event) =>
-                setFormState((prev) => ({ ...prev, reason: event.target.value as FeaturedPlacementReason }))
-              }
-              className="app-control h-11 w-full rounded-[18px] px-4"
-            >
-              {REASON_OPTIONS.map((reason) => (
-                <option key={reason} value={reason}>
-                  {t(`reason.${reason}` as Parameters<typeof t>[0])}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <div>
-            <Label htmlFor="featuredStartsAt">{t("fields.startsAt")}</Label>
-            <InputField
-              id="featuredStartsAt"
-              type="datetime-local"
-              value={formState.startsAt}
-              onChange={(event) =>
-                setFormState((prev) => ({ ...prev, startsAt: event.target.value }))
-              }
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="featuredEndsAt">{t("fields.endsAt")}</Label>
-            <InputField
-              id="featuredEndsAt"
-              type="datetime-local"
-              value={formState.endsAt}
-              onChange={(event) =>
-                setFormState((prev) => ({ ...prev, endsAt: event.target.value }))
-              }
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="featuredPriority">{t("fields.priority")}</Label>
-            <InputField
-              id="featuredPriority"
-              type="number"
-              min={1}
-              value={formState.priority}
-              onChange={(event) =>
-                setFormState((prev) => ({ ...prev, priority: event.target.value }))
-              }
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="featuredBadgeAr">{t("fields.badgeLabelAr")}</Label>
-            <InputField
-              id="featuredBadgeAr"
-              value={formState.badgeLabelAr}
-              onChange={(event) =>
-                setFormState((prev) => ({ ...prev, badgeLabelAr: event.target.value }))
-              }
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="featuredBadgeEn">{t("fields.badgeLabelEn")}</Label>
-            <InputField
-              id="featuredBadgeEn"
-              value={formState.badgeLabelEn}
-              onChange={(event) =>
-                setFormState((prev) => ({ ...prev, badgeLabelEn: event.target.value }))
-              }
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="featuredCampaign">{t("fields.campaignName")}</Label>
-            <InputField
-              id="featuredCampaign"
-              value={formState.campaignName}
-              onChange={(event) =>
-                setFormState((prev) => ({ ...prev, campaignName: event.target.value }))
-              }
-            />
-          </div>
-        </div>
-
-        <div className="mt-4">
-          <Label htmlFor="featuredNotes">{t("fields.notesInternal")}</Label>
-          <TextArea
-            id="featuredNotes"
-            rows={3}
-            value={formState.notesInternal}
-            onChange={(value) => setFormState((prev) => ({ ...prev, notesInternal: value }))}
+        <div className="space-y-5">
+          <FeaturedPractitionerPicker
+            value={formState.practitioner}
+            onChange={(practitioner) =>
+              setFormState((prev) => ({ ...prev, practitioner }))
+            }
+            disabled={editorMode === "edit"}
+            error={editorMode === "create" && !formState.practitioner ? formError : null}
           />
-        </div>
 
-        {formError ? <p className="mt-3 text-sm font-medium text-error-500">{formError}</p> : null}
+          <div className="grid gap-4 md:grid-cols-2">
+            <label className="block">
+              <span className="mb-2 block text-xs font-semibold text-text-muted">
+                {t("fields.surface")}
+              </span>
+              <select
+                value={formState.surface}
+                onChange={(event) =>
+                  setFormState((prev) => ({
+                    ...prev,
+                    surface: event.target.value as FeaturedPlacementSurface,
+                  }))
+                }
+                className="app-control h-11 w-full rounded-[18px] px-4"
+              >
+                <option value="HOME">{t("surface.HOME")}</option>
+                <option value="DISCOVERY">{t("surface.DISCOVERY")}</option>
+                <option value="ALL">{t("surface.ALL")}</option>
+              </select>
+            </label>
+
+            <label className="block">
+              <span className="mb-2 block text-xs font-semibold text-text-muted">
+                {t("fields.reason")}
+              </span>
+              <select
+                value={formState.reason}
+                onChange={(event) =>
+                  setFormState((prev) => ({
+                    ...prev,
+                    reason: event.target.value as FeaturedPlacementReason,
+                  }))
+                }
+                className="app-control h-11 w-full rounded-[18px] px-4"
+              >
+                {REASON_OPTIONS.map((reason) => (
+                  <option key={reason} value={reason}>
+                    {t(`reason.${reason}` as Parameters<typeof t>[0])}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <div>
+              <Label htmlFor="featuredStartsAt">{t("fields.startsAt")}</Label>
+              <InputField
+                id="featuredStartsAt"
+                type="datetime-local"
+                value={formState.startsAt}
+                onChange={(event) =>
+                  setFormState((prev) => ({ ...prev, startsAt: event.target.value }))
+                }
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="featuredEndsAt">{t("fields.endsAt")}</Label>
+              <InputField
+                id="featuredEndsAt"
+                type="datetime-local"
+                value={formState.endsAt}
+                onChange={(event) =>
+                  setFormState((prev) => ({ ...prev, endsAt: event.target.value }))
+                }
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="featuredPriority">{t("fields.priority")}</Label>
+              <InputField
+                id="featuredPriority"
+                type="number"
+                min={1}
+                value={formState.priority}
+                onChange={(event) =>
+                  setFormState((prev) => ({ ...prev, priority: event.target.value }))
+                }
+              />
+            </div>
+
+            {editorMode === "edit" ? (
+              <label className="block">
+                <span className="mb-2 block text-xs font-semibold text-text-muted">
+                  {t("fields.status")}
+                </span>
+                <select
+                  value={formState.status}
+                  onChange={(event) =>
+                    setFormState((prev) => ({
+                      ...prev,
+                      status: event.target.value as FeaturedPlacementStatus,
+                    }))
+                  }
+                  className="app-control h-11 w-full rounded-[18px] px-4"
+                >
+                  <option value="ACTIVE">{t("status.ACTIVE")}</option>
+                  <option value="PAUSED">{t("status.PAUSED")}</option>
+                  <option value="EXPIRED">{t("status.EXPIRED")}</option>
+                </select>
+              </label>
+            ) : null}
+
+            <div>
+              <Label htmlFor="featuredCampaign">{t("fields.campaignName")}</Label>
+              <InputField
+                id="featuredCampaign"
+                value={formState.campaignName}
+                onChange={(event) =>
+                  setFormState((prev) => ({ ...prev, campaignName: event.target.value }))
+                }
+              />
+            </div>
+          </div>
+
+          <div>
+            <Label htmlFor="featuredNotes">{t("fields.notesInternal")}</Label>
+            <TextArea
+              id="featuredNotes"
+              rows={3}
+              value={formState.notesInternal}
+              onChange={(value) => setFormState((prev) => ({ ...prev, notesInternal: value }))}
+            />
+          </div>
+
+          {formError && !(editorMode === "create" && !formState.practitioner) ? (
+            <p className="text-sm font-medium text-error-500">{formError}</p>
+          ) : null}
+        </div>
       </FormModal>
 
       <FormModal
         isOpen={Boolean(pauseTarget)}
         onClose={() => setPauseTarget(null)}
-        title={t("pause.title")}
-        description={t("pause.description")}
-        submitLabel={pauseMutation.isPending ? t("pause.submitting") : t("pause.confirm")}
-        cancelLabel={t("pause.cancel")}
+        title={t("end.title")}
+        description={t("end.description")}
+        submitLabel={pauseMutation.isPending ? t("end.submitting") : t("end.confirm")}
+        cancelLabel={t("end.cancel")}
         onSubmit={async () => {
           if (!pauseTarget) return;
           try {
@@ -819,11 +923,12 @@ export default function AdminFeaturedPractitionersScreen() {
               id: pauseTarget.id,
               payload: { note: actionNote.trim() || undefined },
             });
-            toast.success(t("feedback.pauseSuccess"));
+            toast.success(t("feedback.endSuccess"));
             setPauseTarget(null);
             setActionNote("");
           } catch (error) {
-            toast.error(t(featuredErrorKey(error) as Parameters<typeof t>[0]));
+            const messageKey = featuredErrorKey(error);
+            toast.error(t(messageKey as Parameters<typeof t>[0]));
           }
         }}
         loading={pauseMutation.isPending}
@@ -855,7 +960,8 @@ export default function AdminFeaturedPractitionersScreen() {
             setResumeTarget(null);
             setActionNote("");
           } catch (error) {
-            toast.error(t(featuredErrorKey(error) as Parameters<typeof t>[0]));
+            const messageKey = featuredErrorKey(error);
+            toast.error(t(messageKey as Parameters<typeof t>[0]));
           }
         }}
         loading={resumeMutation.isPending}
@@ -869,11 +975,7 @@ export default function AdminFeaturedPractitionersScreen() {
         />
       </FormModal>
 
-      <Drawer
-        isOpen={Boolean(historyTarget)}
-        onClose={() => setHistoryTarget(null)}
-        side="right"
-      >
+      <Drawer isOpen={Boolean(historyTarget)} onClose={() => setHistoryTarget(null)} side="right">
         <ModalHeader
           title={t("history.title")}
           description={
@@ -890,11 +992,7 @@ export default function AdminFeaturedPractitionersScreen() {
           ) : (
             <div className="space-y-4">
               {(historyQuery.data ?? []).map((entry) => {
-                const changes = getChangedFields(
-                  entry.beforeSnapshot,
-                  entry.afterSnapshot,
-                  t,
-                );
+                const changes = getChangedFields(entry.beforeSnapshot, entry.afterSnapshot, t);
                 return (
                   <div key={entry.id} className="rounded-2xl border border-border-light bg-white p-4">
                     <div className="flex items-center justify-between gap-3">
@@ -916,8 +1014,13 @@ export default function AdminFeaturedPractitionersScreen() {
                     {changes.length > 0 ? (
                       <div className="mt-3 space-y-2">
                         {changes.map((change) => (
-                          <div key={`${entry.id}-${change.label}`} className="rounded-xl border border-border-light/70 px-3 py-2">
-                            <p className="text-xs font-semibold text-text-primary">{change.label}</p>
+                          <div
+                            key={`${entry.id}-${change.label}`}
+                            className="rounded-xl border border-border-light/70 px-3 py-2"
+                          >
+                            <p className="text-xs font-semibold text-text-primary">
+                              {change.label}
+                            </p>
                             <p className="mt-1 text-xs text-text-muted">
                               {change.before} → {change.after}
                             </p>
@@ -932,7 +1035,6 @@ export default function AdminFeaturedPractitionersScreen() {
           )}
         </ModalBody>
       </Drawer>
-
     </div>
   );
 }

@@ -4,7 +4,26 @@ export type SessionJoinBlockedReason =
   | 'SESSION_NOT_JOINABLE_STATUS'
   | 'SESSION_NOT_VIDEO_MODE'
   | 'SESSION_TIME_WINDOW_NOT_OPEN'
-  | 'SESSION_RUNTIME_NOT_PREPARED';
+  | 'SESSION_RUNTIME_NOT_PREPARED'
+  | 'SESSION_JOIN_WINDOW_CLOSED';
+
+export type SessionPresentationStatus =
+  | 'UPCOMING'
+  | 'JOINABLE'
+  | 'IN_PROGRESS'
+  | 'COMPLETED'
+  | 'CANCELLED'
+  | 'ENDED'
+  | 'UNAVAILABLE';
+
+export enum SessionPresentationFilter {
+  ALL = 'all',
+  JOINABLE = 'joinable',
+  LIVE = 'live',
+  UPCOMING = 'upcoming',
+  FINISHED = 'finished',
+  UNAVAILABLE = 'unavailable',
+}
 
 export interface SessionRuntimeViewModel {
   provider: SessionProvider;

@@ -25,7 +25,11 @@ export const FilterChip = ({ label, selected = false, onPress }: FilterChipProps
       onPress={onPress}
       activeOpacity={0.7}
     >
-      <Text color={textColor} weight={selected ? '600' : 'normal'} style={styles.label}>
+      <Text
+        color={textColor}
+        weight={selected ? "600" : "normal"}
+        style={styles.label}
+      >
         {label}
       </Text>
     </TouchableOpacity>
@@ -34,16 +38,16 @@ export const FilterChip = ({ label, selected = false, onPress }: FilterChipProps
 
 const styles = StyleSheet.create({
   chip: {
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 22,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
     borderWidth: 1,
-    marginEnd: 12,
-    marginBottom: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
+    marginEnd: 10,
+    marginBottom: 8,
+    alignItems: "center",
+    justifyContent: "center",
   },
   label: {
-    fontSize: 14,
+    fontSize: 13,
   },
 });

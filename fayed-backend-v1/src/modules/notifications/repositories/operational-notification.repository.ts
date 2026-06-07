@@ -140,9 +140,45 @@ export class OperationalNotificationRepository {
 
   createNotification(data: Prisma.NotificationUncheckedCreateInput) {
     return this.inTransaction(async (tx) => {
-      const created = await tx.notification.create({ data });
-      await this.upsertAuditEventFromNotification(tx, created.id);
-      return created;
+      if (data.idempotencyKey) {
+        const existing = await this.findExistingNotificationByIdempotencyKey(
+          tx,
+          {
+            userId: data.userId,
+            notificationTypeId: data.notificationTypeId,
+            channel: data.channel,
+            idempotencyKey: data.idempotencyKey,
+          },
+        );
+
+        if (existing) {
+          return existing;
+        }
+      }
+
+      try {
+        const created = await tx.notification.create({ data });
+        await this.upsertAuditEventFromNotification(tx, created.id);
+        return created;
+      } catch (error) {
+        if (data.idempotencyKey && this.isIdempotencyConflict(error)) {
+          const existing = await this.findExistingNotificationByIdempotencyKey(
+            tx,
+            {
+              userId: data.userId,
+              notificationTypeId: data.notificationTypeId,
+              channel: data.channel,
+              idempotencyKey: data.idempotencyKey,
+            },
+          );
+
+          if (existing) {
+            return existing;
+          }
+        }
+
+        throw error;
+      }
     });
   }
 
@@ -1131,6 +1167,44 @@ export class OperationalNotificationRepository {
         occurredAt: row.updatedAt,
       },
     });
+  }
+
+  private async findExistingNotificationByIdempotencyKey(
+    tx: Prisma.TransactionClient,
+    input: {
+      userId: string;
+      notificationTypeId: string;
+      channel: NotificationChannel;
+      idempotencyKey: string;
+    },
+  ) {
+    return tx.notification.findFirst({
+      where: {
+        userId: input.userId,
+        notificationTypeId: input.notificationTypeId,
+        channel: input.channel,
+        OR: [
+          {
+            idempotencyKey: input.idempotencyKey,
+          },
+          {
+            payloadJson: {
+              path: ['idempotencyKey'],
+              equals: input.idempotencyKey,
+            },
+          },
+        ],
+      },
+    });
+  }
+
+  private isIdempotencyConflict(error: unknown): boolean {
+    return Boolean(
+      error &&
+        typeof error === 'object' &&
+        'code' in error &&
+        (error as { code?: string }).code === 'P2002',
+    );
   }
 
   private resolveEventFamily(slug: string): string {

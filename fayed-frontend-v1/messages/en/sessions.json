@@ -27,6 +27,15 @@
       "EXPIRED": "The payment window ended before this session was confirmed.",
       "REFUND_PENDING": "A refund is in progress for this session.",
       "REFUNDED": "This session has been refunded."
+    },
+    "presentationHints": {
+      "UPCOMING": "This session is confirmed and will open shortly before it starts.",
+      "JOINABLE": "You can enter this session now.",
+      "IN_PROGRESS": "This session is live now.",
+      "COMPLETED": "This session has ended.",
+      "CANCELLED": "This session was cancelled.",
+      "ENDED": "This session has finished.",
+      "UNAVAILABLE": "Live access is not available right now."
     }
   },
   "card": {
@@ -42,13 +51,25 @@
     "CONFIRMED": "Confirmed",
     "UPCOMING": "Upcoming",
     "READY_TO_JOIN": "Ready to join",
+    "JOINABLE": "Ready to join",
     "IN_PROGRESS": "In progress",
     "COMPLETED": "Completed",
     "CANCELLED": "Cancelled",
     "NO_SHOW": "No show",
     "EXPIRED": "Expired",
+    "ENDED": "Ended",
+    "UNAVAILABLE": "Unavailable",
     "REFUND_PENDING": "Refund pending",
     "REFUNDED": "Refunded"
+  },
+  "presentationStatus": {
+    "UPCOMING": "Upcoming",
+    "JOINABLE": "Ready to join",
+    "IN_PROGRESS": "In progress",
+    "COMPLETED": "Completed",
+    "CANCELLED": "Cancelled",
+    "ENDED": "Ended",
+    "UNAVAILABLE": "Unavailable"
   },
   "detail": {
     "backToSessions": "Back to sessions",
@@ -63,6 +84,43 @@
       "duration": "Duration",
       "mode": "Session type",
       "status": "Status"
+    },
+    "presentation": {
+      "UPCOMING": {
+        "title": "Coming up soon",
+        "note": "This session is confirmed and will open shortly before it starts.",
+        "closeout": "Closeout actions are not open yet."
+      },
+      "JOINABLE": {
+        "title": "Ready to join",
+        "note": "You can enter this session now.",
+        "closeout": "Closeout actions are available now."
+      },
+      "IN_PROGRESS": {
+        "title": "Live now",
+        "note": "This session is live now.",
+        "closeout": "Closeout actions remain available while the session is live."
+      },
+      "COMPLETED": {
+        "title": "Completed",
+        "note": "This session has ended.",
+        "closeout": "This session has already been closed."
+      },
+      "CANCELLED": {
+        "title": "Cancelled",
+        "note": "This session was cancelled.",
+        "closeout": "This session is cancelled and closed."
+      },
+      "ENDED": {
+        "title": "Ended",
+        "note": "This session has finished.",
+        "closeout": "Closeout actions are available when needed."
+      },
+      "UNAVAILABLE": {
+        "title": "Unavailable",
+        "note": "Live access is not available right now.",
+        "closeout": "Closeout actions are not available right now."
+      }
     },
     "chatCard": {
       "heading": "Chat",
@@ -103,7 +161,13 @@
         },
         "readOnly": {
           "heading": "Chat is read-only for now",
-          "note": "You can review previous messages, but sending is not available right now."
+          "note": "You can review previous messages, but sending is not available right now.",
+          "review": "You can review session messages after the session ends.",
+          "sendBlocked": "New messages cannot be sent after the session ends."
+        },
+        "availabilityLoading": {
+          "heading": "Loading chat status",
+          "note": "The composer will appear only after the send contract arrives from the server."
         },
         "sessionError": {
           "heading": "Could not load the session",
@@ -403,6 +467,13 @@
         "searchPlaceholder": "Search by session code or patient name",
         "statusLabel": "Status",
         "statusAll": "All statuses",
+        "presentationLabel": "Presentation",
+        "presentationAll": "All sessions",
+        "presentationJoinable": "Ready to join",
+        "presentationLive": "Live now",
+        "presentationUpcoming": "Upcoming",
+        "presentationFinished": "Finished",
+        "presentationUnavailable": "Unavailable",
         "fromLabel": "From date",
         "toLabel": "To date",
         "clear": "Clear filters"

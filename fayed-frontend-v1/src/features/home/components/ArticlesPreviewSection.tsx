@@ -10,54 +10,34 @@ type Props = {
 export default async function ArticlesPreviewSection({ locale }: Props) {
   const t = await getTranslations("home.articles");
 
-  let data;
+  let articles: Awaited<ReturnType<typeof fetchPublicArticles>>["items"] = [];
+
   try {
-    data = await fetchPublicArticles(locale, { page: 1, limit: 3 });
+    const data = await fetchPublicArticles(locale, { page: 1, limit: 3 });
+    articles = data.items;
   } catch {
-    return (
-      <section className="px-6 py-20">
-        <div className="mx-auto max-w-5xl">
-          <div className="app-panel rounded-[32px] p-7 text-center">
-            <p className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-primary/80">
-              {t("eyebrow")}
-            </p>
-            <h2 className="text-2xl font-bold text-text-primary dark:text-white/92">
-              {t("unavailableTitle")}
-            </h2>
-            <p className="mx-auto mt-3 max-w-2xl text-sm leading-7 text-text-secondary">
-              {t("unavailableNote")}
-            </p>
-            <Link
-              href="/practitioners"
-              className="mt-6 inline-flex rounded-2xl border border-border-light px-5 py-3 text-sm font-semibold text-text-primary transition hover:border-primary hover:bg-primary-light hover:text-primary dark:text-white/90"
-            >
-              {t("viewPractitioners")}
-            </Link>
-          </div>
-        </div>
-      </section>
-    );
+    // Silently fail — show minimal teaser instead of error card
   }
 
-  if (data.items.length === 0) {
+  // Minimal teaser when no articles are available
+  if (articles.length === 0) {
     return (
-      <section className="px-6 py-20">
-        <div className="mx-auto max-w-5xl">
-          <div className="app-panel rounded-[32px] p-7 text-center">
-            <p className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-primary/80">
-              {t("eyebrow")}
-            </p>
-            <h2 className="text-2xl font-bold text-text-primary dark:text-white/92">
-              {t("emptyTitle")}
-            </h2>
-            <p className="mx-auto mt-3 max-w-2xl text-sm leading-7 text-text-secondary">
-              {t("emptyNote")}
-            </p>
+      <section className="px-6 py-12 lg:px-12">
+        <div className="mx-auto max-w-7xl">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary/75">
+                {t("eyebrow")}
+              </p>
+              <p className="mt-2 text-lg font-bold text-text-primary dark:text-white/90">
+                {t("title")}
+              </p>
+            </div>
             <Link
-              href="/practitioners"
-              className="mt-6 inline-flex rounded-2xl border border-border-light px-5 py-3 text-sm font-semibold text-text-primary transition hover:border-primary hover:bg-primary-light hover:text-primary dark:text-white/90"
+              href="/articles"
+              className="inline-flex items-center gap-2 text-sm font-semibold text-primary hover:text-primary-hover"
             >
-              {t("viewPractitioners")}
+              {t("viewAll")}
             </Link>
           </div>
         </div>
@@ -66,35 +46,29 @@ export default async function ArticlesPreviewSection({ locale }: Props) {
   }
 
   return (
-    <section className="px-6 py-24">
+    <section className="px-6 py-14 lg:px-12">
       <div className="mx-auto max-w-7xl">
-        <div className="mb-14 text-center">
-          <p className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-primary/80">
-            {t("eyebrow")}
-          </p>
-          <h2 className="mb-4 text-3xl font-bold text-text-primary md:text-4xl dark:text-white/92">
-            {t("title")}
-          </h2>
-          <p className="mx-auto max-w-2xl text-lg leading-8 text-text-secondary">
-            {t("subtitle")}
-          </p>
+        <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <p className="mb-2 text-xs font-semibold uppercase tracking-[0.16em] text-primary/75">
+              {t("eyebrow")}
+            </p>
+            <h2 className="text-2xl font-bold text-text-primary dark:text-white/92">
+              {t("title")}
+            </h2>
+          </div>
+          <Link
+            href="/articles"
+            className="inline-flex items-center gap-2 text-sm font-semibold text-primary hover:text-primary-hover"
+          >
+            {t("viewAll")}
+          </Link>
         </div>
 
-        <div className="space-y-8 rounded-[38px] bg-surface p-4 ring-1 ring-inset ring-border-light sm:p-6 dark:bg-surface dark:ring-border-light">
-          <div className="grid gap-7 md:grid-cols-3">
-            {data.items.map((article) => (
-              <PublicArticleCard key={article.id} article={article} />
-            ))}
-          </div>
-
-          <div className="text-center">
-            <Link
-              href="/articles"
-              className="inline-flex rounded-2xl border border-border-light px-5 py-3 text-sm font-semibold text-text-primary transition hover:border-primary hover:text-primary dark:text-white/90"
-            >
-              {t("viewAll")}
-            </Link>
-          </div>
+        <div className="grid gap-5 md:grid-cols-3">
+          {articles.map((article) => (
+            <PublicArticleCard key={article.id} article={article} />
+          ))}
         </div>
       </div>
     </section>

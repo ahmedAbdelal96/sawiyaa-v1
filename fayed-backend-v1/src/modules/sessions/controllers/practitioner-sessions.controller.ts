@@ -33,11 +33,13 @@ import {
   SessionItemSuccessResponseDto,
   SessionsListSuccessResponseDto,
 } from '../dto/session-response.dto';
+import { PractitionerSessionSummarySuccessResponseDto } from '../dto/practitioner-session-summary-response.dto';
 import {
   SessionJoinItemSuccessResponseDto,
   SessionRuntimeItemSuccessResponseDto,
 } from '../dto/session-runtime-response.dto';
 import { GetMyPractitionerSessionsUseCase } from '../use-cases/get-my-practitioner-sessions.use-case';
+import { GetMyPractitionerSessionSummaryUseCase } from '../use-cases/get-my-practitioner-session-summary.use-case';
 import { GetSessionDetailsUseCase } from '../use-cases/get-session-details.use-case';
 import { MarkSessionCompletedByPractitionerUseCase } from '../use-cases/mark-session-completed-by-practitioner.use-case';
 import { MarkSessionNoShowByPractitionerUseCase } from '../use-cases/mark-session-no-show-by-practitioner.use-case';
@@ -54,12 +56,14 @@ import { ResolveSessionJoinContractUseCase } from '../use-cases/resolve-session-
 @RequireAccountStates(
   AccountStateRequirement.ACTIVE_ACCOUNT,
   AccountStateRequirement.PRACTITIONER_OTP_VERIFIED,
+  AccountStateRequirement.PRACTITIONER_APPROVED,
 )
 @Roles(AppRole.PRACTITIONER)
 @Controller('practitioners/me/sessions')
 export class PractitionerSessionsController {
   constructor(
     private readonly getMyPractitionerSessionsUseCase: GetMyPractitionerSessionsUseCase,
+    private readonly getMyPractitionerSessionSummaryUseCase: GetMyPractitionerSessionSummaryUseCase,
     private readonly getSessionDetailsUseCase: GetSessionDetailsUseCase,
     private readonly markSessionCompletedByPractitionerUseCase: MarkSessionCompletedByPractitionerUseCase,
     private readonly markSessionNoShowByPractitionerUseCase: MarkSessionNoShowByPractitionerUseCase,
@@ -88,6 +92,24 @@ export class PractitionerSessionsController {
       userId: currentUser.id,
       locale,
       query,
+    });
+  }
+
+  @Get('summary')
+  @ApiOperation({
+    summary: 'Get a practitioner session summary',
+    description:
+      'Returns practitioner session counts grouped by the shared presentation policy for dashboard-style rendering.',
+  })
+  @ApiResponse({ status: 200, type: PractitionerSessionSummarySuccessResponseDto })
+  @ApiUnauthorizedResponse({ description: 'Access token is required' })
+  @ApiForbiddenResponse({
+    description:
+      'Route requires practitioner role, active account, and OTP-verified practitioner access',
+  })
+  summary(@CurrentUser() currentUser: AuthenticatedUser) {
+    return this.getMyPractitionerSessionSummaryUseCase.execute({
+      userId: currentUser.id,
     });
   }
 

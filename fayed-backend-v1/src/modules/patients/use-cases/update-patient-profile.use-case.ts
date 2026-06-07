@@ -3,7 +3,6 @@ import { PrismaService } from '@common/prisma/prisma.service';
 import { I18nService } from '@common/i18n/services/i18n.service';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
 import { PatientProfileMapper } from '../mappers/patient-profile.mapper';
-import { CountryRepository } from '../repositories/country.repository';
 import { PatientProfileRepository } from '../repositories/patient-profile.repository';
 import { PatientUserRepository } from '../repositories/patient-user.repository';
 import { UpdatePatientProfileInput } from '../types/patient-profile.types';
@@ -25,7 +24,6 @@ export class UpdatePatientProfileUseCase {
     private readonly createPatientProfileUseCase: CreatePatientProfileUseCase,
     private readonly patientProfileRepository: PatientProfileRepository,
     private readonly patientUserRepository: PatientUserRepository,
-    private readonly countryRepository: CountryRepository,
     private readonly completePatientOnboardingUseCase: CompletePatientOnboardingUseCase,
     private readonly patientProfileMapper: PatientProfileMapper,
     private readonly patientAvatarStorageService: PatientAvatarStorageService,
@@ -37,24 +35,11 @@ export class UpdatePatientProfileUseCase {
     data: UpdatePatientProfileInput;
   }) {
     const normalizedInput = normalizePatientProfileInput(input.data);
-    const normalizedCountryCode =
-      normalizedInput.countryCode === undefined
-        ? undefined
-        : normalizedInput.countryCode === null
-          ? null
-          : normalizedInput.countryCode.toUpperCase();
 
-    const country =
-      normalizedCountryCode && normalizedCountryCode.length > 0
-        ? await this.countryRepository.findByIsoCode(normalizedCountryCode)
-        : normalizedCountryCode === null
-          ? null
-          : undefined;
-
-    if (normalizedCountryCode && !country) {
+    if (normalizedInput.countryCode !== undefined) {
       throw new BadRequestException({
-        messageKey: 'patients.errors.countryNotFound',
-        error: 'PATIENT_COUNTRY_NOT_FOUND',
+        messageKey: 'patients.errors.countryCodeChangeNotAllowed',
+        error: 'COUNTRY_CODE_CHANGE_NOT_ALLOWED',
       });
     }
 
@@ -67,8 +52,6 @@ export class UpdatePatientProfileUseCase {
           dateOfBirth: normalizedInput.dateOfBirth,
           gender: normalizedInput.gender,
           displayName: normalizedInput.displayName,
-          countryId:
-            country === undefined ? undefined : country ? country.id : null,
         },
         tx,
       );

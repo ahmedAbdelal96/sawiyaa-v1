@@ -4,6 +4,8 @@ import { ConversationParticipantRole } from '@prisma/client';
 import { GeneralChatTargetRoleDto } from '../dto/create-general-chat-conversation.dto';
 import { GeneralChatActorRepository } from '../repositories/general-chat-actor.repository';
 import { GeneralChatRepository } from '../repositories/general-chat.repository';
+import { GeneralChatAvailabilityService } from '../services/general-chat-availability.service';
+import { GeneralChatModerationStateService } from '../services/general-chat-moderation-state.service';
 import { ValidateGeneralChatParticipantPolicyService } from '../services/validate-general-chat-participant-policy.service';
 import { CreateOrGetGeneralChatConversationUseCase } from './create-or-get-general-chat-conversation.use-case';
 
@@ -21,6 +23,7 @@ describe('CreateOrGetGeneralChatConversationUseCase', () => {
   const useCase = new CreateOrGetGeneralChatConversationUseCase(
     generalChatRepository,
     generalChatActorRepository,
+    new GeneralChatAvailabilityService(new GeneralChatModerationStateService()),
     new ValidateGeneralChatParticipantPolicyService(),
   );
 
@@ -46,9 +49,23 @@ describe('CreateOrGetGeneralChatConversationUseCase', () => {
       conversationRef: 'gc_ref_1',
       conversationType: 'SYSTEM',
       status: 'OPEN',
+      closedAt: null,
+      adminSendingDisabledAt: null,
+      adminSendingDisabledByUserId: null,
+      adminSendingDisabledReason: null,
+      adminSendingEnabledAt: null,
+      adminSendingEnabledByUserId: null,
+      practitionerSendingDisabledAt: null,
+      practitionerSendingDisabledByUserId: null,
+      practitionerSendingDisabledReason: null,
+      practitionerSendingEnabledAt: null,
+      practitionerSendingEnabledByUserId: null,
       sessionId: null,
       supportTicket: null,
       chatApprovalRequest: null,
+      session: null,
+      createdAt: new Date('2026-04-01T09:00:00.000Z'),
+      updatedAt: new Date('2026-04-01T09:00:00.000Z'),
       participants: [
         {
           userId: 'user_patient',
@@ -93,16 +110,32 @@ describe('CreateOrGetGeneralChatConversationUseCase', () => {
       id: 'conv_existing',
       conversationType: 'SYSTEM',
       status: 'OPEN',
+      closedAt: null,
+      adminSendingDisabledAt: null,
+      adminSendingDisabledByUserId: null,
+      adminSendingDisabledReason: null,
+      adminSendingEnabledAt: null,
+      adminSendingEnabledByUserId: null,
+      practitionerSendingDisabledAt: null,
+      practitionerSendingDisabledByUserId: null,
+      practitionerSendingDisabledReason: null,
+      practitionerSendingEnabledAt: null,
+      practitionerSendingEnabledByUserId: null,
       supportTicket: null,
       chatApprovalRequest: null,
       conversationRef: 'gc_existing',
       sessionId: null,
+      session: null,
+      createdAt: new Date('2026-04-01T09:00:00.000Z'),
+      updatedAt: new Date('2026-04-01T09:00:00.000Z'),
       participants: [
         {
           userId: 'user_patient',
+          participantRole: ConversationParticipantRole.PATIENT,
         },
         {
           userId: 'user_practitioner',
+          participantRole: ConversationParticipantRole.PRACTITIONER,
         },
       ],
     });
@@ -176,13 +209,28 @@ describe('CreateOrGetGeneralChatConversationUseCase', () => {
       id: 'conv_bad',
       conversationType: 'SYSTEM',
       status: 'OPEN',
+      closedAt: null,
+      adminSendingDisabledAt: null,
+      adminSendingDisabledByUserId: null,
+      adminSendingDisabledReason: null,
+      adminSendingEnabledAt: null,
+      adminSendingEnabledByUserId: null,
+      practitionerSendingDisabledAt: null,
+      practitionerSendingDisabledByUserId: null,
+      practitionerSendingDisabledReason: null,
+      practitionerSendingEnabledAt: null,
+      practitionerSendingEnabledByUserId: null,
       supportTicket: { id: 'ticket_1' },
       chatApprovalRequest: null,
       conversationRef: 'gc_bad',
       sessionId: null,
+      session: null,
+      createdAt: new Date('2026-04-01T09:00:00.000Z'),
+      updatedAt: new Date('2026-04-01T09:00:00.000Z'),
       participants: [
         {
           userId: 'user_patient',
+          participantRole: ConversationParticipantRole.PATIENT,
         },
       ],
     });

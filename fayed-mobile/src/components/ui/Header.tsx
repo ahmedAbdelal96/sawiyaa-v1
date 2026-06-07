@@ -8,6 +8,7 @@ import { useAuth } from "../../providers/AuthProvider";
 import { Ionicons } from "@expo/vector-icons";
 import { MOBILE_HEADER_HEIGHT, MOBILE_HORIZONTAL_PADDING } from "../mobile-shell";
 import { useGeneralChatUnreadSummary } from "../../features/messages/hooks";
+import { usePatientProfile } from "../../features/patient/profile/hooks";
 import { usePatientUnreadNotificationCount } from "../../features/patient/notifications/hooks";
 import { usePractitionerUnreadNotificationCount } from "../../features/practitioner/notifications/hooks";
 import { useNavigationHistory } from "../../providers/NavigationHistoryProvider";
@@ -67,6 +68,14 @@ export const Header = ({
   const unreadPractitionerNotificationsQuery = usePractitionerUnreadNotificationCount({
     enabled: role === "practitioner" && !hideQuickActions,
   });
+
+  const patientProfileQuery = usePatientProfile(
+    role === "patient" && !hideQuickActions,
+  );
+  const patientAvatarUrl =
+    patientProfileQuery.data?.profile?.avatarDataUrl ??
+    patientProfileQuery.data?.profile?.avatarUrl ??
+    null;
 
   const unreadMessages = unreadMessagesQuery.data?.item.totalUnreadMessages ?? 0;
   const unreadNotifications =
@@ -171,8 +180,15 @@ export const Header = ({
     router.push("/(patient)/profile" as any);
   };
 
-  const hasAvatar = Boolean((user as any)?.avatarUrl && String((user as any).avatarUrl).trim());
-  const avatarSource = hasAvatar ? { uri: String((user as any).avatarUrl) } : null;
+  const hasAvatar = Boolean(
+    (patientAvatarUrl && patientAvatarUrl.trim()) ||
+      ((user as any)?.avatarUrl && String((user as any).avatarUrl).trim()),
+  );
+  const avatarSource = patientAvatarUrl
+    ? { uri: patientAvatarUrl }
+    : (user as any)?.avatarUrl
+      ? { uri: String((user as any).avatarUrl) }
+      : null;
 
   const quickActions = (
     <View
@@ -215,22 +231,45 @@ export const Header = ({
         style={styles.iconButton}
         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
       >
-        <Ionicons
-          name="notifications-outline"
-          size={21}
-          color={theme.colors.textPrimary}
-        />
-        {unreadNotifications > 0 ? (
-          <View
-            style={[
-              styles.unreadDot,
-              {
-                backgroundColor: theme.colors.error,
-                borderColor: theme.colors.surface,
-              },
-            ]}
+        <View style={styles.iconContainer}>
+          <Ionicons
+            name="notifications-outline"
+            size={21}
+            color={theme.colors.textPrimary}
           />
-        ) : null}
+          {unreadNotifications > 0 ? (
+            role === "practitioner" ? (
+              <View
+                style={[
+                  styles.unreadBadge,
+                  {
+                    backgroundColor: theme.colors.error,
+                    borderColor: theme.colors.surface,
+                  },
+                ]}
+              >
+                <Text
+                  weight="700"
+                  style={[styles.unreadBadgeText, { color: "#fff" }]}
+                >
+                  {unreadNotifications > 99
+                    ? "99+"
+                    : unreadNotifications.toString()}
+                </Text>
+              </View>
+            ) : (
+              <View
+                style={[
+                  styles.unreadDot,
+                  {
+                    backgroundColor: theme.colors.error,
+                    borderColor: theme.colors.surface,
+                  },
+                ]}
+              />
+            )
+          ) : null}
+        </View>
       </TouchableOpacity>
 
       <TouchableOpacity

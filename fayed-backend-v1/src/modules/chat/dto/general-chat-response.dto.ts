@@ -7,6 +7,23 @@ import {
   ModerationReportReason,
   ModerationReportTargetType,
 } from '@prisma/client';
+import { GENERAL_CHAT_AVAILABILITY_REASONS } from '../types/general-chat.types';
+
+export class GeneralChatAvailabilityDto {
+  @ApiProperty()
+  canRead!: boolean;
+
+  @ApiProperty()
+  canSend!: boolean;
+
+  @ApiProperty()
+  readOnly!: boolean;
+
+  @ApiProperty({
+    enum: Object.values(GENERAL_CHAT_AVAILABILITY_REASONS),
+  })
+  reason!: string;
+}
 
 export class GeneralChatParticipantSummaryDto {
   @ApiProperty()
@@ -107,6 +124,9 @@ export class GeneralChatConversationListItemDto {
 
   @ApiProperty({ nullable: true })
   lastReadAt!: string | null;
+
+  @ApiProperty({ type: GeneralChatAvailabilityDto })
+  chatAvailability!: GeneralChatAvailabilityDto;
 }
 
 export class GeneralChatConversationDetailItemDto extends GeneralChatConversationListItemDto {

@@ -4,7 +4,6 @@ import {
   OnApplicationBootstrap,
   OnModuleDestroy,
 } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import {
   NotificationCategory,
   SessionEventType,
@@ -15,6 +14,7 @@ import { I18nService } from '@common/i18n/services/i18n.service';
 import { PrismaService } from '@common/prisma/prisma.service';
 import { NotificationIntentWriterService } from '@modules/notifications/services/notification-intent-writer.service';
 import { ResolveSessionJoinReadinessService } from './resolve-session-join-readiness.service';
+import { SESSION_JOIN_LAG_MINUTES } from '../utils/session-join-policy.util';
 import {
   SessionRepository,
   type SessionJoinNotificationCandidate,
@@ -32,10 +32,8 @@ export class SessionJoinAvailableNotificationSweeperService
 {
   private intervalHandle: NodeJS.Timeout | null = null;
   private isSweeping = false;
-  private readonly joinLagMinutes: number;
 
   constructor(
-    private readonly configService: ConfigService,
     private readonly prisma: PrismaService,
     private readonly sessionRepository: SessionRepository,
     private readonly resolveSessionJoinReadinessService: ResolveSessionJoinReadinessService,
@@ -45,10 +43,7 @@ export class SessionJoinAvailableNotificationSweeperService
     private readonly notificationIntentWriterService: NotificationIntentWriterService,
     private readonly i18nService: I18nService,
     private readonly logger: AppLoggerService,
-  ) {
-    this.joinLagMinutes =
-      this.configService.get<number>('session.joinLagMinutes') ?? 120;
-  }
+  ) {}
 
   onApplicationBootstrap(): void {
     void this.sweepOnce();
@@ -76,7 +71,7 @@ export class SessionJoinAvailableNotificationSweeperService
 
     try {
       const windowStart = new Date(
-        now.getTime() - this.joinLagMinutes * 60_000,
+        now.getTime() - SESSION_JOIN_LAG_MINUTES * 60_000,
       );
 
       const candidates =
@@ -191,7 +186,27 @@ export class SessionJoinAvailableNotificationSweeperService
         joinOpenAt: session.joinOpenAt,
         packageContext,
       }),
+      this.createJoinAvailablePushNotification({
+        sessionId: session.id,
+        userId: candidate.patient.user.id,
+        locale: localePatient,
+        recipientRole: 'PATIENT',
+        routePath: `/${localePatient}/patient/sessions/${session.id}`,
+        scheduledStartAt: session.scheduledStartAt,
+        joinOpenAt: session.joinOpenAt,
+        packageContext,
+      }),
       this.createJoinAvailableNotification({
+        sessionId: session.id,
+        userId: candidate.practitioner.user.id,
+        locale: localePractitioner,
+        recipientRole: 'PRACTITIONER',
+        routePath: `/${localePractitioner}/practitioner/sessions/${session.id}`,
+        scheduledStartAt: session.scheduledStartAt,
+        joinOpenAt: session.joinOpenAt,
+        packageContext,
+      }),
+      this.createJoinAvailablePushNotification({
         sessionId: session.id,
         userId: candidate.practitioner.user.id,
         locale: localePractitioner,
@@ -395,6 +410,7 @@ export class SessionJoinAvailableNotificationSweeperService
       payload: {
         sessionId: input.sessionId,
         recipientRole: input.recipientRole,
+        targetRole: input.recipientRole,
         routePath: input.routePath,
         scheduledStartAt: input.scheduledStartAt?.toISOString() ?? null,
         joinOpenAt: input.joinOpenAt?.toISOString() ?? null,
@@ -415,6 +431,74 @@ export class SessionJoinAvailableNotificationSweeperService
       relatedEntityType: 'SESSION',
       relatedEntityId: input.sessionId,
       idempotencyKey: `sessions.session-join-available:${input.sessionId}:${input.userId}`,
+      category: NotificationCategory.SESSION,
+    });
+  }
+
+  private async createJoinAvailablePushNotification(input: {
+    sessionId: string;
+    userId: string;
+    locale: 'en' | 'ar';
+    recipientRole: 'PATIENT' | 'PRACTITIONER';
+    routePath: string;
+    scheduledStartAt: Date | null;
+    joinOpenAt: Date | null;
+    packageContext?: {
+      packagePurchaseId: string;
+      packagePlanCode: string;
+      packagePlanTitle?: string | null;
+      packageSessionIndex: number | null;
+      packageSessionCount: number | null;
+      packageDiscountPercent?: number | null;
+    } | null;
+  }): Promise<void> {
+    const packageContextText = this.buildPackageContextText(
+      input.locale,
+      input.packageContext,
+    );
+    const title = this.i18nService.t(
+      'sessions.notifications.sessionJoinAvailableTitle',
+      input.locale,
+    );
+    const body = this.i18nService.t(
+      'sessions.notifications.sessionJoinAvailableBody',
+      input.locale,
+      {
+        packageContext: packageContextText,
+      },
+    );
+
+    await this.notificationIntentWriterService.createPushNotification({
+      slug: 'sessions.session-join-available',
+      userId: input.userId,
+      locale: input.locale,
+      title,
+      body,
+      payload: {
+        sessionId: input.sessionId,
+        recipientRole: input.recipientRole,
+        targetRole: input.recipientRole,
+        routePath: input.routePath,
+        scheduledStartAt: input.scheduledStartAt?.toISOString() ?? null,
+        joinOpenAt: input.joinOpenAt?.toISOString() ?? null,
+        ...(input.packageContext
+          ? {
+              packagePurchaseId: input.packageContext.packagePurchaseId,
+              packagePlanCode: input.packageContext.packagePlanCode,
+              packagePlanTitle: input.packageContext.packagePlanTitle ?? null,
+              packageSessionIndex:
+                input.packageContext.packageSessionIndex ?? null,
+              packageSessionCount:
+                input.packageContext.packageSessionCount ?? null,
+              packageDiscountPercent:
+                input.packageContext.packageDiscountPercent ?? null,
+            }
+          : {}),
+      },
+      relatedEntityType: 'SESSION',
+      relatedEntityId: input.sessionId,
+      idempotencyKey: `sessions.session-join-available:push:${input.sessionId}:${input.userId}`,
+      scheduledFor: input.joinOpenAt ?? new Date(),
       category: NotificationCategory.SESSION,
     });
   }
@@ -484,6 +568,7 @@ export class SessionJoinAvailableNotificationSweeperService
       payload: {
         sessionId: input.sessionId,
         recipientRole: input.recipientRole,
+        targetRole: input.recipientRole,
         routePath: input.routePath,
         scheduledStartAt: input.scheduledStartAt?.toISOString() ?? null,
         joinOpenAt: input.joinOpenAt?.toISOString() ?? null,
@@ -551,8 +636,7 @@ export class SessionJoinAvailableNotificationSweeperService
   }
 
   private resolveAppUrl(): string {
-    const rawAppUrl =
-      this.configService.get<string>('app.url') ?? 'http://localhost:3000';
+    const rawAppUrl = process.env.APP_URL ?? 'http://localhost:3000';
     return rawAppUrl.endsWith('/') ? rawAppUrl.slice(0, -1) : rawAppUrl;
   }
 }

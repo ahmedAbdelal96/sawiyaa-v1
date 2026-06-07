@@ -7,6 +7,23 @@ import {
 } from '@prisma/client';
 import { PaymentRegionalPricingMode } from '@common/payments/payment-region.resolver';
 
+export type PaymentActionReason =
+  | 'PAYABLE'
+  | 'SESSION_EXPIRED'
+  | 'PROCESSING'
+  | 'COMPLETED'
+  | 'FAILED'
+  | 'CANCELLED'
+  | 'REFUNDED'
+  | 'UNAVAILABLE';
+
+export interface PaymentAction {
+  canPay: boolean;
+  reason: PaymentActionReason;
+  sessionStatus?: string;
+  sessionExpiresAt?: string | null;
+}
+
 export interface PaymentViewModel {
   id: string;
   sessionId: string | null;
@@ -31,6 +48,7 @@ export interface PaymentViewModel {
   expiredAt: string | null;
   refundedAt: string | null;
   createdAt: string;
+  paymentAction: PaymentAction;
 }
 
 export interface RefundViewModel {

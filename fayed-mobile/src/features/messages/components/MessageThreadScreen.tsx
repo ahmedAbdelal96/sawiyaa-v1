@@ -3,46 +3,27 @@ import {
   ActivityIndicator,
   FlatList,
   KeyboardAvoidingView,
-  I18nManager,
-  Image,
   Platform,
   RefreshControl,
   StyleSheet,
-  TouchableOpacity,
   View,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
-import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
-import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
-  Button,
-  Card,
-  EmptyState,
   ErrorState,
   Header,
-  Input,
   LoadingState,
   Screen,
-  StatusChip,
-  SummaryRow,
   Text,
 } from "../../../components/ui";
 import { useAuth } from "../../../providers/AuthProvider";
 import { useTheme } from "../../../providers/ThemeProvider";
-import { resolveMediaUrl } from "../../../lib/resolve-media-url";
 import {
   formatMessageTime,
+  formatMessageTimestamp,
   getConversationDisplayName,
-  getConversationIdentitySummary,
-  getConversationPrimaryParticipant,
-  getConversationStatusTone,
   getConversationSubLabel,
-  getConversationParticipantLabels,
-  getParticipantAvatarUrl,
-  getParticipantDisplayName,
-  getParticipantInitials,
   getMessageSenderLabel,
   getMessageSenderRoleLabel,
   getMessageStatusLabel,
@@ -50,10 +31,7 @@ import {
   sortMessagesChronologically,
   uniqByMessageId,
 } from "../utils";
-import type {
-  GeneralChatMessageItemDto,
-  MessagesRole,
-} from "../types";
+import type { GeneralChatMessageItemDto, MessagesRole } from "../types";
 import {
   useGeneralChatConversation,
   useGeneralChatResumeRefresh,
@@ -61,6 +39,11 @@ import {
   useMarkGeneralChatConversationReadMutation,
   useSendGeneralChatMessageMutation,
 } from "../hooks";
+import {
+  ConversationBubble,
+  ConversationComposer,
+  ConversationEmptyState,
+} from "./ConversationPrimitives";
 
 type MessageThreadScreenProps = {
   role: MessagesRole;
@@ -70,7 +53,6 @@ type MessageThreadScreenProps = {
 type ThreadMessageRow = {
   message: GeneralChatMessageItemDto;
   isGroupStart: boolean;
-  isGroupEnd: boolean;
   senderLabel: string;
   senderRoleLabel: string;
 };
@@ -79,19 +61,21 @@ export function MessageThreadScreen({
   role,
   conversationId,
 }: MessageThreadScreenProps) {
-  const router = useRouter();
   const { user } = useAuth();
   const { t, i18n } = useTranslation();
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
-  const tabBarHeight = useBottomTabBarHeight();
-  const isRTL = I18nManager.isRTL;
   const locale = i18n.language || "en";
 
   const conversationQuery = useGeneralChatConversation(role, conversationId);
-  const messagesQuery = useInfiniteGeneralChatMessages(role, conversationId, { pageSize: 25 });
+  const messagesQuery = useInfiniteGeneralChatMessages(role, conversationId, {
+    pageSize: 25,
+  });
   const sendMutation = useSendGeneralChatMessageMutation(role, conversationId);
-  const markReadMutation = useMarkGeneralChatConversationReadMutation(role, conversationId);
+  const markReadMutation = useMarkGeneralChatConversationReadMutation(
+    role,
+    conversationId,
+  );
   useGeneralChatResumeRefresh(role, conversationId);
 
   const listRef = useRef<FlatList<ThreadMessageRow> | null>(null);
@@ -112,28 +96,45 @@ export function MessageThreadScreen({
   }, [conversationId]);
 
   const conversation = conversationQuery.data?.item ?? null;
-  const primaryParticipant = getConversationPrimaryParticipant(conversation, user?.id ?? null);
   const messages = useMemo(() => {
     const pages = messagesQuery.data?.pages ?? [];
     const rows = pages.flatMap((page) => page.items);
 
     return sortMessagesChronologically(uniqByMessageId(rows));
   }, [messagesQuery.data?.pages]);
-  const participantLabels = getConversationParticipantLabels(role);
+
   const messageRows = useMemo<ThreadMessageRow[]>(() => {
     return messages.map((message, index) => {
       const previous = index > 0 ? messages[index - 1] : null;
-      const next = index < messages.length - 1 ? messages[index + 1] : null;
 
       return {
         message,
         isGroupStart: !previous || !isSameSenderMessage(previous, message),
-        isGroupEnd: !next || !isSameSenderMessage(message, next),
-        senderLabel: getMessageSenderLabel(message, user?.id, role),
-        senderRoleLabel: getMessageSenderRoleLabel(message, user?.id, role),
+        senderLabel: getMessageSenderLabel(message, user?.id, role, locale),
+        senderRoleLabel: getMessageSenderRoleLabel(
+          message,
+          user?.id,
+          role,
+          locale,
+        ),
       };
     });
-  }, [messages, role, user?.id]);
+  }, [locale, messages, role, user?.id]);
+
+  const threadTitle = t("messages.thread.sessionTitle", "Session chat");
+  const contextLabel = useMemo(() => {
+    if (!conversation) {
+      return null;
+    }
+
+    const parts = [
+      getConversationDisplayName(conversation, role, user?.id ?? null, locale),
+      getConversationSubLabel(conversation, user?.id ?? null, locale),
+      formatMessageTimestamp(conversation.latestActivityAt, locale),
+    ].filter((value, index, arr) => Boolean(value) && arr.indexOf(value) === index) as string[];
+
+    return parts.join(" · ");
+  }, [conversation, locale, role, user?.id]);
 
   const isInitialLoading =
     (conversationQuery.isLoading && !conversationQuery.data) ||
@@ -202,17 +203,13 @@ export function MessageThreadScreen({
     void maybeAutoFillOlderMessages();
   }, [messages.length, maybeAutoFillOlderMessages]);
 
-  const canSend =
-    Boolean(draft.trim()) &&
-    Boolean(conversation) &&
-    conversation?.status !== "CLOSED" &&
-    conversation?.status !== "EXPIRED" &&
-    conversation?.status !== "SUSPENDED" &&
-    !sendMutation.isPending &&
-    !isSending;
-
-  const canOpenSession = Boolean(conversation?.linkedSessionId);
-  const composerBottomOffset = Math.max(tabBarHeight, insets.bottom) + 12;
+  const chatAvailability = conversation?.chatAvailability ?? null;
+  const showComposer =
+    chatAvailability?.canSend === true && chatAvailability?.readOnly !== true;
+  const showAvailabilityLoading = chatAvailability == null;
+  const showReadOnlyNotice =
+    !showAvailabilityLoading &&
+    (chatAvailability?.canSend !== true || chatAvailability?.readOnly === true);
 
   const handleRefresh = () => {
     void conversationQuery.refetch();
@@ -248,27 +245,14 @@ export function MessageThreadScreen({
     }
   };
 
-  const handleOpenSession = () => {
-    if (!conversation?.linkedSessionId) {
-      return;
-    }
-
-    const sessionHref =
-      role === "patient"
-        ? `/(patient)/sessions/${conversation.linkedSessionId}`
-        : `/(practitioner)/sessions/${conversation.linkedSessionId}`;
-
-    router.push(sessionHref as any);
-  };
-
   if (isInitialLoading) {
     return (
       <Screen bg="background">
-        <Header
-          showBack
-          title={t("messages.thread.title", "Conversation")}
+        <Header showBack title={threadTitle} />
+        <LoadingState
+          fullScreen
+          message={t("messages.common.loading", "Loading...")}
         />
-        <LoadingState fullScreen message={t("messages.common.loading", "Loading...")} />
       </Screen>
     );
   }
@@ -276,10 +260,7 @@ export function MessageThreadScreen({
   if (isInitialError || !conversation) {
     return (
       <Screen bg="background">
-        <Header
-          showBack
-          title={t("messages.thread.title", "Conversation")}
-        />
+        <Header showBack title={threadTitle} />
         <ErrorState
           fullScreen
           title={t("messages.common.errorTitle", "Could not load conversation")}
@@ -296,15 +277,12 @@ export function MessageThreadScreen({
 
   return (
     <Screen bg="background">
-      <Header
-        showBack
-        title={t("messages.thread.title", "Conversation")}
-      />
+      <Header showBack title={threadTitle} />
 
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 12 : 0}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 8 : 0}
       >
         <FlatList<ThreadMessageRow>
           ref={listRef}
@@ -346,103 +324,25 @@ export function MessageThreadScreen({
           showsVerticalScrollIndicator={false}
           ListHeaderComponent={
             <View style={styles.headerWrap}>
-              <Card
-                variant="elevated"
-                padding="lg"
-                style={[
-                  styles.summaryCard,
-                  {
-                    borderWidth: 1,
-                    borderColor: theme.colors.borderLight,
-                  },
-                ]}
-              >
-                <View style={styles.summaryHeader}>
-                  <View
-                    style={[
-                      styles.headerAvatar,
-                      { backgroundColor: theme.colors.primaryLight },
-                    ]}
+              {contextLabel ? (
+                <View
+                  style={[
+                    styles.contextStrip,
+                    {
+                      backgroundColor: theme.colors.surface,
+                      borderBottomColor: theme.colors.borderLight,
+                    },
+                  ]}
+                >
+                  <Text
+                    color={theme.colors.textSecondary}
+                    style={styles.contextText}
+                    numberOfLines={1}
                   >
-                    {getParticipantAvatarUrl(primaryParticipant) ? (
-                      <Image
-                        source={{
-                          uri:
-                            resolveMediaUrl(getParticipantAvatarUrl(primaryParticipant)) ??
-                            getParticipantAvatarUrl(primaryParticipant)!,
-                        }}
-                        style={styles.headerAvatarImage}
-                      />
-                    ) : (
-                      <Text weight="600" color={theme.colors.primary} style={styles.headerAvatarText}>
-                        {getParticipantInitials(
-                          primaryParticipant,
-                          getParticipantDisplayName(
-                            primaryParticipant,
-                            role === "patient" ? "Practitioner" : "Patient",
-                          ),
-                        )}
-                      </Text>
-                    )}
-                  </View>
-                  <View style={styles.summaryHeaderText}>
-                    <Text weight="bold" style={styles.summaryTitle}>
-                      {getConversationDisplayName(conversation, role, user?.id ?? null)}
-                    </Text>
-                    <Text color={theme.colors.textSecondary} style={styles.summarySubtitle}>
-                      {getConversationSubLabel(conversation, user?.id ?? null)}
-                    </Text>
-                    <Text color={theme.colors.textMuted} style={styles.summaryIdentity}>
-                      {getConversationIdentitySummary(conversation, role, user?.id ?? null)}
-                    </Text>
-                  </View>
-                  <StatusChip
-                    label={formatStatusLabel(conversation.status)}
-                    tone={getConversationStatusTone(conversation.status)}
-                    showDot={false}
-                  />
-                </View>
-
-                <View style={styles.participantRow}>
-                  <StatusChip label={participantLabels.self} tone="info" showDot={false} />
-                  <Text color={theme.colors.textMuted} style={styles.participantSeparator}>
-                    {"·"}
+                    {contextLabel}
                   </Text>
-                  <StatusChip label={participantLabels.other} tone="default" showDot={false} />
                 </View>
-
-                <View style={styles.summaryRows}>
-                  <SummaryRow
-                    label={t("messages.thread.summary.status", "Status")}
-                    value={conversation.status.replaceAll("_", " ")}
-                  />
-                  <SummaryRow
-                    label={t("messages.thread.summary.unread", "Unread")}
-                    value={conversation.unreadCount}
-                  />
-                  <SummaryRow
-                    label={t("messages.thread.summary.lastActivity", "Last activity")}
-                    value={formatMessageTime(conversation.latestActivityAt, locale)}
-                  />
-                </View>
-
-                {canOpenSession ? (
-                  <TouchableOpacity
-                    style={[
-                      styles.linkRow,
-                      { backgroundColor: theme.colors.primaryLight },
-                    ]}
-                    activeOpacity={0.85}
-                    onPress={handleOpenSession}
-                  >
-                    <Ionicons name="calendar-outline" size={18} color={theme.colors.primary} />
-                    <Text weight="600" color={theme.colors.primary} style={styles.linkRowText}>
-                      {t("messages.thread.openSession", "Open session")}
-                    </Text>
-                    <Ionicons name={isRTL ? "chevron-back" : "chevron-forward"} size={16} color={theme.colors.primary} />
-                  </TouchableOpacity>
-                ) : null}
-              </Card>
+              ) : null}
 
               {messagesQuery.isFetchingNextPage ? (
                 <View style={styles.topState}>
@@ -455,7 +355,7 @@ export function MessageThreadScreen({
                   </Text>
                 </View>
               ) : messagesQuery.isFetchNextPageError ? (
-                <TouchableOpacity
+                <View
                   style={[
                     styles.topRetry,
                     {
@@ -463,13 +363,11 @@ export function MessageThreadScreen({
                       backgroundColor: theme.colors.surfaceSecondary,
                     },
                   ]}
-                  activeOpacity={0.85}
-                  onPress={() => void messagesQuery.fetchNextPage()}
                 >
                   <Text weight="600" style={{ color: theme.colors.primary }}>
                     {t("messages.common.retryNext", "Try again")}
                   </Text>
-                </TouchableOpacity>
+                </View>
               ) : !messagesQuery.hasNextPage && messages.length > 0 ? (
                 <Text color={theme.colors.textSecondary} style={styles.startHint}>
                   {t(
@@ -481,13 +379,8 @@ export function MessageThreadScreen({
             </View>
           }
           ListEmptyComponent={
-            <EmptyState
+            <ConversationEmptyState
               title={t("messages.thread.emptyTitle", "No messages yet")}
-              description={t(
-                "messages.thread.emptyDescription",
-                "Start the conversation with a short message.",
-              )}
-              icon={<Ionicons name="chatbubbles-outline" size={32} color={theme.colors.primary} />}
             />
           }
           renderItem={({ item }) => (
@@ -496,67 +389,62 @@ export function MessageThreadScreen({
               locale={locale}
               isMine={item.message.senderUserId === user?.id}
               showIdentity={item.isGroupStart}
-              isGroupEnd={item.isGroupEnd}
               senderLabel={item.senderLabel}
               senderRoleLabel={item.senderRoleLabel}
             />
           )}
         />
 
-        <View
-          style={[
-            styles.composerBar,
-            {
-              backgroundColor: theme.colors.surface,
-              borderTopColor: theme.colors.borderLight,
-              marginBottom: composerBottomOffset,
-            },
-          ]}
-        >
-          <View style={[styles.composerRow, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
-            <Input
-              value={draft}
-              onChangeText={setDraft}
-              placeholder={t(
-                "messages.thread.composerPlaceholder",
-                "Write a message",
-              )}
-              multiline
-              numberOfLines={3}
+        <View style={{ paddingBottom: Math.max(insets.bottom, 8) }}>
+          {showAvailabilityLoading ? (
+            <View
               style={[
-                styles.composerInput,
+                styles.readOnlyNotice,
                 {
-                  textAlign: isRTL ? "right" : "left",
+                  borderColor: theme.colors.borderLight,
+                  backgroundColor: theme.colors.surfaceSecondary,
                 },
               ]}
-              containerStyle={styles.composerInputContainer}
-            />
-
-            <Button
-              title={
-                sendMutation.isPending || isSending
-                  ? t("messages.thread.sending", "Sending...")
-                  : t("messages.thread.send", "Send")
-              }
-              onPress={() => void handleSend()}
-              disabled={!canSend}
-              style={styles.sendButton}
-            />
-          </View>
-
-          {composerError ? (
-            <Text color="#ef4444" style={styles.composerError}>
-              {composerError}
-            </Text>
-          ) : null}
-
-          {!canSend && conversation.status !== "OPEN" && conversation.status !== "PENDING" ? (
-            <Text color={theme.colors.textMuted} style={styles.composerHint}>
-              {t(
-                "messages.thread.closedHint",
-                "This conversation is not accepting new messages right now.",
+            >
+              <Text weight="600" color={theme.colors.textPrimary} style={styles.readOnlyTitle}>
+                {t("messages.thread.availabilityLoadingTitle")}
+              </Text>
+              <Text color={theme.colors.textSecondary} style={styles.readOnlyLine}>
+                {t("messages.thread.availabilityLoadingNote")}
+              </Text>
+            </View>
+          ) : showReadOnlyNotice ? (
+            <View
+              style={[
+                styles.readOnlyNotice,
+                {
+                  borderColor: theme.colors.borderLight,
+                  backgroundColor: theme.colors.surfaceSecondary,
+                },
+              ]}
+            >
+              <Text weight="600" color={theme.colors.textPrimary} style={styles.readOnlyTitle}>
+                {t("messages.thread.readOnlyTitle")}
+              </Text>
+              <Text color={theme.colors.textSecondary} style={styles.readOnlyLine}>
+                {t("messages.thread.readOnlyReviewNote")}
+              </Text>
+              <Text color={theme.colors.textSecondary} style={styles.readOnlyLine}>
+                {t("messages.thread.readOnlySendNote")}
+              </Text>
+            </View>
+          ) : showComposer ? (
+            <ConversationComposer
+              value={draft}
+              onChangeText={setDraft}
+              onSend={() => void handleSend()}
+              disabled={!draft.trim() || sendMutation.isPending || isSending}
+              placeholder={t(
+                "messages.thread.composerPlaceholder",
+                "Write your message",
               )}
-            </Text>
+              error={composerError}
+            />
           ) : null}
         </View>
       </KeyboardAvoidingView>
@@ -569,7 +457,6 @@ function MessageBubble({
   locale,
   isMine,
   showIdentity,
-  isGroupEnd,
   senderLabel,
   senderRoleLabel,
 }: {
@@ -577,29 +464,14 @@ function MessageBubble({
   locale: string;
   isMine: boolean;
   showIdentity: boolean;
-  isGroupEnd: boolean;
   senderLabel: string;
   senderRoleLabel: string;
 }) {
   const { theme } = useTheme();
-  const isRTL = I18nManager.isRTL;
-  const contentText = resolveMessageText(message);
+
+  const contentText = resolveMessageText(message, locale);
   const timeValue = formatMessageTime(message.sentAt, locale);
-  const statusLabel = isMine ? getMessageStatusLabel(message.status) : null;
-  const messageIdentity = message.senderIdentity;
-  const bubbleDisplayName = isMine
-    ? "You"
-    : messageIdentity?.displayName?.trim() || senderLabel;
-  const bubbleRoleLabel = isMine
-    ? senderRoleLabel
-    : messageIdentity?.subtitle?.trim() || senderRoleLabel;
-  const bubbleAvatarUrl = messageIdentity?.avatarUrl?.trim() || null;
-  const bubbleAvatarText = getParticipantInitials(
-    messageIdentity
-      ? { userId: messageIdentity.userId, role: messageIdentity.role, identity: messageIdentity }
-      : null,
-    bubbleDisplayName,
-  );
+  const statusLabel = isMine ? getMessageStatusLabel(message.status, locale) : null;
 
   if (message.messageType === "SYSTEM") {
     return (
@@ -622,106 +494,37 @@ function MessageBubble({
   }
 
   return (
-    <View
-      style={[
-        styles.messageRow,
-        {
-          marginTop: showIdentity ? 10 : 2,
-          alignSelf: isMine ? "flex-end" : "flex-start",
-          alignItems: isMine ? "flex-end" : "flex-start",
-        },
-      ]}
-    >
-      {showIdentity ? (
-        <View
-          style={[
-            styles.identityRow,
-            {
-              flexDirection: isRTL ? "row-reverse" : "row",
-            },
-          ]}
-        >
-          <View style={[styles.messageAvatar, { backgroundColor: theme.colors.primaryLight }]}>
-            {bubbleAvatarUrl ? (
-              <Image
-                source={{ uri: resolveMediaUrl(bubbleAvatarUrl) ?? bubbleAvatarUrl }}
-                style={styles.messageAvatarImage}
-              />
-            ) : (
-              <Text weight="600" color={theme.colors.primary} style={styles.messageAvatarText}>
-                {bubbleAvatarText}
-              </Text>
-            )}
-          </View>
-          <View style={styles.identityTextWrap}>
-            <Text weight="600" style={styles.identityName} color={theme.colors.textPrimary}>
-              {bubbleDisplayName}
+    <ConversationBubble
+      isMine={isMine}
+      text={contentText}
+      timeLabel={timeValue}
+      statusLabel={statusLabel}
+      header={
+        showIdentity && !isMine ? (
+          <View style={styles.identityHeader}>
+            <Text
+              weight="600"
+              color={theme.colors.textPrimary}
+              style={styles.identityName}
+            >
+              {senderLabel}
             </Text>
             <Text color={theme.colors.textMuted} style={styles.identityRole}>
-              {bubbleRoleLabel}
+              {senderRoleLabel}
             </Text>
           </View>
-        </View>
-      ) : null}
-
-      <View
-        style={[
-          styles.messageBubble,
-          {
-            backgroundColor: isMine ? theme.colors.primaryLight : theme.colors.surface,
-            borderColor: isMine ? theme.colors.primaryLight : theme.colors.borderLight,
-            marginTop: showIdentity ? 4 : 0,
-            marginBottom: isGroupEnd ? 0 : 2,
-          },
-        ]}
-      >
-        <Text style={styles.messageText} color={theme.colors.textPrimary}>
-          {contentText}
-        </Text>
-
-        {message.attachments.length > 0 ? (
-          <View style={styles.attachmentWrap}>
-            {message.attachments.map((attachment) => (
-              <View
-                key={attachment.fileId}
-                style={[
-                  styles.attachmentChip,
-                  { backgroundColor: theme.colors.surfaceSecondary },
-                ]}
-              >
-                <Ionicons name="attach-outline" size={14} color={theme.colors.textMuted} />
-                <Text color={theme.colors.textSecondary} style={styles.attachmentText}>
-                  {attachment.originalName || attachment.mimeType}
-                </Text>
-              </View>
-            ))}
-          </View>
-        ) : null}
-
-        <View style={styles.messageMetaRow}>
-          <Text color={theme.colors.textMuted} style={styles.messageMeta}>
-            {timeValue}
-          </Text>
-          {statusLabel ? (
-            <>
-              <Text color={theme.colors.textMuted} style={styles.messageMeta}>
-                •
-              </Text>
-              <Text color={theme.colors.textMuted} style={styles.messageMeta}>
-                {statusLabel}
-              </Text>
-            </>
-          ) : null}
-        </View>
-      </View>
-      {isMine ? null : (
-        <View style={styles.messageAvatarSpacer} />
-      )}
-    </View>
+        ) : undefined
+      }
+      attachments={message.attachments.map((attachment) => ({
+        key: attachment.fileId,
+        label: attachment.originalName || attachment.mimeType || "Attachment",
+      }))}
+    />
   );
 }
 
-function resolveMessageText(message: GeneralChatMessageItemDto) {
+function resolveMessageText(message: GeneralChatMessageItemDto, locale?: string) {
+  const isArabic = locale?.startsWith("ar") ?? false;
   const text = message.contentText?.trim();
   if (text) {
     return text;
@@ -729,17 +532,19 @@ function resolveMessageText(message: GeneralChatMessageItemDto) {
 
   if (message.attachments.length > 0) {
     if (message.attachments.length === 1) {
-      return message.attachments[0]?.originalName || message.attachments[0]?.mimeType || "Attachment";
+      return (
+        message.attachments[0]?.originalName ||
+        message.attachments[0]?.mimeType ||
+        (isArabic ? "مرفق" : "Attachment")
+      );
     }
 
-    return `${message.attachments.length} attachments`;
+    return isArabic
+      ? `${message.attachments.length} مرفقات`
+      : `${message.attachments.length} attachments`;
   }
 
-  return "Message";
-}
-
-function formatStatusLabel(status: string) {
-  return status.replaceAll("_", " ");
+  return isArabic ? "رسالة" : "Message";
 }
 
 const styles = StyleSheet.create({
@@ -750,234 +555,89 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   listContent: {
-    paddingBottom: 16,
-    gap: 10,
+    paddingBottom: 12,
   },
   headerWrap: {
-    gap: 10,
-    marginBottom: 6,
-  },
-  summaryCard: {
-    gap: 12,
-  },
-  summaryHeader: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    justifyContent: "space-between",
-    gap: 12,
-  },
-  summaryHeaderText: {
-    flex: 1,
-    gap: 4,
-  },
-  headerAvatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    alignItems: "center",
-    justifyContent: "center",
-    overflow: "hidden",
-  },
-  headerAvatarImage: {
-    width: "100%",
-    height: "100%",
-  },
-  headerAvatarText: {
-    fontSize: 13,
-    lineHeight: 18,
-  },
-  summaryTitle: {
-    fontSize: 18,
-    lineHeight: 24,
-  },
-  summarySubtitle: {
-    fontSize: 13,
-    lineHeight: 20,
-  },
-  summaryIdentity: {
-    fontSize: 12,
-    lineHeight: 18,
-  },
-  participantRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    flexWrap: "wrap",
-    gap: 6,
-  },
-  participantSeparator: {
-    fontSize: 18,
-    lineHeight: 18,
-  },
-  summaryRows: {
     gap: 8,
+    marginBottom: 4,
   },
-  linkRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 10,
-    borderRadius: 14,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
+  contextStrip: {
+    minHeight: 42,
+    justifyContent: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
   },
-  linkRowText: {
-    flex: 1,
+  contextText: {
     fontSize: 13,
+    textAlign: "center",
   },
   topState: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 10,
-    paddingVertical: 6,
+    gap: 8,
+    paddingTop: 6,
   },
   topStateText: {
-    fontSize: 13,
+    fontSize: 12,
   },
   topRetry: {
     alignSelf: "center",
     borderWidth: 1,
-    borderRadius: 14,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
   },
   startHint: {
     textAlign: "center",
     fontSize: 12,
-    lineHeight: 18,
-    paddingVertical: 4,
+    marginTop: 4,
+    marginBottom: 2,
   },
-  messageRow: {
-    width: "100%",
-    flexDirection: "row",
-    gap: 8,
-  },
-  identityRow: {
-    alignItems: "center",
-    gap: 8,
-    marginBottom: 4,
-  },
-  identityTextWrap: {
+  identityHeader: {
+    alignItems: "flex-start",
     gap: 1,
+    marginBottom: 2,
   },
   identityName: {
-    fontSize: 13,
-    lineHeight: 18,
+    fontSize: 12,
+    lineHeight: 16,
   },
   identityRole: {
-    fontSize: 11,
-    lineHeight: 16,
-  },
-  messageBubble: {
-    maxWidth: "84%",
-    borderWidth: 1,
-    borderRadius: 18,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    gap: 8,
-  },
-  messageText: {
-    fontSize: 15,
-    lineHeight: 22,
-  },
-  messageMetaRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    flexWrap: "wrap",
-  },
-  messageMeta: {
-    fontSize: 11,
-    lineHeight: 16,
-  },
-  messageAvatar: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: 2,
-    overflow: "hidden",
-  },
-  messageAvatarImage: {
-    width: "100%",
-    height: "100%",
-  },
-  messageAvatarText: {
-    fontSize: 11,
+    fontSize: 10,
     lineHeight: 14,
-  },
-  messageAvatarSpacer: {
-    width: 28,
-    height: 28,
-    marginTop: 2,
   },
   systemWrap: {
     alignItems: "center",
+    marginVertical: 6,
   },
   systemBubble: {
+    maxWidth: "88%",
+    borderRadius: 12,
     borderWidth: 1,
-    borderRadius: 999,
-    paddingHorizontal: 14,
+    paddingHorizontal: 12,
     paddingVertical: 8,
-    maxWidth: "90%",
   },
   systemText: {
     fontSize: 12,
-    lineHeight: 18,
+    lineHeight: 17,
     textAlign: "center",
   },
-  attachmentWrap: {
-    gap: 8,
+  readOnlyNotice: {
+    marginHorizontal: 12,
+    borderWidth: 1,
+    borderRadius: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    gap: 4,
   },
-  attachmentChip: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    alignSelf: "flex-start",
-    borderRadius: 12,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
+  readOnlyTitle: {
+    fontSize: 13,
+    lineHeight: 19,
   },
-  attachmentText: {
-    fontSize: 12,
-  },
-  composerBar: {
-    borderTopWidth: 1,
-    paddingHorizontal: 12,
-    paddingTop: 12,
-    paddingBottom: 12,
-    gap: 8,
-  },
-  composerRow: {
-    alignItems: "flex-end",
-    gap: 10,
-  },
-  composerInputContainer: {
-    flex: 1,
-    marginBottom: 0,
-    minWidth: 0,
-  },
-  composerInput: {
-    minHeight: 72,
-    maxHeight: 120,
-    textAlignVertical: "top",
-    paddingTop: 14,
-  },
-  composerError: {
+  readOnlyLine: {
     fontSize: 12,
     lineHeight: 18,
-  },
-  composerHint: {
-    fontSize: 12,
-    lineHeight: 18,
-  },
-  sendButton: {
-    alignSelf: "flex-end",
-    width: 96,
-    minHeight: 52,
-    borderRadius: 14,
-    flexShrink: 0,
   },
 });
-

@@ -4,6 +4,7 @@ import type {
   PractitionerSessionDetails,
   PractitionerSessionJoinContract,
   PractitionerSessionRuntime,
+  PractitionerSessionSummaryResponse,
   SessionsListResponse,
 } from "./types";
 
@@ -12,6 +13,11 @@ export async function getPractitionerSessions(query?: ListSessionsQuery) {
     params: query,
   });
   return extractApiData<SessionsListResponse>(response);
+}
+
+export async function getPractitionerSessionSummary() {
+  const response = await apiClient.get("/practitioners/me/sessions/summary");
+  return extractApiData<PractitionerSessionSummaryResponse>(response);
 }
 
 export async function getPractitionerSession(sessionId: string) {

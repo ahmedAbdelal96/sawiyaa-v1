@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Text } from './Text';
+import { useTheme } from '../../providers/ThemeProvider';
 
 export type BadgeStatus = 'success' | 'warning' | 'error' | 'info' | 'default';
 
@@ -10,22 +11,19 @@ export interface StatusBadgeProps {
 }
 
 export const StatusBadge = ({ label, status = 'default' }: StatusBadgeProps) => {
-  const getColors = () => {
-    switch (status) {
-      case 'success': return { bg: '#dcfce7', text: '#166534' };
-      case 'warning': return { bg: '#fef9c3', text: '#854d0e' };
-      case 'error': return { bg: '#fee2e2', text: '#991b1b' };
-      case 'info': return { bg: '#dbeafe', text: '#1e40af' };
-      case 'default':
-      default:
-        return { bg: '#f3f4f6', text: '#374151' };
-    }
-  };
-
-  const colors = getColors();
+  const { theme } = useTheme();
+  const colors = resolveColors(theme, status);
 
   return (
-    <View style={[styles.badge, { backgroundColor: colors.bg }]}>
+    <View
+      style={[
+        styles.badge,
+        {
+          backgroundColor: colors.bg,
+          borderColor: colors.border,
+        },
+      ]}
+    >
       <Text style={styles.label} weight="600" color={colors.text}>
         {label}
       </Text>
@@ -33,15 +31,55 @@ export const StatusBadge = ({ label, status = 'default' }: StatusBadgeProps) => 
   );
 };
 
+function resolveColors(
+  theme: ReturnType<typeof useTheme>["theme"],
+  status: BadgeStatus,
+) {
+  switch (status) {
+    case 'success':
+      return {
+        bg: theme.colors.successLight ?? '#dcfce7',
+        border: theme.colors.successLight ?? '#bbf7d0',
+        text: theme.colors.success ?? '#166534',
+      };
+    case 'warning':
+      return {
+        bg: theme.colors.warningLight ?? '#fef9c3',
+        border: theme.colors.warningLight ?? '#fde68a',
+        text: theme.colors.warning ?? '#854d0e',
+      };
+    case 'error':
+      return {
+        bg: theme.colors.errorLight ?? '#fee2e2',
+        border: theme.colors.errorLight ?? '#fecaca',
+        text: theme.colors.error ?? '#991b1b',
+      };
+    case 'info':
+      return {
+        bg: theme.colors.infoLight ?? '#dbeafe',
+        border: theme.colors.infoLight ?? '#bfdbfe',
+        text: theme.colors.info ?? '#1e40af',
+      };
+    case 'default':
+    default:
+      return {
+        bg: theme.colors.surfaceSecondary,
+        border: theme.colors.borderLight,
+        text: theme.colors.textSecondary,
+      };
+  }
+}
+
 const styles = StyleSheet.create({
   badge: {
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 12,
     alignSelf: 'flex-start',
+    borderWidth: 1,
   },
   label: {
     fontSize: 12,
-    textTransform: 'uppercase',
+    textTransform: 'none',
   },
 });

@@ -7,6 +7,8 @@ export interface AuthSessionDeviceContext {
   deviceId?: string | null;
   ipAddress?: string | null;
   userAgent?: string | null;
+  countryCode?: string | null;
+  countryCodeSource?: 'HEADER_CF' | 'HEADER_VERCEL' | 'DEV_OVERRIDE' | 'NONE' | null;
 }
 
 export interface CreateAuthSessionInput extends AuthSessionDeviceContext {

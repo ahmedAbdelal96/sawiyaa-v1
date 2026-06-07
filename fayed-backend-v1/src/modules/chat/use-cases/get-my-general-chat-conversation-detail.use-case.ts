@@ -7,12 +7,14 @@ import {
 import { GeneralChatRepository } from '../repositories/general-chat.repository';
 import { ConversationAccessPolicy } from '../policies/conversation-access.policy';
 import { GENERAL_CHAT_ERROR_CODES } from '../types/general-chat.types';
+import { GeneralChatAvailabilityService } from '../services/general-chat-availability.service';
 
 @Injectable()
 export class GetMyGeneralChatConversationDetailUseCase {
   constructor(
     private readonly generalChatRepository: GeneralChatRepository,
     private readonly conversationAccessPolicy: ConversationAccessPolicy,
+    private readonly generalChatAvailabilityService: GeneralChatAvailabilityService,
   ) {}
 
   async execute(input: {
@@ -61,6 +63,38 @@ export class GetMyGeneralChatConversationDetailUseCase {
     const participantSummaries = conversation.participants.map((participant) =>
       buildGeneralChatParticipantSummary(participant, participantDirectory),
     );
+    const chatAvailability =
+      this.generalChatAvailabilityService.resolveAvailability({
+        conversation: {
+          status: conversation.status,
+          closedAt: conversation.closedAt,
+          adminLock: {
+            disabledAt: conversation.adminSendingDisabledAt,
+            disabledByUserId: conversation.adminSendingDisabledByUserId,
+            disabledReason: conversation.adminSendingDisabledReason,
+            enabledAt: conversation.adminSendingEnabledAt,
+            enabledByUserId: conversation.adminSendingEnabledByUserId,
+          },
+          practitionerLock: {
+            disabledAt: conversation.practitionerSendingDisabledAt,
+            disabledByUserId: conversation.practitionerSendingDisabledByUserId,
+            disabledReason: conversation.practitionerSendingDisabledReason,
+            enabledAt: conversation.practitionerSendingEnabledAt,
+            enabledByUserId: conversation.practitionerSendingEnabledByUserId,
+          },
+        },
+        linkedSession: conversation.session
+          ? {
+              status: conversation.session.status,
+              sessionMode: conversation.session.sessionMode,
+              scheduledStartAt: conversation.session.scheduledStartAt,
+              scheduledEndAt: conversation.session.scheduledEndAt,
+              provider: conversation.session.provider,
+              providerRoomId: conversation.session.providerRoomId,
+              providerSessionRef: conversation.session.providerSessionRef,
+            }
+          : null,
+      });
 
     return {
       item: {
@@ -93,6 +127,7 @@ export class GetMyGeneralChatConversationDetailUseCase {
         lastReadAt: viewerParticipant.lastReadAt
           ? viewerParticipant.lastReadAt.toISOString()
           : null,
+        chatAvailability,
       },
     };
   }

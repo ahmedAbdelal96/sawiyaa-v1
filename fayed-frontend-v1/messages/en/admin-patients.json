@@ -48,7 +48,31 @@
     "view": "View details",
     "close": "Close",
     "prev": "Previous",
-    "next": "Next"
+    "next": "Next",
+    "changeCountry": "Change country"
+  },
+  "changeCountry": {
+    "title": "Change patient country",
+    "description": "Update the country stored against this patient profile. Used for pricing correction after identity verification.",
+    "eyebrow": "Patients",
+    "currentCountry": "Current country",
+    "currentCountryNotSet": "Not set",
+    "newCountry": "New country",
+    "selectCountry": "Select a country",
+    "searchCountry": "Search countries...",
+    "reason": "Reason for change",
+    "reasonPlaceholder": "Explain why this change is being made (min. 10 characters)",
+    "reasonHint": "This reason will be recorded in the audit log.",
+    "warning": "Changing the country will affect how pricing is displayed to this patient. This action is logged for audit purposes.",
+    "confirm": "Confirm change",
+    "cancel": "Cancel",
+    "success": "Country changed successfully",
+    "error": "Failed to change country",
+    "sameCountryError": "Patient is already in {country}. No change needed.",
+    "confirmTitle": "Confirm country change",
+    "confirmDescription": "{from} → {to}",
+    "countriesEmpty": "No countries found",
+    "countriesOverflow": "+{count} more results — try refining your search"
   },
   "details": {
     "title": "Patient details",

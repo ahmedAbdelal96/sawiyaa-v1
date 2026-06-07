@@ -12,20 +12,39 @@
 **/.next/
 **/coverage/
 **/.nyc_output/
+dist/
+build/
+.next/
+coverage/
 
 # Local env files (never commit secrets)
 **/.env
 **/.env.*
 !**/.env.example
 !**/.env.*.example
+.env
+.env.*
+!.env.example
 
 # Logs & temp
 **/logs/
 **/*.log
 **/*.err.log
+logs/
+*.log
+*.tsbuildinfo
 **/.tmp/
 **/.temp/
 **/tmp_*
+tmp/
+cache/
+.cache/
+test-reports/
+reports/
+check-articles*.ts
+check-counts.js
+fix-arabic*.py
+run-articles-only.ts
 
 # Editor/OS
 **/.idea/
@@ -97,6 +116,7 @@ smokes/
 stitch_*/
 button-list.json
 .tmp-generate-matrices.js
+fayed-frontend-v3/
 
 # External reference apps
 shezlong/

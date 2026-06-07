@@ -13,6 +13,28 @@ import { AdminPractitionerDirectoryRepository } from '../repositories/admin-prac
  * Admin-only practitioner directory listing.
  * This read surface is intentionally independent from public practitioner visibility constraints.
  */
+type AdminPractitionerDirectoryRow = {
+  id: string;
+  publicSlug: string | null;
+  status: string;
+  yearsOfExperience: number | null;
+  avatarUrl: string | null;
+  practitionerType: string;
+  professionalTitle: string | null;
+  user: {
+    displayName: string | null;
+    emails: { email: string }[];
+  };
+  country: {
+    isoCode: string | null;
+  } | null;
+  presence: Parameters<typeof isPresenceEffectivelyOnline>[0];
+  ratingSummary: {
+    averageRating: number | null;
+    publishedReviewsCount: number;
+  } | null;
+};
+
 @Injectable()
 export class ListAdminPractitionersDirectoryUseCase {
   constructor(
@@ -48,15 +70,18 @@ export class ListAdminPractitionersDirectoryUseCase {
       take: limit,
     });
 
+    const directoryRows = rows as unknown as AdminPractitionerDirectoryRow[];
+
     return {
       message: this.i18nService.t(
         'admin.practitionerApplications.success.applicationsFetched',
         input.locale,
       ),
-      items: rows.map((row) => ({
+      items: directoryRows.map((row) => ({
         id: row.id,
         slug: row.publicSlug || row.id,
         displayName: row.user.displayName ?? null,
+        email: row.user.emails?.[0]?.email ?? null,
         avatarUrl: row.avatarUrl ?? null,
         professionalTitle: row.professionalTitle ?? null,
         practitionerType: row.practitionerType,

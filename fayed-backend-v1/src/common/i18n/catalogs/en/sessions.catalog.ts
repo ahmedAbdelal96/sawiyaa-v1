@@ -19,6 +19,16 @@ export const enSessionsCatalog = {
     sessionCancelledPractitionerTitle: 'Session cancelled by patient',
     sessionCancelledPractitionerBody:
       'A patient cancelled a session scheduled at {{sessionAt}}.',
+    sessionReminder60Title: 'Session reminder',
+    sessionReminder60Body: 'Your session starts in an hour.',
+    sessionReminder60PractitionerTitle: 'You have a session in an hour',
+    sessionReminder60PractitionerBody:
+      'Review the session details and get ready to join at the scheduled time.',
+    sessionReminder15Title: 'Your session starts soon',
+    sessionReminder15Body: 'Your session starts in 15 minutes.',
+    sessionReminder15PractitionerTitle: 'Your session starts in 15 minutes',
+    sessionReminder15PractitionerBody:
+      'Open the session page when join time starts.',
     packageSessionContext:
       ' Session {{packageSessionIndex}} of {{packageSessionCount}} in your package.',
   },

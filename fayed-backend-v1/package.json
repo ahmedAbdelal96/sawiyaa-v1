@@ -29,6 +29,7 @@
     "prisma:migrate:deploy": "prisma migrate deploy",
     "prisma:studio": "prisma studio",
     "prisma:seed": "ts-node --preferTsExts prisma/seed.ts",
+    "seed:practitioner-finance": "ts-node --preferTsExts prisma/seed/practitioner-finance.seed.ts",
     "seed:qa:testsprite": "ts-node --preferTsExts prisma/seed/qa.testsprite.seed.ts",
     "db:reset": "prisma migrate reset"
   },

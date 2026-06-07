@@ -105,6 +105,7 @@ export interface PatientRegisterRequest {
   password: string;
   displayName?: string;
   deviceId?: string;
+  phone?: string;
 }
 
 export interface PatientLoginRequest {

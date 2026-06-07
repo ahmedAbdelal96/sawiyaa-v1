@@ -19,6 +19,8 @@ export const enChatCatalog = {
       'You do not have access to this general chat conversation',
     conversationNotSendable:
       'Conversation state does not allow sending messages',
+    sessionChatReadOnly:
+      'This session chat is read-only now',
     messageNotFound: 'General chat message was not found',
     messageContentRequired: 'Message content is required',
     attachmentRefInvalid: 'Attachment reference payload is invalid',

@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { UserRoleType, UserStatus } from '@prisma/client';
 import { PrismaService } from '@common/prisma/prisma.service';
+import { CountryRepository } from '../../patients/repositories/country.repository';
 import { IssueAuthTokensUseCase } from './issue-auth-tokens.use-case';
 import { AuthIdentityRepository } from '../repositories/auth-identity.repository';
 import { UserEmailRepository } from '../repositories/user-email.repository';
@@ -24,6 +25,7 @@ export class RegisterPatientWithGoogleUseCase {
     private readonly userRepository: UserRepository,
     private readonly userEmailRepository: UserEmailRepository,
     private readonly authIdentityRepository: AuthIdentityRepository,
+    private readonly countryRepository: CountryRepository,
     private readonly issueAuthTokensUseCase: IssueAuthTokensUseCase,
   ) {}
 
@@ -83,6 +85,10 @@ export class RegisterPatientWithGoogleUseCase {
     }
 
     const user = await this.prisma.$transaction(async (tx) => {
+      const countryId = input.deviceContext.countryCode
+        ? (await this.countryRepository.findByIsoCode(input.deviceContext.countryCode))?.id
+        : null;
+
       if (existingEmail) {
         if (existingEmail.user.status !== UserStatus.ACTIVE) {
           throw new ForbiddenException({
@@ -105,6 +111,7 @@ export class RegisterPatientWithGoogleUseCase {
         await this.userRepository.createPatientProfileIfMissing(
           existingEmail.user.id,
           googleIdentity.displayName,
+          countryId,
           tx,
         );
         return existingEmail.user;
@@ -126,6 +133,7 @@ export class RegisterPatientWithGoogleUseCase {
       await this.userRepository.createPatientProfileIfMissing(
         createdUser.id,
         googleIdentity.displayName,
+        countryId,
         tx,
       );
       await this.userEmailRepository.upsertPrimaryEmail(

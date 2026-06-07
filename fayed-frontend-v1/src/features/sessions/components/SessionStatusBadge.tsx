@@ -1,18 +1,34 @@
 import { useTranslations } from "next-intl";
 import { AdminStatusBadge } from "@/components/shared/admin/AdminDashboardKit";
-import type { SessionStatus } from "../types/sessions.types";
+import type { SessionPresentationStatus, SessionStatus } from "../types/sessions.types";
 
 type Props = {
-  status: SessionStatus;
+  status?: SessionStatus;
+  presentationStatus?: SessionPresentationStatus;
   labelOverride?: string;
 };
 
-export default function SessionStatusBadge({ status, labelOverride }: Props) {
+export default function SessionStatusBadge({
+  status,
+  presentationStatus,
+  labelOverride,
+}: Props) {
   const t = useTranslations("sessions");
-  const tone =
-    status === "READY_TO_JOIN" || status === "IN_PROGRESS"
+  const displayStatus = presentationStatus ?? status;
+  const tone = presentationStatus
+    ? displayStatus === "JOINABLE" || displayStatus === "IN_PROGRESS"
       ? "success"
-      : status === "PENDING_PAYMENT" || status === "PENDING_PRACTITIONER_RESPONSE" || status === "EXPIRED" || status === "REFUND_PENDING"
+      : displayStatus === "UPCOMING" || displayStatus === "UNAVAILABLE"
+        ? "warning"
+      : displayStatus === "CANCELLED" || displayStatus === "ENDED"
+          ? "danger"
+          : "neutral"
+    : status === "IN_PROGRESS"
+      ? "success"
+      : status === "PENDING_PAYMENT" ||
+          status === "PENDING_PRACTITIONER_RESPONSE" ||
+          status === "EXPIRED" ||
+          status === "REFUND_PENDING"
         ? "warning"
         : status === "CANCELLED" || status === "NO_SHOW"
           ? "danger"
@@ -20,9 +36,9 @@ export default function SessionStatusBadge({ status, labelOverride }: Props) {
             ? "primary"
             : "neutral";
 
-  return (
-    <AdminStatusBadge tone={tone}>
-      {labelOverride ?? t(`status.${status}` as Parameters<typeof t>[0])}
-    </AdminStatusBadge>
-  );
+  const labelKey = presentationStatus
+    ? `presentationStatus.${displayStatus ?? "UNAVAILABLE"}`
+    : `status.${displayStatus ?? "DRAFT"}`;
+
+  return <AdminStatusBadge tone={tone}>{labelOverride ?? t(labelKey as Parameters<typeof t>[0])}</AdminStatusBadge>;
 }

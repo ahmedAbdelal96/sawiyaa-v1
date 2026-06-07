@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
-import { Search, Eye, Users, CheckCircle2, AlertCircle } from "lucide-react";
+import { Search, Eye, Users, CheckCircle2, AlertCircle, Globe } from "lucide-react";
 import { DataTable } from "@/components/ui/data-table";
 import type { ColumnDef } from "@/components/ui/data-table";
 import AdminOperationalListShell, { AdminSummaryCard } from "@/components/shared/admin/AdminOperationalListShell";
@@ -15,6 +15,7 @@ import { DEFAULT_PAGE_LIMIT, DEFAULT_PAGE_SIZE_OPTIONS } from "@/constants/pagin
 import { useDebouncedValue } from "@/hooks/use-debounce";
 import type { AdminPatientListItem } from "../types/admin-patients.types";
 import { useAdminPatients } from "../hooks/use-admin-patients";
+import { AdminPatientCountryChangeModal } from "./AdminPatientCountryChangeModal";
 
 const PAGE_SIZE_OPTIONS = DEFAULT_PAGE_SIZE_OPTIONS;
 
@@ -46,6 +47,7 @@ export default function AdminPatientsDirectory() {
   const [onboarding, setOnboarding] = useState<"all" | "completed" | "incomplete">("all");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_LIMIT);
+  const [countryChangePatient, setCountryChangePatient] = useState<AdminPatientListItem | null>(null);
 
   const debouncedSearch = useDebouncedValue(search, 300);
 
@@ -312,6 +314,12 @@ export default function AdminPatientsDirectory() {
           rowActions={(row) => (
             <div className="flex items-center justify-end gap-2">
               <ActionIconButton
+                label={t("actions.changeCountry")}
+                intent="neutral"
+                icon={<Globe className="h-4 w-4" />}
+                onClick={() => setCountryChangePatient(row)}
+              />
+              <ActionIconButton
                 label={t("actions.view")}
                 intent="view"
                 icon={<Eye className="h-4 w-4" />}
@@ -323,6 +331,14 @@ export default function AdminPatientsDirectory() {
           hoverable
         />
       </AdminOperationalListShell>
+
+      {countryChangePatient && (
+        <AdminPatientCountryChangeModal
+          patient={countryChangePatient}
+          isOpen={true}
+          onClose={() => setCountryChangePatient(null)}
+        />
+      )}
     </>
   );
 }

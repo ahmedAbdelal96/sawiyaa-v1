@@ -23,6 +23,12 @@ describe('ValidateCouponEligibilityService', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    jest.useRealTimers();
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+    jest.restoreAllMocks();
   });
 
   const buildCoupon = (ownerPractitionerId: string) => ({
@@ -105,5 +111,73 @@ describe('ValidateCouponEligibilityService', () => {
         },
       }),
     ).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it('rejects coupons whose end date has passed', async () => {
+    jest
+      .spyOn(Date, 'now')
+      .mockReturnValue(new Date('2026-06-03T12:00:00.000Z').getTime());
+    (couponRepository.countPatientRedemptions as jest.Mock).mockResolvedValue(0);
+
+    await expect(
+      service.validateForSession({
+        coupon: {
+          ...buildCoupon('practitioner-1'),
+          endsAt: new Date('2026-06-02T23:59:59.999Z'),
+        },
+        session: {
+          id: 'session-1',
+          flowType: SessionFlowType.SCHEDULED,
+          sessionMode: SessionMode.VIDEO,
+          durationMinutes: 30,
+          practitioner: {
+            id: 'practitioner-1',
+            publicSlug: 'dr-ahmed',
+            countryId: null,
+            country: null,
+            specialties: [],
+          },
+          patient: {
+            id: 'patient-1',
+            countryId: null,
+            country: null,
+          },
+        },
+      }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it('allows a coupon until the end of its selected end day', async () => {
+    jest
+      .spyOn(Date, 'now')
+      .mockReturnValue(new Date('2026-06-03T20:00:00.000Z').getTime());
+    (couponRepository.countPatientRedemptions as jest.Mock).mockResolvedValue(0);
+
+    await expect(
+      service.validateForSession({
+        coupon: {
+          ...buildCoupon('practitioner-1'),
+          endsAt: new Date('2026-06-03T23:59:59.999Z'),
+        },
+        session: {
+          id: 'session-1',
+          flowType: SessionFlowType.SCHEDULED,
+          sessionMode: SessionMode.VIDEO,
+          durationMinutes: 30,
+          practitioner: {
+            id: 'practitioner-1',
+            publicSlug: 'dr-ahmed',
+            countryId: null,
+            country: null,
+            specialties: [],
+          },
+          patient: {
+            id: 'patient-1',
+            countryId: null,
+            country: null,
+          },
+        },
+      }),
+    ).resolves.toMatchObject({ id: 'coupon-1' });
   });
 });

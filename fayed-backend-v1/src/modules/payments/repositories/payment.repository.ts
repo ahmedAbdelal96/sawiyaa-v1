@@ -155,7 +155,16 @@ export class PaymentRepository {
         where,
         skip: input.skip,
         take: input.take,
-        include: this.paymentInclude,
+        include: {
+          ...this.paymentInclude,
+          session: {
+            select: {
+              id: true,
+              status: true,
+              expiresAt: true,
+            },
+          },
+        },
         orderBy: [{ createdAt: 'desc' }],
       }),
       this.prisma.payment.count({ where }),

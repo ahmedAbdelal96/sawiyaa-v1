@@ -34,6 +34,7 @@ import type {
   AuthenticatedUser,
   MobileSupportedRole,
   OtpChallengeResponse,
+  PractitionerLoginResponse,
   PatientLoginRequest,
   PatientRegisterRequest,
   PatientForgotPasswordRequest,
@@ -53,6 +54,7 @@ import {
 } from "../features/auth/storage";
 import { resolveMobileRole } from "../features/auth/roles";
 import { resolvePatientNotificationRoute } from "../features/patient/notifications/routes";
+import { resolvePractitionerNotificationRoute } from "../features/practitioner/notifications/utils";
 import {
   configureForegroundNotifications,
   extractNotificationHref,
@@ -80,7 +82,7 @@ interface AuthContextValue {
   ) => Promise<void>;
   startPractitionerLogin: (
     payload: PractitionerLoginRequest,
-  ) => Promise<OtpChallengeResponse>;
+  ) => Promise<PractitionerLoginResponse>;
   verifyPractitionerOtp: (
     payload: Omit<PractitionerVerifyOtpRequest, "deviceId">,
   ) => Promise<void>;
@@ -130,6 +132,17 @@ function isSupportedMobileRole(
   role: string | null | undefined,
 ): role is MobileSupportedRole {
   return role === "patient" || role === "practitioner";
+}
+
+function isAuthSuccessResponse(
+  payload: PractitionerLoginResponse,
+): payload is AuthSuccessResponse {
+  return (
+    typeof payload === "object" &&
+    payload !== null &&
+    "tokens" in payload &&
+    "user" in payload
+  );
 }
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
@@ -316,6 +329,44 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       return;
     }
 
+    const resolveTargetRoute = (
+      response: Notifications.NotificationResponse,
+    ) => {
+      const data = response.notification.request.content.data as
+        | Record<string, unknown>
+        | undefined;
+      const href = extractNotificationHref(data);
+      const typeSlug =
+        typeof data?.type === "string" && data.type.trim()
+          ? data.type.trim()
+          : null;
+      const rawTargetRole =
+        typeof data?.targetRole === "string"
+          ? data.targetRole.trim().toLowerCase()
+          : null;
+      const currentRole = sessionRef.current?.role ?? null;
+      const effectiveRole =
+        rawTargetRole === "patient" || rawTargetRole === "practitioner"
+          ? rawTargetRole
+          : currentRole;
+
+      if (effectiveRole === "patient") {
+        return (
+          resolvePatientNotificationRoute(href ?? "/", typeSlug) ??
+          "/(patient)/notifications"
+        );
+      }
+
+      if (effectiveRole === "practitioner") {
+        return (
+          resolvePractitionerNotificationRoute(href ?? "/", typeSlug) ??
+          "/(practitioner)/notifications"
+        );
+      }
+
+      return null;
+    };
+
     const handleResponse = async (
       response: Notifications.NotificationResponse | null,
     ) => {
@@ -330,17 +381,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
       lastHandledNotificationIdentifierRef.current = identifier;
 
-      const currentSession = sessionRef.current;
-      if (currentSession?.role !== "patient") {
+      const targetRoute = resolveTargetRoute(response);
+
+      if (!targetRoute) {
         return;
       }
 
-      const href = extractNotificationHref(
-        response.notification.request.content.data,
-      );
-      const targetRoute = href ? resolvePatientNotificationRoute(href) : null;
-
-      router.push((targetRoute ?? "/(patient)/notifications") as any);
+      router.push(targetRoute as any);
     };
 
     const subscription = Notifications.addNotificationResponseReceivedListener(
@@ -433,6 +480,23 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     if (session.role === "practitioner" && (inAuthGroup || inPatientGroup)) {
       router.replace("/(practitioner)");
+      return;
+    }
+
+    if (session.role === "practitioner") {
+      const practitionerStatus = session.user.practitionerStatus;
+      const isPractitionerApproved = practitionerStatus === "APPROVED";
+      const inPractitionerStatusRoute =
+        inPractitionerGroup && segments[1] === "application-status";
+
+      if (!isPractitionerApproved && !inPractitionerStatusRoute) {
+        router.replace("/(practitioner)/application-status");
+        return;
+      }
+
+      if (isPractitionerApproved && inPractitionerStatusRoute) {
+        router.replace("/(practitioner)");
+      }
     }
   }, [isBootstrapping, router, segments, session]);
 
@@ -465,9 +529,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const startPractitionerLogin = useCallback(
     async (payload: PractitionerLoginRequest) => {
-      return practitionerLogin(payload);
+      const response = await practitionerLogin(payload);
+      if (isAuthSuccessResponse(response)) {
+        await consumeAuthSuccess(response, "practitioner");
+      }
+      return response;
     },
-    [],
+    [consumeAuthSuccess],
   );
 
   const verifyPractitionerOtp = useCallback(

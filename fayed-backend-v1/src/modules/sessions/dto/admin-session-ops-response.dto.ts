@@ -46,6 +46,7 @@ export class AdminSessionRuntimeInspectionItemDto {
       'SESSION_NOT_VIDEO_MODE',
       'SESSION_TIME_WINDOW_NOT_OPEN',
       'SESSION_RUNTIME_NOT_PREPARED',
+      'SESSION_JOIN_WINDOW_CLOSED',
     ],
   })
   blockedReason!: SessionJoinBlockedReason | null;

@@ -55,7 +55,7 @@ describe('NotificationDomainValidityGuardService', () => {
       relatedEntityType: 'SESSION',
       relatedEntityId: 'session_1',
       notificationType: {
-        slug: 'sessions.session-reminder',
+        slug: 'sessions.session-reminder-60',
         category: 'SESSION',
       },
     });

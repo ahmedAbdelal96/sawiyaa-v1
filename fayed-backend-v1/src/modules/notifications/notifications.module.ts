@@ -23,6 +23,7 @@ import { NotificationDomainValidityGuardService } from './services/notification-
 import { NotificationOpsPresenter } from './presenters/notification-ops.presenter';
 import { UserNotificationsPresenter } from './presenters/user-notifications.presenter';
 import { NotificationIntentWriterService } from './services/notification-intent-writer.service';
+import { SessionReminderQueueRepository } from './repositories/session-reminder-queue.repository';
 import { GetAdminAuditEventDetailsUseCase } from './use-cases/get-admin-audit-event-details.use-case';
 import { ListAdminAuditEventsUseCase } from './use-cases/list-admin-audit-events.use-case';
 import { ListAdminOperationalNotificationsUseCase } from './use-cases/list-admin-operational-notifications.use-case';
@@ -32,6 +33,7 @@ import { GetMyUnreadNotificationCountUseCase } from './use-cases/get-my-unread-n
 import { ListMyNotificationDevicesUseCase } from './use-cases/list-my-notification-devices.use-case';
 import { MarkAllMyNotificationsReadUseCase } from './use-cases/mark-all-my-notifications-read.use-case';
 import { MarkMyNotificationReadUseCase } from './use-cases/mark-my-notification-read.use-case';
+import { SendDevTestPushNotificationUseCase } from './use-cases/send-dev-test-push-notification.use-case';
 import { RegisterNotificationDeviceUseCase } from './use-cases/register-notification-device.use-case';
 import { RevokeNotificationDeviceUseCase } from './use-cases/revoke-notification-device.use-case';
 
@@ -64,6 +66,7 @@ import { RevokeNotificationDeviceUseCase } from './use-cases/revoke-notification
     UserNotificationsPresenter,
     NotificationIntentWriterService,
     AdminAuditPresenter,
+    SessionReminderQueueRepository,
     ListAdminAuditEventsUseCase,
     GetAdminAuditEventDetailsUseCase,
     ListAdminOperationalNotificationsUseCase,
@@ -74,6 +77,7 @@ import { RevokeNotificationDeviceUseCase } from './use-cases/revoke-notification
     GetMyUnreadNotificationCountUseCase,
     MarkAllMyNotificationsReadUseCase,
     MarkMyNotificationReadUseCase,
+    SendDevTestPushNotificationUseCase,
     RegisterNotificationDeviceUseCase,
     RevokeNotificationDeviceUseCase,
     ListMyNotificationDevicesUseCase,
@@ -85,6 +89,7 @@ import { RevokeNotificationDeviceUseCase } from './use-cases/revoke-notification
     NotificationDeliveryAttemptEngineService,
     OperationalNotificationService,
     NotificationIntentWriterService,
+    SessionReminderQueueRepository,
   ],
 })
 export class NotificationsModule {}

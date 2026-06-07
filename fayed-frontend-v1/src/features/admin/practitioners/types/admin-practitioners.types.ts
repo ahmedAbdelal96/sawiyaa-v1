@@ -2,8 +2,10 @@ export interface AdminPractitionerListItem {
   id: string;
   slug: string;
   displayName: string | null;
+  email?: string | null;
   avatarUrl: string | null;
   professionalTitle: string | null;
+  status: string;
   practitionerType: string;
   countryCode: string | null;
   isOnlineNow: boolean;

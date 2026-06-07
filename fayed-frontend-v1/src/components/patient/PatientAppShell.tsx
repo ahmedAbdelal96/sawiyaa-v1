@@ -4,6 +4,7 @@ import LanguageToggle from "@/components/public/LanguageToggle";
 import ThemeToggle from "@/components/public/ThemeToggle";
 import BrandMark from "@/components/shared/BrandMark";
 import UserDropdown from "@/components/header/UserDropdown";
+import UserNotificationDropdown from "@/features/notifications/components/UserNotificationDropdown";
 import ActionIconButton from "@/components/ui/action-icon-button/ActionIconButton";
 import { Drawer } from "@/components/ui/modal";
 import { Link, usePathname } from "@/i18n/navigation";
@@ -202,6 +203,7 @@ export default function PatientAppShell({ children }: PatientAppShellProps) {
             <LanguageToggle />
             <ThemeToggle />
             <MessagesHeaderButton role="patient" />
+            <UserNotificationDropdown role="patient" />
             <UserDropdown
               compact
               quickLinks={userQuickLinks.map((item) => ({

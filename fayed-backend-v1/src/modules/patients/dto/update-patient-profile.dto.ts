@@ -39,15 +39,6 @@ export class UpdatePatientProfileDto {
   @Matches(/^(ar|en)$/)
   locale?: string;
 
-  @ApiPropertyOptional({
-    description: 'Active country ISO code stored against the patient profile',
-  })
-  @IsOptional()
-  @IsString()
-  @Length(2, 3)
-  @Matches(/^[A-Za-z]{2,3}$/)
-  countryCode?: string | null;
-
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()

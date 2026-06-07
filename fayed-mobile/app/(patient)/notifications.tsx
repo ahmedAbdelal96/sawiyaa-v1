@@ -66,11 +66,10 @@ export default function PatientNotificationsScreen() {
         await markReadMutation.mutateAsync(item.id);
       }
 
-      if (!item.action?.href) {
-        return;
-      }
-
-      const targetRoute = resolvePatientNotificationRoute(item.action.href);
+      const targetRoute = resolvePatientNotificationRoute(
+        item.action?.href ?? "/",
+        item.typeSlug,
+      );
       if (!targetRoute) {
         Alert.alert(
           t("patientNotifications.unsupportedAlertTitle"),

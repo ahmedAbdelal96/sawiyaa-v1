@@ -64,6 +64,14 @@ export interface PractitionerLedgerListResponse {
 export interface PractitionerLedgerListParams {
   page?: number;
   limit?: number;
+  entryType?: PractitionerLedgerEntryType;
+  balanceBucket?: PractitionerLedgerBalanceBucket;
+  currencyCode?: string;
+  referenceType?: string;
+  paymentId?: string;
+  settlementId?: string;
+  effectiveFrom?: string;
+  effectiveTo?: string;
 }
 
 export type PractitionerSettlementStatus =
@@ -111,4 +119,8 @@ export interface PractitionerSettlementListResponse {
 export interface PractitionerSettlementListParams {
   page?: number;
   limit?: number;
+  status?: PractitionerSettlementStatus;
+  currencyCode?: string;
+  createdFrom?: string;
+  createdTo?: string;
 }

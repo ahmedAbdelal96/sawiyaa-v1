@@ -5,8 +5,8 @@
   },
   "hero": {
     "eyebrow": "Your journey",
-    "title": "A calm place to see what matters next",
-    "note": "This screen brings together your next session, payment follow-up, support status, and recent care activity in one simple view."
+    "title": "Start from the next step that fits you",
+    "note": "Review your next session, payments, and support from one place."
   },
   "summary": {
     "suggested": {
@@ -18,73 +18,80 @@
       "BOOK_NEXT_SESSION": "Book your next session"
     },
     "chips": {
-      "pendingPayment": "A payment still needs your attention",
+      "pendingPayment": "A payment needs your attention",
       "nextSessionAt": "Next session: {date}",
       "supportOpen": "Support is following up with you",
       "lastAssessment": "Last check-in: {date}"
     }
   },
   "primaryAction": {
-    "eyebrow": "Recommended next step"
+    "eyebrow": "Suggested step"
   },
   "upcoming": {
     "pendingPayment": {
       "heading": "Pending payment",
-      "cta": "Complete payment"
+      "cta": "Complete payment",
+      "noPayment": "No pending payments",
+      "zeroHint": "No pending payments"
     },
     "session": {
       "heading": "Upcoming session",
-      "cta": "Open session details"
+      "cta": "Open session details",
+      "noSession": "No upcoming sessions"
     },
     "instantBooking": {
-      "heading": "Pending instant booking request",
+      "heading": "Active instant booking request",
       "note": "A request with {practitioner} is still active.",
       "duration": "{n} min",
       "expiresAt": "Expires {date}"
     },
     "empty": {
-      "heading": "Nothing urgent right now",
-      "note": "When there is something that needs your attention, it will appear here."
+      "heading": "No upcoming sessions",
+      "note": "Once you book a session, it will appear here with the time and next steps.",
+      "noSession": "No upcoming sessions"
     }
   },
   "recent": {
     "heading": "Recent activity",
-    "note": "A short view of your care activity, so you can pick up where you left off.",
+    "note": "Quick access to your latest activity.",
     "sessions": {
-      "heading": "Recent sessions",
-      "viewAll": "View all"
+      "heading": "Sessions",
+      "viewAll": "View all",
+      "zeroHint": "No sessions yet"
     },
     "payments": {
-      "heading": "Recent payments",
+      "heading": "Payments",
       "viewAll": "View all",
       "viewSession": "View session"
     },
     "assessments": {
-      "heading": "Recent check-ins",
+      "heading": "Check-ins",
       "completedAt": "Completed {date}",
       "score": "Score: {score}",
-      "viewResult": "View result"
+      "viewResult": "View result",
+      "viewAll": "View all"
     },
     "matching": {
-      "heading": "Recent matching",
+      "heading": "Matching",
       "recommendation": "Recommended practitioner: {practitioner}",
-      "noRecommendation": "No recommendation snapshot available yet.",
+      "noRecommendation": "No recommendation yet.",
       "completedAt": "Completed {date}",
-      "viewMatching": "View matching result",
-      "viewPractitioner": "View practitioner"
+      "viewMatching": "View result",
+      "viewPractitioner": "View practitioner",
+      "viewAll": "View all"
     },
     "empty": {
-      "heading": "Your recent activity will appear here",
-      "note": "Once you book sessions, complete check-ins, or make payments, this area will help you return to them quickly."
+      "heading": "No recent activity",
+      "note": "Bookings, payments, and support will appear here once you use them."
     }
   },
   "support": {
     "heading": "Support",
     "openTicket": "You still have an open support ticket connected to your account.",
-    "viewTicket": "Open support ticket",
+    "viewTicket": "Open ticket",
     "updatedAt": "Updated {date}",
-    "empty": "If you need help, you can still reach support from your current patient area.",
-    "chatCta": "Open support",
+    "empty": "If you have an issue with booking, payment, or joining a session, support can help.",
+    "chatCta": "Contact support",
     "categories": {
       "BOOKING": "Booking",
       "PAYMENT": "Payment",
@@ -104,13 +111,16 @@
       "ESCALATED": "Escalated",
       "RESOLVED": "Resolved",
       "CLOSED": "Closed"
-    }
+    },
+    "zeroHint": "No open requests",
+    "openTicketBody": "You have an open support request. You can follow the latest update here.",
+    "sectionTitle": "Support is following up"
   },
   "quickLinks": {
     "careHeading": "Continue your care",
-    "careNote": "Start from the action that helps you move forward with a little less effort.",
-    "utilityHeading": "Useful shortcuts",
-    "utilityNote": "Keep practical tools nearby without letting them take over the whole journey.",
+    "careNote": "Start from the step that moves you forward.",
+    "utilityHeading": "Quick access",
+    "utilityNote": "Important tools in one place.",
     "sessions": "Sessions",
     "payments": "Payments",
     "practitioners": "Practitioners",
@@ -118,45 +128,46 @@
     "support": "Support"
   },
   "nextSteps": {
-    "moreHeading": "More helpful next steps",
-    "unavailable": "This next step is part of your journey, but its dedicated web screen is not ready yet.",
+    "moreHeading": "Other steps",
+    "unavailable": "This step is not available on the web yet.",
     "types": {
       "COMPLETE_PAYMENT": {
-        "title": "Complete your pending payment",
-        "note": "Finish this payment so your care plan can continue without interruption.",
+        "title": "Complete pending payment",
+        "note": "Finish this payment so your session can continue.",
         "cta": "Complete payment"
       },
       "JOIN_UPCOMING_SESSION": {
         "title": "Get ready for your upcoming session",
-        "note": "Open your session details to review the time and current status. A direct join flow is not available on the web yet.",
+        "note": "Review session details and current status.",
         "cta": "Open session details"
       },
       "VIEW_SUPPORT_TICKET": {
         "title": "Check your support follow-up",
-        "note": "Support still has an open ticket linked to your account.",
+        "note": "You have an open support ticket on your account.",
         "cta": "Open support"
       },
       "TAKE_ASSESSMENT": {
         "title": "Start a quick check-in",
-        "note": "A short check-in can help you understand your current needs before the next step.",
+        "note": "A short check-in can help clarify your current needs.",
         "cta": "Start check-in"
       },
       "START_GUIDED_MATCHING": {
         "title": "Start guided matching",
-        "note": "Guided matching can help you move toward a suitable practitioner.",
-        "cta": "Start matching"
+        "note": "Guided matching helps you find the right practitioner.",
+        "cta": "Help me choose"
       },
       "BOOK_NEXT_SESSION": {
         "title": "Book your next session",
-        "note": "Explore practitioners and choose the next session that fits your journey.",
+        "note": "Browse practitioners and choose what fits your journey.",
         "cta": "Browse practitioners"
       }
     }
   },
   "states": {
     "error": {
-      "heading": "We could not load your journey right now",
-      "note": "Please try again. Your sessions and payments are still available from the patient navigation.",
+      "eyebrow": "Loading error",
+      "heading": "We could not load your journey",
+      "note": "Please try again. Your sessions and payments are still available.",
       "retry": "Try again"
     }
   }

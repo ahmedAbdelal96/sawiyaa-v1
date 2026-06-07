@@ -44,6 +44,7 @@ import { SendCareChatMessageUseCase } from '../use-cases/send-care-chat-message.
 @RequireAccountStates(
   AccountStateRequirement.ACTIVE_ACCOUNT,
   AccountStateRequirement.PRACTITIONER_OTP_VERIFIED,
+  AccountStateRequirement.PRACTITIONER_APPROVED,
 )
 @Roles(AppRole.PRACTITIONER)
 @Controller('practitioners/me/care-chat')

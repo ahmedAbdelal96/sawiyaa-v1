@@ -1,15 +1,17 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Linking, ScrollView, StyleSheet, View } from "react-native";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import {
   Button,
   Card,
+  CompactActionRow,
   ErrorState,
   Header,
   LoadingState,
   Screen,
   StatusBadge,
+  StatusChip,
   Text,
 } from "../../../src/components/ui";
 import {
@@ -22,37 +24,37 @@ import {
 import type {
   PractitionerSessionDetails,
   PractitionerSessionJoinContract,
-  SessionStatus,
+  SessionPresentationStatus,
 } from "../../../src/features/practitioner/sessions/types";
 import { useTheme } from "../../../src/providers/ThemeProvider";
 import { normalizeAllowedExternalUrl } from "../../../src/lib/external-url";
 import { trackAnalyticsEvent } from "../../../src/lib/analytics";
 import { openSessionGeneralChat } from "../../../src/features/messages/api";
+import { getAppDirection } from "../../../src/i18n/direction";
+import { Linking, ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
 
-const COMPLETE_ALLOWED: SessionStatus[] = ["READY_TO_JOIN", "IN_PROGRESS"];
-const NO_SHOW_ALLOWED: SessionStatus[] = [
+const COMPLETE_ALLOWED: SessionPresentationStatus[] = ["JOINABLE", "IN_PROGRESS"];
+const NO_SHOW_ALLOWED: SessionPresentationStatus[] = [
   "UPCOMING",
-  "READY_TO_JOIN",
+  "JOINABLE",
   "IN_PROGRESS",
 ];
-const RUNTIME_CHECKABLE: SessionStatus[] = [
-  "CONFIRMED",
+const RUNTIME_CHECKABLE: SessionPresentationStatus[] = [
   "UPCOMING",
-  "READY_TO_JOIN",
+  "JOINABLE",
   "IN_PROGRESS",
 ];
-const PREPARE_ELIGIBLE: SessionStatus[] = [
-  "CONFIRMED",
-  "UPCOMING",
-  "READY_TO_JOIN",
-];
+const PREPARE_ELIGIBLE: SessionPresentationStatus[] = ["UPCOMING", "JOINABLE"];
 
 export default function PractitionerSessionDetailScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { t, i18n } = useTranslation();
   const { theme } = useTheme();
-  const locale = i18n.language?.startsWith("ar") ? "ar-SA" : "en-US";
+  const direction = getAppDirection(i18n.language);
+  const isRTL = direction === "rtl";
+  const locale = isRTL ? "ar-SA" : "en-US";
+  const textAlign = isRTL ? "right" : "left";
   const autoJoinKeyRef = useRef<string | null>(null);
 
   const sessionQuery = usePractitionerSession(id ?? null);
@@ -63,23 +65,37 @@ export default function PractitionerSessionDetailScreen() {
   const [feedback, setFeedback] = useState<string | null>(null);
   const [joinContract, setJoinContract] =
     useState<PractitionerSessionJoinContract | null>(null);
-
-  const session = sessionQuery.data?.item ?? null;
-
-  const resolveJoinContract = async (sessionId: string) => {
-    const payload = await joinMutation.mutateAsync(sessionId);
-    setJoinContract(payload.item);
-    return payload.item;
+  const handleBackToSessions = () => {
+    router.replace("/(practitioner)/sessions");
   };
 
+  const session = sessionQuery.data?.item ?? null;
+  const sessionId = session?.id ?? null;
+  const sessionPresentationStatus = session?.presentationStatus;
+  const sessionMode = session?.sessionMode;
+
+  const resolveJoinContract = useCallback(
+    async (sessionId: string) => {
+      const payload = await joinMutation.mutateAsync(sessionId);
+      setJoinContract(payload.item);
+      return payload.item;
+    },
+    [joinMutation],
+  );
+
   useEffect(() => {
-    if (!session || !shouldAutoCheckJoin(session)) {
+    if (
+      !sessionId ||
+      !sessionPresentationStatus ||
+      !sessionMode ||
+      !shouldAutoCheckJoin(sessionPresentationStatus, sessionMode)
+    ) {
       autoJoinKeyRef.current = null;
       setJoinContract(null);
       return;
     }
 
-    const nextKey = `${session.id}:${session.status}:${session.sessionMode}`;
+    const nextKey = `${sessionId}:${sessionPresentationStatus}:${sessionMode}`;
     if (autoJoinKeyRef.current === nextKey) {
       return;
     }
@@ -87,7 +103,7 @@ export default function PractitionerSessionDetailScreen() {
     autoJoinKeyRef.current = nextKey;
     let active = true;
 
-    resolveJoinContract(session.id).catch(() => {
+    resolveJoinContract(sessionId).catch(() => {
       if (active) {
         setJoinContract(null);
       }
@@ -96,7 +112,12 @@ export default function PractitionerSessionDetailScreen() {
     return () => {
       active = false;
     };
-  }, [session?.id, session?.status, session?.sessionMode]);
+  }, [
+    resolveJoinContract,
+    sessionId,
+    sessionPresentationStatus,
+    sessionMode,
+  ]);
 
   const sessionFacts = useMemo(() => {
     if (!session) {
@@ -130,6 +151,7 @@ export default function PractitionerSessionDetailScreen() {
       <Screen bg="background">
         <Header
           showBack
+          onBack={handleBackToSessions}
           title={t("practitioner.sessionDetail.title")}
         />
         <LoadingState fullScreen />
@@ -142,6 +164,7 @@ export default function PractitionerSessionDetailScreen() {
       <Screen bg="background">
         <Header
           showBack
+          onBack={handleBackToSessions}
           title={t("practitioner.sessionDetail.title")}
         />
         <ErrorState fullScreen onRetry={sessionQuery.refetch} />
@@ -149,16 +172,17 @@ export default function PractitionerSessionDetailScreen() {
     );
   }
 
-  const canComplete = COMPLETE_ALLOWED.includes(session.status);
-  const canNoShow = NO_SHOW_ALLOWED.includes(session.status);
+  const canComplete = COMPLETE_ALLOWED.includes(session.presentationStatus);
+  const canNoShow = NO_SHOW_ALLOWED.includes(session.presentationStatus);
   const canPrepare = canShowPrepareAction(session, joinContract);
   const canCheckJoin = canShowJoinCheckAction(session, joinContract);
+  const canJoinNow = session.joinAvailability?.canJoin === true;
   const canOpenMessages =
-    session.status === "READY_TO_JOIN" ||
-    session.status === "IN_PROGRESS" ||
-    session.status === "COMPLETED";
+    session.chatAvailability?.canRead === true;
+  const messagesAreReadOnly = session.chatAvailability.readOnly;
   const joinUrl = buildJoinUrl(joinContract);
-  const currentState = getCurrentStateContent(session, joinContract, t);
+  const canOpenJoinAction = canJoinNow && Boolean(joinUrl);
+  const stateCopy = getSessionStateCopy(session, joinContract, locale, t);
 
   const handlePrepare = async () => {
     setFeedback(null);
@@ -169,7 +193,7 @@ export default function PractitionerSessionDetailScreen() {
           ? t("practitioner.sessionDetail.prepareReady")
           : t("practitioner.sessionDetail.preparePending"),
       );
-      if (shouldAutoCheckJoin(session)) {
+      if (shouldAutoCheckJoin(session.presentationStatus, session.sessionMode)) {
         await resolveJoinContract(session.id).catch(() => {});
       }
     } catch {
@@ -181,12 +205,10 @@ export default function PractitionerSessionDetailScreen() {
     setFeedback(null);
     try {
       const contract = await resolveJoinContract(session.id);
-
       if (contract.canJoin && buildJoinUrl(contract)) {
         setFeedback(t("practitioner.sessionDetail.openRoomReady"));
         return;
       }
-
       setFeedback(
         t("practitioner.sessionDetail.joinBlocked", {
           reason: t(
@@ -200,19 +222,14 @@ export default function PractitionerSessionDetailScreen() {
   };
 
   const handleOpenRoom = async () => {
-    const nextUrl = joinUrl;
-    if (!nextUrl) {
-      return;
-    }
-
+    if (!canOpenJoinAction || !joinUrl) return;
     setFeedback(null);
     try {
-      const safeJoinUrl = normalizeAllowedExternalUrl(nextUrl);
+      const safeJoinUrl = normalizeAllowedExternalUrl(joinUrl);
       if (!safeJoinUrl) {
         setFeedback(t("practitioner.sessionDetail.joinError"));
         return;
       }
-
       await Linking.openURL(safeJoinUrl);
       trackAnalyticsEvent("session_joined", {
         role: "practitioner",
@@ -227,15 +244,12 @@ export default function PractitionerSessionDetailScreen() {
   };
 
   const handleOpenMessages = async () => {
-    if (!canOpenMessages) {
-      return;
-    }
-
+    if (!canOpenMessages) return;
     try {
       const payload = await openSessionGeneralChat(session.id);
       router.push(`/(practitioner)/messages/${payload.item.conversationId}` as any);
     } catch {
-      setFeedback(t("practitioner.sessionDetail.openMessagesError", "Could not open messages."));
+      setFeedback(t("practitioner.sessionDetail.openMessagesError"));
     }
   };
 
@@ -263,82 +277,186 @@ export default function PractitionerSessionDetailScreen() {
     }
   };
 
+  const primaryAction = canOpenJoinAction
+    ? {
+        title: t("practitioner.sessionDetail.openRoom"),
+        onPress: () => void handleOpenRoom(),
+        disabled: false,
+      }
+    : canPrepare
+      ? {
+          title: prepareMutation.isPending
+            ? t("practitioner.sessionDetail.preparing")
+            : t("practitioner.sessionDetail.prepare"),
+          onPress: () => void handlePrepare(),
+          disabled: prepareMutation.isPending,
+        }
+      : canCheckJoin
+        ? {
+            title: joinMutation.isPending
+              ? t("practitioner.sessionDetail.checkingJoin")
+              : t("practitioner.sessionDetail.checkJoin"),
+            onPress: () => void handleCheckJoin(),
+            disabled: joinMutation.isPending,
+          }
+        : canComplete
+          ? {
+              title: completeMutation.isPending
+                ? t("practitioner.sessionDetail.completing")
+                : t("practitioner.sessionDetail.markCompleted"),
+              onPress: () => void handleComplete(),
+              disabled: completeMutation.isPending,
+            }
+          : null;
+
   return (
     <Screen bg="background">
       <Header
         showBack
+        onBack={handleBackToSessions}
         title={t("practitioner.sessionDetail.title")}
       />
 
       <ScrollView contentContainerStyle={styles.content}>
-        <Card variant="elevated" padding="lg" style={styles.heroCard}>
-          <View style={styles.heroTopRow}>
-            <View style={styles.heroTextWrap}>
-              <Text weight="bold" style={styles.heroTitle}>
+        <Card variant="elevated" padding="md" style={styles.summaryCard}>
+          <View
+            style={[
+              styles.summaryTopRow,
+              { flexDirection: isRTL ? "row-reverse" : "row" },
+            ]}
+          >
+            <View
+              style={[
+                styles.summaryTextWrap,
+                { alignItems: isRTL ? "flex-end" : "flex-start" },
+              ]}
+            >
+              <Text
+                weight="600"
+                style={[styles.summaryName, { textAlign }]}
+                numberOfLines={1}
+              >
                 {session.patient?.displayName ??
                   t("practitioner.sessions.unknownPatient")}
               </Text>
-              <Text
-                color={theme.colors.textSecondary}
-                style={styles.heroSubtitle}
-              >
-                {t("practitioner.sessionDetail.heroSubtitle", {
-                  sessionCode: session.sessionCode,
-                })}
-              </Text>
             </View>
             <StatusBadge
-              label={t(`practitioner.sessionStatus.${session.status}`)}
-              status={mapSessionBadge(session.status)}
+              label={t(`practitioner.presentationStatus.${session.presentationStatus}`)}
+              status={mapSessionBadge(session.presentationStatus)}
             />
           </View>
 
-          <View style={styles.heroMetaStack}>
-            <Text color={theme.colors.textSecondary} style={styles.heroMeta}>
-              {session.scheduledStartAt
-                ? t("practitioner.sessionDetail.sessionAt", {
-                    datetime: formatSessionDate(
-                      session.scheduledStartAt,
-                      locale,
-                    ),
-                  })
-                : t("practitioner.sessions.noSchedule")}
-            </Text>
-            <Text color={theme.colors.textSecondary} style={styles.heroMeta}>
-              {t("practitioner.sessionDetail.heroMode", {
-                mode: t(
-                  `practitioner.sessionDetail.modeValue.${session.sessionMode}`,
-                ),
-              })}
-            </Text>
-          </View>
-        </Card>
+          <Text color={theme.colors.textSecondary} style={[styles.summaryMeta, { textAlign }]}>
+            {session.scheduledStartAt
+              ? t("practitioner.sessionDetail.sessionAt", {
+                  datetime: formatSessionDate(session.scheduledStartAt, locale),
+                })
+              : t("practitioner.sessions.noSchedule")}
+          </Text>
 
-        <Card variant="outlined" padding="lg" style={styles.sectionCard}>
-          <Text weight="600" style={styles.sectionTitle}>
-            {t("practitioner.sessionDetail.currentState")}
-          </Text>
-          <Text weight="600" style={styles.stateTitle}>
-            {currentState.title}
-          </Text>
-          <Text color={theme.colors.textSecondary} style={styles.sectionBody}>
-            {currentState.note}
-          </Text>
           <View
             style={[
-              styles.nextStepBox,
-              { backgroundColor: theme.colors.surfaceSecondary },
+              styles.summaryChipsRow,
+              { flexDirection: isRTL ? "row-reverse" : "row" },
             ]}
           >
-            <Text color={theme.colors.textMuted} style={styles.eyebrow}>
-              {t("practitioner.sessionDetail.nextStepLabel")}
-            </Text>
-            <Text weight="600" style={styles.nextStepValue}>
-              {currentState.nextStep}
-            </Text>
+            <StatusChip
+              label={t("practitioner.sessions.duration", {
+                minutes: session.durationMinutes,
+              })}
+              tone="default"
+              showDot={false}
+            />
+            <StatusChip
+              label={t(
+                `practitioner.sessionDetail.modeValue.${session.sessionMode}`,
+              )}
+              tone="info"
+              showDot={false}
+            />
+            <StatusChip
+              label={getFlowTypeLabel(session.flowType, t)}
+              tone="default"
+              showDot={false}
+            />
           </View>
+
+          <Text
+            color={theme.colors.textMuted}
+            style={[styles.summaryCode, { textAlign }]}
+            numberOfLines={1}
+          >
+            {t("practitioner.sessionDetail.sessionCodeLabel", {
+              sessionCode: session.sessionCode,
+            })}
+          </Text>
+        </Card>
+
+        <Card variant="outlined" padding="md" style={styles.sectionCard}>
+          <Text weight="600" style={[styles.sectionTitle, { textAlign }]}>
+            {t("practitioner.sessionDetail.actionsTitle")}
+          </Text>
+          <Text color={theme.colors.textSecondary} style={[styles.actionSummary, { textAlign }]}>
+            {stateCopy.summary}
+          </Text>
+          {stateCopy.hint ? (
+            <Text color={theme.colors.textMuted} style={[styles.helperText, { textAlign }]}>
+              {stateCopy.hint}
+            </Text>
+          ) : null}
+
+          <View style={styles.actionColumn}>
+            {primaryAction ? (
+              <Button
+                title={primaryAction.title}
+                onPress={primaryAction.onPress}
+                disabled={primaryAction.disabled}
+              />
+            ) : null}
+
+            {canOpenMessages ? (
+              <View style={styles.messagesBlock}>
+                <SessionSecondaryActionRow
+                  label={t("practitioner.sessionDetail.messages")}
+                  onPress={() => void handleOpenMessages()}
+                  isRTL={isRTL}
+                  textAlign={textAlign}
+                />
+                {messagesAreReadOnly ? (
+                  <Text
+                    color={theme.colors.textSecondary}
+                    style={[styles.helperText, { textAlign }]}
+                  >
+                    {t("practitioner.sessionDetail.messagesReadOnly")}
+                  </Text>
+                ) : null}
+              </View>
+            ) : null}
+
+            {canNoShow ? (
+              <CompactActionRow
+                label={
+                  noShowMutation.isPending
+                    ? t("practitioner.sessionDetail.markingNoShow")
+                    : t("practitioner.sessionDetail.markNoShow")
+                }
+                onPress={() => void handleNoShow()}
+              />
+            ) : null}
+          </View>
+
+          {joinMutation.isPending ? (
+            <Text color={theme.colors.textSecondary} style={[styles.helperText, { textAlign }]}>
+              {t("practitioner.sessionDetail.checkingJoin")}
+            </Text>
+          ) : null}
+          {prepareMutation.isPending ? (
+            <Text color={theme.colors.textSecondary} style={[styles.helperText, { textAlign }]}>
+              {t("practitioner.sessionDetail.preparing")}
+            </Text>
+          ) : null}
           {joinContract?.blockedReason ? (
-            <Text color={theme.colors.textSecondary} style={styles.helperText}>
+            <Text color={theme.colors.textSecondary} style={[styles.helperText, { textAlign }]}>
               {t("practitioner.sessionDetail.joinBlocked", {
                 reason: t(
                   `practitioner.sessionDetail.blocked.${joinContract.blockedReason}` as const,
@@ -346,126 +464,25 @@ export default function PractitionerSessionDetailScreen() {
               })}
             </Text>
           ) : null}
-        </Card>
-
-        <Card variant="outlined" padding="lg" style={styles.sectionCard}>
-          <Text weight="600" style={styles.sectionTitle}>
-            {t("practitioner.sessionDetail.actionsTitle")}
-          </Text>
-          <Text color={theme.colors.textSecondary} style={styles.sectionBody}>
-            {getActionSummary(session, joinContract, t)}
-          </Text>
-
-          {joinMutation.isPending ? (
-            <Text color={theme.colors.textSecondary} style={styles.helperText}>
-              {t("practitioner.sessionDetail.checkingJoin")}
+          {!session.joinAvailability?.canJoin &&
+          session.joinAvailability?.availableAt &&
+          session.presentationStatus === "UPCOMING" ? (
+            <Text
+              color={theme.colors.textSecondary}
+              style={[styles.helperText, { textAlign }]}
+            >
+              {t("practitioner.sessionDetail.joinAvailableAt", {
+                datetime: formatSessionDate(
+                  session.joinAvailability.availableAt,
+                  locale,
+                ),
+              })}
             </Text>
           ) : null}
-
-          {prepareMutation.isPending ? (
-            <Text color={theme.colors.textSecondary} style={styles.helperText}>
-              {t("practitioner.sessionDetail.preparing")}
-            </Text>
-          ) : null}
-
-          <View style={styles.actionColumn}>
-            {joinUrl ? (
-              <Button
-                title={t("practitioner.sessionDetail.openRoom")}
-                onPress={() => void handleOpenRoom()}
-              />
-            ) : null}
-
-            {canPrepare ? (
-              <Button
-                title={
-                  prepareMutation.isPending
-                    ? t("practitioner.sessionDetail.preparing")
-                    : t("practitioner.sessionDetail.prepare")
-                }
-                onPress={() => void handlePrepare()}
-                disabled={prepareMutation.isPending}
-              />
-            ) : null}
-
-            {canCheckJoin && !joinUrl ? (
-              <Button
-                title={
-                  joinMutation.isPending
-                    ? t("practitioner.sessionDetail.checkingJoin")
-                    : t("practitioner.sessionDetail.checkJoin")
-                }
-                variant="secondary"
-                onPress={() => void handleCheckJoin()}
-                disabled={joinMutation.isPending}
-              />
-            ) : null}
-
-            {canOpenMessages ? (
-              <Button
-                title={t("practitioner.sessionDetail.messages", "Messages")}
-                variant="secondary"
-                onPress={() => void handleOpenMessages()}
-              />
-            ) : null}
-
-            {!joinUrl && !canPrepare && !canCheckJoin ? (
-              <View
-                style={[
-                  styles.emptyActionBox,
-                  { backgroundColor: theme.colors.surfaceSecondary },
-                ]}
-              >
-                <Text color={theme.colors.textSecondary}>
-                  {t("practitioner.sessionDetail.noImmediateAction")}
-                </Text>
-              </View>
-            ) : null}
-          </View>
-
-          <View style={styles.closeoutWrap}>
-            <Text weight="600" style={styles.subsectionTitle}>
-              {t("practitioner.sessionDetail.closeout")}
-            </Text>
-            {canComplete || canNoShow ? (
-              <View style={styles.actionColumn}>
-                {canComplete ? (
-                  <Button
-                    title={
-                      completeMutation.isPending
-                        ? t("practitioner.sessionDetail.completing")
-                        : t("practitioner.sessionDetail.markCompleted")
-                    }
-                    onPress={() => void handleComplete()}
-                    disabled={completeMutation.isPending}
-                  />
-                ) : null}
-                {canNoShow ? (
-                  <Button
-                    title={
-                      noShowMutation.isPending
-                        ? t("practitioner.sessionDetail.markingNoShow")
-                        : t("practitioner.sessionDetail.markNoShow")
-                    }
-                    variant="secondary"
-                    onPress={() => void handleNoShow()}
-                    disabled={noShowMutation.isPending}
-                  />
-                ) : null}
-              </View>
-            ) : (
-              <Text
-                color={theme.colors.textSecondary}
-                style={styles.helperText}
-              >
-                {getCloseoutSummary(session, t)}
-              </Text>
-            )}
-          </View>
         </Card>
 
-        <Card variant="outlined" padding="lg" style={styles.sectionCard}>
-          <Text weight="600" style={styles.sectionTitle}>
+        <Card variant="outlined" padding="md" style={styles.sectionCard}>
+          <Text weight="600" style={[styles.sectionTitle, { textAlign }]}>
             {t("practitioner.sessionDetail.sessionFacts")}
           </Text>
           {sessionFacts.map((fact, index) => (
@@ -498,29 +515,99 @@ function SummaryRow({
   isLast?: boolean;
 }) {
   const { theme } = useTheme();
+  const { i18n } = useTranslation();
+  const isRTL = getAppDirection(i18n.language) === "rtl";
+  const textAlign = isRTL ? "right" : "left";
 
   return (
     <View
       style={[
         styles.summaryRow,
+        { flexDirection: isRTL ? "row-reverse" : "row" },
         {
           borderBottomColor: theme.colors.borderLight,
           borderBottomWidth: isLast ? 0 : 1,
         },
       ]}
     >
-      <Text color={theme.colors.textMuted}>{label}</Text>
-      <Text weight="600" style={styles.summaryValue}>
+      <Text color={theme.colors.textMuted} style={{ textAlign }}>
+        {label}
+      </Text>
+      <Text weight="600" style={[styles.summaryValue, { textAlign }]}>
         {value}
       </Text>
     </View>
   );
 }
 
-function shouldAutoCheckJoin(session: PractitionerSessionDetails) {
+function SessionSecondaryActionRow({
+  label,
+  onPress,
+  isRTL,
+  textAlign,
+}: {
+  label: string;
+  onPress: () => void;
+  isRTL: boolean;
+  textAlign: "left" | "right";
+}) {
+  const { theme } = useTheme();
+
   return (
-    session.sessionMode === "VIDEO" &&
-    RUNTIME_CHECKABLE.includes(session.status)
+    <TouchableOpacity
+      activeOpacity={0.8}
+      onPress={onPress}
+      accessibilityRole="button"
+      style={[
+        styles.secondaryActionRow,
+        {
+          borderColor: theme.colors.borderLight,
+          backgroundColor: theme.colors.surface,
+          shadowColor: theme.colors.shadow ?? "#000000",
+        },
+        {
+          flexDirection: isRTL ? "row-reverse" : "row",
+        },
+      ]}
+    >
+      <View
+        style={[
+          styles.secondaryActionContent,
+          { flexDirection: isRTL ? "row-reverse" : "row" },
+        ]}
+      >
+        <View style={[styles.secondaryActionIconBox, { backgroundColor: theme.colors.surfaceSecondary }]}>
+          <Ionicons
+            name="chatbubbles-outline"
+            size={16}
+            color={theme.colors.primary}
+          />
+        </View>
+        <Text
+          color={theme.colors.textPrimary}
+          weight="600"
+          style={[styles.secondaryActionLabel, { textAlign }]}
+          numberOfLines={1}
+        >
+          {label}
+        </Text>
+      </View>
+      <Ionicons
+        name={isRTL ? "chevron-back" : "chevron-forward"}
+        size={18}
+        color={theme.colors.textSecondary}
+      />
+    </TouchableOpacity>
+  );
+}
+
+function shouldAutoCheckJoin(
+  presentationStatus: SessionPresentationStatus,
+  sessionMode: PractitionerSessionDetails["sessionMode"],
+) {
+  return (
+    sessionMode === "VIDEO" &&
+    RUNTIME_CHECKABLE.includes(presentationStatus)
   );
 }
 
@@ -528,17 +615,12 @@ function canShowPrepareAction(
   session: PractitionerSessionDetails,
   joinContract: PractitionerSessionJoinContract | null,
 ) {
-  if (session.sessionMode !== "VIDEO") {
+  if (session.sessionMode !== "VIDEO") return false;
+  if (!PREPARE_ELIGIBLE.includes(session.presentationStatus)) return false;
+  if (session.joinAvailability?.blockedReason === "SESSION_JOIN_WINDOW_CLOSED") {
     return false;
   }
-
-  if (!PREPARE_ELIGIBLE.includes(session.status)) {
-    return false;
-  }
-
-  if (joinContract?.canJoin) {
-    return false;
-  }
+  if (joinContract?.canJoin) return false;
 
   return (
     !joinContract ||
@@ -551,14 +633,14 @@ function canShowJoinCheckAction(
   session: PractitionerSessionDetails,
   joinContract: PractitionerSessionJoinContract | null,
 ) {
-  if (session.sessionMode !== "VIDEO") {
+  if (session.sessionMode !== "VIDEO") return false;
+  if (!RUNTIME_CHECKABLE.includes(session.presentationStatus)) return false;
+  if (session.joinAvailability?.blockedReason === "SESSION_JOIN_WINDOW_CLOSED") {
     return false;
   }
-
-  if (!RUNTIME_CHECKABLE.includes(session.status)) {
+  if (joinContract?.blockedReason === "SESSION_JOIN_WINDOW_CLOSED") {
     return false;
   }
-
   return !joinContract?.canJoin;
 }
 
@@ -566,11 +648,9 @@ function buildJoinUrl(joinContract: PractitionerSessionJoinContract | null) {
   if (!joinContract?.canJoin || !joinContract.roomUrl) {
     return null;
   }
-
   if (joinContract.joinToken && joinContract.provider === "DAILY") {
     return `${joinContract.roomUrl}${joinContract.roomUrl.includes("?") ? "&" : "?"}t=${encodeURIComponent(joinContract.joinToken)}`;
   }
-
   return joinContract.roomUrl;
 }
 
@@ -592,11 +672,9 @@ function getFlowTypeLabel(
   if (flowType === "SCHEDULED") {
     return t("practitioner.sessionDetail.flowTypeValue.SCHEDULED");
   }
-
   if (flowType === "INSTANT") {
     return t("practitioner.sessionDetail.flowTypeValue.INSTANT");
   }
-
   return t("practitioner.sessionDetail.flowTypeValue.DEFAULT");
 }
 
@@ -631,259 +709,190 @@ function formatTimezoneLabel(
   });
 }
 
-function getCurrentStateContent(
+function getSessionStateCopy(
   session: PractitionerSessionDetails,
   joinContract: PractitionerSessionJoinContract | null,
+  locale: string,
   t: (key: string, options?: Record<string, unknown>) => string,
 ) {
-  const statusLabel = t(`practitioner.sessionStatus.${session.status}`);
-
-  switch (session.status) {
-    case "PENDING_PAYMENT":
-      return {
-        title: statusLabel,
-        note: t("practitioner.sessionDetail.stateNote.PENDING_PAYMENT"),
-        nextStep: t("practitioner.sessionDetail.nextStep.waitForPayment"),
-      };
-    case "PENDING_PRACTITIONER_RESPONSE":
-      return {
-        title: statusLabel,
-        note: t(
-          "practitioner.sessionDetail.stateNote.PENDING_PRACTITIONER_RESPONSE",
-        ),
-        nextStep: t("practitioner.sessionDetail.nextStep.waitForConfirmation"),
-      };
-    case "CONFIRMED":
+  switch (session.presentationStatus) {
     case "UPCOMING":
       return {
-        title: statusLabel,
-        note:
-          joinContract?.blockedReason === "SESSION_RUNTIME_NOT_PREPARED"
-            ? t("practitioner.sessionDetail.stateNote.UPCOMING_NEEDS_PREPARE")
-            : t("practitioner.sessionDetail.stateNote.UPCOMING"),
-        nextStep:
-          joinContract?.blockedReason === "SESSION_RUNTIME_NOT_PREPARED"
-            ? t("practitioner.sessionDetail.nextStep.prepareRoom")
-            : t("practitioner.sessionDetail.nextStep.waitForWindow"),
+        summary: t("practitioner.sessionDetail.stateNote.UPCOMING"),
+        hint:
+          !session.joinAvailability?.canJoin &&
+          session.joinAvailability?.availableAt
+            ? t("practitioner.sessionDetail.joinAvailableAt", {
+                datetime: formatSessionDate(
+                  session.joinAvailability.availableAt,
+                  locale,
+                ),
+              })
+            : null,
       };
-    case "READY_TO_JOIN":
+    case "JOINABLE":
       return {
-        title: statusLabel,
-        note: joinContract?.canJoin
+        summary: joinContract?.canJoin
           ? t("practitioner.sessionDetail.stateNote.READY_TO_JOIN_NOW")
-          : joinContract?.blockedReason === "SESSION_RUNTIME_NOT_PREPARED"
-            ? t("practitioner.sessionDetail.stateNote.READY_TO_JOIN_PREPARE")
-            : t("practitioner.sessionDetail.stateNote.READY_TO_JOIN_CHECK"),
-        nextStep: joinContract?.canJoin
-          ? t("practitioner.sessionDetail.nextStep.openRoom")
-          : joinContract?.blockedReason === "SESSION_RUNTIME_NOT_PREPARED"
-            ? t("practitioner.sessionDetail.nextStep.prepareRoom")
-            : t("practitioner.sessionDetail.nextStep.checkJoin"),
+          : t("practitioner.sessionDetail.stateNote.READY_TO_JOIN_CHECK"),
+        hint:
+          joinContract?.canJoin ||
+          joinContract?.blockedReason !== "SESSION_RUNTIME_NOT_PREPARED"
+            ? null
+            : t("practitioner.sessionDetail.stateNote.READY_TO_JOIN_PREPARE"),
       };
     case "IN_PROGRESS":
       return {
-        title: statusLabel,
-        note: joinContract?.canJoin
+        summary: joinContract?.canJoin
           ? t("practitioner.sessionDetail.stateNote.IN_PROGRESS_OPEN")
           : t("practitioner.sessionDetail.stateNote.IN_PROGRESS"),
-        nextStep: joinContract?.canJoin
-          ? t("practitioner.sessionDetail.nextStep.openRoom")
-          : t("practitioner.sessionDetail.nextStep.checkJoin"),
+        hint: null,
       };
     case "COMPLETED":
       return {
-        title: statusLabel,
-        note: t("practitioner.sessionDetail.stateNote.COMPLETED"),
-        nextStep: t("practitioner.sessionDetail.nextStep.reviewOnly"),
-      };
-    case "NO_SHOW":
-      return {
-        title: statusLabel,
-        note: t("practitioner.sessionDetail.stateNote.NO_SHOW"),
-        nextStep: t("practitioner.sessionDetail.nextStep.reviewOnly"),
+        summary: t("practitioner.sessionDetail.noImmediateAction"),
+        hint: null,
       };
     case "CANCELLED":
       return {
-        title: statusLabel,
-        note: t("practitioner.sessionDetail.stateNote.CANCELLED"),
-        nextStep: t("practitioner.sessionDetail.nextStep.reviewOnly"),
+        summary: t("practitioner.sessionDetail.stateNote.CANCELLED"),
+        hint: null,
       };
-    case "EXPIRED":
+    case "ENDED":
       return {
-        title: statusLabel,
-        note: t("practitioner.sessionDetail.stateNote.EXPIRED"),
-        nextStep: t("practitioner.sessionDetail.nextStep.reviewOnly"),
+        summary: t("practitioner.sessionDetail.noImmediateAction"),
+        hint: null,
       };
-    case "REFUND_PENDING":
+    case "UNAVAILABLE":
       return {
-        title: statusLabel,
-        note: t("practitioner.sessionDetail.stateNote.REFUND_PENDING"),
-        nextStep: t("practitioner.sessionDetail.nextStep.reviewOnly"),
-      };
-    case "REFUNDED":
-      return {
-        title: statusLabel,
-        note: t("practitioner.sessionDetail.stateNote.REFUNDED"),
-        nextStep: t("practitioner.sessionDetail.nextStep.reviewOnly"),
-      };
-    default:
-      return {
-        title: statusLabel,
-        note: t("practitioner.sessionDetail.stateNote.DEFAULT"),
-        nextStep: t("practitioner.sessionDetail.nextStep.reviewOnly"),
+        summary: t("practitioner.sessionDetail.stateNote.UNAVAILABLE"),
+        hint: null,
       };
   }
 }
 
-function getActionSummary(
-  session: PractitionerSessionDetails,
-  joinContract: PractitionerSessionJoinContract | null,
-  t: (key: string, options?: Record<string, unknown>) => string,
-) {
-  if (joinContract?.canJoin) {
-    return t("practitioner.sessionDetail.actionSummary.openRoom");
-  }
-
-  if (canShowPrepareAction(session, joinContract)) {
-    return t("practitioner.sessionDetail.actionSummary.prepareRoom");
-  }
-
-  if (canShowJoinCheckAction(session, joinContract)) {
-    return t("practitioner.sessionDetail.actionSummary.checkJoin");
-  }
-
-  if (
-    COMPLETE_ALLOWED.includes(session.status) ||
-    NO_SHOW_ALLOWED.includes(session.status)
-  ) {
-    return t("practitioner.sessionDetail.actionSummary.closeout");
-  }
-
-  return t("practitioner.sessionDetail.actionSummary.none");
-}
-
-function getCloseoutSummary(
-  session: PractitionerSessionDetails,
-  t: (key: string, options?: Record<string, unknown>) => string,
-) {
-  switch (session.status) {
-    case "COMPLETED":
-      return t("practitioner.sessionDetail.closeoutSummary.COMPLETED");
-    case "NO_SHOW":
-      return t("practitioner.sessionDetail.closeoutSummary.NO_SHOW");
-    case "CANCELLED":
-    case "EXPIRED":
-    case "REFUND_PENDING":
-    case "REFUNDED":
-      return t("practitioner.sessionDetail.closeoutSummary.CLOSED");
-    default:
-      return t("practitioner.sessionDetail.closeoutSummary.NOT_READY");
-  }
-}
-
-function mapSessionBadge(status: SessionStatus) {
+function mapSessionBadge(status: SessionPresentationStatus) {
   switch (status) {
-    case "READY_TO_JOIN":
+    case "JOINABLE":
     case "IN_PROGRESS":
       return "success" as const;
     case "UPCOMING":
-    case "CONFIRMED":
-    case "PENDING_PRACTITIONER_RESPONSE":
       return "warning" as const;
-    case "NO_SHOW":
-    case "CANCELLED":
-    case "EXPIRED":
-      return "error" as const;
-    default:
+    case "COMPLETED":
+    case "ENDED":
       return "default" as const;
+    case "CANCELLED":
+      return "error" as const;
+    case "UNAVAILABLE":
+      return "warning" as const;
   }
 }
 
 const styles = StyleSheet.create({
   content: {
-    paddingHorizontal: 20,
-    paddingTop: 14,
+    paddingHorizontal: 16,
+    paddingTop: 10,
     paddingBottom: 24,
-    gap: 14,
-  },
-  heroCard: {
     gap: 10,
   },
-  heroTopRow: {
+  summaryCard: {
+    gap: 8,
+  },
+  summaryTopRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
-    gap: 12,
-  },
-  heroTextWrap: {
-    flex: 1,
-  },
-  heroTitle: {
-    fontSize: 22,
-    marginBottom: 4,
-  },
-  heroSubtitle: {
-    fontSize: 14,
-  },
-  heroMetaStack: {
-    gap: 4,
-  },
-  heroMeta: {
-    fontSize: 14,
-    lineHeight: 22,
-  },
-  sectionCard: {
     gap: 10,
   },
+  summaryTextWrap: {
+    flex: 1,
+  },
+  summaryName: {
+    fontSize: 17,
+    marginBottom: 2,
+  },
+  summaryCode: {
+    fontSize: 11,
+    lineHeight: 16,
+    marginTop: 6,
+  },
+  summaryMeta: {
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  summaryChipsRow: {
+    flexDirection: "row",
+    gap: 8,
+    flexWrap: "wrap",
+  },
+  sectionCard: {
+    gap: 8,
+  },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 15,
   },
-  subsectionTitle: {
-    fontSize: 16,
-  },
-  stateTitle: {
-    fontSize: 16,
-  },
-  sectionBody: {
-    lineHeight: 22,
+  actionSummary: {
+    fontSize: 13,
+    lineHeight: 18,
   },
   nextStepBox: {
-    borderRadius: 14,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 9,
     gap: 4,
   },
   eyebrow: {
-    fontSize: 12,
+    fontSize: 11,
   },
   nextStepValue: {
-    fontSize: 15,
-    lineHeight: 22,
+    fontSize: 13,
+    lineHeight: 18,
   },
   helperText: {
-    lineHeight: 22,
+    fontSize: 12,
+    lineHeight: 18,
+  },
+  messagesBlock: {
+    gap: 6,
+    width: "100%",
   },
   actionColumn: {
-    gap: 10,
+    gap: 8,
   },
-  emptyActionBox: {
-    borderRadius: 14,
-    paddingHorizontal: 14,
+  secondaryActionRow: {
+    minHeight: 48,
     paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderWidth: 1,
+    borderRadius: 14,
+    justifyContent: "space-between",
+    alignItems: "center",
+    width: "100%",
   },
-  closeoutWrap: {
-    marginTop: 6,
+  secondaryActionContent: {
+    alignItems: "center",
     gap: 10,
+    flex: 1,
+  },
+  secondaryActionIconBox: {
+    width: 30,
+    height: 30,
+    borderRadius: 999,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  secondaryActionLabel: {
+    fontSize: 13,
+    lineHeight: 18,
+    flexShrink: 1,
   },
   summaryRow: {
-    flexDirection: "row",
     justifyContent: "space-between",
     gap: 12,
-    paddingVertical: 10,
+    paddingVertical: 8,
   },
   summaryValue: {
     flex: 1,
-    textAlign: "right",
+    fontSize: 13,
   },
 });
-

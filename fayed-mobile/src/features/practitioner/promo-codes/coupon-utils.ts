@@ -23,6 +23,8 @@ export interface PractitionerPromoCodeFormValues {
   isActive: boolean;
 }
 
+export type PractitionerPromoCodeDateField = "startsAt" | "endsAt";
+
 export function normalizePractitionerPromoCodeInput(value: string) {
   return value.trim().toUpperCase();
 }
@@ -65,6 +67,39 @@ export function parseOptionalDateValue(value: string) {
   }
 
   return trimmed;
+}
+
+export function parsePractitionerPromoCodeDate(value: string) {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  const parsed = new Date(trimmed);
+  if (Number.isNaN(parsed.getTime())) {
+    return null;
+  }
+
+  return parsed;
+}
+
+export function serializePractitionerPromoCodeDate(
+  date: Date,
+  field: PractitionerPromoCodeDateField,
+) {
+  const year = date.getFullYear();
+  const month = date.getMonth() + 1;
+  const day = date.getDate();
+  const time = field === "startsAt"
+    ? "00:00:00.000"
+    : "23:59:59.999";
+  const offsetMinutes = -date.getTimezoneOffset();
+  const offsetSign = offsetMinutes >= 0 ? "+" : "-";
+  const absoluteOffsetMinutes = Math.abs(offsetMinutes);
+  const offsetHours = String(Math.floor(absoluteOffsetMinutes / 60)).padStart(2, "0");
+  const offsetRemainder = String(absoluteOffsetMinutes % 60).padStart(2, "0");
+
+  return `${year.toString().padStart(4, "0")}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}T${time}${offsetSign}${offsetHours}:${offsetRemainder}`;
 }
 
 export function validatePractitionerPromoCodeForm(

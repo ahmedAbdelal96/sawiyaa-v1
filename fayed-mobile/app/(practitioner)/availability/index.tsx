@@ -35,8 +35,8 @@ import {
   useSetPresenceStatus,
 } from "../../../src/features/practitioner/presence/hooks";
 import type { PresenceStatus } from "../../../src/features/practitioner/presence/types";
-import { useTheme } from "../../../src/providers/ThemeProvider";
 import { trackAnalyticsEvent } from "../../../src/lib/analytics";
+import { useTheme } from "../../../src/providers/ThemeProvider";
 
 const STATUS_OPTIONS: PresenceStatus[] = ["ONLINE", "AWAY", "BUSY", "OFFLINE"];
 const DAY_KEYS = [
@@ -55,15 +55,6 @@ type DraftSlot = {
   durationMinutes: 30 | 60;
   startMinuteOfDay: number;
   endMinuteOfDay: number;
-};
-
-type SlotFormState = {
-  dayOfWeek: number;
-  mode: "add" | "edit";
-  targetKey?: string;
-  startTime: string;
-  endTime: string;
-  error: string | null;
 };
 
 type ExceptionFormState = {
@@ -101,33 +92,24 @@ export default function PractitionerAvailabilityScreen() {
   const updateException = useUpdateAvailabilityException();
 
   const [draftSlots, setDraftSlots] = useState<DraftSlot[]>([]);
-  const [slotForm, setSlotForm] = useState<SlotFormState | null>(null);
+  const [selectedDayOfWeek, setSelectedDayOfWeek] = useState(0);
+  const [selectedDuration, setSelectedDuration] = useState<30 | 60>(60);
   const [slotSaveMessage, setSlotSaveMessage] = useState<string | null>(null);
+
   const [exceptionFormOpen, setExceptionFormOpen] = useState(false);
-  const [exceptionForm, setExceptionForm] = useState<ExceptionFormState>(
-    EMPTY_EXCEPTION_FORM,
-  );
+  const [exceptionForm, setExceptionForm] =
+    useState<ExceptionFormState>(EMPTY_EXCEPTION_FORM);
   const [exceptionMessage, setExceptionMessage] = useState<string | null>(null);
 
   const hasLoadError = presenceQuery.isError || availabilityQuery.isError;
   const availabilityData = availabilityQuery.data ?? null;
-  const activeSlots = useMemo(
-    () => draftSlots.length,
-    [draftSlots.length],
-  );
-  const activeExceptions = useMemo(
-    () =>
-      (availabilityData?.exceptions ?? []).filter((item) => item.isActive),
-    [availabilityData?.exceptions],
-  );
 
   useEffect(() => {
     if (!availabilityData) {
       return;
     }
-
     setDraftSlots(buildDraftSlots(availabilityData));
-    setSlotForm(null);
+    setSelectedDayOfWeek((current) => (current >= 0 && current <= 6 ? current : 0));
     setExceptionFormOpen(false);
     setExceptionForm(EMPTY_EXCEPTION_FORM);
   }, [availabilityData]);
@@ -144,85 +126,115 @@ export default function PractitionerAvailabilityScreen() {
     [draftSlots],
   );
 
-  const openAddSlot = (dayOfWeek: number) => {
-    setSlotForm({
-      dayOfWeek,
-      mode: "add",
-      startTime: "09:00",
-      endTime: "17:00",
-      error: null,
-    });
-    setSlotSaveMessage(null);
-  };
+  const selectedDaySlots = useMemo(
+    () =>
+      draftSlots
+        .filter((slot) => slot.dayOfWeek === selectedDayOfWeek)
+        .sort((left, right) => left.startMinuteOfDay - right.startMinuteOfDay),
+    [draftSlots, selectedDayOfWeek],
+  );
 
-  const openEditSlot = (slot: DraftSlot) => {
-    setSlotForm({
-      dayOfWeek: slot.dayOfWeek,
-      mode: "edit",
-      targetKey: slot.key,
-      startTime: minutesToTime(slot.startMinuteOfDay, locale),
-      endTime: minutesToTime(slot.endMinuteOfDay, locale),
-      error: null,
-    });
-    setSlotSaveMessage(null);
-  };
+  const timeGrid = useMemo(() => buildTimeGrid(8 * 60, 22 * 60), []);
+  const activeExceptions = useMemo(
+    () => (availabilityData?.exceptions ?? []).filter((item) => item.isActive),
+    [availabilityData?.exceptions],
+  );
+  const weeklySlotsCount = draftSlots.length;
+  const isSaving = replaceWeeklyAvailability.isPending;
+  const isDirtyState = isDirty(availabilityData, draftSlots);
 
-  const cancelSlotForm = () => {
-    setSlotForm(null);
-  };
+  const currentStatus = presenceQuery.data?.presence.status ?? null;
+  const instantBookingEnabled =
+    presenceQuery.data?.presence.isInstantBookingEnabled ?? false;
 
-  const saveSlotForm = () => {
-    if (!slotForm) {
+  const summaryCounts = useMemo(() => {
+    const now = new Date();
+    const today = now.getDay();
+    let todayCount = 0;
+    let upcomingCount = 0;
+    let activeCount = 0;
+    let completedCount = 0;
+
+    for (const slot of draftSlots) {
+      if (slot.dayOfWeek === today) {
+        todayCount += 1;
+      }
+      if (slot.dayOfWeek > today) {
+        upcomingCount += 1;
+      }
+      if (slot.dayOfWeek === today && slot.endMinuteOfDay > now.getHours() * 60 + now.getMinutes()) {
+        activeCount += 1;
+      }
+      if (slot.dayOfWeek === today && slot.endMinuteOfDay <= now.getHours() * 60 + now.getMinutes()) {
+        completedCount += 1;
+      }
+    }
+
+    return {
+      todayCount,
+      upcomingCount,
+      activeCount,
+      completedCount,
+    };
+  }, [draftSlots]);
+
+  const toggleSlot = (startMinuteOfDay: number) => {
+    const endMinuteOfDay = startMinuteOfDay + selectedDuration;
+
+    const exact = draftSlots.find(
+      (slot) =>
+        slot.dayOfWeek === selectedDayOfWeek &&
+        slot.startMinuteOfDay === startMinuteOfDay &&
+        slot.durationMinutes === selectedDuration,
+    );
+
+    if (exact) {
+      setDraftSlots((current) => current.filter((slot) => slot.key !== exact.key));
+      setSlotSaveMessage(null);
       return;
     }
 
-    const parsed = validateSlotForm(slotForm, draftSlots, t);
-    if (!parsed.ok) {
-      setSlotForm((current) =>
-        current ? { ...current, error: parsed.error } : current,
+    const overlap = draftSlots.some(
+      (slot) =>
+        slot.dayOfWeek === selectedDayOfWeek &&
+        startMinuteOfDay < slot.endMinuteOfDay &&
+        endMinuteOfDay > slot.startMinuteOfDay,
+    );
+
+    if (overlap) {
+      setSlotSaveMessage(
+        t("practitioner.availability.validation.overlap", {
+          defaultValue: "لا يمكن إضافة وقت متداخل.",
+        }),
       );
       return;
     }
 
-    setDraftSlots((current) => {
-      const next =
-        slotForm.mode === "edit"
-          ? current.filter((item) => item.key !== slotForm.targetKey)
-          : [...current];
+    const newSlot: DraftSlot = {
+      key: `${selectedDayOfWeek}-${startMinuteOfDay}-${selectedDuration}`,
+      dayOfWeek: selectedDayOfWeek,
+      durationMinutes: selectedDuration,
+      startMinuteOfDay,
+      endMinuteOfDay,
+    };
 
-      const durationMinutes =
-        (parsed.endMinuteOfDay - parsed.startMinuteOfDay) as 30 | 60;
-
-      next.push({
-        key:
-          slotForm.mode === "edit" && slotForm.targetKey
-            ? slotForm.targetKey
-            : `${slotForm.dayOfWeek}-${parsed.startMinuteOfDay}`,
-        dayOfWeek: slotForm.dayOfWeek,
-        durationMinutes,
-        startMinuteOfDay: parsed.startMinuteOfDay,
-        endMinuteOfDay: parsed.endMinuteOfDay,
-      });
-
-      return next.sort(
+    setDraftSlots((current) =>
+      [...current, newSlot].sort(
         (left, right) =>
           left.dayOfWeek - right.dayOfWeek ||
           left.startMinuteOfDay - right.startMinuteOfDay,
-      );
-    });
-
-    setSlotForm(null);
-    setSlotSaveMessage(null);
-  };
-
-  const removeSlot = (slotKey: string) => {
-    setDraftSlots((current) => current.filter((item) => item.key !== slotKey));
+      ),
+    );
     setSlotSaveMessage(null);
   };
 
   const handleSaveSchedule = async () => {
     if (!availabilityData?.timezone) {
-      setSlotSaveMessage(t("practitioner.availability.saveError"));
+      setSlotSaveMessage(
+        t("practitioner.availability.saveError", {
+          defaultValue: "تعذر حفظ التغييرات.",
+        }),
+      );
       return;
     }
 
@@ -236,13 +248,21 @@ export default function PractitionerAvailabilityScreen() {
           endMinuteOfDay: slot.endMinuteOfDay,
         })),
       });
-      setSlotSaveMessage(t("practitioner.availability.saveSuccess"));
+      setSlotSaveMessage(
+        t("practitioner.availability.saveSuccess", {
+          defaultValue: "تم حفظ الجدول بنجاح.",
+        }),
+      );
       trackAnalyticsEvent("practitioner_availability_updated", {
         action: "weekly_slots_saved",
         slotsCount: draftSlots.length,
       });
     } catch {
-      setSlotSaveMessage(t("practitioner.availability.saveError"));
+      setSlotSaveMessage(
+        t("practitioner.availability.saveError", {
+          defaultValue: "تعذر حفظ التغييرات.",
+        }),
+      );
     }
   };
 
@@ -250,62 +270,8 @@ export default function PractitionerAvailabilityScreen() {
     if (!availabilityData) {
       return;
     }
-
     setDraftSlots(buildDraftSlots(availabilityData));
-    setSlotForm(null);
     setSlotSaveMessage(null);
-  };
-
-  const handleCreateException = async () => {
-    const validated = validateExceptionForm(exceptionForm, t);
-    if (!validated.ok) {
-      setExceptionForm((current) => ({ ...current, error: validated.error }));
-      return;
-    }
-
-    try {
-      const payload = {
-        type: exceptionForm.type,
-        startsAt: validated.startsAt,
-        endsAt: validated.endsAt,
-        reason: exceptionForm.reason.trim() || undefined,
-      };
-
-      if (exceptionForm.targetId) {
-        await updateException.mutateAsync({
-          exceptionId: exceptionForm.targetId,
-          payload,
-        });
-        trackAnalyticsEvent("practitioner_availability_updated", {
-          action: "exception_updated",
-          exceptionType: payload.type,
-        });
-      } else {
-        await createException.mutateAsync(payload);
-        trackAnalyticsEvent("practitioner_availability_updated", {
-          action: "exception_created",
-          exceptionType: payload.type,
-        });
-      }
-      setExceptionFormOpen(false);
-      setExceptionForm(EMPTY_EXCEPTION_FORM);
-      setExceptionMessage(t("practitioner.availability.exceptionSaveSuccess"));
-    } catch {
-      setExceptionMessage(t("practitioner.availability.exceptionSaveError"));
-    }
-  };
-
-  const handleDeleteException = async (exception: AvailabilityException) => {
-    try {
-      await deleteException.mutateAsync(exception.id);
-      setExceptionMessage(t("practitioner.availability.exceptionDeleteSuccess"));
-      trackAnalyticsEvent("practitioner_availability_updated", {
-        action: "exception_deleted",
-        exceptionType: exception.type,
-      });
-    } catch {
-      setExceptionMessage(t("practitioner.availability.exceptionDeleteError"));
-    }
   };
 
   const openAddException = () => {
@@ -327,9 +293,73 @@ export default function PractitionerAvailabilityScreen() {
     setExceptionMessage(null);
   };
 
-  const currentStatus = presenceQuery.data?.presence.status ?? null;
-  const instantBookingEnabled =
-    presenceQuery.data?.presence.isInstantBookingEnabled ?? false;
+  const handleCreateOrUpdateException = async () => {
+    const validated = validateExceptionForm(exceptionForm, t);
+    if (!validated.ok) {
+      setExceptionForm((current) => ({ ...current, error: validated.error }));
+      return;
+    }
+
+    const payload = {
+      type: exceptionForm.type,
+      startsAt: validated.startsAt,
+      endsAt: validated.endsAt,
+      reason: exceptionForm.reason.trim() || undefined,
+    };
+
+    try {
+      if (exceptionForm.targetId) {
+        await updateException.mutateAsync({
+          exceptionId: exceptionForm.targetId,
+          payload,
+        });
+        trackAnalyticsEvent("practitioner_availability_updated", {
+          action: "exception_updated",
+          exceptionType: payload.type,
+        });
+      } else {
+        await createException.mutateAsync(payload);
+        trackAnalyticsEvent("practitioner_availability_updated", {
+          action: "exception_created",
+          exceptionType: payload.type,
+        });
+      }
+      setExceptionFormOpen(false);
+      setExceptionForm(EMPTY_EXCEPTION_FORM);
+      setExceptionMessage(
+        t("practitioner.availability.exceptionSaveSuccess", {
+          defaultValue: "تم حفظ الاستثناء.",
+        }),
+      );
+    } catch {
+      setExceptionMessage(
+        t("practitioner.availability.exceptionSaveError", {
+          defaultValue: "تعذر حفظ الاستثناء.",
+        }),
+      );
+    }
+  };
+
+  const handleDeleteException = async (exception: AvailabilityException) => {
+    try {
+      await deleteException.mutateAsync(exception.id);
+      setExceptionMessage(
+        t("practitioner.availability.exceptionDeleteSuccess", {
+          defaultValue: "تم حذف الاستثناء.",
+        }),
+      );
+      trackAnalyticsEvent("practitioner_availability_updated", {
+        action: "exception_deleted",
+        exceptionType: exception.type,
+      });
+    } catch {
+      setExceptionMessage(
+        t("practitioner.availability.exceptionDeleteError", {
+          defaultValue: "تعذر حذف الاستثناء.",
+        }),
+      );
+    }
+  };
 
   return (
     <Screen bg="background">
@@ -355,115 +385,62 @@ export default function PractitionerAvailabilityScreen() {
         availabilityData &&
         presenceQuery.data ? (
           <>
-            <Card variant="outlined" padding="lg" style={styles.sectionCard}>
+            <Card variant="outlined" padding="sm" style={styles.sectionCard}>
               <Text weight="600" style={styles.sectionTitle}>
                 {t("practitioner.availability.overviewTitle")}
               </Text>
-              <Text
-                color={theme.colors.textSecondary}
-                style={styles.sectionBody}
-              >
-                {t("practitioner.availability.overviewBody")}
+              <Text color={theme.colors.textSecondary} style={styles.sectionBody}>
+                {t("practitioner.availability.scheduleBodyCompact", {
+                  defaultValue:
+                    "حدّد الأوقات التي يمكنك استقبال الجلسات فيها خلال الأسبوع.",
+                })}
               </Text>
 
-              <View style={styles.summaryList}>
-                <SummaryRow
-                  label={t("practitioner.availability.currentStatus")}
-                  value={
-                    currentStatus
-                      ? t(`practitioner.presence.status.${currentStatus}`)
-                      : "-"
-                  }
+              <View style={styles.summaryChipsRow}>
+                <StatChip
+                  label={t("practitioner.availability.summary.today", {
+                    defaultValue: "جلسات اليوم",
+                  })}
+                  value={formatCount(summaryCounts.todayCount, locale)}
                   theme={theme}
                 />
-                <SummaryRow
-                  label={t("practitioner.availability.weeklyWindows")}
-                  value={formatCount(activeSlots, locale)}
+                <StatChip
+                  label={t("practitioner.availability.summary.upcoming", {
+                    defaultValue: "القادمة",
+                  })}
+                  value={formatCount(summaryCounts.upcomingCount, locale)}
                   theme={theme}
                 />
-                <SummaryRow
-                  label={t("practitioner.availability.temporaryChanges")}
-                  value={formatCount(activeExceptions.length, locale)}
+                <StatChip
+                  label={t("practitioner.availability.summary.active", {
+                    defaultValue: "النشطة",
+                  })}
+                  value={formatCount(summaryCounts.activeCount, locale)}
+                  theme={theme}
+                />
+                <StatChip
+                  label={t("practitioner.availability.summary.completed", {
+                    defaultValue: "المكتملة",
+                  })}
+                  value={formatCount(summaryCounts.completedCount, locale)}
                   theme={theme}
                 />
               </View>
 
-              <View
-                style={[
-                  styles.badgeRow,
-                  { flexDirection: rowDirection },
-                ]}
-              >
-                {availabilityData.timezone ? (
-                  <View
-                    style={[
-                      styles.badge,
-                      {
-                        backgroundColor: theme.colors.surfaceSecondary,
-                        borderColor: theme.colors.borderLight,
-                      },
-                    ]}
-                  >
-                    <Text color={theme.colors.textSecondary} style={styles.badgeText}>
-                      {formatTimezoneLabel(availabilityData.timezone, i18n.language)}
-                    </Text>
-                  </View>
-                ) : null}
+              <View style={[styles.timezoneRow, { flexDirection: rowDirection }]}>
+                <Text color={theme.colors.textMuted} style={styles.eyebrow}>
+                  {t("practitioner.availability.timezoneLabel")}
+                </Text>
+                <Text weight="600" style={styles.timezoneValue}>
+                  {formatTimezoneLabel(availabilityData.timezone, i18n.language)}
+                </Text>
               </View>
-
-              {!availabilityData.timezone ? (
-                <View
-                  style={[
-                    styles.warningBox,
-                    {
-                      backgroundColor: theme.colors.warningLight ?? "#FEF3C7",
-                      borderColor: theme.colors.warning ?? "#F59E0B",
-                    },
-                  ]}
-                >
-                  <Text weight="600" color={theme.colors.warning ?? "#B45309"}>
-                    {t("practitioner.availability.noTimezone")}
-                  </Text>
-                </View>
-              ) : null}
             </Card>
 
-            <Card variant="outlined" padding="lg" style={styles.sectionCard}>
+            <Card variant="outlined" padding="sm" style={styles.sectionCard}>
               <Text weight="600" style={styles.sectionTitle}>
                 {t("practitioner.availability.presenceTitle")}
               </Text>
-              <Text
-                color={theme.colors.textSecondary}
-                style={styles.sectionBody}
-              >
-                {t("practitioner.availability.presenceBody")}
-              </Text>
-
-              <View
-                style={[
-                  styles.currentStateBox,
-                  {
-                    backgroundColor: theme.colors.surfaceSecondary,
-                    borderColor: theme.colors.borderLight,
-                  },
-                ]}
-              >
-                <Text color={theme.colors.textMuted} style={styles.eyebrow}>
-                  {t("practitioner.availability.currentStatus")}
-                </Text>
-                <Text weight="600" style={styles.currentStatusValue}>
-                  {currentStatus
-                    ? t(`practitioner.presence.status.${currentStatus}`)
-                    : "-"}
-                </Text>
-                <Text
-                  color={theme.colors.textSecondary}
-                  style={styles.helperText}
-                >
-                  {t("practitioner.availability.presenceBody")}
-                </Text>
-              </View>
-
               <View style={styles.statusGrid}>
                 {STATUS_OPTIONS.map((status) => {
                   const active = currentStatus === status;
@@ -489,13 +466,8 @@ export default function PractitionerAvailabilityScreen() {
                       }}
                     >
                       <Text
-                        color={
-                          active
-                            ? theme.colors.primary
-                            : theme.colors.textSecondary
-                        }
+                        color={active ? theme.colors.primary : theme.colors.textSecondary}
                         weight="600"
-                        style={styles.statusChipLabel}
                       >
                         {t(`practitioner.presence.status.${status}`)}
                       </Text>
@@ -504,21 +476,10 @@ export default function PractitionerAvailabilityScreen() {
                 })}
               </View>
 
-              <View
-                style={[
-                  styles.instantRow,
-                  {
-                    flexDirection: rowDirection,
-                    borderTopColor: theme.colors.borderLight,
-                  },
-                ]}
-              >
+              <View style={[styles.instantRow, { flexDirection: rowDirection }]}>
                 <View style={styles.instantTextWrap}>
                   <Text weight="600">{t("practitioner.availability.instantBooking")}</Text>
-                  <Text
-                    color={theme.colors.textSecondary}
-                    style={styles.instantBody}
-                  >
+                  <Text color={theme.colors.textSecondary} style={styles.instantBody}>
                     {t("practitioner.availability.instantBookingBody")}
                   </Text>
                 </View>
@@ -541,278 +502,271 @@ export default function PractitionerAvailabilityScreen() {
                   <View
                     style={[
                       styles.toggleKnob,
-                      {
-                        alignSelf: instantBookingEnabled
-                          ? "flex-end"
-                          : "flex-start",
-                      },
+                      { alignSelf: instantBookingEnabled ? "flex-end" : "flex-start" },
                     ]}
                   />
                 </TouchableOpacity>
               </View>
             </Card>
 
-            <Card variant="outlined" padding="lg" style={styles.sectionCard}>
+            <Card variant="outlined" padding="sm" style={styles.sectionCard}>
               <Text weight="600" style={styles.sectionTitle}>
                 {t("practitioner.availability.scheduleTitle")}
               </Text>
-              <Text
-                color={theme.colors.textSecondary}
-                style={styles.sectionBody}
-              >
-                {t("practitioner.availability.scheduleBody")}
+
+              <Text weight="600" style={styles.subsectionTitle}>
+                {t("practitioner.availability.durationSelector", {
+                  defaultValue: "اختر مدة الجلسة",
+                })}
               </Text>
-
-              <View
-                style={[
-                  styles.timezoneRow,
-                  {
-                    backgroundColor: theme.colors.surfaceSecondary,
-                    borderColor: theme.colors.borderLight,
-                    flexDirection: rowDirection,
-                  },
-                ]}
-              >
-                <Text color={theme.colors.textMuted} style={styles.eyebrow}>
-                  {t("practitioner.availability.timezoneLabel")}
-                </Text>
-                <Text weight="600" style={styles.timezoneValue}>
-                  {formatTimezoneLabel(availabilityData.timezone, i18n.language)}
-                </Text>
-              </View>
-
-              <View style={styles.dayList}>
-                {groupedDraftSlots.map((day) => {
-                  const isEditingThisDay =
-                    slotForm?.dayOfWeek === day.dayOfWeek;
+              <View style={[styles.typeRow, { flexDirection: rowDirection }]}>
+                {[30, 60].map((duration) => {
+                  const active = selectedDuration === duration;
                   return (
-                    <View
-                      key={day.weekday}
+                    <TouchableOpacity
+                      key={duration}
                       style={[
-                        styles.dayCard,
+                        styles.typeChip,
                         {
-                          borderColor: theme.colors.borderLight,
-                          backgroundColor: theme.colors.surface,
+                          backgroundColor: active
+                            ? theme.colors.primaryLight
+                            : theme.colors.surface,
+                          borderColor: active
+                            ? theme.colors.primary
+                            : theme.colors.borderLight,
                         },
                       ]}
+                      onPress={() => setSelectedDuration(duration as 30 | 60)}
                     >
-                      <View
-                        style={[
-                          styles.dayHeader,
-                          { flexDirection: rowDirection },
-                        ]}
+                      <Text
+                        color={active ? theme.colors.primary : theme.colors.textSecondary}
+                        weight="600"
                       >
-                        <View style={styles.dayHeaderText}>
-                          <Text weight="600" style={styles.dayTitle}>
-                            {t(`practitioner.weekday.${day.weekday}`)}
-                          </Text>
-                          <Text
-                            color={theme.colors.textSecondary}
-                            style={styles.daySubtitle}
-                          >
-                            {describeDaySlots(day.slots, locale, t)}
-                          </Text>
-                        </View>
-                        <TouchableOpacity
-                          style={[
-                            styles.inlineAction,
-                            {
-                              borderColor: theme.colors.borderLight,
-                              backgroundColor: theme.colors.surfaceSecondary,
-                            },
-                          ]}
-                          onPress={() =>
-                            isEditingThisDay
-                              ? cancelSlotForm()
-                              : openAddSlot(day.dayOfWeek)
-                          }
-                          disabled={replaceWeeklyAvailability.isPending}
-                        >
-                          <Text color={theme.colors.textSecondary} weight="600">
-                            {isEditingThisDay
-                              ? t("common.cancel")
-                              : day.slots.length
-                                ? t("practitioner.availability.editSlot")
-                                : t("practitioner.availability.addSlot")}
-                          </Text>
-                        </TouchableOpacity>
-                      </View>
-
-                      {day.slots.length ? (
-                        <View style={styles.slotList}>
-                          {day.slots.map((slot) => (
-                            <View
-                              key={slot.key}
-                              style={[
-                                styles.slotRow,
-                                {
-                                  backgroundColor:
-                                    theme.colors.surfaceSecondary,
-                                  flexDirection: rowDirection,
-                                },
-                              ]}
-                            >
-                              <View style={styles.slotTextWrap}>
-                                <Text weight="600">
-                                  {t("practitioner.availability.slotRange", {
-                                    start: formatMinutes(
-                                      slot.startMinuteOfDay,
-                                      locale,
-                                    ),
-                                    end: formatMinutes(
-                                      slot.endMinuteOfDay,
-                                      locale,
-                                    ),
-                                  })}
-                                </Text>
-                              </View>
-                              <View style={styles.slotActions}>
-                      <TouchableOpacity
-                        style={styles.slotActionButton}
-                        onPress={() => openEditSlot(slot)}
-                        disabled={replaceWeeklyAvailability.isPending}
-                      >
-                                  <Text
-                                    color={theme.colors.primary}
-                                    weight="600"
-                                  >
-                                    {t("practitioner.availability.editSlot")}
-                                  </Text>
-                                </TouchableOpacity>
-                                <TouchableOpacity
-                                  style={styles.slotActionButton}
-                                  onPress={() => removeSlot(slot.key)}
-                                  disabled={replaceWeeklyAvailability.isPending}
-                                >
-                                  <Text color={theme.colors.error} weight="600">
-                                    {t("practitioner.availability.removeSlot")}
-                                  </Text>
-                                </TouchableOpacity>
-                              </View>
-                            </View>
-                          ))}
-                        </View>
-                      ) : null}
-
-                      {isEditingThisDay ? (
-                        <View
-                          style={[
-                            styles.editorBox,
-                            {
-                              backgroundColor: theme.colors.surfaceSecondary,
-                              borderColor: theme.colors.borderLight,
-                            },
-                          ]}
-                        >
-                          <Input
-                            label={t("practitioner.availability.startTime")}
-                            value={slotForm?.startTime ?? ""}
-                            onChangeText={(value) =>
-                              setSlotForm((current) =>
-                                current
-                                  ? { ...current, startTime: value, error: null }
-                                  : current,
-                              )
-                            }
-                            placeholder="09:00"
-                            helperText={t("practitioner.availability.timeHint")}
-                            autoCapitalize="none"
-                            autoCorrect={false}
-                            keyboardType="numbers-and-punctuation"
-                            maxLength={5}
-                            style={styles.timeInput}
-                          />
-                          <Input
-                            label={t("practitioner.availability.endTime")}
-                            value={slotForm?.endTime ?? ""}
-                            onChangeText={(value) =>
-                              setSlotForm((current) =>
-                                current
-                                  ? { ...current, endTime: value, error: null }
-                                  : current,
-                              )
-                            }
-                            placeholder="17:00"
-                            error={slotForm?.error ?? undefined}
-                            autoCapitalize="none"
-                            autoCorrect={false}
-                            keyboardType="numbers-and-punctuation"
-                            maxLength={5}
-                            style={styles.timeInput}
-                          />
-
-                          <View style={styles.editorActions}>
-                            <Button
-                              title={t("practitioner.availability.confirmSlot")}
-                              onPress={() => saveSlotForm()}
-                            />
-                            <Button
-                              title={t("common.cancel")}
-                              variant="secondary"
-                              onPress={() => cancelSlotForm()}
-                            />
-                          </View>
-                        </View>
-                      ) : null}
-                    </View>
+                        {t("practitioner.availability.durationMinutes", {
+                          defaultValue: "{{minutes}} دقيقة",
+                          minutes: duration,
+                        })}
+                      </Text>
+                    </TouchableOpacity>
                   );
                 })}
+              </View>
+
+              <Text weight="600" style={styles.subsectionTitle}>
+                {t("practitioner.availability.selectDay", { defaultValue: "اختر اليوم" })}
+              </Text>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={[
+                  styles.weekdayScroll,
+                  { flexDirection: rowDirection },
+                ]}
+              >
+                {groupedDraftSlots.map((day) => {
+                  const active = selectedDayOfWeek === day.dayOfWeek;
+                  return (
+                    <TouchableOpacity
+                      key={day.weekday}
+                      style={[
+                        styles.dayChip,
+                        {
+                          backgroundColor: active
+                            ? theme.colors.primaryLight
+                            : theme.colors.surface,
+                          borderColor: active
+                            ? theme.colors.primary
+                            : theme.colors.borderLight,
+                        },
+                      ]}
+                      onPress={() => setSelectedDayOfWeek(day.dayOfWeek)}
+                    >
+                      <Text
+                        weight="600"
+                        color={active ? theme.colors.primary : theme.colors.textPrimary}
+                      >
+                        {t(`practitioner.weekday.${day.weekday}`)}
+                      </Text>
+                      <Text color={theme.colors.textSecondary} style={styles.dayChipCount}>
+                        {formatCount(day.slots.length, locale)}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+
+              <Text weight="600" style={styles.subsectionTitle}>
+                {t("practitioner.availability.timeSlots", {
+                  defaultValue: "الأوقات المتاحة",
+                })}
+              </Text>
+              <View style={styles.slotGrid}>
+                {timeGrid.map((minute) => {
+                  const end = minute + selectedDuration;
+                  const selected = draftSlots.some(
+                    (slot) =>
+                      slot.dayOfWeek === selectedDayOfWeek &&
+                      slot.startMinuteOfDay === minute &&
+                      slot.durationMinutes === selectedDuration,
+                  );
+                  const overlap = draftSlots.some(
+                    (slot) =>
+                      slot.dayOfWeek === selectedDayOfWeek &&
+                      minute < slot.endMinuteOfDay &&
+                      end > slot.startMinuteOfDay &&
+                      !(slot.startMinuteOfDay === minute && slot.durationMinutes === selectedDuration),
+                  );
+
+                  return (
+                    <TouchableOpacity
+                      key={`${selectedDayOfWeek}-${selectedDuration}-${minute}`}
+                      style={[
+                        styles.gridSlotButton,
+                        {
+                          backgroundColor: selected
+                            ? theme.colors.primaryLight
+                            : theme.colors.surface,
+                          borderColor: selected
+                            ? theme.colors.primary
+                            : overlap
+                              ? theme.colors.borderStrong
+                              : theme.colors.borderLight,
+                        },
+                      ]}
+                      disabled={isSaving}
+                      onPress={() => toggleSlot(minute)}
+                    >
+                      <Text
+                        weight="600"
+                        color={selected ? theme.colors.primary : theme.colors.textPrimary}
+                      >
+                        {formatMinutes(minute)}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+
+              <Text weight="600" style={styles.subsectionTitle}>
+                {t("practitioner.availability.selectedSlots", {
+                  defaultValue: "الأوقات المختارة",
+                })}
+              </Text>
+              {selectedDaySlots.length ? (
+                <View style={styles.selectedChips}>
+                  {selectedDaySlots.map((slot) => (
+                    <TouchableOpacity
+                      key={slot.key}
+                      style={[
+                        styles.selectedChip,
+                        {
+                          backgroundColor: theme.colors.primaryLight,
+                          borderColor: theme.colors.primary,
+                        },
+                      ]}
+                      onPress={() =>
+                        setDraftSlots((current) =>
+                          current.filter((item) => item.key !== slot.key),
+                        )
+                      }
+                    >
+                      <Text color={theme.colors.primary} weight="600">
+                        {t("practitioner.availability.slotRange", {
+                          defaultValue: "{{start}} - {{end}}",
+                          start: formatMinutes(slot.startMinuteOfDay),
+                          end: formatMinutes(slot.endMinuteOfDay),
+                        })}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              ) : (
+                <Text color={theme.colors.textSecondary}>
+                  {t("practitioner.availability.selectedSlotsEmpty", {
+                    defaultValue: "لم تحدد أوقاتًا لهذا اليوم بعد",
+                  })}
+                </Text>
+              )}
+
+              <Text weight="600" style={styles.subsectionTitle}>
+                {t("practitioner.availability.weeklySummary", {
+                  defaultValue: "ملخص الأسبوع",
+                })}
+              </Text>
+              <View style={styles.weeklySummaryList}>
+                {groupedDraftSlots.map((day) => (
+                  <View
+                    key={`summary-${day.weekday}`}
+                    style={[
+                      styles.summaryRow,
+                      {
+                        backgroundColor: theme.colors.surfaceSecondary,
+                        borderColor: theme.colors.borderLight,
+                      },
+                    ]}
+                  >
+                    <Text weight="600">{t(`practitioner.weekday.${day.weekday}`)}</Text>
+                    <Text color={theme.colors.textSecondary}>
+                      {day.slots.length
+                        ? t("practitioner.availability.daySlotsCount", {
+                            defaultValue: "{{count}} أوقات",
+                            count: day.slots.length,
+                          })
+                        : t("practitioner.availability.noSlots", {
+                            defaultValue: "لا توجد أوقات",
+                          })}
+                    </Text>
+                  </View>
+                ))}
               </View>
 
               <View style={styles.footerActions}>
                 <Button
                   title={
-                    replaceWeeklyAvailability.isPending
+                    isSaving
                       ? t("practitioner.availability.saving")
                       : t("practitioner.availability.saveSchedule")
                   }
                   onPress={() => void handleSaveSchedule()}
-                  disabled={
-                    !availabilityData.timezone ||
-                    !isDirty(availabilityData, draftSlots) ||
-                    replaceWeeklyAvailability.isPending
-                  }
+                  disabled={!availabilityData.timezone || !isDirtyState || isSaving}
+                  style={styles.compactButton}
                 />
                 <Button
                   title={t("practitioner.availability.resetChanges")}
                   variant="secondary"
-                  onPress={() => handleResetSchedule()}
-                  disabled={
-                    !isDirty(availabilityData, draftSlots) ||
-                    replaceWeeklyAvailability.isPending
-                  }
+                  onPress={handleResetSchedule}
+                  disabled={!isDirtyState || isSaving}
+                  style={styles.compactButton}
                 />
               </View>
 
-              {slotSaveMessage ? (
-                <Text
-                  color={
-                    slotSaveMessage ===
-                    t("practitioner.availability.saveSuccess")
-                      ? theme.colors.primary
-                      : theme.colors.error
-                  }
-                  style={styles.helperText}
-                >
-                  {slotSaveMessage}
-                </Text>
-              ) : (
-                <Text color={theme.colors.textMuted} style={styles.helperText}>
-                  {t("practitioner.availability.saveHint")}
-                </Text>
-              )}
+              <Text
+                color={
+                  slotSaveMessage ===
+                  t("practitioner.availability.saveSuccess", {
+                    defaultValue: "تم حفظ الجدول بنجاح.",
+                  })
+                    ? theme.colors.primary
+                    : slotSaveMessage
+                      ? theme.colors.error
+                      : theme.colors.textMuted
+                }
+                style={styles.helperText}
+              >
+                {slotSaveMessage ??
+                  t("practitioner.availability.saveHint", {
+                    defaultValue: "اضغط حفظ التغييرات بعد تحديث الأوقات.",
+                  })}
+              </Text>
             </Card>
 
-            <Card variant="outlined" padding="lg" style={styles.sectionCard}>
-              <View style={styles.exceptionHeader}>
-                <View style={styles.dayHeaderText}>
+            <Card variant="outlined" padding="sm" style={styles.sectionCard}>
+              <View style={[styles.exceptionHeader, { flexDirection: rowDirection }]}>
+                <View style={styles.exceptionHeaderText}>
                   <Text weight="600" style={styles.sectionTitle}>
                     {t("practitioner.availability.exceptionsTitle")}
                   </Text>
-                  <Text
-                    color={theme.colors.textSecondary}
-                    style={styles.sectionBody}
-                  >
+                  <Text color={theme.colors.textSecondary} style={styles.sectionBody}>
                     {t("practitioner.availability.exceptionsBody")}
                   </Text>
                 </View>
@@ -844,54 +798,40 @@ export default function PractitionerAvailabilityScreen() {
                     },
                   ]}
                 >
-                  <View
-                    style={[
-                      styles.typeRow,
-                      { flexDirection: rowDirection },
-                    ]}
-                  >
-                    {(["BLOCK", "OPEN_EXTRA"] as AvailabilityExceptionType[]).map(
-                      (type) => {
-                        const active = exceptionForm.type === type;
-                        return (
-                          <TouchableOpacity
-                            key={type}
-                            style={[
-                              styles.typeChip,
-                              {
-                                backgroundColor: active
-                                  ? theme.colors.primaryLight
-                                  : theme.colors.surface,
-                                borderColor: active
-                                  ? theme.colors.primary
-                                  : theme.colors.borderLight,
-                              },
-                            ]}
-                            onPress={() =>
-                              setExceptionForm((current) => ({
-                                ...current,
-                                type,
-                                error: null,
-                              }))
-                            }
+                  <View style={[styles.typeRow, { flexDirection: rowDirection }]}>
+                    {(["BLOCK", "OPEN_EXTRA"] as AvailabilityExceptionType[]).map((type) => {
+                      const active = exceptionForm.type === type;
+                      return (
+                        <TouchableOpacity
+                          key={type}
+                          style={[
+                            styles.typeChip,
+                            {
+                              backgroundColor: active
+                                ? theme.colors.primaryLight
+                                : theme.colors.surface,
+                              borderColor: active
+                                ? theme.colors.primary
+                                : theme.colors.borderLight,
+                            },
+                          ]}
+                          onPress={() =>
+                            setExceptionForm((current) => ({
+                              ...current,
+                              type,
+                              error: null,
+                            }))
+                          }
+                        >
+                          <Text
+                            color={active ? theme.colors.primary : theme.colors.textSecondary}
+                            weight="600"
                           >
-                            <Text
-                              color={
-                                active
-                                  ? theme.colors.primary
-                                  : theme.colors.textSecondary
-                              }
-                              weight="600"
-                              style={styles.typeChipLabel}
-                            >
-                              {t(
-                                `practitioner.availability.exceptionType.${type}`,
-                              )}
-                            </Text>
-                          </TouchableOpacity>
-                        );
-                      },
-                    )}
+                            {t(`practitioner.availability.exceptionType.${type}`)}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
                   </View>
 
                   <Input
@@ -904,13 +844,11 @@ export default function PractitionerAvailabilityScreen() {
                         error: null,
                       }))
                     }
-                    placeholder="2026-04-25 14:00"
+                    placeholder="2026-04-25T14:00"
                     helperText={t("practitioner.availability.exceptionTimeHint")}
+                    keyboardType="numbers-and-punctuation"
                     autoCapitalize="none"
                     autoCorrect={false}
-                    keyboardType="numbers-and-punctuation"
-                    maxLength={16}
-                    style={styles.timeInput}
                   />
                   <Input
                     label={t("practitioner.availability.exceptionEndsAt")}
@@ -922,22 +860,17 @@ export default function PractitionerAvailabilityScreen() {
                         error: null,
                       }))
                     }
-                    placeholder="2026-04-25 16:00"
+                    placeholder="2026-04-25T16:00"
+                    keyboardType="numbers-and-punctuation"
                     autoCapitalize="none"
                     autoCorrect={false}
-                    keyboardType="numbers-and-punctuation"
-                    maxLength={16}
                     error={exceptionForm.error ?? undefined}
-                    style={styles.timeInput}
                   />
                   <Input
                     label={t("practitioner.availability.exceptionReason")}
                     value={exceptionForm.reason}
                     onChangeText={(value) =>
-                      setExceptionForm((current) => ({
-                        ...current,
-                        reason: value,
-                      }))
+                      setExceptionForm((current) => ({ ...current, reason: value }))
                     }
                     placeholder={t(
                       "practitioner.availability.exceptionReasonPlaceholder",
@@ -955,7 +888,8 @@ export default function PractitionerAvailabilityScreen() {
                             ? t("practitioner.availability.saving")
                             : t("practitioner.availability.saveException")
                       }
-                      onPress={() => void handleCreateException()}
+                      onPress={() => void handleCreateOrUpdateException()}
+                      style={styles.compactButton}
                     />
                     <Button
                       title={t("common.cancel")}
@@ -965,6 +899,7 @@ export default function PractitionerAvailabilityScreen() {
                         setExceptionForm(EMPTY_EXCEPTION_FORM);
                         setExceptionMessage(null);
                       }}
+                      style={styles.compactButton}
                     />
                   </View>
                 </View>
@@ -980,17 +915,11 @@ export default function PractitionerAvailabilityScreen() {
                         {
                           backgroundColor: theme.colors.surfaceSecondary,
                           borderColor: theme.colors.borderLight,
-                          flexDirection: rowDirection,
                         },
                       ]}
                     >
                       <View style={styles.exceptionTextWrap}>
-                        <View
-                          style={[
-                            styles.exceptionBadgeRow,
-                            { flexDirection: rowDirection },
-                          ]}
-                        >
+                        <View style={[styles.exceptionBadgeRow, { flexDirection: rowDirection }]}>
                           <View
                             style={[
                               styles.exceptionBadge,
@@ -1013,63 +942,54 @@ export default function PractitionerAvailabilityScreen() {
                                   : theme.colors.primary
                               }
                               weight="600"
-                              style={styles.exceptionBadgeText}
                             >
-                              {t(
-                                `practitioner.availability.exceptionType.${exception.type}`,
-                              )}
+                              {t(`practitioner.availability.exceptionType.${exception.type}`)}
                             </Text>
                           </View>
-                          <Text
-                            color={theme.colors.textSecondary}
-                            style={styles.exceptionMeta}
-                          >
+                          <Text color={theme.colors.textSecondary} style={styles.exceptionMeta}>
                             {formatExceptionRange(exception.startsAt, exception.endsAt, locale)}
                           </Text>
                         </View>
                         {exception.reason ? (
-                          <Text
-                            color={theme.colors.textMuted}
-                            style={styles.exceptionReason}
-                          >
+                          <Text color={theme.colors.textMuted} style={styles.exceptionReason}>
                             {exception.reason}
                           </Text>
                         ) : null}
                       </View>
-                      <TouchableOpacity
-                        style={styles.slotActionButton}
-                        onPress={() => openEditException(exception)}
-                        disabled={deleteException.isPending}
-                      >
-                        <Text color={theme.colors.primary} weight="600">
-                          {t("practitioner.availability.editException")}
-                        </Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        style={styles.slotActionButton}
-                        onPress={() => void handleDeleteException(exception)}
-                        disabled={deleteException.isPending}
-                      >
-                        <Text color={theme.colors.error} weight="600">
-                          {t("practitioner.availability.removeException")}
-                        </Text>
-                      </TouchableOpacity>
+                      <View style={[styles.slotActions, { flexDirection: rowDirection }]}>
+                        <TouchableOpacity
+                          style={styles.slotActionButton}
+                          onPress={() => openEditException(exception)}
+                        >
+                          <Text color={theme.colors.primary} weight="600">
+                            {t("practitioner.availability.editException")}
+                          </Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={styles.slotActionButton}
+                          onPress={() => void handleDeleteException(exception)}
+                          disabled={deleteException.isPending}
+                        >
+                          <Text color={theme.colors.error} weight="600">
+                            {t("practitioner.availability.removeException")}
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
                     </View>
                   ))}
                 </View>
               ) : (
                 <Text color={theme.colors.textSecondary}>
-                  {t("practitioner.availability.emptyExceptions")}
+                  {t("practitioner.availability.emptyExceptions", {
+                    defaultValue: "لا توجد استثناءات حاليًا",
+                  })}
                 </Text>
               )}
 
               {exceptionMessage ? (
                 <Text
                   color={
-                    exceptionMessage ===
-                      t("practitioner.availability.exceptionSaveSuccess") ||
-                    exceptionMessage ===
-                      t("practitioner.availability.exceptionDeleteSuccess")
+                    exceptionMessage.includes("تم")
                       ? theme.colors.primary
                       : theme.colors.error
                   }
@@ -1086,7 +1006,7 @@ export default function PractitionerAvailabilityScreen() {
   );
 }
 
-function SummaryRow({
+function StatChip({
   label,
   value,
   theme,
@@ -1098,112 +1018,99 @@ function SummaryRow({
   return (
     <View
       style={[
-        styles.summaryRow,
+        styles.summaryChip,
         {
           backgroundColor: theme.colors.surfaceSecondary,
           borderColor: theme.colors.borderLight,
         },
       ]}
     >
-      <Text color={theme.colors.textMuted} style={styles.summaryLabel}>
+      <Text color={theme.colors.textMuted} style={styles.summaryChipLabel}>
         {label}
       </Text>
-      <Text weight="600" style={styles.summaryValue}>
-        {value}
-      </Text>
+      <Text weight="600">{value}</Text>
     </View>
   );
 }
 
-function describeDaySlots(
-  slots: DraftSlot[],
-  locale: string,
-  t: (key: string, options?: Record<string, unknown>) => string,
-) {
-  if (!slots.length) {
-    return t("practitioner.availability.noSlots");
+function buildTimeGrid(startMinute: number, endMinute: number) {
+  const items: number[] = [];
+  for (let minute = startMinute; minute <= endMinute; minute += 30) {
+    items.push(minute);
   }
-
-  return slots
-    .map((slot) =>
-      t("practitioner.availability.slotRange", {
-        start: formatMinutes(slot.startMinuteOfDay, locale),
-        end: formatMinutes(slot.endMinuteOfDay, locale),
-      }),
-    )
-    .join(" · ");
+  return items;
 }
 
 function buildDraftSlots(data: AvailabilityData): DraftSlot[] {
-  return data.weeklySlots
-    .filter((slot) => slot.isActive)
-    .map((slot) => {
-      const durationMinutes: 30 | 60 =
-        slot.durationMinutes === 60 ? 60 : 30;
+  const expanded: DraftSlot[] = [];
 
-      return {
+  for (const slot of data.weeklySlots) {
+    if (!slot.isActive) {
+      continue;
+    }
+
+    const durationMinutes: 30 | 60 = slot.durationMinutes === 60 ? 60 : 30;
+    const rangeMinutes = slot.endMinuteOfDay - slot.startMinuteOfDay;
+
+    if (rangeMinutes === durationMinutes) {
+      expanded.push({
         key: slot.id,
         dayOfWeek: slot.dayOfWeek,
         durationMinutes,
         startMinuteOfDay: slot.startMinuteOfDay,
         endMinuteOfDay: slot.endMinuteOfDay,
-      };
-    })
-    .sort(
-      (left, right) =>
-        left.dayOfWeek - right.dayOfWeek ||
-        left.startMinuteOfDay - right.startMinuteOfDay,
-    );
-}
+      });
+      continue;
+    }
 
-function isDirty(data: AvailabilityData | null, draftSlots: DraftSlot[]) {
-  if (!data) {
-    return false;
+    // Legacy/seed windows can be longer than one booking slot.
+    // Expand them into atomic slots so backend validation remains satisfied on save.
+    if (
+      rangeMinutes > durationMinutes &&
+      rangeMinutes % durationMinutes === 0
+    ) {
+      let cursor = slot.startMinuteOfDay;
+      let part = 0;
+      while (cursor < slot.endMinuteOfDay) {
+        expanded.push({
+          key: `${slot.id}-part-${part}`,
+          dayOfWeek: slot.dayOfWeek,
+          durationMinutes,
+          startMinuteOfDay: cursor,
+          endMinuteOfDay: cursor + durationMinutes,
+        });
+        cursor += durationMinutes;
+        part += 1;
+      }
+    }
   }
 
-  const source = buildDraftSlots(data).map(serializeSlot).sort();
-  const current = draftSlots.map(serializeSlot).sort();
-  return source.join("|") !== current.join("|");
+  return expanded.sort(
+    (left, right) =>
+      left.dayOfWeek - right.dayOfWeek ||
+      left.startMinuteOfDay - right.startMinuteOfDay,
+  );
 }
 
 function serializeSlot(slot: DraftSlot) {
   return `${slot.dayOfWeek}:${slot.durationMinutes}:${slot.startMinuteOfDay}:${slot.endMinuteOfDay}`;
 }
 
-function minutesToTime(minutes: number, locale: string) {
+function isDirty(data: AvailabilityData | null, draftSlots: DraftSlot[]) {
+  if (!data) {
+    return false;
+  }
+  const source = buildDraftSlots(data).map(serializeSlot).sort();
+  const current = draftSlots.map(serializeSlot).sort();
+  return source.join("|") !== current.join("|");
+}
+
+function formatMinutes(minutes: number) {
   const rawHour = Math.floor(minutes / 60);
   const rawMinute = minutes % 60;
   const hour = String(rawHour).padStart(2, "0");
   const minute = String(rawMinute).padStart(2, "0");
   return `${hour}:${minute}`;
-}
-
-function formatMinutes(minutes: number, locale: string) {
-  return minutesToTime(minutes, locale);
-}
-
-function parseTimeToMinutes(value: string) {
-  const trimmed = normalizeDigits(value.trim());
-  const match = trimmed.match(/^(\d{1,2}):(\d{2})$/);
-  if (!match) {
-    return null;
-  }
-
-  const hours = Number(match[1]);
-  const minutes = Number(match[2]);
-  if (Number.isNaN(hours) || Number.isNaN(minutes)) {
-    return null;
-  }
-
-  if (hours < 0 || hours > 24 || minutes < 0 || minutes > 59) {
-    return null;
-  }
-
-  if (hours === 24 && minutes !== 0) {
-    return null;
-  }
-
-  return hours * 60 + minutes;
 }
 
 function parseLocalDateTimeToIso(value: string) {
@@ -1214,24 +1121,18 @@ function parseLocalDateTimeToIso(value: string) {
   if (!match) {
     return null;
   }
-
   const year = Number(match[1]);
   const month = Number(match[2]);
   const day = Number(match[3]);
   const hours = Number(match[4]);
   const minutes = Number(match[5]);
-
-  if (
-    [year, month, day, hours, minutes].some((part) => Number.isNaN(part))
-  ) {
+  if ([year, month, day, hours, minutes].some((part) => Number.isNaN(part))) {
     return null;
   }
-
   const date = new Date(year, month - 1, day, hours, minutes);
   if (Number.isNaN(date.getTime())) {
     return null;
   }
-
   return date.toISOString();
 }
 
@@ -1240,13 +1141,11 @@ function toLocalDateTimeInputValue(value: string) {
   if (Number.isNaN(date.getTime())) {
     return "";
   }
-
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const day = String(date.getDate()).padStart(2, "0");
   const hours = String(date.getHours()).padStart(2, "0");
   const minutes = String(date.getMinutes()).padStart(2, "0");
-
   return `${year}-${month}-${day}T${hours}:${minutes}`;
 }
 
@@ -1261,81 +1160,13 @@ function normalizeDigits(value: string) {
       if (arabicIndex >= 0) {
         return String(arabicIndex);
       }
-
       const easternIndex = easternArabicIndic.indexOf(character);
       if (easternIndex >= 0) {
         return String(easternIndex);
       }
-
       return character;
     })
     .join("");
-}
-
-function validateSlotForm(
-  slotForm: SlotFormState,
-  draftSlots: DraftSlot[],
-  t: (key: string, options?: Record<string, unknown>) => string,
-) {
-  const startMinuteOfDay = parseTimeToMinutes(slotForm.startTime);
-  const endMinuteOfDay = parseTimeToMinutes(slotForm.endTime);
-
-  if (startMinuteOfDay === null || endMinuteOfDay === null) {
-    return {
-      ok: false as const,
-      error: t("practitioner.availability.validation.invalidTime"),
-    };
-  }
-
-  if (endMinuteOfDay <= startMinuteOfDay) {
-    return {
-      ok: false as const,
-      error: t("practitioner.availability.validation.endAfterStart"),
-    };
-  }
-
-  if (
-    startMinuteOfDay % 30 !== 0 ||
-    endMinuteOfDay % 30 !== 0
-  ) {
-    return {
-      ok: false as const,
-      error: t("practitioner.availability.validation.invalidGranularity"),
-    };
-  }
-
-  const durationMinutes = endMinuteOfDay - startMinuteOfDay;
-  if (durationMinutes !== 30 && durationMinutes !== 60) {
-    return {
-      ok: false as const,
-      error: t("practitioner.availability.validation.invalidDuration"),
-    };
-  }
-
-  const compareSlots = draftSlots.filter(
-    (slot) =>
-      slot.dayOfWeek === slotForm.dayOfWeek &&
-      slot.key !== slotForm.targetKey,
-  );
-
-  const overlaps = compareSlots.some(
-    (slot) =>
-      startMinuteOfDay < slot.endMinuteOfDay &&
-      endMinuteOfDay > slot.startMinuteOfDay,
-  );
-
-  if (overlaps) {
-    return {
-      ok: false as const,
-      error: t("practitioner.availability.validation.overlap"),
-    };
-  }
-
-  return {
-    ok: true as const,
-    startMinuteOfDay,
-    endMinuteOfDay,
-  };
 }
 
 function validateExceptionForm(
@@ -1344,26 +1175,19 @@ function validateExceptionForm(
 ) {
   const startsAt = parseLocalDateTimeToIso(exceptionForm.startsAt);
   const endsAt = parseLocalDateTimeToIso(exceptionForm.endsAt);
-
   if (!startsAt || !endsAt) {
     return {
       ok: false as const,
       error: t("practitioner.availability.validation.exceptionDatesRequired"),
     };
   }
-
   if (new Date(endsAt) <= new Date(startsAt)) {
     return {
       ok: false as const,
       error: t("practitioner.availability.validation.invalidDateTime"),
     };
   }
-
-  return {
-    ok: true as const,
-    startsAt,
-    endsAt,
-  };
+  return { ok: true as const, startsAt, endsAt };
 }
 
 function formatExceptionRange(isoStart: string, isoEnd: string, locale: string) {
@@ -1375,23 +1199,19 @@ function formatExceptionRange(isoStart: string, isoEnd: string, locale: string) 
     minute: "2-digit",
     hour12: !locale.startsWith("ar"),
   });
-
-  return `${formatter.format(new Date(isoStart))} — ${formatter.format(
+  return `${formatter.format(new Date(isoStart))} - ${formatter.format(
     new Date(isoEnd),
   )}`;
 }
 
 function formatCount(count: number, locale: string) {
-  return new Intl.NumberFormat(locale, {
-    useGrouping: false,
-  }).format(count);
+  return new Intl.NumberFormat(locale, { useGrouping: false }).format(count);
 }
 
 function formatTimezoneLabel(timezone: string, language?: string) {
   if (!timezone) {
     return "-";
   }
-
   const cityToken = timezone.split("/").pop()?.replace(/_/g, " ") ?? timezone;
   const arabicMap = {
     Cairo: "القاهرة",
@@ -1400,117 +1220,90 @@ function formatTimezoneLabel(timezone: string, language?: string) {
     Kuwait: "الكويت",
     Doha: "الدوحة",
   } as const;
-
   if (language?.startsWith("ar")) {
-    return `${arabicMap[cityToken as keyof typeof arabicMap] ?? cityToken}`;
+    return arabicMap[cityToken as keyof typeof arabicMap] ?? cityToken;
   }
-
   return cityToken;
 }
 
 const styles = StyleSheet.create({
   content: {
-    paddingHorizontal: 20,
-    paddingTop: 14,
-    paddingBottom: 28,
-    gap: 14,
-  },
-  sectionCard: {
-    gap: 14,
-  },
-  sectionTitle: {
-    fontSize: 18,
-  },
-  sectionBody: {
-    lineHeight: 22,
-  },
-  summaryList: {
-    gap: 10,
-  },
-  summaryRow: {
-    borderWidth: 1,
-    borderRadius: 16,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    gap: 4,
-  },
-  summaryLabel: {
-    fontSize: 12,
-  },
-  summaryValue: {
-    fontSize: 16,
-  },
-  badgeRow: {
-    flexWrap: "wrap",
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 22,
     gap: 8,
   },
-  badge: {
-    alignSelf: "flex-start",
-    borderWidth: 1,
-    borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+  sectionCard: {
+    gap: 8,
   },
-  badgeText: {
-    fontSize: 12,
+  sectionTitle: {
+    fontSize: 15,
   },
-  warningBox: {
-    borderWidth: 1,
-    borderRadius: 16,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
+  sectionBody: {
+    fontSize: 11,
+    lineHeight: 16,
   },
-  currentStateBox: {
-    borderWidth: 1,
-    borderRadius: 18,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+  summaryChipsRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: 6,
   },
-  eyebrow: {
+  summaryChip: {
+    borderWidth: 1,
+    borderRadius: 11,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    minWidth: "48%",
+  },
+  summaryChipLabel: {
+    fontSize: 10,
+    marginBottom: 1,
+  },
+  timezoneRow: {
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  timezoneValue: {
     fontSize: 12,
   },
-  currentStatusValue: {
-    fontSize: 18,
-  },
-  helperText: {
-    lineHeight: 20,
+  eyebrow: {
+    fontSize: 10,
   },
   statusGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 10,
+    gap: 6,
   },
   statusChip: {
-    flexBasis: "48%",
-    minHeight: 58,
+    width: "48%",
     borderWidth: 1,
-    borderRadius: 18,
-    paddingHorizontal: 14,
-    paddingVertical: 14,
+    borderRadius: 11,
+    paddingVertical: 8,
     alignItems: "center",
     justifyContent: "center",
   },
-  statusChipLabel: {
-    textAlign: "center",
-  },
   instantRow: {
-    marginTop: 2,
-    paddingTop: 14,
     borderTopWidth: 1,
+    borderTopColor: "#D9E0E6",
+    paddingTop: 8,
     alignItems: "center",
     justifyContent: "space-between",
-    gap: 12,
+    gap: 6,
   },
   instantTextWrap: {
     flex: 1,
   },
   instantBody: {
-    marginTop: 4,
-    lineHeight: 20,
+    marginTop: 2,
+    fontSize: 11,
+    lineHeight: 16,
   },
   toggle: {
-    width: 56,
+    width: 54,
     borderRadius: 999,
     padding: 4,
   },
@@ -1518,142 +1311,146 @@ const styles = StyleSheet.create({
     width: 20,
     height: 20,
     borderRadius: 999,
-    backgroundColor: "#ffffff",
+    backgroundColor: "#FFFFFF",
   },
-  timezoneRow: {
-    borderWidth: 1,
-    borderRadius: 16,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 12,
-  },
-  timezoneValue: {
-    fontSize: 14,
-  },
-  dayList: {
-    gap: 10,
-  },
-  dayCard: {
-    borderWidth: 1,
-    borderRadius: 18,
-    padding: 14,
-    gap: 10,
-  },
-  dayHeader: {
-    alignItems: "flex-start",
-    justifyContent: "space-between",
-    gap: 12,
-  },
-  dayHeaderText: {
-    flex: 1,
-    gap: 4,
-  },
-  dayTitle: {
-    fontSize: 16,
-  },
-  daySubtitle: {
-    lineHeight: 20,
-  },
-  inlineAction: {
-    borderWidth: 1,
-    borderRadius: 999,
-    paddingHorizontal: 14,
-    paddingVertical: 9,
-  },
-  slotList: {
-    gap: 8,
-  },
-  slotRow: {
-    borderRadius: 16,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    gap: 10,
-    alignItems: "flex-start",
-    justifyContent: "space-between",
-  },
-  slotTextWrap: {
-    flex: 1,
-    gap: 4,
-  },
-  slotActions: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 16,
-  },
-  slotActionButton: {
-    paddingVertical: 2,
-  },
-  editorBox: {
-    borderWidth: 1,
-    borderRadius: 18,
-    padding: 14,
-    gap: 10,
-  },
-  editorActions: {
-    gap: 10,
-  },
-  footerActions: {
-    gap: 10,
-  },
-  exceptionHeader: {
-    alignItems: "flex-start",
-    justifyContent: "space-between",
-    gap: 12,
+  subsectionTitle: {
+    fontSize: 13,
+    marginTop: 2,
   },
   typeRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 10,
-    marginBottom: 4,
+    gap: 6,
   },
   typeChip: {
     borderWidth: 1,
     borderRadius: 999,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+    paddingHorizontal: 11,
+    paddingVertical: 6,
   },
-  typeChipLabel: {
-    textAlign: "center",
+  weekdayScroll: {
+    gap: 5,
+    paddingVertical: 2,
   },
-  exceptionList: {
-    gap: 10,
-  },
-  exceptionRow: {
+  dayChip: {
     borderWidth: 1,
-    borderRadius: 16,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    gap: 10,
-    alignItems: "flex-start",
-    justifyContent: "space-between",
+    borderRadius: 11,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    minWidth: 80,
+    alignItems: "center",
+    gap: 2,
   },
-  exceptionTextWrap: {
-    flex: 1,
-    gap: 8,
+  dayChipCount: {
+    fontSize: 10,
   },
-  exceptionBadgeRow: {
-    gap: 8,
+  slotGrid: {
+    flexDirection: "row",
     flexWrap: "wrap",
+    justifyContent: "space-between",
+    gap: 6,
+  },
+  gridSlotButton: {
+    width: "48.5%",
+    borderWidth: 1,
+    borderRadius: 11,
+    paddingVertical: 7,
     alignItems: "center",
   },
-  exceptionBadge: {
+  selectedChips: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 6,
+  },
+  selectedChip: {
     borderWidth: 1,
     borderRadius: 999,
     paddingHorizontal: 10,
     paddingVertical: 6,
   },
-  exceptionBadgeText: {
-    fontSize: 12,
+  weeklySummaryList: {
+    gap: 5,
+  },
+  summaryRow: {
+    borderWidth: 1,
+    borderRadius: 11,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  footerActions: {
+    gap: 5,
+    marginTop: 4,
+  },
+  compactButton: {
+    minHeight: 46,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+  },
+  helperText: {
+    fontSize: 10,
+    lineHeight: 15,
+  },
+  exceptionHeader: {
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 6,
+  },
+  exceptionHeaderText: {
+    flex: 1,
+    gap: 2,
+  },
+  inlineAction: {
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  editorBox: {
+    borderWidth: 1,
+    borderRadius: 11,
+    padding: 10,
+    gap: 5,
+  },
+  editorActions: {
+    gap: 5,
+  },
+  exceptionList: {
+    gap: 5,
+  },
+  exceptionRow: {
+    borderWidth: 1,
+    borderRadius: 11,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    gap: 5,
+  },
+  exceptionTextWrap: {
+    gap: 4,
+  },
+  exceptionBadgeRow: {
+    alignItems: "center",
+    gap: 5,
+    flexWrap: "wrap",
+  },
+  exceptionBadge: {
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
   },
   exceptionMeta: {
-    fontSize: 13,
+    fontSize: 10,
   },
   exceptionReason: {
-    lineHeight: 20,
+    fontSize: 11,
+    lineHeight: 16,
   },
-  timeInput: {
-    textAlign: "center",
+  slotActions: {
+    gap: 8,
+  },
+  slotActionButton: {
+    paddingVertical: 2,
   },
 });

@@ -11,6 +11,7 @@ import { arFinancialRulesCatalog } from './financial-rules.catalog';
 import { arInstantBookingCatalog } from './instant-booking.catalog';
 import { arMatchingCatalog } from './matching.catalog';
 import { arModerationCatalog } from './moderation.catalog';
+import { arMessagesCatalog } from './messages.catalog';
 import { arPatientJourneyCatalog } from './patient-journey.catalog';
 import { arPatientsCatalog } from './patients.catalog';
 import { arPaymentsCatalog } from './payments.catalog';
@@ -41,6 +42,7 @@ export const arCatalog = {
   instantBooking: arInstantBookingCatalog,
   matching: arMatchingCatalog,
   moderation: arModerationCatalog,
+  messages: arMessagesCatalog,
   patientJourney: arPatientJourneyCatalog,
   patients: arPatientsCatalog,
   payments: arPaymentsCatalog,

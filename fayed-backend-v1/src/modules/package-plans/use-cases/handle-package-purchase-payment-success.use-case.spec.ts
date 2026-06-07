@@ -1,4 +1,3 @@
-import { ConfigService } from '@nestjs/config';
 import {
   SessionEventType,
   SessionStatus,
@@ -20,9 +19,6 @@ describe('HandlePackagePurchasePaymentSuccessUseCase', () => {
     const prisma = {
       $transaction: jest.fn().mockImplementation(async (fn) => fn({})),
     };
-    const configService = {
-      get: jest.fn().mockReturnValue(15),
-    } as unknown as ConfigService;
     const paymentRepository = {
       findById: jest.fn().mockResolvedValue({
         id: 'payment-1',
@@ -116,7 +112,6 @@ describe('HandlePackagePurchasePaymentSuccessUseCase', () => {
 
     const useCase = new HandlePackagePurchasePaymentSuccessUseCase(
       prisma as never,
-      configService,
       paymentRepository as never,
       packagePurchaseRepository as never,
       sessionRepository as never,

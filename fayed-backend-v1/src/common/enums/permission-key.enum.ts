@@ -21,6 +21,7 @@ export enum PermissionKey {
   CHAT_ATTACHMENTS_READ = 'chat.attachments.read',
   PATIENTS_READ_ADMIN = 'patients.read.admin',
   PATIENTS_SENSITIVE_READ = 'patients.sensitive.read',
+  PATIENTS_UPDATE_ADMIN = 'patients.update.admin',
   SUPPORT_TICKET_NOTE_INTERNAL = 'support.ticket.note.internal',
   SUPPORT_TICKET_ASSIGN = 'support.ticket.assign',
   PRACTITIONER_APPLICATIONS_READ = 'practitionerApplications.read',

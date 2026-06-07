@@ -4,14 +4,12 @@ import { useSyncExternalStore } from "react";
 import { useLocale } from "next-intl";
 import { useQueries } from "@tanstack/react-query";
 import {
-  Activity,
   ArrowRight,
-  BadgeDollarSign,
   CalendarClock,
-  ClipboardCheck,
   Headset,
   MessageSquareMore,
   ShieldAlert,
+  Users,
   WalletCards,
 } from "lucide-react";
 import { Link } from "@/i18n/navigation";
@@ -26,7 +24,7 @@ import { useAdminPractitionerApplications } from "@/features/admin/practitioner-
 import { useAdminSettlementBatches } from "@/features/admin/settlements/hooks/use-admin-settlements";
 import { useAdminModerationReports } from "@/features/admin/moderation-reports/hooks/use-admin-moderation-reports";
 import { useAdminNotifications } from "@/features/admin/notifications/hooks/use-admin-notifications";
-import { ListStateSkeleton, StateCard } from "@/components/shared/ContentStates";
+import { ListStateSkeleton } from "@/components/shared/ContentStates";
 import { PermissionKey } from "@/lib/auth/permissions";
 import { formatMoney as formatFinanceMoney } from "@/lib/finance-format";
 import {
@@ -37,82 +35,121 @@ import {
 import { AdminDashboardChartCard } from "./dashboard/AdminDashboardChartCard";
 import { AdminDashboardKpiCard } from "./dashboard/AdminDashboardKpiCard";
 import { AdminDashboardQueueCard } from "./dashboard/AdminDashboardQueueCard";
-import { AdminDashboardSectionHeader } from "./dashboard/AdminDashboardSectionHeader";
 
 type LocaleCopy = {
-  pageTitle: string;
-  pageSubtitle: string;
-  pageNote: string;
   hero: {
-    prioritiesTitle: string;
-    prioritiesSubtitle: string;
-    quickActionsTitle: string;
-    quickActionsSubtitle: string;
-    countSuffix: string;
+    title: string;
+    subtitle: string;
+    today: string;
   };
   common: {
     loading: string;
     noData: string;
     unknown: string;
     viewAll: string;
-    updatedLabel: string;
-    totalLabel: string;
+    viewDetails: string;
   };
   kpi: {
-    sessions: string;
-    support: string;
-    care: string;
-    revenue: string;
-    sessionsHelper: string;
-    supportHelper: string;
-    careHelper: string;
-    revenueHelper: string;
-  };
-  charts: {
-    heading: string;
-    subtitle: string;
-    sessionsTitle: string;
-    sessionsSubtitle: string;
-    settlementsTitle: string;
-    settlementsSubtitle: string;
-    workloadTitle: string;
-    workloadSubtitle: string;
-    sessionsSeries: string;
-    sessionsAverageSeries: string;
-    settlementsSeries: string;
+    sessionsToday: string;
+    openSupport: string;
+    pendingApplications: string;
+    settlementsTotal: string;
+    noDataYet: string;
   };
   attention: {
     heading: string;
-    subtitle: string;
-    supportTitle: string;
-    supportSubtitle: string;
-    supportEmpty: string;
-    careTitle: string;
-    careSubtitle: string;
-    careEmpty: string;
-    applicationsTitle: string;
-    applicationsSubtitle: string;
-    applicationsEmpty: string;
-    moderationTitle: string;
+    support: string;
+    careQueue: string;
+    applications: string;
+    moderation: string;
+    empty: string;
+  };
+  charts: {
+    sessionsTrend: string;
+    workload: string;
+    settlementsTrend: string;
+    noDataYet: string;
+  };
+  followUp: {
+    heading: string;
+    support: string;
+    applications: string;
+    noItems: string;
   };
   activity: {
     heading: string;
-    subtitle: string;
-    recentTitle: string;
-    recentSubtitle: string;
-    recentEmpty: string;
-    snapshotTitle: string;
-    snapshotSubtitle: string;
-    snapshotEmpty: string;
-  };
-  delta: {
-    upFromPrevious: string;
-    downFromPrevious: string;
-    unchanged: string;
-    comparedToYesterday: string;
-    comparedToPreviousBatch: string;
+    recentNotifications: string;
+    noRecent: string;
   };
 };
+
+// ─── Enum translation maps ───────────────────────────────────────────────────
+
+const SUPPORT_PRIORITY: Record<string, { en: string; ar: string }> = {
+  LOW: { en: "Low", ar: "منخفضة" },
+  NORMAL: { en: "Normal", ar: "عادية" },
+  MEDIUM: { en: "Medium", ar: "متوسطة" },
+  HIGH: { en: "High", ar: "عالية" },
+  URGENT: { en: "Urgent", ar: "عاجلة" },
+};
+
+const SUPPORT_CATEGORY: Record<string, { en: string; ar: string }> = {
+  BOOKING: { en: "Booking", ar: "الحجز" },
+  PAYMENT: { en: "Payment", ar: "الدفع" },
+  SESSION: { en: "Session", ar: "الجلسة" },
+  TECHNICAL: { en: "Technical", ar: "تقني" },
+  ACCOUNT: { en: "Account", ar: "الحساب" },
+  MATCHING: { en: "Matching", ar: "المطابقة" },
+  GENERAL: { en: "General", ar: "عام" },
+  CONTENT: { en: "Content", ar: "المحتوى" },
+  CHAT: { en: "Chat", ar: "المحادثة" },
+  OTHER: { en: "Other", ar: "أخرى" },
+};
+
+const SUPPORT_STATUS: Record<string, { en: string; ar: string }> = {
+  OPEN: { en: "Open", ar: "مفتوح" },
+  IN_PROGRESS: { en: "In progress", ar: "قيد المتابعة" },
+  WAITING_FOR_USER: { en: "Waiting", ar: "في الانتظار" },
+  ESCALATED: { en: "Escalated", ar: "متصاعد" },
+  RESOLVED: { en: "Resolved", ar: "تم الحل" },
+  CLOSED: { en: "Closed", ar: "مغلق" },
+};
+
+const PRACTITIONER_TYPE: Record<string, { en: string; ar: string }> = {
+  PSYCHOLOGIST: { en: "Psychologist", ar: "أخصائي نفسي" },
+  PSYCHIATRIST: { en: "Psychiatrist", ar: "طبيب نفسي" },
+  NUTRITIONIST: { en: "Nutritionist", ar: "أخصائي تغذية" },
+  WEIGHT_LOSS_SPECIALIST: { en: "Weight loss specialist", ar: "أخصائي إنقاص الوزن" },
+  COUNSELOR: { en: "Counselor", ar: "مرشد" },
+};
+
+const PRACTITIONER_APPLICATION_STATUS: Record<string, { en: string; ar: string }> = {
+  DRAFT: { en: "Draft", ar: "مسودة" },
+  SUBMITTED: { en: "Submitted", ar: "مُرسل" },
+  UNDER_REVIEW: { en: "Under review", ar: "قيد المراجعة" },
+  CHANGES_REQUESTED: { en: "Changes requested", ar: "يُطلب تعديل" },
+  APPROVED: { en: "Approved", ar: "مقبول" },
+  REJECTED: { en: "Rejected", ar: "مرفوض" },
+  ARCHIVED: { en: "Archived", ar: "مؤرشف" },
+};
+
+const NOTIFICATION_STATUS: Record<string, { en: string; ar: string }> = {
+  UNREAD: { en: "Unread", ar: "غير مقروء" },
+  READ: { en: "Read", ar: "مقروء" },
+  ARCHIVED: { en: "Archived", ar: "مؤرشف" },
+};
+
+function tEnum<T extends Record<string, { en: string; ar: string }>>(
+  map: T,
+  raw: string,
+  locale: string,
+): string {
+  const entry = map[raw];
+  if (!entry) return raw;
+  return locale === "ar" ? entry.ar : entry.en;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 function useHasHydrated() {
   return useSyncExternalStore(
@@ -124,153 +161,95 @@ function useHasHydrated() {
 
 const COPY: Record<"en" | "ar", LocaleCopy> = {
   en: {
-    pageTitle: "Admin Ops Dashboard",
-    pageSubtitle: "Business and operations snapshot for fast executive visibility.",
-    pageNote:
-      "Built from live queues and existing admin contracts to keep this screen accurate and actionable.",
     hero: {
-      prioritiesTitle: "Operational priorities",
-      prioritiesSubtitle: "Open the queues that are building pressure right now.",
-      quickActionsTitle: "Jump to active workstreams",
-      quickActionsSubtitle: "Shortcuts into the queues and finance views most teams reopen during the day.",
-      countSuffix: "items",
+      title: "Admin Dashboard",
+      subtitle: "Quick overview of sessions, support, applications, and payments.",
+      today: "Today",
     },
     common: {
       loading: "Loading...",
-      noData: "No data available",
+      noData: "No data",
       unknown: "Unknown",
       viewAll: "View all",
-      updatedLabel: "Updated",
-      totalLabel: "total",
+      viewDetails: "View details",
     },
     kpi: {
-      sessions: "Sessions today",
-      support: "Open support workload",
-      care: "Pending care requests",
-      revenue: "Settlement snapshot",
-      sessionsHelper: "Booked session volume in the current day.",
-      supportHelper: "Open tickets waiting for admin follow-up.",
-      careHelper: "Care-chat requests waiting for a decision.",
-      revenueHelper: "Latest settlement batch amount.",
-    },
-    charts: {
-      heading: "Performance trends",
-      subtitle: "Two business trends and one workload distribution view.",
-      sessionsTitle: "Session trend",
-      sessionsSubtitle: "Daily sessions over the last 14 days.",
-      settlementsTitle: "Settlement trend",
-      settlementsSubtitle: "Latest settlement batches by period.",
-      workloadTitle: "Current workload mix",
-      workloadSubtitle: "How active queues are distributed right now.",
-      sessionsSeries: "Sessions",
-      sessionsAverageSeries: "3-day average",
-      settlementsSeries: "Settlements",
+      sessionsToday: "Sessions today",
+      openSupport: "Open support",
+      pendingApplications: "Pending applications",
+      settlementsTotal: "Settlements total",
+      noDataYet: "Not enough data yet",
     },
     attention: {
       heading: "Needs attention",
-      subtitle: "Queues that usually require immediate operational action.",
-      supportTitle: "Support queue",
-      supportSubtitle: "Recent open tickets",
-      supportEmpty: "No open support tickets right now.",
-      careTitle: "Care queue",
-      careSubtitle: "Pending care requests",
-      careEmpty: "No pending care requests right now.",
-      applicationsTitle: "Application queue",
-      applicationsSubtitle: "Submitted practitioner applications",
-      applicationsEmpty: "No pending applications right now.",
-      moderationTitle: "Moderation queue",
+      support: "Support queue",
+      careQueue: "Care queue",
+      applications: "Applications queue",
+      moderation: "Moderation queue",
+      empty: "No items need attention now.",
+    },
+    charts: {
+      sessionsTrend: "Sessions trend (14 days)",
+      workload: "Workload distribution",
+      settlementsTrend: "Settlements trend",
+      noDataYet: "Not enough data yet.",
+    },
+    followUp: {
+      heading: "Requires follow-up",
+      support: "Support",
+      applications: "Applications",
+      noItems: "No items require follow-up now.",
     },
     activity: {
-      heading: "Recent operations activity",
-      subtitle: "Live operational movement from existing admin feeds.",
-      recentTitle: "Recent notifications",
-      recentSubtitle: "Latest high-signal operational updates.",
-      recentEmpty: "No recent activity to show right now.",
-      snapshotTitle: "Queue snapshot",
-      snapshotSubtitle: "Fast view of current queue totals.",
-      snapshotEmpty: "No queue movement available yet.",
-    },
-    delta: {
-      upFromPrevious: "{value}% up",
-      downFromPrevious: "{value}% down",
-      unchanged: "No change",
-      comparedToYesterday: "Compared to yesterday",
-      comparedToPreviousBatch: "Compared to previous batch",
+      heading: "Recent activity",
+      recentNotifications: "Latest notifications",
+      noRecent: "No recent activity.",
     },
   },
   ar: {
-    pageTitle: "لوحة عمليات الإدارة",
-    pageSubtitle: "لقطة تنفيذية سريعة للأعمال والتشغيل من شاشة واحدة.",
-    pageNote:
-      "هذه اللوحة مبنية على بيانات حية من مسارات الإدارة الحالية لضمان وضوح القرار وسرعة المتابعة.",
     hero: {
-      prioritiesTitle: "أولويات التشغيل",
-      prioritiesSubtitle: "افتح القوائم التي تحتاج متابعة مباشرة الآن.",
-      quickActionsTitle: "الانتقال السريع لمسارات العمل",
-      quickActionsSubtitle: "اختصارات لأكثر المسارات التي تعود إليها فرق الإدارة خلال اليوم.",
-      countSuffix: "عنصر",
+      title: "لوحة الإدارة",
+      subtitle: "متابعة سريعة للجلسات، الدعم، الطلبات، والمدفوعات.",
+      today: "اليوم",
     },
     common: {
       loading: "جاري التحميل...",
-      noData: "لا توجد بيانات متاحة",
+      noData: "لا توجد بيانات",
       unknown: "غير معروف",
       viewAll: "عرض الكل",
-      updatedLabel: "آخر تحديث",
-      totalLabel: "إجمالي",
+      viewDetails: "عرض التفاصيل",
     },
     kpi: {
-      sessions: "جلسات اليوم",
-      support: "عبء الدعم المفتوح",
-      care: "طلبات الرعاية المعلقة",
-      revenue: "ملخص التسويات",
-      sessionsHelper: "إجمالي الجلسات المحجوزة خلال اليوم الحالي.",
-      supportHelper: "تذاكر مفتوحة تحتاج متابعة من الإدارة.",
-      careHelper: "طلبات محادثة رعاية بانتظار القرار.",
-      revenueHelper: "إجمالي أحدث دفعة تسوية.",
-    },
-    charts: {
-      heading: "اتجاهات الأداء",
-      subtitle: "اتجاهان للأعمال مع توزيع واضح لعبء العمل الحالي.",
-      sessionsTitle: "اتجاه الجلسات",
-      sessionsSubtitle: "الجلسات اليومية خلال آخر 14 يوماً.",
-      settlementsTitle: "اتجاه التسويات",
-      settlementsSubtitle: "آخر دفعات التسوية حسب الفترة.",
-      workloadTitle: "توزيع عبء العمل الحالي",
-      workloadSubtitle: "صورة مباشرة لتوزيع القوائم النشطة الآن.",
-      sessionsSeries: "الجلسات",
-      sessionsAverageSeries: "متوسط 3 أيام",
-      settlementsSeries: "التسويات",
+      sessionsToday: "جلسات اليوم",
+      openSupport: "دعم مفتوح",
+      pendingApplications: "طلبات معلقة",
+      settlementsTotal: "إجمالي التسويات",
+      noDataYet: "لا توجد بيانات كافية بعد",
     },
     attention: {
-      heading: "يتطلب المتابعة",
-      subtitle: "أهم القوائم التي تحتاج تدخل تشغيلي سريع.",
-      supportTitle: "قائمة الدعم",
-      supportSubtitle: "أحدث التذاكر المفتوحة",
-      supportEmpty: "لا توجد تذاكر دعم مفتوحة حالياً.",
-      careTitle: "قائمة الرعاية",
-      careSubtitle: "طلبات الرعاية المعلقة",
-      careEmpty: "لا توجد طلبات رعاية معلقة حالياً.",
-      applicationsTitle: "قائمة الطلبات",
-      applicationsSubtitle: "طلبات الممارسين المقدمة",
-      applicationsEmpty: "لا توجد طلبات معلقة حالياً.",
-      moderationTitle: "قائمة الإشراف",
+      heading: "يحتاج متابعة",
+      support: "قائمة الدعم",
+      careQueue: "قائمة الرعاية",
+      applications: "قائمة الطلبات",
+      moderation: "قائمة الإشراف",
+      empty: "لا توجد عناصر تحتاج متابعة الآن.",
+    },
+    charts: {
+      sessionsTrend: "اتجاه الجلسات (١٤ يوماً)",
+      workload: "توزيع العبء",
+      settlementsTrend: "اتجاه التسويات",
+      noDataYet: "لا توجد بيانات كافية بعد.",
+    },
+    followUp: {
+      heading: "يتطلب متابعة",
+      support: "الدعم",
+      applications: "الطلبات",
+      noItems: "لا توجد عناصر تحتاج متابعة الآن.",
     },
     activity: {
-      heading: "النشاط التشغيلي الأخير",
-      subtitle: "حركة تشغيلية مباشرة من قنوات الإدارة الحالية.",
-      recentTitle: "أحدث التنبيهات",
-      recentSubtitle: "آخر التحديثات التشغيلية المهمة.",
-      recentEmpty: "لا توجد عناصر حديثة للعرض حالياً.",
-      snapshotTitle: "ملخص القوائم",
-      snapshotSubtitle: "نظرة سريعة على أحجام القوائم الحالية.",
-      snapshotEmpty: "لا توجد حركة كافية لعرض الملخص حالياً.",
-    },
-    delta: {
-      upFromPrevious: "ارتفاع {value}%",
-      downFromPrevious: "انخفاض {value}%",
-      unchanged: "بدون تغيير",
-      comparedToYesterday: "مقارنة بالأمس",
-      comparedToPreviousBatch: "مقارنة بالدفعة السابقة",
+      heading: "النشاط الأخير",
+      recentNotifications: "آخر التنبيهات",
+      noRecent: "لا توجد أحداث حديثة.",
     },
   },
 };
@@ -291,18 +270,6 @@ function formatNumber(locale: string, value: number) {
   return new Intl.NumberFormat(normalizeLocale(locale)).format(value);
 }
 
-function formatPercent(locale: string, value: number) {
-  return new Intl.NumberFormat(normalizeLocale(locale), {
-    maximumFractionDigits: 1,
-    minimumFractionDigits: 0,
-  }).format(value);
-}
-
-function parseMoney(value: string | null | undefined) {
-  const parsed = Number(value ?? "0");
-  return Number.isFinite(parsed) ? parsed : 0;
-}
-
 function formatDateLabel(locale: string, iso: string | null) {
   if (!iso) return "-";
   return new Date(iso).toLocaleDateString(normalizeLocale(locale), {
@@ -314,7 +281,6 @@ function formatDateLabel(locale: string, iso: string | null) {
 function formatDateTimeLabel(locale: string, iso: string | null) {
   if (!iso) return "-";
   return new Date(iso).toLocaleString(normalizeLocale(locale), {
-    year: "numeric",
     month: "short",
     day: "numeric",
     hour: "numeric",
@@ -330,14 +296,27 @@ function buildLocalizedPath(locale: string, path: string) {
 function humanizeEventSlug(slug: string, locale: string) {
   if (!slug) return locale === "ar" ? "حدث تشغيلي" : "Operational event";
   const normalized = slug.replace(/[._-]/g, " ").trim();
-  if (locale === "ar") {
-    return normalized;
-  }
+  if (locale === "ar") return normalized;
   return normalized.charAt(0).toUpperCase() + normalized.slice(1);
 }
 
 function monthKeyValue(year: number, month: number) {
   return year * 100 + month;
+}
+
+/** Only show delta when baseline > 0 and comparison won't produce misleading values */
+function safeDeltaText(
+  current: number,
+  previous: number,
+  locale: string,
+  copy: { upFromPrevious: string; downFromPrevious: string; unchanged: string },
+): string | undefined {
+  if (previous <= 0) return undefined;
+  if (current === previous) return copy.unchanged;
+  const diff = ((current - previous) / previous) * 100;
+  const abs = Math.abs(Math.round(diff));
+  const sign = diff > 0 ? "+" : "-";
+  return `${sign}${abs}%`;
 }
 
 export default function AdminDashboard() {
@@ -399,11 +378,7 @@ export default function AdminDashboard() {
     status: "PENDING",
   }, { enabled: canReadCareChat });
   const applicationsQuery = useAdminPractitionerApplications(
-    {
-      page: 1,
-      limit: 5,
-      status: "SUBMITTED",
-    },
+    { page: 1, limit: 5, status: "SUBMITTED" },
     canReadApplications,
   );
   const moderationQuery = useAdminModerationReports({
@@ -436,7 +411,6 @@ export default function AdminDashboard() {
             scheduledFrom: range.start,
             scheduledTo: range.end,
           } as const;
-
           return {
             queryKey: [...adminSessionsQueryKeys.list(params), "trend"] as const,
             queryFn: () => listAdminSessions(params),
@@ -455,18 +429,16 @@ export default function AdminDashboard() {
   const moderationTotal = moderationQuery.data?.pagination.totalItems ?? 0;
 
   const settlementsSorted = [...(settlementsQuery.data?.items ?? [])].sort(
-    (a, b) =>
-      monthKeyValue(a.periodYear, a.periodMonth) - monthKeyValue(b.periodYear, b.periodMonth),
+    (a, b) => monthKeyValue(a.periodYear, a.periodMonth) - monthKeyValue(b.periodYear, b.periodMonth),
   );
   const settlementLatest = settlementsSorted[settlementsSorted.length - 1];
   const settlementPrevious = settlementsSorted[settlementsSorted.length - 2];
 
-  const settlementLatestValue = parseMoney(settlementLatest?.totalAmount);
-  const settlementPreviousValue = parseMoney(settlementPrevious?.totalAmount);
+  const settlementLatestValue = Number(settlementLatest?.totalAmount ?? "0") || 0;
+  const settlementPreviousValue = Number(settlementPrevious?.totalAmount ?? "0") || 0;
   const settlementCurrency = settlementLatest?.currency ?? null;
+  const hasSettlementData = settlementLatestValue > 0;
 
-  const sessionsDeltaBase = sessionsYesterday <= 0 ? 1 : sessionsYesterday;
-  const sessionsDeltaPercent = ((sessionsToday - sessionsYesterday) / sessionsDeltaBase) * 100;
   const sessionsDeltaTone =
     sessionsToday > sessionsYesterday
       ? ("up" as const)
@@ -474,9 +446,6 @@ export default function AdminDashboard() {
         ? ("down" as const)
         : ("neutral" as const);
 
-  const settlementDeltaBase = settlementPreviousValue <= 0 ? 1 : settlementPreviousValue;
-  const settlementDeltaPercent =
-    ((settlementLatestValue - settlementPreviousValue) / settlementDeltaBase) * 100;
   const settlementDeltaTone =
     settlementLatestValue > settlementPreviousValue
       ? ("up" as const)
@@ -485,435 +454,219 @@ export default function AdminDashboard() {
         : ("neutral" as const);
 
   const sessionsTrendLabels = trendDates.map((date) =>
-    date.toLocaleDateString(normalizeLocale(locale), {
-      month: "numeric",
-      day: "numeric",
-    }),
+    date.toLocaleDateString(normalizeLocale(locale), { month: "numeric", day: "numeric" }),
   );
-  const sessionsTrendSeries = sessionsTrendQueries.map(
-    (query) => query.data?.pagination.totalItems ?? 0,
-  );
+  const sessionsTrendSeries = sessionsTrendQueries.map((q) => q.data?.pagination.totalItems ?? 0);
   const sessionsMovingAverageSeries = sessionsTrendSeries.map((_, index, all) => {
     const startIndex = Math.max(0, index - 2);
     const window = all.slice(startIndex, index + 1);
-    const average = window.reduce((sum, value) => sum + value, 0) / window.length;
-    return Number(average.toFixed(2));
+    return Number((window.reduce((s, v) => s + v, 0) / window.length).toFixed(2));
   });
-  const sessionsTrendLoading = sessionsTrendQueries.some((query) => query.isLoading);
+  const sessionsTrendLoading = sessionsTrendQueries.some((q) => q.isLoading);
 
   const settlementChartLabels = settlementsSorted.map((item) => {
     const date = new Date(item.periodYear, item.periodMonth - 1, 1);
     return date.toLocaleDateString(normalizeLocale(locale), { month: "short" });
   });
-  const settlementChartSeries = settlementsSorted.map((item) =>
-    parseMoney(item.totalAmount),
-  );
+  const settlementChartSeries = settlementsSorted.map((item) => Number(item.totalAmount) || 0);
 
   const workloadSeries = [supportTotal, careTotal, applicationsTotal, moderationTotal];
-  const hasWorkloadData = workloadSeries.some((value) => value > 0);
+  const hasWorkloadData = workloadSeries.some((v) => v > 0);
 
+  // Support items — translated enums in subtitles and badges
   const supportItems = canReadSupport
     ? (supportQuery.data?.items ?? []).map((ticket) => ({
         id: ticket.id,
         title: ticket.subject,
-        subtitle: `${ticket.category} - ${formatDateLabel(locale, ticket.createdAt)}`,
+        subtitle: `${tEnum(SUPPORT_CATEGORY, ticket.category, locale)} · ${formatDateLabel(locale, ticket.createdAt)}`,
         href: `/admin/support/${ticket.id}`,
         badge: (
-          <span className="rounded-full bg-primary-light px-2 py-0.5 text-[11px] font-semibold text-text-brand dark:bg-primary/15 dark:text-primary-light">
-            {ticket.priority}
-          </span>
-        ),
-      }))
-    : [];
-
-  const careItems = canReadCareChat
-    ? (careQuery.data?.items ?? []).map((request) => ({
-        id: request.id,
-        title: request.patient.displayName ?? copy.common.unknown,
-        subtitle: `${request.practitioner.displayName ?? copy.common.unknown} - ${formatDateLabel(
-          locale,
-          request.requestedAt,
-        )}`,
-        href: `/admin/care-chat/${request.id}`,
-        badge: (
           <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-700 dark:bg-amber-500/15 dark:text-amber-400">
-            {request.status}
+            {tEnum(SUPPORT_PRIORITY, ticket.priority, locale)}
           </span>
         ),
       }))
     : [];
 
+  // Application items — translated enums in subtitles and badges
   const applicationItems = canReadApplications
     ? (applicationsQuery.data?.applications ?? []).map((app) => ({
         id: app.applicationId,
         title: app.displayName ?? copy.common.unknown,
-        subtitle: `${app.practitionerType} - ${formatDateLabel(locale, app.submittedAt)}`,
+        subtitle: `${tEnum(PRACTITIONER_TYPE, app.practitionerType, locale)} · ${formatDateLabel(locale, app.submittedAt)}`,
         href: `/admin/practitioner-applications/${app.applicationId}`,
         badge: (
-          <span className="rounded-full bg-surface-tertiary px-2 py-0.5 text-[11px] font-semibold text-text-muted dark:bg-white/10 dark:text-white/70">
-            {app.applicationStatus}
+          <span className="rounded-full bg-primary-light px-2 py-0.5 text-[11px] font-semibold text-text-brand dark:bg-primary/15 dark:text-primary-light">
+            {tEnum(PRACTITIONER_APPLICATION_STATUS, app.applicationStatus, locale)}
           </span>
         ),
       }))
     : [];
 
+  // Recent activity — translated notification status in badges
   const recentActivityItems = canReadNotifications
     ? (notificationsQuery.data?.items ?? []).map((item) => ({
         id: item.id,
         title: humanizeEventSlug(item.typeSlug, locale),
-        subtitle: `${item.category} - ${formatDateTimeLabel(locale, item.updatedAt)}`,
+        subtitle: `${item.category} · ${formatDateTimeLabel(locale, item.updatedAt)}`,
         href: `/admin/notifications/${item.id}`,
         badge: (
           <span className="rounded-full bg-surface-tertiary px-2 py-0.5 text-[11px] font-semibold text-text-muted dark:bg-white/10 dark:text-white/70">
-            {item.status}
+            {tEnum(NOTIFICATION_STATUS, item.status, locale)}
           </span>
         ),
       }))
     : [];
 
-  const queueSnapshotItems = [
-    {
-      id: "support-total",
-      title: copy.attention.supportTitle,
-      subtitle: `${formatNumber(locale, supportTotal)} ${copy.common.totalLabel}`,
-    },
-    {
-      id: "care-total",
-      title: copy.attention.careTitle,
-      subtitle: `${formatNumber(locale, careTotal)} ${copy.common.totalLabel}`,
-    },
-    {
-      id: "application-total",
-      title: copy.attention.applicationsTitle,
-      subtitle: `${formatNumber(locale, applicationsTotal)} ${copy.common.totalLabel}`,
-    },
-    {
-      id: "moderation-total",
-      title: copy.attention.moderationTitle,
-      subtitle: `${formatNumber(locale, moderationTotal)} ${copy.common.totalLabel}`,
-    },
-  ];
+  // Needs attention — only queues with count > 0
+  const attentionItems = [
+    ...(canReadSupport && supportTotal > 0
+      ? [{ id: "support", title: copy.attention.support, count: supportTotal, href: "/admin/support", icon: <Headset className="h-4 w-4" />, tone: "amber" as const }]
+      : []),
+    ...(canReadCareChat && careTotal > 0
+      ? [{ id: "care", title: copy.attention.careQueue, count: careTotal, href: "/admin/care-chat", icon: <MessageSquareMore className="h-4 w-4" />, tone: "violet" as const }]
+      : []),
+    ...(canReadApplications && applicationsTotal > 0
+      ? [{ id: "applications", title: copy.attention.applications, count: applicationsTotal, href: "/admin/practitioner-applications", icon: <Users className="h-4 w-4" />, tone: "emerald" as const }]
+      : []),
+    ...(canReadModerationReports && moderationTotal > 0
+      ? [{ id: "moderation", title: copy.attention.moderation, count: moderationTotal, href: "/admin/moderation/reports", icon: <ShieldAlert className="h-4 w-4" />, tone: "slate" as const }]
+      : []),
+  ].sort((a, b) => b.count - a.count);
 
-  const sessionsDeltaText =
-    sessionsDeltaTone === "neutral"
-      ? copy.delta.unchanged
-      : (sessionsDeltaTone === "up"
-          ? copy.delta.upFromPrevious
-          : copy.delta.downFromPrevious
-        ).replace("{value}", formatPercent(locale, Math.abs(sessionsDeltaPercent)));
+  const ATTENTION_TONE: Record<string, { bg: string; text: string; icon: string }> = {
+    amber: { bg: "bg-amber-50/85 dark:bg-amber-500/10", text: "text-amber-700 dark:text-amber-300", icon: "text-amber-600 dark:text-amber-400" },
+    violet: { bg: "bg-violet-50/85 dark:bg-violet-500/10", text: "text-violet-700 dark:text-violet-300", icon: "text-violet-600 dark:text-violet-400" },
+    emerald: { bg: "bg-emerald-50/85 dark:bg-emerald-500/10", text: "text-emerald-700 dark:text-emerald-300", icon: "text-emerald-600 dark:text-emerald-400" },
+    slate: { bg: "bg-slate-100/85 dark:bg-white/[0.06]", text: "text-slate-700 dark:text-white/80", icon: "text-slate-500 dark:text-white/60" },
+  };
 
-  const settlementDeltaText =
-    settlementDeltaTone === "neutral"
-      ? copy.delta.unchanged
-      : (settlementDeltaTone === "up"
-          ? copy.delta.upFromPrevious
-          : copy.delta.downFromPrevious
-        ).replace("{value}", formatPercent(locale, Math.abs(settlementDeltaPercent)));
+  const hasAnyAttention = attentionItems.length > 0;
 
-  const headerSnapshotItems = [
-    {
-      id: "support",
-      label: copy.attention.supportTitle,
-      value: formatNumber(locale, supportTotal),
-    },
-    {
-      id: "care",
-      label: copy.attention.careTitle,
-      value: formatNumber(locale, careTotal),
-    },
-    {
-      id: "applications",
-      label: copy.attention.applicationsTitle,
-      value: formatNumber(locale, applicationsTotal),
-    },
-  ];
-
-  const priorityItems = [
-    ...(canReadSupport
-      ? [
-          {
-            id: "support-priority",
-            title: copy.attention.supportTitle,
-            count: supportTotal,
-            subtitle: copy.attention.supportSubtitle,
-            href: "/admin/support",
-            icon: <Headset className="h-4 w-4" />,
-            toneClass: "bg-amber-50/85 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300",
-          },
-        ]
-      : []),
-    ...(canReadCareChat
-      ? [
-          {
-            id: "care-priority",
-            title: copy.attention.careTitle,
-            count: careTotal,
-            subtitle: copy.attention.careSubtitle,
-            href: "/admin/care-chat",
-            icon: <MessageSquareMore className="h-4 w-4" />,
-            toneClass: "bg-violet-50/85 text-violet-700 dark:bg-violet-500/10 dark:text-violet-300",
-          },
-        ]
-      : []),
-    ...(canReadApplications
-      ? [
-          {
-            id: "applications-priority",
-            title: copy.attention.applicationsTitle,
-            count: applicationsTotal,
-            subtitle: copy.attention.applicationsSubtitle,
-            href: "/admin/practitioner-applications",
-            icon: <ClipboardCheck className="h-4 w-4" />,
-            toneClass: "bg-primary-light/75 text-text-brand dark:bg-primary/10 dark:text-primary-light",
-          },
-        ]
-      : []),
-    ...(canReadModerationReports
-      ? [
-          {
-            id: "moderation-priority",
-            title: copy.attention.moderationTitle,
-            count: moderationTotal,
-            subtitle: copy.activity.snapshotSubtitle,
-            href: "/admin/moderation/reports",
-            icon: <ShieldAlert className="h-4 w-4" />,
-            toneClass: "bg-slate-100/85 text-slate-700 dark:bg-white/[0.06] dark:text-white/80",
-          },
-        ]
-      : []),
-  ].sort((first, second) => second.count - first.count);
-
-  const quickActionItems = [
-    ...(canReadSessions
-      ? [
-          {
-            id: "sessions",
-            title: copy.kpi.sessions,
-            subtitle: copy.kpi.sessionsHelper,
-            href: "/admin/sessions",
-            icon: <CalendarClock className="h-4 w-4" />,
-            value: formatNumber(locale, sessionsToday),
-          },
-        ]
-      : []),
-    ...(canReadSupport
-      ? [
-          {
-            id: "support",
-            title: copy.attention.supportTitle,
-            subtitle: copy.attention.supportSubtitle,
-            href: "/admin/support",
-            icon: <Headset className="h-4 w-4" />,
-            value: formatNumber(locale, supportTotal),
-          },
-        ]
-      : []),
-    ...(canReadCareChat
-      ? [
-          {
-            id: "care",
-            title: copy.attention.careTitle,
-            subtitle: copy.attention.careSubtitle,
-            href: "/admin/care-chat",
-            icon: <MessageSquareMore className="h-4 w-4" />,
-            value: formatNumber(locale, careTotal),
-          },
-        ]
-      : []),
-    ...(canReadSettlements
-      ? [
-          {
-            id: "settlements",
-            title: copy.charts.settlementsTitle,
-            subtitle: copy.kpi.revenueHelper,
-            href: "/admin/settlements",
-            icon: <WalletCards className="h-4 w-4" />,
-            value: formatFinanceMoney(locale, settlementLatestValue, settlementCurrency, {
-              fallbackText: copy.common.noData,
-              minimumFractionDigits: 0,
-              maximumFractionDigits: 2,
-            }),
-          },
-        ]
-      : []),
-  ];
-
-  const strongestPriority = priorityItems[0]?.count ?? 0;
+  const sessionsDeltaText = safeDeltaText(sessionsToday, sessionsYesterday, locale, {
+    upFromPrevious: "+",
+    downFromPrevious: "-",
+    unchanged: "0%",
+  });
+  const settlementDeltaText = safeDeltaText(settlementLatestValue, settlementPreviousValue, locale, {
+    upFromPrevious: "+",
+    downFromPrevious: "-",
+    unchanged: "0%",
+  });
 
   return (
-    <div className="space-y-6">
-      <section className="app-panel rounded-[34px] px-6 py-6 sm:px-7 sm:py-7">
-        <div className="grid gap-6 xl:grid-cols-[minmax(0,1.45fr)_minmax(320px,0.95fr)]">
+    <div className="space-y-5">
+      {/* ── Section 1: Compact header ── */}
+      <section className="app-panel rounded-[24px] px-5 py-4 sm:px-6 sm:py-5">
+        <div className="flex items-center justify-between gap-4">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
-              {copy.common.updatedLabel}
-            </p>
-            <h1 className="mt-2 text-2xl font-semibold tracking-tight text-text-primary dark:text-white/95 sm:text-3xl">
-              {copy.pageTitle}
+            <h1 className="text-xl font-semibold tracking-tight text-text-primary dark:text-white/95 sm:text-2xl">
+              {copy.hero.title}
             </h1>
-            <p className="mt-2 max-w-[68ch] text-sm leading-6 text-text-secondary sm:text-base">
-              {copy.pageSubtitle}
-            </p>
-            <p className="mt-3 max-w-[70ch] text-sm leading-6 text-text-muted">{copy.pageNote}</p>
-
-            <div className="mt-5 flex flex-wrap gap-2.5">
-              {headerSnapshotItems.map((item) => (
-                <div
-                  key={item.id}
-                  className="app-chip rounded-full px-3.5 py-2 text-sm text-text-secondary dark:text-white/80"
-                >
-                  <span className="font-semibold text-text-primary dark:text-white/95">{item.value}</span>{" "}
-                  {item.label}
-                </div>
-              ))}
-            </div>
-
-            <div className="mt-6">
-              <div className="flex flex-wrap items-end justify-between gap-3">
-                <div>
-                  <h2 className="text-sm font-semibold text-text-primary dark:text-white/95">
-                    {copy.hero.quickActionsTitle}
-                  </h2>
-                  <p className="mt-1 max-w-[56ch] text-sm text-text-secondary">
-                    {copy.hero.quickActionsSubtitle}
-                  </p>
-                </div>
-              </div>
-
-              <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                {quickActionItems.map((item) => (
-                  <Link
-                    key={item.id}
-                    href={buildLocalizedPath(locale, item.href) as never}
-                    className="app-panel-soft block rounded-[26px] p-4 transition hover:-translate-y-0.5 hover:border-primary/25 hover:bg-primary-light/35 dark:hover:bg-primary/10"
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <span className="inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-primary-light text-text-brand dark:bg-primary/15 dark:text-primary-light">
-                        {item.icon}
-                      </span>
-                      <span className="text-sm font-semibold text-text-primary dark:text-white/95">
-                        {item.value}
-                      </span>
-                    </div>
-                    <h3 className="mt-4 text-sm font-semibold text-text-primary dark:text-white/95">
-                      {item.title}
-                    </h3>
-                    <p className="mt-1 text-xs leading-5 text-text-secondary">{item.subtitle}</p>
-                  </Link>
-                ))}
-              </div>
-            </div>
+            <p className="mt-1 text-sm text-text-secondary">{copy.hero.subtitle}</p>
           </div>
-
-          <aside className="app-panel-soft rounded-[30px] p-5 sm:p-6">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <h2 className="text-base font-semibold tracking-tight text-text-primary dark:text-white/95">
-                  {copy.hero.prioritiesTitle}
-                </h2>
-                <p className="mt-1 text-sm leading-6 text-text-secondary">
-                  {copy.hero.prioritiesSubtitle}
-                </p>
-              </div>
-            </div>
-
-            <div className="mt-5 space-y-2.5">
-              {priorityItems.map((item) => (
-                <Link
-                  key={item.id}
-                  href={buildLocalizedPath(locale, item.href) as never}
-                  className="flex items-center justify-between gap-3 rounded-[22px] bg-white/88 px-4 py-3 transition hover:bg-primary-light/45 dark:bg-white/[0.04] dark:hover:bg-primary/10"
-                >
-                  <div className="flex min-w-0 items-center gap-3">
-                    <span className={`inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl ${item.toneClass}`}>
-                      {item.icon}
-                    </span>
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-semibold text-text-primary dark:text-white/95">
-                        {item.title}
-                      </p>
-                      <p className="mt-0.5 truncate text-xs text-text-secondary">{item.subtitle}</p>
-                    </div>
-                  </div>
-                  <div className="flex shrink-0 items-center gap-2 text-text-secondary dark:text-white/75">
-                    <div className="text-end">
-                      <p className="text-sm font-semibold text-text-primary dark:text-white/95">
-                        {formatNumber(locale, item.count)}
-                      </p>
-                      <p className="text-[11px]">{copy.hero.countSuffix}</p>
-                    </div>
-                    <ArrowRight className="h-4 w-4 rtl:rotate-180" />
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </aside>
+          {hasHydrated && (
+            <span className="app-chip rounded-full bg-primary-light px-3.5 py-1.5 text-xs font-semibold text-text-brand dark:bg-primary/15 dark:text-primary-light rtl:ml-0">
+              {copy.hero.today} · {now.toLocaleDateString(normalizeLocale(locale), { weekday: "short", month: "short", day: "numeric" })}
+            </span>
+          )}
         </div>
       </section>
 
-      <section className="grid gap-4 xl:grid-cols-4">
+      {/* ── Section 2: Needs attention — only shown when items exist ── */}
+      {hasAnyAttention && (
+        <section className="app-panel rounded-[24px] px-5 py-4 sm:px-6 sm:py-5">
+          <h2 className="mb-4 text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
+            {copy.attention.heading}
+          </h2>
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            {attentionItems.map((item) => {
+              const tone = ATTENTION_TONE[item.tone] ?? ATTENTION_TONE.slate;
+              return (
+                <Link
+                  key={item.id}
+                  href={buildLocalizedPath(locale, item.href) as never}
+                  className="flex items-center gap-3 rounded-[20px] bg-white/80 px-4 py-3 transition hover:-translate-y-0.5 hover:bg-primary-light/35 dark:bg-white/[0.04] dark:hover:bg-primary/10"
+                >
+                  <span className={`inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl ${tone.bg} ${tone.icon}`}>
+                    {item.icon}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-semibold text-text-primary dark:text-white/95">
+                      {item.title}
+                    </p>
+                    <p className="mt-0.5 text-xs text-text-secondary">
+                      {formatNumber(locale, item.count)}
+                    </p>
+                  </div>
+                  <ArrowRight className="h-4 w-4 shrink-0 text-text-muted rtl:rotate-180" />
+                </Link>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
+      {!hasAnyAttention && (
+        <div className="app-panel-soft rounded-[20px] border border-dashed p-4 text-center text-sm text-text-muted">
+          {copy.attention.empty}
+        </div>
+      )}
+
+      {/* ── Section 3: KPI cards ── */}
+      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <AdminDashboardKpiCard
-          label={copy.kpi.sessions}
+          label={copy.kpi.sessionsToday}
           value={formatNumber(locale, sessionsToday)}
           icon={<CalendarClock className="h-5 w-5" />}
-          helper={copy.kpi.sessionsHelper}
-          deltaText={`${sessionsDeltaText} - ${copy.delta.comparedToYesterday}`}
+          deltaText={sessionsDeltaText}
           deltaTone={sessionsDeltaTone}
           accentTone="blue"
         />
         <AdminDashboardKpiCard
-          label={copy.kpi.support}
+          label={copy.kpi.openSupport}
           value={formatNumber(locale, supportTotal)}
           icon={<Headset className="h-5 w-5" />}
-          helper={copy.kpi.supportHelper}
           accentTone="amber"
         />
         <AdminDashboardKpiCard
-          label={copy.kpi.care}
-          value={formatNumber(locale, careTotal)}
-          icon={<MessageSquareMore className="h-5 w-5" />}
-          helper={copy.kpi.careHelper}
-          accentTone="violet"
+          label={copy.kpi.pendingApplications}
+          value={formatNumber(locale, applicationsTotal)}
+          icon={<Users className="h-5 w-5" />}
+          accentTone="teal"
         />
         <AdminDashboardKpiCard
-          label={copy.kpi.revenue}
-          value={formatFinanceMoney(locale, settlementLatestValue, settlementCurrency, {
-            fallbackText: copy.common.noData,
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 2,
-          })}
+          label={copy.kpi.settlementsTotal}
+          value={hasSettlementData
+            ? formatFinanceMoney(locale, settlementLatestValue, settlementCurrency, {
+                fallbackText: "-",
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 2,
+              })
+            : "-"}
           icon={<WalletCards className="h-5 w-5" />}
-          helper={copy.kpi.revenueHelper}
-          deltaText={`${settlementDeltaText} - ${copy.delta.comparedToPreviousBatch}`}
+          deltaText={settlementDeltaText}
           deltaTone={settlementDeltaTone}
-          accentTone="teal"
+          accentTone="blue"
         />
       </section>
 
+      {/* ── Section 4: Charts ── */}
       <section>
-        <AdminDashboardSectionHeader
-          title={copy.charts.heading}
-          subtitle={copy.charts.subtitle}
-        />
-        <div className="grid gap-5 xl:grid-cols-12">
-          <div className="xl:col-span-7">
-            <AdminDashboardChartCard
-              title={copy.charts.sessionsTitle}
-              subtitle={copy.charts.sessionsSubtitle}
-              actionLabel={copy.common.viewAll}
-              actionHref={canReadSessions ? "/admin/sessions" : undefined}
-            >
+        <div className="grid gap-4 xl:grid-cols-12">
+          <div className="xl:col-span-8">
+            <AdminDashboardChartCard title={copy.charts.sessionsTrend}>
               {sessionsTrendLoading ? (
-                <ListStateSkeleton items={1} heightClass="h-[280px]" />
+                <ListStateSkeleton items={1} heightClass="h-[240px]" />
               ) : (
                 <AreaTrendChart
                   locale={locale}
                   categories={sessionsTrendLabels}
-                  seriesName={copy.charts.sessionsSeries}
+                  seriesName={isArabic ? "الجلسات" : "Sessions"}
                   values={sessionsTrendSeries}
-                  comparisonSeriesName={copy.charts.sessionsAverageSeries}
+                  comparisonSeriesName={isArabic ? "متوسط ٣ أيام" : "3-day avg"}
                   comparisonValues={sessionsMovingAverageSeries}
-                  height={300}
+                  height={260}
                   color={chartPalette[0]}
                   comparisonColor={chartPalette[1]}
                 />
@@ -921,29 +674,23 @@ export default function AdminDashboard() {
             </AdminDashboardChartCard>
           </div>
 
-          <div className="xl:col-span-5">
-            <AdminDashboardChartCard
-              title={copy.charts.workloadTitle}
-              subtitle={copy.charts.workloadSubtitle}
-            >
+          <div className="xl:col-span-4">
+            <AdminDashboardChartCard title={copy.charts.workload}>
               {!hasWorkloadData ? (
-                <StateCard
-                  centered
-                  title={copy.common.noData}
-                  note={copy.activity.snapshotEmpty}
-                  className="border-dashed"
-                />
+                <div className="flex h-[240px] items-center justify-center rounded-[20px] border border-dashed border-border-light bg-surface-secondary/50 dark:border-white/10 dark:bg-white/[0.02]">
+                  <p className="text-sm text-text-muted">{copy.charts.noDataYet}</p>
+                </div>
               ) : (
                 <DonutDistributionChart
                   locale={locale}
                   labels={[
-                    copy.attention.supportTitle,
-                    copy.attention.careTitle,
-                    copy.attention.applicationsTitle,
-                    copy.attention.moderationTitle,
+                    copy.attention.support,
+                    copy.attention.careQueue,
+                    copy.attention.applications,
+                    copy.attention.moderation,
                   ]}
                   values={workloadSeries}
-                  height={300}
+                  height={260}
                   colors={[chartPalette[0], chartPalette[1], chartPalette[2], "#C6CED9"]}
                 />
               )}
@@ -951,30 +698,22 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        <div className="mt-5">
-          <AdminDashboardChartCard
-            title={copy.charts.settlementsTitle}
-            subtitle={copy.charts.settlementsSubtitle}
-            actionLabel={copy.common.viewAll}
-            actionHref={canReadSettlements ? "/admin/settlements" : undefined}
-          >
+        <div className="mt-4">
+          <AdminDashboardChartCard title={copy.charts.settlementsTrend}>
             {!hasHydrated || settlementsQuery.isLoading ? (
-              <ListStateSkeleton items={1} heightClass="h-[240px]" />
+              <ListStateSkeleton items={1} heightClass="h-[200px]" />
             ) : settlementChartSeries.length === 0 ? (
-              <StateCard
-                centered
-                title={copy.common.noData}
-                note={copy.charts.settlementsSubtitle}
-                className="border-dashed"
-              />
+              <div className="flex h-[200px] items-center justify-center rounded-[20px] border border-dashed border-border-light bg-surface-secondary/50 dark:border-white/10 dark:bg-white/[0.02]">
+                <p className="text-sm text-text-muted">{copy.charts.noDataYet}</p>
+              </div>
             ) : (
               <BarTrendChart
                 locale={locale}
                 categories={settlementChartLabels}
-                seriesName={copy.charts.settlementsSeries}
+                seriesName={isArabic ? "التسويات" : "Settlements"}
                 values={settlementChartSeries}
-            currencyCode={settlementCurrency ?? undefined}
-                height={260}
+                currencyCode={settlementCurrency ?? undefined}
+                height={200}
                 distributed
                 colors={chartPalette}
               />
@@ -983,195 +722,38 @@ export default function AdminDashboard() {
         </div>
       </section>
 
+      {/* ── Section 5: Follow-up queues ── */}
       <section>
-        <AdminDashboardSectionHeader
-          title={copy.attention.heading}
-          subtitle={copy.attention.subtitle}
-        />
-        <div className="grid gap-5 xl:grid-cols-12">
-          <div className="xl:col-span-8">
-            <div className="grid gap-5 lg:grid-cols-2">
-              <AdminDashboardQueueCard
-                title={copy.attention.supportTitle}
-                subtitle={copy.attention.supportSubtitle}
-                actionLabel={canReadSupport ? copy.common.viewAll : undefined}
-                actionHref={canReadSupport ? "/admin/support" : undefined}
-                emptyText={copy.attention.supportEmpty}
-                items={supportItems}
-              />
-              <AdminDashboardQueueCard
-                title={copy.attention.careTitle}
-                subtitle={copy.attention.careSubtitle}
-                actionLabel={canReadCareChat ? copy.common.viewAll : undefined}
-                actionHref={canReadCareChat ? "/admin/care-chat" : undefined}
-                emptyText={copy.attention.careEmpty}
-                items={careItems}
-              />
-            </div>
-          </div>
-
-          <div className="xl:col-span-4">
-            <article className="app-panel rounded-[30px] p-5 sm:p-6">
-              <AdminDashboardSectionHeader
-                title={copy.attention.applicationsTitle}
-                subtitle={copy.attention.applicationsSubtitle}
-                actionLabel={canReadApplications ? copy.common.viewAll : undefined}
-                actionHref={canReadApplications ? "/admin/practitioner-applications" : undefined}
-              />
-
-              <div className="rounded-[24px] bg-primary-light/45 p-4 dark:bg-primary/10">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-brand dark:text-primary-light">
-                  {copy.common.totalLabel}
-                </p>
-                <p className="mt-2 text-[2rem] font-semibold tracking-tight text-text-primary dark:text-white/95">
-                  {formatNumber(locale, applicationsTotal)}
-                </p>
-                <p className="mt-2 text-sm leading-6 text-text-secondary">
-                  {applicationsTotal >= strongestPriority && applicationsTotal > 0
-                    ? copy.attention.subtitle
-                    : copy.attention.applicationsSubtitle}
-                </p>
-              </div>
-
-              <div className="mt-4">
-                {applicationItems.length === 0 ? (
-                  <div className="app-panel-soft rounded-[24px] border border-dashed p-4 text-sm text-text-muted dark:border-white/10">
-                    {copy.attention.applicationsEmpty}
-                  </div>
-                ) : (
-                  <ul className="overflow-hidden rounded-[24px] divide-y divide-border-light/80 bg-surface-secondary/75 dark:divide-white/10 dark:bg-white/[0.03]">
-                    {applicationItems.map((item) => (
-                      <li key={item.id}>
-                        <Link
-                          href={item.href as never}
-                          className="flex items-start justify-between gap-3 px-4 py-3.5 transition hover:bg-primary-light/55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 dark:hover:bg-primary/10"
-                        >
-                          <div className="min-w-0">
-                            <p className="truncate text-sm font-medium text-text-primary dark:text-white/95">
-                              {item.title}
-                            </p>
-                            {item.subtitle ? (
-                              <p className="mt-0.5 text-xs text-text-muted">{item.subtitle}</p>
-                            ) : null}
-                          </div>
-                          {item.badge ? <div className="shrink-0">{item.badge}</div> : null}
-                        </Link>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            </article>
-          </div>
+        <h2 className="mb-4 text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
+          {copy.followUp.heading}
+        </h2>
+        <div className="grid gap-4 xl:grid-cols-2">
+          <AdminDashboardQueueCard
+            title={copy.followUp.support}
+            actionLabel={canReadSupport ? copy.common.viewAll : undefined}
+            actionHref={canReadSupport ? "/admin/support" : undefined}
+            emptyText={copy.followUp.noItems}
+            items={supportItems}
+          />
+          <AdminDashboardQueueCard
+            title={copy.followUp.applications}
+            actionLabel={canReadApplications ? copy.common.viewAll : undefined}
+            actionHref={canReadApplications ? "/admin/practitioner-applications" : undefined}
+            emptyText={copy.followUp.noItems}
+            items={applicationItems}
+          />
         </div>
       </section>
 
+      {/* ── Section 6: Recent activity ── */}
       <section>
-        <AdminDashboardSectionHeader
+        <AdminDashboardQueueCard
           title={copy.activity.heading}
-          subtitle={copy.activity.subtitle}
+          actionLabel={canReadNotifications ? copy.common.viewAll : undefined}
+          actionHref={canReadNotifications ? "/admin/notifications" : undefined}
+          emptyText={copy.activity.noRecent}
+          items={recentActivityItems}
         />
-        <div className="grid gap-5 xl:grid-cols-12">
-          <div className="xl:col-span-7">
-            <AdminDashboardQueueCard
-              title={copy.activity.recentTitle}
-              subtitle={copy.activity.recentSubtitle}
-              actionLabel={canReadNotifications ? copy.common.viewAll : undefined}
-              actionHref={canReadNotifications ? "/admin/notifications" : undefined}
-              emptyText={copy.activity.recentEmpty}
-              items={recentActivityItems}
-            />
-          </div>
-          <div className="xl:col-span-5">
-            <article className="app-panel rounded-[30px] p-5 sm:p-6">
-              <AdminDashboardSectionHeader
-                title={copy.activity.snapshotTitle}
-                subtitle={copy.activity.snapshotSubtitle}
-                actionLabel={canReadModerationReports ? copy.common.viewAll : undefined}
-                actionHref={canReadModerationReports ? "/admin/moderation/reports" : undefined}
-              />
-              <ul className="space-y-2.5">
-                {queueSnapshotItems.map((item) => (
-                  <li
-                    key={item.id}
-                    className="rounded-[22px] bg-surface-secondary/80 px-4 py-3 dark:bg-white/[0.03]"
-                  >
-                    <div className="flex items-center justify-between gap-3">
-                      <span className="text-sm font-medium text-text-primary dark:text-white/95">
-                        {item.title}
-                      </span>
-                      <span className="text-sm text-text-secondary">{item.subtitle}</span>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-
-              <div className="mt-5">
-                <div className="flex items-center justify-between gap-3 rounded-[22px] bg-slate-100/80 px-4 py-3 dark:bg-white/[0.04]">
-                  <div>
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-muted">
-                      {copy.common.updatedLabel}
-                    </p>
-                    <p className="mt-1 text-sm font-medium text-text-primary dark:text-white/95">
-                      {hasHydrated
-                        ? formatDateTimeLabel(locale, new Date().toISOString())
-                        : copy.common.loading}
-                    </p>
-                  </div>
-                  <span className="app-chip rounded-full px-3 py-1.5 text-xs text-text-secondary dark:text-white/80">
-                    {formatNumber(locale, supportTotal + careTotal + applicationsTotal + moderationTotal)} {copy.hero.countSuffix}
-                  </span>
-                </div>
-              </div>
-
-              <div className="mt-4 grid grid-cols-2 gap-2.5">
-                <div className="rounded-[22px] bg-primary-light/70 p-3 dark:bg-primary/10">
-                  <div className="flex items-center gap-2 text-text-brand dark:text-primary-light">
-                    <ClipboardCheck className="h-4 w-4" />
-                    <p className="text-xs font-semibold">{copy.attention.applicationsTitle}</p>
-                  </div>
-                  <p className="mt-1 text-xl font-semibold text-text-primary dark:text-white/95">
-                    {formatNumber(locale, applicationsTotal)}
-                  </p>
-                </div>
-
-                <div className="rounded-[22px] bg-surface-secondary/85 p-3 dark:bg-white/[0.03]">
-                  <div className="flex items-center gap-2 text-text-secondary">
-                    <ShieldAlert className="h-4 w-4" />
-                    <p className="text-xs font-semibold">{copy.attention.moderationTitle}</p>
-                  </div>
-                  <p className="mt-1 text-xl font-semibold text-text-primary dark:text-white/95">
-                    {formatNumber(locale, moderationTotal)}
-                  </p>
-                </div>
-
-                <div className="rounded-[22px] bg-surface-secondary/85 p-3 dark:bg-white/[0.03]">
-                  <div className="flex items-center gap-2 text-text-secondary">
-                    <Activity className="h-4 w-4" />
-                    <p className="text-xs font-semibold">{copy.attention.supportTitle}</p>
-                  </div>
-                  <p className="mt-1 text-xl font-semibold text-text-primary dark:text-white/95">
-                    {formatNumber(locale, supportTotal)}
-                  </p>
-                </div>
-
-                <div className="rounded-[22px] bg-surface-secondary/85 p-3 dark:bg-white/[0.03]">
-                  <div className="flex items-center gap-2 text-text-secondary">
-                    <BadgeDollarSign className="h-4 w-4" />
-                    <p className="text-xs font-semibold">{copy.kpi.revenue}</p>
-                  </div>
-                  <p className="mt-1 text-xl font-semibold text-text-primary dark:text-white/95">
-                    {formatFinanceMoney(locale, settlementLatestValue, settlementCurrency, {
-                      fallbackText: copy.common.noData,
-                      minimumFractionDigits: 0,
-                      maximumFractionDigits: 2,
-                    })}
-                  </p>
-                </div>
-              </div>
-            </article>
-          </div>
-        </div>
       </section>
     </div>
   );

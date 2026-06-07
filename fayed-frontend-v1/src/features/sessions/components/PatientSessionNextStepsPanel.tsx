@@ -13,6 +13,7 @@ import { usePatientCareChatRequests } from "@/features/care-chat/hooks/use-care-
 import { usePatientReviews } from "@/features/reviews";
 import PatientSessionReviewCard from "./PatientSessionReviewCard";
 import SessionStatusBadge from "./SessionStatusBadge";
+import { canOpenSessionChatFromPresentationStatus } from "../lib/session-presentation";
 import type { SessionItem } from "../types/sessions.types";
 
 type Props = {
@@ -71,9 +72,10 @@ function ActionTile({
 
 export default function PatientSessionNextStepsPanel({ session }: Props) {
   const t = useTranslations("sessions");
-  const isCompleted = session.status === "COMPLETED";
-  const canOpenSessionChat = ["READY_TO_JOIN", "IN_PROGRESS", "COMPLETED"].includes(
-    session.status,
+  const isCompleted =
+    session.presentationStatus === "COMPLETED" || session.presentationStatus === "ENDED";
+  const canOpenSessionChat = canOpenSessionChatFromPresentationStatus(
+    session.presentationStatus,
   );
 
   const reviewsQuery = usePatientReviews(
@@ -120,7 +122,7 @@ export default function PatientSessionNextStepsPanel({ session }: Props) {
           </p>
         </div>
 
-        <SessionStatusBadge status="COMPLETED" />
+      <SessionStatusBadge presentationStatus={session.presentationStatus} />
       </div>
 
       <div className="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1.35fr)_minmax(0,0.9fr)]">

@@ -30,6 +30,9 @@ describe('NotificationChannelExecutionService', () => {
       subjectSnapshot: null,
       bodySnapshot: 'Body',
       payloadJson: {},
+      relatedEntityType: null,
+      relatedEntityId: null,
+      notificationType: { slug: 'test.in-app', category: 'SYSTEM' },
     });
 
     expect(result).toEqual(
@@ -55,6 +58,9 @@ describe('NotificationChannelExecutionService', () => {
       subjectSnapshot: 'Subject',
       bodySnapshot: 'Body',
       payloadJson: { target: 'user@example.com' },
+      relatedEntityType: null,
+      relatedEntityId: null,
+      notificationType: { slug: 'test.email', category: 'SYSTEM' },
     });
 
     expect(emailService.sendEmail).toHaveBeenCalledWith(
@@ -80,6 +86,9 @@ describe('NotificationChannelExecutionService', () => {
       subjectSnapshot: 'Subject',
       bodySnapshot: 'Body',
       payloadJson: {},
+      relatedEntityType: null,
+      relatedEntityId: null,
+      notificationType: { slug: 'test.email', category: 'SYSTEM' },
     });
 
     expect(result).toEqual({

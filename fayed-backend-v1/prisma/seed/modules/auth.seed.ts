@@ -114,6 +114,10 @@ export const permissionDefinitions: Array<{
     description: 'Read sensitive patient data such as assessment submissions',
   },
   {
+    key: 'patients.update.admin',
+    description: 'Update patient profile data in back-office (e.g. country change for pricing correction)',
+  },
+  {
     key: 'support.ticket.note.internal',
     description:
       'Add internal notes to support tickets (admin-only; not visible to reporters)',
@@ -281,6 +285,7 @@ export const rolePermissionBundles: Array<{
       'audit-log.read',
       'sessions.read.admin',
       'patients.read.admin',
+      'patients.update.admin',
     ],
   },
   {

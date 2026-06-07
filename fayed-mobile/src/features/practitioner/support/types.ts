@@ -25,6 +25,18 @@ export type SupportTicketPriority =
   | "HIGH"
   | "URGENT";
 
+export interface CreateSupportTicketPayload {
+  category: SupportTicketType;
+  subject: string;
+  description: string;
+  priority?: SupportTicketPriority;
+  relatedSessionId?: string;
+  relatedPaymentId?: string;
+  relatedInstantBookingRequestId?: string;
+  relatedMatchingSessionId?: string;
+  relatedAssessmentSubmissionId?: string;
+}
+
 export type SupportMessageStatus = "SENT" | "DELIVERED" | "READ" | "FAILED";
 
 export type SupportMessageSenderRole =
@@ -90,4 +102,3 @@ export interface SupportTicketListResponseData {
   items: SupportTicketItemDto[];
   pagination: SupportPaginationDto;
 }
-

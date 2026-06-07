@@ -7,11 +7,9 @@ import {
   TextInput,
   TouchableOpacity,
   View,
-  I18nManager,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import * as ImagePicker from "expo-image-picker";
 import {
   Header,
   Screen,
@@ -24,8 +22,6 @@ import { useTranslation } from "react-i18next";
 import {
   usePatchPatientProfile,
   usePatientProfile,
-  useRemovePatientAvatar,
-  useUploadPatientAvatar,
 } from "../../../src/features/patient/profile/hooks";
 import {
   formatProfileDate,
@@ -37,7 +33,6 @@ import { getCountryLabel } from "../../../src/features/patient/profile/country-u
 import { extractApiErrorMessage } from "../../../src/lib/api";
 import { DatePickerModal } from "../../../src/features/patient/profile/components/DatePickerModal";
 import { GenderSelectModal, type GenderValue } from "../../../src/features/patient/profile/components/GenderSelectModal";
-import { CountryPickerModal } from "../../../src/features/patient/profile/components/CountryPickerModal";
 
 function toLocalDateString(date: Date): string {
   const y = date.getFullYear();
@@ -54,36 +49,26 @@ export default function EditPatientProfileScreen() {
 
   const profileQuery = usePatientProfile();
   const patchProfile = usePatchPatientProfile();
-  const uploadAvatar = useUploadPatientAvatar();
-  const removeAvatar = useRemovePatientAvatar();
   const profile = profileQuery.data?.profile;
 
   const [displayName, setDisplayName] = useState("");
   const [dateOfBirth, setDateOfBirth] = useState<Date | null>(null);
   const [gender, setGender] = useState<GenderValue>(null);
-  const [countryCode, setCountryCode] = useState<string | null>(null);
-  const [selectedImageUri, setSelectedImageUri] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<{
     displayName?: string;
     dateOfBirth?: string;
     gender?: string;
-    countryCode?: string;
   }>({});
-
-  // Avatar actions
-  const [avatarActionSheetVisible, setAvatarActionSheetVisible] = useState(false);
 
   // Modals
   const [datePickerVisible, setDatePickerVisible] = useState(false);
   const [genderModalVisible, setGenderModalVisible] = useState(false);
-  const [countryPickerVisible, setCountryPickerVisible] = useState(false);
 
   useEffect(() => {
     if (!profile) return;
 
     setDisplayName(profile.displayName ?? "");
     setGender((profile.gender as GenderValue) ?? null);
-    setCountryCode(profile.countryCode ?? null);
 
     if (profile.dateOfBirth) {
       const [y, mo, d] = profile.dateOfBirth.split("-").map(Number);
@@ -92,12 +77,6 @@ export default function EditPatientProfileScreen() {
       }
     }
   }, [profile]);
-
-  useEffect(() => {
-    setSelectedImageUri(
-      profile?.avatarDataUrl ?? profile?.avatarUrl ?? null,
-    );
-  }, [profile?.avatarDataUrl, profile?.avatarUrl]);
 
   const displayNameInitials = getInitials(
     (displayName.trim() || profile?.displayName) ?? undefined,
@@ -111,9 +90,9 @@ export default function EditPatientProfileScreen() {
     ? t(`profileScreen.details.genderOptions.${gender}` as const)
     : t("profileScreen.none");
 
-  const countryDisplayValue = countryCode
-    ? getCountryLabel(countryCode, i18n.language)
-    : "";
+  const countryDisplayValue = profile?.countryCode
+    ? getCountryLabel(profile.countryCode, i18n.language)
+    : t("profileScreen.none");
 
   const genderOptions: { value: GenderValue; label: string }[] = [
     { value: "male", label: t("profileScreen.details.genderOptions.male") },
@@ -143,111 +122,18 @@ export default function EditPatientProfileScreen() {
       errors.gender = t("profileScreen.edit.fields.genderRequired");
     }
 
-    if (!countryCode) {
-      errors.countryCode = t("profileScreen.edit.fields.countryRequired");
-    }
-
     setFieldErrors(errors);
     return Object.keys(errors).length === 0;
-  };
-
-  const pickImage = async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== "granted") {
-      Alert.alert(
-        t("profileScreen.details.avatar.permissionNeeded"),
-        t("profileScreen.details.avatar.permissionDenied"),
-      );
-      return;
-    }
-
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.8,
-    });
-
-    if (result.canceled || !result.assets?.[0]) return;
-
-    const asset = result.assets[0];
-    const fileSizeMB = (asset.fileSize ?? 0) / (1024 * 1024);
-    if (fileSizeMB > 5) {
-      Alert.alert(t("profileScreen.details.avatar.imageTooLarge"));
-      return;
-    }
-
-    const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
-    if (!allowedTypes.includes(asset.mimeType ?? "")) {
-      Alert.alert(t("profileScreen.details.avatar.unsupportedType"));
-      return;
-    }
-
-    setSelectedImageUri(asset.uri);
-  };
-
-  const handleRemoveAvatar = async () => {
-    try {
-      await removeAvatar.mutateAsync();
-      setSelectedImageUri(null);
-      setAvatarActionSheetVisible(false);
-    } catch (error) {
-      Alert.alert(
-        t("profileScreen.common.saveFailedTitle"),
-        extractApiErrorMessage(error) ||
-          t("profileScreen.details.avatar.uploadFailed"),
-      );
-    }
-  };
-
-  const handleSaveAvatar = async () => {
-    if (!selectedImageUri) return;
-    if (selectedImageUri === profile?.avatarDataUrl || selectedImageUri === profile?.avatarUrl) return;
-
-    const uriParts = selectedImageUri.split(".");
-    const ext = uriParts[uriParts.length - 1]?.toLowerCase() ?? "jpg";
-    const name = `avatar.${ext}`;
-    const mimeType =
-      ext === "png"
-        ? "image/png"
-        : ext === "webp"
-          ? "image/webp"
-          : "image/jpeg";
-
-    try {
-      await uploadAvatar.mutateAsync({
-        uri: selectedImageUri,
-        name,
-        type: mimeType,
-      });
-    } catch (error) {
-      Alert.alert(
-        t("profileScreen.common.saveFailedTitle"),
-        extractApiErrorMessage(error) ||
-          t("profileScreen.details.avatar.uploadFailed"),
-      );
-      throw error;
-    }
   };
 
   const handleSave = async () => {
     if (!validate()) return;
 
-    const needsAvatarUpload =
-      selectedImageUri &&
-      selectedImageUri !== profile?.avatarDataUrl &&
-      selectedImageUri !== profile?.avatarUrl;
-
     try {
-      if (needsAvatarUpload) {
-        await handleSaveAvatar();
-      }
-
       await patchProfile.mutateAsync({
         displayName: displayName.trim(),
         dateOfBirth: normalizeDateOfBirth(toLocalDateString(dateOfBirth!)),
         gender,
-        countryCode,
       });
 
       router.back();
@@ -265,22 +151,20 @@ export default function EditPatientProfileScreen() {
       <Header title={t("profileScreen.edit.screenTitle")} showBack />
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Avatar card */}
+        {/* Avatar card — read-only context, photo update is on /profile-details */}
         <Card
           variant="elevated"
           style={[styles.card, { borderColor: theme.colors.borderLight }]}
         >
-          <TouchableOpacity
-            activeOpacity={0.8}
-            onPress={() => setAvatarActionSheetVisible(true)}
+          <View
             style={[
               styles.avatarRow,
               isRtl ? styles.avatarRowRtl : null,
             ]}
           >
-            {selectedImageUri ? (
+            {profile?.avatarDataUrl || profile?.avatarUrl ? (
               <Image
-                source={{ uri: selectedImageUri }}
+                source={{ uri: profile?.avatarDataUrl ?? profile?.avatarUrl ?? "" }}
                 style={styles.avatarImage}
               />
             ) : (
@@ -314,13 +198,7 @@ export default function EditPatientProfileScreen() {
                 {t("profileScreen.edit.avatarHint")}
               </Text>
             </View>
-            <Ionicons
-              name="camera"
-              size={20}
-              color={theme.colors.primary}
-              style={isRtl ? styles.cameraIconRtl : styles.cameraIconLtr}
-            />
-          </TouchableOpacity>
+          </View>
         </Card>
 
         {/* Personal data card */}
@@ -511,7 +389,7 @@ export default function EditPatientProfileScreen() {
               ) : null}
             </View>
 
-            {/* Country */}
+            {/* Country — read-only, detected at registration */}
             <View style={styles.fieldWrap}>
               <Text
                 weight="500"
@@ -520,15 +398,11 @@ export default function EditPatientProfileScreen() {
               >
                 {t("profileScreen.edit.fields.countryCode")}
               </Text>
-              <TouchableOpacity
-                activeOpacity={0.7}
-                onPress={() => setCountryPickerVisible(true)}
+              <View
                 style={[
                   styles.selectorButton,
                   {
-                    borderColor: fieldErrors.countryCode
-                      ? "#ef4444"
-                      : theme.colors.borderLight,
+                    borderColor: theme.colors.borderLight,
                     backgroundColor: theme.colors.surface,
                     flexDirection: isRtl ? "row-reverse" : "row",
                   },
@@ -538,27 +412,19 @@ export default function EditPatientProfileScreen() {
                   style={[
                     styles.selectorText,
                     {
-                      color: countryDisplayValue
-                        ? theme.colors.textPrimary
-                        : theme.colors.textMuted,
+                      color: theme.colors.textPrimary,
                       textAlign: isRtl ? "right" : "left",
                     },
                   ]}
                 >
-                  {countryDisplayValue ||
-                    t("profileScreen.edit.countryPicker.placeholder")}
+                  {countryDisplayValue}
                 </Text>
                 <Ionicons
-                  name="location-outline"
-                  size={20}
+                  name="lock-closed-outline"
+                  size={18}
                   color={theme.colors.textMuted}
                 />
-              </TouchableOpacity>
-              {fieldErrors.countryCode ? (
-                <Text color="#ef4444" style={styles.fieldError}>
-                  {fieldErrors.countryCode}
-                </Text>
-              ) : null}
+              </View>
             </View>
           </View>
         </Card>
@@ -617,85 +483,6 @@ export default function EditPatientProfileScreen() {
           setGender(val);
         }}
       />
-
-      {/* Country Picker Modal */}
-      <CountryPickerModal
-        visible={countryPickerVisible}
-        value={countryCode}
-        onClose={() => setCountryPickerVisible(false)}
-        onSelect={(code) => {
-          setCountryCode(code);
-          if (fieldErrors.countryCode) {
-            setFieldErrors((e) => ({ ...e, countryCode: undefined }));
-          }
-        }}
-      />
-
-      {/* Avatar Action Sheet */}
-      {avatarActionSheetVisible && (
-        <View style={styles.avatarActionBackdrop}>
-          <TouchableOpacity
-            style={StyleSheet.absoluteFill}
-            activeOpacity={1}
-            onPress={() => setAvatarActionSheetVisible(false)}
-          />
-          <View
-            style={[
-              styles.avatarActionSheet,
-              { backgroundColor: theme.colors.surface },
-            ]}
-          >
-            <View
-              style={[
-                styles.avatarActionHandle,
-                { backgroundColor: theme.colors.borderLight },
-              ]}
-            />
-            <TouchableOpacity
-              activeOpacity={0.7}
-              onPress={() => {
-                setAvatarActionSheetVisible(false);
-                pickImage();
-              }}
-              style={[
-                styles.avatarActionItem,
-                { borderBottomColor: theme.colors.borderLight },
-              ]}
-            >
-              <Ionicons
-                name="image-outline"
-                size={22}
-                color={theme.colors.primary}
-              />
-              <Text
-                weight="500"
-                style={[styles.avatarActionLabel, { color: theme.colors.textPrimary }]}
-              >
-                {t("profileScreen.details.avatar.choosePhoto")}
-              </Text>
-            </TouchableOpacity>
-            {(profile?.avatarUrl || profile?.avatarDataUrl) && (
-              <TouchableOpacity
-                activeOpacity={0.7}
-                onPress={handleRemoveAvatar}
-                style={styles.avatarActionItem}
-              >
-                <Ionicons
-                  name="trash-outline"
-                  size={22}
-                  color="#ef4444"
-                />
-                <Text
-                  weight="500"
-                  style={[styles.avatarActionLabel, { color: "#ef4444" }]}
-                >
-                  {t("profileScreen.details.avatar.removePhoto")}
-                </Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        </View>
-      )}
     </Screen>
   );
 }
@@ -815,41 +602,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 12,
     marginTop: 4,
-  },
-  cameraIconLtr: {
-    marginLeft: 4,
-  },
-  cameraIconRtl: {
-    marginRight: 4,
-  },
-  avatarActionBackdrop: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0,0,0,0.4)",
-    justifyContent: "flex-end",
-  },
-  avatarActionSheet: {
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingBottom: 40,
-    paddingTop: 10,
-    paddingHorizontal: 20,
-  },
-  avatarActionHandle: {
-    width: 40,
-    height: 4,
-    borderRadius: 2,
-    alignSelf: "center",
-    marginBottom: 16,
-  },
-  avatarActionItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 14,
-    paddingVertical: 16,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-  },
-  avatarActionLabel: {
-    fontSize: 16,
   },
   cancelButton: {
     flex: 1,

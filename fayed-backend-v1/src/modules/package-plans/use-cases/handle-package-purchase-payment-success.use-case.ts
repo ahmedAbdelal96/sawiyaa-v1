@@ -3,7 +3,6 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import {
   Payment,
   PaymentEventType,
@@ -16,6 +15,7 @@ import { OperationalNotificationService } from '@modules/notifications/services/
 import { PackageSettlementService } from '@modules/financial-operations/services/package-settlement.service';
 import { PaymentRepository } from '@modules/payments/repositories/payment.repository';
 import { SessionRepository } from '@modules/sessions/repositories/session.repository';
+import { SESSION_JOIN_LEAD_MINUTES } from '@modules/sessions/utils/session-join-policy.util';
 import { ValidateSessionStatusTransitionService } from '@modules/sessions/services/validate-session-status-transition.service';
 import { PatientPackagePurchaseRepository } from '../repositories/package-purchase.repository';
 
@@ -23,7 +23,6 @@ import { PatientPackagePurchaseRepository } from '../repositories/package-purcha
 export class HandlePackagePurchasePaymentSuccessUseCase {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly configService: ConfigService,
     private readonly paymentRepository: PaymentRepository,
     private readonly packagePurchaseRepository: PatientPackagePurchaseRepository,
     private readonly sessionRepository: SessionRepository,
@@ -110,8 +109,6 @@ export class HandlePackagePurchasePaymentSuccessUseCase {
     }
 
     const now = new Date();
-    const joinLeadMinutes =
-      this.configService.get<number>('session.joinLeadMinutes') ?? 15;
 
     const activated = await this.prisma.$transaction(async (tx) => {
       const updatedPurchase = await this.packagePurchaseRepository.updateStatus(
@@ -132,7 +129,8 @@ export class HandlePackagePurchasePaymentSuccessUseCase {
 
         const joinOpenAt = session.scheduledStartAt
           ? new Date(
-              session.scheduledStartAt.getTime() - joinLeadMinutes * 60_000,
+              session.scheduledStartAt.getTime() -
+                SESSION_JOIN_LEAD_MINUTES * 60_000,
             )
           : null;
 

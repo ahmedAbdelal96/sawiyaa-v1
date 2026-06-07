@@ -58,6 +58,39 @@ export class CouponRepository {
     });
   }
 
+  listOwnedCouponsRaw(input: {
+    practitionerId: string;
+    q?: string | null;
+  }) {
+    const normalizedQuery = input.q?.trim() ? input.q.trim() : null;
+    const where: Prisma.CouponWhereInput = {
+      ownerPractitionerId: input.practitionerId,
+      ...(normalizedQuery
+        ? {
+            OR: [
+              {
+                code: {
+                  contains: normalizedQuery,
+                  mode: 'insensitive',
+                },
+              },
+              {
+                slug: {
+                  contains: normalizedQuery.toLowerCase(),
+                  mode: 'insensitive',
+                },
+              },
+            ],
+          }
+        : {}),
+    };
+
+    return this.prisma.coupon.findMany({
+      where,
+      orderBy: [{ createdAt: 'desc' }],
+    });
+  }
+
   listOwnedCoupons(input: {
     practitionerId: string;
     page: number;

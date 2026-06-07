@@ -41,6 +41,6 @@ import { UpdatePatientProfileUseCase } from './use-cases/update-patient-profile.
     UpdatePatientProfileUseCase,
     CompletePatientOnboardingUseCase,
   ],
-  exports: [PatientProfileRepository],
+  exports: [PatientProfileRepository, PatientUserRepository, CountryRepository],
 })
 export class PatientsModule {}

@@ -1,5 +1,33 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { SessionMode, SessionStatus } from '@prisma/client';
+import { GeneralChatAvailabilityDto } from '@modules/chat/dto/general-chat-response.dto';
+import {
+  SessionJoinBlockedReason,
+  SessionPresentationStatus,
+} from '../types/session-video.types';
+
+export class SessionJoinAvailabilityDto {
+  @ApiProperty()
+  canJoin!: boolean;
+
+  @ApiProperty({
+    nullable: true,
+    enum: [
+      'SESSION_NOT_JOINABLE_STATUS',
+      'SESSION_NOT_VIDEO_MODE',
+      'SESSION_TIME_WINDOW_NOT_OPEN',
+      'SESSION_RUNTIME_NOT_PREPARED',
+      'SESSION_JOIN_WINDOW_CLOSED',
+    ],
+  })
+  blockedReason!: SessionJoinBlockedReason | null;
+
+  @ApiProperty({ nullable: true })
+  availableAt!: string | null;
+
+  @ApiProperty({ nullable: true })
+  expiresAt!: string | null;
+}
 
 export class SessionPractitionerSummaryDto {
   @ApiProperty()
@@ -33,6 +61,19 @@ export class SessionItemResponseDto {
   @ApiProperty({ enum: SessionStatus })
   status!: SessionStatus;
 
+  @ApiProperty({
+    enum: [
+      'UPCOMING',
+      'JOINABLE',
+      'IN_PROGRESS',
+      'COMPLETED',
+      'CANCELLED',
+      'ENDED',
+      'UNAVAILABLE',
+    ],
+  })
+  presentationStatus!: SessionPresentationStatus;
+
   @ApiProperty()
   createdAt!: string;
 
@@ -53,6 +94,12 @@ export class SessionItemResponseDto {
 
   @ApiProperty({ type: SessionPatientSummaryDto, nullable: true })
   patient!: SessionPatientSummaryDto | null;
+
+  @ApiProperty({ type: SessionJoinAvailabilityDto })
+  joinAvailability!: SessionJoinAvailabilityDto;
+
+  @ApiProperty({ type: GeneralChatAvailabilityDto })
+  chatAvailability!: GeneralChatAvailabilityDto;
 }
 
 export class SessionDetailsResponseDto extends SessionItemResponseDto {

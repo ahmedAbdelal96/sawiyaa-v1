@@ -3,15 +3,6 @@ import { OrchestrateSessionPaymentStatusService } from './orchestrate-session-pa
 
 describe('OrchestrateSessionPaymentStatusService', () => {
   function buildService() {
-    const configService = {
-      get: jest.fn((key: string) => {
-        if (key === 'session.joinLeadMinutes') {
-          return 15;
-        }
-
-        return undefined;
-      }),
-    };
     const prisma = {
       $transaction: jest.fn((fn: (tx: never) => unknown) => fn({} as never)),
     };
@@ -41,7 +32,6 @@ describe('OrchestrateSessionPaymentStatusService', () => {
     };
 
     const service = new OrchestrateSessionPaymentStatusService(
-      configService as never,
       prisma as never,
       sessionRepository as never,
       validateSessionStatusTransitionService as never,
@@ -70,7 +60,7 @@ describe('OrchestrateSessionPaymentStatusService', () => {
       'session_1',
       expect.objectContaining({
         status: SessionStatus.CONFIRMED,
-        joinOpenAt: new Date('2026-04-02T09:45:00.000Z'),
+        joinOpenAt: new Date('2026-04-02T09:58:00.000Z'),
       }),
       expect.anything(),
     );

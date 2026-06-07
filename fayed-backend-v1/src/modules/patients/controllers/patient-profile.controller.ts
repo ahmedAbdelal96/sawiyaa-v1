@@ -136,7 +136,6 @@ export class PatientProfileController {
               : new Date(body.dateOfBirth),
         gender: body.gender,
         locale: body.locale,
-        countryCode: body.countryCode,
         timezone: body.timezone,
         completeOnboarding: body.completeOnboarding,
       },

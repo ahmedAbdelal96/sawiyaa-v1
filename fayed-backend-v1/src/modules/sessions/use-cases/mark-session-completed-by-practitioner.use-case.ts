@@ -11,6 +11,7 @@ import { SessionPractitionerRepository } from '../repositories/session-practitio
 import { SessionRepository } from '../repositories/session.repository';
 import { ValidateSessionStatusTransitionService } from '../services/validate-session-status-transition.service';
 import { PostPackageSessionLedgerEntriesUseCase } from '@modules/financial-operations/use-cases/post-package-session-ledger-entries.use-case';
+import { OperationalNotificationService } from '@modules/notifications/services/operational-notification.service';
 
 @Injectable()
 export class MarkSessionCompletedByPractitionerUseCase {
@@ -21,6 +22,7 @@ export class MarkSessionCompletedByPractitionerUseCase {
     private readonly sessionMapper: SessionMapper,
     private readonly validateSessionStatusTransitionService: ValidateSessionStatusTransitionService,
     private readonly postPackageSessionLedgerEntriesUseCase: PostPackageSessionLedgerEntriesUseCase,
+    private readonly operationalNotificationService: OperationalNotificationService,
   ) {}
 
   async execute(input: {
@@ -92,6 +94,11 @@ export class MarkSessionCompletedByPractitionerUseCase {
       });
 
       return completedSession;
+    });
+
+    await this.operationalNotificationService.cancelSessionReminders({
+      sessionId: updatedSession.id,
+      cancelledAt: completedAt,
     });
 
     return {

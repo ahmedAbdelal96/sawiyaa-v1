@@ -4,6 +4,7 @@ import type {
   CurrentAuthUserResponse,
   MessageResponse,
   OtpChallengeResponse,
+  PractitionerLoginResponse,
   PatientGoogleAuthRequest,
   PatientLoginRequest,
   PatientRegisterRequest,
@@ -70,7 +71,7 @@ export async function practitionerRegister(data: PractitionerRegisterRequest) {
 
 export async function practitionerLogin(data: PractitionerLoginRequest) {
   const response = await apiClient.post("/auth/practitioner/login", data);
-  return extractApiData<OtpChallengeResponse>(response);
+  return extractApiData<PractitionerLoginResponse>(response);
 }
 
 export async function practitionerVerifyOtp(

@@ -238,6 +238,9 @@ export class NotificationDeliveryAttemptEngineService {
     if (channel === 'IN_APP') {
       return 'IN_APP';
     }
+    if (channel === 'PUSH') {
+      return 'EXPO';
+    }
     return 'UNKNOWN';
   }
 

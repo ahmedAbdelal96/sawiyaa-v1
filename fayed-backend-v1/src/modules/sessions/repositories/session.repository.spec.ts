@@ -1,12 +1,15 @@
 import { SessionMode, SessionStatus } from '@prisma/client';
 import { PrismaService } from '@common/prisma/prisma.service';
 import { SessionRepository } from './session.repository';
+import { SessionPresentationFilter } from '../types/session-video.types';
 
 describe('SessionRepository', () => {
   const findMany = jest.fn();
+  const count = jest.fn();
   const prisma = {
     session: {
       findMany,
+      count,
     },
   } as unknown as PrismaService;
 
@@ -120,6 +123,108 @@ describe('SessionRepository', () => {
               SessionStatus.READY_TO_JOIN,
               SessionStatus.IN_PROGRESS,
             ]),
+          },
+        }),
+      ]),
+    );
+  });
+
+  it('lists practitioner sessions using presentation filters on the server side', async () => {
+    findMany.mockResolvedValue([]);
+    count.mockResolvedValue(0);
+
+    await repository.listPractitionerSessions({
+      practitionerId: 'practitioner-1',
+      presentationFilter: SessionPresentationFilter.JOINABLE,
+      query: 'SES-2026',
+      scheduledFrom: new Date('2026-05-01T08:00:00.000Z'),
+      scheduledTo: new Date('2026-05-01T10:00:00.000Z'),
+      now: new Date('2026-05-01T09:58:30.000Z'),
+      skip: 20,
+      take: 10,
+    });
+
+    const findCall = (findMany.mock.calls as Array<[unknown]>)[0][0] as {
+      where: {
+        practitionerId: string;
+        AND: Array<Record<string, unknown>>;
+      };
+      skip: number;
+      take: number;
+    };
+    const countCall = (count.mock.calls as Array<[unknown]>)[0][0] as {
+      where: {
+        practitionerId: string;
+        AND: Array<Record<string, unknown>>;
+      };
+    };
+
+    expect(findCall.where.practitionerId).toBe('practitioner-1');
+    expect(countCall.where).toEqual(findCall.where);
+    expect(findCall.where.AND).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          status: {
+            in: [
+              SessionStatus.CONFIRMED,
+              SessionStatus.UPCOMING,
+              SessionStatus.READY_TO_JOIN,
+            ],
+          },
+        }),
+        expect.objectContaining({
+          sessionCode: {
+            contains: 'SES-2026',
+            mode: 'insensitive',
+          },
+        }),
+        expect.objectContaining({
+          scheduledStartAt: {
+            gte: new Date('2026-05-01T08:00:00.000Z'),
+            lte: new Date('2026-05-01T10:00:00.000Z'),
+          },
+        }),
+        expect.objectContaining({
+          sessionMode: SessionMode.VIDEO,
+        }),
+      ]),
+    );
+    expect(findCall.skip).toBe(20);
+    expect(findCall.take).toBe(10);
+  });
+
+  it('keeps the live presentation filter inside the actual session window', async () => {
+    findMany.mockResolvedValue([]);
+    count.mockResolvedValue(0);
+
+    await repository.listPractitionerSessions({
+      practitionerId: 'practitioner-1',
+      presentationFilter: SessionPresentationFilter.LIVE,
+      now: new Date('2026-05-01T09:58:30.000Z'),
+      skip: 0,
+      take: 20,
+    });
+
+    const findCall = (findMany.mock.calls as Array<[unknown]>)[0][0] as {
+      where: {
+        practitionerId: string;
+        AND: Array<Record<string, unknown>>;
+      };
+    };
+
+    expect(findCall.where.practitionerId).toBe('practitioner-1');
+    expect(findCall.where.AND).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          sessionMode: SessionMode.VIDEO,
+          status: SessionStatus.IN_PROGRESS,
+          scheduledStartAt: {
+            not: null,
+            lte: new Date('2026-05-01T09:58:30.000Z'),
+          },
+          scheduledEndAt: {
+            not: null,
+            gte: new Date('2026-05-01T09:58:30.000Z'),
           },
         }),
       ]),

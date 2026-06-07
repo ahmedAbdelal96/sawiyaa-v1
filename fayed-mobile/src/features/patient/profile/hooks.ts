@@ -46,8 +46,8 @@ export function usePatchPatientProfile() {
 export function useUploadPatientAvatar() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (file: { uri: string; name: string; type: string }) =>
-      uploadPatientAvatar(file),
+    mutationFn: (asset: Parameters<typeof uploadPatientAvatar>[0]) =>
+      uploadPatientAvatar(asset),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: patientProfileQueryKeys.all });
       queryClient.invalidateQueries({ queryKey: ["auth"] });

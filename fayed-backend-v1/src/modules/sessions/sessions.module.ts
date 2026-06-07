@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { JwtAccessAuthGuard } from '@common/guards/authentication/jwt-access-auth.guard';
 import { PermissionResolverService } from '@common/guards/authorization/permission-resolver.service';
 import { PermissionsGuard } from '@common/guards/authorization/permissions.guard';
@@ -7,6 +7,7 @@ import { AvailabilityModule } from '@modules/availability/availability.module';
 import { CustomerWalletsModule } from '@modules/customer-wallets/customer-wallets.module';
 import { FinancialOperationsModule } from '@modules/financial-operations/financial-operations.module';
 import { NotificationsModule } from '@modules/notifications/notifications.module';
+import { PaymentsModule } from '@modules/payments/payments.module';
 import { PublicPractitionerVisibilityPolicy } from '@modules/practitioners/policies/public-practitioner-visibility.policy';
 import { AdminSessionsOperationsController } from './controllers/admin-sessions-operations.controller';
 import { PatientSessionsController } from './controllers/patient-sessions.controller';
@@ -22,6 +23,7 @@ import { ApplySessionCancellationFinancialEffectsService } from './services/appl
 import { EvaluateSessionCancellationPolicyService } from './services/evaluate-session-cancellation-policy.service';
 import { ResolveSessionJoinReadinessService } from './services/resolve-session-join-readiness.service';
 import { SessionJoinAvailableNotificationSweeperService } from './services/session-join-available-notification-sweeper.service';
+import { SessionReminderNotificationSweeperService } from './services/session-reminder-notification-sweeper.service';
 import { ParseDailyAttendanceWebhookService } from './services/parse-daily-attendance-webhook.service';
 import { SessionVideoProviderRegistryService } from './services/session-video-provider-registry.service';
 import { SessionVideoProviderResolverService } from './services/session-video-provider-resolver.service';
@@ -39,6 +41,7 @@ import { ExpireUnpaidSessionUseCase } from './use-cases/expire-unpaid-session.us
 import { GetMyPatientSessionsUseCase } from './use-cases/get-my-patient-sessions.use-case';
 import { GetMyPatientSessionSummaryUseCase } from './use-cases/get-my-patient-session-summary.use-case';
 import { GetMyPractitionerSessionsUseCase } from './use-cases/get-my-practitioner-sessions.use-case';
+import { GetMyPractitionerSessionSummaryUseCase } from './use-cases/get-my-practitioner-session-summary.use-case';
 import { GetAdminSessionAttendanceUseCase } from './use-cases/get-admin-session-attendance.use-case';
 import { GetAdminSessionsUseCase } from './use-cases/get-admin-sessions.use-case';
 import { GetSessionDetailsUseCase } from './use-cases/get-session-details.use-case';
@@ -62,6 +65,7 @@ import { UpdateSessionCancellationPolicyUseCase } from './use-cases/update-sessi
     NotificationsModule,
     CustomerWalletsModule,
     FinancialOperationsModule,
+    forwardRef(() => PaymentsModule),
   ],
   controllers: [
     PatientSessionsController,
@@ -99,6 +103,7 @@ import { UpdateSessionCancellationPolicyUseCase } from './use-cases/update-sessi
     GetMyPatientSessionsUseCase,
     GetMyPatientSessionSummaryUseCase,
     GetMyPractitionerSessionsUseCase,
+    GetMyPractitionerSessionSummaryUseCase,
     GetAdminSessionsUseCase,
     GetAdminSessionAttendanceUseCase,
     GetSessionDetailsUseCase,
@@ -114,6 +119,7 @@ import { UpdateSessionCancellationPolicyUseCase } from './use-cases/update-sessi
     CancelSessionUseCase,
     ExpireUnpaidSessionUseCase,
     SessionJoinAvailableNotificationSweeperService,
+    SessionReminderNotificationSweeperService,
   ],
   exports: [
     SessionRepository,

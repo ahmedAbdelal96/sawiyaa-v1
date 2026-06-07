@@ -13,7 +13,6 @@ import {
   Screen,
   StatusBadge,
   StatusChip,
-  SectionHeader,
   SummaryRow,
   formatDateTime,
   Text,
@@ -28,6 +27,12 @@ import { usePractitionerSessions } from "../../src/features/practitioner/session
 import type { SessionStatus } from "../../src/features/practitioner/sessions/types";
 import { useAuth } from "../../src/providers/AuthProvider";
 import { useTheme } from "../../src/providers/ThemeProvider";
+import {
+  CompactActionLink,
+  CompactSectionHeader,
+  resolvePractitionerTone,
+  type PractitionerTone,
+} from "../../src/features/practitioner/ui/compact";
 
 export default function PractitionerHomeScreen() {
   const { t, i18n } = useTranslation();
@@ -43,6 +48,8 @@ export default function PractitionerHomeScreen() {
   const sessionsQuery = usePractitionerSessions({ limit: 3 });
 
   const locale = i18n.language?.startsWith("ar") ? "ar-SA" : "en-US";
+  const isArabic = i18n.language?.startsWith("ar");
+  const textAlign = isArabic ? "right" : "left";
 
   const upcomingItems = useMemo(() => {
     return (sessionsQuery.data?.items ?? []).filter((item) =>
@@ -63,6 +70,40 @@ export default function PractitionerHomeScreen() {
       return leftTime - rightTime;
     })[0] ?? null;
   }, [upcomingItems]);
+  const presence = presenceQuery.data?.presence;
+  const todaySnapshot = useMemo(() => {
+    const totalUpcoming = upcomingItems.length;
+    const nextStart = upcomingSession?.scheduledStartAt
+      ? formatDateTime(upcomingSession.scheduledStartAt, locale)
+      : t("practitioner.home.noSessions");
+
+    return [
+      {
+        key: "todaySessions",
+        label: t("practitioner.home.metrics.todaySessions", "جلسات اليوم"),
+        value: String(totalUpcoming),
+      },
+      {
+        key: "nextSession",
+        label: t("practitioner.home.metrics.nextSession", "الجلسة القادمة"),
+        value: upcomingSession ? nextStart : t("common.none", "لا يوجد"),
+      },
+      {
+        key: "availability",
+        label: t("practitioner.home.metrics.presence", "حالة التوفر"),
+        value: presence
+          ? t(`practitioner.presence.status.${presence.status}`)
+          : t("common.notAvailable", "غير متاح"),
+      },
+      {
+        key: "instantBooking",
+        label: t("practitioner.home.metrics.instantBooking", "الحجز الفوري"),
+        value: presence?.isInstantBookingEnabled
+          ? t("common.enabled")
+          : t("common.disabled"),
+      },
+    ];
+  }, [locale, t, upcomingItems.length, upcomingSession, presence]);
 
   if (profileQuery.isLoading) {
     return (
@@ -85,7 +126,6 @@ export default function PractitionerHomeScreen() {
   const profile = profileQuery.data.profile;
   const readiness = readinessQuery.data?.readiness ?? null;
   const application = applicationQuery.data?.application ?? null;
-  const presence = presenceQuery.data?.presence;
   const approvalBlocked = profile.profileStatus !== "APPROVED";
   const applicationStatus =
     application?.status ?? profile.applicationStatusSummary?.status ?? null;
@@ -111,8 +151,16 @@ export default function PractitionerHomeScreen() {
       ? "error"
       : "ready";
   const upcomingSessionActionLabel = isJoinableSessionStatus(upcomingSession?.status)
-    ? "Join"
-    : "View";
+    ? isArabic
+      ? "انضم الآن"
+      : "Join now"
+    : isArabic
+      ? "عرض التفاصيل"
+      : "View details";
+  const todaySnapshotItems = todaySnapshot.map((item) => ({
+    ...item,
+    tone: snapshotToneForMetric(item.key),
+  }));
 
   return (
     <Screen bg="background">
@@ -130,15 +178,20 @@ export default function PractitionerHomeScreen() {
       />
 
       <ScrollView contentContainerStyle={styles.content}>
-        <Card variant="elevated" padding="lg" style={styles.heroCard}>
-          <View style={styles.heroTopRow}>
-            <View style={styles.heroTextWrap}>
-              <Text weight="bold" style={styles.heroTitle}>
+        <Card variant="elevated" padding="sm" style={styles.welcomeCard}>
+          <View style={styles.welcomeTopRow}>
+            <View style={styles.welcomeTextWrap}>
+              <Text
+                weight="600"
+                style={[styles.welcomeTitle, { textAlign }]}
+                numberOfLines={1}
+              >
                 {profile.displayName ?? t("practitioner.home.fallbackName")}
               </Text>
               <Text
                 color={theme.colors.textSecondary}
-                style={styles.heroSubtitle}
+                style={[styles.welcomeSubtitle, { textAlign }]}
+                numberOfLines={1}
               >
                 {profile.professionalTitle ??
                   t("practitioner.home.fallbackTitle")}
@@ -150,147 +203,107 @@ export default function PractitionerHomeScreen() {
             />
           </View>
 
-          <View style={styles.metaRow}>
-            <MetricCard
-              label={t("practitioner.home.metrics.presence")}
-              value={
-                presence
-                  ? t(`practitioner.presence.status.${presence.status}`)
-                  : "-"
-              }
-            />
-            <MetricCard
-              label={t("practitioner.home.metrics.instantBooking")}
-              value={
-                presence?.isInstantBookingEnabled
-                  ? t("common.enabled")
-                  : t("common.disabled")
-              }
-            />
-          </View>
-          <View style={styles.metaRow}>
-            <MetricCard
-              label={t("practitioner.home.metrics.specialties")}
-              value={String(profile.specialties.length)}
-            />
-            <MetricCard
-              label={t("practitioner.home.metrics.credentials")}
-              value={String(profile.credentialSummary.totalCredentials)}
-            />
-          </View>
+          <Text color={theme.colors.textSecondary} style={[styles.welcomeHint, { textAlign }]}>
+            {t(
+              "practitioner.home.compactHint",
+              "راجع مواعيدك وحالة العمل بسرعة من لوحة اليوم.",
+            )}
+          </Text>
         </Card>
 
-        <Card variant="outlined" padding="lg" style={styles.promoCard}>
-          <View style={styles.promoTopRow}>
-            <View style={styles.promoIconWrap}>
-              <Ionicons
-                name="pricetag-outline"
-                size={22}
-                color={theme.colors.primary}
-              />
-            </View>
-            <StatusChip
-              label={t("practitioner.promoCodes.cardBadge", "Promo codes")}
-              tone="info"
-              showDot={false}
-            />
-          </View>
-          <Text weight="600" style={styles.promoTitle}>
-            {t("practitioner.promoCodes.title")}
-          </Text>
-          <Text color={theme.colors.textSecondary} style={styles.promoBody}>
-            {t("practitioner.promoCodes.subtitle")}
-          </Text>
-          <Text color={theme.colors.textSecondary} style={styles.promoNote}>
-            {t("practitioner.promoCodes.financialNote")}
-          </Text>
-          <Button
-            title={t("practitioner.promoCodes.openAction", "Open promo codes")}
-            variant="secondary"
-            onPress={() => router.push("/(practitioner)/promo-codes")}
-            style={styles.promoButton}
+        <Card variant="outlined" padding="sm" style={styles.snapshotCard}>
+          <CompactSectionHeader
+            title={t("practitioner.home.todaySnapshot", "لقطة اليوم")}
+            subtitle={t("practitioner.home.todaySnapshotSub", "ملخص سريع قبل بدء يومك")}
           />
+          <View style={styles.snapshotGrid}>
+            {todaySnapshotItems.map((item) => (
+              <MetricChip
+                key={item.key}
+                label={item.label}
+                value={item.value}
+                textAlign={textAlign}
+                tone={item.tone}
+              />
+            ))}
+          </View>
         </Card>
 
-        {upcomingSession ? (
-          <Card
-            variant="outlined"
-            padding="md"
-            style={[
-              styles.upcomingSessionCard,
-              {
-                borderColor: theme.colors.borderLight,
-                backgroundColor: theme.colors.surface,
-              },
-            ]}
-          >
-            <SectionHeader
-              title={t("practitioner.home.upcomingSession.title", "Upcoming Session")}
-              subtitle={
-                upcomingSession.patient?.displayName ??
-                t("practitioner.sessions.unknownPatient")
-              }
-              action={
-                <TouchableOpacity
-                  onPress={() => router.push("/(practitioner)/sessions")}
-                >
-                  <Text color={theme.colors.textBrand} weight="600">
-                    {t("practitioner.home.viewAll")}
-                  </Text>
-                </TouchableOpacity>
-              }
-            />
-
-            <Text color={theme.colors.textSecondary} style={styles.upcomingSessionTime}>
-              {upcomingSession.scheduledStartAt
-                ? formatDateTime(upcomingSession.scheduledStartAt, locale)
-                : t("practitioner.sessions.noSchedule")}
-            </Text>
-
-            <View style={styles.upcomingSessionStatusRow}>
-              <StatusChip
-                label={t(`sessionStatus.${upcomingSession.status}`)}
-                tone={mapSessionBadge(upcomingSession.status)}
-                showDot={false}
-              />
-            </View>
-
-            <CompactActionRow
-              label={upcomingSessionActionLabel}
-              onPress={() =>
-                router.push(`/(practitioner)/sessions/${upcomingSession.id}`)
-              }
-              accessibilityLabel={upcomingSessionActionLabel}
-              style={styles.upcomingSessionCta}
-            />
-          </Card>
-        ) : null}
-
-        <Card variant="outlined" padding="lg" style={styles.workspaceCard}>
-          <SectionHeader
-            title={t("practitioner.home.workspaceStatus.title")}
-            subtitle={t("practitioner.home.workspaceStatus.subtitle")}
+        <Card variant="outlined" padding="sm" style={styles.nextSessionCard}>
+          <CompactSectionHeader
+            title={t("practitioner.home.upcomingSession.title", "الجلسة القادمة")}
+            subtitle={t("practitioner.home.upcomingSession.subtitle", "أقرب موعد يحتاج انتباهك")}
             action={
-              <TouchableOpacity onPress={() => router.push("/(practitioner)/account")}>
-                <Text color={theme.colors.textBrand} weight="600">
-                  {t("practitioner.home.workspaceStatus.openAccount")}
-                </Text>
-              </TouchableOpacity>
+              <CompactActionLink
+                label={t("practitioner.home.viewAll")}
+                onPress={() => router.push("/(practitioner)/sessions")}
+              />
             }
           />
 
+          {upcomingSession ? (
+            <>
+              <Text weight="600" style={[styles.nextSessionPatient, { textAlign }]}>
+                {upcomingSession.patient?.displayName ??
+                  t("practitioner.sessions.unknownPatient")}
+              </Text>
+              <Text color={theme.colors.textSecondary} style={[styles.nextSessionTime, { textAlign }]}>
+                {upcomingSession.scheduledStartAt
+                  ? formatDateTime(upcomingSession.scheduledStartAt, locale)
+                  : t("practitioner.sessions.noSchedule")}
+              </Text>
+              <View style={styles.nextSessionMetaRow}>
+                <StatusChip
+                  label={t(`practitioner.sessionStatus.${upcomingSession.status}`)}
+                  tone={mapSessionBadge(upcomingSession.status)}
+                  showDot={false}
+                />
+              </View>
+              <CompactActionRow
+                label={upcomingSessionActionLabel}
+                onPress={() =>
+                  router.push(`/(practitioner)/sessions/${upcomingSession.id}`)
+                }
+                accessibilityLabel={upcomingSessionActionLabel}
+                style={styles.nextSessionCta}
+              />
+            </>
+          ) : (
+            <View style={styles.nextSessionEmpty}>
+              <Text style={[styles.nextSessionEmptyTitle, { textAlign }]} weight="600">
+                {t("practitioner.home.noUpcomingTitle", "لا توجد جلسات قادمة حاليًا")}
+              </Text>
+              <Text color={theme.colors.textSecondary} style={[styles.nextSessionEmptyBody, { textAlign }]}>
+                {t("practitioner.home.noUpcomingBody", "يمكنك تحديث التوفر لاستقبال حجوزات جديدة.")}
+              </Text>
+              <Button
+                title={t("practitioner.tab.availability")}
+                variant="secondary"
+                onPress={() => router.push("/(practitioner)/availability")}
+                style={styles.compactButton}
+              />
+            </View>
+          )}
+        </Card>
+
+        <Card variant="outlined" padding="sm" style={styles.workspaceCard}>
+          <CompactSectionHeader
+            title={t("practitioner.home.workspaceStatus.title")}
+            subtitle={t("practitioner.home.workspaceStatus.subtitle")}
+            action={
+              <CompactActionLink
+                label={t("practitioner.home.workspaceStatus.openAccount")}
+                onPress={() => router.push("/(practitioner)/account")}
+              />
+            }
+          />
           {workspaceState === "loading" ? (
-            <LoadingState message="Loading workspace status..." />
+            <LoadingState />
           ) : workspaceState === "error" ? (
-            <ErrorState
-              title="Could not load workspace status"
-              message="Please try again in a moment."
-              onRetry={() => {
-                readinessQuery.refetch();
-                applicationQuery.refetch();
-              }}
-              retryText="Try again"
-            />
+            <ErrorState onRetry={() => {
+              readinessQuery.refetch();
+              applicationQuery.refetch();
+            }} />
           ) : (
             <>
               <View style={styles.workspaceRows}>
@@ -300,10 +313,7 @@ export default function PractitionerHomeScreen() {
                     <StatusChip
                       label={
                         applicationStatus
-                          ? t(
-                              `practitioner.account.applicationStatuses.${applicationStatus}`,
-                              applicationStatus,
-                            )
+                          ? t(`practitioner.account.applicationStatuses.${applicationStatus}`, applicationStatus)
                           : t("practitioner.account.applicationStatuses.NONE")
                       }
                       tone={mapApplicationSummaryTone(applicationStatus)}
@@ -332,10 +342,9 @@ export default function PractitionerHomeScreen() {
                   }
                 />
               </View>
-
               {missingRequirements.length ? (
                 <View style={styles.missingBlock}>
-                  <Text weight="600" style={styles.missingTitle} color={theme.colors.textSecondary}>
+                  <Text weight="600" style={[styles.missingTitle, { textAlign }]} color={theme.colors.textSecondary}>
                     {t("practitioner.home.workspaceStatus.missingSteps")}
                   </Text>
                   <View style={styles.missingChips}>
@@ -355,110 +364,43 @@ export default function PractitionerHomeScreen() {
         </Card>
 
         {approvalBlocked ? (
-          <Card variant="flat" padding="lg" style={styles.noticeCard}>
-            <Text weight="600" style={styles.noticeTitle}>
+          <Card variant="flat" padding="md" style={styles.noticeCard}>
+            <Text weight="600" style={[styles.noticeTitle, { textAlign }]}>
               {t("practitioner.home.approvalNotice.title")}
             </Text>
-            <Text color={theme.colors.textSecondary} style={styles.noticeBody}>
+            <Text color={theme.colors.textSecondary} style={[styles.noticeBody, { textAlign }]}>
               {t("practitioner.home.approvalNotice.body")}
             </Text>
-            <StatusBadge
-              label={t(`practitioner.profileStatus.${profile.profileStatus}`)}
-              status={mapProfileBadge(profile.profileStatus)}
-            />
           </Card>
         ) : null}
 
-        <Card variant="outlined" padding="lg">
-          <View style={styles.sectionHeader}>
-            <Text weight="600" style={styles.sectionTitle}>
-              {t("practitioner.home.nextSessions")}
-            </Text>
-            <TouchableOpacity
-              onPress={() => router.push("/(practitioner)/sessions")}
-            >
-              <Text color={theme.colors.textBrand} weight="600">
-                {t("practitioner.home.viewAll")}
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          {sessionsQuery.isLoading ? (
-            <LoadingState />
-          ) : sessionsQuery.isError ? (
-            <Text color={theme.colors.error}>
-              {t("practitioner.common.loadError")}
-            </Text>
-          ) : upcomingItems.length ? (
-            <View style={styles.listWrap}>
-              {upcomingItems.map((session) => (
-                <TouchableOpacity
-                  key={session.id}
-                  style={[
-                    styles.sessionRow,
-                    { borderBottomColor: theme.colors.borderLight },
-                  ]}
-                  onPress={() =>
-                    router.push(`/(practitioner)/sessions/${session.id}`)
-                  }
-                >
-                  <View style={styles.sessionRowText}>
-                    <Text weight="600">
-                      {session.patient?.displayName ??
-                        t("practitioner.sessions.unknownPatient")}
-                    </Text>
-                    <Text
-                      color={theme.colors.textSecondary}
-                      style={styles.sessionMeta}
-                    >
-                      {session.scheduledStartAt
-                        ? new Date(session.scheduledStartAt).toLocaleString(
-                            locale,
-                            {
-                              month: "short",
-                              day: "numeric",
-                              hour: "numeric",
-                              minute: "2-digit",
-                              hour12: !locale.startsWith("ar"),
-                            },
-                          )
-                        : t("practitioner.sessions.noSchedule")}
-                    </Text>
-                  </View>
-                  <StatusBadge
-                    label={t(`practitioner.sessionStatus.${session.status}`)}
-                    status={mapSessionBadge(session.status)}
-                  />
-                </TouchableOpacity>
-              ))}
-            </View>
-          ) : (
-            <Text color={theme.colors.textSecondary}>
-              {t("practitioner.home.noSessions")}
-            </Text>
-          )}
-        </Card>
-
-        <Card variant="outlined" padding="lg">
-          <Text weight="600" style={styles.sectionTitle}>
-            {t("practitioner.home.quickAccess")}
-          </Text>
+        <Card variant="outlined" padding="sm">
+          <CompactSectionHeader title={t("practitioner.home.quickAccess")} />
           <View style={styles.quickGrid}>
             <QuickAccessCard
               icon="calendar-outline"
               label={t("practitioner.tab.sessions")}
+              tone="daily"
               onPress={() => router.push("/(practitioner)/sessions")}
             />
             <QuickAccessCard
               icon="pulse-outline"
               label={t("practitioner.tab.availability")}
+              tone="info"
               onPress={() => router.push("/(practitioner)/availability")}
             />
           </View>
           <View style={styles.quickGrid}>
             <QuickAccessCard
+              icon="chatbubbles-outline"
+              label={t("messages.inbox.title")}
+              tone="messages"
+              onPress={() => router.push("/(practitioner)/messages")}
+            />
+            <QuickAccessCard
               icon="headset-outline"
               label={t("practitioner.support.quickAccess")}
+              tone="support"
               onPress={() =>
                 router.push(
                   {
@@ -468,34 +410,19 @@ export default function PractitionerHomeScreen() {
                 )
               }
             />
-            <QuickAccessCard
-              icon="chatbubble-ellipses-outline"
-              label={t("practitioner.careChat.quickAccess")}
-              onPress={() => router.push("/(practitioner)/care-chat")}
-            />
           </View>
           <View style={styles.quickGrid}>
             <QuickAccessCard
               icon="person-circle-outline"
               label={t("practitioner.account.quickAccess")}
+              tone="account"
               onPress={() => router.push("/(practitioner)/account")}
             />
             <QuickAccessCard
               icon="cash-outline"
               label={t("practitioner.finance.quickAccess")}
+              tone="finance"
               onPress={() => router.push("/(practitioner)/finance")}
-            />
-          </View>
-          <View style={styles.quickGrid}>
-            <QuickAccessCard
-              icon="wallet-outline"
-              label={t("practitioner.finance.wallet.title")}
-              onPress={() => router.push("/(practitioner)/finance/wallet")}
-            />
-            <QuickAccessCard
-              icon="shield-checkmark-outline"
-              label={t("practitioner.home.onboarding")}
-              onPress={() => router.push("/(practitioner)/onboarding")}
             />
           </View>
         </Card>
@@ -504,20 +431,31 @@ export default function PractitionerHomeScreen() {
   );
 }
 
-function MetricCard({ label, value }: { label: string; value: string }) {
+function MetricChip({
+  label,
+  value,
+  textAlign,
+  tone = "neutral",
+}: {
+  label: string;
+  value: string;
+  textAlign: "left" | "right";
+  tone?: PractitionerTone;
+}) {
   const { theme } = useTheme();
+  const palette = resolvePractitionerTone(theme, tone);
 
   return (
     <View
       style={[
-        styles.metricCard,
-        { backgroundColor: theme.colors.surfaceSecondary },
+        styles.metricChip,
+        { backgroundColor: palette.surface, borderColor: palette.border },
       ]}
     >
-      <Text color={theme.colors.textMuted} style={styles.metricLabel}>
+      <Text color={theme.colors.textMuted} style={[styles.metricLabel, { textAlign }]} numberOfLines={1}>
         {label}
       </Text>
-      <Text weight="600" style={styles.metricValue}>
+      <Text weight="600" style={[styles.metricValue, { textAlign, color: palette.accent }]} numberOfLines={1}>
         {value}
       </Text>
     </View>
@@ -527,25 +465,48 @@ function MetricCard({ label, value }: { label: string; value: string }) {
 function QuickAccessCard({
   icon,
   label,
+  tone = "neutral",
   onPress,
 }: {
   icon: keyof typeof Ionicons.glyphMap;
   label: string;
+  tone?: PractitionerTone;
   onPress: () => void;
 }) {
   const { theme } = useTheme();
+  const palette = resolvePractitionerTone(theme, tone);
 
   return (
     <TouchableOpacity
-      style={[styles.quickCard, { borderColor: theme.colors.borderLight }]}
+      style={[
+        styles.quickCard,
+        { borderColor: palette.border, backgroundColor: palette.surface },
+      ]}
       onPress={onPress}
     >
-      <Ionicons name={icon} size={24} color={theme.colors.primary} />
-      <Text weight="600" style={styles.quickCardLabel}>
+      <View style={[styles.quickIconWrap, { backgroundColor: palette.iconBackground }]}>
+        <Ionicons name={icon} size={20} color={palette.iconColor} />
+      </View>
+      <Text weight="600" style={styles.quickCardLabel} numberOfLines={1}>
         {label}
       </Text>
     </TouchableOpacity>
   );
+}
+
+function snapshotToneForMetric(key: string): PractitionerTone {
+  switch (key) {
+    case "todaySessions":
+      return "daily";
+    case "nextSession":
+      return "info";
+    case "availability":
+      return "success";
+    case "instantBooking":
+      return "warning";
+    default:
+      return "neutral";
+  }
 }
 
 function mapProfileBadge(status: string) {
@@ -590,162 +551,143 @@ const styles = StyleSheet.create({
     padding: 6,
   },
   content: {
-    paddingHorizontal: 20,
-    paddingTop: 14,
+    paddingHorizontal: 16,
+    paddingTop: 10,
     paddingBottom: 24,
-    gap: 14,
+    gap: 8,
   },
-  heroCard: {
-    gap: 16,
+  welcomeCard: {
+    gap: 6,
   },
-  promoCard: {
-    gap: 12,
-  },
-  promoTopRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    gap: 12,
-  },
-  promoIconWrap: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#e8f4f2",
-  },
-  promoTitle: {
-    fontSize: 18,
-  },
-  promoBody: {
-    fontSize: 14,
-    lineHeight: 22,
-  },
-  promoNote: {
-    fontSize: 13,
-    lineHeight: 20,
-  },
-  promoButton: {
-    marginTop: 2,
-  },
-  upcomingSessionCard: {
-    gap: 12,
-    marginTop: 14,
-  },
-  upcomingSessionTime: {
-    fontSize: 14,
-    lineHeight: 22,
-  },
-  upcomingSessionStatusRow: {
-    alignItems: "flex-start",
-  },
-  upcomingSessionCta: {
-    marginTop: 2,
-  },
-  heroTopRow: {
+  welcomeTopRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
-    gap: 12,
-  },
-  heroTextWrap: {
-    flex: 1,
-  },
-  heroTitle: {
-    fontSize: 24,
-    marginBottom: 4,
-  },
-  heroSubtitle: {
-    fontSize: 15,
-  },
-  metaRow: {
-    flexDirection: "row",
-    gap: 12,
-  },
-  metricCard: {
-    flex: 1,
-    borderRadius: 18,
-    padding: 14,
-  },
-  metricLabel: {
-    fontSize: 12,
-    marginBottom: 6,
-  },
-  metricValue: {
-    fontSize: 16,
-  },
-  noticeCard: {
     gap: 10,
   },
+  welcomeTextWrap: {
+    flex: 1,
+  },
+  welcomeTitle: {
+    fontSize: 18,
+  },
+  welcomeSubtitle: {
+    fontSize: 12,
+  },
+  welcomeHint: {
+    fontSize: 11,
+    lineHeight: 16,
+  },
+  snapshotCard: {
+    gap: 6,
+  },
+  snapshotGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  metricChip: {
+    width: "48%",
+    borderRadius: 11,
+    paddingVertical: 7,
+    paddingHorizontal: 9,
+    minHeight: 54,
+    borderWidth: 1,
+  },
+  nextSessionCard: {
+    gap: 6,
+  },
+  nextSessionPatient: {
+    fontSize: 14,
+  },
+  nextSessionTime: {
+    fontSize: 12,
+    lineHeight: 17,
+  },
+  nextSessionMetaRow: {
+    alignItems: "flex-start",
+  },
+  nextSessionCta: {
+    marginTop: 2,
+  },
+  nextSessionEmpty: {
+    gap: 7,
+  },
+  nextSessionEmptyTitle: {
+    fontSize: 13,
+  },
+  nextSessionEmptyBody: {
+    fontSize: 11,
+    lineHeight: 16,
+  },
+  noticeCard: {
+    gap: 6,
+  },
   noticeTitle: {
-    fontSize: 16,
+    fontSize: 13,
   },
   noticeBody: {
-    fontSize: 14,
-    lineHeight: 22,
+    fontSize: 11,
+    lineHeight: 16,
   },
   workspaceCard: {
-    gap: 14,
+    gap: 8,
   },
   workspaceRows: {
     gap: 2,
   },
-  sectionHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 14,
-  },
   sectionTitle: {
-    fontSize: 18,
-    marginBottom: 12,
-  },
-  listWrap: {
-    gap: 2,
-  },
-  sessionRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 12,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-  },
-  sessionRowText: {
-    flex: 1,
-  },
-  sessionMeta: {
-    fontSize: 13,
-    marginTop: 4,
+    fontSize: 14,
+    marginBottom: 6,
   },
   quickGrid: {
     flexDirection: "row",
-    gap: 12,
+    gap: 6,
+    marginBottom: 6,
   },
   quickCard: {
     flex: 1,
     borderWidth: 1,
-    borderRadius: 18,
-    padding: 16,
-    gap: 12,
+    borderRadius: 12,
+    paddingVertical: 9,
+    paddingHorizontal: 9,
+    gap: 5,
+    minHeight: 60,
   },
   quickCardLabel: {
-    fontSize: 15,
+    fontSize: 12,
+  },
+  quickIconWrap: {
+    width: 34,
+    height: 34,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  compactButton: {
+    minHeight: 46,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 12,
   },
   missingBlock: {
-    gap: 10,
+    gap: 6,
     paddingTop: 2,
   },
   missingTitle: {
-    fontSize: 13,
-    textTransform: "uppercase",
-    letterSpacing: 0.4,
+    fontSize: 11,
   },
   missingChips: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 8,
+    gap: 6,
+  },
+  metricLabel: {
+    fontSize: 10,
+    marginBottom: 3,
+  },
+  metricValue: {
+    fontSize: 12,
   },
 });
 

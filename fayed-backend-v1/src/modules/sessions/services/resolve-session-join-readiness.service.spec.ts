@@ -13,12 +13,12 @@ describe('ResolveSessionJoinReadinessService', () => {
     const result = service.resolve({
       status: SessionStatus.UPCOMING,
       sessionMode: SessionMode.VIDEO,
-      scheduledStartAt: start,
+      scheduledStartAt: new Date('2026-04-02T10:02:00.000Z'),
       scheduledEndAt: end,
       provider: SessionProvider.ZOOM,
       providerRoomId: 'room_1',
       providerSessionRef: 'https://room.zoom.us/j/room_1',
-      now,
+      now: new Date('2026-04-02T10:00:30.000Z'),
     });
 
     expect(result.canJoin).toBe(true);
@@ -45,8 +45,8 @@ describe('ResolveSessionJoinReadinessService', () => {
     const result = service.resolve({
       status: SessionStatus.UPCOMING,
       sessionMode: SessionMode.VIDEO,
-      scheduledStartAt: start,
-      scheduledEndAt: end,
+      scheduledStartAt: new Date('2026-04-02T10:02:00.000Z'),
+      scheduledEndAt: new Date('2026-04-02T10:32:00.000Z'),
       provider: SessionProvider.NONE,
       providerRoomId: null,
       providerSessionRef: null,
@@ -74,6 +74,118 @@ describe('ResolveSessionJoinReadinessService', () => {
     expect(result.blockedReason).toBe('SESSION_TIME_WINDOW_NOT_OPEN');
   });
 
+  it('blocks join after the session window closes', () => {
+    const result = service.resolve({
+      status: SessionStatus.UPCOMING,
+      sessionMode: SessionMode.VIDEO,
+      scheduledStartAt: new Date('2026-04-02T09:00:00.000Z'),
+      scheduledEndAt: new Date('2026-04-02T09:30:00.000Z'),
+      provider: SessionProvider.ZOOM,
+      providerRoomId: 'room_1',
+      providerSessionRef: 'https://room.zoom.us/j/room_1',
+      now,
+    });
+
+    expect(result.canJoin).toBe(false);
+    expect(result.blockedReason).toBe('SESSION_JOIN_WINDOW_CLOSED');
+  });
+
+  it('blocks stale IN_PROGRESS sessions after the session window closes', () => {
+    const result = service.resolve({
+      status: SessionStatus.IN_PROGRESS,
+      sessionMode: SessionMode.VIDEO,
+      scheduledStartAt: new Date('2026-04-02T09:00:00.000Z'),
+      scheduledEndAt: new Date('2026-04-02T09:30:00.000Z'),
+      provider: SessionProvider.ZOOM,
+      providerRoomId: 'room_1',
+      providerSessionRef: 'https://room.zoom.us/j/room_1',
+      now,
+    });
+
+    expect(result.canJoin).toBe(false);
+    expect(result.blockedReason).toBe('SESSION_JOIN_WINDOW_CLOSED');
+  });
+
+  it('blocks stale READY_TO_JOIN sessions after the session window closes', () => {
+    const result = service.resolve({
+      status: SessionStatus.READY_TO_JOIN,
+      sessionMode: SessionMode.VIDEO,
+      scheduledStartAt: new Date('2026-04-02T09:00:00.000Z'),
+      scheduledEndAt: new Date('2026-04-02T09:30:00.000Z'),
+      provider: SessionProvider.ZOOM,
+      providerRoomId: 'room_1',
+      providerSessionRef: 'https://room.zoom.us/j/room_1',
+      now,
+    });
+
+    expect(result.canJoin).toBe(false);
+    expect(result.blockedReason).toBe('SESSION_JOIN_WINDOW_CLOSED');
+  });
+
+  it('allows join exactly inside the two-minute join window before start', () => {
+    const result = service.resolve({
+      status: SessionStatus.CONFIRMED,
+      sessionMode: SessionMode.VIDEO,
+      scheduledStartAt: new Date('2026-04-02T10:02:00.000Z'),
+      scheduledEndAt: new Date('2026-04-02T10:32:00.000Z'),
+      provider: SessionProvider.ZOOM,
+      providerRoomId: 'room_1',
+      providerSessionRef: 'https://room.zoom.us/j/room_1',
+      now: new Date('2026-04-02T10:00:00.000Z'),
+    });
+
+    expect(result.canJoin).toBe(true);
+    expect(result.blockedReason).toBeNull();
+  });
+
+  it('marks sessions as not joinable before the join window opens', () => {
+    const result = service.resolve({
+      status: SessionStatus.CONFIRMED,
+      sessionMode: SessionMode.VIDEO,
+      scheduledStartAt: new Date('2026-04-02T10:10:00.000Z'),
+      scheduledEndAt: new Date('2026-04-02T10:40:00.000Z'),
+      provider: SessionProvider.ZOOM,
+      providerRoomId: 'room_1',
+      providerSessionRef: 'https://room.zoom.us/j/room_1',
+      now: new Date('2026-04-02T10:07:59.000Z'),
+    });
+
+    expect(result.canJoin).toBe(false);
+    expect(result.blockedReason).toBe('SESSION_TIME_WINDOW_NOT_OPEN');
+  });
+
+  it('keeps a session joinable while the session is in progress and still prepared', () => {
+    const result = service.resolve({
+      status: SessionStatus.IN_PROGRESS,
+      sessionMode: SessionMode.VIDEO,
+      scheduledStartAt: new Date('2026-04-02T10:02:00.000Z'),
+      scheduledEndAt: new Date('2026-04-02T10:32:00.000Z'),
+      provider: SessionProvider.ZOOM,
+      providerRoomId: 'room_1',
+      providerSessionRef: 'https://room.zoom.us/j/room_1',
+      now: new Date('2026-04-02T10:15:00.000Z'),
+    });
+
+    expect(result.canJoin).toBe(true);
+    expect(result.blockedReason).toBeNull();
+  });
+
+  it('blocks joinable-looking READY_TO_JOIN sessions after the window closes', () => {
+    const result = service.resolve({
+      status: SessionStatus.READY_TO_JOIN,
+      sessionMode: SessionMode.VIDEO,
+      scheduledStartAt: new Date('2026-04-02T10:00:00.000Z'),
+      scheduledEndAt: new Date('2026-04-02T10:30:00.000Z'),
+      provider: SessionProvider.ZOOM,
+      providerRoomId: 'room_1',
+      providerSessionRef: 'https://room.zoom.us/j/room_1',
+      now: new Date('2026-04-02T10:30:01.000Z'),
+    });
+
+    expect(result.canJoin).toBe(false);
+    expect(result.blockedReason).toBe('SESSION_JOIN_WINDOW_CLOSED');
+  });
+
   it('blocks refunded sessions from runtime prepare and join', () => {
     const result = service.resolve({
       status: SessionStatus.REFUNDED,
@@ -87,6 +199,22 @@ describe('ResolveSessionJoinReadinessService', () => {
     });
 
     expect(result.canPrepareRuntime).toBe(false);
+    expect(result.canJoin).toBe(false);
+    expect(result.blockedReason).toBe('SESSION_NOT_JOINABLE_STATUS');
+  });
+
+  it('blocks cancelled sessions from join', () => {
+    const result = service.resolve({
+      status: SessionStatus.CANCELLED,
+      sessionMode: SessionMode.VIDEO,
+      scheduledStartAt: start,
+      scheduledEndAt: end,
+      provider: SessionProvider.ZOOM,
+      providerRoomId: 'room_1',
+      providerSessionRef: 'https://room.zoom.us/j/room_1',
+      now,
+    });
+
     expect(result.canJoin).toBe(false);
     expect(result.blockedReason).toBe('SESSION_NOT_JOINABLE_STATUS');
   });

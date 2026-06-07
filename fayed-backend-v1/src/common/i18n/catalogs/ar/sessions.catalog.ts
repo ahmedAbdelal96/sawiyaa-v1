@@ -1,4 +1,4 @@
-export const arSessionsCatalog = {
+﻿export const arSessionsCatalog = {
   notifications: {
     sessionConfirmedTitle: 'تم تأكيد الجلسة',
     sessionConfirmedBody:
@@ -18,6 +18,14 @@ export const arSessionsCatalog = {
     sessionCancelledPractitionerTitle: 'تم إلغاء الجلسة بواسطة المريض',
     sessionCancelledPractitionerBody:
       'قام المريض بإلغاء جلسة مجدولة في {{sessionAt}}.',
+    sessionReminder60Title: 'تذكير بموعد الجلسة',
+    sessionReminder60Body: 'جلستك ستبدأ بعد حوالي ساعة.',
+    sessionReminder60PractitionerTitle: 'تذكير بموعد الجلسة',
+    sessionReminder60PractitionerBody: 'لديك جلسة ستبدأ بعد حوالي ساعة.',
+    sessionReminder15Title: 'اقترب موعد الجلسة',
+    sessionReminder15Body: 'جلستك ستبدأ بعد حوالي 15 دقيقة.',
+    sessionReminder15PractitionerTitle: 'اقترب موعد الجلسة',
+    sessionReminder15PractitionerBody: 'لديك جلسة ستبدأ بعد حوالي 15 دقيقة.',
     packageSessionContext:
       ' الجلسة {{packageSessionIndex}} من أصل {{packageSessionCount}} ضمن الباقة الخاصة بك.',
   },

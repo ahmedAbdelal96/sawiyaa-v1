@@ -1,14 +1,16 @@
 {
   "meta": {
-    "title": "مختصين مميزين",
-    "description": "إدارة المختصين الذين يظهرون كاختيارات مميزة في الصفحة الرئيسية أو صفحة المختصين."
+    "title": "المختصون المميزون",
+    "description": "اختر مختصًا موجودًا وحدد مدة الظهور ومكانه."
   },
-  "eyebrow": "إدارة العروض المميزة",
-  "title": "مختصين مميزين",
-  "subtitle": "إدارة المختصين الذين يظهرون كاختيارات مميزة في الصفحة الرئيسية أو صفحة المختصين.",
+  "eyebrow": "إدارة الظهور المميز",
+  "title": "المختصون المميزون",
+  "subtitle": "اختر مختصًا موجودًا وحدد مدة الظهور ومكانه.",
   "summary": {
     "total": "إجمالي العناصر",
-    "active": "نشط الآن"
+    "active": "نشط الآن",
+    "scheduled": "مجدول",
+    "inactive": "منتهي / غير نشط"
   },
   "table": {
     "practitioner": "المختص",
@@ -16,7 +18,7 @@
     "status": "الحالة",
     "startsAt": "تاريخ البداية",
     "endsAt": "تاريخ النهاية",
-    "priority": "الترتيب",
+    "priority": "ترتيب الظهور",
     "reason": "السبب",
     "badge": "الشارة",
     "campaign": "الحملة",
@@ -24,48 +26,67 @@
   },
   "filters": {
     "all": "الكل",
+    "search": "ابحث عن مختص",
+    "searchPlaceholder": "ابحث بالاسم أو الـ slug أو البريد أو التخصص",
     "status": "الحالة",
     "surface": "مكان الظهور",
-    "reason": "السبب",
-    "practitionerSearch": "بحث عن مختص",
-    "practitionerSearchPlaceholder": "ابحث بالاسم أو اللقب أو الـ slug",
     "startsFrom": "يبدأ من",
     "endsTo": "ينتهي إلى"
   },
   "actions": {
     "add": "إضافة مختص مميز",
     "edit": "تعديل",
-    "pause": "إيقاف",
+    "end": "إنهاء الظهور",
     "resume": "استئناف",
-    "history": "التاريخ",
+    "history": "السجل",
+    "openProfile": "فتح الملف",
     "clearFilters": "مسح الفلاتر"
   },
   "editor": {
     "createTitle": "إضافة مختص مميز",
-    "editTitle": "تعديل المختص المميز",
-    "description": "حدّد إعدادات الظهور والمدة والسبب بشكل واضح لفريق التسويق.",
+    "editTitle": "تعديل الظهور المميز",
+    "description": "اختر المختص أولًا، ثم عدّل إعدادات الظهور والمدة.",
     "saving": "جارٍ الحفظ...",
     "createAction": "إضافة",
-    "saveAction": "حفظ التعديلات",
-    "cancelAction": "إلغاء",
-    "loadingDetails": "جارٍ تحميل التفاصيل..."
+    "saveAction": "حفظ التغييرات",
+    "cancelAction": "إلغاء"
   },
-  "pause": {
-    "title": "إيقاف الظهور المميز",
-    "description": "هل تريد إيقاف هذا الظهور الآن؟",
-    "confirm": "تأكيد الإيقاف",
-    "submitting": "جارٍ الإيقاف...",
+  "picker": {
+    "searchLabel": "اختيار المختص",
+    "searchPlaceholder": "ابحث بالاسم أو الـ slug أو البريد أو التخصص",
+    "searchHint": "اختر مختصًا موجودًا من النظام، وسيتم تعبئة الهوية تلقائيًا.",
+    "loading": "جارٍ التحميل...",
+    "resultsTitle": "النتائج",
+    "resultsHint": "اختر مختصًا واحدًا للمتابعة.",
+    "noResults": "لا توجد نتائج مطابقة.",
+    "emptySelection": "لم يتم اختيار مختص بعد.",
+    "clear": "مسح الاختيار",
+    "verified": "موثّق",
+    "notVerified": "غير موثّق",
+    "statusUnknown": "حالة غير معروفة",
+    "previewTitle": "المختص المحدد",
+    "previewSlug": "Slug",
+    "previewProfile": "الملف",
+    "eligibleNotice": "يبدو هذا المختص مؤهلًا للظهور المميز.",
+    "ineligibleWarning": "قد لا يكون هذا المختص مؤهلًا. سيمنع النظام أي حفظ غير صالح.",
+    "noSelection": "لا يوجد اختيار"
+  },
+  "end": {
+    "title": "إنهاء الظهور",
+    "description": "سيتم إيقاف هذا الظهور المميز. يمكنك استئنافه لاحقًا إذا كان ما زال صالحًا.",
+    "confirm": "إنهاء الظهور",
+    "submitting": "جارٍ الإنهاء...",
     "cancel": "إلغاء"
   },
   "resume": {
-    "title": "استئناف الظهور المميز",
-    "description": "هل تريد إعادة تفعيل هذا الظهور الآن؟",
-    "confirm": "تأكيد الاستئناف",
+    "title": "استئناف الظهور",
+    "description": "أعد هذا الظهور للعمل إذا كان لا يزال صالحًا.",
+    "confirm": "استئناف",
     "submitting": "جارٍ الاستئناف...",
     "cancel": "إلغاء"
   },
   "history": {
-    "title": "تاريخ التعديلات",
+    "title": "سجل الظهور",
     "loading": "جارٍ تحميل السجل...",
     "unknownActor": "مستخدم غير معروف",
     "actions": {
@@ -80,20 +101,16 @@
     }
   },
   "fields": {
-    "practitionerId": "معرف المختص",
-    "practitionerIdPlaceholder": "أدخل practitionerId (مؤقتًا)",
-    "practitionerSlug": "Slug المختص",
-    "practitionerSlugPlaceholder": "أدخل slug المختص (مؤقتًا)",
     "surface": "مكان الظهور",
+    "status": "الحالة",
     "startsAt": "تاريخ البداية",
     "endsAt": "تاريخ النهاية",
-    "priority": "الترتيب",
-    "badgeLabelAr": "الشارة بالعربي",
-    "badgeLabelEn": "الشارة بالإنجليزي",
+    "priority": "ترتيب الظهور",
+    "badgeLabelAr": "الشارة بالعربية",
+    "badgeLabelEn": "الشارة بالإنجليزية",
     "reason": "السبب",
     "campaignName": "اسم الحملة",
     "notesInternal": "ملاحظات داخلية",
-    "status": "الحالة",
     "noteOptional": "ملاحظة اختيارية"
   },
   "status": {
@@ -101,47 +118,62 @@
     "PAUSED": "متوقف",
     "EXPIRED": "منتهي"
   },
+  "lifecycle": {
+    "ACTIVE": "نشط الآن",
+    "SCHEDULED": "مجدول",
+    "EXPIRED": "منتهي",
+    "PAUSED": "متوقف"
+  },
+  "practitionerStatus": {
+    "APPROVED": "معتمد",
+    "PENDING_REVIEW": "بانتظار المراجعة",
+    "REJECTED": "مرفوض",
+    "SUSPENDED": "موقوف",
+    "INACTIVE": "غير نشط",
+    "DRAFT": "مسودة"
+  },
   "surface": {
     "HOME": "الصفحة الرئيسية",
-    "DISCOVERY": "صفحة المختصين",
-    "ALL": "الكل"
+    "DISCOVERY": "الاستكشاف",
+    "ALL": "كل الأماكن"
   },
   "reason": {
     "FEATURED": "مميز",
     "SPONSORED": "برعاية",
     "DISCOUNT": "خصم",
     "NEW_SPECIALIST": "مختص جديد",
-    "HIGH_AVAILABILITY": "متاح بكثافة",
-    "EDITORIAL_PICK": "اختيار Fayed"
+    "HIGH_AVAILABILITY": "توافر مرتفع",
+    "EDITORIAL_PICK": "اختيار تحريري"
   },
   "states": {
     "emptyTitle": "لا توجد عناصر مميزة حاليًا",
-    "emptyDescription": "ابدأ بإضافة مختص مميز ليظهر هنا.",
+    "emptyDescription": "اختر مختصًا من النظام وحدد مدة ظهوره كعنصر مميز.",
     "listErrorTitle": "تعذر تحميل البيانات",
-    "listErrorDescription": "حدث خطأ أثناء جلب قائمة المختصين المميزين.",
+    "listErrorDescription": "تعذر تحميل عناصر الظهور المميز.",
     "retry": "إعادة المحاولة",
     "readOnlyTitle": "عرض فقط",
-    "readOnlyDescription": "ليس لديك صلاحية لإجراء تعديلات على هذه الصفحة.",
-    "ok": "حسنًا"
+    "readOnlyDescription": "ليست لديك صلاحية تعديل هذه الصفحة."
   },
   "validation": {
-    "practitionerRequired": "أدخل معرف المختص أو الـ slug.",
+    "practitionerRequired": "اختر مختصًا واحدًا.",
     "startsAtRequired": "تاريخ البداية مطلوب.",
-    "priorityPositive": "الترتيب يجب أن يكون رقمًا موجبًا.",
+    "priorityPositive": "ترتيب الظهور يجب أن يكون رقمًا موجبًا.",
     "endsAtAfterStartsAt": "تاريخ النهاية يجب أن يكون بعد تاريخ البداية."
   },
   "feedback": {
     "createSuccess": "تمت إضافة المختص المميز بنجاح.",
-    "updateSuccess": "تم تحديث البيانات بنجاح.",
-    "pauseSuccess": "تم إيقاف الظهور بنجاح.",
+    "updateSuccess": "تم تحديث الظهور بنجاح.",
+    "endSuccess": "تم إنهاء الظهور بنجاح.",
     "resumeSuccess": "تم استئناف الظهور بنجاح."
   },
   "errors": {
     "notFound": "العنصر المطلوب غير موجود.",
     "invalidDateRange": "مدة الظهور غير صحيحة.",
-    "invalidPriority": "الترتيب غير صحيح.",
-    "resumeExpired": "لا يمكن استئناف عنصر منتهي الصلاحية.",
-    "invalidPractitioner": "المختص غير صالح أو غير متاح.",
+    "invalidPriority": "ترتيب الظهور غير صحيح.",
+    "resumeExpired": "لا يمكن استئناف عنصر منتهي.",
+    "invalidPractitioner": "المختص المحدد غير مؤهل.",
+    "overlap": "يوجد ظهور نشط آخر لنفس المختص وفي نفس المدة.",
+    "practitionerRequired": "اختر مختصًا أولًا.",
     "generic": "حدث خطأ غير متوقع. حاول مرة أخرى."
   }
 }

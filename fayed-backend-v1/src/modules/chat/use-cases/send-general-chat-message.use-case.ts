@@ -12,17 +12,20 @@ import {
   buildGeneralChatParticipantDirectoryMap,
 } from '../helpers/general-chat-identity.mapper';
 import { GeneralChatRepository } from '../repositories/general-chat.repository';
-import { GeneralChatModerationStateService } from '../services/general-chat-moderation-state.service';
+import { GeneralChatAvailabilityService } from '../services/general-chat-availability.service';
 import { ConversationAccessPolicy } from '../policies/conversation-access.policy';
 import { ValidateGeneralChatMessagePayloadService } from '../services/validate-general-chat-message-payload.service';
+import { OperationalNotificationService } from '@modules/notifications/services/operational-notification.service';
+import { GENERAL_CHAT_AVAILABILITY_REASONS } from '../types/general-chat.types';
 
 @Injectable()
 export class SendGeneralChatMessageUseCase {
   constructor(
     private readonly generalChatRepository: GeneralChatRepository,
-    private readonly generalChatModerationStateService: GeneralChatModerationStateService,
+    private readonly generalChatAvailabilityService: GeneralChatAvailabilityService,
     private readonly validateGeneralChatMessagePayloadService: ValidateGeneralChatMessagePayloadService,
     private readonly conversationAccessPolicy: ConversationAccessPolicy,
+    private readonly operationalNotificationService: OperationalNotificationService,
   ) {}
 
   async execute(input: {
@@ -47,33 +50,57 @@ export class SendGeneralChatMessageUseCase {
       requesterId: input.authenticatedUser.id,
     });
 
-    const moderationState =
-      this.generalChatModerationStateService.resolveConversationState({
-        status: conversation.status,
-        closedAt: conversation.closedAt ?? null,
-        adminLock: {
-          disabledAt: conversation.adminSendingDisabledAt ?? null,
-          disabledByUserId: conversation.adminSendingDisabledByUserId ?? null,
-          disabledReason: conversation.adminSendingDisabledReason ?? null,
-          enabledAt: conversation.adminSendingEnabledAt ?? null,
-          enabledByUserId: conversation.adminSendingEnabledByUserId ?? null,
+    const chatAvailability =
+      this.generalChatAvailabilityService.resolveAvailability({
+        conversation: {
+          status: conversation.status,
+          closedAt: conversation.closedAt,
+          adminLock: {
+            disabledAt: conversation.adminSendingDisabledAt,
+            disabledByUserId: conversation.adminSendingDisabledByUserId,
+            disabledReason: conversation.adminSendingDisabledReason,
+            enabledAt: conversation.adminSendingEnabledAt,
+            enabledByUserId: conversation.adminSendingEnabledByUserId,
+          },
+          practitionerLock: {
+            disabledAt: conversation.practitionerSendingDisabledAt,
+            disabledByUserId: conversation.practitionerSendingDisabledByUserId,
+            disabledReason: conversation.practitionerSendingDisabledReason,
+            enabledAt: conversation.practitionerSendingEnabledAt,
+            enabledByUserId: conversation.practitionerSendingEnabledByUserId,
+          },
         },
-        practitionerLock: {
-          disabledAt: conversation.practitionerSendingDisabledAt ?? null,
-          disabledByUserId:
-            conversation.practitionerSendingDisabledByUserId ?? null,
-          disabledReason:
-            conversation.practitionerSendingDisabledReason ?? null,
-          enabledAt: conversation.practitionerSendingEnabledAt ?? null,
-          enabledByUserId:
-            conversation.practitionerSendingEnabledByUserId ?? null,
-        },
+        linkedSession: conversation.session
+          ? {
+              status: conversation.session.status,
+              sessionMode: conversation.session.sessionMode,
+              scheduledStartAt: conversation.session.scheduledStartAt,
+              scheduledEndAt: conversation.session.scheduledEndAt,
+              provider: conversation.session.provider,
+              providerRoomId: conversation.session.providerRoomId,
+              providerSessionRef: conversation.session.providerSessionRef,
+            }
+          : null,
       });
 
-    if (!moderationState.canSendMessage) {
+    if (!chatAvailability.canSend) {
+      const sessionReadOnlyReason =
+        chatAvailability.reason ===
+          GENERAL_CHAT_AVAILABILITY_REASONS.sessionEnded ||
+        chatAvailability.reason ===
+          GENERAL_CHAT_AVAILABILITY_REASONS.sessionCancelled ||
+        chatAvailability.reason ===
+          GENERAL_CHAT_AVAILABILITY_REASONS.sessionNotStarted;
+
       throw new BadRequestException({
-        messageKey: 'chat.errors.conversationNotSendable',
-        errorCode: GENERAL_CHAT_ERROR_CODES.conversationNotSendable,
+        messageKey:
+          sessionReadOnlyReason
+            ? 'chat.errors.sessionChatReadOnly'
+            : 'chat.errors.conversationNotSendable',
+        errorCode:
+          sessionReadOnlyReason
+            ? GENERAL_CHAT_ERROR_CODES.sessionChatReadOnly
+            : GENERAL_CHAT_ERROR_CODES.conversationNotSendable,
       });
     }
 
@@ -108,6 +135,14 @@ export class SendGeneralChatMessageUseCase {
         attachments: normalized.attachments,
         sentAt: now,
       });
+
+    await this.operationalNotificationService.notifyConversationMessage({
+      lane: 'SESSION_CHAT',
+      threadId: input.conversationId,
+      messageId: persisted.message.id,
+      senderUserId: input.authenticatedUser.id,
+      participants: conversation.participants,
+    });
 
     return {
       item: {

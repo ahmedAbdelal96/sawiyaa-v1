@@ -6,6 +6,7 @@ import { SessionRepository } from '../repositories/session.repository';
 import { ValidateSessionStatusTransitionService } from '../services/validate-session-status-transition.service';
 import { MarkSessionCompletedByPractitionerUseCase } from './mark-session-completed-by-practitioner.use-case';
 import { PostPackageSessionLedgerEntriesUseCase } from '@modules/financial-operations/use-cases/post-package-session-ledger-entries.use-case';
+import { OperationalNotificationService } from '@modules/notifications/services/operational-notification.service';
 
 describe('MarkSessionCompletedByPractitionerUseCase', () => {
   it('marks owned session as completed and emits completion event', async () => {
@@ -58,6 +59,9 @@ describe('MarkSessionCompletedByPractitionerUseCase', () => {
     const postPackageSessionLedgerEntriesUseCase = {
       execute: jest.fn().mockResolvedValue({ wasAlreadyPosted: true }),
     } as unknown as PostPackageSessionLedgerEntriesUseCase;
+    const operationalNotificationService = {
+      cancelSessionReminders: jest.fn().mockResolvedValue(undefined),
+    } as unknown as OperationalNotificationService;
 
     const prisma = {
       $transaction: jest.fn().mockImplementation(async (fn: (...args: any[]) => any) => fn({})),
@@ -70,6 +74,7 @@ describe('MarkSessionCompletedByPractitionerUseCase', () => {
       new SessionMapper(),
       transitionService,
       postPackageSessionLedgerEntriesUseCase,
+      operationalNotificationService,
     );
 
     const result = await useCase.execute({
@@ -94,6 +99,12 @@ describe('MarkSessionCompletedByPractitionerUseCase', () => {
         sessionId: 'session-1',
       }),
     );
+    expect(
+      (operationalNotificationService.cancelSessionReminders as jest.Mock),
+    ).toHaveBeenCalledWith({
+      sessionId: 'session-1',
+      cancelledAt: expect.any(Date),
+    });
   });
 
   it('rejects non-owned session mutation', async () => {
@@ -118,6 +129,9 @@ describe('MarkSessionCompletedByPractitionerUseCase', () => {
     const postPackageSessionLedgerEntriesUseCase = {
       execute: jest.fn().mockResolvedValue({ wasAlreadyPosted: true }),
     } as unknown as PostPackageSessionLedgerEntriesUseCase;
+    const operationalNotificationService = {
+      cancelSessionReminders: jest.fn().mockResolvedValue(undefined),
+    } as unknown as OperationalNotificationService;
 
     const prisma = {
       $transaction: jest.fn(),
@@ -130,6 +144,7 @@ describe('MarkSessionCompletedByPractitionerUseCase', () => {
       new SessionMapper(),
       transitionService,
       postPackageSessionLedgerEntriesUseCase,
+      operationalNotificationService,
     );
 
     await expect(

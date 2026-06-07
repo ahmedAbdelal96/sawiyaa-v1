@@ -11,6 +11,7 @@
 import { resolveMobileRole } from "../../src/features/auth/roles";
 import type { AuthenticatedUser } from "../../src/features/auth/contracts";
 import { resolvePatientNotificationRoute } from "../../src/features/patient/notifications/routes";
+import { resolvePractitionerNotificationRoute } from "../../src/features/practitioner/notifications/utils";
 import { resolveNotificationDeviceRole } from "../../src/features/push/types";
 
 // ---------------------------------------------------------------------------
@@ -139,6 +140,27 @@ describe("resolvePatientNotificationRoute", () => {
     ).toBe("/(patient)/care-chat/conv-1");
   });
 
+  it("routes message notifications to the patient messages inbox tabs", () => {
+    expect(
+      resolvePatientNotificationRoute(
+        "/patient/support/conv-1",
+        "messages.support-message-received",
+      ),
+    ).toBe("/(patient)/messages?tab=support");
+    expect(
+      resolvePatientNotificationRoute(
+        "/patient/care-chat/conv-1",
+        "messages.follow-up-message-received",
+      ),
+    ).toBe("/(patient)/messages?tab=followup");
+    expect(
+      resolvePatientNotificationRoute(
+        "/patient/messages/session-1",
+        "messages.session-message-received",
+      ),
+    ).toBe("/(patient)/messages?tab=sessions");
+  });
+
   it("routes assessments deep-link to assessments screen", () => {
     expect(resolvePatientNotificationRoute("/patient/assessments")).toBe(
       "/(patient)/assessments",
@@ -163,6 +185,33 @@ describe("resolvePatientNotificationRoute", () => {
 
   it("returns null for admin-class route injected via notification payload", () => {
     expect(resolvePatientNotificationRoute("/admin/practitioner-applications")).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// resolvePractitionerNotificationRoute â€” deep-link allowlist
+// ---------------------------------------------------------------------------
+
+describe("resolvePractitionerNotificationRoute", () => {
+  it("routes message notifications to the practitioner messages inbox tabs", () => {
+    expect(
+      resolvePractitionerNotificationRoute(
+        "/practitioner/support/conv-1",
+        "messages.support-message-received",
+      ),
+    ).toBe("/(practitioner)/messages?tab=support");
+    expect(
+      resolvePractitionerNotificationRoute(
+        "/practitioner/care-chat/conv-1",
+        "messages.follow-up-message-received",
+      ),
+    ).toBe("/(practitioner)/messages?tab=followup");
+    expect(
+      resolvePractitionerNotificationRoute(
+        "/practitioner/messages/session-1",
+        "messages.session-message-received",
+      ),
+    ).toBe("/(practitioner)/messages?tab=sessions");
   });
 });
 

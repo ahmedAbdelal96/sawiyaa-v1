@@ -109,6 +109,18 @@ export class AdminPractitionerDirectoryRepository {
               },
             },
             {
+              user: {
+                emails: {
+                  some: {
+                    email: {
+                      contains: search,
+                      mode: 'insensitive',
+                    },
+                  },
+                },
+              },
+            },
+            {
               professionalTitle: {
                 contains: search,
                 mode: 'insensitive',
@@ -189,6 +201,11 @@ export class AdminPractitionerDirectoryRepository {
           user: {
             select: {
               displayName: true,
+              emails: {
+                select: {
+                  email: true,
+                },
+              },
             },
           },
           country: {

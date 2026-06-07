@@ -188,7 +188,9 @@ export const useAuthStore = create<AuthStore>()(
         try {
           await logoutAction();
         } finally {
-          requestSensitiveCacheClear("logout");
+          if (typeof window !== "undefined") {
+            requestSensitiveCacheClear("logout");
+          }
           set({
             user: null,
             tenant: null,

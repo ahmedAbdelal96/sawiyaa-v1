@@ -1,8 +1,9 @@
 import React, { useEffect, useMemo, useState } from "react";
 import {
-  Alert,
+  ActivityIndicator,
   Keyboard,
   Modal,
+  Pressable,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -23,8 +24,11 @@ import {
   Screen,
   StatusChip,
   Text,
+  formatDate,
   formatDateTime,
 } from "../../../../components/ui";
+import { FilterChip } from "../../../../components/ui/FilterChip";
+import { SearchBar } from "../../../../components/ui/SearchBar";
 import { useTheme } from "../../../../providers/ThemeProvider";
 import { extractApiErrorMessage } from "../../../../lib/api";
 import {
@@ -32,11 +36,15 @@ import {
   buildUpdatePractitionerCouponRequest,
   classifyPractitionerPromoCodeError,
   normalizePercentageInput,
+  parsePractitionerPromoCodeDate,
   sanitizePractitionerPromoCodeInput,
+  serializePractitionerPromoCodeDate,
   validatePractitionerPromoCodeForm,
+  type PractitionerPromoCodeDateField,
   type PractitionerPromoCodeFormValues,
 } from "../coupon-utils";
 import {
+  useActivatePractitionerCoupon,
   useCreatePractitionerCoupon,
   useDisablePractitionerCoupon,
   usePractitionerCoupon,
@@ -47,6 +55,7 @@ import {
 import type {
   PractitionerCouponItem,
   PractitionerCouponRedemptionItem,
+  PractitionerCouponEffectiveStatus,
   PractitionerCouponStatus,
 } from "../types";
 
@@ -65,9 +74,14 @@ type ScreenFeedback =
     }
   | null;
 
-const DEFAULT_LIST_LIMIT = 50;
+const DEFAULT_LIST_LIMIT = 20;
 const DEFAULT_REDEMPTION_LIMIT = 20;
-
+const STATUS_FILTERS: ("ALL" | "ACTIVE" | "DISABLED" | "EXPIRED")[] = [
+  "ALL",
+  "ACTIVE",
+  "DISABLED",
+  "EXPIRED",
+];
 export default function PractitionerPromoCodesScreen() {
   const { t, i18n } = useTranslation();
   const { theme } = useTheme();
@@ -76,8 +90,22 @@ export default function PractitionerPromoCodesScreen() {
   const [panelMode, setPanelMode] = useState<PanelMode>("none");
   const [activeCouponId, setActiveCouponId] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<ScreenFeedback>(null);
+  const [page, setPage] = useState(1);
+  const [searchDraft, setSearchDraft] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"ALL" | "ACTIVE" | "DISABLED" | "EXPIRED">("ALL");
 
-  const listQuery = usePractitionerCoupons({ page: 1, limit: DEFAULT_LIST_LIMIT });
+  useEffect(() => {
+    const timer = setTimeout(() => setSearchQuery(searchDraft.trim()), 250);
+    return () => clearTimeout(timer);
+  }, [searchDraft]);
+
+  const listQuery = usePractitionerCoupons({
+    page,
+    limit: DEFAULT_LIST_LIMIT,
+    ...(searchQuery ? { q: searchQuery } : {}),
+    ...(statusFilter === "ALL" ? {} : { status: statusFilter }),
+  });
   const detailQuery = usePractitionerCoupon(
     panelMode === "edit" || panelMode === "details" ? activeCouponId : null,
   );
@@ -91,8 +119,13 @@ export default function PractitionerPromoCodesScreen() {
   const createMutation = useCreatePractitionerCoupon();
   const updateMutation = useUpdatePractitionerCoupon();
   const disableMutation = useDisablePractitionerCoupon();
+  const activateMutation = useActivatePractitionerCoupon();
+  const [items, setItems] = useState<PractitionerCouponItem[]>([]);
+  const [pendingAction, setPendingAction] = useState<{
+    couponId: string;
+    kind: "disable" | "activate";
+  } | null>(null);
 
-  const listItems = useMemo(() => listQuery.data?.items ?? [], [listQuery.data?.items]);
   const selectedCoupon = useMemo(() => {
     if (!activeCouponId) {
       return null;
@@ -100,13 +133,13 @@ export default function PractitionerPromoCodesScreen() {
 
     return (
       detailQuery.data?.item ??
-      listItems.find((item) => item.id === activeCouponId) ??
+      items.find((item) => item.id === activeCouponId) ??
       null
     );
-  }, [activeCouponId, detailQuery.data?.item, listItems]);
+  }, [activeCouponId, detailQuery.data?.item, items]);
 
-  const isInitialLoading = listQuery.isLoading && listItems.length === 0;
-  const listError = listQuery.isError && listItems.length === 0;
+  const isInitialLoading = listQuery.isLoading && items.length === 0;
+  const listError = listQuery.isError && items.length === 0;
 
   useEffect(() => {
     if (!feedback) {
@@ -136,6 +169,54 @@ export default function PractitionerPromoCodesScreen() {
     setPanelMode("none");
     setActiveCouponId(null);
   };
+
+  const refreshList = () => {
+    setItems([]);
+    setPage(1);
+    listQuery.refetch();
+  };
+
+  useEffect(() => {
+    if (panelMode === "none") {
+      return;
+    }
+
+    setFeedback(null);
+  }, [panelMode]);
+
+  useEffect(() => {
+    setItems([]);
+    setPage(1);
+  }, [searchQuery, statusFilter]);
+
+  useEffect(() => {
+    if (!listQuery.data) {
+      return;
+    }
+
+    setItems((current) => {
+      if (page === 1) {
+        return listQuery.data.items;
+      }
+
+      const seen = new Set(current.map((item) => item.id));
+      const next = [...current];
+      for (const item of listQuery.data.items) {
+        if (!seen.has(item.id)) {
+          next.push(item);
+        }
+      }
+      return next;
+    });
+  }, [listQuery.data, page]);
+
+  const hasMore = useMemo(() => {
+    if (!listQuery.data) {
+      return false;
+    }
+
+    return page < listQuery.data.pagination.totalPages;
+  }, [listQuery.data, page]);
 
   const handleCreate = async (values: PractitionerPromoCodeFormValues) => {
     const payload = buildCreatePractitionerCouponRequest(values);
@@ -180,34 +261,53 @@ export default function PractitionerPromoCodesScreen() {
   };
 
   const handleDisable = (coupon: PractitionerCouponItem) => {
-    Alert.alert(
-      t("practitioner.promoCodes.disable.title"),
-      t("practitioner.promoCodes.disable.body"),
-      [
-        { text: t("practitioner.common.cancel"), style: "cancel" },
-        {
-          text: t("practitioner.promoCodes.disable.confirm"),
-          style: "destructive",
-          onPress: async () => {
-            try {
-              await disableMutation.mutateAsync(coupon.id);
-              setFeedback({
-                tone: "warning",
-                title: t("practitioner.promoCodes.notifications.disabledTitle"),
-                body: t("practitioner.promoCodes.notifications.disabledBody", {
-                  code: coupon.code,
-                }),
-              });
-            } catch (error) {
-              Alert.alert(
-                t("practitioner.promoCodes.errors.genericTitle"),
-                mapCouponError(error, t).message,
-              );
-            }
-          },
-        },
-      ],
-    );
+    void (async () => {
+      try {
+        setPendingAction({ couponId: coupon.id, kind: "disable" });
+        await disableMutation.mutateAsync(coupon.id);
+        setFeedback({
+          tone: "warning",
+          title: t("practitioner.promoCodes.notifications.disabledTitle"),
+          body: t("practitioner.promoCodes.notifications.disabledBody", {
+            code: coupon.code,
+          }),
+        });
+      } catch (error) {
+        console.error("[practitioner-promo-codes] disable failed", error);
+        setFeedback({
+          tone: "warning",
+          title: t("practitioner.promoCodes.notifications.actionFailedTitle"),
+          body: t("practitioner.promoCodes.notifications.actionFailedBody"),
+        });
+      } finally {
+        setPendingAction(null);
+      }
+    })();
+  };
+
+  const handleActivate = (coupon: PractitionerCouponItem) => {
+    void (async () => {
+      try {
+        setPendingAction({ couponId: coupon.id, kind: "activate" });
+        await activateMutation.mutateAsync(coupon.id);
+        setFeedback({
+          tone: "success",
+          title: t("practitioner.promoCodes.notifications.activatedTitle"),
+          body: t("practitioner.promoCodes.notifications.activatedBody", {
+            code: coupon.code,
+          }),
+        });
+      } catch (error) {
+        console.error("[practitioner-promo-codes] activate failed", error);
+        setFeedback({
+          tone: "warning",
+          title: t("practitioner.promoCodes.notifications.actionFailedTitle"),
+          body: t("practitioner.promoCodes.notifications.actionFailedBody"),
+        });
+      } finally {
+        setPendingAction(null);
+      }
+    })();
   };
 
   if (isInitialLoading) {
@@ -217,7 +317,7 @@ export default function PractitionerPromoCodesScreen() {
           title={t("practitioner.promoCodes.title")}
           showBack
           rightElement={
-            <TouchableOpacity onPress={() => listQuery.refetch()} style={styles.headerAction}>
+            <TouchableOpacity onPress={refreshList} style={styles.headerAction}>
               <Ionicons name="refresh-outline" size={22} color={theme.colors.textPrimary} />
             </TouchableOpacity>
           }
@@ -237,7 +337,7 @@ export default function PractitionerPromoCodesScreen() {
           title={t("practitioner.promoCodes.title")}
           showBack
           rightElement={
-            <TouchableOpacity onPress={() => listQuery.refetch()} style={styles.headerAction}>
+            <TouchableOpacity onPress={refreshList} style={styles.headerAction}>
               <Ionicons name="refresh-outline" size={22} color={theme.colors.textPrimary} />
             </TouchableOpacity>
           }
@@ -246,7 +346,7 @@ export default function PractitionerPromoCodesScreen() {
           fullScreen
           title={t("practitioner.promoCodes.errorTitle")}
           message={t("practitioner.promoCodes.errorBody")}
-          onRetry={() => listQuery.refetch()}
+          onRetry={refreshList}
         />
       </Screen>
     );
@@ -259,11 +359,8 @@ export default function PractitionerPromoCodesScreen() {
         showBack
         rightElement={
           <View style={styles.headerRight}>
-            <TouchableOpacity onPress={() => listQuery.refetch()} style={styles.headerAction}>
+            <TouchableOpacity onPress={refreshList} style={styles.headerAction}>
               <Ionicons name="refresh-outline" size={22} color={theme.colors.textPrimary} />
-            </TouchableOpacity>
-            <TouchableOpacity onPress={openCreate} style={styles.headerAction}>
-              <Ionicons name="add-circle-outline" size={24} color={theme.colors.primary} />
             </TouchableOpacity>
           </View>
         }
@@ -274,36 +371,61 @@ export default function PractitionerPromoCodesScreen() {
         refreshControl={
           <RefreshControl
             refreshing={listQuery.isRefetching}
-            onRefresh={() => listQuery.refetch()}
+            onRefresh={refreshList}
             tintColor={theme.colors.primary}
           />
         }
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        <Card variant="elevated" padding="lg" style={styles.heroCard}>
-          <View style={styles.heroTopRow}>
-            <View style={styles.heroTextWrap}>
-              <Text weight="bold" style={styles.heroTitle}>
+        <Card variant="outlined" padding="sm" style={styles.toolbarCard}>
+          <View style={styles.toolbarHeader}>
+            <View style={styles.toolbarTextWrap}>
+              <Text weight="bold" style={styles.toolbarTitle}>
                 {t("practitioner.promoCodes.title")}
               </Text>
-              <Text color={theme.colors.textSecondary} style={styles.heroSubtitle}>
+              <Text color={theme.colors.textSecondary} style={styles.toolbarSubtitle}>
                 {t("practitioner.promoCodes.subtitle")}
               </Text>
             </View>
-            <View style={styles.heroIconWrap}>
-              <Ionicons name="pricetag-outline" size={24} color={theme.colors.primary} />
-            </View>
+            <Button
+              title={t("practitioner.promoCodes.createCta")}
+              onPress={openCreate}
+              variant="secondary"
+              style={styles.createButton}
+            />
           </View>
 
-          <Text color={theme.colors.textSecondary} style={styles.heroNote}>
+          <Text color={theme.colors.textSecondary} style={styles.toolbarNote}>
             {t("practitioner.promoCodes.financialNote")}
           </Text>
 
-          <Button
-            title={t("practitioner.promoCodes.createCta")}
-            onPress={openCreate}
+          <SearchBar
+            value={searchDraft}
+            onChangeText={setSearchDraft}
+            onClear={() => setSearchDraft("")}
+            placeholder={t("practitioner.promoCodes.searchPlaceholder")}
           />
+
+          <View style={styles.filterBlock}>
+            <Text weight="600" style={styles.filterLabel}>
+              {t("practitioner.promoCodes.filters.status")}
+            </Text>
+            <View style={styles.chipRow}>
+              {STATUS_FILTERS.map((status) => (
+                <FilterChip
+                  key={status}
+                  label={
+                    status === "ALL"
+                      ? t("practitioner.promoCodes.filters.all")
+                      : resolveCouponStatusLabel(status, t)
+                  }
+                  selected={statusFilter === status}
+                  onPress={() => setStatusFilter(status)}
+                />
+              ))}
+            </View>
+          </View>
         </Card>
 
         {feedback ? (
@@ -338,17 +460,19 @@ export default function PractitionerPromoCodesScreen() {
           </Card>
         ) : null}
 
-        {listItems.length ? (
+        {items.length ? (
           <View style={styles.list}>
-            {listItems.map((coupon) => (
+            {items.map((coupon) => (
               <CouponCard
                 key={coupon.id}
                 coupon={coupon}
                 locale={locale}
                 theme={theme}
                 t={t}
+                pendingAction={pendingAction}
                 onEdit={() => openEdit(coupon.id)}
                 onDisable={() => handleDisable(coupon)}
+                onActivate={() => handleActivate(coupon)}
                 onDetails={() => openDetails(coupon.id)}
               />
             ))}
@@ -357,8 +481,6 @@ export default function PractitionerPromoCodesScreen() {
           <EmptyState
             title={t("practitioner.promoCodes.empty.title")}
             description={t("practitioner.promoCodes.empty.body")}
-            actionLabel={t("practitioner.promoCodes.empty.action")}
-            onAction={openCreate}
             icon={
               <Ionicons
                 name="pricetag-outline"
@@ -366,14 +488,24 @@ export default function PractitionerPromoCodesScreen() {
                 color={theme.colors.textMuted}
               />
             }
+            />
+          )}
+
+        {hasMore ? (
+          <Button
+            title={listQuery.isFetching ? t("practitioner.finance.common.loadingMore") : t("practitioner.finance.common.loadMore")}
+            onPress={() => setPage((current) => current + 1)}
+            variant="secondary"
+            disabled={listQuery.isFetching}
           />
-        )}
+        ) : null}
       </ScrollView>
 
       <PromoCodeFormModal
         visible={panelMode === "create" || panelMode === "edit"}
         mode={panelMode === "edit" ? "edit" : "create"}
         coupon={selectedCoupon}
+        locale={locale}
         theme={theme}
         t={t}
         loading={createMutation.isPending || updateMutation.isPending}
@@ -406,25 +538,84 @@ function CouponCard({
   locale,
   theme,
   t,
+  pendingAction,
   onEdit,
   onDisable,
+  onActivate,
   onDetails,
 }: {
   coupon: PractitionerCouponItem;
   locale: string;
   theme: ReturnType<typeof useTheme>["theme"];
   t: ReturnType<typeof useTranslation>["t"];
+  pendingAction: { couponId: string; kind: "disable" | "activate" } | null;
   onEdit: () => void;
   onDisable: () => void;
+  onActivate: () => void;
   onDetails: () => void;
 }) {
-  const statusTone = resolveCouponStatusTone(coupon.status);
+  const displayStatus = coupon.effectiveStatus ?? coupon.status;
+  const statusTone = resolveCouponStatusTone(displayStatus);
+  const usageLabel = formatUsageLabel(coupon.currentUsageCount, coupon.usageLimitTotal, t);
+  const patientLimitLabel = formatPatientLimitLabel(
+    coupon.usageLimitPerPatient,
+    t,
+  );
+  const canDisable =
+    displayStatus === "ACTIVE" || displayStatus === "NOT_STARTED";
+  const canActivate = displayStatus === "DISABLED";
+  const isRowPending = pendingAction?.couponId === coupon.id;
+  const disablePending =
+    pendingAction?.couponId === coupon.id && pendingAction?.kind === "disable";
+  const activatePending =
+    pendingAction?.couponId === coupon.id && pendingAction?.kind === "activate";
+
+  const actions = [
+    {
+      kind: "details" as const,
+      label: t("practitioner.promoCodes.actions.details"),
+      icon: "receipt-outline" as const,
+      onPress: onDetails,
+      variant: "default" as const,
+    },
+    {
+      kind: "edit" as const,
+      label: t("practitioner.promoCodes.actions.edit"),
+      icon: "create-outline" as const,
+      onPress: onEdit,
+      variant: "default" as const,
+    },
+    canDisable
+      ? {
+          kind: "disable" as const,
+          label: t("practitioner.promoCodes.actions.disable"),
+          icon: "ban-outline" as const,
+          onPress: onDisable,
+          variant: "danger" as const,
+        }
+      : null,
+    canActivate
+      ? {
+          kind: "activate" as const,
+          label: t("practitioner.promoCodes.actions.activate"),
+          icon: "checkmark-circle-outline" as const,
+          onPress: onActivate,
+          variant: "success" as const,
+        }
+      : null,
+  ].filter(Boolean) as {
+    kind: "details" | "edit" | "disable" | "activate";
+    label: string;
+    icon: keyof typeof Ionicons.glyphMap;
+    onPress: () => void;
+    variant: "default" | "danger" | "success";
+  }[];
 
   return (
-    <Card variant="outlined" padding="lg" style={styles.couponCard}>
+    <Card variant="outlined" padding="sm" style={styles.couponCard}>
       <View style={styles.couponTopRow}>
         <View style={styles.couponTextWrap}>
-          <Text weight="bold" style={styles.couponCode}>
+          <Text weight="700" style={styles.couponCode} numberOfLines={1}>
             {coupon.code}
           </Text>
           <Text color={theme.colors.textSecondary} style={styles.couponSubtitle}>
@@ -434,50 +625,36 @@ function CouponCard({
           </Text>
         </View>
         <StatusChip
-          label={t(`practitioner.promoCodes.status.${coupon.status}`, coupon.status)}
+          label={resolveCouponStatusLabel(displayStatus, t)}
           tone={statusTone}
           showDot={false}
         />
       </View>
 
-      <View style={styles.couponMetaGrid}>
-        <MetaPill
-          label={t("practitioner.promoCodes.list.usage")}
-          value={coupon.usageLimitTotal ? `${coupon.currentUsageCount} / ${coupon.usageLimitTotal}` : `${coupon.currentUsageCount}`}
-          theme={theme}
-        />
-        <MetaPill
-          label={t("practitioner.promoCodes.list.perPatient")}
-          value={coupon.usageLimitPerPatient ? String(coupon.usageLimitPerPatient) : t("common.notSet", "Not set")}
-          theme={theme}
-        />
-      </View>
+      <Text color={theme.colors.textSecondary} style={styles.couponUsageLine} numberOfLines={1}>
+        {usageLabel} · {t("practitioner.promoCodes.list.perPatient")}: {patientLimitLabel}
+      </Text>
 
-      <Text color={theme.colors.textSecondary} style={styles.couponWindow}>
+      <Text color={theme.colors.textSecondary} style={styles.couponWindow} numberOfLines={1}>
         {formatDateWindow(coupon.startsAt, coupon.endsAt, locale, t)}
       </Text>
 
       <View style={styles.couponActions}>
-        <ActionPill
-          label={t("practitioner.promoCodes.actions.edit")}
-          icon="create-outline"
-          onPress={onEdit}
-          theme={theme}
-        />
-        <ActionPill
-          label={t("practitioner.promoCodes.actions.disable")}
-          icon="ban-outline"
-          onPress={onDisable}
-          theme={theme}
-          variant="danger"
-          disabled={!coupon.isActive}
-        />
-        <ActionPill
-          label={t("practitioner.promoCodes.actions.details")}
-          icon="receipt-outline"
-          onPress={onDetails}
-          theme={theme}
-        />
+        {actions.map((action) => (
+          <ActionPill
+            key={action.kind}
+            label={action.label}
+            icon={action.icon}
+            onPress={action.onPress}
+            theme={theme}
+            variant={action.variant}
+            loading={
+              (action.kind === "disable" && disablePending) ||
+              (action.kind === "activate" && activatePending)
+            }
+            disabled={isRowPending}
+          />
+        ))}
       </View>
     </Card>
   );
@@ -487,6 +664,7 @@ function PromoCodeFormModal({
   visible,
   mode,
   coupon,
+  locale,
   theme,
   t,
   loading,
@@ -497,6 +675,7 @@ function PromoCodeFormModal({
   visible: boolean;
   mode: "create" | "edit";
   coupon: PractitionerCouponItem | null;
+  locale: string;
   theme: ReturnType<typeof useTheme>["theme"];
   t: ReturnType<typeof useTranslation>["t"];
   loading: boolean;
@@ -506,6 +685,10 @@ function PromoCodeFormModal({
 }) {
   const [values, setValues] = useState<PractitionerPromoCodeFormValues>(blankFormValues);
   const [error, setError] = useState<string | null>(null);
+  const [datePickerState, setDatePickerState] = useState<{
+    field: PractitionerPromoCodeDateField;
+    value: Date | null;
+  } | null>(null);
 
   const discountLocked = mode === "edit" && Boolean(coupon?.currentUsageCount);
 
@@ -531,6 +714,41 @@ function PromoCodeFormModal({
     setValues(blankFormValues);
   }, [coupon, visible]);
 
+  const clearSubmissionError = () => setError(null);
+
+  const openDatePicker = (field: PractitionerPromoCodeDateField) => {
+    clearSubmissionError();
+    setDatePickerState({
+      field,
+      value: parsePractitionerPromoCodeDate(values[field]),
+    });
+  };
+
+  const closeDatePicker = () => {
+    setDatePickerState(null);
+  };
+
+  const confirmDatePicker = (date: Date) => {
+    if (!datePickerState) {
+      return;
+    }
+
+    setValues((current) => ({
+      ...current,
+      [datePickerState.field]: serializePractitionerPromoCodeDate(
+        date,
+        datePickerState.field,
+      ),
+    }));
+    clearSubmissionError();
+    setDatePickerState(null);
+  };
+
+  const clearDateField = (field: PractitionerPromoCodeDateField) => {
+    setValues((current) => ({ ...current, [field]: "" }));
+    clearSubmissionError();
+  };
+
   const validationErrors = useMemo(
     () =>
       validatePractitionerPromoCodeForm(values, {
@@ -547,6 +765,7 @@ function PromoCodeFormModal({
       : t("practitioner.promoCodes.form.updateSubmit");
 
   const handleCodeChange = (next: string) => {
+    clearSubmissionError();
     setValues((current) => ({
       ...current,
       code: sanitizePractitionerPromoCodeInput(next),
@@ -554,6 +773,7 @@ function PromoCodeFormModal({
   };
 
   const handleDiscountChange = (next: string) => {
+    clearSubmissionError();
     setValues((current) => ({
       ...current,
       discountValue: normalizePercentageInput(next),
@@ -677,9 +897,10 @@ function PromoCodeFormModal({
             <Input
               label={t("practitioner.promoCodes.form.totalLimitLabel")}
               value={values.usageLimitTotal}
-              onChangeText={(next) =>
-                setValues((current) => ({ ...current, usageLimitTotal: next }))
-              }
+              onChangeText={(next) => {
+                clearSubmissionError();
+                setValues((current) => ({ ...current, usageLimitTotal: next }));
+              }}
               placeholder={t("practitioner.promoCodes.form.totalLimitPlaceholder")}
               keyboardType="number-pad"
               helperText={t("practitioner.promoCodes.form.totalLimitHint")}
@@ -693,9 +914,10 @@ function PromoCodeFormModal({
             <Input
               label={t("practitioner.promoCodes.form.patientLimitLabel")}
               value={values.usageLimitPerPatient}
-              onChangeText={(next) =>
-                setValues((current) => ({ ...current, usageLimitPerPatient: next }))
-              }
+              onChangeText={(next) => {
+                clearSubmissionError();
+                setValues((current) => ({ ...current, usageLimitPerPatient: next }));
+              }}
               placeholder={t("practitioner.promoCodes.form.patientLimitPlaceholder")}
               keyboardType="number-pad"
               helperText={t("practitioner.promoCodes.form.patientLimitHint")}
@@ -706,34 +928,36 @@ function PromoCodeFormModal({
               }
             />
 
-            <Input
+            <PromoCodeDateField
               label={t("practitioner.promoCodes.form.startsAtLabel")}
               value={values.startsAt}
-              onChangeText={(next) =>
-                setValues((current) => ({ ...current, startsAt: next }))
-              }
-              placeholder={t("practitioner.promoCodes.form.datePlaceholder")}
+              placeholder={t("practitioner.promoCodes.form.startsAtPlaceholder")}
               helperText={t("practitioner.promoCodes.form.startsAtHint")}
               error={
                 validationErrors.startsAt
                   ? t(`practitioner.promoCodes.form.errors.${validationErrors.startsAt}`)
                   : undefined
               }
+              onPress={() => openDatePicker("startsAt")}
+              onClear={() => clearDateField("startsAt")}
+              locale={locale}
+              theme={theme}
             />
 
-            <Input
+            <PromoCodeDateField
               label={t("practitioner.promoCodes.form.endsAtLabel")}
               value={values.endsAt}
-              onChangeText={(next) =>
-                setValues((current) => ({ ...current, endsAt: next }))
-              }
-              placeholder={t("practitioner.promoCodes.form.datePlaceholder")}
+              placeholder={t("practitioner.promoCodes.form.endsAtPlaceholder")}
               helperText={t("practitioner.promoCodes.form.endsAtHint")}
               error={
                 validationErrors.endsAt
                   ? t(`practitioner.promoCodes.form.errors.${validationErrors.endsAt}`)
                   : undefined
               }
+              onPress={() => openDatePicker("endsAt")}
+              onClear={() => clearDateField("endsAt")}
+              locale={locale}
+              theme={theme}
             />
 
             <View style={styles.toggleRow}>
@@ -747,9 +971,10 @@ function PromoCodeFormModal({
               </View>
               <Switch
                 value={values.isActive}
-                onValueChange={(next) =>
-                  setValues((current) => ({ ...current, isActive: next }))
-                }
+                onValueChange={(next) => {
+                  clearSubmissionError();
+                  setValues((current) => ({ ...current, isActive: next }));
+                }}
                 trackColor={{
                   false: theme.colors.borderLight,
                   true: theme.colors.primary,
@@ -778,6 +1003,440 @@ function PromoCodeFormModal({
               disabled={!canSubmit}
             />
           </ScrollView>
+        </View>
+      </View>
+
+      <PromoCodeDatePickerModal
+        visible={Boolean(datePickerState)}
+        value={datePickerState?.value ?? null}
+        locale={locale}
+        title={
+          datePickerState?.field === "startsAt"
+            ? t("practitioner.promoCodes.form.startsAtLabel")
+            : t("practitioner.promoCodes.form.endsAtLabel")
+        }
+        t={t}
+        onClose={closeDatePicker}
+        onConfirm={confirmDatePicker}
+        onClear={
+          datePickerState?.field
+            ? () => {
+                clearDateField(datePickerState.field);
+                closeDatePicker();
+              }
+            : undefined
+        }
+      />
+    </Modal>
+  );
+}
+
+function PromoCodeDateField({
+  label,
+  value,
+  placeholder,
+  helperText,
+  error,
+  onPress,
+  onClear,
+  locale,
+  theme,
+}: {
+  label: string;
+  value: string;
+  placeholder: string;
+  helperText: string;
+  error?: string;
+  onPress: () => void;
+  onClear: () => void;
+  locale: string;
+  theme: ReturnType<typeof useTheme>["theme"];
+}) {
+  const displayValue = value ? formatDate(value, locale) : "";
+  const hasValue = Boolean(displayValue);
+
+  return (
+    <View style={styles.dateFieldWrap}>
+      <Text weight="500" color={theme.colors.textSecondary} style={styles.dateFieldLabel}>
+        {label}
+      </Text>
+      <TouchableOpacity
+        activeOpacity={0.7}
+        onPress={onPress}
+        style={[
+          styles.dateFieldButton,
+          {
+            borderColor: error ? "#ef4444" : theme.colors.borderLight,
+            backgroundColor: theme.colors.surface,
+            flexDirection: locale.startsWith("ar") ? "row-reverse" : "row",
+          },
+        ]}
+      >
+        <Text
+          style={[
+            styles.dateFieldValue,
+            {
+              color: hasValue ? theme.colors.textPrimary : theme.colors.textMuted,
+              textAlign: locale.startsWith("ar") ? "right" : "left",
+            },
+          ]}
+          numberOfLines={1}
+        >
+          {hasValue ? displayValue : placeholder}
+        </Text>
+        <View style={styles.dateFieldActions}>
+          {hasValue ? (
+            <TouchableOpacity
+              onPress={onClear}
+              hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel={label}
+              style={styles.dateFieldActionButton}
+            >
+              <Ionicons
+                name="close-circle-outline"
+                size={18}
+                color={theme.colors.textMuted}
+              />
+            </TouchableOpacity>
+          ) : null}
+          <Ionicons
+            name="calendar-outline"
+            size={18}
+            color={theme.colors.textMuted}
+          />
+        </View>
+      </TouchableOpacity>
+      {error ? (
+        <Text color="#ef4444" style={styles.dateFieldError}>
+          {error}
+        </Text>
+      ) : (
+        <Text color={theme.colors.textMuted} style={styles.dateFieldHelper}>
+          {helperText}
+        </Text>
+      )}
+    </View>
+  );
+}
+
+const WEEKDAY_LABELS_AR = ["س", "ح", "ن", "ث", "ر", "خ", "ج"];
+const WEEKDAY_LABELS_EN = ["S", "M", "T", "W", "T", "F", "S"];
+
+function createCalendarDate(year: number, month: number, day: number) {
+  return new Date(year, month, day, 12, 0, 0, 0);
+}
+
+function startOfCalendarMonth(date: Date) {
+  return createCalendarDate(date.getFullYear(), date.getMonth(), 1);
+}
+
+function isSameCalendarDay(left: Date, right: Date) {
+  return (
+    left.getFullYear() === right.getFullYear() &&
+    left.getMonth() === right.getMonth() &&
+    left.getDate() === right.getDate()
+  );
+}
+
+function getWeekStartIndex(locale: string) {
+  return locale.startsWith("ar") ? 6 : 0;
+}
+
+function getWeekdayLabels(locale: string) {
+  return locale.startsWith("ar") ? WEEKDAY_LABELS_AR : WEEKDAY_LABELS_EN;
+}
+
+function buildMonthGrid(viewDate: Date, locale: string) {
+  const year = viewDate.getFullYear();
+  const month = viewDate.getMonth();
+  const weekStartIndex = getWeekStartIndex(locale);
+  const monthStart = new Date(year, month, 1);
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const leadingEmptyCells = (monthStart.getDay() - weekStartIndex + 7) % 7;
+  const totalCells = Math.ceil((leadingEmptyCells + daysInMonth) / 7) * 7;
+  const cells: Array<Date | null> = [];
+
+  for (let index = 0; index < totalCells; index += 1) {
+    if (index < leadingEmptyCells || index >= leadingEmptyCells + daysInMonth) {
+      cells.push(null);
+      continue;
+    }
+
+    const day = index - leadingEmptyCells + 1;
+    cells.push(createCalendarDate(year, month, day));
+  }
+
+  const rows: Array<Array<Date | null>> = [];
+  for (let index = 0; index < cells.length; index += 7) {
+    rows.push(cells.slice(index, index + 7));
+  }
+
+  return rows;
+}
+
+function getMonthYearLabel(date: Date, locale: string) {
+  return new Intl.DateTimeFormat(locale, {
+    month: "long",
+    year: "numeric",
+  }).format(date);
+}
+
+function PromoCodeDatePickerModal({
+  visible,
+  value,
+  locale,
+  title,
+  t,
+  onClose,
+  onConfirm,
+  onClear,
+}: {
+  visible: boolean;
+  value: Date | null;
+  locale: string;
+  title: string;
+  t: ReturnType<typeof useTranslation>["t"];
+  onClose: () => void;
+  onConfirm: (date: Date) => void;
+  onClear?: () => void;
+}) {
+  const { theme } = useTheme();
+  const isArabic = locale.startsWith("ar");
+  const initialSelectedDate = value ? new Date(value) : null;
+  const [viewDate, setViewDate] = useState(() =>
+    startOfCalendarMonth(initialSelectedDate ?? new Date()),
+  );
+  const [selectedDate, setSelectedDate] = useState<Date | null>(initialSelectedDate);
+
+  useEffect(() => {
+    if (!visible) {
+      return;
+    }
+
+    const next = value ? new Date(value) : null;
+    setViewDate(startOfCalendarMonth(next ?? new Date()));
+    setSelectedDate(next);
+  }, [value, visible]);
+
+  const monthYearLabel = useMemo(
+    () => getMonthYearLabel(viewDate, locale),
+    [locale, viewDate],
+  );
+  const weekdayLabels = useMemo(() => getWeekdayLabels(locale), [locale]);
+  const calendarRows = useMemo(() => buildMonthGrid(viewDate, locale), [locale, viewDate]);
+  const today = useMemo(
+    () =>
+      createCalendarDate(
+        new Date().getFullYear(),
+        new Date().getMonth(),
+        new Date().getDate(),
+      ),
+    [],
+  );
+
+  const navigateMonth = (offset: number) => {
+    setViewDate((current) =>
+      startOfCalendarMonth(createCalendarDate(current.getFullYear(), current.getMonth() + offset, 1)),
+    );
+  };
+
+  const confirmSelection = () => {
+    if (!selectedDate) {
+      return;
+    }
+
+    onConfirm(selectedDate);
+  };
+
+  const clearSelection = () => {
+    onClear?.();
+    onClose();
+  };
+
+  return (
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+      <View style={styles.datePickerOverlay}>
+        <View style={[styles.datePickerSheet, { backgroundColor: theme.colors.surface }]}>
+          <View style={styles.datePickerTopBar}>
+            <Text weight="700" style={styles.datePickerTitle}>
+              {title}
+            </Text>
+
+            <TouchableOpacity
+              onPress={onClose}
+              hitSlop={8}
+              style={[styles.datePickerTopButton, styles.datePickerCloseButton]}
+            >
+              <Ionicons name="close" size={18} color={theme.colors.textSecondary} />
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.datePickerBody}>
+            <View style={styles.calendarHeader}>
+              <Pressable
+                onPress={() => navigateMonth(isArabic ? 1 : -1)}
+                accessibilityRole="button"
+                accessibilityLabel={isArabic ? "????? ??????" : "Previous month"}
+                style={({ pressed }) => [
+                  styles.calendarNavButton,
+                  {
+                    backgroundColor: theme.colors.surfaceSecondary,
+                    opacity: pressed ? 0.85 : 1,
+                  },
+                ]}
+              >
+                <Ionicons
+                  name={isArabic ? "chevron-forward" : "chevron-back"}
+                  size={18}
+                  color={theme.colors.textPrimary}
+                />
+              </Pressable>
+
+              <Text weight="700" style={styles.calendarMonthLabel}>
+                {monthYearLabel}
+              </Text>
+
+              <Pressable
+                onPress={() => navigateMonth(isArabic ? -1 : 1)}
+                accessibilityRole="button"
+                accessibilityLabel={isArabic ? "????? ??????" : "Next month"}
+                style={({ pressed }) => [
+                  styles.calendarNavButton,
+                  {
+                    backgroundColor: theme.colors.surfaceSecondary,
+                    opacity: pressed ? 0.85 : 1,
+                  },
+                ]}
+              >
+                <Ionicons
+                  name={isArabic ? "chevron-back" : "chevron-forward"}
+                  size={18}
+                  color={theme.colors.textPrimary}
+                />
+              </Pressable>
+            </View>
+
+            <View style={styles.calendarWeekdays}>
+              {weekdayLabels.map((label) => (
+                <Text
+                  key={label}
+                  weight="600"
+                  color={theme.colors.textSecondary}
+                  style={styles.calendarWeekdayLabel}
+                >
+                  {label}
+                </Text>
+              ))}
+            </View>
+
+            <View style={styles.calendarGrid}>
+              {calendarRows.map((week, weekIndex) => (
+                <View key={weekIndex} style={styles.calendarWeekRow}>
+                  {week.map((day, dayIndex) => {
+                    const key = `${weekIndex}-${dayIndex}`;
+                    if (!day) {
+                      return <View key={key} style={styles.calendarEmptyCell} />;
+                    }
+
+                    const selected = selectedDate ? isSameCalendarDay(selectedDate, day) : false;
+                    const isToday = isSameCalendarDay(today, day);
+
+                    return (
+                      <Pressable
+                        key={key}
+                        onPress={() => setSelectedDate(day)}
+                        accessibilityRole="button"
+                        accessibilityLabel={formatDate(
+                          serializePractitionerPromoCodeDate(day, "startsAt"),
+                          locale,
+                        )}
+                        style={({ pressed }) => [
+                          styles.calendarDayCell,
+                          {
+                            borderColor: selected
+                              ? theme.colors.primary
+                              : isToday
+                                ? theme.colors.primary
+                                : theme.colors.borderLight,
+                            backgroundColor: selected ? theme.colors.primary : theme.colors.surface,
+                            opacity: pressed ? 0.88 : 1,
+                          },
+                        ]}
+                      >
+                        <Text
+                          weight={selected ? "700" : "600"}
+                          style={[
+                            styles.calendarDayLabel,
+                            {
+                              color: selected ? "#ffffff" : theme.colors.textPrimary,
+                            },
+                          ]}
+                        >
+                          {day.getDate()}
+                        </Text>
+                        <View
+                          style={[
+                            styles.calendarDayMarker,
+                            {
+                              backgroundColor: selected
+                                ? "rgba(255,255,255,0.95)"
+                                : isToday
+                                  ? theme.colors.primary
+                                  : "transparent",
+                            },
+                          ]}
+                        />
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              ))}
+            </View>
+          </View>
+
+          <View style={styles.datePickerFooter}>
+            {onClear ? (
+              <TouchableOpacity
+                onPress={clearSelection}
+                style={styles.datePickerClearButton}
+                activeOpacity={0.8}
+              >
+                <Text weight="600" color={theme.colors.textSecondary}>
+                  {t("practitioner.promoCodes.form.datePicker.clear")}
+                </Text>
+              </TouchableOpacity>
+            ) : (
+              <View style={styles.datePickerClearButton} />
+            )}
+
+            <View style={styles.datePickerFooterActions}>
+              <TouchableOpacity
+                onPress={onClose}
+                style={[styles.datePickerFooterButton, styles.datePickerFooterGhostButton]}
+                activeOpacity={0.8}
+              >
+                <Text weight="600" color={theme.colors.textSecondary}>
+                  {t("practitioner.promoCodes.form.datePicker.cancel")}
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={confirmSelection}
+                disabled={!selectedDate}
+                style={[
+                  styles.datePickerFooterButton,
+                  styles.datePickerFooterPrimaryButton,
+                  !selectedDate ? styles.datePickerFooterDisabledButton : null,
+                ]}
+                activeOpacity={0.85}
+              >
+                <Text weight="700" color="#ffffff">
+                  {t("practitioner.promoCodes.form.datePicker.confirm")}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
         </View>
       </View>
     </Modal>
@@ -845,10 +1504,10 @@ function PromoCodeDetailModal({
               />
             ) : coupon ? (
               <>
-                <Card variant="outlined" padding="lg" style={styles.detailHero}>
+                <Card variant="outlined" padding="sm" style={styles.detailHero}>
                   <View style={styles.couponTopRow}>
                     <View style={styles.couponTextWrap}>
-                      <Text weight="bold" style={styles.couponCode}>
+                      <Text weight="700" style={styles.couponCode} numberOfLines={1}>
                         {coupon.code}
                       </Text>
                       <Text color={theme.colors.textSecondary} style={styles.couponSubtitle}>
@@ -858,40 +1517,27 @@ function PromoCodeDetailModal({
                       </Text>
                     </View>
                     <StatusChip
-                      label={t(`practitioner.promoCodes.status.${coupon.status}`, coupon.status)}
-                      tone={resolveCouponStatusTone(coupon.status)}
+                      label={resolveCouponStatusLabel(
+                        coupon.effectiveStatus ?? coupon.status,
+                        t,
+                      )}
+                      tone={resolveCouponStatusTone(
+                        coupon.effectiveStatus ?? coupon.status,
+                      )}
                       showDot={false}
                     />
                   </View>
 
-                  <View style={styles.couponMetaGrid}>
-                    <MetaPill
-                      label={t("practitioner.promoCodes.list.usage")}
-                      value={coupon.usageLimitTotal ? `${coupon.currentUsageCount} / ${coupon.usageLimitTotal}` : `${coupon.currentUsageCount}`}
-                      theme={theme}
-                    />
-                    <MetaPill
-                      label={t("practitioner.promoCodes.list.perPatient")}
-                      value={coupon.usageLimitPerPatient ? String(coupon.usageLimitPerPatient) : t("common.notSet", "Not set")}
-                      theme={theme}
-                    />
-                  </View>
+                  <Text color={theme.colors.textSecondary} style={styles.couponUsageLine} numberOfLines={1}>
+                    {formatUsageLabel(coupon.currentUsageCount, coupon.usageLimitTotal, t)} · {t("practitioner.promoCodes.list.perPatient")}: {formatPatientLimitLabel(coupon.usageLimitPerPatient, t)}
+                  </Text>
 
-                  <Text color={theme.colors.textSecondary} style={styles.couponWindow}>
+                  <Text color={theme.colors.textSecondary} style={styles.couponWindow} numberOfLines={1}>
                     {formatDateWindow(coupon.startsAt, coupon.endsAt, locale, t)}
                   </Text>
                 </Card>
 
-                <Card variant="outlined" padding="lg" style={styles.detailSection}>
-                  <Text weight="600" style={styles.detailSectionTitle}>
-                    {t("practitioner.promoCodes.detail.financeTitle")}
-                  </Text>
-                  <Text color={theme.colors.textSecondary} style={styles.detailSectionBody}>
-                    {t("practitioner.promoCodes.detail.financeBody")}
-                  </Text>
-                </Card>
-
-                <Card variant="outlined" padding="lg" style={styles.detailSection}>
+                <Card variant="outlined" padding="sm" style={styles.detailSection}>
                   <Text weight="600" style={styles.detailSectionTitle}>
                     {t("practitioner.promoCodes.detail.redemptionsTitle")}
                   </Text>
@@ -943,7 +1589,7 @@ function RedemptionCard({
   t: ReturnType<typeof useTranslation>["t"];
 }) {
   return (
-    <Card variant="flat" padding="md" style={styles.redemptionCard}>
+    <Card variant="flat" padding="sm" style={styles.redemptionCard}>
       <View style={styles.redemptionTopRow}>
         <View style={styles.redemptionText}>
           <Text weight="600" style={styles.redemptionName} numberOfLines={1}>
@@ -959,14 +1605,30 @@ function RedemptionCard({
       </View>
 
       <View style={styles.redemptionPairs}>
-        <MetaPill label={t("practitioner.promoCodes.detail.grossAmount")} value={formatMoney(item.grossAmount, item.currencyCode ?? null, locale, t("practitioner.finance.common.currencyUnavailable"))} theme={theme} />
-        <MetaPill label={t("practitioner.promoCodes.detail.platformShare")} value={formatMoney(item.platformDiscountShare, item.currencyCode ?? null, locale, t("practitioner.finance.common.currencyUnavailable"))} theme={theme} />
-        <MetaPill label={t("practitioner.promoCodes.detail.practitionerShare")} value={formatMoney(item.practitionerDiscountShare, item.currencyCode ?? null, locale, t("practitioner.finance.common.currencyUnavailable"))} theme={theme} />
+        <MetaPill
+          label={t("practitioner.promoCodes.detail.grossAmount")}
+          value={formatMoney(
+            item.grossAmount,
+            item.currencyCode ?? null,
+            locale,
+            t("practitioner.finance.common.currencyUnavailable"),
+          )}
+          theme={theme}
+        />
+        <MetaPill
+          label={t("practitioner.promoCodes.detail.platformShare")}
+          value={formatMoney(
+            item.platformDiscountShare,
+            item.currencyCode ?? null,
+            locale,
+            t("practitioner.finance.common.currencyUnavailable"),
+          )}
+          theme={theme}
+        />
       </View>
 
       <Text color={theme.colors.textSecondary} style={styles.redemptionFooter}>
-        {item.sessionId ? `${t("practitioner.promoCodes.detail.sessionRef")}: ${shortReference(item.sessionId)}` : ""}
-        {item.paymentId ? ` • ${t("practitioner.promoCodes.detail.paymentRef")}: ${shortReference(item.paymentId)}` : ""}
+        {formatDateTime(item.createdAt, locale)}
       </Text>
     </Card>
   );
@@ -1000,42 +1662,82 @@ function ActionPill({
   theme,
   variant = "default",
   disabled = false,
+  loading = false,
 }: {
   label: string;
   icon: keyof typeof Ionicons.glyphMap;
   onPress: () => void;
   theme: ReturnType<typeof useTheme>["theme"];
-  variant?: "default" | "danger";
+  variant?: "default" | "danger" | "success";
   disabled?: boolean;
+  loading?: boolean;
 }) {
   return (
     <TouchableOpacity
-      onPress={onPress}
-      disabled={disabled}
+      onPress={() => {
+        if (disabled || loading) {
+          return;
+        }
+
+        onPress();
+      }}
+      disabled={disabled || loading}
+      accessibilityRole="button"
+      accessibilityState={{ disabled: disabled || loading, busy: loading }}
+      hitSlop={6}
       style={[
         styles.actionPill,
         {
           backgroundColor:
             variant === "danger"
               ? `${theme.colors.error}12`
-              : theme.colors.surfaceSecondary,
+              : variant === "success"
+                ? `${theme.colors.success}12`
+                : theme.colors.surfaceSecondary,
           borderColor:
             variant === "danger"
               ? `${theme.colors.error}25`
-              : theme.colors.borderLight,
-          opacity: disabled ? 0.55 : 1,
+              : variant === "success"
+                ? `${theme.colors.success}25`
+                : theme.colors.borderLight,
+          opacity: disabled || loading ? 0.55 : 1,
         },
       ]}
     >
-      <Ionicons
-        name={icon}
-        size={16}
-        color={variant === "danger" ? theme.colors.error : theme.colors.textPrimary}
-      />
+      {loading ? (
+        <ActivityIndicator
+          size="small"
+          color={
+            variant === "danger"
+              ? theme.colors.error
+              : variant === "success"
+                ? theme.colors.success
+                : theme.colors.textPrimary
+          }
+        />
+      ) : (
+        <Ionicons
+          name={icon}
+          size={16}
+          color={
+            variant === "danger"
+              ? theme.colors.error
+              : variant === "success"
+                ? theme.colors.success
+                : theme.colors.textPrimary
+          }
+        />
+      )}
       <Text
         weight="600"
         style={styles.actionPillLabel}
-        color={variant === "danger" ? theme.colors.error : theme.colors.textPrimary}
+        color={
+          variant === "danger"
+            ? theme.colors.error
+            : variant === "success"
+              ? theme.colors.success
+              : theme.colors.textPrimary
+        }
       >
         {label}
       </Text>
@@ -1043,20 +1745,40 @@ function ActionPill({
   );
 }
 
-function resolveCouponStatusTone(status: PractitionerCouponStatus) {
+function resolveCouponStatusTone(
+  status: PractitionerCouponStatus | PractitionerCouponEffectiveStatus,
+) {
   switch (status) {
     case "ACTIVE":
-    case "APPROVED":
       return "success" as const;
-    case "PENDING_REVIEW":
-    case "DRAFT":
-      return "warning" as const;
     case "EXPIRED":
+    case "NOT_STARTED":
+    case "USAGE_LIMIT_REACHED":
+      return "warning" as const;
     case "DISABLED":
-    case "REJECTED":
       return "error" as const;
     default:
       return "default" as const;
+  }
+}
+
+function resolveCouponStatusLabel(
+  status: PractitionerCouponStatus | PractitionerCouponEffectiveStatus,
+  t: ReturnType<typeof useTranslation>["t"],
+) {
+  switch (status) {
+    case "ACTIVE":
+      return t("practitioner.promoCodes.status.ACTIVE");
+    case "EXPIRED":
+      return t("practitioner.promoCodes.status.EXPIRED");
+    case "DISABLED":
+      return t("practitioner.promoCodes.status.DISABLED");
+    case "NOT_STARTED":
+      return t("practitioner.promoCodes.status.NOT_STARTED");
+    case "USAGE_LIMIT_REACHED":
+      return t("practitioner.promoCodes.status.USAGE_LIMIT_REACHED");
+    default:
+      return t(`practitioner.promoCodes.status.${status}`);
   }
 }
 
@@ -1068,6 +1790,34 @@ function formatPercentLabel(value: string) {
 
   const label = parsed % 1 === 0 ? parsed.toFixed(0) : parsed.toFixed(2);
   return `${label}%`;
+}
+
+function formatUsageLabel(
+  currentUsageCount: number,
+  usageLimitTotal: number | null,
+  t: ReturnType<typeof useTranslation>["t"],
+) {
+  if (usageLimitTotal) {
+    return t("practitioner.promoCodes.list.usageWithLimit", {
+      current: currentUsageCount,
+      total: usageLimitTotal,
+    });
+  }
+
+  return t("practitioner.promoCodes.list.usageWithoutLimit", {
+    current: currentUsageCount,
+  });
+}
+
+function formatPatientLimitLabel(
+  usageLimitPerPatient: number | null,
+  t: ReturnType<typeof useTranslation>["t"],
+) {
+  if (usageLimitPerPatient) {
+    return String(usageLimitPerPatient);
+  }
+
+  return t("common.notSet");
 }
 
 function formatMoney(
@@ -1115,14 +1865,6 @@ function formatDateWindow(
   return t("practitioner.promoCodes.list.endsAt", {
     value: formatDateTime(endsAt, locale),
   });
-}
-
-function shortReference(value: string) {
-  if (value.length <= 12) {
-    return value;
-  }
-
-  return `${value.slice(0, 8)}…${value.slice(-4)}`;
 }
 
 function blankFormValues(): PractitionerPromoCodeFormValues {
@@ -1185,10 +1927,10 @@ function mapCouponError(error: unknown, t: ReturnType<typeof useTranslation>["t"
 
 const styles = StyleSheet.create({
   scroll: {
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 28,
-    gap: 14,
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 24,
+    gap: 10,
   },
   headerRight: {
     flexDirection: "row",
@@ -1198,118 +1940,113 @@ const styles = StyleSheet.create({
   headerAction: {
     padding: 8,
   },
-  heroCard: {
-    gap: 14,
+  toolbarCard: {
+    gap: 6,
   },
-  heroTopRow: {
+  toolbarHeader: {
     flexDirection: "row",
-    alignItems: "flex-start",
     justifyContent: "space-between",
-    gap: 12,
+    alignItems: "flex-start",
+    gap: 8,
   },
-  heroTextWrap: {
+  toolbarTextWrap: {
     flex: 1,
+    gap: 2,
   },
-  heroTitle: {
-    fontSize: 24,
-    marginBottom: 4,
-  },
-  heroSubtitle: {
-    fontSize: 14,
-    lineHeight: 22,
-  },
-  heroNote: {
-    fontSize: 13,
+  toolbarTitle: {
+    fontSize: 15,
     lineHeight: 20,
   },
-  heroIconWrap: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#e8f4f2",
+  toolbarSubtitle: {
+    fontSize: 10,
+    lineHeight: 14,
+  },
+  toolbarNote: {
+    fontSize: 9,
+    lineHeight: 13,
+  },
+  createButton: {
+    width: 100,
+    minHeight: 36,
+    paddingHorizontal: 9,
+    paddingVertical: 6,
+  },
+  filterBlock: {
+    gap: 4,
+  },
+  filterLabel: {
+    fontSize: 11,
+  },
+  chipRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
   },
   feedbackCard: {
-    gap: 8,
+    gap: 3,
   },
   feedbackRow: {
     flexDirection: "row",
     justifyContent: "flex-start",
   },
   feedbackTitle: {
-    fontSize: 16,
+    fontSize: 13,
+    lineHeight: 18,
   },
   feedbackBody: {
-    fontSize: 13,
-    lineHeight: 20,
+    fontSize: 11,
+    lineHeight: 16,
   },
   list: {
-    gap: 12,
+    gap: 5,
   },
   couponCard: {
-    gap: 12,
+    gap: 4,
   },
   couponTopRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
-    gap: 12,
+    gap: 4,
   },
   couponTextWrap: {
     flex: 1,
   },
   couponCode: {
-    fontSize: 18,
-    marginBottom: 4,
+    fontSize: 14,
+    marginBottom: 1,
   },
   couponSubtitle: {
-    fontSize: 14,
-    lineHeight: 21,
+    fontSize: 10,
+    lineHeight: 14,
   },
-  couponMetaGrid: {
-    flexDirection: "row",
-    gap: 10,
-    flexWrap: "wrap",
-  },
-  metaPill: {
-    minWidth: "48%",
-    flexGrow: 1,
-    borderRadius: 18,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-  },
-  metaPillLabel: {
-    fontSize: 12,
-    marginBottom: 4,
-  },
-  metaPillValue: {
-    fontSize: 14,
+  couponUsageLine: {
+    fontSize: 10,
+    lineHeight: 14,
   },
   couponWindow: {
-    fontSize: 13,
-    lineHeight: 20,
+    fontSize: 9,
+    lineHeight: 13,
   },
   couponActions: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 8,
+    gap: 3,
   },
   actionPill: {
     flexGrow: 1,
-    flexBasis: "30%",
-    minHeight: 44,
-    borderRadius: 999,
+    flexBasis: "31%",
+    minHeight: 30,
+    borderRadius: 14,
     borderWidth: 1,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingHorizontal: 7,
+    paddingVertical: 5,
     alignItems: "center",
     justifyContent: "center",
     flexDirection: "row",
-    gap: 6,
+    gap: 3,
   },
   actionPillLabel: {
-    fontSize: 12,
+    fontSize: 9,
   },
   modalOverlay: {
     flex: 1,
@@ -1317,7 +2054,7 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
   },
   modalSheet: {
-    maxHeight: "92%",
+    maxHeight: "90%",
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     paddingTop: 8,
@@ -1332,22 +2069,22 @@ const styles = StyleSheet.create({
   },
   modalHeader: {
     paddingHorizontal: 20,
-    paddingBottom: 10,
+    paddingBottom: 8,
     flexDirection: "row",
     alignItems: "flex-start",
     justifyContent: "space-between",
-    gap: 12,
+    gap: 10,
   },
   modalHeaderText: {
     flex: 1,
   },
   modalTitle: {
-    fontSize: 20,
-    marginBottom: 4,
+    fontSize: 18,
+    marginBottom: 3,
   },
   modalSubtitle: {
-    fontSize: 13,
-    lineHeight: 20,
+    fontSize: 12,
+    lineHeight: 18,
   },
   modalCloseButton: {
     padding: 8,
@@ -1356,87 +2093,274 @@ const styles = StyleSheet.create({
   modalContent: {
     paddingHorizontal: 20,
     paddingBottom: 28,
-    gap: 14,
+    gap: 12,
   },
   modalNoteCard: {
-    gap: 8,
+    gap: 6,
   },
   modalNoteTitle: {
-    fontSize: 15,
+    fontSize: 14,
   },
   modalNoteBody: {
-    fontSize: 13,
-    lineHeight: 20,
+    fontSize: 12,
+    lineHeight: 18,
   },
   toggleRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    gap: 12,
-    paddingVertical: 6,
+    gap: 10,
+    paddingVertical: 5,
   },
   toggleText: {
     flex: 1,
   },
   toggleLabel: {
-    fontSize: 14,
-    marginBottom: 3,
+    fontSize: 13,
+    marginBottom: 2,
   },
   toggleHint: {
-    fontSize: 12,
-    lineHeight: 18,
+    fontSize: 11,
+    lineHeight: 16,
   },
   inlineErrorCard: {
     backgroundColor: "#fef3f2",
   },
   inlineErrorText: {
+    fontSize: 12,
+    lineHeight: 18,
+  },
+  dateFieldWrap: {
+    gap: 4,
+  },
+  dateFieldLabel: {
     fontSize: 13,
-    lineHeight: 20,
+  },
+  dateFieldButton: {
+    minHeight: 60,
+    borderRadius: 12,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    gap: 8,
+    flexDirection: "row",
+  },
+  dateFieldValue: {
+    flex: 1,
+    fontSize: 16,
+    lineHeight: 22,
+  },
+  dateFieldActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  dateFieldActionButton: {
+    padding: 2,
+  },
+  dateFieldError: {
+    fontSize: 12,
+    lineHeight: 18,
+  },
+  dateFieldHelper: {
+    fontSize: 11,
+    lineHeight: 16,
+  },
+  datePickerOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(15, 23, 42, 0.45)",
+    justifyContent: "flex-end",
+  },
+  datePickerSheet: {
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    paddingTop: 10,
+    paddingBottom: 14,
+    overflow: "hidden",
+    maxHeight: "88%",
+  },
+  datePickerTopBar: {
+    paddingHorizontal: 16,
+    paddingBottom: 6,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 10,
+  },
+  datePickerTopButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "transparent",
+  },
+  datePickerCloseButton: {
+    backgroundColor: "transparent",
+  },
+  datePickerTitle: {
+    flex: 1,
+    fontSize: 16,
+    textAlign: "center",
+  },
+  datePickerBody: {
+    paddingHorizontal: 16,
+    gap: 10,
+  },
+  calendarHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 8,
+  },
+  calendarNavButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  calendarMonthLabel: {
+    flex: 1,
+    fontSize: 16,
+    textAlign: "center",
+  },
+  calendarWeekdays: {
+    flexDirection: "row",
+  },
+  calendarWeekdayLabel: {
+    flex: 1,
+    textAlign: "center",
+    fontSize: 11,
+    lineHeight: 14,
+  },
+  calendarGrid: {
+    gap: 4,
+  },
+  calendarWeekRow: {
+    flexDirection: "row",
+    gap: 4,
+  },
+  calendarEmptyCell: {
+    flex: 1,
+    height: 40,
+    opacity: 0,
+  },
+  calendarDayCell: {
+    flex: 1,
+    height: 40,
+    borderRadius: 12,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 2,
+  },
+  calendarDayLabel: {
+    fontSize: 13,
+    lineHeight: 16,
+  },
+  calendarDayMarker: {
+    width: 5,
+    height: 5,
+    borderRadius: 999,
+  },
+  datePickerFooter: {
+    paddingHorizontal: 16,
+    paddingTop: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 8,
+  },
+  datePickerFooterActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  datePickerClearButton: {
+    minHeight: 36,
+    justifyContent: "center",
+    paddingRight: 4,
+  },
+  datePickerFooterButton: {
+    minHeight: 36,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  datePickerFooterGhostButton: {
+    backgroundColor: "transparent",
+  },
+  datePickerFooterPrimaryButton: {
+    backgroundColor: "#0f766e",
+  },
+  datePickerFooterDisabledButton: {
+    opacity: 0.45,
+  },
+  datePickerFooterSpacer: {
+    width: 1,
   },
   detailHero: {
-    gap: 12,
+    gap: 4,
   },
   detailSection: {
-    gap: 12,
+    gap: 6,
   },
   detailSectionTitle: {
-    fontSize: 16,
+    fontSize: 13,
   },
   detailSectionBody: {
-    fontSize: 13,
-    lineHeight: 20,
+    fontSize: 11,
+    lineHeight: 16,
   },
   redemptionList: {
-    gap: 10,
+    gap: 8,
   },
   redemptionCard: {
-    gap: 10,
+    gap: 6,
   },
   redemptionTopRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    gap: 12,
+    gap: 8,
   },
   redemptionText: {
     flex: 1,
   },
   redemptionName: {
-    fontSize: 15,
+    fontSize: 13,
   },
   redemptionMeta: {
-    fontSize: 12,
-    marginTop: 4,
+    fontSize: 10,
+    marginTop: 1,
   },
   redemptionAmount: {
-    fontSize: 15,
+    fontSize: 13,
   },
   redemptionPairs: {
     flexDirection: "row",
-    gap: 8,
+    gap: 6,
     flexWrap: "wrap",
   },
+  metaPill: {
+    minWidth: "48%",
+    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    gap: 2,
+  },
+  metaPillLabel: {
+    fontSize: 8,
+    lineHeight: 12,
+  },
+  metaPillValue: {
+    fontSize: 10,
+    lineHeight: 14,
+  },
   redemptionFooter: {
-    fontSize: 12,
-    lineHeight: 18,
+    fontSize: 10,
+    lineHeight: 14,
   },
 });

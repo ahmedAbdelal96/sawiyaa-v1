@@ -10,6 +10,10 @@ import {
   SessionMode,
 } from '@prisma/client';
 import { PaymentRegionalPricingMode } from '@common/payments/payment-region.resolver';
+import type {
+  CouponEffectiveStatus,
+  CouponEffectiveStatusReason,
+} from '../utils/coupon-effective-status.util';
 
 export type SessionFinancialContext = {
   id: string;
@@ -75,6 +79,8 @@ export type ResolvedCouponViewModel = {
   slug: string;
   couponScope: CouponScope;
   status: CouponStatus;
+  effectiveStatus: CouponEffectiveStatus;
+  effectiveStatusReason: CouponEffectiveStatusReason | null;
   discountType: DiscountType;
   discountValue: string;
   maxDiscountAmount: string | null;

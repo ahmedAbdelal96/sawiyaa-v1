@@ -14,23 +14,15 @@ import { DEFAULT_PAGE_LIMIT, DEFAULT_PAGE_SIZE_OPTIONS } from "@/constants/pagin
 import { useDebouncedValue } from "@/hooks/use-debounce";
 import { usePractitionerSessions } from "../hooks/use-sessions";
 import SessionStatusBadge from "./SessionStatusBadge";
-import type { SessionListItem, SessionStatus } from "../types/sessions.types";
+import type { SessionListItem } from "../types/sessions.types";
 
-const SESSION_STATUS_FILTERS: SessionStatus[] = [
-  "DRAFT",
-  "PENDING_PAYMENT",
-  "PENDING_PRACTITIONER_RESPONSE",
-  "CONFIRMED",
-  "UPCOMING",
-  "READY_TO_JOIN",
-  "IN_PROGRESS",
-  "COMPLETED",
-  "CANCELLED",
-  "NO_SHOW",
-  "EXPIRED",
-  "REFUND_PENDING",
-  "REFUNDED",
-];
+type PractitionerPresentationFilter =
+  | "all"
+  | "joinable"
+  | "live"
+  | "upcoming"
+  | "finished"
+  | "unavailable";
 
 function parseDateOnlyToStartIso(value: string): string | undefined {
   const [year, month, day] = value.split("-").map((part) => Number(part));
@@ -63,12 +55,12 @@ function formatSessionDateTime(isoString: string | null, locale: string): string
 
 export default function PractitionerSessionsPanel() {
   const t = useTranslations("sessions");
-  const tStatus = useTranslations("sessions.status");
   const locale = useLocale();
   const router = useRouter();
 
   const [search, setSearch] = useState("");
-  const [status, setStatus] = useState<SessionStatus | "">("");
+  const [presentationFilter, setPresentationFilter] =
+    useState<PractitionerPresentationFilter>("all");
   const [scheduledFrom, setScheduledFrom] = useState("");
   const [scheduledTo, setScheduledTo] = useState("");
   const [page, setPage] = useState(1);
@@ -79,24 +71,27 @@ export default function PractitionerSessionsPanel() {
 
   const queryParams = useMemo(
     () => ({
-      status: status || undefined,
       query: effectiveSearch || undefined,
+      presentationFilter:
+        presentationFilter === "all" ? undefined : presentationFilter,
       scheduledFrom: scheduledFrom ? parseDateOnlyToStartIso(scheduledFrom) : undefined,
       scheduledTo: scheduledTo ? parseDateOnlyToEndIso(scheduledTo) : undefined,
       page,
       limit,
     }),
-    [effectiveSearch, limit, page, scheduledFrom, scheduledTo, status],
+    [effectiveSearch, limit, page, presentationFilter, scheduledFrom, scheduledTo],
   );
 
   const { data, isLoading, isError, refetch } = usePractitionerSessions(queryParams);
-  const sessions = data?.items ?? [];
+  const sessions = useMemo(() => data?.items ?? [], [data?.items]);
   const pagination = data?.pagination;
-  const hasActiveFilters = Boolean(search.trim() || status || scheduledFrom || scheduledTo);
+  const hasActiveFilters = Boolean(
+    search.trim() || presentationFilter !== "all" || scheduledFrom || scheduledTo,
+  );
 
   const clearFilters = () => {
     setSearch("");
-    setStatus("");
+    setPresentationFilter("all");
     setScheduledFrom("");
     setScheduledTo("");
     setPage(1);
@@ -164,7 +159,12 @@ export default function PractitionerSessionsPanel() {
         id: "status",
         header: t("practitioner.list.table.status"),
         accessor: (row) => row.status,
-        cell: (row) => <SessionStatusBadge status={row.status} />,
+        cell: (row) => (
+          <SessionStatusBadge
+            status={row.status}
+            presentationStatus={row.presentationStatus}
+          />
+        ),
       },
     ],
     [locale, t],
@@ -224,22 +224,30 @@ export default function PractitionerSessionsPanel() {
             </label>
 
             <label className="block">
-              <span className="mb-1 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
-                {t("practitioner.list.filters.statusLabel")}
+                <span className="mb-1 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
+                {t("practitioner.list.filters.presentationLabel")}
               </span>
               <select
                 className="app-control w-full px-4 py-2.5"
-                value={status}
+                value={presentationFilter}
                 onChange={(event) => {
-                  setStatus(event.target.value as SessionStatus | "");
+                  setPresentationFilter(event.target.value as PractitionerPresentationFilter);
                   setPage(1);
                 }}
-                aria-label={t("practitioner.list.filters.statusLabel")}
+                aria-label={t("practitioner.list.filters.presentationLabel")}
               >
-                <option value="">{t("practitioner.list.filters.statusAll")}</option>
-                {SESSION_STATUS_FILTERS.map((sessionStatus) => (
-                  <option key={sessionStatus} value={sessionStatus}>
-                    {tStatus(sessionStatus)}
+                <option value="all">{t("practitioner.list.filters.presentationAll")}</option>
+                {(
+                  [
+                    ["joinable", t("practitioner.list.filters.presentationJoinable")],
+                    ["live", t("practitioner.list.filters.presentationLive")],
+                    ["upcoming", t("practitioner.list.filters.presentationUpcoming")],
+                    ["finished", t("practitioner.list.filters.presentationFinished")],
+                    ["unavailable", t("practitioner.list.filters.presentationUnavailable")],
+                  ] as const
+                ).map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
                   </option>
                 ))}
               </select>

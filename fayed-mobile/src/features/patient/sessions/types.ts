@@ -13,6 +13,23 @@ export type SessionStatus =
   | "REFUND_PENDING"
   | "REFUNDED";
 
+export type SessionPresentationStatus =
+  | "UPCOMING"
+  | "JOINABLE"
+  | "IN_PROGRESS"
+  | "COMPLETED"
+  | "CANCELLED"
+  | "ENDED"
+  | "UNAVAILABLE";
+
+export type SessionPresentationFilter =
+  | "all"
+  | "joinable"
+  | "live"
+  | "upcoming"
+  | "finished"
+  | "unavailable";
+
 export type SessionMode = "VIDEO" | "AUDIO" | "CHAT";
 
 export type SessionCancellationBookingType = "STANDARD" | "INSTANT";
@@ -38,7 +55,31 @@ export type SessionJoinBlockedReason =
   | "SESSION_NOT_JOINABLE_STATUS"
   | "SESSION_NOT_VIDEO_MODE"
   | "SESSION_TIME_WINDOW_NOT_OPEN"
-  | "SESSION_RUNTIME_NOT_PREPARED";
+  | "SESSION_RUNTIME_NOT_PREPARED"
+  | "SESSION_JOIN_WINDOW_CLOSED";
+
+export type SessionChatAvailabilityReason =
+  | "ALLOWED"
+  | "SESSION_NOT_STARTED"
+  | "SESSION_ENDED"
+  | "SESSION_CANCELLED"
+  | "CONVERSATION_CLOSED"
+  | "MODERATION_LOCKED"
+  | "NOT_PARTICIPANT";
+
+export interface SessionJoinAvailability {
+  canJoin: boolean;
+  blockedReason: SessionJoinBlockedReason | null;
+  availableAt: string | null;
+  expiresAt: string | null;
+}
+
+export interface SessionChatAvailability {
+  canRead: boolean;
+  canSend: boolean;
+  readOnly: boolean;
+  reason: SessionChatAvailabilityReason;
+}
 
 export interface AvailabilityWindow {
   startsAt: string;
@@ -78,12 +119,15 @@ export interface SessionListItem {
   id: string;
   sessionCode: string;
   status: SessionStatus;
+  presentationStatus: SessionPresentationStatus;
   scheduledStartAt: string | null;
   scheduledEndAt: string | null;
   durationMinutes: number;
   sessionMode: SessionMode;
   practitioner: SessionPractitionerSummary;
   patient: SessionPatientSummary | null;
+  joinAvailability: SessionJoinAvailability;
+  chatAvailability: SessionChatAvailability;
 }
 
 export interface SessionDetails extends SessionListItem {
@@ -106,6 +150,31 @@ export interface SessionsPagination {
 export interface SessionsListResponse {
   items: SessionListItem[];
   pagination: SessionsPagination;
+}
+
+export interface PatientSessionSummary {
+  total: number;
+  totalItems: number;
+  pendingPayment: number;
+  pendingPractitionerResponse: number;
+  confirmed: number;
+  upcoming: number;
+  readyToJoin: number;
+  inProgress: number;
+  completed: number;
+  cancelled: number;
+  noShow: number;
+  expired: number;
+  refundPending: number;
+  refunded: number;
+  actionRequired: number;
+  active: number;
+  history: number;
+  paymentExpired: number;
+}
+
+export interface PatientSessionSummaryResponse {
+  item: PatientSessionSummary;
 }
 
 export interface CreateScheduledSessionPayload {
@@ -172,6 +241,7 @@ export interface SessionCancellationPreviewResponse {
 
 export interface ListSessionsQuery {
   status?: SessionStatus;
+  presentationFilter?: SessionPresentationFilter;
   page?: number;
   limit?: number;
 }

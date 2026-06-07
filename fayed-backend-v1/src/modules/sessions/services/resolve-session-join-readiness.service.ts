@@ -2,28 +2,16 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { SessionMode, SessionProvider, SessionStatus } from '@prisma/client';
 import { SessionJoinBlockedReason } from '../types/session-video.types';
+import { resolveSessionJoinPolicy } from '../utils/session-join-policy.util';
 
 @Injectable()
 export class ResolveSessionJoinReadinessService {
-  private readonly joinAllowedStatuses = new Set<SessionStatus>([
-    SessionStatus.CONFIRMED,
-    SessionStatus.UPCOMING,
-    SessionStatus.READY_TO_JOIN,
-    SessionStatus.IN_PROGRESS,
-  ]);
-
   private readonly prepareLeadMinutes: number;
-  private readonly joinLeadMinutes: number;
-  private readonly joinLagMinutes: number;
 
   constructor(private readonly configService: ConfigService) {
     this.prepareLeadMinutes =
       this.configService.get<number>('session.runtimePrepareLeadMinutes') ??
       24 * 60;
-    this.joinLeadMinutes =
-      this.configService.get<number>('session.joinLeadMinutes') ?? 15;
-    this.joinLagMinutes =
-      this.configService.get<number>('session.joinLagMinutes') ?? 120;
   }
 
   resolve(input: {
@@ -40,68 +28,15 @@ export class ResolveSessionJoinReadinessService {
     canJoin: boolean;
     blockedReason: SessionJoinBlockedReason | null;
   } {
-    if (input.sessionMode !== SessionMode.VIDEO) {
-      return {
-        canPrepareRuntime: false,
-        canJoin: false,
-        blockedReason: 'SESSION_NOT_VIDEO_MODE',
-      };
-    }
-
-    if (!this.joinAllowedStatuses.has(input.status)) {
-      return {
-        canPrepareRuntime: false,
-        canJoin: false,
-        blockedReason: 'SESSION_NOT_JOINABLE_STATUS',
-      };
-    }
-
-    if (!input.scheduledStartAt || !input.scheduledEndAt) {
-      return {
-        canPrepareRuntime: false,
-        canJoin: false,
-        blockedReason: 'SESSION_TIME_WINDOW_NOT_OPEN',
-      };
-    }
-
-    const prepareOpensAt = new Date(
-      input.scheduledStartAt.getTime() - this.prepareLeadMinutes * 60_000,
-    );
-    const joinOpensAt = new Date(
-      input.scheduledStartAt.getTime() - this.joinLeadMinutes * 60_000,
-    );
-    const joinClosesAt = new Date(
-      input.scheduledEndAt.getTime() + this.joinLagMinutes * 60_000,
-    );
-
-    const canPrepareRuntime =
-      input.now >= prepareOpensAt && input.now <= joinClosesAt;
-    const runtimePrepared =
-      input.provider !== SessionProvider.NONE &&
-      Boolean(input.providerRoomId) &&
-      Boolean(input.providerSessionRef);
-    const inJoinWindow = input.now >= joinOpensAt && input.now <= joinClosesAt;
-
-    if (!canPrepareRuntime || !inJoinWindow) {
-      return {
-        canPrepareRuntime,
-        canJoin: false,
-        blockedReason: 'SESSION_TIME_WINDOW_NOT_OPEN',
-      };
-    }
-
-    if (!runtimePrepared) {
-      return {
-        canPrepareRuntime,
-        canJoin: false,
-        blockedReason: 'SESSION_RUNTIME_NOT_PREPARED',
-      };
-    }
+    const resolution = resolveSessionJoinPolicy({
+      ...input,
+      runtimePrepareLeadMinutes: this.prepareLeadMinutes,
+    });
 
     return {
-      canPrepareRuntime,
-      canJoin: true,
-      blockedReason: null,
+      canPrepareRuntime: resolution.canPrepareRuntime,
+      canJoin: resolution.canJoin,
+      blockedReason: resolution.blockedReason,
     };
   }
 }

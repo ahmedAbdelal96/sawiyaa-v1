@@ -261,6 +261,11 @@ enum SessionEventType {
   PROVIDER_ROOM_ENDED
 }
 
+enum SessionReminderType {
+  REMINDER_60
+  REMINDER_15
+}
+
 enum SessionCancellationBookingType {
   STANDARD
   INSTANT
@@ -1277,6 +1282,7 @@ model User {
   notificationDevices                           NotificationDevice[]
   refundPolicyAcceptances                       RefundPolicyAcceptance[]
   inAppNotificationFeedStates                   InAppNotificationFeedState[]
+  sessionReminderQueueRecipientEntries           SessionReminderQueue[]
   trainingInstructors                           TrainingInstructor[]
   trainingCoursesCreated                        Course[]                        @relation("TrainingCourseCreatedByUser")
   trainingCoursesPublished                      Course[]                        @relation("TrainingCoursePublishedByUser")
@@ -2169,6 +2175,7 @@ model Session {
   cancellationRecord     SessionCancellationRecord?
   corporateSponsorship   CorporateSessionSponsorship?
   corporateLedgerEntries CorporateLedger[]
+  sessionReminderQueueEntries SessionReminderQueue[]
 
   @@unique([packagePurchaseId, packageSessionIndex])
   @@index([patientId, status])
@@ -2178,6 +2185,26 @@ model Session {
   @@index([flowType, status])
   @@index([provider, providerRoomId])
   @@index([paymentCoverageType, status])
+}
+
+model SessionReminderQueue {
+  id              String             @id @default(uuid()) @db.Uuid
+  sessionId       String             @db.Uuid
+  recipientUserId String             @db.Uuid
+  recipientRole   UserRoleType
+  reminderType    SessionReminderType
+  dueAt           DateTime
+  sentAt          DateTime?
+  cancelledAt     DateTime?
+  idempotencyKey  String             @unique @db.VarChar(191)
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  session       Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  recipientUser User    @relation(fields: [recipientUserId], references: [id], onDelete: Cascade)
+
+  @@index([dueAt, sentAt, cancelledAt])
+  @@index([sessionId])
 }
 
 model SessionCancellationPolicy {

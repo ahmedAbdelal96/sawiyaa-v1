@@ -54,7 +54,9 @@ export class PractitionerMarketingPlacementManagementRepository {
             select: {
               id: true,
               publicSlug: true,
+              status: true,
               professionalTitle: true,
+              avatarUrl: true,
               user: {
                 select: {
                   id: true,
@@ -91,7 +93,9 @@ export class PractitionerMarketingPlacementManagementRepository {
           select: {
             id: true,
             publicSlug: true,
+            status: true,
             professionalTitle: true,
+            avatarUrl: true,
             user: {
               select: {
                 id: true,
@@ -129,13 +133,56 @@ export class PractitionerMarketingPlacementManagementRepository {
       select: {
         id: true,
         publicSlug: true,
+        status: true,
         professionalTitle: true,
+        avatarUrl: true,
         user: {
           select: {
             id: true,
             displayName: true,
           },
         },
+      },
+    });
+  }
+
+  async findActiveOverlappingPlacement(input: {
+    practitionerId: string;
+    surface: PractitionerMarketingPlacementSurface;
+    startsAt: Date;
+    endsAt: Date | null;
+    excludePlacementId?: string;
+  }) {
+    const candidateEnd = input.endsAt ?? new Date('9999-12-31T23:59:59.999Z');
+    const surfaceConditions =
+      input.surface === PractitionerMarketingPlacementSurface.ALL
+        ? [
+            { surface: PractitionerMarketingPlacementSurface.HOME },
+            { surface: PractitionerMarketingPlacementSurface.DISCOVERY },
+            { surface: PractitionerMarketingPlacementSurface.ALL },
+          ]
+        : [
+            { surface: input.surface },
+            { surface: PractitionerMarketingPlacementSurface.ALL },
+          ];
+
+    return this.prisma.practitionerMarketingPlacement.findFirst({
+      where: {
+        ...(input.excludePlacementId
+          ? { id: { not: input.excludePlacementId } }
+          : {}),
+        practitionerId: input.practitionerId,
+        status: PractitionerMarketingPlacementStatus.ACTIVE,
+        surface: { in: surfaceConditions.map((item) => item.surface) },
+        startsAt: { lte: candidateEnd },
+        OR: [{ endsAt: null }, { endsAt: { gte: input.startsAt } }],
+      },
+      select: {
+        id: true,
+        surface: true,
+        startsAt: true,
+        endsAt: true,
+        status: true,
       },
     });
   }
@@ -148,7 +195,9 @@ export class PractitionerMarketingPlacementManagementRepository {
           select: {
             id: true,
             publicSlug: true,
+            status: true,
             professionalTitle: true,
+            avatarUrl: true,
             user: {
               select: {
                 id: true,
@@ -185,7 +234,9 @@ export class PractitionerMarketingPlacementManagementRepository {
           select: {
             id: true,
             publicSlug: true,
+            status: true,
             professionalTitle: true,
+            avatarUrl: true,
             user: {
               select: {
                 id: true,
@@ -223,7 +274,9 @@ export class PractitionerMarketingPlacementManagementRepository {
         placementId: input.placementId,
         action: input.action,
         actorUserId: input.actorUserId,
-        beforeSnapshot: input.beforeSnapshot as Prisma.InputJsonValue | undefined,
+        beforeSnapshot: input.beforeSnapshot as
+          | Prisma.InputJsonValue
+          | undefined,
         afterSnapshot: input.afterSnapshot as Prisma.InputJsonValue | undefined,
         note: input.note ?? null,
       },
@@ -294,13 +347,17 @@ export class PractitionerMarketingPlacementManagementRepository {
       ...(input.surface ? { surface: input.surface } : {}),
       ...(input.reason ? { reason: input.reason } : {}),
       ...(startsFrom ? { startsAt: { gte: startsFrom } } : {}),
-      ...(endsTo ? { OR: [{ endsAt: null }, { endsAt: { lte: endsTo } }] } : {}),
+      ...(endsTo
+        ? { OR: [{ endsAt: null }, { endsAt: { lte: endsTo } }] }
+        : {}),
       ...(search
         ? {
             practitioner: {
               OR: [
                 { publicSlug: { contains: search, mode: 'insensitive' } },
-                { professionalTitle: { contains: search, mode: 'insensitive' } },
+                {
+                  professionalTitle: { contains: search, mode: 'insensitive' },
+                },
                 {
                   user: {
                     displayName: {
@@ -316,4 +373,3 @@ export class PractitionerMarketingPlacementManagementRepository {
     };
   }
 }
-

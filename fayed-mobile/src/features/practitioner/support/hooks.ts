@@ -1,11 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuthenticatedQueryEnabled } from "../../auth/query-auth";
 import {
+  createSupportTicket,
   addSupportMessage,
   getMySupportTicket,
   listMySupportTickets,
 } from "./api";
-import type { ListSupportTicketsQuery } from "./types";
+import type { CreateSupportTicketPayload, ListSupportTicketsQuery } from "./types";
 
 const supportKeys = {
   all: ["practitioner-support"] as const,
@@ -22,6 +23,18 @@ export function usePractitionerSupportTickets(query?: ListSupportTicketsQuery) {
     queryFn: () => listMySupportTickets(query),
     enabled,
     staleTime: 30_000,
+  });
+}
+
+export function useCreatePractitionerSupportTicket() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (payload: CreateSupportTicketPayload) => createSupportTicket(payload),
+    onSuccess: (data) => {
+      queryClient.setQueryData(supportKeys.detail(data.item.id), data.item);
+      queryClient.invalidateQueries({ queryKey: supportKeys.all });
+    },
   });
 }
 
@@ -50,4 +63,3 @@ export function useAddPractitionerSupportMessage(ticketId: string) {
     },
   });
 }
-

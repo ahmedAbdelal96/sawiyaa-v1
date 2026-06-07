@@ -8,11 +8,21 @@ import { Dropdown } from "@/components/ui/dropdown/Dropdown";
 import { ListStateSkeleton, StateCard } from "@/components/shared/ContentStates";
 import { useUserNotifications, useMyUnreadNotificationCount, useMarkAllMyNotificationsRead, useMarkMyNotificationRead } from "../hooks/use-user-notifications";
 import { formatUserNotificationDateTime } from "../lib/format-user-notification-date-time";
+import {
+  dispatchOpenMessagesShell,
+} from "@/features/messages-shell/lib/messages-shell-events";
+import { resolveNotificationClickTarget } from "../lib/resolve-notification-click-target";
 import type { UserNotificationItem } from "../types/user-notifications.types";
 
 type UserNotificationDropdownProps = {
   role: "patient" | "practitioner";
 };
+
+function resolveMessagesShellLane(
+  lane: "session" | "support" | "followup",
+): "session" | "practitioner" | "support" {
+  return lane === "followup" ? "practitioner" : lane;
+}
 
 export default function UserNotificationDropdown({
   role,
@@ -33,6 +43,7 @@ export default function UserNotificationDropdown({
   const items = useMemo(() => listQuery.data?.items ?? [], [listQuery.data?.items]);
 
   const badgeValue = unreadCount > 99 ? "99+" : String(unreadCount);
+  const maxDropdownHeightClass = "max-h-[min(70vh,520px)] overflow-hidden";
 
   const handleMarkRead = (item: UserNotificationItem) => {
     if (item.readAt) {
@@ -67,11 +78,11 @@ export default function UserNotificationDropdown({
         isOpen={isOpen}
         onClose={() => setIsOpen(false)}
         closeOnOutsideClick={false}
-        className={`absolute mt-[17px] flex w-[min(360px,calc(100vw-1rem))] flex-col rounded-2xl border border-border-light bg-surface-secondary p-4 shadow-theme-lg dark:border-border-light dark:bg-surface-secondary ${
+        className={`absolute mt-[17px] flex w-[min(360px,calc(100vw-1rem))] flex-col rounded-2xl border border-border-light bg-surface-secondary p-4 shadow-theme-lg dark:border-border-light dark:bg-surface-secondary ${maxDropdownHeightClass} ${
           isRtl ? "left-0 origin-top-left" : "right-0 origin-top-right"
         }`}
       >
-        <div className="border-b border-border-light pb-3 dark:border-border-light">
+        <div className="shrink-0 border-b border-border-light pb-3 dark:border-border-light">
           <div className="flex items-start justify-between gap-3">
             <div>
               <h5 className="text-lg font-semibold text-text-primary">
@@ -103,7 +114,7 @@ export default function UserNotificationDropdown({
           </div>
         </div>
 
-        <div className="py-3">
+        <div className="min-h-0 flex-1 overflow-y-auto py-3 pr-1">
           {listQuery.isLoading ? (
             <ListStateSkeleton items={3} heightClass="h-20" />
           ) : listQuery.isError ? (
@@ -154,19 +165,46 @@ export default function UserNotificationDropdown({
                 }`;
 
                 if (item.action) {
-                  return (
-                    <Link
-                      key={item.id}
-                      href={item.action.href as never}
-                      onClick={() => {
-                        setIsOpen(false);
-                        handleMarkRead(item);
-                      }}
-                      className={cardClassName}
-                    >
-                      {content}
-                    </Link>
-                  );
+                  const target = resolveNotificationClickTarget({
+                    item,
+                    role,
+                  });
+
+                  if (target.kind === "messages-shell") {
+                    return (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => {
+                          setIsOpen(false);
+                          handleMarkRead(item);
+                          dispatchOpenMessagesShell({
+                            lane: resolveMessagesShellLane(target.lane),
+                            threadId: target.threadId,
+                          });
+                        }}
+                        className={`${cardClassName} text-start`}
+                      >
+                        {content}
+                      </button>
+                    );
+                  }
+
+                  if (target.kind === "href") {
+                    return (
+                      <Link
+                        key={item.id}
+                        href={target.href as never}
+                        onClick={() => {
+                          setIsOpen(false);
+                          handleMarkRead(item);
+                        }}
+                        className={cardClassName}
+                      >
+                        {content}
+                      </Link>
+                    );
+                  }
                 }
 
                 return (
@@ -184,7 +222,7 @@ export default function UserNotificationDropdown({
           )}
         </div>
 
-        <div className="border-t border-border-light pt-3 dark:border-border-light">
+        <div className="shrink-0 border-t border-border-light pt-3 dark:border-border-light">
           <p className="text-xs text-text-secondary">
             {role === "patient"
               ? t("context.patient")
@@ -195,4 +233,3 @@ export default function UserNotificationDropdown({
     </div>
   );
 }
-

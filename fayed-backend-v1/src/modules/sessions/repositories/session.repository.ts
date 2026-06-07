@@ -7,6 +7,8 @@ import {
 } from '@prisma/client';
 import { PrismaService } from '@common/prisma/prisma.service';
 import { AdminSessionsSortDto } from '../dto/list-admin-sessions.dto';
+import { SessionPresentationFilter } from '../types/session-video.types';
+import { buildSessionPresentationFilterWhere } from '../utils/session-join-policy.util';
 
 type DbClient = PrismaService | Prisma.TransactionClient;
 
@@ -81,6 +83,41 @@ const sessionJoinNotificationCandidateSelect = {
 
 export type SessionJoinNotificationCandidate = Prisma.SessionGetPayload<{
   select: typeof sessionJoinNotificationCandidateSelect;
+}>;
+
+const sessionReminderNotificationCandidateSelect = {
+  id: true,
+  status: true,
+  scheduledStartAt: true,
+  patient: {
+    select: {
+      id: true,
+    },
+  },
+  practitioner: {
+    select: {
+      id: true,
+    },
+  },
+} as const;
+
+const sessionSummaryCandidateSelect = {
+  id: true,
+  status: true,
+  sessionMode: true,
+  scheduledStartAt: true,
+  scheduledEndAt: true,
+  provider: true,
+  providerRoomId: true,
+  providerSessionRef: true,
+} as const;
+
+export type SessionReminderNotificationCandidate = Prisma.SessionGetPayload<{
+  select: typeof sessionReminderNotificationCandidateSelect;
+}>;
+
+export type SessionSummaryCandidate = Prisma.SessionGetPayload<{
+  select: typeof sessionSummaryCandidateSelect;
 }>;
 
 @Injectable()
@@ -185,9 +222,38 @@ export class SessionRepository {
     });
   }
 
+  listReminderNotificationCandidates(input: {
+    now: Date;
+    take: number;
+  }): Promise<SessionReminderNotificationCandidate[]> {
+    return this.prisma.session.findMany({
+      where: {
+        status: {
+          in: [
+            SessionStatus.CONFIRMED,
+            SessionStatus.UPCOMING,
+            SessionStatus.READY_TO_JOIN,
+          ],
+        },
+        scheduledStartAt: {
+          not: null,
+          gt: input.now,
+        },
+      },
+      orderBy: [
+        { scheduledStartAt: 'asc' },
+        { createdAt: 'asc' },
+      ],
+      take: input.take,
+      select: sessionReminderNotificationCandidateSelect,
+    });
+  }
+
   listPatientSessions(input: {
     patientId: string;
     status?: SessionStatus;
+    presentationFilter?: SessionPresentationFilter;
+    now?: Date;
     skip: number;
     take: number;
   }) {
@@ -195,6 +261,20 @@ export class SessionRepository {
       patientId: input.patientId,
       status: input.status,
     };
+    const andFilters: Prisma.SessionWhereInput[] = [];
+
+    if (input.presentationFilter) {
+      andFilters.push(
+        buildSessionPresentationFilterWhere({
+          presentationFilter: input.presentationFilter,
+          now: input.now,
+        }),
+      );
+    }
+
+    if (andFilters.length > 0) {
+      where.AND = andFilters;
+    }
 
     return Promise.all([
       this.prisma.session.findMany({
@@ -206,6 +286,16 @@ export class SessionRepository {
       }),
       this.prisma.session.count({ where }),
     ]);
+  }
+
+  listPatientSessionSummaryCandidates(patientId: string) {
+    return this.prisma.session.findMany({
+      where: {
+        patientId,
+      },
+      orderBy: [{ scheduledStartAt: 'asc' }, { createdAt: 'asc' }],
+      select: sessionSummaryCandidateSelect,
+    });
   }
 
   listPendingPaymentSessionsDueForExpiry(input: { now: Date; take: number }) {
@@ -288,9 +378,11 @@ export class SessionRepository {
   listPractitionerSessions(input: {
     practitionerId: string;
     status?: SessionStatus;
+    presentationFilter?: SessionPresentationFilter;
     query?: string;
     scheduledFrom?: Date;
     scheduledTo?: Date;
+    now?: Date;
     skip: number;
     take: number;
   }) {
@@ -301,6 +393,15 @@ export class SessionRepository {
 
     if (input.status) {
       andFilters.push({ status: input.status });
+    }
+
+    if (input.presentationFilter) {
+      andFilters.push(
+        buildSessionPresentationFilterWhere({
+          presentationFilter: input.presentationFilter,
+          now: input.now,
+        }),
+      );
     }
 
     if (input.query?.trim()) {
@@ -338,6 +439,16 @@ export class SessionRepository {
       }),
       this.prisma.session.count({ where }),
     ]);
+  }
+
+  listPractitionerSessionSummaryCandidates(practitionerId: string) {
+    return this.prisma.session.findMany({
+      where: {
+        practitionerId,
+      },
+      orderBy: [{ scheduledStartAt: 'asc' }, { createdAt: 'asc' }],
+      select: sessionSummaryCandidateSelect,
+    });
   }
 
   listAdminSessions(input: {

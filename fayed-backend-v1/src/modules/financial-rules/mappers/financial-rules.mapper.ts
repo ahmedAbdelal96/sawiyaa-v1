@@ -5,6 +5,10 @@ import {
   ResolvedCouponViewModel,
   SessionFinancialBreakdownViewModel,
 } from '../types/financial-rules.types';
+import {
+  resolveCouponEffectiveStatus,
+  type ResolvedCouponEffectiveStatus,
+} from '../utils/coupon-effective-status.util';
 
 @Injectable()
 export class FinancialRulesMapper {
@@ -32,13 +36,18 @@ export class FinancialRulesMapper {
     };
   }
 
-  toCoupon(coupon: Coupon): ResolvedCouponViewModel {
+  toCoupon(
+    coupon: Coupon,
+    resolvedStatus: ResolvedCouponEffectiveStatus = resolveCouponEffectiveStatus(coupon),
+  ): ResolvedCouponViewModel {
     return {
       id: coupon.id,
       code: coupon.code,
       slug: coupon.slug,
       couponScope: coupon.couponScope,
       status: coupon.status,
+      effectiveStatus: resolvedStatus.effectiveStatus,
+      effectiveStatusReason: resolvedStatus.effectiveStatusReason,
       discountType: coupon.discountType,
       discountValue: coupon.discountValue.toString(),
       maxDiscountAmount: coupon.maxDiscountAmount?.toString() ?? null,

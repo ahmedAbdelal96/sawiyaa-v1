@@ -4,6 +4,7 @@ import { SessionPractitionerRepository } from '../repositories/session-practitio
 import { SessionRepository } from '../repositories/session.repository';
 import { ValidateSessionStatusTransitionService } from '../services/validate-session-status-transition.service';
 import { MarkSessionNoShowByPractitionerUseCase } from './mark-session-no-show-by-practitioner.use-case';
+import { OperationalNotificationService } from '@modules/notifications/services/operational-notification.service';
 
 describe('MarkSessionNoShowByPractitionerUseCase', () => {
   it('marks owned session as no-show and emits patient-no-show event', async () => {
@@ -48,6 +49,9 @@ describe('MarkSessionNoShowByPractitionerUseCase', () => {
     const transitionService = {
       assertCanTransition: jest.fn(),
     } as unknown as ValidateSessionStatusTransitionService;
+    const operationalNotificationService = {
+      cancelSessionReminders: jest.fn().mockResolvedValue(undefined),
+    } as unknown as OperationalNotificationService;
 
     const prisma = {
       $transaction: jest.fn().mockImplementation(async (fn: (...args: any[]) => any) => fn({})),
@@ -59,6 +63,7 @@ describe('MarkSessionNoShowByPractitionerUseCase', () => {
       sessionRepository,
       new SessionMapper(),
       transitionService,
+      operationalNotificationService,
     );
 
     const result = await useCase.execute({
@@ -75,5 +80,11 @@ describe('MarkSessionNoShowByPractitionerUseCase', () => {
     expect(
       (sessionRepository.createEvent as jest.Mock).mock.calls[0][0].eventType,
     ).toBe(SessionEventType.NO_SHOW_PATIENT);
+    expect(
+      (operationalNotificationService.cancelSessionReminders as jest.Mock),
+    ).toHaveBeenCalledWith({
+      sessionId: 'session-1',
+      cancelledAt: expect.any(Date),
+    });
   });
 });

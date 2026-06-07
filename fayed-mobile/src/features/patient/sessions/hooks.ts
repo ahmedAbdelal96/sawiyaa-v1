@@ -12,6 +12,7 @@ import {
   getPatientSession,
   getPatientSessionCancellationPreview,
   getPatientSessions,
+  getPatientSessionSummary,
   getPublicAvailabilityWindows,
   resolvePatientSessionJoinContract,
 } from "./api";
@@ -25,6 +26,7 @@ const patientSessionsQueryKeys = {
     [...patientSessionsQueryKeys.all, "infinite-list", query ?? {}] as const,
   details: (sessionId: string) =>
     [...patientSessionsQueryKeys.all, "details", sessionId] as const,
+  summary: () => [...patientSessionsQueryKeys.all, "summary"] as const,
   cancelPreview: (sessionId: string) =>
     [...patientSessionsQueryKeys.all, "cancel-preview", sessionId] as const,
   availabilityWindows: (
@@ -83,6 +85,23 @@ export function usePatientSessions(query?: ListSessionsQuery) {
   return useQuery({
     queryKey: patientSessionsQueryKeys.list(query),
     queryFn: () => getPatientSessions(query),
+    enabled,
+    staleTime: 30_000,
+  });
+}
+
+export function usePatientSessionSummary() {
+  const enabled = useAuthenticatedQueryEnabled("patient");
+
+  return useQuery({
+    queryKey: patientSessionsQueryKeys.summary(),
+    queryFn: async () => {
+      const response = await getPatientSessionSummary();
+      return {
+        ...response.item,
+        total: response.item.totalItems,
+      };
+    },
     enabled,
     staleTime: 30_000,
   });

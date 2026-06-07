@@ -17,7 +17,7 @@ import {
 } from "@/features/sessions/api/sessions.api";
 import type {
   SessionListItem,
-  SessionStatus,
+  SessionPresentationStatus,
 } from "@/features/sessions/types/sessions.types";
 import {
   getAdminSupportTickets,
@@ -45,12 +45,6 @@ type UseUnifiedMessagingShellResult = {
   unreadLikeCount: number;
   sessionSignal: UnifiedSessionSignal;
 };
-
-const SESSION_CHAT_ELIGIBLE_STATUSES: SessionStatus[] = [
-  "READY_TO_JOIN",
-  "IN_PROGRESS",
-  "COMPLETED",
-];
 
 function mapCareStatus(status: CareChatRequestStatus) {
   if (status === "PENDING") return "Pending";
@@ -118,11 +112,17 @@ function buildSupportRootHref(role: UnifiedMessagingRole) {
   return "/admin/support";
 }
 
-function getSessionPriority(status: SessionStatus) {
+function getSessionPriority(status: SessionPresentationStatus) {
   if (status === "IN_PROGRESS") return 3;
-  if (status === "READY_TO_JOIN") return 2;
-  if (status === "COMPLETED") return 1;
+  if (status === "JOINABLE") return 2;
+  if (status === "COMPLETED" || status === "ENDED" || status === "CANCELLED") return 1;
   return 0;
+}
+
+function mapSessionChatStatus(status: SessionPresentationStatus): UnifiedSessionChatStatus {
+  if (status === "JOINABLE") return "READY_TO_JOIN";
+  if (status === "IN_PROGRESS") return "IN_PROGRESS";
+  return "COMPLETED";
 }
 
 export function useUnifiedMessagingShell(
@@ -298,9 +298,10 @@ export function useUnifiedMessagingShell(
   const sessionItems = useMemo(() => {
     const rows = (sessionQuery.data?.items ?? []) as SessionListItem[];
     const prepared = rows
-      .filter((item) => SESSION_CHAT_ELIGIBLE_STATUSES.includes(item.status))
+      .filter((item) => item.chatAvailability?.canRead === true)
       .sort((a, b) => {
-        const statusScore = getSessionPriority(b.status) - getSessionPriority(a.status);
+        const statusScore =
+          getSessionPriority(b.presentationStatus) - getSessionPriority(a.presentationStatus);
         if (statusScore !== 0) return statusScore;
         const aAt = a.scheduledStartAt ? new Date(a.scheduledStartAt).getTime() : 0;
         const bAt = b.scheduledStartAt ? new Date(b.scheduledStartAt).getTime() : 0;
@@ -315,9 +316,11 @@ export function useUnifiedMessagingShell(
           : item.patient?.displayName ?? "Session chat",
       note: `Session #${item.sessionCode}`,
       href: buildSessionHref(role, item.id),
-      status: item.status.replaceAll("_", " "),
-      sessionStatus: item.status as UnifiedSessionChatStatus,
-      isSessionPriority: item.status === "READY_TO_JOIN" || item.status === "IN_PROGRESS",
+      status: item.presentationStatus.replaceAll("_", " "),
+      sessionStatus: mapSessionChatStatus(item.presentationStatus),
+      isSessionPriority:
+        item.presentationStatus === "JOINABLE" ||
+        item.presentationStatus === "IN_PROGRESS",
       at: item.scheduledStartAt,
     }));
   }, [role, sessionQuery.data?.items]);
@@ -364,7 +367,9 @@ export function useUnifiedMessagingShell(
   const sessionAttentionCount = useMemo(() => {
     const rows = (sessionQuery.data?.items ?? []) as SessionListItem[];
     return rows.filter(
-      (item) => item.status === "READY_TO_JOIN" || item.status === "IN_PROGRESS",
+      (item) =>
+        item.presentationStatus === "JOINABLE" ||
+        item.presentationStatus === "IN_PROGRESS",
     ).length;
   }, [sessionQuery.data?.items]);
 

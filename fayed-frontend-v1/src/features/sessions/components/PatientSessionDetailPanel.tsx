@@ -39,6 +39,8 @@ import {
   hasSessionRuntimeAccess,
   isJoinWindowOpen,
 } from "../lib/session-runtime";
+import { canOpenSessionChatFromPresentationStatus } from "../lib/session-presentation";
+import SessionStatusBadge from "./SessionStatusBadge";
 import { usePatientPayments } from "@/features/payments/hooks/use-payments";
 import { canContinuePayment } from "@/features/payments/lib/payment-status";
 import type {
@@ -48,12 +50,6 @@ import type {
 } from "../types/sessions.types";
 
 const CANCELLABLE_STATUSES: SessionStatus[] = ["CONFIRMED", "UPCOMING"];
-const SESSION_CHAT_OPEN_STATUSES: SessionStatus[] = [
-  "READY_TO_JOIN",
-  "IN_PROGRESS",
-  "COMPLETED",
-];
-
 function formatDatetime(isoString: string | null, numLocale: string): string {
   if (!isoString) return "";
   return new Date(isoString).toLocaleString(numLocale, {
@@ -248,22 +244,21 @@ export default function PatientSessionDetailPanel({ sessionId }: Props) {
 
   const isCancellable = CANCELLABLE_STATUSES.includes(session.status);
   const hasRuntimeAccess = hasSessionRuntimeAccess(session.status);
-  const isChatAvailable = SESSION_CHAT_OPEN_STATUSES.includes(session.status);
   const paymentStateKey =
     session.status === "PENDING_PAYMENT"
       ? "PENDING_PAYMENT"
       : session.status === "REFUND_PENDING"
         ? "REFUND_PENDING"
-        : session.status === "REFUNDED"
-          ? "REFUNDED"
-          : session.status === "EXPIRED"
-            ? "EXPIRED"
-            : session.status === "CONFIRMED" ||
-                session.status === "UPCOMING" ||
-                session.status === "READY_TO_JOIN" ||
-                session.status === "IN_PROGRESS" ||
-                session.status === "COMPLETED"
-              ? "SECURED"
+      : session.status === "REFUNDED"
+        ? "REFUNDED"
+        : session.status === "EXPIRED"
+          ? "EXPIRED"
+          : session.presentationStatus === "UPCOMING" ||
+              session.presentationStatus === "JOINABLE" ||
+              session.presentationStatus === "IN_PROGRESS" ||
+              session.presentationStatus === "COMPLETED" ||
+              session.presentationStatus === "ENDED"
+            ? "SECURED"
           : null;
   const sessionPayment = paymentsData?.items.find((payment) => payment.sessionId === session.id);
   const sessionPaymentCurrency = sessionPayment?.currency ?? null;
@@ -271,6 +266,10 @@ export default function PatientSessionDetailPanel({ sessionId }: Props) {
     sessionPayment && Number(sessionPayment.amountDiscount) > 0,
   );
   const hasActivePendingPayment = Boolean(sessionPayment && canContinuePayment(sessionPayment));
+  const canJoinNow = session.joinAvailability?.canJoin === true;
+  const canOpenSessionChat = canOpenSessionChatFromPresentationStatus(
+    session.presentationStatus,
+  );
   const joinUrl = buildProviderLaunchUrl(joinResult);
   const runtimePrepared = getRuntimePreparedState({ prepareResult, joinResult });
   const runtimeProvider = getRuntimeProvider({ prepareResult, joinResult });
@@ -281,19 +280,21 @@ export default function PatientSessionDetailPanel({ sessionId }: Props) {
   const shouldShowJoinCheck =
     hasRuntimeAccess &&
     !(joinResult?.canJoin && canLaunchProviderRuntime(joinResult)) &&
-    (joinWindowOpen ||
-      session.status === "READY_TO_JOIN" ||
-      session.status === "IN_PROGRESS" ||
-      runtimePrepared ||
-      Boolean(joinResult));
+    canJoinNow;
   const cancellationPreview = previewCancellationMutation.data;
-  const runtimeStatusNote = t(`detail.runtime.status.${session.status}` as Parameters<
+  const runtimeStatusNote = t(`detail.presentation.${session.presentationStatus}.note` as Parameters<
     typeof t
   >[0]);
+  const runtimeStatusTitle = t(`detail.presentation.${session.presentationStatus}.title` as Parameters<
+    typeof t
+  >[0]);
+  const runtimeStatusCloseout = t(
+    `detail.presentation.${session.presentationStatus}.closeout` as Parameters<typeof t>[0],
+  );
   const sessionModeLabel = t(`detail.mode.${session.sessionMode}` as Parameters<
     typeof t
   >[0]);
-  const chatNote = isChatAvailable ? t("detail.chatCard.note") : t("detail.chatCard.disabledNote");
+  const chatNote = canOpenSessionChat ? t("detail.chatCard.note") : t("detail.chatCard.disabledNote");
   const paymentStateNote = paymentStateKey
     ? tPayments(`sessionState.${paymentStateKey}.note` as Parameters<typeof tPayments>[0])
     : null;
@@ -437,9 +438,10 @@ export default function PatientSessionDetailPanel({ sessionId }: Props) {
             </h2>
             <p className="mt-2 text-sm leading-6 text-text-secondary">{t("detail.summary.note")}</p>
           </div>
-          <span className="rounded-full bg-primary-light px-3 py-1 text-xs font-medium text-text-brand dark:bg-primary/15 dark:text-primary-light">
-            {t(`status.${session.status}` as Parameters<typeof t>[0])}
-          </span>
+          <SessionStatusBadge
+            status={session.status}
+            presentationStatus={session.presentationStatus}
+          />
         </div>
 
         <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -552,11 +554,7 @@ export default function PatientSessionDetailPanel({ sessionId }: Props) {
                         <Loader2 size={14} className="animate-spin" />
                         {t("detail.runtime.actions.checking")}
                       </>
-                    ) : session.status === "READY_TO_JOIN" || session.status === "IN_PROGRESS" ? (
-                      t("detail.runtime.actions.joinNow")
-                    ) : (
-                      t("detail.runtime.actions.checkAccess")
-                    )}
+                    ) : canJoinNow ? t("detail.runtime.actions.joinNow") : t("detail.runtime.actions.checkAccess")}
                   </Button>
                 )}
               </div>
@@ -628,7 +626,7 @@ export default function PatientSessionDetailPanel({ sessionId }: Props) {
         </div>
 
         <div className="mt-4 flex flex-wrap gap-3">
-          {isChatAvailable ? (
+          {canOpenSessionChat ? (
             <Link
               href={`/patient/sessions/${session.id}/chat` as never}
               className="inline-flex items-center justify-center rounded-2xl bg-primary px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-primary-hover"
@@ -646,7 +644,7 @@ export default function PatientSessionDetailPanel({ sessionId }: Props) {
           )}
         </div>
 
-        {!isChatAvailable && (
+        {!canOpenSessionChat && (
           <div className="mt-3 rounded-2xl border border-border-light bg-surface-tertiary px-4 py-3 text-sm text-text-secondary dark:bg-white/5">
             {chatNote}
           </div>
@@ -872,7 +870,12 @@ export default function PatientSessionDetailPanel({ sessionId }: Props) {
                 />
                 <LabeledValue
                   label={t("detail.cancelConfirm.summaryFields.status")}
-                  value={t(`status.${session.status}` as Parameters<typeof t>[0])}
+                  value={
+                    <SessionStatusBadge
+                      status={session.status}
+                      presentationStatus={session.presentationStatus}
+                    />
+                  }
                 />
               </div>
             </section>

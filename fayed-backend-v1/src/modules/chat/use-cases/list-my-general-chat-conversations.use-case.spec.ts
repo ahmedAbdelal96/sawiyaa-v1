@@ -1,3 +1,5 @@
+import { GeneralChatAvailabilityService } from '../services/general-chat-availability.service';
+import { GeneralChatModerationStateService } from '../services/general-chat-moderation-state.service';
 import { GeneralChatRepository } from '../repositories/general-chat.repository';
 import { ListMyGeneralChatConversationsUseCase } from './list-my-general-chat-conversations.use-case';
 
@@ -9,6 +11,7 @@ describe('ListMyGeneralChatConversationsUseCase', () => {
 
   const useCase = new ListMyGeneralChatConversationsUseCase(
     generalChatRepository,
+    new GeneralChatAvailabilityService(new GeneralChatModerationStateService()),
   );
 
   beforeEach(() => {
@@ -25,6 +28,21 @@ describe('ListMyGeneralChatConversationsUseCase', () => {
           conversationRef: 'gc_b',
           status: 'OPEN',
           sessionId: null,
+          closedAt: null,
+          adminSendingDisabledAt: null,
+          adminSendingDisabledByUserId: null,
+          adminSendingDisabledReason: null,
+          adminSendingEnabledAt: null,
+          adminSendingEnabledByUserId: null,
+          practitionerSendingDisabledAt: null,
+          practitionerSendingDisabledByUserId: null,
+          practitionerSendingDisabledReason: null,
+          practitionerSendingEnabledAt: null,
+          practitionerSendingEnabledByUserId: null,
+          conversationType: 'SYSTEM',
+          supportTicket: null,
+          chatApprovalRequest: null,
+          session: null,
           createdAt: new Date('2026-04-01T09:00:00.000Z'),
           updatedAt: new Date('2026-04-01T09:30:00.000Z'),
           participants: [
@@ -53,8 +71,8 @@ describe('ListMyGeneralChatConversationsUseCase', () => {
           status: 'OPEN',
           linkedSessionId: null,
           participants: [
-            { userId: 'user_patient', role: 'PATIENT' },
-            { userId: 'user_practitioner', role: 'PRACTITIONER' },
+            { userId: 'user_patient', role: 'PATIENT', identity: null },
+            { userId: 'user_practitioner', role: 'PRACTITIONER', identity: null },
           ],
           createdAt: '2026-04-01T09:00:00.000Z',
           latestActivityAt: '2026-04-01T09:30:00.000Z',
@@ -63,6 +81,12 @@ describe('ListMyGeneralChatConversationsUseCase', () => {
           hasUnread: false,
           lastReadMessageId: null,
           lastReadAt: null,
+          chatAvailability: {
+            canRead: true,
+            canSend: true,
+            readOnly: false,
+            reason: 'ALLOWED',
+          },
         },
       ],
       pagination: {
@@ -84,12 +108,36 @@ describe('ListMyGeneralChatConversationsUseCase', () => {
           conversationRef: 'gc_a',
           status: 'OPEN',
           sessionId: 'session_1',
+          closedAt: null,
+          adminSendingDisabledAt: null,
+          adminSendingDisabledByUserId: null,
+          adminSendingDisabledReason: null,
+          adminSendingEnabledAt: null,
+          adminSendingEnabledByUserId: null,
+          practitionerSendingDisabledAt: null,
+          practitionerSendingDisabledByUserId: null,
+          practitionerSendingDisabledReason: null,
+          practitionerSendingEnabledAt: null,
+          practitionerSendingEnabledByUserId: null,
+          conversationType: 'SYSTEM',
+          supportTicket: null,
+          chatApprovalRequest: null,
           createdAt: new Date('2026-04-01T09:00:00.000Z'),
           updatedAt: new Date('2026-04-01T09:30:00.000Z'),
           participants: [
             { userId: 'user_patient', participantRole: 'PATIENT' },
             { userId: 'user_practitioner', participantRole: 'PRACTITIONER' },
           ],
+          session: {
+            id: 'session_1',
+            status: 'IN_PROGRESS',
+            sessionMode: 'VIDEO',
+            scheduledStartAt: new Date('2026-04-01T09:45:00.000Z'),
+            scheduledEndAt: new Date('2026-04-01T10:15:00.000Z'),
+            provider: 'DAILY',
+            providerRoomId: 'room_1',
+            providerSessionRef: 'room_1',
+          },
           messages: [
             {
               id: 'message_1',
@@ -119,6 +167,13 @@ describe('ListMyGeneralChatConversationsUseCase', () => {
       messageType: 'TEXT',
       previewText: 'Hello',
       sentAt: '2026-04-01T10:00:00.000Z',
+      senderIdentity: null,
+    });
+    expect(result.items[0].chatAvailability).toEqual({
+      canRead: true,
+      canSend: false,
+      readOnly: true,
+      reason: 'SESSION_ENDED',
     });
     expect(result.items[0].unreadCount).toBe(2);
     expect(result.items[0].hasUnread).toBe(true);

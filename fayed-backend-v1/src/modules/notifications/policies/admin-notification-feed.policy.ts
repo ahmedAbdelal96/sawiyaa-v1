@@ -5,8 +5,11 @@ const AUDIT_ONLY_TYPE_SLUGS = [
   'payments.refund-succeeded',
   'sessions.session-confirmed',
   'sessions.session-confirmed-practitioner',
+  'sessions.session-reminder-60',
+  'sessions.session-reminder-15',
   'training.schedule-reminder',
   'training.enrollment-confirmed',
+  'dev.push-test',
 ] as const;
 
 export function getAdminNotificationFeedExcludedTypeSlugs(): string[] {
@@ -14,7 +17,7 @@ export function getAdminNotificationFeedExcludedTypeSlugs(): string[] {
 }
 
 export function getAdminNotificationFeedExcludedTypePrefixes(): string[] {
-  return [...AUDIT_ONLY_TYPE_PREFIXES];
+  return [...AUDIT_ONLY_TYPE_PREFIXES, 'dev.'];
 }
 
 export function isAdminNotificationTypeVisible(slug: string): boolean {

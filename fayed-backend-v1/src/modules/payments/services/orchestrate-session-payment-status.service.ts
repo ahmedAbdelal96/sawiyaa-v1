@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import {
   PaymentEventType,
   PaymentStatus,
@@ -10,6 +9,7 @@ import { PrismaService } from '@common/prisma/prisma.service';
 import { OperationalNotificationService } from '@modules/notifications/services/operational-notification.service';
 import { ExpireUnpaidSessionUseCase } from '@modules/sessions/use-cases/expire-unpaid-session.use-case';
 import { SessionRepository } from '@modules/sessions/repositories/session.repository';
+import { SESSION_JOIN_LEAD_MINUTES } from '@modules/sessions/utils/session-join-policy.util';
 import { ValidateSessionStatusTransitionService } from '@modules/sessions/services/validate-session-status-transition.service';
 
 /**
@@ -17,19 +17,13 @@ import { ValidateSessionStatusTransitionService } from '@modules/sessions/servic
  */
 @Injectable()
 export class OrchestrateSessionPaymentStatusService {
-  private readonly joinLeadMinutes: number;
-
   constructor(
-    private readonly configService: ConfigService,
     private readonly prisma: PrismaService,
     private readonly sessionRepository: SessionRepository,
     private readonly validateSessionStatusTransitionService: ValidateSessionStatusTransitionService,
     private readonly expireUnpaidSessionUseCase: ExpireUnpaidSessionUseCase,
     private readonly operationalNotificationService: OperationalNotificationService,
-  ) {
-    this.joinLeadMinutes =
-      this.configService.get<number>('session.joinLeadMinutes') ?? 15;
-  }
+  ) {}
 
   async markSessionConfirmedFromPayment(input: {
     session: {
@@ -47,7 +41,7 @@ export class OrchestrateSessionPaymentStatusService {
     const joinOpenAt = input.session.scheduledStartAt
       ? new Date(
           input.session.scheduledStartAt.getTime() -
-            this.joinLeadMinutes * 60_000,
+            SESSION_JOIN_LEAD_MINUTES * 60_000,
         )
       : null;
 

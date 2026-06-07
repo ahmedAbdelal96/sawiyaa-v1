@@ -15,6 +15,7 @@ const generalConversationReadSelect =
   Prisma.validator<Prisma.ConversationSelect>()({
     id: true,
     conversationRef: true,
+    conversationType: true,
     status: true,
     sessionId: true,
     closedAt: true,
@@ -30,6 +31,28 @@ const generalConversationReadSelect =
     practitionerSendingEnabledByUserId: true,
     createdAt: true,
     updatedAt: true,
+    supportTicket: {
+      select: {
+        id: true,
+      },
+    },
+    chatApprovalRequest: {
+      select: {
+        id: true,
+      },
+    },
+    session: {
+      select: {
+        id: true,
+        status: true,
+        sessionMode: true,
+        scheduledStartAt: true,
+        scheduledEndAt: true,
+        provider: true,
+        providerRoomId: true,
+        providerSessionRef: true,
+      },
+    },
     participants: {
       where: { isActive: true },
       select: {
@@ -97,26 +120,7 @@ export class GeneralChatRepository {
   findByConversationRef(conversationRef: string) {
     return this.prisma.conversation.findUnique({
       where: { conversationRef },
-      include: {
-        supportTicket: {
-          select: {
-            id: true,
-          },
-        },
-        chatApprovalRequest: {
-          select: {
-            id: true,
-          },
-        },
-        participants: {
-          where: { isActive: true },
-          select: {
-            userId: true,
-            participantRole: true,
-          },
-          orderBy: [{ participantRole: 'asc' }, { userId: 'asc' }],
-        },
-      },
+      select: generalConversationReadSelect,
     });
   }
 
@@ -219,26 +223,7 @@ export class GeneralChatRepository {
           ],
         },
       },
-      include: {
-        supportTicket: {
-          select: {
-            id: true,
-          },
-        },
-        chatApprovalRequest: {
-          select: {
-            id: true,
-          },
-        },
-        participants: {
-          where: { isActive: true },
-          select: {
-            userId: true,
-            participantRole: true,
-          },
-          orderBy: [{ participantRole: 'asc' }, { userId: 'asc' }],
-        },
-      },
+      select: generalConversationReadSelect,
     });
   }
 

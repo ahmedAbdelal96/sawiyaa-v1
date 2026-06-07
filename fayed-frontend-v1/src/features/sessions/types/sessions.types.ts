@@ -18,6 +18,23 @@ export type SessionStatus =
   | "REFUND_PENDING"
   | "REFUNDED";
 
+export type SessionPresentationStatus =
+  | "UPCOMING"
+  | "JOINABLE"
+  | "IN_PROGRESS"
+  | "COMPLETED"
+  | "CANCELLED"
+  | "ENDED"
+  | "UNAVAILABLE";
+
+export type SessionPresentationFilter =
+  | "all"
+  | "joinable"
+  | "live"
+  | "upcoming"
+  | "finished"
+  | "unavailable";
+
 export type SessionMode = "VIDEO";
 export type SessionProvider = string;
 export type SessionProviderJoinMode =
@@ -54,7 +71,31 @@ export type SessionJoinBlockedReason =
   | "SESSION_NOT_JOINABLE_STATUS"
   | "SESSION_NOT_VIDEO_MODE"
   | "SESSION_TIME_WINDOW_NOT_OPEN"
-  | "SESSION_RUNTIME_NOT_PREPARED";
+  | "SESSION_RUNTIME_NOT_PREPARED"
+  | "SESSION_JOIN_WINDOW_CLOSED";
+
+export type SessionChatAvailabilityReason =
+  | "ALLOWED"
+  | "SESSION_NOT_STARTED"
+  | "SESSION_ENDED"
+  | "SESSION_CANCELLED"
+  | "CONVERSATION_CLOSED"
+  | "MODERATION_LOCKED"
+  | "NOT_PARTICIPANT";
+
+export type SessionJoinAvailability = {
+  canJoin: boolean;
+  blockedReason: SessionJoinBlockedReason | null;
+  availableAt: string | null;
+  expiresAt: string | null;
+};
+
+export type SessionChatAvailability = {
+  canRead: boolean;
+  canSend: boolean;
+  readOnly: boolean;
+  reason: SessionChatAvailabilityReason;
+};
 
 export type SessionPractitionerSummary = {
   id: string;
@@ -75,6 +116,7 @@ export type SessionItem = {
   id: string;
   sessionCode: string;
   status: SessionStatus;
+  presentationStatus: SessionPresentationStatus;
   createdAt: string;
   scheduledStartAt: string | null;
   scheduledEndAt: string | null;
@@ -82,6 +124,8 @@ export type SessionItem = {
   sessionMode: SessionMode;
   practitioner: SessionPractitionerSummary;
   patient: SessionPatientSummary | null;
+  joinAvailability: SessionJoinAvailability;
+  chatAvailability: SessionChatAvailability;
   flowType: string;
   expiresAt: string | null;
   cancelledAt: string | null;
@@ -116,6 +160,7 @@ export type SessionListItem = {
   id: string;
   sessionCode: string;
   status: SessionStatus;
+  presentationStatus: SessionPresentationStatus;
   createdAt: string;
   scheduledStartAt: string | null;
   scheduledEndAt: string | null;
@@ -123,6 +168,8 @@ export type SessionListItem = {
   sessionMode: SessionMode;
   practitioner: SessionPractitionerSummary;
   patient: SessionPatientSummary | null;
+  joinAvailability: SessionJoinAvailability;
+  chatAvailability: SessionChatAvailability;
 };
 
 export type SessionsPagination = {
@@ -163,6 +210,7 @@ export type SessionSummaryResponseData = {
 
 export type ListSessionsParams = {
   status?: SessionStatus;
+  presentationFilter?: SessionPresentationFilter;
   query?: string;
   scheduledFrom?: string;
   scheduledTo?: string;

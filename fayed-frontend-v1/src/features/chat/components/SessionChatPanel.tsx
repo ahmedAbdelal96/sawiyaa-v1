@@ -13,7 +13,6 @@ import {
   usePatientSession,
   usePractitionerSession,
 } from "@/features/sessions/hooks/use-sessions";
-import type { SessionItem } from "@/features/sessions/types/sessions.types";
 import {
   useCloseGeneralChatConversation,
   useGeneralChatMessages,
@@ -45,12 +44,6 @@ type Props = {
   scope: "patient" | "practitioner";
 };
 
-const CHAT_ALLOWED_SESSION_STATUSES: SessionItem["status"][] = [
-  "READY_TO_JOIN",
-  "IN_PROGRESS",
-  "COMPLETED",
-];
-
 function formatTime(iso: string, locale: string) {
   try {
     const date = new Date(iso);
@@ -80,12 +73,14 @@ export default function SessionChatPanel({ sessionId, scope }: Props) {
   const sessionQuery = scope === "patient" ? patientSessionQuery : practitionerSessionQuery;
 
   const session = sessionQuery.data ?? null;
-  const chatAllowed = session ? CHAT_ALLOWED_SESSION_STATUSES.includes(session.status) : false;
+  const chatAllowed = session?.chatAvailability?.canRead ?? false;
 
   const openMutation = useOpenSessionGeneralChat(sessionId);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [conversationIdentity, setConversationIdentity] =
     useState<GeneralChatConversationIdentity | null>(null);
+  const sessionChatAvailability =
+    conversationIdentity?.chatAvailability ?? session?.chatAvailability ?? null;
 
   useEffect(() => {
     if (!chatAllowed) return;
@@ -177,15 +172,15 @@ export default function SessionChatPanel({ sessionId, scope }: Props) {
     scope === "patient"
       ? (`/patient/sessions/${sessionId}` as never)
       : (`/practitioner/sessions/${sessionId}` as never);
-  const conversationIsReadOnly = Boolean(
-    conversationIdentity && conversationIdentity.status !== "OPEN",
-  );
-
-  const canSend =
+  const showComposer =
     Boolean(conversationId) &&
-    !isSending &&
-    !closeMutation.isPending &&
-    !conversationIsReadOnly;
+    sessionChatAvailability?.canSend === true &&
+    sessionChatAvailability?.readOnly !== true;
+  const showAvailabilityLoading =
+    sessionChatAvailability == null || !conversationId || openMutation.isPending;
+  const showReadOnlyNotice =
+    !showAvailabilityLoading &&
+    (sessionChatAvailability?.canSend !== true || sessionChatAvailability?.readOnly === true);
 
   const handlePickFiles = () => {
     fileInputRef.current?.click();
@@ -547,105 +542,113 @@ export default function SessionChatPanel({ sessionId, scope }: Props) {
         </div>
 
         <div className="shrink-0 border-t border-border-light px-3 py-3 sm:px-4">
-          <form onSubmit={handleSend} className="space-y-2">
-            {conversationIsReadOnly ? (
-              <div className="rounded-2xl border border-border-light bg-surface-tertiary px-4 py-3 text-xs leading-6 text-text-secondary dark:bg-white/5">
-                <p className="font-semibold text-text-primary dark:text-white/90">
-                  {t("detail.chat.states.readOnly.heading")}
-                </p>
-                <p className="mt-1">{t("detail.chat.states.readOnly.note")}</p>
-              </div>
-            ) : null}
-
-            {attachments.length > 0 ? (
-              <div className="flex flex-wrap gap-2">
-                {attachments.map((att) => (
-                  <span
-                    key={att.fileId}
-                    className="inline-flex items-center gap-2 rounded-full border border-border-light bg-white px-3 py-1 text-xs font-medium text-text-primary dark:bg-white/5 dark:text-white/90"
-                  >
-                    <span className="break-words">
-                      {att.originalName ?? att.mimeType}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveAttachment(att.fileId)}
-                      className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-border-light text-text-muted transition hover:text-danger-600"
-                      aria-label={t("detail.chat.actions.removeAttachment")}
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
-                  </span>
-                ))}
-              </div>
-            ) : null}
-
-            <div className="flex items-end gap-2">
-              <label className="sr-only">{t("detail.chat.compose.label")}</label>
-              <textarea
-                rows={1}
-                value={message}
-                onChange={(e) => {
-                  const next = e.target.value;
-                  setMessage(next);
-                  realtimeThread.reportTypingActivity(next.trim().length > 0);
-                }}
-                maxLength={4000}
-                disabled={!conversationId || isSending || conversationIsReadOnly}
-                placeholder={t("detail.chat.compose.placeholder")}
-                className="app-control max-h-20 min-h-9 flex-1 resize-none rounded-md border-border-strong bg-white px-2 py-1.5 text-xs shadow-[inset_0_1px_0_rgba(255,255,255,0.8),0_8px_14px_-14px_rgba(68,161,148,0.35)] focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-60 dark:border-white/15 dark:bg-white/8 dark:text-white"
-              />
-
-              <input
-                ref={fileInputRef}
-                type="file"
-                className="hidden"
-                onChange={(e) => handleFilesSelected(e.target.files)}
-              />
-              <button
-                type="button"
-                onClick={handlePickFiles}
-                disabled={
-                  !conversationId ||
-                  uploadMutation.isPending ||
-                  attachments.length >= 5 ||
-                  conversationIsReadOnly
-                }
-                className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-border-light bg-white text-text-secondary transition hover:border-primary/35 hover:text-primary disabled:cursor-not-allowed disabled:opacity-60 dark:border-white/12 dark:bg-white/5 dark:text-white/75"
-                aria-label={t("detail.chat.actions.attach")}
-                title={t("detail.chat.actions.attach")}
-              >
-                {uploadMutation.isPending ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Paperclip className="h-4 w-4" />
-                )}
-              </button>
-              <button
-                type="submit"
-                disabled={!canSend || message.trim().length === 0}
-                className="inline-flex h-9 items-center justify-center gap-1.5 rounded-md bg-gradient-to-br from-primary to-primary-active px-3 text-xs font-semibold text-white shadow-[0_10px_18px_-10px_rgba(68,161,148,0.78)] transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {isSending ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <SendHorizonal className="h-3.5 w-3.5" />
-                )}
-                {t("detail.chat.actions.send")}
-              </button>
+          {showAvailabilityLoading ? (
+            <div className="rounded-2xl border border-border-light bg-surface-tertiary px-4 py-3 text-xs leading-6 text-text-secondary dark:bg-white/5">
+              <p className="font-semibold text-text-primary dark:text-white/90">
+                {t("detail.chat.states.availabilityLoading.heading")}
+              </p>
+              <p className="mt-1">{t("detail.chat.states.availabilityLoading.note")}</p>
             </div>
+          ) : showReadOnlyNotice ? (
+            <div className="rounded-2xl border border-border-light bg-surface-tertiary px-4 py-3 text-xs leading-6 text-text-secondary dark:bg-white/5">
+              <p className="font-semibold text-text-primary dark:text-white/90">
+                {t("detail.chat.states.readOnly.heading")}
+              </p>
+              <p className="mt-1">{t("detail.chat.states.readOnly.review")}</p>
+              <p className="mt-1">{t("detail.chat.states.readOnly.sendBlocked")}</p>
+            </div>
+          ) : showComposer ? (
+            <form onSubmit={handleSend} className="space-y-2">
+              {attachments.length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                  {attachments.map((att) => (
+                    <span
+                      key={att.fileId}
+                      className="inline-flex items-center gap-2 rounded-full border border-border-light bg-white px-3 py-1 text-xs font-medium text-text-primary dark:bg-white/5 dark:text-white/90"
+                    >
+                      <span className="break-words">
+                        {att.originalName ?? att.mimeType}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveAttachment(att.fileId)}
+                        className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-border-light text-text-muted transition hover:text-danger-600"
+                        aria-label={t("detail.chat.actions.removeAttachment")}
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              ) : null}
 
-            {sendMutation.isError ? (
-              <p className="text-xs text-rose-600 dark:text-rose-400">
-                {t("detail.chat.states.sendError")}
-              </p>
-            ) : null}
-            {uploadMutation.isError ? (
-              <p className="text-xs text-rose-600 dark:text-rose-400">
-                {t("detail.chat.states.uploadError")}
-              </p>
-            ) : null}
-          </form>
+              <div className="flex items-end gap-2">
+                <label className="sr-only">{t("detail.chat.compose.label")}</label>
+                <textarea
+                  rows={1}
+                  value={message}
+                  onChange={(e) => {
+                    const next = e.target.value;
+                    setMessage(next);
+                    realtimeThread.reportTypingActivity(next.trim().length > 0);
+                  }}
+                  maxLength={4000}
+                  disabled={!conversationId || isSending}
+                  placeholder={t("detail.chat.compose.placeholder")}
+                  className="app-control max-h-20 min-h-9 flex-1 resize-none rounded-md border-border-strong bg-white px-2 py-1.5 text-xs shadow-[inset_0_1px_0_rgba(255,255,255,0.8),0_8px_14px_-14px_rgba(68,161,148,0.35)] focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-60 dark:border-white/15 dark:bg-white/8 dark:text-white"
+                />
+
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  className="hidden"
+                  onChange={(e) => handleFilesSelected(e.target.files)}
+                />
+                <button
+                  type="button"
+                  onClick={handlePickFiles}
+                  disabled={
+                    !conversationId ||
+                    uploadMutation.isPending ||
+                    attachments.length >= 5 ||
+                    sessionChatAvailability?.readOnly === true
+                  }
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-border-light bg-white text-text-secondary transition hover:border-primary/35 hover:text-primary disabled:cursor-not-allowed disabled:opacity-60 dark:border-white/12 dark:bg-white/5 dark:text-white/75"
+                  aria-label={t("detail.chat.actions.attach")}
+                  title={t("detail.chat.actions.attach")}
+                >
+                  {uploadMutation.isPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Paperclip className="h-4 w-4" />
+                  )}
+                </button>
+                <button
+                  type="submit"
+                  disabled={message.trim().length === 0 || isSending || closeMutation.isPending}
+                  className="inline-flex h-9 items-center justify-center gap-1.5 rounded-md bg-gradient-to-br from-primary to-primary-active px-3 text-xs font-semibold text-white shadow-[0_10px_18px_-10px_rgba(68,161,148,0.78)] transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {isSending ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <SendHorizonal className="h-3.5 w-3.5" />
+                  )}
+                  {t("detail.chat.actions.send")}
+                </button>
+              </div>
+
+              {sendMutation.isError ? (
+                <p className="text-xs text-rose-600 dark:text-rose-400">
+                  {t("detail.chat.states.sendError")}
+                </p>
+              ) : null}
+              {uploadMutation.isError ? (
+                <p className="text-xs text-rose-600 dark:text-rose-400">
+                  {t("detail.chat.states.uploadError")}
+                </p>
+              ) : null}
+            </form>
+          ) : null}
         </div>
       </section>
     </FullHeightMessagesPage>

@@ -782,6 +782,20 @@ exports.Prisma.SessionScalarFieldEnum = {
   updatedAt: 'updatedAt'
 };
 
+exports.Prisma.SessionReminderQueueScalarFieldEnum = {
+  id: 'id',
+  sessionId: 'sessionId',
+  recipientUserId: 'recipientUserId',
+  recipientRole: 'recipientRole',
+  reminderType: 'reminderType',
+  dueAt: 'dueAt',
+  sentAt: 'sentAt',
+  cancelledAt: 'cancelledAt',
+  idempotencyKey: 'idempotencyKey',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
 exports.Prisma.SessionCancellationPolicyScalarFieldEnum = {
   id: 'id',
   bookingType: 'bookingType',
@@ -2662,6 +2676,11 @@ exports.SessionPaymentCoverageType = exports.$Enums.SessionPaymentCoverageType =
   PACKAGE: 'PACKAGE'
 };
 
+exports.SessionReminderType = exports.$Enums.SessionReminderType = {
+  REMINDER_60: 'REMINDER_60',
+  REMINDER_15: 'REMINDER_15'
+};
+
 exports.SessionCancellationBookingType = exports.$Enums.SessionCancellationBookingType = {
   STANDARD: 'STANDARD',
   INSTANT: 'INSTANT'
@@ -3525,6 +3544,7 @@ exports.Prisma.ModelName = {
   AvailabilityException: 'AvailabilityException',
   PractitionerPresence: 'PractitionerPresence',
   Session: 'Session',
+  SessionReminderQueue: 'SessionReminderQueue',
   SessionCancellationPolicy: 'SessionCancellationPolicy',
   SessionCancellationPolicyRule: 'SessionCancellationPolicyRule',
   SessionCancellationRecord: 'SessionCancellationRecord',

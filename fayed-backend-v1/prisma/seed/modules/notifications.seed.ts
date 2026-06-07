@@ -83,6 +83,7 @@ export const notificationsSeedModule: SeedModule = {
         description:
           'Operational notification for patient when session is confirmed',
         category: NotificationCategory.SESSION,
+        supportsPush: true,
       },
       {
         slug: 'sessions.session-confirmed-practitioner',
@@ -90,6 +91,7 @@ export const notificationsSeedModule: SeedModule = {
         description:
           'Operational notification for practitioner when session is confirmed',
         category: NotificationCategory.SESSION,
+        supportsPush: true,
       },
       {
         slug: 'sessions.session-cancelled',
@@ -97,6 +99,7 @@ export const notificationsSeedModule: SeedModule = {
         description:
           'Operational notification for patient when session is cancelled',
         category: NotificationCategory.SESSION,
+        supportsPush: true,
       },
       {
         slug: 'sessions.session-cancelled-practitioner',
@@ -104,6 +107,7 @@ export const notificationsSeedModule: SeedModule = {
         description:
           'Operational notification for practitioner when patient cancels session',
         category: NotificationCategory.SESSION,
+        supportsPush: true,
       },
       {
         slug: 'sessions.session-join-available',
@@ -113,7 +117,60 @@ export const notificationsSeedModule: SeedModule = {
         category: NotificationCategory.SESSION,
         supportsEmail: true,
         supportsSms: false,
-        supportsPush: false,
+        supportsPush: true,
+        supportsInApp: true,
+      },
+      {
+        slug: 'messages.session-message-received',
+        displayName: 'Session Chat Message Received',
+        description:
+          'Operational notification when a session chat message is received',
+        category: NotificationCategory.CHAT,
+        supportsEmail: false,
+        supportsSms: false,
+        supportsPush: true,
+        supportsInApp: true,
+      },
+      {
+        slug: 'messages.support-message-received',
+        displayName: 'Support Message Received',
+        description:
+          'Operational notification when a support message is received',
+        category: NotificationCategory.SUPPORT,
+        supportsEmail: false,
+        supportsSms: false,
+        supportsPush: true,
+        supportsInApp: true,
+      },
+      {
+        slug: 'messages.follow-up-message-received',
+        displayName: 'Follow-up Message Received',
+        description:
+          'Operational notification when a follow-up chat message is received',
+        category: NotificationCategory.CHAT,
+        supportsEmail: false,
+        supportsSms: false,
+        supportsPush: true,
+        supportsInApp: true,
+      },
+      {
+        slug: 'sessions.session-reminder-60',
+        displayName: 'Session Reminder 60 Minutes',
+        description: 'Operational reminder sent one hour before a session',
+        category: NotificationCategory.SESSION,
+        supportsEmail: true,
+        supportsSms: false,
+        supportsPush: true,
+        supportsInApp: true,
+      },
+      {
+        slug: 'sessions.session-reminder-15',
+        displayName: 'Session Reminder 15 Minutes',
+        description: 'Operational reminder sent fifteen minutes before a session',
+        category: NotificationCategory.SESSION,
+        supportsEmail: true,
+        supportsSms: false,
+        supportsPush: true,
         supportsInApp: true,
       },
       {
@@ -128,6 +185,16 @@ export const notificationsSeedModule: SeedModule = {
         displayName: 'Training Schedule Reminder',
         description: 'Operational reminder before a training schedule starts',
         category: NotificationCategory.TRAINING,
+      },
+      {
+        slug: 'dev.push-test',
+        displayName: 'Dev Push Test',
+        description: 'Developer-only Expo push test notification type',
+        category: NotificationCategory.SYSTEM,
+        supportsEmail: false,
+        supportsSms: false,
+        supportsPush: true,
+        supportsInApp: false,
       },
     ];
 
@@ -436,6 +503,192 @@ export const notificationsSeedModule: SeedModule = {
             subjectTemplate: 'جلستك على فايد جاهزة للدخول',
             titleTemplate: 'جلستك جاهزة للدخول',
             bodyTemplate: 'تبدأ جلستك قريبًا. افتح صفحة الجلسة للانضمام بأمان.',
+            ctaLabel: 'افتح الجلسة',
+            ctaUrlTemplate: '{{appUrl}}{{routePath}}',
+          },
+        },
+      },
+      {
+        typeSlug: 'messages.session-message-received',
+        channel: NotificationChannel.IN_APP,
+        slug: 'messages.session-message-received.in-app.v1',
+        translations: {
+          en: {
+            subjectTemplate: null,
+            titleTemplate: 'New message',
+            bodyTemplate: 'You have a new message.',
+          },
+          ar: {
+            subjectTemplate: null,
+            titleTemplate: 'رسالة جديدة',
+            bodyTemplate: 'لديك رسالة جديدة.',
+          },
+        },
+      },
+      {
+        typeSlug: 'messages.session-message-received',
+        channel: NotificationChannel.PUSH,
+        slug: 'messages.session-message-received.push.v1',
+        translations: {
+          en: {
+            subjectTemplate: null,
+            titleTemplate: 'New message',
+            bodyTemplate: 'You have a new message.',
+          },
+          ar: {
+            subjectTemplate: null,
+            titleTemplate: 'رسالة جديدة',
+            bodyTemplate: 'لديك رسالة جديدة.',
+          },
+        },
+      },
+      {
+        typeSlug: 'messages.support-message-received',
+        channel: NotificationChannel.IN_APP,
+        slug: 'messages.support-message-received.in-app.v1',
+        translations: {
+          en: {
+            subjectTemplate: null,
+            titleTemplate: 'New message',
+            bodyTemplate: 'You have a new message from support.',
+          },
+          ar: {
+            subjectTemplate: null,
+            titleTemplate: 'رسالة جديدة',
+            bodyTemplate: 'لديك رسالة جديدة من الدعم.',
+          },
+        },
+      },
+      {
+        typeSlug: 'messages.support-message-received',
+        channel: NotificationChannel.PUSH,
+        slug: 'messages.support-message-received.push.v1',
+        translations: {
+          en: {
+            subjectTemplate: null,
+            titleTemplate: 'New message',
+            bodyTemplate: 'You have a new message from support.',
+          },
+          ar: {
+            subjectTemplate: null,
+            titleTemplate: 'رسالة جديدة',
+            bodyTemplate: 'لديك رسالة جديدة من الدعم.',
+          },
+        },
+      },
+      {
+        typeSlug: 'messages.follow-up-message-received',
+        channel: NotificationChannel.IN_APP,
+        slug: 'messages.follow-up-message-received.in-app.v1',
+        translations: {
+          en: {
+            subjectTemplate: null,
+            titleTemplate: 'New message',
+            bodyTemplate: 'You have a new follow-up message.',
+          },
+          ar: {
+            subjectTemplate: null,
+            titleTemplate: 'رسالة جديدة',
+            bodyTemplate: 'لديك رسالة جديدة في محادثة المتابعة.',
+          },
+        },
+      },
+      {
+        typeSlug: 'messages.follow-up-message-received',
+        channel: NotificationChannel.PUSH,
+        slug: 'messages.follow-up-message-received.push.v1',
+        translations: {
+          en: {
+            subjectTemplate: null,
+            titleTemplate: 'New message',
+            bodyTemplate: 'You have a new follow-up message.',
+          },
+          ar: {
+            subjectTemplate: null,
+            titleTemplate: 'رسالة جديدة',
+            bodyTemplate: 'لديك رسالة جديدة في محادثة المتابعة.',
+          },
+        },
+      },
+      {
+        typeSlug: 'sessions.session-reminder-60',
+        channel: NotificationChannel.IN_APP,
+        slug: 'sessions.session-reminder-60.in-app.v1',
+        translations: {
+          en: {
+            subjectTemplate: null,
+            titleTemplate: 'Session reminder',
+            bodyTemplate: 'Your session starts in an hour.',
+            ctaLabel: 'Open session',
+            ctaUrlTemplate: '{{appUrl}}{{routePath}}',
+          },
+          ar: {
+            subjectTemplate: null,
+            titleTemplate: 'تذكير بموعد جلستك',
+            bodyTemplate: 'جلستك تبدأ بعد ساعة.',
+            ctaLabel: 'افتح الجلسة',
+            ctaUrlTemplate: '{{appUrl}}{{routePath}}',
+          },
+        },
+      },
+      {
+        typeSlug: 'sessions.session-reminder-60',
+        channel: NotificationChannel.EMAIL,
+        slug: 'sessions.session-reminder-60.email.v1',
+        translations: {
+          en: {
+            subjectTemplate: 'Session reminder',
+            titleTemplate: 'Session reminder',
+            bodyTemplate: 'Your session starts in an hour.',
+            ctaLabel: 'Open session',
+            ctaUrlTemplate: '{{appUrl}}{{routePath}}',
+          },
+          ar: {
+            subjectTemplate: 'تذكير بموعد جلستك',
+            titleTemplate: 'تذكير بموعد جلستك',
+            bodyTemplate: 'جلستك تبدأ بعد ساعة.',
+            ctaLabel: 'افتح الجلسة',
+            ctaUrlTemplate: '{{appUrl}}{{routePath}}',
+          },
+        },
+      },
+      {
+        typeSlug: 'sessions.session-reminder-15',
+        channel: NotificationChannel.IN_APP,
+        slug: 'sessions.session-reminder-15.in-app.v1',
+        translations: {
+          en: {
+            subjectTemplate: null,
+            titleTemplate: 'Your session starts soon',
+            bodyTemplate: 'Your session starts in 15 minutes.',
+            ctaLabel: 'Open session',
+            ctaUrlTemplate: '{{appUrl}}{{routePath}}',
+          },
+          ar: {
+            subjectTemplate: null,
+            titleTemplate: 'جلستك ستبدأ قريبًا',
+            bodyTemplate: 'جلستك تبدأ بعد 15 دقيقة.',
+            ctaLabel: 'افتح الجلسة',
+            ctaUrlTemplate: '{{appUrl}}{{routePath}}',
+          },
+        },
+      },
+      {
+        typeSlug: 'sessions.session-reminder-15',
+        channel: NotificationChannel.EMAIL,
+        slug: 'sessions.session-reminder-15.email.v1',
+        translations: {
+          en: {
+            subjectTemplate: 'Your session starts soon',
+            titleTemplate: 'Your session starts soon',
+            bodyTemplate: 'Your session starts in 15 minutes.',
+            ctaLabel: 'Open session',
+            ctaUrlTemplate: '{{appUrl}}{{routePath}}',
+          },
+          ar: {
+            subjectTemplate: 'جلستك ستبدأ قريبًا',
+            titleTemplate: 'جلستك ستبدأ قريبًا',
+            bodyTemplate: 'جلستك تبدأ بعد 15 دقيقة.',
             ctaLabel: 'افتح الجلسة',
             ctaUrlTemplate: '{{appUrl}}{{routePath}}',
           },

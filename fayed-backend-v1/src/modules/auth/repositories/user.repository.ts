@@ -84,6 +84,7 @@ export class UserRepository {
   createPatientProfileIfMissing(
     userId: string,
     displayName?: string | null,
+    countryId?: string | null,
     tx?: Prisma.TransactionClient,
   ) {
     return this.getDb(tx).patientProfile.upsert({
@@ -91,6 +92,7 @@ export class UserRepository {
       create: {
         userId,
         displayName: displayName ?? null,
+        countryId: countryId ?? null,
       },
       update: {},
     });

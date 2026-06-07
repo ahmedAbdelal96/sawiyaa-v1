@@ -11,6 +11,12 @@ type QueuedNotification = {
   subjectSnapshot: string | null;
   bodySnapshot: string | null;
   payloadJson: unknown;
+  relatedEntityType: string | null;
+  relatedEntityId: string | null;
+  notificationType: {
+    slug: string;
+    category: string;
+  };
 };
 
 export type ChannelExecutionResult = {

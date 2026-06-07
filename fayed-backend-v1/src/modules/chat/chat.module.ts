@@ -8,6 +8,7 @@ import { SecurityAuditModule } from '@common/security-audit/security-audit.modul
 import { AuthModule } from '@modules/auth/auth.module';
 import { CareChatModule } from '@modules/care-chat/care-chat.module';
 import { ModerationModule } from '@modules/moderation/moderation.module';
+import { NotificationsModule } from '@modules/notifications/notifications.module';
 import { SupportModule } from '@modules/support/support.module';
 import { GeneralChatAttachmentsController } from './controllers/general-chat-attachments.controller';
 import { AdminGeneralChatConversationsController } from './controllers/admin-general-chat-conversations.controller';
@@ -18,6 +19,7 @@ import { AdminGeneralChatRepository } from './repositories/admin-general-chat.re
 import { GeneralChatActorRepository } from './repositories/general-chat-actor.repository';
 import { GeneralChatRepository } from './repositories/general-chat.repository';
 import { GeneralChatAttachmentStorageService } from './services/general-chat-attachment-storage.service';
+import { GeneralChatAvailabilityService } from './services/general-chat-availability.service';
 import { GeneralChatModerationStateService } from './services/general-chat-moderation-state.service';
 import { ValidateGeneralChatMessagePayloadService } from './services/validate-general-chat-message-payload.service';
 import { ValidateGeneralChatParticipantPolicyService } from './services/validate-general-chat-participant-policy.service';
@@ -45,6 +47,7 @@ import { ConversationAccessPolicy } from './policies/conversation-access.policy'
     SecurityAuditModule,
     ModerationModule,
     AuthModule,
+    NotificationsModule,
     SupportModule,
     CareChatModule,
   ],
@@ -64,6 +67,7 @@ import { ConversationAccessPolicy } from './policies/conversation-access.policy'
     AdminGeneralChatRepository,
     GeneralChatActorRepository,
     GeneralChatAttachmentStorageService,
+    GeneralChatAvailabilityService,
     GeneralChatModerationStateService,
     ValidateGeneralChatParticipantPolicyService,
     ValidateGeneralChatMessagePayloadService,

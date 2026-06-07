@@ -13,7 +13,33 @@ export type SessionStatus =
   | "REFUND_PENDING"
   | "REFUNDED";
 
+export type SessionPresentationStatus =
+  | "UPCOMING"
+  | "JOINABLE"
+  | "IN_PROGRESS"
+  | "COMPLETED"
+  | "CANCELLED"
+  | "ENDED"
+  | "UNAVAILABLE";
+
+export type SessionPresentationFilter =
+  | "all"
+  | "joinable"
+  | "live"
+  | "upcoming"
+  | "finished"
+  | "unavailable";
+
 export type SessionMode = "VIDEO" | "AUDIO" | "CHAT";
+
+export type SessionChatAvailabilityReason =
+  | "ALLOWED"
+  | "SESSION_NOT_STARTED"
+  | "SESSION_ENDED"
+  | "SESSION_CANCELLED"
+  | "CONVERSATION_CLOSED"
+  | "MODERATION_LOCKED"
+  | "NOT_PARTICIPANT";
 
 export interface SessionPractitionerSummary {
   id: string;
@@ -26,16 +52,26 @@ export interface SessionPatientSummary {
   displayName: string | null;
 }
 
+export interface SessionChatAvailability {
+  canRead: boolean;
+  canSend: boolean;
+  readOnly: boolean;
+  reason: SessionChatAvailabilityReason;
+}
+
 export interface PractitionerSessionListItem {
   id: string;
   sessionCode: string;
   status: SessionStatus;
+  presentationStatus: SessionPresentationStatus;
   scheduledStartAt: string | null;
   scheduledEndAt: string | null;
   durationMinutes: number;
   sessionMode: SessionMode;
   practitioner: SessionPractitionerSummary;
   patient: SessionPatientSummary | null;
+  joinAvailability: SessionJoinAvailability;
+  chatAvailability: SessionChatAvailability;
 }
 
 export interface PractitionerSessionDetails extends PractitionerSessionListItem {
@@ -57,6 +93,7 @@ export interface SessionsPagination {
 
 export interface ListSessionsQuery {
   status?: SessionStatus;
+  presentationFilter?: SessionPresentationFilter;
   page?: number;
   limit?: number;
 }
@@ -66,13 +103,35 @@ export interface SessionsListResponse {
   pagination: SessionsPagination;
 }
 
+export interface PractitionerSessionSummary {
+  totalItems: number;
+  upcoming: number;
+  ready: number;
+  live: number;
+  closed: number;
+  actionRequired: number;
+  unavailable: number;
+}
+
+export interface PractitionerSessionSummaryResponse {
+  item: PractitionerSessionSummary;
+}
+
 export type SessionProvider = "NONE" | "DAILY";
 
 export type SessionJoinBlockedReason =
   | "SESSION_NOT_JOINABLE_STATUS"
   | "SESSION_NOT_VIDEO_MODE"
   | "SESSION_TIME_WINDOW_NOT_OPEN"
-  | "SESSION_RUNTIME_NOT_PREPARED";
+  | "SESSION_RUNTIME_NOT_PREPARED"
+  | "SESSION_JOIN_WINDOW_CLOSED";
+
+export interface SessionJoinAvailability {
+  canJoin: boolean;
+  blockedReason: SessionJoinBlockedReason | null;
+  availableAt: string | null;
+  expiresAt: string | null;
+}
 
 export interface PractitionerSessionRuntime {
   provider: SessionProvider;

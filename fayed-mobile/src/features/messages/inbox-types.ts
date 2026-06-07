@@ -27,24 +27,80 @@ export interface NormalizedInboxItem {
     | CareChatRequestItemDto;
 }
 
+function isArabicLocale(locale?: string) {
+  return locale?.startsWith("ar") ?? false;
+}
+
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+export function isLikelyInternalId(value: string | null | undefined) {
+  const trimmed = value?.trim();
+  if (!trimmed) {
+    return true;
+  }
+
+  if (trimmed.startsWith("gc_")) {
+    return true;
+  }
+
+  if (UUID_RE.test(trimmed)) {
+    return true;
+  }
+
+  if (/^[0-9a-f]{16,}$/i.test(trimmed)) {
+    return true;
+  }
+
+  if (/^[A-Za-z0-9_-]{24,}$/.test(trimmed) && /[0-9]/.test(trimmed)) {
+    return true;
+  }
+
+  return false;
+}
+
+export function safeDisplayText(
+  value: string | null | undefined,
+  fallback: string | null,
+) {
+  const trimmed = value?.trim();
+  if (!trimmed || isLikelyInternalId(trimmed)) {
+    return fallback;
+  }
+
+  return trimmed;
+}
+
 export function buildSessionInboxItem(
   conversation: GeneralChatConversationListItemDto,
   role: MessagesRole,
+  locale?: string,
 ): NormalizedInboxItem {
+  const isArabic = isArabicLocale(locale);
   const counterpart = conversation.participants.find(
     (p) =>
       p.role === (role === "patient" ? "PRACTITIONER" : "PATIENT"),
   );
-  const displayName = counterpart?.identity?.displayName?.trim() || null;
+  const displayName = safeDisplayText(counterpart?.identity?.displayName, null);
   const title = displayName
-    ?? (role === "patient" ? "Practitioner" : "Patient");
+    ? isArabic
+      ? `جلسة مع ${displayName}`
+      : `Session with ${displayName}`
+    : isArabic
+    ? "محادثة جلسة"
+    : "Session conversation";
 
   const subtitle = conversation.linkedSessionId
-    ? `Session #${conversation.conversationRef}`
-    : `Conversation #${conversation.conversationRef}`;
+    ? isArabic
+      ? "محادثة جلسة"
+      : "Session conversation"
+    : isArabic
+    ? "محادثة"
+    : "Conversation";
 
   const preview =
-    conversation.latestMessage?.previewText?.trim() || "No messages yet.";
+    safeDisplayText(conversation.latestMessage?.previewText, null) ||
+    (isArabic ? "لا توجد رسائل بعد." : "No messages yet.");
 
   return {
     id: conversation.conversationId,
@@ -66,13 +122,17 @@ export function buildSessionInboxItem(
 export function buildSupportInboxItem(
   ticket: SupportTicketItemDto,
   role: MessagesRole,
+  locale?: string,
 ): NormalizedInboxItem {
+  const isArabic = isArabicLocale(locale);
+  const title = safeDisplayText(ticket.subject, null) ||
+    (isArabic ? "محادثة الدعم" : "Support conversation");
   return {
     id: ticket.id,
     sourceType: "support",
-    title: ticket.subject,
+    title,
     subtitle: null,
-    preview: "Support conversation",
+    preview: isArabic ? "محادثة الدعم" : "Support conversation",
     latestActivityAt: ticket.lastMessageAt ?? ticket.createdAt,
     unreadCount: ticket.unreadCount,
     status: ticket.status,
@@ -87,19 +147,22 @@ export function buildSupportInboxItem(
 export function buildCareInboxItem(
   request: CareChatRequestItemDto,
   role: MessagesRole,
+  locale?: string,
 ): NormalizedInboxItem {
+  const isArabic = isArabicLocale(locale);
   const name =
     role === "patient"
       ? request.practitioner.displayName
       : request.patient.displayName;
+  const safeName = safeDisplayText(name, null);
+  const safeReason = safeDisplayText(request.reason, null);
 
   return {
     id: request.linkedConversationId ?? request.id,
     sourceType: "care",
-    title: name ?? (role === "patient" ? "Practitioner" : "Patient"),
-    subtitle:
-      request.reason?.trim() || null,
-    preview: request.reason?.trim() || "Follow-up conversation",
+    title: safeName || (isArabic ? "متابعة" : "Follow-up"),
+    subtitle: safeReason,
+    preview: safeReason || (isArabic ? "متابعة" : "Follow-up conversation"),
     latestActivityAt: request.requestedAt,
     unreadCount: request.unreadCount,
     status: request.status,
@@ -109,8 +172,8 @@ export function buildCareInboxItem(
           ? `/(patient)/care-chat/${request.linkedConversationId}`
           : `/(patient)/care-chat/request/${request.id}`
         : request.linkedConversationId
-        ? `/(practitioner)/care-chat/${request.linkedConversationId}`
-        : `/(practitioner)/care-chat/request/${request.id}`,
+        ? `/(practitioner)/messages/${request.linkedConversationId}?source=care`
+        : `/(practitioner)/messages?tab=followup`,
     raw: request,
   };
 }

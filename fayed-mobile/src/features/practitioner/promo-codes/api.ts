@@ -43,6 +43,16 @@ export async function updatePractitionerCoupon(
   return extractApiData<PractitionerCouponDetailResponse>(response);
 }
 
+export async function activatePractitionerCoupon(couponId: string) {
+  const response = await apiClient.patch(
+    `/practitioners/me/coupons/${couponId}`,
+    {
+      isActive: true,
+    },
+  );
+  return extractApiData<PractitionerCouponDetailResponse>(response);
+}
+
 export async function disablePractitionerCoupon(couponId: string) {
   const response = await apiClient.post(
     `/practitioners/me/coupons/${couponId}/disable`,
@@ -60,4 +70,3 @@ export async function listPractitionerCouponRedemptions(
   );
   return extractApiData<PractitionerCouponRedemptionsListResponse>(response);
 }
-

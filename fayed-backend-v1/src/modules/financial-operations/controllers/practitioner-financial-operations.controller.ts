@@ -34,7 +34,10 @@ import { ListPractitionerSettlementsUseCase } from '../use-cases/list-practition
 @ApiBearerAuth()
 @UseGuards(JwtAccessAuthGuard, RolesGuard)
 @Roles(AppRole.PRACTITIONER)
-@RequireAccountStates(AccountStateRequirement.ACTIVE_ACCOUNT)
+@RequireAccountStates(
+  AccountStateRequirement.ACTIVE_ACCOUNT,
+  AccountStateRequirement.PRACTITIONER_APPROVED,
+)
 @Controller('practitioners/me')
 export class PractitionerFinancialOperationsController {
   constructor(

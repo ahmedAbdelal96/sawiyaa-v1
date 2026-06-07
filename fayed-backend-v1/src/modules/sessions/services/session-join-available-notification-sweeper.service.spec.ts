@@ -1,4 +1,3 @@
-import { ConfigService } from '@nestjs/config';
 import { SessionMode, SessionProvider, SessionStatus } from '@prisma/client';
 import { AppLoggerService } from '@common/logging/app-logger.service';
 import { PrismaService } from '@common/prisma/prisma.service';
@@ -81,28 +80,11 @@ type JoinEmailNotificationWriteInput = {
 
 describe('SessionJoinAvailableNotificationSweeperService', () => {
   function buildService(options?: { candidates?: JoinCandidate[] }) {
-    const get = jest.fn((key: string) => {
-      if (key === 'session.runtimePrepareLeadMinutes') {
-        return 24 * 60;
-      }
-
-      if (key === 'session.joinLeadMinutes') {
-        return 15;
-      }
-
-      if (key === 'session.joinLagMinutes') {
-        return 120;
-      }
-
-      return undefined;
-    });
-    const configService = { get } as unknown as ConfigService;
-
     let currentSession: JoinCandidate = options?.candidates?.[0] ?? {
       id: 'session_1',
       status: SessionStatus.CONFIRMED,
       sessionMode: SessionMode.VIDEO,
-      joinOpenAt: new Date('2026-05-01T10:00:00.000Z'),
+      joinOpenAt: new Date('2026-05-01T10:13:00.000Z'),
       scheduledStartAt: new Date('2026-05-01T10:15:00.000Z'),
       scheduledEndAt: new Date('2026-05-01T10:45:00.000Z'),
       provider: SessionProvider.NONE,
@@ -210,8 +192,10 @@ describe('SessionJoinAvailableNotificationSweeperService', () => {
 
     const seenIdempotencyKeys = new Set<string>();
     const seenEmailIdempotencyKeys = new Set<string>();
+    const seenPushIdempotencyKeys = new Set<string>();
     const notificationWrites: JoinNotificationWriteInput[] = [];
     const emailNotificationWrites: JoinEmailNotificationWriteInput[] = [];
+    const pushNotificationWrites: JoinNotificationWriteInput[] = [];
     const createInAppNotification = jest.fn(
       (input: JoinNotificationWriteInput) => {
         if (
@@ -250,9 +234,27 @@ describe('SessionJoinAvailableNotificationSweeperService', () => {
         });
       },
     );
+    const createPushNotification = jest.fn((input: JoinNotificationWriteInput) => {
+      if (
+        input.idempotencyKey &&
+        seenPushIdempotencyKeys.has(input.idempotencyKey)
+      ) {
+        return Promise.resolve(null);
+      }
+
+      if (input.idempotencyKey) {
+        seenPushIdempotencyKeys.add(input.idempotencyKey);
+      }
+
+      pushNotificationWrites.push(input);
+      return Promise.resolve({
+        id: `push_notification_${pushNotificationWrites.length}`,
+      });
+    });
     const notificationIntentWriterService = {
       createInAppNotification,
       createEmailNotification,
+      createPushNotification,
     } as unknown as NotificationIntentWriterService;
 
     const t = jest.fn((key: string, locale: 'en' | 'ar') => {
@@ -275,10 +277,11 @@ describe('SessionJoinAvailableNotificationSweeperService', () => {
     const logger = { info, error } as unknown as AppLoggerService;
 
     const resolveSessionJoinReadinessService =
-      new ResolveSessionJoinReadinessService(configService);
+      new ResolveSessionJoinReadinessService({
+        get: () => undefined,
+      } as never);
 
     const service = new SessionJoinAvailableNotificationSweeperService(
-      configService,
       prisma,
       sessionRepository,
       resolveSessionJoinReadinessService,
@@ -302,10 +305,13 @@ describe('SessionJoinAvailableNotificationSweeperService', () => {
       assertCanTransition,
       createInAppNotification,
       createEmailNotification,
+      createPushNotification,
       notificationWrites,
       emailNotificationWrites,
+      pushNotificationWrites,
       seenIdempotencyKeys,
       seenEmailIdempotencyKeys,
+      seenPushIdempotencyKeys,
       info,
       error,
       currentSessionRef: () => currentSession,
@@ -320,7 +326,7 @@ describe('SessionJoinAvailableNotificationSweeperService', () => {
     const setup = buildService();
 
     const handled = await setup.service.sweepOnce(
-      new Date('2026-05-01T10:00:00.000Z'),
+      new Date('2026-05-01T10:13:00.000Z'),
     );
 
     expect(handled).toBe(1);
@@ -340,11 +346,18 @@ describe('SessionJoinAvailableNotificationSweeperService', () => {
     );
 
     expect(setup.createInAppNotification).toHaveBeenCalledTimes(2);
+    expect(setup.createPushNotification).toHaveBeenCalledTimes(2);
     expect(setup.createEmailNotification).toHaveBeenCalledTimes(2);
     const patientNotification = setup.notificationWrites.find(
       (entry) => entry.userId === 'patient-user-1',
     );
     const practitionerNotification = setup.notificationWrites.find(
+      (entry) => entry.userId === 'practitioner-user-1',
+    );
+    const patientPushNotification = setup.pushNotificationWrites.find(
+      (entry) => entry.userId === 'patient-user-1',
+    );
+    const practitionerPushNotification = setup.pushNotificationWrites.find(
       (entry) => entry.userId === 'practitioner-user-1',
     );
     const patientEmailNotification = setup.emailNotificationWrites.find(
@@ -356,6 +369,8 @@ describe('SessionJoinAvailableNotificationSweeperService', () => {
 
     expect(patientNotification).toBeDefined();
     expect(practitionerNotification).toBeDefined();
+    expect(patientPushNotification).toBeDefined();
+    expect(practitionerPushNotification).toBeDefined();
     expect(patientEmailNotification).toBeDefined();
     expect(practitionerEmailNotification).toBeDefined();
 
@@ -370,9 +385,10 @@ describe('SessionJoinAvailableNotificationSweeperService', () => {
       payload: {
         sessionId: 'session_1',
         recipientRole: 'PATIENT',
+        targetRole: 'PATIENT',
         routePath: '/ar/patient/sessions/session_1',
         scheduledStartAt: '2026-05-01T10:15:00.000Z',
-        joinOpenAt: '2026-05-01T10:00:00.000Z',
+        joinOpenAt: '2026-05-01T10:13:00.000Z',
       },
     });
     expect(patientNotification?.payload).not.toHaveProperty(
@@ -389,9 +405,45 @@ describe('SessionJoinAvailableNotificationSweeperService', () => {
       payload: {
         sessionId: 'session_1',
         recipientRole: 'PRACTITIONER',
+        targetRole: 'PRACTITIONER',
         routePath: '/en/practitioner/sessions/session_1',
         scheduledStartAt: '2026-05-01T10:15:00.000Z',
-        joinOpenAt: '2026-05-01T10:00:00.000Z',
+        joinOpenAt: '2026-05-01T10:13:00.000Z',
+      },
+    });
+
+    expect(patientPushNotification).toMatchObject({
+      slug: 'sessions.session-join-available',
+      userId: 'patient-user-1',
+      locale: 'ar',
+      idempotencyKey:
+        'sessions.session-join-available:push:session_1:patient-user-1',
+      relatedEntityType: 'SESSION',
+      relatedEntityId: 'session_1',
+      payload: {
+        sessionId: 'session_1',
+        recipientRole: 'PATIENT',
+        targetRole: 'PATIENT',
+        routePath: '/ar/patient/sessions/session_1',
+        scheduledStartAt: '2026-05-01T10:15:00.000Z',
+        joinOpenAt: '2026-05-01T10:13:00.000Z',
+      },
+    });
+    expect(practitionerPushNotification).toMatchObject({
+      slug: 'sessions.session-join-available',
+      userId: 'practitioner-user-1',
+      locale: 'en',
+      idempotencyKey:
+        'sessions.session-join-available:push:session_1:practitioner-user-1',
+      relatedEntityType: 'SESSION',
+      relatedEntityId: 'session_1',
+      payload: {
+        sessionId: 'session_1',
+        recipientRole: 'PRACTITIONER',
+        targetRole: 'PRACTITIONER',
+        routePath: '/en/practitioner/sessions/session_1',
+        scheduledStartAt: '2026-05-01T10:15:00.000Z',
+        joinOpenAt: '2026-05-01T10:13:00.000Z',
       },
     });
 
@@ -409,7 +461,7 @@ describe('SessionJoinAvailableNotificationSweeperService', () => {
         recipientRole: 'PATIENT',
         routePath: '/ar/patient/sessions/session_1',
         scheduledStartAt: '2026-05-01T10:15:00.000Z',
-        joinOpenAt: '2026-05-01T10:00:00.000Z',
+        joinOpenAt: '2026-05-01T10:13:00.000Z',
       },
     });
     expect(practitionerEmailNotification).toMatchObject({
@@ -426,7 +478,7 @@ describe('SessionJoinAvailableNotificationSweeperService', () => {
         recipientRole: 'PRACTITIONER',
         routePath: '/en/practitioner/sessions/session_1',
         scheduledStartAt: '2026-05-01T10:15:00.000Z',
-        joinOpenAt: '2026-05-01T10:00:00.000Z',
+        joinOpenAt: '2026-05-01T10:13:00.000Z',
       },
     });
 
@@ -464,7 +516,7 @@ describe('SessionJoinAvailableNotificationSweeperService', () => {
           id: 'session_1',
           status: SessionStatus.CONFIRMED,
           sessionMode: SessionMode.VIDEO,
-          joinOpenAt: new Date('2026-05-01T10:00:00.000Z'),
+          joinOpenAt: new Date('2026-05-01T10:13:00.000Z'),
           scheduledStartAt: new Date('2026-05-01T10:15:00.000Z'),
           scheduledEndAt: new Date('2026-05-01T10:45:00.000Z'),
           packageSessionIndex: 2,
@@ -501,7 +553,7 @@ describe('SessionJoinAvailableNotificationSweeperService', () => {
     });
 
     const handled = await setup.service.sweepOnce(
-      new Date('2026-05-01T10:00:00.000Z'),
+      new Date('2026-05-01T10:13:00.000Z'),
     );
 
     expect(handled).toBe(1);
@@ -537,7 +589,7 @@ describe('SessionJoinAvailableNotificationSweeperService', () => {
           id: 'session_cancelled',
           status: SessionStatus.CANCELLED,
           sessionMode: SessionMode.VIDEO,
-          joinOpenAt: new Date('2026-05-01T10:00:00.000Z'),
+          joinOpenAt: new Date('2026-05-01T10:13:00.000Z'),
           scheduledStartAt: new Date('2026-05-01T10:15:00.000Z'),
           scheduledEndAt: new Date('2026-05-01T10:45:00.000Z'),
           provider: SessionProvider.NONE,
@@ -562,7 +614,7 @@ describe('SessionJoinAvailableNotificationSweeperService', () => {
           id: 'session_audio',
           status: SessionStatus.CONFIRMED,
           sessionMode: SessionMode.AUDIO,
-          joinOpenAt: new Date('2026-05-01T10:00:00.000Z'),
+          joinOpenAt: new Date('2026-05-01T10:13:00.000Z'),
           scheduledStartAt: new Date('2026-05-01T10:15:00.000Z'),
           scheduledEndAt: new Date('2026-05-01T10:45:00.000Z'),
           provider: SessionProvider.NONE,
@@ -587,11 +639,12 @@ describe('SessionJoinAvailableNotificationSweeperService', () => {
     });
 
     const handled = await setup.service.sweepOnce(
-      new Date('2026-05-01T10:00:00.000Z'),
+      new Date('2026-05-01T10:13:00.000Z'),
     );
 
     expect(handled).toBe(0);
     expect(setup.createInAppNotification).not.toHaveBeenCalled();
+    expect(setup.createPushNotification).not.toHaveBeenCalled();
     expect(setup.createEmailNotification).not.toHaveBeenCalled();
     expect(setup.updateStatus).not.toHaveBeenCalled();
     expect(setup.updateRuntimeIfMissing).not.toHaveBeenCalled();
@@ -605,7 +658,7 @@ describe('SessionJoinAvailableNotificationSweeperService', () => {
           id: 'session_1',
           status: SessionStatus.CONFIRMED,
           sessionMode: SessionMode.VIDEO,
-          joinOpenAt: new Date('2026-05-01T10:00:00.000Z'),
+          joinOpenAt: new Date('2026-05-01T10:13:00.000Z'),
           scheduledStartAt: new Date('2026-05-01T10:15:00.000Z'),
           scheduledEndAt: new Date('2026-05-01T10:45:00.000Z'),
           packageSessionIndex: 2,
@@ -642,7 +695,7 @@ describe('SessionJoinAvailableNotificationSweeperService', () => {
     });
 
     const handled = await setup.service.sweepOnce(
-      new Date('2026-05-01T10:00:00.000Z'),
+      new Date('2026-05-01T10:13:00.000Z'),
     );
 
     expect(handled).toBe(1);
@@ -678,7 +731,7 @@ describe('SessionJoinAvailableNotificationSweeperService', () => {
           id: 'session_missing_email',
           status: SessionStatus.CONFIRMED,
           sessionMode: SessionMode.VIDEO,
-          joinOpenAt: new Date('2026-05-01T10:00:00.000Z'),
+          joinOpenAt: new Date('2026-05-01T10:13:00.000Z'),
           scheduledStartAt: new Date('2026-05-01T10:15:00.000Z'),
           scheduledEndAt: new Date('2026-05-01T10:45:00.000Z'),
           provider: SessionProvider.NONE,
@@ -702,8 +755,9 @@ describe('SessionJoinAvailableNotificationSweeperService', () => {
       ],
     });
 
-    await setup.service.sweepOnce(new Date('2026-05-01T10:00:00.000Z'));
+    await setup.service.sweepOnce(new Date('2026-05-01T10:15:00.000Z'));
     expect(setup.createInAppNotification).toHaveBeenCalledTimes(2);
+    expect(setup.createPushNotification).toHaveBeenCalledTimes(2);
     expect(setup.createEmailNotification).toHaveBeenCalledTimes(1);
     expect(setup.emailNotificationWrites).toHaveLength(1);
     expect(setup.emailNotificationWrites[0]).toMatchObject({
@@ -712,6 +766,7 @@ describe('SessionJoinAvailableNotificationSweeperService', () => {
       payload: {
         sessionId: 'session_missing_email',
         recipientRole: 'PRACTITIONER',
+        targetRole: 'PRACTITIONER',
         routePath: '/en/practitioner/sessions/session_missing_email',
       },
     });
@@ -720,13 +775,19 @@ describe('SessionJoinAvailableNotificationSweeperService', () => {
   it('is safe to run repeatedly because idempotency keys stay stable', async () => {
     const setup = buildService();
 
-    await setup.service.sweepOnce(new Date('2026-05-01T10:00:00.000Z'));
+    await setup.service.sweepOnce(new Date('2026-05-01T10:15:00.000Z'));
     await setup.service.sweepOnce(new Date('2026-05-01T10:01:00.000Z'));
 
     expect(setup.seenIdempotencyKeys).toEqual(
       new Set([
         'sessions.session-join-available:session_1:patient-user-1',
         'sessions.session-join-available:session_1:practitioner-user-1',
+      ]),
+    );
+    expect(setup.seenPushIdempotencyKeys).toEqual(
+      new Set([
+        'sessions.session-join-available:push:session_1:patient-user-1',
+        'sessions.session-join-available:push:session_1:practitioner-user-1',
       ]),
     );
     expect(setup.seenEmailIdempotencyKeys).toEqual(
@@ -736,6 +797,7 @@ describe('SessionJoinAvailableNotificationSweeperService', () => {
       ]),
     );
     expect(setup.notificationWrites).toHaveLength(2);
+    expect(setup.pushNotificationWrites).toHaveLength(2);
     expect(setup.emailNotificationWrites).toHaveLength(2);
   });
 });

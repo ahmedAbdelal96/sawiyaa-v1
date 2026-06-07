@@ -73,6 +73,8 @@ export interface OtpChallengeResponse {
   requiresOtpVerification: boolean;
 }
 
+export type PractitionerLoginResponse = AuthSuccessResponse | OtpChallengeResponse;
+
 export interface PractitionerRegistrationResponse {
   message: string;
   userId: string;
@@ -108,6 +110,7 @@ export interface PatientRegisterRequest {
   password: string;
   displayName?: string;
   deviceId?: string;
+  phone?: string;
 }
 
 export interface PatientLoginRequest {

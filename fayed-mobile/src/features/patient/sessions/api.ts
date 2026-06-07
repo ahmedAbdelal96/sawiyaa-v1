@@ -4,6 +4,7 @@ import type {
   CreateScheduledSessionResponse,
   ListSessionsQuery,
   PublicAvailabilityWindowsData,
+  PatientSessionSummaryResponse,
   SessionCancellationPreviewResponse,
   SessionDetails,
   SessionJoinContractResponse,
@@ -37,6 +38,11 @@ export async function getPatientSessions(query?: ListSessionsQuery) {
     params: query,
   });
   return extractApiData<SessionsListResponse>(response);
+}
+
+export async function getPatientSessionSummary() {
+  const response = await apiClient.get("/patients/me/sessions/summary");
+  return extractApiData<PatientSessionSummaryResponse>(response);
 }
 
 export async function getPatientSession(sessionId: string) {

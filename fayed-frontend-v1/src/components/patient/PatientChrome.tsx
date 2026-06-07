@@ -92,11 +92,26 @@ export function PatientSectionCard({
   );
 }
 
+type PatientActionPanelTone = "teal" | "emerald" | "sky" | "indigo" | "amber" | "violet";
+
+const TONE_STYLES: Record<
+  PatientActionPanelTone,
+  { bg: string; icon: string; ring: string }
+> = {
+  teal: { bg: "bg-teal-50", icon: "text-teal-600", ring: "ring-teal-200" },
+  emerald: { bg: "bg-emerald-50", icon: "text-emerald-600", ring: "ring-emerald-200" },
+  sky: { bg: "bg-sky-50", icon: "text-sky-600", ring: "ring-sky-200" },
+  indigo: { bg: "bg-indigo-50", icon: "text-indigo-600", ring: "ring-indigo-200" },
+  amber: { bg: "bg-amber-50", icon: "text-amber-600", ring: "ring-amber-200" },
+  violet: { bg: "bg-violet-50", icon: "text-violet-600", ring: "ring-violet-200" },
+};
+
 type PatientActionPanelProps = {
   href: string;
   label: ReactNode;
   description?: ReactNode;
   icon?: ReactNode;
+  tone?: PatientActionPanelTone;
   className?: string;
 };
 
@@ -105,18 +120,28 @@ export function PatientActionPanel({
   label,
   description,
   icon,
+  tone = "teal",
   className,
 }: PatientActionPanelProps) {
+  const styles = TONE_STYLES[tone];
+
   return (
     <Link
       href={href as never}
       className={cn(
-        "app-panel-soft flex items-start gap-3 rounded-[24px] px-4 py-4 transition hover:-translate-y-0.5 hover:border-primary/25 hover:bg-surface-secondary dark:hover:bg-white/8",
+        "app-panel-soft flex items-start gap-3 rounded-[22px] px-4 py-4 transition hover:-translate-y-0.5 hover:border-primary/25 hover:bg-surface-secondary dark:hover:bg-white/8",
         className,
       )}
     >
       {icon ? (
-        <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-primary-light text-primary dark:bg-primary/15 dark:text-primary-light">
+        <span
+          className={cn(
+            "inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl ring-1 ring-inset",
+            styles.bg,
+            styles.ring,
+            styles.icon,
+          )}
+        >
           {icon}
         </span>
       ) : null}

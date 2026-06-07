@@ -1,6 +1,9 @@
 "use client";
 
+import type { UnifiedMessagingLane } from "../types/messages-shell.types";
+
 export const OPEN_SESSION_CHAT_EVENT = "fayed:messages-shell-open-session-chat";
+export const OPEN_MESSAGES_SHELL_EVENT = "fayed:messages-shell-open";
 export const TOGGLE_MESSAGES_SHELL_EVENT = "fayed:messages-shell-toggle";
 
 export type OpenSessionChatEventPayload = {
@@ -8,6 +11,12 @@ export type OpenSessionChatEventPayload = {
 };
 
 export type ToggleMessagesShellEventPayload = {
+  anchorRect?: Pick<DOMRect, "top" | "left" | "right" | "bottom">;
+};
+
+export type OpenMessagesShellEventPayload = {
+  lane?: UnifiedMessagingLane;
+  threadId?: string;
   anchorRect?: Pick<DOMRect, "top" | "left" | "right" | "bottom">;
 };
 
@@ -48,6 +57,15 @@ export function dispatchToggleMessagesShell(
   );
 }
 
+export function dispatchOpenMessagesShell(payload?: OpenMessagesShellEventPayload) {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(
+    new CustomEvent<OpenMessagesShellEventPayload>(OPEN_MESSAGES_SHELL_EVENT, {
+      detail: payload,
+    }),
+  );
+}
+
 export function listenToggleMessagesShell(
   handler: (payload?: ToggleMessagesShellEventPayload) => void,
 ) {
@@ -64,5 +82,24 @@ export function listenToggleMessagesShell(
 
   return () => {
     window.removeEventListener(TOGGLE_MESSAGES_SHELL_EVENT, listener);
+  };
+}
+
+export function listenOpenMessagesShell(
+  handler: (payload?: OpenMessagesShellEventPayload) => void,
+) {
+  if (typeof window === "undefined") {
+    return () => undefined;
+  }
+
+  const listener = (event: Event) => {
+    const customEvent = event as CustomEvent<OpenMessagesShellEventPayload>;
+    handler(customEvent.detail);
+  };
+
+  window.addEventListener(OPEN_MESSAGES_SHELL_EVENT, listener);
+
+  return () => {
+    window.removeEventListener(OPEN_MESSAGES_SHELL_EVENT, listener);
   };
 }

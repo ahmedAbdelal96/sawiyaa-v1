@@ -1,5 +1,6 @@
 import React from "react";
 import {
+  ActivityIndicator,
   Alert,
   ScrollView,
   StyleSheet,
@@ -10,10 +11,10 @@ import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import {
-  Button,
   Card,
   EmptyState,
   ErrorState,
+  FilterChip,
   Header,
   LoadingState,
   Screen,
@@ -27,25 +28,24 @@ import {
   usePractitionerNotifications,
   usePractitionerUnreadNotificationCount,
 } from "../../src/features/practitioner/notifications/hooks";
-import { resolvePatientNotificationRoute } from "../../src/features/patient/notifications/routes";
 import type { UserNotificationItem } from "../../src/features/patient/notifications/types";
+import {
+  formatPractitionerNotificationDateTime,
+  resolvePractitionerNotificationPresentation,
+  resolvePractitionerNotificationRoute,
+} from "../../src/features/practitioner/notifications/utils";
 
-function formatNotificationDateTime(dateString: string, locale: string) {
-  return new Date(dateString).toLocaleString(locale, {
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: !locale.startsWith("ar"),
-  });
-}
+type NotificationFilter = "all" | "unread" | "read";
 
 export default function PractitionerNotificationsScreen() {
   const router = useRouter();
   const { theme } = useTheme();
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
-  const [showUnreadOnly, setShowUnreadOnly] = React.useState(false);
+  const [filter, setFilter] = React.useState<NotificationFilter>("all");
+  const [pendingNotificationId, setPendingNotificationId] = React.useState<
+    string | null
+  >(null);
 
   const notificationsQuery = usePractitionerNotifications(
     { page: 1, limit: 20 },
@@ -57,190 +57,380 @@ export default function PractitionerNotificationsScreen() {
   const markReadMutation = useMarkPractitionerNotificationRead();
   const markAllReadMutation = useMarkAllPractitionerNotificationsRead();
 
-  const notifications = notificationsQuery.data?.items ?? [];
+  const notifications = React.useMemo(
+    () => notificationsQuery.data?.items ?? [],
+    [notificationsQuery.data?.items],
+  );
   const unreadCount = unreadCountQuery.data?.item?.unreadCount ?? 0;
-  const filteredNotifications = showUnreadOnly
-    ? notifications.filter((n: UserNotificationItem) => n.readAt === null)
-    : notifications;
+
+  const filteredNotifications = React.useMemo(() => {
+    if (filter === "unread") {
+      return notifications.filter((notification) => notification.readAt === null);
+    }
+
+    if (filter === "read") {
+      return notifications.filter((notification) => notification.readAt !== null);
+    }
+
+    return notifications;
+  }, [filter, notifications]);
+
+  const hasNotifications = notifications.length > 0;
 
   async function handleMarkRead(notification: UserNotificationItem) {
-    if (notification.readAt === null) {
-      try {
-        await markReadMutation.mutateAsync(notification.id);
-      } catch (error) {
-        Alert.alert(
-          t("notifications.error.title"),
-          t("notifications.error.markReadFailed"),
-        );
-      }
+    if (notification.readAt !== null) {
+      return;
     }
+
+    await markReadMutation.mutateAsync(notification.id);
   }
 
   async function handleMarkAllRead() {
     try {
-      await markAllReadMutation.mutateAsync(undefined);
-    } catch (error) {
+      await markAllReadMutation.mutateAsync();
+      await Promise.all([
+        notificationsQuery.refetch(),
+        unreadCountQuery.refetch(),
+      ]);
+    } catch {
       Alert.alert(
-        t("notifications.error.title"),
-        t("notifications.error.markAllReadFailed"),
+        t("practitionerNotifications.actionFailedTitle"),
+        t("practitionerNotifications.actionFailedBody"),
       );
     }
   }
 
-  function handleNotificationPress(notification: UserNotificationItem) {
-    if (notification.readAt === null) {
-      handleMarkRead(notification);
+  async function handleNotificationPress(notification: UserNotificationItem) {
+    if (
+      pendingNotificationId ||
+      markReadMutation.isPending ||
+      markAllReadMutation.isPending
+    ) {
+      return;
     }
 
-    if (notification.action?.href) {
-      try {
-        const route = resolvePatientNotificationRoute(notification.action.href);
-        if (route) {
-          router.push(route);
-        }
-      } catch (error) {
-        console.warn("Invalid notification href:", notification.action?.href);
+    setPendingNotificationId(notification.id);
+
+    try {
+      await handleMarkRead(notification);
+
+      const route = resolvePractitionerNotificationRoute(
+        notification.action?.href ?? "/",
+        notification.typeSlug,
+      );
+
+      if (!route) {
+        Alert.alert(
+          t("practitionerNotifications.unsupportedAlertTitle"),
+          t("practitionerNotifications.unsupportedAlertBody"),
+        );
+        return;
       }
+
+      router.push(route as any);
+    } catch {
+      Alert.alert(
+        t("practitionerNotifications.actionFailedTitle"),
+        t("practitionerNotifications.actionFailedBody"),
+      );
+    } finally {
+      setPendingNotificationId(null);
     }
   }
 
   return (
     <Screen safeArea bg="background">
-      <Header
-        title={t("practitioner.notifications.title")}
-        showBack
-        rightElement={
-          unreadCount > 0 ? (
-            <TouchableOpacity
-              onPress={() => void handleMarkAllRead()}
-              disabled={markAllReadMutation.isPending}
-            >
-              <Text color={theme.colors.primary} weight="600">
-                {markAllReadMutation.isPending
-                  ? t("notifications.markAllLoading")
-                  : t("notifications.markAll")}
-              </Text>
-            </TouchableOpacity>
-          ) : null
-        }
-      />
-
-      {filteredNotifications.length > 0 && (
-        <View style={styles.actionBar}>
-          <TouchableOpacity
-            onPress={() => setShowUnreadOnly(!showUnreadOnly)}
-            style={styles.filterButton}
-          >
-            <Text
-              color={
-                showUnreadOnly ? theme.colors.primary : theme.colors.textMuted
-              }
-              style={styles.filterText}
-            >
-              {showUnreadOnly
-                ? t("notifications.filter.unread")
-                : t("notifications.filter.all")}
-            </Text>
-          </TouchableOpacity>
-        </View>
-      )}
+      <Header title={t("practitionerNotifications.title")} showBack />
 
       {notificationsQuery.isLoading && !notifications.length ? (
         <LoadingState />
       ) : notificationsQuery.isError ? (
         <ErrorState
-          title={t("notifications.error.title")}
-          message={t("notifications.error.loadFailed")}
+          title={t("practitionerNotifications.errorTitle")}
+          message={t("practitionerNotifications.errorBody")}
           onRetry={() => notificationsQuery.refetch()}
         />
-      ) : filteredNotifications.length === 0 ? (
-        <EmptyState
-          title={t("notifications.empty.title")}
-          description={t("notifications.empty.message")}
-          icon={
-            <Ionicons
-              name="notifications-outline"
-              size={48}
-              color={theme.colors.textMuted}
-            />
-          }
-        />
       ) : (
-        <ScrollView style={styles.list}>
-          {filteredNotifications.map((notification: UserNotificationItem) => (
-            <TouchableOpacity
-              key={notification.id}
-              onPress={() => handleNotificationPress(notification)}
-              activeOpacity={0.7}
-            >
-              <Card
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          <Card variant="outlined" padding="sm" style={styles.summaryCard}>
+            <View style={styles.summaryRow}>
+              <View
                 style={[
-                  styles.notificationCard,
+                  styles.summaryIcon,
                   {
                     backgroundColor:
-                      notification.readAt !== null
-                        ? theme.colors.surface
-                        : theme.colors.primary + "08",
+                      unreadCount > 0
+                        ? theme.colors.primaryLight
+                        : theme.colors.surfaceSecondary,
+                    borderColor: theme.colors.borderLight,
                   },
                 ]}
               >
-                <View style={styles.notificationContent}>
-                  <View style={styles.notificationHeader}>
-                    <Text
-                      style={[
-                        styles.notificationTitle,
-                        { color: theme.colors.textPrimary },
-                      ]}
-                      weight={notification.readAt !== null ? "normal" : "bold"}
-                    >
-                      {notification.title}
-                    </Text>
+                <Ionicons
+                  name="notifications-outline"
+                  size={20}
+                  color={theme.colors.primary}
+                />
+              </View>
 
-                    {notification.readAt === null && (
-                      <View
-                        style={[
-                          styles.unreadBadge,
-                          { backgroundColor: theme.colors.primary },
-                        ]}
-                      />
-                    )}
-                  </View>
+              <View style={styles.summaryTextWrap}>
+                <Text weight="700" style={styles.summaryTitle}>
+                  {t("practitionerNotifications.centerTitle")}
+                </Text>
+                <Text
+                  color={theme.colors.textSecondary}
+                  style={styles.summaryBody}
+                >
+                  {unreadCount > 0
+                    ? t("practitionerNotifications.summaryBody", {
+                        count: unreadCount,
+                      })
+                    : t("practitionerNotifications.summaryEmptyBody")}
+                </Text>
+              </View>
 
-                  {notification.body && (
-                    <Text
-                      style={[
-                        styles.notificationMessage,
-                        { color: theme.colors.textSecondary },
-                      ]}
-                      numberOfLines={2}
-                    >
-                      {notification.body}
-                    </Text>
-                  )}
+              <View
+                style={[
+                  styles.summaryCountPill,
+                  {
+                    backgroundColor:
+                      unreadCount > 0
+                        ? theme.colors.primaryLight
+                        : theme.colors.surfaceSecondary,
+                    borderColor: theme.colors.borderLight,
+                  },
+                ]}
+              >
+                <Text
+                  weight="700"
+                  color={
+                    unreadCount > 0
+                      ? theme.colors.primary
+                      : theme.colors.textSecondary
+                  }
+                  style={styles.summaryCountText}
+                >
+                  {unreadCount}
+                </Text>
+              </View>
+            </View>
 
-                  <Text
-                    style={[
-                      styles.notificationTime,
-                      { color: theme.colors.textMuted },
-                    ]}
+            {unreadCount > 0 ? (
+              <TouchableOpacity
+                onPress={() => void handleMarkAllRead()}
+                disabled={markAllReadMutation.isPending}
+                activeOpacity={0.84}
+                style={[
+                  styles.summaryAction,
+                  {
+                    borderColor: theme.colors.borderStrong,
+                    backgroundColor: theme.colors.surface,
+                  },
+                  markAllReadMutation.isPending ? styles.summaryActionDisabled : null,
+                ]}
+              >
+                {markAllReadMutation.isPending ? (
+                  <ActivityIndicator size="small" color={theme.colors.primary} />
+                ) : null}
+                <Text
+                  color={theme.colors.primary}
+                  weight="600"
+                  style={styles.summaryActionText}
+                >
+                  {markAllReadMutation.isPending
+                    ? t("practitionerNotifications.markAllLoading")
+                    : t("practitionerNotifications.markAll")}
+                </Text>
+              </TouchableOpacity>
+            ) : null}
+          </Card>
+
+          {hasNotifications ? (
+            <View style={styles.filterRow}>
+              <FilterChip
+                label={t("practitionerNotifications.filters.all")}
+                selected={filter === "all"}
+                onPress={() => setFilter("all")}
+              />
+              <FilterChip
+                label={t("practitionerNotifications.filters.unread")}
+                selected={filter === "unread"}
+                onPress={() => setFilter("unread")}
+              />
+              <FilterChip
+                label={t("practitionerNotifications.filters.read")}
+                selected={filter === "read"}
+                onPress={() => setFilter("read")}
+              />
+            </View>
+          ) : null}
+
+          {!hasNotifications ? (
+            <EmptyState
+              title={t("practitionerNotifications.emptyTitle")}
+              description={t("practitionerNotifications.emptyBody")}
+              icon={
+                <Ionicons
+                  name="notifications-outline"
+                  size={48}
+                  color={theme.colors.textMuted}
+                />
+              }
+            />
+          ) : filteredNotifications.length === 0 ? (
+            <EmptyState
+              title={
+                filter === "read"
+                  ? t("practitionerNotifications.emptyReadTitle")
+                  : t("practitionerNotifications.emptyUnreadTitle")
+              }
+              description={
+                filter === "read"
+                  ? t("practitionerNotifications.emptyReadBody")
+                  : t("practitionerNotifications.emptyUnreadBody")
+              }
+              icon={
+                <Ionicons
+                  name="checkmark-done-outline"
+                  size={48}
+                  color={theme.colors.textMuted}
+                />
+              }
+            />
+          ) : (
+            <View style={styles.list}>
+              {filteredNotifications.map((notification) => {
+                const isUnread = notification.readAt === null;
+                const presentation =
+                  resolvePractitionerNotificationPresentation(
+                    notification,
+                    i18n.language,
+                    t,
+                  );
+                const actionRoute = notification.action?.href
+                  ? resolvePractitionerNotificationRoute(
+                      notification.action.href,
+                      notification.typeSlug,
+                    )
+                  : resolvePractitionerNotificationRoute(
+                      "/",
+                      notification.typeSlug,
+                    );
+                const isPending = pendingNotificationId === notification.id;
+                const isDisabled =
+                  Boolean(pendingNotificationId) ||
+                  markReadMutation.isPending ||
+                  markAllReadMutation.isPending;
+
+                return (
+                  <TouchableOpacity
+                    key={notification.id}
+                    activeOpacity={0.88}
+                    disabled={isDisabled}
+                    onPress={() => void handleNotificationPress(notification)}
                   >
-                    {formatNotificationDateTime(
-                      notification.createdAt,
-                      i18n.language,
-                    )}
-                  </Text>
-                </View>
+                    <Card
+                      variant="outlined"
+                      padding="sm"
+                      style={[
+                        styles.notificationCard,
+                        {
+                          borderColor: isUnread
+                            ? theme.colors.primary + "38"
+                            : theme.colors.borderLight,
+                          backgroundColor: isUnread
+                            ? theme.colors.primaryLight + "18"
+                            : theme.colors.surface,
+                          opacity: isPending ? 0.72 : 1,
+                        },
+                      ]}
+                    >
+                      <View style={styles.itemTopRow}>
+                        <View style={styles.itemTextWrap}>
+                          <View style={styles.itemTitleRow}>
+                            <Text
+                              weight={isUnread ? "700" : "600"}
+                              style={[
+                                styles.itemTitle,
+                                {
+                                  color: isUnread
+                                    ? theme.colors.textPrimary
+                                    : theme.colors.textSecondary,
+                                },
+                              ]}
+                            >
+                              {presentation.title}
+                            </Text>
 
-                {notification.action?.href && (
-                  <Ionicons
-                    name="chevron-forward"
-                    size={20}
-                    color={theme.colors.textMuted}
-                  />
-                )}
-              </Card>
-            </TouchableOpacity>
-          ))}
+                            {isUnread ? (
+                              <View
+                                style={[
+                                  styles.unreadPill,
+                                  {
+                                    backgroundColor: theme.colors.primaryLight,
+                                    borderColor: theme.colors.primary + "28",
+                                  },
+                                ]}
+                              >
+                                <View
+                                  style={[
+                                    styles.unreadDot,
+                                    { backgroundColor: theme.colors.primary },
+                                  ]}
+                                />
+                                <Text
+                                  color={theme.colors.primary}
+                                  weight="600"
+                                  style={styles.unreadPillText}
+                                >
+                                  {t("practitionerNotifications.statusUnread")}
+                                </Text>
+                              </View>
+                            ) : null}
+                          </View>
+
+                          {presentation.body ? (
+                            <Text
+                              color={
+                                isUnread
+                                  ? theme.colors.textSecondary
+                                  : theme.colors.textMuted
+                              }
+                              style={styles.itemBody}
+                              numberOfLines={3}
+                            >
+                              {presentation.body}
+                            </Text>
+                          ) : null}
+                        </View>
+                      </View>
+
+                      <View style={styles.itemFooter}>
+                        <Text
+                          color={theme.colors.textMuted}
+                          style={styles.itemDate}
+                        >
+                          {formatPractitionerNotificationDateTime(
+                            notification.createdAt,
+                            i18n.language,
+                          )}
+                        </Text>
+
+                        <Ionicons
+                          name="chevron-forward"
+                          size={16}
+                          color={actionRoute ? theme.colors.primary : theme.colors.textMuted}
+                        />
+                      </View>
+                    </Card>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          )}
         </ScrollView>
       )}
     </Screen>
@@ -248,66 +438,134 @@ export default function PractitionerNotificationsScreen() {
 }
 
 const styles = StyleSheet.create({
-  actionBar: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+  scrollContent: {
     paddingHorizontal: 16,
-    paddingVertical: 12,
-    gap: 8,
+    paddingTop: 12,
+    paddingBottom: 28,
   },
-  filterButton: {
-    flex: 1,
-    paddingVertical: 8,
+  summaryCard: {
+    marginBottom: 12,
   },
-  filterText: {
-    fontSize: 14,
-    fontWeight: "500",
-  },
-  markAllButton: {
-    paddingHorizontal: 12,
-  },
-  list: {
-    flex: 1,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-  },
-  notificationCard: {
-    marginVertical: 8,
-    padding: 12,
+  summaryRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
     gap: 12,
   },
-  notificationContent: {
-    flex: 1,
-    gap: 6,
+  summaryIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
   },
-  notificationHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    gap: 8,
-  },
-  notificationTitle: {
+  summaryTextWrap: {
     flex: 1,
-    fontSize: 14,
+    gap: 4,
+  },
+  summaryTitle: {
+    fontSize: 16,
+    lineHeight: 22,
+  },
+  summaryBody: {
+    fontSize: 13,
     lineHeight: 20,
   },
-  unreadBadge: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    flexShrink: 0,
-    marginTop: 6,
+  summaryCountPill: {
+    minWidth: 42,
+    height: 32,
+    paddingHorizontal: 10,
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
   },
-  notificationMessage: {
+  summaryCountText: {
     fontSize: 13,
     lineHeight: 18,
   },
-  notificationTime: {
+  summaryAction: {
+    marginTop: 10,
+    minHeight: 36,
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  },
+  summaryActionDisabled: {
+    opacity: 0.72,
+  },
+  summaryActionText: {
+    fontSize: 12,
+    lineHeight: 16,
+  },
+  filterRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    marginBottom: 6,
+  },
+  list: {
+    gap: 10,
+    paddingTop: 4,
+  },
+  notificationCard: {
+    borderRadius: 18,
+  },
+  itemTopRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    gap: 12,
+  },
+  itemTextWrap: {
+    flex: 1,
+    gap: 6,
+  },
+  itemTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  itemTitle: {
+    fontSize: 15,
+    lineHeight: 22,
+    flexShrink: 1,
+  },
+  itemBody: {
+    fontSize: 13,
+    lineHeight: 20,
+  },
+  itemFooter: {
+    marginTop: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+  },
+  itemDate: {
     fontSize: 11,
     lineHeight: 14,
+  },
+  unreadPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    height: 24,
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    borderWidth: 1,
+  },
+  unreadDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 999,
+  },
+  unreadPillText: {
+    fontSize: 12,
+    lineHeight: 16,
   },
 });

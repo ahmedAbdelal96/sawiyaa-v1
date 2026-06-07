@@ -1,6 +1,7 @@
 import React from "react";
 import { ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import {
   Card,
@@ -16,13 +17,20 @@ import {
   usePractitionerWalletSummary,
 } from "../../../src/features/practitioner/finance/hooks";
 import {
-  formatDateTime,
+  formatDateShort,
   formatMoney,
   monthYearLabel,
+  settlementStatusLabel,
   settlementStatusTone,
 } from "../../../src/features/practitioner/finance/utils";
+import type { PractitionerSettlementItem } from "../../../src/features/practitioner/finance/types";
 import { useTheme } from "../../../src/providers/ThemeProvider";
-import { useRouter } from "expo-router";
+import {
+  CompactActionLink,
+  CompactEmptyState,
+  CompactSectionHeader,
+  resolvePractitionerTone,
+} from "../../../src/features/practitioner/ui/compact";
 
 const PREVIEW_LIMIT = 3;
 
@@ -33,10 +41,13 @@ export default function PractitionerWalletScreen() {
 
   const locale = i18n.language?.startsWith("ar") ? "ar-SA" : "en-US";
   const walletQuery = usePractitionerWalletSummary();
-  const settlementsQuery = usePractitionerSettlementItems({ page: 1, limit: PREVIEW_LIMIT });
+  const settlementsQuery = usePractitionerSettlementItems({
+    page: 1,
+    limit: PREVIEW_LIMIT,
+  });
 
   const wallet = walletQuery.data?.item ?? null;
-  const recentSettlements = settlementsQuery.data?.items ?? [];
+  const recentSettlements = settlementsQuery.data?.items.slice(0, 3) ?? [];
 
   if (walletQuery.isLoading) {
     return (
@@ -67,60 +78,102 @@ export default function PractitionerWalletScreen() {
         title={t("practitioner.finance.wallet.title")}
         showBack
         rightElement={
-          <TouchableOpacity onPress={() => walletQuery.refetch()}>
+          <TouchableOpacity onPress={() => walletQuery.refetch()} style={styles.headerAction}>
             <Ionicons name="refresh-outline" size={22} color={theme.colors.textPrimary} />
           </TouchableOpacity>
         }
       />
 
       <ScrollView contentContainerStyle={styles.content}>
-        <Card variant="elevated" padding="lg" style={styles.heroCard}>
-          <Text weight="bold" style={styles.heroTitle}>
-            {t("practitioner.finance.wallet.title")}
-          </Text>
-          <Text color={theme.colors.textSecondary} style={styles.heroSubtitle}>
-            {t("practitioner.finance.wallet.subtitle")}
-          </Text>
+        <Card variant="outlined" padding="sm" style={styles.summaryCard}>
+          <CompactSectionHeader
+            title={t("practitioner.finance.wallet.summary")}
+            subtitle={t("practitioner.finance.wallet.balanceHint")}
+          />
 
-          <View style={styles.primaryBalance}>
+          <View style={styles.balanceBlock}>
             <Text color={theme.colors.textMuted} style={styles.balanceLabel}>
               {t("practitioner.finance.wallet.available")}
             </Text>
-            <Text weight="bold" style={styles.balanceValue}>
-              {formatMoney(wallet?.availableBalance ?? "0", wallet?.currency ?? null, locale, t("practitioner.finance.common.currencyUnavailable"))}
-            </Text>
-            <Text color={theme.colors.textSecondary} style={styles.balanceHint}>
-              {t("practitioner.finance.wallet.balanceHint")}
+            <Text weight="700" style={styles.balanceValue}>
+              {formatMoney(
+                wallet?.availableBalance ?? "0",
+                wallet?.currency ?? null,
+                locale,
+                t("practitioner.finance.common.currencyUnavailable"),
+              )}
             </Text>
           </View>
-        </Card>
 
-        <Card variant="outlined" padding="lg">
-          <Text weight="600" style={styles.sectionTitle}>
-            {t("practitioner.finance.wallet.summary")}
-          </Text>
           <View style={styles.metricGrid}>
-            <MetricCard label={t("practitioner.finance.wallet.available")} value={formatMoney(wallet?.availableBalance ?? "0", wallet?.currency ?? null, locale, t("practitioner.finance.common.currencyUnavailable"))} />
-            <MetricCard label={t("practitioner.finance.wallet.pending")} value={formatMoney(wallet?.pendingBalance ?? "0", wallet?.currency ?? null, locale, t("practitioner.finance.common.currencyUnavailable"))} />
-            <MetricCard label={t("practitioner.finance.wallet.reserved")} value={formatMoney(wallet?.reservedBalance ?? "0", wallet?.currency ?? null, locale, t("practitioner.finance.common.currencyUnavailable"))} />
-            <MetricCard label={t("practitioner.finance.wallet.totalEarned")} value={formatMoney(wallet?.totalEarned ?? "0", wallet?.currency ?? null, locale, t("practitioner.finance.common.currencyUnavailable"))} />
-            <MetricCard label={t("practitioner.finance.wallet.lifetimePaidOut")} value={formatMoney(wallet?.lifetimePaidOut ?? "0", wallet?.currency ?? null, locale, t("practitioner.finance.common.currencyUnavailable"))} />
-            <MetricCard label={t("practitioner.finance.wallet.lastLedgerEntryAt")} value={formatDateTime(wallet?.lastLedgerEntryAt ?? null, locale)} />
-            <MetricCard label={t("practitioner.finance.wallet.updatedAt")} value={formatDateTime(wallet?.updatedAt ?? null, locale)} />
+            <MetricCard
+              tone="warning"
+              label={t("practitioner.finance.wallet.pending")}
+              hint={t("practitioner.finance.wallet.hints.pending")}
+              value={formatMoney(
+                wallet?.pendingBalance ?? "0",
+                wallet?.currency ?? null,
+                locale,
+                t("practitioner.finance.common.currencyUnavailable"),
+              )}
+            />
+            <MetricCard
+              tone="neutral"
+              label={t("practitioner.finance.wallet.reserved")}
+              hint={t("practitioner.finance.wallet.hints.reserved")}
+              value={formatMoney(
+                wallet?.reservedBalance ?? "0",
+                wallet?.currency ?? null,
+                locale,
+                t("practitioner.finance.common.currencyUnavailable"),
+              )}
+            />
+            <MetricCard
+              tone="success"
+              label={t("practitioner.finance.wallet.totalEarned")}
+              hint={t("practitioner.finance.wallet.hints.totalEarned")}
+              value={formatMoney(
+                wallet?.totalEarned ?? "0",
+                wallet?.currency ?? null,
+                locale,
+                t("practitioner.finance.common.currencyUnavailable"),
+              )}
+            />
+            <MetricCard
+              tone="info"
+              label={t("practitioner.finance.wallet.lifetimePaidOut")}
+              hint={t("practitioner.finance.wallet.hints.lifetimePaidOut")}
+              value={formatMoney(
+                wallet?.lifetimePaidOut ?? "0",
+                wallet?.currency ?? null,
+                locale,
+                t("practitioner.finance.common.currencyUnavailable"),
+              )}
+            />
+          </View>
+
+          <View style={styles.detailRows}>
+            <DetailRow
+              label={t("practitioner.finance.wallet.lastLedgerEntryAt")}
+              value={formatDateShort(wallet?.lastLedgerEntryAt ?? null, locale)}
+            />
+            <DetailRow
+              label={t("practitioner.finance.wallet.updatedAt")}
+              value={formatDateShort(wallet?.updatedAt ?? null, locale)}
+            />
           </View>
         </Card>
 
-        <Card variant="outlined" padding="lg">
-          <View style={styles.sectionHeader}>
-            <Text weight="600" style={styles.sectionTitle}>
-              {t("practitioner.finance.wallet.recentSettlements")}
-            </Text>
-            <TouchableOpacity onPress={() => router.push("/(practitioner)/finance/settlements")}>
-              <Text color={theme.colors.textBrand} weight="600">
-                {t("practitioner.finance.common.viewAll")}
-              </Text>
-            </TouchableOpacity>
-          </View>
+        <Card variant="outlined" padding="sm">
+          <CompactSectionHeader
+            title={t("practitioner.finance.wallet.recentSettlements")}
+            action={
+              <CompactActionLink
+                label={t("practitioner.finance.common.viewAll")}
+                onPress={() => router.push("/(practitioner)/finance/settlements")}
+              />
+            }
+          />
           {settlementsQuery.isLoading ? (
             <LoadingState message={t("practitioner.finance.common.loading")} />
           ) : settlementsQuery.isError ? (
@@ -132,39 +185,15 @@ export default function PractitionerWalletScreen() {
           ) : recentSettlements.length ? (
             <View style={styles.listWrap}>
               {recentSettlements.map((item) => (
-                <View key={item.id} style={[styles.settlementRow, { borderColor: theme.colors.borderLight }]}>
-                  <View style={styles.settlementHeader}>
-                    <View style={styles.settlementText}>
-                      <Text weight="600" style={styles.settlementTitle} numberOfLines={1}>
-                        {monthYearLabel(item.batchPeriodYear, item.batchPeriodMonth, locale)}
-                      </Text>
-                      <Text color={theme.colors.textMuted} style={styles.settlementMeta}>
-                        {item.externalPayoutRef
-                          ? `${t("practitioner.finance.settlements.received")} ${item.externalPayoutRef}`
-                          : t("practitioner.finance.settlements.pendingPayout")}
-                      </Text>
-                    </View>
-                    <Text weight="600" style={styles.settlementAmount}>
-                      {formatMoney(item.amountNet, item.currency, locale, t("practitioner.finance.common.currencyUnavailable"))}
-                    </Text>
-                  </View>
-                  <View style={styles.badgeRow}>
-                    <StatusBadge
-                      label={t(`practitioner.finance.settlements.statuses.${item.status}`, item.status)}
-                      status={settlementStatusTone(item.status)}
-                    />
-                    <StatusBadge
-                      label={t(`practitioner.finance.settlements.statuses.${item.batchStatus}`, item.batchStatus)}
-                      status={settlementStatusTone(item.batchStatus)}
-                    />
-                  </View>
-                </View>
+                <SettlementRow key={item.id} item={item} locale={locale} t={t} />
               ))}
             </View>
           ) : (
-            <Text color={theme.colors.textSecondary}>
-              {t("practitioner.finance.settlements.emptyBody")}
-            </Text>
+            <CompactEmptyState
+              title={t("practitioner.finance.settlements.emptyTitle")}
+              description={t("practitioner.finance.settlements.emptyBody")}
+              icon={<Ionicons name="layers-outline" size={28} color={theme.colors.textMuted} />}
+            />
           )}
         </Card>
       </ScrollView>
@@ -172,111 +201,208 @@ export default function PractitionerWalletScreen() {
   );
 }
 
-function MetricCard({ label, value }: { label: string; value: string }) {
+function MetricCard({
+  label,
+  hint,
+  value,
+  tone = "neutral",
+}: {
+  label: string;
+  hint: string;
+  value: string;
+  tone?: "neutral" | "success" | "warning" | "info";
+}) {
   const { theme } = useTheme();
+  const palette = resolvePractitionerTone(theme, tone);
 
   return (
-    <View style={[styles.metricCard, { backgroundColor: theme.colors.surfaceSecondary }]}>
+    <View style={[styles.metricCard, { backgroundColor: palette.surface, borderColor: palette.border }]}>
       <Text color={theme.colors.textMuted} style={styles.metricLabel}>
         {label}
       </Text>
-      <Text weight="600" style={styles.metricValue}>
+      <Text weight="600" style={[styles.metricValue, { color: palette.accent }]}>
+        {value}
+      </Text>
+      <Text color={theme.colors.textMuted} style={styles.metricHint}>
+        {hint}
+      </Text>
+    </View>
+  );
+}
+
+function DetailRow({ label, value }: { label: string; value: string }) {
+  const { theme } = useTheme();
+
+  return (
+    <View style={[styles.detailRow, { borderColor: theme.colors.borderLight }]}>
+      <Text color={theme.colors.textMuted} style={styles.detailLabel}>
+        {label}
+      </Text>
+      <Text weight="600" style={styles.detailValue} numberOfLines={1}>
         {value}
       </Text>
     </View>
   );
 }
 
+function SettlementRow({
+  item,
+  locale,
+  t,
+}: {
+  item: PractitionerSettlementItem;
+  locale: string;
+  t: ReturnType<typeof useTranslation>["t"];
+}) {
+  const { theme } = useTheme();
+  const palette = resolvePractitionerTone(
+    theme,
+    item.status === "PAID"
+      ? "success"
+      : item.status === "FAILED" || item.status === "CANCELLED"
+        ? "danger"
+        : item.status === "READY" || item.status === "PROCESSING"
+          ? "warning"
+          : "neutral",
+  );
+
+  return (
+    <View
+      style={[
+        styles.settlementRow,
+        { backgroundColor: palette.surface, borderColor: palette.border },
+      ]}
+    >
+      <View style={styles.settlementTop}>
+        <View style={styles.settlementText}>
+          <Text weight="600" style={styles.settlementTitle} numberOfLines={1}>
+            {monthYearLabel(item.batchPeriodYear, item.batchPeriodMonth, locale)}
+          </Text>
+          <Text color={theme.colors.textMuted} style={styles.settlementMeta} numberOfLines={1}>
+            {formatDateShort(item.paidAt ?? item.failedAt ?? item.createdAt, locale)}
+          </Text>
+        </View>
+        <Text weight="600" style={[styles.settlementAmount, { color: palette.accent }]}>
+          {formatMoney(
+            item.amountNet,
+            item.currency ?? null,
+            locale,
+            t("practitioner.finance.common.currencyUnavailable"),
+          )}
+        </Text>
+      </View>
+
+      <View style={styles.badgeRow}>
+        <StatusBadge
+          label={settlementStatusLabel(item.status, locale)}
+          status={settlementStatusTone(item.status)}
+        />
+      </View>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   content: {
-    paddingHorizontal: 24,
-    paddingTop: 18,
+    paddingHorizontal: 16,
+    paddingTop: 12,
     paddingBottom: 24,
-    gap: 16,
+    gap: 10,
   },
-  heroCard: {
-    gap: 14,
+  headerAction: {
+    padding: 8,
   },
-  heroTitle: {
-    fontSize: 22,
+  summaryCard: {
+    gap: 10,
   },
-  heroSubtitle: {
-    fontSize: 14,
-    lineHeight: 22,
-  },
-  primaryBalance: {
-    borderRadius: 18,
-    padding: 18,
-    gap: 6,
+  balanceBlock: {
+    borderRadius: 16,
+    paddingVertical: 8,
+    gap: 4,
   },
   balanceLabel: {
-    fontSize: 12,
+    fontSize: 10,
   },
   balanceValue: {
-    fontSize: 28,
-  },
-  balanceHint: {
-    fontSize: 13,
-    lineHeight: 20,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    marginBottom: 12,
+    fontSize: 20,
+    lineHeight: 26,
   },
   metricGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 12,
+    gap: 6,
   },
   metricCard: {
     width: "48%",
-    borderRadius: 18,
-    padding: 18,
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    gap: 2,
   },
   metricLabel: {
-    fontSize: 12,
-    marginBottom: 6,
+    fontSize: 10,
   },
   metricValue: {
-    fontSize: 15,
-    lineHeight: 22,
+    fontSize: 12,
+    lineHeight: 16,
   },
-  sectionHeader: {
+  metricHint: {
+    fontSize: 9,
+    lineHeight: 12,
+  },
+  detailRows: {
+    gap: 6,
+  },
+  detailRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 12,
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+  },
+  detailLabel: {
+    fontSize: 10,
+    flex: 1,
+  },
+  detailValue: {
+    fontSize: 11,
+    flexShrink: 0,
+    maxWidth: "58%",
+    textAlign: "left",
   },
   listWrap: {
-    gap: 10,
+    gap: 6,
   },
   settlementRow: {
     borderWidth: 1,
-    borderRadius: 18,
-    padding: 18,
-    gap: 10,
+    borderRadius: 14,
+    padding: 8,
+    gap: 5,
   },
-  settlementHeader: {
+  settlementTop: {
     flexDirection: "row",
     justifyContent: "space-between",
-    gap: 12,
+    gap: 8,
   },
   settlementText: {
     flex: 1,
   },
   settlementTitle: {
-    fontSize: 16,
+    fontSize: 12,
   },
   settlementMeta: {
-    fontSize: 12,
-    marginTop: 4,
+    fontSize: 9,
+    marginTop: 1,
   },
   settlementAmount: {
-    fontSize: 16,
+    fontSize: 12,
   },
   badgeRow: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 8,
+    gap: 4,
   },
 });

@@ -28,6 +28,18 @@ export class PatientUserRepository {
     });
   }
 
+  findById(userId: string, tx?: Prisma.TransactionClient) {
+    return this.getDb(tx).user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        displayName: true,
+        status: true,
+        roles: true,
+      },
+    });
+  }
+
   updatePreferences(
     userId: string,
     data: {
