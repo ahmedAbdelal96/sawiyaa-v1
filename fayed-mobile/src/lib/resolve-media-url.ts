@@ -1,3 +1,4 @@
+import { Platform } from "react-native";
 import { apiClient } from "./api";
 
 export function resolveMediaUrl(url?: string | null) {
@@ -11,6 +12,18 @@ export function resolveMediaUrl(url?: string | null) {
   }
 
   if (/^https?:\/\//i.test(trimmed)) {
+    try {
+      const parsed = new URL(trimmed);
+      if (
+        Platform.OS === "web" &&
+        parsed.hostname === "files.local"
+      ) {
+        return null;
+      }
+    } catch {
+      return trimmed;
+    }
+
     return trimmed;
   }
 

@@ -25,4 +25,9 @@ export class CreateAcademyEnrollmentDto {
   @IsString()
   @MaxLength(191)
   sourceLabel?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  returnUrlBase?: string;
 }

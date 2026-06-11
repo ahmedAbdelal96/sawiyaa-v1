@@ -339,23 +339,28 @@ export class AcademyRepository {
   updateEnrollment(
     enrollmentId: string,
     data: Prisma.AcademyEnrollmentUncheckedUpdateInput,
+    tx?: Prisma.TransactionClient,
   ) {
-    return this.prisma.academyEnrollment.update({
+    return (tx ?? this.prisma).academyEnrollment.update({
       where: { id: enrollmentId },
       data,
       include: this.enrollmentInclude(),
     });
   }
 
-  createPaymentAttempt(data: Prisma.AcademyPaymentAttemptUncheckedCreateInput) {
-    return this.prisma.academyPaymentAttempt.create({ data });
+  createPaymentAttempt(
+    data: Prisma.AcademyPaymentAttemptUncheckedCreateInput,
+    tx?: Prisma.TransactionClient,
+  ) {
+    return (tx ?? this.prisma).academyPaymentAttempt.create({ data });
   }
 
   updatePaymentAttempt(
     paymentAttemptId: string,
     data: Prisma.AcademyPaymentAttemptUncheckedUpdateInput,
+    tx?: Prisma.TransactionClient,
   ) {
-    return this.prisma.academyPaymentAttempt.update({
+    return (tx ?? this.prisma).academyPaymentAttempt.update({
       where: { id: paymentAttemptId },
       data,
     });

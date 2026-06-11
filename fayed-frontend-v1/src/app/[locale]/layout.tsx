@@ -1,10 +1,11 @@
-import { NextIntlClientProvider, hasLocale } from "next-intl";
+import { hasLocale } from "next-intl";
 import { notFound } from "next/navigation";
 import { routing } from "@/i18n/routing";
 import { setRequestLocale, getMessages } from "next-intl/server";
 import { getUserData } from "@/lib/auth/server";
 import StoreInitializer from "@/components/shared/StoreInitializer";
 import type { AuthTenant } from "@/stores/auth-store";
+import { AppIntlProvider } from "@/i18n/IntlProvider";
 
 type Props = {
   children: React.ReactNode;
@@ -37,7 +38,7 @@ export default async function LocaleLayout({ children, params }: Props) {
 
   return (
     <div dir={dir} className={locale === "ar" ? "font-arabic" : ""}>
-      <NextIntlClientProvider locale={locale} messages={messages}>
+      <AppIntlProvider locale={locale} messages={messages}>
         <StoreInitializer
           user={userData ? {
             id: userData.id,
@@ -50,7 +51,7 @@ export default async function LocaleLayout({ children, params }: Props) {
           tenant={(userData?.tenant || null) as AuthTenant | null}
         />
         {children}
-      </NextIntlClientProvider>
+      </AppIntlProvider>
     </div>
   );
 }

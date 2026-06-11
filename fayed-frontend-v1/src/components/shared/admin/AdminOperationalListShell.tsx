@@ -1,18 +1,25 @@
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import {
+  AdminFilterCard,
   AdminMetricCard,
   AdminPageHeader,
-  AdminSectionCard,
+  AdminStatsGrid,
+  AdminTableSection,
 } from "@/components/shared/admin/AdminDashboardKit";
+
+// ─── AdminSummaryCard ─────────────────────────────────────────────────────────
+// Convenience alias kept for backward-compat with existing pages.
 
 export type AdminSummaryCardProps = {
   label: string;
   value: ReactNode;
   hint?: ReactNode;
   icon?: ReactNode;
-  tone?: "neutral" | "primary" | "success" | "warning";
+  tone?: "neutral" | "primary" | "success" | "warning" | "danger" | "info" | "finance";
   className?: string;
+  metricKey?: string;
+  semantic?: string;
 };
 
 export function AdminSummaryCard({
@@ -22,9 +29,25 @@ export function AdminSummaryCard({
   icon,
   tone = "neutral",
   className,
+  metricKey,
+  semantic,
 }: AdminSummaryCardProps) {
-  return <AdminMetricCard label={label} value={value} hint={hint} icon={icon} tone={tone} className={className} />;
+  return (
+    <AdminMetricCard
+      label={label}
+      value={value}
+      hint={hint}
+      icon={icon}
+      tone={tone}
+      className={className}
+      metricKey={metricKey}
+      semantic={semantic}
+    />
+  );
 }
+
+// ─── AdminSummaryCardsRow ─────────────────────────────────────────────────────
+// Convenience alias — wraps AdminStatsGrid so existing consumers don't break.
 
 export function AdminSummaryCardsRow({
   children,
@@ -33,37 +56,38 @@ export function AdminSummaryCardsRow({
   children: ReactNode;
   className?: string;
 }) {
-  return (
-    <section
-      className={cn(
-        "grid gap-3 sm:grid-cols-2 lg:grid-cols-4",
-        className,
-      )}
-    >
-      {children}
-    </section>
-  );
+  return <AdminStatsGrid className={className}>{children}</AdminStatsGrid>;
 }
 
+// ─── AdminOperationalListShell ────────────────────────────────────────────────
+
 export type AdminOperationalListShellProps = {
+  // Header
   title: ReactNode;
   eyebrow?: ReactNode;
   description?: ReactNode;
   actions?: ReactNode;
+
+  // Optional notice/banner above stats
   notice?: ReactNode;
+
+  // Stats cards (passed as children of AdminStatsGrid)
   summaryCards?: ReactNode;
+
+  // Filters block (wrapped in AdminFilterCard)
   filters?: ReactNode;
+  filtersTitle?: ReactNode;
+
+  // Table section header (wraps children in AdminTableSection when provided)
+  tableTitle?: ReactNode;
+  tableSubtitle?: ReactNode;
+  tableActions?: ReactNode;
+
+  // The main content (DataTable or custom table)
   children: ReactNode;
+
   className?: string;
 };
-
-function AdminFiltersSurface({ children }: { children: ReactNode }) {
-  return (
-    <AdminSectionCard className="rounded-[28px] border-border-light/80 bg-white/96 shadow-[0_14px_34px_-28px_rgba(34,52,56,0.16)] dark:bg-surface-secondary/92">
-      <div className="p-6">{children}</div>
-    </AdminSectionCard>
-  );
-}
 
 export default function AdminOperationalListShell({
   title,
@@ -73,11 +97,18 @@ export default function AdminOperationalListShell({
   notice,
   summaryCards,
   filters,
+  filtersTitle,
+  tableTitle,
+  tableSubtitle,
+  tableActions,
   children,
   className,
 }: AdminOperationalListShellProps) {
+  const hasTableHeader = Boolean(tableTitle || tableSubtitle || tableActions);
+
   return (
-    <div className={cn("space-y-5", className)}>
+    <div className={cn("space-y-4", className)}>
+      {/* ── Page Header ── */}
       <AdminPageHeader
         eyebrow={eyebrow}
         title={title}
@@ -85,13 +116,32 @@ export default function AdminOperationalListShell({
         actions={actions}
       />
 
+      {/* ── Notice / Banner ── */}
       {notice ? <section>{notice}</section> : null}
 
-      {summaryCards ? <AdminSummaryCardsRow>{summaryCards}</AdminSummaryCardsRow> : null}
+      {/* ── Stats Grid ── */}
+      {summaryCards ? (
+        <AdminStatsGrid>{summaryCards}</AdminStatsGrid>
+      ) : null}
 
-      {filters ? <AdminFiltersSurface>{filters}</AdminFiltersSurface> : null}
+      {/* ── Filters Card ── */}
+      {filters ? (
+        <AdminFilterCard title={filtersTitle}>{filters}</AdminFilterCard>
+      ) : null}
 
-      {children}
+      {/* ── Table Section ── */}
+      {hasTableHeader ? (
+        <AdminTableSection
+          title={tableTitle}
+          subtitle={tableSubtitle}
+          actions={tableActions}
+          flushContent
+        >
+          {children}
+        </AdminTableSection>
+      ) : (
+        children
+      )}
     </div>
   );
 }

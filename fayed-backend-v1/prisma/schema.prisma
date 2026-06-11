@@ -30,6 +30,7 @@ enum UserStatus {
   PENDING_VERIFICATION
   PENDING_APPROVAL
   DELETED
+  
 }
 
 enum AuthProvider {

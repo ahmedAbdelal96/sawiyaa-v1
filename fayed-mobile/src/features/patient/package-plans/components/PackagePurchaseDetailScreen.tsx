@@ -1,57 +1,56 @@
-import React from "react";
-import { Linking, StyleSheet, View } from "react-native";
+import React, { useEffect } from "react";
+import { I18nManager, StyleSheet, TouchableOpacity, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import {
-  Button,
   Card,
+  CompactActionRow,
   DetailPageScaffold,
   EmptyState,
-  SectionHeader,
   StatusChip,
-  SummaryRow,
   Text,
-  formatDateTime,
 } from "../../../../components/ui";
 import { useTheme } from "../../../../providers/ThemeProvider";
+import { resolveSupportedCurrencyCode } from "../../../../lib/currency";
 import { useMyPackagePurchase } from "../hooks";
 import {
   canContinuePackagePurchasePayment,
+  formatDatetime,
   formatMoney,
-  getNextUpcomingPackageSession,
+  getPackagePurchaseBookedSessionCount,
   getPackagePurchaseCompletionCount,
-  getPackagePurchaseLiveCount,
-  getPackagePurchasePendingCount,
-  getPackagePurchaseTerminalCount,
-  groupPackagePurchaseSessions,
+  getPackagePurchaseSessionModeTranslationKey,
+  getPackagePurchaseSessionPresentationStatusTone,
+  getPackagePurchaseSessionPresentationStatusTranslationKey,
+  getPackagePurchaseStatusTone,
+  getPackagePurchaseStatusTranslationKey,
   isPackagePurchasePaymentExpired,
+  formatSessionDateTimeRange,
+  resolvePackagePurchasePlanCount,
+  getPackagePurchaseUnbookedSessionCount,
+  getPackagePurchaseUnbookedSessionIndexes,
+  sortPackagePurchaseSessions,
+  warnPackagePurchaseContractMismatch,
 } from "../lib";
-import { resolveSupportedCurrencyCode } from "../../../../lib/currency";
 
-function getStatusTone(status: string | null | undefined) {
-  switch (status) {
-    case "ACTIVE":
-      return "success" as const;
-    case "COMPLETED":
-      return "default" as const;
-    case "PENDING_PAYMENT":
-      return "warning" as const;
-    case "REFUNDED":
-      return "default" as const;
-    default:
-      return "default" as const;
-  }
-}
-
-function SessionItem({
+function SessionTimelineRow({
   session,
   purchaseSessionCount,
   locale,
+  onPress,
 }: {
   session: {
     id: string;
-    sessionCode: string;
-    status: string;
+    presentationStatus: Parameters<
+      typeof getPackagePurchaseSessionPresentationStatusTranslationKey
+    >[0];
+    joinAvailability: {
+      canJoin: boolean;
+      blockedReason: string | null;
+      availableAt: string | null;
+      expiresAt: string | null;
+    };
     scheduledStartAt: string | null;
     scheduledEndAt: string | null;
     durationMinutes: number;
@@ -60,54 +59,125 @@ function SessionItem({
   };
   purchaseSessionCount: number;
   locale: string;
+  onPress: () => void;
 }) {
   const { t } = useTranslation();
-  const router = useRouter();
-  const canOpen = ["CONFIRMED", "UPCOMING", "READY_TO_JOIN", "IN_PROGRESS"].includes(
-    session.status,
+  const { theme } = useTheme();
+  const isRTL = I18nManager.isRTL;
+  const statusLabel = t(
+    getPackagePurchaseSessionPresentationStatusTranslationKey(session.presentationStatus),
+    {
+      defaultValue: session.presentationStatus,
+    },
   );
+  const statusTone = getPackagePurchaseSessionPresentationStatusTone(
+    session.presentationStatus,
+  );
+  const sessionModeLabel = t(getPackagePurchaseSessionModeTranslationKey(session.sessionMode), {
+    defaultValue: session.sessionMode,
+  });
+  const durationLabel = t("packagePurchases.detail.duration", {
+    count: session.durationMinutes,
+  });
+  const dateTimeRange = formatSessionDateTimeRange(
+    session.scheduledStartAt,
+    session.scheduledEndAt,
+    locale,
+  );
+  const joinAvailabilityNote = session.joinAvailability.canJoin
+    ? null
+    : session.joinAvailability.availableAt &&
+      new Date(session.joinAvailability.availableAt).getTime() > Date.now()
+      ? t("packagePurchases.detail.joinAvailableAt", {
+          datetime: formatDatetime(session.joinAvailability.availableAt, locale),
+        })
+      : null;
 
   return (
-    <Card variant="outlined" padding="md" style={styles.sessionCard}>
-      <View style={styles.sessionTopRow}>
-        <View style={styles.sessionMetaCol}>
-          <Text weight="600" style={styles.sessionCode}>
-            {session.sessionCode}
-          </Text>
-          <Text color="#64748b" style={styles.sessionIndex}>
+    <TouchableOpacity
+      activeOpacity={0.78}
+      accessibilityRole="button"
+      accessibilityLabel={t("packagePurchases.detail.viewSession", {
+        defaultValue: "View session",
+      })}
+      onPress={onPress}
+      style={[
+        styles.row,
+        {
+          flexDirection: isRTL ? "row-reverse" : "row",
+          borderBottomColor: theme.colors.borderLight,
+        },
+      ]}
+    >
+      <View style={styles.rowMeta}>
+        <View style={[styles.rowTop, isRTL && styles.rowTopRtl]}>
+          <Text weight="600" style={styles.rowTitle}>
             {t("packagePurchases.detail.sessionIndex", {
               current: session.packageSessionIndex,
               total: purchaseSessionCount,
-              defaultValue: `Session ${session.packageSessionIndex}/${purchaseSessionCount}`,
             })}
           </Text>
+          <StatusChip label={statusLabel} tone={statusTone} showDot={false} />
         </View>
-        <StatusChip label={session.status} tone={canOpen ? "success" : "default"} showDot={false} />
+        <Text color={theme.colors.textSecondary} style={styles.rowTime}>
+          {dateTimeRange}
+        </Text>
+        <Text color={theme.colors.textMuted} style={styles.rowMetaText}>
+          {sessionModeLabel} {" · "} {durationLabel}
+        </Text>
+        {joinAvailabilityNote ? (
+          <Text color={theme.colors.textMuted} style={styles.rowMetaText}>
+            {joinAvailabilityNote}
+          </Text>
+        ) : null}
       </View>
+      <Ionicons
+        name={isRTL ? "chevron-back" : "chevron-forward"}
+        size={16}
+        color={theme.colors.textMuted}
+      />
+    </TouchableOpacity>
+  );
+}
 
-      <SummaryRow
-        label={t("packagePurchases.detail.startAt", "Start")}
-        value={session.scheduledStartAt ? formatDateTime(session.scheduledStartAt, locale) : "-"}
-      />
-      <SummaryRow
-        label={t("packagePurchases.detail.endAt", "End")}
-        value={session.scheduledEndAt ? formatDateTime(session.scheduledEndAt, locale) : "-"}
-      />
-      <SummaryRow
-        label={t("packagePurchases.detail.duration", "Duration")}
-        value={t("packagePurchases.detail.minutes", {
-          count: session.durationMinutes,
-          defaultValue: `${session.durationMinutes} minutes`,
-        })}
-      />
-      <View style={styles.sessionActionRow}>
-        <Button
-          title={canOpen ? t("packagePurchases.detail.openSession", "Open session") : t("packagePurchases.detail.viewSession", "View session")}
-          variant="secondary"
-          onPress={() => router.push(`/(patient)/sessions/${session.id}` as never)}
-        />
+function UnbookedSessionTimelineRow({
+  sessionIndex,
+  purchaseSessionCount,
+}: {
+  sessionIndex: number;
+  purchaseSessionCount: number;
+}) {
+  const { t } = useTranslation();
+  const { theme } = useTheme();
+  const isRTL = I18nManager.isRTL;
+  const placeholderLabel = t("packagePurchases.detail.notBookedYet");
+
+  return (
+    <View
+      style={[
+        styles.unbookedRow,
+        {
+          flexDirection: isRTL ? "row-reverse" : "row",
+          borderBottomColor: theme.colors.borderLight,
+          backgroundColor: theme.colors.surfaceSecondary,
+        },
+      ]}
+    >
+      <View style={styles.rowMeta}>
+        <View style={[styles.rowTop, isRTL && styles.rowTopRtl]}>
+          <Text weight="600" style={styles.rowTitle}>
+            {t("packagePurchases.detail.sessionIndex", {
+              current: sessionIndex,
+              total: purchaseSessionCount,
+            })}
+          </Text>
+          <StatusChip label={placeholderLabel} tone="default" showDot={false} />
+        </View>
+        <Text color={theme.colors.textSecondary} style={styles.rowTime}>
+          {t("packagePurchases.detail.unbookedSessionSubtitle")}
+        </Text>
       </View>
-    </Card>
+    </View>
   );
 }
 
@@ -122,20 +192,40 @@ export default function PackagePurchaseDetailScreen({
   const locale = i18n.language?.startsWith("ar") ? "ar-SA" : "en-US";
   const purchaseQuery = useMyPackagePurchase(purchaseId);
   const purchase = purchaseQuery.data?.item ?? null;
+  const planCountFromCode = purchase ? resolvePackagePurchasePlanCount(purchase.planCode) : null;
+  const hasPlanMismatch = Boolean(
+    purchase &&
+      planCountFromCode !== null &&
+      planCountFromCode !== purchase.sessionCount,
+  );
+
+  useEffect(() => {
+    if (!purchase || !hasPlanMismatch) {
+      return;
+    }
+
+    warnPackagePurchaseContractMismatch({
+      purchaseId: purchase.id,
+      planCode: purchase.planCode,
+      sessionCount: purchase.sessionCount,
+      linkedSessionsCount: purchase.linkedSessions.totalItems,
+    });
+  }, [
+    hasPlanMismatch,
+    purchase,
+    purchase?.id,
+    purchase?.linkedSessions.totalItems,
+    purchase?.planCode,
+    purchase?.sessionCount,
+  ]);
 
   if (purchaseQuery.isSuccess && !purchase) {
     return (
-      <DetailPageScaffold
-        title={t("packagePurchases.detail.title", "Package purchase")}
-        showBack
-      >
+      <DetailPageScaffold title={t("packagePurchases.detail.title")} showBack>
         <EmptyState
-          title={t("packagePurchases.detail.notFoundTitle", "Purchase not found")}
-          description={t(
-            "packagePurchases.detail.notFoundDescription",
-            "The package purchase link is invalid or the record is no longer available.",
-          )}
-          actionLabel={t("packagePurchases.detail.back", "Back")}
+          title={t("packagePurchases.detail.notFoundTitle")}
+          description={t("packagePurchases.detail.notFoundDescription")}
+          actionLabel={t("packagePurchases.detail.back")}
           onAction={() => router.replace("/(patient)/package-purchases" as never)}
         />
       </DetailPageScaffold>
@@ -145,10 +235,10 @@ export default function PackagePurchaseDetailScreen({
   if (purchaseQuery.isLoading) {
     return (
       <DetailPageScaffold
-        title={t("packagePurchases.detail.title", "Package purchase")}
+        title={t("packagePurchases.detail.title")}
         showBack
         loading
-        loadingMessage={t("packagePurchases.detail.loading", "Loading purchase...")}
+        loadingMessage={t("packagePurchases.detail.loading")}
       >
         <View />
       </DetailPageScaffold>
@@ -158,13 +248,13 @@ export default function PackagePurchaseDetailScreen({
   if (purchaseQuery.isError || !purchase) {
     return (
       <DetailPageScaffold
-        title={t("packagePurchases.detail.title", "Package purchase")}
+        title={t("packagePurchases.detail.title")}
         showBack
         error={purchaseQuery.isError}
-        errorTitle={t("packagePurchases.detail.errorTitle", "We could not load the purchase")}
-        errorMessage={t("packagePurchases.detail.errorMessage", "Please try again in a moment.")}
+        errorTitle={t("packagePurchases.detail.errorTitle")}
+        errorMessage={t("packagePurchases.detail.errorMessage")}
         onRetry={() => purchaseQuery.refetch()}
-        retryText={t("packagePurchases.detail.retry", "Try again")}
+        retryText={t("packagePurchases.detail.retry")}
       >
         <View />
       </DetailPageScaffold>
@@ -172,192 +262,155 @@ export default function PackagePurchaseDetailScreen({
   }
 
   const completedCount = getPackagePurchaseCompletionCount(purchase);
-  const pendingCount = getPackagePurchasePendingCount(purchase);
-  const liveCount = getPackagePurchaseLiveCount(purchase);
-  const terminalCount = getPackagePurchaseTerminalCount(purchase);
-  const nextUpcomingSession = getNextUpcomingPackageSession(purchase);
   const paymentExpired = isPackagePurchasePaymentExpired(purchase);
   const canContinuePayment = canContinuePackagePurchasePayment(purchase);
-  const sessions = groupPackagePurchaseSessions(purchase);
+  const bookedSessions = sortPackagePurchaseSessions(purchase.linkedSessions.items);
+  const bookedSessionCount = getPackagePurchaseBookedSessionCount(purchase);
+  const unbookedSessionCount = getPackagePurchaseUnbookedSessionCount(purchase);
+  const unbookedSessionIndexes = getPackagePurchaseUnbookedSessionIndexes(purchase);
   const currency = resolveSupportedCurrencyCode({
     currencyCode: purchase.selectedCurrencyCode,
     regionalPricingMode: purchase.regionalPricingMode,
     resolvedCountryIsoCode: purchase.resolvedCountryIsoCode,
   });
+  const title = t("packagePurchases.plans.generic", {
+    count: purchase.sessionCount,
+    defaultValue: `${purchase.sessionCount} session package`,
+  });
+  const paymentDueDate = purchase.paymentExpiresAt
+    ? formatDatetime(purchase.paymentExpiresAt, locale)
+    : "-";
+  const usageSummary = t("packagePurchases.detail.summaryUsageBooked", {
+    count: completedCount,
+    total: purchase.sessionCount,
+  });
+  const bookedSummary = t("packagePurchases.detail.bookedSummary", {
+    count: unbookedSessionCount,
+    booked: bookedSessionCount,
+    total: purchase.sessionCount,
+  });
+  const priceSummary = t("packagePurchases.detail.priceSummary", {
+    value: formatMoney(purchase.patientPayableTotal, currency, locale),
+    discount: `${purchase.discountPercent}%`,
+  });
 
   return (
     <DetailPageScaffold
-      title={t("packagePurchases.detail.title", "Package purchase")}
+      title={t("packagePurchases.detail.title")}
       showBack
       contentContainerStyle={styles.scaffold}
     >
       <View style={styles.stack}>
-        <Card variant="elevated" padding="lg" style={styles.heroCard}>
-          <View style={styles.heroTopRow}>
-            <View style={styles.heroMeta}>
-              <Text weight="bold" style={styles.heroTitle}>
-                {purchase.planCode}
+        <Card variant="outlined" padding="sm" style={styles.summaryCard}>
+          <View style={[styles.summaryTopRow, I18nManager.isRTL && styles.summaryTopRowRtl]}>
+            <View style={styles.summaryMeta}>
+              <Text weight="600" style={styles.summaryTitle}>
+                {title}
               </Text>
-              <Text color={theme.colors.textSecondary} style={styles.heroSubtitle}>
-                {t("packagePurchases.detail.subtitle", "Your package progress at a glance")}
+              <Text color={theme.colors.textSecondary} style={styles.summarySubtitle}>
+                {t("packagePurchases.detail.subtitle")}
               </Text>
             </View>
-            <StatusChip label={purchase.status} tone={getStatusTone(purchase.status)} showDot={false} />
+            <StatusChip
+              label={t(getPackagePurchaseStatusTranslationKey(purchase.status), {
+                defaultValue: purchase.status,
+              })}
+              tone={getPackagePurchaseStatusTone(purchase.status)}
+              showDot={false}
+            />
           </View>
 
-          <View style={styles.heroStats}>
-            <SummaryRow
-              label={t("packagePurchases.detail.progress", "Progress")}
-              value={`${completedCount}/${purchase.sessionCount}`}
-            />
-            <SummaryRow
-              label={t("packagePurchases.detail.currency", "Currency")}
-              value={currency}
-            />
-            <SummaryRow
-              label={t("packagePurchases.detail.total", "Total")}
-              value={formatMoney(purchase.patientPayableTotal, currency, locale)}
-            />
-            <SummaryRow
-              label={t("packagePurchases.detail.paymentExpiry", "Payment expiry")}
-              value={purchase.paymentExpiresAt ? formatDateTime(purchase.paymentExpiresAt, locale) : "-"}
-            />
+          <View style={styles.summaryLines}>
+            <Text color={theme.colors.textSecondary} style={styles.summaryLine}>
+              {usageSummary}
+            </Text>
+            <Text color={theme.colors.textSecondary} style={styles.summaryLine}>
+              {bookedSummary}
+            </Text>
+            <Text color={theme.colors.textSecondary} style={styles.summaryLine}>
+              {priceSummary}
+            </Text>
           </View>
         </Card>
 
         {purchase.status === "PENDING_PAYMENT" ? (
-          <Card variant="elevated" padding="lg" style={styles.sectionCard}>
-            <SectionHeader
-              title={t("packagePurchases.detail.paymentTitle", "Payment")}
-              subtitle={t(
-                "packagePurchases.detail.paymentSubtitle",
-                "Complete payment to activate the package sessions.",
-              )}
-            />
-            <Text color={theme.colors.textSecondary} style={styles.paymentNote}>
-              {paymentExpired
-                ? t("packagePurchases.detail.paymentExpired", "The payment window has expired.")
-                : t(
-                    "packagePurchases.detail.paymentActive",
-                    "Your payment window is still active and ready to continue.",
-                  )}
+          <Card variant="outlined" padding="sm" style={styles.paymentCard}>
+            <View style={styles.paymentHeader}>
+              <Text weight="600" style={styles.paymentTitle}>
+                {t("packagePurchases.detail.paymentTitle")}
+              </Text>
+              <Text color={theme.colors.textSecondary} style={styles.paymentNote}>
+                {paymentExpired
+                  ? t("packagePurchases.detail.paymentExpired")
+                  : t("packagePurchases.detail.paymentDueHelper")}
+              </Text>
+            </View>
+            <Text color={theme.colors.textMuted} style={styles.paymentSummary}>
+              {t("packagePurchases.detail.paymentDueSummary", {
+                value: paymentDueDate,
+              })}
             </Text>
             {canContinuePayment ? (
-              <Button
-                title={t("packagePurchases.detail.continuePayment", "Continue payment")}
+              <CompactActionRow
+                label={t("packagePurchases.detail.continuePayment")}
+                accessibilityLabel={t("packagePurchases.detail.continuePayment")}
                 onPress={() => router.push(`/(patient)/package-purchases/${purchase.id}/pay` as never)}
-                style={styles.button}
+                style={styles.paymentAction}
               />
             ) : null}
           </Card>
         ) : null}
 
-        <Card variant="elevated" padding="lg" style={styles.sectionCard}>
-          <SectionHeader
-            title={t("packagePurchases.detail.sessionsTitle", "Sessions")}
-            subtitle={t(
-              "packagePurchases.detail.sessionsSubtitle",
-              "Follow the linked sessions and open each one when it becomes available.",
-            )}
-          />
-          <View style={styles.metricRow}>
-            <StatusChip label={t("packagePurchases.detail.completed", { count: completedCount, defaultValue: `${completedCount} completed` })} tone="success" showDot={false} />
-            <StatusChip label={t("packagePurchases.detail.pending", { count: pendingCount, defaultValue: `${pendingCount} pending` })} tone="warning" showDot={false} />
-            <StatusChip label={t("packagePurchases.detail.live", { count: liveCount, defaultValue: `${liveCount} live` })} tone="info" showDot={false} />
-            <StatusChip label={t("packagePurchases.detail.terminal", { count: terminalCount, defaultValue: `${terminalCount} ended` })} tone="default" showDot={false} />
+        <Card variant="outlined" padding="sm" style={styles.timelineCard}>
+          <View style={styles.timelineHeader}>
+            <Text weight="600" style={styles.timelineTitle}>
+              {t("packagePurchases.detail.timelineTitle")}
+            </Text>
+            <Text color={theme.colors.textSecondary} style={styles.timelineSubtitle}>
+              {t("packagePurchases.detail.timelineSubtitle")}
+            </Text>
           </View>
 
-          {nextUpcomingSession ? (
-            <Card variant="outlined" padding="md" style={styles.nextCard}>
-              <Text color="#0f766e" style={styles.nextLabel}>
-                {t("packagePurchases.detail.nextSession", "Next session")}
+          {bookedSessions.length > 0 ? (
+            <View style={styles.sectionStack}>
+              <Text color={theme.colors.textMuted} style={styles.sectionTitle}>
+                {t("packagePurchases.detail.bookedSessionsTitle")}
               </Text>
-              <Text weight="600" style={styles.nextTitle}>
-                {t("packagePurchases.detail.sessionIndex", {
-                  current: nextUpcomingSession.packageSessionIndex,
-                  total: purchase.sessionCount,
-                  defaultValue: `Session ${nextUpcomingSession.packageSessionIndex}/${purchase.sessionCount}`,
-                })}
-              </Text>
-              <Text color="#64748b" style={styles.nextMeta}>
-                {formatDateTime(nextUpcomingSession.scheduledStartAt, locale)}
-              </Text>
-            </Card>
+              <View style={styles.rowStack}>
+                {bookedSessions.map((session) => (
+                  <SessionTimelineRow
+                    key={session.id}
+                    session={session}
+                    purchaseSessionCount={purchase.sessionCount}
+                    locale={locale}
+                    onPress={() => router.push(`/(patient)/sessions/${session.id}` as never)}
+                  />
+                ))}
+              </View>
+            </View>
           ) : null}
 
-          <View style={styles.groupStack}>
-            {sessions.live.length > 0 ? (
-              <View style={styles.group}>
-                <Text weight="600" style={styles.groupTitle}>
-                  {t("packagePurchases.detail.groups.live", "Live")}
-                </Text>
-                <View style={styles.groupList}>
-                  {sessions.live.map((session) => (
-                    <SessionItem
-                      key={session.id}
-                      session={session}
-                      purchaseSessionCount={purchase.sessionCount}
-                      locale={locale}
-                    />
-                  ))}
-                </View>
+          {unbookedSessionIndexes.length > 0 ? (
+            <View style={styles.sectionStack}>
+              <Text color={theme.colors.textMuted} style={styles.sectionTitle}>
+                {t("packagePurchases.detail.unbookedSessionsTitle")}
+              </Text>
+              <Text color={theme.colors.textSecondary} style={styles.sectionBody}>
+                {t("packagePurchases.detail.unbookedSessionsBody", {
+                  count: unbookedSessionCount,
+                })}
+              </Text>
+              <View style={styles.rowStack}>
+                {unbookedSessionIndexes.map((sessionIndex) => (
+                  <UnbookedSessionTimelineRow
+                    key={sessionIndex}
+                    sessionIndex={sessionIndex}
+                    purchaseSessionCount={purchase.sessionCount}
+                  />
+                ))}
               </View>
-            ) : null}
-
-            {sessions.pending.length > 0 ? (
-              <View style={styles.group}>
-                <Text weight="600" style={styles.groupTitle}>
-                  {t("packagePurchases.detail.groups.pending", "Pending")}
-                </Text>
-                <View style={styles.groupList}>
-                  {sessions.pending.map((session) => (
-                    <SessionItem
-                      key={session.id}
-                      session={session}
-                      purchaseSessionCount={purchase.sessionCount}
-                      locale={locale}
-                    />
-                  ))}
-                </View>
-              </View>
-            ) : null}
-
-            {sessions.completed.length > 0 ? (
-              <View style={styles.group}>
-                <Text weight="600" style={styles.groupTitle}>
-                  {t("packagePurchases.detail.groups.completed", "Completed")}
-                </Text>
-                <View style={styles.groupList}>
-                  {sessions.completed.map((session) => (
-                    <SessionItem
-                      key={session.id}
-                      session={session}
-                      purchaseSessionCount={purchase.sessionCount}
-                      locale={locale}
-                    />
-                  ))}
-                </View>
-              </View>
-            ) : null}
-
-            {sessions.terminal.length > 0 ? (
-              <View style={styles.group}>
-                <Text weight="600" style={styles.groupTitle}>
-                  {t("packagePurchases.detail.groups.terminal", "Ended")}
-                </Text>
-                <View style={styles.groupList}>
-                  {sessions.terminal.map((session) => (
-                    <SessionItem
-                      key={session.id}
-                      session={session}
-                      purchaseSessionCount={purchase.sessionCount}
-                      locale={locale}
-                    />
-                  ))}
-                </View>
-              </View>
-            ) : null}
-          </View>
+            </View>
+          ) : null}
         </Card>
       </View>
     </DetailPageScaffold>
@@ -366,105 +419,133 @@ export default function PackagePurchaseDetailScreen({
 
 const styles = StyleSheet.create({
   scaffold: {
-    paddingBottom: 32,
+    paddingBottom: 28,
   },
   stack: {
-    gap: 14,
+    gap: 12,
   },
-  heroCard: {
+  summaryCard: {
     marginHorizontal: 0,
+    gap: 8,
   },
-  heroTopRow: {
+  summaryTopRow: {
     flexDirection: "row",
     alignItems: "flex-start",
     justifyContent: "space-between",
     gap: 12,
   },
-  heroMeta: {
+  summaryTopRowRtl: {
+    flexDirection: "row-reverse",
+  },
+  summaryMeta: {
     flex: 1,
   },
-  heroTitle: {
-    fontSize: 22,
-    lineHeight: 30,
+  summaryTitle: {
+    fontSize: 17,
+    lineHeight: 23,
   },
-  heroSubtitle: {
-    fontSize: 14,
-    lineHeight: 22,
-    marginTop: 6,
+  summarySubtitle: {
+    fontSize: 12,
+    lineHeight: 18,
+    marginTop: 4,
   },
-  heroStats: {
-    marginTop: 12,
+  summaryLines: {
+    gap: 4,
   },
-  sectionCard: {
+  summaryLine: {
+    fontSize: 12,
+    lineHeight: 18,
+  },
+  paymentCard: {
     marginHorizontal: 0,
+    gap: 6,
+  },
+  paymentHeader: {
+    gap: 2,
+  },
+  paymentTitle: {
+    fontSize: 13,
+    lineHeight: 18,
   },
   paymentNote: {
-    fontSize: 14,
-    lineHeight: 22,
-    marginTop: 12,
-  },
-  button: {
-    marginTop: 12,
-  },
-  metricRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-    marginTop: 12,
-    marginBottom: 12,
-  },
-  nextCard: {
-    marginHorizontal: 0,
-    marginBottom: 12,
-  },
-  nextLabel: {
-    fontSize: 11,
-    textTransform: "uppercase",
-    letterSpacing: 0.16,
-  },
-  nextTitle: {
-    fontSize: 16,
-    marginTop: 4,
-  },
-  nextMeta: {
     fontSize: 12,
+    lineHeight: 18,
+  },
+  paymentSummary: {
+    fontSize: 12,
+    lineHeight: 18,
+  },
+  paymentAction: {
+    alignSelf: "flex-start",
     marginTop: 4,
   },
-  groupStack: {
-    gap: 14,
-    marginTop: 8,
-  },
-  group: {
-    gap: 10,
-  },
-  groupTitle: {
-    fontSize: 16,
-  },
-  groupList: {
-    gap: 10,
-  },
-  sessionCard: {
+  timelineCard: {
     marginHorizontal: 0,
+    gap: 10,
+  },
+  timelineHeader: {
+    gap: 2,
+  },
+  timelineTitle: {
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  timelineSubtitle: {
+    fontSize: 12,
+    lineHeight: 18,
+  },
+  sectionStack: {
     gap: 8,
   },
-  sessionTopRow: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    justifyContent: "space-between",
-    gap: 12,
+  sectionTitle: {
+    fontSize: 12,
+    lineHeight: 18,
   },
-  sessionMetaCol: {
+  sectionBody: {
+    fontSize: 12,
+    lineHeight: 18,
+  },
+  rowStack: {
+    gap: 6,
+  },
+  row: {
+    alignItems: "center",
+    paddingVertical: 7,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    gap: 10,
+  },
+  rowMeta: {
     flex: 1,
   },
-  sessionCode: {
-    fontSize: 14,
+  rowTop: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 10,
   },
-  sessionIndex: {
-    fontSize: 12,
-    marginTop: 4,
+  rowTopRtl: {
+    flexDirection: "row-reverse",
   },
-  sessionActionRow: {
-    marginTop: 8,
+  rowTitle: {
+    fontSize: 12.5,
+    lineHeight: 17,
+  },
+  rowTime: {
+    fontSize: 11.5,
+    lineHeight: 16,
+    marginTop: 2,
+  },
+  rowMetaText: {
+    fontSize: 11.5,
+    lineHeight: 16,
+    marginTop: 2,
+  },
+  unbookedRow: {
+    alignItems: "center",
+    paddingVertical: 7,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    gap: 10,
+    borderRadius: 12,
+    paddingHorizontal: 10,
   },
 });
-

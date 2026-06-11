@@ -4,11 +4,17 @@ import {
   SessionMode,
   SessionStatus,
 } from '@prisma/client';
+import {
+  SessionJoinAvailabilityViewModel,
+  SessionPresentationStatus,
+} from '@modules/sessions/utils/session-join-policy.util';
 
 export interface PackagePurchaseSessionSummaryViewModel {
   id: string;
   sessionCode: string;
   status: SessionStatus;
+  presentationStatus: SessionPresentationStatus;
+  joinAvailability: SessionJoinAvailabilityViewModel;
   scheduledStartAt: string | null;
   scheduledEndAt: string | null;
   durationMinutes: number;

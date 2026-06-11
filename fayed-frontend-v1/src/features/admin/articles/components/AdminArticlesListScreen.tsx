@@ -264,6 +264,7 @@ export default function AdminArticlesListScreen() {
       }
       summaryCards={
         <AdminSummaryCard
+          metricKey="articles.total"
           label={t("list.title")}
           value={typeof data?.pagination.totalItems === "number" ? data.pagination.totalItems : "..."}
           tone="primary"

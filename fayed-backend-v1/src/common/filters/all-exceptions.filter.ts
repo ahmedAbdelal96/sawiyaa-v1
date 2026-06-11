@@ -10,7 +10,10 @@ import { Request, Response } from 'express';
 import { I18nService } from '@common/i18n/services/i18n.service';
 import { AuthenticatedRequest } from '@common/interfaces/authenticated-request.interface';
 import { AppLoggerService } from '@common/logging/app-logger.service';
-import { sanitizeForLogging } from '@common/logging/log-sanitizer.util';
+import {
+  redactUrlForLogging,
+  sanitizeForLogging,
+} from '@common/logging/log-sanitizer.util';
 
 @Catch()
 @Injectable()
@@ -87,7 +90,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
     }
 
     const method = request.method;
-    const path = request.originalUrl ?? request.url;
+    const path = redactUrlForLogging(request.originalUrl ?? request.url);
     const userId = request.user?.id ?? null;
     const requestId = request.requestId ?? null;
 
@@ -127,7 +130,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
       message,
       errors,
       timestamp: new Date().toISOString(),
-      path: request.url,
+      path,
       locale: request.locale,
       requestId,
     });

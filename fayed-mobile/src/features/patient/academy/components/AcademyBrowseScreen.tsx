@@ -1,164 +1,128 @@
 import React, { useMemo } from "react";
-import { FlatList, Image, StyleSheet, View } from "react-native";
+import { Image, StyleSheet, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import {
-  Button,
   Card,
-  CompactActionRow,
   ListPageScaffold,
   SectionHeader,
   StatusChip,
   Text,
-  formatDate,
 } from "../../../../components/ui";
 import { useTheme } from "../../../../providers/ThemeProvider";
 import { useAuth } from "../../../../providers/AuthProvider";
+import { getAppDirection } from "../../../../i18n/direction";
 import { resolveSupportedCurrencyCode } from "../../../../lib/currency";
+import { resolveMediaUrl } from "../../../../lib/resolve-media-url";
 import { useInfinitePublicAcademyCourses } from "../hooks";
 import type { AcademyCourseItem } from "../types";
-import { resolveMediaUrl } from "../../../../lib/resolve-media-url";
-
-function formatCurrency(
-  amount: string | null,
-  currency: string | null,
-  locale: string,
-) {
-  if (!amount || !currency) {
-    return null;
-  }
-
-  const numeric = Number(amount);
-  if (!Number.isFinite(numeric)) {
-    return `${amount} ${currency}`;
-  }
-
-  return new Intl.NumberFormat(locale, {
-    style: "currency",
-    currency,
-    maximumFractionDigits: 0,
-  }).format(numeric);
-}
-
-function resolveStatusTone(status: AcademyCourseItem["status"]) {
-  switch (status) {
-    case "PUBLISHED":
-      return "success" as const;
-    case "DRAFT":
-      return "warning" as const;
-    case "ARCHIVED":
-      return "default" as const;
-    default:
-      return "default" as const;
-  }
-}
-
-function splitCourseContent(content: string) {
-  return content
-    .replace(/\r\n/g, "\n")
-    .replace(/<\s*br\s*\/?>/gi, "\n")
-    .replace(/<li[^>]*>/gi, "\n- ")
-    .replace(/<\/(p|div|section|article|header|blockquote|h[1-6]|ul|ol|li)>/gi, "\n")
-    .replace(/<script[\s\S]*?<\/script>/gi, "")
-    .replace(/<style[\s\S]*?<\/style>/gi, "")
-    .replace(/<[^>]+>/g, "")
-    .replace(/&nbsp;/g, " ")
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .split(/\n{2,}/)
-    .map((block) => block.replace(/\n+/g, "\n").trim())
-    .filter(Boolean);
-}
+import { formatAcademyMoney, isAcademyCourseFree } from "../display";
 
 function CourseCard({ course }: { course: AcademyCourseItem }) {
   const router = useRouter();
   const { t, i18n } = useTranslation();
   const { theme } = useTheme();
   const locale = i18n.language?.startsWith("ar") ? "ar-EG" : "en-US";
+  const isRtl = getAppDirection(i18n.language) === "rtl";
   const coverUri = resolveMediaUrl(course.coverImageUrl ?? course.thumbnailUrl);
   const displayCurrency = resolveSupportedCurrencyCode({
     currencyCode: course.currencyCode,
     regionalPricingMode: course.regionalPricingMode,
     resolvedCountryIsoCode: course.resolvedCountryIsoCode,
   });
+  const isFreeCourse = isAcademyCourseFree(course);
   const priceLabel =
-    formatCurrency(course.priceAmount, displayCurrency, locale) ||
-    t("academyMobile.free", "Free");
+    isFreeCourse
+      ? t("academyMobile.free")
+      : formatAcademyMoney(course.priceAmount, displayCurrency, locale) ??
+        t("academyMobile.paid");
   const lectureCount = course.plannedLectureCount ?? course.lectures?.length ?? null;
   const durationLabel = course.plannedDurationDays
     ? t("academyMobile.durationDays", {
         count: course.plannedDurationDays,
-        defaultValue: `${course.plannedDurationDays} days`,
       })
     : null;
   const description = course.shortDescription?.trim();
+  const detailsLabel = t("academyMobile.viewDetails");
 
   return (
-    <Card variant="elevated" padding="none" style={styles.card}>
-      {coverUri ? (
-        <Image source={{ uri: coverUri }} style={styles.cover} resizeMode="cover" />
-      ) : (
-        <View style={[styles.cover, { backgroundColor: theme.colors.primaryLight }]} />
-      )}
-
-      <View style={styles.cardBody}>
-        <View style={styles.cardTopRow}>
-          <StatusChip
-            label={
-              course.publishedAt
-                ? t("academyMobile.published", "Published")
-                : t("academyMobile.draft", "Draft")
-            }
-            tone={resolveStatusTone(course.status)}
-            showDot={false}
-          />
-          <Text color={theme.colors.textMuted} style={styles.price}>
-            {priceLabel}
-          </Text>
+    <Card
+      variant="outlined"
+      padding="sm"
+      style={styles.card}
+      onPress={() => router.push(`/(patient)/academy/${course.slug}` as never)}
+      accessibilityRole="button"
+      accessibilityLabel={t("academyMobile.card.accessibilityLabel", {
+        title: course.title,
+      })}
+    >
+      <View style={[styles.cardLayout, isRtl && styles.cardLayoutRtl]}>
+        <View
+          style={[
+            styles.mediaBox,
+            { backgroundColor: theme.colors.primaryLight },
+            !coverUri && styles.mediaPlaceholder,
+          ]}
+        >
+          {coverUri ? (
+            <Image source={{ uri: coverUri }} style={styles.mediaImage} resizeMode="cover" />
+          ) : (
+            <Ionicons name="library-outline" size={22} color={theme.colors.primary} />
+          )}
         </View>
 
-        <Text weight="bold" style={styles.title}>
-          {course.title}
+        <View style={styles.content}>
+          <View style={[styles.topRow, isRtl && styles.topRowRtl]}>
+            <StatusChip
+              label={t("academyMobile.available")}
+              tone="success"
+              showDot={false}
+            />
+            <Text color={theme.colors.textMuted} style={styles.price}>
+              {priceLabel}
+            </Text>
+          </View>
+
+          <Text weight="600" style={styles.title} numberOfLines={2}>
+            {course.title}
+          </Text>
+
+          {description ? (
+            <Text
+              color={theme.colors.textSecondary}
+              style={styles.description}
+              numberOfLines={2}
+            >
+              {description}
+            </Text>
+          ) : null}
+
+          <View style={styles.metaRow}>
+            {durationLabel ? (
+              <Text color={theme.colors.textMuted} style={styles.metaText}>
+                {durationLabel}
+              </Text>
+            ) : null}
+            {lectureCount ? (
+              <Text color={theme.colors.textMuted} style={styles.metaText}>
+                {t("academyMobile.lectureCount", {
+                  count: lectureCount,
+                })}
+              </Text>
+            ) : null}
+          </View>
+        </View>
+      </View>
+
+      <View style={[styles.actionHint, isRtl && styles.actionHintRtl]}>
+        <Text color={theme.colors.primary} weight="600" style={styles.actionHintText}>
+          {detailsLabel}
         </Text>
-
-        {description ? (
-          <Text color={theme.colors.textSecondary} style={styles.description}>
-            {description}
-          </Text>
-        ) : null}
-
-        <View style={styles.metaRow}>
-          {lectureCount ? (
-            <Text color={theme.colors.textMuted} style={styles.metaText}>
-              {t("academyMobile.lectureCount", {
-                count: lectureCount,
-                defaultValue:
-                  lectureCount === 1
-                    ? "1 module/lesson"
-                    : `${lectureCount} modules/lessons`,
-              })}
-            </Text>
-          ) : null}
-          {durationLabel ? (
-            <Text color={theme.colors.textMuted} style={styles.metaText}>
-              {durationLabel}
-            </Text>
-          ) : null}
-          {course.startsAt ? (
-            <Text color={theme.colors.textMuted} style={styles.metaText}>
-              {formatDate(course.startsAt, i18n.language)}
-            </Text>
-          ) : null}
-        </View>
-
-        <CompactActionRow
-          label={t("academyMobile.viewDetails", "View details")}
-          onPress={() => router.push(`/(patient)/academy/${course.slug}` as any)}
-          accessibilityLabel={t("academyMobile.viewDetails", "View details")}
-          style={styles.actionRow}
+        <Ionicons
+          name={isRtl ? "chevron-back" : "chevron-forward"}
+          size={16}
+          color={theme.colors.primary}
         />
       </View>
     </Card>
@@ -166,7 +130,6 @@ function CourseCard({ course }: { course: AcademyCourseItem }) {
 }
 
 export default function AcademyBrowseScreen() {
-  const router = useRouter();
   const { t } = useTranslation();
   const { theme } = useTheme();
   const { user, role, isLoading: isAuthLoading } = useAuth();
@@ -192,199 +155,185 @@ export default function AcademyBrowseScreen() {
 
   return (
     <ListPageScaffold
-      title={t("academyMobile.title", "Academy")}
+      title={t("academyMobile.title")}
       showBack
       loading={coursesQuery.isLoading}
-      loadingMessage={t(
-        "academyMobile.loading",
-        "Loading academy programs...",
-      )}
+      loadingMessage={t("academyMobile.loading")}
       error={coursesQuery.isError}
-      errorTitle={t(
-        "academyMobile.errorTitle",
-        "We could not load the academy right now",
-      )}
-      errorMessage={t(
-        "academyMobile.errorMessage",
-        "Please try again in a moment.",
-      )}
+      errorTitle={t("academyMobile.errorTitle")}
+      errorMessage={t("academyMobile.errorMessage")}
       onRetry={() => coursesQuery.refetch()}
-      retryText={t("retry", "Try again")}
+      retryText={t("retry")}
       empty={items.length === 0}
-      emptyTitle={t("academyMobile.emptyTitle", "No programs found")}
-      emptyDescription={t(
-        "academyMobile.emptyDescription",
-        "There are no public academy programs available right now.",
-      )}
+      emptyTitle={t("academyMobile.emptyTitle")}
+      emptyDescription={t("academyMobile.emptyDescription")}
       contentContainerStyle={styles.scaffold}
     >
       <View style={styles.headerStack}>
         <SectionHeader
-          title={t("academyMobile.sectionTitle", "Programs")}
-          subtitle={t(
-            "academyMobile.sectionSubtitle",
-            "Browse public programs, prices, and schedules at a calm pace.",
-          )}
+          title={t("academyMobile.sectionTitle")}
+          subtitle={t("academyMobile.sectionSubtitle")}
         />
       </View>
 
-      <FlatList
-        data={items}
-        keyExtractor={(course) => course.id}
-        renderItem={({ item: course }) => <CourseCard course={course} />}
-        ItemSeparatorComponent={() => <View style={styles.separator} />}
-        contentContainerStyle={styles.listContent}
-        showsVerticalScrollIndicator={false}
-        refreshing={coursesQuery.isRefetching && !coursesQuery.isFetchingNextPage}
-        onRefresh={() => coursesQuery.refetch()}
-        onEndReached={() => {
-          if (
-            coursesQuery.hasNextPage &&
-            !coursesQuery.isFetchingNextPage &&
-            !coursesQuery.isLoading &&
-            !coursesQuery.isError
-          ) {
-            coursesQuery.fetchNextPage();
-          }
-        }}
-        onEndReachedThreshold={0.45}
-        ListHeaderComponent={
-          <Text color={theme.colors.textSecondary} style={styles.resultsCount}>
-            {latestPage
-              ? t("academyMobile.resultsCount", {
-                  shown: items.length,
-                  total: latestPage.pagination.totalItems,
-                })
-              : " "}
+      <View style={styles.listStack}>
+        {items.map((course) => (
+          <CourseCard key={course.id} course={course} />
+        ))}
+      </View>
+
+      <Text color={theme.colors.textSecondary} style={styles.resultsCount}>
+        {latestPage
+          ? t("academyMobile.resultsCount", {
+              shown: items.length,
+              total: latestPage.pagination.totalItems,
+            })
+          : " "}
+      </Text>
+
+      {coursesQuery.isFetchingNextPage ? (
+        <View style={styles.footerState}>
+          <Text color={theme.colors.textSecondary} style={styles.footerText}>
+            {t("academyMobile.loadingMore")}
           </Text>
-        }
-        ListFooterComponent={
-          coursesQuery.isFetchingNextPage ? (
-            <View style={styles.footerState}>
-              <Text color={theme.colors.textSecondary} style={styles.footerText}>
-                {t(
-                  "academyMobile.loadingMore",
-                  "Loading more academy programs...",
-                )}
-              </Text>
-            </View>
-          ) : coursesQuery.isFetchNextPageError ? (
-            <View style={styles.footerState}>
-              <Text
-                weight="bold"
-                style={styles.footerTitle}
-                color={theme.colors.textPrimary}
-              >
-                {t(
-                  "academyMobile.loadMoreErrorTitle",
-                  "Could not load more academy programs",
-                )}
-              </Text>
-              <Text
-                color={theme.colors.textSecondary}
-                style={styles.footerText}
-              >
-                {t(
-                  "academyMobile.loadMoreErrorSubtitle",
-                  "Try again to load the next set of results.",
-                )}
-              </Text>
-              <Button title={t("retry", "Retry")} onPress={() => coursesQuery.fetchNextPage()} />
-            </View>
-          ) : coursesQuery.hasNextPage === false && items.length > 0 ? (
-            <View style={styles.footerState}>
-              <Text
-                color={theme.colors.textSecondary}
-                style={styles.footerText}
-              >
-                {t(
-                  "academyMobile.endOfList",
-                  "You have reached the end of the list.",
-                )}
-              </Text>
-            </View>
-          ) : null
-        }
-      />
+        </View>
+      ) : coursesQuery.isFetchNextPageError ? (
+        <View style={styles.footerState}>
+          <Text weight="bold" style={styles.footerTitle} color={theme.colors.textPrimary}>
+            {t("academyMobile.loadMoreErrorTitle")}
+          </Text>
+          <Text color={theme.colors.textSecondary} style={styles.footerText}>
+            {t("academyMobile.loadMoreErrorSubtitle")}
+          </Text>
+          <View style={styles.footerButton}>
+            <Text
+              color={theme.colors.primary}
+              weight="600"
+              style={styles.retryLink}
+              onPress={() => coursesQuery.fetchNextPage()}
+            >
+              {t("retry")}
+            </Text>
+          </View>
+        </View>
+      ) : coursesQuery.hasNextPage === false && items.length > 0 ? (
+        <View style={styles.footerState}>
+          <Text color={theme.colors.textSecondary} style={styles.footerText}>
+            {t("academyMobile.endOfList")}
+          </Text>
+        </View>
+      ) : null}
     </ListPageScaffold>
   );
 }
 
 const styles = StyleSheet.create({
   scaffold: {
-    paddingBottom: 24,
+    paddingBottom: 20,
   },
   headerStack: {
+    gap: 10,
+    marginBottom: 10,
+  },
+  listStack: {
     gap: 12,
-    marginBottom: 12,
-  },
-  listContent: {
-    gap: 14,
-    paddingBottom: 24,
-  },
-  separator: {
-    height: 0,
   },
   card: {
     marginHorizontal: 0,
+  },
+  cardLayout: {
+    flexDirection: "row",
+    gap: 12,
+  },
+  cardLayoutRtl: {
+    flexDirection: "row-reverse",
+  },
+  mediaBox: {
+    width: 68,
+    height: 68,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
     overflow: "hidden",
   },
-  cover: {
+  mediaPlaceholder: {
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.25)",
+  },
+  mediaImage: {
     width: "100%",
-    height: 180,
-    backgroundColor: "#eef2ff",
+    height: "100%",
   },
-  cardBody: {
-    padding: 16,
-    gap: 10,
+  content: {
+    flex: 1,
+    gap: 8,
   },
-  cardTopRow: {
+  topRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    gap: 12,
+    gap: 10,
+  },
+  topRowRtl: {
+    flexDirection: "row-reverse",
   },
   price: {
     fontSize: 13,
   },
   title: {
-    fontSize: 20,
-    lineHeight: 28,
+    fontSize: 18,
+    lineHeight: 24,
   },
   description: {
-    fontSize: 14,
-    lineHeight: 22,
+    fontSize: 13,
+    lineHeight: 19,
   },
   metaRow: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 10,
+    gap: 8,
   },
   metaText: {
-    fontSize: 12,
+    fontSize: 11.5,
+    lineHeight: 16,
   },
-  actionRow: {
-    marginTop: 6,
+  actionHint: {
+    marginTop: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "flex-start",
+    gap: 6,
+  },
+  actionHintRtl: {
+    flexDirection: "row-reverse",
+  },
+  actionHintText: {
+    fontSize: 13,
   },
   resultsCount: {
-    fontSize: 14,
-    marginBottom: 14,
-    marginTop: 2,
+    fontSize: 13,
+    marginTop: 8,
+    marginBottom: 8,
   },
   footerState: {
-    paddingTop: 8,
-    paddingBottom: 20,
+    paddingTop: 4,
+    paddingBottom: 12,
+  },
+  footerButton: {
+    marginTop: 8,
   },
   footerTitle: {
-    fontSize: 16,
+    fontSize: 15,
     marginBottom: 6,
     textAlign: "center",
   },
   footerText: {
-    fontSize: 14,
-    lineHeight: 21,
+    fontSize: 13,
+    lineHeight: 19,
     textAlign: "center",
-    marginBottom: 14,
+    marginBottom: 12,
+  },
+  retryLink: {
+    textAlign: "center",
   },
 });
-

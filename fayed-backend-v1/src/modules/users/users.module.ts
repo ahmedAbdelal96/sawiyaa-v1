@@ -1,6 +1,5 @@
 import { Module } from '@nestjs/common';
 import { JwtAccessAuthGuard } from '@common/guards/authentication/jwt-access-auth.guard';
-import { PermissionResolverService } from '@common/guards/authorization/permission-resolver.service';
 import { CurrentUserAvatarController } from './controllers/current-user-avatar.controller';
 import { CurrentUserController } from './controllers/current-user.controller';
 import { CurrentUserMapper } from './mappers/current-user.mapper';
@@ -28,7 +27,6 @@ import { UpdateCurrentUserAvatarUseCase } from './use-cases/update-current-user-
   controllers: [CurrentUserController, CurrentUserAvatarController],
   providers: [
     JwtAccessAuthGuard,
-    PermissionResolverService,
     CurrentUserMapper,
     UserRepository,
     UserRoleRepository,

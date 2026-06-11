@@ -7,6 +7,7 @@
     "title": "My Profile",
     "subtitle": "Keep your details up to date for a smoother care journey."
   },
+
   "summary": {
     "title": "Profile Details",
     "subtitle": "Review your information, then edit only when needed."
@@ -29,6 +30,9 @@
     "preferences": "Preferences"
   },
   "fields": {
+    "email": {
+      "label": "Email Address"
+    },
     "displayName": {
       "label": "Display Name",
       "placeholder": "Enter your display name"
@@ -69,6 +73,7 @@
     "hint": "Allowed formats: JPG, PNG, WEBP. Max size: 5MB.",
     "selectedFile": "Selected file: {fileName}",
     "actions": {
+      "changePhoto": "Change Photo",
       "upload": "Upload photo",
       "uploading": "Uploading...",
       "remove": "Remove photo",

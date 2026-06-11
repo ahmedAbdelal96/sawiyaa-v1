@@ -1,5 +1,7 @@
 "use client";
 
+import Avatar from "@/components/ui/avatar/Avatar";
+
 type ComparisonRow = {
   key: string;
   label: string;
@@ -53,12 +55,13 @@ export default function AdminApplicationStepIdentity({
       <div className="grid gap-4 lg:grid-cols-[220px_minmax(0,1fr)]">
         <div className="rounded-2xl border border-gray-100 bg-surface-secondary/70 p-4 dark:border-gray-800 dark:bg-gray-800/50">
           <div className="h-[160px] w-full overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900">
-            {avatarUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={avatarUrl} alt={name} className="h-full w-full object-cover" referrerPolicy="no-referrer" />
-            ) : (
-              <div className="flex h-full items-center justify-center text-sm text-gray-500">{noPhotoLabel}</div>
-            )}
+            <Avatar
+              src={avatarUrl}
+              name={name}
+              size="custom"
+              className="h-full w-full rounded-xl"
+              imgClassName="rounded-xl"
+            />
           </div>
           <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">{photoStatus}</p>
         </div>

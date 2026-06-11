@@ -5,13 +5,46 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, useWatch } from "react-hook-form";
 import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
-import { BadgeCheck, Camera, Eye, FilePenLine, Loader2, Upload, Trash2 } from "lucide-react";
+import {
+  BadgeCheck,
+  Camera,
+  Eye,
+  FilePenLine,
+  Loader2,
+  Upload,
+  Trash2,
+  User,
+  Briefcase,
+  CreditCard,
+  FileText,
+  Calendar,
+  Info,
+  Clock,
+  Layers,
+  ArrowRightLeft,
+  Mail,
+  Phone,
+  Globe,
+  AlertTriangle,
+  Sparkles,
+} from "lucide-react";
 import { z } from "zod";
 import Button from "@/components/ui/button/Button";
 import { FormModal } from "@/components/ui/modal";
 import Input from "@/components/form/input/InputField";
 import Label from "@/components/form/Label";
 import { FormSkeleton } from "@/components/shared/LoadingStates";
+import {
+  PractitionerPageHeader,
+  PractitionerStatsGrid,
+  PractitionerStatCard,
+  PractitionerSectionCard,
+  PractitionerTabs,
+  PractitionerInfoGrid,
+  PractitionerInfoItem,
+} from "@/components/shared/practitioner/PractitionerWorkspaceKit";
+import Avatar from "@/components/ui/avatar/Avatar";
+import { cn } from "@/lib/utils";
 import {
   getLocalizedBankOptions,
   getLocalizedWalletProviderOptions,
@@ -324,13 +357,24 @@ function formatReadinessRequirement(
   requirement: string,
   t: ReturnType<typeof useTranslations>,
 ): string {
-  switch (requirement) {
+  const cleanKey = requirement
+    .trim()
+    .replace(/\s+/g, "")
+    .replace(/^(.)/, (match) => match.toLowerCase());
+
+  switch (cleanKey) {
     case "primarySpecialtyCategoryId":
       return t("profile.readiness.requirements.primarySpecialtyCategoryId");
     case "payoutAccountHolderName":
+    case "accountHolderName":
       return t("profile.readiness.requirements.payoutAccountHolderName");
     case "payoutDestination":
+    case "payoutDetails":
       return t("profile.readiness.requirements.payoutDestination");
+    case "identityDocuments":
+      return t("profile.readiness.requirements.identityDocuments" as any);
+    case "academicCertificate":
+      return t("profile.readiness.requirements.academicCertificate" as any);
     default:
       return requirement;
   }
@@ -368,10 +412,50 @@ async function compressAvatarToDataUrl(file: File): Promise<string> {
   }
 }
 
+function InfoRow({
+  label,
+  value,
+  icon,
+}: {
+  label: React.ReactNode;
+  value: React.ReactNode;
+  icon?: React.ReactNode;
+}) {
+  const isValueEmpty =
+    value === null ||
+    value === undefined ||
+    (typeof value === "string" && value.trim().length === 0);
+
+  const displayValue = isValueEmpty ? (
+    <span className="text-slate-400 italic">—</span>
+  ) : (
+    value
+  );
+
+  return (
+    <div className="flex items-center justify-between py-2.5 border-b border-slate-100 last:border-0 dark:border-white/5">
+      <div className="flex items-center gap-2 min-w-0">
+        {icon && (
+          <div className="text-teal-600 dark:text-teal-450 flex-shrink-0">
+            {icon}
+          </div>
+        )}
+        <span className="text-xs font-semibold text-slate-500 dark:text-white/60 truncate">
+          {label}
+        </span>
+      </div>
+      <span className="text-sm font-bold text-slate-800 dark:text-white/95 text-end pl-4 leading-tight break-all">
+        {displayValue}
+      </span>
+    </div>
+  );
+}
+
 export default function PractitionerProfileWorkspace() {
   const t = useTranslations("practitioner-area");
   const locale = useLocale();
   const router = useRouter();
+  const [activeTab, setActiveTab] = useState("overview");
   const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
   const [feedback, setFeedback] = useState<{ tone: "success" | "error"; message: string } | null>(null);
   const [avatarDraft, setAvatarDraft] = useState<AvatarDraftState>({
@@ -386,13 +470,37 @@ export default function PractitionerProfileWorkspace() {
   const submitApplication = useSubmitPractitionerApplication();
 
   const profile = data?.profile;
+  const fallbackProfile = useMemo(() => ({
+    displayName: "",
+    avatarUrl: "",
+    professionalTitle: "",
+    practitionerType: "" as PractitionerType,
+    specialties: [],
+    payoutDestination: null,
+    pricing: {
+      session30: { egp: 0, usd: 0 },
+      session60: { egp: 0, usd: 0 },
+    },
+    yearsOfExperience: 0,
+    languages: [],
+    applicationStatusSummary: null,
+    credentialSummary: { totalCredentials: 0, pendingCount: 0, approvedCount: 0, rejectedCount: 0 },
+    primarySpecialtyCategoryId: "",
+    bio: "",
+    practitionerGender: "" as PractitionerGender,
+    countryCode: "",
+    timezone: "",
+    locale: "" as "ar" | "en",
+  } as unknown as PractitionerProfile), []);
+  const profileOrFallback = profile ?? fallbackProfile;
+
   const readiness = readinessQuery.data?.readiness ?? null;
   const application = profile?.applicationStatusSummary ?? null;
   const snapshot = application?.submissionSnapshot as ApplicationSnapshot;
   const hasPrimarySpecialty =
-    Boolean(profile?.primarySpecialtyCategoryId?.trim()) ||
-    Boolean(profile?.specialties.some((specialty) => specialty.isPrimary));
-  const hasPayoutAccountHolderName = Boolean(profile?.payoutDestination?.accountHolderName?.trim());
+    Boolean(profileOrFallback.primarySpecialtyCategoryId?.trim()) ||
+    Boolean(profileOrFallback.specialties.some((specialty) => specialty.isPrimary));
+  const hasPayoutAccountHolderName = Boolean(profileOrFallback.payoutDestination?.accountHolderName?.trim());
 
   const profileSchema = useMemo(
     () =>
@@ -874,15 +982,7 @@ export default function PractitionerProfileWorkspace() {
     }
   };
 
-  if (isLoading) {
-    return (
-      <section className={PAGE_CARD}>
-        <FormSkeleton />
-      </section>
-    );
-  }
-
-  if (isError || !profile) {
+  if (!isLoading && (isError || !profile)) {
     return (
       <section className={PAGE_CARD}>
         <div className="flex flex-col items-center justify-center py-10 text-center">
@@ -915,11 +1015,44 @@ export default function PractitionerProfileWorkspace() {
   const payoutSummaryCardClassName = `${SOFT_CARD} ${
     hasPayoutAccountHolderName ? "" : "border border-error-200 bg-error-50/30"
   }`;
-  const hasAvatar = Boolean(profile.avatarUrl);
-  const avatarInitials = getInitials(profile.displayName);
-  const displaySpecialties = profile.specialties.slice(0, 4);
-  const payoutSummary = formatPayoutDestinationLabel(profile.payoutDestination, t);
-  const credentialSummary = profile.credentialSummary;
+  const hasAvatar = Boolean(profileOrFallback.avatarUrl);
+  const avatarInitials = getInitials(profileOrFallback.displayName);
+  const displaySpecialties = profileOrFallback.specialties.slice(0, 4);
+  const payoutSummary = formatPayoutDestinationLabel(profileOrFallback.payoutDestination, t);
+  const credentialSummary = profileOrFallback.credentialSummary;
+  const formattedLanguages = useMemo(() => {
+    const languageLabels: Record<string, string> = {
+      ar: t("profile.locale.ar") || (locale === "ar" ? "العربية" : "Arabic"),
+      en: t("profile.locale.en") || (locale === "ar" ? "الإنجليزية" : "English"),
+      arabic: t("profile.locale.ar") || (locale === "ar" ? "العربية" : "Arabic"),
+      english: t("profile.locale.en") || (locale === "ar" ? "الإنجليزية" : "English"),
+    };
+    if (!profileOrFallback.languages || profileOrFallback.languages.length === 0) return null;
+    return profileOrFallback.languages
+      .map((l) => languageLabels[l.toLowerCase()] || l)
+      .join(locale === "ar" ? "، " : ", ");
+  }, [profileOrFallback.languages, locale, t]);
+
+  const tabLabels = {
+    ar: {
+      overview: "نظرة عامة",
+      personal: t("profile.sections.personal"),
+      professional: t("profile.sections.professional"),
+      payout: t("profile.sections.payoutDestination"),
+      credentials: `${t("profile.summary.credentials")} & ${t("profile.sections.specialties")}`,
+      availability: "الجدولة والباقات",
+    },
+    en: {
+      overview: "Overview",
+      personal: "Personal Info",
+      professional: "Professional & Pricing",
+      payout: "Payout Details",
+      credentials: "Credentials & Specialties",
+      availability: "Availability & Packages",
+    }
+  };
+
+  const activeLabels = tabLabels[locale === "ar" ? "ar" : "en"];
 
   return (
     <div className="space-y-4 sm:space-y-5">
@@ -935,378 +1068,711 @@ export default function PractitionerProfileWorkspace() {
         </div>
       ) : null}
 
-      <section className={PAGE_CARD}>
-        <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
-          <div className="flex min-w-0 items-start gap-4">
-            <div className="flex h-20 w-20 shrink-0 overflow-hidden rounded-full border border-border-light bg-surface-secondary">
-              {profile.avatarUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={profile.avatarUrl} alt={t("profile.avatar.alt")} className="h-full w-full object-cover" />
-              ) : (
-                <div className="flex h-full w-full items-center justify-center text-lg font-semibold text-text-muted">
-                  {avatarInitials}
-                </div>
-              )}
-            </div>
+      <PractitionerPageHeader
+        eyebrow={t("profile.page.eyebrow")}
+        title={t("profile.page.title")}
+        description={t("profile.page.subtitle")}
+      />
 
-            <div className="min-w-0 space-y-2">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="rounded-full bg-primary-light px-3 py-1 text-xs font-semibold text-primary">
-                  {t("profile.page.eyebrow")}
-                </span>
-                <span
-                  className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                    currentApplicationStatus === "APPROVED"
-                      ? "bg-success-50 text-success-700"
-                      : currentApplicationStatus === "UNDER_REVIEW" || currentApplicationStatus === "SUBMITTED"
-                        ? "bg-warning-50 text-warning-700"
-                        : "bg-surface-tertiary text-text-secondary"
-                  }`}
+      <PractitionerSectionCard className="p-0 overflow-hidden border-slate-200/80 shadow-sm">
+        {/* Tabs row at the top inside the card */}
+        <div className="px-5 pt-2 border-b border-slate-100 dark:border-white/5 bg-slate-50/30 dark:bg-white/[0.01]">
+          <PractitionerTabs
+            tabs={[
+              { id: "overview", label: activeLabels.overview, icon: <Info className="h-4 w-4" /> },
+              { id: "personal", label: activeLabels.personal, icon: <User className="h-4 w-4" /> },
+              { id: "professional", label: activeLabels.professional, icon: <Briefcase className="h-4 w-4" /> },
+              { id: "payout", label: activeLabels.payout, icon: <CreditCard className="h-4 w-4" /> },
+              { id: "credentials", label: activeLabels.credentials, icon: <FileText className="h-4 w-4" /> },
+              { id: "availability", label: activeLabels.availability, icon: <Calendar className="h-4 w-4" /> },
+            ]}
+            activeTab={activeTab}
+            onChange={setActiveTab}
+            className="border-b-0"
+          />
+        </div>
+
+        {/* Content area below tabs */}
+        <div className="p-5 grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-5 items-start">
+          {/* Left Column: Summary Card */}
+          <aside className="space-y-4">
+            <PractitionerSectionCard className="flex flex-col items-center text-center p-4">
+            <div className="relative group">
+              <Avatar
+                src={profileOrFallback.avatarUrl}
+                name={profileOrFallback.displayName ?? ""}
+                size="custom"
+                className="h-24 w-24 border-2 border-primary/20 bg-surface-secondary"
+                fallbackInitials={avatarInitials}
+              />
+              {canRequestChanges ? (
+                <button
+                  type="button"
+                  onClick={openRequestModal}
+                  className="absolute inset-0 flex items-center justify-center bg-black/40 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                  title={t("profile.actions.updateAvatar")}
                 >
-                  {applicationStatusLabel}
-                </span>
-              </div>
-
-              <h1 className="truncate text-2xl font-semibold text-text-primary sm:text-3xl">
-                {profile.displayName ?? t("profile.page.fallbackTitle")}
-              </h1>
-
-              <p className="max-w-3xl text-sm leading-6 text-text-secondary">
-                {t("profile.page.subtitle")}
-              </p>
-
-              <div className="flex flex-wrap gap-2">
-                {profile.practitionerType ? (
-                  <span className="rounded-full bg-surface-tertiary px-3 py-1 text-xs font-medium text-text-secondary">
-                    {t(`profile.practitionerType.${profile.practitionerType}` as Parameters<typeof t>[0])}
-                  </span>
-                ) : null}
-                {profile.countryCode ? (
-                  <span className="rounded-full bg-surface-tertiary px-3 py-1 text-xs font-medium text-text-secondary">
-                    {profile.countryCode}
-                  </span>
-                ) : null}
-                {profile.timezone ? (
-                  <span className="rounded-full bg-surface-tertiary px-3 py-1 text-xs font-medium text-text-secondary">
-                    {profile.timezone}
-                  </span>
-                ) : null}
-              </div>
-            </div>
-          </div>
-
-          <div className="flex flex-wrap gap-2 xl:flex-col xl:items-stretch">
-            <Button
-              size="sm"
-              onClick={openRequestModal}
-              disabled={!canRequestChanges}
-              startIcon={<FilePenLine className="h-4 w-4" />}
-            >
-              {currentApplicationStatus === "CHANGES_REQUESTED" || currentApplicationStatus === "REJECTED"
-                ? t("profile.actions.reviseRequest")
-                : t("profile.actions.requestChanges")}
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => {
-                document.getElementById("profile-live-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
-              }}
-              startIcon={<Eye className="h-4 w-4" />}
-            >
-              {t("profile.actions.reviewLiveProfile")}
-            </Button>
-          </div>
-        </div>
-
-        <div className="mt-5 grid gap-3 md:grid-cols-3">
-          <div className={`${SOFT_CARD} border-t-2 border-t-primary/30`}>
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
-              {t("profile.summary.reviewState")}
-            </p>
-            <p className="mt-2 text-base font-semibold text-text-primary">
-              {applicationStatusLabel}
-            </p>
-            <p className="mt-1 text-xs leading-5 text-text-secondary">
-              {currentApplicationStatus
-                ? t(`profile.request.statusMessage.${currentApplicationStatus}` as Parameters<typeof t>[0])
-                : t("profile.request.noRequestHint")}
-            </p>
-          </div>
-
-          <div className={SOFT_CARD}>
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
-              {t("profile.summary.readiness")}
-            </p>
-            <p className="mt-2 text-base font-semibold text-text-primary">{readinessLabel}</p>
-            <p className={`mt-1 text-xs leading-5 ${readinessTone === "success" ? "text-success-700" : "text-warning-700"}`}>
-              {canSubmitApplication
-                ? t("profile.readiness.readyNote")
-                : t("profile.readiness.notReadyNote")}
-            </p>
-            {!canSubmitApplication && readinessMissingRequirements.length > 0 ? (
-              <ul className="mt-2 space-y-1 text-xs leading-5 text-warning-700">
-                {readinessMissingRequirements.map((item) => (
-                  <li key={item}>- {formatReadinessRequirement(item, t)}</li>
-                ))}
-              </ul>
-            ) : null}
-          </div>
-
-          <div className={SOFT_CARD}>
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
-              {t("profile.summary.credentials")}
-            </p>
-            <p className="mt-2 text-base font-semibold text-text-primary">
-              {credentialSummary.totalCredentials}
-            </p>
-            <p className="mt-1 text-xs leading-5 text-text-secondary">
-              {t("profile.summary.credentialsNote", {
-                count: credentialSummary.totalCredentials,
-                pending: credentialSummary.pendingCount,
-                approved: credentialSummary.approvedCount,
-              })}
-            </p>
-          </div>
-        </div>
-      </section>
-
-      <section className="grid gap-4 xl:grid-cols-[1.25fr_.95fr]">
-        <article id="profile-live-section" className={SECTION_CARD}>
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <h2 className="text-lg font-semibold text-text-primary">{t("profile.sections.liveProfile")}</h2>
-              <p className="mt-1 text-sm text-text-secondary">{t("profile.sections.liveProfileNote")}</p>
-            </div>
-          </div>
-
-          <div className="mt-5 grid gap-3 md:grid-cols-2">
-            <ProfileFieldCard label={t("profile.fields.displayName.label")} value={profile.displayName} />
-            <ProfileFieldCard label={t("profile.fields.professionalTitle.label")} value={profile.professionalTitle} />
-            <ProfileFieldCard
-              label={t("profile.fields.practitionerType.label")}
-              value={t(`profile.practitionerType.${profile.practitionerType}` as Parameters<typeof t>[0])}
-            />
-            <ProfileFieldCard
-              label={t("profile.fields.practitionerGender.label")}
-              value={profile.practitionerGender ? t(`profile.practitionerGender.${profile.practitionerGender}` as Parameters<typeof t>[0]) : null}
-            />
-            <ProfileFieldCard label={t("profile.fields.countryCode.label")} value={profile.countryCode} />
-            <ProfileFieldCard label={t("profile.fields.timezone.label")} value={profile.timezone} />
-            <ProfileFieldCard label={t("profile.fields.locale.label")} value={profile.locale} />
-            <ProfileFieldCard
-              label={t("profile.fields.yearsOfExperience.label")}
-              value={profile.yearsOfExperience != null ? String(profile.yearsOfExperience) : null}
-            />
-          </div>
-
-          <div className="mt-4 rounded-2xl border border-border-light bg-surface-secondary p-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
-              {t("profile.sections.sessionPricing")}
-            </p>
-            <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-              <ProfileFieldCard
-                label={t("profile.fields.sessionPrice30Egp.label")}
-                value={formatMoneyValue(profile.pricing.session30.egp, locale)}
-              />
-              <ProfileFieldCard
-                label={t("profile.fields.sessionPrice30Usd.label")}
-                value={formatMoneyValue(profile.pricing.session30.usd, locale)}
-              />
-              <ProfileFieldCard
-                label={t("profile.fields.sessionPrice60Egp.label")}
-                value={formatMoneyValue(profile.pricing.session60.egp, locale)}
-              />
-              <ProfileFieldCard
-                label={t("profile.fields.sessionPrice60Usd.label")}
-                value={formatMoneyValue(profile.pricing.session60.usd, locale)}
-              />
-            </div>
-          </div>
-
-          <div className="mt-3 grid gap-3 md:grid-cols-2">
-            <div className="rounded-2xl border border-border-light bg-surface-secondary p-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
-                {t("profile.fields.bio.label")}
-              </p>
-              <p className="mt-2 text-sm leading-6 text-text-primary">
-                {profile.bio ?? t("profile.request.emptyValue")}
-              </p>
-            </div>
-
-            <div className={payoutSummaryCardClassName}>
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
-                {t("profile.sections.payoutDestination")}
-              </p>
-              <p className="mt-2 text-sm leading-6 text-text-primary">{payoutSummary}</p>
-              {!hasPayoutAccountHolderName ? (
-                <p className="mt-2 text-xs leading-5 text-error-700">
-                  {t("profile.request.payoutAccountHolderRequired")}
-                </p>
+                  <Camera className="h-5 w-5" />
+                </button>
               ) : null}
             </div>
-          </div>
 
-          <div className="mt-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
-              {t("profile.sections.specialties")}
-            </p>
-            <div className={`mt-2 rounded-2xl p-3 ${specialtiesSectionClassName}`}>
-              <div className="flex flex-wrap gap-2">
-              {displaySpecialties.length > 0 ? (
-                displaySpecialties.map((specialty) => (
-                  <span
-                    key={specialty.specialtyId}
-                    className="rounded-full bg-surface-tertiary px-3 py-1 text-xs font-medium text-text-secondary"
-                  >
-                    {specialty.title ?? specialty.slug}
-                    {specialty.isPrimary ? ` · ${t("profile.specialties.primary")}` : ""}
-                  </span>
-                ))
+            <h2 className="mt-3 text-lg font-bold text-text-primary dark:text-white/95 leading-tight">
+              {isLoading ? (
+                <div className="h-5 w-36 bg-slate-200/60 dark:bg-white/10 rounded animate-pulse mx-auto" />
               ) : (
-                <span className="text-sm text-text-secondary">{t("profile.specialties.empty")}</span>
+                profileOrFallback.displayName || t("profile.page.fallbackTitle")
               )}
-              </div>
-              {!hasPrimarySpecialty ? (
-                <div className="mt-3 flex flex-wrap items-center gap-2 text-sm leading-6 text-error-700">
-                  <span>{t("profile.request.primarySpecialtyRequired")}</span>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => router.push(specialtiesHelpRoute)}
-                  >
-                    {t("profile.actions.openSpecialties")}
-                  </Button>
-                </div>
-              ) : null}
-            </div>
-          </div>
-        </article>
+            </h2>
 
-        <article className={SECTION_CARD}>
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <h2 className="text-lg font-semibold text-text-primary">{t("profile.sections.changeRequest")}</h2>
-              <p className="mt-1 text-sm text-text-secondary">{t("profile.sections.changeRequestNote")}</p>
-            </div>
-            <span
-              className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                currentApplicationStatus === "APPROVED"
-                  ? "bg-success-50 text-success-700"
-                  : currentApplicationStatus === "UNDER_REVIEW" || currentApplicationStatus === "SUBMITTED"
-                    ? "bg-warning-50 text-warning-700"
-                    : "bg-surface-tertiary text-text-secondary"
-              }`}
-            >
-              {applicationStatusLabel}
-            </span>
-          </div>
-
-          <div className="mt-5 space-y-3">
-            <ProfileFieldCard
-              label={t("profile.request.submittedAt")}
-              value={formatDateTime(application?.submittedAt ?? null, locale)}
-            />
-            <ProfileFieldCard
-              label={t("profile.request.reviewedAt")}
-              value={formatDateTime(application?.reviewedAt ?? null, locale)}
-            />
-            <ProfileFieldCard
-              label={t("profile.request.reviewedBy")}
-              value={application?.reviewedByUserId}
-            />
-          </div>
-
-          <div className="mt-4 rounded-2xl border border-border-light bg-surface-secondary p-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
-              {t("profile.request.changeSummary")}
-            </p>
-            {currentRequestChanges.length > 0 ? (
-              <ul className="mt-3 space-y-2">
-                {currentRequestChanges.map((item) => (
-                  <li
-                    key={`${item.label}-${item.value}`}
-                    className="flex items-start gap-2 text-sm leading-6 text-text-primary"
-                  >
-                    <BadgeCheck className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                    <span>
-                      <span className="font-medium">{item.label}:</span> {item.value}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="mt-2 text-sm leading-6 text-text-secondary">
-                {t("profile.request.noChanges")}
+            {isLoading ? (
+              <div className="h-3.5 w-24 bg-slate-100/60 dark:bg-white/5 rounded animate-pulse mt-2 mx-auto" />
+            ) : profileOrFallback.professionalTitle ? (
+              <p className="mt-1 text-xs font-medium text-text-secondary dark:text-white/60">
+                {profileOrFallback.professionalTitle}
               </p>
+            ) : null}
+
+            {isLoading ? (
+              <div className="h-4 w-20 bg-slate-100/60 dark:bg-white/5 rounded animate-pulse mt-2 mx-auto" />
+            ) : profileOrFallback.practitionerType ? (
+              <span className="mt-2 inline-block rounded-full bg-slate-100 px-2.5 py-0.5 text-[10px] font-semibold text-text-secondary dark:bg-white/5">
+                {t(`profile.practitionerType.${profileOrFallback.practitionerType}` as Parameters<typeof t>[0])}
+              </span>
+            ) : null}
+
+            <div className="mt-3.5 w-full border-t border-slate-100 dark:border-white/5 pt-3.5 space-y-1.5">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-text-muted">{t("profile.summary.reviewState")}</span>
+                {isLoading ? (
+                  <span className="h-4 w-16 bg-slate-100/60 dark:bg-white/5 rounded animate-pulse" />
+                ) : (
+                  <span
+                    className={cn(
+                      "rounded-full px-2 py-0.5 font-semibold text-[10px]",
+                      currentApplicationStatus === "APPROVED"
+                        ? "bg-success-50 text-success-700 dark:bg-success-500/10 dark:text-success-300"
+                        : currentApplicationStatus === "UNDER_REVIEW" || currentApplicationStatus === "SUBMITTED"
+                          ? "bg-warning-50 text-warning-700 dark:bg-warning-500/10 dark:text-warning-300"
+                          : "bg-surface-tertiary text-text-secondary"
+                    )}
+                  >
+                    {applicationStatusLabel}
+                  </span>
+                )}
+              </div>
+
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-text-muted">{t("profile.summary.readiness")}</span>
+                {isLoading ? (
+                  <span className="h-4 w-16 bg-slate-100/60 dark:bg-white/5 rounded animate-pulse" />
+                ) : (
+                  <span
+                    className={cn(
+                      "flex items-center gap-1 font-semibold",
+                      canSubmitApplication ? "text-success-700 dark:text-success-300" : "text-warning-700 dark:text-warning-300"
+                    )}
+                  >
+                    <span className={cn("h-1.5 w-1.5 rounded-full", canSubmitApplication ? "bg-success-600" : "bg-warning-600")} />
+                    {readinessLabel}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            <div className="mt-3 w-full border-t border-slate-100 dark:border-white/5 pt-3 grid grid-cols-2 gap-1.5 text-center">
+              <div className="rounded-lg bg-slate-50/50 p-1.5 dark:bg-white/5">
+                <p className="text-[10px] font-semibold text-text-muted uppercase tracking-wider">{t("profile.fields.yearsOfExperience.label")}</p>
+                <p className="mt-1 text-sm font-bold text-text-primary dark:text-white/95">
+                  {isLoading ? (
+                    <span className="block h-4 w-6 bg-slate-100/65 dark:bg-white/5 rounded animate-pulse mx-auto" />
+                  ) : (
+                    profileOrFallback.yearsOfExperience != null ? profileOrFallback.yearsOfExperience : "-"
+                  )}
+                </p>
+              </div>
+              <div className="rounded-lg bg-slate-50/50 p-1.5 dark:bg-white/5">
+                <p className="text-[10px] font-semibold text-text-muted uppercase tracking-wider">{t("profile.summary.credentials")}</p>
+                <p className="mt-1 text-sm font-bold text-text-primary dark:text-white/95">
+                  {isLoading ? (
+                    <span className="block h-4 w-6 bg-slate-100/65 dark:bg-white/5 rounded animate-pulse mx-auto" />
+                  ) : (
+                    credentialSummary.totalCredentials
+                  )}
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-3 w-full space-y-2">
+              <Button
+                size="sm"
+                className="w-full justify-center"
+                onClick={openRequestModal}
+                disabled={!canRequestChanges}
+                startIcon={<FilePenLine className="h-4 w-4" />}
+              >
+                {currentApplicationStatus === "CHANGES_REQUESTED" || currentApplicationStatus === "REJECTED"
+                  ? t("profile.actions.reviseRequest")
+                  : t("profile.actions.requestChanges")}
+              </Button>
+            </div>
+          </PractitionerSectionCard>
+        </aside>
+
+        {/* Right Column: Tabbed Content */}
+        <main className="space-y-4 min-w-0">
+          <div className="space-y-4">
+            {isLoading ? (
+              <PractitionerSectionCard className="p-6">
+                <FormSkeleton />
+              </PractitionerSectionCard>
+            ) : (
+              <>
+                {/* Tab 1: Overview */}
+                {activeTab === "overview" && (
+                  <div className="space-y-4">
+                    {profileOrFallback.bio && (
+                      <PractitionerSectionCard>
+                        <div className="flex items-center gap-2.5 mb-4 border-b border-slate-150 pb-3 dark:border-white/10">
+                          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-teal-50 text-teal-700 dark:bg-teal-500/10 dark:text-teal-300">
+                            <User className="h-4 w-4" />
+                          </div>
+                          <h3 className="text-sm font-bold text-slate-800 dark:text-white/90">
+                            {t("profile.fields.bio.label")}
+                          </h3>
+                        </div>
+                        <p className="text-sm leading-relaxed text-slate-700 dark:text-white/80 whitespace-pre-wrap">
+                          {profileOrFallback.bio}
+                        </p>
+                      </PractitionerSectionCard>
+                    )}
+
+                    {/* Application Change Request Status Card */}
+                    <PractitionerSectionCard className="space-y-4">
+                      <div className="flex items-center justify-between mb-4 border-b border-slate-150 pb-3 dark:border-white/10">
+                        <div className="flex items-center gap-2.5">
+                          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-teal-50 text-teal-700 dark:bg-teal-500/10 dark:text-teal-300">
+                            <Info className="h-4 w-4" />
+                          </div>
+                          <h3 className="text-sm font-bold text-slate-800 dark:text-white/90">
+                            {t("profile.sections.changeRequest")}
+                          </h3>
+                        </div>
+                        <span
+                          className={cn(
+                            "rounded-full px-2.5 py-0.5 text-xs font-semibold",
+                            currentApplicationStatus === "APPROVED"
+                              ? "bg-success-50 text-success-700 dark:bg-success-500/10 dark:text-success-300"
+                              : currentApplicationStatus === "UNDER_REVIEW" || currentApplicationStatus === "SUBMITTED"
+                                ? "bg-warning-50 text-warning-700 dark:bg-warning-500/10 dark:text-warning-300"
+                                : "bg-surface-tertiary text-text-secondary"
+                          )}
+                        >
+                          {applicationStatusLabel}
+                        </span>
+                      </div>
+
+                      <div className="relative border-s border-slate-150 dark:border-white/10 ms-4 space-y-6 pt-2 pb-2">
+                        {/* Submitted */}
+                        <div className="relative ps-7">
+                          <div className="absolute -start-2.5 top-0 flex h-5 w-5 items-center justify-center rounded-full border border-teal-200 bg-teal-50 dark:border-teal-500/30 dark:bg-teal-500/10">
+                            <div className="h-2 w-2 rounded-full bg-teal-600 dark:bg-teal-400" />
+                          </div>
+                          <p className="text-[10px] font-bold text-slate-400 dark:text-white/40 uppercase tracking-wider">{t("profile.request.submittedAt")}</p>
+                          <p className="text-sm font-bold text-slate-800 dark:text-white/90 mt-0.5">
+                            {formatDateTime(application?.submittedAt ?? null, locale) || t("profile.request.emptyValue")}
+                          </p>
+                        </div>
+
+                        {/* Reviewed */}
+                        <div className="relative ps-7">
+                          <div className={cn(
+                            "absolute -start-2.5 top-0 flex h-5 w-5 items-center justify-center rounded-full border",
+                            application?.reviewedAt
+                              ? "border-teal-200 bg-teal-50 dark:border-teal-500/30 dark:bg-teal-500/10"
+                              : "border-slate-200 bg-slate-50 dark:border-white/10 dark:bg-white/5"
+                          )}>
+                            <div className={cn(
+                              "h-2 w-2 rounded-full",
+                              application?.reviewedAt ? "bg-teal-600 dark:bg-teal-400" : "bg-slate-400 dark:bg-white/20"
+                            )} />
+                          </div>
+                          <p className="text-[10px] font-bold text-slate-400 dark:text-white/40 uppercase tracking-wider">{t("profile.request.reviewedAt")}</p>
+                          <p className="text-sm font-bold text-slate-800 dark:text-white/90 mt-0.5">
+                            {formatDateTime(application?.reviewedAt ?? null, locale) || t("profile.request.emptyValue")}
+                            {application?.reviewedByUserId ? ` (${t("profile.request.reviewedBy")}: ${application.reviewedByUserId})` : ""}
+                          </p>
+                        </div>
+
+                        {/* Change Summary */}
+                        <div className="relative ps-7">
+                          <div className="absolute -start-2.5 top-0 flex h-5 w-5 items-center justify-center rounded-full border border-slate-200 bg-slate-50 dark:border-white/10 dark:bg-white/5">
+                            <div className="h-2 w-2 rounded-full bg-slate-400 dark:bg-white/20" />
+                          </div>
+                          <p className="text-[10px] font-bold text-slate-400 dark:text-white/40 uppercase tracking-wider">{t("profile.request.changeSummary")}</p>
+                          <div className="mt-1.5">
+                            {currentRequestChanges.length > 0 ? (
+                              <div className="flex flex-wrap gap-2 max-w-2xl">
+                                {currentRequestChanges.map((item) => (
+                                  <span
+                                    key={`${item.label}-${item.value}`}
+                                    className="inline-flex items-center gap-1 rounded-md bg-slate-50 border border-slate-200 px-2 py-0.5 text-xs text-slate-700 dark:bg-white/5 dark:border-white/10 dark:text-white/80"
+                                  >
+                                    <span className="font-semibold">{item.label}:</span> {item.value}
+                                  </span>
+                                ))}
+                              </div>
+                            ) : (
+                              <p className="text-xs text-text-muted">{t("profile.request.noChanges")}</p>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Admin Note */}
+                        {(application?.reviewDecisionReason || application?.reviewNotes) ? (
+                          <div className="relative ps-7">
+                            <div className="absolute -start-2.5 top-0 flex h-5 w-5 items-center justify-center rounded-full border border-amber-200 bg-amber-50 dark:border-amber-500/30 dark:bg-amber-500/10">
+                              <div className="h-2 w-2 rounded-full bg-amber-600 dark:bg-amber-400" />
+                            </div>
+                            <p className="text-[10px] font-bold text-slate-400 dark:text-white/40 uppercase tracking-wider">{t("profile.request.adminNote")}</p>
+                            <p className="mt-1.5 text-xs leading-relaxed text-amber-900 dark:text-amber-300 bg-amber-50/30 dark:bg-amber-500/5 p-3 rounded-lg border border-amber-200/50 dark:border-amber-500/10 max-w-2xl">
+                              {application?.reviewDecisionReason ?? application?.reviewNotes}
+                            </p>
+                          </div>
+                        ) : null}
+                      </div>
+                    </PractitionerSectionCard>
+
+                    {/* Readiness Requirements Details */}
+                    {!canSubmitApplication && (
+                      <div className="rounded-xl border border-amber-200 bg-amber-50/20 p-5 dark:border-amber-500/30 dark:bg-amber-500/5">
+                        <div className="flex items-start gap-3">
+                          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-amber-100 text-amber-850 dark:bg-amber-500/20 dark:text-amber-300">
+                            <AlertTriangle className="h-4 w-4" />
+                          </div>
+                          <div className="space-y-3 flex-1 min-w-0">
+                            <div>
+                              <h4 className="text-sm font-bold text-amber-900 dark:text-amber-300">
+                                {t("profile.readiness.notReady")}
+                              </h4>
+                              <p className="mt-0.5 text-xs text-amber-700/90 dark:text-amber-400/95 leading-normal">
+                                {t("profile.readiness.notReadyNote")}
+                              </p>
+                            </div>
+                            {readinessMissingRequirements.length > 0 && (
+                              <div className="flex flex-wrap gap-2">
+                                {readinessMissingRequirements.map((item) => (
+                                  <span
+                                    key={item}
+                                    className="inline-flex items-center gap-1.5 rounded-full bg-amber-100/60 px-3 py-1 text-xs font-semibold text-amber-900 border border-amber-200/50 dark:bg-amber-500/10 dark:text-amber-300 dark:border-amber-500/20"
+                                  >
+                                    <span className="h-1.5 w-1.5 rounded-full bg-amber-600 dark:bg-amber-400 shrink-0" />
+                                    {formatReadinessRequirement(item, t)}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Tab 2: Personal Details */}
+                {activeTab === "personal" && (
+                  <PractitionerSectionCard className="space-y-4">
+                    <div className="flex items-center gap-2.5 mb-4 border-b border-slate-150 pb-3 dark:border-white/10">
+                      <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-teal-50 text-teal-700 dark:bg-teal-500/10 dark:text-teal-300">
+                        <User className="h-4 w-4" />
+                      </div>
+                      <h3 className="text-sm font-bold text-slate-800 dark:text-white/90">
+                        {t("profile.sections.personal")}
+                      </h3>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-0.5">
+                      <InfoRow
+                        label={t("profile.fields.displayName.label")}
+                        value={profileOrFallback.displayName}
+                        icon={<User className="h-3.5 w-3.5" />}
+                      />
+                      <InfoRow
+                        label={t("profile.fields.practitionerGender.label")}
+                        value={profileOrFallback.practitionerGender ? t(`profile.practitionerGender.${profileOrFallback.practitionerGender}` as Parameters<typeof t>[0]) : null}
+                        icon={<User className="h-3.5 w-3.5" />}
+                      />
+                      <InfoRow
+                        label={t("profile.fields.countryCode.label")}
+                        value={profileOrFallback.countryCode}
+                        icon={<Globe className="h-3.5 w-3.5" />}
+                      />
+                      <InfoRow
+                        label={t("profile.fields.timezone.label")}
+                        value={profileOrFallback.timezone}
+                        icon={<Clock className="h-3.5 w-3.5" />}
+                      />
+                      <InfoRow
+                        label={t("profile.fields.locale.label")}
+                        value={profileOrFallback.locale ? t(`profile.locale.${profileOrFallback.locale}` as Parameters<typeof t>[0]) : null}
+                        icon={<Globe className="h-3.5 w-3.5" />}
+                      />
+                    </div>
+                  </PractitionerSectionCard>
+                )}
+
+                {/* Tab 3: Professional & Pricing */}
+                {activeTab === "professional" && (
+                  <div className="space-y-4">
+                    <PractitionerSectionCard className="space-y-4">
+                      <div className="flex items-center gap-2.5 mb-4 border-b border-slate-150 pb-3 dark:border-white/10">
+                        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-teal-50 text-teal-700 dark:bg-teal-500/10 dark:text-teal-300">
+                          <Briefcase className="h-4 w-4" />
+                        </div>
+                        <h3 className="text-sm font-bold text-slate-800 dark:text-white/90">
+                          {t("profile.sections.professional")}
+                        </h3>
+                      </div>
+                      <div className="space-y-0.5">
+                        <InfoRow
+                          label={t("profile.fields.professionalTitle.label")}
+                          value={profileOrFallback.professionalTitle}
+                          icon={<Briefcase className="h-3.5 w-3.5" />}
+                        />
+                        <InfoRow
+                          label={t("profile.fields.practitionerType.label") || t("profile.fields.practitionerType")}
+                          value={profileOrFallback.practitionerType ? t(`profile.practitionerType.${profileOrFallback.practitionerType}` as Parameters<typeof t>[0]) : null}
+                          icon={<User className="h-3.5 w-3.5" />}
+                        />
+                        <InfoRow
+                          label={t("profile.fields.yearsOfExperience.label")}
+                          value={profileOrFallback.yearsOfExperience != null ? String(profileOrFallback.yearsOfExperience) : null}
+                          icon={<Clock className="h-3.5 w-3.5" />}
+                        />
+                        <InfoRow
+                          label={t("profile.sections.languages") || "Languages"}
+                          value={formattedLanguages}
+                          icon={<Globe className="h-3.5 w-3.5" />}
+                        />
+                      </div>
+                    </PractitionerSectionCard>
+
+                    <PractitionerSectionCard className="space-y-4">
+                      <div className="flex items-center gap-2.5 mb-4 border-b border-slate-150 pb-3 dark:border-white/10">
+                        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-teal-50 text-teal-700 dark:bg-teal-500/10 dark:text-teal-300">
+                          <CreditCard className="h-4 w-4" />
+                        </div>
+                        <h3 className="text-sm font-bold text-slate-800 dark:text-white/90">
+                          {t("profile.sections.sessionPricing")}
+                        </h3>
+                      </div>
+                      <PractitionerInfoGrid columns={2}>
+                        {/* EGP 30m */}
+                        <div className="rounded-xl border border-slate-200/80 bg-white p-4.5 shadow-sm hover:shadow-md hover:border-slate-300 transition-all duration-200 dark:border-white/8 dark:bg-surface-secondary flex items-center justify-between">
+                          <div className="space-y-1">
+                            <span className="text-[10px] font-bold text-slate-400 dark:text-white/40 uppercase tracking-wider">
+                              {locale === "ar" ? "سعر 30 دقيقة (EGP)" : "30-Minute Price (EGP)"}
+                            </span>
+                            <p className="text-xl font-extrabold text-teal-600 dark:text-teal-400 leading-tight">
+                              {formatMoneyValue(profileOrFallback.pricing.session30.egp, locale)}
+                            </p>
+                          </div>
+                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-teal-50 border border-teal-100/50 text-teal-700 dark:bg-teal-500/10 dark:text-teal-300 dark:border-teal-500/20">
+                            <CreditCard className="h-5 w-5" />
+                          </div>
+                        </div>
+
+                        {/* USD 30m */}
+                        <div className="rounded-xl border border-slate-200/80 bg-white p-4.5 shadow-sm hover:shadow-md hover:border-slate-300 transition-all duration-200 dark:border-white/8 dark:bg-surface-secondary flex items-center justify-between">
+                          <div className="space-y-1">
+                            <span className="text-[10px] font-bold text-slate-400 dark:text-white/40 uppercase tracking-wider">
+                              {locale === "ar" ? "سعر 30 دقيقة (USD)" : "30-Minute Price (USD)"}
+                            </span>
+                            <p className="text-xl font-extrabold text-amber-600 dark:text-amber-400 leading-tight">
+                              {formatMoneyValue(profileOrFallback.pricing.session30.usd, locale)}
+                            </p>
+                          </div>
+                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-50 border border-amber-100/50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300 dark:border-amber-500/20">
+                            <CreditCard className="h-5 w-5" />
+                          </div>
+                        </div>
+
+                        {/* EGP 60m */}
+                        <div className="rounded-xl border border-slate-200/80 bg-white p-4.5 shadow-sm hover:shadow-md hover:border-slate-300 transition-all duration-200 dark:border-white/8 dark:bg-surface-secondary flex items-center justify-between">
+                          <div className="space-y-1">
+                            <span className="text-[10px] font-bold text-slate-400 dark:text-white/40 uppercase tracking-wider">
+                              {locale === "ar" ? "سعر 60 دقيقة (EGP)" : "60-Minute Price (EGP)"}
+                            </span>
+                            <p className="text-xl font-extrabold text-teal-600 dark:text-teal-400 leading-tight">
+                              {formatMoneyValue(profileOrFallback.pricing.session60.egp, locale)}
+                            </p>
+                          </div>
+                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-teal-50 border border-teal-100/50 text-teal-700 dark:bg-teal-500/10 dark:text-teal-300 dark:border-teal-500/20">
+                            <CreditCard className="h-5 w-5" />
+                          </div>
+                        </div>
+
+                        {/* USD 60m */}
+                        <div className="rounded-xl border border-slate-200/80 bg-white p-4.5 shadow-sm hover:shadow-md hover:border-slate-300 transition-all duration-200 dark:border-white/8 dark:bg-surface-secondary flex items-center justify-between">
+                          <div className="space-y-1">
+                            <span className="text-[10px] font-bold text-slate-400 dark:text-white/40 uppercase tracking-wider">
+                              {locale === "ar" ? "سعر 60 دقيقة (USD)" : "60-Minute Price (USD)"}
+                            </span>
+                            <p className="text-xl font-extrabold text-amber-600 dark:text-amber-400 leading-tight">
+                              {formatMoneyValue(profileOrFallback.pricing.session60.usd, locale)}
+                            </p>
+                          </div>
+                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-50 border border-amber-100/50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300 dark:border-amber-500/20">
+                            <CreditCard className="h-5 w-5" />
+                          </div>
+                        </div>
+                      </PractitionerInfoGrid>
+                    </PractitionerSectionCard>
+                  </div>
+                )}
+
+                {/* Tab 4: Payout Details */}
+                {activeTab === "payout" && (
+                  <PractitionerSectionCard className="space-y-4">
+                    <div className="flex items-center gap-2.5 mb-4 border-b border-slate-150 pb-3 dark:border-white/10">
+                      <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-teal-50 text-teal-700 dark:bg-teal-500/10 dark:text-teal-300">
+                        <CreditCard className="h-4 w-4" />
+                      </div>
+                      <h3 className="text-sm font-bold text-slate-800 dark:text-white/90">
+                        {t("profile.sections.payoutDestination")}
+                      </h3>
+                    </div>
+
+                    <div className={cn(
+                      "p-5 rounded-xl border flex items-start gap-3.5 shadow-sm mb-4 transition-all duration-200",
+                      hasPayoutAccountHolderName 
+                        ? "bg-slate-50/30 border-slate-200 dark:bg-white/[0.02] dark:border-white/8" 
+                        : "border-error-200 bg-error-50/20"
+                    )}>
+                      <div className={cn(
+                        "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border",
+                        hasPayoutAccountHolderName 
+                          ? "bg-teal-50 border-teal-100 text-teal-700 dark:bg-teal-500/10 dark:text-teal-300 dark:border-teal-500/20" 
+                          : "bg-error-100 border-error-200 text-error-700"
+                      )}>
+                        <CreditCard className="h-5 w-5" />
+                      </div>
+                      <div className="space-y-1 flex-1">
+                        <p className="text-xs font-medium text-slate-500 dark:text-white/60">
+                          {t("profile.fields.payoutMethodType.label")}
+                        </p>
+                        <p className="text-base font-bold text-slate-900 dark:text-white/95 leading-tight">
+                          {payoutSummary}
+                        </p>
+                        {!hasPayoutAccountHolderName && (
+                          <p className="mt-1.5 text-xs text-error-600 font-medium">
+                            {t("profile.request.payoutAccountHolderRequired")}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    {!profileOrFallback.payoutDestination?.methodType ? (
+                      <div className="text-center py-6 border border-dashed border-slate-200 dark:border-white/10 rounded-xl bg-slate-50/20 p-4">
+                        <p className="text-sm text-text-muted italic">
+                          {locale === "ar" ? "لا توجد تفاصيل صرف مضافة بعد." : "No payout details added yet."}
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="space-y-0.5">
+                        <InfoRow
+                          label={t("profile.fields.payoutAccountHolderName.label")}
+                          value={profileOrFallback.payoutDestination.accountHolderName}
+                          icon={<User className="h-3.5 w-3.5" />}
+                        />
+
+                        {profileOrFallback.payoutDestination.methodType === "BANK_ACCOUNT" && (
+                          <>
+                            <InfoRow
+                              label={t("profile.fields.payoutBankName.label")}
+                              value={profileOrFallback.payoutDestination.bankName}
+                              icon={<Briefcase className="h-3.5 w-3.5" />}
+                            />
+                            <InfoRow
+                              label={t("profile.fields.payoutBankAccountNumber.label")}
+                              value={profileOrFallback.payoutDestination.bankAccountNumber}
+                              icon={<CreditCard className="h-3.5 w-3.5" />}
+                            />
+                          </>
+                        )}
+
+                        {profileOrFallback.payoutDestination.methodType === "IBAN" && (
+                          <InfoRow
+                            label={t("profile.fields.payoutIban.label")}
+                            value={profileOrFallback.payoutDestination.iban}
+                            icon={<CreditCard className="h-3.5 w-3.5" />}
+                          />
+                        )}
+
+                        {profileOrFallback.payoutDestination.methodType === "WALLET" && (
+                          <>
+                            <InfoRow
+                              label={t("profile.fields.payoutWalletProvider.label")}
+                              value={profileOrFallback.payoutDestination.walletProvider}
+                              icon={<Layers className="h-3.5 w-3.5" />}
+                            />
+                            <InfoRow
+                              label={t("profile.fields.payoutWalletIdentifier.label")}
+                              value={profileOrFallback.payoutDestination.walletIdentifier}
+                              icon={<Phone className="h-3.5 w-3.5" />}
+                            />
+                          </>
+                        )}
+
+                        {profileOrFallback.payoutDestination.methodType === "OTHER" && (
+                          <InfoRow
+                            label={t("profile.fields.payoutOtherDetails.label")}
+                            value={profileOrFallback.payoutDestination.otherDetails}
+                            icon={<FileText className="h-3.5 w-3.5" />}
+                          />
+                        )}
+                      </div>
+                    )}
+                  </PractitionerSectionCard>
+                )}
+
+                {/* Tab 5: Credentials & Specialties */}
+                {activeTab === "credentials" && (
+                  <div className="space-y-4">
+                    <PractitionerSectionCard className="space-y-4">
+                      <div className="flex items-center justify-between mb-4 border-b border-slate-150 pb-3 dark:border-white/10">
+                        <div className="flex items-center gap-2.5">
+                          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-teal-50 text-teal-700 dark:bg-teal-500/10 dark:text-teal-300">
+                            <FileText className="h-4 w-4" />
+                          </div>
+                          <h3 className="text-sm font-bold text-slate-800 dark:text-white/90">
+                            {t("profile.summary.credentials")}
+                          </h3>
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => router.push(`/${locale}/practitioner/credentials`)}
+                        >
+                          {t("dashboard.quickLinks.credentials.title")}
+                        </Button>
+                      </div>
+
+                      <div className="space-y-0.5">
+                        <InfoRow
+                          label={locale === "ar" ? "إجمالي المؤهلات" : "Total credentials"}
+                          value={credentialSummary.totalCredentials}
+                          icon={<Layers className="h-3.5 w-3.5" />}
+                        />
+                        <InfoRow
+                          label={locale === "ar" ? "المؤهلات المعتمدة" : "Approved credentials"}
+                          value={
+                            <span className="text-emerald-600 dark:text-emerald-400 font-bold">
+                              {credentialSummary.approvedCount}
+                            </span>
+                          }
+                          icon={<BadgeCheck className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />}
+                        />
+                        <InfoRow
+                          label={locale === "ar" ? "المؤهلات قيد المراجعة" : "Pending credentials"}
+                          value={
+                            <span className="text-amber-600 dark:text-amber-400 font-bold">
+                              {credentialSummary.pendingCount}
+                            </span>
+                          }
+                          icon={<Clock className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />}
+                        />
+                      </div>
+                    </PractitionerSectionCard>
+
+                    <PractitionerSectionCard className="space-y-4">
+                      <div className="flex items-center justify-between mb-4 border-b border-slate-150 pb-3 dark:border-white/10">
+                        <div className="flex items-center gap-2.5">
+                          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-teal-50 text-teal-700 dark:bg-teal-500/10 dark:text-teal-300">
+                            <Layers className="h-4 w-4" />
+                          </div>
+                          <h3 className="text-sm font-bold text-slate-800 dark:text-white/90">
+                            {t("profile.sections.specialties")}
+                          </h3>
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => router.push(specialtiesHelpRoute)}
+                        >
+                          {t("profile.actions.openSpecialties")}
+                        </Button>
+                      </div>
+
+                      <div className={cn(
+                        "p-5 rounded-xl border transition-all duration-200", 
+                        hasPrimarySpecialty 
+                          ? "bg-slate-50/30 border-slate-200 dark:bg-white/[0.01] dark:border-white/8" 
+                          : "border-error-200 bg-error-50/20"
+                      )}>
+                        <div className="flex flex-wrap gap-2">
+                          {displaySpecialties.length > 0 ? (
+                            displaySpecialties.map((specialty) => (
+                              <span
+                                key={specialty.specialtyId}
+                                className={cn(
+                                  "inline-flex items-center gap-1.5 rounded-full px-3.5 py-1 text-xs font-bold border transition-colors",
+                                  specialty.isPrimary
+                                    ? "bg-teal-50 border-teal-200 text-teal-800 dark:bg-teal-500/10 dark:border-teal-500/20 dark:text-teal-300"
+                                    : "bg-slate-50 border-slate-200 text-slate-700 dark:bg-white/5 dark:border-white/10 dark:text-white/80"
+                                )}
+                              >
+                                {specialty.isPrimary ? (
+                                  <Sparkles className="h-3 w-3 text-teal-600 dark:text-teal-400 shrink-0" />
+                                ) : null}
+                                <span>{specialty.title ?? specialty.slug}</span>
+                                {specialty.isPrimary ? (
+                                  <span className="text-[10px] opacity-75 font-medium">({t("profile.specialties.primary")})</span>
+                                ) : null}
+                              </span>
+                            ))
+                          ) : (
+                            <span className="text-sm text-text-muted italic">{t("profile.specialties.empty")}</span>
+                          )}
+                        </div>
+
+                        {!hasPrimarySpecialty && (
+                          <p className="mt-2 text-xs text-error-600 font-medium">{t("profile.request.primarySpecialtyRequired")}</p>
+                        )}
+                      </div>
+                    </PractitionerSectionCard>
+                  </div>
+                )}
+
+                {/* Tab 6: Availability & Packages */}
+                {activeTab === "availability" && (
+                  <PractitionerSectionCard className="space-y-4 text-center py-8">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-teal-50 text-teal-700 dark:bg-teal-500/10 dark:text-teal-300 mx-auto mb-2">
+                      <Calendar className="h-6 w-6" />
+                    </div>
+                    <h3 className="text-base font-bold text-text-primary dark:text-white/95">
+                      {locale === "ar" ? "إدارة مواعيد الجدولة والباقات" : "Manage Schedule & Packages"}
+                    </h3>
+                    <p className="text-sm text-text-secondary max-w-md mx-auto leading-relaxed">
+                      {locale === "ar"
+                        ? "يمكنك إعداد الأوقات المتاحة وحضورك وتفعيل باقات الجلسات من خلال لوحة الجدولة المخصصة."
+                        : "You can manage your weekly schedule, presence, and session packages in the dedicated scheduling page."}
+                    </p>
+                    <div className="pt-2">
+                      <Button
+                        onClick={() => router.push(`/${locale}/practitioner/availability`)}
+                        startIcon={<Calendar className="h-4 w-4" />}
+                      >
+                        {locale === "ar" ? "الذهاب إلى التوفر" : "Go to Availability"}
+                      </Button>
+                    </div>
+                  </PractitionerSectionCard>
+                )}
+              </>
             )}
           </div>
-
-          {application?.reviewDecisionReason || application?.reviewNotes ? (
-            <div className="mt-4 rounded-2xl border border-border-light bg-surface-secondary p-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
-                {t("profile.request.adminNote")}
-              </p>
-              <p className="mt-2 text-sm leading-6 text-text-primary">
-                {application?.reviewDecisionReason ?? application?.reviewNotes ?? "-"}
-              </p>
-            </div>
-          ) : null}
-        </article>
-      </section>
-
-      <section className={SECTION_CARD}>
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div className="min-w-0">
-            <h2 className="text-lg font-semibold text-text-primary">{t("profile.sections.avatar")}</h2>
-            <p className="mt-1 text-sm text-text-secondary">{t("profile.avatar.pageHint")}</p>
-          </div>
-
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={openRequestModal}
-            disabled={!canRequestChanges}
-            startIcon={<Camera className="h-4 w-4" />}
-          >
-            {t("profile.actions.updateAvatar")}
-          </Button>
-        </div>
-
-        <div className="mt-4 grid gap-4 md:grid-cols-[160px_1fr]">
-          <div className="flex h-40 w-40 overflow-hidden rounded-[28px] border border-border-light bg-surface-secondary">
-            {selectedAvatarPreview ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={selectedAvatarPreview} alt={t("profile.avatar.alt")} className="h-full w-full object-cover" />
-            ) : (
-              <div className="flex h-full w-full items-center justify-center text-2xl font-semibold text-text-muted">
-                {avatarInitials}
-              </div>
-            )}
-          </div>
-
-          <div className="space-y-3">
-            <div className="rounded-2xl border border-border-light bg-surface-secondary p-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
-                {t("profile.avatar.liveLabel")}
-              </p>
-              <p className="mt-2 text-sm leading-6 text-text-primary">
-                {hasAvatar ? t("profile.avatar.livePresent") : t("profile.avatar.liveEmpty")}
-              </p>
-            </div>
-
-            <div className="rounded-2xl border border-border-light bg-surface-secondary p-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
-                {t("profile.avatar.hint")}
-              </p>
-              <p className="mt-2 text-sm leading-6 text-text-secondary">
-                {t("profile.avatar.hintBody")}
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
+        </main>
+      </div>
+      </PractitionerSectionCard>
 
       <FormModal
         isOpen={isRequestModalOpen}
@@ -1658,7 +2124,7 @@ export default function PractitionerProfileWorkspace() {
                   {avatarDraft.previewUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={avatarDraft.previewUrl} alt={t("profile.avatar.alt")} className="h-full w-full object-cover" />
-                  ) : profile.avatarUrl ? (
+                  ) : profile?.avatarUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={profile.avatarUrl} alt={t("profile.avatar.alt")} className="h-full w-full object-cover" />
                   ) : (
@@ -1695,7 +2161,7 @@ export default function PractitionerProfileWorkspace() {
                       variant="outline"
                       size="sm"
                       onClick={handleKeepCurrentPhoto}
-                      disabled={!profile.avatarUrl && avatarDraft.mode === "keep"}
+                      disabled={!profile?.avatarUrl && avatarDraft.mode === "keep"}
                     >
                       {t("profile.avatar.keepCurrent")}
                     </Button>

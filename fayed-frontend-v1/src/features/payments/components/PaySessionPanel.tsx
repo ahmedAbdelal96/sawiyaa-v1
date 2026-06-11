@@ -518,7 +518,10 @@ export default function PaySessionPanel({ sessionId }: Props) {
 
   const initiate = useInitiateSessionPayment();
 
-  const returnUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? ""}/${locale}/patient/sessions/${sessionId}/payment-return`;
+  const returnUrl =
+    typeof window !== "undefined" && window.location?.origin
+      ? `${window.location.origin}/${locale}/patient/sessions/${sessionId}/payment-return`
+      : "";
   const gatewayRemainingAmount = Number(walletSplit?.gatewayRemaining ?? "0");
   const isHostedCheckoutExpected = Boolean(breakdown && gatewayRemainingAmount > 0);
 
@@ -625,6 +628,10 @@ export default function PaySessionPanel({ sessionId }: Props) {
             supportedPaymobMethods.includes(selectedPaymobMethod)
               ? selectedPaymobMethod
               : undefined,
+          returnUrl:
+            isPaymobPaymentFlow && isHostedCheckoutExpected
+              ? returnUrl ?? undefined
+              : undefined,
           acceptedRefundPolicyId: acceptedRefundPolicyId ?? "",
         },
       },
@@ -646,7 +653,11 @@ export default function PaySessionPanel({ sessionId }: Props) {
             data.item.provider === "INTERNAL_WALLET" &&
             (data.item.status === "CAPTURED" || data.item.status === "AUTHORIZED")
           ) {
-            window.location.assign(`${returnUrl}?redirect_status=succeeded`);
+            if (returnUrl) {
+              window.location.assign(`${returnUrl}?redirect_status=succeeded`);
+              return;
+            }
+            setInitiateError(t("page.initiateError"));
             return;
           }
 

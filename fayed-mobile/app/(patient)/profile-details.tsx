@@ -25,6 +25,7 @@ import {
   useRemovePatientAvatar,
   useUploadPatientAvatar,
 } from "../../src/features/patient/profile/hooks";
+import { normalizeProfileGender } from "../../src/features/patient/profile/gender-utils";
 import {
   formatProfileDate,
   getInitials,
@@ -82,8 +83,9 @@ export default function PatientProfileDetailsScreen() {
   const birthDateLabel = formatProfileDate(profile?.dateOfBirth, i18n.language)
     ?? t("profileScreen.none");
 
-  const genderLabel = profile?.gender
-    ? t(`profileScreen.details.genderOptions.${profile.gender}` as const)
+  const genderKey = normalizeProfileGender(profile?.gender);
+  const genderLabel = genderKey
+    ? t(`profileScreen.details.genderOptions.${genderKey}` as const)
     : t("profileScreen.none");
 
   const countryLabel = getCountryLabel(profile?.countryCode ?? null, i18n.language);
@@ -319,7 +321,6 @@ export default function PatientProfileDetailsScreen() {
         onPickImage={pickImage}
         onRemove={handleRemoveAvatar}
         hasAvatar={!!(profile?.avatarUrl || profile?.avatarDataUrl)}
-        isRtl={isRtl}
         theme={theme}
         t={t}
       />
@@ -458,7 +459,6 @@ function AvatarActionSheet({
   onPickImage,
   onRemove,
   hasAvatar,
-  isRtl,
   theme,
   t,
 }: {
@@ -467,7 +467,6 @@ function AvatarActionSheet({
   onPickImage: () => void;
   onRemove: () => void;
   hasAvatar: boolean;
-  isRtl: boolean;
   theme: ReturnType<typeof useTheme>["theme"];
   t: (key: string) => string;
 }) {

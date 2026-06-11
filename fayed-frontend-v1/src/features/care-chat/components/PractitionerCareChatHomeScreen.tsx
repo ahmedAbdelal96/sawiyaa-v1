@@ -10,7 +10,7 @@ import type { ColumnDef } from "@/components/ui/data-table";
 import { buildUpdatedSearchParams, parseEnumParam, parsePositiveIntParam } from "@/components/ui/data-table";
 import ActionIconButton from "@/components/ui/action-icon-button/ActionIconButton";
 import FilterClearButton from "@/components/ui/filters/FilterClearButton";
-import AdminOperationalListShell, { AdminSummaryCard } from "@/components/shared/admin/AdminOperationalListShell";
+import PractitionerOperationalListShell, { PractitionerSummaryCard } from "@/components/shared/practitioner/PractitionerOperationalListShell";
 import { DEFAULT_PAGE_LIMIT, DEFAULT_PAGE_SIZE_OPTIONS } from "@/constants/pagination";
 import { usePractitionerCareChatRequests } from "../hooks/use-care-chat";
 import type { CareChatListParams, CareChatRequestItem, CareChatRequestStatus } from "../types/care-chat.types";
@@ -154,16 +154,17 @@ export default function PractitionerCareChatHomeScreen() {
   };
 
   return (
-    <AdminOperationalListShell
+    <PractitionerOperationalListShell
       eyebrow={t("practitioner.home.eyebrow")}
       title={t("practitioner.home.title")}
       description={t("practitioner.home.note")}
       summaryCards={
-        <AdminSummaryCard
+        <PractitionerSummaryCard
           label={t("practitioner.list.heading")}
           value={data ? String(data.pagination.totalItems) : t("practitioner.list.countLoading")}
           hint={t("practitioner.list.note")}
           tone="primary"
+          metricKey="carechat.total"
         />
       }
       filters={
@@ -247,6 +248,6 @@ export default function PractitionerCareChatHomeScreen() {
         caption={t("practitioner.list.heading")}
         size="sm"
       />
-    </AdminOperationalListShell>
+    </PractitionerOperationalListShell>
   );
 }

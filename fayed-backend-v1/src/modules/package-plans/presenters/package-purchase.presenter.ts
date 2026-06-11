@@ -1,5 +1,11 @@
 import { Injectable } from '@nestjs/common';
+import { SessionProvider } from '@prisma/client';
 import { PaymentRegionalPricingMode } from '@common/payments/payment-region.resolver';
+import {
+  buildSessionJoinAvailabilityViewModel,
+  DEFAULT_SESSION_RUNTIME_PREPARE_LEAD_MINUTES,
+  resolveSessionPresentationStatus,
+} from '@modules/sessions/utils/session-join-policy.util';
 import {
   PatientPackagePurchaseViewModel,
   PackagePurchaseSessionSummaryViewModel,
@@ -31,6 +37,9 @@ type PurchaseRecord = {
     id: string;
     sessionCode: string;
     status: PackagePurchaseSessionSummaryViewModel['status'];
+    provider: SessionProvider;
+    providerRoomId: string | null;
+    providerSessionRef: string | null;
     scheduledStartAt: Date | null;
     scheduledEndAt: Date | null;
     durationMinutes: number;
@@ -44,9 +53,11 @@ export class PackagePurchasePresenter {
   toViewModel(input: {
     purchase: PurchaseRecord;
     sessions?: PurchaseRecord['sessions'];
+    now?: Date;
   }): PatientPackagePurchaseViewModel {
+    const now = input.now ?? new Date();
     const linkedSessionItems = (input.sessions ?? input.purchase.sessions).map(
-      (session) => this.toSessionViewModel(session),
+      (session) => this.toSessionViewModel(session, now),
     );
 
     return {
@@ -110,11 +121,36 @@ export class PackagePurchasePresenter {
 
   private toSessionViewModel(
     session: PurchaseRecord['sessions'][number],
+    now: Date,
   ): PackagePurchaseSessionSummaryViewModel {
+    const presentationStatus = resolveSessionPresentationStatus({
+      status: session.status,
+      sessionMode: session.sessionMode,
+      scheduledStartAt: session.scheduledStartAt,
+      scheduledEndAt: session.scheduledEndAt,
+      provider: session.provider,
+      providerRoomId: session.providerRoomId,
+      providerSessionRef: session.providerSessionRef,
+      now,
+      runtimePrepareLeadMinutes: DEFAULT_SESSION_RUNTIME_PREPARE_LEAD_MINUTES,
+    });
+
     return {
       id: session.id,
       sessionCode: session.sessionCode,
       status: session.status,
+      presentationStatus,
+      joinAvailability: buildSessionJoinAvailabilityViewModel({
+        status: session.status,
+        sessionMode: session.sessionMode,
+        scheduledStartAt: session.scheduledStartAt,
+        scheduledEndAt: session.scheduledEndAt,
+        provider: session.provider,
+        providerRoomId: session.providerRoomId,
+        providerSessionRef: session.providerSessionRef,
+        now,
+        runtimePrepareLeadMinutes: DEFAULT_SESSION_RUNTIME_PREPARE_LEAD_MINUTES,
+      }),
       scheduledStartAt: session.scheduledStartAt?.toISOString() ?? null,
       scheduledEndAt: session.scheduledEndAt?.toISOString() ?? null,
       durationMinutes: session.durationMinutes,

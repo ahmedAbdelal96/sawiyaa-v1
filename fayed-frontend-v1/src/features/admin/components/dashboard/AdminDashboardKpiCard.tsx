@@ -36,28 +36,28 @@ const DELTA_TONE_ICON: Record<DeltaTone, ReactNode> = {
 
 const ACCENT_TONE_CLASS: Record<AccentTone, AccentToneStyle> = {
   teal: {
-    shell: "bg-primary-light/55 dark:bg-primary/10",
-    glow: "bg-primary/12 dark:bg-primary/18",
-    iconShell: "bg-white/80 dark:bg-primary/15",
-    icon: "text-text-brand dark:text-primary-light",
+    shell: "bg-white dark:bg-white/[0.03] border border-slate-200/70 dark:border-white/5 shadow-sm",
+    glow: "bg-primary/5 dark:bg-primary/10",
+    iconShell: "bg-primary-light/50 dark:bg-primary/15",
+    icon: "text-primary dark:text-primary-light",
   },
   blue: {
-    shell: "bg-sky-50/80 dark:bg-sky-500/10",
-    glow: "bg-sky-400/14 dark:bg-sky-500/18",
-    iconShell: "bg-white/80 dark:bg-sky-500/15",
-    icon: "text-sky-700 dark:text-sky-300",
+    shell: "bg-white dark:bg-white/[0.03] border border-slate-200/70 dark:border-white/5 shadow-sm",
+    glow: "bg-sky-400/5 dark:bg-sky-500/10",
+    iconShell: "bg-sky-50 dark:bg-sky-500/15",
+    icon: "text-sky-600 dark:text-sky-400",
   },
   amber: {
-    shell: "bg-amber-50/85 dark:bg-amber-500/10",
-    glow: "bg-amber-300/28 dark:bg-amber-500/18",
-    iconShell: "bg-white/80 dark:bg-amber-500/15",
-    icon: "text-amber-700 dark:text-amber-300",
+    shell: "bg-white dark:bg-white/[0.03] border border-slate-200/70 dark:border-white/5 shadow-sm",
+    glow: "bg-amber-300/10 dark:bg-amber-500/10",
+    iconShell: "bg-amber-50 dark:bg-amber-500/15",
+    icon: "text-amber-600 dark:text-amber-400",
   },
   violet: {
-    shell: "bg-violet-50/85 dark:bg-violet-500/10",
-    glow: "bg-violet-300/22 dark:bg-violet-500/18",
-    iconShell: "bg-white/80 dark:bg-violet-500/15",
-    icon: "text-violet-700 dark:text-violet-300",
+    shell: "bg-white dark:bg-white/[0.03] border border-slate-200/70 dark:border-white/5 shadow-sm",
+    glow: "bg-violet-300/10 dark:bg-violet-500/10",
+    iconShell: "bg-violet-50 dark:bg-violet-500/15",
+    icon: "text-violet-600 dark:text-violet-400",
   },
 };
 
@@ -75,34 +75,22 @@ export function AdminDashboardKpiCard({
   return (
     <article
       className={cn(
-        "app-panel relative isolate overflow-hidden rounded-[30px] px-5 py-5 sm:px-6",
+        "relative overflow-hidden rounded-2xl px-5 py-5 sm:px-6 transition hover:shadow-md",
         accentStyles.shell,
       )}
     >
-      <span
-        aria-hidden="true"
-        className={cn("pointer-events-none absolute -right-10 -top-10 h-28 w-28 rounded-full", accentStyles.glow)}
-      />
-      <span
-        aria-hidden="true"
-        className={cn(
-          "pointer-events-none absolute -bottom-8 left-1/2 h-20 w-20 -translate-x-1/2 rounded-full opacity-70",
-          accentStyles.glow,
-        )}
-      />
-
-      <div className="relative z-10 flex items-start justify-between gap-4">
+      <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
           <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-muted">
             {label}
           </p>
-          <p className="mt-3 text-[2rem] font-semibold tracking-tight tabular-nums text-text-primary dark:text-white/95 sm:text-[2.15rem]">
+          <p className="mt-3 text-[1.85rem] font-bold tracking-tight tabular-nums text-text-primary dark:text-white/95 sm:text-[2rem]">
             {value}
           </p>
         </div>
         <span
           className={cn(
-            "inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl",
+            "inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl",
             accentStyles.iconShell,
             accentStyles.icon,
           )}
@@ -111,18 +99,18 @@ export function AdminDashboardKpiCard({
         </span>
       </div>
 
-      <div className="relative z-10 mt-4 space-y-3">
+      <div className="mt-4 flex items-center justify-between gap-2">
         {deltaText ? (
           <span
             className={cn(
-              "inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold",
+              "inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold",
               DELTA_TONE_CLASS[deltaTone],
             )}
           >
             {DELTA_TONE_ICON[deltaTone]}
             {deltaText}
           </span>
-        ) : null}
+        ) : <span className="h-5" />}
 
         {helper ? <p className="max-w-[30ch] text-xs leading-5 text-text-secondary">{helper}</p> : null}
       </div>

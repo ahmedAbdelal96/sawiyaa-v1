@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -13,11 +14,13 @@ import {
   PaymentProvider,
 } from '@prisma/client';
 import { PrismaService } from '@common/prisma/prisma.service';
+import { SupportedLocale } from '@common/i18n/types/locale.types';
 import { resolveProviderForCurrency } from '@common/payments/payment-region.resolver';
 import { PaymentRepository } from '@modules/payments/repositories/payment.repository';
 import { PaymentGeoContextService } from '@modules/payments/services/payment-geo-context.service';
 import { PaymentProviderRegistryService } from '@modules/payments/services/payment-provider-registry.service';
 import { PaymentProviderResolverService } from '@modules/payments/services/payment-provider-resolver.service';
+import { PaymentRuntimeConfigService } from '@modules/payments/services/payment-runtime-config.service';
 import { ValidatePaymentStatusTransitionService } from '@modules/payments/services/validate-payment-status-transition.service';
 import { CreateAcademyEnrollmentDto } from '../dto/create-academy-enrollment.dto';
 import { AcademyPresenter } from '../presenters/academy.presenter';
@@ -33,11 +36,16 @@ export class CreateAcademyEnrollmentUseCase {
     private readonly paymentGeoContextService: PaymentGeoContextService,
     private readonly paymentProviderResolverService: PaymentProviderResolverService,
     private readonly paymentProviderRegistryService: PaymentProviderRegistryService,
+    private readonly paymentRuntimeConfigService: PaymentRuntimeConfigService,
     private readonly validatePaymentStatusTransitionService: ValidatePaymentStatusTransitionService,
     private readonly academyPresenter: AcademyPresenter,
   ) {}
 
-  async execute(input: { slug: string; payload: CreateAcademyEnrollmentDto }) {
+  async execute(input: {
+    slug: string;
+    locale: SupportedLocale;
+    payload: CreateAcademyEnrollmentDto;
+  }) {
     const course = await this.academyRepository.findPublicCourseBySlug(
       input.slug,
     );
@@ -57,7 +65,7 @@ export class CreateAcademyEnrollmentUseCase {
         existingCountryCode: existingLearner?.countryCode ?? null,
       });
 
-    const learner = await this.academyRepository.upsertLearner({
+    const learner = await this.upsertLearnerSafely({
       fullName: input.payload.fullName.trim(),
       phoneNumber,
       whatsappNumber: input.payload.whatsappNumber?.trim() || null,
@@ -93,7 +101,7 @@ export class CreateAcademyEnrollmentUseCase {
       course.currencyCode === null;
 
     if (isFree) {
-      const created = await this.academyRepository.createEnrollment({
+      const created = await this.createEnrollmentSafely({
         academyCourseId: course.id,
         academyLearnerId: learner.id,
         publicAccessToken,
@@ -136,7 +144,7 @@ export class CreateAcademyEnrollmentUseCase {
 
     const enrollment =
       existing ??
-      (await this.academyRepository.createEnrollment({
+      (await this.createEnrollmentSafely({
         academyCourseId: course.id,
         academyLearnerId: learner.id,
         publicAccessToken,
@@ -198,30 +206,44 @@ export class CreateAcademyEnrollmentUseCase {
         tx,
       );
 
-      const createdAttempt = await this.academyRepository.createPaymentAttempt({
-        academyCourseId: course.id,
-        academyEnrollmentId: enrollment.id,
-        paymentId: createdPayment.id,
-        provider,
-        status: PaymentStatus.CREATED,
-        amountSubtotal: pricing.amount,
-        amountDiscount: '0',
-        amountTotal: pricing.amount,
-        currencyCode: pricing.currencyCode,
-      });
+      const createdAttempt = await this.academyRepository.createPaymentAttempt(
+        {
+          academyCourseId: course.id,
+          academyEnrollmentId: enrollment.id,
+          paymentId: createdPayment.id,
+          provider,
+          status: PaymentStatus.CREATED,
+          amountSubtotal: pricing.amount,
+          amountDiscount: '0',
+          amountTotal: pricing.amount,
+          currencyCode: pricing.currencyCode,
+        },
+        tx,
+      );
       paymentAttemptId = createdAttempt.id;
 
-      await this.academyRepository.updateEnrollment(enrollment.id, {
-        paymentId: createdPayment.id,
-        enrollmentStatus: AcademyEnrollmentStatus.PENDING_PAYMENT,
-        paymentStatus: PaymentStatus.CREATED,
-        confirmedAt: null,
-        cancelledAt: null,
-        failedAt: null,
-        failedReason: null,
-      });
+      await this.academyRepository.updateEnrollment(
+        enrollment.id,
+        {
+          paymentId: createdPayment.id,
+          enrollmentStatus: AcademyEnrollmentStatus.PENDING_PAYMENT,
+          paymentStatus: PaymentStatus.CREATED,
+          confirmedAt: null,
+          cancelledAt: null,
+          failedAt: null,
+          failedReason: null,
+        },
+        tx,
+      );
 
       return createdPayment;
+    });
+
+    const academyPaymentReturnUrl = this.resolveAcademyPaymentReturnUrl({
+      locale: input.locale,
+      enrollmentId: enrollment.id,
+      publicAccessToken,
+      returnUrlBase: input.payload.returnUrlBase ?? null,
     });
 
     try {
@@ -232,6 +254,7 @@ export class CreateAcademyEnrollmentUseCase {
         description: `Academy enrollment payment: ${course.slug}`,
         sessionId: course.id,
         patientEmail: learner.email ?? null,
+        redirectionUrl: academyPaymentReturnUrl,
       });
 
       this.validatePaymentStatusTransitionService.assertCanTransition(
@@ -291,14 +314,33 @@ export class CreateAcademyEnrollmentUseCase {
         );
 
         if (paymentAttemptId) {
-          await this.academyRepository.updatePaymentAttempt(paymentAttemptId, {
-            status: updatedPayment.status,
-            providerPaymentRef: providerResult.providerPaymentRef,
-            providerOrderRef: providerResult.providerOrderRef ?? null,
-            providerCustomerRef: providerResult.providerCustomerRef ?? null,
-            checkoutUrl: providerResult.checkoutUrl ?? null,
-            clientSecret: providerResult.clientSecret ?? null,
-          });
+          await this.academyRepository.updatePaymentAttempt(
+            paymentAttemptId,
+            {
+              status: updatedPayment.status,
+              providerPaymentRef: this.normalizePaymentAttemptValue(
+                providerResult.providerPaymentRef,
+                191,
+              ),
+              providerOrderRef: this.normalizePaymentAttemptValue(
+                providerResult.providerOrderRef ?? null,
+                191,
+              ),
+              providerCustomerRef: this.normalizePaymentAttemptValue(
+                providerResult.providerCustomerRef ?? null,
+                191,
+              ),
+              checkoutUrl: this.normalizePaymentAttemptValue(
+                providerResult.checkoutUrl ?? null,
+                500,
+              ),
+              clientSecret: this.normalizePaymentAttemptValue(
+                providerResult.clientSecret ?? null,
+                500,
+              ),
+            },
+            tx,
+          );
         }
 
         await this.academyRepository.createActivityLog({
@@ -320,24 +362,32 @@ export class CreateAcademyEnrollmentUseCase {
         );
 
         if (paymentAttemptId) {
-          await this.academyRepository.updatePaymentAttempt(paymentAttemptId, {
-            status: PaymentStatus.FAILED,
-            failureReason:
+          await this.academyRepository.updatePaymentAttempt(
+            paymentAttemptId,
+            {
+              status: PaymentStatus.FAILED,
+              failureReason:
+                error instanceof Error
+                  ? error.message.slice(0, 500)
+                  : 'Payment initiation failed',
+            },
+            tx,
+          );
+        }
+
+        await this.academyRepository.updateEnrollment(
+          enrollment.id,
+          {
+            enrollmentStatus: AcademyEnrollmentStatus.PAYMENT_FAILED,
+            paymentStatus: PaymentStatus.FAILED,
+            failedAt: new Date(),
+            failedReason:
               error instanceof Error
                 ? error.message.slice(0, 500)
                 : 'Payment initiation failed',
-          });
-        }
-
-        await this.academyRepository.updateEnrollment(enrollment.id, {
-          enrollmentStatus: AcademyEnrollmentStatus.PAYMENT_FAILED,
-          paymentStatus: PaymentStatus.FAILED,
-          failedAt: new Date(),
-          failedReason:
-            error instanceof Error
-              ? error.message.slice(0, 500)
-              : 'Payment initiation failed',
-        });
+          },
+          tx,
+        );
       });
 
       throw error;
@@ -390,7 +440,120 @@ export class CreateAcademyEnrollmentUseCase {
     });
   }
 
+  private resolveAcademyPaymentReturnUrl(input: {
+    locale: SupportedLocale;
+    enrollmentId: string;
+    publicAccessToken: string;
+    returnUrlBase?: string | null;
+  }): string {
+    const normalizedPath = `/${input.locale}/patient/academy/enrollments/${input.enrollmentId}/payment-return`;
+    const returnUrlBase = this.resolveAllowedReturnUrlBase(
+      input.returnUrlBase ?? null,
+    );
+    const normalizedBaseUrl = returnUrlBase
+      ? returnUrlBase.endsWith('/')
+        ? returnUrlBase
+        : `${returnUrlBase}/`
+      : (() => {
+          const baseUrl = this.paymentRuntimeConfigService.getAppBaseUrl().trim();
+          return baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
+        })();
+    const returnUrl = new URL(
+      input.returnUrlBase ? `${input.enrollmentId}/payment-return` : normalizedPath,
+      normalizedBaseUrl,
+    );
+    returnUrl.searchParams.set('token', input.publicAccessToken);
+    return returnUrl.toString();
+  }
+
+  private resolveAllowedReturnUrlBase(
+    returnUrlBase: string | null | undefined,
+  ): string | null {
+    return this.paymentRuntimeConfigService.resolveTrustedReturnUrlBase(
+      returnUrlBase ?? null,
+    );
+  }
+
   private toMinorUnits(amount: string): number {
     return Math.round(Number(amount) * 100);
+  }
+
+  private normalizePaymentAttemptValue(
+    value: string | null | undefined,
+    maxLength: number,
+  ): string | null {
+    if (!value) {
+      return null;
+    }
+
+    const normalized = value.trim();
+    if (normalized.length <= maxLength) {
+      return normalized;
+    }
+
+    return normalized.slice(0, maxLength);
+  }
+
+  private async upsertLearnerSafely(input: {
+    fullName: string;
+    phoneNumber: string;
+    whatsappNumber?: string | null;
+    email?: string | null;
+    countryCode?: string | null;
+    countryCodeDeclared?: string | null;
+    countryCodeSource?: string | null;
+    countryCodeMismatch?: boolean;
+    sourceLabel?: string | null;
+  }) {
+    try {
+      return await this.academyRepository.upsertLearner(input);
+    } catch (error) {
+      if (this.isUniqueConstraintError(error)) {
+        throw new ConflictException({
+          messageKey: 'academy.errors.learnerContactAlreadyExists',
+          error: 'ACADEMY_LEARNER_CONTACT_ALREADY_EXISTS',
+        });
+      }
+
+      throw error;
+    }
+  }
+
+  private async createEnrollmentSafely(input: {
+    academyCourseId: string;
+    academyLearnerId: string;
+    publicAccessToken: string;
+    enrollmentStatus: AcademyEnrollmentStatus;
+    paymentStatus: PaymentStatus;
+    confirmedAt?: Date | null;
+    cancelledAt?: Date | null;
+    failedAt?: Date | null;
+    failedReason?: string | null;
+  }) {
+    try {
+      return await this.academyRepository.createEnrollment(input);
+    } catch (error) {
+      if (this.isUniqueConstraintError(error)) {
+        const existing =
+          await this.academyRepository.findEnrollmentByCourseAndLearner(
+            input.academyCourseId,
+            input.academyLearnerId,
+          );
+        if (existing) {
+          return existing;
+        }
+
+        throw new ConflictException({
+          messageKey: 'academy.errors.enrollmentAlreadyExists',
+          error: 'ACADEMY_ENROLLMENT_ALREADY_EXISTS',
+        });
+      }
+
+      throw error;
+    }
+  }
+
+  private isUniqueConstraintError(error: unknown): boolean {
+    return (error as { code?: string } | null | undefined)?.code === 'P2002';
   }
 }

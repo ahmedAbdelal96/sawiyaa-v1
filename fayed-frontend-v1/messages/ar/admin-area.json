@@ -918,6 +918,7 @@
       "specialty": "التخصص",
       "status": "الحالة",
       "submittedAt": "تاريخ الإرسال",
+      "updatedAt": "تاريخ التحديث",
       "actions": "الإجراءات",
       "viewAction": "عرض",
       "noName": "بدون اسم",

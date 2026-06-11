@@ -41,9 +41,11 @@ export class ListMyPackagePurchasesUseCase {
         take: limit,
       });
 
+    const now = new Date();
+
     return {
       items: purchases.map((purchase) =>
-        this.packagePurchasePresenter.toViewModel({ purchase }),
+        this.packagePurchasePresenter.toViewModel({ purchase, now }),
       ),
       pagination: {
         page,

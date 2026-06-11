@@ -29,12 +29,12 @@ export function AdminDashboardQueueCard({
   items,
 }: AdminDashboardQueueCardProps) {
   const rowClassName = cn(
-    "group flex items-start justify-between gap-3 px-4 py-3.5 transition",
-    "hover:bg-primary-light/55 dark:hover:bg-primary/10",
+    "group flex items-start justify-between gap-3 py-3 transition rounded-xl px-3",
+    "hover:bg-slate-50 dark:hover:bg-white/[0.03]",
   );
 
   return (
-    <article className="app-panel rounded-[30px] p-5 sm:p-6">
+    <article className="rounded-2xl border border-slate-200/70 bg-white p-5 dark:border-white/5 dark:bg-white/[0.03] shadow-sm sm:p-6">
       <AdminDashboardSectionHeader
         title={title}
         subtitle={subtitle}
@@ -43,11 +43,11 @@ export function AdminDashboardQueueCard({
       />
 
       {items.length === 0 ? (
-        <div className="app-panel-soft rounded-[24px] border border-dashed p-4 text-sm text-text-muted dark:border-white/10">
-          {emptyText}
+        <div className="mt-4 flex h-[160px] items-center justify-center rounded-xl border border-dashed border-slate-200 dark:border-white/10 bg-slate-50/50 dark:bg-white/[0.01]">
+          <p className="text-sm text-text-muted">{emptyText}</p>
         </div>
       ) : (
-        <ul className="overflow-hidden rounded-[24px] bg-surface-secondary/75 divide-y divide-border-light/80 dark:divide-white/10 dark:bg-white/[0.03]">
+        <ul className="mt-4 divide-y divide-slate-100 dark:divide-white/5">
           {items.map((item) => {
             const content = (
               <div className={rowClassName}>
@@ -56,7 +56,7 @@ export function AdminDashboardQueueCard({
                     {item.title}
                   </p>
                   {item.subtitle ? (
-                    <p className="mt-0.5 text-xs text-text-muted">{item.subtitle}</p>
+                    <p className="mt-1 text-xs text-text-secondary">{item.subtitle}</p>
                   ) : null}
                 </div>
                 {item.badge ? <div className="shrink-0">{item.badge}</div> : null}
@@ -64,11 +64,11 @@ export function AdminDashboardQueueCard({
             );
 
             if (!item.href) {
-              return <li key={item.id}>{content}</li>;
+              return <li key={item.id} className="py-1">{content}</li>;
             }
 
             return (
-              <li key={item.id}>
+              <li key={item.id} className="py-1">
                 <Link href={item.href as never} className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30">
                   {content}
                 </Link>

@@ -9,11 +9,11 @@
     "subtitle": "بياناتك الأساسية، الصورة الشخصية، وإعدادات اللغة والإشعارات."
   },
   "roles": {
-    "ADMIN": "مدير النظام",
-    "SUPPORT_AGENT": "دعم العملاء",
-    "CONTENT_REVIEWER": "مراجع المحتوى",
-    "PATIENT": "مستخدم",
-    "PRACTITIONER": "معالج"
+    "SUPER_ADMIN": "مدير النظام",
+    "ADMIN": "مدير",
+    "SUPPORT_AGENT": "مسؤول دعم",
+    "CONTENT_REVIEWER": "مراجع محتوى",
+    "fallback": "مسؤول"
   },
   "accountStatus": {
     "ACTIVE": "نشط",
@@ -47,8 +47,12 @@
     "manageNotifications": "إدارة الإشعارات"
   },
   "tabs": {
-    "profile": "الملف الشخصي",
-    "notifications": "الإشعارات"
+    "overview": "نظرة عامة",
+    "account": "بيانات الحساب",
+    "preferences": "التفضيلات",
+    "notifications": "الإشعارات",
+    "security": "الأمان",
+    "activity": "النشاط"
   },
   "sections": {
     "avatar": {

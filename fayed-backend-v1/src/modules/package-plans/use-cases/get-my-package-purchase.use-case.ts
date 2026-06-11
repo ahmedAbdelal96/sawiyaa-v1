@@ -41,8 +41,10 @@ export class GetMyPackagePurchaseUseCase {
       });
     }
 
+    const now = new Date();
+
     return {
-      item: this.packagePurchasePresenter.toViewModel({ purchase }),
+      item: this.packagePurchasePresenter.toViewModel({ purchase, now }),
     };
   }
 }

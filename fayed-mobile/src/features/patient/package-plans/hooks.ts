@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuthenticatedQueryEnabled } from "../../auth/query-auth";
 import type { RefundPolicyType } from "../refund-policies/types";
 import {
@@ -71,6 +71,30 @@ export function useMyPackagePurchases(params?: ListMyPackagePurchasesParams) {
   return useQuery({
     queryKey: packagePurchaseQueryKeys.list(params),
     queryFn: () => listMyPackagePurchases(params),
+    enabled,
+    staleTime: 30_000,
+  });
+}
+
+export function useInfiniteMyPackagePurchases(params?: Omit<ListMyPackagePurchasesParams, "page">) {
+  const enabled = useAuthenticatedQueryEnabled("patient");
+
+  return useInfiniteQuery({
+    queryKey: packagePurchaseQueryKeys.list(params),
+    initialPageParam: 1,
+    queryFn: ({ pageParam }) =>
+      listMyPackagePurchases({
+        ...params,
+        page: Number(pageParam) || 1,
+      }),
+    getNextPageParam: (lastPage) => {
+      const { page, totalPages } = lastPage.pagination;
+      if (page >= totalPages) {
+        return undefined;
+      }
+
+      return page + 1;
+    },
     enabled,
     staleTime: 30_000,
   });

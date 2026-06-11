@@ -5,6 +5,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { Check, Loader2, Search, X } from "lucide-react";
 import Button from "@/components/ui/button/Button";
 import Label from "@/components/form/Label";
+import Avatar from "@/components/ui/avatar/Avatar";
 import InputField from "@/components/form/input/InputField";
 import { AdminStatusBadge } from "@/components/shared/admin/AdminDashboardKit";
 import { useDebouncedValue } from "@/hooks/use-debounce";
@@ -120,20 +121,11 @@ export default function FeaturedPractitionerPicker({
           <div className="space-y-3">
             <div className="flex items-start justify-between gap-3">
               <div className="flex min-w-0 items-center gap-3">
-                <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-border-light bg-white">
-                  {value.avatarUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={value.avatarUrl}
-                      alt={value.displayName ?? value.slug}
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    <span className="text-sm font-semibold text-text-muted">
-                      {getInitials(value.displayName)}
-                    </span>
-                  )}
-                </div>
+                <Avatar
+                  src={value.avatarUrl}
+                  name={value.displayName ?? value.slug}
+                  size="xlarge"
+                />
                 <div className="min-w-0">
                   <p className="truncate text-sm font-semibold text-text-primary">
                     {selectedLabel}
@@ -234,20 +226,11 @@ export default function FeaturedPractitionerPicker({
                         : "border-border-light bg-white hover:border-primary/20 hover:bg-surface-secondary",
                     )}
                   >
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-border-light bg-surface-secondary">
-                      {candidate.avatarUrl ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={candidate.avatarUrl}
-                          alt={candidate.displayName ?? candidate.slug}
-                          className="h-full w-full object-cover"
-                        />
-                      ) : (
-                        <span className="text-xs font-semibold text-text-muted">
-                          {getInitials(candidate.displayName)}
-                        </span>
-                      )}
-                    </div>
+                    <Avatar
+                      src={candidate.avatarUrl}
+                      name={candidate.displayName ?? candidate.slug}
+                      size="large"
+                    />
 
                     <div className="min-w-0 flex-1">
                       <div className="flex items-start justify-between gap-3">

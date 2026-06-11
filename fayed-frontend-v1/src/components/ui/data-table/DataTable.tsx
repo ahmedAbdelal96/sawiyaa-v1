@@ -23,6 +23,7 @@
 
 import { useMemo, useState, useSyncExternalStore } from 'react';
 import { ArrowUp, ArrowDown } from 'lucide-react';
+import { useTranslations, useLocale } from 'next-intl';
 import type { DataTableProps } from './types';
 import { DataTableLoading } from './DataTableLoading';
 import { DataTableEmpty } from './DataTableEmpty';
@@ -32,6 +33,7 @@ import { DEFAULT_PAGE_SIZE_OPTIONS } from "@/constants/pagination";
 import {
   isRTL,
   getColumnAlignment,
+  resolveColumnAlignment,
   getColumnVisibilityClass,
   sortData,
   filterData,
@@ -133,7 +135,9 @@ export function DataTable<T = any>({
   loadingMessage,
 }: DataTableProps<T>) {
   // Detect RTL
-  const rtl = isRTL();
+  const locale = useLocale();
+  const rtl = locale === 'ar';
+  const t = useTranslations("common");
   
   // Get size classes
   const sizeClasses = getSizeClasses(size);
@@ -235,29 +239,38 @@ export function DataTable<T = any>({
     return (
       <DataTableEmpty
         icon={emptyState?.icon}
-        title={emptyState?.title || (rtl ? 'لا توجد بيانات' : 'No data')}
+        title={emptyState?.title || t("dataTable.noData")}
         description={emptyState?.description}
         action={emptyState?.action}
       />
     );
   }
   
+  // Explicit mapping of alignments to Tailwind classes to prevent purge issues
+  const textAlignMap = {
+    left: "text-left",
+    right: "text-right",
+    center: "text-center",
+    start: "text-start",
+    end: "text-end",
+  };
+
   return (
     <div className={`${className}`}>
       {/* Table Container */}
-      <div className="overflow-hidden rounded-[28px] border border-border-light bg-white shadow-[0_18px_36px_-30px_rgba(34,52,56,0.18)]">
+      <div className="overflow-hidden rounded-[24px] border border-border-light bg-white shadow-[0_18px_36px_-30px_rgba(34,52,56,0.18)]">
         {(exportConfig?.enabled || (pagination && onPageSizeChange)) && (
-          <div className="border-b border-border-light px-4 py-3 sm:px-6">
+          <div className="border-b border-border-light px-4 py-2.5 sm:px-6">
             <div className="flex flex-wrap items-center justify-between gap-3">
               {pagination && onPageSizeChange ? (
-                <label className="inline-flex items-center gap-2 text-xs font-medium text-text-muted">
-                  <span>{rtl ? "عدد الصفوف" : "Rows"}</span>
+                <label className="inline-flex items-center gap-2 text-xs font-semibold text-text-secondary">
+                  <span>{t("dataTable.rows")}</span>
                   <select
                     value={pagination.limit}
                     onChange={(event) => onPageSizeChange(Number(event.target.value))}
                     disabled={loading}
-                    className="app-control h-9 min-w-[90px] px-2 py-1 text-sm"
-                    aria-label={rtl ? "عدد الصفوف في الصفحة" : "Rows per page"}
+                    className="app-control h-9 min-w-[85px] px-2 py-1 text-xs rounded-xl focus:border-border-focus focus:ring-2"
+                    aria-label={t("dataTable.rowsPerPage")}
                   >
                     {(pageSizeOptions ?? DEFAULT_PAGE_SIZE_OPTIONS).map((size) => (
                       <option key={size} value={size}>
@@ -273,8 +286,8 @@ export function DataTable<T = any>({
               <div className="flex flex-wrap items-center gap-2">
                 {sortableColumns.length > 0 ? (
                   <>
-                    <label className="inline-flex items-center gap-2 text-xs font-medium text-text-muted">
-                      <span>{rtl ? "ترتيب حسب" : "Sort by"}</span>
+                    <label className="inline-flex items-center gap-2 text-xs font-semibold text-text-secondary">
+                      <span>{t("dataTable.sortBy")}</span>
                       <select
                         value={activeSort?.column ?? defaultSortColumn ?? sortableColumns[0].id}
                         onChange={(event) =>
@@ -283,8 +296,8 @@ export function DataTable<T = any>({
                             direction: activeSort?.direction ?? "desc",
                           })
                         }
-                        className="app-control h-9 min-w-[140px] px-2 py-1 text-sm"
-                        aria-label={rtl ? "اختيار عمود الترتيب" : "Sort column"}
+                        className="app-control h-9 min-w-[130px] px-2 py-1 text-xs rounded-xl focus:border-border-focus focus:ring-2"
+                        aria-label={t("dataTable.sortBy")}
                       >
                         {sortableColumns.map((column) => (
                           <option key={column.id} value={column.id}>
@@ -293,8 +306,8 @@ export function DataTable<T = any>({
                         ))}
                       </select>
                     </label>
-                    <label className="inline-flex items-center gap-2 text-xs font-medium text-text-muted">
-                      <span>{rtl ? "الاتجاه" : "Direction"}</span>
+                    <label className="inline-flex items-center gap-2 text-xs font-semibold text-text-secondary">
+                      <span>{t("dataTable.direction")}</span>
                       <select
                         value={activeSort?.direction ?? "desc"}
                         onChange={(event) =>
@@ -303,11 +316,11 @@ export function DataTable<T = any>({
                             direction: event.target.value as "asc" | "desc",
                           })
                         }
-                        className="app-control h-9 min-w-[110px] px-2 py-1 text-sm"
-                        aria-label={rtl ? "اتجاه الترتيب" : "Sort direction"}
+                        className="app-control h-9 min-w-[105px] px-2 py-1 text-xs rounded-xl focus:border-border-focus focus:ring-2"
+                        aria-label={t("dataTable.direction")}
                       >
-                        <option value="desc">{rtl ? "الأحدث أولًا" : "Newest first"}</option>
-                        <option value="asc">{rtl ? "الأقدم أولًا" : "Oldest first"}</option>
+                        <option value="desc">{t("dataTable.newestFirst")}</option>
+                        <option value="asc">{t("dataTable.oldestFirst")}</option>
                       </select>
                     </label>
                   </>
@@ -335,44 +348,50 @@ export function DataTable<T = any>({
             
             {/* Table Header */}
             <thead
-              className={`border-b border-border-light bg-surface-secondary/95 backdrop-blur-sm ${
+              className={`border-b border-gray-300 dark:border-gray-700 bg-gray-100/60 dark:bg-gray-800/20 backdrop-blur-xs ${
                 stickyHeader ? 'sticky top-0 z-10' : ''
               }`}
             >
               <tr role="row">
                 {/* Selection checkbox column */}
                 {selectable && (
-                  <th className={`${sizeClasses.header} w-12`} role="columnheader">
-                    <input
-                      type="checkbox"
-                      checked={
-                        selectedRows.length > 0 &&
-                        selectedRows.length === processedData.length
-                      }
-                      onChange={(e) => {
-                        if (onSelectionChange) {
-                          if (e.target.checked) {
-                            onSelectionChange(
-                              processedData.map((row, index) =>
-                                getRowId(row, index)
-                              )
-                            );
-                          } else {
-                            onSelectionChange([]);
-                          }
+                  <th className={`${sizeClasses.header} w-12 text-center font-semibold text-text-secondary`} role="columnheader">
+                    <div className="flex items-center justify-center">
+                      <input
+                        type="checkbox"
+                        checked={
+                          selectedRows.length > 0 &&
+                          selectedRows.length === processedData.length
                         }
-                      }}
-                      className="w-4 h-4 text-primary border-border-light rounded focus:ring-primary"
-                      aria-label={rtl ? 'تحديد الكل' : 'Select all'}
-                    />
+                        onChange={(e) => {
+                          if (onSelectionChange) {
+                            if (e.target.checked) {
+                              onSelectionChange(
+                                processedData.map((row, index) =>
+                                  getRowId(row, index)
+                                )
+                              );
+                            } else {
+                              onSelectionChange([]);
+                            }
+                          }
+                        }}
+                        className="w-4 h-4 text-primary border-border-light rounded focus:ring-primary/20 focus:ring-2 transition-colors cursor-pointer"
+                        aria-label={t("dataTable.selectAll")}
+                      />
+                    </div>
                   </th>
                 )}
                 
                 {/* Data columns */}
                 {columns.map((column) => {
-                  const alignment = getColumnAlignment(column, rtl);
+                  const { textClass, justifyClass } = resolveColumnAlignment(column, rtl);
                   const isSorted = activeSort?.column === column.id;
                   const sortDirection = activeSort?.direction;
+                  
+                  const hasHeaderTextAlignClass = column.headerClassName && /(^|\s)text-(left|right|center|start|end)(\s|$)/.test(column.headerClassName);
+                  const headerTextAlignClass = hasHeaderTextAlignClass ? '' : textClass;
+                  const sortIconSizeClass = size === 'sm' ? 'w-3 h-3' : 'w-3.5 h-3.5';
                   
                   return (
                     <th
@@ -380,11 +399,12 @@ export function DataTable<T = any>({
                       role="columnheader"
                       className={`
                         ${sizeClasses.header}
+                        group
                         whitespace-normal break-words font-semibold text-text-secondary
                         ${column.headerClassName || ''}
-                        ${alignment === 'right' ? 'text-right' : alignment === 'center' ? 'text-center' : 'text-left'}
+                        ${headerTextAlignClass}
                       ${
-                        column.sortable ? 'cursor-pointer select-none transition-colors hover:bg-primary-light/30' : ''
+                        column.sortable ? 'cursor-pointer select-none transition-colors hover:bg-surface-tertiary/75' : ''
                       }
                         ${isSorted ? 'text-text-primary' : ''}
                         ${getColumnVisibilityClass(column)}
@@ -399,18 +419,18 @@ export function DataTable<T = any>({
                           : undefined
                       }
                     >
-                      <div className="flex items-center gap-2">
+                      <div className={`flex items-center gap-1.5 ${justifyClass}`}>
                         <span>{column.header}</span>
                         {column.sortable && (
-                          <span className="inline-flex flex-col">
-                            {isSorted && sortDirection === 'asc' ? (
-                              <ArrowUp className="w-3 h-3" />
-                            ) : isSorted && sortDirection === 'desc' ? (
-                              <ArrowDown className="w-3 h-3" />
+                          <span className="inline-flex shrink-0 items-center text-text-muted transition-opacity duration-200">
+                            {isSorted ? (
+                              sortDirection === 'asc' ? (
+                                <ArrowUp className={`${sortIconSizeClass} text-primary`} />
+                              ) : (
+                                <ArrowDown className={`${sortIconSizeClass} text-primary`} />
+                              )
                             ) : (
-                              <span className="w-3 h-3 opacity-30">
-                                <ArrowUp className="w-3 h-3" />
-                              </span>
+                              <ArrowUp className={`${sortIconSizeClass} opacity-25 group-hover:opacity-60 transition-opacity`} />
                             )}
                           </span>
                         )}
@@ -422,17 +442,19 @@ export function DataTable<T = any>({
                 {/* Actions column */}
                 {rowActions && (
                   <th
-                    className={`${sizeClasses.header} ${rtl ? 'text-right' : 'text-left'} whitespace-nowrap`}
+                    className={`${sizeClasses.header} text-center font-semibold text-text-secondary whitespace-nowrap`}
                     role="columnheader"
                   >
-                    {rowActionsHeader || 'Actions'}
+                    <div className="flex items-center justify-center">
+                      {rowActionsHeader || t('dataTable.actions')}
+                    </div>
                   </th>
                 )}
               </tr>
             </thead>
             
             {/* Table Body */}
-            <tbody className="divide-y divide-border-light">
+            <tbody className="divide-y divide-border-light/80">
               {processedData.map((row, index) => {
                 const rowId = getRowId(row, index);
                 const isSelected = selectedRows.includes(rowId);
@@ -443,41 +465,46 @@ export function DataTable<T = any>({
                     role="row"
                     onClick={() => onRowClick?.(row)}
                     className={`
-                      transition-colors
-                      ${hoverable ? 'hover:bg-surface-tertiary/70' : ''}
-                      ${striped && index % 2 === 1 ? 'bg-surface-tertiary/60' : ''}
+                      transition-colors duration-150
+                      ${hoverable ? 'hover:bg-surface-secondary/40' : ''}
+                      ${striped && index % 2 === 1 ? 'bg-surface-secondary/15' : ''}
                       ${onRowClick ? 'cursor-pointer' : ''}
-                      ${isSelected ? 'bg-primary-light/50 ring-1 ring-inset ring-primary/10' : ''}
+                      ${isSelected ? 'bg-primary-light/20 ring-1 ring-inset ring-primary/5' : ''}
                       ${getRowClassName?.(row, index) ?? ''}
                     `}
                   >
                     {/* Selection checkbox */}
                     {selectable && (
-                      <td className={sizeClasses.cell} role="cell">
-                        <input
-                          type="checkbox"
-                          checked={isSelected}
-                          onChange={(e) => {
-                            e.stopPropagation();
-                            if (onSelectionChange) {
-                              if (e.target.checked) {
-                                onSelectionChange([...selectedRows, rowId]);
-                              } else {
-                                onSelectionChange(
-                                  selectedRows.filter((id) => id !== rowId)
-                                );
+                      <td className={`${sizeClasses.cell} text-center align-middle`} role="cell">
+                        <div className="flex items-center justify-center">
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={(e) => {
+                              e.stopPropagation();
+                              if (onSelectionChange) {
+                                if (e.target.checked) {
+                                  onSelectionChange([...selectedRows, rowId]);
+                                } else {
+                                  onSelectionChange(
+                                    selectedRows.filter((id) => id !== rowId)
+                                  );
+                                }
                               }
-                            }
-                          }}
-                          className="w-4 h-4 text-primary border-border-light rounded focus:ring-primary"
-                          aria-label={`${rtl ? 'تحديد' : 'Select'} ${rowId}`}
-                        />
+                            }}
+                            className="w-4 h-4 text-primary border-border-light rounded focus:ring-primary/20 focus:ring-2 transition-colors cursor-pointer"
+                            aria-label={`${t("dataTable.selectRow")} ${rowId}`}
+                          />
+                        </div>
                       </td>
                     )}
                     
                     {/* Data cells */}
                     {columns.map((column) => {
-                      const alignment = getColumnAlignment(column, rtl);
+                      const { textClass } = resolveColumnAlignment(column, rtl);
+                      const hasAlignClass = column.className && /(^|\s)align-(top|middle|bottom|baseline)(\s|$)/.test(column.className);
+                      const hasLeadingClass = column.className && /leading-/.test(column.className);
+                      const hasTextAlignClass = column.className && /(^|\s)text-(left|right|center|start|end)(\s|$)/.test(column.className);
                       
                       // Get cell value
                       let value: any;
@@ -492,16 +519,22 @@ export function DataTable<T = any>({
                         ? column.cell(row, value)
                         : value;
                       
+                      const cellTextAlignClass = hasTextAlignClass ? '' : textClass;
+                      const cellVerticalAlignClass = hasAlignClass ? '' : 'align-middle';
+                      const cellLeadingClass = hasLeadingClass ? '' : 'leading-5';
+                      
                       return (
                         <td
                           key={column.id}
-                        role="cell"
-                        className={`
-                          ${sizeClasses.cell}
-                          align-top whitespace-normal break-words leading-6
-                          ${column.className || ''}
-                          ${alignment === 'right' ? 'text-right' : alignment === 'center' ? 'text-center' : 'text-left'}
-                          ${getColumnVisibilityClass(column)}
+                          role="cell"
+                          className={`
+                            ${sizeClasses.cell}
+                            ${cellVerticalAlignClass}
+                            ${cellLeadingClass}
+                            whitespace-normal break-words text-text-primary
+                            ${column.className || ''}
+                            ${cellTextAlignClass}
+                            ${getColumnVisibilityClass(column)}
                           `}
                         >
                           {cellContent}
@@ -512,11 +545,13 @@ export function DataTable<T = any>({
                     {/* Actions cell */}
                     {rowActions && (
                       <td
-                        className={`${sizeClasses.cell} ${rtl ? 'text-right' : 'text-left'}`}
+                        className={`${sizeClasses.cell} text-center align-middle`}
                         role="cell"
                         onClick={(e) => e.stopPropagation()}
                       >
-                        {rowActions(row)}
+                        <div className="inline-flex items-center justify-center gap-1.5">
+                          {rowActions(row)}
+                        </div>
                       </td>
                     )}
                   </tr>

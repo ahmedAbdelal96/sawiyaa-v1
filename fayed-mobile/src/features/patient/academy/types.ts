@@ -117,6 +117,16 @@ export type AcademyEnrollmentPayment = {
 };
 
 export type AcademyJoinAccess = {
+  canAccessSession: boolean;
+  canAccessGroup: boolean;
+  accessLockedReason:
+    | "PAYMENT_PENDING"
+    | "PAYMENT_FAILED"
+    | "ENROLLMENT_CANCELLED"
+    | "ENROLLMENT_REFUNDED"
+    | "ACCESS_NOT_AVAILABLE"
+    | string
+    | null;
   meetingUrl: string | null;
   whatsappGroupUrl: string | null;
 };
@@ -150,6 +160,7 @@ export type CreateAcademyEnrollmentInput = {
   whatsappNumber?: string;
   email?: string;
   sourceLabel?: string;
+  returnUrlBase?: string;
 };
 
 export type ListAcademyCoursesParams = {

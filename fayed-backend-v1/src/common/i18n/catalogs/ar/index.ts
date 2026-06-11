@@ -1,5 +1,6 @@
 import { arAuthCatalog } from './auth.catalog';
 import { arAdminCatalog } from './admin.catalog';
+import { arAcademyCatalog } from './academy.catalog';
 import { arAssessmentsCatalog } from './assessments.catalog';
 import { arAvailabilityCatalog } from './availability.catalog';
 import { arCareChatCatalog } from './care-chat.catalog';
@@ -28,6 +29,7 @@ import { arUsersCatalog } from './users.catalog';
 import { arValidationCatalog } from './validation.catalog';
 
 export const arCatalog = {
+  academy: arAcademyCatalog,
   auth: arAuthCatalog,
   admin: arAdminCatalog,
   assessments: arAssessmentsCatalog,

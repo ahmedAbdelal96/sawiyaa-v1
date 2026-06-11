@@ -1,4 +1,4 @@
-import { SessionMode, SessionStatus } from '@prisma/client';
+import { SessionMode, SessionProvider, SessionStatus } from '@prisma/client';
 import { PackagePurchasePresenter } from './package-purchase.presenter';
 
 describe('PackagePurchasePresenter', () => {
@@ -25,17 +25,34 @@ describe('PackagePurchasePresenter', () => {
         updatedAt: new Date('2026-01-01T00:00:00.000Z'),
         sessions: [
           {
-            id: 'session-1',
-            sessionCode: 'SES-1',
-            status: SessionStatus.PENDING_PAYMENT,
-            scheduledStartAt: new Date('2026-01-01T10:00:00.000Z'),
+            id: 'session-live',
+            sessionCode: 'SES-LIVE',
+            status: SessionStatus.READY_TO_JOIN,
+            provider: SessionProvider.DAILY,
+            providerRoomId: 'room-live',
+            providerSessionRef: 'ref-live',
+            scheduledStartAt: new Date('2026-01-01T09:58:00.000Z'),
             scheduledEndAt: new Date('2026-01-01T11:00:00.000Z'),
             durationMinutes: 60,
             sessionMode: SessionMode.VIDEO,
             packageSessionIndex: 1,
           },
+          {
+            id: 'session-ended',
+            sessionCode: 'SES-ENDED',
+            status: SessionStatus.READY_TO_JOIN,
+            provider: SessionProvider.DAILY,
+            providerRoomId: 'room-ended',
+            providerSessionRef: 'ref-ended',
+            scheduledStartAt: new Date('2025-12-31T08:00:00.000Z'),
+            scheduledEndAt: new Date('2025-12-31T09:00:00.000Z'),
+            durationMinutes: 60,
+            sessionMode: SessionMode.VIDEO,
+            packageSessionIndex: 2,
+          },
         ],
       },
+      now: new Date('2026-01-01T10:30:00.000Z'),
     });
 
     expect(result).toMatchObject({
@@ -47,6 +64,19 @@ describe('PackagePurchasePresenter', () => {
     expect(result).not.toHaveProperty('commissionMode');
     expect(result.linkedSessions.items[0]).toMatchObject({
       packageSessionIndex: 1,
+      presentationStatus: 'JOINABLE',
+      joinAvailability: {
+        canJoin: true,
+        blockedReason: null,
+      },
+    });
+    expect(result.linkedSessions.items[1]).toMatchObject({
+      packageSessionIndex: 2,
+      presentationStatus: 'ENDED',
+      joinAvailability: {
+        canJoin: false,
+        blockedReason: 'SESSION_JOIN_WINDOW_CLOSED',
+      },
     });
   });
 });

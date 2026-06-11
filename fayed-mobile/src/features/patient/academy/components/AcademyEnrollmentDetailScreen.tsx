@@ -1,5 +1,6 @@
 import React from "react";
-import { Linking, StyleSheet, View } from "react-native";
+import { Linking, Platform, StyleSheet, View } from "react-native";
+import * as WebBrowser from "expo-web-browser";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import {
@@ -14,25 +15,19 @@ import {
   formatDate,
 } from "../../../../components/ui";
 import { useTheme } from "../../../../providers/ThemeProvider";
-import { normalizeAllowedExternalUrl } from "../../../../lib/external-url";
 import { usePublicAcademyEnrollment } from "../hooks";
-
-function resolveEnrollmentTone(status: string | null | undefined) {
-  switch (status) {
-    case "CONFIRMED":
-    case "PAID":
-      return "success" as const;
-    case "PENDING_PAYMENT":
-      return "warning" as const;
-    case "PAYMENT_FAILED":
-      return "error" as const;
-    case "CANCELLED":
-    case "REFUNDED":
-      return "default" as const;
-    default:
-      return "info" as const;
-  }
-}
+import {
+  buildAcademyEnrollmentPaymentRedirectUrl,
+  buildAcademyEnrollmentPaymentReturnUrl,
+} from "../navigation";
+import { normalizeAllowedExternalUrl } from "../../../../lib/external-url";
+import {
+  formatAcademyMoney,
+  getAcademyAccessLockedReasonTranslationKey,
+  getAcademyEnrollmentStatusTone,
+  getAcademyEnrollmentStatusTranslationKey,
+  getAcademyPaymentStatusTranslationKey,
+} from "../display";
 
 export default function AcademyEnrollmentDetailScreen({
   enrollmentId,
@@ -45,136 +40,177 @@ export default function AcademyEnrollmentDetailScreen({
 }) {
   const router = useRouter();
   const { theme } = useTheme();
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const enrollmentQuery = usePublicAcademyEnrollment(enrollmentId, token);
   const enrollment = enrollmentQuery.data ?? null;
   const isMissingAccessLink = !enrollmentId || !token;
 
   const payment = enrollment?.payment ?? null;
-  const isNotFound = isMissingAccessLink || (enrollmentQuery.isSuccess && !enrollment);
+  const isNotFound =
+    isMissingAccessLink || (enrollmentQuery.isSuccess && !enrollment);
+  const paymentAmountLabel =
+    payment && formatAcademyMoney(payment.amount, payment.currency, locale);
+  const isPendingPaymentFlow =
+    enrollment?.enrollmentStatus === "PENDING_PAYMENT" ||
+    enrollment?.enrollmentStatus === "PAYMENT_FAILED";
+  const joinAccess = enrollment?.joinAccess ?? null;
+  const showJoinSection = Boolean(
+    joinAccess && (joinAccess.canAccessSession || joinAccess.canAccessGroup),
+  );
+  const showPaymentSection = Boolean(payment) || isPendingPaymentFlow;
+  const paymentStatusLabel = enrollment?.paymentStatus
+    ? t(getAcademyPaymentStatusTranslationKey(enrollment.paymentStatus))
+    : t("academy.enrollment.paymentStatuses.UNKNOWN");
+  const accessLockedCopy =
+    joinAccess?.accessLockedReason && !showJoinSection && isPendingPaymentFlow
+      ? t(
+          getAcademyAccessLockedReasonTranslationKey(
+            joinAccess.accessLockedReason,
+          ),
+        )
+      : null;
+
+  const openPaymentRedirect = async () => {
+    const returnUrl = buildAcademyEnrollmentPaymentReturnUrl({
+      enrollmentId,
+      token,
+    });
+    const redirectUrl = buildAcademyEnrollmentPaymentRedirectUrl({
+      enrollmentId,
+      token,
+      returnUrl,
+    });
+
+    if (Platform.OS === "web") {
+      window.location.assign(redirectUrl);
+      return;
+    }
+
+    await WebBrowser.openAuthSessionAsync(redirectUrl, returnUrl);
+  };
 
   return (
     <DetailPageScaffold
-      title={t("academy.enrollment.title", "Enrollment")}
+      title={t("academy.enrollment.title")}
       showBack
       loading={enrollmentQuery.isLoading}
-      loadingMessage={t("academy.enrollment.loading", "Loading enrollment...")}
+      loadingMessage={t("academy.enrollment.loading")}
       error={enrollmentQuery.isError}
-      errorTitle={t("academy.enrollment.errorTitle", "We could not load the enrollment")}
-      errorMessage={t("academy.enrollment.errorMessage", "Please try again in a moment.")}
+      errorTitle={t("academy.enrollment.errorTitle")}
+      errorMessage={t("academy.enrollment.errorMessage")}
       onRetry={() => enrollmentQuery.refetch()}
-      retryText={t("academy.enrollment.retry", "Try again")}
+      retryText={t("academy.enrollment.retry")}
       contentContainerStyle={styles.scaffold}
     >
       {isNotFound ? (
         <EmptyState
-          title={t("academy.enrollment.notFoundTitle", "Enrollment not found")}
-          description={t(
-            "academy.enrollment.notFoundDescription",
-            "The enrollment link is invalid or the record is no longer available.",
-          )}
-          actionLabel={t("academy.enrollment.back", "Back")}
+          title={t("academy.enrollment.notFoundTitle")}
+          description={t("academy.enrollment.notFoundDescription")}
+          actionLabel={t("academy.enrollment.back")}
           onAction={() => router.replace("/(patient)/academy" as never)}
         />
       ) : enrollment ? (
         <View style={styles.stack}>
-          <Card variant="elevated" padding="lg" style={styles.heroCard}>
+          <Card variant="elevated" padding="sm" style={styles.heroCard}>
             <SectionHeader
               title={enrollment.courseTitle}
-              subtitle={t("academy.enrollment.course", "Program enrollment")}
+              subtitle={t("academy.enrollment.course")}
             />
             <View style={styles.statusRow}>
               <StatusChip
-                label={enrollment.enrollmentStatus}
-                tone={resolveEnrollmentTone(enrollment.enrollmentStatus)}
+                label={t(
+                  getAcademyEnrollmentStatusTranslationKey(
+                    enrollment.enrollmentStatus,
+                  ),
+                )}
+                tone={getAcademyEnrollmentStatusTone(
+                  enrollment.enrollmentStatus,
+                )}
+                showDot={false}
               />
-              {enrollment.paymentStatus ? (
-                <StatusChip
-                  label={enrollment.paymentStatus}
-                  tone={enrollment.paymentStatus === "CAPTURED" ? "success" : "default"}
-                  showDot={false}
-                />
-              ) : null}
             </View>
             <View style={styles.summary}>
               <SummaryRow
-                label={t("academy.enrollment.registeredAt", "Registered")}
+                label={t("academy.enrollment.registeredAt")}
                 value={formatDate(enrollment.registeredAt, locale)}
               />
-              <SummaryRow
-                label={t("academy.enrollment.learner", "Learner")}
-                value={enrollment.learner.fullName}
-              />
-              <SummaryRow
-                label={t("academy.enrollment.phone", "Phone")}
-                value={enrollment.learner.phoneNumber}
-              />
-              <SummaryRow
-                label={t("academy.enrollment.reference", "Reference")}
-                value={enrollment.publicAccessToken}
-              />
+              {!isPendingPaymentFlow ? (
+                <>
+                  <SummaryRow
+                    label={t("academy.enrollment.learner")}
+                    value={enrollment.learner.fullName}
+                  />
+                  <SummaryRow
+                    label={t("academy.enrollment.phone")}
+                    value={enrollment.learner.phoneNumber}
+                  />
+                </>
+              ) : null}
             </View>
           </Card>
 
-          {payment ? (
-            <Card variant="elevated" padding="lg" style={styles.sectionCard}>
+          {showPaymentSection ? (
+            <Card variant="outlined" padding="sm" style={styles.sectionCard}>
               <SectionHeader
-                title={t("academy.enrollment.paymentTitle", "Payment")}
-                subtitle={t(
-                  "academy.enrollment.paymentSubtitle",
-                  "Continue securely when the checkout is ready.",
-                )}
+                title={
+                  isPendingPaymentFlow
+                    ? t("academy.enrollment.pendingPaymentTitle")
+                    : t("academy.enrollment.paymentTitle")
+                }
+                subtitle={
+                  isPendingPaymentFlow
+                    ? t("academy.enrollment.pendingPaymentSubtitle")
+                    : t("academy.enrollment.paymentSubtitle")
+                }
               />
               <View style={styles.summary}>
+                {payment ? (
+                  <SummaryRow
+                    label={t("academy.enrollment.amount")}
+                    value={
+                      paymentAmountLabel ??
+                      `${payment.amount} ${payment.currency}`
+                    }
+                  />
+                ) : null}
                 <SummaryRow
-                  label={t("academy.enrollment.paymentStatus", "Payment status")}
-                  value={payment.status}
-                />
-                <SummaryRow
-                  label={t("academy.enrollment.amount", "Amount")}
-                  value={`${payment.amount} ${payment.currency}`}
+                  label={t("academy.enrollment.paymentStatusLabel")}
+                  value={paymentStatusLabel}
                 />
               </View>
-              {payment.checkoutUrl ? (
+              {isPendingPaymentFlow && accessLockedCopy ? (
+                <Text
+                  color={theme.colors.textSecondary}
+                  style={styles.helperText}
+                >
+                  {accessLockedCopy}
+                </Text>
+              ) : null}
+              {isPendingPaymentFlow ? (
                 <Button
-                  title={t("academy.enrollment.payNow", "Pay now")}
-                  onPress={async () => {
-                    const safe = normalizeAllowedExternalUrl(payment.checkoutUrl ?? "");
-                    if (!safe) {
-                      return;
-                    }
-
-                    await Linking.openURL(safe);
-                  }}
+                  title={t("academy.enrollment.payNow")}
+                  onPress={() => void openPaymentRedirect()}
                   style={styles.button}
                 />
-              ) : payment.clientSecret ? (
-                <Text color={theme.colors.textSecondary}>
-                  {t(
-                    "academy.enrollment.paymentUnsupported",
-                    "This payment method requires a native card flow that is not enabled yet.",
-                  )}
-                </Text>
               ) : null}
             </Card>
           ) : null}
 
-          {(enrollment.joinAccess.meetingUrl || enrollment.joinAccess.whatsappGroupUrl) ? (
-            <Card variant="elevated" padding="lg" style={styles.sectionCard}>
+          {showJoinSection ? (
+            <Card variant="outlined" padding="sm" style={styles.sectionCard}>
               <SectionHeader
-                title={t("academy.enrollment.joinTitle", "Join access")}
-                subtitle={t(
-                  "academy.enrollment.joinSubtitle",
-                  "Open the available classroom or group link when it becomes visible.",
-                )}
+                title={t("academy.enrollment.joinTitle")}
+                subtitle={t("academy.enrollment.joinSubtitle")}
               />
               <View style={styles.joinStack}>
-                {enrollment.joinAccess.meetingUrl ? (
+                {joinAccess?.canAccessSession && joinAccess.meetingUrl ? (
                   <Button
-                    title={t("academy.enrollment.openMeeting", "Open meeting")}
+                    title={t("academy.enrollment.openMeeting")}
                     variant="secondary"
                     onPress={async () => {
-                      const safe = normalizeAllowedExternalUrl(enrollment.joinAccess.meetingUrl ?? "");
+                      const safe = normalizeAllowedExternalUrl(
+                        joinAccess.meetingUrl ?? "",
+                      );
                       if (!safe) {
                         return;
                       }
@@ -183,12 +219,14 @@ export default function AcademyEnrollmentDetailScreen({
                     }}
                   />
                 ) : null}
-                {enrollment.joinAccess.whatsappGroupUrl ? (
+                {joinAccess?.canAccessGroup && joinAccess.whatsappGroupUrl ? (
                   <Button
-                    title={t("academy.enrollment.openGroup", "Open group")}
+                    title={t("academy.enrollment.openGroup")}
                     variant="secondary"
                     onPress={async () => {
-                      const safe = normalizeAllowedExternalUrl(enrollment.joinAccess.whatsappGroupUrl ?? "");
+                      const safe = normalizeAllowedExternalUrl(
+                        joinAccess.whatsappGroupUrl ?? "",
+                      );
                       if (!safe) {
                         return;
                       }
@@ -211,7 +249,7 @@ const styles = StyleSheet.create({
     paddingBottom: 32,
   },
   stack: {
-    gap: 14,
+    gap: 12,
   },
   heroCard: {
     marginHorizontal: 0,
@@ -220,20 +258,24 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 8,
-    marginTop: 12,
+    marginTop: 10,
   },
   summary: {
-    marginTop: 14,
+    marginTop: 12,
   },
   sectionCard: {
     marginHorizontal: 0,
+    gap: 8,
   },
   button: {
-    marginTop: 14,
+    marginTop: 12,
+  },
+  helperText: {
+    fontSize: 13,
+    lineHeight: 19,
   },
   joinStack: {
     gap: 10,
     marginTop: 12,
   },
 });
-

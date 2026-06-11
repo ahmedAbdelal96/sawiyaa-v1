@@ -10,7 +10,15 @@ import type { ColumnDef } from "@/components/ui/data-table";
 import { buildUpdatedSearchParams, parseEnumParam, parsePositiveIntParam } from "@/components/ui/data-table";
 import FilterClearButton from "@/components/ui/filters/FilterClearButton";
 import { DEFAULT_PAGE_LIMIT, DEFAULT_PAGE_SIZE_OPTIONS } from "@/constants/pagination";
-import { SurfaceCard, SurfaceHeader, SurfaceStatCard } from "@/components/shared/SurfaceShell";
+import {
+  PractitionerPageHeader,
+  PractitionerStatsGrid,
+  PractitionerStatCard,
+  PractitionerFilterCard,
+  PractitionerTableSection,
+  PractitionerSectionCard,
+  PractitionerEmptyState,
+} from "@/components/shared/practitioner/PractitionerWorkspaceKit";
 import { getPractitionerSettlementsErrorKey, getPractitionerWalletErrorKey } from "../lib/financial-operations-errors";
 import { usePractitionerSettlements, usePractitionerWallet } from "../hooks/use-financial-operations";
 import type {
@@ -210,12 +218,12 @@ export default function PractitionerWalletSummaryScreen() {
   if (walletQuery.isLoading) {
     return (
       <div className="space-y-4">
-        <div className="app-panel rounded-[28px] p-6 sm:p-7">
+        <PractitionerSectionCard>
           <p className="text-sm text-text-muted">{t("summary.note")}</p>
-        </div>
-        <div className="app-panel rounded-[28px] p-6 sm:p-7">
+        </PractitionerSectionCard>
+        <PractitionerSectionCard>
           <p className="text-sm text-text-muted">{t("settlements.countLoading")}</p>
-        </div>
+        </PractitionerSectionCard>
       </div>
     );
   }
@@ -223,120 +231,111 @@ export default function PractitionerWalletSummaryScreen() {
   if (walletQuery.isError) {
     return (
       <div className="space-y-4">
-        <div className="app-panel rounded-[28px] p-6 sm:p-7">
-          <h1 className="text-2xl font-semibold tracking-tight text-text-primary dark:text-white/95 sm:text-3xl">
+        <PractitionerSectionCard>
+          <h1 className="text-xl font-semibold tracking-tight text-text-primary dark:text-white/95 sm:text-2xl">
             {t("summary.title")}
           </h1>
           <p className="mt-3 text-sm leading-6 text-text-secondary">{t(getPractitionerWalletErrorKey(walletQuery.error))}</p>
-        </div>
+        </PractitionerSectionCard>
       </div>
     );
   }
 
   if (!summary) {
     return (
-      <div className="app-panel rounded-[28px] p-6 sm:p-7">
-        <h1 className="text-2xl font-semibold tracking-tight text-text-primary dark:text-white/95 sm:text-3xl">
-          {t("states.empty.heading")}
-        </h1>
-        <p className="mt-3 text-sm leading-6 text-text-secondary">{t("states.empty.note")}</p>
-      </div>
+      <PractitionerEmptyState
+        title={t("states.empty.heading")}
+        description={t("states.empty.note")}
+      />
     );
   }
 
   return (
     <div className="space-y-4">
-      <SurfaceCard variant="compact" className="overflow-hidden px-4 py-4 sm:px-5 sm:py-5">
-        <SurfaceHeader
-          eyebrow={t("summary.eyebrow")}
-          title={t("summary.title")}
-          description={t("summary.note")}
-          actions={
-            <span className="app-chip rounded-full px-3 py-1 text-xs font-medium">
-              {t("summary.currency", { currency: summary.currency })}
-            </span>
-          }
-        />
-      </SurfaceCard>
+      <PractitionerPageHeader
+        eyebrow={t("summary.eyebrow")}
+        title={t("summary.title")}
+        description={t("summary.note")}
+        actions={
+          <span className="app-chip rounded-full px-3 py-1 text-xs font-medium">
+            {t("summary.currency", { currency: summary.currency })}
+          </span>
+        }
+      />
 
-      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-        <SurfaceStatCard
+      <PractitionerStatsGrid cols={5}>
+        <PractitionerStatCard
           label={t("summary.cards.available")}
           value={summary.available}
-          tone="brand"
-          icon={<Wallet className="h-4 w-4" />}
+          tone="primary"
+          metricKey="wallet.available"
         />
-        <SurfaceStatCard
+        <PractitionerStatCard
           label={t("summary.cards.pending")}
           value={summary.pending}
           tone="warning"
-          icon={<Clock3 className="h-4 w-4" />}
+          metricKey="wallet.pending"
         />
-        <SurfaceStatCard
+        <PractitionerStatCard
           label={t("summary.cards.reserved")}
           value={summary.reserved}
-          tone="primary"
-          icon={<ShieldCheck className="h-4 w-4" />}
+          tone="neutral"
+          metricKey="wallet.reserved"
         />
-        <SurfaceStatCard
+        <PractitionerStatCard
           label={t("summary.cards.totalEarned")}
           value={summary.totalEarned}
           tone="neutral"
-          icon={<BadgeDollarSign className="h-4 w-4" />}
+          metricKey="wallet.totalEarned"
         />
-        <SurfaceStatCard
+        <PractitionerStatCard
           label={t("summary.cards.lifetimePaidOut")}
           value={summary.lifetimePaidOut}
           tone="success"
-          icon={<ArrowUpRight className="h-4 w-4" />}
+          metricKey="wallet.lifetimePaidOut"
         />
-      </section>
+      </PractitionerStatsGrid>
 
-      <SurfaceCard as="section" variant="section" className="overflow-hidden px-0 py-0">
-        <div className="flex flex-wrap items-start justify-between gap-3 px-4 pt-4 sm:px-5 sm:pt-5">
-          <div className="min-w-0">
-            <h2 className="text-sm font-semibold text-text-primary dark:text-white/95">
-              {t("settlements.eyebrow")}
-            </h2>
-            <p className="mt-1 text-xs text-text-muted">{t("settlements.note")}</p>
-          </div>
-        </div>
-
-        <div className="px-4 pb-4 pt-3 sm:px-5 sm:pb-5">
-          <div className="flex flex-wrap items-end justify-between gap-3">
-            <label className="block min-w-[220px]">
-              <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
-                {t("settlements.filters.allStatuses")}
-              </span>
-              <select
-                value={settlementStatus}
-                onChange={(event) =>
-                  updateListQuery({ status: event.target.value === "ALL" ? null : event.target.value, page: 1 })
-                }
-                className="app-control w-full px-4 py-3"
-              >
-                {STATUS_FILTERS.map((status) => (
-                  <option key={status} value={status}>
-                    {status === "ALL"
-                      ? t("settlements.filters.allStatuses")
-                      : t(`settlements.statuses.${status}` as Parameters<typeof t>[0])}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <FilterClearButton
-              disabled={!hasSettlementFilters && settlementPage === 1}
-              onClick={() =>
-                updateListQuery({
-                  status: null,
-                  page: 1,
-                })
+      <PractitionerFilterCard>
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <label className="block min-w-[220px]">
+            <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
+              {t("settlements.filters.allStatuses")}
+            </span>
+            <select
+              value={settlementStatus}
+              onChange={(event) =>
+                updateListQuery({ status: event.target.value === "ALL" ? null : event.target.value, page: 1 })
               }
-            />
-          </div>
-        </div>
+              className="app-control w-full px-4 py-3"
+            >
+              {STATUS_FILTERS.map((status) => (
+                <option key={status} value={status}>
+                  {status === "ALL"
+                    ? t("settlements.filters.allStatuses")
+                    : t(`settlements.statuses.${status}` as Parameters<typeof t>[0])}
+                </option>
+              ))}
+            </select>
+          </label>
 
+          <FilterClearButton
+            disabled={!hasSettlementFilters && settlementPage === 1}
+            onClick={() =>
+              updateListQuery({
+                status: null,
+                page: 1,
+              })
+            }
+          />
+        </div>
+      </PractitionerFilterCard>
+
+      <PractitionerTableSection
+        title={t("settlements.eyebrow")}
+        subtitle={t("settlements.note")}
+        flushContent
+      >
         <DataTable
           data={settlements?.items ?? []}
           columns={settlementColumns}
@@ -375,9 +374,9 @@ export default function PractitionerWalletSummaryScreen() {
           caption={t("settlements.title")}
           size="sm"
         />
-      </SurfaceCard>
+      </PractitionerTableSection>
 
-      <SurfaceCard variant="section" className="rounded-[28px] p-5 sm:p-6">
+      <PractitionerSectionCard>
         <div className="flex items-center gap-2 text-sm font-semibold text-text-primary dark:text-white/95">
           <WalletCards className="h-4 w-4 text-primary" />
           {t("summary.detailsHeading")}
@@ -392,7 +391,7 @@ export default function PractitionerWalletSummaryScreen() {
             <span className="text-sm text-text-primary dark:text-white/90">{summary.updatedAt}</span>
           </div>
         </div>
-      </SurfaceCard>
+      </PractitionerSectionCard>
     </div>
   );
 }

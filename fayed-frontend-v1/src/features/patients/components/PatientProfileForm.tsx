@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Camera, Loader2, PencilLine, Trash2, Upload, Wallet } from "lucide-react";
+import { Camera, Loader2, PencilLine, Trash2, Upload, Wallet, Info, User, HelpCircle } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import {
   usePatientProfile,
@@ -22,6 +22,18 @@ import FileInput from "@/components/form/input/FileInput";
 import Label from "@/components/form/Label";
 import { FormSkeleton } from "@/components/shared/LoadingStates";
 import { resolvePatientCurrencyCode } from "@/features/payments/lib/patient-currency";
+import {
+  ProfileWorkspaceShell,
+  ProfileWorkspaceCard,
+  ProfileTabs,
+  ProfileSummaryCard,
+  ProfileInfoSection,
+  ProfileInfoRow,
+  ProfileInfoGrid,
+} from "@/components/shared/profile/ProfileWorkspaceKit";
+import Avatar from "@/components/ui/avatar/Avatar";
+import CollapsibleHelpCenter from "@/components/shared/CollapsibleHelpCenter";
+import { useAuthState } from "@/stores/auth-store";
 
 type ProfileFormData = {
   displayName?: string;
@@ -91,12 +103,14 @@ function formatMoney(value: string, currencyCode: string, locale: string): strin
 export default function PatientProfileForm() {
   const t = useTranslations("patient-profile");
   const locale = useLocale();
+  const { user } = useAuthState();
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedAvatarFile, setSelectedAvatarFile] = useState<File | null>(null);
   const [avatarFeedback, setAvatarFeedback] = useState<{ type: "success" | "error"; message: string } | null>(
     null
   );
+  const [showPhotoPanel, setShowPhotoPanel] = useState(false);
 
   const { data, isLoading, isError, refetch } = usePatientProfile();
   const { mutate, isPending, isError: isMutateError } = useUpdatePatientProfile();
@@ -311,185 +325,227 @@ export default function PatientProfileForm() {
   const isAvatarBusy = uploadAvatar.isPending || removeAvatar.isPending;
 
   return (
-    <>
-      <section className="app-panel rounded-[28px] p-5 sm:p-6">
-        <div className="grid gap-5 lg:grid-cols-[auto_minmax(0,1fr)] lg:items-center">
-          <div className="flex items-center gap-4">
-            <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-full border border-border-light bg-surface-secondary">
-              {effectiveAvatarUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={effectiveAvatarUrl}
-                  alt={t("avatar.alt")}
-                  className="h-full w-full object-cover"
-                />
-              ) : (
-                <span className="text-lg font-semibold text-text-muted">
-                  {getInitials(profile.displayName)}
-                </span>
+    <ProfileWorkspaceShell>
+      {saveSuccess ? (
+        <div className="rounded-2xl border border-success-200 bg-success-50 px-4 py-3 text-sm text-success-700">
+          {t("feedback.success")}
+        </div>
+      ) : null}
+
+      <ProfileWorkspaceCard>
+        {/* Content Area: Grid */}
+        <div className="p-5 grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-5 items-start">
+          {/* Summary Card */}
+          <aside className="space-y-4">
+            <ProfileSummaryCard>
+              <Avatar
+                src={effectiveAvatarUrl}
+                name={profile.displayName ?? ""}
+                size="custom"
+                className="h-24 w-24 border-2 border-primary/20 bg-surface-secondary"
+              />
+              <h2 className="mt-3 text-lg font-bold text-text-primary dark:text-white/95 leading-tight">
+                {profile.displayName || t("page.title")}
+              </h2>
+              <p className="mt-1 text-xs text-text-secondary dark:text-white/60 truncate max-w-[240px]">
+                {user?.email || ""}
+              </p>
+              
+              <div className="mt-3.5 w-full border-t border-slate-100 dark:border-white/5 pt-3.5 space-y-1.5 text-xs text-text-muted">
+                <div className="flex items-center justify-between">
+                  <span>{t("fields.countryCode.label")}</span>
+                  <span className="font-semibold text-text-primary">{profile.countryCode || "-"}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span>{t("fields.locale.label")}</span>
+                  <span className="font-semibold text-text-primary">
+                    {profile.locale === "ar"
+                      ? t("fields.locale.options.ar")
+                      : profile.locale === "en"
+                        ? t("fields.locale.options.en")
+                        : "-"}
+                  </span>
+                </div>
+              </div>
+
+              <div className="mt-4 w-full border-t border-slate-100 dark:border-white/5 pt-3 space-y-2">
+                <Button
+                  size="sm"
+                  onClick={openEditModal}
+                  startIcon={<PencilLine className="h-4 w-4" />}
+                  className="w-full"
+                >
+                  {t("actions.edit")}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setShowPhotoPanel(!showPhotoPanel)}
+                  startIcon={<Camera className="h-4 w-4" />}
+                  className="w-full"
+                >
+                  {t("avatar.actions.changePhoto")}
+                </Button>
+              </div>
+
+              {showPhotoPanel && (
+                <div className="mt-3.5 w-full border-t border-slate-100 dark:border-white/5 pt-3.5 space-y-2.5">
+                  <div className="text-xs font-semibold text-text-primary">
+                    {t("avatar.title")}
+                  </div>
+                  <FileInput
+                    accept="image/jpeg,image/png,image/webp"
+                    onChange={handleAvatarFileChange}
+                    className="file:bg-primary-light file:text-text-brand text-xs"
+                  />
+                  {selectedAvatarFile && (
+                    <p className="text-xs text-text-secondary truncate max-w-[200px]">
+                      {t("avatar.selectedFile", { fileName: selectedAvatarFile.name })}
+                    </p>
+                  )}
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      onClick={handleAvatarUpload}
+                      disabled={!selectedAvatarFile || isAvatarBusy}
+                      className="flex-1 font-medium"
+                      startIcon={
+                        uploadAvatar.isPending ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <Upload className="h-3.5 w-3.5" />
+                        )
+                      }
+                    >
+                      {uploadAvatar.isPending ? t("avatar.actions.uploading") : t("avatar.actions.upload")}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={handleAvatarRemove}
+                      disabled={isAvatarBusy || (!selectedAvatarFile && !profile.avatarUrl)}
+                      className="flex-1 font-medium"
+                      startIcon={
+                        removeAvatar.isPending ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <Trash2 className="h-3.5 w-3.5" />
+                        )
+                      }
+                    >
+                      {selectedAvatarFile
+                        ? t("avatar.actions.clearSelection")
+                        : removeAvatar.isPending
+                          ? t("avatar.actions.removing")
+                          : t("avatar.actions.remove")}
+                    </Button>
+                  </div>
+                  <p className="text-[10px] text-text-muted leading-tight">{t("avatar.hint")}</p>
+                  {avatarFeedback && (
+                    <p
+                      className={`text-xs font-medium ${
+                        avatarFeedback.type === "success" ? "text-success-600" : "text-error-500"
+                      }`}
+                    >
+                      {avatarFeedback.message}
+                    </p>
+                  )}
+                </div>
               )}
-            </div>
-            <div>
-              <h2 className="text-base font-semibold text-text-primary">{t("avatar.title")}</h2>
-              <p className="text-sm text-text-secondary">{t("avatar.subtitle")}</p>
-            </div>
-          </div>
+            </ProfileSummaryCard>
+          </aside>
 
-          <div className="w-full max-w-md space-y-3">
-            <FileInput
-              accept="image/jpeg,image/png,image/webp"
-              onChange={handleAvatarFileChange}
-              className="file:bg-primary-light file:text-text-brand"
-            />
+          {/* Main Content Areas */}
+          <main className="space-y-5">
+            {/* 1. Personal Details */}
+            <ProfileInfoSection
+              title={t("summary.title")}
+              subtitle={t("summary.subtitle")}
+              action={
+                <Button size="sm" onClick={openEditModal} startIcon={<PencilLine className="h-4 w-4" />}>
+                  {t("actions.edit")}
+                </Button>
+              }
+            >
+              <ProfileInfoGrid columns={2}>
+                <ProfileInfoRow
+                  label={t("fields.displayName.label")}
+                  value={profile.displayName}
+                  icon={<User className="h-4 w-4" />}
+                />
+                <ProfileInfoRow
+                  label={t("fields.email.label")}
+                  value={user?.email}
+                  icon={<Info className="h-4 w-4" />}
+                />
+                <ProfileInfoRow
+                  label={t("fields.dateOfBirth.label")}
+                  value={formatDateValue(profile.dateOfBirth, locale)}
+                  icon={<Info className="h-4 w-4" />}
+                />
+                <ProfileInfoRow
+                  label={t("fields.gender.label")}
+                  value={
+                    profile.gender === "male"
+                      ? t("fields.gender.options.male")
+                      : profile.gender === "female"
+                        ? t("fields.gender.options.female")
+                        : "-"
+                  }
+                  icon={<User className="h-4 w-4" />}
+                />
+                <ProfileInfoRow
+                  label={t("fields.locale.label")}
+                  value={
+                    profile.locale === "ar"
+                      ? t("fields.locale.options.ar")
+                      : profile.locale === "en"
+                        ? t("fields.locale.options.en")
+                        : "-"
+                  }
+                  icon={<Info className="h-4 w-4" />}
+                />
+                <ProfileInfoRow
+                  label={t("fields.countryCode.label")}
+                  value={profile.countryCode}
+                  icon={<Info className="h-4 w-4" />}
+                />
+                <ProfileInfoRow
+                  label={t("fields.timezone.label")}
+                  value={profile.timezone}
+                  icon={<Info className="h-4 w-4" />}
+                />
+              </ProfileInfoGrid>
+            </ProfileInfoSection>
 
-            {selectedAvatarFile ? (
-              <p className="text-xs text-text-secondary">
-                {t("avatar.selectedFile", { fileName: selectedAvatarFile.name })}
-              </p>
-            ) : null}
-
-            <div className="flex flex-wrap gap-2">
-              <Button
-                size="sm"
-                type="button"
-                onClick={handleAvatarUpload}
-                disabled={!selectedAvatarFile || isAvatarBusy}
-                startIcon={
-                  uploadAvatar.isPending ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Upload className="h-4 w-4" />
-                  )
-                }
-              >
-                {uploadAvatar.isPending ? t("avatar.actions.uploading") : t("avatar.actions.upload")}
-              </Button>
-
-              <Button
-                size="sm"
-                type="button"
-                variant="outline"
-                onClick={handleAvatarRemove}
-                disabled={isAvatarBusy || (!selectedAvatarFile && !profile.avatarUrl)}
-                startIcon={
-                  removeAvatar.isPending ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Trash2 className="h-4 w-4" />
-                  )
-                }
-              >
-                {selectedAvatarFile
-                  ? t("avatar.actions.clearSelection")
-                  : removeAvatar.isPending
-                    ? t("avatar.actions.removing")
-                    : t("avatar.actions.remove")}
-              </Button>
-            </div>
-
-              <p className="text-xs text-text-muted">{t("avatar.hint")}</p>
-
-            {avatarFeedback ? (
-              <p
-                className={`text-sm font-medium ${
-                  avatarFeedback.type === "success" ? "text-success-600" : "text-error-500"
-                }`}
-              >
-                {avatarFeedback.message}
-              </p>
-            ) : null}
-          </div>
+            {/* 2. Wallet / Payments Section */}
+            <ProfileInfoSection title={t("wallet.title")} subtitle={t("wallet.hint")} icon={<Wallet className="h-5 w-5" />}>
+              <ProfileInfoGrid columns={2}>
+                <ProfileInfoRow
+                  label={t("wallet.availableLabel")}
+                  value={
+                    walletSummaryLoading
+                      ? t("wallet.loading")
+                      : walletCurrencyCode
+                        ? formatMoney(walletSummary?.availableBalance ?? "0", walletCurrencyCode, locale)
+                        : walletSummary?.availableBalance ?? "0"
+                  }
+                />
+                <ProfileInfoRow
+                  label={t("wallet.reservedLabel")}
+                  value={
+                    walletSummaryLoading
+                      ? t("wallet.loading")
+                      : walletCurrencyCode
+                        ? formatMoney(walletSummary?.reservedBalance ?? "0", walletCurrencyCode, locale)
+                        : walletSummary?.reservedBalance ?? "0"
+                  }
+                />
+              </ProfileInfoGrid>
+            </ProfileInfoSection>
+          </main>
         </div>
-      </section>
-      <section className="app-panel rounded-[28px] p-5 sm:p-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <h2 className="text-base font-semibold text-text-primary">{t("summary.title")}</h2>
-            <p className="mt-1 text-sm text-text-secondary">{t("summary.subtitle")}</p>
-          </div>
-          <Button size="sm" onClick={openEditModal} startIcon={<PencilLine className="h-4 w-4" />}>
-            {t("actions.edit")}
-          </Button>
-        </div>
-
-        <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
-          <div className="app-panel-soft rounded-2xl p-3">
-            <p className="text-xs text-text-muted">{t("fields.displayName.label")}</p>
-            <p className="mt-1 text-sm font-medium text-text-primary">{profile.displayName || "-"}</p>
-          </div>
-          <div className="app-panel-soft rounded-2xl p-3">
-            <p className="text-xs text-text-muted">{t("fields.dateOfBirth.label")}</p>
-            <p className="mt-1 text-sm font-medium text-text-primary">
-              {formatDateValue(profile.dateOfBirth, locale)}
-            </p>
-          </div>
-          <div className="app-panel-soft rounded-2xl p-3">
-            <p className="text-xs text-text-muted">{t("fields.gender.label")}</p>
-            <p className="mt-1 text-sm font-medium text-text-primary">
-              {profile.gender === "male"
-                ? t("fields.gender.options.male")
-                : profile.gender === "female"
-                  ? t("fields.gender.options.female")
-                  : "-"}
-            </p>
-          </div>
-          <div className="app-panel-soft rounded-2xl p-3">
-            <p className="text-xs text-text-muted">{t("fields.locale.label")}</p>
-            <p className="mt-1 text-sm font-medium text-text-primary">
-              {profile.locale === "ar"
-                ? t("fields.locale.options.ar")
-                : profile.locale === "en"
-                  ? t("fields.locale.options.en")
-                  : "-"}
-            </p>
-          </div>
-          <div className="app-panel-soft rounded-2xl p-3">
-            <p className="text-xs text-text-muted">{t("fields.countryCode.label")}</p>
-            <p className="mt-1 text-sm font-medium text-text-primary">{profile.countryCode || "-"}</p>
-          </div>
-          <div className="app-panel-soft rounded-2xl p-3">
-            <p className="text-xs text-text-muted">{t("fields.timezone.label")}</p>
-            <p className="mt-1 text-sm font-medium text-text-primary">{profile.timezone || "-"}</p>
-          </div>
-        </div>
-
-        {saveSuccess ? (
-          <p className="mt-4 text-sm font-medium text-success-600">{t("feedback.success")}</p>
-        ) : null}
-      </section>
-
-      <section className="app-panel rounded-[28px] p-5 sm:p-6">
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <Wallet className="h-4 w-4 text-primary" />
-            <h2 className="text-base font-semibold text-text-primary">{t("wallet.title")}</h2>
-          </div>
-          <p className="text-xs text-text-muted">{t("wallet.hint")}</p>
-        </div>
-
-        <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <div className="app-panel-soft rounded-2xl p-3">
-            <p className="text-xs text-text-muted">{t("wallet.availableLabel")}</p>
-            <p className="mt-1 text-base font-semibold text-text-primary">
-              {walletSummaryLoading
-                ? t("wallet.loading")
-                : walletCurrencyCode
-                  ? formatMoney(walletSummary?.availableBalance ?? "0", walletCurrencyCode, locale)
-                  : walletSummary?.availableBalance ?? "0"}
-            </p>
-          </div>
-          <div className="app-panel-soft rounded-2xl p-3">
-            <p className="text-xs text-text-muted">{t("wallet.reservedLabel")}</p>
-            <p className="mt-1 text-base font-semibold text-text-primary">
-              {walletSummaryLoading
-                ? t("wallet.loading")
-                : walletCurrencyCode
-                  ? formatMoney(walletSummary?.reservedBalance ?? "0", walletCurrencyCode, locale)
-                  : walletSummary?.reservedBalance ?? "0"}
-            </p>
-          </div>
-        </div>
-      </section>
+      </ProfileWorkspaceCard>
 
       <FormModal
         isOpen={isEditModalOpen}
@@ -551,7 +607,6 @@ export default function PatientProfileForm() {
             </select>
           </div>
 
-          
           <div className="sm:col-span-2">
             <Label htmlFor="timezone">{t("fields.timezone.label")}</Label>
             <Input
@@ -569,6 +624,6 @@ export default function PatientProfileForm() {
 
         {isMutateError ? <p className="mt-4 text-sm font-medium text-error-500">{t("feedback.error")}</p> : null}
       </FormModal>
-    </>
+    </ProfileWorkspaceShell>
   );
 }

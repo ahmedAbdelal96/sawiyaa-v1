@@ -4,12 +4,13 @@ import {
   TextInput,
   TextInputProps,
   StyleSheet,
-  I18nManager,
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { Text } from './Text';
 import { useTheme } from '../../providers/ThemeProvider';
+import { getAppDirection } from '../../i18n/direction';
 
 export interface InputProps extends TextInputProps {
   label?: string;
@@ -37,8 +38,10 @@ export const Input = ({
   ...props
 }: InputProps) => {
   const { theme } = useTheme();
+  const { i18n } = useTranslation();
   const [isFocused, setIsFocused] = useState(false);
-  const isRTL = I18nManager.isRTL;
+  const direction = getAppDirection(i18n.language);
+  const isRTL = direction === 'rtl';
   const resolvedLabelDir = labelDirection ?? (isRTL ? "right" : "left");
   const resolvedPlaceholderDir = placeholderDirection ?? (isRTL ? "right" : "left");
 
@@ -63,7 +66,14 @@ export const Input = ({
   return (
     <View style={[styles.container, containerStyle]}>
       {label && (
-        <Text weight="500" style={[styles.label, { textAlign: resolvedLabelDir }]} color={theme.colors.textSecondary}>
+        <Text
+          weight="500"
+          style={[
+            styles.label,
+            { textAlign: resolvedLabelDir, writingDirection: direction },
+          ]}
+          color={theme.colors.textSecondary}
+        >
           {label}
         </Text>
       )}
@@ -80,10 +90,11 @@ export const Input = ({
         {leftElement && <View style={styles.leftElement}>{leftElement}</View>}
         <TextInput
           style={[
-            styles.input,
-            {
+          styles.input,
+          {
               color: theme.colors.textPrimary,
               textAlign: resolvedPlaceholderDir,
+              writingDirection: direction,
             },
             style,
           ]}
@@ -95,11 +106,23 @@ export const Input = ({
         {rightElement && <View style={styles.rightElement}>{rightElement}</View>}
       </View>
       {error ? (
-        <Text style={[styles.errorText, { textAlign: resolvedLabelDir }]} color="#ef4444">
+        <Text
+          style={[
+            styles.errorText,
+            { textAlign: resolvedLabelDir, writingDirection: direction },
+          ]}
+          color="#ef4444"
+        >
           {error}
         </Text>
       ) : helperText ? (
-        <Text style={[styles.helperText, { textAlign: resolvedLabelDir }]} color={theme.colors.textMuted}>
+        <Text
+          style={[
+            styles.helperText,
+            { textAlign: resolvedLabelDir, writingDirection: direction },
+          ]}
+          color={theme.colors.textMuted}
+        >
           {helperText}
         </Text>
       ) : null}

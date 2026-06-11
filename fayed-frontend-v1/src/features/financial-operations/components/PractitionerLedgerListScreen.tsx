@@ -11,7 +11,13 @@ import { buildUpdatedSearchParams, parseEnumParam, parsePositiveIntParam, parseT
 import FilterClearButton from "@/components/ui/filters/FilterClearButton";
 import DateField from "@/components/form/input/DateField";
 import { DEFAULT_PAGE_LIMIT, DEFAULT_PAGE_SIZE_OPTIONS } from "@/constants/pagination";
-import { SurfaceCard, SurfaceHeader, SurfaceStatCard } from "@/components/shared/SurfaceShell";
+import {
+  PractitionerPageHeader,
+  PractitionerStatsGrid,
+  PractitionerStatCard,
+  PractitionerFilterCard,
+  PractitionerTableSection,
+} from "@/components/shared/practitioner/PractitionerWorkspaceKit";
 import { getPractitionerLedgerErrorKey } from "../lib/financial-operations-errors";
 import { usePractitionerLedger } from "../hooks/use-financial-operations";
 import type {
@@ -60,10 +66,10 @@ function formatDateTime(value: string, locale: string) {
   });
 }
 
-function shortId(value: string) {
+const shortId = (value: string) => {
   if (value.length <= 10) return value;
   return `${value.slice(0, 6)}...${value.slice(-4)}`;
-}
+};
 
 function getReferenceLabel(
   entry: PractitionerLedgerEntry,
@@ -232,61 +238,59 @@ export default function PractitionerLedgerListScreen() {
 
   return (
     <div className="space-y-4">
-      <SurfaceCard variant="compact" className="overflow-hidden px-4 py-4 sm:px-5 sm:py-5">
-        <SurfaceHeader
-          eyebrow={t("ledger.eyebrow")}
-          title={t("ledger.title")}
-          description={t("ledger.note")}
-          actions={
-            <span className="app-chip rounded-full px-3 py-1 text-xs font-medium">
-              {data ? t("ledger.count", { value: data.pagination.totalItems }) : t("ledger.countLoading")}
-            </span>
-          }
-        />
-      </SurfaceCard>
+      <PractitionerPageHeader
+        eyebrow={t("ledger.eyebrow")}
+        title={t("ledger.title")}
+        description={t("ledger.note")}
+        actions={
+          <span className="app-chip rounded-full px-3 py-1 text-xs font-medium">
+            {data ? t("ledger.count", { value: data.pagination.totalItems }) : t("ledger.countLoading")}
+          </span>
+        }
+      />
 
-      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <SurfaceStatCard
+      <PractitionerStatsGrid cols={4}>
+        <PractitionerStatCard
           label={locale.startsWith("ar") ? "إجمالي القيود" : "Entries"}
           value={data ? String(data.pagination.totalItems) : "..."}
           tone="primary"
-          icon={<FileText className="h-4 w-4" />}
+          metricKey="ledger.entries"
         />
-        <SurfaceStatCard
+        <PractitionerStatCard
           label={locale.startsWith("ar") ? "القيد المدين" : "Debit focus"}
           value={t("ledger.directions.DEBIT" as Parameters<typeof t>[0])}
           tone="neutral"
-          icon={<FileText className="h-4 w-4" />}
+          metricKey="ledger.debit"
         />
-        <SurfaceStatCard
+        <PractitionerStatCard
           label={locale.startsWith("ar") ? "القيود المرتبطة" : "Linked refs"}
           value={paymentId || settlementId || referenceType ? "1+" : "..."}
           tone="success"
-          icon={<FileText className="h-4 w-4" />}
+          metricKey="ledger.linkedRefs"
         />
-        <SurfaceStatCard
+        <PractitionerStatCard
           label={locale.startsWith("ar") ? "الصفحة الحالية" : "Current page"}
           value={String(page)}
           tone="warning"
-          icon={<FileText className="h-4 w-4" />}
+          metricKey="ledger.currentPage"
         />
-      </section>
+      </PractitionerStatsGrid>
 
-      <SurfaceCard as="section" variant="section" className="overflow-hidden px-0 py-0">
-        <div className="flex flex-wrap items-start justify-between gap-3 px-4 pt-4 sm:px-5 sm:pt-5">
-          <div className="min-w-0">
-            <h2 className="text-sm font-semibold text-text-primary dark:text-white/95">
-              {locale.startsWith("ar") ? "فلاتر الدفتر" : "Ledger filters"}
-            </h2>
-            <p className="mt-1 text-xs text-text-muted">
-              {locale.startsWith("ar")
-                ? "فلتر القيود حسب النوع والحجم والمرجع والتاريخ."
-                : "Filter ledger entries by type, bucket, reference, and date range."}
-            </p>
+      <PractitionerFilterCard>
+        <div className="space-y-3">
+          <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border-light pb-2 dark:border-white/8">
+            <div className="min-w-0">
+              <h2 className="text-sm font-semibold text-text-primary dark:text-white/95">
+                {locale.startsWith("ar") ? "فلاتر الدفتر" : "Ledger filters"}
+              </h2>
+              <p className="mt-0.5 text-xs text-text-muted">
+                {locale.startsWith("ar")
+                  ? "فلتر القيود حسب النوع والحجم والمرجع والتاريخ."
+                  : "Filter ledger entries by type, bucket, reference, and date range."}
+              </p>
+            </div>
           </div>
-        </div>
 
-        <div className="px-4 pb-4 pt-3 sm:px-5 sm:pb-5">
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
             <label className="block">
               <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
@@ -416,7 +420,13 @@ export default function PractitionerLedgerListScreen() {
             </div>
           </div>
         </div>
+      </PractitionerFilterCard>
 
+      <PractitionerTableSection
+        title={locale.startsWith("ar") ? "سجل المعاملات" : "Transactions Log"}
+        subtitle={locale.startsWith("ar") ? "قائمة تفصيلية بكل القيود المالية المسجلة لحسابك" : "Detailed list of all ledger entries recorded for your account"}
+        flushContent
+      >
         <DataTable
           data={data?.items ?? []}
           columns={columns}
@@ -455,7 +465,7 @@ export default function PractitionerLedgerListScreen() {
           caption={t("ledger.title")}
           size="sm"
         />
-      </SurfaceCard>
+      </PractitionerTableSection>
     </div>
   );
 }

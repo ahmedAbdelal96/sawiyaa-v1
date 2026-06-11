@@ -1,19 +1,50 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import { useLocale } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import {
   ChevronDown,
   Filter,
   MoreHorizontal,
   Search,
   SlidersHorizontal,
+  Grid,
+  Activity,
+  CheckCircle2,
+  AlertTriangle,
+  Users,
+  BadgeCheck,
+  ShieldCheck,
+  Star,
+  Calendar,
+  CalendarClock,
+  Clock3,
+  Ban,
+  XCircle,
+  FileText,
+  Sparkles,
+  Wallet,
+  ShieldAlert,
+  CircleDashed,
+  FilePlus2,
+  Edit3,
+  Wifi,
+  CircleOff,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Dropdown } from "@/components/ui/dropdown/Dropdown";
 import { DropdownItem } from "@/components/ui/dropdown/DropdownItem";
 
-type Tone = "neutral" | "primary" | "success" | "warning" | "danger" | "info";
+// ─── Tone System ─────────────────────────────────────────────────────────────
+
+type Tone =
+  | "neutral"
+  | "primary"
+  | "success"
+  | "warning"
+  | "danger"
+  | "info"
+  | "finance";
 
 const TONE_STYLES: Record<
   Tone,
@@ -27,54 +58,83 @@ const TONE_STYLES: Record<
   }
 > = {
   neutral: {
-    shell: "border-border-light bg-white shadow-[0_16px_30px_-26px_rgba(34,52,56,0.18)]",
-    value: "text-text-primary",
-    label: "text-text-muted",
-    hint: "text-text-secondary",
-    iconShell: "bg-primary-light text-text-brand",
-    chip: "border-border-light bg-surface-secondary text-text-secondary",
+    shell: "border-slate-200/80 bg-white shadow-[0_2px_12px_-6px_rgba(15,23,42,0.10)]",
+    value: "text-slate-800",
+    label: "text-slate-500",
+    hint: "text-slate-400",
+    iconShell: "bg-teal-50 text-teal-700 ring-1 ring-teal-200/60",
+    chip: "border-slate-200 bg-slate-50 text-slate-600",
   },
   primary: {
-    shell: "border-primary/18 bg-primary-light/40 shadow-[0_18px_34px_-26px_rgba(68,161,148,0.18)]",
-    value: "text-text-brand",
-    label: "text-text-brand/82",
-    hint: "text-text-secondary",
-    iconShell: "bg-white text-text-brand",
-    chip: "border-primary/18 bg-white text-text-brand",
+    shell: "border-teal-200/70 bg-white shadow-[0_2px_12px_-6px_rgba(20,150,132,0.12)]",
+    value: "text-teal-800",
+    label: "text-teal-600",
+    hint: "text-teal-500",
+    iconShell: "bg-teal-600 text-white ring-1 ring-teal-700/20",
+    chip: "border-teal-200/80 bg-teal-50 text-teal-700",
   },
   success: {
-    shell: "border-success-500/16 bg-success-50/80 shadow-[0_18px_34px_-26px_rgba(18,183,106,0.16)]",
-    value: "text-success-700",
-    label: "text-success-700/82",
-    hint: "text-success-700/78",
-    iconShell: "bg-white text-success-700",
-    chip: "border-success-200/80 bg-white text-success-700",
+    shell: "border-emerald-200/70 bg-white shadow-[0_2px_12px_-6px_rgba(16,185,129,0.10)]",
+    value: "text-emerald-800",
+    label: "text-emerald-600",
+    hint: "text-emerald-500",
+    iconShell: "bg-emerald-500 text-white ring-1 ring-emerald-600/20",
+    chip: "border-emerald-200/80 bg-emerald-50 text-emerald-700",
   },
   warning: {
-    shell: "border-warning-300/30 bg-warning-50/90 shadow-[0_18px_34px_-26px_rgba(247,144,9,0.16)]",
-    value: "text-warning-700",
-    label: "text-warning-700/82",
-    hint: "text-warning-700/78",
-    iconShell: "bg-white text-warning-700",
-    chip: "border-warning-200/80 bg-white text-warning-700",
+    shell: "border-amber-200/70 bg-white shadow-[0_2px_12px_-6px_rgba(245,158,11,0.10)]",
+    value: "text-amber-800",
+    label: "text-amber-600",
+    hint: "text-amber-500",
+    iconShell: "bg-amber-500 text-white ring-1 ring-amber-600/20",
+    chip: "border-amber-200/80 bg-amber-50 text-amber-700",
   },
   danger: {
-    shell: "border-error-200/70 bg-error-50/80 shadow-[0_18px_34px_-26px_rgba(240,68,56,0.14)]",
-    value: "text-error-700",
-    label: "text-error-700/82",
-    hint: "text-error-700/78",
-    iconShell: "bg-white text-error-700",
-    chip: "border-error-200/80 bg-white text-error-700",
+    shell: "border-rose-200/70 bg-white shadow-[0_2px_12px_-6px_rgba(244,63,94,0.10)]",
+    value: "text-rose-800",
+    label: "text-rose-600",
+    hint: "text-rose-500",
+    iconShell: "bg-rose-500 text-white ring-1 ring-rose-600/20",
+    chip: "border-rose-200/80 bg-rose-50 text-rose-700",
   },
   info: {
-    shell: "border-sky-200/70 bg-sky-50/80 shadow-[0_18px_34px_-26px_rgba(56,133,214,0.14)]",
-    value: "text-sky-700",
-    label: "text-sky-700/82",
-    hint: "text-sky-700/78",
-    iconShell: "bg-white text-sky-700",
-    chip: "border-sky-200/80 bg-white text-sky-700",
+    shell: "border-sky-200/70 bg-white shadow-[0_2px_12px_-6px_rgba(14,165,233,0.10)]",
+    value: "text-sky-800",
+    label: "text-sky-600",
+    hint: "text-sky-500",
+    iconShell: "bg-sky-500 text-white ring-1 ring-sky-600/20",
+    chip: "border-sky-200/80 bg-sky-50 text-sky-700",
+  },
+  finance: {
+    shell: "border-indigo-200/70 bg-white shadow-[0_2px_12px_-6px_rgba(99,102,241,0.10)]",
+    value: "text-indigo-800",
+    label: "text-indigo-600",
+    hint: "text-indigo-500",
+    iconShell: "bg-indigo-500 text-white ring-1 ring-indigo-600/20",
+    chip: "border-indigo-200/80 bg-indigo-50 text-indigo-700",
   },
 };
+
+// ─── AdminPageShell ───────────────────────────────────────────────────────────
+// Additive-only: use when a page has no outer layout wrapper controlling padding/bg.
+// Do NOT nest inside route layouts that already set max-width/padding.
+
+export type AdminPageShellProps = {
+  children: ReactNode;
+  className?: string;
+};
+
+export function AdminPageShell({ children, className }: AdminPageShellProps) {
+  return (
+    <div className={cn("min-h-screen bg-surface-page", className)}>
+      <div className="mx-auto max-w-screen-2xl px-4 py-5 sm:px-6 lg:px-8">
+        <div className="space-y-4">{children}</div>
+      </div>
+    </div>
+  );
+}
+
+// ─── AdminPageHeader ──────────────────────────────────────────────────────────
 
 export type AdminPageHeaderProps = {
   eyebrow?: ReactNode;
@@ -93,31 +153,70 @@ export function AdminPageHeader({
   meta,
   className,
 }: AdminPageHeaderProps) {
+  const locale = useLocale();
+  const isRtl = locale === "ar";
+
   return (
-    <section className={cn("space-y-2", className)}>
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div className="min-w-0 space-y-1">
+    <section className={cn("space-y-1.5", className)}>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div className="min-w-0 space-y-0.5">
           {eyebrow ? (
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">
+            <p
+              className={cn(
+                "text-xs font-medium text-primary",
+                !isRtl && "uppercase tracking-[0.14em]",
+              )}
+            >
               {eyebrow}
             </p>
           ) : null}
-          <h1 className="text-[2.05rem] font-semibold tracking-[-0.02em] text-text-primary sm:text-[2.4rem]">
+          <h1 className="text-xl font-semibold tracking-tight text-text-primary sm:text-2xl">
             {title}
           </h1>
           {description ? (
-            <p className="max-w-3xl text-sm leading-6 text-text-secondary sm:text-base">
+            <p className="max-w-2xl text-sm leading-5 text-text-secondary">
               {description}
             </p>
           ) : null}
-          {meta ? <div className="pt-1">{meta}</div> : null}
+          {meta ? <div className="pt-0.5">{meta}</div> : null}
         </div>
 
-        {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}
+        {actions ? (
+          <div className="flex flex-shrink-0 flex-wrap items-center gap-2">{actions}</div>
+        ) : null}
       </div>
     </section>
   );
 }
+
+// ─── AdminStatsGrid ───────────────────────────────────────────────────────────
+
+const STATS_GRID_COLS = {
+  2: "sm:grid-cols-2",
+  3: "sm:grid-cols-2 lg:grid-cols-3",
+  4: "sm:grid-cols-2 lg:grid-cols-4",
+  6: "sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6",
+} as const;
+
+export type AdminStatsGridProps = {
+  children: ReactNode;
+  cols?: keyof typeof STATS_GRID_COLS;
+  className?: string;
+};
+
+export function AdminStatsGrid({
+  children,
+  cols = 4,
+  className,
+}: AdminStatsGridProps) {
+  return (
+    <section className={cn("grid gap-3", STATS_GRID_COLS[cols], className)}>
+      {children}
+    </section>
+  );
+}
+
+// ─── AdminMetricCard ──────────────────────────────────────────────────────────
 
 export type AdminMetricCardProps = {
   label: ReactNode;
@@ -126,7 +225,97 @@ export type AdminMetricCardProps = {
   icon?: ReactNode;
   tone?: Tone;
   className?: string;
+  metricKey?: string;
+  semantic?: string;
 };
+
+function getFallbackIcon({
+  metricKey,
+  semantic,
+  tone,
+  label,
+}: {
+  metricKey?: string;
+  semantic?: string;
+  tone?: string;
+  label?: ReactNode;
+}): ReactNode {
+  const key = (metricKey || semantic || "").toLowerCase().trim();
+
+  // Patients
+  if (key === "patients.total") return <Users className="h-4 w-4" />;
+  if (key === "patients.completed") return <CheckCircle2 className="h-4 w-4" />;
+  if (key === "patients.incomplete") return <AlertTriangle className="h-4 w-4" />;
+
+  // Practitioners
+  if (key === "practitioners.total") return <Users className="h-4 w-4" />;
+  if (key === "practitioners.online") return <Wifi className="h-4 w-4" />;
+  if (key === "practitioners.verified") return <BadgeCheck className="h-4 w-4" />;
+  if (key === "practitioners.rating") return <Star className="h-4 w-4" />;
+
+  // Sessions
+  if (key === "sessions.total") return <Calendar className="h-4 w-4" />;
+  if (key === "sessions.live") return <Activity className="h-4 w-4" />;
+  if (key === "sessions.upcoming") return <CalendarClock className="h-4 w-4" />;
+  if (key === "sessions.delayed") return <AlertTriangle className="h-4 w-4" />;
+  if (key === "sessions.completed") return <CheckCircle2 className="h-4 w-4" />;
+  if (key === "sessions.cancelled") return <Ban className="h-4 w-4" />;
+
+  // Practitioner Applications
+  if (key === "applications.total") return <FileText className="h-4 w-4" />;
+  if (key === "applications.pending") return <Clock3 className="h-4 w-4" />;
+  if (key === "applications.approved") return <BadgeCheck className="h-4 w-4" />;
+  if (key === "applications.rejected") return <XCircle className="h-4 w-4" />;
+  if (key === "applications.editrequests") return <Edit3 className="h-4 w-4" />;
+
+  // Featured Practitioners
+  if (key === "featured.total") return <Sparkles className="h-4 w-4" />;
+  if (key === "featured.active") return <Activity className="h-4 w-4" />;
+  if (key === "featured.scheduled") return <Calendar className="h-4 w-4" />;
+  if (key === "featured.inactive") return <Clock3 className="h-4 w-4" />;
+
+  // Finance / reconciliation
+  if (key === "finance.matched") return <ShieldCheck className="h-4 w-4" />;
+  if (key === "finance.issues") return <AlertTriangle className="h-4 w-4" />;
+  if (key === "finance.pending") return <Clock3 className="h-4 w-4" />;
+  if (key === "finance.ledger") return <Wallet className="h-4 w-4" />;
+  if (key === "finance.payouts") return <Wallet className="h-4 w-4" />;
+
+  // Articles & Assessments
+  if (key === "articles.total") return <FileText className="h-4 w-4" />;
+  if (key === "assessments.total") return <FileText className="h-4 w-4" />;
+
+  // Broad/partial key matching
+  if (key.includes("total") || key.includes("count") || key.includes("all")) {
+    return <Grid className="h-4 w-4" />;
+  }
+  if (key.includes("active")) return <Activity className="h-4 w-4" />;
+  if (key.includes("inactive") || key.includes("expired")) return <CircleOff className="h-4 w-4" />;
+  if (key.includes("warning") || key.includes("alert")) return <AlertTriangle className="h-4 w-4" />;
+  if (key.includes("finance") || key.includes("money") || key.includes("payout")) return <Wallet className="h-4 w-4" />;
+
+  // Label text matching (last-resort, optional fallback)
+  if (typeof label === "string") {
+    const labelStr = label.toLowerCase().trim();
+    if (labelStr.includes("مرضى") || labelStr.includes("patient")) return <Users className="h-4 w-4" />;
+    if (labelStr.includes("ممارس") || labelStr.includes("practitioner")) return <Users className="h-4 w-4" />;
+    if (labelStr.includes("جلسات") || labelStr.includes("sessions") || labelStr.includes("session")) return <Calendar className="h-4 w-4" />;
+    if (labelStr.includes("طلبات") || labelStr.includes("applications") || labelStr.includes("application")) return <FileText className="h-4 w-4" />;
+    if (labelStr.includes("مقال") || labelStr.includes("article")) return <FileText className="h-4 w-4" />;
+    if (labelStr.includes("تقييم") || labelStr.includes("rating")) return <Star className="h-4 w-4" />;
+    if (labelStr.includes("إجمالي") || labelStr.includes("total") || labelStr.includes("count")) return <Grid className="h-4 w-4" />;
+  }
+
+  // Tone fallback
+  if (tone === "success") return <CheckCircle2 className="h-4 w-4" />;
+  if (tone === "warning") return <AlertTriangle className="h-4 w-4" />;
+  if (tone === "danger") return <ShieldAlert className="h-4 w-4" />;
+  if (tone === "info") return <BadgeCheck className="h-4 w-4" />;
+  if (tone === "finance") return <Wallet className="h-4 w-4" />;
+
+  // Generic fallback default icon
+  return <Grid className="h-4 w-4" />;
+}
 
 export function AdminMetricCard({
   label,
@@ -135,49 +324,166 @@ export function AdminMetricCard({
   icon,
   tone = "neutral",
   className,
+  metricKey,
+  semantic,
 }: AdminMetricCardProps) {
   const styles = TONE_STYLES[tone];
+  const locale = useLocale();
+  const isRtl = locale === "ar";
+
+  const resolvedIcon = icon ?? getFallbackIcon({ metricKey, semantic, tone, label });
 
   return (
     <article
       className={cn(
-        "relative isolate overflow-hidden rounded-xl border px-4 py-4",
+        "relative isolate overflow-hidden rounded-xl border px-4 py-3.5",
         styles.shell,
         className,
       )}
     >
+      {/* Subtle decorative accent — much smaller than before */}
       <span
         aria-hidden="true"
-        className="pointer-events-none absolute -right-6 -top-6 h-16 w-16 rounded-full bg-primary/8"
-      />
-      <span
-        aria-hidden="true"
-        className="pointer-events-none absolute -bottom-6 left-1/2 h-14 w-14 -translate-x-1/2 rounded-full bg-white/60"
+        className="pointer-events-none absolute -end-4 -top-4 h-10 w-10 rounded-full bg-current opacity-[0.06]"
       />
 
-      <div className="relative z-10 flex items-start justify-between gap-3">
+      <div className="relative z-10 flex items-center justify-between gap-3">
         <div className="min-w-0">
-          <p className={cn("text-[11px] font-semibold uppercase tracking-[0.16em]", styles.label)}>
+          <p
+            className={cn(
+              "text-[10px] font-semibold text-current",
+              styles.label,
+              !isRtl && "uppercase tracking-[0.14em]",
+            )}
+          >
             {label}
           </p>
-          <p className={cn("mt-2 text-2xl font-semibold tracking-[-0.03em] tabular-nums", styles.value)}>
+          <p
+            className={cn(
+              "mt-1.5 text-xl font-semibold tracking-tight tabular-nums",
+              styles.value,
+            )}
+          >
             {value}
           </p>
-          {hint ? <p className={cn("mt-2 text-xs leading-5", styles.hint)}>{hint}</p> : null}
+          {hint ? (
+            <p className={cn("mt-1 text-[11px] leading-4", styles.hint)}>{hint}</p>
+          ) : null}
         </div>
 
-        {icon ? (
+        {resolvedIcon ? (
           <span
             aria-hidden="true"
-            className={cn("inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl", styles.iconShell)}
+            className={cn(
+              "inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg",
+              styles.iconShell,
+            )}
           >
-            {icon}
+            {resolvedIcon}
           </span>
         ) : null}
       </div>
     </article>
   );
 }
+
+// ─── AdminFilterCard ──────────────────────────────────────────────────────────
+
+export type AdminFilterCardProps = {
+  children: ReactNode;
+  title?: ReactNode;
+  description?: ReactNode;
+  actions?: ReactNode;
+  className?: string;
+};
+
+export function AdminFilterCard({
+  children,
+  title,
+  description,
+  actions,
+  className,
+}: AdminFilterCardProps) {
+  return (
+    <section
+      className={cn(
+        "overflow-hidden rounded-xl border border-border-light bg-white shadow-[0_2px_8px_-4px_rgba(34,52,56,0.10)]",
+        className,
+      )}
+    >
+      {(title || description || actions) && (
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border-light/70 px-5 py-3">
+          <div className="flex items-center gap-2">
+            <SlidersHorizontal className="h-3.5 w-3.5 text-text-muted" aria-hidden="true" />
+            {title ? (
+              <p className="text-sm font-semibold text-text-primary">{title}</p>
+            ) : null}
+            {description ? (
+              <p className="text-xs text-text-secondary">{description}</p>
+            ) : null}
+          </div>
+          {actions ? (
+            <div className="flex flex-wrap items-center gap-2">{actions}</div>
+          ) : null}
+        </div>
+      )}
+      <div className="px-5 py-4">{children}</div>
+    </section>
+  );
+}
+
+// ─── AdminTableSection ────────────────────────────────────────────────────────
+
+export type AdminTableSectionProps = {
+  children: ReactNode;
+  title?: ReactNode;
+  subtitle?: ReactNode;
+  actions?: ReactNode;
+  /** When true, children render flush to the card edges (no inner padding). Ideal for DataTable or custom tables. */
+  flushContent?: boolean;
+  className?: string;
+};
+
+export function AdminTableSection({
+  children,
+  title,
+  subtitle,
+  actions,
+  flushContent = false,
+  className,
+}: AdminTableSectionProps) {
+  const hasHeader = Boolean(title || subtitle || actions);
+
+  return (
+    <section
+      className={cn(
+        "overflow-hidden rounded-xl border border-border-light bg-white shadow-[0_2px_8px_-4px_rgba(34,52,56,0.10)]",
+        className,
+      )}
+    >
+      {hasHeader && (
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border-light/70 px-5 py-3.5">
+          <div className="min-w-0">
+            {title ? (
+              <p className="text-sm font-semibold text-text-primary">{title}</p>
+            ) : null}
+            {subtitle ? (
+              <p className="mt-0.5 text-xs text-text-secondary">{subtitle}</p>
+            ) : null}
+          </div>
+          {actions ? (
+            <div className="flex flex-wrap items-center gap-2">{actions}</div>
+          ) : null}
+        </div>
+      )}
+      <div className={cn(!flushContent && hasHeader && "px-5 py-4")}>
+        {children}
+      </div>
+    </section>
+  );
+}
+
+// ─── AdminSectionCard ─────────────────────────────────────────────────────────
 
 export type AdminSectionCardProps = {
   eyebrow?: ReactNode;
@@ -196,43 +502,61 @@ export function AdminSectionCard({
   children,
   className,
 }: AdminSectionCardProps) {
+  const locale = useLocale();
+  const isRtl = locale === "ar";
+
   return (
     <section
       className={cn(
-        "overflow-hidden rounded-[24px] border border-outline-variant/30 bg-white shadow-[0_4px_24px_rgba(68,161,148,0.04)]",
+        "overflow-hidden rounded-xl border border-border-light bg-white shadow-[0_2px_8px_-4px_rgba(34,52,56,0.10)]",
         className,
       )}
     >
       {(eyebrow || title || description || actions) && (
-        <div className="border-b border-outline-variant/20 px-5 py-5 sm:px-6">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div className="min-w-0 space-y-1.5">
+        <div className="border-b border-border-light/70 px-5 py-4 sm:px-5">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="min-w-0 space-y-1">
               {eyebrow ? (
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">
+                <p
+                  className={cn(
+                    "text-[10px] font-medium text-primary",
+                    !isRtl && "uppercase tracking-[0.14em]",
+                  )}
+                >
                   {eyebrow}
                 </p>
               ) : null}
               {title ? (
-                <h2 className="text-[1.65rem] font-semibold tracking-[-0.02em] text-text-primary">
+                <h2 className="text-base font-semibold text-text-primary">
                   {title}
                 </h2>
               ) : null}
               {description ? (
-                <p className="max-w-3xl text-sm leading-6 text-text-secondary">{description}</p>
+                <p className="max-w-2xl text-sm leading-5 text-text-secondary">
+                  {description}
+                </p>
               ) : null}
             </div>
 
-            {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}
+            {actions ? (
+              <div className="flex flex-wrap items-center gap-2">{actions}</div>
+            ) : null}
           </div>
         </div>
       )}
 
-      <div className={cn((eyebrow || title || description || actions) && "px-5 py-5 sm:px-6")}>
+      <div
+        className={cn(
+          (eyebrow || title || description || actions) && "px-5 py-4 sm:px-5",
+        )}
+      >
         {children}
       </div>
     </section>
   );
 }
+
+// ─── AdminStatusBadge ─────────────────────────────────────────────────────────
 
 type BadgeTone = Tone | "muted";
 
@@ -252,7 +576,7 @@ export function AdminStatusBadge({
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-semibold",
+        "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold",
         styles.chip,
         className,
       )}
@@ -274,6 +598,8 @@ export function AdminRiskBadge(props: AdminStatusBadgeProps) {
   return <AdminStatusBadge {...props} />;
 }
 
+// ─── AdminTableTabs ───────────────────────────────────────────────────────────
+
 export type AdminTableTabsProps<T extends string> = {
   value: T;
   tabs: Array<{ value: T; label: ReactNode; count?: ReactNode }>;
@@ -290,7 +616,7 @@ export function AdminTableTabs<T extends string>({
   return (
     <div
       className={cn(
-        "inline-flex flex-wrap gap-1.5 rounded-[18px] bg-surface-tertiary/90 p-1.5",
+        "inline-flex flex-wrap gap-1 rounded-2xl bg-surface-tertiary/90 p-1",
         className,
       )}
     >
@@ -302,9 +628,9 @@ export function AdminTableTabs<T extends string>({
             type="button"
             onClick={() => onChange(tab.value)}
             className={cn(
-              "inline-flex items-center gap-2 rounded-[14px] px-3.5 py-2 text-sm font-medium transition",
+              "inline-flex items-center gap-1.5 rounded-[14px] px-3 py-1.5 text-sm font-medium transition",
               active
-                ? "bg-white text-text-brand shadow-[0_10px_18px_-16px_rgba(34,52,56,0.24)]"
+                ? "bg-white text-text-brand shadow-[0_4px_12px_-8px_rgba(34,52,56,0.20)]"
                 : "text-text-secondary hover:bg-white/70 hover:text-text-primary",
             )}
           >
@@ -312,7 +638,7 @@ export function AdminTableTabs<T extends string>({
             {tab.count ? (
               <span
                 className={cn(
-                  "rounded-full border px-2 py-0.5 text-[11px] font-semibold",
+                  "rounded-full border px-1.5 py-px text-[10px] font-semibold",
                   active
                     ? "border-primary/15 bg-primary-light text-text-brand"
                     : "border-border-light bg-white text-text-secondary",
@@ -327,6 +653,8 @@ export function AdminTableTabs<T extends string>({
     </div>
   );
 }
+
+// ─── AdminTableToolbar ────────────────────────────────────────────────────────
 
 export type AdminTableToolbarProps = {
   search?: {
@@ -346,22 +674,24 @@ export function AdminTableToolbar({
   actions,
   className,
 }: AdminTableToolbarProps) {
+  const t = useTranslations("common.dataTable");
+
   return (
-    <div className={cn("space-y-4", className)}>
-      <div className="flex flex-wrap items-center justify-between gap-3">
+    <div className={cn("space-y-3", className)}>
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-border-light bg-surface-secondary text-text-secondary">
-            <Filter className="h-4 w-4" />
+          <span className="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-border-light bg-surface-secondary text-text-secondary">
+            <Filter className="h-3.5 w-3.5" />
           </span>
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
-              Filters
-            </p>
-            <p className="text-sm text-text-secondary">Refine the current list without leaving the page.</p>
+            <p className="text-xs font-semibold text-text-muted">{t("filters")}</p>
+            <p className="text-xs text-text-secondary">{t("refineList")}</p>
           </div>
         </div>
 
-        {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}
+        {actions ? (
+          <div className="flex flex-wrap items-center gap-2">{actions}</div>
+        ) : null}
       </div>
 
       <div className="grid gap-3 xl:grid-cols-[minmax(0,1.25fr)_auto]">
@@ -374,7 +704,7 @@ export function AdminTableToolbar({
               onChange={(event) => search.onChange(event.target.value)}
               placeholder={search.placeholder}
               aria-label={search.ariaLabel ?? search.placeholder}
-              className="app-control w-full rounded-[18px] py-3 pe-4 ps-11 text-sm"
+              className="app-control w-full rounded-[18px] py-2.5 pe-4 ps-11 text-sm"
             />
           </label>
         ) : null}
@@ -382,13 +712,13 @@ export function AdminTableToolbar({
         <div className="flex items-center justify-start gap-2 xl:justify-end">
           {filters ? (
             <div className="flex flex-wrap items-center gap-2 rounded-[18px] border border-border-light bg-surface-secondary px-3 py-2 text-sm text-text-secondary">
-              <SlidersHorizontal className="h-4 w-4" />
+              <SlidersHorizontal className="h-3.5 w-3.5" />
               <div className="flex flex-wrap items-center gap-2">{filters}</div>
             </div>
           ) : (
             <span className="inline-flex items-center gap-2 rounded-[18px] border border-border-light bg-surface-secondary px-3 py-2 text-sm text-text-secondary">
-              <SlidersHorizontal className="h-4 w-4" />
-              Filters
+              <SlidersHorizontal className="h-3.5 w-3.5" />
+              {t("filters")}
             </span>
           )}
         </div>
@@ -396,6 +726,8 @@ export function AdminTableToolbar({
     </div>
   );
 }
+
+// ─── AdminRowActionsMenu ──────────────────────────────────────────────────────
 
 export type AdminRowActionsMenuItem = {
   label: ReactNode;
@@ -418,22 +750,23 @@ export function AdminRowActionsMenu({
 }: AdminRowActionsMenuProps) {
   const locale = useLocale();
   const [open, setOpen] = useState(false);
-  const dropdownAlignment = locale === "ar" ? "left-0 origin-top-left" : "right-0 origin-top-right";
+  const dropdownAlignment =
+    locale === "ar" ? "left-0 origin-top-left" : "right-0 origin-top-right";
 
   return (
     <div className={cn("relative inline-flex", className)}>
       <button
         type="button"
         onClick={() => setOpen((value) => !value)}
-        className="dropdown-toggle inline-flex h-9 w-9 items-center justify-center rounded-full border border-border-light bg-white text-text-secondary transition hover:border-primary/25 hover:bg-primary-light/50 hover:text-text-brand"
+        className="dropdown-toggle inline-flex h-8 w-8 items-center justify-center rounded-full border border-border-light bg-white text-text-secondary transition hover:border-primary/25 hover:bg-primary-light/50 hover:text-text-brand"
         aria-label={label}
       >
-        <MoreHorizontal className="h-4 w-4" />
+        <MoreHorizontal className="h-3.5 w-3.5" />
       </button>
       <Dropdown
         isOpen={open}
         onClose={() => setOpen(false)}
-        className={`${dropdownAlignment} mt-2 flex w-56 flex-col p-2`}
+        className={`${dropdownAlignment} mt-2 flex w-52 flex-col p-1.5`}
       >
         {items.map((item, index) => (
           <DropdownItem
@@ -445,13 +778,17 @@ export function AdminRowActionsMenu({
               setOpen(false);
             }}
             baseClassName={cn(
-              "flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition",
+              "flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-sm font-medium transition",
               item.danger
                 ? "text-error-700 hover:bg-error-50"
                 : "text-text-primary hover:bg-primary-light/50 hover:text-text-brand",
             )}
           >
-            {item.icon ? <span className="inline-flex h-4 w-4 items-center justify-center">{item.icon}</span> : null}
+            {item.icon ? (
+              <span className="inline-flex h-4 w-4 items-center justify-center">
+                {item.icon}
+              </span>
+            ) : null}
             <span>{item.label}</span>
           </DropdownItem>
         ))}

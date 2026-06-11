@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Image, ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
+import { Image, StyleSheet, TouchableOpacity, View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
@@ -23,6 +23,7 @@ import { usePublicAvailabilityWindows } from "../../sessions/hooks";
 import { getPatientPreferredCurrency } from "../../../../lib/currency";
 import { usePatientProfile } from "../../profile/hooks";
 import { useGetPublicPractitionerDetails } from "../../discovery/api";
+import { getPackagePurchasePlanTranslationKey } from "../lib";
 import {
   buildSlotsFromWindows,
   formatLocalizedDateRange,
@@ -55,12 +56,18 @@ function resolveQuoteLabel(
   quotedItem: PackagePlanQuotedItem | undefined,
   locale: string,
   currencyCode?: string | null,
+  planLabel?: string | null,
 ) {
   if (!quotedItem) {
     return null;
   }
 
-  return `${quotedItem.item.title} · ${formatMoney(quotedItem.quote.patientPayableTotal, currencyCode ?? quotedItem.quote.selectedCurrencyCode, locale)}`;
+  const resolvedPlanLabel = planLabel ?? quotedItem.item.title;
+  return `${resolvedPlanLabel} | ${formatMoney(
+    quotedItem.quote.patientPayableTotal,
+    currencyCode ?? quotedItem.quote.selectedCurrencyCode,
+    locale,
+  )}`;
 }
 
 export default function PackagePurchaseCreateScreen() {
@@ -83,7 +90,6 @@ export default function PackagePurchaseCreateScreen() {
 
   const durationMinutes = Number(params.durationMinutes) >= 60 ? 60 : 30;
   const sessionMode = (params.sessionMode === "AUDIO" ? "AUDIO" : "VIDEO") as "VIDEO" | "AUDIO";
-  const currencyCode = params.currencyCode?.trim().toUpperCase() || "EGP";
   const authScopeKey = useMemo(() => {
     if (isAuthLoading) {
       return "bootstrapping";
@@ -128,7 +134,13 @@ export default function PackagePurchaseCreateScreen() {
     resolvedCountryIsoCode: plan?.quote.resolvedCountryIsoCode ?? null,
   });
   const sessionCount = plan?.quote.sessionCount ?? plan?.item.sessionCount ?? 0;
-  const selectedQuoteLabel = resolveQuoteLabel(plan, locale, quoteCurrency);
+  const localizedPlanLabel = plan
+    ? t(getPackagePurchasePlanTranslationKey(plan.item.code), {
+        count: plan.item.sessionCount,
+        defaultValue: plan.item.title,
+      })
+    : null;
+  const selectedQuoteLabel = resolveQuoteLabel(plan, locale, quoteCurrency, localizedPlanLabel);
   const currentWeek = getWeekRange(weekOffset);
   const availabilityQuery = usePublicAvailabilityWindows(
     params.practitionerSlug ?? null,
@@ -288,7 +300,10 @@ export default function PackagePurchaseCreateScreen() {
                 showDot={false}
               />
               <Text weight="bold" style={styles.title}>
-                {plan.item.title}
+                {t(getPackagePurchasePlanTranslationKey(plan.item.code), {
+                  count: plan.item.sessionCount,
+                  defaultValue: plan.item.title,
+                })}
               </Text>
               <Text color={theme.colors.textSecondary} style={styles.subtitle}>
                 {params.practitionerName || params.practitionerSlug}
@@ -468,7 +483,13 @@ export default function PackagePurchaseCreateScreen() {
             />
             <SummaryRow
               label={t("packagePurchases.create.package", "Package")}
-              value={selectedQuoteLabel || plan.item.title}
+              value={
+                selectedQuoteLabel ||
+                t(getPackagePurchasePlanTranslationKey(plan.item.code), {
+                  count: plan.item.sessionCount,
+                  defaultValue: plan.item.title,
+                })
+              }
             />
             <SummaryRow
               label={t("packagePurchases.create.duration", "Session duration")}
@@ -698,4 +719,3 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
 });
-

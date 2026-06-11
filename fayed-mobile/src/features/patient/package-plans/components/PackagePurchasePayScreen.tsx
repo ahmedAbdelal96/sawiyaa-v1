@@ -1,13 +1,11 @@
-import React, { useMemo, useState } from "react";
-import { Linking, ScrollView, StyleSheet, Switch, View } from "react-native";
+import React, { useEffect, useMemo, useState } from "react";
+import { I18nManager, Linking, StyleSheet, Switch, View } from "react-native";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
-import { Ionicons } from "@expo/vector-icons";
 import {
   Button,
   Card,
   DetailPageScaffold,
-  EmptyState,
   ScreenHeading,
   SectionHeader,
   StatusChip,
@@ -21,23 +19,15 @@ import { normalizeAllowedExternalUrl } from "../../../../lib/external-url";
 import { useInitiatePackagePurchasePayment, useMyPackagePurchase, usePackageRefundPolicy } from "../hooks";
 import {
   canContinuePackagePurchasePayment,
+  formatDatetime,
   formatMoney,
   getPackagePurchaseCompletionCount,
+  getPackagePurchaseStatusTone,
+  getPackagePurchaseStatusTranslationKey,
   isPackagePurchasePaymentExpired,
+  resolvePackagePurchasePlanCount,
+  warnPackagePurchaseContractMismatch,
 } from "../lib";
-
-function getStatusTone(status: string | null | undefined) {
-  switch (status) {
-    case "ACTIVE":
-      return "success" as const;
-    case "PENDING_PAYMENT":
-      return "warning" as const;
-    case "COMPLETED":
-      return "default" as const;
-    default:
-      return "default" as const;
-  }
-}
 
 export default function PackagePurchasePayScreen({
   purchaseId,
@@ -58,6 +48,32 @@ export default function PackagePurchasePayScreen({
     enabled: Boolean(purchase?.status === "PENDING_PAYMENT"),
   });
   const refundPolicy = refundPolicyQuery.data?.item ?? null;
+  const planCountFromCode = purchase ? resolvePackagePurchasePlanCount(purchase.planCode) : null;
+  const hasPlanMismatch = Boolean(
+    purchase &&
+      planCountFromCode !== null &&
+      planCountFromCode !== purchase.sessionCount,
+  );
+
+  useEffect(() => {
+    if (!purchase || !hasPlanMismatch) {
+      return;
+    }
+
+    warnPackagePurchaseContractMismatch({
+      purchaseId: purchase.id,
+      planCode: purchase.planCode,
+      sessionCount: purchase.sessionCount,
+      linkedSessionsCount: purchase.linkedSessions.totalItems,
+    });
+  }, [
+    hasPlanMismatch,
+    purchase,
+    purchase?.id,
+    purchase?.linkedSessions.totalItems,
+    purchase?.planCode,
+    purchase?.sessionCount,
+  ]);
 
   const canContinuePayment = useMemo(
     () => Boolean(purchase && canContinuePackagePurchasePayment(purchase)),
@@ -97,6 +113,10 @@ export default function PackagePurchasePayScreen({
     currencyCode: purchase.selectedCurrencyCode,
     regionalPricingMode: purchase.regionalPricingMode,
     resolvedCountryIsoCode: purchase.resolvedCountryIsoCode,
+  });
+  const title = t("packagePurchases.plans.generic", {
+    count: purchase.sessionCount,
+    defaultValue: `${purchase.sessionCount} session package`,
   });
 
   const handleContinue = async () => {
@@ -179,35 +199,43 @@ export default function PackagePurchasePayScreen({
           titleVariant="h2"
         />
         <Card variant="elevated" padding="lg" style={styles.heroCard}>
-          <View style={styles.heroTopRow}>
+          <View style={[styles.heroTopRow, I18nManager.isRTL && styles.heroTopRowRtl]}>
             <View style={styles.heroMeta}>
               <Text weight="bold" style={styles.heroTitle}>
-                {purchase.planCode}
+                {title}
               </Text>
               <Text color={theme.colors.textSecondary} style={styles.heroSubtitle}>
                 {t("packagePurchases.pay.subtitle", "Complete the package payment securely.")}
               </Text>
             </View>
-            <StatusChip label={purchase.status} tone={getStatusTone(purchase.status)} showDot={false} />
+            <StatusChip
+              label={t(getPackagePurchaseStatusTranslationKey(purchase.status), {
+                defaultValue: purchase.status,
+              })}
+              tone={getPackagePurchaseStatusTone(purchase.status)}
+              showDot={false}
+            />
           </View>
           <View style={styles.paymentSummary}>
             <SummaryRow
-              label={t("packagePurchases.pay.total", "Total")}
+              label={t("packagePurchases.pay.total")}
               value={formatMoney(purchase.patientPayableTotal, currency, locale)}
             />
             <SummaryRow
-              label={t("packagePurchases.pay.progress", "Progress")}
+              label={t("packagePurchases.pay.progress")}
               value={`${completionCount}/${purchase.sessionCount}`}
             />
-            <SummaryRow
-              label={t("packagePurchases.pay.paymentExpiry", "Payment expiry")}
-              value={purchase.paymentExpiresAt ? purchase.paymentExpiresAt : "-"}
-              helperText={
-                paymentExpired
-                  ? t("packagePurchases.pay.expired", "This payment window has expired.")
-                  : t("packagePurchases.pay.active", "This payment window is still active.")
-              }
-            />
+            {purchase.status === "PENDING_PAYMENT" ? (
+              <SummaryRow
+                label={t("packagePurchases.pay.paymentDueBy")}
+                value={purchase.paymentExpiresAt ? formatDatetime(purchase.paymentExpiresAt, locale) : "-"}
+                helperText={
+                  paymentExpired
+                    ? t("packagePurchases.pay.paymentExpired")
+                    : t("packagePurchases.pay.paymentDueByHelper")
+                }
+              />
+            ) : null}
           </View>
         </Card>
 
@@ -226,7 +254,9 @@ export default function PackagePurchasePayScreen({
           ) : refundPolicy ? (
             <Card variant="outlined" padding="md" style={styles.policyCard}>
               <Text weight="600" style={styles.policyTitle}>
-                {refundPolicy.titleEn ?? refundPolicy.titleAr ?? refundPolicy.key}
+                {i18n.language?.startsWith("ar")
+                  ? (refundPolicy.titleAr ?? refundPolicy.titleEn ?? refundPolicy.key)
+                  : (refundPolicy.titleEn ?? refundPolicy.titleAr ?? refundPolicy.key)}
               </Text>
               <Text color={theme.colors.textSecondary} style={styles.policyMeta}>
                 {t("packagePurchases.pay.policyClauses", {
@@ -237,7 +267,7 @@ export default function PackagePurchasePayScreen({
                       : `${refundPolicy.clauseCount} clauses`,
                 })}
               </Text>
-              <View style={styles.acceptRow}>
+              <View style={[styles.acceptRow, I18nManager.isRTL && styles.acceptRowRtl]}>
                 <Switch
                   value={accepted}
                   onValueChange={setAccepted}
@@ -316,6 +346,9 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     gap: 12,
   },
+  heroTopRowRtl: {
+    flexDirection: "row-reverse",
+  },
   heroMeta: {
     flex: 1,
   },
@@ -338,6 +371,9 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 20,
   },
+  noticeCard: {
+    marginHorizontal: 0,
+  },
   policyCard: {
     marginHorizontal: 0,
     marginTop: 12,
@@ -355,13 +391,13 @@ const styles = StyleSheet.create({
     gap: 10,
     marginTop: 12,
   },
+  acceptRowRtl: {
+    flexDirection: "row-reverse",
+  },
   acceptText: {
     flex: 1,
     fontSize: 13,
     lineHeight: 20,
-  },
-  noticeCard: {
-    marginHorizontal: 0,
   },
   footer: {
     marginTop: 10,

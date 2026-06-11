@@ -4,6 +4,7 @@ import {
   ServiceUnavailableException,
 } from '@nestjs/common';
 import { ConfigType } from '@nestjs/config';
+import appConfig from '@config/app.config';
 import { PaymentProvider } from '@prisma/client';
 import paymentConfig from '@config/payment.config';
 import { PaymentGatewayControlRuntimeService } from '@modules/payment-gateway-control/services/payment-gateway-control.runtime';
@@ -55,6 +56,8 @@ export class PaymentRuntimeConfigService {
   constructor(
     @Inject(paymentConfig.KEY)
     private readonly paymentCfg: ConfigType<typeof paymentConfig>,
+    @Inject(appConfig.KEY)
+    private readonly appCfg: ConfigType<typeof appConfig>,
     private readonly paymentGatewayControlRuntimeService: PaymentGatewayControlRuntimeService,
   ) {}
 
@@ -302,6 +305,58 @@ export class PaymentRuntimeConfigService {
     }
 
     return appBaseUrl;
+  }
+
+  getTrustedReturnUrlOrigins(): string[] {
+    const origins = new Set<string>();
+
+    this.addTrustedOrigin(origins, this.appCfg.url ?? null);
+    this.addTrustedOrigin(origins, this.paymentCfg.appBaseUrl ?? null);
+
+    for (const origin of this.appCfg.corsOrigins ?? []) {
+      this.addTrustedOrigin(origins, origin);
+    }
+
+    return [...origins];
+  }
+
+  isTrustedReturnUrl(returnUrl: string | null | undefined): boolean {
+    const parsed = this.parseUrlOrNull(returnUrl);
+    if (!parsed) {
+      return false;
+    }
+
+    if (parsed.protocol === 'fayed:') {
+      return true;
+    }
+
+    if (!this.isHttpUrl(parsed)) {
+      return false;
+    }
+
+    return this.getTrustedReturnUrlOrigins().includes(parsed.origin);
+  }
+
+  resolveTrustedReturnUrl(
+    returnUrl: string | null | undefined,
+  ): string | null {
+    if (!returnUrl?.trim()) {
+      return null;
+    }
+
+    return this.isTrustedReturnUrl(returnUrl.trim()) ? returnUrl.trim() : null;
+  }
+
+  resolveTrustedReturnUrlBase(
+    returnUrlBase: string | null | undefined,
+  ): string | null {
+    if (!returnUrlBase?.trim()) {
+      return null;
+    }
+
+    return this.isTrustedReturnUrl(returnUrlBase.trim())
+      ? returnUrlBase.trim()
+      : null;
   }
 
   getRedirectUrls(): {
@@ -692,5 +747,32 @@ export class PaymentRuntimeConfigService {
 
     const trimmed = value.trim();
     return trimmed ? trimmed : null;
+  }
+
+  private addTrustedOrigin(target: Set<string>, value: string | null): void {
+    const parsed = this.parseUrlOrNull(value);
+    if (!parsed) {
+      return;
+    }
+
+    if (this.isHttpUrl(parsed)) {
+      target.add(parsed.origin);
+    }
+  }
+
+  private parseUrlOrNull(value: string | null | undefined): URL | null {
+    if (!value?.trim()) {
+      return null;
+    }
+
+    try {
+      return new URL(value.trim());
+    } catch {
+      return null;
+    }
+  }
+
+  private isHttpUrl(url: URL): boolean {
+    return url.protocol === 'http:' || url.protocol === 'https:';
   }
 }

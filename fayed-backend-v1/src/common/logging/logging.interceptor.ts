@@ -12,7 +12,7 @@ import { Inject } from '@nestjs/common';
 import { Request } from 'express';
 import loggingConfig from '@config/logging.config';
 import { AuthenticatedRequest } from '@common/interfaces/authenticated-request.interface';
-import { sanitizeForLogging } from './log-sanitizer.util';
+import { redactUrlForLogging, sanitizeForLogging } from './log-sanitizer.util';
 import { AppLoggerService } from './app-logger.service';
 
 /**
@@ -130,7 +130,7 @@ export class LoggingInterceptor implements NestInterceptor {
     return sanitizeForLogging({
       requestId: request.requestId,
       method: request.method,
-      path: request.originalUrl ?? request.url,
+      path: redactUrlForLogging(request.originalUrl ?? request.url),
       userId: request.user?.id ?? null,
       ip: expressRequest.ip,
       userAgent: request.headers['user-agent'],

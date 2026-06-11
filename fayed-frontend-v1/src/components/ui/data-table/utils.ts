@@ -30,20 +30,82 @@ export function isRTL(): boolean {
 }
 
 /**
- * Get text alignment based on column config and RTL
- * Auto-detects appropriate alignment if not specified
+ * Resolve logical/physical column alignment to Tailwind CSS text and justify classes
+ */
+export function resolveColumnAlignment(
+  column: ColumnDef | null | undefined,
+  rtl: boolean
+): {
+  textClass: string;
+  justifyClass: string;
+  effectiveAlign: 'left' | 'right' | 'center' | 'start' | 'end';
+} {
+  // Default to "start" logical alignment
+  let align: 'left' | 'right' | 'center' | 'start' | 'end' = 'start';
+  
+  if (column) {
+    if (column.align) {
+      align = column.align;
+    } else if (column.id === 'actions') {
+      align = 'center';
+    }
+  }
+
+  switch (align) {
+    case 'start':
+      return {
+        textClass: 'text-start',
+        justifyClass: 'justify-start',
+        effectiveAlign: 'start',
+      };
+    case 'end':
+      return {
+        textClass: 'text-end',
+        justifyClass: 'justify-end',
+        effectiveAlign: 'end',
+      };
+    case 'center':
+      return {
+        textClass: 'text-center',
+        justifyClass: 'justify-center',
+        effectiveAlign: 'center',
+      };
+    case 'left':
+      return {
+        textClass: 'text-left',
+        justifyClass: rtl ? 'justify-end' : 'justify-start',
+        effectiveAlign: 'left',
+      };
+    case 'right':
+      return {
+        textClass: 'text-right',
+        justifyClass: rtl ? 'justify-start' : 'justify-end',
+        effectiveAlign: 'right',
+      };
+    default:
+      return {
+        textClass: 'text-start',
+        justifyClass: 'justify-start',
+        effectiveAlign: 'start',
+      };
+  }
+}
+
+/**
+ * Get text alignment based on column config and RTL (for backward compatibility)
  */
 export function getColumnAlignment(
   column: ColumnDef,
   rtl: boolean
 ): 'left' | 'right' | 'center' {
-  // Use explicit alignment if provided
-  if (column.align) {
-    return column.align;
+  const { effectiveAlign } = resolveColumnAlignment(column, rtl);
+  if (effectiveAlign === 'start') {
+    return rtl ? 'right' : 'left';
   }
-  
-  // Auto-detect based on RTL
-  return rtl ? 'right' : 'left';
+  if (effectiveAlign === 'end') {
+    return rtl ? 'left' : 'right';
+  }
+  return effectiveAlign;
 }
 
 /**
@@ -248,8 +310,8 @@ export function getPaginationPages(
 export function getSizeClasses(size: 'sm' | 'md' | 'lg' = 'md') {
   const sizeMap = {
     sm: {
-      cell: 'px-2.5 py-1.5 text-xs',
-      header: 'px-2.5 py-1.5 text-xs',
+      cell: 'px-3 py-2 text-[13px]',
+      header: 'px-3 py-2 text-[11px]',
     },
     md: {
       cell: 'px-4 py-2.5 text-sm',

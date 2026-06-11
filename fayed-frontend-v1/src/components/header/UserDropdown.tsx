@@ -9,6 +9,7 @@ import { useRouter } from "@/i18n/navigation";
 import { LogOut, User } from "lucide-react";
 import { usePatientProfile } from "@/features/patients/hooks/use-patients";
 import type { ReactNode } from "react";
+import Avatar from "@/components/ui/avatar/Avatar";
 
 type UserDropdownProps = {
   compact?: boolean;
@@ -23,8 +24,14 @@ type UserDropdownProps = {
 function getProfileHref(role?: string | null) {
   if (role === "PATIENT") return "/patient/profile";
   if (role === "PRACTITIONER") return "/practitioner/profile";
-  if (role === "ADMIN" || role === "SUPPORT_AGENT" || role === "CONTENT_REVIEWER")
-    return "/admin/settings";
+  if (
+    role === "ADMIN" ||
+    role === "SUPER_ADMIN" ||
+    role === "SUPPORT_AGENT" ||
+    role === "CONTENT_REVIEWER"
+  ) {
+    return "/admin/profile";
+  }
   return null;
 }
 
@@ -45,7 +52,6 @@ export default function UserDropdown({ compact = false, quickLinks = [] }: UserD
   }, [t, user]);
 
   const userEmail = user?.email || "";
-  const userInitial = displayName.charAt(0).toUpperCase();
   const profileHref = getProfileHref(user?.role);
   const dropdownAlignment = locale === "ar" ? "left-0 origin-top-left" : "right-0 origin-top-right";
   const patientAvatar = patientProfileQuery.data?.profile.avatarDataUrl ?? null;
@@ -71,18 +77,11 @@ export default function UserDropdown({ compact = false, quickLinks = [] }: UserD
         }`}
         aria-label={t("account")}
       >
-        {effectiveAvatar ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={effectiveAvatar}
-            alt={displayName}
-            className="h-10 w-10 rounded-full object-cover"
-          />
-        ) : (
-          <span className="flex h-10 w-10 items-center justify-center rounded-full bg-primary-light text-sm font-semibold text-primary dark:bg-primary/15 dark:text-primary-light">
-            {userInitial}
-          </span>
-        )}
+        <Avatar
+          src={effectiveAvatar}
+          name={displayName}
+          size="medium"
+        />
 
         {!compact && (
           <span className="hidden min-w-0 text-start sm:block">

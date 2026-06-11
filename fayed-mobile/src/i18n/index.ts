@@ -6,6 +6,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import en from "./locales/en.json";
 import ar from "./locales/ar.json";
+import { warnMissingTranslation } from "./missing-key-warning";
 
 const resources = {
   en: { translation: en },
@@ -33,6 +34,38 @@ function applyRtlDirection(language: AppLanguage) {
   return didDirectionChange;
 }
 
+function resolveTranslationNamespace(options: unknown): string | undefined {
+  if (!options || typeof options !== "object") return undefined;
+
+  const ns = (options as { ns?: string | readonly string[] }).ns;
+  if (typeof ns === "string") return ns;
+  if (Array.isArray(ns) && typeof ns[0] === "string") return ns[0];
+  return undefined;
+}
+
+function resolveTranslationLanguage(options: unknown): AppLanguage {
+  if (!options || typeof options !== "object") return initialLanguage;
+
+  const lng = (options as { lng?: string }).lng;
+  return normalizeLanguage(lng ?? i18n.language);
+}
+
+function hasPluralizedTranslation(
+  language: AppLanguage,
+  namespace: string | undefined,
+  key: string,
+) {
+  const pluralSuffixes = ["zero", "one", "two", "few", "many", "other"] as const;
+
+  return pluralSuffixes.some((suffix) =>
+    i18n.exists(`${key}_${suffix}`, {
+      lng: language,
+      ns: namespace,
+      fallbackLng: [] as never,
+    } as never),
+  );
+}
+
 // Fallback if expo-localization doesn't return anything
 const deviceLanguage = normalizeLanguage(
   getLocales()[0]?.languageCode || DEFAULT_LANGUAGE,
@@ -47,10 +80,46 @@ i18n.use(initReactI18next).init({
   resources,
   lng: initialLanguage,
   fallbackLng: DEFAULT_LANGUAGE,
+  saveMissing: process.env.NODE_ENV !== "production",
+  missingKeyHandler(lngs, ns, key) {
+    warnMissingTranslation({
+      lang: lngs[0] ?? initialLanguage,
+      namespace: ns,
+      key,
+      fallbackLanguages: lngs.slice(1),
+    });
+  },
   interpolation: {
     escapeValue: false, // React already safely escapes
   },
 });
+
+const originalTranslate = i18n.t.bind(i18n);
+i18n.t = ((key: unknown, options?: unknown) => {
+  if (typeof key === "string" && process.env.NODE_ENV !== "production") {
+    const namespace = resolveTranslationNamespace(options);
+    const language = resolveTranslationLanguage(options);
+    const existsInCurrentLanguage = i18n.exists(key, {
+      ...(typeof options === "object" && options !== null ? (options as Record<string, unknown>) : {}),
+      lng: language,
+      ns: namespace,
+      fallbackLng: [] as never,
+    } as never);
+
+    const isPluralizedKey = typeof options === "object" && options !== null && "count" in options;
+
+    if (!existsInCurrentLanguage && !(isPluralizedKey && hasPluralizedTranslation(language, namespace, key))) {
+      warnMissingTranslation({
+        lang: language,
+        namespace,
+        key,
+        fallbackLanguages: language === DEFAULT_LANGUAGE ? [] : [DEFAULT_LANGUAGE],
+      });
+    }
+  }
+
+  return originalTranslate(key as never, options as never);
+}) as typeof i18n.t;
 
 async function hydratePersistedLanguage() {
   try {

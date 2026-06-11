@@ -9,7 +9,13 @@ import type { ColumnDef } from "@/components/ui/data-table";
 import ActionIconButton from "@/components/ui/action-icon-button/ActionIconButton";
 import Button from "@/components/ui/button/Button";
 import DateField from "@/components/form/input/DateField";
-import { SurfaceCard, SurfaceHeader, SurfaceStatCard, SurfaceToolbar } from "@/components/shared/SurfaceShell";
+import {
+  PractitionerPageHeader,
+  PractitionerStatCard,
+  PractitionerFilterCard,
+  PractitionerTableSection,
+  PractitionerStatsGrid,
+} from "@/components/shared/practitioner/PractitionerWorkspaceKit";
 import { DEFAULT_PAGE_LIMIT, DEFAULT_PAGE_SIZE_OPTIONS } from "@/constants/pagination";
 import { useDebouncedValue } from "@/hooks/use-debounce";
 import { usePractitionerSessions } from "../hooks/use-sessions";
@@ -178,32 +184,28 @@ export default function PractitionerSessionsPanel() {
     : t("practitioner.list.emptyNote");
 
   return (
-    <div className="space-y-3">
-      <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_300px] lg:items-start">
-        <SurfaceCard as="section" variant="compact" className="overflow-hidden px-4 py-4 sm:px-5 sm:py-5">
-          <SurfaceHeader
-            eyebrow={t("practitioner.meta.listTitle")}
-            title={t("practitioner.list.heading")}
-            description={t("practitioner.list.note")}
-            className="gap-2"
-          />
-        </SurfaceCard>
+    <div className="space-y-4">
+      <PractitionerPageHeader
+        eyebrow={t("practitioner.meta.listTitle")}
+        title={t("practitioner.list.heading")}
+        description={t("practitioner.list.note")}
+      />
 
-        <div className="self-start">
-          <SurfaceStatCard
-            label={t("practitioner.list.summary.total")}
-            value={String(pagination?.totalItems ?? 0)}
-            hint={t("practitioner.list.summary.totalHint")}
-            tone="primary"
-          />
-        </div>
-      </div>
+      <PractitionerStatsGrid cols={4}>
+        <PractitionerStatCard
+          label={t("practitioner.list.summary.total")}
+          value={String(pagination?.totalItems ?? 0)}
+          hint={t("practitioner.list.summary.totalHint")}
+          tone="primary"
+          metricKey="sessions.total"
+        />
+      </PractitionerStatsGrid>
 
-      <SurfaceToolbar className="px-3 py-3 sm:px-4 sm:py-4">
+      <PractitionerFilterCard>
         <div className="space-y-2.5">
           <div className="grid gap-2.5 lg:grid-cols-2 xl:grid-cols-4">
             <label className="block">
-              <span className="mb-1 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
+              <span className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
                 {t("practitioner.list.filters.searchLabel")}
               </span>
               <div className="relative">
@@ -224,7 +226,7 @@ export default function PractitionerSessionsPanel() {
             </label>
 
             <label className="block">
-                <span className="mb-1 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
+              <span className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
                 {t("practitioner.list.filters.presentationLabel")}
               </span>
               <select
@@ -274,7 +276,7 @@ export default function PractitionerSessionsPanel() {
             />
           </div>
 
-          <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center justify-between gap-3 pt-1">
             <p className="text-xs text-text-secondary">{t("practitioner.list.tableNote")}</p>
 
             <Button
@@ -289,82 +291,75 @@ export default function PractitionerSessionsPanel() {
             </Button>
           </div>
         </div>
-      </SurfaceToolbar>
+      </PractitionerFilterCard>
 
-      <SurfaceCard as="section" variant="section" className="overflow-hidden px-0 py-0">
-        <div className="flex flex-wrap items-start justify-between gap-3 px-4 pt-4 sm:px-5 sm:pt-5">
-          <div className="min-w-0">
-            <h2 className="text-sm font-semibold text-text-primary dark:text-white/95">
-              {t("practitioner.list.tableTitle")}
-            </h2>
-            <p className="mt-1 text-xs text-text-muted">{t("practitioner.list.tableNote")}</p>
-          </div>
-        </div>
-
-        <div className="pt-3">
-          <DataTable
-            data={sessions}
-            columns={columns}
-            getRowId={(row) => row.id}
-            loading={isLoading}
-            error={isError ? t("practitioner.list.errorNote") : null}
-            errorState={{
-              title: t("practitioner.list.errorHeading"),
-              description: t("practitioner.list.errorNote"),
-              action: {
-                label: t("practitioner.list.retry"),
-                onClick: () => refetch(),
-              },
-            }}
-            emptyState={{
-              title: emptyStateTitle,
-              description: emptyStateDescription,
-              action: hasActiveFilters
-                ? {
-                    label: t("practitioner.list.filters.clear"),
-                    onClick: clearFilters,
-                  }
-                : undefined,
-            }}
-            pagination={
-              pagination
-                ? {
-                    page: pagination.page,
-                    limit: pagination.limit,
-                    totalItems: pagination.totalItems,
-                    totalPages: pagination.totalPages,
-                  }
-                : {
-                    page,
-                    limit,
-                    totalItems: 0,
-                    totalPages: 1,
-                  }
-            }
-            onPageChange={(nextPage) => setPage(nextPage)}
-            onPageSizeChange={(nextLimit) => {
-              setLimit(nextLimit);
-              setPage(1);
-            }}
-            pageSizeOptions={DEFAULT_PAGE_SIZE_OPTIONS}
-            rowActionsHeader={t("practitioner.list.table.actions")}
-            rowActions={(row) => (
-              <ActionIconButton
-                intent="view"
-                label={t("practitioner.list.table.openDetails")}
-                icon={<Eye className="h-4 w-4" />}
-                onClick={() => openSession(row.id)}
-              />
-            )}
-            onRowClick={(row) => openSession(row.id)}
-            ariaLabel={t("practitioner.list.heading")}
-            caption={t("practitioner.list.heading")}
-            stickyHeader
-            hoverable
-            striped
-          />
-        </div>
-      </SurfaceCard>
+      <PractitionerTableSection
+        title={t("practitioner.list.tableTitle")}
+        subtitle={t("practitioner.list.tableNote")}
+        flushContent
+      >
+        <DataTable
+          data={sessions}
+          columns={columns}
+          getRowId={(row) => row.id}
+          loading={isLoading}
+          error={isError ? t("practitioner.list.errorNote") : null}
+          errorState={{
+            title: t("practitioner.list.errorHeading"),
+            description: t("practitioner.list.errorNote"),
+            action: {
+              label: t("practitioner.list.retry"),
+              onClick: () => refetch(),
+            },
+          }}
+          emptyState={{
+            title: emptyStateTitle,
+            description: emptyStateDescription,
+            action: hasActiveFilters
+              ? {
+                  label: t("practitioner.list.filters.clear"),
+                  onClick: clearFilters,
+                }
+              : undefined,
+          }}
+          pagination={
+            pagination
+              ? {
+                  page: pagination.page,
+                  limit: pagination.limit,
+                  totalItems: pagination.totalItems,
+                  totalPages: pagination.totalPages,
+                }
+              : {
+                  page,
+                  limit,
+                  totalItems: 0,
+                  totalPages: 1,
+                }
+          }
+          onPageChange={(nextPage) => setPage(nextPage)}
+          onPageSizeChange={(nextLimit) => {
+            setLimit(nextLimit);
+            setPage(1);
+          }}
+          pageSizeOptions={DEFAULT_PAGE_SIZE_OPTIONS}
+          rowActionsHeader={t("practitioner.list.table.actions")}
+          rowActions={(row) => (
+            <ActionIconButton
+              intent="view"
+              label={t("practitioner.list.table.openDetails")}
+              icon={<Eye className="h-4 w-4" />}
+              onClick={() => openSession(row.id)}
+            />
+          )}
+          onRowClick={(row) => openSession(row.id)}
+          ariaLabel={t("practitioner.list.heading")}
+          caption={t("practitioner.list.heading")}
+          stickyHeader
+          hoverable
+          striped
+        />
+      </PractitionerTableSection>
     </div>
   );
 }

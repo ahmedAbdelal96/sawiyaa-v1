@@ -32,7 +32,14 @@ import Badge from "@/components/ui/badge/Badge";
 import ActionIconButton from "@/components/ui/action-icon-button/ActionIconButton";
 import { Drawer, ConfirmModal, FormModal } from "@/components/ui/modal";
 import { ListStateSkeleton, StateCard } from "@/components/shared/ContentStates";
-import { SurfaceCard, SurfaceHeader, SurfaceStatCard } from "@/components/shared/SurfaceShell";
+import {
+  PractitionerPageHeader,
+  PractitionerStatsGrid,
+  PractitionerStatCard,
+  PractitionerFilterCard,
+  PractitionerTableSection,
+  PractitionerSectionCard,
+} from "@/components/shared/practitioner/PractitionerWorkspaceKit";
 import { useDebouncedValue } from "@/hooks/use-debounce";
 import { toAppError } from "@/lib/api/errors";
 import {
@@ -965,41 +972,39 @@ function CouponDetailDrawer({
             })()
           ) : coupon ? tab === "overview" ? (
             <div className="space-y-5">
-              <SurfaceCard variant="subtle" className="p-5">
-                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                  <SurfaceStatCard
-                    label={t("detail.stats.discount")}
-                    value={getDiscountLabel(coupon, locale)}
-                    hint={t("detail.stats.discountHint")}
-                    tone="primary"
-                    icon={<BadgePercent className="h-4 w-4" />}
-                  />
-                  <SurfaceStatCard
-                    label={t("detail.stats.usage")}
-                    value={String(coupon.currentUsageCount)}
-                    hint={getUsageLabel(coupon, t)}
-                    tone="success"
-                    icon={<History className="h-4 w-4" />}
-                  />
-                  <SurfaceStatCard
-                    label={t("detail.stats.window")}
-                    value={coupon.startsAt || coupon.endsAt ? t("detail.stats.windowDefined") : t("common.alwaysActive")}
-                    hint={getDateWindowLabel(coupon, locale, t)}
-                    tone="neutral"
-                    icon={<CalendarClock className="h-4 w-4" />}
-                  />
-                  <SurfaceStatCard
-                    label={t("detail.stats.split")}
-                    value={`${coupon.platformSharePercent}% / ${coupon.practitionerSharePercent}%`}
-                    hint={t("detail.stats.splitHint")}
-                    tone="warning"
-                    icon={<ArrowLeftRight className="h-4 w-4" />}
-                  />
-                </div>
-              </SurfaceCard>
+              <PractitionerStatsGrid cols={4}>
+                <PractitionerStatCard
+                  label={t("detail.stats.discount")}
+                  value={getDiscountLabel(coupon, locale)}
+                  hint={t("detail.stats.discountHint")}
+                  tone="primary"
+                  icon={<BadgePercent className="h-4 w-4" />}
+                />
+                <PractitionerStatCard
+                  label={t("detail.stats.usage")}
+                  value={String(coupon.currentUsageCount)}
+                  hint={getUsageLabel(coupon, t)}
+                  tone="success"
+                  icon={<History className="h-4 w-4" />}
+                />
+                <PractitionerStatCard
+                  label={t("detail.stats.window")}
+                  value={coupon.startsAt || coupon.endsAt ? t("detail.stats.windowDefined") : t("common.alwaysActive")}
+                  hint={getDateWindowLabel(coupon, locale, t)}
+                  tone="neutral"
+                  icon={<CalendarClock className="h-4 w-4" />}
+                />
+                <PractitionerStatCard
+                  label={t("detail.stats.split")}
+                  value={`${coupon.platformSharePercent}% / ${coupon.practitionerSharePercent}%`}
+                  hint={t("detail.stats.splitHint")}
+                  tone="warning"
+                  icon={<ArrowLeftRight className="h-4 w-4" />}
+                />
+              </PractitionerStatsGrid>
 
               <div className="grid gap-4 lg:grid-cols-2">
-                <SurfaceCard variant="section" className="space-y-3">
+                <PractitionerSectionCard className="space-y-3">
                   <h3 className="text-sm font-semibold text-text-primary dark:text-white/95">
                     {t("detail.sectionSummary")}
                   </h3>
@@ -1011,9 +1016,9 @@ function CouponDetailDrawer({
                     <DetailRow label={t("detail.usageLimitTotal")} value={coupon.usageLimitTotal === null ? t("common.unlimited") : String(coupon.usageLimitTotal)} />
                     <DetailRow label={t("detail.usageLimitPerPatient")} value={coupon.usageLimitPerPatient === null ? t("common.unlimited") : String(coupon.usageLimitPerPatient)} />
                   </dl>
-                </SurfaceCard>
+                </PractitionerSectionCard>
 
-                <SurfaceCard variant="section" className="space-y-3">
+                <PractitionerSectionCard className="space-y-3">
                   <h3 className="text-sm font-semibold text-text-primary dark:text-white/95">
                     {t("detail.sectionStatus")}
                   </h3>
@@ -1025,7 +1030,7 @@ function CouponDetailDrawer({
                     <DetailRow label={t("detail.createdAt")} value={formatDateTime(coupon.createdAt, locale)} />
                     <DetailRow label={t("detail.updatedAt")} value={formatDateTime(coupon.updatedAt, locale)} />
                   </dl>
-                </SurfaceCard>
+                </PractitionerSectionCard>
               </div>
 
               <div className="rounded-[22px] border border-border-light bg-primary-light/45 px-4 py-4 text-sm leading-6 text-text-secondary dark:border-primary/20 dark:bg-primary/10">
@@ -1240,54 +1245,54 @@ export default function PractitionerPromoCodesScreen() {
   return (
     <>
       <div className="space-y-6">
-        <SurfaceHeader
+        <PractitionerPageHeader
           eyebrow={t("eyebrow")}
           title={t("title")}
           description={t("description")}
           actions={
-          <Button
-            type="button"
-            onClick={() => setCreateOpen(true)}
-            startIcon={<Plus className="h-4 w-4" />}
-            data-testid="promo-codes-create-button"
-          >
-            {t("actions.create")}
-          </Button>
+            <Button
+              type="button"
+              onClick={() => setCreateOpen(true)}
+              startIcon={<Plus className="h-4 w-4" />}
+              data-testid="promo-codes-create-button"
+            >
+              {t("actions.create")}
+            </Button>
           }
         />
 
-        <SurfaceCard variant="subtle" className="space-y-4">
-          <div className="grid gap-3 md:grid-cols-3">
-            <SurfaceStatCard
-              label={t("summary.totalCodes")}
-              value={String(summary.totalCoupons)}
-              hint={t("summary.totalCodesHint")}
-              tone="primary"
-              icon={<Tag className="h-4 w-4" />}
-            />
-            <SurfaceStatCard
-              label={t("summary.activeCodes")}
-              value={String(summary.activeCoupons)}
-              hint={t("summary.activeCodesHint")}
-              tone="success"
-              icon={<ShieldCheck className="h-4 w-4" />}
-            />
-            <SurfaceStatCard
-              label={t("summary.totalRedemptions")}
-              value={String(summary.totalRedemptions)}
-              hint={t("summary.totalRedemptionsHint")}
-              tone="warning"
-              icon={<History className="h-4 w-4" />}
-            />
-          </div>
+        <PractitionerStatsGrid cols={3}>
+          <PractitionerStatCard
+            label={t("summary.totalCodes")}
+            value={String(summary.totalCoupons)}
+            hint={t("summary.totalCodesHint")}
+            tone="primary"
+            metricKey="promoCodes.total"
+          />
+          <PractitionerStatCard
+            label={t("summary.activeCodes")}
+            value={String(summary.activeCoupons)}
+            hint={t("summary.activeCodesHint")}
+            tone="success"
+            metricKey="promoCodes.active"
+          />
+          <PractitionerStatCard
+            label={t("summary.totalRedemptions")}
+            value={String(summary.totalRedemptions)}
+            hint={t("summary.totalRedemptionsHint")}
+            tone="warning"
+            metricKey="promoCodes.redemptions"
+          />
+        </PractitionerStatsGrid>
 
-          <div className="rounded-[22px] border border-primary/15 bg-primary-light/45 px-4 py-4 text-sm leading-6 text-text-secondary dark:border-primary/20 dark:bg-primary/10">
-            <div className="flex items-start gap-3">
-              <BadgePercent className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-              <p>{t("note.body")}</p>
-            </div>
+        <PractitionerSectionCard className="border-primary/15 bg-primary-light/45 dark:border-primary/20 dark:bg-primary/10">
+          <div className="flex items-start gap-3 text-sm leading-6 text-text-secondary">
+            <BadgePercent className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+            <p>{t("note.body")}</p>
           </div>
+        </PractitionerSectionCard>
 
+        <PractitionerFilterCard>
           <div className="grid gap-3 md:grid-cols-[1.2fr_0.8fr_auto]">
             <label className="relative block">
               <span className="sr-only">{t("filters.searchLabel")}</span>
@@ -1337,7 +1342,7 @@ export default function PractitionerPromoCodesScreen() {
               </Button>
             </div>
           </div>
-        </SurfaceCard>
+        </PractitionerFilterCard>
 
         {couponsQuery.isLoading && !couponsQuery.data ? (
           <ListStateSkeleton items={4} />
@@ -1351,7 +1356,7 @@ export default function PractitionerPromoCodesScreen() {
             }}
           />
         ) : (
-          <SurfaceCard variant="section">
+          <PractitionerTableSection>
             <DataTable
               data={coupons}
               columns={columns}
@@ -1416,7 +1421,7 @@ export default function PractitionerPromoCodesScreen() {
               ariaLabel={t("title")}
               caption={t("title")}
             />
-          </SurfaceCard>
+          </PractitionerTableSection>
         )}
       </div>
 

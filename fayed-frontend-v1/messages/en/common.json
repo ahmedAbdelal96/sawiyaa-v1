@@ -46,5 +46,22 @@
       "description": "Add a team member to start coordinating responsibilities and bookings.",
       "action": "Add staff member"
     }
+  },
+  "dataTable": {
+    "rows": "Rows",
+    "rowsPerPage": "Rows per page",
+    "sortBy": "Sort by",
+    "direction": "Direction",
+    "newestFirst": "Newest first",
+    "oldestFirst": "Oldest first",
+    "selectAll": "Select all",
+    "selectRow": "Select",
+    "noData": "No data",
+    "next": "Next",
+    "previous": "Previous",
+    "showing": "Showing {start} to {end} of {total}",
+    "filters": "Filters",
+    "refineList": "Refine the current list without leaving the page.",
+    "actions": "Actions"
   }
 }

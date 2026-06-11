@@ -1,4 +1,8 @@
-import type { SessionMode } from "../sessions/types";
+import type {
+  SessionJoinAvailability,
+  SessionMode,
+  SessionPresentationStatus,
+} from "../sessions/types";
 
 export type PackagePlanSessionQuote = {
   planCode: string;
@@ -96,6 +100,8 @@ export type PatientPackagePurchaseSessionSummary = {
     | "EXPIRED"
     | "REFUND_PENDING"
     | "REFUNDED";
+  presentationStatus: SessionPresentationStatus;
+  joinAvailability: SessionJoinAvailability;
   scheduledStartAt: string | null;
   scheduledEndAt: string | null;
   durationMinutes: number;

@@ -57,7 +57,7 @@ export class InitiateSessionPaymentDto {
     required: false,
     example: 'fayed://sessions/session_123/payment-return',
     description:
-      'Optional mobile return URL for hosted checkout flows. When provided by a trusted native client, the payment provider can return directly into the app instead of the public web payment-return page.',
+      'Optional trusted return URL for hosted checkout flows. When provided by a trusted caller surface, the payment provider can return directly to that same surface instead of the public web payment-return page.',
   })
   @IsOptional()
   @IsString()

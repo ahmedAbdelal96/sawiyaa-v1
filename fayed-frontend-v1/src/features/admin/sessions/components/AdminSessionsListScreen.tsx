@@ -28,10 +28,12 @@ import {
   parseTextParam,
 } from "@/components/ui/data-table";
 import {
+  AdminFilterCard,
   AdminMetricCard,
   AdminPageHeader,
-  AdminSectionCard,
+  AdminStatsGrid,
   AdminStatusBadge,
+  AdminTableSection,
   AdminTableTabs,
 } from "@/components/shared/admin/AdminDashboardKit";
 import SessionStatusBadge from "@/features/sessions/components/SessionStatusBadge";
@@ -291,7 +293,7 @@ export default function AdminSessionsListScreen() {
     {
       label: locale === "ar" ? "قادمة" : "Upcoming",
       value: upcomingCount ?? "...",
-      hint: locale === "ar" ? "قريبًا" : "Scheduled ahead",
+      hint: locale === "ar" ? "قريباً" : "Scheduled ahead",
       icon: <CalendarClock className="h-4 w-4" />,
       tone: "success" as const,
     },
@@ -429,23 +431,17 @@ export default function AdminSessionsListScreen() {
         }
       />
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <AdminStatsGrid>
         {metrics.map((metric) => (
           <AdminMetricCard key={metric.label} {...metric} />
         ))}
-      </div>
+      </AdminStatsGrid>
 
-      <AdminSectionCard
-        title={locale === "ar" ? "قائمة الجلسات" : "Sessions Directory"}
-        description={
-          locale === "ar"
-            ? "بحث وتشغيل الجلسات من لوحة واحدة."
-            : "Search and manage sessions from one operational board."
-        }
+      <AdminFilterCard
+        title={locale === "ar" ? "الفلاتر والبحث" : "Filters & Search"}
       >
-        <div className="space-y-5">
-          <div className="rounded-[24px] border border-border-light bg-surface-secondary/45 p-3 sm:p-4">
-            <div className="flex flex-col gap-3 xl:grid xl:grid-cols-[minmax(0,1fr)_auto] xl:items-center xl:gap-4">
+        <div className="space-y-4">
+          <div className="flex flex-col gap-3 xl:grid xl:grid-cols-[minmax(0,1fr)_auto] xl:items-center xl:gap-4">
               <AdminTableTabs
                 value={activeTab}
                 onChange={(nextValue) => {
@@ -473,7 +469,7 @@ export default function AdminSessionsListScreen() {
                     className="app-control w-full rounded-full bg-white px-4 py-3 ps-11 text-sm shadow-theme-xs"
                     placeholder={
                       locale === "ar"
-                        ? "ابحث باسم المستفيد أو المعالج أو رقم الجلسة..."
+                        ? "ابحث باسم المريض أو المعالج أو رقم الجلسة..."
                         : "Search by beneficiary name, practitioner name, or session ID..."
                     }
                     aria-label={locale === "ar" ? "بحث الجلسات" : "Search sessions"}
@@ -564,8 +560,28 @@ export default function AdminSessionsListScreen() {
               />
             </div>
           </div>
+      </AdminFilterCard>
 
-          <div className="overflow-hidden rounded-[28px] border border-border-light bg-white shadow-[0_18px_36px_-30px_rgba(34,52,56,0.18)]">
+      <AdminTableSection
+        subtitle={
+          typeof data?.pagination.totalItems === "number"
+            ? locale === "ar"
+              ? `${data.pagination.totalItems} جلسة`
+              : `${data.pagination.totalItems} sessions`
+            : undefined
+        }
+        actions={
+          <button
+            type="button"
+            onClick={() => sessions.refetch()}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-border-light bg-white px-3 py-1.5 text-xs font-semibold text-text-primary transition hover:border-primary/25 hover:bg-surface-secondary"
+          >
+            <RefreshCw className="h-3.5 w-3.5" />
+            {locale === "ar" ? "تحديث" : "Refresh"}
+          </button>
+        }
+        flushContent
+      >
             {sessions.isLoading || (searchMode && allSessionsQuery.isLoading) ? (
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[1040px]">
@@ -615,7 +631,7 @@ export default function AdminSessionsListScreen() {
                   <p className="mt-2 text-sm leading-6 text-text-secondary">
                     {searchMode
                       ? locale === "ar"
-                        ? "تعذر تحميل كل الصفحات المطلوبة للبحث."
+                        ? "تعذّر تحميل كل الصفحات المطلوبة للبحث."
                         : "Could not load all pages needed for search."
                       : t("states.error.note")}
                   </p>
@@ -783,9 +799,7 @@ export default function AdminSessionsListScreen() {
                 ) : null}
               </div>
             ) : null}
-          </div>
-        </div>
-      </AdminSectionCard>
+      </AdminTableSection>
 
       <Drawer
         isOpen={Boolean(selectedSessionId)}
@@ -997,7 +1011,7 @@ export default function AdminSessionsListScreen() {
             </>
           ) : (
             <div className="rounded-[24px] border border-border-light bg-surface-secondary/50 p-6 text-sm text-text-secondary">
-              {locale === "ar" ? "جاري تحميل تفاصيل الجلسة..." : "Loading session details..."}
+              {locale === "ar" ? "جارٍ تحميل تفاصيل الجلسة..." : "Loading session details..."}
             </div>
           )}
         </ModalBody>

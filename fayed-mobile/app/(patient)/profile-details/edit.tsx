@@ -29,6 +29,7 @@ import {
   normalizeDateOfBirth,
   isValidDateOfBirth,
 } from "../../../src/features/patient/profile/account-utils";
+import { normalizeProfileGender } from "../../../src/features/patient/profile/gender-utils";
 import { getCountryLabel } from "../../../src/features/patient/profile/country-utils";
 import { extractApiErrorMessage } from "../../../src/lib/api";
 import { DatePickerModal } from "../../../src/features/patient/profile/components/DatePickerModal";
@@ -68,7 +69,12 @@ export default function EditPatientProfileScreen() {
     if (!profile) return;
 
     setDisplayName(profile.displayName ?? "");
-    setGender((profile.gender as GenderValue) ?? null);
+    const normalizedGender = normalizeProfileGender(profile.gender);
+    setGender(
+      normalizedGender === "male" || normalizedGender === "female"
+        ? normalizedGender
+        : null,
+    );
 
     if (profile.dateOfBirth) {
       const [y, mo, d] = profile.dateOfBirth.split("-").map(Number);
@@ -86,19 +92,14 @@ export default function EditPatientProfileScreen() {
     ? formatProfileDate(dateOfBirth.toISOString().slice(0, 10), i18n.language)
     : "";
 
-  const genderDisplayValue = gender
-    ? t(`profileScreen.details.genderOptions.${gender}` as const)
+  const genderDisplayKey = normalizeProfileGender(gender);
+  const genderDisplayValue = genderDisplayKey
+    ? t(`profileScreen.details.genderOptions.${genderDisplayKey}` as const)
     : t("profileScreen.none");
 
   const countryDisplayValue = profile?.countryCode
     ? getCountryLabel(profile.countryCode, i18n.language)
     : t("profileScreen.none");
-
-  const genderOptions: { value: GenderValue; label: string }[] = [
-    { value: "male", label: t("profileScreen.details.genderOptions.male") },
-    { value: "female", label: t("profileScreen.details.genderOptions.female") },
-    { value: null, label: t("profileScreen.details.genderOptions.unspecified") },
-  ];
 
   const validate = (): boolean => {
     const errors: typeof fieldErrors = {};

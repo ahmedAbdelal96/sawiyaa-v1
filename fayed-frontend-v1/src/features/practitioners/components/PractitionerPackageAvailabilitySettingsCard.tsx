@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Loader2, Package, ShieldAlert, ShieldCheck } from "lucide-react";
+import { Loader2, ShieldAlert, ShieldCheck } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import Badge from "@/components/ui/badge/Badge";
 import Button from "@/components/ui/button/Button";
@@ -12,6 +12,10 @@ import {
   useUpdatePractitionerProfile,
 } from "../hooks/use-practitioners";
 import type { PractitionerProfile } from "../types/practitioners.types";
+import {
+  PractitionerPageHeader,
+  PractitionerSectionCard,
+} from "@/components/shared/practitioner/PractitionerWorkspaceKit";
 
 type RequirementKey =
   | "approvedProfile"
@@ -157,137 +161,125 @@ function PractitionerPackageAvailabilitySettingsCardContent({
   const hasProfileWarnings = draftEnabled && displayMissingRequirements.length > 0;
 
   return (
-    <section className="app-panel rounded-[32px] p-5 sm:p-6">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-        <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-primary-light text-primary">
-              <Package className="h-5 w-5" />
-            </span>
-            <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-primary">
-                {t("settings.packageAvailability.eyebrow")}
+    <div className="space-y-4">
+      <PractitionerPageHeader
+        eyebrow={t("settings.packageAvailability.eyebrow")}
+        title={t("settings.packageAvailability.title")}
+        description={t("settings.packageAvailability.description")}
+        actions={
+          <Badge
+            variant="light"
+            color={statusTone}
+            size="sm"
+            startIcon={currentEnabled ? <ShieldCheck size={14} /> : <ShieldAlert size={14} />}
+          >
+            {currentEnabled
+              ? t("settings.packageAvailability.status.enabled")
+              : t("settings.packageAvailability.status.disabled")}
+          </Badge>
+        }
+      />
+
+      <PractitionerSectionCard>
+        <div className="rounded-xl border border-border-light bg-surface px-4 py-4 shadow-sm">
+          <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-text-primary">
+                {t("settings.packageAvailability.toggleLabel")}
               </p>
-              <h1 className="mt-1 text-2xl font-bold text-text-primary">
-                {t("settings.packageAvailability.title")}
-              </h1>
+              <p className="mt-1 text-sm leading-6 text-text-secondary">
+                {t("settings.packageAvailability.helper")}
+              </p>
             </div>
-          </div>
-          <p className="mt-3 max-w-3xl text-sm leading-6 text-text-secondary">
-            {t("settings.packageAvailability.description")}
-          </p>
-        </div>
 
-        <Badge
-          variant="light"
-          color={statusTone}
-          size="sm"
-          startIcon={currentEnabled ? <ShieldCheck size={14} /> : <ShieldAlert size={14} />}
-        >
-          {currentEnabled
-            ? t("settings.packageAvailability.status.enabled")
-            : t("settings.packageAvailability.status.disabled")}
-        </Badge>
-      </div>
-
-      <div className="mt-6 rounded-[28px] border border-border-light bg-surface px-4 py-4 shadow-sm">
-        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-          <div className="min-w-0">
-            <p className="text-sm font-semibold text-text-primary">
-              {t("settings.packageAvailability.toggleLabel")}
-            </p>
-            <p className="mt-1 text-sm leading-6 text-text-secondary">
-              {t("settings.packageAvailability.helper")}
-            </p>
-          </div>
-
-          <button
-            type="button"
-            role="switch"
-            aria-checked={draftEnabled}
-            disabled={updateProfile.isPending}
-            onClick={() => {
-              setFeedback(null);
-              setServerMissingRequirements([]);
-              setDraftEnabled((current) => !current);
-            }}
-            className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full border transition ${
-              draftEnabled
-                ? "border-primary bg-primary/15"
-                : "border-border-light bg-surface-secondary"
-            } ${updateProfile.isPending ? "cursor-not-allowed opacity-60" : ""}`}
-          >
-            <span
-              className={`inline-block h-5 w-5 rounded-full bg-white shadow-theme-sm transition-transform ${
+            <button
+              type="button"
+              role="switch"
+              aria-checked={draftEnabled}
+              disabled={updateProfile.isPending}
+              onClick={() => {
+                setFeedback(null);
+                setServerMissingRequirements([]);
+                setDraftEnabled((current) => !current);
+              }}
+              className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full border transition ${
                 draftEnabled
-                  ? isRTL
-                    ? "-translate-x-5"
-                    : "translate-x-5"
-                  : "translate-x-1"
-              }`}
-            />
-          </button>
-        </div>
-      </div>
-
-      {hasProfileWarnings ? (
-        <div className="mt-4 rounded-[28px] border border-warning-200 bg-warning-50 p-4 text-sm text-warning-800">
-          <p className="font-semibold">
-            {t("settings.packageAvailability.warning.title")}
-          </p>
-          <p className="mt-1 leading-6">
-            {t("settings.packageAvailability.warning.note")}
-          </p>
-          <ul className="mt-3 space-y-2">
-            {displayMissingRequirements.map((item) => (
-              <li key={item} className="flex items-start gap-2 leading-6">
-                <span className="mt-2 h-1.5 w-1.5 rounded-full bg-warning-700" />
-                <span>{requirementLabel(item)}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      ) : null}
-
-      <div className="mt-5 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <div className="text-sm text-text-secondary">
-          {hasChanges ? (
-            <span>{t("settings.packageAvailability.actions.unsaved")}</span>
-          ) : (
-            <span>{t("settings.packageAvailability.actions.saved")}</span>
-          )}
+                  ? "border-primary bg-primary/15"
+                  : "border-border-light bg-surface-secondary"
+              } ${updateProfile.isPending ? "cursor-not-allowed opacity-60" : ""}`}
+            >
+              <span
+                className={`inline-block h-5 w-5 rounded-full bg-white shadow-theme-sm transition-transform ${
+                  draftEnabled
+                    ? isRTL
+                      ? "-translate-x-5"
+                      : "translate-x-5"
+                    : "translate-x-1"
+                }`}
+              />
+            </button>
+          </div>
         </div>
 
-        <div className="flex flex-wrap gap-2">
-          <Button
-            type="button"
-            onClick={handleSave}
-            disabled={!canSave}
-            startIcon={
-              updateProfile.isPending ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : null
-            }
+        {hasProfileWarnings ? (
+          <div className="mt-4 rounded-xl border border-warning-200 bg-warning-50 p-4 text-sm text-warning-800">
+            <p className="font-semibold">
+              {t("settings.packageAvailability.warning.title")}
+            </p>
+            <p className="mt-1 leading-6">
+              {t("settings.packageAvailability.warning.note")}
+            </p>
+            <ul className="mt-3 space-y-2">
+              {displayMissingRequirements.map((item) => (
+                <li key={item} className="flex items-start gap-2 leading-6">
+                  <span className="mt-2 h-1.5 w-1.5 rounded-full bg-warning-700" />
+                  <span>{requirementLabel(item)}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
+
+        <div className="mt-5 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="text-sm text-text-secondary">
+            {hasChanges ? (
+              <span>{t("settings.packageAvailability.actions.unsaved")}</span>
+            ) : (
+              <span>{t("settings.packageAvailability.actions.saved")}</span>
+            )}
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              onClick={handleSave}
+              disabled={!canSave}
+              startIcon={
+                updateProfile.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : null
+              }
+            >
+              {updateProfile.isPending
+                ? t("settings.packageAvailability.actions.saving")
+                : t("settings.packageAvailability.actions.save")}
+            </Button>
+          </div>
+        </div>
+
+        {feedback ? (
+          <div
+            className={`mt-4 rounded-xl border px-4 py-3 text-sm leading-6 ${
+              feedback.tone === "success"
+                ? "border-success-200 bg-success-50 text-success-700"
+                : "border-error-200 bg-error-50 text-error-700"
+            }`}
           >
-            {updateProfile.isPending
-              ? t("settings.packageAvailability.actions.saving")
-              : t("settings.packageAvailability.actions.save")}
-          </Button>
-        </div>
-      </div>
-
-      {feedback ? (
-        <div
-          className={`mt-4 rounded-[24px] border px-4 py-3 text-sm leading-6 ${
-            feedback.tone === "success"
-              ? "border-success-200 bg-success-50 text-success-700"
-              : "border-error-200 bg-error-50 text-error-700"
-          }`}
-        >
-          {feedback.message}
-        </div>
-      ) : null}
-    </section>
+            {feedback.message}
+          </div>
+        ) : null}
+      </PractitionerSectionCard>
+    </div>
   );
 }
 
@@ -299,18 +291,18 @@ export default function PractitionerPackageAvailabilitySettingsCard() {
 
   if (isLoading) {
     return (
-      <section className="app-panel rounded-[32px] p-5 sm:p-6">
+      <PractitionerSectionCard>
         <Skeleton className="h-5 w-32" />
         <Skeleton className="mt-3 h-8 w-64" />
         <Skeleton className="mt-3 h-4 w-full max-w-2xl" />
-        <Skeleton className="mt-6 h-24 w-full rounded-[24px]" />
-      </section>
+        <Skeleton className="mt-6 h-24 w-full rounded-xl" />
+      </PractitionerSectionCard>
     );
   }
 
   if (isError || !profile) {
     return (
-      <section className="app-panel rounded-[32px] p-5 sm:p-6">
+      <PractitionerSectionCard>
         <div className="flex items-start gap-3">
           <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-error-50 text-error-600">
             <ShieldAlert className="h-5 w-5" />
@@ -330,7 +322,7 @@ export default function PractitionerPackageAvailabilitySettingsCard() {
             {t("settings.packageAvailability.feedback.retry")}
           </Button>
         </div>
-      </section>
+      </PractitionerSectionCard>
     );
   }
 

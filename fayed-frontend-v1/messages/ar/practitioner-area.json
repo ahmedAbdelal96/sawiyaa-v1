@@ -334,7 +334,8 @@
       "bio": "النبذة",
       "specialties": "التخصصات",
       "liveProfile": "الملف المباشر",
-      "personal": "التفاصيل الشخصية"
+      "personal": "التفاصيل الشخصية",
+      "languages": "لغات الجلسة"
     },
     "avatar": {
       "heading": "الصورة الشخصية",
@@ -543,7 +544,11 @@
       "requirements": {
         "primarySpecialtyCategoryId": "التخصص الأساسي",
         "payoutAccountHolderName": "اسم صاحب الحساب",
-        "payoutDestination": "تفاصيل الصرف"
+        "accountHolderName": "اسم صاحب الحساب",
+        "payoutDestination": "تفاصيل الصرف",
+        "payoutDetails": "تفاصيل الصرف",
+        "identityDocuments": "مستندات الهوية",
+        "academicCertificate": "الشهادة الأكاديمية"
       }
     },
     "specialties": {
@@ -1405,6 +1410,75 @@
           }
         }
       }
+    }
+  },
+  "application": {
+    "wizard": {
+      "eyebrow": "معالج الطلب",
+      "title": "أكمل طلبك",
+      "lockedTitle": "الطلب مغلق",
+      "goToDashboard": "الذهاب إلى لوحة التحكم",
+      "reviewProfile": "مراجعة الملف الشخصي",
+      "qualificationsModalDescription": "أضف أو راجع المستندات التي تدعم طلبك.",
+      "threeStep": {
+        "helpers": {
+          "basic": "حافظ على دقة تفاصيل هويتك حتى يتمكن فريق المراجعة من التعرف على حسابك بسهولة.",
+          "paymentSubmit": "تأكد من إعداد بيانات المستحقات لتتمكن من تقديم طلبك للمراجعة."
+        }
+      },
+      "approvedTitle": "طلبك معتمد"
+    },
+    "status": {
+      "SUBMITTED": "تم التقديم",
+      "APPROVED": "معتمد"
+    },
+    "completionIssues": {
+      "codes": {
+        "DOCUMENTS_IDENTITY_EVIDENCE_REQUIRED": {
+          "title": "مستند إثبات الهوية مطلوب"
+        },
+        "DOCUMENTS_NATIONAL_ID_FRONT_MISSING": {
+          "title": "الوجه الأمامي للبطاقة الوطنية مفقود"
+        },
+        "DOCUMENTS_CREDENTIAL_NOT_APPROVED": {
+          "title": "المستندات قيد المراجعة"
+        },
+        "PAYOUT_DESTINATION_REQUIRED": {
+          "title": "طريقة الدفع مفقودة"
+        },
+        "PAYOUT_ACCOUNT_HOLDER_REQUIRED": {
+          "title": "اسم صاحب الحساب مفقود"
+        },
+        "QUALIFICATIONS_ACADEMIC_CERTIFICATE_REQUIRED": {
+          "title": "الشهادة الأكاديمية مطلوبة"
+        }
+      }
+    },
+    "statusMessage": {
+      "SUBMITTED": "تم تقديم طلبك وهو الآن قيد المراجعة.",
+      "UNDER_REVIEW": "طلبك قيد المراجعة الآن من قبل فريق فايد. سيتم إشعارك بأي تحديثات.",
+      "APPROVED": "تمت الموافقة على طلبك بنجاح وأصبح حسابك مفعلًا كمتخصص."
+    },
+    "pending": {
+      "title": "طلبك قيد المراجعة",
+      "subtitle": "تم استلام طلبك، ويقوم فريق Fayed بمراجعته الآن. سنخبرك عند وجود أي تحديث.",
+      "whatHappensNext": "ما الذي يحدث الآن؟",
+      "reviewProcess": "نراجع بياناتك المهنية والمستندات للتأكد من جاهزية ملفك قبل تفعيل حسابك كمتخصص.",
+      "infoCallout": "ستصلك أي تحديثات أو طلبات تعديل من خلال الإشعارات أو البريد الإلكتروني.",
+      "goToDashboard": "الذهاب إلى لوحة التحكم",
+      "reviewProfile": "مراجعة الملف الشخصي"
+    },
+    "meta": {
+      "title": "تقديم الطلب — الممارس",
+      "description": "أكمل تقديم طلب الانضمام كمتخصص في منصة فايد."
+    }
+  },
+  "practitionerApplication": {
+    "steps": {
+      "basicProfile": "المعلومات الأساسية",
+      "professionalDetails": "الملف المهني",
+      "qualifications": "المؤهلات",
+      "pricing": "الدفع والتقديم"
     }
   }
 }

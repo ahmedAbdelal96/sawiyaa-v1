@@ -260,6 +260,7 @@ export default function AdminAssessmentsListScreen() {
       }
       summaryCards={
         <AdminSummaryCard
+          metricKey="assessments.total"
           label={t("assessmentsAdmin.table.title")}
           value={typeof totalItems === "number" ? totalItems : "..."}
           tone="primary"

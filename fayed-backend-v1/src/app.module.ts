@@ -30,6 +30,7 @@ import { ThrottlePolicyGuard } from './common/throttle/throttle-policy.guard';
 import { CsrfProtectionGuard } from './common/guards/security/csrf-protection.guard';
 import { StepUpGuard } from './common/guards/security/step-up.guard';
 import { SecurityAuditModule } from './common/security-audit/security-audit.module';
+import { CommonAuthModule } from './common/guards/common-auth.module';
 import { HealthModule } from './health/health.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { AdminModule } from './modules/admin/admin.module';
@@ -91,6 +92,7 @@ import { CorporateSponsorshipModule } from './modules/corporate-sponsorship/corp
     PrismaModule,
     ThrottleModule,
     SecurityAuditModule,
+    CommonAuthModule,
     HealthModule,
     ConfigModule,
     AuthModule,

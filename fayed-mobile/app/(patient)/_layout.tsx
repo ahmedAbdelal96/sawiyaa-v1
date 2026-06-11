@@ -110,7 +110,12 @@ export default function PatientLayout() {
       <Tabs.Screen name="articles/[slug]" options={{ href: null }} />
       <Tabs.Screen name="academy/index" options={{ href: null }} />
       <Tabs.Screen name="academy/[slug]" options={{ href: null }} />
+      <Tabs.Screen name="academy/enroll/[slug]" options={{ href: null }} />
       <Tabs.Screen name="academy/enrollments/[id]" options={{ href: null }} />
+      <Tabs.Screen
+        name="academy/enrollments/[id]/payment-return"
+        options={{ href: null }}
+      />
       <Tabs.Screen name="package-purchases/index" options={{ href: null }} />
       <Tabs.Screen name="package-purchases/[id]" options={{ href: null }} />
       <Tabs.Screen name="package-purchases/create" options={{ href: null }} />

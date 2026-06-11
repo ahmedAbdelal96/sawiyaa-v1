@@ -69,6 +69,7 @@ export type InitiateSessionPaymentInput = {
   useWalletBalance?: boolean;
   paymobMethod?: PaymobCheckoutMethod;
   acceptedRefundPolicyId: string;
+  returnUrl?: string;
 };
 
 export type PaymentReconcileSessionReturnInput = {

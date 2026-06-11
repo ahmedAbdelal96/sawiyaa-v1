@@ -14,24 +14,37 @@ import Label from "@/components/form/Label";
 import { DEFAULT_PAGE_LIMIT, DEFAULT_PAGE_SIZE_OPTIONS } from "@/constants/pagination";
 import { useDebouncedValue } from "@/hooks/use-debounce";
 import type { AdminPatientListItem } from "../types/admin-patients.types";
-import { useAdminPatients } from "../hooks/use-admin-patients";
+import { useAdminCountries, useAdminPatients } from "../hooks/use-admin-patients";
+import { resolveCountryLabel } from "@/features/admin/shared/utils/resolve-country-label";
 import { AdminPatientCountryChangeModal } from "./AdminPatientCountryChangeModal";
 
 const PAGE_SIZE_OPTIONS = DEFAULT_PAGE_SIZE_OPTIONS;
 
-function StatusPill({ status }: { status: string }) {
+function StatusPill({ status, t }: { status: string; t: any }) {
   const tone =
     status === "ACTIVE"
-      ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+      ? "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/20 dark:text-emerald-400 dark:border-emerald-900/30"
       : status === "SUSPENDED"
-        ? "bg-rose-50 text-rose-700 border-rose-200"
+        ? "bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/20 dark:text-rose-400 dark:border-rose-900/30"
         : status.startsWith("PENDING")
-          ? "bg-amber-50 text-amber-800 border-amber-200"
-          : "bg-surface-secondary text-text-secondary border-border-light";
+          ? "bg-amber-50 text-amber-800 border-amber-200 dark:bg-amber-950/20 dark:text-amber-400 dark:border-amber-900/30"
+          : "bg-surface-secondary text-text-secondary border-border-light dark:bg-surface-secondary dark:text-text-secondary dark:border-border-light/20";
+
+  const normalized = status.toUpperCase();
+  let label = status;
+  if (normalized === "ACTIVE") {
+    label = t("filters.statusActive");
+  } else if (normalized === "INACTIVE") {
+    label = t("filters.statusInactive");
+  } else if (normalized === "SUSPENDED" || normalized === "BLOCKED") {
+    label = t("filters.statusSuspended");
+  } else if (normalized.startsWith("PENDING")) {
+    label = t("filters.statusPending");
+  }
 
   return (
-    <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-semibold ${tone}`}>
-      {status}
+    <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold ${tone}`}>
+      {label}
     </span>
   );
 }
@@ -62,6 +75,7 @@ export default function AdminPatientsDirectory() {
     [debouncedSearch, onboarding, page, pageSize, status],
   );
 
+  const { data: countries = [] } = useAdminCountries();
   const { data, isLoading, isError, refetch } = useAdminPatients(queryParams);
   const items = data?.items ?? [];
   const pagination = data?.pagination;
@@ -109,6 +123,7 @@ export default function AdminPatientsDirectory() {
         id: "name",
         header: t("table.name"),
         accessor: (row) => row.displayName ?? row.primaryEmail ?? row.primaryPhone ?? row.userId,
+        align: "start",
         cell: (row) => (
           <div className="min-w-0">
             <p className="truncate text-sm font-semibold text-text-primary dark:text-white/95">
@@ -123,22 +138,29 @@ export default function AdminPatientsDirectory() {
       {
         id: "country",
         header: t("table.country"),
-        accessor: (row) => row.countryCode ?? "-",
+        accessor: (row) => resolveCountryLabel(row.countryCode, countries, locale),
+        align: "center",
+        cell: (row) => (
+          <span className="text-sm text-text-primary dark:text-white/90">
+            {resolveCountryLabel(row.countryCode, countries, locale)}
+          </span>
+        ),
         hideOnMobile: true,
       },
       {
         id: "onboarding",
         header: t("table.onboarding"),
         accessor: (row) => (row.onboardingCompletedAt ? "COMPLETED" : "INCOMPLETE"),
+        align: "center",
         cell: (row) =>
           row.onboardingCompletedAt ? (
-            <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700">
-              <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
+            <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-700 dark:border-emerald-900/30 dark:bg-emerald-950/20 dark:text-emerald-400">
+              <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />
               {t("states.completed")}
             </span>
           ) : (
-            <span className="inline-flex items-center gap-1 text-xs font-semibold text-amber-800">
-              <AlertCircle className="h-4 w-4" aria-hidden="true" />
+            <span className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-800 dark:border-amber-900/30 dark:bg-amber-950/20 dark:text-amber-400">
+              <AlertCircle className="h-3.5 w-3.5" aria-hidden="true" />
               {t("states.incomplete")}
             </span>
           ),
@@ -147,13 +169,15 @@ export default function AdminPatientsDirectory() {
         id: "status",
         header: t("table.status"),
         accessor: (row) => row.status,
-        cell: (row) => <StatusPill status={row.status} />,
+        align: "center",
+        cell: (row) => <StatusPill status={row.status} t={t} />,
         hideOnMobile: true,
       },
       {
         id: "createdAt",
         header: t("table.createdAt"),
         accessor: (row) => row.createdAt,
+        align: "center",
         cell: (row) => (
           <span className="text-sm text-text-secondary">
             {new Date(row.createdAt).toLocaleDateString(locale)}
@@ -162,7 +186,7 @@ export default function AdminPatientsDirectory() {
         hideOnMobile: true,
       },
     ],
-    [locale, t],
+    [locale, t, countries],
   );
 
   const resetToFirstPage = () => setPage(1);
@@ -312,7 +336,7 @@ export default function AdminPatientsDirectory() {
           pageSizeOptions={PAGE_SIZE_OPTIONS}
           rowActionsHeader={t("table.actions")}
           rowActions={(row) => (
-            <div className="flex items-center justify-end gap-2">
+            <div className="inline-flex items-center justify-center gap-1.5">
               <ActionIconButton
                 label={t("actions.changeCountry")}
                 intent="neutral"

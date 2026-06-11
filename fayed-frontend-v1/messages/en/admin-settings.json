@@ -9,11 +9,11 @@
     "subtitle": "Review account data and update language, timezone, and notification preferences."
   },
   "roles": {
-    "ADMIN": "System admin",
-    "SUPPORT_AGENT": "Support agent",
-    "CONTENT_REVIEWER": "Content reviewer",
-    "PATIENT": "User",
-    "PRACTITIONER": "Practitioner"
+    "SUPER_ADMIN": "Super Admin",
+    "ADMIN": "Admin",
+    "SUPPORT_AGENT": "Support Agent",
+    "CONTENT_REVIEWER": "Content Reviewer",
+    "fallback": "Admin user"
   },
   "accountStatus": {
     "ACTIVE": "Active",
@@ -47,8 +47,12 @@
     "manageNotifications": "Manage notifications"
   },
   "tabs": {
-    "profile": "Profile",
-    "notifications": "Notifications"
+    "overview": "Overview",
+    "account": "Account Details",
+    "preferences": "Preferences",
+    "notifications": "Notifications",
+    "security": "Security",
+    "activity": "Activity"
   },
   "sections": {
     "avatar": {

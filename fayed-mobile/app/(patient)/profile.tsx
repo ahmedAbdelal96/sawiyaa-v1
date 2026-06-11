@@ -23,6 +23,7 @@ import {
   formatProfileDate,
   getInitials,
 } from "../../src/features/patient/profile/account-utils";
+import { normalizeProfileGender } from "../../src/features/patient/profile/gender-utils";
 import { useGeneralChatUnreadSummary } from "../../src/features/messages/hooks";
 
 export default function PatientProfileScreen() {
@@ -30,7 +31,7 @@ export default function PatientProfileScreen() {
   const { signOut, user } = useAuth();
   const { theme } = useTheme();
   const { t, i18n } = useTranslation();
-  const moreTitle = i18n.language?.startsWith("ar") ? "المزيد" : "More";
+  const moreTitle = t("profileScreen.moreTitle");
 
   const profileQuery = usePatientProfile();
   const settingsQuery = useMySettings();
@@ -90,8 +91,9 @@ export default function PatientProfileScreen() {
   const birthDateLabel =
     formatProfileDate(profile?.dateOfBirth, i18n.language) ??
     t("profileScreen.none");
-  const genderLabel = profile?.gender?.trim()
-    ? t(`profileScreen.details.genderOptions.${profile.gender?.trim()}` as const)
+  const genderKey = normalizeProfileGender(profile?.gender);
+  const genderLabel = genderKey
+    ? t(`profileScreen.details.genderOptions.${genderKey}` as const)
     : t("profileScreen.none");
 
   return (
@@ -379,11 +381,8 @@ export default function PatientProfileScreen() {
         >
           <View style={styles.rowPad}>
             <ListRow
-              title={t("profileScreen.hub.rows.articles.title", "Articles")}
-              subtitle={t(
-                "profileScreen.hub.rows.articles.subtitle",
-                "Browse health content and guidance",
-              )}
+              title={t("profileScreen.hub.rows.articles.title")}
+              subtitle={t("profileScreen.hub.rows.articles.subtitle")}
               leftElement={
                 <Ionicons
                   name="newspaper-outline"
@@ -397,11 +396,8 @@ export default function PatientProfileScreen() {
           </View>
           <View style={styles.rowPad}>
             <ListRow
-              title={t("profileScreen.hub.rows.messages.title", "Messages")}
-              subtitle={t(
-                "profileScreen.hub.rows.messages.subtitle",
-                "Open conversations with your practitioner",
-              )}
+              title={t("profileScreen.hub.rows.messages.title")}
+              subtitle={t("profileScreen.hub.rows.messages.subtitle")}
               leftElement={
                 <Ionicons
                   name="chatbubbles-outline"

@@ -16,7 +16,13 @@ import {
 import FilterClearButton from "@/components/ui/filters/FilterClearButton";
 import DateField from "@/components/form/input/DateField";
 import { DEFAULT_PAGE_LIMIT, DEFAULT_PAGE_SIZE_OPTIONS } from "@/constants/pagination";
-import { SurfaceCard, SurfaceHeader, SurfaceStatCard } from "@/components/shared/SurfaceShell";
+import {
+  PractitionerPageHeader,
+  PractitionerStatsGrid,
+  PractitionerStatCard,
+  PractitionerFilterCard,
+  PractitionerTableSection,
+} from "@/components/shared/practitioner/PractitionerWorkspaceKit";
 import { getPractitionerSettlementsErrorKey } from "../lib/financial-operations-errors";
 import { usePractitionerSettlements } from "../hooks/use-financial-operations";
 import type {
@@ -199,117 +205,104 @@ export default function PractitionerSettlementsListScreen() {
 
   return (
     <div className="space-y-4">
-      <SurfaceCard variant="compact" className="overflow-hidden px-4 py-4 sm:px-5 sm:py-5">
-        <SurfaceHeader
-          eyebrow={t("settlements.eyebrow")}
-          title={t("settlements.title")}
-          description={t("settlements.note")}
-          actions={
-            <span className="app-chip rounded-full px-3 py-1 text-xs font-medium">
-              {data ? t("settlements.count", { value: data.pagination.totalItems }) : t("settlements.countLoading")}
-            </span>
-          }
-        />
-      </SurfaceCard>
+      <PractitionerPageHeader
+        eyebrow={t("settlements.eyebrow")}
+        title={t("settlements.title")}
+        description={t("settlements.note")}
+        actions={
+          <span className="app-chip rounded-full px-3 py-1 text-xs font-medium">
+            {data ? t("settlements.count", { value: data.pagination.totalItems }) : t("settlements.countLoading")}
+          </span>
+        }
+      />
 
-      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-2">
-        <SurfaceStatCard
+      <PractitionerStatsGrid cols={2}>
+        <PractitionerStatCard
           label={locale.startsWith("ar") ? "إجمالي التسويات" : "Settlements"}
           value={data ? String(data.pagination.totalItems) : "..."}
           tone="primary"
-          icon={<Layers className="h-4 w-4" />}
+          metricKey="settlements.total"
         />
-        <SurfaceStatCard
+        <PractitionerStatCard
           label={locale.startsWith("ar") ? "الصفحة الحالية" : "Current page"}
           value={String(settlementPage)}
           tone="neutral"
-          icon={<Layers className="h-4 w-4" />}
+          metricKey="settlements.currentPage"
         />
-      </section>
+      </PractitionerStatsGrid>
 
-      <SurfaceCard as="section" variant="section" className="overflow-hidden px-0 py-0">
-        <div className="flex flex-wrap items-start justify-between gap-3 px-4 pt-4 sm:px-5 sm:pt-5">
-          <div className="min-w-0">
-            <h2 className="text-sm font-semibold text-text-primary dark:text-white/95">
-              {locale.startsWith("ar") ? "فلاتر التسويات" : "Settlement filters"}
-            </h2>
-            <p className="mt-1 text-xs text-text-muted">
-              {locale.startsWith("ar")
-                ? "فلتر التسويات حسب الحالة والعملـة والتاريخ."
-                : "Filter settlements by status, currency, and creation date range."}
-            </p>
+      <PractitionerFilterCard
+        title={locale.startsWith("ar") ? "فلاتر التسويات" : "Settlement filters"}
+      >
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+          <label className="block">
+            <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
+              {locale.startsWith("ar") ? "الحالة" : "Status"}
+            </span>
+            <select
+              value={settlementStatus}
+              onChange={(event) =>
+                updateListQuery({ status: event.target.value === "ALL" ? null : event.target.value, page: 1 })
+              }
+              className="app-control w-full px-4 py-3"
+            >
+              {STATUS_FILTERS.map((status) => (
+                <option key={status} value={status}>
+                  {status === "ALL"
+                    ? locale.startsWith("ar")
+                      ? "كل الحالات"
+                      : "All statuses"
+                    : t(`settlements.statuses.${status}` as Parameters<typeof t>[0])}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="block">
+            <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
+              {locale.startsWith("ar") ? "العملة" : "Currency"}
+            </span>
+            <input
+              type="text"
+              value={currencyCode}
+              onChange={(event) => updateListQuery({ currencyCode: event.target.value.trim() || null, page: 1 })}
+              placeholder="EGP"
+              className="app-control w-full px-4 py-3"
+            />
+          </label>
+
+          <DateField
+            label={locale.startsWith("ar") ? "من تاريخ" : "From date"}
+            value={createdFrom}
+            onChange={(nextValue) => updateListQuery({ createdFrom: nextValue || null, page: 1 })}
+            placeholder={locale.startsWith("ar") ? "YYYY-MM-DD" : "YYYY-MM-DD"}
+          />
+
+          <DateField
+            label={locale.startsWith("ar") ? "إلى تاريخ" : "To date"}
+            value={createdTo}
+            onChange={(nextValue) => updateListQuery({ createdTo: nextValue || null, page: 1 })}
+            placeholder={locale.startsWith("ar") ? "YYYY-MM-DD" : "YYYY-MM-DD"}
+          />
+
+          <div className="flex items-end justify-end md:col-span-2 xl:col-span-4">
+            <FilterClearButton
+              disabled={!hasSettlementFilters && settlementPage === 1}
+              onClick={() =>
+                updateListQuery({
+                  status: null,
+                  currencyCode: null,
+                  createdFrom: null,
+                  createdTo: null,
+                  page: 1,
+                })
+              }
+            />
           </div>
         </div>
+      </PractitionerFilterCard>
 
-        <div className="px-4 pb-4 pt-3 sm:px-5 sm:pb-5">
-          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-            <label className="block">
-              <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
-                {locale.startsWith("ar") ? "الحالة" : "Status"}
-              </span>
-              <select
-                value={settlementStatus}
-                onChange={(event) =>
-                  updateListQuery({ status: event.target.value === "ALL" ? null : event.target.value, page: 1 })
-                }
-                className="app-control w-full px-4 py-3"
-              >
-                {STATUS_FILTERS.map((status) => (
-                  <option key={status} value={status}>
-                    {status === "ALL"
-                      ? locale.startsWith("ar")
-                        ? "كل الحالات"
-                        : "All statuses"
-                      : t(`settlements.statuses.${status}` as Parameters<typeof t>[0])}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label className="block">
-              <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
-                {locale.startsWith("ar") ? "العملة" : "Currency"}
-              </span>
-              <input
-                type="text"
-                value={currencyCode}
-                onChange={(event) => updateListQuery({ currencyCode: event.target.value.trim() || null, page: 1 })}
-                placeholder="EGP"
-                className="app-control w-full px-4 py-3"
-              />
-            </label>
-
-            <DateField
-              label={locale.startsWith("ar") ? "من تاريخ" : "From date"}
-              value={createdFrom}
-              onChange={(nextValue) => updateListQuery({ createdFrom: nextValue || null, page: 1 })}
-              placeholder={locale.startsWith("ar") ? "YYYY-MM-DD" : "YYYY-MM-DD"}
-            />
-
-            <DateField
-              label={locale.startsWith("ar") ? "إلى تاريخ" : "To date"}
-              value={createdTo}
-              onChange={(nextValue) => updateListQuery({ createdTo: nextValue || null, page: 1 })}
-              placeholder={locale.startsWith("ar") ? "YYYY-MM-DD" : "YYYY-MM-DD"}
-            />
-
-            <div className="flex items-end justify-end md:col-span-2 xl:col-span-4">
-              <FilterClearButton
-                disabled={!hasSettlementFilters && settlementPage === 1}
-                onClick={() =>
-                  updateListQuery({
-                    status: null,
-                    currencyCode: null,
-                    createdFrom: null,
-                    createdTo: null,
-                    page: 1,
-                  })
-                }
-              />
-            </div>
-          </div>
-        </div>
-
+      <PractitionerTableSection flushContent>
         <DataTable
           data={data?.items ?? []}
           columns={columns}
@@ -348,7 +341,7 @@ export default function PractitionerSettlementsListScreen() {
           caption={t("settlements.title")}
           size="sm"
         />
-      </SurfaceCard>
+      </PractitionerTableSection>
     </div>
   );
 }

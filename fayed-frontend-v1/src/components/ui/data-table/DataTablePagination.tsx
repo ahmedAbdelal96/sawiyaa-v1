@@ -1,15 +1,6 @@
-/**
- * DataTable Pagination Component
- *
- * Reusable pagination controls for the DataTable.
- * Supports RTL/LTR, page info, and navigation.
- */
-
-'use client';
-
-import Pagination from "@/components/tables/Pagination";
-import { useLocale } from "next-intl";
+import { useTranslations } from "next-intl";
 import type { PaginationConfig } from "./types";
+import { getPaginationPages } from "./utils";
 
 interface DataTablePaginationProps {
   pagination: PaginationConfig;
@@ -22,29 +13,69 @@ export function DataTablePagination({
   onPageChange,
   loading = false,
 }: DataTablePaginationProps) {
-  const locale = useLocale();
+  const t = useTranslations("common");
   const { page, totalPages } = pagination;
   if (totalPages <= 1) return null;
 
   const total = pagination.totalItems ?? pagination.total ?? 0;
   const start = total === 0 ? 0 : (page - 1) * pagination.limit + 1;
   const end = total === 0 ? 0 : Math.min(page * pagination.limit, total);
-  const summary = locale === "ar"
-    ? `عرض ${start} إلى ${end} من ${total}`
-    : `Showing ${start} to ${end} of ${total}`;
+  
+  const summary = t("dataTable.showing", { start, end, total });
+  const nextLabel = t("dataTable.next");
+  const prevLabel = t("dataTable.previous");
+
+  const pages = getPaginationPages(page, totalPages);
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border-light px-4 py-4 sm:px-6">
-      <p className="text-sm text-text-secondary">{summary}</p>
-      <Pagination
-        currentPage={page}
-        totalPages={totalPages}
-        onPageChange={(nextPage) => {
-          if (loading) return;
-          if (nextPage < 1 || nextPage > totalPages) return;
-          onPageChange(nextPage);
-        }}
-      />
+    <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border-light/80 px-4 py-3 sm:px-6">
+      <p className="text-[13px] font-semibold text-text-secondary">{summary}</p>
+      
+      <div className="flex flex-wrap items-center gap-1.5" role="navigation" aria-label="Pagination">
+        <button
+          onClick={() => !loading && page > 1 && onPageChange(page - 1)}
+          disabled={loading || page === 1}
+          className="inline-flex h-9 items-center justify-center rounded-xl border border-border-light bg-white px-3 text-xs font-semibold text-text-primary shadow-theme-xs transition hover:border-primary/25 hover:bg-primary-light disabled:cursor-not-allowed disabled:opacity-50 dark:border-border-light dark:bg-surface-secondary dark:hover:bg-surface-tertiary"
+        >
+          {prevLabel}
+        </button>
+        
+        <div className="flex items-center gap-1">
+          {pages.map((item, index) => {
+            if (item === '...') {
+              return (
+                <span key={`dots-${index}`} className="px-1.5 text-xs text-text-muted">
+                  ...
+                </span>
+              );
+            }
+            
+            const isCurrent = item === page;
+            return (
+              <button
+                key={item}
+                onClick={() => !loading && onPageChange(item as number)}
+                disabled={loading}
+                className={`inline-flex h-9 w-9 items-center justify-center rounded-xl text-xs font-semibold transition ${
+                  isCurrent
+                    ? "bg-primary text-white shadow-theme-sm"
+                    : "text-text-secondary hover:bg-primary-light hover:text-text-brand"
+                }`}
+              >
+                {item}
+              </button>
+            );
+          })}
+        </div>
+
+        <button
+          onClick={() => !loading && page < totalPages && onPageChange(page + 1)}
+          disabled={loading || page === totalPages}
+          className="inline-flex h-9 items-center justify-center rounded-xl border border-border-light bg-white px-3 text-xs font-semibold text-text-primary shadow-theme-xs transition hover:border-primary/25 hover:bg-primary-light disabled:cursor-not-allowed disabled:opacity-50 dark:border-border-light dark:bg-surface-secondary dark:hover:bg-surface-tertiary"
+        >
+          {nextLabel}
+        </button>
+      </div>
     </div>
   );
 }

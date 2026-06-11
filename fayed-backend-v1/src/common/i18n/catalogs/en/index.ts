@@ -1,5 +1,6 @@
 import { enAuthCatalog } from './auth.catalog';
 import { enAdminCatalog } from './admin.catalog';
+import { enAcademyCatalog } from './academy.catalog';
 import { enAssessmentsCatalog } from './assessments.catalog';
 import { enAvailabilityCatalog } from './availability.catalog';
 import { enCareChatCatalog } from './care-chat.catalog';
@@ -28,6 +29,7 @@ import { enUsersCatalog } from './users.catalog';
 import { enValidationCatalog } from './validation.catalog';
 
 export const enCatalog = {
+  academy: enAcademyCatalog,
   auth: enAuthCatalog,
   admin: enAdminCatalog,
   assessments: enAssessmentsCatalog,

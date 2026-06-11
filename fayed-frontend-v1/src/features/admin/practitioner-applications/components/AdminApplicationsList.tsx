@@ -6,6 +6,8 @@ import { usePathname, useRouter } from "@/i18n/navigation";
 import { useSearchParams } from "next/navigation";
 import { Edit3, Eye, FilePlus2, Plus, Search } from "lucide-react";
 import { useAdminPractitionerApplications } from "../hooks/use-practitioner-applications";
+import { useAdminCountries } from "@/features/admin/patients/hooks/use-admin-patients";
+import { resolveCountryLabel } from "@/features/admin/shared/utils/resolve-country-label";
 import { DataTable } from "@/components/ui/data-table";
 import ActionIconButton from "@/components/ui/action-icon-button/ActionIconButton";
 import type { ColumnDef, SortConfig } from "@/components/ui/data-table";
@@ -137,6 +139,7 @@ export default function AdminApplicationsList() {
   };
 
   const { data, isLoading, isError, refetch } = useAdminPractitionerApplications(params, true);
+  const { data: countries = [] } = useAdminCountries();
 
   const updateListQuery = (updates: Record<string, string | number | null | undefined>) => {
     const next = buildUpdatedSearchParams(new URLSearchParams(searchParams.toString()), updates);
@@ -148,15 +151,18 @@ export default function AdminApplicationsList() {
     () => [
       {
         id: "applicant",
-        header: "Applicant",
+        header: t("applications.table.applicant"),
         accessor: (row) => row.displayName ?? t("applications.table.noName"),
+        align: "start",
         sortable: true,
         cell: (row) => (
           <div className="min-w-0">
             <p className="truncate text-sm font-medium text-text-primary dark:text-white">
               {row.displayName ?? t("applications.table.noName")}
             </p>
-            <p className="mt-1 text-xs text-text-muted">{row.countryCode ?? "-"}</p>
+            <p className="mt-1 text-xs text-text-muted">
+              {resolveCountryLabel(row.countryCode, countries, locale)}
+            </p>
           </div>
         ),
       },
@@ -164,6 +170,7 @@ export default function AdminApplicationsList() {
         id: "kind",
         header: t("applications.table.kind"),
         accessor: (row) => row.applicationKind,
+        align: "center",
         cell: (row) => (
           <span
             className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${kindColour[row.applicationKind]}`}
@@ -174,35 +181,40 @@ export default function AdminApplicationsList() {
       },
       {
         id: "type",
-        header: "Type",
+        header: t("applications.table.type"),
         accessor: (row) => t(`practitionerType.${row.practitionerType as PractitionerType}`),
+        align: "center",
       },
       {
         id: "specialty",
-        header: "Specialty",
+        header: t("applications.table.specialty"),
         accessor: (row) => row.mainSpecialty?.title ?? "-",
+        align: "start",
         hideOnMobile: true,
       },
       {
         id: "submittedAt",
-        header: "Submitted",
+        header: t("applications.table.submittedAt"),
         accessor: (row) => (row.submittedAt ? new Date(row.submittedAt).getTime() : null),
+        align: "center",
         hideOnMobile: true,
         sortable: true,
         cell: (row) => (row.submittedAt ? new Date(row.submittedAt).toLocaleDateString(locale) : "-"),
       },
       {
         id: "updatedAt",
-        header: "Updated",
+        header: t("applications.table.updatedAt"),
         accessor: (row) => new Date(row.updatedAt).getTime(),
+        align: "center",
         hideOnMobile: true,
         sortable: true,
         cell: (row) => new Date(row.updatedAt).toLocaleDateString(locale),
       },
       {
         id: "status",
-        header: "Status",
+        header: t("applications.table.status"),
         accessor: (row) => row.applicationStatus,
+        align: "center",
         sortable: true,
         cell: (row) => (
           <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${statusColour[row.applicationStatus]}`}>
@@ -211,7 +223,7 @@ export default function AdminApplicationsList() {
         ),
       },
     ],
-    [locale, t]
+    [locale, t, countries]
   );
 
   const applications = data?.applications ?? [];
@@ -234,12 +246,14 @@ export default function AdminApplicationsList() {
       summaryCards={
         <>
           <AdminSummaryCard
+            metricKey="applications.total"
             label={t("applications.summary.total")}
             value={typeof summary?.total === "number" ? summary.total : "..."}
             hint={t("applications.summary.totalHint")}
             tone="primary"
           />
           <AdminSummaryCard
+            metricKey="applications.pending"
             label={t("applications.summary.active")}
             value={typeof summary?.activeApplications === "number" ? summary.activeApplications : "..."}
             hint={t("applications.summary.activeHint")}
@@ -247,6 +261,7 @@ export default function AdminApplicationsList() {
             icon={<FilePlus2 className="h-5 w-5" />}
           />
           <AdminSummaryCard
+            metricKey="applications.new"
             label={t("applications.summary.new")}
             value={typeof summary?.newApplications === "number" ? summary.newApplications : "..."}
             hint={t("applications.summary.newHint")}
@@ -254,6 +269,7 @@ export default function AdminApplicationsList() {
             icon={<FilePlus2 className="h-5 w-5" />}
           />
           <AdminSummaryCard
+            metricKey="applications.editrequests"
             label={t("applications.summary.edit")}
             value={typeof summary?.editRequests === "number" ? summary.editRequests : "..."}
             hint={t("applications.summary.editHint")}
@@ -261,12 +277,14 @@ export default function AdminApplicationsList() {
             icon={<Edit3 className="h-5 w-5" />}
           />
           <AdminSummaryCard
+            metricKey="applications.approved"
             label={t("applications.summary.approvedHistory")}
             value={typeof summary?.approvedApplications === "number" ? summary.approvedApplications : "..."}
             hint={t("applications.summary.approvedHistoryHint")}
             tone="success"
           />
           <AdminSummaryCard
+            metricKey="applications.rejected"
             label={t("applications.summary.rejectedHistory")}
             value={typeof summary?.rejectedApplications === "number" ? summary.rejectedApplications : "..."}
             hint={t("applications.summary.rejectedHistoryHint")}
@@ -407,6 +425,7 @@ export default function AdminApplicationsList() {
           updateListQuery({ sortBy: nextSort.column, sortDir: nextSort.direction })
         }
         onRowClick={(row) => router.push(`/admin/practitioner-applications/${row.applicationId}` as never)}
+        rowActionsHeader={t("applications.table.actions")}
         rowActions={(row) => (
           <ActionIconButton
             intent="view"

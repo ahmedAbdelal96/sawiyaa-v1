@@ -427,10 +427,10 @@ export default function AdminPackagePlansScreen() {
       }
       summaryCards={
         <>
-          <AdminSummaryCard label={t("summary.total")} value={stats.total} tone="primary" />
-          <AdminSummaryCard label={t("summary.active")} value={stats.active} tone="success" />
-          <AdminSummaryCard label={t("summary.inactive")} value={stats.inactive} tone="warning" />
-          <AdminSummaryCard label={t("summary.purchases")} value={stats.purchases} tone="neutral" />
+          <AdminSummaryCard metricKey="total" label={t("summary.total")} value={stats.total} tone="primary" />
+          <AdminSummaryCard metricKey="active" label={t("summary.active")} value={stats.active} tone="success" />
+          <AdminSummaryCard metricKey="inactive" label={t("summary.inactive")} value={stats.inactive} tone="warning" />
+          <AdminSummaryCard metricKey="finance.payouts" label={t("summary.purchases")} value={stats.purchases} tone="neutral" />
         </>
       }
     >

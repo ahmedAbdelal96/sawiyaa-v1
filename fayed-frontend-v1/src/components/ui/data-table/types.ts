@@ -12,6 +12,7 @@ import { ReactNode } from 'react';
 
 export type ResponsiveBreakpoint = 'sm' | 'md' | 'lg' | 'xl' | '2xl';
 
+
 /**
  * Column Definition
  * Defines how each column should be rendered and behave
@@ -35,7 +36,7 @@ export interface ColumnDef<T = any> {
   width?: string;
   
   /** Text alignment (auto-detects RTL/LTR if not specified) */
-  align?: 'left' | 'right' | 'center';
+  align?: 'left' | 'right' | 'center' | 'start' | 'end';
   
   /** Enable/disable sorting for this column */
   sortable?: boolean;

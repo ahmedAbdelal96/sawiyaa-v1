@@ -364,7 +364,8 @@
       "bio": "Bio",
       "specialties": "Specialties",
       "liveProfile": "Live profile",
-      "sessionPricing": "Session pricing"
+      "sessionPricing": "Session pricing",
+      "languages": "Session languages"
     },
     "readiness": {
       "notReady": "Needs review",
@@ -374,7 +375,11 @@
       "requirements": {
         "primarySpecialtyCategoryId": "Primary specialty",
         "payoutAccountHolderName": "Account holder name",
-        "payoutDestination": "Payout details"
+        "accountHolderName": "Account holder name",
+        "payoutDestination": "Payout details",
+        "payoutDetails": "Payout details",
+        "identityDocuments": "Identity documents",
+        "academicCertificate": "Academic certificate"
       }
     },
     "actions": {
@@ -1392,6 +1397,70 @@
           }
         }
       }
+    }
+  },
+  "application": {
+    "pending": {
+      "title": "Your application is under review",
+      "subtitle": "We have received your application and the Fayed team is reviewing it now. We will notify you of any updates.",
+      "whatHappensNext": "What happens next?",
+      "reviewProcess": "We are reviewing your professional details and documents to ensure your profile is ready before activating your practitioner account.",
+      "infoCallout": "You will receive any updates or revision requests via notifications or email.",
+      "goToDashboard": "Go to dashboard",
+      "reviewProfile": "Review profile"
+    },
+    "meta": {
+      "title": "Application — Practitioner",
+      "description": "Complete your practitioner application on the Fayed platform."
+    },
+    "statusMessage": {
+      "SUBMITTED": "Your application has been submitted and is currently under review.",
+      "UNDER_REVIEW": "Your application is currently under review by the Fayed team. You will be notified of any updates.",
+      "APPROVED": "Your application has been successfully approved and your practitioner account is now active."
+    },
+    "wizard": {
+      "qualificationsModalDescription": "Add or review the documents that support your application.",
+      "threeStep": {
+        "helpers": {
+          "basic": "Keep your identity details accurate so the review team can easily verify your account.",
+          "paymentSubmit": "Make sure to complete payout details to submit your application for review."
+        }
+      },
+      "approvedTitle": "Your Application is Approved"
+    },
+    "status": {
+      "SUBMITTED": "Submitted",
+      "APPROVED": "Approved"
+    },
+    "completionIssues": {
+      "codes": {
+        "DOCUMENTS_IDENTITY_EVIDENCE_REQUIRED": {
+          "title": "Identity document required"
+        },
+        "DOCUMENTS_NATIONAL_ID_FRONT_MISSING": {
+          "title": "Front side of National ID missing"
+        },
+        "DOCUMENTS_CREDENTIAL_NOT_APPROVED": {
+          "title": "Documents pending review"
+        },
+        "PAYOUT_DESTINATION_REQUIRED": {
+          "title": "Payout method missing"
+        },
+        "PAYOUT_ACCOUNT_HOLDER_REQUIRED": {
+          "title": "Account holder name missing"
+        },
+        "QUALIFICATIONS_ACADEMIC_CERTIFICATE_REQUIRED": {
+          "title": "Academic certificate required"
+        }
+      }
+    }
+  },
+  "practitionerApplication": {
+    "steps": {
+      "basicProfile": "Basic Information",
+      "professionalDetails": "Professional Profile",
+      "qualifications": "Qualifications",
+      "pricing": "Payment & Submission"
     }
   }
 }

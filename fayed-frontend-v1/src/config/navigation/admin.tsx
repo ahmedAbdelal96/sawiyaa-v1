@@ -157,6 +157,12 @@ export const adminNavigation: NavigationConfig = [
         path: "/practitioner-payouts/history",
         requiredPermissions: [PK.PRACTITIONER_PAYOUTS_READ],
       },
+      {
+        key: "revenueShareRules",
+        icon: <NavigationIcons.payments />,
+        path: "/settings/revenue-share",
+        requiredPermissions: [PK.ACCOUNTING_READ],
+      },
     ],
   },
   {

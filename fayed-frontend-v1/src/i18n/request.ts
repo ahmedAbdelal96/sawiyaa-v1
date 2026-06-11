@@ -1,6 +1,7 @@
 import { getRequestConfig } from "next-intl/server";
 import { IntlErrorCode } from "next-intl";
 import { routing } from "./routing";
+import { warnMissingTranslation } from "./missing-key-warning";
 
 export default getRequestConfig(async ({ requestLocale }) => {
   let locale = await requestLocale;
@@ -85,14 +86,7 @@ export default getRequestConfig(async ({ requestLocale }) => {
     locale,
     messages,
     onError(error) {
-      if (error.code === IntlErrorCode.MISSING_MESSAGE) {
-        if (process.env.NODE_ENV === "development") {
-          console.warn("[i18n] Missing translation:", {
-            key: error.message,
-            locale,
-          });
-        }
-      } else if (process.env.NODE_ENV === "development") {
+      if (process.env.NODE_ENV === "development" && error.code !== IntlErrorCode.MISSING_MESSAGE) {
         console.error("[i18n] Error:", error.message);
       }
     },
@@ -100,6 +94,12 @@ export default getRequestConfig(async ({ requestLocale }) => {
       const path = [namespace, key].filter(Boolean).join(".");
 
       if (error.code === IntlErrorCode.MISSING_MESSAGE) {
+        warnMissingTranslation({
+          locale,
+          namespace,
+          key,
+          fallbackLocale: routing.defaultLocale,
+        });
         return `[${path}]`;
       }
 

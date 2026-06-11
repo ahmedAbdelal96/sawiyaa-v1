@@ -29,6 +29,7 @@ import {
   AdminSectionCard,
 } from "@/components/shared/admin/AdminDashboardKit";
 import { Drawer, FormModal, ModalBody, ModalHeader } from "@/components/ui/modal";
+import Avatar from "@/components/ui/avatar/Avatar";
 import { useCurrentUserPermissions } from "@/features/users/hooks/use-users";
 import { toAppError } from "@/lib/api/errors";
 import { PermissionKey, hasPermission } from "@/lib/auth/permissions";
@@ -324,20 +325,11 @@ export default function AdminFeaturedPractitionersScreen() {
         accessor: (row) => row.practitioner?.displayName ?? row.practitionerId,
         cell: (row) => (
           <div className="flex min-w-0 items-center gap-3">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-border-light bg-surface-secondary">
-              {row.practitioner?.avatarUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={row.practitioner.avatarUrl}
-                  alt={row.practitioner.displayName ?? "-"}
-                  className="h-full w-full object-cover"
-                />
-              ) : (
-                <span className="text-xs font-semibold text-text-muted">
-                  {(row.practitioner?.displayName ?? "?").slice(0, 2).toUpperCase()}
-                </span>
-              )}
-            </div>
+            <Avatar
+              src={row.practitioner?.avatarUrl}
+              name={row.practitioner?.displayName ?? ""}
+              size="large"
+            />
 
             <div className="min-w-0">
               <p className="truncate text-sm font-semibold text-text-primary">
@@ -532,21 +524,25 @@ export default function AdminFeaturedPractitionersScreen() {
         summaryCards={
           <>
             <AdminSummaryCard
+              metricKey="featured.total"
               label={t("summary.total")}
               value={derivedStats.total}
               tone="primary"
             />
             <AdminSummaryCard
+              metricKey="featured.active"
               label={t("summary.active")}
               value={derivedStats.active}
               tone="success"
             />
             <AdminSummaryCard
+              metricKey="featured.scheduled"
               label={t("summary.scheduled")}
               value={derivedStats.scheduled}
               tone="primary"
             />
             <AdminSummaryCard
+              metricKey="featured.inactive"
               label={t("summary.inactive")}
               value={derivedStats.expired + derivedStats.paused}
               tone="neutral"

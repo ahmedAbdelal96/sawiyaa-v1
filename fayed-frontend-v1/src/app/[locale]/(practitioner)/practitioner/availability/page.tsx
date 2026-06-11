@@ -1,5 +1,9 @@
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
+import {
+  PractitionerPageHeader,
+  PractitionerPageShell,
+} from "@/components/shared/practitioner/PractitionerWorkspaceKit";
 import PresencePanel from "@/features/presence/components/PresencePanel";
 import AvailabilityPanel from "@/features/availability/components/AvailabilityPanel";
 
@@ -22,17 +26,15 @@ export default async function PractitionerAvailabilityPage({ params }: Props) {
   const t = await getTranslations({ locale, namespace: "practitioner-area" });
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-          {t("availability.page.title")}
-        </h1>
-        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          {t("availability.page.subtitle")}
-        </p>
+    <PractitionerPageShell>
+      <PractitionerPageHeader
+        title={t("availability.page.title")}
+        description={t("availability.page.subtitle")}
+      />
+      <div className="space-y-6">
+        <PresencePanel />
+        <AvailabilityPanel />
       </div>
-      <PresencePanel />
-      <AvailabilityPanel />
-    </div>
+    </PractitionerPageShell>
   );
 }

@@ -918,6 +918,7 @@
       "specialty": "Specialty",
       "status": "Status",
       "submittedAt": "Submitted",
+      "updatedAt": "Updated",
       "actions": "Actions",
       "viewAction": "View",
       "noName": "Unnamed",

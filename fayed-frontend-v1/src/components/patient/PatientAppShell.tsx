@@ -4,6 +4,7 @@ import LanguageToggle from "@/components/public/LanguageToggle";
 import ThemeToggle from "@/components/public/ThemeToggle";
 import BrandMark from "@/components/shared/BrandMark";
 import UserDropdown from "@/components/header/UserDropdown";
+import Avatar from "@/components/ui/avatar/Avatar";
 import UserNotificationDropdown from "@/features/notifications/components/UserNotificationDropdown";
 import ActionIconButton from "@/components/ui/action-icon-button/ActionIconButton";
 import { Drawer } from "@/components/ui/modal";
@@ -252,18 +253,12 @@ export default function PatientAppShell({ children }: PatientAppShellProps) {
             </div>
 
             <div className="absolute bottom-4 start-4 end-4 flex items-center gap-3">
-              {effectiveAvatar ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={effectiveAvatar}
-                  alt={displayName}
-                  className="h-14 w-14 rounded-full object-cover ring-2 ring-white/35"
-                />
-              ) : (
-                <span className="flex h-14 w-14 items-center justify-center rounded-full bg-white/12 text-lg font-semibold text-white ring-2 ring-white/25">
-                  {userInitial}
-                </span>
-              )}
+              <Avatar
+                src={effectiveAvatar}
+                name={displayName}
+                size="custom"
+                className="h-14 w-14 ring-2 ring-white/35"
+              />
 
               <div className="min-w-0">
                 <p className="truncate text-sm font-semibold text-text-primary dark:text-white">{displayName}</p>

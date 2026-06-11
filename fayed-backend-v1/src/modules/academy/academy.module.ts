@@ -13,6 +13,7 @@ import { CreateAcademyCourseLectureUseCase } from './use-cases/create-academy-co
 import { CreateAcademyEnrollmentUseCase } from './use-cases/create-academy-enrollment.use-case';
 import { GetAdminAcademyCourseUseCase } from './use-cases/get-admin-academy-course.use-case';
 import { GetPublicAcademyCourseBySlugUseCase } from './use-cases/get-public-academy-course-by-slug.use-case';
+import { GetPublicAcademyEnrollmentPaymentRedirectUseCase } from './use-cases/get-public-academy-enrollment-payment-redirect.use-case';
 import { GetPublicAcademyEnrollmentUseCase } from './use-cases/get-public-academy-enrollment.use-case';
 import { ListAdminAcademyCoursesUseCase } from './use-cases/list-admin-academy-courses.use-case';
 import { ListAdminAcademyEnrollmentsUseCase } from './use-cases/list-admin-academy-enrollments.use-case';
@@ -31,6 +32,7 @@ import { UpdateAcademyCourseUseCase } from './use-cases/update-academy-course.us
     ListPublicAcademyCoursesUseCase,
     GetPublicAcademyCourseBySlugUseCase,
     GetPublicAcademyEnrollmentUseCase,
+    GetPublicAcademyEnrollmentPaymentRedirectUseCase,
     CreateAcademyEnrollmentUseCase,
     ListAdminAcademyCoursesUseCase,
     GetAdminAcademyCourseUseCase,

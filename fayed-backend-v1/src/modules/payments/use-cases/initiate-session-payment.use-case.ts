@@ -566,36 +566,20 @@ export class InitiateSessionPaymentUseCase {
     }
 
     if (input.returnUrl?.trim()) {
-      return this.assertSupportedReturnUrl(input.returnUrl.trim());
+      const trustedReturnUrl = this.paymentRuntimeConfigService.resolveTrustedReturnUrl(
+        input.returnUrl.trim(),
+      );
+
+      if (!trustedReturnUrl) {
+        throw new BadRequestException({
+          messageKey: 'payments.errors.invalidReturnUrl',
+          error: 'PAYMENT_INVALID_RETURN_URL',
+        });
+      }
+
+      return trustedReturnUrl;
     }
 
     return `${input.appBaseUrl}/${input.locale}/patient/sessions/${input.sessionId}/payment-return`;
-  }
-
-  private assertSupportedReturnUrl(returnUrl: string): string {
-    let parsed: URL;
-
-    try {
-      parsed = new URL(returnUrl);
-    } catch {
-      throw new BadRequestException({
-        messageKey: 'payments.errors.invalidReturnUrl',
-        error: 'PAYMENT_INVALID_RETURN_URL',
-      });
-    }
-
-    const protocol = parsed.protocol.toLowerCase();
-    if (
-      protocol === 'javascript:' ||
-      protocol === 'data:' ||
-      protocol === 'file:'
-    ) {
-      throw new BadRequestException({
-        messageKey: 'payments.errors.invalidReturnUrl',
-        error: 'PAYMENT_INVALID_RETURN_URL',
-      });
-    }
-
-    return parsed.toString();
   }
 }

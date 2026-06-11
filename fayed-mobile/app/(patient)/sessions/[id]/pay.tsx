@@ -7,6 +7,7 @@ import {
   StyleSheet,
   Switch,
   TouchableOpacity,
+  Platform,
   View,
 } from "react-native";
 import * as Linking from "expo-linking";
@@ -401,15 +402,25 @@ export default function SessionPaymentCheckoutScreen() {
     resolvedCountryIsoCode: breakdown?.resolvedCountryIsoCode ?? null,
   });
   const normalizedCouponDraft = normalizePromoCodeInput(couponDraft);
-  const nativeReturnUrl = useMemo(
-    () =>
-      id
-        ? Linking.createURL(`/sessions/${id}/payment-return`, {
-            scheme: "fayed",
-          })
-        : null,
-    [id],
-  );
+  const sessionReturnUrl = useMemo(() => {
+    if (!id) {
+      return null;
+    }
+
+    const paymentReturnPath = `/sessions/${id}/payment-return`;
+
+    if (
+      Platform.OS === "web" &&
+      typeof window !== "undefined" &&
+      window.location?.origin
+    ) {
+      return `${window.location.origin}${paymentReturnPath}`;
+    }
+
+    return Linking.createURL(paymentReturnPath, {
+      scheme: "fayed",
+    });
+  }, [id]);
 
   const split = useMemo(() => {
     if (!breakdown) {
@@ -626,11 +637,20 @@ export default function SessionPaymentCheckoutScreen() {
       return;
     }
 
-    if (nativeReturnUrl) {
+    if (Platform.OS === "web") {
+      try {
+        window.location.assign(safeCheckoutUrl);
+      } finally {
+        setIsLaunchingCheckout(false);
+      }
+      return;
+    }
+
+    if (sessionReturnUrl) {
       try {
         const result = await WebBrowser.openAuthSessionAsync(
           safeCheckoutUrl,
-          nativeReturnUrl,
+          sessionReturnUrl,
         );
 
         if (result.type === "success") {
@@ -727,7 +747,7 @@ export default function SessionPaymentCheckoutScreen() {
               : undefined,
           returnUrl:
             gatewayPaymentRequired && capabilities?.provider === "PAYMOB"
-              ? (nativeReturnUrl ?? undefined)
+              ? (sessionReturnUrl ?? undefined)
               : undefined,
         },
       });

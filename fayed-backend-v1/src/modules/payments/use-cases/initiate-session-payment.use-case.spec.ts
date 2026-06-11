@@ -76,6 +76,21 @@ describe('InitiateSessionPaymentUseCase', () => {
     resolvePaymobCheckoutMethod: jest.fn(),
     isTestMode: jest.fn(() => true),
     getPaymobMethodRegistry: jest.fn(() => []),
+    resolveTrustedReturnUrl: jest.fn((value: string | null | undefined) => {
+      if (!value?.trim()) {
+        return null;
+      }
+
+      if (
+        value.startsWith('http://localhost:3000') ||
+        value.startsWith('http://localhost:8081') ||
+        value.startsWith('fayed://')
+      ) {
+        return value;
+      }
+
+      return null;
+    }),
   } as unknown as PaymentRuntimeConfigService;
   const resolveSessionPaymentPricingService = {
     resolve: jest.fn(),
@@ -281,6 +296,44 @@ describe('InitiateSessionPaymentUseCase', () => {
     expect(providerAdapter.initiateSessionPayment).toHaveBeenCalledTimes(1);
     expect(result.item.status).toBe(PaymentStatus.PENDING);
     expect(result.item.sessionId).toBe('session-1');
+  });
+
+  it.each([
+    'http://localhost:8081/patient/sessions/session-1/payment-return',
+    'http://localhost:3000/en/patient/sessions/session-1/payment-return',
+    'fayed://sessions/session-1/payment-return',
+  ])('preserves trusted session returnUrl %s for Paymob payments', async (returnUrl) => {
+    await useCase.execute({
+      userId: 'user-1',
+      locale: 'en',
+      sessionId: 'session-1',
+      acceptedRefundPolicyId: 'refund-policy-version-1',
+      displayLocale: 'en',
+      returnUrl,
+    });
+
+    expect(
+      providerAdapter.initiateSessionPayment,
+    ).toHaveBeenCalledWith(
+      expect.objectContaining({
+        redirectionUrl: returnUrl,
+      }),
+    );
+  });
+
+  it('rejects an untrusted session returnUrl instead of silently falling back to the web default', async () => {
+    await expect(
+      useCase.execute({
+        userId: 'user-1',
+        locale: 'en',
+        sessionId: 'session-1',
+        acceptedRefundPolicyId: 'refund-policy-version-1',
+        displayLocale: 'en',
+        returnUrl: 'https://evil.example/patient/sessions/session-1/payment-return',
+      }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+
+    expect(providerAdapter.initiateSessionPayment).not.toHaveBeenCalled();
   });
 
   it('reuses an active payment and still requires a valid refund policy acceptance', async () => {

@@ -36,18 +36,18 @@ export function DataTableEmpty({
   action,
 }: DataTableEmptyProps) {
   return (
-    <div className="overflow-hidden rounded-[28px] border border-border-light bg-white shadow-[0_16px_34px_-28px_rgba(34,52,56,0.18)]">
-      <div className="px-6 py-12 text-center sm:px-8">
-        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-primary/15 bg-primary-light text-primary shadow-[0_12px_22px_-18px_rgba(68,161,148,0.22)]">
-          {icon || <Inbox className="h-7 w-7 text-current" />}
+    <div className="overflow-hidden rounded-[24px] border border-border-light bg-white shadow-[0_18px_36px_-30px_rgba(34,52,56,0.18)]">
+      <div className="px-4 py-10 text-center sm:px-6">
+        <div className="mx-auto mb-3.5 flex h-12 w-12 items-center justify-center rounded-xl border border-primary/15 bg-primary-light text-primary shadow-[0_10px_20px_-16px_rgba(68,161,148,0.2)]">
+          {icon || <Inbox className="h-6 w-6 text-current" />}
         </div>
 
-        <h3 className="mb-2 text-lg font-semibold text-text-primary">
+        <h3 className="text-base font-semibold text-text-primary">
           {title}
         </h3>
 
         {description && (
-          <p className="mx-auto mb-6 max-w-md text-sm text-text-secondary">
+          <p className="mx-auto mt-1 max-w-sm text-xs leading-5 text-text-secondary">
             {description}
           </p>
         )}
@@ -55,7 +55,7 @@ export function DataTableEmpty({
         {action && (
           <button
             onClick={action.onClick}
-            className="inline-flex h-10 items-center justify-center rounded-2xl bg-primary px-4 text-sm font-semibold text-white shadow-[0_12px_24px_-18px_rgba(68,161,148,0.38)] transition hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-primary/20"
+            className="mt-4 inline-flex h-8.5 items-center justify-center rounded-xl bg-primary px-4 text-xs font-semibold text-white shadow-[0_10px_20px_-14px_rgba(68,161,148,0.35)] transition hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-primary/20"
           >
             {action.label}
           </button>

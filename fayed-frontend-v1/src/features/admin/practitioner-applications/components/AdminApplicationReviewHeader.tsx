@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import AvatarText from "@/components/ui/avatar/AvatarText";
+import Avatar from "@/components/ui/avatar/Avatar";
 import type { ReactNode } from "react";
 
 type Props = {
@@ -48,12 +48,12 @@ export default function AdminApplicationReviewHeader({
             aria-label={hasAvatar ? previewPhotoLabel : photoMissingLabel}
             title={hasAvatar ? previewPhotoLabel : photoMissingLabel}
           >
-            {hasAvatar ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={avatarUrl ?? ""} alt={name} className="h-full w-full object-cover" referrerPolicy="no-referrer" />
-            ) : (
-              <AvatarText name={name} className="h-[68px] w-[68px]" />
-            )}
+            <Avatar
+              src={avatarUrl}
+              name={name}
+              size="custom"
+              className="h-full w-full"
+            />
           </button>
           <div className="min-w-0">
             <h1 className="truncate text-2xl font-semibold text-gray-900 dark:text-white">{name}</h1>

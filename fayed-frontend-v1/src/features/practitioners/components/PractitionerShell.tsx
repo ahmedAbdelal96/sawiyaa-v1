@@ -43,39 +43,36 @@ export default function PractitionerShell({ children }: PractitionerShellProps) 
 
   const pathWithoutLocale = pathname.replace(/^\/[a-z]{2}(?=\/|$)/, "") || "/";
   const approved = profile?.profileStatus === "APPROVED";
-  const onboardingOnlyMode = Boolean(profile && !approved);
   const onboardingPathActive = isOnboardingPath(pathWithoutLocale);
+  
+  const isLoading = authLoading || profileLoading;
+  const isError = authError;
+
   const heartbeatEnabled =
-    isOtpVerified && approved && !authLoading && !profileLoading && !authError;
+    isOtpVerified && approved && !isLoading && !isError;
 
   usePractitionerPresenceHeartbeat(heartbeatEnabled);
 
   useEffect(() => {
+    if (isLoading || isError) return;
     if (!isOtpVerified || !profile || approved || onboardingPathActive) {
       return;
     }
     router.replace(ONBOARDING_PATH as never);
-  }, [approved, onboardingPathActive, isOtpVerified, profile, router]);
+  }, [approved, onboardingPathActive, isOtpVerified, profile, router, isLoading, isError]);
 
-  const navigation = onboardingOnlyMode
-    ? practitionerOnboardingNavigation
-    : practitionerNavigation;
-
-  if (authLoading || profileLoading || authError) {
+  if (isLoading || isError) {
     return (
       <DashboardLayout
-        navigation={navigation}
+        navigation={[]} // Safe minimal shell, no unauthorized tabs
         basePathPrefix="/practitioner"
         layoutVariant="practitioner"
         messagingRole="practitioner"
         contentMode={onboardingPathActive ? "full" : "constrained"}
       >
-        <div className="rounded-2xl border border-border-light bg-surface-primary p-6 dark:bg-white/5">
-          <p className="text-sm text-text-secondary">
-            {authLoading || profileLoading
-              ? t("dashboard.page.subtitle")
-              : t("dashboard.feedback.loadError")}
-          </p>
+        <div className="rounded-2xl border border-border-light bg-surface-primary p-6 dark:bg-white/5 animate-pulse">
+          <div className="h-4 w-1/3 bg-surface-secondary rounded mb-2"></div>
+          <div className="h-4 w-1/4 bg-surface-secondary rounded"></div>
         </div>
       </DashboardLayout>
     );
@@ -108,9 +105,40 @@ export default function PractitionerShell({ children }: PractitionerShellProps) 
     );
   }
 
+  if (!approved) {
+    if (!onboardingPathActive) {
+      // Prevent rendering protected content while waiting for redirect
+      return (
+        <DashboardLayout
+          navigation={practitionerOnboardingNavigation}
+          basePathPrefix="/practitioner"
+          layoutVariant="practitioner"
+          messagingRole="practitioner"
+          contentMode="full"
+        >
+          <div className="flex justify-center py-10">
+            <div className="h-8 w-8 animate-spin rounded-full border-2 border-border-strong border-t-primary" />
+          </div>
+        </DashboardLayout>
+      );
+    }
+
+    return (
+      <DashboardLayout
+        navigation={practitionerOnboardingNavigation}
+        basePathPrefix="/practitioner"
+        layoutVariant="practitioner"
+        messagingRole="practitioner"
+        contentMode="full"
+      >
+        {children}
+      </DashboardLayout>
+    );
+  }
+
   return (
     <DashboardLayout
-      navigation={navigation}
+      navigation={practitionerNavigation}
       basePathPrefix="/practitioner"
       layoutVariant="practitioner"
       messagingRole="practitioner"

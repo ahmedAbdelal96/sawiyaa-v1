@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useLocale, useTranslations } from "next-intl";
@@ -999,6 +999,64 @@ export default function PractitionerApplicationWizardThreeStep() {
             },
           }}
         />
+      </div>
+    );
+  }
+
+  if (status === "SUBMITTED" || status === "UNDER_REVIEW") {
+    return (
+      <div className="mx-auto w-full max-w-3xl space-y-8 py-6 md:py-10">
+        <div className="flex flex-col items-center space-y-4 text-center">
+          <div className="flex h-16 w-16 items-center justify-center rounded-[20px] bg-warning-50 text-warning-600 shadow-sm ring-1 ring-warning-100/50">
+            <CheckCircle2 className="h-8 w-8" />
+          </div>
+          <div className="space-y-2">
+            <h1 className="text-3xl font-bold tracking-tight text-text-primary">
+              {t("application.pending.title")}
+            </h1>
+            <p className="mx-auto max-w-xl text-base leading-relaxed text-text-secondary">
+              {t("application.pending.subtitle")}
+            </p>
+          </div>
+          <div className="pt-2">
+            <StepTone tone="warning">{getLocalizedApplicationStatus(t, status)}</StepTone>
+          </div>
+        </div>
+
+        <div className="overflow-hidden rounded-3xl border border-border-light bg-white shadow-sm ring-1 ring-black/5">
+          <div className="p-6 md:p-8">
+            <h2 className="text-xl font-semibold text-text-primary">
+              {t("application.pending.whatHappensNext")}
+            </h2>
+            <p className="mt-3 leading-relaxed text-text-secondary">
+              {t("application.pending.reviewProcess")}
+            </p>
+
+            <div className="mt-8 flex flex-col gap-4 rounded-2xl border border-primary/10 bg-primary-light/30 p-5 md:flex-row md:items-start md:gap-5">
+              <div className="shrink-0 pt-0.5">
+                <Sparkles className="h-5 w-5 text-primary" />
+              </div>
+              <p className="text-sm leading-relaxed text-text-secondary">
+                {t("application.pending.infoCallout")}
+              </p>
+            </div>
+
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
+              <Link
+                href="/practitioner/dashboard"
+                className="inline-flex w-full items-center justify-center rounded-2xl bg-primary px-6 py-3 text-sm font-medium text-white shadow-sm transition hover:bg-primary-hover sm:w-auto"
+              >
+                {t("application.pending.goToDashboard")}
+              </Link>
+              <Link
+                href="/practitioner/profile"
+                className="inline-flex w-full items-center justify-center rounded-2xl border border-border-light bg-white px-6 py-3 text-sm font-medium text-text-primary shadow-sm transition hover:bg-surface-secondary sm:w-auto"
+              >
+                {t("application.pending.reviewProfile")}
+              </Link>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }

@@ -1,5 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import { CourseStatus, CourseVisibility, PaymentStatus } from '@prisma/client';
+import {
+  AcademyEnrollmentStatus,
+  CourseStatus,
+  CourseVisibility,
+  PaymentStatus,
+} from '@prisma/client';
 import { AcademyCourseStats } from '../types/academy.types';
 import {
   resolveAcademyCheckoutPricing,
@@ -284,6 +289,11 @@ export class AcademyPresenter {
       string,
       unknown
     >;
+    const joinAccess = this.presentEnrollmentJoinAccess({
+      enrollmentStatus: input.enrollmentStatus,
+      meetingUrl: input.academyCourse.meetingUrl ?? null,
+      whatsappGroupUrl: input.academyCourse.whatsappGroupUrl ?? null,
+    });
 
     return {
       id: input.id,
@@ -337,10 +347,56 @@ export class AcademyPresenter {
               clientSecret: latestAttempt.clientSecret,
             }
           : null,
-      joinAccess: {
-        meetingUrl: input.academyCourse.meetingUrl ?? null,
-        whatsappGroupUrl: input.academyCourse.whatsappGroupUrl ?? null,
-      },
+      joinAccess,
+    };
+  }
+
+  private presentEnrollmentJoinAccess(input: {
+    enrollmentStatus: string;
+    meetingUrl: string | null;
+    whatsappGroupUrl: string | null;
+  }) {
+    const isAccessUnlocked =
+      input.enrollmentStatus === AcademyEnrollmentStatus.PAID ||
+      input.enrollmentStatus === AcademyEnrollmentStatus.CONFIRMED;
+
+    const meetingUrl = isAccessUnlocked ? (input.meetingUrl ?? null) : null;
+    const whatsappGroupUrl = isAccessUnlocked
+      ? (input.whatsappGroupUrl ?? null)
+      : null;
+    const canAccessSession = Boolean(meetingUrl);
+    const canAccessGroup = Boolean(whatsappGroupUrl);
+
+    let accessLockedReason: string | null = null;
+
+    if (!isAccessUnlocked) {
+      switch (input.enrollmentStatus) {
+        case AcademyEnrollmentStatus.PENDING_PAYMENT:
+          accessLockedReason = 'PAYMENT_PENDING';
+          break;
+        case AcademyEnrollmentStatus.PAYMENT_FAILED:
+          accessLockedReason = 'PAYMENT_FAILED';
+          break;
+        case AcademyEnrollmentStatus.CANCELLED:
+          accessLockedReason = 'ENROLLMENT_CANCELLED';
+          break;
+        case AcademyEnrollmentStatus.REFUNDED:
+          accessLockedReason = 'ENROLLMENT_REFUNDED';
+          break;
+        default:
+          accessLockedReason = 'ACCESS_NOT_AVAILABLE';
+          break;
+      }
+    } else if (!canAccessSession && !canAccessGroup) {
+      accessLockedReason = 'ACCESS_NOT_AVAILABLE';
+    }
+
+    return {
+      canAccessSession,
+      canAccessGroup,
+      accessLockedReason,
+      meetingUrl,
+      whatsappGroupUrl,
     };
   }
 }

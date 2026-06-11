@@ -19,7 +19,7 @@ import {
   Users,
 } from "lucide-react";
 import AvatarText from "@/components/ui/avatar/AvatarText";
-import { useAdminPatientDetails } from "../hooks/use-admin-patients";
+import { useAdminPatientDetails, useAdminCountries } from "../hooks/use-admin-patients";
 import {
   useAdminPatientWalletEntries,
   useAdminPatientWalletSummary,
@@ -108,6 +108,7 @@ export default function AdminPatient360Screen({ patientId }: { patientId: string
 
   const [tab, setTab] = useState<PatientTabKey>("overview");
 
+  const { data: countries = [] } = useAdminCountries();
   const { data: patient, isLoading, isError, refetch } = useAdminPatientDetails(patientId, true);
 
   useEffect(() => {
@@ -459,7 +460,18 @@ export default function AdminPatient360Screen({ patientId }: { patientId: string
               value={patient?.primaryPhone ?? "-"}
               valueClassName="break-all"
             />
-            <KeyValueRow label={t("patient360.profile.country")} value={patient?.countryCode ?? "-"} />
+            <KeyValueRow
+              label={t("patient360.profile.country")}
+              value={(() => {
+                const code = patient?.countryCode;
+                if (!code) return "-";
+                const match = countries.find((c) => c.isoCode.toUpperCase() === code.toUpperCase());
+                if (match) {
+                  return locale === "ar" ? (match.nativeName || match.name) : match.name;
+                }
+                return code.toUpperCase();
+              })()}
+            />
             <KeyValueRow label={t("patient360.profile.gender")} value={patient?.gender ?? "-"} />
             <KeyValueRow label={t("patient360.profile.dob")} value={patient?.dateOfBirth ?? "-"} />
             <KeyValueRow
@@ -593,8 +605,15 @@ export default function AdminPatient360Screen({ patientId }: { patientId: string
               </div>
 
               {patient?.status ? (
-                <span className={cn("inline-flex items-center rounded-full border px-3 py-2 text-xs font-semibold", statusTone)}>
-                  {patient.status}
+                <span className={cn("inline-flex items-center rounded-full border px-3 py-1.5 text-xs font-semibold", statusTone)}>
+                  {(() => {
+                    const normalized = patient.status.toUpperCase();
+                    if (normalized === "ACTIVE") return t("filters.statusActive");
+                    if (normalized === "INACTIVE") return t("filters.statusInactive");
+                    if (normalized === "SUSPENDED" || normalized === "BLOCKED") return t("filters.statusSuspended");
+                    if (normalized.startsWith("PENDING")) return t("filters.statusPending");
+                    return patient.status;
+                  })()}
                 </span>
               ) : null}
 

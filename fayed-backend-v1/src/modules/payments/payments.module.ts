@@ -120,6 +120,7 @@ import { RetryPaymentRefundUseCase } from './use-cases/retry-payment-refund.use-
     PaymentProviderRegistryService,
     PaymentProviderResolverService,
     PaymentGeoContextService,
+    PaymentRuntimeConfigService,
     ValidatePaymentStatusTransitionService,
     ExpirePaymentUseCase,
   ],

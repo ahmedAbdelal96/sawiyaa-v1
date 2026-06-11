@@ -12,7 +12,12 @@ import {
 import { RequireAccountStates } from '@common/decorators/account-state.decorator';
 import { AccountStateRequirement } from '@common/enums/account-state-requirement.enum';
 import { JwtAccessAuthGuard } from '@common/guards/authentication/jwt-access-auth.guard';
-import { AdminGuard } from '@common/guards/authorization/admin.guard';
+import { RolesGuard } from '@common/guards/authorization/roles.guard';
+import { PermissionsGuard } from '@common/guards/authorization/permissions.guard';
+import { Roles } from '@common/decorators/roles.decorator';
+import { Permissions } from '@common/decorators/permissions.decorator';
+import { AppRole } from '@common/enums/app-role.enum';
+import { PermissionKey } from '@common/enums/permission-key.enum';
 import { UpdateRevenueShareRulesDto } from '../dto/revenue-share-rules.dto';
 import { RevenueShareRulesItemSuccessResponseDto } from '../dto/financial-rules-response.dto';
 import { GetRevenueShareRulesUseCase } from '../use-cases/get-revenue-share-rules.use-case';
@@ -20,7 +25,8 @@ import { UpdateRevenueShareRulesUseCase } from '../use-cases/update-revenue-shar
 
 @ApiTags('Admin - Financial Rules')
 @ApiBearerAuth()
-@UseGuards(JwtAccessAuthGuard, AdminGuard)
+@UseGuards(JwtAccessAuthGuard, RolesGuard, PermissionsGuard)
+@Roles(AppRole.SUPER_ADMIN, AppRole.ADMIN, AppRole.FINANCE_STAFF)
 @RequireAccountStates(AccountStateRequirement.ACTIVE_ACCOUNT)
 @Controller('admin/revenue-share-rules')
 export class AdminRevenueShareRulesController {
@@ -30,6 +36,7 @@ export class AdminRevenueShareRulesController {
   ) {}
 
   @Get()
+  @Permissions(PermissionKey.ACCOUNTING_READ)
   @ApiOperation({
     summary: 'Get revenue share rules (local vs cross-border)',
     description:
@@ -43,6 +50,7 @@ export class AdminRevenueShareRulesController {
   }
 
   @Put()
+  @Permissions(PermissionKey.ACCOUNTING_WRITE)
   @ApiOperation({
     summary: 'Update revenue share rules (local vs cross-border)',
     description:
