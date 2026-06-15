@@ -1,4 +1,4 @@
-﻿export const arSessionsCatalog = {
+export const arSessionsCatalog = {
   notifications: {
     sessionConfirmedTitle: 'تم تأكيد الجلسة',
     sessionConfirmedBody:
@@ -12,7 +12,7 @@
     sessionJoinAvailableEmailSubject: 'جلستك على فايد جاهزة للدخول',
     sessionJoinAvailableEmailTitle: 'جلستك جاهزة للدخول',
     sessionJoinAvailableEmailBody:
-      'تبدأ جلستك قريبًا.{{packageContext}} افتح صفحة الجلسة للانضمام بأمان: {{sessionUrl}}',
+      'تبدأ جلستك قريبًا.{{packageContext}} افتح صفحة الجلسة للانضمام بأمان.',
     sessionCancelledTitle: 'تم إلغاء الجلسة',
     sessionCancelledBody: 'تم إلغاء جلستك المجدولة في {{sessionAt}}.',
     sessionCancelledPractitionerTitle: 'تم إلغاء الجلسة بواسطة المريض',

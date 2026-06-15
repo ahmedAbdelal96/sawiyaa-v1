@@ -488,7 +488,7 @@ export default function PatientAssessmentsHomeScreen({
             </Link>
 
             <Link
-              href="/patient/support"
+              href="/patient/messages?lane=support"
               className="app-panel-soft group flex items-center justify-between gap-4 rounded-[28px] p-5 transition hover:border-primary/25 hover:text-primary"
             >
               <div>

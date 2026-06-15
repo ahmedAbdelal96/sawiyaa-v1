@@ -2,7 +2,7 @@
 
 import { useDeferredValue, useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import { BadgeDollarSign, Package, Search, Users } from "lucide-react";
+import { BadgeDollarSign, Package, Search, Sparkles, Users } from "lucide-react";
 import Button from "@/components/ui/button/Button";
 import { DataTable } from "@/components/ui/data-table";
 import type { ColumnDef } from "@/components/ui/data-table";
@@ -20,9 +20,9 @@ import {
   useAdminPractitionerPayoutSummaries,
 } from "../hooks/use-admin-practitioner-payouts";
 import type { AdminPractitionerPayoutSummary } from "../types/admin-practitioner-payouts.types";
-import AdminPractitionerPayoutDrawer, {
+import AdminPractitionerSettlementDrawer, {
   type AdminPractitionerPayoutDrawerTarget,
-} from "./AdminPractitionerPayoutDrawer";
+} from "./AdminPractitionerSettlementDrawer";
 
 type CurrencyCode = "EGP" | "USD";
 type BalanceFilter = "ALL" | "HAS_PAYABLE" | "HAS_PACKAGE";
@@ -39,6 +39,36 @@ function getLatestPayoutAt(values: Array<string | null | undefined>) {
 
   const latest = Math.max(...timestamps);
   return Number.isFinite(latest) ? new Date(latest).toISOString() : null;
+}
+
+function maskSensitiveValue(value: string | null | undefined) {
+  const trimmed = value?.trim() ?? "";
+  if (!trimmed) return "-";
+  if (trimmed.length <= 8) return trimmed;
+  return `${trimmed.slice(0, 4)}••••${trimmed.slice(-4)}`;
+}
+
+function formatDestinationPreview(
+  t: ReturnType<typeof useTranslations>,
+  summary: AdminPractitionerPayoutSummary | null,
+) {
+  const destination = summary?.egp.payoutDestinationSnapshot ?? summary?.usd.payoutDestinationSnapshot ?? null;
+  if (!destination) {
+    return t("list.destination.missing");
+  }
+
+  switch (destination.methodType) {
+    case "BANK_ACCOUNT":
+      return `${t("list.destination.methods.bank")}: ${destination.accountHolderName ?? "-"} · ${destination.bankName ?? "-"} · ${maskSensitiveValue(destination.bankAccountNumber)}`;
+    case "IBAN":
+      return `${t("list.destination.methods.iban")}: ${destination.accountHolderName ?? "-"} · ${maskSensitiveValue(destination.iban)}`;
+    case "WALLET":
+      return `${t("list.destination.methods.wallet")}: ${destination.accountHolderName ?? "-"} · ${destination.walletProvider ?? "-"} · ${maskSensitiveValue(destination.walletIdentifier)}`;
+    case "OTHER":
+      return `${t("list.destination.methods.other")}: ${destination.otherDetails ?? "-"}`;
+    default:
+      return t("list.destination.missing");
+  }
 }
 
 function hasPackageMoney(summary: AdminPractitionerPayoutSummary | null) {
@@ -118,6 +148,7 @@ export default function AdminPractitionerPayoutsListScreen() {
   const deferredSearch = useDeferredValue(search.trim());
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(DEFAULT_PAGE_LIMIT);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [drawerPractitioner, setDrawerPractitioner] =
     useState<AdminPractitionerPayoutDrawerTarget | null>(null);
   const [drawerDefaultCurrency, setDrawerDefaultCurrency] = useState<CurrencyCode>("EGP");
@@ -168,6 +199,13 @@ export default function AdminPractitionerPayoutsListScreen() {
   const handleOpenPay = (target: AdminPractitionerPayoutDrawerTarget, defaultCurrency: CurrencyCode) => {
     setDrawerPractitioner(target);
     setDrawerDefaultCurrency(defaultCurrency);
+    setIsDrawerOpen(true);
+  };
+
+  const handleOpenCreateSettlement = () => {
+    setDrawerPractitioner(null);
+    setDrawerDefaultCurrency("EGP");
+    setIsDrawerOpen(true);
   };
 
   const summaryMetrics = useMemo(() => {
@@ -225,6 +263,9 @@ export default function AdminPractitionerPayoutsListScreen() {
             {summary.practitionerName ?? summary.practitionerSlug ?? summary.practitionerId}
           </p>
           <p className="text-xs text-text-secondary">{summary.practitionerSlug ?? summary.practitionerId}</p>
+          <p className="text-xs leading-5 text-text-secondary">
+            {formatDestinationPreview(t, summary)}
+          </p>
         </div>
       ),
     },
@@ -284,9 +325,18 @@ export default function AdminPractitionerPayoutsListScreen() {
         title={t("list.title")}
         description={t("list.description")}
         actions={
-          <SurfaceActionLink href="/admin/practitioner-payouts/history">
-            {t("list.actions.history")}
-          </SurfaceActionLink>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button variant="primary" onClick={handleOpenCreateSettlement}>
+              <Sparkles className="h-4 w-4" />
+              {t("list.actions.createSettlement")}
+            </Button>
+            <SurfaceActionLink href="/admin/practitioner-payouts/history">
+              {t("list.actions.history")}
+            </SurfaceActionLink>
+            <SurfaceActionLink href="/admin/finance/accounting/reconciliation">
+              {t("list.actions.reconciliation")}
+            </SurfaceActionLink>
+          </div>
         }
         summaryCards={
           <>
@@ -406,6 +456,57 @@ export default function AdminPractitionerPayoutsListScreen() {
                 ))}
               </div>
             </div>
+
+            <section className="grid gap-4 rounded-[28px] border border-border-light bg-gradient-to-br from-brand-25 via-white to-surface-secondary p-5 shadow-soft dark:border-white/8 dark:from-primary/10 dark:via-surface-secondary dark:to-surface-secondary">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                <div className="space-y-3">
+                  <div className="inline-flex items-center gap-2 rounded-full bg-white/80 px-3 py-1 text-xs font-semibold text-primary shadow-sm dark:bg-white/[0.08]">
+                    <Sparkles className="h-3.5 w-3.5" />
+                    {t("list.workspace.eyebrow")}
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-semibold text-text-primary dark:text-white/95">
+                      {t("list.workspace.title")}
+                    </h2>
+                    <p className="mt-2 max-w-3xl text-sm leading-6 text-text-secondary">
+                      {t("list.workspace.description")}
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-2 text-xs font-medium text-text-secondary">
+                    <span className="rounded-full bg-white px-3 py-1 shadow-sm dark:bg-white/[0.08]">
+                      {t("list.workspace.bullets.manualTransfer")}
+                    </span>
+                    <span className="rounded-full bg-white px-3 py-1 shadow-sm dark:bg-white/[0.08]">
+                      {t("list.workspace.bullets.recordActualAmount")}
+                    </span>
+                    <span className="rounded-full bg-white px-3 py-1 shadow-sm dark:bg-white/[0.08]">
+                      {t("list.workspace.bullets.keepHistory")}
+                    </span>
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <Button variant="primary" onClick={handleOpenCreateSettlement}>
+                    {t("list.actions.createSettlement")}
+                  </Button>
+                  <SurfaceActionLink href="/admin/practitioner-payouts/history">
+                    {t("list.actions.history")}
+                  </SurfaceActionLink>
+                </div>
+              </div>
+            </section>
+
+            {activeFilterChips.length > 0 ? (
+              <div className="flex flex-wrap gap-2">
+                {activeFilterChips.map((chip) => (
+                  <span
+                    key={chip.id}
+                    className="inline-flex items-center rounded-full border border-primary/15 bg-primary-light/20 px-3 py-1 text-xs font-semibold text-primary dark:border-primary/20 dark:bg-primary/10"
+                  >
+                    {chip.label}
+                  </span>
+                ))}
+              </div>
+            ) : null}
           </div>
         }
       >
@@ -454,17 +555,12 @@ export default function AdminPractitionerPayoutsListScreen() {
                     disabled={!canPayEgp && !canPayUsd}
                     onClick={() =>
                       handleOpenPay(
-                        {
-                          practitionerId: summary.practitionerId,
-                          practitionerName:
-                            summary.practitionerName ?? summary.practitionerSlug ?? summary.practitionerId,
-                          practitionerSlug: summary.practitionerSlug ?? summary.practitionerId,
-                        },
+                        summary,
                         defaultCurrency,
                       )
                     }
                   >
-                    {t("list.actions.pay")}
+                    {t("list.actions.createSettlement")}
                   </Button>
                 </div>
               );
@@ -475,15 +571,20 @@ export default function AdminPractitionerPayoutsListScreen() {
           <p className="text-xs leading-6 text-text-secondary">{t("list.note")}</p>
       </AdminOperationalListShell>
 
-      <AdminPractitionerPayoutDrawer
-        isOpen={Boolean(drawerPractitioner)}
-        practitioner={drawerPractitioner}
-        defaultCurrency={drawerDefaultCurrency}
-        onClose={() => setDrawerPractitioner(null)}
-        onSuccess={() => {
-          summariesQuery.refetch();
-        }}
-      />
+      {isDrawerOpen ? (
+        <AdminPractitionerSettlementDrawer
+          isOpen={isDrawerOpen}
+          practitioner={drawerPractitioner}
+          defaultCurrency={drawerDefaultCurrency}
+          onClose={() => {
+            setIsDrawerOpen(false);
+            setDrawerPractitioner(null);
+          }}
+          onSuccess={() => {
+            summariesQuery.refetch();
+          }}
+        />
+      ) : null}
     </>
   );
 }

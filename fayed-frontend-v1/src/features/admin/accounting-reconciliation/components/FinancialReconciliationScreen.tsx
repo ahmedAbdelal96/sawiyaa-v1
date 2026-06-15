@@ -34,6 +34,7 @@ import Label from "@/components/form/Label";
 import TextArea from "@/components/form/input/TextArea";
 import { DEFAULT_PAGE_LIMIT, DEFAULT_PAGE_SIZE_OPTIONS } from "@/constants/pagination";
 import { useCurrentUserPermissions } from "@/features/users/hooks/use-users";
+import { Link } from "@/i18n/navigation";
 import { PermissionKey } from "@/lib/auth/permissions";
 import { isStepUpRequiredError, toAppError } from "@/lib/api/errors";
 import { getReconciliationIssueCopy } from "../issue-code-copy";
@@ -651,14 +652,28 @@ export default function FinancialReconciliationScreen() {
           eyebrow={t("page.eyebrow")}
           title={t("page.title")}
           description={t("page.description")}
-          notice={
-            <div className="rounded-[20px] border border-warning-200 bg-warning-50/75 px-4 py-3 text-sm text-warning-900 dark:border-warning-500/20 dark:bg-warning-500/10 dark:text-warning-100">
-              <div className="flex items-start gap-3">
-                <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0" />
-                <p>{t("page.safetyNotice")}</p>
-              </div>
+        notice={
+          <div className="space-y-3 rounded-[20px] border border-warning-200 bg-warning-50/75 px-4 py-3 text-sm text-warning-900 dark:border-warning-500/20 dark:bg-warning-500/10 dark:text-warning-100">
+            <div className="flex items-start gap-3">
+              <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0" />
+              <p>{t("page.safetyNotice")}</p>
             </div>
-          }
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-warning-200/70 bg-white/70 px-4 py-3 text-warning-950 shadow-sm dark:border-warning-500/20 dark:bg-white/[0.04] dark:text-warning-50">
+              <div className="space-y-1">
+                <p className="text-sm font-semibold">{t("page.settlementCtaTitle")}</p>
+                <p className="text-xs leading-5 text-warning-900/80 dark:text-warning-50/80">
+                  {t("page.settlementCtaDescription")}
+                </p>
+              </div>
+              <Link
+                href="/admin/practitioner-payouts"
+                className="inline-flex items-center justify-center rounded-full border border-warning-300 bg-warning-100 px-4 py-2 text-xs font-semibold text-warning-950 transition hover:bg-warning-200 dark:border-warning-500/30 dark:bg-warning-500/10 dark:text-warning-50 dark:hover:bg-warning-500/20"
+              >
+                {t("page.settlementCtaAction")}
+              </Link>
+            </div>
+          </div>
+        }
           summaryCards={
             <>
               <AdminSummaryCard

@@ -36,6 +36,7 @@ import { MarkMyNotificationReadUseCase } from './use-cases/mark-my-notification-
 import { SendDevTestPushNotificationUseCase } from './use-cases/send-dev-test-push-notification.use-case';
 import { RegisterNotificationDeviceUseCase } from './use-cases/register-notification-device.use-case';
 import { RevokeNotificationDeviceUseCase } from './use-cases/revoke-notification-device.use-case';
+import { NotificationContextEnrichmentService } from './services/notification-context-enrichment.service';
 
 /**
  * Notifications module provides the operational notification stack and the authenticated in-app feed.
@@ -64,6 +65,7 @@ import { RevokeNotificationDeviceUseCase } from './use-cases/revoke-notification
     NotificationDomainValidityGuardService,
     NotificationOpsPresenter,
     UserNotificationsPresenter,
+    NotificationContextEnrichmentService,
     NotificationIntentWriterService,
     AdminAuditPresenter,
     SessionReminderQueueRepository,

@@ -33,6 +33,7 @@ import type {
   UnifiedMessagingRole,
   UnifiedSessionChatStatus,
 } from "../types/messages-shell.types";
+import { getMessagesPath } from "../utils/messages-routes";
 import PractitionerLaneThread from "./PractitionerLaneThread";
 import SessionLaneThread from "./SessionLaneThread";
 import SupportLaneThread from "./SupportLaneThread";
@@ -107,7 +108,7 @@ function getCopy(locale: string): CopyPack {
         practitioner: "تابع التواصل العلاجي مع المعالج من هنا.",
         support: "تواصل مع فريق الدعم مباشرة من نفس اللوحة.",
       },
-      openAll: "العرض الكامل (اختياري)",
+      openAll: "عرض كل الرسائل",
       empty: "لا توجد محادثات في هذا القسم حاليًا.",
       loading: "جارٍ تحميل المحادثات...",
       error: "تعذر تحميل هذا القسم الآن.",
@@ -161,7 +162,7 @@ function getCopy(locale: string): CopyPack {
       practitioner: "Continue care communication with your practitioner.",
       support: "Contact support directly from this docked panel.",
     },
-    openAll: "Open full view (optional)",
+    openAll: "View all messages",
     empty: "No conversations in this lane right now.",
     loading: "Loading conversations...",
     error: "Could not load this lane right now.",
@@ -656,6 +657,13 @@ export default function UnifiedMessagesLauncher({
   const badgeValue = adjustedUnreadLikeCount > 99 ? "99+" : String(adjustedUnreadLikeCount);
   const activeLaneItems = laneMeta[activeLane].lane.items;
 
+  const footerHref = useMemo(() => {
+    const laneParam = activeLane === "practitioner" ? "care" : activeLane;
+    return getMessagesPath(null, role, {
+      lane: laneParam,
+    });
+  }, [role, activeLane]);
+
   return (
     <div
       ref={panelRef}
@@ -915,7 +923,7 @@ export default function UnifiedMessagesLauncher({
               <SupportLaneThread
                 role={role}
                 ticketId={selectedSupportItem?.supportTicketId ?? selectedSupportTicketId}
-                fullViewHref={selectedSupportItem?.href ?? laneMeta.support.href}
+                fullViewHref={getMessagesPath(null, role, { lane: "support", id: selectedSupportItem?.supportTicketId || selectedSupportTicketId || undefined })}
                 locale={locale}
                 copy={{
                   heading: copy.supportHeading,
@@ -947,7 +955,7 @@ export default function UnifiedMessagesLauncher({
                 requestId={selectedPractitionerItem?.careRequestId ?? selectedPractitionerRequestId}
                 conversationId={selectedPractitionerItem?.careConversationId ?? null}
                 requestStatus={selectedPractitionerItem?.careRequestStatus}
-                fullViewHref={selectedPractitionerItem?.href ?? laneMeta.practitioner.href}
+                fullViewHref={getMessagesPath(null, role, { lane: "care", id: selectedPractitionerItem?.careRequestId || selectedPractitionerRequestId || undefined })}
                 locale={locale}
                 copy={{
                   heading: copy.practitionerHeading,
@@ -967,7 +975,7 @@ export default function UnifiedMessagesLauncher({
 
           <div className="border-t border-border-light/70 px-3 py-1.5 dark:border-white/10">
             <Link
-              href={laneMeta[activeLane].href as never}
+              href={footerHref as never}
               onClick={() => setIsOpen(false)}
               className="inline-flex items-center gap-2 text-xs font-semibold text-primary hover:underline"
             >

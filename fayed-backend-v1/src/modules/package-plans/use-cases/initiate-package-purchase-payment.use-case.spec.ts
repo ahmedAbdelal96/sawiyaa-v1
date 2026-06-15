@@ -17,6 +17,7 @@ import { PaymentMapper } from '@modules/payments/mappers/payment.mapper';
 import { PaymentRepository } from '@modules/payments/repositories/payment.repository';
 import { PaymentProviderRegistryService } from '@modules/payments/services/payment-provider-registry.service';
 import { PaymentProviderResolverService } from '@modules/payments/services/payment-provider-resolver.service';
+import { PaymentRuntimeConfigService } from '@modules/payments/services/payment-runtime-config.service';
 import { ValidatePaymentStatusTransitionService } from '@modules/payments/services/validate-payment-status-transition.service';
 import { RefundPolicyService } from '@modules/refund-policies/services/refund-policy.service';
 import { PatientPackagePurchaseRepository } from '../repositories/package-purchase.repository';
@@ -46,6 +47,13 @@ describe('InitiatePackagePurchasePaymentUseCase', () => {
   const paymentProviderResolverService = {
     resolveProvider: jest.fn(),
   } as unknown as PaymentProviderResolverService;
+  const paymentRuntimeConfigService = {
+    resolveTrustedReturnUrl: jest.fn((returnUrl: string | null | undefined) =>
+      returnUrl && /localhost:8081|localhost:3000|^fayed:/.test(returnUrl)
+        ? returnUrl
+        : null,
+    ),
+  } as unknown as PaymentRuntimeConfigService;
   const paymentGeoContextService = {
     buildCountrySnapshot: jest.fn((input) => input),
   } as unknown as PaymentGeoContextService;
@@ -104,6 +112,7 @@ describe('InitiatePackagePurchasePaymentUseCase', () => {
     paymentRepository,
     paymentProviderRegistryService,
     paymentProviderResolverService,
+    paymentRuntimeConfigService,
     paymentGeoContextService,
     validatePaymentStatusTransitionService,
     paymentMapper,
@@ -182,11 +191,29 @@ describe('InitiatePackagePurchasePaymentUseCase', () => {
       metadataJson: {},
     });
     (paymentRepository.createEvent as jest.Mock).mockResolvedValue({});
-    (paymentRepository.updateStatus as jest.Mock).mockResolvedValue({
-      id: 'payment-1',
-      status: PaymentStatus.PENDING,
-      metadataJson: {},
-    });
+    (paymentRepository.updateStatus as jest.Mock).mockImplementation(
+      async (paymentId: string, data: { status?: PaymentStatus; metadataJson?: Record<string, unknown> }) => ({
+        id: paymentId,
+        status: data.status ?? PaymentStatus.PENDING,
+        sessionId: null,
+        provider: PaymentProvider.PAYMOB,
+        amountSubtotal: '360.00',
+        amountDiscount: '0.00',
+        amountTotal: '360.00',
+        amountFromWallet: '0.00',
+        amountFromGateway: '360.00',
+        currencyCode: 'EGP',
+        providerPaymentRef: 'provider-payment-1',
+        providerOrderRef: 'provider-order-1',
+        providerCustomerRef: null,
+        initiatedAt: new Date(),
+        capturedAt: null,
+        failedAt: null,
+        expiredAt: null,
+        metadataJson: data.metadataJson ?? {},
+        createdAt: '2026-01-01T00:00:00.000Z',
+      }),
+    );
     (
       refundPolicyService.ensureAcceptedRefundPolicyForPayment as jest.Mock
     ).mockResolvedValue({
@@ -207,6 +234,7 @@ describe('InitiatePackagePurchasePaymentUseCase', () => {
       userId: 'user-1',
       purchaseId: 'purchase-1',
       acceptedRefundPolicyId: 'refund-policy-version-1',
+      returnUrl: 'http://localhost:8081/package-purchases/purchase-1/pay',
       displayLocale: 'en',
     });
 
@@ -223,7 +251,6 @@ describe('InitiatePackagePurchasePaymentUseCase', () => {
         paymentId: 'payment-1',
         packagePurchaseId: 'purchase-1',
       }),
-      expect.anything(),
     );
     expect(paymentRepository.createPayment).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -263,13 +290,14 @@ describe('InitiatePackagePurchasePaymentUseCase', () => {
         amountMinor: 36000,
         currency: 'EGP',
         sessionId: 'purchase-1',
+        redirectionUrl: 'http://localhost:8081/package-purchases/purchase-1/pay',
       }),
     );
     expect(result.item.status).toBe(PaymentStatus.PENDING);
     expect(result.item.sessionId).toBeNull();
   });
 
-  it('reuses an existing active payment without creating duplicates', async () => {
+  it('refreshes an active hosted checkout instead of reusing a stale URL', async () => {
     (
       packagePurchaseRepository.findByIdForPatient as jest.Mock
     ).mockResolvedValue({
@@ -299,6 +327,98 @@ describe('InitiatePackagePurchasePaymentUseCase', () => {
       },
     });
 
+    (providerAdapter.initiateSessionPayment as jest.Mock).mockResolvedValueOnce({
+      providerPaymentRef: 'provider-payment-2',
+      providerOrderRef: 'provider-order-2',
+      providerCustomerRef: null,
+      status: PaymentStatus.PENDING,
+      checkoutUrl: 'https://checkout-refreshed',
+      clientSecret: null,
+      metadata: {},
+    });
+
+    const result = await useCase.execute({
+      userId: 'user-1',
+      purchaseId: 'purchase-1',
+      acceptedRefundPolicyId: 'refund-policy-version-1',
+      returnUrl: 'http://localhost:3000/en/patient/package-purchases/purchase-1',
+      displayLocale: 'en',
+    });
+
+    expect(paymentRepository.createPayment).not.toHaveBeenCalled();
+    expect(providerAdapter.initiateSessionPayment).toHaveBeenCalledTimes(1);
+    expect(providerAdapter.initiateSessionPayment).toHaveBeenCalledWith(
+      expect.objectContaining({
+        paymentId: 'payment-existing',
+        redirectionUrl:
+          'http://localhost:3000/en/patient/package-purchases/purchase-1',
+      }),
+    );
+    expect(
+      refundPolicyService.ensureAcceptedRefundPolicyForPayment,
+    ).toHaveBeenCalledTimes(1);
+    expect(result.item.id).toBe('payment-existing');
+    expect(result.item.checkoutUrl).toBe('https://checkout-refreshed');
+    expect(result.item.clientSecret).toBeNull();
+  });
+
+  it('rejects an untrusted returnUrl instead of silently falling back to the web default', async () => {
+    await expect(
+      useCase.execute({
+        userId: 'user-1',
+        purchaseId: 'purchase-1',
+        acceptedRefundPolicyId: 'refund-policy-version-1',
+        returnUrl: 'https://evil.example/package-purchases/purchase-1/pay',
+        displayLocale: 'en',
+      }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+
+    expect(providerAdapter.initiateSessionPayment).not.toHaveBeenCalled();
+  });
+
+  it('rejects missing returnUrl for Paymob instead of falling back to the web default', async () => {
+    await expect(
+      useCase.execute({
+        userId: 'user-1',
+        purchaseId: 'purchase-1',
+        acceptedRefundPolicyId: 'refund-policy-version-1',
+        displayLocale: 'en',
+      }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+
+    expect(providerAdapter.initiateSessionPayment).not.toHaveBeenCalled();
+  });
+
+  it('reuses an authorized payment without reopening checkout', async () => {
+    (
+      packagePurchaseRepository.findByIdForPatient as jest.Mock
+    ).mockResolvedValue({
+      ...basePurchase,
+      payment: {
+        id: 'payment-authorized',
+        status: PaymentStatus.AUTHORIZED,
+        sessionId: null,
+        provider: PaymentProvider.PAYMOB,
+        amountSubtotal: '360.00',
+        amountDiscount: '0.00',
+        amountTotal: '360.00',
+        amountFromWallet: '0.00',
+        amountFromGateway: '360.00',
+        currencyCode: 'EGP',
+        providerPaymentRef: 'provider-payment-authorized',
+        providerOrderRef: 'provider-order-authorized',
+        providerCustomerRef: null,
+        initiatedAt: new Date('2026-01-01T00:00:00.000Z'),
+        capturedAt: new Date('2026-01-01T00:10:00.000Z'),
+        failedAt: null,
+        expiredAt: null,
+        metadataJson: {
+          checkoutUrl: 'https://checkout-authorized',
+          clientSecret: null,
+        },
+      },
+    });
+
     const result = await useCase.execute({
       userId: 'user-1',
       purchaseId: 'purchase-1',
@@ -308,12 +428,8 @@ describe('InitiatePackagePurchasePaymentUseCase', () => {
 
     expect(paymentRepository.createPayment).not.toHaveBeenCalled();
     expect(providerAdapter.initiateSessionPayment).not.toHaveBeenCalled();
-    expect(
-      refundPolicyService.ensureAcceptedRefundPolicyForPayment,
-    ).toHaveBeenCalledTimes(1);
-    expect(result.item.id).toBe('payment-existing');
-    expect(result.item.checkoutUrl).toBe('https://checkout-existing');
-    expect(result.item.clientSecret).toBe('secret-existing');
+    expect(result.item.id).toBe('payment-authorized');
+    expect(result.item.status).toBe(PaymentStatus.AUTHORIZED);
   });
 
   it('rejects missing accepted refund policy ids', async () => {

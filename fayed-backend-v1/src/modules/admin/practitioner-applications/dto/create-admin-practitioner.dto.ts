@@ -17,6 +17,7 @@ import {
   IsNumber,
   IsOptional,
   IsString,
+  Matches,
   MaxLength,
   MinLength,
   Min,
@@ -31,11 +32,15 @@ export class CreateAdminPractitionerCredentialDto {
   credentialType!: CredentialType;
 
   @ApiProperty({
-    example: 'https://files.example.com/credential.pdf',
+    example:
+      '/uploads/practitioners/admin-direct-create/credentials/license.pdf',
   })
   @IsString()
   @MinLength(3)
   @MaxLength(500)
+  @Matches(/^\/uploads\/.+/, {
+    message: 'credential file url must reference a managed upload path',
+  })
   fileUrl!: string;
 
   @ApiPropertyOptional({
@@ -65,51 +70,53 @@ export class CreateAdminPractitionerDto {
   @IsString()
   @MinLength(8)
   @MaxLength(72)
+  @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/, {
+    message:
+      'password must include at least one lowercase letter, one uppercase letter, and one number',
+  })
   password!: string;
 
-  @ApiPropertyOptional({
+  @ApiProperty({
     example: 'Dr. New Practitioner',
   })
-  @IsOptional()
   @IsString()
+  @MinLength(2)
   @MaxLength(191)
-  displayName?: string;
+  displayName!: string;
 
-  @ApiPropertyOptional({
+  @ApiProperty({
     enum: PractitionerType,
-    default: PractitionerType.OTHER,
   })
-  @IsOptional()
   @IsEnum(PractitionerType)
-  practitionerType?: PractitionerType;
+  practitionerType!: PractitionerType;
 
   @ApiPropertyOptional({ enum: PractitionerGender })
   @IsOptional()
   @IsEnum(PractitionerGender)
   practitionerGender?: PractitionerGender | null;
 
-  @ApiPropertyOptional({
+  @ApiProperty({
     example: 'Clinical Psychologist',
   })
-  @IsOptional()
   @IsString()
+  @MinLength(2)
   @MaxLength(191)
-  professionalTitle?: string;
+  professionalTitle!: string;
 
-  @ApiPropertyOptional({
+  @ApiProperty({
     example: 'Short professional bio',
   })
-  @IsOptional()
   @IsString()
+  @MinLength(10)
   @MaxLength(4000)
-  bio?: string;
+  bio!: string;
 
-  @ApiPropertyOptional({
+  @ApiProperty({
     example: 6,
   })
-  @IsOptional()
   @IsInt()
-  yearsOfExperience?: number;
+  @Min(1)
+  yearsOfExperience!: number;
 
   @ApiPropertyOptional({
     example: 250,
@@ -151,15 +158,14 @@ export class CreateAdminPractitionerDto {
   @Min(0.01)
   sessionPrice60Usd?: number | null;
 
-  @ApiPropertyOptional({
+  @ApiProperty({
     example: 'EG',
     description: 'ISO-2 country code',
   })
-  @IsOptional()
   @IsString()
   @MinLength(2)
   @MaxLength(3)
-  countryCode?: string;
+  countryCode!: string;
 
   @ApiProperty({
     type: [String],
@@ -182,24 +188,23 @@ export class CreateAdminPractitionerDto {
   @Type(() => PractitionerSpecialtySelectionInputDto)
   specialtySelection!: PractitionerSpecialtySelectionInputDto;
 
-  @ApiPropertyOptional({
+  @ApiProperty({
     type: PractitionerPayoutDestinationInputDto,
   })
-  @IsOptional()
   @ValidateNested()
   @Type(() => PractitionerPayoutDestinationInputDto)
-  payoutDestination?: PractitionerPayoutDestinationInputDto | null;
+  payoutDestination!: PractitionerPayoutDestinationInputDto;
 
-  @ApiPropertyOptional({
+  @ApiProperty({
     type: [CreateAdminPractitionerCredentialDto],
-    description: 'Optional initial credential metadata records',
+    description: 'Initial credential metadata records stored via safe upload.',
   })
-  @IsOptional()
   @IsArray()
+  @ArrayMinSize(1)
   @ArrayMaxSize(10)
   @ValidateNested({ each: true })
   @Type(() => CreateAdminPractitionerCredentialDto)
-  credentials?: CreateAdminPractitionerCredentialDto[];
+  credentials!: CreateAdminPractitionerCredentialDto[];
 
   @ApiPropertyOptional({
     example: 'Created directly by admin ops',

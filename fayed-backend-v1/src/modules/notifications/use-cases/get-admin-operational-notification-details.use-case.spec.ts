@@ -2,6 +2,7 @@ import { NotFoundException } from '@nestjs/common';
 import { NotificationOpsPresenter } from '../presenters/notification-ops.presenter';
 import { OperationalNotificationRepository } from '../repositories/operational-notification.repository';
 import { GetAdminOperationalNotificationDetailsUseCase } from './get-admin-operational-notification-details.use-case';
+import { NotificationContextEnrichmentService } from '../services/notification-context-enrichment.service';
 
 describe('GetAdminOperationalNotificationDetailsUseCase', () => {
   const repository = {
@@ -10,10 +11,14 @@ describe('GetAdminOperationalNotificationDetailsUseCase', () => {
   const presenter = {
     toDetailItem: jest.fn().mockReturnValue({ id: 'n1' }),
   } as unknown as NotificationOpsPresenter;
+  const enrichmentService = {
+    enrichOne: jest.fn().mockResolvedValue({ context: {}, primaryAction: { kind: 'details' } }),
+  } as unknown as NotificationContextEnrichmentService;
 
   const useCase = new GetAdminOperationalNotificationDetailsUseCase(
     repository,
     presenter,
+    enrichmentService,
   );
 
   beforeEach(() => {

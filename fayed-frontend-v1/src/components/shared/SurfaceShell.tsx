@@ -6,10 +6,10 @@ type SurfaceVariant = "page" | "section" | "compact" | "subtle";
 type SurfaceTone = "neutral" | "brand" | "primary" | "success" | "warning";
 
 const SURFACE_VARIANTS: Record<SurfaceVariant, string> = {
-  page: "rounded-[30px] border border-border-light bg-white p-6 shadow-[0_18px_40px_-30px_rgba(34,52,56,0.18)] sm:p-7",
-  section: "rounded-[26px] border border-border-light bg-white p-5 shadow-[0_16px_34px_-30px_rgba(34,52,56,0.16)] sm:p-6",
-  compact: "rounded-[22px] border border-border-light bg-white p-4 shadow-[0_14px_28px_-28px_rgba(34,52,56,0.14)] sm:p-5",
-  subtle: "rounded-[22px] border border-border-light/80 bg-surface-secondary p-4 shadow-none sm:p-5",
+  page: "rounded-[30px] border border-border-light bg-surface-secondary p-6 shadow-[0_18px_40px_-30px_rgba(34,52,56,0.18)] dark:shadow-[0_18px_40px_-30px_rgba(0,0,0,0.6)] sm:p-7",
+  section: "rounded-[26px] border border-border-light bg-surface-secondary p-5 shadow-[0_16px_34px_-30px_rgba(34,52,56,0.16)] dark:shadow-[0_16px_34px_-30px_rgba(0,0,0,0.5)] sm:p-6",
+  compact: "rounded-[22px] border border-border-light bg-surface-secondary p-4 shadow-[0_14px_28px_-28px_rgba(34,52,56,0.14)] dark:shadow-[0_14px_28px_-28px_rgba(0,0,0,0.4)] sm:p-5",
+  subtle: "rounded-[22px] border border-border-light/80 bg-surface-tertiary p-4 shadow-none sm:p-5",
 };
 
 const STAT_TONE_CLASSES: Record<
@@ -24,12 +24,12 @@ const STAT_TONE_CLASSES: Record<
   }
 > = {
   neutral: {
-    shell: "border-border-light bg-white text-text-primary shadow-[0_18px_40px_-30px_rgba(34,52,56,0.14)]",
-    label: "text-text-muted/90",
+    shell: "border-border-light bg-surface-secondary text-text-primary shadow-[0_18px_40px_-30px_rgba(34,52,56,0.14)] dark:shadow-[0_18px_40px_-30px_rgba(0,0,0,0.5)]",
+    label: "text-text-secondary",
     value: "text-text-primary",
-    hint: "text-text-secondary",
-    accent: "bg-primary-light/70",
-    iconShell: "bg-primary-light text-text-brand shadow-[0_10px_22px_-14px_rgba(68,161,148,0.2)]",
+    hint: "text-text-muted",
+    accent: "bg-primary-light/70 dark:bg-primary-light/10",
+    iconShell: "bg-primary-light text-text-brand shadow-[0_10px_22px_-14px_rgba(68,161,148,0.2)] dark:shadow-none",
   },
   brand: {
     shell: "border-primary/30 bg-primary text-white shadow-[0_22px_48px_-28px_rgba(68,161,148,0.38)]",
@@ -56,12 +56,12 @@ const STAT_TONE_CLASSES: Record<
     iconShell: "bg-white/14 text-white",
   },
   warning: {
-    shell: "border-warning-200 bg-warning-50 text-text-primary shadow-[0_20px_42px_-28px_rgba(247,144,9,0.18)]",
-    label: "text-warning-700/90",
-    value: "text-text-primary",
-    hint: "text-warning-700/74",
-    accent: "bg-warning-300/35",
-    iconShell: "bg-warning-100 text-warning-700",
+    shell: "border-status-warning-border bg-status-warning-soft text-status-warning",
+    label: "text-status-warning opacity-90",
+    value: "text-status-warning",
+    hint: "text-status-warning opacity-75",
+    accent: "bg-status-warning-border/30",
+    iconShell: "bg-status-warning-soft text-status-warning",
   },
 };
 
@@ -114,7 +114,7 @@ export function SurfaceHeader({
           </p>
         ) : null}
         <div className="space-y-1">
-          <h1 className="text-2xl font-semibold tracking-tight text-text-primary dark:text-white/95 sm:text-3xl">
+          <h1 className="text-2xl font-semibold tracking-tight text-text-primary sm:text-3xl">
             {title}
           </h1>
           {description ? (
@@ -160,7 +160,7 @@ export function SurfaceActionLink({
   const variantClasses =
     variant === "primary"
       ? "bg-primary text-white shadow-[0_12px_24px_-16px_rgba(68,161,148,0.34)] hover:bg-primary-hover"
-      : "border border-border-light bg-white text-text-primary shadow-[0_10px_20px_-16px_rgba(34,52,56,0.08)] hover:border-primary/30 hover:bg-brand-25 dark:bg-surface-secondary dark:text-text-primary dark:hover:bg-surface-tertiary";
+      : "border border-border-light bg-surface-secondary text-text-primary shadow-[0_10px_20px_-16px_rgba(34,52,56,0.08)] dark:shadow-[0_10px_20px_-16px_rgba(0,0,0,0.4)] hover:border-primary/30 hover:bg-surface-tertiary";
 
   return (
     <Link href={href as never} className={cn(baseClasses, variantClasses, className)}>
@@ -198,7 +198,7 @@ export function SurfaceStatCard({
     >
       <span
         aria-hidden="true"
-      className={cn("pointer-events-none absolute -right-7 -top-7 h-24 w-24 rounded-full", toneStyles.accent)}
+        className={cn("pointer-events-none absolute -right-7 -top-7 h-24 w-24 rounded-full", toneStyles.accent)}
       />
       <span
         aria-hidden="true"

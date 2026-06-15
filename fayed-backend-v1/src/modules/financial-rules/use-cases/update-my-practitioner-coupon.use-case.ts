@@ -4,6 +4,8 @@ import { SecurityAuditService } from '@common/security-audit/security-audit.serv
 import { FinancialRulesMapper } from '../mappers/financial-rules.mapper';
 import { CouponRepository } from '../repositories/coupon.repository';
 
+const PRACTITIONER_COUPON_MAX_PERCENT = 25;
+
 @Injectable()
 export class UpdateMyPractitionerCouponUseCase {
   constructor(
@@ -149,7 +151,7 @@ export class UpdateMyPractitionerCouponUseCase {
 
   private assertPercentageLimit(discountValue: string) {
     const value = Number(discountValue);
-    if (!Number.isFinite(value) || value <= 0 || value > 20) {
+    if (!Number.isFinite(value) || value <= 0 || value > PRACTITIONER_COUPON_MAX_PERCENT) {
       throw new BadRequestException({
         messageKey: 'financialRules.errors.practitionerCouponDiscountTooHigh',
         error: 'FINANCIAL_RULE_PRACTITIONER_COUPON_DISCOUNT_TOO_HIGH',

@@ -607,25 +607,7 @@ export class SupportTicketRepository {
 
   async countUnreadForUser(input: { userId: string; adminLike: boolean }) {
     const accessScope = input.adminLike
-      ? {
-          OR: [
-            {
-              supportTicket: {
-                is: {
-                  assignedToUserId: input.userId,
-                },
-              },
-            },
-            {
-              participants: {
-                some: {
-                  userId: input.userId,
-                  isActive: true,
-                },
-              },
-            },
-          ],
-        }
+      ? {}
       : {
           participants: {
             some: {

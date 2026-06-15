@@ -15,6 +15,8 @@ import { DataTable } from "@/components/ui/data-table";
 import ActionIconButton from "@/components/ui/action-icon-button/ActionIconButton";
 import Button from "@/components/ui/button/Button";
 import FilterClearButton from "@/components/ui/filters/FilterClearButton";
+import InputField from "@/components/form/input/InputField";
+import Select from "@/components/form/Select";
 import AdminOperationalListShell, {
   AdminSummaryCard,
 } from "@/components/shared/admin/AdminOperationalListShell";
@@ -31,7 +33,6 @@ import { useAdminTrainings } from "../hooks/use-training";
 import {
   formatTrainingDatetime,
   getOpenSchedulesCount,
-  getStatusToneClasses,
 } from "./training-utils";
 import AdminTrainingCreateModal from "./AdminTrainingCreateModal";
 import type {
@@ -158,7 +159,7 @@ export default function AdminTrainingOverviewScreen() {
         sortable: true,
         cell: (row) => (
           <div className="min-w-0">
-            <p className="truncate text-sm font-semibold text-text-primary dark:text-white/95">
+            <p className="truncate text-sm font-semibold text-text-primary">
               {row.title}
             </p>
             <p className="mt-1 font-mono text-xs text-text-muted">{row.slug}</p>
@@ -173,15 +174,19 @@ export default function AdminTrainingOverviewScreen() {
         header: t("admin.list.columns.status"),
         accessor: (row) => row.status,
         sortable: true,
-        cell: (row) => (
-          <span
-            className={`rounded-full px-2.5 py-1 text-xs font-semibold ${getStatusToneClasses(
-              getLifecycleTone(row.status),
-            )}`}
-          >
-            {getLifecycleLabel(t, row)}
-          </span>
-        ),
+        cell: (row) => {
+          const statusStyle =
+            row.status === "PUBLISHED"
+              ? "border border-status-success-border bg-status-success-soft text-status-success"
+              : row.status === "DRAFT"
+                ? "border border-status-warning-border bg-status-warning-soft text-status-warning"
+                : "border border-border-light bg-surface-tertiary text-text-secondary";
+          return (
+            <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${statusStyle}`}>
+              {getLifecycleLabel(t, row)}
+            </span>
+          );
+        },
       },
       {
         id: "availability",
@@ -189,12 +194,14 @@ export default function AdminTrainingOverviewScreen() {
         accessor: (row) => getAvailabilityLabel(t, row),
         cell: (row) => {
           const state = getAvailabilityState(row);
+          const availabilityStyle =
+            state === "open"
+              ? "border border-status-success-border bg-status-success-soft text-status-success"
+              : state === "closed"
+                ? "border border-status-warning-border bg-status-warning-soft text-status-warning"
+                : "border border-border-light bg-surface-tertiary text-text-secondary";
           return (
-            <span
-              className={`rounded-full px-2.5 py-1 text-xs font-semibold ${getStatusToneClasses(
-                getAvailabilityTone(state),
-              )}`}
-            >
+            <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${availabilityStyle}`}>
               {getAvailabilityLabel(t, row)}
             </span>
           );
@@ -207,7 +214,7 @@ export default function AdminTrainingOverviewScreen() {
         sortable: true,
         hideOnMobile: true,
         cell: (row) => (
-          <span className="app-chip rounded-full px-2.5 py-1 text-xs font-medium">
+          <span className="rounded-full border border-primary/20 bg-primary-light px-2.5 py-1 text-xs font-semibold text-text-brand">
             {t(`statuses.visibility.${row.visibility}` as Parameters<typeof t>[0])}
           </span>
         ),
@@ -230,7 +237,7 @@ export default function AdminTrainingOverviewScreen() {
         sortable: true,
         cell: (row) => (
           <div className="space-y-1">
-            <p className="text-xs font-medium text-text-primary dark:text-white/90">
+            <p className="text-xs font-medium text-text-primary">
               {t("admin.list.scheduleSummary", {
                 total: row.schedules.length,
                 open: getOpenSchedulesCount(row),
@@ -314,6 +321,17 @@ export default function AdminTrainingOverviewScreen() {
     searchQuery.trim() ? { id: "query", label: searchQuery.trim() } : null,
   ].filter(Boolean) as Array<{ id: string; label: string }>;
 
+  const statusFilterOptions = useMemo(
+    () => [
+      { value: "ALL", label: t("admin.filters.allStatuses") },
+      ...STATUS_FILTERS.filter((status) => status !== "ALL").map((status) => ({
+        value: status,
+        label: t(`statuses.course.${status}` as Parameters<typeof t>[0]),
+      })),
+    ],
+    [t],
+  );
+
   return (
     <AdminOperationalListShell
       eyebrow={t("admin.eyebrow")}
@@ -344,7 +362,7 @@ export default function AdminTrainingOverviewScreen() {
         <div className="space-y-4">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <h2 className="text-base font-semibold text-text-primary dark:text-white/95">
+              <h2 className="text-base font-semibold text-text-primary">
                 {t("admin.filters.heading")}
               </h2>
               <p className="mt-1 text-sm text-text-secondary">{t("admin.filters.note")}</p>
@@ -363,33 +381,27 @@ export default function AdminTrainingOverviewScreen() {
 
           <div className="grid gap-3 lg:grid-cols-2">
             <label className="block">
-              <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
+              <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-secondary">
                 {t("admin.filters.allStatuses")}
               </span>
-              <select
-                value={statusFilter}
-                onChange={(event) =>
+              <Select
+                key={`statusFilter-${statusFilter}`}
+                defaultValue={statusFilter}
+                onChange={(value) =>
                   updateListQuery({
-                    status: event.target.value === "ALL" ? null : event.target.value,
+                    status: value === "ALL" ? null : value,
                     page: 1,
                   })
                 }
-                className="app-control w-full px-4 py-3"
-              >
-                <option value="ALL">{t("admin.filters.allStatuses")}</option>
-                {STATUS_FILTERS.filter((status) => status !== "ALL").map((status) => (
-                  <option key={status} value={status}>
-                    {t(`statuses.course.${status}` as Parameters<typeof t>[0])}
-                  </option>
-                ))}
-              </select>
+                options={statusFilterOptions}
+              />
             </label>
 
             <label className="block">
-              <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
+              <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-secondary">
                 {t("admin.filters.search")}
               </span>
-              <input
+              <InputField
                 value={searchQuery}
                 onChange={(event) =>
                   updateListQuery({
@@ -398,7 +410,6 @@ export default function AdminTrainingOverviewScreen() {
                   })
                 }
                 placeholder={t("admin.filters.searchPlaceholder")}
-                className="app-control w-full px-4 py-3"
               />
             </label>
           </div>

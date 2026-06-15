@@ -27,6 +27,18 @@ export class FinancialOperationsPractitionerRepository {
     id: true,
     publicSlug: true,
     professionalTitle: true,
+    payoutDestination: {
+      select: {
+        methodType: true,
+        accountHolderName: true,
+        bankName: true,
+        bankAccountNumber: true,
+        iban: true,
+        walletProvider: true,
+        walletIdentifier: true,
+        otherDetails: true,
+      },
+    },
     user: {
       select: {
         displayName: true,

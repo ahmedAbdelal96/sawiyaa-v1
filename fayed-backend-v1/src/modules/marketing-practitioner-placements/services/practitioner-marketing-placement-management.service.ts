@@ -9,6 +9,9 @@ import {
 } from '@prisma/client';
 import { PractitionerMarketingPlacementManagementRepository } from '../repositories/practitioner-marketing-placement-management.repository';
 
+/** Maximum active featured placements allowed on HOME surface at any time. */
+export const FEATURED_HOME_MAX_SLOTS = 5;
+
 type CreatePlacementInput = {
   actorUserId: string;
   practitionerId: string;
@@ -113,13 +116,26 @@ export class PractitionerMarketingPlacementManagementService {
       });
     }
 
+    // Enforce HOME/ALL rules: priority range + slots limit
+    if (input.surface === 'HOME' || input.surface === 'ALL') {
+      await this.assertHomePlacementRules({
+        surface: input.surface,
+        status: input.status ?? PractitionerMarketingPlacementStatus.ACTIVE,
+        priority: input.priority ?? 1,
+        startsAt,
+        endsAt,
+      });
+    }
+
     const created = await this.repository.create({
       practitionerId: practitioner.id,
       surface: input.surface,
       status: input.status ?? PractitionerMarketingPlacementStatus.ACTIVE,
       startsAt,
       endsAt,
-      priority: input.priority ?? 100,
+      priority:
+        input.priority ??
+        (input.surface === 'HOME' || input.surface === 'ALL' ? 1 : 100),
       badgeLabelAr: input.badgeLabelAr?.trim() || 'مميز',
       badgeLabelEn: input.badgeLabelEn?.trim() || 'Featured',
       reason: input.reason ?? 'FEATURED',
@@ -163,6 +179,26 @@ export class PractitionerMarketingPlacementManagementService {
     if (overlappingPlacement) {
       throw new BadRequestException({
         error: 'FEATURED_PLACEMENT_OVERLAPPING_ACTIVE',
+      });
+    }
+
+    // Determine effective surface and status after this update
+    const effectiveSurface = input.surface ?? existing.surface;
+    const effectiveStatus = input.status ?? existing.status;
+    const effectivePriority = input.priority ?? existing.priority;
+
+    // Enforce HOME/ALL rules when the resulting placement would be ACTIVE on HOME/ALL
+    if (
+      (effectiveSurface === 'HOME' || effectiveSurface === 'ALL') &&
+      effectiveStatus === PractitionerMarketingPlacementStatus.ACTIVE
+    ) {
+      await this.assertHomePlacementRules({
+        surface: effectiveSurface,
+        status: effectiveStatus,
+        priority: effectivePriority,
+        startsAt,
+        endsAt,
+        excludePlacementId: existing.id,
       });
     }
 
@@ -255,6 +291,18 @@ export class PractitionerMarketingPlacementManagementService {
       });
     }
 
+    // Enforce HOME/ALL rules when resuming onto HOME/ALL
+    if (existing.surface === 'HOME' || existing.surface === 'ALL') {
+      await this.assertHomePlacementRules({
+        surface: existing.surface,
+        status: PractitionerMarketingPlacementStatus.ACTIVE,
+        priority: existing.priority,
+        startsAt: existing.startsAt,
+        endsAt: existing.endsAt,
+        excludePlacementId: existing.id,
+      });
+    }
+
     const before = this.repository.toSnapshot(existing);
     const updated = await this.repository.update(input.id, {
       status: PractitionerMarketingPlacementStatus.ACTIVE,
@@ -277,6 +325,62 @@ export class PractitionerMarketingPlacementManagementService {
   async getHistory(placementId: string) {
     await this.getById(placementId);
     return this.repository.listHistory(placementId);
+  }
+
+  /**
+   * Shared validation for HOME/ALL surfaces when the resulting placement
+   * would be ACTIVE. Enforces:
+   *   1. priority range (1..FEATURED_HOME_MAX_SLOTS)
+   *   2. slots limit (FEATURED_HOME_MAX_SLOTS overlapping ACTIVE placements)
+   *   3. unique slot collision (no two ACTIVE placements share the same slot)
+   */
+  private async assertHomePlacementRules(input: {
+    surface: 'HOME' | 'ALL';
+    status: PractitionerMarketingPlacementStatus;
+    priority: number;
+    startsAt: Date;
+    endsAt: Date | null;
+    excludePlacementId?: string;
+  }) {
+    // 1. Priority must be within valid range for HOME/ALL ACTIVE placements
+    if (input.priority < 1 || input.priority > FEATURED_HOME_MAX_SLOTS) {
+      throw new BadRequestException({
+        error: 'FEATURED_PLACEMENT_PRIORITY_OUT_OF_RANGE',
+        message: `Priority must be between 1 and ${FEATURED_HOME_MAX_SLOTS} for HOME/ALL placements.`,
+      });
+    }
+
+    // 2. Slots limit: count overlapping ACTIVE HOME/ALL placements
+    const activeCount = await this.repository.countActivePlacementsForSurface({
+      surface: input.surface,
+      startsAt: input.startsAt,
+      endsAt: input.endsAt,
+      excludePlacementId: input.excludePlacementId,
+    });
+
+    if (activeCount >= FEATURED_HOME_MAX_SLOTS) {
+      throw new BadRequestException({
+        error: 'FEATURED_PLACEMENT_HOME_SLOTS_FULL',
+        message: `Maximum of ${FEATURED_HOME_MAX_SLOTS} active HOME placements allowed. Please pause or end an existing placement first.`,
+      });
+    }
+
+    // 3. Unique slot collision: no two ACTIVE placements may share the same
+    //    display slot on HOME/ALL during overlapping periods
+    const collision = await this.repository.findActiveSlotCollision({
+      surface: input.surface,
+      priority: input.priority,
+      startsAt: input.startsAt,
+      endsAt: input.endsAt,
+      excludePlacementId: input.excludePlacementId,
+    });
+
+    if (collision) {
+      throw new BadRequestException({
+        error: 'FEATURED_PLACEMENT_SLOT_ALREADY_TAKEN',
+        message: `Display slot ${input.priority} is already taken during this period.`,
+      });
+    }
   }
 
   private validateCreateInput(input: CreatePlacementInput) {

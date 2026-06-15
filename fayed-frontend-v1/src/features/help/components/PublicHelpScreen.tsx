@@ -241,7 +241,7 @@ function HelpSupportCard({
         </div>
 
         <Link
-          href="/patient/support"
+          href="/patient/messages?lane=support"
           className="inline-flex items-center justify-center rounded-2xl bg-primary px-6 py-3 text-sm font-semibold text-white shadow-[0_12px_24px_-16px_rgba(68,161,148,0.34)] transition hover:bg-primary-hover dark:shadow-[0_12px_24px_-16px_rgba(68,161,148,0.22)]"
         >
           {cta}

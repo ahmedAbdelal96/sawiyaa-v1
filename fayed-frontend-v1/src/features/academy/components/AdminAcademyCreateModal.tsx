@@ -6,6 +6,9 @@ import { useRouter } from "@/i18n/navigation";
 import { Plus } from "lucide-react";
 import Button from "@/components/ui/button/Button";
 import { Modal, ModalBody, ModalFooter, ModalHeader } from "@/components/ui/modal";
+import InputField from "@/components/form/input/InputField";
+import TextArea from "@/components/form/input/TextArea";
+import Select from "@/components/form/Select";
 import { useCreateAdminAcademyCourse } from "../hooks/use-academy";
 import { getAcademyPlanFieldIssues, type AcademyPlanFieldIssue } from "../lib/academy-form-errors";
 import { getAdminAcademyErrorKey } from "../lib/academy-errors";
@@ -198,11 +201,6 @@ function AdminAcademyCreateModalForm({
     }
   };
 
-  const controlClassName = (field: keyof CreateCourseForm) =>
-    `w-full rounded-2xl border bg-white px-4 py-3 text-sm text-text-primary outline-none transition focus:border-primary/35 ${
-      fieldErrors[field] ? "border-rose-400" : "border-border-light"
-    }`;
-
   const derivedEndsAt = useMemo(() => {
     const startsAt = localDateTimeToIso(form.startsAt.trim());
     const duration = Number.parseInt(form.plannedDurationDays.trim(), 10);
@@ -222,6 +220,15 @@ function AdminAcademyCreateModalForm({
     });
   }, [form.plannedDurationDays, form.startsAt, locale]);
 
+  const visibilityOptions = useMemo(
+    () =>
+      COURSE_VISIBILITIES.map((value) => ({
+        value,
+        label: t(`statuses.visibility.${value}` as Parameters<typeof t>[0]),
+      })),
+    [t],
+  );
+
   return (
     <form onSubmit={handleSubmit} className="flex max-h-[calc(100vh-2rem)] flex-col">
       <ModalHeader
@@ -231,219 +238,195 @@ function AdminAcademyCreateModalForm({
       />
 
       <ModalBody>
-          <div className="space-y-4">
-            <section className="rounded-3xl border border-border-light bg-surface-secondary/55 p-4 sm:p-5">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">
-                {t("admin.create.sections.basics")}
-              </p>
-              <div className="mt-4 grid gap-4 lg:grid-cols-2">
-                <label className="block lg:col-span-2">
-                  <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
-                    {t("admin.create.fields.title")}
-                  </span>
-                  <input
-                    value={form.title}
-                    onChange={(event) =>
-                      setForm((current) => ({ ...current, title: event.target.value }))
-                    }
-                    placeholder={t("admin.create.placeholders.title")}
-                    className={controlClassName("title")}
-                  />
-                  {fieldErrors.title ? (
-                    <p className="mt-2 text-xs text-rose-600">{fieldErrors.title}</p>
-                  ) : null}
-                </label>
-
-                <label className="block">
-                  <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
-                    {t("admin.create.fields.visibility")}
-                  </span>
-                  <select
-                    value={form.visibility}
-                    onChange={(event) =>
-                      setForm((current) => ({
-                        ...current,
-                        visibility: event.target.value as CourseVisibility,
-                      }))
-                    }
-                    className="w-full rounded-2xl border border-border-light bg-white px-4 py-3 text-sm text-text-primary outline-none transition focus:border-primary/35"
-                  >
-                    {COURSE_VISIBILITIES.map((value) => (
-                      <option key={value} value={value}>
-                        {t(`statuses.visibility.${value}` as Parameters<typeof t>[0])}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-
-                <label className="block lg:col-span-2">
-                  <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
-                    {t("admin.create.fields.shortDescription")}
-                  </span>
-                  <input
-                    value={form.shortDescription}
-                    onChange={(event) =>
-                      setForm((current) => ({ ...current, shortDescription: event.target.value }))
-                    }
-                    placeholder={t("admin.create.placeholders.shortDescription")}
-                    className="w-full rounded-2xl border border-border-light bg-white px-4 py-3 text-sm text-text-primary outline-none transition focus:border-primary/35"
-                  />
-                </label>
-
-                <label className="block lg:col-span-2">
-                  <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
-                    {t("admin.create.fields.fullDescription")}
-                  </span>
-                  <textarea
-                    rows={4}
-                    value={form.fullDescription}
-                    onChange={(event) =>
-                      setForm((current) => ({ ...current, fullDescription: event.target.value }))
-                    }
-                    placeholder={t("admin.create.placeholders.fullDescription")}
-                    className="w-full rounded-2xl border border-border-light bg-white px-4 py-3 text-sm text-text-primary outline-none transition focus:border-primary/35"
-                  />
-                </label>
-              </div>
-            </section>
-
-            <section className="rounded-3xl border border-border-light bg-surface-secondary/55 p-4 sm:p-5">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">
-                {t("admin.create.sections.planning")}
-              </p>
-              <div className="mt-4 grid gap-4 lg:grid-cols-2">
-                <label className="block">
-                  <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
-                    {t("admin.create.fields.plannedDurationDays")}
-                  </span>
-                  <input
-                    type="number"
-                    min={1}
-                    value={form.plannedDurationDays}
-                    onChange={(event) =>
-                      setForm((current) => ({
-                        ...current,
-                        plannedDurationDays: event.target.value,
-                      }))
-                    }
-                    placeholder={t("admin.create.placeholders.plannedDurationDays")}
-                    className={controlClassName("plannedDurationDays")}
-                  />
-                  {fieldErrors.plannedDurationDays ? (
-                    <p className="mt-2 text-xs text-rose-600">
-                      {fieldErrors.plannedDurationDays}
-                    </p>
-                  ) : null}
-                </label>
-
-                <label className="block">
-                  <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
-                    {t("admin.create.fields.plannedLectureCount")}
-                  </span>
-                  <input
-                    type="number"
-                    min={1}
-                    value={form.plannedLectureCount}
-                    onChange={(event) =>
-                      setForm((current) => ({
-                        ...current,
-                        plannedLectureCount: event.target.value,
-                      }))
-                    }
-                    placeholder={t("admin.create.placeholders.plannedLectureCount")}
-                    className={controlClassName("plannedLectureCount")}
-                  />
-                  {fieldErrors.plannedLectureCount ? (
-                    <p className="mt-2 text-xs text-rose-600">
-                      {fieldErrors.plannedLectureCount}
-                    </p>
-                  ) : null}
-                </label>
-
-                <label className="block">
-                  <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
-                    {t("admin.create.fields.startsAt")}
-                  </span>
-                  <input
-                    type="datetime-local"
-                    value={form.startsAt}
-                    onChange={(event) =>
-                      setForm((current) => ({ ...current, startsAt: event.target.value }))
-                    }
-                    className={controlClassName("startsAt")}
-                  />
-                  {fieldErrors.startsAt ? (
-                    <p className="mt-2 text-xs text-rose-600">{fieldErrors.startsAt}</p>
-                  ) : null}
-                </label>
-
-                <div className="block rounded-2xl border border-dashed border-border-light bg-white px-4 py-3">
-                  <span className="block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
-                    {t("admin.create.fields.endsAtPreview")}
-                  </span>
-                  <p className="mt-2 text-sm font-semibold text-text-primary">
-                    {derivedEndsAt || t("admin.create.placeholders.endsAtPreview")}
-                  </p>
-                  <p className="mt-1 text-xs text-text-muted">
-                    {t("admin.create.endsAtPreviewHelper")}
-                  </p>
-                </div>
-              </div>
-            </section>
-
-            <section className="rounded-3xl border border-border-light bg-surface-secondary/55 p-4 sm:p-5">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">
-                {t("admin.create.sections.pricing")}
-              </p>
-              <div className="mt-4 grid gap-4 lg:grid-cols-2">
-                <label className="block">
-                  <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
-                    {t("admin.create.fields.priceAmountEgp")}
-                  </span>
-                  <input
-                    value={form.priceAmountEgp}
-                    onChange={(event) =>
-                      setForm((current) => ({ ...current, priceAmountEgp: event.target.value }))
-                    }
-                    placeholder={t("admin.create.placeholders.priceAmountEgp")}
-                    className={controlClassName("priceAmountEgp")}
-                  />
-                  {fieldErrors.priceAmountEgp ? (
-                    <p className="mt-2 text-xs text-rose-600">{fieldErrors.priceAmountEgp}</p>
-                  ) : null}
-                </label>
-
-                <label className="block">
-                  <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
-                    {t("admin.create.fields.priceAmountUsd")}
-                  </span>
-                  <input
-                    value={form.priceAmountUsd}
-                    onChange={(event) =>
-                      setForm((current) => ({ ...current, priceAmountUsd: event.target.value }))
-                    }
-                    placeholder={t("admin.create.placeholders.priceAmountUsd")}
-                    className={controlClassName("priceAmountUsd")}
-                  />
-                  {fieldErrors.priceAmountUsd ? (
-                    <p className="mt-2 text-xs text-rose-600">{fieldErrors.priceAmountUsd}</p>
-                  ) : null}
-                </label>
-              </div>
-            </section>
-          </div>
-
-          {feedback ? (
-            <p
-              className={`mt-4 text-sm ${
-                feedback.tone === "success"
-                  ? "text-emerald-600 dark:text-emerald-400"
-                  : "text-rose-600 dark:text-rose-400"
-              }`}
-            >
-              {feedback.message}
+        <div className="space-y-4">
+          <section className="rounded-3xl border border-border-light bg-surface-tertiary p-4 sm:p-5">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">
+              {t("admin.create.sections.basics")}
             </p>
-          ) : null}
+            <div className="mt-4 grid gap-4 lg:grid-cols-2">
+              <label className="block lg:col-span-2">
+                <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-secondary">
+                  {t("admin.create.fields.title")}
+                </span>
+                <InputField
+                  value={form.title}
+                  onChange={(event) =>
+                    setForm((current) => ({ ...current, title: event.target.value }))
+                  }
+                  placeholder={t("admin.create.placeholders.title")}
+                  error={!!fieldErrors.title}
+                  hint={fieldErrors.title}
+                />
+              </label>
+
+              <label className="block">
+                <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-secondary">
+                  {t("admin.create.fields.visibility")}
+                </span>
+                <Select
+                  defaultValue={form.visibility}
+                  onChange={(value) =>
+                    setForm((current) => ({
+                      ...current,
+                      visibility: value as CourseVisibility,
+                    }))
+                  }
+                  options={visibilityOptions}
+                />
+              </label>
+
+              <label className="block lg:col-span-2">
+                <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-secondary">
+                  {t("admin.create.fields.shortDescription")}
+                </span>
+                <InputField
+                  value={form.shortDescription}
+                  onChange={(event) =>
+                    setForm((current) => ({ ...current, shortDescription: event.target.value }))
+                  }
+                  placeholder={t("admin.create.placeholders.shortDescription")}
+                />
+              </label>
+
+              <label className="block lg:col-span-2">
+                <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-secondary">
+                  {t("admin.create.fields.fullDescription")}
+                </span>
+                <TextArea
+                  rows={4}
+                  value={form.fullDescription}
+                  onChange={(value) =>
+                    setForm((current) => ({ ...current, fullDescription: value }))
+                  }
+                  placeholder={t("admin.create.placeholders.fullDescription")}
+                />
+              </label>
+            </div>
+          </section>
+
+          <section className="rounded-3xl border border-border-light bg-surface-tertiary p-4 sm:p-5">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">
+              {t("admin.create.sections.planning")}
+            </p>
+            <div className="mt-4 grid gap-4 lg:grid-cols-2">
+              <label className="block">
+                <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-secondary">
+                  {t("admin.create.fields.plannedDurationDays")}
+                </span>
+                <InputField
+                  type="number"
+                  min={1}
+                  value={form.plannedDurationDays}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      plannedDurationDays: event.target.value,
+                    }))
+                  }
+                  placeholder={t("admin.create.placeholders.plannedDurationDays")}
+                  error={!!fieldErrors.plannedDurationDays}
+                  hint={fieldErrors.plannedDurationDays}
+                />
+              </label>
+
+              <label className="block">
+                <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-secondary">
+                  {t("admin.create.fields.plannedLectureCount")}
+                </span>
+                <InputField
+                  type="number"
+                  min={1}
+                  value={form.plannedLectureCount}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      plannedLectureCount: event.target.value,
+                    }))
+                  }
+                  placeholder={t("admin.create.placeholders.plannedLectureCount")}
+                  error={!!fieldErrors.plannedLectureCount}
+                  hint={fieldErrors.plannedLectureCount}
+                />
+              </label>
+
+              <label className="block">
+                <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-secondary">
+                  {t("admin.create.fields.startsAt")}
+                </span>
+                <InputField
+                  type="datetime-local"
+                  value={form.startsAt}
+                  onChange={(event) =>
+                    setForm((current) => ({ ...current, startsAt: event.target.value }))
+                  }
+                  error={!!fieldErrors.startsAt}
+                  hint={fieldErrors.startsAt}
+                />
+              </label>
+
+              <div className="block rounded-2xl border border-dashed border-border-light bg-surface-secondary px-4 py-3">
+                <span className="block text-xs font-semibold uppercase tracking-[0.18em] text-text-secondary">
+                  {t("admin.create.fields.endsAtPreview")}
+                </span>
+                <p className="mt-2 text-sm font-semibold text-text-primary">
+                  {derivedEndsAt || t("admin.create.placeholders.endsAtPreview")}
+                </p>
+                <p className="mt-1 text-xs text-text-muted">
+                  {t("admin.create.endsAtPreviewHelper")}
+                </p>
+              </div>
+            </div>
+          </section>
+
+          <section className="rounded-3xl border border-border-light bg-surface-tertiary p-4 sm:p-5">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">
+              {t("admin.create.sections.pricing")}
+            </p>
+            <div className="mt-4 grid gap-4 lg:grid-cols-2">
+              <label className="block">
+                <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-secondary">
+                  {t("admin.create.fields.priceAmountEgp")}
+                </span>
+                <InputField
+                  value={form.priceAmountEgp}
+                  onChange={(event) =>
+                    setForm((current) => ({ ...current, priceAmountEgp: event.target.value }))
+                  }
+                  placeholder={t("admin.create.placeholders.priceAmountEgp")}
+                  error={!!fieldErrors.priceAmountEgp}
+                  hint={fieldErrors.priceAmountEgp}
+                />
+              </label>
+
+              <label className="block">
+                <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-secondary">
+                  {t("admin.create.fields.priceAmountUsd")}
+                </span>
+                <InputField
+                  value={form.priceAmountUsd}
+                  onChange={(event) =>
+                    setForm((current) => ({ ...current, priceAmountUsd: event.target.value }))
+                  }
+                  placeholder={t("admin.create.placeholders.priceAmountUsd")}
+                  error={!!fieldErrors.priceAmountUsd}
+                  hint={fieldErrors.priceAmountUsd}
+                />
+              </label>
+            </div>
+          </section>
+        </div>
+
+        {feedback ? (
+          <p
+            className={`mt-4 rounded-2xl border px-4 py-3 text-sm ${
+              feedback.tone === "success"
+                ? "border-status-success-border bg-status-success-soft text-status-success"
+                : "border-status-danger-border bg-status-danger-soft text-status-danger"
+            }`}
+          >
+            {feedback.message}
+          </p>
+        ) : null}
       </ModalBody>
 
       <ModalFooter>

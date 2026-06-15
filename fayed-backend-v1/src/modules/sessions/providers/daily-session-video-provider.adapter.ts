@@ -24,12 +24,15 @@ type DailyMeetingTokenResponse = {
 @Injectable()
 export class DailySessionVideoProviderAdapter implements SessionVideoProviderAdapter {
   readonly provider = SessionProvider.DAILY;
-  private readonly dailyBaseUrl = 'https://api.daily.co/v1';
 
   constructor(
     @Inject(videoConfig.KEY)
     private readonly videoCfg: ConfigType<typeof videoConfig>,
   ) {}
+
+  private get dailyBaseUrl(): string {
+    return this.videoCfg.daily.apiBaseUrl ?? 'https://api.daily.co/v1';
+  }
 
   async createRoom(input: {
     sessionId: string;

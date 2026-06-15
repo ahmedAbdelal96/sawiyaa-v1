@@ -1,12 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { useLocale, useTranslations } from "next-intl";
-import { Check, Loader2, Search, X } from "lucide-react";
-import Button from "@/components/ui/button/Button";
-import Label from "@/components/form/Label";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
+import { Check, ChevronDown, Loader2, Search, X } from "lucide-react";
 import Avatar from "@/components/ui/avatar/Avatar";
-import InputField from "@/components/form/input/InputField";
 import { AdminStatusBadge } from "@/components/shared/admin/AdminDashboardKit";
 import { useDebouncedValue } from "@/hooks/use-debounce";
 import { useAdminPractitioners } from "@/features/admin/practitioners/hooks/use-admin-practitioners";
@@ -33,16 +30,6 @@ type Props = {
   error?: string | null;
 };
 
-function getInitials(name: string | null | undefined) {
-  const trimmed = name?.trim();
-  if (!trimmed) return "P";
-  const parts = trimmed.split(/\s+/).filter(Boolean);
-  return parts
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase() ?? "")
-    .join("");
-}
-
 function getPractitionerStatusTone(status?: string | null) {
   if (status === "APPROVED") return "success" as const;
   if (status === "PENDING_REVIEW" || status === "DRAFT") return "warning" as const;
@@ -59,16 +46,18 @@ export default function FeaturedPractitionerPicker({
   error,
 }: Props) {
   const t = useTranslations("admin-featured-practitioners");
-  const locale = useLocale();
   const [search, setSearch] = useState("");
+  const [isOpen, setIsOpen] = useState(false);
   const debouncedSearch = useDebouncedValue(search, 300);
   const shouldQuery = !disabled;
+
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const practitionersQuery = useAdminPractitioners(
     {
       search: debouncedSearch.trim() || undefined,
       page: 1,
-      limit: 6,
+      limit: 8,
       sort: "recommended",
     },
     shouldQuery,
@@ -89,184 +78,174 @@ export default function FeaturedPractitionerPicker({
     [practitionersQuery.data?.items],
   );
 
+  // Close dropdown on outside click
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleMouseDown = (event: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleMouseDown);
+    return () => document.removeEventListener("mousedown", handleMouseDown);
+  }, [isOpen]);
+
+  // Reset search when value is cleared
   useEffect(() => {
     if (!value) {
       setSearch("");
     }
   }, [value]);
 
-  const selectedLabel = value?.displayName ?? value?.slug ?? t("picker.noSelection");
-  const hasEligibilityWarning = Boolean(value && (value.status !== "APPROVED" || !value.slug));
+  const handleSelect = (candidate: FeaturedPractitionerCandidate) => {
+    onChange(candidate);
+    setSearch("");
+    setIsOpen(false);
+  };
+
+  const handleClear = () => {
+    onChange(null);
+    setSearch("");
+    setIsOpen(false);
+  };
 
   return (
-    <div className="space-y-3">
-      <div>
-        <Label htmlFor="featuredPractitionerSearch">{t("picker.searchLabel")}</Label>
-        <div className="relative">
+    <div ref={containerRef} className="space-y-2">
+      {/* Label */}
+      <p className="text-sm font-semibold text-text-primary">
+        {t("picker.searchLabel")}
+      </p>
+
+      {/* Combobox input */}
+      <div className="relative">
+<div className="relative">
           <Search className="pointer-events-none absolute start-4 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
-          <InputField
-            id="featuredPractitionerSearch"
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
+          <input
+            type="text"
+            value={isOpen ? search : (value ? value.displayName ?? value.slug : search)}
+            onChange={(event) => {
+              setSearch(event.target.value);
+              if (!isOpen) setIsOpen(true);
+            }}
+            onFocus={() => {
+              if (!disabled) setIsOpen(true);
+            }}
+            onClick={() => {
+              if (!disabled && !value) setIsOpen(true);
+            }}
             placeholder={t("picker.searchPlaceholder")}
             disabled={disabled}
-            className="ps-11"
+            className={cn(
+              "app-control w-full rounded-[18px] border py-2.5 pe-11 ps-11 text-sm",
+              isOpen && candidates.length > 0
+                ? "border-primary/40 rounded-b-[14px] rounded-t-[18px]"
+                : "border-border-light",
+            )}
           />
+          {value ? (
+            <button
+              type="button"
+              onClick={handleClear}
+              disabled={disabled}
+              className="absolute end-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-text-muted hover:bg-surface-secondary hover:text-text-primary disabled:opacity-50"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          ) : (
+            <ChevronDown className="pointer-events-none absolute end-4 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
+          )}
         </div>
-        <p className="mt-1.5 text-xs text-text-muted">{t("picker.searchHint")}</p>
-      </div>
 
-      <div className="rounded-[24px] border border-border-light bg-surface-secondary/50 p-4">
-        {value ? (
-          <div className="space-y-3">
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex min-w-0 items-center gap-3">
-                <Avatar
-                  src={value.avatarUrl}
-                  name={value.displayName ?? value.slug}
-                  size="xlarge"
-                />
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold text-text-primary">
-                    {selectedLabel}
-                  </p>
-                  <p className="truncate text-xs text-text-muted">
-                    {value.professionalTitle ?? value.email ?? value.slug}
-                  </p>
+        {/* Dropdown popover */}
+        {isOpen && !disabled ? (
+          <div className="absolute z-50 mt-1 w-full min-w-[280px] overflow-hidden rounded-[18px] border border-border-light bg-white shadow-[0_8px_24px_-8px_rgba(25,52,57,0.18)] dark:bg-surface-secondary">
+            <div className="max-h-64 overflow-y-auto py-1">
+              {practitionersQuery.isFetching ? (
+                <div className="flex items-center justify-center gap-2 px-4 py-5 text-sm text-text-muted">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  {t("picker.loading")}
                 </div>
-              </div>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => onChange(null)}
-                disabled={disabled}
-                startIcon={<X className="h-4 w-4" />}
-              >
-                {t("picker.clear")}
-              </Button>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-2">
-              <AdminStatusBadge tone={getPractitionerStatusTone(value.status)}>
-                {value.status ? t(`practitionerStatus.${value.status}` as Parameters<typeof t>[0]) : t("picker.statusUnknown")}
-              </AdminStatusBadge>
-              <AdminStatusBadge tone={value.isVerified ? "success" : "warning"}>
-                {value.isVerified ? t("picker.verified") : t("picker.notVerified")}
-              </AdminStatusBadge>
-            </div>
-
-            <div className="rounded-2xl border border-border-light bg-white p-4">
-              <p className="text-sm font-semibold text-text-primary">
-                {t("picker.previewTitle")}
-              </p>
-              <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                <div className="rounded-2xl bg-surface-secondary px-4 py-3">
-                  <p className="text-xs text-text-muted">{t("picker.previewSlug")}</p>
-                  <p className="mt-1 text-sm font-medium text-text-primary">{value.slug}</p>
-                </div>
-                <div className="rounded-2xl bg-surface-secondary px-4 py-3">
-                  <p className="text-xs text-text-muted">{t("picker.previewProfile")}</p>
-                  <p className="mt-1 truncate text-sm font-medium text-text-primary">
-                    /{locale}/practitioners/{value.slug}
-                  </p>
-                </div>
-              </div>
-              {hasEligibilityWarning ? (
-                <div className="mt-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-                  {t("picker.ineligibleWarning")}
+              ) : candidates.length === 0 ? (
+                <div className="px-4 py-5 text-center text-sm text-text-muted">
+                  {t("picker.noResults")}
                 </div>
               ) : (
-                <div className="mt-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-                  {t("picker.eligibleNotice")}
-                </div>
-              )}
-            </div>
-          </div>
-        ) : (
-          <div className="rounded-2xl border border-dashed border-border-light bg-white px-4 py-6 text-sm text-text-muted">
-            {t("picker.emptySelection")}
-          </div>
-        )}
-      </div>
-
-      {!disabled ? (
-        <div className="rounded-[24px] border border-border-light bg-white p-3">
-          <div className="flex items-center justify-between gap-3 px-1 pb-3">
-            <div>
-              <p className="text-sm font-semibold text-text-primary">{t("picker.resultsTitle")}</p>
-              <p className="text-xs text-text-muted">{t("picker.resultsHint")}</p>
-            </div>
-            {practitionersQuery.isFetching ? (
-              <span className="inline-flex items-center gap-2 text-xs text-text-muted">
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                {t("picker.loading")}
-              </span>
-            ) : null}
-          </div>
-
-          <div className="space-y-2">
-            {candidates.length === 0 ? (
-              <div className="rounded-2xl bg-surface-secondary px-4 py-5 text-sm text-text-muted">
-                {t("picker.noResults")}
-              </div>
-            ) : (
-              candidates.map((candidate) => {
-                const active = candidate.id === value?.id;
-                return (
-                  <button
-                    key={candidate.id}
-                    type="button"
-                    disabled={disabled}
-                    onClick={() => onChange(candidate)}
-                    className={cn(
-                      "flex w-full items-start gap-3 rounded-2xl border px-3 py-3 text-start transition",
-                      active
-                        ? "border-primary/30 bg-primary-light/35"
-                        : "border-border-light bg-white hover:border-primary/20 hover:bg-surface-secondary",
-                    )}
-                  >
-                    <Avatar
-                      src={candidate.avatarUrl}
-                      name={candidate.displayName ?? candidate.slug}
-                      size="large"
-                    />
-
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <p className="truncate text-sm font-semibold text-text-primary">
-                            {candidate.displayName ?? candidate.slug}
-                          </p>
-                          <p className="truncate text-xs text-text-muted">
-                            {candidate.professionalTitle ?? candidate.email ?? candidate.slug}
-                          </p>
-                        </div>
-                        <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-border-light bg-white text-text-muted">
-                          {active ? <Check className="h-4 w-4 text-success-600" /> : null}
-                        </span>
+                candidates.map((candidate) => {
+                  const active = candidate.id === value?.id;
+                  return (
+                    <button
+                      key={candidate.id}
+                      type="button"
+                      onClick={() => handleSelect(candidate)}
+                      className={cn(
+                        "flex w-full items-center gap-3 px-3 py-2.5 text-start transition",
+                        active
+                          ? "bg-primary-light/35"
+                          : "hover:bg-surface-secondary",
+                      )}
+                    >
+                      <Avatar
+                        src={candidate.avatarUrl}
+                        name={candidate.displayName ?? candidate.slug}
+                        size="small"
+                      />
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium text-text-primary">
+                          {candidate.displayName ?? candidate.slug}
+</p>
+                        <p className="truncate text-xs text-text-muted">
+                          {candidate.professionalTitle ?? candidate.email ?? candidate.slug}
+                        </p>
                       </div>
-
-                      <div className="mt-2 flex flex-wrap items-center gap-2">
+                      <div className="flex items-center gap-1.5">
                         <AdminStatusBadge tone={getPractitionerStatusTone(candidate.status)}>
                           {candidate.status
                             ? t(`practitionerStatus.${candidate.status}` as Parameters<typeof t>[0])
                             : t("picker.statusUnknown")}
                         </AdminStatusBadge>
-                        <span className="text-[11px] uppercase tracking-[0.16em] text-text-muted">
-                          {candidate.slug}
-                        </span>
+                        {active ? (
+                          <Check className="h-4 w-4 text-success-600" />
+                        ) : null}
                       </div>
-                    </div>
-                  </button>
-                );
-              })
-            )}
+                    </button>
+                  );
+                })
+              )}
+            </div>
           </div>
+        ) : null}
+      </div>
+
+      {/* Selected practitioner summary */}
+      {value ? (
+        <div className="flex items-center gap-2 rounded-[18px] border border-border-light bg-surface-secondary/50 px-3 py-2">
+          <Avatar
+            src={value.avatarUrl}
+            name={value.displayName ?? value.slug}
+            size="small"
+          />
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-medium text-text-primary">
+              {value.displayName ?? value.slug}
+            </p>
+            <p className="truncate text-xs text-text-muted">
+              {value.professionalTitle ?? value.email ?? value.slug}
+            </p>
+          </div>
+          <AdminStatusBadge tone={getPractitionerStatusTone(value.status)}>
+            {value.status
+              ? t(`practitionerStatus.${value.status}` as Parameters<typeof t>[0])
+              : t("picker.statusUnknown")}
+          </AdminStatusBadge>
         </div>
       ) : null}
 
-      {error ? <p className="text-sm font-medium text-error-500">{error}</p> : null}
+      {/* Hint text */}
+      {!value ? (
+        <p className="text-xs text-text-muted">{t("picker.searchHint")}</p>
+      ) : null}
+
+      {error ?<p className="text-sm font-medium text-error-500">{error}</p> : null}
     </div>
   );
 }

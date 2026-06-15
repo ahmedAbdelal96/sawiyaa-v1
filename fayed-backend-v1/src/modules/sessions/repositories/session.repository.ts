@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import {
   Prisma,
+  SessionEventType,
   SessionMode,
   SessionProvider,
   SessionStatus,
@@ -145,6 +146,25 @@ export class SessionRepository {
     });
   }
 
+  /**
+   * Phase 3 — Admin evidence enrichment.
+   *
+   * Loads a session with the minimum data needed to surface a participant
+   * identity summary (displayName, primary email, primary phone) for both
+   * the patient and the practitioner. Used only by the admin runtime
+   * inspection and admin attendance endpoints, where identity is read by
+   * support agents and admins with `SESSIONS_READ_ADMIN` permission.
+   *
+   * Kept separate from `findById` so the rest of the codebase does not
+   * silently expand its data surface to include user contact details.
+   */
+  findByIdWithParticipants(sessionId: string, tx?: Prisma.TransactionClient) {
+    return this.getDb(tx).session.findUnique({
+      where: { id: sessionId },
+      select: this.participantIdentityInclude,
+    });
+  }
+
   findByDailyRoomReference(input: {
     roomName: string | null;
     roomUrl: string | null;
@@ -286,6 +306,70 @@ export class SessionRepository {
       }),
       this.prisma.session.count({ where }),
     ]);
+  }
+
+  async countUnreadBySessionIdsForUser(input: {
+    userId: string;
+    sessionIds: string[];
+  }): Promise<Map<string, number>> {
+    const uniqueSessionIds = Array.from(new Set(input.sessionIds)).filter(Boolean);
+    if (uniqueSessionIds.length === 0) {
+      return new Map<string, number>();
+    }
+
+    const conversations = await this.prisma.conversation.findMany({
+      where: {
+        sessionId: { in: uniqueSessionIds },
+        conversationType: 'SYSTEM',
+        participants: {
+          some: {
+            userId: input.userId,
+            isActive: true,
+          },
+        },
+      },
+      select: {
+        id: true,
+        sessionId: true,
+      },
+    });
+
+    const conversationIds = conversations.map((c) => c.id).filter(Boolean);
+    if (conversationIds.length === 0) {
+      return new Map<string, number>();
+    }
+
+    const unreadCounts = await this.prisma.message.groupBy({
+      by: ['conversationId'],
+      where: {
+        conversationId: { in: conversationIds },
+        senderUserId: {
+          not: input.userId,
+        },
+        status: {
+          in: ['SENT', 'DELIVERED'],
+        },
+        deletedAt: null,
+        visibility: 'NORMAL',
+      },
+      _count: {
+        _all: true,
+      },
+    });
+
+    const conversationIdToUnreadCount = new Map<string, number>(
+      unreadCounts.map((row) => [row.conversationId, row._count._all])
+    );
+
+    const sessionIdToUnreadCount = new Map<string, number>();
+    for (const conv of conversations) {
+      if (conv.sessionId) {
+        const count = conversationIdToUnreadCount.get(conv.id) ?? 0;
+        sessionIdToUnreadCount.set(conv.sessionId, count);
+      }
+    }
+
+    return sessionIdToUnreadCount;
   }
 
   listPatientSessionSummaryCandidates(patientId: string) {
@@ -693,6 +777,25 @@ export class SessionRepository {
     return this.getDb(tx).sessionEvent.create({ data });
   }
 
+  findSessionEventByProviderEventRef(input: {
+    sessionId: string;
+    eventType: SessionEventType;
+    providerEventRef: string | null;
+  }) {
+    return this.prisma.sessionEvent.findFirst({
+      where: {
+        sessionId: input.sessionId,
+        eventType: input.eventType,
+        metadataJson: input.providerEventRef === null
+          ? { equals: Prisma.JsonNull }
+          : {
+              path: ['providerEventRef'],
+              equals: input.providerEventRef,
+            },
+      },
+    });
+  }
+
   findAttendanceEventByIngestionKey(ingestionKey: string) {
     return this.prisma.sessionAttendanceEvent.findUnique({
       where: { ingestionKey },
@@ -753,6 +856,13 @@ export class SessionRepository {
     return this.prisma.sessionAttendanceEvent.findMany({
       where: { sessionId },
       orderBy: [{ occurredAt: 'asc' }, { ingestedAt: 'asc' }],
+    });
+  }
+
+  listSessionEventsBySessionId(sessionId: string) {
+    return this.prisma.sessionEvent.findMany({
+      where: { sessionId },
+      orderBy: { createdAt: 'asc' },
     });
   }
 
@@ -845,6 +955,66 @@ export class SessionRepository {
       },
     },
   } satisfies Prisma.SessionInclude;
+
+  /**
+   * Phase 3 — narrower include that explicitly opts the admin evidence
+   * endpoints into reading user contact details. Only callers that use
+   * `findByIdWithParticipants` will incur the extra joins.
+   */
+  private readonly participantIdentityInclude = {
+    id: true,
+    sessionCode: true,
+    status: true,
+    sessionMode: true,
+    scheduledStartAt: true,
+    scheduledEndAt: true,
+    durationMinutes: true,
+    joinOpenAt: true,
+    provider: true,
+    providerRoomId: true,
+    providerSessionRef: true,
+    patientId: true,
+    practitionerId: true,
+    practitioner: {
+      select: {
+        id: true,
+        publicSlug: true,
+        user: {
+          select: {
+            id: true,
+            displayName: true,
+            emails: {
+              where: { isVerified: true },
+              select: { email: true, isPrimary: true },
+            },
+            phones: {
+              where: { isVerified: true },
+              select: { phone: true, isPrimary: true },
+            },
+          },
+        },
+      },
+    },
+    patient: {
+      select: {
+        id: true,
+        user: {
+          select: {
+            id: true,
+            displayName: true,
+            emails: {
+              where: { isVerified: true },
+              select: { email: true, isPrimary: true },
+            },
+            phones: {
+              where: { isVerified: true },
+              select: { phone: true, isPrimary: true },
+            },
+          },
+        },
+      },
+    },
+  } satisfies Prisma.SessionSelect;
 
   private normalizeRoomUrl(roomUrl: string): string {
     const trimmed = roomUrl.trim();

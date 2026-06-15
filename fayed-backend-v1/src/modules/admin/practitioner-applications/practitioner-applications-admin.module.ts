@@ -37,6 +37,7 @@ import { UpdateAdminPractitionerAvatarUseCase } from './use-cases/update-admin-p
 import { UpdatePractitionerApplicationDraftUseCase } from './use-cases/update-practitioner-application-draft.use-case';
 import { GetPractitionerApplicationAvatarFileUseCase } from './use-cases/get-practitioner-application-avatar-file.use-case';
 import { GetPractitionerApplicationCredentialFileUseCase } from './use-cases/get-practitioner-application-credential-file.use-case';
+import { UploadAdminPractitionerCredentialFileUseCase } from './use-cases/upload-admin-practitioner-credential-file.use-case';
 import { PractitionerAvatarStorageService } from '@modules/practitioners/services/practitioner-avatar-storage.service';
 import { PractitionerCredentialStorageService } from '@modules/practitioners/services/practitioner-credential-storage.service';
 
@@ -81,6 +82,7 @@ import { PractitionerCredentialStorageService } from '@modules/practitioners/ser
     GetPractitionerApplicationDetailsUseCase,
     GetPractitionerApplicationAvatarFileUseCase,
     GetPractitionerApplicationCredentialFileUseCase,
+    UploadAdminPractitionerCredentialFileUseCase,
     CreateAdminPractitionerUseCase,
     UpdatePractitionerApplicationDraftUseCase,
     UpsertPractitionerApplicationCredentialUseCase,

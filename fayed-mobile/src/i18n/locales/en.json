@@ -1416,6 +1416,7 @@
       "refundPolicyMissing": "Package refund policy is not available right now.",
       "acceptRefundPolicy": "Please confirm that you accept the package refund policy before continuing.",
       "unsupportedRedirect": "We could not open the payment link.",
+      "openFailed": "We could not open the payment page. Please try again.",
       "nativeUnsupported": "This payment method requires a native card flow that is not enabled yet.",
       "subtitle": "Complete the package payment securely.",
       "total": "Final amount",

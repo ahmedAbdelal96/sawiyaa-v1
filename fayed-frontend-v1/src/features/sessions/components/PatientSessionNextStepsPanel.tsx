@@ -186,7 +186,7 @@ export default function PatientSessionNextStepsPanel({ session }: Props) {
             icon={<LifeBuoy className="h-4 w-4" />}
             title={t("detail.nextSteps.support.title")}
             note={t("detail.nextSteps.support.note")}
-            href="/patient/support"
+            href="/patient/messages?lane=support"
             ctaLabel={t("detail.nextSteps.support.cta")}
           />
         </aside>

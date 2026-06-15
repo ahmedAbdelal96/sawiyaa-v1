@@ -8,6 +8,7 @@ import {
   SettlementPayoutMethod,
   SettlementPayoutSource,
   SettlementBatchStatus,
+  PractitionerPayoutMethodType,
   WalletBalanceBucket,
 } from '@prisma/client';
 
@@ -63,6 +64,17 @@ export type WalletViewModel = {
   lifetimePaidOut: string;
   lastLedgerEntryAt: string | null;
   updatedAt: string | null;
+};
+
+export type PractitionerPayoutDestinationSnapshotViewModel = {
+  methodType: PractitionerPayoutMethodType | null;
+  accountHolderName: string | null;
+  bankName: string | null;
+  bankAccountNumber: string | null;
+  iban: string | null;
+  walletProvider: string | null;
+  walletIdentifier: string | null;
+  otherDetails: string | null;
 };
 
 export type LedgerEntryViewModel = {
@@ -336,6 +348,9 @@ export type PractitionerPayoutBalanceViewModel = {
   practitionerId: string;
   practitionerName: string | null;
   currencyCode: string;
+  payoutDestinationSnapshot: PractitionerPayoutDestinationSnapshotViewModel | null;
+  payoutDestinationType: string | null;
+  payoutDestinationSummaryMasked: string | null;
   normalSessionPayableAmount: string;
   packageReleasedPayableAmount: string;
   packageHeldAmount: string;
@@ -347,6 +362,11 @@ export type PractitionerManualPayoutSummaryViewModel = {
   practitionerId: string;
   practitionerName: string | null;
   practitionerSlug: string | null;
+  safeDisplayCode: string;
+  avatarUrl: string | null;
+  primarySpecialtyName: string | null;
+  payoutDestinationType: string | null;
+  payoutDestinationSummaryMasked: string | null;
   egp: PractitionerPayoutBalanceViewModel;
   usd: PractitionerPayoutBalanceViewModel;
   hasPayable: boolean;

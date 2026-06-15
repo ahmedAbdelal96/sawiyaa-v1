@@ -17,7 +17,7 @@ export function AdminDashboardChartCard({
   children,
 }: AdminDashboardChartCardProps) {
   return (
-    <article className="rounded-2xl border border-slate-200/70 bg-white p-5 dark:border-white/5 dark:bg-white/[0.03] shadow-sm sm:p-6">
+    <article className="rounded-3xl border border-slate-200/70 bg-white p-5 dark:border-white/5 dark:bg-white/[0.03] shadow-sm sm:p-6">
       <AdminDashboardSectionHeader
         title={title}
         subtitle={subtitle}

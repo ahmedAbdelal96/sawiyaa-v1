@@ -44,6 +44,8 @@ export type AdminNotificationsPagination = {
   totalPages: number;
 };
 
+import type { NotificationContext, NotificationPrimaryAction } from "@/features/notifications/types/user-notifications.types";
+
 export type AdminNotificationListItem = {
   id: string;
   status: AdminNotificationStatus;
@@ -62,6 +64,8 @@ export type AdminNotificationListItem = {
   latestAttemptErrorCode: string | null;
   createdAt: string;
   updatedAt: string;
+  context?: NotificationContext;
+  primaryAction?: NotificationPrimaryAction;
 };
 
 export type AdminNotificationAttemptItem = {
@@ -94,6 +98,8 @@ export type AdminNotificationDetailItem = {
   createdAt: string;
   updatedAt: string;
   attempts: AdminNotificationAttemptItem[];
+  context?: NotificationContext;
+  primaryAction?: NotificationPrimaryAction;
 };
 
 export type AdminNotificationsListResponseData = {

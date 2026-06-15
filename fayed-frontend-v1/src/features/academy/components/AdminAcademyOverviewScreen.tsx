@@ -13,6 +13,7 @@ import AdminOperationalListShell, {
   AdminSummaryCard,
 } from "@/components/shared/admin/AdminOperationalListShell";
 import Input from "@/components/form/input/InputField";
+import Select from "@/components/form/Select";
 import type { ColumnDef } from "@/components/ui/data-table";
 import {
   buildUpdatedSearchParams,
@@ -111,12 +112,6 @@ export default function AdminAcademyOverviewScreen() {
     }),
     [data?.pagination.totalItems, visibleItems],
   );
-  const activeFilterChips = [
-    statusFilter !== "ALL"
-      ? { id: "status", label: t(`statuses.course.${statusFilter}` as Parameters<typeof t>[0]) }
-      : null,
-    searchQuery.trim() ? { id: "query", label: searchQuery.trim() } : null,
-  ].filter(Boolean) as Array<{ id: string; label: string }>;
 
   const columns: ColumnDef<AcademyCourseItem>[] = [
     {
@@ -138,12 +133,12 @@ export default function AdminAcademyOverviewScreen() {
       accessor: (row) => row.status ?? "DRAFT",
       cell: (row) => (
         <span
-          className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+          className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${
             row.status === "PUBLISHED"
-              ? "bg-emerald-50 text-emerald-700"
+              ? "border-status-success-border bg-status-success-soft text-status-success"
               : row.status === "ARCHIVED"
-                ? "bg-slate-100 text-slate-600"
-                : "bg-amber-50 text-amber-700"
+                ? "border-border-light bg-surface-tertiary text-text-muted"
+                : "border-status-warning-border bg-status-warning-soft text-status-warning"
           }`}
         >
           {t(`statuses.course.${row.status ?? "DRAFT"}` as Parameters<typeof t>[0])}
@@ -155,7 +150,7 @@ export default function AdminAcademyOverviewScreen() {
       header: t("admin.list.columns.visibility"),
       accessor: (row) => row.visibility ?? "PUBLIC",
       cell: (row) => (
-        <span className="rounded-full bg-brand-25 px-2.5 py-1 text-xs font-semibold text-text-brand">
+        <span className="rounded-full border border-primary/20 bg-primary-light px-2.5 py-1 text-xs font-semibold text-text-brand">
           {t(`statuses.visibility.${row.visibility ?? "PUBLIC"}` as Parameters<typeof t>[0])}
         </span>
       ),
@@ -226,6 +221,17 @@ export default function AdminAcademyOverviewScreen() {
     },
   ];
 
+  const statusFilterOptions = useMemo(
+    () => [
+      { value: "ALL", label: t("admin.filters.statusAll") },
+      ...STATUS_FILTERS.filter((status) => status !== "ALL").map((status) => ({
+        value: status,
+        label: t(`statuses.course.${status}` as Parameters<typeof t>[0]),
+      })),
+    ],
+    [t],
+  );
+
   return (
     <AdminOperationalListShell
       eyebrow={t("admin.badge")}
@@ -270,30 +276,24 @@ export default function AdminAcademyOverviewScreen() {
         <div className="space-y-4">
           <div className="grid gap-3 lg:grid-cols-2">
             <label className="block">
-              <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
+              <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-secondary">
                 {t("admin.filters.status")}
               </span>
-              <select
-                value={statusFilter}
-                onChange={(event) =>
+              <Select
+                key={`statusFilter-${statusFilter}`}
+                defaultValue={statusFilter}
+                onChange={(value) =>
                   updateListQuery({
-                    status: event.target.value === "ALL" ? null : event.target.value,
+                    status: value === "ALL" ? null : value,
                     page: 1,
                   })
                 }
-                className="w-full rounded-2xl border border-border-light bg-white px-4 py-3 text-sm text-text-primary outline-none transition focus:border-primary/35"
-              >
-                <option value="ALL">{t("admin.filters.statusAll")}</option>
-                {STATUS_FILTERS.filter((status) => status !== "ALL").map((status) => (
-                  <option key={status} value={status}>
-                    {t(`statuses.course.${status}` as Parameters<typeof t>[0])}
-                  </option>
-                ))}
-              </select>
+                options={statusFilterOptions}
+              />
             </label>
 
             <label className="block">
-              <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
+              <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-secondary">
                 {t("admin.filters.search")}
               </span>
               <Input
@@ -327,7 +327,6 @@ export default function AdminAcademyOverviewScreen() {
         </div>
       }
     >
-
       <DataTable
         data={visibleItems}
         columns={columns}

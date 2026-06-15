@@ -17,7 +17,7 @@ export const patientNavigation: NavigationConfig = [
   {
     key: "workspace",
     items: [
-      { key: "support", icon: <NavigationIcons.support />, path: "/support" },
+      { key: "messages", icon: <NavigationIcons.chat />, path: "/messages" },
       { key: "helpCenter", icon: <NavigationIcons.page />, path: "/help" },
       { key: "training", icon: <NavigationIcons.training />, path: "/training" },
       { key: "payments", icon: <NavigationIcons.payments />, path: "/payments" },

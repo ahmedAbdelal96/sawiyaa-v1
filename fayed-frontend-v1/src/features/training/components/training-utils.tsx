@@ -1,3 +1,4 @@
+import { API_CONFIG } from "@/lib/api/config";
 import type {
   EnrollmentAttendanceStatus,
   EnrollmentStatus,
@@ -126,4 +127,28 @@ export function getTrainingCardSummary(
     published,
     description: training.shortDescription?.trim() || null,
   };
+}
+
+export function buildTrainingPaymentReturnUrl(input: {
+  locale: string;
+  enrollmentId: string;
+  origin: string;
+}): string {
+  const normalizedOrigin = input.origin.replace(/\/$/, "");
+  return `${normalizedOrigin}/${input.locale}/patient/training/${input.enrollmentId}/payment-return`;
+}
+
+export function buildTrainingPaymentRedirectUrl(input: {
+  enrollmentId: string;
+  returnUrl: string;
+}): string {
+  const encodedReturnUrl = encodeURIComponent(input.returnUrl);
+  const relativePath = `/patients/me/training/enrollments/${encodeURIComponent(input.enrollmentId)}/pay/redirect?returnUrl=${encodedReturnUrl}`;
+  const apiBaseUrl = API_CONFIG.baseURL.replace(/\/$/, "");
+
+  if (/^https?:\/\//i.test(apiBaseUrl)) {
+    return new URL(relativePath, `${apiBaseUrl}/`).toString();
+  }
+
+  return `${apiBaseUrl}${relativePath}`;
 }

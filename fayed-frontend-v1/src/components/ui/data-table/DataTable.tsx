@@ -258,7 +258,7 @@ export function DataTable<T = any>({
   return (
     <div className={`${className}`}>
       {/* Table Container */}
-      <div className="overflow-hidden rounded-[24px] border border-border-light bg-white shadow-[0_18px_36px_-30px_rgba(34,52,56,0.18)]">
+      <div className="overflow-hidden rounded-[24px] border border-border-light bg-surface-secondary shadow-[0_18px_36px_-30px_rgba(0,0,0,0.15)]">
         {(exportConfig?.enabled || (pagination && onPageSizeChange)) && (
           <div className="border-b border-border-light px-4 py-2.5 sm:px-6">
             <div className="flex flex-wrap items-center justify-between gap-3">
@@ -348,7 +348,7 @@ export function DataTable<T = any>({
             
             {/* Table Header */}
             <thead
-              className={`border-b border-gray-300 dark:border-gray-700 bg-gray-100/60 dark:bg-gray-800/20 backdrop-blur-xs ${
+              className={`border-b border-border-light bg-surface-tertiary backdrop-blur-xs ${
                 stickyHeader ? 'sticky top-0 z-10' : ''
               }`}
             >
@@ -376,7 +376,7 @@ export function DataTable<T = any>({
                             }
                           }
                         }}
-                        className="w-4 h-4 text-primary border-border-light rounded focus:ring-primary/20 focus:ring-2 transition-colors cursor-pointer"
+                        className="w-4 h-4 text-primary border-border-light rounded focus:ring-ring-focus focus:ring-2 transition-colors cursor-pointer"
                         aria-label={t("dataTable.selectAll")}
                       />
                     </div>
@@ -466,8 +466,8 @@ export function DataTable<T = any>({
                     onClick={() => onRowClick?.(row)}
                     className={`
                       transition-colors duration-150
-                      ${hoverable ? 'hover:bg-surface-secondary/40' : ''}
-                      ${striped && index % 2 === 1 ? 'bg-surface-secondary/15' : ''}
+                      ${hoverable ? 'hover:bg-surface-tertiary' : ''}
+                      ${striped && index % 2 === 1 ? 'bg-surface-tertiary/40' : ''}
                       ${onRowClick ? 'cursor-pointer' : ''}
                       ${isSelected ? 'bg-primary-light/20 ring-1 ring-inset ring-primary/5' : ''}
                       ${getRowClassName?.(row, index) ?? ''}
@@ -492,7 +492,7 @@ export function DataTable<T = any>({
                                 }
                               }
                             }}
-                            className="w-4 h-4 text-primary border-border-light rounded focus:ring-primary/20 focus:ring-2 transition-colors cursor-pointer"
+                            className="w-4 h-4 text-primary border-border-light rounded focus:ring-ring-focus focus:ring-2 transition-colors cursor-pointer"
                             aria-label={`${t("dataTable.selectRow")} ${rowId}`}
                           />
                         </div>

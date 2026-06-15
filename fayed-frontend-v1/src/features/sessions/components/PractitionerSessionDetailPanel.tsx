@@ -138,8 +138,8 @@ export default function PractitionerSessionDetailPanel({ sessionId }: Props) {
   const runtimeProvider = getRuntimeProvider({ prepareResult, joinResult });
   const runtimeRoomName = getRuntimeRoomName({ prepareResult, joinResult });
   const runtimeProviderLabel = formatProviderDisplayName(runtimeProvider);
-  const prepareAllowed = hasRuntimeAccess && !runtimePrepared && canPrepareSessionRuntime(session);
-  const joinWindowOpen = isJoinWindowOpen(session);
+  const prepareAllowed = hasRuntimeAccess && !runtimePrepared && canPrepareSessionRuntime(session, joinResult);
+  const joinWindowOpen = isJoinWindowOpen(session, joinResult);
   const canJoinNow = session.joinAvailability?.canJoin === true;
   const canOpenSessionChat = canOpenSessionChatFromPresentationStatus(
     session.presentationStatus,

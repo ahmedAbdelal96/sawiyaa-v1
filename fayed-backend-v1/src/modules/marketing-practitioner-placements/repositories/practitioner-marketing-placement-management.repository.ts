@@ -330,6 +330,79 @@ export class PractitionerMarketingPlacementManagementRepository {
     };
   }
 
+  /**
+   * Returns a conflicting ACTIVE placement that occupies the same display slot
+   * (same priority) on HOME or ALL within the overlapping date range.
+   * DISCOVERY-only placements do not block HOME/ALL slots.
+   */
+  async findActiveSlotCollision(input: {
+    surface: 'HOME' | 'ALL';
+    priority: number;
+    startsAt: Date;
+    endsAt: Date | null;
+    excludePlacementId?: string;
+  }) {
+    const candidateEnd = input.endsAt ?? new Date('9999-12-31T23:59:59.999Z');
+    // HOME and ALL surfaces share the same slot pool; DISCOVERY does not
+    const surfaceConditions = [
+      { surface: PractitionerMarketingPlacementSurface.HOME },
+      { surface: PractitionerMarketingPlacementSurface.ALL },
+    ];
+
+    return this.prisma.practitionerMarketingPlacement.findFirst({
+      where: {
+        ...(input.excludePlacementId
+          ? { id: { not: input.excludePlacementId } }
+          : {}),
+        status: PractitionerMarketingPlacementStatus.ACTIVE,
+        priority: input.priority,
+        surface: { in: surfaceConditions.map((s) => s.surface) },
+        startsAt: { lte: candidateEnd },
+        OR: [{ endsAt: null }, { endsAt: { gte: input.startsAt } }],
+      },
+      select: {
+        id: true,
+        practitionerId: true,
+        surface: true,
+        priority: true,
+        startsAt: true,
+        endsAt: true,
+        status: true,
+      },
+    });
+  }
+
+  async countActivePlacementsForSurface(input: {
+    surface: PractitionerMarketingPlacementSurface;
+    startsAt: Date;
+    endsAt: Date | null;
+    excludePlacementId?: string;
+  }) {
+    const candidateEnd = input.endsAt ?? new Date('9999-12-31T23:59:59.999Z');
+    const surfaceConditions =
+      input.surface === PractitionerMarketingPlacementSurface.ALL
+        ? [
+            { surface: PractitionerMarketingPlacementSurface.HOME },
+            { surface: PractitionerMarketingPlacementSurface.ALL },
+          ]
+        : [
+            { surface: input.surface },
+            { surface: PractitionerMarketingPlacementSurface.ALL },
+          ];
+
+    return this.prisma.practitionerMarketingPlacement.count({
+      where: {
+        ...(input.excludePlacementId
+          ? { id: { not: input.excludePlacementId } }
+          : {}),
+        status: PractitionerMarketingPlacementStatus.ACTIVE,
+        surface: { in: surfaceConditions.map((item) => item.surface) },
+        startsAt: { lte: candidateEnd },
+        OR: [{ endsAt: null }, { endsAt: { gte: input.startsAt } }],
+      },
+    });
+  }
+
   private buildWhere(input: {
     status?: PractitionerMarketingPlacementStatus;
     surface?: PractitionerMarketingPlacementSurface;

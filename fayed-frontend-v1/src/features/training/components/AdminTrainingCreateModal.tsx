@@ -1,11 +1,14 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { Plus } from "lucide-react";
 import Button from "@/components/ui/button/Button";
 import { Modal, ModalBody, ModalFooter, ModalHeader } from "@/components/ui/modal";
+import InputField from "@/components/form/input/InputField";
+import TextArea from "@/components/form/input/TextArea";
+import Select from "@/components/form/Select";
 import { useCreateAdminTraining } from "../hooks/use-training";
 import { getAdminTrainingErrorKey } from "../lib/admin-training-errors";
 import type { CourseType, CourseVisibility } from "../types/training.types";
@@ -98,6 +101,32 @@ export default function AdminTrainingCreateModal({ isOpen, onClose }: Props) {
     }
   };
 
+  const localeOptions = useMemo(
+    () => [
+      { value: "ar", label: t("admin.create.locales.ar") },
+      { value: "en", label: t("admin.create.locales.en") },
+    ],
+    [t],
+  );
+
+  const courseTypeOptions = useMemo(
+    () =>
+      COURSE_TYPES.map((type) => ({
+        value: type,
+        label: t(`courseTypes.${type}` as Parameters<typeof t>[0]),
+      })),
+    [t],
+  );
+
+  const visibilityOptions = useMemo(
+    () =>
+      COURSE_VISIBILITIES.map((value) => ({
+        value,
+        label: t(`statuses.visibility.${value}` as Parameters<typeof t>[0]),
+      })),
+    [t],
+  );
+
   return (
     <Modal
       isOpen={isOpen}
@@ -117,51 +146,44 @@ export default function AdminTrainingCreateModal({ isOpen, onClose }: Props) {
         <ModalBody>
           <div className="grid gap-4 lg:grid-cols-2">
             <label className="block">
-              <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
+              <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-secondary">
                 {t("admin.create.fields.locale")}
               </span>
-              <select
-                value={form.locale}
-                onChange={(event) =>
+              <Select
+                key={`locale-${form.locale}`}
+                defaultValue={form.locale}
+                onChange={(value) =>
                   setForm((current) => ({
                     ...current,
-                    locale: event.target.value,
+                    locale: value,
                   }))
                 }
-                className="w-full rounded-2xl border border-border-light bg-white px-4 py-3 text-sm text-text-primary outline-none transition focus:border-primary/35 dark:bg-white/5 dark:text-white"
-              >
-                <option value="ar">{t("admin.create.locales.ar")}</option>
-                <option value="en">{t("admin.create.locales.en")}</option>
-              </select>
+                options={localeOptions}
+              />
             </label>
 
             <label className="block">
-              <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
+              <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-secondary">
                 {t("admin.create.fields.courseType")}
               </span>
-              <select
-                value={form.courseType}
-                onChange={(event) =>
+              <Select
+                key={`courseType-${form.courseType}`}
+                defaultValue={form.courseType}
+                onChange={(value) =>
                   setForm((current) => ({
                     ...current,
-                    courseType: event.target.value as CourseType,
+                    courseType: value as CourseType,
                   }))
                 }
-                className="w-full rounded-2xl border border-border-light bg-white px-4 py-3 text-sm text-text-primary outline-none transition focus:border-primary/35 dark:bg-white/5 dark:text-white"
-              >
-                {COURSE_TYPES.map((type) => (
-                  <option key={type} value={type}>
-                    {t(`courseTypes.${type}` as Parameters<typeof t>[0])}
-                  </option>
-                ))}
-              </select>
+                options={courseTypeOptions}
+              />
             </label>
 
             <label className="block">
-              <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
+              <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-secondary">
                 {t("admin.create.fields.title")}
               </span>
-              <input
+              <InputField
                 value={form.title}
                 onChange={(event) =>
                   setForm((current) => ({
@@ -170,37 +192,31 @@ export default function AdminTrainingCreateModal({ isOpen, onClose }: Props) {
                   }))
                 }
                 placeholder={t("admin.create.placeholders.title")}
-                className="w-full rounded-2xl border border-border-light bg-white px-4 py-3 text-sm text-text-primary outline-none transition focus:border-primary/35 dark:bg-white/5 dark:text-white"
               />
             </label>
 
             <label className="block">
-              <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
+              <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-secondary">
                 {t("admin.create.fields.visibility")}
               </span>
-              <select
-                value={form.visibility}
-                onChange={(event) =>
+              <Select
+                key={`visibility-${form.visibility}`}
+                defaultValue={form.visibility}
+                onChange={(value) =>
                   setForm((current) => ({
                     ...current,
-                    visibility: event.target.value as CourseVisibility,
+                    visibility: value as CourseVisibility,
                   }))
                 }
-                className="w-full rounded-2xl border border-border-light bg-white px-4 py-3 text-sm text-text-primary outline-none transition focus:border-primary/35 dark:bg-white/5 dark:text-white"
-              >
-                {COURSE_VISIBILITIES.map((value) => (
-                  <option key={value} value={value}>
-                    {t(`statuses.visibility.${value}` as Parameters<typeof t>[0])}
-                  </option>
-                ))}
-              </select>
+                options={visibilityOptions}
+              />
             </label>
 
             <label className="block lg:col-span-2">
-              <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
+              <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-secondary">
                 {t("admin.create.fields.shortDescription")}
               </span>
-              <input
+              <InputField
                 value={form.shortDescription}
                 onChange={(event) =>
                   setForm((current) => ({
@@ -209,35 +225,33 @@ export default function AdminTrainingCreateModal({ isOpen, onClose }: Props) {
                   }))
                 }
                 placeholder={t("admin.create.placeholders.shortDescription")}
-                className="w-full rounded-2xl border border-border-light bg-white px-4 py-3 text-sm text-text-primary outline-none transition focus:border-primary/35 dark:bg-white/5 dark:text-white"
               />
             </label>
 
             <label className="block lg:col-span-2">
-              <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
+              <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-secondary">
                 {t("admin.create.fields.fullDescription")}
               </span>
-              <textarea
+              <TextArea
                 rows={4}
                 value={form.fullDescription}
-                onChange={(event) =>
+                onChange={(value) =>
                   setForm((current) => ({
                     ...current,
-                    fullDescription: event.target.value,
+                    fullDescription: value,
                   }))
                 }
                 placeholder={t("admin.create.placeholders.fullDescription")}
-                className="w-full rounded-2xl border border-border-light bg-white px-4 py-3 text-sm text-text-primary outline-none transition focus:border-primary/35 dark:bg-white/5 dark:text-white"
               />
             </label>
           </div>
 
           {feedback ? (
             <p
-              className={`mt-4 text-sm ${
+              className={`mt-4 rounded-2xl border px-4 py-3 text-sm ${
                 feedback.tone === "success"
-                  ? "text-emerald-600 dark:text-emerald-400"
-                  : "text-rose-600 dark:text-rose-400"
+                  ? "border-status-success-border bg-status-success-soft text-status-success"
+                  : "border-status-danger-border bg-status-danger-soft text-status-danger"
               }`}
             >
               {feedback.message}

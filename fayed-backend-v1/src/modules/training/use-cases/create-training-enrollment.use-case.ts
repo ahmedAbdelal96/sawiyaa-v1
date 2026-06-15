@@ -21,11 +21,16 @@ import { PaymentRepository } from '@modules/payments/repositories/payment.reposi
 import { PaymentGeoContextService } from '@modules/payments/services/payment-geo-context.service';
 import { PaymentProviderRegistryService } from '@modules/payments/services/payment-provider-registry.service';
 import { PaymentProviderResolverService } from '@modules/payments/services/payment-provider-resolver.service';
+import { PaymentRuntimeConfigService } from '@modules/payments/services/payment-runtime-config.service';
 import { ValidatePaymentStatusTransitionService } from '@modules/payments/services/validate-payment-status-transition.service';
 import { CreateTrainingEnrollmentDto } from '../dto/create-training-enrollment.dto';
 import { TrainingPresenter } from '../presenters/training.presenter';
 import { TrainingRepository } from '../repositories/training.repository';
 import { ResolveTrainingScheduleEnrollmentAvailabilityService } from '../services/resolve-training-schedule-enrollment-availability.service';
+
+type CreateTrainingEnrollmentInput = CreateTrainingEnrollmentDto & {
+  forceRefreshPayment?: boolean;
+};
 
 @Injectable()
 export class CreateTrainingEnrollmentUseCase {
@@ -35,6 +40,7 @@ export class CreateTrainingEnrollmentUseCase {
     private readonly paymentRepository: PaymentRepository,
     private readonly paymentGeoContextService: PaymentGeoContextService,
     private readonly paymentProviderResolverService: PaymentProviderResolverService,
+    private readonly paymentRuntimeConfigService: PaymentRuntimeConfigService,
     private readonly paymentProviderRegistryService: PaymentProviderRegistryService,
     private readonly validatePaymentStatusTransitionService: ValidatePaymentStatusTransitionService,
     private readonly resolveTrainingScheduleEnrollmentAvailabilityService: ResolveTrainingScheduleEnrollmentAvailabilityService,
@@ -45,7 +51,7 @@ export class CreateTrainingEnrollmentUseCase {
     userId: string;
     locale: SupportedLocale;
     scheduleId: string;
-    payload: CreateTrainingEnrollmentDto;
+    payload: CreateTrainingEnrollmentInput;
   }) {
     const patient = await this.trainingRepository.findPatientProfileByUserId(
       input.userId,
@@ -151,6 +157,14 @@ export class CreateTrainingEnrollmentUseCase {
         enrollmentStatus: EnrollmentStatus.PENDING_PAYMENT,
         paymentStatus: PaymentStatus.CREATED,
       }));
+    const providerRedirectionUrl =
+      provider === PaymentProvider.PAYMOB
+        ? this.resolveTrainingPaymentReturnUrl({
+            locale: input.locale,
+            enrollmentId: enrollment.id,
+            returnUrl: input.payload.returnUrl ?? null,
+          })
+        : null;
 
     const activePaymentStatuses: PaymentStatus[] = [
       PaymentStatus.CREATED,
@@ -159,7 +173,7 @@ export class CreateTrainingEnrollmentUseCase {
       PaymentStatus.AUTHORIZED,
     ];
 
-    if (existing?.paymentId) {
+    if (!input.payload.forceRefreshPayment && existing?.paymentId) {
       const previousPayment = await this.paymentRepository.findById(
         existing.paymentId,
       );
@@ -253,6 +267,7 @@ export class CreateTrainingEnrollmentUseCase {
         description: `Training enrollment payment: ${schedule.scheduleCode}`,
         sessionId: schedule.id,
         patientEmail: patient.user.emails[0]?.email ?? null,
+        redirectionUrl: providerRedirectionUrl,
       });
     } catch (error) {
       const failureReason =
@@ -466,5 +481,25 @@ export class CreateTrainingEnrollmentUseCase {
 
   private toMinorUnits(amount: string): number {
     return Math.round(Number(amount) * 100);
+  }
+
+  private resolveTrainingPaymentReturnUrl(input: {
+    locale: SupportedLocale;
+    enrollmentId: string;
+    returnUrl: string | null;
+  }): string {
+    const trustedReturnUrl = this.paymentRuntimeConfigService.resolveTrustedReturnUrl(
+      input.returnUrl,
+    );
+
+    if (trustedReturnUrl) {
+      return trustedReturnUrl;
+    }
+
+    const appBaseUrl = this.paymentRuntimeConfigService
+      .getAppBaseUrl()
+      .replace(/\/$/, '');
+
+    return `${appBaseUrl}/${input.locale}/patient/training/${input.enrollmentId}/payment-return`;
   }
 }

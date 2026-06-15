@@ -117,27 +117,6 @@ export class InitiateSessionPaymentUseCase {
     const activePayment =
       await this.paymentRepository.findLatestActiveBySessionId(session.id);
 
-    if (activePayment) {
-      await this.refundPolicyService.ensureAcceptedRefundPolicyForPayment({
-        policyType: RefundPolicyType.SESSION,
-        acceptedRefundPolicyId: input.acceptedRefundPolicyId,
-        acceptedByUserId: input.userId,
-        paymentId: activePayment.id,
-        sessionId: session.id,
-        displayLocale: input.displayLocale,
-        userAgent: input.userAgent ?? null,
-        ipAddress: input.ipAddress ?? null,
-        metadataJson: {
-          paymentPurpose: PaymentPurpose.SESSION_BOOKING,
-          sessionId: session.id,
-          policyType: RefundPolicyType.SESSION,
-        },
-      });
-      return {
-        item: this.paymentMapper.toViewModel(activePayment),
-      };
-    }
-
     const pricing = await this.resolveSessionPaymentPricingService.resolve({
       session,
       couponCode: input.couponCode ?? null,
@@ -301,127 +280,147 @@ export class InitiateSessionPaymentUseCase {
       provider,
     });
 
-    const payment = await this.prisma.$transaction(async (tx) => {
-      const paymobRegistrySnapshot = isPaymobProvider
-        ? this.paymentRuntimeConfigService
-            .getPaymobMethodRegistry()
-            .map((item) => ({
-              key: item.key,
-              label: item.label,
-              type: item.type,
-              enabled: item.enabled,
-              supportedCheckoutFlows: item.supportedCheckoutFlows,
-            }))
-        : [];
+    const payment =
+      activePayment ??
+      (await this.prisma.$transaction(async (tx) => {
+        const paymobRegistrySnapshot = isPaymobProvider
+          ? this.paymentRuntimeConfigService
+              .getPaymobMethodRegistry()
+              .map((item) => ({
+                key: item.key,
+                label: item.label,
+                type: item.type,
+                enabled: item.enabled,
+                supportedCheckoutFlows: item.supportedCheckoutFlows,
+              }))
+          : [];
 
-      const created = await this.paymentRepository.createPayment(
-        {
-          sessionId: session.id,
-          patientId: patient.id,
-          practitionerId: session.practitioner.id,
-          paymentPurpose: pricing.paymentPurpose,
-          provider,
-          status: PaymentStatus.CREATED,
-          amountSubtotal: effectiveAmountSubtotal,
-          amountDiscount: effectiveAmountDiscount,
-          amountTotal: effectiveAmountTotal,
-          amountFromWallet: amountFromWallet.toFixed(2),
-          amountFromGateway: amountFromGateway.toFixed(2),
-          currencyCode: effectiveBreakdown.currency ?? pricing.currencyCode,
-          commissionRuleId: pricing.commissionRuleId,
-          commissionPlatformRatePercent: pricing.commissionPlatformRatePercent,
-          commissionPractitionerRatePercent:
-            pricing.commissionPractitionerRatePercent,
-          couponId: pricing.couponId,
-          couponCodeSnapshot: pricing.couponCodeSnapshot,
-          couponDiscountSnapshot: pricing.couponDiscountSnapshot,
-          couponPlatformShareSnapshot: pricing.couponPlatformSharePercent,
-          couponPractitionerShareSnapshot:
-            pricing.couponPractitionerSharePercent,
-          vatRatePercentSnapshot: vatRatePercentDecimal.toFixed(2),
-          vatAmountSnapshot: vatAmountDecimal.toFixed(2),
-          gatewayFeeRatePercentSnapshot:
-            gatewayFeeRatePercentDecimal.toFixed(2),
-          gatewayFeeFixedAmountSnapshot:
-            gatewayFeeFixedAmountDecimal.toFixed(2),
-          gatewayFeeAmountSnapshot: gatewayFeeAmountDecimal.toFixed(2),
-          metadataJson: {
-            source: 'session-payment-initiation',
-            providerMode,
-            redirectUrls,
-            providerMethod: selectedPaymobMethod ?? null,
-            paymobCheckoutFlow,
-            paymobRegistrySnapshot,
+        const created = await this.paymentRepository.createPayment(
+          {
+            sessionId: session.id,
+            patientId: patient.id,
+            practitionerId: session.practitioner.id,
+            paymentPurpose: pricing.paymentPurpose,
+            provider,
+            status: PaymentStatus.CREATED,
+            amountSubtotal: effectiveAmountSubtotal,
+            amountDiscount: effectiveAmountDiscount,
+            amountTotal: effectiveAmountTotal,
             amountFromWallet: amountFromWallet.toFixed(2),
             amountFromGateway: amountFromGateway.toFixed(2),
-            regionalPricingMode: pricing.regionalPricingMode,
-            resolvedCountryIsoCode: pricing.resolvedCountryIsoCode,
-            pricingCurrencyCode: pricing.currencyCode,
-            countrySnapshot,
-            financialBreakdown: {
-              ...effectiveBreakdown,
-              vatRatePercent: vatRatePercentDecimal.toFixed(2),
-              vatAmount: vatAmountDecimal.toFixed(2),
-              gatewayFeeRatePercent: gatewayFeeRatePercentDecimal.toFixed(2),
-              gatewayFeeFixedAmount: gatewayFeeFixedAmountDecimal.toFixed(2),
-              gatewayFeeAmount: gatewayFeeAmountDecimal.toFixed(2),
+            currencyCode: effectiveBreakdown.currency ?? pricing.currencyCode,
+            commissionRuleId: pricing.commissionRuleId,
+            commissionPlatformRatePercent: pricing.commissionPlatformRatePercent,
+            commissionPractitionerRatePercent:
+              pricing.commissionPractitionerRatePercent,
+            couponId: pricing.couponId,
+            couponCodeSnapshot: pricing.couponCodeSnapshot,
+            couponDiscountSnapshot: pricing.couponDiscountSnapshot,
+            couponPlatformShareSnapshot: pricing.couponPlatformSharePercent,
+            couponPractitionerShareSnapshot:
+              pricing.couponPractitionerSharePercent,
+            vatRatePercentSnapshot: vatRatePercentDecimal.toFixed(2),
+            vatAmountSnapshot: vatAmountDecimal.toFixed(2),
+            gatewayFeeRatePercentSnapshot:
+              gatewayFeeRatePercentDecimal.toFixed(2),
+            gatewayFeeFixedAmountSnapshot:
+              gatewayFeeFixedAmountDecimal.toFixed(2),
+            gatewayFeeAmountSnapshot: gatewayFeeAmountDecimal.toFixed(2),
+            metadataJson: {
+              source: 'session-payment-initiation',
+              providerMode,
+              redirectUrls,
+              providerMethod: selectedPaymobMethod ?? null,
+              paymobCheckoutFlow,
+              paymobRegistrySnapshot,
+              amountFromWallet: amountFromWallet.toFixed(2),
+              amountFromGateway: amountFromGateway.toFixed(2),
+              regionalPricingMode: pricing.regionalPricingMode,
+              resolvedCountryIsoCode: pricing.resolvedCountryIsoCode,
+              pricingCurrencyCode: pricing.currencyCode,
+              countrySnapshot,
+              financialBreakdown: {
+                ...effectiveBreakdown,
+                vatRatePercent: vatRatePercentDecimal.toFixed(2),
+                vatAmount: vatAmountDecimal.toFixed(2),
+                gatewayFeeRatePercent: gatewayFeeRatePercentDecimal.toFixed(2),
+                gatewayFeeFixedAmount: gatewayFeeFixedAmountDecimal.toFixed(2),
+                gatewayFeeAmount: gatewayFeeAmountDecimal.toFixed(2),
+              },
+              ...(corporateSponsorshipMetadata ?? {}),
             },
-            ...(corporateSponsorshipMetadata ?? {}),
           },
-        },
-        tx,
-      );
-
-      if (amountFromWallet.gt(0)) {
-        await this.customerWalletAccountingService.reserveForSessionPayment({
-          patientId: patient.id,
-          paymentId: created.id,
-          sessionId: session.id,
-          currencyCode: effectiveBreakdown.currency ?? pricing.currencyCode,
-          amount: amountFromWallet.toFixed(2),
-          expiresAt: session.expiresAt ?? null,
           tx,
-        });
-      }
+        );
 
-      await this.refundPolicyService.ensureAcceptedRefundPolicyForPayment(
-        {
-          policyType: RefundPolicyType.SESSION,
-          acceptedRefundPolicyId: input.acceptedRefundPolicyId,
-          acceptedByUserId: input.userId,
-          paymentId: created.id,
-          sessionId: session.id,
-          displayLocale: input.displayLocale,
-          userAgent: input.userAgent ?? null,
-          ipAddress: input.ipAddress ?? null,
-          metadataJson: {
-            paymentPurpose: PaymentPurpose.SESSION_BOOKING,
+        if (amountFromWallet.gt(0)) {
+          await this.customerWalletAccountingService.reserveForSessionPayment({
+            patientId: patient.id,
+            paymentId: created.id,
             sessionId: session.id,
+            currencyCode: effectiveBreakdown.currency ?? pricing.currencyCode,
+            amount: amountFromWallet.toFixed(2),
+            expiresAt: session.expiresAt ?? null,
+            tx,
+          });
+        }
+
+        await this.refundPolicyService.ensureAcceptedRefundPolicyForPayment(
+          {
             policyType: RefundPolicyType.SESSION,
-            ...(corporateSponsorshipMetadata ?? {}),
+            acceptedRefundPolicyId: input.acceptedRefundPolicyId,
+            acceptedByUserId: input.userId,
+            paymentId: created.id,
+            sessionId: session.id,
+            displayLocale: input.displayLocale,
+            userAgent: input.userAgent ?? null,
+            ipAddress: input.ipAddress ?? null,
+            metadataJson: {
+              paymentPurpose: PaymentPurpose.SESSION_BOOKING,
+              sessionId: session.id,
+              policyType: RefundPolicyType.SESSION,
+              ...(corporateSponsorshipMetadata ?? {}),
+            },
           },
-        },
-        tx,
-      );
+          tx,
+        );
 
-      await this.paymentRepository.createEvent(
-        {
-          paymentId: created.id,
-          eventType: PaymentEventType.PAYMENT_CREATED,
-          payloadJson: {
-            source: 'patient-initiation',
-            resolvedProvider: provider,
-            providerMode,
-            providerMethod: selectedPaymobMethod ?? null,
-            paymobCheckoutFlow,
-            countrySnapshot,
+        await this.paymentRepository.createEvent(
+          {
+            paymentId: created.id,
+            eventType: PaymentEventType.PAYMENT_CREATED,
+            payloadJson: {
+              source: 'patient-initiation',
+              resolvedProvider: provider,
+              providerMode,
+              providerMethod: selectedPaymobMethod ?? null,
+              paymobCheckoutFlow,
+              countrySnapshot,
+            },
           },
-        },
-        tx,
-      );
+          tx,
+        );
 
-      return created;
-    });
+        return created;
+      }));
+
+    if (activePayment) {
+      await this.refundPolicyService.ensureAcceptedRefundPolicyForPayment({
+        policyType: RefundPolicyType.SESSION,
+        acceptedRefundPolicyId: input.acceptedRefundPolicyId,
+        acceptedByUserId: input.userId,
+        paymentId: activePayment.id,
+        sessionId: session.id,
+        displayLocale: input.displayLocale,
+        userAgent: input.userAgent ?? null,
+        ipAddress: input.ipAddress ?? null,
+        metadataJson: {
+          paymentPurpose: PaymentPurpose.SESSION_BOOKING,
+          sessionId: session.id,
+          policyType: RefundPolicyType.SESSION,
+        },
+      });
+    }
 
     if (isInternalWalletProvider) {
       const captured = await this.markPaymentSucceededUseCase.execute({

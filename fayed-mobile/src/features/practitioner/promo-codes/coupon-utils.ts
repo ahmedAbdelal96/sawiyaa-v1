@@ -33,8 +33,22 @@ export function sanitizePractitionerPromoCodeInput(value: string) {
   return normalizePractitionerPromoCodeInput(value).replace(/[^A-Z0-9_-]/g, "");
 }
 
-export function normalizePercentageInput(value: string) {
-  return value.replace(/[^0-9.]/g, "");
+const MAX_COUPON_PERCENT = 25;
+
+export function normalizePercentageInput(value: string): string {
+  // Reject negative values upfront
+  if (value.startsWith("-")) return "";
+  const cleaned = value.replace(/[^0-9.]/g, "");
+  if (!cleaned) return "";
+  const parts = cleaned.split(".");
+  const integerPart = parts[0];
+  const decimalPart = parts.length > 1 ? "." + parts.slice(1).join("") : "";
+  const numericValue = Number(integerPart + decimalPart);
+  if (!Number.isFinite(numericValue)) return "";
+  if (numericValue > MAX_COUPON_PERCENT) return String(MAX_COUPON_PERCENT);
+  // Normalize trailing .0
+  if (decimalPart === ".0") return integerPart;
+  return integerPart + decimalPart;
 }
 
 export function isValidPractitionerPromoCode(code: string) {
@@ -129,7 +143,7 @@ export function validatePractitionerPromoCodeForm(
       const parsedDiscount = Number(discountValue);
       if (!Number.isFinite(parsedDiscount) || parsedDiscount <= 0) {
         errors.discountValue = "invalid";
-      } else if (parsedDiscount > 20) {
+      } else if (parsedDiscount > 25) {
         errors.discountValue = "tooHigh";
       }
     }
@@ -276,7 +290,7 @@ export function classifyPractitionerPromoCodeError(
     ],
     [
       "discountTooHigh",
-      ["too high", "cannot exceed 20", "discount too high", "لا يمكن أن يتجاوز 20", "يتجاوز 20%"],
+      ["too high", "cannot exceed 25", "discount too high", "لا يمكن أن يتجاوز 25", "يتجاوز 25%"],
     ],
     [
       "percentageOnly",

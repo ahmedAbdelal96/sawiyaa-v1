@@ -57,7 +57,20 @@
       "snapshotNote": "يظهر سجل المحاولات فقط من المحاولات التي سجّلها الباك بالفعل.",
       "visibilityNote": "الإجراءات الجماعية والأرشفة والحذف والتفضيلات خارج النطاق عمدًا.",
       "attemptsNote": "يظهر سجل المحاولات فقط من المحاولات التي سجّلها الباك بالفعل.",
-      "attemptLabel": "المحاولة {value}"
+      "attemptLabel": "المحاولة {value}",
+      "overview": "الملخص التشغيلي",
+      "relatedContext": "السياق المرتبط",
+      "deliveryStatus": "حالة التسليم",
+      "attemptsTimeline": "جدول المحاولات",
+      "messageSnapshot": "لقطة الرسالة",
+      "technicalDetails": "تفاصيل تقنية",
+      "openConversation": "فتح المحادثة",
+      "openSession": "فتح الجلسة",
+      "openSupportTicket": "فتح تذكرة الدعم",
+      "failedDelivery": "فشل إرسال الإشعار",
+      "noAttempts": "لا توجد محاولات إرسال مسجلة",
+      "noContentSnapshot": "لا توجد لقطة محتوى محفوظة لهذا الإشعار.",
+      "breadcrumb": "تشخيص الإشعارات"
     },
     "dropdown": {
       "ariaLabel": "الإشعارات التشغيلية",
@@ -168,11 +181,20 @@
       "subjectSnapshot": "لقطة الموضوع",
       "attemptsCount": "عدد المحاولات",
       "provider": "المزوّد",
-      "errorCode": "رمز الخطأ"
+      "errorCode": "رمز الخطأ",
+      "notificationHeader": "الإشعار",
+      "statusHeader": "الحالة",
+      "channelHeader": "القناة",
+      "categoryHeader": "الفئة",
+      "recipientHeader": "المستلم",
+      "attemptsHeader": "المحاولات",
+      "dateHeader": "المجدول / المحدث",
+      "summaryHeader": "نتيجة التسليم"
     },
     "fallback": {
       "noValue": "—",
-      "noSnapshot": "لا توجد لقطة محفوظة لهذا الحقل."
+      "noSnapshot": "لا توجد لقطة محفوظة لهذا الحقل.",
+      "secureActionAttached": "تم إرفاق رابط إجراء آمن لهذا الإشعار."
     },
     "states": {
       "empty": {
@@ -211,7 +233,7 @@
     "channels": {
       "EMAIL": "البريد الإلكتروني",
       "SMS": "رسالة نصية",
-      "PUSH": "إشعار فوري",
+      "PUSH": "إشعار هاتف",
       "IN_APP": "داخل التطبيق"
     },
     "categories": {
@@ -230,6 +252,169 @@
       "SENT": "تم الإرسال",
       "DELIVERED": "تم التسليم",
       "FAILED": "فشل"
+    },
+    "technical": {
+      "heading": "تفاصيل تقنية",
+      "typeSlug": "معرّف الحدث (Event Slug)",
+      "category": "الفئة",
+      "relatedType": "نوع الكيان المرتبط",
+      "relatedId": "معرّف الكيان المرتبط",
+      "recipientId": "معرّف المستخدم المستلم",
+      "errorCode": "رمز الخطأ",
+      "payloadCopy": "نسخ لقطة JSON",
+      "copySuccess": "تم النسخ!",
+      "rawLogs": "سجلات التشخيص الخام"
+    },
+    "slugs": {
+      "GENERAL_CHAT_MESSAGE": {
+        "title": "رسالة جديدة في المحادثة",
+        "subtitle": "محادثة · رسالة"
+      },
+      "GENERAL-CHAT-MESSAGE": {
+        "title": "رسالة جديدة في المحادثة",
+        "subtitle": "محادثة · رسالة"
+      },
+      "messages-session-message-received": {
+        "title": "رسالة جديدة في محادثة الجلسة",
+        "subtitle": "محادثة · جلسة"
+      },
+      "messages-support-message-received": {
+        "title": "رسالة دعم جديدة",
+        "subtitle": "دعم · عمليات"
+      },
+      "messages-follow-up-message-received": {
+        "title": "رسالة متابعة جديدة",
+        "subtitle": "متابعة · محادثة"
+      },
+      "sessions-session-join-available": {
+        "title": "تذكير بالانضمام للجلسة",
+        "subtitle": "جلسة · تذكير"
+      },
+      "sessions-session-reminder": {
+        "title": "تذكير بالجلسة",
+        "subtitle": "جلسة · تذكير"
+      },
+      "sessions-session-booked": {
+        "title": "تم حجز جلسة جديدة",
+        "subtitle": "جلسة · حجز"
+      },
+      "sessions-session-cancelled": {
+        "title": "تم إلغاء الجلسة",
+        "subtitle": "جلسة · إلغاء"
+      },
+      "sessions-session-rescheduled": {
+        "title": "تم إعادة جدولة الجلسة",
+        "subtitle": "جلسة · جدولة"
+      },
+      "support-ticket-created": {
+        "title": "تم إنشاء تذكرة دعم جديدة",
+        "subtitle": "دعم · عمليات"
+      },
+      "support-ticket-reply-received": {
+        "title": "رد جديد على تذكرة الدعم",
+        "subtitle": "دعم · عمليات"
+      },
+      "payments-payment-succeeded": {
+        "title": "تمت عملية الدفع بنجاح",
+        "subtitle": "مالية · عملية دفع"
+      },
+      "payments-payment-failed": {
+        "title": "فشلت عملية الدفع",
+        "subtitle": "مالية · عملية دفع"
+      },
+      "payments-refund-created": {
+        "title": "تم إنشاء طلب استرداد مالي",
+        "subtitle": "مالية · استرداد"
+      },
+      "payments-refund-completed": {
+        "title": "اكتمل طلب الاسترداد المالي",
+        "subtitle": "مالية · استرداد"
+      },
+      "fallback": {
+        "title": "إشعار نظام",
+        "subtitle": "نظام"
+      },
+      "messages": {
+        "session-message-received": {
+          "title": "رسالة جديدة في محادثة الجلسة",
+          "subtitle": "محادثة · جلسة"
+        },
+        "support-message-received": {
+          "title": "رسالة دعم جديدة",
+          "subtitle": "دعم · عمليات"
+        },
+        "follow-up-message-received": {
+          "title": "رسالة متابعة جديدة",
+          "subtitle": "متابعة · محادثة"
+        }
+      },
+      "sessions": {
+        "session-join-available": {
+          "title": "تذكير بالانضمام للجلسة",
+          "subtitle": "جلسة · إشعار هاتف"
+        },
+        "session-reminder": {
+          "title": "تذكير بالجلسة",
+          "subtitle": "جلسة · تذكير"
+        },
+        "session-booked": {
+          "title": "تم حجز جلسة جديدة",
+          "subtitle": "جلسة · حجز"
+        },
+        "session-cancelled": {
+          "title": "تم إلغاء الجلسة",
+          "subtitle": "جلسة · إلغاء"
+        },
+        "session-rescheduled": {
+          "title": "تم إعادة جدولة الجلسة",
+          "subtitle": "جلسة · جدولة"
+        }
+      },
+      "support": {
+        "ticket-created": {
+          "title": "تم إنشاء تذكرة دعم جديدة",
+          "subtitle": "دعم · عمليات"
+        },
+        "ticket-reply-received": {
+          "title": "رد جديد على تذكرة الدعم",
+          "subtitle": "دعم · عمليات"
+        }
+      },
+      "payments": {
+        "payment-succeeded": {
+          "title": "تمت عملية الدفع بنجاح",
+          "subtitle": "مالية · عملية دفع"
+        },
+        "payment-failed": {
+          "title": "فشلت عملية الدفع",
+          "subtitle": "مالية · عملية دفع"
+        },
+        "refund-created": {
+          "title": "تم إنشاء طلب استرداد مالي",
+          "subtitle": "مالية · استرداد"
+        },
+        "refund-completed": {
+          "title": "اكتمل طلب الاسترداد المالي",
+          "subtitle": "مالية · استرداد"
+        }
+      }
+    },
+    "errors": {
+      "PUSH_DEVICE_NOT_REGISTERED": "جهاز المستخدم غير مسجل لاستقبال إشعارات الهاتف",
+      "INVALID_EMAIL_ADDRESS": "عنوان البريد الإلكتروني غير صحيح",
+      "EMAIL_BOUNCED": "تم ارتداد البريد الإلكتروني من خادم المستلم",
+      "SMS_PROVIDER_ERROR": "فشل تسليم الرسالة النصية من المزود",
+      "SUPPRESSED_BY_USER": "تم كتم الإشعار بناءً على تفضيلات المستخدم",
+      "RATE_LIMIT_EXCEEDED": "تم تجاوز الحد المسموح به لمعدل الإرسال",
+      "fallback": "تعذر تسليم الإشعار"
+    },
+    "listSummary": {
+      "total": "إجمالي الإشعارات",
+      "failed": "الإشعارات الفاشلة",
+      "pushFailed": "فشل إشعارات الهاتف",
+      "emailFailed": "فشل البريد الإلكتروني",
+      "sent": "تم الإرسال",
+      "pending": "معلق / مجدول"
     }
   }
 }

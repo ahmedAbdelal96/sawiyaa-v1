@@ -18,7 +18,7 @@
     "status": "الحالة",
     "startsAt": "تاريخ البداية",
     "endsAt": "تاريخ النهاية",
-    "priority": "ترتيب الظهور",
+    "priority": "موضع الظهور",
     "reason": "السبب",
     "badge": "الشارة",
     "campaign": "الحملة",
@@ -105,13 +105,18 @@
     "status": "الحالة",
     "startsAt": "تاريخ البداية",
     "endsAt": "تاريخ النهاية",
-    "priority": "ترتيب الظهور",
+    "duration": "مدة الظهور",
+    "endsAtHint": "اتركه فارغًا إذا كان الظهور بدون تاريخ نهاية.",
+    "priority": "موضع الظهور",
+    "slotOption": "الموضع {{slot}}",
+    "priorityHint": "اختر موضعًا من 1 إلى 5. الموضع 1 يظهر أولًا في الصفحة الرئيسية.",
     "badgeLabelAr": "الشارة بالعربية",
     "badgeLabelEn": "الشارة بالإنجليزية",
     "reason": "السبب",
     "campaignName": "اسم الحملة",
     "notesInternal": "ملاحظات داخلية",
-    "noteOptional": "ملاحظة اختيارية"
+    "noteOptional": "ملاحظة اختيارية",
+    "advancedSettings": "إعدادات متقدمة"
   },
   "status": {
     "ACTIVE": "نشط",
@@ -121,7 +126,7 @@
   "lifecycle": {
     "ACTIVE": "نشط الآن",
     "SCHEDULED": "مجدول",
-    "EXPIRED": "منتهي",
+    "EXPIRED": "انتهت مدة الظهور",
     "PAUSED": "متوقف"
   },
   "practitionerStatus": {
@@ -157,7 +162,7 @@
   "validation": {
     "practitionerRequired": "اختر مختصًا واحدًا.",
     "startsAtRequired": "تاريخ البداية مطلوب.",
-    "priorityPositive": "ترتيب الظهور يجب أن يكون رقمًا موجبًا.",
+    "priorityPositive": "اختر موضعًا من 1 إلى 5.",
     "endsAtAfterStartsAt": "تاريخ النهاية يجب أن يكون بعد تاريخ البداية."
   },
   "feedback": {
@@ -169,10 +174,13 @@
   "errors": {
     "notFound": "العنصر المطلوب غير موجود.",
     "invalidDateRange": "مدة الظهور غير صحيحة.",
-    "invalidPriority": "ترتيب الظهور غير صحيح.",
-    "resumeExpired": "لا يمكن استئناف عنصر منتهي.",
+    "invalidPriority": "موضع الظهور غير صحيح.",
+    "priorityOutOfRange": "موضع الظهور يجب أن يكون بين 1 و5.",
+    "slotAlreadyTaken": "هذا الموضع مستخدم بالفعل خلال نفس الفترة. اختر موضعًا آخر أو غيّر فترة الظهور.",
+    "resumeExpired": "انتهت مدة الظهور. عدّل تاريخ النهاية أو أنشئ ظهورًا جديدًا.",
     "invalidPractitioner": "المختص المحدد غير مؤهل.",
     "overlap": "يوجد ظهور نشط آخر لنفس المختص وفي نفس المدة.",
+    "homeSlotsFull": "وصلت للحد الأقصى من مواضع الظهور النشطة على الصفحة الرئيسية.",
     "practitionerRequired": "اختر مختصًا أولًا.",
     "generic": "حدث خطأ غير متوقع. حاول مرة أخرى."
   }

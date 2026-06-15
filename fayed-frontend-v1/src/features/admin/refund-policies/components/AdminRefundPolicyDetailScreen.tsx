@@ -8,6 +8,9 @@ import { AlertTriangle, ArrowLeft, ArrowDown, ArrowUp, Plus, Pencil, Trash2 } fr
 import Badge from "@/components/ui/badge/Badge";
 import Button from "@/components/ui/button/Button";
 import { Modal, ModalBody, ModalFooter, ModalHeader } from "@/components/ui/modal";
+import InputField from "@/components/form/input/InputField";
+import TextArea from "@/components/form/input/TextArea";
+import Checkbox from "@/components/form/input/Checkbox";
 import { ListStateSkeleton, StateCard } from "@/components/shared/ContentStates";
 import AdminOperationalListShell from "@/components/shared/admin/AdminOperationalListShell";
 import { SurfaceCard, SurfaceHeader, SurfaceToolbar } from "@/components/shared/SurfaceShell";
@@ -74,46 +77,64 @@ function ClauseModal({
       <ModalBody>
         <div className="grid gap-4 md:grid-cols-2">
           <label className="space-y-2">
-            <span className="text-sm font-medium text-text-primary">{t("editor.fields.titleAr")}</span>
-            <input
+            <span className="text-sm font-medium text-text-secondary">{t("editor.fields.titleAr")}</span>
+            <InputField
               value={draft.titleAr}
               onChange={(event) => onChange({ ...draft, titleAr: event.target.value })}
-              className="w-full rounded-2xl border border-border-light bg-white px-4 py-3 text-sm outline-none ring-0 focus:border-primary"
             />
           </label>
           <label className="space-y-2">
-            <span className="text-sm font-medium text-text-primary">{t("editor.fields.titleEn")}</span>
-            <input
+            <span className="text-sm font-medium text-text-secondary">{t("editor.fields.titleEn")}</span>
+            <InputField
               value={draft.titleEn}
               onChange={(event) => onChange({ ...draft, titleEn: event.target.value })}
-              className="w-full rounded-2xl border border-border-light bg-white px-4 py-3 text-sm outline-none ring-0 focus:border-primary"
             />
           </label>
           <label className="space-y-2 md:col-span-2">
-            <span className="text-sm font-medium text-text-primary">{t("editor.fields.bodyAr")}</span>
-            <textarea
+            <span className="text-sm font-medium text-text-secondary">{t("editor.fields.bodyAr")}</span>
+            <TextArea
               value={draft.bodyAr}
-              onChange={(event) => onChange({ ...draft, bodyAr: event.target.value })}
+              onChange={(value) => onChange({ ...draft, bodyAr: value })}
               rows={4}
-              className="w-full rounded-2xl border border-border-light bg-white px-4 py-3 text-sm outline-none focus:border-primary"
+              placeholder=""
             />
           </label>
           <label className="space-y-2 md:col-span-2">
-            <span className="text-sm font-medium text-text-primary">{t("editor.fields.bodyEn")}</span>
-            <textarea
+            <span className="text-sm font-medium text-text-secondary">{t("editor.fields.bodyEn")}</span>
+            <TextArea
               value={draft.bodyEn}
-              onChange={(event) => onChange({ ...draft, bodyEn: event.target.value })}
+              onChange={(value) => onChange({ ...draft, bodyEn: value })}
               rows={4}
-              className="w-full rounded-2xl border border-border-light bg-white px-4 py-3 text-sm outline-none focus:border-primary"
+              placeholder=""
             />
           </label>
-          <label className="md:col-span-2 inline-flex items-center gap-3 rounded-2xl border border-border-light bg-surface px-4 py-3">
-            <input
-              type="checkbox"
-              checked={draft.isActive}
-              onChange={(event) => onChange({ ...draft, isActive: event.target.checked })}
-              className="h-4 w-4 rounded border-border-light text-primary"
-            />
+          <label className="md:col-span-2 inline-flex items-start gap-3 rounded-2xl border border-border-light bg-surface-secondary px-4 py-3 cursor-pointer">
+            <div className="relative w-5 h-5 mt-0.5 shrink-0">
+              <input
+                type="checkbox"
+                checked={draft.isActive}
+                onChange={(event) => onChange({ ...draft, isActive: event.target.checked })}
+                className="h-5 w-5 appearance-none rounded-md border border-border-light bg-surface-tertiary text-primary checked:bg-primary checked:border-primary focus:ring-ring-focus focus:border-border-focus transition-colors cursor-pointer"
+              />
+              {draft.isActive && (
+                <svg
+                  className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 pointer-events-none text-white"
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="14"
+                  height="14"
+                  viewBox="0 0 14 14"
+                  fill="none"
+                >
+                  <path
+                    d="M11.6666 3.5L5.24992 9.91667L2.33325 7"
+                    stroke="currentColor"
+                    strokeWidth="1.94437"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              )}
+            </div>
             <span className="space-y-1">
               <span className="block text-sm font-medium text-text-primary">{t("editor.fields.isActive")}</span>
               <span className="block text-xs leading-5 text-text-secondary">{t("editor.fields.clauseActiveNote")}</span>
@@ -356,10 +377,10 @@ export default function AdminRefundPolicyDetailScreen({ policyType }: Props) {
           }
           meta={
             <div className="flex flex-wrap gap-2">
-              <span className="rounded-full bg-surface px-3 py-1 text-sm font-medium text-text-primary">
+              <span className="rounded-full bg-surface-tertiary px-3 py-1 text-sm font-medium text-text-primary">
                 {t("detail.summary.clauses")}: {sortedClauses.length}
               </span>
-              <span className="rounded-full bg-surface px-3 py-1 text-sm font-medium text-text-primary">
+              <span className="rounded-full bg-surface-tertiary px-3 py-1 text-sm font-medium text-text-primary">
                 {t("detail.summary.updatedAt")}: {formatAdminRefundPolicyDate(policy.updatedAt, locale)}
               </span>
             </div>
@@ -368,7 +389,13 @@ export default function AdminRefundPolicyDetailScreen({ policyType }: Props) {
       </SurfaceCard>
 
       {feedback ? (
-        <p className={`rounded-2xl border px-4 py-3 text-sm ${feedback.tone === "success" ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-rose-200 bg-rose-50 text-rose-700"}`}>
+        <p
+          className={`rounded-2xl border px-4 py-3 text-sm ${
+            feedback.tone === "success"
+              ? "border-status-success-border bg-status-success-soft text-status-success"
+              : "border-status-danger-border bg-status-danger-soft text-status-danger"
+          }`}
+        >
           {feedback.message}
         </p>
       ) : null}
@@ -407,30 +434,26 @@ export default function AdminRefundPolicyDetailScreen({ policyType }: Props) {
             </div>
             <div className="grid gap-4 md:grid-cols-2">
               <label className="space-y-2">
-                <span className="text-sm font-medium text-text-primary">{t("editor.fields.titleAr")}</span>
-                <input
+                <span className="text-sm font-medium text-text-secondary">{t("editor.fields.titleAr")}</span>
+                <InputField
                   value={titleAr}
                   onChange={(event) => setTitleAr(event.target.value)}
-                  className="w-full rounded-2xl border border-border-light bg-white px-4 py-3 text-sm outline-none focus:border-primary"
                 />
               </label>
               <label className="space-y-2">
-                <span className="text-sm font-medium text-text-primary">{t("editor.fields.titleEn")}</span>
-                <input
+                <span className="text-sm font-medium text-text-secondary">{t("editor.fields.titleEn")}</span>
+                <InputField
                   value={titleEn}
                   onChange={(event) => setTitleEn(event.target.value)}
-                  className="w-full rounded-2xl border border-border-light bg-white px-4 py-3 text-sm outline-none focus:border-primary"
                 />
               </label>
-              <label className="md:col-span-2 inline-flex items-center gap-3 rounded-2xl border border-border-light bg-surface px-4 py-3">
-                <input
-                  type="checkbox"
+              <div className="md:col-span-2 rounded-2xl border border-border-light bg-surface-secondary px-4 py-3">
+                <Checkbox
+                  label={t("editor.fields.isActive")}
                   checked={isActive}
-                  onChange={(event) => setIsActive(event.target.checked)}
-                  className="h-4 w-4 rounded border-border-light text-primary"
+                  onChange={(checked) => setIsActive(checked)}
                 />
-                <span className="text-sm font-medium text-text-primary">{t("editor.fields.isActive")}</span>
-              </label>
+              </div>
             </div>
           </SurfaceCard>
 
@@ -442,7 +465,7 @@ export default function AdminRefundPolicyDetailScreen({ policyType }: Props) {
 
             <div className="space-y-2">
               {sortedClauses.map((clause) => (
-                <div key={clause.id} className="rounded-2xl border border-border-light bg-white px-4 py-3">
+                <div key={clause.id} className="rounded-2xl border border-border-light bg-surface-secondary px-4 py-3">
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div className="min-w-0 flex-1 space-y-2">
                       <div className="flex flex-wrap items-center gap-2">
@@ -507,7 +530,7 @@ export default function AdminRefundPolicyDetailScreen({ policyType }: Props) {
               ))}
 
               {sortedClauses.length === 0 ? (
-                <p className="rounded-2xl border border-dashed border-border-light bg-surface px-4 py-4 text-sm text-text-secondary">
+                <p className="rounded-2xl border border-dashed border-border-light bg-surface-tertiary px-4 py-4 text-sm text-text-secondary">
                   {t("clauses.empty.note")}
                 </p>
               ) : null}

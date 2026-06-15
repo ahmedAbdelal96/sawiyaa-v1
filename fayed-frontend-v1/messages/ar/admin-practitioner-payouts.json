@@ -1,206 +1,297 @@
 {
-    "meta":  {
-                 "title":  "مستحقات المعالجين - الإدارة",
-                 "description":  "راجع أرصدة المعالجين ومبالغ الباقات وسجلات الدفعات اليدوية."
-             },
-    "list":  {
-                 "meta":  {
-                              "title":  "مستحقات المعالجين - الإدارة",
-                              "description":  "راجع مستحقات كل معالج حسب العملة وسجّل المبلغ الذي تم تحويله فعليًا خارج المنصة."
-                          },
-                 "eyebrow":  "مستحقات المعالجين",
-                 "title":  "مستحقات المعالجين",
-                 "description":  "راجع مستحقات كل معالج حسب العملة وسجّل المبلغ الذي تم تحويله فعليًا خارج المنصة.",
-                 "searchLabel":  "ابحث عن معالج",
-                 "searchPlaceholder":  "ابحث بالاسم أو المعرّف",
-                 "results":  "{count, number} معالج",
-                 "loading":  "جارٍ تحميل المعالجين...",
-                 "emptyTitle":  "لا توجد مستحقات قابلة للدفع حاليًا",
-                 "emptyDescription":  "لا يوجد معالجون لديهم مستحقات أو مبالغ باقات في هذه اللحظة.",
-                 "note":  "ستظهر مستحقات الجلسات ومبالغ الباقات في نفس الصفحة مع الحفاظ على فصل الجنيه والدولار.",
-                 "filters":  {
-                                 "all":  "الكل",
-                                 "hasPayable":  "لهم فلوس",
-                                 "hasPackage":  "لهم باقات",
-                                 "allCurrencies":  "كل العملات"
-                             },
-                 "columns":  {
-                                 "practitioner":  "المعالج",
-                                 "payableEgp":  "القابل للدفع EGP",
-                                 "payableUsd":  "القابل للدفع USD",
-                                 "lastPayout":  "آخر دفعة",
-                                 "actions":  "الإجراءات"
-                             },
-                 "payableNow":  "القابل للدفع الآن",
-                 "normalSessionsShort":  "الجلسات العادية:",
-                 "packageReleasedShort":  "مبالغ الباقات المتاحة:",
-                 "packageHeldShort":  "مبالغ الباقات المحجوزة:",
-                 "packageHint":  "محجوز EGP: {egp} | محجوز USD: {usd}",
-                 "actions":  {
-                                 "viewDetails":  "عرض التفاصيل",
-                                 "pay":  "دفع",
-                                 "history":  "سجل الدفعات"
-                             },
-                 "pagination":  {
-                                    "previous":  "السابق",
-                                    "next":  "التالي",
-                                    "page":  "الصفحة {page, number} من {totalPages, number}"
-                                }
-             },
-    "detail":  {
-                   "meta":  {
-                                "title":  "تفاصيل مستحقات المعالج",
-                                "description":  "راجع الأرصدة حسب العملة ومبالغ الباقات وسجل الدفعات لمعالج واحد."
-                            },
-                   "eyebrow":  "مستحقات المعالجين",
-                   "description":  "راجع الأرصدة حسب العملة ومبالغ الباقات وسجل الدفعات لمعالج واحد.",
-                   "backToList":  "العودة إلى المستحقات",
-                   "payNow":  "دفع الآن",
-                   "sections":  {
-                                    "egp":  "الجنيه المصري",
-                                    "usd":  "الدولار الأمريكي"
-                                },
-                   "metrics":  {
-                                   "normal":  "مستحقات الجلسات العادية",
-                                   "packageReleased":  "مستحقات الباقات الجاهزة للصرف",
-                                   "packageHeld":  "مبالغ الباقات المحجوزة",
-                                   "totalPayable":  "إجمالي القابل للدفع الآن",
-                                   "lastPayout":  "آخر دفعة"
-                               },
-                   "lastPayoutEmpty":  "لا توجد دفعة مسجلة بعد",
-                   "packageSectionTitle":  "مبالغ الباقات",
-                   "packageSectionDescription":  "مبالغ الباقات جزء من حساب المعالج، لكن الجزء المحجوز يبقى خارج إجمالي القابل للدفع حتى يتم الإفراج عنه.",
-                   "packageSectionNote":  "المبالغ المحجوزة تظهر للتوضيح فقط، ولا يمكن دفعها الآن إلا إذا سمحت قواعد الإفراج في الخلفية بذلك بالفعل.",
-                   "historyEyebrow":  "سجل الدفعات",
-                   "historyTitle":  "سجل الدفعات",
-                   "historyDescription":  "الدفعات اليدوية الحديثة المسجلة لهذا المعالج.",
-                   "historyEmptyTitle":  "لا توجد دفعات بعد",
-                   "historyEmptyDescription":  "ستظهر الدفعات المسجلة هنا بعد حفظها.",
-                   "historyColumns":  {
-                                          "amount":  "المبلغ",
-                                          "currency":  "العملة",
-                                          "paidAt":  "تاريخ الدفع",
-                                          "paymentMethod":  "الطريقة",
-                                          "reference":  "مرجع التحويل",
-                                          "notes":  "ملاحظات"
-                                      }
-               },
-    "history":  {
-                    "meta":  {
-                                 "title":  "سجل دفعات المعالجين - الإدارة",
-                                 "description":  "راجع الدفعات اليدوية المسجلة عبر المعالجين."
-                             },
-                    "eyebrow":  "سجل دفعات المعالجين",
-                    "title":  "سجل دفعات المعالجين",
-                    "description":  "راجع سجلات الدفعات التي سجّلتها الإدارة.",
-                    "backToList":  "العودة إلى المستحقات",
-                    "results":  "{count, number} سجل",
-                    "loading":  "جارٍ تحميل سجل الدفعات...",
-                    "emptyTitle":  "لا توجد سجلات دفعات",
-                    "emptyDescription":  "ستظهر الدفعات المسجلة هنا.",
-                    "filters":  {
-                                    "currencyLabel":  "العملة",
-                                    "allCurrencies":  "كل العملات"
-                                },
-                    "columns":  {
-                                    "practitioner":  "المعالج",
-                                    "currency":  "العملة",
-                                    "amount":  "المبلغ المدفوع",
-                                    "paidAt":  "تاريخ الدفع",
-                                    "reference":  "مرجع التحويل",
-                                    "notes":  "ملاحظات",
-                                    "recordedBy":  "تم التسجيل بواسطة",
-                                    "actions":  "Actions"
-                                },
-                    "pagination":  {
-                                       "previous":  "السابق",
-                                       "next":  "التالي",
-                                       "page":  "الصفحة {page, number} من {totalPages, number}"
-                                   },
-                    "actions":  {
-                                    "viewPractitioner":  "عرض المعالج",
-                                    "viewDetails":  "عرض التفاصيل"
-                                },
-                    "detail":  {
-                                   "eyebrow":  "سجل دفعة",
-                                   "title":  "تفاصيل الدفعة",
-                                   "description":  "راجع تفاصيل الدفعة كما تم تسجيلها من الإدارة.",
-                                   "close":  "إغلاق",
-                                   "unknownPractitioner":  "معالج غير معروف",
-                                   "notesTitle":  "ملاحظات",
-                                   "noNotes":  "لم تضاف ملاحظات لهذه الدفعة.",
-                                   "fields":  {
-                                                  "amount":  "المبلغ المدفوع",
-                                                  "currency":  "العملة",
-                                                  "paidAt":  "تاريخ الدفع",
-                                                  "paymentMethod":  "الطريقة",
-                                                  "reference":  "مرجع التحويل",
-                                                  "recordedBy":  "تم التسجيل بواسطة"
-                                              }
-                               }
-                },
-    "drawer":  {
-                   "eyebrow":  "دفع مستحقات معالج",
-                   "title":  "تسجيل دفعة معالج",
-                   "description":  "اختر العملة وسجّل المبلغ الذي تم تحويله فعليًا خارج المنصة.",
-                   "manualNotice":  "هذه الصفحة تسجل الدفعة فقط. التحويل الفعلي يتم خارج المنصة.",
-                   "currencyHelp":  "لكل عملة رصيد مستقل، ويتم تسجيلها بشكل منفصل.",
-                   "practitioner":  "المعالج",
-                   "selectedCurrency":  "العملة المختارة",
-                   "summary":  {
-                                   "normal":  "مستحقات الجلسات العادية",
-                                   "packageReleased":  "مستحقات الباقات الجاهزة للصرف",
-                                   "packageHeld":  "مبالغ الباقات المحجوزة",
-                                   "totalPayable":  "إجمالي القابل للصرف"
-                               },
-                   "lastPayout":  "آخر دفعة",
-                   "packageHeldNote":  "مبالغ الباقات المحجوزة تظهر للمراجعة فقط ولا تدخل في إجمالي القابل للصرف.",
-                   "noPayableAmount":  "لا توجد مبالغ قابلة للدفع لهذا المعالج بهذه العملة.",
-                   "currencyLabel":  "العملة",
-                   "amountPaidLabel":  "المبلغ المحول فعليًا",
-                   "paidAtLabel":  "تاريخ التحويل",
-                   "paymentMethodLabel":  "طريقة التحويل",
-                   "transferReferenceLabel":  "رقم مرجع التحويل",
-                   "transferReferencePlaceholder":  "مرجع البنك أو المحفظة",
-                   "notesLabel":  "ملاحظات",
-                   "notesPlaceholder":  "ملاحظة اختيارية",
-                   "remainingLabel":  "المتبقي بعد الدفع",
-                   "footerNote":  "سجّل هنا المبلغ الذي تم تحويله فعليًا للمعالج خارج المنصة.",
-                   "cancel":  "إلغاء",
-                   "validation":  {
-                                      "amountInvalid":  "أدخل مبلغًا صحيحًا أكبر من الصفر.",
-                                      "amountTooHigh":  "لا يمكن تسجيل مبلغ أكبر من المستحقات القابلة للصرف لهذه العملة."
-                                  },
-                   "amountCurrencyNote":  "عملة المبلغ: {currency}"
-               },
-    "currencies":  {
-                       "EGP":  "EGP - الجنيه المصري",
-                       "USD":  "USD - الدولار الأمريكي"
-                   },
-    "paymentMethods":  {
-                           "MANUAL_BANK_TRANSFER":  "تحويل بنكي يدوي",
-                           "WALLET_TRANSFER":  "تحويل محفظة",
-                           "CASH":  "نقدي",
-                           "OTHER":  "أخرى"
-                       },
-    "actions":  {
-                    "record":  "تسجيل الدفع",
-                    "saving":  "جارٍ الحفظ...",
-                    "pay":  "دفع",
-                    "payNow":  "دفع الآن",
-                    "backToList":  "العودة إلى القائمة",
-                    "viewDetails":  "عرض التفاصيل",
-                    "history":  "سجل الدفعات"
-                },
-    "errors":  {
-                   "pickPractitioner":  "يرجى اختيار المعالج أولًا.",
-                   "currencyRequired":  "يرجى اختيار العملة.",
-                   "balanceUnavailable":  "تعذر تحميل الرصيد الآن.",
-                   "amountInvalid":  "أدخل مبلغًا صحيحًا أكبر من الصفر.",
-                   "amountExceedsDue":  "لا يمكن تسجيل مبلغ أكبر من الرصيد القابل للصرف لهذه العملة.",
-                   "noPayableAmount":  "لا توجد مبالغ قابلة للصرف لهذا المعالج بهذه العملة.",
-                   "generic":  "تعذر تسجيل الدفعة الآن.",
-                   "duplicateReference":  "تم تسجيل رقم مرجع التحويل هذا من قبل.",
-                   "practitionerNotFound":  "لم يتم العثور على المعالج."
-               }
+  "meta": {
+    "title": "مستحقات المعالجين - الإدارة",
+    "description": "راجع أرصدة المعالجين ومبالغ الباقات وسجلات الدفعات اليدوية."
+  },
+  "list": {
+    "meta": {
+      "title": "مستحقات المعالجين - الإدارة",
+      "description": "راجع مستحقات كل معالج حسب العملة وسجّل المبلغ الذي تم تحويله فعليًا خارج المنصة."
+    },
+    "eyebrow": "مستحقات المعالجين",
+    "title": "مستحقات المعالجين",
+    "description": "راجع مستحقات كل معالج حسب العملة وسجّل المبلغ الذي تم تحويله فعليًا خارج المنصة.",
+    "searchLabel": "ابحث عن معالج",
+    "searchPlaceholder": "ابحث بالاسم أو المعرّف",
+    "results": "{count, number} معالج",
+    "loading": "جارٍ تحميل المعالجين...",
+    "emptyTitle": "لا توجد مستحقات قابلة للدفع حاليًا",
+    "emptyDescription": "لا يوجد معالجون لديهم مستحقات أو مبالغ باقات في هذه اللحظة.",
+    "note": "ستظهر مستحقات الجلسات ومبالغ الباقات في نفس الصفحة مع الحفاظ على فصل الجنيه والدولار.",
+    "filters": {
+      "all": "الكل",
+      "hasPayable": "لهم فلوس",
+      "hasPackage": "لهم باقات",
+      "allCurrencies": "كل العملات"
+    },
+    "columns": {
+      "practitioner": "المعالج",
+      "payableEgp": "القابل للدفع EGP",
+      "payableUsd": "القابل للدفع USD",
+      "lastPayout": "آخر دفعة",
+      "actions": "الإجراءات"
+    },
+    "payableNow": "القابل للدفع الآن",
+    "normalSessionsShort": "الجلسات العادية:",
+    "packageReleasedShort": "مبالغ الباقات المتاحة:",
+    "packageHeldShort": "مبالغ الباقات المحجوزة:",
+    "packageHint": "محجوز EGP: {egp} | محجوز USD: {usd}",
+    "destination": {
+      "missing": "لا توجد لقطة وجهة دفع متاحة",
+      "methods": {
+        "bank": "تحويل بنكي",
+        "iban": "IBAN",
+        "wallet": "محفظة",
+        "other": "أخرى",
+        "unknown": "طريقة غير معروفة"
+      }
+    },
+    "actions": {
+      "viewDetails": "عرض التفاصيل",
+      "pay": "دفع",
+      "history": "سجل الدفعات",
+      "createSettlement": "إنشاء تسوية",
+      "reconciliation": "مراجعة محاسبية"
+    },
+    "workspace": {
+      "eyebrow": "مساحة التسوية",
+      "title": "أنشئ تسوية بعد خروج المال من Fayed",
+      "description": "اختر المختص، راجع لقطة وجهة الدفع، ثم سجّل المبلغ الفعلي الذي حوّلته خارج المنصة.",
+      "bullets": {
+        "manualTransfer": "تحويل خارجي فقط",
+        "recordActualAmount": "سجّل المبلغ الفعلي المدفوع",
+        "keepHistory": "احتفظ بسجل التسويات في مكان واحد"
+      }
+    },
+    "pagination": {
+      "previous": "السابق",
+      "next": "التالي",
+      "page": "الصفحة {page, number} من {totalPages, number}"
+    }
+  },
+  "detail": {
+    "meta": {
+      "title": "تفاصيل مستحقات المعالج",
+      "description": "راجع الأرصدة حسب العملة ومبالغ الباقات وسجل الدفعات لمعالج واحد."
+    },
+    "eyebrow": "مستحقات المعالجين",
+    "description": "راجع الأرصدة حسب العملة ومبالغ الباقات وسجل الدفعات لمعالج واحد.",
+    "backToList": "العودة إلى المستحقات",
+    "payNow": "دفع الآن",
+    "sections": {
+      "egp": "الجنيه المصري",
+      "usd": "الدولار الأمريكي"
+    },
+    "metrics": {
+      "normal": "مستحقات الجلسات العادية",
+      "packageReleased": "مستحقات الباقات الجاهزة للصرف",
+      "packageHeld": "مبالغ الباقات المحجوزة",
+      "totalPayable": "إجمالي القابل للدفع الآن",
+      "lastPayout": "آخر دفعة"
+    },
+    "lastPayoutEmpty": "لا توجد دفعة مسجلة بعد",
+    "packageSectionTitle": "مبالغ الباقات",
+    "packageSectionDescription": "مبالغ الباقات جزء من حساب المعالج، لكن الجزء المحجوز يبقى خارج إجمالي القابل للدفع حتى يتم الإفراج عنه.",
+    "packageSectionNote": "المبالغ المحجوزة تظهر للتوضيح فقط، ولا يمكن دفعها الآن إلا إذا سمحت قواعد الإفراج في الخلفية بذلك بالفعل.",
+    "historyEyebrow": "سجل الدفعات",
+    "historyTitle": "سجل الدفعات",
+    "historyDescription": "الدفعات اليدوية الحديثة المسجلة لهذا المعالج.",
+    "historyEmptyTitle": "لا توجد دفعات بعد",
+    "historyEmptyDescription": "ستظهر الدفعات المسجلة هنا بعد حفظها.",
+    "actions": {
+      "reconciliation": "مراجعة محاسبية"
+    },
+    "filters": {
+      "practitionerLabel": "المختص",
+      "practitionerPlaceholder": "ابحث بالاسم أو المعرّف",
+      "methodLabel": "الطريقة",
+      "allMethods": "كل الطرق",
+      "from": "من",
+      "to": "إلى",
+      "clear": "مسح الفلاتر"
+    },
+    "historyColumns": {
+      "amount": "المبلغ",
+      "currency": "العملة",
+      "paidAt": "تاريخ الدفع",
+      "paymentMethod": "الطريقة",
+      "reference": "مرجع التحويل",
+      "notes": "ملاحظات"
+    }
+  },
+  "history": {
+    "meta": {
+      "title": "سجل دفعات المعالجين - الإدارة",
+      "description": "راجع الدفعات اليدوية المسجلة عبر المعالجين."
+    },
+    "eyebrow": "سجل دفعات المعالجين",
+    "title": "سجل دفعات المعالجين",
+    "description": "راجع سجلات الدفعات التي سجّلتها الإدارة.",
+    "backToList": "العودة إلى المستحقات",
+    "results": "{count, number} سجل",
+    "loading": "جارٍ تحميل سجل الدفعات...",
+    "emptyTitle": "لا توجد سجلات دفعات",
+    "emptyDescription": "ستظهر الدفعات المسجلة هنا.",
+    "filters": {
+      "currencyLabel": "العملة",
+      "allCurrencies": "كل العملات"
+    },
+    "columns": {
+      "practitioner": "المعالج",
+      "currency": "العملة",
+      "amount": "المبلغ المدفوع",
+      "paidAt": "تاريخ الدفع",
+      "reference": "مرجع التحويل",
+      "notes": "ملاحظات",
+      "recordedBy": "تم التسجيل بواسطة",
+      "actions": "Actions"
+    },
+    "pagination": {
+      "previous": "السابق",
+      "next": "التالي",
+      "page": "الصفحة {page, number} من {totalPages, number}"
+    },
+    "actions": {
+      "viewPractitioner": "عرض المختص",
+      "viewDetails": "عرض التفاصيل"
+    },
+    "detail": {
+      "eyebrow": "سجل دفعة",
+      "title": "تفاصيل الدفعة",
+      "description": "راجع تفاصيل الدفعة كما تم تسجيلها من الإدارة.",
+      "close": "إغلاق",
+      "unknownPractitioner": "معالج غير معروف",
+      "notesTitle": "ملاحظات",
+      "noNotes": "لم تضاف ملاحظات لهذه الدفعة.",
+      "fields": {
+        "amount": "المبلغ المدفوع",
+        "currency": "العملة",
+        "paidAt": "تاريخ الدفع",
+        "paymentMethod": "الطريقة",
+        "reference": "مرجع التحويل",
+        "recordedBy": "تم التسجيل بواسطة"
+      }
+    }
+  },
+  "drawer": {
+    "eyebrow": "دفع مستحقات معالج",
+    "title": "تسجيل دفعة معالج",
+    "description": "اختر العملة وسجّل المبلغ الذي تم تحويله فعليًا خارج المنصة.",
+    "manualNotice": "هذه الصفحة تسجل الدفعة فقط. التحويل الفعلي يتم خارج المنصة.",
+    "currencyHelp": "لكل عملة رصيد مستقل، ويتم تسجيلها بشكل منفصل.",
+    "practitioner": "المعالج",
+    "selectedCurrency": "العملة المختارة",
+    "summary": {
+      "normal": "مستحقات الجلسات العادية",
+      "packageReleased": "مستحقات الباقات الجاهزة للصرف",
+      "packageHeld": "مبالغ الباقات المحجوزة",
+      "totalPayable": "إجمالي القابل للصرف"
+    },
+    "lastPayout": "آخر دفعة",
+    "packageHeldNote": "مبالغ الباقات المحجوزة تظهر للمراجعة فقط ولا تدخل في إجمالي القابل للصرف.",
+    "noPayableAmount": "لا توجد مبالغ قابلة للدفع لهذا المعالج بهذه العملة.",
+    "currencyLabel": "العملة",
+    "amountPaidLabel": "المبلغ المحول فعليًا",
+    "paidAtLabel": "تاريخ التحويل",
+    "paymentMethodLabel": "طريقة التحويل",
+    "transferReferenceLabel": "رقم مرجع التحويل",
+    "transferReferencePlaceholder": "مرجع البنك أو المحفظة",
+    "notesLabel": "ملاحظات",
+    "notesPlaceholder": "ملاحظة اختيارية",
+    "remainingLabel": "المتبقي بعد الدفع",
+    "footerNote": "سجّل هنا المبلغ الذي تم تحويله فعليًا للمعالج خارج المنصة.",
+    "cancel": "إلغاء",
+    "validation": {
+      "amountInvalid": "أدخل مبلغًا صحيحًا أكبر من الصفر.",
+      "amountTooHigh": "لا يمكن تسجيل مبلغ أكبر من المستحقات القابلة للصرف لهذه العملة."
+    },
+    "amountCurrencyNote": "عملة المبلغ: {currency}",
+    "searchEyebrow": "مساحة التسوية",
+    "searchTitle": "إنشاء تسوية",
+    "searchDescription": "ابحث باسم المعالج أو الكود لاختيار المعالج الذي تريد تسجيل تسوية له.",
+    "searchHint": "البحث يعرض حتى 30 نتيجة مختصرة فقط.",
+    "searchStartTitle": "ابحث عن مختص للتسوية",
+    "searchStartDescription": "ابحث باسم المعالج أو الكود لاختيار المعالج الذي تريد تسجيل تسوية له.",
+    "searchEmptyTitle": "لا توجد نتائج مطابقة",
+    "searchEmptyDescription": "جرّب اسمًا أو كودًا آخر.",
+    "searchPlaceholder": "ابحث باسم المعالج أو الكود",
+    "selectPractitioner": "اختيار",
+    "selectedPractitioner": "المختص المحدد",
+    "selectionNote": "راجع بطاقات الرصيد ولقطة وجهة الدفع للقراءة فقط، ثم سجّل المبلغ الفعلي الذي حوّلته خارج Fayed.",
+    "identityConfirmation": "تأكد من بيانات المعالج قبل تسجيل التسوية.",
+    "changePractitioner": "تغيير المختص",
+    "viewHistory": "عرض سجل التسويات",
+    "openSettlement": "فتح التسوية",
+    "currentCurrencyLabel": "عملة التسوية الحالية",
+    "currencyActive": "محدد",
+    "currencySwitch": "تبديل",
+    "currencyBadge": {
+      "egp": "EGP",
+      "usd": "USD"
+    },
+    "balanceBreakdown": "العادي {normal} · الباقات {packages} · المحجوز {held}",
+    "packageHeldLabel": "المبلغ المحجوز",
+    "destinationTitle": "لقطة وجهة الدفع",
+    "destinationReadOnly": "للقراءة فقط",
+    "destinationMissing": "لا توجد لقطة لوجهة الدفع لهذا المختص.",
+    "destinationSummary": "ملخص وجهة الدفع",
+    "confirmationHint": "تأكد أن المبلغ أعلاه يطابق ما تم تحويله خارجيًا قبل الحفظ.",
+    "destination": {
+      "accountHolder": "صاحب الحساب",
+      "bankName": "البنك",
+      "walletProvider": "مزوّد المحفظة",
+      "identifier": "الحساب / المعرّف",
+      "otherDetails": "تفاصيل أخرى",
+      "methods": {
+        "bank": "حساب بنكي",
+        "iban": "IBAN",
+        "wallet": "محفظة",
+        "other": "أخرى",
+        "unknown": "طريقة غير معروفة"
+      }
+    },
+    "comboboxLabel": "اختيار المعالج",
+    "clearSearch": "مسح البحث",
+    "searchError": "تعذّر حمل نتائج البحث الآن.",
+    "destinationAvailable": "وجهة الدفع متاحة",
+    "destinationMissingShort": "يحتاج وجهة دفع",
+    "initialEmptyMessage": "لا يوجد معالجون لديهم أرصدة قابلة للتسوية حاليًا",
+    "confirmationCheckboxLabel": "أؤكد أن المبلغ أعلاه هو المبلغ الذي تم تحويله فعليًا خارج المنصة."
+  },
+  "currencies": {
+    "EGP": "EGP - الجنيه المصري",
+    "USD": "USD - الدولار الأمريكي"
+  },
+  "paymentMethods": {
+    "MANUAL_BANK_TRANSFER": "تحويل بنكي يدوي",
+    "WALLET_TRANSFER": "تحويل محفظة",
+    "CASH": "نقدي",
+    "OTHER": "أخرى"
+  },
+  "actions": {
+    "record": "تسجيل الدفع",
+    "saving": "جارٍ الحفظ...",
+    "pay": "دفع",
+    "payNow": "دفع الآن",
+    "backToList": "العودة إلى القائمة",
+    "viewDetails": "عرض التفاصيل",
+    "history": "سجل الدفعات",
+    "createSettlement": "إنشاء تسوية",
+    "reconciliation": "مراجعة محاسبية"
+  },
+  "errors": {
+    "pickPractitioner": "يرجى اختيار المعالج أولًا.",
+    "currencyRequired": "يرجى اختيار العملة.",
+    "balanceUnavailable": "تعذر تحميل الرصيد الآن.",
+    "amountInvalid": "أدخل مبلغًا صحيحًا أكبر من الصفر.",
+    "amountExceedsDue": "لا يمكن تسجيل مبلغ أكبر من الرصيد القابل للصرف لهذه العملة.",
+    "noPayableAmount": "لا توجد مبالغ قابلة للصرف لهذا المعالج بهذه العملة.",
+    "generic": "تعذر تسجيل الدفعة الآن.",
+    "duplicateReference": "تم تسجيل رقم مرجع التحويل هذا من قبل.",
+    "practitionerNotFound": "لم يتم العثور على المعالج."
+  },
+  "messages": {
+    "success": "تم حفظ التسوية بنجاح.",
+    "error": "تعذّر حفظ التسوية. حاول مرة أخرى."
+  }
 }

@@ -3,7 +3,10 @@ import { extractData } from "@/lib/api/response";
 import type { ApiPayload } from "@/lib/api/contracts";
 import type {
   ApprovePractitionerApplicationRequest,
+  AdminDirectPractitionerCreateResponse,
+  AdminPreparedPractitionerCredentialResponse,
   CreateAdminPractitionerRequest,
+  UploadAdminPractitionerCredentialFileRequest,
   ListPractitionerApplicationsParams,
   PractitionerApplicationDecisionResponse,
   PractitionerApplicationCredentialResponse,
@@ -153,9 +156,30 @@ export async function createAdminPractitionerDirectly(
   data: CreateAdminPractitionerRequest
 ) {
   const response =
-    await httpClient.post<ApiPayload<PractitionerApplicationDecisionResponse>>(
+    await httpClient.post<ApiPayload<AdminDirectPractitionerCreateResponse>>(
       "/admin/practitioner-applications/direct-create",
       data
+    );
+  return extractData(response.data);
+}
+
+/**
+ * Uploads a credential file for direct practitioner creation and returns a managed fileUrl.
+ */
+export async function uploadAdminDirectPractitionerCredentialFile(
+  data: UploadAdminPractitionerCredentialFileRequest
+) {
+  const formData = new FormData();
+  formData.append("file", data.file);
+  formData.append("credentialType", data.credentialType);
+  if (data.expiresAt) {
+    formData.append("expiresAt", data.expiresAt);
+  }
+
+  const response =
+    await httpClient.post<ApiPayload<AdminPreparedPractitionerCredentialResponse>>(
+      "/admin/practitioner-applications/direct-create/credentials/upload",
+      formData
     );
   return extractData(response.data);
 }

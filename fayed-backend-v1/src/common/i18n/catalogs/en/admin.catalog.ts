@@ -29,6 +29,8 @@ export const enAdminCatalog = {
         'Practitioner application details fetched successfully',
       practitionerCreatedDirectly:
         'Practitioner was created directly from admin successfully',
+      credentialPrepared:
+        'Credential file was uploaded and prepared successfully',
       applicationApproved: 'Practitioner application approved successfully',
       applicationRejected: 'Practitioner application rejected successfully',
       changesRequested: 'Changes were requested successfully',
@@ -45,7 +47,11 @@ export const enAdminCatalog = {
         'Practitioner application is already rejected',
       applicationNotReviewable:
         'Practitioner application is not reviewable in its current state',
+      directCreateMissingRequirements:
+        'Direct practitioner creation is missing required approval data',
       invalidCountryCode: 'Country code is invalid or not active',
+      invalidCredentialExpiry:
+        'Credential expiry must be a future date when provided',
       invalidYearsOfExperience: 'Years of experience must be zero or greater',
       invalidSpecialtyIds: 'One or more specialty ids are invalid or inactive',
       invalidSpecialtyCategoryId:

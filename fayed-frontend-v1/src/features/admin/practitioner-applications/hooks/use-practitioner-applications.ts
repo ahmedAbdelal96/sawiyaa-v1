@@ -8,6 +8,7 @@ import {
   listAdminPractitionerApplications,
   rejectAdminPractitionerApplication,
   requestChangesAdminPractitionerApplication,
+  uploadAdminDirectPractitionerCredentialFile,
   updateAdminPractitionerApplicationCredential,
   updateAdminPractitionerApplicationDraft,
 } from "../api/practitioner-applications.api";
@@ -19,6 +20,7 @@ import type {
   ListPractitionerApplicationsParams,
   RejectPractitionerApplicationRequest,
   RequestPractitionerApplicationChangesRequest,
+  UploadAdminPractitionerCredentialFileRequest,
   UpdateAdminPractitionerApplicationCredentialRequest,
   UpdatePractitionerApplicationDraftRequest,
 } from "../types/practitioner-applications.types";
@@ -175,6 +177,16 @@ export function useCreateAdminPractitionerDirect() {
       queryClient.invalidateQueries({ queryKey: ["practitioners"] });
       queryClient.invalidateQueries({ queryKey: ["users"] });
     },
+  });
+}
+
+/**
+ * Uploads a credential file for admin direct-create wizard.
+ */
+export function useUploadAdminDirectPractitionerCredentialFile() {
+  return useMutation({
+    mutationFn: (data: UploadAdminPractitionerCredentialFileRequest) =>
+      uploadAdminDirectPractitionerCredentialFile(data),
   });
 }
 

@@ -32,6 +32,7 @@ export class SessionMapper {
   toListItem(
     session: SessionWithRelations,
     now = new Date(),
+    unreadCount = 0,
   ): SessionListItemViewModel {
     return {
       id: session.id,
@@ -84,14 +85,17 @@ export class SessionMapper {
         now,
         runtimePrepareLeadMinutes: DEFAULT_SESSION_RUNTIME_PREPARE_LEAD_MINUTES,
       }),
+      unreadCount,
+      hasUnread: unreadCount > 0,
     };
   }
 
   toDetails(
     session: SessionWithRelations,
     now = new Date(),
+    unreadCount = 0,
   ): SessionDetailsViewModel {
-    const base = this.toListItem(session, now);
+    const base = this.toListItem(session, now, unreadCount);
 
     return {
       ...base,

@@ -49,8 +49,15 @@ export class GetMyPatientSessionsUseCase {
         take: limit,
       });
 
+    const unreadMap = await this.sessionRepository.countUnreadBySessionIdsForUser({
+      userId: input.userId,
+      sessionIds: sessions.map((s) => s.id),
+    });
+
     return {
-      items: sessions.map((session) => this.sessionMapper.toListItem(session, now)),
+      items: sessions.map((session) =>
+        this.sessionMapper.toListItem(session, now, unreadMap.get(session.id) ?? 0)
+      ),
       pagination: {
         page,
         limit,

@@ -3,6 +3,13 @@
 import { useMemo, useRef, useState, type FormEvent } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import {
+  CheckCircle2,
+  ChevronDown,
+  Clock3,
+  PlusCircle,
+  ShieldAlert,
+} from "lucide-react";
+import {
   useCreateAvailabilityException,
   useDeleteAvailabilityException,
 } from "../hooks/use-availability";
@@ -17,16 +24,12 @@ type ExceptionMode = "DAY_OFF" | "BLOCK_SELECTED_TIMES" | "ADD_EXTRA_TIMES";
 type ExceptionFormState = {
   internalNote: string;
   error: string | null;
+  errorArea: "date" | "mode" | "range" | null;
 };
 
 type SlotSelection = {
   startIndex: number | null;
   endIndex: number | null;
-};
-
-type ExceptionGroup = {
-  dateKey: string;
-  items: AvailabilityException[];
 };
 
 const SLOT_STEP_MINUTES = 30;
@@ -48,10 +51,6 @@ const WEEKDAY_SHORT_TO_INDEX: Record<string, number> = {
   Fri: 5,
   Sat: 6,
 };
-
-function padTwoDigits(value: number): string {
-  return String(value).padStart(2, "0");
-}
 
 function getDateKeyInTimeZone(date: Date, timeZone: string): string {
   const formatter = new Intl.DateTimeFormat("en-CA", {
@@ -103,6 +102,38 @@ function buildTimeLabel(minutes: number, locale: string): string {
 
 function buildRangeLabel(startMinute: number, endMinute: number, locale: string): string {
   return `${buildTimeLabel(startMinute, locale)} - ${buildTimeLabel(endMinute, locale)}`;
+}
+
+function buildDurationLabel(durationMinutes: number, locale: string): string {
+  if (durationMinutes >= DAY_MINUTES - 1) {
+    return locale === "ar" ? "طوال اليوم" : "Full day";
+  }
+
+  const hours = Math.floor(durationMinutes / 60);
+  const minutes = durationMinutes % 60;
+  const formatter = new Intl.NumberFormat(locale);
+
+  if (hours === 0) {
+    return locale === "ar"
+      ? `${formatter.format(minutes)} دقيقة`
+      : `${formatter.format(minutes)} minute${minutes === 1 ? "" : "s"}`;
+  }
+
+  const hourLabel =
+    locale === "ar"
+      ? `${formatter.format(hours)} ساعة`
+      : `${formatter.format(hours)} hour${hours === 1 ? "" : "s"}`;
+
+  if (minutes === 0) {
+    return hourLabel;
+  }
+
+  const minuteLabel =
+    locale === "ar"
+      ? `${formatter.format(minutes)} دقيقة`
+      : `${formatter.format(minutes)} minute${minutes === 1 ? "" : "s"}`;
+
+  return locale === "ar" ? `${hourLabel} و ${minuteLabel}` : `${hourLabel} ${minuteLabel}`;
 }
 
 function toIsoFromDateKeyAndMinutes(dateKey: string, minutes: number): string {
@@ -173,28 +204,11 @@ function getModeFromException(exception: AvailabilityException, timeZone: string
   return isFullDayBlock(exception, timeZone) ? "DAY_OFF" : "BLOCK_SELECTED_TIMES";
 }
 
-function groupExceptionsByDate(exceptions: AvailabilityException[], timeZone: string): ExceptionGroup[] {
-  const grouped = new Map<string, AvailabilityException[]>();
-
-  for (const exception of exceptions) {
-    const dateKey = getDateKeyInTimeZone(new Date(exception.startsAt), timeZone);
-    const bucket = grouped.get(dateKey) ?? [];
-    bucket.push(exception);
-    grouped.set(dateKey, bucket);
-  }
-
-  return Array.from(grouped.entries())
-    .sort(([left], [right]) => right.localeCompare(left))
-    .map(([dateKey, items]) => ({
-      dateKey,
-      items: items.sort((left, right) => left.startsAt.localeCompare(right.startsAt)),
-    }));
-}
-
 function buildInitialForm(): ExceptionFormState {
   return {
     internalNote: "",
     error: null,
+    errorArea: null,
   };
 }
 
@@ -216,7 +230,7 @@ export default function AvailabilityExceptionsList({ data }: Props) {
   const deleteException = useDeleteAvailabilityException();
   const dateInputRef = useRef<HTMLInputElement | null>(null);
 
-  const [selectedMode, setSelectedMode] = useState<ExceptionMode>("DAY_OFF");
+  const [selectedMode, setSelectedMode] = useState<ExceptionMode | null>(null);
   const [selectedDate, setSelectedDate] = useState<string>(() => getDateKeyInTimeZone(new Date(), data.timezone));
   const [form, setForm] = useState<ExceptionFormState>(buildInitialForm);
   const [slotSelection, setSlotSelection] = useState<SlotSelection>(buildInitialSelection);
@@ -227,12 +241,29 @@ export default function AvailabilityExceptionsList({ data }: Props) {
     [data.exceptions],
   );
 
-  const groupedExceptions = useMemo(
-    () => groupExceptionsByDate(activeExceptions, data.timezone),
-    [activeExceptions, data.timezone],
+  const selectedDateExceptions = useMemo(
+    () =>
+      activeExceptions.filter(
+        (exception) => getDateKeyInTimeZone(new Date(exception.startsAt), data.timezone) === selectedDate,
+      ),
+    [activeExceptions, data.timezone, selectedDate],
   );
 
   const dateInfo = useMemo(() => {
+    if (!selectedDate) {
+      return {
+        title: t("dateSummary.noDateSelected"),
+        dateLabel: t("dateSummary.noDateSelected"),
+        weekdayLabel: t("dateSummary.noDateSelected"),
+        hasWeeklySchedule: false,
+        hasExceptions: false,
+        hasFullDayBlock: false,
+        summaryLine: "",
+        weeklyScheduleLabel: t("dateSummary.noWeeklySchedule"),
+        dayStatusLabel: t("dateSummary.noExceptionsForDay"),
+      };
+    }
+
     const dateLabel = buildDateLabel(selectedDate, data.timezone, locale);
     const weekdayIndex = getWeekdayIndexForDateKey(selectedDate, data.timezone);
     const hasWeeklySchedule = data.weeklySlots.some(
@@ -241,10 +272,18 @@ export default function AvailabilityExceptionsList({ data }: Props) {
     const hasExceptions = activeExceptions.some(
       (exception) => getDateKeyInTimeZone(new Date(exception.startsAt), data.timezone) === selectedDate,
     );
+    const hasFullDayBlock = selectedDateExceptions.some((exception) => isFullDayBlock(exception, data.timezone));
     const weekdayLabel = new Intl.DateTimeFormat(locale, {
       weekday: "long",
       timeZone: data.timezone,
     }).format(new Date(`${selectedDate}T12:00:00`));
+    const dayStatusLabel = hasFullDayBlock
+      ? t("dateSummary.dayBlocked")
+      : hasExceptions
+        ? t("dateSummary.dayHasExceptions")
+        : hasWeeklySchedule
+          ? t("dateSummary.followsWeeklySchedule")
+          : t("dateSummary.noWeeklySchedule");
 
     return {
       title: `${t("summary.titlePrefix")} ${dateLabel}`,
@@ -252,11 +291,41 @@ export default function AvailabilityExceptionsList({ data }: Props) {
       weekdayLabel,
       hasWeeklySchedule,
       hasExceptions,
+      hasFullDayBlock,
       summaryLine: `${weekdayLabel} · ${data.timezone}`,
       weeklyScheduleLabel: hasWeeklySchedule ? t("summary.weeklySchedule") : t("summary.noWeeklySchedule"),
-      exceptionsLabel: hasExceptions ? t("summary.hasExceptions") : t("summary.noExceptionsForDay"),
+      dayStatusLabel,
     };
-  }, [activeExceptions, data.timezone, data.weeklySlots, locale, selectedDate, t]);
+  }, [activeExceptions, data.timezone, data.weeklySlots, locale, selectedDate, selectedDateExceptions, t]);
+
+  const selectedModeConfig = selectedMode
+    ? {
+        DAY_OFF: {
+          title: t("modes.dayOff.title"),
+          description: t("modes.dayOff.description"),
+          helper: t("modes.dayOff.helper"),
+          cta: t("modes.dayOff.cta"),
+          tone: "warning" as const,
+          icon: ShieldAlert,
+        },
+        BLOCK_SELECTED_TIMES: {
+          title: t("modes.blockTimes.title"),
+          description: t("modes.blockTimes.description"),
+          helper: t("modes.blockTimes.helper"),
+          cta: t("modes.blockTimes.cta"),
+          tone: "amber" as const,
+          icon: Clock3,
+        },
+        ADD_EXTRA_TIMES: {
+          title: t("modes.extraAvailability.title"),
+          description: t("modes.extraAvailability.description"),
+          helper: t("modes.extraAvailability.helper"),
+          cta: t("modes.extraAvailability.cta"),
+          tone: "success" as const,
+          icon: PlusCircle,
+        },
+      }[selectedMode]
+    : null;
 
   const timeSlots = useMemo(
     () => Array.from({ length: DAY_MINUTES / SLOT_STEP_MINUTES }, (_, index) => index * SLOT_STEP_MINUTES),
@@ -274,57 +343,29 @@ export default function AvailabilityExceptionsList({ data }: Props) {
       ? buildRangeLabel(selectedStartMinute, selectedEndMinute, locale)
       : null;
 
-  const selectedModeTitle =
-    selectedMode === "DAY_OFF"
-      ? t("modes.dayOff.title")
-      : selectedMode === "BLOCK_SELECTED_TIMES"
-        ? t("modes.blockTimes.title")
-        : t("modes.extraAvailability.title");
-
-  const selectedModeDescription =
-    selectedMode === "DAY_OFF"
-      ? t("modes.dayOff.description")
-      : selectedMode === "BLOCK_SELECTED_TIMES"
-        ? t("modes.blockTimes.description")
-        : t("modes.extraAvailability.description");
-
-  const selectedModeHelper =
-    selectedMode === "DAY_OFF"
-      ? t("modes.dayOff.helper")
-      : selectedMode === "BLOCK_SELECTED_TIMES"
-        ? t("modes.blockTimes.helper")
-        : t("modes.extraAvailability.helper");
-
-  const submitLabel =
-    selectedMode === "DAY_OFF"
-      ? t("modes.dayOff.cta")
-      : selectedMode === "BLOCK_SELECTED_TIMES"
-        ? t("modes.blockTimes.cta")
-        : t("modes.extraAvailability.cta");
-
   function resetTimeSelection() {
     setSlotSelection(buildInitialSelection());
-    setForm((current) => ({ ...current, error: null }));
+    setForm((current) => ({ ...current, error: null, errorArea: null }));
   }
 
   function handleSelectQuickDate(nextDate: string) {
     setSelectedDate(nextDate);
     resetTimeSelection();
-    setForm((current) => ({ ...current, error: null }));
+    setForm((current) => ({ ...current, error: null, errorArea: null }));
   }
 
   function handleDateInputChange(value: string) {
     setSelectedDate(value);
     resetTimeSelection();
-    setForm((current) => ({ ...current, error: null }));
+    setForm((current) => ({ ...current, error: null, errorArea: null }));
   }
 
   function handleSlotClick(index: number) {
-    if (selectedMode === "DAY_OFF") {
+    if (!selectedMode || selectedMode === "DAY_OFF") {
       return;
     }
 
-    setForm((current) => ({ ...current, error: null }));
+    setForm((current) => ({ ...current, error: null, errorArea: null }));
 
     setSlotSelection((current) => {
       if (current.startIndex === null || current.endIndex !== null) {
@@ -339,14 +380,42 @@ export default function AvailabilityExceptionsList({ data }: Props) {
     });
   }
 
-  function validateForm() {
+  function validateForm():
+    | {
+        message: string;
+        area: ExceptionFormState["errorArea"];
+      }
+    | null {
     if (!selectedDate) {
-      return t("validation.dateRequired");
+      return {
+        message: t("validation.dateRequired"),
+        area: "date",
+      };
+    }
+
+    if (!selectedMode) {
+      return {
+        message: t("validation.actionRequired"),
+        area: "mode",
+      };
     }
 
     if (selectedMode !== "DAY_OFF") {
       if (slotSelection.startIndex === null || slotSelection.endIndex === null) {
-        return t("validation.slotRequired");
+        return {
+          message: t("validation.slotRequired"),
+          area: "range",
+        };
+      }
+
+      const startMinute = timeSlots[slotSelection.startIndex] ?? null;
+      const endMinute = slotSelection.endIndex === null ? null : (timeSlots[slotSelection.endIndex] ?? 0) + SLOT_STEP_MINUTES;
+
+      if (startMinute === null || endMinute === null || endMinute <= startMinute) {
+        return {
+          message: t("validation.endAfterStart"),
+          area: "range",
+        };
       }
     }
 
@@ -358,7 +427,11 @@ export default function AvailabilityExceptionsList({ data }: Props) {
 
     const validationError = validateForm();
     if (validationError) {
-      setForm((current) => ({ ...current, error: validationError }));
+      setForm((current) => ({
+        ...current,
+        error: validationError.message,
+        errorArea: validationError.area,
+      }));
       return;
     }
 
@@ -397,13 +470,14 @@ export default function AvailabilityExceptionsList({ data }: Props) {
     createException.mutate(payload, {
       onSuccess: () => {
         resetTimeSelection();
-        setForm({ internalNote: "", error: null });
+        setForm({ internalNote: "", error: null, errorArea: null });
         setShowInternalNote(false);
       },
       onError: () => {
         setForm((current) => ({
           ...current,
           error: t("errors.create"),
+          errorArea: "range",
         }));
       },
     });
@@ -428,346 +502,560 @@ export default function AvailabilityExceptionsList({ data }: Props) {
     return { today, tomorrow };
   }, [data.timezone]);
 
-  const selectedModeCards = [
+  const actionCards = [
     {
       id: "DAY_OFF" as const,
+      number: "1",
       title: t("modes.dayOff.title"),
       description: t("modes.dayOff.description"),
+      tone: "warning" as const,
+      icon: ShieldAlert,
+      badge: t("labels.preventBookings"),
     },
     {
       id: "BLOCK_SELECTED_TIMES" as const,
+      number: "2",
       title: t("modes.blockTimes.title"),
       description: t("modes.blockTimes.description"),
+      tone: "amber" as const,
+      icon: Clock3,
+      badge: t("labels.blockedTimes"),
     },
     {
       id: "ADD_EXTRA_TIMES" as const,
+      number: "3",
       title: t("modes.extraAvailability.title"),
       description: t("modes.extraAvailability.description"),
+      tone: "success" as const,
+      icon: PlusCircle,
+      badge: t("labels.extraAvailability"),
     },
   ];
 
   return (
     <section className="rounded-[28px] border border-border-light bg-white p-5 shadow-sm dark:border-border-light dark:bg-surface-secondary">
       <div className="space-y-2">
+        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
+          {t("steps.eyebrow")}
+        </p>
         <h2 className="text-xl font-semibold tracking-tight text-text-primary dark:text-white/90">{t("heading")}</h2>
         <p className="max-w-3xl text-sm leading-6 text-text-secondary">{t("description")}</p>
       </div>
 
       <div className="mt-5 rounded-3xl border border-border-light bg-surface-secondary/55 p-4">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-          <div className="space-y-2">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
-              {t("dateMode.eyebrow")}
-            </p>
-            <h3 className="text-base font-semibold text-text-primary dark:text-white/90">
-              {t("dateMode.title")}
-            </h3>
-            <p className="text-sm leading-6 text-text-secondary">{t("dateMode.subtitle")}</p>
-          </div>
-
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => handleSelectQuickDate(quickDates.today)}
-              className={[
-                "rounded-full border px-4 py-2 text-sm font-medium transition",
-                selectedDate === quickDates.today
-                  ? "border-primary/40 bg-primary-light/70 text-text-primary shadow-sm"
-                  : "border-border-light bg-white text-text-secondary hover:border-primary/30 hover:bg-surface-tertiary",
-              ].join(" ")}
+        <div className="grid gap-3 md:grid-cols-3">
+          {[
+            { label: t("steps.step1"), hint: t("steps.step1Hint") },
+            { label: t("steps.step2"), hint: t("steps.step2Hint") },
+            { label: t("steps.step3"), hint: t("steps.step3Hint") },
+          ].map((step, index) => (
+            <div
+              key={step.label}
+              className="flex gap-3 rounded-2xl border border-border-light bg-white px-4 py-3 shadow-sm dark:bg-surface-secondary"
             >
-              {t("dateMode.today")}
-            </button>
-            <button
-              type="button"
-              onClick={() => handleSelectQuickDate(quickDates.tomorrow)}
-              className={[
-                "rounded-full border px-4 py-2 text-sm font-medium transition",
-                selectedDate === quickDates.tomorrow
-                  ? "border-primary/40 bg-primary-light/70 text-text-primary shadow-sm"
-                  : "border-border-light bg-white text-text-secondary hover:border-primary/30 hover:bg-surface-tertiary",
-              ].join(" ")}
-            >
-              {t("dateMode.tomorrow")}
-            </button>
-            <button
-              type="button"
-              onClick={() => dateInputRef.current?.focus()}
-              className="rounded-full border border-border-light bg-white px-4 py-2 text-sm font-medium text-text-secondary transition hover:border-primary/30 hover:bg-surface-tertiary"
-            >
-              {t("dateMode.pickDate")}
-            </button>
-          </div>
-        </div>
-
-        <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
-          <div className="min-w-0">
-            <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
-              {t("dateMode.selectedDate")}
-            </label>
-            <input
-              ref={dateInputRef}
-              type="date"
-              value={selectedDate}
-              onChange={(event) => handleDateInputChange(event.target.value)}
-              className="app-control px-4 py-3"
-            />
-          </div>
-
-          <div className="rounded-2xl border border-primary/20 bg-white px-4 py-4 shadow-sm dark:bg-surface-secondary">
-            <div className="flex flex-wrap items-center gap-2">
-              <p className="text-sm font-semibold text-text-primary dark:text-white/90">{dateInfo.title}</p>
-              <span className="inline-flex rounded-full border border-primary/20 bg-primary-light/70 px-3 py-1 text-xs font-medium text-text-brand">
-                {dateInfo.weeklyScheduleLabel}
+              <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary-light text-sm font-semibold text-text-brand">
+                {index + 1}
               </span>
-              <span className="inline-flex rounded-full border border-border-light bg-surface-tertiary px-3 py-1 text-xs font-medium text-text-secondary">
-                {dateInfo.exceptionsLabel}
-              </span>
-            </div>
-            <p className="mt-2 text-sm leading-6 text-text-secondary">{dateInfo.summaryLine}</p>
-          </div>
-        </div>
-      </div>
-
-      <div className="mt-5 grid gap-3 md:grid-cols-3">
-        {selectedModeCards.map((option) => {
-          const isSelected = selectedMode === option.id;
-          return (
-            <button
-              key={option.id}
-              type="button"
-              onClick={() => {
-                setSelectedMode(option.id);
-                resetTimeSelection();
-              }}
-              className={[
-                "rounded-2xl border px-4 py-4 text-right transition",
-                "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/30",
-                isSelected
-                  ? "border-primary/45 bg-primary-light/60 text-text-primary shadow-sm"
-                  : "border-border-light bg-white text-text-primary hover:border-primary/30 hover:bg-surface-tertiary",
-              ].join(" ")}
-            >
-              <div className="space-y-1">
-                <p className="text-sm font-semibold">{option.title}</p>
-                <p className="text-xs leading-5 text-text-secondary">{option.description}</p>
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-text-primary dark:text-white/90">{step.label}</p>
+                <p className="mt-1 text-xs leading-5 text-text-secondary">{step.hint}</p>
               </div>
-            </button>
-          );
-        })}
+            </div>
+          ))}
+        </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="mt-5 rounded-3xl border border-border-light bg-white p-4 shadow-sm dark:border-border-light dark:bg-surface-secondary">
-        <div className="flex flex-col gap-2 border-b border-border-light pb-4 lg:flex-row lg:items-start lg:justify-between">
-          <div className="space-y-1">
-            <p className="text-sm font-semibold text-text-primary dark:text-white/90">{selectedModeTitle}</p>
-            <p className="text-sm text-text-secondary">{selectedModeDescription}</p>
-          </div>
-          <p className="max-w-2xl text-sm leading-6 text-text-secondary">{selectedModeHelper}</p>
-        </div>
+      <form onSubmit={handleSubmit} className="mt-5 space-y-5">
+        <div className="rounded-3xl border border-border-light bg-surface-secondary/45 p-4">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+            <div className="space-y-2">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
+                {t("dateMode.eyebrow")}
+              </p>
+              <h3 className="text-base font-semibold text-text-primary dark:text-white/90">
+                {t("dateMode.title")}
+              </h3>
+              <p className="text-sm leading-6 text-text-secondary">{t("dateMode.subtitle")}</p>
+            </div>
 
-        {selectedMode === "DAY_OFF" ? (
-          <div className="mt-4 grid gap-4">
-            <div className="rounded-2xl border border-primary/20 bg-primary-light/35 px-4 py-4">
-              <p className="text-sm font-semibold text-text-primary dark:text-white/90">{t("modes.dayOff.title")}</p>
-              <p className="mt-1 text-sm text-text-secondary">{t("modes.dayOff.helper")}</p>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => handleSelectQuickDate(quickDates.today)}
+                className={[
+                  "rounded-full border px-4 py-2 text-sm font-medium transition",
+                  selectedDate === quickDates.today
+                    ? "border-primary/40 bg-primary-light/70 text-text-primary shadow-sm"
+                    : "border-border-light bg-white text-text-secondary hover:border-primary/30 hover:bg-surface-tertiary",
+                ].join(" ")}
+              >
+                {t("dateMode.today")}
+              </button>
+              <button
+                type="button"
+                onClick={() => handleSelectQuickDate(quickDates.tomorrow)}
+                className={[
+                  "rounded-full border px-4 py-2 text-sm font-medium transition",
+                  selectedDate === quickDates.tomorrow
+                    ? "border-primary/40 bg-primary-light/70 text-text-primary shadow-sm"
+                    : "border-border-light bg-white text-text-secondary hover:border-primary/30 hover:bg-surface-tertiary",
+                ].join(" ")}
+              >
+                {t("dateMode.tomorrow")}
+              </button>
+              <button
+                type="button"
+                onClick={() => dateInputRef.current?.focus()}
+                className="rounded-full border border-border-light bg-white px-4 py-2 text-sm font-medium text-text-secondary transition hover:border-primary/30 hover:bg-surface-tertiary"
+              >
+                {t("dateMode.pickDate")}
+              </button>
             </div>
           </div>
-        ) : (
-          <div className="mt-4 grid gap-4">
-            <div className="rounded-2xl border border-primary/20 bg-primary-light/30 px-4 py-4">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <p className="text-sm font-semibold text-text-primary dark:text-white/90">{t("picker.title")}</p>
-                  <p className="mt-1 text-sm text-text-secondary">{t("picker.helper")}</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={resetTimeSelection}
-                  className="rounded-full border border-border-light bg-white px-4 py-2 text-sm font-medium text-text-secondary transition hover:bg-surface-tertiary"
+
+          <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
+            <div className="min-w-0">
+              <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
+                {t("dateMode.selectedDate")}
+              </label>
+              <input
+                ref={dateInputRef}
+                type="date"
+                value={selectedDate}
+                onChange={(event) => handleDateInputChange(event.target.value)}
+                className="app-control px-4 py-3"
+              />
+              {form.errorArea === "date" ? <p className="mt-2 text-sm text-error-500">{form.error}</p> : null}
+            </div>
+
+            <div className="rounded-2xl border border-primary/20 bg-white px-4 py-4 shadow-sm dark:bg-surface-secondary">
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="text-sm font-semibold text-text-primary dark:text-white/90">{dateInfo.title}</p>
+                <span className="inline-flex rounded-full border border-primary/20 bg-primary-light/70 px-3 py-1 text-xs font-medium text-text-brand">
+                  {dateInfo.weeklyScheduleLabel}
+                </span>
+                <span
+                  className={[
+                    "inline-flex rounded-full px-3 py-1 text-xs font-medium",
+                    dateInfo.hasFullDayBlock
+                      ? "border border-amber-200 bg-amber-50 text-amber-900"
+                      : dateInfo.hasExceptions
+                        ? "border border-warning-200 bg-warning-50 text-warning-900"
+                        : "border border-border-light bg-surface-tertiary text-text-secondary",
+                  ].join(" ")}
                 >
-                  {t("picker.clearSelection")}
-                </button>
+                  {dateInfo.dayStatusLabel}
+                </span>
               </div>
 
-              {selectedRangeLabel ? (
-                <div className="mt-4 flex flex-wrap items-center gap-2">
-                  <span className="inline-flex rounded-full border border-primary/20 bg-white px-3 py-1 text-xs font-semibold text-text-brand">
-                    {t("picker.selectedRange")}
-                  </span>
-                  <span className="inline-flex rounded-full border border-primary/20 bg-primary-light/70 px-3 py-1 text-xs font-medium text-text-primary">
-                    {selectedRangeLabel}
-                  </span>
+              <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                <div className="rounded-xl border border-border-light bg-surface-secondary/45 px-3 py-3">
+                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">{t("dateSummary.date")}</p>
+                  <p className="mt-1 text-sm font-medium text-text-primary">{dateInfo.dateLabel}</p>
                 </div>
-              ) : (
-                <p className="mt-4 text-sm text-text-secondary">
-                  {t("picker.selectStart")}
-                  {" "}
-                  {t("picker.selectEnd")}
-                </p>
-              )}
+                <div className="rounded-xl border border-border-light bg-surface-secondary/45 px-3 py-3">
+                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">{t("dateSummary.weekday")}</p>
+                  <p className="mt-1 text-sm font-medium text-text-primary">{dateInfo.weekdayLabel}</p>
+                </div>
+                <div className="rounded-xl border border-border-light bg-surface-secondary/45 px-3 py-3">
+                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">{t("dateSummary.timezone")}</p>
+                  <p className="mt-1 text-sm font-medium text-text-primary">{data.timezone}</p>
+                </div>
+                <div className="rounded-xl border border-border-light bg-surface-secondary/45 px-3 py-3">
+                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
+                    {t("dateSummary.weeklyStatus")}
+                  </p>
+                  <p className="mt-1 text-sm font-medium text-text-primary">
+                    {dateInfo.hasWeeklySchedule ? t("dateSummary.followsWeeklySchedule") : t("dateSummary.noWeeklySchedule")}
+                  </p>
+                </div>
+              </div>
+
+              <p className="mt-3 text-sm leading-6 text-text-secondary">{t("dateSummary.note")}</p>
             </div>
+          </div>
+        </div>
 
-            <div className="grid gap-4">
-              {TIME_GROUPS.map((group) => (
-                <div key={group.key} className="rounded-2xl border border-border-light bg-surface-secondary/45 p-4">
-                  <div className="mb-3 flex items-center justify-between gap-3">
-                    <div>
-                      <p className="text-sm font-semibold text-text-primary dark:text-white/90">
-                        {t(`timeGroups.${group.key}`)}
-                      </p>
-                      <p className="text-xs text-text-muted">
-                        {buildRangeLabel(group.start, group.end === DAY_MINUTES ? 1439 : group.end - SLOT_STEP_MINUTES, locale)}
-                      </p>
+        <div>
+          <div className="mb-3 flex items-end justify-between gap-4">
+            <div className="space-y-1">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
+                {t("steps.step2")}
+              </p>
+              <h3 className="text-sm font-semibold text-text-primary dark:text-white/90">{t("actionHeading")}</h3>
+              <p className="text-xs leading-5 text-text-secondary">{t("actionHint")}</p>
+            </div>
+          </div>
+
+          <div className="grid gap-3">
+            {actionCards.map((option) => {
+              const isSelected = selectedMode === option.id;
+              const accentClass =
+                option.tone === "warning"
+                  ? "border-amber-300 bg-amber-50/95 shadow-[0_10px_24px_-18px_rgba(245,158,11,0.45)]"
+                  : option.tone === "success"
+                    ? "border-emerald-200 bg-emerald-50/90 shadow-[0_10px_24px_-18px_rgba(16,185,129,0.45)]"
+                    : "border-amber-200 bg-amber-50/90 shadow-[0_10px_24px_-18px_rgba(245,158,11,0.25)]";
+              const badgeClass =
+                option.tone === "warning"
+                  ? "bg-amber-100 text-amber-900"
+                  : option.tone === "success"
+                    ? "bg-emerald-100 text-emerald-800"
+                    : "bg-amber-100 text-amber-900";
+
+              return (
+                <div
+                  key={option.id}
+                  className={[
+                    "overflow-hidden rounded-[22px] border text-right transition-all duration-200",
+                    isSelected
+                      ? `${accentClass} shadow-lg ring-1 ring-inset ring-current/10`
+                      : "border-border-light bg-white shadow-sm hover:-translate-y-0.5 hover:shadow-md dark:bg-surface-secondary dark:hover:bg-white/5",
+                  ].join(" ")}
+                >
+                  <button
+                    type="button"
+                    aria-pressed={isSelected}
+                    aria-expanded={isSelected}
+                    onClick={() => {
+                      if (selectedMode === option.id) {
+                        setSelectedMode(null);
+                        resetTimeSelection();
+                        setShowInternalNote(false);
+                        setForm((current) => ({ ...current, error: null, errorArea: null }));
+                        return;
+                      }
+
+                      if (selectedMode !== option.id) {
+                        setSelectedMode(option.id);
+                        resetTimeSelection();
+                        setShowInternalNote(false);
+                        setForm((current) => ({ ...current, error: null, errorArea: null }));
+                      }
+                    }}
+                    className={[
+                      "group flex w-full items-start gap-3 px-4 py-4 text-right transition",
+                      "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/30",
+                      isSelected ? "bg-white/35" : "hover:bg-surface-tertiary",
+                    ].join(" ")}
+                  >
+                    <span className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/90 shadow-sm">
+                      <option.icon
+                        className={[
+                          "h-5 w-5",
+                          option.tone === "warning"
+                            ? "text-amber-700"
+                            : option.tone === "success"
+                              ? "text-emerald-600"
+                              : "text-amber-700",
+                        ].join(" ")}
+                      />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="text-sm font-semibold text-text-primary dark:text-white/90">{option.title}</p>
+                        <span className={["inline-flex rounded-full px-2.5 py-0.5 text-[11px] font-semibold", badgeClass].join(" ")}>
+                          {option.tone === "warning"
+                            ? t("labels.dayOff")
+                            : option.tone === "success"
+                              ? t("labels.extraAvailability")
+                              : t("labels.blockTime")}
+                        </span>
+                      </div>
+                      <p className="mt-1 text-xs leading-5 text-text-secondary">{option.description}</p>
                     </div>
-                  </div>
+                    {isSelected ? (
+                      <span className="inline-flex items-center gap-1 rounded-full border border-primary/20 bg-primary-light/80 px-3 py-1 text-[11px] font-semibold text-text-brand dark:bg-surface-secondary">
+                        <CheckCircle2 className="h-3.5 w-3.5" />
+                        {t("selectedAction")}
+                      </span>
+                    ) : (
+                      <ChevronDown className="mt-1 h-4 w-4 shrink-0 text-text-muted transition group-hover:text-text-secondary" />
+                    )}
+                  </button>
 
-                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
-                    {timeSlots
-                      .filter((minute) => minute >= group.start && minute < group.end)
-                      .map((minute, indexInGroup) => {
-                        const absoluteIndex = timeSlots.indexOf(minute);
-                        const isStart = slotSelection.startIndex === absoluteIndex;
-                        const isEnd = slotSelection.endIndex === absoluteIndex;
-                        const hasRange =
-                          slotSelection.startIndex !== null &&
-                          slotSelection.endIndex !== null &&
-                          absoluteIndex > slotSelection.startIndex &&
-                          absoluteIndex < slotSelection.endIndex;
-
-                        return (
-                          <button
-                            key={minute}
-                            type="button"
-                            onClick={() => handleSlotClick(absoluteIndex)}
+                  {isSelected && selectedModeConfig ? (
+                    <div className="border-t border-white/60 bg-white/50 px-4 py-4 text-right dark:border-border-light dark:bg-surface-secondary/70">
+                      <div
+                        className={[
+                          "space-y-4 rounded-2xl border p-4",
+                          selectedModeConfig.tone === "warning"
+                            ? "border-amber-200 bg-amber-50/60"
+                            : selectedModeConfig.tone === "success"
+                              ? "border-emerald-200 bg-emerald-50/60"
+                              : "border-amber-200 bg-amber-50/55",
+                        ].join(" ")}
+                      >
+                        <div className="flex items-start gap-3">
+                          <span
                             className={[
-                              "rounded-xl border px-3 py-2 text-sm font-medium transition",
-                              "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/30",
-                              isStart || isEnd
-                                ? "border-primary bg-primary text-white shadow-sm"
-                                : hasRange
-                                  ? "border-primary/30 bg-primary-light/65 text-text-primary"
-                                  : "border-border-light bg-white text-text-secondary hover:border-primary/30 hover:bg-surface-tertiary",
+                              "mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full",
+                              selectedModeConfig.tone === "warning"
+                                ? "bg-amber-100 text-amber-800"
+                                : selectedModeConfig.tone === "success"
+                                  ? "bg-emerald-100 text-emerald-700"
+                                  : "bg-amber-100 text-amber-800",
                             ].join(" ")}
                           >
-                            {buildTimeLabel(minute, locale)}
-                          </button>
-                        );
-                      })}
-                  </div>
+                            <selectedModeConfig.icon className="h-4 w-4" />
+                          </span>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-semibold text-text-primary dark:text-white/90">
+                              {selectedModeConfig.title}
+                            </p>
+                            <p className="mt-1 text-sm leading-6 text-text-secondary">{selectedModeConfig.helper}</p>
+                          </div>
+                        </div>
+
+                        {selectedMode === "DAY_OFF" ? (
+                          <div className="space-y-4">
+                            <div className="rounded-2xl border border-amber-200 bg-amber-50/75 px-4 py-4">
+                              <p className="text-sm font-semibold text-text-primary dark:text-white/90">
+                                {t("modes.dayOff.noteTitle")}
+                              </p>
+                              <p className="mt-1 text-sm leading-6 text-text-secondary">{t("modes.dayOff.note")}</p>
+                            </div>
+
+                            <div className="min-w-0">
+                              <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
+                                {t("form.internalNoteLabel")}
+                              </label>
+                              <textarea
+                                value={form.internalNote}
+                                onChange={(event) =>
+                                  setForm((current) => ({
+                                    ...current,
+                                    internalNote: event.target.value,
+                                    error: null,
+                                    errorArea: null,
+                                  }))
+                                }
+                                placeholder={t("form.internalNotePlaceholder")}
+                                rows={3}
+                                className="app-control min-h-[84px] px-4 py-3"
+                              />
+                            </div>
+
+                            <div className="flex items-center justify-end gap-3">
+                              <button
+                                type="submit"
+                                disabled={createException.isPending}
+                                className="inline-flex items-center justify-center rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
+                              >
+                                {createException.isPending ? t("form.saving") : selectedModeConfig.cta}
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="space-y-4">
+                            <div className="rounded-2xl border border-primary/20 bg-primary-light/20 px-4 py-3">
+                              <div className="flex flex-wrap items-center justify-between gap-3">
+                                <div>
+                                  <p className="text-sm font-semibold text-text-primary dark:text-white/90">
+                                    {t("picker.title")}
+                                  </p>
+                                  <p className="mt-1 text-sm text-text-secondary">{t("picker.helper")}</p>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={resetTimeSelection}
+                                  className="rounded-full border border-border-light bg-white px-4 py-2 text-sm font-medium text-text-secondary transition hover:bg-surface-tertiary"
+                                >
+                                  {t("picker.clearSelection")}
+                                </button>
+                              </div>
+
+                              {selectedRangeLabel ? (
+                                <div className="mt-4 flex flex-wrap items-center gap-2">
+                                  <span className="inline-flex rounded-full border border-primary/20 bg-white px-3 py-1 text-xs font-semibold text-text-brand">
+                                    {t("picker.selectedRange")}
+                                  </span>
+                                  <span className="inline-flex rounded-full border border-primary/20 bg-primary-light/70 px-3 py-1 text-xs font-medium text-text-primary">
+                                    {selectedRangeLabel}
+                                  </span>
+                                </div>
+                              ) : (
+                                <p className="mt-4 text-sm text-text-secondary">
+                                  {t("picker.selectStart")} {t("picker.selectEnd")}
+                                </p>
+                              )}
+                            </div>
+
+                            <div className="grid gap-4">
+                              {TIME_GROUPS.map((group) => (
+                                <div
+                                  key={group.key}
+                                  className="rounded-2xl border border-border-light bg-surface-secondary/45 p-4"
+                                >
+                                  <div className="mb-3 flex items-center justify-between gap-3">
+                                    <div>
+                                      <p className="text-sm font-semibold text-text-primary dark:text-white/90">
+                                        {t(`timeGroups.${group.key}`)}
+                                      </p>
+                                      <p className="text-xs text-text-muted">
+                                        {buildRangeLabel(
+                                          group.start,
+                                          group.end === DAY_MINUTES ? 1439 : group.end - SLOT_STEP_MINUTES,
+                                          locale,
+                                        )}
+                                      </p>
+                                    </div>
+                                  </div>
+
+                                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
+                                    {timeSlots
+                                      .filter((minute) => minute >= group.start && minute < group.end)
+                                      .map((minute) => {
+                                        const absoluteIndex = timeSlots.indexOf(minute);
+                                        const isStart = slotSelection.startIndex === absoluteIndex;
+                                        const isEnd = slotSelection.endIndex === absoluteIndex;
+                                        const hasRange =
+                                          slotSelection.startIndex !== null &&
+                                          slotSelection.endIndex !== null &&
+                                          absoluteIndex > slotSelection.startIndex &&
+                                          absoluteIndex < slotSelection.endIndex;
+
+                                        return (
+                                          <button
+                                            key={minute}
+                                            type="button"
+                                            onClick={() => handleSlotClick(absoluteIndex)}
+                                            className={[
+                                              "rounded-xl border px-3 py-2 text-sm font-medium transition",
+                                              "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/30",
+                                              isStart || isEnd
+                                                ? "border-primary bg-primary text-white shadow-sm"
+                                                : hasRange
+                                                  ? "border-primary/30 bg-primary-light/65 text-text-primary"
+                                                  : "border-border-light bg-white text-text-secondary hover:border-primary/30 hover:bg-surface-tertiary",
+                                            ].join(" ")}
+                                          >
+                                            {buildTimeLabel(minute, locale)}
+                                          </button>
+                                        );
+                                      })}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+
+                            <div className="rounded-2xl border border-border-light bg-surface-secondary/25 px-4 py-3">
+                              <div className="flex flex-wrap items-center justify-between gap-3">
+                                <div className="space-y-1">
+                                  <p className="text-sm font-semibold text-text-primary dark:text-white/90">
+                                    {t("form.internalNoteLabel")}
+                                  </p>
+                                  <p className="text-xs leading-5 text-text-muted">{t("form.internalNoteHint")}</p>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => setShowInternalNote((current) => !current)}
+                                  className="inline-flex items-center justify-center rounded-full border border-border-light bg-white px-4 py-2 text-sm font-medium text-text-secondary transition hover:border-primary/30 hover:bg-surface-tertiary"
+                                >
+                                  {showInternalNote
+                                    ? t("form.hideInternalNote")
+                                    : form.internalNote.trim()
+                                      ? t("form.editInternalNote")
+                                      : t("form.addInternalNote")}
+                                </button>
+                              </div>
+
+                              {showInternalNote ? (
+                                <div className="mt-4 min-w-0">
+                                  <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
+                                    {t("form.internalNote")}
+                                  </label>
+                                  <textarea
+                                    value={form.internalNote}
+                                    onChange={(event) =>
+                                      setForm((current) => ({
+                                        ...current,
+                                        internalNote: event.target.value,
+                                        error: null,
+                                        errorArea: null,
+                                      }))
+                                    }
+                                    placeholder={t("form.internalNotePlaceholder")}
+                                    rows={3}
+                                    className="app-control min-h-[84px] px-4 py-3"
+                                  />
+                                </div>
+                              ) : form.internalNote.trim() ? (
+                                <p className="mt-3 inline-flex rounded-full border border-success-200 bg-success-light px-3 py-1 text-sm font-medium text-success-700">
+                                  {t("form.internalNoteSaved")}
+                                </p>
+                              ) : null}
+                            </div>
+
+                            {form.errorArea === "range" ? (
+                              <p className="text-sm text-error-500">{form.error}</p>
+                            ) : null}
+
+                            <div className="flex items-center justify-end gap-3">
+                              <button
+                                type="submit"
+                                disabled={createException.isPending}
+                                className={[
+                                  "inline-flex items-center justify-center rounded-xl px-4 py-3 text-sm font-semibold text-white shadow-sm transition disabled:cursor-not-allowed disabled:opacity-60",
+                                  selectedMode === "ADD_EXTRA_TIMES" ? "bg-primary hover:bg-primary-hover" : "bg-text-primary hover:bg-gray-700",
+                                ].join(" ")}
+                              >
+                                {createException.isPending ? t("form.saving") : selectedModeConfig.cta}
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ) : null}
                 </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        <div className="mt-4 rounded-2xl border border-border-light bg-surface-secondary/25 px-4 py-3">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="space-y-1">
-              <p className="text-sm font-semibold text-text-primary dark:text-white/90">
-                {t("form.internalNoteLabel")}
-              </p>
-              <p className="text-xs leading-5 text-text-muted">{t("form.internalNoteHint")}</p>
-            </div>
-            <button
-              type="button"
-              onClick={() => setShowInternalNote((current) => !current)}
-              className="inline-flex items-center justify-center rounded-full border border-border-light bg-white px-4 py-2 text-sm font-medium text-text-secondary transition hover:border-primary/30 hover:bg-surface-tertiary"
-            >
-              {showInternalNote
-                ? t("form.hideInternalNote")
-                : form.internalNote.trim()
-                  ? t("form.editInternalNote")
-                  : t("form.addInternalNote")}
-            </button>
+              );
+            })}
           </div>
 
-          {showInternalNote ? (
-            <div className="mt-4 min-w-0">
-              <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
-                {t("form.internalNote")}
-              </label>
-              <textarea
-                value={form.internalNote}
-                onChange={(event) =>
-                  setForm((current) => ({ ...current, internalNote: event.target.value, error: null }))
-                }
-                placeholder={t("form.internalNotePlaceholder")}
-                rows={3}
-                className="app-control min-h-[84px] px-4 py-3"
-              />
-            </div>
-          ) : form.internalNote.trim() ? (
-            <p className="mt-3 inline-flex rounded-full border border-success-200 bg-success-light px-3 py-1 text-sm font-medium text-success-700">
-              {t("form.internalNoteSaved")}
-            </p>
-          ) : null}
+          {form.errorArea === "mode" ? <p className="mt-3 text-sm text-error-500">{form.error}</p> : null}
         </div>
-
-        <div className="mt-4 flex items-center justify-end gap-3">
-          <button
-            type="submit"
-            disabled={createException.isPending}
-            className="inline-flex items-center justify-center rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-white transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {createException.isPending ? t("form.saving") : submitLabel}
-          </button>
-        </div>
-
-        {form.error ? <p className="mt-3 text-sm text-error-500">{form.error}</p> : null}
-        {createException.isError ? <p className="mt-3 text-sm text-error-500">{t("errors.create")}</p> : null}
       </form>
 
-      <div className="mt-5">
-        <div className="mb-3 flex items-end justify-between gap-4">
+      <div className="mt-6 rounded-[28px] border border-border-light bg-surface-secondary/50 p-5 shadow-sm">
+        <div className="mb-4 flex items-end justify-between gap-4">
           <div className="space-y-1">
-            <h3 className="text-sm font-semibold text-text-primary dark:text-white/90">{t("list.heading")}</h3>
-            <p className="text-xs text-text-secondary">{t("list.note")}</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">{t("steps.step3")}</p>
+            <h3 className="text-sm font-semibold text-text-primary dark:text-white/90">{t("currentExceptions.heading")}</h3>
+            <p className="text-xs leading-5 text-text-secondary">{t("currentExceptions.subtitle")}</p>
           </div>
         </div>
 
-        {groupedExceptions.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-border-light bg-surface-secondary/45 px-4 py-6 text-sm text-text-muted">
-            {t("list.empty")}
+        {selectedDateExceptions.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-border-light bg-white px-4 py-6 text-sm text-text-muted shadow-sm dark:bg-surface-secondary">
+            {t("currentExceptions.empty")}
           </div>
         ) : (
-          <div className="space-y-4">
-            {groupedExceptions.map((group) => (
-              <div key={group.dateKey} className="rounded-2xl border border-border-light bg-white p-4 shadow-sm dark:border-border-light dark:bg-surface-secondary">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div>
-                    <h4 className="text-sm font-semibold text-text-primary dark:text-white/90">
-                      {buildDateLabel(group.dateKey, data.timezone, locale)}
-                    </h4>
-                  </div>
-                </div>
-
-                <div className="mt-4 space-y-3">
-                  {group.items.map((exception) => (
-                    <ExceptionRow
-                      key={exception.id}
-                      exception={exception}
-                      timeZone={data.timezone}
-                      locale={locale}
-                      t={t}
-                      onDelete={handleDelete}
-                      deleting={deleteException.isPending}
-                    />
-                  ))}
-                </div>
-              </div>
+          <div className="space-y-3">
+            {selectedDateExceptions.map((exception) => (
+              <ExceptionRow
+                key={exception.id}
+                exception={exception}
+                selectedDate={selectedDate}
+                timeZone={data.timezone}
+                locale={locale}
+                t={t}
+                onDelete={handleDelete}
+                deleting={deleteException.isPending}
+              />
             ))}
           </div>
         )}
-      </div>
 
-      {deleteException.isError ? <p className="mt-3 text-sm text-error-500">{t("errors.delete")}</p> : null}
+        {deleteException.isError ? <p className="mt-3 text-sm text-error-500">{t("errors.delete")}</p> : null}
+      </div>
     </section>
   );
 }
 
 function ExceptionRow({
   exception,
+  selectedDate,
   timeZone,
   locale,
   t,
@@ -775,6 +1063,7 @@ function ExceptionRow({
   deleting,
 }: {
   exception: AvailabilityException;
+  selectedDate: string;
   timeZone: string;
   locale: string;
   t: ReturnType<typeof useTranslations>;
@@ -783,17 +1072,19 @@ function ExceptionRow({
 }) {
   const mode = getModeFromException(exception, timeZone);
   const internalNote = exception.reason?.trim();
+  const startParts = getZonedDateParts(new Date(exception.startsAt), timeZone);
+  const endParts = getZonedDateParts(new Date(exception.endsAt), timeZone);
+  const startMinute = startParts.hour * 60 + startParts.minute;
+  const endMinute = endParts.hour * 60 + endParts.minute;
   const timeRange = isFullDayBlock(exception, timeZone)
     ? t("labels.fullDay")
-    : `${buildTimeLabel(
-        getZonedDateParts(new Date(exception.startsAt), timeZone).hour * 60 +
-          getZonedDateParts(new Date(exception.startsAt), timeZone).minute,
-        locale,
-      )} - ${buildTimeLabel(
-        getZonedDateParts(new Date(exception.endsAt), timeZone).hour * 60 +
-          getZonedDateParts(new Date(exception.endsAt), timeZone).minute,
-        locale,
-      )}`;
+    : `${buildTimeLabel(startMinute, locale)} - ${buildTimeLabel(endMinute, locale)}`;
+  const durationMinutes = Math.max(
+    1,
+    Math.round((new Date(exception.endsAt).getTime() - new Date(exception.startsAt).getTime()) / 60_000),
+  );
+  const durationLabel = buildDurationLabel(durationMinutes, locale);
+  const dateLabel = buildDateLabel(selectedDate, timeZone, locale);
 
   const modeLabel =
     mode === "DAY_OFF"
@@ -803,25 +1094,34 @@ function ExceptionRow({
         : t("labels.extraAvailability");
 
   return (
-    <div className="rounded-2xl border border-border-light bg-surface-secondary/40 p-4">
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex min-w-0 flex-wrap items-center gap-2">
-          <span
-            className={[
-              "inline-flex rounded-full border px-3 py-1 text-xs font-semibold",
-              mode === "ADD_EXTRA_TIMES"
-                ? "border-primary/20 bg-primary-light/70 text-text-brand"
-                : "border-warning-200 bg-warning-50 text-warning-900",
-            ].join(" ")}
-          >
-            {modeLabel}
-          </span>
-          <span className="inline-flex rounded-full border border-border-light bg-white px-3 py-1 text-xs font-medium text-text-secondary">
-            {timeRange}
-          </span>
-          <span className="inline-flex rounded-full border border-success-200 bg-success-light px-3 py-1 text-xs font-semibold text-success-700">
-            {t("labels.active")}
-          </span>
+    <div className="rounded-2xl border border-border-light bg-white p-4 shadow-sm dark:border-border-light dark:bg-surface-secondary">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <span
+              className={[
+                "inline-flex rounded-full border px-3 py-1 text-xs font-semibold",
+                mode === "ADD_EXTRA_TIMES"
+                  ? "border-primary/20 bg-primary-light/70 text-text-brand"
+                  : "border-warning-200 bg-warning-50 text-warning-900",
+              ].join(" ")}
+            >
+              {modeLabel}
+            </span>
+            <span className="inline-flex rounded-full border border-border-light bg-surface-tertiary px-3 py-1 text-xs font-medium text-text-secondary">
+              {dateLabel}
+            </span>
+            <span className="inline-flex rounded-full border border-border-light bg-surface-tertiary px-3 py-1 text-xs font-medium text-text-secondary">
+              {timeRange}
+            </span>
+            <span className="inline-flex rounded-full border border-border-light bg-surface-tertiary px-3 py-1 text-xs font-medium text-text-secondary">
+              {t("labels.duration")}: {durationLabel}
+            </span>
+          </div>
+
+          {internalNote ? (
+            <p className="mt-3 text-sm leading-6 text-text-secondary">{internalNote}</p>
+          ) : null}
         </div>
 
         <button
@@ -832,21 +1132,6 @@ function ExceptionRow({
         >
           {t("actions.remove")}
         </button>
-      </div>
-
-      <div className="mt-3 grid gap-3 md:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
-        {internalNote ? (
-          <div className="min-w-0">
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
-              {t("list.internalNote")}
-            </p>
-            <p className="mt-1 text-sm leading-6 text-text-secondary">{internalNote}</p>
-          </div>
-        ) : null}
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">{t("list.status")}</p>
-          <p className="mt-1 text-sm leading-6 text-text-secondary">{t("labels.active")}</p>
-        </div>
       </div>
     </div>
   );

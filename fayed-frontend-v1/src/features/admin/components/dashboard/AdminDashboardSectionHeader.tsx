@@ -15,23 +15,23 @@ export function AdminDashboardSectionHeader({
   actionHref,
 }: AdminDashboardSectionHeaderProps) {
   return (
-    <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
+    <div className="mb-4 flex items-center justify-between gap-3 flex-wrap">
       <div className="min-w-0">
-        <h2 className="text-base font-semibold tracking-tight text-text-primary dark:text-white/95 sm:text-[1.05rem]">
+        <h2 className="text-sm font-bold uppercase tracking-wider text-text-primary dark:text-white/90">
           {title}
         </h2>
         {subtitle ? (
-          <p className="mt-1 max-w-[60ch] text-sm leading-6 text-text-secondary">{subtitle}</p>
+          <p className="mt-1 text-xs text-text-secondary dark:text-slate-400 leading-normal">{subtitle}</p>
         ) : null}
       </div>
 
       {actionLabel && actionHref ? (
         <Link
           href={actionHref as never}
-          className="app-chip inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 text-sm font-medium text-text-secondary transition hover:border-primary/25 hover:text-text-brand dark:text-white/85 dark:hover:text-primary-light"
+          className="inline-flex items-center gap-1 text-xs font-bold text-teal-600 hover:text-teal-700 dark:text-teal-400 dark:hover:text-teal-300 transition-colors focus-visible:outline-none focus-visible:underline"
         >
           {actionLabel}
-          <ArrowRight className="h-4 w-4 rtl:rotate-180" />
+          <ArrowRight className="h-3.5 w-3.5 rtl:rotate-180" />
         </Link>
       ) : null}
     </div>

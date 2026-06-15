@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { I18nManager, Linking, StyleSheet, Switch, View } from "react-native";
+import { I18nManager, Platform, StyleSheet, Switch, View } from "react-native";
+import * as WebBrowser from "expo-web-browser";
+import * as Linking from "expo-linking";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import {
@@ -13,10 +15,10 @@ import {
   Text,
 } from "../../../../components/ui";
 import { useTheme } from "../../../../providers/ThemeProvider";
-import { extractApiErrorMessage } from "../../../../lib/api";
 import { resolveSupportedCurrencyCode } from "../../../../lib/currency";
 import { normalizeAllowedExternalUrl } from "../../../../lib/external-url";
 import { useInitiatePackagePurchasePayment, useMyPackagePurchase, usePackageRefundPolicy } from "../hooks";
+import { isInvalidPaymentReturnUrlError, logPaymentInitiationError } from "../../payments/payment-initiation-errors";
 import {
   canContinuePackagePurchasePayment,
   formatDatetime,
@@ -28,6 +30,8 @@ import {
   resolvePackagePurchasePlanCount,
   warnPackagePurchaseContractMismatch,
 } from "../lib";
+
+WebBrowser.maybeCompleteAuthSession();
 
 export default function PackagePurchasePayScreen({
   purchaseId,
@@ -79,6 +83,25 @@ export default function PackagePurchasePayScreen({
     () => Boolean(purchase && canContinuePackagePurchasePayment(purchase)),
     [purchase],
   );
+  const paymentReturnUrl = useMemo(() => {
+    if (!purchaseId) {
+      return null;
+    }
+
+    const paymentReturnPath = `/package-purchases/${purchaseId}/pay`;
+
+    if (Platform.OS === "web") {
+      if (typeof window !== "undefined" && window.location?.origin) {
+        return `${window.location.origin}${paymentReturnPath}`;
+      }
+
+      return null;
+    }
+
+    return Linking.createURL(paymentReturnPath, {
+      scheme: "fayed",
+    });
+  }, [purchaseId]);
 
   if (purchaseQuery.isLoading) {
     return (
@@ -144,6 +167,7 @@ export default function PackagePurchasePayScreen({
         purchaseId,
         input: {
           acceptedRefundPolicyId: refundPolicy.id,
+          returnUrl: paymentReturnUrl ?? undefined,
         },
       });
 
@@ -157,15 +181,52 @@ export default function PackagePurchasePayScreen({
       if (payment.checkoutUrl) {
         const safeUrl = normalizeAllowedExternalUrl(payment.checkoutUrl);
         if (!safeUrl) {
-          setLocalError(
-            t("packagePurchases.pay.unsupportedRedirect", "We could not open the payment link."),
-          );
+          setLocalError(t("packagePurchases.pay.unsupportedRedirect", "We could not open the payment link."));
           return;
         }
 
         setIsRedirecting(true);
-        await Linking.openURL(safeUrl);
-        router.replace(`/(patient)/package-purchases/${purchaseId}` as never);
+
+        if (Platform.OS === "web") {
+          window.location.assign(safeUrl);
+          return;
+        }
+
+        if (!paymentReturnUrl) {
+          setLocalError(t("packagePurchases.pay.unsupportedRedirect", "We could not open the payment link."));
+          return;
+        }
+
+        try {
+          const result = await WebBrowser.openAuthSessionAsync(
+            safeUrl,
+            paymentReturnUrl,
+          );
+
+          if (result.type === "success") {
+            await purchaseQuery.refetch();
+            router.replace(`/(patient)/package-purchases/${purchaseId}` as never);
+            return;
+          }
+
+          setLocalError(
+            t(
+              "packagePurchases.pay.openFailed",
+              "Could not open the payment page. Please try again.",
+            ),
+          );
+        } catch (error) {
+          if (__DEV__) {
+            console.error("Failed to open package checkout", error);
+          }
+
+          setLocalError(
+            t(
+              "packagePurchases.pay.openFailed",
+              "Could not open the payment page. Please try again.",
+            ),
+          );
+        }
         return;
       }
 
@@ -181,7 +242,18 @@ export default function PackagePurchasePayScreen({
 
       router.replace(`/(patient)/package-purchases/${purchaseId}` as never);
     } catch (error) {
-      setLocalError(extractApiErrorMessage(error));
+      logPaymentInitiationError("package-payment-initiation", error);
+
+      if (isInvalidPaymentReturnUrlError(error)) {
+        setLocalError(
+          t("packagePurchases.pay.unsupportedRedirect", "We could not open the payment link."),
+        );
+        return;
+      }
+
+      setLocalError(
+        t("packagePurchases.pay.openFailed", "Could not open the payment page. Please try again."),
+      );
     } finally {
       setIsRedirecting(false);
     }

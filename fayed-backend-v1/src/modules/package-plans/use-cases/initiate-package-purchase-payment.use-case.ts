@@ -21,6 +21,7 @@ import { PaymentMapper } from '@modules/payments/mappers/payment.mapper';
 import { PaymentRepository } from '@modules/payments/repositories/payment.repository';
 import { PaymentProviderRegistryService } from '@modules/payments/services/payment-provider-registry.service';
 import { PaymentProviderResolverService } from '@modules/payments/services/payment-provider-resolver.service';
+import { PaymentRuntimeConfigService } from '@modules/payments/services/payment-runtime-config.service';
 import { ValidatePaymentStatusTransitionService } from '@modules/payments/services/validate-payment-status-transition.service';
 import { RefundPolicyService } from '@modules/refund-policies/services/refund-policy.service';
 import { PatientPackagePurchaseRepository } from '../repositories/package-purchase.repository';
@@ -45,6 +46,7 @@ export class InitiatePackagePurchasePaymentUseCase {
     private readonly paymentRepository: PaymentRepository,
     private readonly paymentProviderRegistryService: PaymentProviderRegistryService,
     private readonly paymentProviderResolverService: PaymentProviderResolverService,
+    private readonly paymentRuntimeConfigService: PaymentRuntimeConfigService,
     private readonly paymentGeoContextService: PaymentGeoContextService,
     private readonly validatePaymentStatusTransitionService: ValidatePaymentStatusTransitionService,
     private readonly paymentMapper: PaymentMapper,
@@ -55,6 +57,7 @@ export class InitiatePackagePurchasePaymentUseCase {
     userId: string;
     purchaseId: string;
     acceptedRefundPolicyId: string;
+    returnUrl?: string | null;
     displayLocale: string;
     userAgent?: string | null;
     ipAddress?: string | null;
@@ -116,33 +119,15 @@ export class InitiatePackagePurchasePaymentUseCase {
     }
 
     const activePackagePayment = purchase.payment;
-    if (activePackagePayment) {
-      if (!ACTIVE_PAYMENT_STATUSES.includes(activePackagePayment.status)) {
-        throw new ConflictException({
-          messageKey: 'packagePurchases.errors.paymentAlreadyExists',
-          error: 'PACKAGE_PURCHASE_PAYMENT_ALREADY_EXISTS',
-        });
-      }
-
-      await this.refundPolicyService.ensureAcceptedRefundPolicyForPayment({
-        policyType: RefundPolicyType.PACKAGE,
-        acceptedRefundPolicyId: input.acceptedRefundPolicyId,
-        acceptedByUserId: input.userId,
-        paymentId: activePackagePayment.id,
-        packagePurchaseId: purchase.id,
-        displayLocale: input.displayLocale,
-        userAgent: input.userAgent ?? null,
-        ipAddress: input.ipAddress ?? null,
-        metadataJson: {
-          paymentPurpose: PaymentPurpose.SESSION_PACKAGE_PURCHASE,
-          packagePurchaseId: purchase.id,
-          policyType: RefundPolicyType.PACKAGE,
-        },
+    const isRefreshingActivePayment = Boolean(activePackagePayment);
+    if (
+      activePackagePayment &&
+      !ACTIVE_PAYMENT_STATUSES.includes(activePackagePayment.status)
+    ) {
+      throw new ConflictException({
+        messageKey: 'packagePurchases.errors.paymentAlreadyExists',
+        error: 'PACKAGE_PURCHASE_PAYMENT_ALREADY_EXISTS',
       });
-
-      return {
-        item: this.paymentMapper.toViewModel(activePackagePayment as never),
-      };
     }
 
     const currencyCode = (purchase.currencyCodeSnapshot ?? '')
@@ -196,70 +181,75 @@ export class InitiatePackagePurchasePaymentUseCase {
       countrySnapshot,
     } as const;
 
-    const payment = await this.prisma.$transaction(async (tx) => {
-      const createdPayment = await this.paymentRepository.createPayment(
-        {
-          sessionId: null,
-          patientId: patient.id,
-          practitionerId: purchase.practitionerId,
-          paymentPurpose: PaymentPurpose.SESSION_PACKAGE_PURCHASE,
-          provider,
-          status: PaymentStatus.CREATED,
-          amountSubtotal: amountDecimal.toFixed(2),
-          amountDiscount: '0',
-          amountTotal: amountDecimal.toFixed(2),
-          currencyCode,
-          metadataJson: paymentMetadata,
-        },
-        tx,
-      );
-
-      await this.paymentRepository.createEvent(
-        {
-          paymentId: createdPayment.id,
-          eventType: PaymentEventType.PAYMENT_CREATED,
-          payloadJson: {
-            source: 'package-purchase-payment-initiation',
-            packagePurchaseId: purchase.id,
-            packagePlanCode: purchase.planCodeSnapshot,
-            paymentPurpose: PaymentPurpose.SESSION_PACKAGE_PURCHASE,
+    const payment =
+      activePackagePayment ??
+      (await this.prisma.$transaction(async (tx) => {
+        const createdPayment = await this.paymentRepository.createPayment(
+          {
+            sessionId: null,
             patientId: patient.id,
             practitionerId: purchase.practitionerId,
-          },
-        },
-        tx,
-      );
-
-      await this.packagePurchaseRepository.updatePaymentInitiation(
-        purchase.id,
-        {
-          paymentId: createdPayment.id,
-          paymentInitiatedAt: new Date(),
-        },
-        tx,
-      );
-
-      await this.refundPolicyService.ensureAcceptedRefundPolicyForPayment(
-        {
-          policyType: RefundPolicyType.PACKAGE,
-          acceptedRefundPolicyId: input.acceptedRefundPolicyId,
-          acceptedByUserId: input.userId,
-          paymentId: createdPayment.id,
-          packagePurchaseId: purchase.id,
-          displayLocale: input.displayLocale,
-          userAgent: input.userAgent ?? null,
-          ipAddress: input.ipAddress ?? null,
-          metadataJson: {
             paymentPurpose: PaymentPurpose.SESSION_PACKAGE_PURCHASE,
-            packagePurchaseId: purchase.id,
-            policyType: RefundPolicyType.PACKAGE,
+            provider,
+            status: PaymentStatus.CREATED,
+            amountSubtotal: amountDecimal.toFixed(2),
+            amountDiscount: '0',
+            amountTotal: amountDecimal.toFixed(2),
+            currencyCode,
+            metadataJson: paymentMetadata,
           },
-        },
-        tx,
-      );
+          tx,
+        );
 
-      return createdPayment;
+        await this.paymentRepository.createEvent(
+          {
+            paymentId: createdPayment.id,
+            eventType: PaymentEventType.PAYMENT_CREATED,
+            payloadJson: {
+              source: 'package-purchase-payment-initiation',
+              packagePurchaseId: purchase.id,
+              packagePlanCode: purchase.planCodeSnapshot,
+              paymentPurpose: PaymentPurpose.SESSION_PACKAGE_PURCHASE,
+              patientId: patient.id,
+              practitionerId: purchase.practitionerId,
+            },
+          },
+          tx,
+        );
+
+        await this.packagePurchaseRepository.updatePaymentInitiation(
+          purchase.id,
+          {
+            paymentId: createdPayment.id,
+            paymentInitiatedAt: new Date(),
+          },
+          tx,
+        );
+
+        return createdPayment;
+      }));
+
+    await this.refundPolicyService.ensureAcceptedRefundPolicyForPayment({
+      policyType: RefundPolicyType.PACKAGE,
+      acceptedRefundPolicyId: input.acceptedRefundPolicyId,
+      acceptedByUserId: input.userId,
+      paymentId: payment.id,
+      packagePurchaseId: purchase.id,
+      displayLocale: input.displayLocale,
+      userAgent: input.userAgent ?? null,
+      ipAddress: input.ipAddress ?? null,
+      metadataJson: {
+        paymentPurpose: PaymentPurpose.SESSION_PACKAGE_PURCHASE,
+        packagePurchaseId: purchase.id,
+        policyType: RefundPolicyType.PACKAGE,
+      },
     });
+
+    if (payment.status === PaymentStatus.AUTHORIZED) {
+      return {
+        item: this.paymentMapper.toViewModel(payment as never),
+      };
+    }
 
     const practitionerSlug =
       purchase.practitioner?.publicSlug ?? purchase.practitionerId;
@@ -273,6 +263,11 @@ export class InitiatePackagePurchasePaymentUseCase {
 
     let providerResult: PaymentProviderInitiationResult;
     try {
+      const trustedReturnUrl = this.resolveProviderRedirectionUrl({
+        provider,
+        returnUrl: input.returnUrl ?? null,
+      });
+
       providerResult = await providerAdapter.initiateSessionPayment({
         paymentId: payment.id,
         amountMinor,
@@ -280,7 +275,7 @@ export class InitiatePackagePurchasePaymentUseCase {
         description: `Package purchase payment: ${purchase.planCodeSnapshot ?? purchase.id}`,
         sessionId: purchase.id,
         patientEmail: null,
-        redirectionUrl: null,
+        redirectionUrl: trustedReturnUrl,
         checkoutCountryIsoCode:
           patientCountryIsoCode ?? practitionerCountryIsoCode,
         operatingCountryIsoCode: practitionerCountryIsoCode,
@@ -337,6 +332,7 @@ export class InitiatePackagePurchasePaymentUseCase {
         payment.id,
         {
           status: providerResult.status,
+          initiatedAt: new Date(),
           providerPaymentRef: providerResult.providerPaymentRef,
           providerOrderRef: providerResult.providerOrderRef ?? null,
           providerCustomerRef: providerResult.providerCustomerRef ?? null,
@@ -351,6 +347,17 @@ export class InitiatePackagePurchasePaymentUseCase {
         },
         tx,
       );
+
+      if (isRefreshingActivePayment) {
+        await this.packagePurchaseRepository.updatePaymentInitiation(
+          purchase.id,
+          {
+            paymentId: payment.id,
+            paymentInitiatedAt: new Date(),
+          },
+          tx,
+        );
+      }
 
       await this.paymentRepository.createEvent(
         {
@@ -413,5 +420,28 @@ export class InitiatePackagePurchasePaymentUseCase {
         currencyCode: input.currencyCode,
       },
     });
+  }
+
+  private resolveProviderRedirectionUrl(input: {
+    provider: PaymentProvider;
+    returnUrl: string | null;
+  }): string | null {
+    if (input.provider !== PaymentProvider.PAYMOB) {
+      return null;
+    }
+
+    const trustedReturnUrl =
+      this.paymentRuntimeConfigService.resolveTrustedReturnUrl(
+        input.returnUrl,
+      );
+
+    if (!trustedReturnUrl) {
+      throw new BadRequestException({
+        messageKey: 'payments.errors.invalidReturnUrl',
+        error: 'PAYMENT_INVALID_RETURN_URL',
+      });
+    }
+
+    return trustedReturnUrl;
   }
 }

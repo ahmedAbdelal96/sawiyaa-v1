@@ -2,12 +2,16 @@ type PaginationProps = {
   currentPage: number;
   totalPages: number;
   onPageChange: (page: number) => void;
+  prevLabel?: string;
+  nextLabel?: string;
 };
 
 const Pagination: React.FC<PaginationProps> = ({
   currentPage,
   totalPages,
   onPageChange,
+  prevLabel,
+  nextLabel,
 }) => {
   const pagesAroundCurrent = Array.from(
     { length: Math.min(3, totalPages) },
@@ -19,9 +23,9 @@ const Pagination: React.FC<PaginationProps> = ({
       <button
         onClick={() => onPageChange(currentPage - 1)}
         disabled={currentPage === 1}
-        className="inline-flex h-10 items-center justify-center rounded-2xl border border-border-light bg-white px-3.5 py-2.5 text-sm text-text-primary shadow-theme-xs transition hover:border-primary/25 hover:bg-primary-light disabled:cursor-not-allowed disabled:opacity-50 dark:border-border-light dark:bg-surface-secondary dark:hover:bg-surface-tertiary"
+        className="inline-flex h-10 items-center justify-center rounded-2xl border border-border-light bg-surface-secondary px-3.5 py-2.5 text-sm text-text-secondary shadow-theme-xs transition hover:bg-surface-tertiary hover:text-text-primary disabled:bg-surface-tertiary/60 disabled:text-text-muted disabled:border-border-light disabled:opacity-60 disabled:cursor-not-allowed"
       >
-        Previous
+        {prevLabel || "Previous"}
       </button>
       <div className="flex items-center gap-2">
         {currentPage > 3 && <span className="px-2">...</span>}
@@ -31,9 +35,9 @@ const Pagination: React.FC<PaginationProps> = ({
             onClick={() => onPageChange(page)}
             className={`px-4 py-2 rounded ${
               currentPage === page
-                ? "bg-primary text-white shadow-[0_12px_24px_-18px_rgba(68,161,148,0.38)]"
-                : "text-text-secondary dark:text-text-secondary"
-            } inline-flex h-10 w-10 items-center justify-center rounded-2xl text-sm font-medium transition hover:bg-primary-light hover:text-text-brand`}
+                ? "bg-primary text-white border border-primary"
+                : "text-text-secondary hover:bg-surface-tertiary hover:text-text-primary"
+            } inline-flex h-10 w-10 items-center justify-center rounded-2xl text-sm font-medium transition`}
           >
             {page}
           </button>
@@ -43,9 +47,9 @@ const Pagination: React.FC<PaginationProps> = ({
       <button
         onClick={() => onPageChange(currentPage + 1)}
         disabled={currentPage === totalPages}
-        className="inline-flex h-10 items-center justify-center rounded-2xl border border-border-light bg-white px-3.5 py-2.5 text-sm text-text-primary shadow-theme-xs transition hover:border-primary/25 hover:bg-primary-light disabled:cursor-not-allowed disabled:opacity-50 dark:border-border-light dark:bg-surface-secondary dark:hover:bg-surface-tertiary"
+        className="inline-flex h-10 items-center justify-center rounded-2xl border border-border-light bg-surface-secondary px-3.5 py-2.5 text-sm text-text-secondary shadow-theme-xs transition hover:bg-surface-tertiary hover:text-text-primary disabled:bg-surface-tertiary/60 disabled:text-text-muted disabled:border-border-light disabled:opacity-60 disabled:cursor-not-allowed"
       >
-        Next
+        {nextLabel || "Next"}
       </button>
     </div>
   );

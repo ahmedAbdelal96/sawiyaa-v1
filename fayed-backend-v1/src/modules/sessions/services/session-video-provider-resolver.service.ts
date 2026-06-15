@@ -38,6 +38,11 @@ export class SessionVideoProviderResolverService {
     }
 
     const normalized = value.trim().toUpperCase();
+    // ZOOM is not supported in Phase 1 — treat it as unknown so DAILY fallback is used.
+    if (normalized === 'ZOOM') {
+      return null;
+    }
+
     return Object.values(SessionProvider).includes(
       normalized as SessionProvider,
     )

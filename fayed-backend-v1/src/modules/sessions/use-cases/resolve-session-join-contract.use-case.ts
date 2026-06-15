@@ -4,6 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import {
+  Prisma,
   SessionEventType,
   SessionProvider,
   SessionStatus,
@@ -16,6 +17,7 @@ import { SessionRepository } from '../repositories/session.repository';
 import { ResolveSessionJoinReadinessService } from '../services/resolve-session-join-readiness.service';
 import { SessionVideoProviderRegistryService } from '../services/session-video-provider-registry.service';
 import { SessionVideoProviderResolverService } from '../services/session-video-provider-resolver.service';
+import { resolveSessionJoinPolicy } from '../utils/session-join-policy.util';
 import { PrepareSessionRuntimeUseCase } from './prepare-session-runtime.use-case';
 
 @Injectable()
@@ -50,6 +52,18 @@ export class ResolveSessionJoinContractUseCase {
       userId: input.userId,
       actorType: input.actorType,
       session,
+    });
+
+    // JOIN_ATTEMPTED — always emitted at the start of a join attempt
+    await this.emitEvent({
+      sessionId: session.id,
+      eventType: SessionEventType.JOIN_ATTEMPTED,
+      actorUserId: input.userId,
+      metadata: {
+        actorType: input.actorType,
+        sessionStatus: session.status,
+        sessionMode: session.sessionMode,
+      },
     });
 
     let effectiveSession = session;
@@ -89,7 +103,30 @@ export class ResolveSessionJoinContractUseCase {
       });
     }
 
+    // JOIN_BLOCKED — emitted when the user is not allowed to join
     if (!readiness.canJoin) {
+      const policy = resolveSessionJoinPolicy({
+        status: effectiveSession.status,
+        sessionMode: effectiveSession.sessionMode,
+        scheduledStartAt: effectiveSession.scheduledStartAt,
+        scheduledEndAt: effectiveSession.scheduledEndAt,
+        provider: effectiveSession.provider,
+        providerRoomId: effectiveSession.providerRoomId,
+        providerSessionRef: effectiveSession.providerSessionRef,
+        now: new Date(),
+      });
+
+      await this.emitEvent({
+        sessionId: effectiveSession.id,
+        eventType: SessionEventType.JOIN_BLOCKED,
+        actorUserId: input.userId,
+        metadata: {
+          actorType: input.actorType,
+          blockedReason: readiness.blockedReason,
+          sessionStatus: effectiveSession.status,
+        },
+      });
+
       return {
         item: {
           sessionId: effectiveSession.id,
@@ -97,6 +134,8 @@ export class ResolveSessionJoinContractUseCase {
           provider: effectiveSession.provider,
           canJoin: false,
           blockedReason: readiness.blockedReason,
+          availableAt: policy.joinOpensAt?.toISOString() ?? null,
+          expiresAt: policy.joinClosesAt?.toISOString() ?? null,
           roomName: effectiveSession.providerRoomId,
           roomUrl: effectiveSession.providerSessionRef,
           joinToken: null,
@@ -115,14 +154,60 @@ export class ResolveSessionJoinContractUseCase {
       );
     const adapter =
       this.sessionVideoProviderRegistryService.get(resolvedProvider);
-    const join = await adapter.createJoinToken({
-      roomId: effectiveSession.providerRoomId!,
-      userId: input.userId,
-      actorType: input.actorType,
-      displayName:
-        input.actorType === 'PATIENT'
-          ? effectiveSession.patient.user.displayName
-          : effectiveSession.practitioner.user.displayName,
+
+    // Token idempotency: reuse if a valid token was recently issued.
+    // The simplest safe approach is to always ask Daily — Daily tokens for the
+    // same room_name + user_id are valid until expiry and Daily handles reuse
+    // server-side. We emit JOIN_TOKEN_ISSUED only after a successful response.
+    let joinToken: string;
+    let tokenExpiresAt: string | null = null;
+    try {
+      const tokenResult = await adapter.createJoinToken({
+        roomId: effectiveSession.providerRoomId!,
+        userId: input.userId,
+        actorType: input.actorType,
+        displayName:
+          input.actorType === 'PATIENT'
+            ? effectiveSession.patient.user.displayName
+            : effectiveSession.practitioner.user.displayName,
+      });
+      joinToken = tokenResult.token;
+      tokenExpiresAt = this.normalizeDate(tokenResult.expiresAt);
+
+      await this.emitEvent({
+        sessionId: effectiveSession.id,
+        eventType: SessionEventType.JOIN_TOKEN_ISSUED,
+        actorUserId: input.userId,
+        metadata: {
+          actorType: input.actorType,
+          provider: resolvedProvider,
+          roomId: effectiveSession.providerRoomId,
+          tokenExpiresAt,
+        },
+      });
+    } catch (err) {
+      await this.emitEvent({
+        sessionId: effectiveSession.id,
+        eventType: SessionEventType.JOIN_TOKEN_FAILED,
+        actorUserId: input.userId,
+        metadata: {
+          actorType: input.actorType,
+          provider: resolvedProvider,
+          error: err instanceof Error ? err.message : String(err),
+        },
+      });
+      throw err;
+    }
+
+    // JOIN_ALLOWED — emitted only when a token was successfully issued
+    await this.emitEvent({
+      sessionId: effectiveSession.id,
+      eventType: SessionEventType.JOIN_ALLOWED,
+      actorUserId: input.userId,
+      metadata: {
+        actorType: input.actorType,
+        provider: resolvedProvider,
+      },
     });
 
     const promotableToReadyStatuses: SessionStatus[] = [
@@ -158,6 +243,17 @@ export class ResolveSessionJoinContractUseCase {
       ))!;
     }
 
+    const policy = resolveSessionJoinPolicy({
+      status: effectiveSession.status,
+      sessionMode: effectiveSession.sessionMode,
+      scheduledStartAt: effectiveSession.scheduledStartAt,
+      scheduledEndAt: effectiveSession.scheduledEndAt,
+      provider: effectiveSession.provider,
+      providerRoomId: effectiveSession.providerRoomId,
+      providerSessionRef: effectiveSession.providerSessionRef,
+      now: new Date(),
+    });
+
     return {
       item: {
         sessionId: effectiveSession.id,
@@ -165,17 +261,19 @@ export class ResolveSessionJoinContractUseCase {
         provider: effectiveSession.provider,
         canJoin: true,
         blockedReason: null,
+        availableAt: policy.joinOpensAt?.toISOString() ?? null,
+        expiresAt: policy.joinClosesAt?.toISOString() ?? null,
         roomName: effectiveSession.providerRoomId,
         roomUrl: effectiveSession.providerSessionRef,
-        joinToken: join.token,
+        joinToken,
         providerRuntime: this.buildProviderRuntime({
           provider: effectiveSession.provider,
           roomId: effectiveSession.providerRoomId,
           roomUrl: effectiveSession.providerSessionRef,
-          token: join.token,
-          tokenExpiresAt: this.normalizeDate(join.expiresAt),
-          joinMode: join.joinMode ?? 'redirect_url',
-          payload: join.payload ?? {},
+          token: joinToken,
+          tokenExpiresAt,
+          joinMode: 'redirect_url',
+          payload: {},
         }),
       },
     };
@@ -224,6 +322,24 @@ export class ResolveSessionJoinContractUseCase {
         error: 'SESSION_ACCESS_DENIED',
       });
     }
+  }
+
+  private async emitEvent(input: {
+    sessionId: string;
+    eventType: SessionEventType;
+    actorUserId: string;
+    metadata?: Record<string, unknown>;
+  }) {
+    await this.sessionRepository.createEvent({
+      sessionId: input.sessionId,
+      eventType: input.eventType,
+      actorUserId: input.actorUserId,
+      metadataJson: this.toPrismaJson(input.metadata ?? {}),
+    });
+  }
+
+  private toPrismaJson(value: Record<string, unknown>): Prisma.InputJsonObject {
+    return JSON.parse(JSON.stringify(value)) as Prisma.InputJsonObject;
   }
 
   private buildProviderRuntime(input: {

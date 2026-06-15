@@ -191,24 +191,24 @@ function TargetQuickActions({
 }
 
 function resolveSupportHref(item: ModerationCaseDetail | undefined) {
-  if (!item) return "/admin/support";
+  if (!item) return "/admin/messages?lane=support";
 
   if (item.targetType === "SUPPORT_TICKET") {
-    return `/admin/support/${item.targetId}`;
+    return `/admin/messages?lane=support&id=${item.targetId}`;
   }
 
   if (item.targetType === "SUPPORT_MESSAGE") {
     const ticketId = item.targetSnapshot?.context?.supportTicketId;
     if (typeof ticketId === "string" && ticketId.trim().length > 0) {
-      return `/admin/support/${ticketId}`;
+      return `/admin/messages?lane=support&id=${ticketId}`;
     }
   }
 
   if (item.reporterUserId) {
-    return `/admin/support?reporterUserId=${encodeURIComponent(item.reporterUserId)}`;
+    return `/admin/messages?lane=support&reporterUserId=${encodeURIComponent(item.reporterUserId)}`;
   }
 
-  return "/admin/support";
+  return "/admin/messages?lane=support";
 }
 
 function resolveDirectSupportTicketId(item: ModerationCaseDetail | undefined) {
@@ -455,7 +455,7 @@ export default function AdminModerationReportDetailScreen({ reportId }: Props) {
     if (directSupportTicketId) {
       try {
         await getAdminSupportTicket(directSupportTicketId);
-        router.push(`/admin/support/${directSupportTicketId}` as never);
+        router.push(`/admin/messages?lane=support&id=${directSupportTicketId}` as never);
         return;
       } catch {
         // If the referenced ticket is missing or inaccessible, fallback to creating a fresh outreach thread.
@@ -475,15 +475,15 @@ export default function AdminModerationReportDetailScreen({ reportId }: Props) {
           description: "مرحبًا، نحتاج بعض التفاصيل الإضافية لمتابعة البلاغ وحل المشكلة بأسرع وقت.",
           priority: "NORMAL",
         });
-        router.push(`/admin/support/${created.item.id}` as never);
+        router.push(`/admin/messages?lane=support&id=${created.item.id}` as never);
         return;
       } catch {
-        router.push("/admin/support" as never);
+        router.push("/admin/messages?lane=support" as never);
         return;
       }
     }
 
-    router.push("/admin/support" as never);
+    router.push("/admin/messages?lane=support" as never);
   };
 
   const reasonRequired = selectedAction ? doesActionRequireReason(selectedAction) : false;

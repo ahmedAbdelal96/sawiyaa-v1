@@ -236,7 +236,7 @@ function OverlayCloseButton({ onClose }: { onClose: () => void }) {
     <button
       type="button"
       onClick={onClose}
-      className="absolute end-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full border border-border-light bg-white text-text-muted shadow-[0_8px_18px_-12px_rgba(25,52,57,0.18)] transition hover:border-border-strong hover:bg-surface-secondary hover:text-text-primary dark:bg-surface-tertiary dark:shadow-[0_8px_18px_-12px_rgba(0,0,0,0.38)] sm:end-5 sm:top-5"
+      className="absolute end-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full border border-border-light bg-surface-secondary text-text-muted transition hover:border-border-strong hover:bg-surface-tertiary hover:text-text-primary sm:end-5 sm:top-5"
     >
       <X className="h-5 w-5" />
     </button>
@@ -244,7 +244,7 @@ function OverlayCloseButton({ onClose }: { onClose: () => void }) {
 }
 
 function panelShellClassName(extra?: string) {
-  return `relative overflow-hidden rounded-[32px] border border-border-light bg-white shadow-[0_30px_84px_-36px_rgba(25,52,57,0.26)] dark:bg-surface-secondary dark:shadow-[0_30px_84px_-36px_rgba(0,0,0,0.5)] ${extra ?? ""}`;
+  return `relative overflow-hidden rounded-[32px] border border-border-light bg-surface-secondary shadow-lg ${extra ?? ""}`;
 }
 
 export function Modal({
@@ -330,12 +330,12 @@ export function ModalHeader({
   const { titleId, descriptionId } = useModalContext();
 
   return (
-    <div className={`border-b border-border-light/80 bg-white px-6 pb-5 pt-6 sm:px-7 sm:pb-6 sm:pt-7 ${className ?? ""}`}>
+    <div className={`border-b border-border-light bg-surface-secondary px-6 pb-5 pt-6 sm:px-7 sm:pb-6 sm:pt-7 ${className ?? ""}`}>
       {eyebrow ? (
         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">{eyebrow}</p>
       ) : null}
       {title ? (
-        <h2 id={titleId} className="mt-2 text-xl font-semibold text-text-primary dark:text-white/95">
+        <h2 id={titleId} className="mt-2 text-xl font-semibold text-text-primary">
           {title}
         </h2>
       ) : null}
@@ -359,7 +359,7 @@ export function ModalBody({ children, className }: ModalSectionProps) {
 
 export function ModalFooter({ children, className }: ModalSectionProps) {
   return (
-    <div className={`border-t border-border-light/80 bg-surface-secondary/40 px-6 py-4 dark:bg-surface-secondary/85 sm:px-7 ${className ?? ""}`}>
+    <div className={`border-t border-border-light bg-surface-secondary px-6 py-4 sm:px-7 ${className ?? ""}`}>
       <div className="flex flex-wrap justify-end gap-2">{children}</div>
     </div>
   );
@@ -395,14 +395,14 @@ export function FormModal({
               {cancelLabel ?? "Cancel"}
             </Button>
             {submitLabel ? (
-            <Button
-              variant={destructive ? "danger" : "primary"}
-              onClick={onSubmit}
-              disabled={loading || submitDisabled}
-              {...submitButtonProps}
-            >
-              {submitLabel}
-            </Button>
+              <Button
+                variant={destructive ? "danger" : "primary"}
+                onClick={onSubmit}
+                disabled={loading || submitDisabled}
+                {...submitButtonProps}
+              >
+                {submitLabel}
+              </Button>
             ) : null}
           </ModalFooter>
         ) : null}
@@ -467,10 +467,10 @@ export function NoticeDialog({
 }: NoticeDialogProps) {
   const toneClass =
     tone === "primary"
-      ? "border-primary/15 bg-primary-light text-text-brand shadow-[0_14px_28px_-24px_rgba(68,161,148,0.28)] dark:border-primary/20 dark:bg-primary/10 dark:text-primary-light"
+      ? "border-status-info-border bg-status-info-soft text-status-info"
       : tone === "warning"
-        ? "border-warning-200 bg-warning-50 text-warning-800 shadow-[0_14px_28px_-24px_rgba(245,158,11,0.24)] dark:border-warning-500/20 dark:bg-warning-500/10 dark:text-warning-300"
-        : "border-border-light bg-surface-secondary text-text-secondary shadow-[0_14px_28px_-24px_rgba(25,52,57,0.12)] dark:bg-surface-tertiary";
+        ? "border-status-warning-border bg-status-warning-soft text-status-warning"
+        : "border-border-light bg-surface-tertiary text-text-secondary";
 
   const Icon = tone === "warning" ? AlertTriangle : Info;
 
@@ -546,7 +546,7 @@ export function Drawer({
 
     // Side drawers: edge-to-edge on mobile app surfaces when inset=false.
     if (!inset) {
-      return `relative h-[100dvh] w-full max-w-xl overflow-hidden rounded-none bg-white shadow-2xl dark:bg-surface-secondary ${className ?? ""}`;
+      return `relative h-[100dvh] w-full max-w-xl overflow-hidden rounded-none bg-surface-secondary shadow-2xl ${className ?? ""}`;
     }
 
     return `${panelShellClassName("h-full w-full max-w-xl rounded-none sm:h-[calc(100vh-2rem)] sm:rounded-[32px]")} ${className ?? ""}`;

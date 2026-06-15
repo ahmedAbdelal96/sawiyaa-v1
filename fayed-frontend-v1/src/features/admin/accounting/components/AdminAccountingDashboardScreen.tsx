@@ -2,15 +2,17 @@
 
 import { useMemo } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import { usePathname, useRouter } from "@/i18n/navigation";
+import { usePathname, useRouter, Link } from "@/i18n/navigation";
 import { useSearchParams } from "next/navigation";
-import { Building2, CircleDollarSign, Download, HandCoins, Receipt, Scale, TrendingUp } from "lucide-react";
+import { AlertTriangle, Building2, CircleDollarSign, Download, HandCoins, Receipt, Scale, TrendingUp } from "lucide-react";
 import { AreaTrendChart, BarTrendChart } from "@/components/charts";
-import { DashboardChartCard, DashboardKpiCard, DashboardSectionHeader } from "@/components/dashboard";
+import { DashboardChartCard, DashboardSectionHeader } from "@/components/dashboard";
 import { DataTable } from "@/components/ui/data-table";
 import type { ColumnDef } from "@/components/ui/data-table";
 import { buildUpdatedSearchParams, parsePositiveIntParam } from "@/components/ui/data-table";
 import Button from "@/components/ui/button/Button";
+import Select from "@/components/form/Select";
+import InputField from "@/components/form/input/InputField";
 import { parseDownloadFilename, triggerBlobDownload } from "@/lib/downloads/file-download";
 import { formatMoney as formatFinanceMoney } from "@/lib/finance-format";
 import { useAdminAccountingDashboard, useDownloadAdminAccountingDashboardCsv } from "../hooks/use-admin-accounting";
@@ -49,6 +51,64 @@ function parseIsoDateOnly(value: string | null) {
   return value;
 }
 
+interface CustomKpiCardProps {
+  label: string;
+  valueObj: { value: string; currency: string; helper: string | null };
+  icon: React.ReactNode;
+  defaultHelper: string;
+  accentClass: string;
+  drilldownHref?: string;
+}
+
+const CustomKpiCard: React.FC<CustomKpiCardProps> = ({
+  label,
+  valueObj,
+  icon,
+  defaultHelper,
+  accentClass,
+  drilldownHref,
+}) => {
+  const t = useTranslations("admin-accounting");
+
+  return (
+    <article className="app-panel rounded-[24px] border border-border-light bg-surface-secondary p-5 flex flex-col justify-between h-full dark:border-white/10">
+      <div className="flex items-start justify-between gap-4">
+        <div className="space-y-1.5 flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <p className="text-sm text-text-secondary truncate">{label}</p>
+            {valueObj.currency && (
+              <span className="inline-flex items-center rounded-md bg-surface-tertiary px-1.5 py-0.5 text-[10px] font-semibold text-text-muted ring-1 ring-inset ring-border-light dark:bg-white/5 dark:ring-white/10">
+                {valueObj.currency}
+              </span>
+            )}
+          </div>
+          <p className="text-2xl font-semibold tracking-tight text-text-primary dark:text-white/95 mt-1.5">
+            {valueObj.value}
+          </p>
+        </div>
+        <span className={`inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl ${accentClass}`}>
+          {icon}
+        </span>
+      </div>
+
+      <div className="mt-4 flex flex-wrap items-end justify-between gap-2 border-t border-border-light/40 pt-3 dark:border-white/5">
+        <p className="text-xs text-text-muted flex-1 min-w-0 truncate">
+          {valueObj.helper || defaultHelper}
+        </p>
+        {drilldownHref && valueObj.value !== "—" && (
+          <Link
+            href={drilldownHref as never}
+            className="text-xs font-semibold text-text-brand hover:underline flex items-center gap-1 shrink-0"
+          >
+            <span>{t("dashboard.actions.viewDetails") || "عرض التفاصيل"}</span>
+            <span>&rarr;</span>
+          </Link>
+        )}
+      </div>
+    </article>
+  );
+};
+
 export default function AdminAccountingDashboardScreen() {
   const t = useTranslations("admin-accounting");
   const locale = useLocale();
@@ -60,11 +120,12 @@ export default function AdminAccountingDashboardScreen() {
   const from = parseIsoDateOnly(searchParams.get("from"));
   const recentLimit = parsePositiveIntParam(searchParams.get("recentLimit"), 8, { min: 1, max: 20 });
   const currencyCode = searchParams.get("currencyCode")?.trim() || "";
+  const effectiveCurrencyCode = currencyCode || "EGP";
 
   const dashboardQuery = useAdminAccountingDashboard({
     from: from ?? undefined,
     to: to ?? undefined,
-    currencyCode: currencyCode || undefined,
+    currencyCode: effectiveCurrencyCode,
     recentLimit,
   });
 
@@ -111,7 +172,7 @@ export default function AdminAccountingDashboardScreen() {
     const exported = await dashboardExportMutation.mutateAsync({
       from: from ?? undefined,
       to: to ?? undefined,
-      currencyCode: currencyCode || undefined,
+      currencyCode: effectiveCurrencyCode,
       recentLimit,
     });
     const fileName = parseDownloadFilename(
@@ -149,7 +210,7 @@ export default function AdminAccountingDashboardScreen() {
       {
         id: "amount",
         header: t("dashboard.recent.columns.amount"),
-        accessor: (row) => Number(row.amount),
+        accessor: (row) => row.amount,
         cell: (row) =>
           formatFinanceMoney(normalizeLocale(locale), row.amount, row.currencyCode, {
             fallbackText: t("common.notAvailable"),
@@ -165,18 +226,57 @@ export default function AdminAccountingDashboardScreen() {
     [locale, t],
   );
 
+  const currencyOptions = useMemo(
+    () => [
+      { value: "EGP", label: "EGP — الجنيه المصري" },
+      { value: "USD", label: "USD — الدولار الأمريكي" },
+    ],
+    [],
+  );
+
+  const limitOptions = useMemo(
+    () => [
+      { value: "5", label: "5" },
+      { value: "8", label: "8" },
+      { value: "10", label: "10" },
+      { value: "12", label: "12" },
+      { value: "15", label: "15" },
+      { value: "20", label: "20" },
+    ],
+    [],
+  );
+
+  const kpiCurrency = dashboard?.kpis?.currencyCode;
+
+  function renderKpiValue(valueStr: string | undefined) {
+    if (!kpiCurrency) {
+      return {
+        value: "—",
+        currency: "",
+        helper: "لم يتم تحديد العملة من الباك اند",
+      };
+    }
+    return {
+      value: formatFinanceMoney(normalizeLocale(locale), valueStr ?? "0", kpiCurrency),
+      currency: kpiCurrency,
+      helper: null,
+    };
+  }
+
   return (
     <div className="space-y-6">
       <section className="app-panel rounded-[30px] p-6 sm:p-7">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-text-muted">
-              {t("dashboard.eyebrow")}
+              {t("dashboard.eyebrow") || "العمليات المالية"}
             </p>
             <h1 className="mt-2 text-2xl font-semibold text-text-primary dark:text-white/95 sm:text-3xl">
-              {t("dashboard.title")}
+              {"لوحة المالية"}
             </h1>
-            <p className="mt-2 text-sm text-text-secondary">{t("dashboard.note")}</p>
+            <p className="mt-2 text-sm text-text-secondary">
+              {"نظرة عامة على العمليات المحاسبية، الحسابات الجارية، والتسويات المالية للمعالجين والمنصة."}
+            </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <Button
@@ -185,7 +285,7 @@ export default function AdminAccountingDashboardScreen() {
               size="sm"
               onClick={() => router.push("/admin/finance/ledger")}
             >
-              {t("dashboard.actions.openLedger")}
+              {t("dashboard.actions.openLedger") || "فتح مستكشف القيود"}
             </Button>
             <Button
               type="button"
@@ -193,15 +293,15 @@ export default function AdminAccountingDashboardScreen() {
               size="sm"
               onClick={() => router.push("/admin/finance/accounting/reconciliation")}
             >
-              {t("dashboard.actions.openReconciliation")}
+              {t("dashboard.actions.openReconciliation") || "فتح مراجعة الحسابات المالية"}
             </Button>
             <Button
               type="button"
               variant="outline"
               size="sm"
-              onClick={() => router.push("/admin/admin-operations")}
+              onClick={() => router.push("/admin/practitioner-payouts")}
             >
-              {t("dashboard.actions.openOps")}
+              {"فتح مستحقات المعالجين"}
             </Button>
             <Button
               type="button"
@@ -212,8 +312,8 @@ export default function AdminAccountingDashboardScreen() {
               disabled={dashboardExportMutation.isPending}
             >
               {dashboardExportMutation.isPending
-                ? t("dashboard.actions.exporting")
-                : t("dashboard.actions.exportCsv")}
+                ? (t("dashboard.actions.exporting") || "جاري التصدير...")
+                : (t("dashboard.actions.exportCsv") || "تصدير CSV")}
             </Button>
           </div>
         </div>
@@ -223,8 +323,7 @@ export default function AdminAccountingDashboardScreen() {
             <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
               {t("dashboard.filters.from")}
             </span>
-            <input
-              className="app-control w-full py-3"
+            <InputField
               type="date"
               value={from ? from.slice(0, 10) : ""}
               onChange={(event) => updateQuery({ from: event.target.value || null })}
@@ -235,8 +334,7 @@ export default function AdminAccountingDashboardScreen() {
             <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
               {t("dashboard.filters.to")}
             </span>
-            <input
-              className="app-control w-full py-3"
+            <InputField
               type="date"
               value={to ? to.slice(0, 10) : ""}
               onChange={(event) => updateQuery({ to: event.target.value || null })}
@@ -247,11 +345,11 @@ export default function AdminAccountingDashboardScreen() {
             <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
               {t("dashboard.filters.currency")}
             </span>
-            <input
-              className="app-control w-full py-3 uppercase"
-              placeholder={t("dashboard.filters.currencyPlaceholder")}
-              value={currencyCode}
-              onChange={(event) => updateQuery({ currencyCode: event.target.value || null })}
+            <Select
+              options={currencyOptions}
+              placeholder="اختر العملة"
+              defaultValue={effectiveCurrencyCode}
+              onChange={(value) => updateQuery({ currencyCode: value || "EGP" })}
             />
           </label>
 
@@ -259,67 +357,75 @@ export default function AdminAccountingDashboardScreen() {
             <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
               {t("dashboard.filters.recentLimit")}
             </span>
-            <select
-              className="app-control w-full py-3"
-              value={recentLimit}
-              onChange={(event) => updateQuery({ recentLimit: Number(event.target.value) })}
-            >
-              {[5, 8, 10, 12, 15, 20].map((value) => (
-                <option key={value} value={value}>
-                  {value}
-                </option>
-              ))}
-            </select>
+            <Select
+              options={limitOptions}
+              placeholder="العدد"
+              defaultValue={String(recentLimit)}
+              onChange={(value) => updateQuery({ recentLimit: Number(value) || 8 })}
+            />
           </label>
         </div>
       </section>
 
+      {/* Currency Scope Notice */}
+      <div className="rounded-[22px] border border-status-info-border bg-status-info-soft p-4 text-sm text-status-info flex items-start gap-3">
+        <CircleDollarSign className="h-5 w-5 shrink-0 mt-0.5" />
+        <div>
+          <p className="font-semibold">
+            {locale === "ar" ? `تنبيه العملة (${effectiveCurrencyCode})` : `Currency Scope (${effectiveCurrencyCode})`}
+          </p>
+          <p className="mt-1 text-xs sm:text-sm">{t("dashboard.currencyScopeNotice")}</p>
+        </div>
+      </div>
+
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        <DashboardKpiCard
+        <CustomKpiCard
           label={t("dashboard.kpis.grossInflow")}
-          value={formatFinanceMoney(normalizeLocale(locale), dashboard?.kpis.grossInflow ?? "0", dashboard?.kpis.currencyCode)}
-          helper={t("dashboard.kpis.grossInflowHint")}
+          valueObj={renderKpiValue(dashboard?.kpis.grossInflow)}
           icon={<CircleDollarSign className="h-4 w-4" />}
-          accentTone="teal"
+          defaultHelper={t("dashboard.kpis.grossInflowHint")}
+          accentClass="bg-primary-light text-text-brand border border-primary/20"
+          drilldownHref="/admin/finance/ledger?sourceType=PAYMENT_CAPTURED"
         />
-        <DashboardKpiCard
+        <CustomKpiCard
           label={t("dashboard.kpis.platformRevenue")}
-          value={formatFinanceMoney(normalizeLocale(locale), dashboard?.kpis.platformRevenue ?? "0", dashboard?.kpis.currencyCode)}
-          helper={t("dashboard.kpis.platformRevenueHint")}
+          valueObj={renderKpiValue(dashboard?.kpis.platformRevenue)}
           icon={<Building2 className="h-4 w-4" />}
-          accentTone="indigo"
+          defaultHelper={t("dashboard.kpis.platformRevenueHint")}
+          accentClass="bg-status-info-soft text-status-info border border-status-info-border"
+          drilldownHref="/admin/finance/ledger"
         />
-        <DashboardKpiCard
+        <CustomKpiCard
           label={t("dashboard.kpis.practitionerPayable")}
-          value={formatFinanceMoney(
-            normalizeLocale(locale),
-            dashboard?.kpis.practitionerPayableOutstanding ?? "0",
-            dashboard?.kpis.currencyCode,
-          )}
-          helper={t("dashboard.kpis.practitionerPayableHint")}
+          valueObj={renderKpiValue(dashboard?.kpis.practitionerPayableOutstanding)}
           icon={<HandCoins className="h-4 w-4" />}
-          accentTone="sky"
+          defaultHelper={t("dashboard.kpis.practitionerPayableHint")}
+          accentClass="bg-primary-light text-text-brand border border-primary/20"
+          drilldownHref="/admin/practitioner-payouts"
         />
-        <DashboardKpiCard
+        <CustomKpiCard
           label={t("dashboard.kpis.refunds")}
-          value={formatFinanceMoney(normalizeLocale(locale), dashboard?.kpis.refundsTotal ?? "0", dashboard?.kpis.currencyCode)}
-          helper={t("dashboard.kpis.refundsHint")}
+          valueObj={renderKpiValue(dashboard?.kpis.refundsTotal)}
           icon={<Receipt className="h-4 w-4" />}
-          accentTone="orange"
+          defaultHelper={t("dashboard.kpis.refundsHint")}
+          accentClass="bg-status-warning-soft text-status-warning border border-status-warning-border"
+          drilldownHref="/admin/finance/accounting/reconciliation?sourceType=REFUND_SUCCEEDED"
         />
-        <DashboardKpiCard
+        <CustomKpiCard
           label={t("dashboard.kpis.vat")}
-          value={formatFinanceMoney(normalizeLocale(locale), dashboard?.kpis.vatTotal ?? "0", dashboard?.kpis.currencyCode)}
-          helper={t("dashboard.kpis.vatHint")}
+          valueObj={renderKpiValue(dashboard?.kpis.vatTotal)}
           icon={<Scale className="h-4 w-4" />}
-          accentTone="sky"
+          defaultHelper={t("dashboard.kpis.vatHint")}
+          accentClass="bg-status-info-soft text-status-info border border-status-info-border"
+          drilldownHref="/admin/finance/ledger"
         />
-        <DashboardKpiCard
+        <CustomKpiCard
           label={t("dashboard.kpis.fees")}
-          value={formatFinanceMoney(normalizeLocale(locale), dashboard?.kpis.feesTotal ?? "0", dashboard?.kpis.currencyCode)}
-          helper={t("dashboard.kpis.feesHint")}
+          valueObj={renderKpiValue(dashboard?.kpis.feesTotal)}
           icon={<TrendingUp className="h-4 w-4" />}
-          accentTone="indigo"
+          defaultHelper={t("dashboard.kpis.feesHint")}
+          accentClass="bg-status-danger-soft text-status-danger border border-status-danger-border"
+          drilldownHref="/admin/finance/ledger"
         />
       </section>
 
@@ -335,8 +441,8 @@ export default function AdminAccountingDashboardScreen() {
             values={revenueValues}
             comparisonSeriesName={t("dashboard.charts.revenue.comparison")}
             comparisonValues={payableValues}
-            color="#2F2FE4"
-            comparisonColor="#89A4FF"
+            color="#3ba89f"
+            comparisonColor="#53b1fd"
             height={300}
           />
         </DashboardChartCard>
@@ -352,8 +458,8 @@ export default function AdminAccountingDashboardScreen() {
             values={refundValues}
             comparisonSeriesName={t("dashboard.charts.refundsAndFees.fees")}
             comparisonValues={feeValues}
-            color="#FF9013"
-            comparisonColor="#C9D4E8"
+            color="#f97066"
+            comparisonColor="#fec84b"
             height={300}
           />
         </DashboardChartCard>
@@ -371,13 +477,13 @@ export default function AdminAccountingDashboardScreen() {
             categories={categories}
             seriesName={t("dashboard.charts.payablesAndPayouts.series")}
             values={payableValues.map((value, index) => Math.max(value - (payoutValues[index] ?? 0), 0))}
-            currencyCode={dashboard?.kpis.currencyCode ?? undefined}
-            color="#2F2FE4"
+            currencyCode={dashboard?.kpis?.currencyCode ?? effectiveCurrencyCode}
+            color="#3ba89f"
             height={280}
           />
         </DashboardChartCard>
 
-        <article className="app-panel rounded-3xl p-5">
+        <article className="app-panel rounded-3xl p-5 border border-border-light bg-surface-secondary dark:border-white/10">
           <DashboardSectionHeader
             title={t("dashboard.recent.title")}
             subtitle={t("dashboard.recent.note")}
@@ -390,8 +496,8 @@ export default function AdminAccountingDashboardScreen() {
             error={dashboardQuery.isError ? t("dashboard.states.error") : null}
             onRowClick={(row) => router.push(`/admin/finance/ledger/${row.journalEntryId}` as never)}
             emptyState={{
-              title: t("dashboard.states.emptyTitle"),
-              description: t("dashboard.states.emptyNote"),
+              title: t("dashboard.states.emptyTitle") || "لا توجد بيانات",
+              description: "لا توجد أحداث مالية ضمن الفلاتر الحالية",
             }}
             ariaLabel={t("dashboard.recent.title")}
             caption={t("dashboard.recent.title")}

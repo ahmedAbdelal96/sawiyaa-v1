@@ -1,6 +1,8 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { SessionRepository } from '../repositories/session.repository';
 import { ResolveSessionJoinReadinessService } from '../services/resolve-session-join-readiness.service';
+import { buildParticipantsSummary, type SessionWithParticipants } from '../utils/session-participant-identity.util';
+import { resolveSessionPresentationStatus } from '../utils/session-join-policy.util';
 
 @Injectable()
 export class InspectAdminSessionRuntimeUseCase {
@@ -10,7 +12,13 @@ export class InspectAdminSessionRuntimeUseCase {
   ) {}
 
   async execute(input: { sessionId: string }) {
-    const session = await this.sessionRepository.findById(input.sessionId);
+    // Phase 3 — fetch the session with the participant identity include so
+    // we can surface patient/practitioner display names + primary contact
+    // details. Kept separate from findById to avoid expanding the data
+    // surface for unrelated callers.
+    const session = await this.sessionRepository.findByIdWithParticipants(
+      input.sessionId,
+    );
 
     if (!session) {
       throw new NotFoundException({
@@ -19,6 +27,7 @@ export class InspectAdminSessionRuntimeUseCase {
       });
     }
 
+    const now = new Date();
     const readiness = this.resolveSessionJoinReadinessService.resolve({
       status: session.status,
       sessionMode: session.sessionMode,
@@ -27,7 +36,21 @@ export class InspectAdminSessionRuntimeUseCase {
       provider: session.provider,
       providerRoomId: session.providerRoomId,
       providerSessionRef: session.providerSessionRef,
-      now: new Date(),
+      now,
+    });
+
+    const participants = buildParticipantsSummary(
+      session as unknown as SessionWithParticipants,
+    );
+    const presentationStatus = resolveSessionPresentationStatus({
+      status: session.status,
+      sessionMode: session.sessionMode,
+      scheduledStartAt: session.scheduledStartAt,
+      scheduledEndAt: session.scheduledEndAt,
+      provider: session.provider,
+      providerRoomId: session.providerRoomId,
+      providerSessionRef: session.providerSessionRef,
+      now,
     });
 
     return {
@@ -44,6 +67,8 @@ export class InspectAdminSessionRuntimeUseCase {
         canPrepareRuntime: readiness.canPrepareRuntime,
         canJoin: readiness.canJoin,
         blockedReason: readiness.blockedReason,
+        participants,
+        presentationStatus,
       },
     };
   }

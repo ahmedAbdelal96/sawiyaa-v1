@@ -34,9 +34,9 @@ const TextArea: React.FC<TextareaProps> = ({
   if (disabled) {
     textareaClasses += ` cursor-not-allowed border-border-light bg-surface-tertiary text-text-muted opacity-50 dark:border-border-light dark:bg-surface-tertiary dark:text-text-muted`;
   } else if (error) {
-    textareaClasses += ` border-error-500 bg-surface-secondary text-error-800 focus:border-error-300 focus:ring-3 focus:ring-error-500/10 dark:border-error-500 dark:bg-surface-secondary dark:text-error-400 dark:focus:border-error-800`;
+    textareaClasses += ` border-status-danger bg-surface-tertiary text-status-danger focus:ring-3 focus:ring-status-danger/10`;
   } else {
-    textareaClasses += ` border-border-light bg-surface-secondary text-text-primary focus:border-border-focus focus:ring-3 focus:ring-primary/10 dark:border-border-light dark:bg-surface-secondary dark:text-text-primary`;
+    textareaClasses += ` border-border-light bg-surface-tertiary text-text-primary focus:border-border-focus focus:ring-3 focus:ring-ring-focus`;
   }
 
   return (
@@ -53,7 +53,7 @@ const TextArea: React.FC<TextareaProps> = ({
       {hint && (
         <p
           className={`mt-2 text-sm ${
-            error ? "text-error-500" : "text-text-secondary"
+            error ? "text-status-danger" : "text-text-secondary"
           }`}
         >
           {hint}

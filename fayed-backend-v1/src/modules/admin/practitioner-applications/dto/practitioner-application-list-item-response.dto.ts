@@ -377,6 +377,68 @@ export class PractitionerApplicationDecisionSuccessResponseDto {
   application!: PractitionerApplicationDecisionResponseDto;
 }
 
+export class AdminDirectPractitionerSummaryResponseDto {
+  @ApiProperty()
+  practitionerProfileId!: string;
+
+  @ApiProperty()
+  userId!: string;
+
+  @ApiProperty()
+  email!: string;
+
+  @ApiProperty({ nullable: true })
+  displayName!: string | null;
+
+  @ApiProperty({ enum: PractitionerStatus })
+  practitionerStatus!: PractitionerStatus;
+
+  @ApiProperty({ enum: UserStatus })
+  accountStatus!: UserStatus;
+
+  @ApiProperty()
+  credentialCount!: number;
+
+  @ApiProperty()
+  nextAction!: string;
+
+  @ApiProperty()
+  passwordRotationFollowUpRequired!: boolean;
+}
+
+export class AdminDirectPractitionerCreateSuccessResponseDto {
+  @ApiProperty()
+  message!: string;
+
+  @ApiProperty({ type: PractitionerApplicationDecisionResponseDto })
+  application!: PractitionerApplicationDecisionResponseDto;
+
+  @ApiProperty({ type: AdminDirectPractitionerSummaryResponseDto })
+  practitioner!: AdminDirectPractitionerSummaryResponseDto;
+}
+
+export class AdminPreparedPractitionerCredentialResponseDto {
+  @ApiProperty({ enum: CredentialType })
+  credentialType!: CredentialType;
+
+  @ApiProperty()
+  fileUrl!: string;
+
+  @ApiProperty({ nullable: true })
+  expiresAt!: Date | null;
+
+  @ApiProperty()
+  sizeBytes!: number;
+}
+
+export class AdminPreparedPractitionerCredentialSuccessResponseDto {
+  @ApiProperty()
+  message!: string;
+
+  @ApiProperty({ type: AdminPreparedPractitionerCredentialResponseDto })
+  credential!: AdminPreparedPractitionerCredentialResponseDto;
+}
+
 export class PractitionerApplicationCredentialSuccessResponseDto {
   @ApiProperty()
   message!: string;

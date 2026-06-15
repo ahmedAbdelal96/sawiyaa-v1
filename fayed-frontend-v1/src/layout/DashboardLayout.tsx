@@ -39,8 +39,8 @@ export default function DashboardLayout({
     layoutVariant === "practitioner" ? "app-max-shell-practitioner" : "app-max-shell-admin";
 
   return (
-    <div className="min-h-screen xl:flex">
-      <DynamicSidebar navigation={navigation} basePathPrefix={basePathPrefix} />
+    <div className="min-h-screen xl:flex bg-background text-text-primary">
+      <DynamicSidebar navigation={navigation} basePathPrefix={basePathPrefix} density="compact" />
       <Backdrop />
 
       <div

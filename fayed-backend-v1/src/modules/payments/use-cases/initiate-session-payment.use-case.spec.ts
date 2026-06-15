@@ -336,7 +336,7 @@ describe('InitiateSessionPaymentUseCase', () => {
     expect(providerAdapter.initiateSessionPayment).not.toHaveBeenCalled();
   });
 
-  it('reuses an active payment and still requires a valid refund policy acceptance', async () => {
+  it('refreshes an active payment checkout instead of reusing a stale URL', async () => {
     (
       paymentRepository.findLatestActiveBySessionId as jest.Mock
     ).mockResolvedValue({
@@ -344,6 +344,23 @@ describe('InitiateSessionPaymentUseCase', () => {
       status: PaymentStatus.CREATED,
       metadataJson: {
         checkoutUrl: 'https://checkout-existing',
+      },
+    });
+
+    (providerAdapter.initiateSessionPayment as jest.Mock).mockResolvedValueOnce({
+      providerPaymentRef: 'provider-payment-2',
+      providerOrderRef: 'provider-order-2',
+      providerCustomerRef: null,
+      status: PaymentStatus.PENDING,
+      checkoutUrl: 'https://checkout-refreshed',
+      clientSecret: null,
+      metadata: {},
+    });
+    (paymentRepository.updateStatus as jest.Mock).mockResolvedValueOnce({
+      id: 'payment-existing',
+      status: PaymentStatus.PENDING,
+      metadataJson: {
+        checkoutUrl: 'https://checkout-refreshed',
       },
     });
 
@@ -356,20 +373,27 @@ describe('InitiateSessionPaymentUseCase', () => {
     });
 
     expect(paymentRepository.createPayment).not.toHaveBeenCalled();
-    expect(providerAdapter.initiateSessionPayment).not.toHaveBeenCalled();
+    expect(providerAdapter.initiateSessionPayment).toHaveBeenCalledTimes(1);
+    expect(providerAdapter.initiateSessionPayment).toHaveBeenCalledWith(
+      expect.objectContaining({
+        paymentId: 'payment-existing',
+      }),
+    );
     expect(
       refundPolicyService.ensureAcceptedRefundPolicyForPayment,
     ).toHaveBeenCalledTimes(1);
-    expect(
-      refundPolicyService.ensureAcceptedRefundPolicyForPayment,
-    ).toHaveBeenCalledWith(
+    expect(paymentRepository.updateStatus).toHaveBeenCalledWith(
+      'payment-existing',
       expect.objectContaining({
-        paymentId: 'payment-existing',
-        sessionId: 'session-1',
-        policyType: 'SESSION',
+        status: PaymentStatus.PENDING,
+        metadataJson: expect.objectContaining({
+          checkoutUrl: 'https://checkout-refreshed',
+        }),
       }),
+      expect.anything(),
     );
     expect(result.item.id).toBe('payment-existing');
+    expect(result.item.checkoutUrl).toBe('https://checkout-refreshed');
   });
 
   it('rejects missing accepted refund policy ids through the refund policy gate', async () => {

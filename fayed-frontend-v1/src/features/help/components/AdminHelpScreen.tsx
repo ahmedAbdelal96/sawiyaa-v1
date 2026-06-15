@@ -55,7 +55,7 @@ export default function AdminHelpScreen() {
               </div>
               <p className="max-w-lg text-sm leading-6 text-text-secondary">{t("hub.categoriesDescription")}</p>
             </div>
-            <span className="inline-flex items-center rounded-full border border-border-light bg-white px-4 py-2 text-sm font-medium text-text-primary shadow-sm">
+            <span className="inline-flex items-center rounded-full border border-border-light bg-surface px-4 py-2 text-sm font-medium text-text-primary shadow-sm">
               {t("hub.open")}
             </span>
           </div>
@@ -76,7 +76,7 @@ export default function AdminHelpScreen() {
               </div>
               <p className="max-w-lg text-sm leading-6 text-text-secondary">{t("hub.questionsDescription")}</p>
             </div>
-            <span className="inline-flex items-center rounded-full border border-border-light bg-white px-4 py-2 text-sm font-medium text-text-primary shadow-sm">
+            <span className="inline-flex items-center rounded-full border border-border-light bg-surface px-4 py-2 text-sm font-medium text-text-primary shadow-sm">
               {t("hub.open")}
             </span>
           </div>

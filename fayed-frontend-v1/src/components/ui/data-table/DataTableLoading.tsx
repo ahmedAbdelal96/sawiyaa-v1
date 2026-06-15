@@ -44,10 +44,10 @@ export function DataTableLoading({
   const skeletonHeightClass = size === 'sm' ? 'h-3' : size === 'lg' ? 'h-4' : 'h-3.5';
 
   return (
-    <div className="overflow-hidden rounded-[24px] border border-border-light bg-white shadow-[0_18px_36px_-30px_rgba(34,52,56,0.18)]">
+    <div className="overflow-hidden rounded-[24px] border border-border-light bg-surface-secondary shadow-[0_18px_36px_-30px_rgba(0,0,0,0.15)]">
       <div className="overflow-x-auto">
         <table className="w-full">
-          <thead className="border-b border-gray-300 dark:border-gray-700 bg-gray-100/60 dark:bg-gray-800/20">
+          <thead className="border-b border-border-light bg-surface-tertiary text-text-secondary">
             <tr>
               {Array.from({ length: columns }).map((_, i) => (
                 <th
@@ -81,7 +81,7 @@ export function DataTableLoading({
       
       {message && (
         <div className="border-t border-border-light bg-surface-secondary/60 px-4 py-2.5 text-center sm:px-6">
-          <div className="inline-flex items-center gap-2 rounded-full border border-border-light bg-white px-3 py-1 text-xs font-semibold text-text-secondary shadow-theme-xs">
+          <div className="inline-flex items-center gap-2 rounded-full border border-border-light bg-surface-secondary px-3 py-1 text-xs font-semibold text-text-secondary shadow-theme-xs">
             <span className="inline-flex h-3.5 w-3.5 animate-spin rounded-full border-2 border-primary/20 border-t-primary" />
             <span>{message}</span>
           </div>

@@ -11,6 +11,8 @@ import {
   Res,
   StreamableFile,
   UseGuards,
+  UploadedFile,
+  UseInterceptors,
 } from '@nestjs/common';
 import { createReadStream } from 'fs';
 import type { Response } from 'express';
@@ -19,6 +21,7 @@ import {
   ApiBearerAuth,
   ApiBody,
   ApiConflictResponse,
+  ApiConsumes,
   ApiForbiddenResponse,
   ApiNotFoundResponse,
   ApiOperation,
@@ -44,14 +47,18 @@ import { SupportedLocale } from '@common/i18n/types/locale.types';
 import { AuthenticatedUser } from '@common/interfaces/authenticated-user.interface';
 import { ApprovePractitionerApplicationDto } from '../dto/approve-practitioner-application.dto';
 import { CreateAdminPractitionerDto } from '../dto/create-admin-practitioner.dto';
+import { UploadAdminPractitionerCredentialFileDto } from '../dto/upload-admin-practitioner-credential-file.dto';
 import { ListPractitionerApplicationsDto } from '../dto/list-practitioner-applications.dto';
 import {
+  AdminDirectPractitionerCreateSuccessResponseDto,
+  AdminPreparedPractitionerCredentialSuccessResponseDto,
   PractitionerApplicationDecisionSuccessResponseDto,
   PractitionerApplicationCredentialSuccessResponseDto,
   PractitionerApplicationCredentialDeleteSuccessResponseDto,
   PractitionerApplicationDetailsSuccessResponseDto,
   PractitionerApplicationListSuccessResponseDto,
 } from '../dto/practitioner-application-list-item-response.dto';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { RejectPractitionerApplicationDto } from '../dto/reject-practitioner-application.dto';
 import { RequestPractitionerApplicationChangesDto } from '../dto/request-practitioner-application-changes.dto';
 import { UpdatePractitionerApplicationDraftDto } from '../dto/update-practitioner-application-draft.dto';
@@ -72,6 +79,7 @@ import { SecurityAuditService } from '@common/security-audit/security-audit.serv
 import { SecurityAuditOutcome } from '@prisma/client';
 import { GetPractitionerApplicationAvatarFileUseCase } from '../use-cases/get-practitioner-application-avatar-file.use-case';
 import { GetPractitionerApplicationCredentialFileUseCase } from '../use-cases/get-practitioner-application-credential-file.use-case';
+import { UploadAdminPractitionerCredentialFileUseCase } from '../use-cases/upload-admin-practitioner-credential-file.use-case';
 
 /**
  * Admin-only controller for practitioner application review decisions.
@@ -96,6 +104,7 @@ export class PractitionerApplicationsAdminController {
     private readonly updatePractitionerApplicationDraftUseCase: UpdatePractitionerApplicationDraftUseCase,
     private readonly upsertPractitionerApplicationCredentialUseCase: UpsertPractitionerApplicationCredentialUseCase,
     private readonly deletePractitionerApplicationCredentialUseCase: DeletePractitionerApplicationCredentialUseCase,
+    private readonly uploadAdminPractitionerCredentialFileUseCase: UploadAdminPractitionerCredentialFileUseCase,
     private readonly securityAuditService: SecurityAuditService,
   ) {}
 
@@ -203,7 +212,7 @@ export class PractitionerApplicationsAdminController {
   @ApiBody({ type: CreateAdminPractitionerDto })
   @ApiResponse({
     status: 201,
-    type: PractitionerApplicationDecisionSuccessResponseDto,
+    type: AdminDirectPractitionerCreateSuccessResponseDto,
   })
   @ApiBadRequestResponse({
     description: 'Invalid payload or country code is unknown/inactive',
@@ -250,15 +259,75 @@ export class PractitionerApplicationsAdminController {
           actorUserId: currentUser.id,
           actorRoles: currentUser.roles,
           resourceType: 'PractitionerApplication',
-          targetUserId: currentUser.id,
+          resourceId: result.application.applicationId,
+          targetUserId: result.practitioner.userId,
           metadata: {
-            applicationId:
-              (result as { application?: { id?: string } }).application?.id ??
-              null,
+            applicationId: result.application.applicationId,
+            practitionerProfileId: result.practitioner.practitionerProfileId,
           },
         });
         return result;
       });
+  }
+
+  /** Uploads a credential file for later inclusion in admin direct-create payloads. */
+  @Post('direct-create/credentials/upload')
+  @RequireStepUp('security.practitioner.application.direct-create')
+  @Permissions(PermissionKey.PRACTITIONER_APPLICATIONS_APPROVE)
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: { fileSize: 5 * 1024 * 1024 },
+    }),
+  )
+  @ApiOperation({
+    summary: 'Upload direct-create practitioner credential file',
+    description:
+      'Uploads a credential file to managed storage so admin direct practitioner creation can reference a safe internal file URL instead of a raw external link.',
+  })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        file: { type: 'string', format: 'binary' },
+        credentialType: { type: 'string' },
+        expiresAt: { type: 'string', format: 'date-time', nullable: true },
+      },
+      required: ['file', 'credentialType'],
+    },
+  })
+  @ApiResponse({
+    status: 201,
+    type: AdminPreparedPractitionerCredentialSuccessResponseDto,
+  })
+  @ApiBadRequestResponse({ description: 'Invalid file, type, or payload' })
+  @ApiUnauthorizedResponse({ description: 'Access token is required' })
+  @ApiForbiddenResponse({
+    description: 'Route requires active admin account',
+  })
+  uploadDirectCredential(
+    @CurrentLocale() locale: SupportedLocale,
+    @UploadedFile()
+    file:
+      | {
+          buffer: Buffer;
+          mimetype: string;
+          size: number;
+        }
+      | undefined,
+    @Body() body: UploadAdminPractitionerCredentialFileDto,
+  ) {
+    return this.uploadAdminPractitionerCredentialFileUseCase.execute({
+      locale,
+      credentialType: body.credentialType,
+      expiresAt:
+        body.expiresAt === undefined
+          ? undefined
+          : body.expiresAt === null
+            ? null
+            : new Date(body.expiresAt),
+      file,
+    });
   }
 
   /** Returns full admin details for one practitioner application. */

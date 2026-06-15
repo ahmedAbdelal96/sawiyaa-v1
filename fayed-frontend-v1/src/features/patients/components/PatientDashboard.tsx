@@ -87,7 +87,7 @@ export default function PatientDashboard() {
           description={t("quickLinks.assessments.description")}
         />
         <QuickLinkCard
-          href="/patient/support"
+          href="/patient/messages?lane=support"
           icon={<LifeBuoy className="h-5 w-5" />}
           title={t("quickLinks.support.title")}
           description={t("quickLinks.support.description")}

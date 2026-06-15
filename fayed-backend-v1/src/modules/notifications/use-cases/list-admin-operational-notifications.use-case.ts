@@ -5,6 +5,7 @@ import {
   getAdminNotificationFeedExcludedTypePrefixes,
   getAdminNotificationFeedExcludedTypeSlugs,
 } from '../policies/admin-notification-feed.policy';
+import { NotificationContextEnrichmentService } from '../services/notification-context-enrichment.service';
 import { NotificationOpsPresenter } from '../presenters/notification-ops.presenter';
 import { OperationalNotificationRepository } from '../repositories/operational-notification.repository';
 
@@ -13,6 +14,7 @@ export class ListAdminOperationalNotificationsUseCase {
   constructor(
     private readonly repository: OperationalNotificationRepository,
     private readonly presenter: NotificationOpsPresenter,
+    private readonly enrichmentService: NotificationContextEnrichmentService,
   ) {}
 
   async execute(input: { query: ListAdminNotificationsDto }) {
@@ -44,8 +46,13 @@ export class ListAdminOperationalNotificationsUseCase {
         limit,
       });
 
+    const enrichment = await this.enrichmentService.enrichMany(rows);
+
     return {
-      items: rows.map((item) => this.presenter.toListItem(item)),
+      items: rows.map((item) => {
+        const enriched = enrichment.get(item.id);
+        return this.presenter.toListItem(item, enriched);
+      }),
       pagination: this.presenter.presentPagination({ page, limit, totalItems }),
     };
   }

@@ -1,6 +1,31 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { SessionMode, SessionProvider, SessionStatus } from '@prisma/client';
-import { SessionJoinBlockedReason } from '../types/session-video.types';
+import {
+  SessionJoinBlockedReason,
+  SessionPresentationStatus,
+} from '../types/session-video.types';
+
+class AdminSessionIdentityContactDto {
+  @ApiProperty({ nullable: true })
+  userId!: string | null;
+
+  @ApiProperty({ nullable: true })
+  displayName!: string | null;
+
+  @ApiProperty({ nullable: true })
+  email!: string | null;
+
+  @ApiProperty({ nullable: true })
+  phone!: string | null;
+}
+
+class AdminSessionParticipantsDto {
+  @ApiProperty({ type: AdminSessionIdentityContactDto })
+  patient!: AdminSessionIdentityContactDto;
+
+  @ApiProperty({ type: AdminSessionIdentityContactDto })
+  practitioner!: AdminSessionIdentityContactDto;
+}
 
 export class AdminSessionRuntimeInspectionItemDto {
   @ApiProperty()
@@ -50,6 +75,32 @@ export class AdminSessionRuntimeInspectionItemDto {
     ],
   })
   blockedReason!: SessionJoinBlockedReason | null;
+
+  /**
+   * Phase 3 — Participant identity summary (displayName + primary email +
+   * primary phone) for both the patient and the practitioner. Optional
+   * fields may be null when the user has no verified contact row.
+   */
+  @ApiProperty({ type: AdminSessionParticipantsDto })
+  participants!: AdminSessionParticipantsDto;
+
+  /**
+   * Phase 3 — Lifecycle presentation status. Computed by the existing
+   * presentation-status resolver.
+   */
+  @ApiProperty({
+    enum: [
+      'UPCOMING',
+      'JOINABLE',
+      'IN_PROGRESS',
+      'COMPLETED',
+      'CANCELLED',
+      'ENDED',
+      'UNAVAILABLE',
+    ],
+    nullable: true,
+  })
+  presentationStatus!: SessionPresentationStatus | null;
 }
 
 export class AdminSessionRuntimeInspectionDataResponseDto {

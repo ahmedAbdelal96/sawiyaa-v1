@@ -25,6 +25,7 @@ import {
   Home,
   LifeBuoy,
   Menu,
+  MessageSquare,
   Settings,
   Sparkles,
   Stethoscope,
@@ -100,6 +101,11 @@ export default function PatientAppShell({ children }: PatientAppShellProps) {
       href: "/patient/sessions",
       icon: <Calendar className="h-4 w-4" />,
     },
+    {
+      key: "messages",
+      href: "/patient/messages",
+      icon: <MessageSquare className="h-4 w-4" />,
+    },
   ];
 
   const userQuickLinks: PatientNavItem[] = [
@@ -107,11 +113,6 @@ export default function PatientAppShell({ children }: PatientAppShellProps) {
       key: "articles",
       href: "/patient/articles",
       icon: <BookOpen className="h-4 w-4" />,
-    },
-    {
-      key: "support",
-      href: "/patient/support",
-      icon: <LifeBuoy className="h-4 w-4" />,
     },
     {
       key: "training",
@@ -155,6 +156,7 @@ export default function PatientAppShell({ children }: PatientAppShellProps) {
     if (key === "assessments") return tJourney("nextSteps.types.TAKE_ASSESSMENT.cta");
     if (key === "practitioners") return tNav("main.practitioners");
     if (key === "sessions") return tNav("main.sessions");
+    if (key === "messages") return locale === "ar" ? "الرسائل" : "Messages";
     if (key === "support") return tArea("shell.support");
     if (key === "articles") return tNav("main.articles");
     if (key === "training") return tNav("workspace.training");

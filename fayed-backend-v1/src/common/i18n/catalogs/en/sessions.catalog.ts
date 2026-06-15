@@ -12,7 +12,7 @@ export const enSessionsCatalog = {
     sessionJoinAvailableEmailSubject: 'Your Fayed session is ready to join',
     sessionJoinAvailableEmailTitle: 'Your session is ready',
     sessionJoinAvailableEmailBody:
-      'Your session starts soon.{{packageContext}} Open the session page to join securely: {{sessionUrl}}',
+      'Your session starts soon.{{packageContext}} Open the session page to join securely.',
     sessionCancelledTitle: 'Session cancelled',
     sessionCancelledBody:
       'Your session scheduled at {{sessionAt}} was cancelled.',

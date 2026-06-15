@@ -41,6 +41,7 @@ import { SUPPORTED_COUNTRY_CODES } from "@/constants/reference-data";
 import { FormModal } from "@/components/ui/modal";
 import Label from "@/components/form/Label";
 import InputField from "@/components/form/input/InputField";
+import Select from "@/components/form/Select";
 import Avatar from "@/components/ui/avatar/Avatar";
 
 const PAGE_SIZE_OPTIONS = DEFAULT_PAGE_SIZE_OPTIONS;
@@ -125,7 +126,7 @@ export default function AdminPractitionersDirectory() {
             />
 
             <div className="min-w-0">
-              <p className="truncate text-sm font-semibold text-text-primary dark:text-white">
+              <p className="truncate text-sm font-semibold text-text-primary">
                 {row.displayName ?? tAdmin("applications.table.noName")}
               </p>
               <p className="truncate text-xs text-text-muted">
@@ -170,7 +171,7 @@ export default function AdminPractitionersDirectory() {
             <span className="text-sm text-text-muted">-</span>
           ) : (
             <div className="inline-flex items-center gap-2">
-              <span className="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-warning-50 text-warning-700">
+              <span className="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-status-warning-soft text-status-warning border border-status-warning-border">
                 <Star className="h-3.5 w-3.5" />
               </span>
               <div>
@@ -224,6 +225,32 @@ export default function AdminPractitionersDirectory() {
       label: tListing(`countries.${code}`),
     }));
   }, [tListing]);
+
+  const ratingOptions = useMemo(() => [
+    { value: "", label: tListing("filter.anyRating") },
+    { value: "3", label: tListing("filter.rating3Up") },
+    { value: "4", label: tListing("filter.rating4Up") },
+    { value: "4.5", label: tListing("filter.rating45Up") }
+  ], [tListing]);
+
+  const sortOptions = useMemo(() => [
+    { value: "recommended", label: tListing("sort.recommended") },
+    { value: "rating", label: tListing("sort.rating") },
+    { value: "experience", label: tListing("sort.experience") },
+    { value: "newest", label: tListing("sort.newest") },
+    { value: "oldest", label: tListing("sort.oldest") }
+  ], [tListing]);
+
+  const genderOptions = useMemo(() => [
+    { value: "", label: tListing("filter.allGenders") },
+    { value: "male", label: tListing("filter.genderMale") },
+    { value: "female", label: tListing("filter.genderFemale") }
+  ], [tListing]);
+
+  const countryOptionsCombined = useMemo(() => [
+    { value: "", label: tListing("filter.allCountries") },
+    ...countryOptions
+  ], [tListing, countryOptions]);
 
   const resetFilters = () => {
     setSearch("");
@@ -366,56 +393,73 @@ export default function AdminPractitionersDirectory() {
               }
               filters={
                 <>
-                  <label className="flex items-center gap-2 rounded-[16px] border border-border-light bg-white px-3 py-2">
-                    <input
-                      type="checkbox"
-                      checked={onlineOnly}
-                      onChange={(event) => {
-                        setOnlineOnly(event.target.checked);
-                        setPage(1);
-                      }}
-                      className="h-4 w-4 rounded border-border-light text-primary focus:ring-primary"
-                    />
-                    <span className="text-sm text-text-secondary">
+                  <label
+                    className={`flex items-center gap-2 rounded-[16px] border transition-colors cursor-pointer px-3 py-2 ${
+                      onlineOnly
+                        ? "bg-primary-light border-primary/30 text-text-brand"
+                        : "bg-surface-tertiary border-border-light text-text-secondary hover:text-text-primary"
+                    }`}
+                  >
+                    <div className="relative h-4 w-4">
+                      <input
+                        type="checkbox"
+                        checked={onlineOnly}
+                        onChange={(event) => {
+                          setOnlineOnly(event.target.checked);
+                          setPage(1);
+                        }}
+                        className="appearance-none h-4 w-4 rounded border bg-surface-tertiary border-border-light checked:bg-primary checked:border-primary focus:ring-ring-focus focus:border-border-focus transition-colors cursor-pointer"
+                      />
+                      {onlineOnly && (
+                        <svg
+                          className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 pointer-events-none text-white"
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="10"
+                          height="10"
+                          viewBox="0 0 14 14"
+                          fill="none"
+                        >
+                          <path
+                            d="M11.6666 3.5L5.24992 9.91667L2.33325 7"
+                            stroke="currentColor"
+                            strokeWidth="2.5"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
+                      )}
+                    </div>
+                    <span className="text-sm select-none">
                       {tListing("filter.onlineNow")}
                     </span>
                   </label>
 
-                  <select
-                    value={minRating}
-                    onChange={(event) => {
-                      setMinRating(event.target.value as "" | "3" | "4" | "4.5");
+                  <Select
+                    key={`ratingFilter-${minRating}`}
+                    defaultValue={minRating}
+                    onChange={(value) => {
+                      setMinRating(value as "" | "3" | "4" | "4.5");
                       setPage(1);
                     }}
-                    className="app-control h-9 min-w-[9rem] rounded-[18px] px-3 text-sm"
-                  >
-                    <option value="">{tListing("filter.anyRating")}</option>
-                    <option value="3">{tListing("filter.rating3Up")}</option>
-                    <option value="4">{tListing("filter.rating4Up")}</option>
-                    <option value="4.5">{tListing("filter.rating45Up")}</option>
-                  </select>
+                    options={ratingOptions}
+                  />
 
-                  <select
-                    value={sort}
-                    onChange={(event) => {
+                  <Select
+                    key={`sortFilter-${sort}`}
+                    defaultValue={sort}
+                    onChange={(value) => {
                       setSort(
-                        event.target.value as
+                        value as
                           | "recommended"
                           | "experience"
                           | "rating"
                           | "newest"
-                          | "oldest",
+                          | "oldest"
                       );
                       setPage(1);
                     }}
-                    className="app-control h-9 min-w-[10rem] rounded-[18px] px-3 text-sm"
-                  >
-                    <option value="recommended">{tListing("sort.recommended")}</option>
-                    <option value="rating">{tListing("sort.rating")}</option>
-                    <option value="experience">{tListing("sort.experience")}</option>
-                    <option value="newest">{tListing("sort.newest")}</option>
-                    <option value="oldest">{tListing("sort.oldest")}</option>
-                  </select>
+                    options={sortOptions}
+                  />
                 </>
               }
             />
@@ -435,39 +479,30 @@ export default function AdminPractitionersDirectory() {
                   <span className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.14em] text-text-muted">
                     {tListing("filter.gender")}
                   </span>
-                  <select
-                    value={gender}
-                    onChange={(event) => {
-                      setGender(event.target.value as "" | "male" | "female");
+                  <Select
+                    key={`genderFilter-${gender}`}
+                    defaultValue={gender}
+                    onChange={(value) => {
+                      setGender(value as "" | "male" | "female");
                       setPage(1);
                     }}
-                    className="app-control h-9 w-full rounded-[18px] text-sm"
-                  >
-                    <option value="">{tListing("filter.allGenders")}</option>
-                    <option value="male">{tListing("filter.genderMale")}</option>
-                    <option value="female">{tListing("filter.genderFemale")}</option>
-                  </select>
+                    options={genderOptions}
+                  />
                 </label>
 
                 <label className="block">
                   <span className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.14em] text-text-muted">
                     {tListing("filter.country")}
                   </span>
-                  <select
-                    value={country}
-                    onChange={(event) => {
-                      setCountry(event.target.value);
+                  <Select
+                    key={`countryFilter-${country}`}
+                    defaultValue={country}
+                    onChange={(value) => {
+                      setCountry(value);
                       setPage(1);
                     }}
-                    className="app-control h-9 w-full rounded-[18px] text-sm"
-                  >
-                    <option value="">{tListing("filter.allCountries")}</option>
-                    {countryOptions.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
+                    options={countryOptionsCombined}
+                  />
                 </label>
               </div>
             ) : null}
@@ -621,10 +656,10 @@ export default function AdminPractitionersDirectory() {
             </div>
 
             {avatarSuccess ? (
-              <p className="text-sm font-medium text-success-600">{avatarSuccess}</p>
+              <p className="text-sm font-medium text-status-success">{avatarSuccess}</p>
             ) : null}
             {avatarError ? (
-              <p className="text-sm font-medium text-error-500">{avatarError}</p>
+              <p className="text-sm font-medium text-status-danger">{avatarError}</p>
             ) : null}
           </div>
         ) : null}

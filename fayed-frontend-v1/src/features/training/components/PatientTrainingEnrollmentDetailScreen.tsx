@@ -101,7 +101,7 @@ export default function PatientTrainingEnrollmentDetailScreen({ enrollmentId }: 
           {t("patient.detail.back")}
         </Link>
         <Link
-          href="/patient/support"
+          href="/patient/messages?lane=support"
           className="inline-flex items-center justify-center rounded-full px-4 py-2 text-sm text-primary transition hover:underline"
         >
           {t("patient.detail.support")}

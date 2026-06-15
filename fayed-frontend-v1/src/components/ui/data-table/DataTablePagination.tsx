@@ -35,7 +35,7 @@ export function DataTablePagination({
         <button
           onClick={() => !loading && page > 1 && onPageChange(page - 1)}
           disabled={loading || page === 1}
-          className="inline-flex h-9 items-center justify-center rounded-xl border border-border-light bg-white px-3 text-xs font-semibold text-text-primary shadow-theme-xs transition hover:border-primary/25 hover:bg-primary-light disabled:cursor-not-allowed disabled:opacity-50 dark:border-border-light dark:bg-surface-secondary dark:hover:bg-surface-tertiary"
+          className="inline-flex h-9 items-center justify-center rounded-xl border border-border-light bg-surface-secondary px-3 text-xs font-semibold text-text-secondary shadow-theme-xs transition hover:bg-surface-tertiary hover:text-text-primary disabled:bg-surface-tertiary/60 disabled:text-text-muted disabled:border-border-light disabled:opacity-60 disabled:cursor-not-allowed"
         >
           {prevLabel}
         </button>
@@ -58,8 +58,8 @@ export function DataTablePagination({
                 disabled={loading}
                 className={`inline-flex h-9 w-9 items-center justify-center rounded-xl text-xs font-semibold transition ${
                   isCurrent
-                    ? "bg-primary text-white shadow-theme-sm"
-                    : "text-text-secondary hover:bg-primary-light hover:text-text-brand"
+                    ? "bg-primary text-white border border-primary shadow-theme-sm"
+                    : "text-text-secondary hover:bg-surface-tertiary hover:text-text-primary"
                 }`}
               >
                 {item}
@@ -71,7 +71,7 @@ export function DataTablePagination({
         <button
           onClick={() => !loading && page < totalPages && onPageChange(page + 1)}
           disabled={loading || page === totalPages}
-          className="inline-flex h-9 items-center justify-center rounded-xl border border-border-light bg-white px-3 text-xs font-semibold text-text-primary shadow-theme-xs transition hover:border-primary/25 hover:bg-primary-light disabled:cursor-not-allowed disabled:opacity-50 dark:border-border-light dark:bg-surface-secondary dark:hover:bg-surface-tertiary"
+          className="inline-flex h-9 items-center justify-center rounded-xl border border-border-light bg-surface-secondary px-3 text-xs font-semibold text-text-secondary shadow-theme-xs transition hover:bg-surface-tertiary hover:text-text-primary disabled:bg-surface-tertiary/60 disabled:text-text-muted disabled:border-border-light disabled:opacity-60 disabled:cursor-not-allowed"
         >
           {nextLabel}
         </button>

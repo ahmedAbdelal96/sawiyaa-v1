@@ -4,6 +4,8 @@ import { useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { toast } from "sonner";
 import {
+  ChevronDown,
+  ChevronUp,
   ExternalLink,
   Loader2,
   PauseCircle,
@@ -199,6 +201,12 @@ function featuredErrorKey(error: unknown) {
       return "errors.invalidPractitioner";
     case "FEATURED_PLACEMENT_OVERLAPPING_ACTIVE":
       return "errors.overlap";
+    case "FEATURED_PLACEMENT_HOME_SLOTS_FULL":
+      return "errors.homeSlotsFull";
+    case "FEATURED_PLACEMENT_PRIORITY_OUT_OF_RANGE":
+      return "errors.priorityOutOfRange";
+    case "FEATURED_PLACEMENT_SLOT_ALREADY_TAKEN":
+      return "errors.slotAlreadyTaken";
     case "FEATURED_PLACEMENT_PRACTITIONER_REQUIRED":
       return "errors.practitionerRequired";
     default:
@@ -212,7 +220,7 @@ function createDefaultFormState(): FormState {
     surface: "HOME",
     startsAt: "",
     endsAt: "",
-    priority: "100",
+    priority: "1",
     reason: "FEATURED",
     campaignName: "",
     notesInternal: "",
@@ -270,6 +278,8 @@ export default function AdminFeaturedPractitionersScreen() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formState, setFormState] = useState<FormState>(createDefaultFormState);
   const [formError, setFormError] = useState<string | null>(null);
+  const [formErrorKey, setFormErrorKey] = useState<string | null>(null);
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   const [pauseTarget, setPauseTarget] = useState<AdminFeaturedPlacement | null>(null);
   const [resumeTarget, setResumeTarget] = useState<AdminFeaturedPlacement | null>(null);
@@ -375,7 +385,7 @@ export default function AdminFeaturedPractitionersScreen() {
       {
         id: "priority",
         header: t("table.priority"),
-        accessor: (row) => row.priority,
+        accessor: (row) => t("fields.slotOption", { slot: row.priority }),
       },
       {
         id: "reason",
@@ -404,17 +414,19 @@ export default function AdminFeaturedPractitionersScreen() {
     setEditingId(null);
     setFormState(createDefaultFormState());
     setFormError(null);
+    setFormErrorKey(null);
+    setShowAdvanced(false);
   };
 
   const validateForm = (mode: EditorMode) => {
     if (mode === "create" && !formState.practitioner) {
-      return t("validation.practitionerRequired");
+      return { key: "validation.practitionerRequired" };
     }
     if (!formState.startsAt.trim()) {
-      return t("validation.startsAtRequired");
+      return { key: "validation.startsAtRequired" };
     }
-    if (!formState.priority.trim() || Number(formState.priority) <= 0) {
-      return t("validation.priorityPositive");
+    if (!formState.priority.trim() || Number(formState.priority) < 1 || Number(formState.priority) > 5) {
+      return { key: "validation.priorityPositive" };
     }
     if (formState.endsAt.trim()) {
       const starts = new Date(formState.startsAt);
@@ -424,7 +436,7 @@ export default function AdminFeaturedPractitionersScreen() {
         Number.isNaN(ends.getTime()) ||
         ends <= starts
       ) {
-        return t("validation.endsAtAfterStartsAt");
+        return { key: "validation.endsAtAfterStartsAt" };
       }
     }
     return null;
@@ -433,28 +445,29 @@ export default function AdminFeaturedPractitionersScreen() {
   const submitEditor = async () => {
     const validationError = validateForm(editorMode);
     if (validationError) {
-      setFormError(validationError);
+      setFormErrorKey(null);
+      setFormError(t(validationError.key as Parameters<typeof t>[0]));
       return;
     }
 
     if (!formState.practitioner && editorMode === "create") {
-      setFormError(t("validation.practitionerRequired"));
+      setFormErrorKey(null);
+      setFormError(t("validation.practitionerRequired" as Parameters<typeof t>[0]));
       return;
     }
 
     setFormError(null);
+    setFormErrorKey(null);
 
     try {
       if (editorMode === "create" && formState.practitioner) {
         await createMutation.mutateAsync({
           practitionerId: formState.practitioner.id,
-          surface: formState.surface,
+          surface: "HOME",
           startsAt: toIsoOrUndefined(formState.startsAt)!,
           endsAt: toIsoOrUndefined(formState.endsAt),
-          priority: Number(formState.priority),
+          priority: Number(formState.priority) || 1,
           reason: formState.reason,
-          campaignName: formState.campaignName.trim() || undefined,
-          notesInternal: formState.notesInternal.trim() || undefined,
         });
         toast.success(t("feedback.createSuccess"));
       } else if (editingId) {
@@ -477,6 +490,8 @@ export default function AdminFeaturedPractitionersScreen() {
       resetAndCloseEditor();
     } catch (error) {
       const messageKey = featuredErrorKey(error);
+      const isSlotsFull = messageKey === "errors.homeSlotsFull";
+      setFormErrorKey(isSlotsFull ? messageKey : null);
       setFormError(t(messageKey as Parameters<typeof t>[0]));
       toast.error(t(messageKey as Parameters<typeof t>[0]));
     }
@@ -513,6 +528,7 @@ export default function AdminFeaturedPractitionersScreen() {
                 setEditorMode("create");
                 setFormState(createDefaultFormState());
                 setFormError(null);
+                setFormErrorKey(null);
                 setEditorOpen(true);
               }}
               startIcon={<Plus className="h-4 w-4" />}
@@ -689,10 +705,11 @@ export default function AdminFeaturedPractitionersScreen() {
                       setEditingId(row.id);
                       setFormState(toFormStateFromPlacement(row));
                       setFormError(null);
+                      setFormErrorKey(null);
                       setEditorOpen(true);
                     }}
                   />
-                  {row.status === "PAUSED" ? (
+                  {row.status === "PAUSED" && getPlacementLifecycle(row) !== "EXPIRED" ? (
                     <ActionIconButton
                       intent="publish"
                       label={t("actions.resume")}
@@ -775,27 +792,45 @@ export default function AdminFeaturedPractitionersScreen() {
             error={editorMode === "create" && !formState.practitioner ? formError : null}
           />
 
-          <div className="grid gap-4 md:grid-cols-2">
-            <label className="block">
-              <span className="mb-2 block text-xs font-semibold text-text-muted">
-                {t("fields.surface")}
-              </span>
-              <select
-                value={formState.surface}
-                onChange={(event) =>
-                  setFormState((prev) => ({
-                    ...prev,
-                    surface: event.target.value as FeaturedPlacementSurface,
-                  }))
-                }
-                className="app-control h-11 w-full rounded-[18px] px-4"
-              >
-                <option value="HOME">{t("surface.HOME")}</option>
-                <option value="DISCOVERY">{t("surface.DISCOVERY")}</option>
-                <option value="ALL">{t("surface.ALL")}</option>
-              </select>
-            </label>
+          {/* Duration */}
+          <div className="rounded-2xl border border-border-light bg-surface-secondary/40 p-4">
+            <p className="mb-3 text-sm font-semibold text-text-primary">
+              {t("fields.duration")}
+            </p>
+            <div className="grid gap-4 md:grid-cols-2">
+              <div>
+                <Label htmlFor="featuredStartsAt">
+                  {t("fields.startsAt")}
+                </Label>
+                <InputField
+                  id="featuredStartsAt"
+                  type="datetime-local"
+                  value={formState.startsAt}
+                  onChange={(event) =>
+                    setFormState((prev) => ({ ...prev, startsAt: event.target.value }))
+                  }
+                />
+              </div>
 
+              <div>
+                <Label htmlFor="featuredEndsAt">{t("fields.endsAt")}</Label>
+                <InputField
+                  id="featuredEndsAt"
+                  type="datetime-local"
+                  value={formState.endsAt}
+                  onChange={(event) =>
+                    setFormState((prev) => ({ ...prev, endsAt: event.target.value }))
+                  }
+                />
+                <p className="mt-1.5 text-xs text-text-muted">
+                  {t("fields.endsAtHint")}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Quick options */}
+          <div className="grid gap-4 md:grid-cols-2">
             <label className="block">
               <span className="mb-2 block text-xs font-semibold text-text-muted">
                 {t("fields.reason")}
@@ -819,88 +854,132 @@ export default function AdminFeaturedPractitionersScreen() {
             </label>
 
             <div>
-              <Label htmlFor="featuredStartsAt">{t("fields.startsAt")}</Label>
-              <InputField
-                id="featuredStartsAt"
-                type="datetime-local"
-                value={formState.startsAt}
-                onChange={(event) =>
-                  setFormState((prev) => ({ ...prev, startsAt: event.target.value }))
-                }
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="featuredEndsAt">{t("fields.endsAt")}</Label>
-              <InputField
-                id="featuredEndsAt"
-                type="datetime-local"
-                value={formState.endsAt}
-                onChange={(event) =>
-                  setFormState((prev) => ({ ...prev, endsAt: event.target.value }))
-                }
-              />
-            </div>
-
-            <div>
               <Label htmlFor="featuredPriority">{t("fields.priority")}</Label>
-              <InputField
+              <select
                 id="featuredPriority"
-                type="number"
-                min={1}
                 value={formState.priority}
                 onChange={(event) =>
                   setFormState((prev) => ({ ...prev, priority: event.target.value }))
                 }
-              />
+                className="app-control w-full px-4 py-3"
+              >
+                <option value="1">{t("fields.slotOption", { slot: 1 })}</option>
+                <option value="2">{t("fields.slotOption", { slot: 2 })}</option>
+                <option value="3">{t("fields.slotOption", { slot: 3 })}</option>
+                <option value="4">{t("fields.slotOption", { slot: 4 })}</option>
+                <option value="5">{t("fields.slotOption", { slot: 5 })}</option>
+              </select>
+              <p className="mt-1.5 text-xs text-text-muted">
+                {t("fields.priorityHint")}
+              </p>
             </div>
+          </div>
 
-            {editorMode === "edit" ? (
-              <label className="block">
-                <span className="mb-2 block text-xs font-semibold text-text-muted">
-                  {t("fields.status")}
-                </span>
-                <select
-                  value={formState.status}
-                  onChange={(event) =>
-                    setFormState((prev) => ({
-                      ...prev,
-                      status: event.target.value as FeaturedPlacementStatus,
-                    }))
-                  }
-                  className="app-control h-11 w-full rounded-[18px] px-4"
+          {/* Advanced toggle — always visible in edit, hidden in create */}
+          {editorMode === "edit" ? (
+            <>
+              <div className="rounded-2xl border border-border-light bg-surface-secondary/30 p-4">
+                <button
+                  type="button"
+                  onClick={() => setShowAdvanced((v) => !v)}
+                  className="flex w-full items-center justify-between text-sm font-semibold text-text-primary"
                 >
-                  <option value="ACTIVE">{t("status.ACTIVE")}</option>
-                  <option value="PAUSED">{t("status.PAUSED")}</option>
-                  <option value="EXPIRED">{t("status.EXPIRED")}</option>
-                </select>
-              </label>
-            ) : null}
+                  <span>{t("fields.advancedSettings")}</span>
+                  {showAdvanced ? (
+                    <ChevronUp className="h-4 w-4 text-text-muted" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4 text-text-muted" />
+                  )}
+                </button>
 
-            <div>
-              <Label htmlFor="featuredCampaign">{t("fields.campaignName")}</Label>
-              <InputField
-                id="featuredCampaign"
-                value={formState.campaignName}
-                onChange={(event) =>
-                  setFormState((prev) => ({ ...prev, campaignName: event.target.value }))
-                }
-              />
-            </div>
-          </div>
+                {showAdvanced && (
+                  <div className="mt-4 space-y-4">
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <label className="block">
+                        <span className="mb-2 block text-xs font-semibold text-text-muted">
+                          {t("fields.surface")}
+                        </span>
+                        <select
+                          value={formState.surface}
+                          onChange={(event) =>
+                            setFormState((prev) => ({
+                              ...prev,
+                              surface: event.target.value as FeaturedPlacementSurface,
+                            }))
+                          }
+                          className="app-control h-11 w-full rounded-[18px] px-4"
+                        >
+                          <option value="HOME">{t("surface.HOME")}</option>
+                          <option value="DISCOVERY">{t("surface.DISCOVERY")}</option>
+                          <option value="ALL">{t("surface.ALL")}</option>
+                        </select>
+                      </label>
 
-          <div>
-            <Label htmlFor="featuredNotes">{t("fields.notesInternal")}</Label>
-            <TextArea
-              id="featuredNotes"
-              rows={3}
-              value={formState.notesInternal}
-              onChange={(value) => setFormState((prev) => ({ ...prev, notesInternal: value }))}
-            />
-          </div>
+                      <label className="block">
+                        <span className="mb-2 block text-xs font-semibold text-text-muted">
+                          {t("fields.status")}
+                        </span>
+                        <select
+                          value={formState.status}
+                          onChange={(event) =>
+                            setFormState((prev) => ({
+                              ...prev,
+                              status: event.target.value as FeaturedPlacementStatus,
+                            }))
+                          }
+                          className="app-control h-11 w-full rounded-[18px] px-4"
+                        >
+                          <option value="ACTIVE">{t("status.ACTIVE")}</option>
+                          <option value="PAUSED">{t("status.PAUSED")}</option>
+                          <option value="EXPIRED">{t("status.EXPIRED")}</option>
+                        </select>
+                      </label>
+                    </div>
+
+                    <div>
+                      <Label htmlFor="featuredCampaign">
+                        {t("fields.campaignName")}
+                      </Label>
+                      <InputField
+                        id="featuredCampaign"
+                        value={formState.campaignName}
+                        onChange={(event) =>
+                          setFormState((prev) => ({
+                            ...prev,
+                            campaignName: event.target.value,
+                          }))
+                        }
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="featuredNotes">
+                        {t("fields.notesInternal")}
+                      </Label>
+                      <TextArea
+                        id="featuredNotes"
+                        rows={2}
+                        value={formState.notesInternal}
+                        onChange={(value) =>
+                          setFormState((prev) => ({
+                            ...prev,
+                            notesInternal: value,
+                          }))
+                        }
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            </>
+          ) : null}
 
           {formError && !(editorMode === "create" && !formState.practitioner) ? (
-            <p className="text-sm font-medium text-error-500">{formError}</p>
+            <p className="text-sm font-medium text-error-500">
+              {formErrorKey === "errors.homeSlotsFull"
+                ? t("errors.homeSlotsFull")
+                : formError}
+            </p>
           ) : null}
         </div>
       </FormModal>

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
-import { Activity, MonitorPlay, Radar } from "lucide-react";
+import { Activity, Compass, MonitorPlay, Radar } from "lucide-react";
 import { ListStateSkeleton, StateCard } from "@/components/shared/ContentStates";
 import DirectionalArrowIcon from "@/components/ui/navigation/DirectionalArrowIcon";
 import { getAdminSessionRuntimeErrorKey } from "../lib/admin-session-runtime-errors";
@@ -212,13 +212,22 @@ export default function AdminSessionRuntimeInspectionScreen({
               {t("lookup.heading")}
             </h2>
           </div>
-          <Link
-            href="/admin/payments"
-            className="inline-flex items-center gap-2 rounded-full border border-border-light px-4 py-2 text-xs font-semibold text-text-secondary transition hover:border-primary/30 hover:text-primary"
-          >
-            <DirectionalArrowIcon direction="back" className="h-3.5 w-3.5" />
-            {t("lookup.backToPayments")}
-          </Link>
+          <div className="flex flex-wrap items-center gap-2">
+            <Link
+              href="/admin/payments"
+              className="inline-flex items-center gap-2 rounded-full border border-border-light px-4 py-2 text-xs font-semibold text-text-secondary transition hover:border-primary/30 hover:text-primary"
+            >
+              <DirectionalArrowIcon direction="back" className="h-3.5 w-3.5" />
+              {t("lookup.backToPayments")}
+            </Link>
+            <Link
+              href="/admin/sessions/runtime-inspector"
+              className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary-light px-4 py-2 text-xs font-semibold text-primary transition hover:bg-primary/15"
+            >
+              <Compass className="h-3.5 w-3.5" />
+              {t("lookup.openInspector")}
+            </Link>
+          </div>
         </div>
 
         <form onSubmit={handleSubmit} className="mt-4 flex flex-col gap-3 sm:flex-row">
@@ -279,14 +288,23 @@ export default function AdminSessionRuntimeInspectionScreen({
                   {t("result.title")}
                 </h2>
               </div>
-              <span
-                className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                  STATUS_STYLES[item.status] ??
-                  "bg-surface-tertiary text-text-muted dark:bg-white/10 dark:text-white/70"
-                }`}
-              >
-                {t(`statuses.${item.status}` as Parameters<typeof t>[0])}
-              </span>
+              <div className="flex flex-wrap items-center gap-2">
+                <span
+                  className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                    STATUS_STYLES[item.status] ??
+                    "bg-surface-tertiary text-text-muted dark:bg-white/10 dark:text-white/70"
+                  }`}
+                >
+                  {t(`statuses.${item.status}` as Parameters<typeof t>[0])}
+                </span>
+                <Link
+                  href={{ pathname: "/admin/sessions/runtime-inspector", query: { sessionId: item.id } }}
+                  className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary-light px-3 py-1.5 text-xs font-semibold text-primary transition hover:bg-primary/15"
+                >
+                  <Compass className="h-3.5 w-3.5" />
+                  {t("lookup.openInspector")}
+                </Link>
+              </div>
             </div>
           </section>
 

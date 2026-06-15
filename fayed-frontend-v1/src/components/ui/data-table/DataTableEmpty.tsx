@@ -36,9 +36,9 @@ export function DataTableEmpty({
   action,
 }: DataTableEmptyProps) {
   return (
-    <div className="overflow-hidden rounded-[24px] border border-border-light bg-white shadow-[0_18px_36px_-30px_rgba(34,52,56,0.18)]">
+    <div className="overflow-hidden rounded-[24px] border border-border-light bg-surface-secondary shadow-[0_18px_36px_-30px_rgba(0,0,0,0.15)]">
       <div className="px-4 py-10 text-center sm:px-6">
-        <div className="mx-auto mb-3.5 flex h-12 w-12 items-center justify-center rounded-xl border border-primary/15 bg-primary-light text-primary shadow-[0_10px_20px_-16px_rgba(68,161,148,0.2)]">
+        <div className="mx-auto mb-3.5 flex h-12 w-12 items-center justify-center rounded-xl border border-primary/15 bg-primary-light text-primary">
           {icon || <Inbox className="h-6 w-6 text-current" />}
         </div>
 
@@ -55,7 +55,7 @@ export function DataTableEmpty({
         {action && (
           <button
             onClick={action.onClick}
-            className="mt-4 inline-flex h-8.5 items-center justify-center rounded-xl bg-primary px-4 text-xs font-semibold text-white shadow-[0_10px_20px_-14px_rgba(68,161,148,0.35)] transition hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-primary/20"
+            className="mt-4 inline-flex h-8.5 items-center justify-center rounded-xl bg-primary px-4 text-xs font-semibold text-white transition hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-ring-focus"
           >
             {action.label}
           </button>

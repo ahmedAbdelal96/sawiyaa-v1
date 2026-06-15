@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { NotificationContext, NotificationPrimaryAction } from '../types/user-notifications.types';
 
 @Injectable()
 export class NotificationOpsPresenter {
@@ -15,27 +16,30 @@ export class NotificationOpsPresenter {
     };
   }
 
-  toListItem(input: {
-    id: string;
-    status: string;
-    channel: string;
-    notificationType: { category: string; slug: string };
-    userId: string;
-    relatedEntityType: string | null;
-    relatedEntityId: string | null;
-    scheduledFor: Date | null;
-    sentAt: Date | null;
-    failedAt: Date | null;
-    suppressedReason: string | null;
-    createdAt: Date;
-    updatedAt: Date;
-    _count: { deliveryAttempts: number };
-    deliveryAttempts: Array<{
+  toListItem(
+    input: {
+      id: string;
       status: string;
-      errorCode: string | null;
-      attemptedAt: Date;
-    }>;
-  }) {
+      channel: string;
+      notificationType: { category: string; slug: string };
+      userId: string;
+      relatedEntityType: string | null;
+      relatedEntityId: string | null;
+      scheduledFor: Date | null;
+      sentAt: Date | null;
+      failedAt: Date | null;
+      suppressedReason: string | null;
+      createdAt: Date;
+      updatedAt: Date;
+      _count: { deliveryAttempts: number };
+      deliveryAttempts: Array<{
+        status: string;
+        errorCode: string | null;
+        attemptedAt: Date;
+      }>;
+    },
+    enrichment?: { context: NotificationContext; primaryAction: NotificationPrimaryAction },
+  ) {
     return {
       id: input.id,
       status: input.status,
@@ -54,40 +58,45 @@ export class NotificationOpsPresenter {
       latestAttemptErrorCode: input.deliveryAttempts[0]?.errorCode ?? null,
       createdAt: input.createdAt.toISOString(),
       updatedAt: input.updatedAt.toISOString(),
+      context: enrichment?.context,
+      primaryAction: enrichment?.primaryAction,
     };
   }
 
-  toDetailItem(input: {
-    id: string;
-    status: string;
-    channel: string;
-    userId: string;
-    locale: string | null;
-    titleSnapshot: string | null;
-    subjectSnapshot: string | null;
-    bodySnapshot: string | null;
-    relatedEntityType: string | null;
-    relatedEntityId: string | null;
-    scheduledFor: Date | null;
-    sentAt: Date | null;
-    failedAt: Date | null;
-    suppressedReason: string | null;
-    createdAt: Date;
-    updatedAt: Date;
-    notificationType: {
-      category: string;
-      slug: string;
-    };
-    deliveryAttempts: Array<{
+  toDetailItem(
+    input: {
       id: string;
-      attemptNumber: number;
       status: string;
-      provider: string | null;
-      errorCode: string | null;
-      errorMessage: string | null;
-      attemptedAt: Date;
-    }>;
-  }) {
+      channel: string;
+      userId: string;
+      locale: string | null;
+      titleSnapshot: string | null;
+      subjectSnapshot: string | null;
+      bodySnapshot: string | null;
+      relatedEntityType: string | null;
+      relatedEntityId: string | null;
+      scheduledFor: Date | null;
+      sentAt: Date | null;
+      failedAt: Date | null;
+      suppressedReason: string | null;
+      createdAt: Date;
+      updatedAt: Date;
+      notificationType: {
+        category: string;
+        slug: string;
+      };
+      deliveryAttempts: Array<{
+        id: string;
+        attemptNumber: number;
+        status: string;
+        provider: string | null;
+        errorCode: string | null;
+        errorMessage: string | null;
+        attemptedAt: Date;
+      }>;
+    },
+    enrichment?: { context: NotificationContext; primaryAction: NotificationPrimaryAction },
+  ) {
     return {
       id: input.id,
       status: input.status,
@@ -116,6 +125,8 @@ export class NotificationOpsPresenter {
         errorMessage: attempt.errorMessage,
         attemptedAt: attempt.attemptedAt.toISOString(),
       })),
+      context: enrichment?.context,
+      primaryAction: enrichment?.primaryAction,
     };
   }
 }

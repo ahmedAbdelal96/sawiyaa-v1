@@ -3,6 +3,7 @@ import { NotificationStatus } from '@prisma/client';
 import { UserNotificationsPresenter } from '../presenters/user-notifications.presenter';
 import { UserNotificationRepository } from '../repositories/user-notification.repository';
 import { MarkMyNotificationReadUseCase } from './mark-my-notification-read.use-case';
+import { NotificationContextEnrichmentService } from '../services/notification-context-enrichment.service';
 
 describe('MarkMyNotificationReadUseCase', () => {
   const repository = {
@@ -12,8 +13,11 @@ describe('MarkMyNotificationReadUseCase', () => {
   const presenter = {
     presentReadResult: jest.fn().mockImplementation((item) => ({ item })),
   } as unknown as UserNotificationsPresenter;
+  const enrichmentService = {
+    enrichOne: jest.fn().mockResolvedValue({ context: {}, primaryAction: { kind: 'details' } }),
+  } as unknown as NotificationContextEnrichmentService;
 
-  const useCase = new MarkMyNotificationReadUseCase(repository, presenter);
+  const useCase = new MarkMyNotificationReadUseCase(repository, presenter, enrichmentService);
 
   beforeEach(() => {
     jest.clearAllMocks();

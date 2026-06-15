@@ -98,7 +98,7 @@ export default function AdminRefundPoliciesScreen() {
                     {policy?.isActive ? t("badges.active") : t("badges.inactive")}
                   </Badge>
                   <div className="space-y-1">
-                    <h3 className="text-xl font-semibold leading-8 text-text-primary dark:text-white/95">
+                    <h3 className="text-xl font-semibold leading-8 text-text-primary">
                       {titleAr}
                     </h3>
                     {hasDistinctEnglishTitle ? (
@@ -121,10 +121,10 @@ export default function AdminRefundPoliciesScreen() {
               </div>
 
               <div className="flex flex-wrap gap-2">
-                <span className="rounded-full bg-surface px-3 py-1 text-sm font-medium text-text-primary">
+                <span className="rounded-full bg-surface-tertiary px-3 py-1 text-sm font-medium text-text-primary">
                   {clauseLabel}
                 </span>
-                <span className="rounded-full bg-surface px-3 py-1 text-sm font-medium text-text-primary">
+                <span className="rounded-full bg-surface-tertiary px-3 py-1 text-sm font-medium text-text-primary">
                   {updatedLabel}
                 </span>
               </div>

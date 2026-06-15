@@ -35,6 +35,7 @@ import {
 import { AdminDashboardChartCard } from "./dashboard/AdminDashboardChartCard";
 import { AdminDashboardKpiCard } from "./dashboard/AdminDashboardKpiCard";
 import { AdminDashboardQueueCard } from "./dashboard/AdminDashboardQueueCard";
+import { AdminDashboardFocusCard } from "./dashboard/AdminDashboardFocusCard";
 
 type LocaleCopy = {
   hero: {
@@ -297,30 +298,58 @@ function buildLocalizedPath(locale: string, path: string) {
   return locale === "ar" ? `/ar${normalizedPath}` : `/en${normalizedPath}`;
 }
 
-const EVENT_SLUG_MAP: Record<string, { en: string; ar: string }> = {
-  "sessions session join available": {
-    en: "Session is ready to join",
-    ar: "الجلسة أصبحت متاحة للانضمام",
-  },
-  "messages session message received": {
-    en: "New session message",
-    ar: "رسالة جديدة في محادثة جلسة",
-  },
-  "payments session payment succeeded": {
-    en: "Session payment confirmed",
-    ar: "تم تأكيد دفع جلسة",
-  },
-};
-
-function humanizeEventSlug(slug: string, locale: string) {
+function formatActivityType(slug: string, locale: string): string {
   const isAr = locale === "ar";
   if (!slug) return isAr ? "نشاط جديد" : "New activity";
   const normalized = slug.trim().toLowerCase().replace(/[\s.-]+/g, " ");
+  const EVENT_SLUG_MAP: Record<string, { en: string; ar: string }> = {
+    "sessions session join available": {
+      en: "Session is ready to join",
+      ar: "الجلسة أصبحت متاحة للانضمام",
+    },
+    "messages session message received": {
+      en: "New session message",
+      ar: "رسالة جديدة في محادثة جلسة",
+    },
+    "payments session payment succeeded": {
+      en: "Session payment confirmed",
+      ar: "تم تأكيد دفع جلسة",
+    },
+  };
   const mapped = EVENT_SLUG_MAP[normalized];
   if (mapped) {
     return isAr ? mapped.ar : mapped.en;
   }
   return isAr ? "نشاط جديد" : "New activity";
+}
+
+function formatNotificationStatus(status: string, locale: string): string {
+  const isAr = locale === "ar";
+  const NOTIFICATION_STATUS: Record<string, { en: string; ar: string }> = {
+    UNREAD: { en: "Unread", ar: "غير مقروء" },
+    READ: { en: "Read", ar: "مقروء" },
+    ARCHIVED: { en: "Archived", ar: "مؤرشف" },
+    QUEUED: { en: "Queued", ar: "قيد الإرسال" },
+    FAILED: { en: "Failed", ar: "فشل" },
+    SENT: { en: "Sent", ar: "تم الإرسال" },
+    DELIVERED: { en: "Delivered", ar: "تم التسليم" },
+  };
+  const entry = NOTIFICATION_STATUS[status];
+  if (!entry) return status;
+  return isAr ? entry.ar : entry.en;
+}
+
+function formatActivityCategory(category: string, locale: string): string {
+  const isAr = locale === "ar";
+  const CATEGORY_MAP: Record<string, { en: string; ar: string }> = {
+    SESSION: { en: "Session", ar: "الجلسة" },
+    CHAT: { en: "Chat", ar: "المحادثة" },
+    SYSTEM: { en: "System", ar: "النظام" },
+    SUPPORT: { en: "Support", ar: "الدعم" },
+  };
+  const entry = CATEGORY_MAP[category?.toUpperCase()];
+  if (!entry) return category;
+  return isAr ? entry.ar : entry.en;
 }
 
 function monthKeyValue(year: number, month: number) {
@@ -502,7 +531,7 @@ export default function AdminDashboard() {
         id: ticket.id,
         title: ticket.subject,
         subtitle: `${tEnum(SUPPORT_CATEGORY, ticket.category, locale)} · ${formatDateLabel(locale, ticket.createdAt)}`,
-        href: `/admin/support/${ticket.id}`,
+        href: `/admin/messages?lane=support&id=${ticket.id}`,
         badge: (
           <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-700 dark:bg-amber-500/15 dark:text-amber-400">
             {tEnum(SUPPORT_PRIORITY, ticket.priority, locale)}
@@ -530,11 +559,11 @@ export default function AdminDashboard() {
   const recentActivityItems = canReadNotifications
     ? (notificationsQuery.data?.items ?? []).map((item) => ({
         id: item.id,
-        title: humanizeEventSlug(item.typeSlug, locale),
-        subtitle: `${item.category} · ${formatDateTimeLabel(locale, item.updatedAt)}`,
+        title: formatActivityType(item.typeSlug, locale),
+        subtitle: `${formatActivityCategory(item.category, locale)} · ${formatDateTimeLabel(locale, item.updatedAt)}`,
         href: `/admin/notifications/${item.id}`,
         badge: (() => {
-          const label = tEnum(NOTIFICATION_STATUS, item.status, locale);
+          const label = formatNotificationStatus(item.status, locale);
           if (item.status === "FAILED") {
             return (
               <span className="rounded-full bg-red-50 px-2 py-0.5 text-[11px] font-semibold text-red-700 dark:bg-red-500/10 dark:text-red-400">
@@ -568,7 +597,7 @@ export default function AdminDashboard() {
   // Needs attention — only queues with count > 0
   const attentionItems = [
     ...(canReadSupport && supportTotal > 0
-      ? [{ id: "support", title: copy.attention.support, count: supportTotal, href: "/admin/support", icon: <Headset className="h-4 w-4" />, tone: "amber" as const }]
+      ? [{ id: "support", title: copy.attention.support, count: supportTotal, href: "/admin/messages?lane=support", icon: <Headset className="h-4 w-4" />, tone: "amber" as const }]
       : []),
     ...(canReadCareChat && careTotal > 0
       ? [{ id: "care", title: copy.attention.careQueue, count: careTotal, href: "/admin/care-chat", icon: <MessageSquareMore className="h-4 w-4" />, tone: "violet" as const }]
@@ -602,9 +631,9 @@ export default function AdminDashboard() {
   });
 
   return (
-    <div className="space-y-5">
-      {/* ── Section 1: Compact header ── */}
-      <section className="rounded-2xl border border-slate-200/70 bg-white px-5 py-4 dark:border-white/5 dark:bg-white/[0.03] shadow-sm sm:px-6 sm:py-5">
+    <div className="mx-auto max-w-screen-2xl px-4 py-5 sm:px-6 lg:px-8 space-y-5">
+      {/* ── Section 1: Command Header Card ── */}
+      <section className="rounded-3xl border border-slate-200/70 bg-white px-5 py-4 dark:border-white/5 dark:bg-white/[0.03] shadow-sm sm:px-6 sm:py-5">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-xl font-bold tracking-tight text-text-primary dark:text-white/95 sm:text-2xl">
@@ -618,90 +647,72 @@ export default function AdminDashboard() {
                 {copy.hero.today} · {now.toLocaleDateString(normalizeLocale(locale), { weekday: "short", month: "short", day: "numeric" })}
               </span>
             )}
-            <Link
-              href="/admin/sessions"
-              className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-text-secondary hover:bg-slate-50 transition dark:border-white/5 dark:bg-white/[0.02] dark:hover:bg-white/[0.05]"
-            >
-              {isArabic ? "إدارة الجلسات" : "Manage Sessions"}
-            </Link>
+            <div className="flex items-center gap-1">
+              <Link
+                href="/admin/sessions"
+                className="rounded-full border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-medium text-text-secondary hover:bg-slate-50 transition-colors dark:border-white/5 dark:bg-white/[0.02] dark:hover:bg-white/[0.05]"
+              >
+                {isArabic ? "إدارة الجلسات" : "Manage Sessions"}
+              </Link>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* ── Section 2: Needs attention — only shown when items exist ── */}
-      {hasAnyAttention && (
-        <section className="rounded-2xl border border-slate-200/70 bg-white px-5 py-4 dark:border-white/5 dark:bg-white/[0.03] shadow-sm sm:px-6 sm:py-5">
-          <h2 className="mb-4 text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
-            {copy.attention.heading}
-          </h2>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {attentionItems.map((item) => {
-              const tone = ATTENTION_TONE[item.tone] ?? ATTENTION_TONE.slate;
-              return (
-                <Link
-                  key={item.id}
-                  href={buildLocalizedPath(locale, item.href) as never}
-                  className="flex items-center gap-3 rounded-xl border border-slate-100 bg-slate-50/30 px-4 py-3 transition hover:-translate-y-0.5 hover:border-primary/20 hover:bg-primary-light/10 dark:border-white/5 dark:bg-white/[0.01] dark:hover:bg-primary/10"
-                >
-                  <span className={`inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${tone.bg} ${tone.icon}`}>
-                    {item.icon}
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-semibold text-text-primary dark:text-white/95">
-                      {item.title}
-                    </p>
-                    <p className="mt-0.5 text-xs text-text-secondary">
-                      {formatNumber(locale, item.count)}
-                    </p>
-                  </div>
-                  <ArrowRight className="h-4 w-4 shrink-0 text-text-muted rtl:rotate-180" />
-                </Link>
-              );
-            })}
-          </div>
-        </section>
-      )}
+      {/* ── Section 2: Top Analytics Grid (2x2 KPIs on left, Focus Card on right) ── */}
+      <section className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
+        {/* Left column: 2x2 compact KPI cards */}
+        <div className="lg:col-span-8 grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <AdminDashboardKpiCard
+            label={copy.kpi.sessionsToday}
+            value={formatNumber(locale, sessionsToday)}
+            icon={<CalendarClock className="h-5 w-5" />}
+            deltaText={sessionsDeltaText}
+            deltaTone={sessionsDeltaTone}
+            accentTone="blue"
+          />
+          <AdminDashboardKpiCard
+            label={copy.kpi.openSupport}
+            value={formatNumber(locale, supportTotal)}
+            icon={<Headset className="h-5 w-5" />}
+            accentTone="amber"
+          />
+          <AdminDashboardKpiCard
+            label={copy.kpi.pendingApplications}
+            value={formatNumber(locale, applicationsTotal)}
+            icon={<Users className="h-5 w-5" />}
+            accentTone="teal"
+          />
+          <AdminDashboardKpiCard
+            label={copy.kpi.settlementsTotal}
+            value={hasSettlementData
+              ? formatFinanceMoney(locale, settlementLatestValue, settlementCurrency, {
+                  fallbackText: "-",
+                  minimumFractionDigits: 0,
+                  maximumFractionDigits: 2,
+                })
+              : "-"}
+            icon={<WalletCards className="h-5 w-5" />}
+            deltaText={settlementDeltaText}
+            deltaTone={settlementDeltaTone}
+            accentTone="blue"
+          />
+        </div>
 
-      {/* ── Section 3: KPI cards ── */}
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <AdminDashboardKpiCard
-          label={copy.kpi.sessionsToday}
-          value={formatNumber(locale, sessionsToday)}
-          icon={<CalendarClock className="h-5 w-5" />}
-          deltaText={sessionsDeltaText}
-          deltaTone={sessionsDeltaTone}
-          accentTone="blue"
-        />
-        <AdminDashboardKpiCard
-          label={copy.kpi.openSupport}
-          value={formatNumber(locale, supportTotal)}
-          icon={<Headset className="h-5 w-5" />}
-          accentTone="amber"
-        />
-        <AdminDashboardKpiCard
-          label={copy.kpi.pendingApplications}
-          value={formatNumber(locale, applicationsTotal)}
-          icon={<Users className="h-5 w-5" />}
-          accentTone="teal"
-        />
-        <AdminDashboardKpiCard
-          label={copy.kpi.settlementsTotal}
-          value={hasSettlementData
-            ? formatFinanceMoney(locale, settlementLatestValue, settlementCurrency, {
-                fallbackText: "-",
-                minimumFractionDigits: 0,
-                maximumFractionDigits: 2,
-              })
-            : "-"}
-          icon={<WalletCards className="h-5 w-5" />}
-          deltaText={settlementDeltaText}
-          deltaTone={settlementDeltaTone}
-          accentTone="blue"
-        />
+        {/* Right column: Priority / Focus Card */}
+        <div className="lg:col-span-4">
+          <AdminDashboardFocusCard
+            locale={locale}
+            supportCount={supportTotal}
+            applicationsCount={applicationsTotal}
+            careCount={careTotal}
+            moderationCount={moderationTotal}
+          />
+        </div>
       </section>
 
-      {/* ── Section 4: Analytics Grid (Charts) ── */}
-      <section className="grid gap-4 lg:grid-cols-12">
+      {/* ── Section 3: Main Charts Grid ── */}
+      <section className="grid gap-4 grid-cols-1 lg:grid-cols-12">
         <div className="lg:col-span-8">
           <AdminDashboardChartCard title={copy.charts.sessionsTrend}>
             {sessionsTrendLoading ? (
@@ -744,44 +755,45 @@ export default function AdminDashboard() {
             )}
           </AdminDashboardChartCard>
         </div>
-
-        {canReadSettlements && (
-          <div className="lg:col-span-12">
-            <AdminDashboardChartCard title={copy.charts.settlementsTrend}>
-              {!hasSettlementData ? (
-                <div className="flex h-[260px] items-center justify-center rounded-[20px] border border-dashed border-border-light bg-surface-secondary/50 dark:border-white/10 dark:bg-white/[0.02]">
-                  <p className="text-sm text-text-muted">{copy.charts.noDataYet}</p>
-                </div>
-              ) : (
-                <BarTrendChart
-                  locale={locale}
-                  categories={settlementChartLabels}
-                  seriesName={isArabic ? "مبلغ التسوية" : "Settlement Amount"}
-                  values={settlementChartSeries}
-                  currencyCode={settlementCurrency ?? undefined}
-                  height={260}
-                  color={chartPalette[0]}
-                />
-              )}
-            </AdminDashboardChartCard>
-          </div>
-        )}
       </section>
 
-      {/* ── Section 5: Operations Grid ── */}
+      {/* ── Section 4: Wide Settlements / Revenue Trend Card ── */}
+      {canReadSettlements && (
+        <section>
+          <AdminDashboardChartCard title={copy.charts.settlementsTrend}>
+            {!hasSettlementData ? (
+              <div className="flex h-[260px] items-center justify-center rounded-[20px] border border-dashed border-border-light bg-surface-secondary/50 dark:border-white/10 dark:bg-white/[0.02]">
+                <p className="text-sm text-text-muted">{copy.charts.noDataYet}</p>
+              </div>
+            ) : (
+              <BarTrendChart
+                locale={locale}
+                categories={settlementChartLabels}
+                seriesName={isArabic ? "مبلغ التسوية" : "Settlement Amount"}
+                values={settlementChartSeries}
+                currencyCode={settlementCurrency ?? undefined}
+                height={260}
+                color={chartPalette[0]}
+              />
+            )}
+          </AdminDashboardChartCard>
+        </section>
+      )}
+
+      {/* ── Section 5: Bottom Operations Grid ── */}
       <section className="grid gap-4 grid-cols-1 lg:grid-cols-3">
-        {/* Support items */}
+        {/* Support Queue */}
         {canReadSupport && (
           <AdminDashboardQueueCard
             title={copy.followUp.support}
             actionLabel={copy.common.viewAll}
-            actionHref="/admin/support"
+            actionHref="/admin/messages?lane=support"
             emptyText={copy.followUp.noItems}
             items={supportItems}
           />
         )}
 
-        {/* Applications items */}
+        {/* Practitioner Applications */}
         {canReadApplications && (
           <AdminDashboardQueueCard
             title={copy.followUp.applications}
@@ -792,7 +804,7 @@ export default function AdminDashboard() {
           />
         )}
 
-        {/* Recent activity */}
+        {/* Recent Activity */}
         {canReadNotifications && (
           <AdminDashboardQueueCard
             title={copy.activity.heading}

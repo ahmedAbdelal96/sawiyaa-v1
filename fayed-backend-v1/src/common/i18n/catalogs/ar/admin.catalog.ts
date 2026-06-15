@@ -26,6 +26,8 @@ export const arAdminCatalog = {
       applicationFetched: 'تم جلب تفاصيل طلب الممارس بنجاح',
       practitionerCreatedDirectly:
         'تم إنشاء حساب الممارس مباشرة من لوحة الإدارة بنجاح',
+      credentialPrepared:
+        'تم رفع ملف المستند وتجهيزه بنجاح',
       applicationApproved: 'تمت الموافقة على طلب الممارس بنجاح',
       applicationRejected: 'تم رفض طلب الممارس بنجاح',
       changesRequested: 'تم إرسال طلب تعديل بنجاح',
@@ -38,6 +40,8 @@ export const arAdminCatalog = {
       applicationAlreadyApproved: 'تمت الموافقة على طلب الممارس بالفعل',
       applicationAlreadyRejected: 'تم رفض طلب الممارس بالفعل',
       applicationNotReviewable: 'لا يمكن مراجعة طلب الممارس في حالته الحالية',
+      directCreateMissingRequirements:
+        'بيانات إنشاء الممارس مباشرة ناقصة ولازم تستكمل قبل الإنشاء',
       invalidCountryCode: 'رمز الدولة غير صالح أو غير نشط',
       invalidYearsOfExperience: 'سنوات الخبرة يجب أن تكون صفرًا أو أكثر',
       invalidSpecialtyIds: 'هناك تخصص واحد أو أكثر غير صالح أو غير نشط',

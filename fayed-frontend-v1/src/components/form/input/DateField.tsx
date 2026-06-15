@@ -124,14 +124,14 @@ export default function DateField({
   }, [value]);
 
   const inputClasses = [
-    "h-11 w-full rounded-xl border appearance-none bg-surface-secondary px-4 pe-10 py-2.5 text-sm",
+    "h-11 w-full rounded-xl border appearance-none bg-surface-tertiary dark:bg-surface-tertiary px-4 pe-10 py-2.5 text-sm",
     "shadow-theme-xs placeholder:text-text-muted",
     "focus:outline-hidden focus:ring-3",
     disabled
       ? "cursor-not-allowed border-border-light bg-surface-tertiary text-text-muted dark:border-border-light dark:bg-surface-tertiary dark:text-text-muted"
       : error
-        ? "border-error-500 text-error-800 focus:ring-3 focus:ring-error-500/10 dark:border-error-500 dark:text-error-400"
-        : "border-border-light text-text-primary focus:border-border-focus focus:ring-3 focus:ring-primary/10 dark:border-border-light dark:bg-surface-secondary dark:text-text-primary",
+        ? "border-status-danger text-status-danger focus:ring-3 focus:ring-status-danger/10"
+        : "border-border-light text-text-primary focus:border-border-focus focus:ring-3 focus:ring-ring-focus",
   ].join(" ");
 
   return (
@@ -151,7 +151,7 @@ export default function DateField({
           <CalendarDays className="size-5" />
         </span>
       </div>
-      {error && <p className="mt-1.5 text-xs text-error-500">{error}</p>}
+      {error && <p className="mt-1.5 text-xs text-status-danger">{error}</p>}
     </div>
   );
 }

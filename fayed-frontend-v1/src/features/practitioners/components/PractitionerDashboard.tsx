@@ -1,25 +1,27 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useLocale } from "next-intl";
 import {
   Activity,
+  ArrowRight,
   CalendarClock,
   Clock3,
   WalletCards,
 } from "lucide-react";
 import { Link } from "@/i18n/navigation";
+import { cn } from "@/lib/utils";
 import { ListStateSkeleton, StateCard } from "@/components/shared/ContentStates";
 import {
   AreaTrendChart,
   BarTrendChart,
 } from "@/components/charts";
 import {
-  DashboardChartCard,
-  DashboardKpiCard,
-  DashboardQueueCard,
-  DashboardSectionHeader,
-} from "@/components/dashboard";
+  PractitionerDashboardChartCard,
+  PractitionerDashboardKpiCard,
+  PractitionerDashboardQueueCard,
+  PractitionerDashboardSectionHeader,
+} from "./dashboard";
 import { formatMoney as formatFinanceMoney } from "@/lib/finance-format";
 import { usePractitionerProfile } from "../hooks/use-practitioners";
 import { usePractitionerSessions } from "@/features/sessions/hooks/use-sessions";
@@ -294,9 +296,31 @@ const TERMINAL_SESSION_STATUSES = new Set<SessionListItem["status"]>([
   "REFUNDED",
 ]);
 
+function formatSessionStatus(status: string, locale: string): string {
+  const isAr = locale === "ar";
+  const STATUS_MAP: Record<string, { en: string; ar: string }> = {
+    READY_TO_JOIN: { en: "Ready to join", ar: "جاهزة للانضمام" },
+    SCHEDULED: { en: "Scheduled", ar: "مجدولة" },
+    COMPLETED: { en: "Completed", ar: "مكتملة" },
+    CANCELLED: { en: "Cancelled", ar: "ملغاة" },
+    IN_PROGRESS: { en: "In progress", ar: "قيد التنفيذ" },
+    NO_SHOW: { en: "No show", ar: "عدم حضور" },
+    EXPIRED: { en: "Expired", ar: "منتهية" },
+  };
+  const entry = STATUS_MAP[status?.toUpperCase()];
+  if (!entry) return status;
+  return isAr ? entry.ar : entry.en;
+}
+
 export default function PractitionerDashboard() {
   const locale = useLocale();
+  const isArabic = locale === "ar";
   const copy = COPY[locale === "ar" ? "ar" : "en"];
+
+  const [hasHydrated, setHasHydrated] = useState(false);
+  useEffect(() => {
+    setHasHydrated(true);
+  }, []);
 
   const profileQuery = usePractitionerProfile();
   const sessionsQuery = usePractitionerSessions({ page: 1, limit: 50 });
@@ -384,28 +408,32 @@ export default function PractitionerDashboard() {
   }
 
   return (
-    <div className="space-y-6">
-      <section className="app-panel rounded-[32px] p-6 sm:p-7">
-        <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-primary">
-          {copy.pageTitle}
-        </p>
-        <div className="flex flex-wrap items-start justify-between gap-4">
+    <div className="mx-auto max-w-screen-2xl px-4 py-5 sm:px-6 lg:px-8 space-y-4">
+      {/* ── Section 1: Command Header Card ── */}
+      <section className="rounded-3xl border border-slate-200/70 bg-white p-5 dark:border-white/5 dark:bg-white/[0.03] shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight text-text-primary dark:text-white/95 sm:text-3xl">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-text-brand dark:text-primary-light mb-1">
+              {locale === "ar" ? "لوحة المعالج" : "Practitioner Dashboard"}
+            </p>
+            <h1 className="text-xl font-bold tracking-tight text-text-primary dark:text-white/95 sm:text-2xl">
               {profile ? `${greetingName}` : copy.pageTitle}
             </h1>
-            <p className="mt-3 max-w-3xl text-sm leading-6 text-text-secondary sm:text-base">
-              {copy.pageSubtitle}
-            </p>
+            <p className="mt-1 text-sm text-text-secondary">{copy.pageSubtitle}</p>
           </div>
-          <span className="app-chip rounded-full px-3 py-1 text-xs font-medium">
-            {copy.common.updatedLabel}: {formatDateTime(locale, new Date().toISOString())}
-          </span>
+          <div className="flex flex-wrap items-center gap-2 sm:self-center">
+            {hasHydrated && (
+              <span className="app-chip rounded-full bg-primary-light px-3.5 py-1.5 text-xs font-semibold text-text-brand dark:bg-primary/15 dark:text-primary-light">
+                {copy.common.updatedLabel}: {formatDateTime(locale, new Date().toISOString())}
+              </span>
+            )}
+          </div>
         </div>
       </section>
 
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <DashboardKpiCard
+      {/* ── Section 2: Compact KPI Grid ── */}
+      <section className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+        <PractitionerDashboardKpiCard
           label={copy.kpi.sessionsToday}
           value={formatNumber(locale, sessionsToday)}
           helper={copy.kpi.sessionsTodayHelper}
@@ -414,21 +442,21 @@ export default function PractitionerDashboard() {
           accentTone="indigo"
           icon={<CalendarClock className="h-4 w-4" />}
         />
-        <DashboardKpiCard
+        <PractitionerDashboardKpiCard
           label={copy.kpi.joinableNow}
           value={formatNumber(locale, readyNowCount)}
           helper={copy.kpi.joinableNowHelper}
           accentTone="sky"
           icon={<Activity className="h-4 w-4" />}
         />
-        <DashboardKpiCard
+        <PractitionerDashboardKpiCard
           label={copy.kpi.walletAvailable}
           value={formatFinanceMoney(normalizeLocale(locale), availableBalance, wallet?.currency ?? null)}
           helper={copy.kpi.walletHelper}
           accentTone="teal"
           icon={<WalletCards className="h-4 w-4" />}
         />
-        <DashboardKpiCard
+        <PractitionerDashboardKpiCard
           label={copy.kpi.lastSettlement}
           value={formatFinanceMoney(normalizeLocale(locale), latestSettlementAmount, settlementCurrency)}
           helper={copy.kpi.lastSettlementHelper}
@@ -437,95 +465,126 @@ export default function PractitionerDashboard() {
         />
       </section>
 
-      <section className="space-y-4">
-        <DashboardSectionHeader title={copy.charts.heading} subtitle={copy.charts.subtitle} />
-        <DashboardChartCard
-          title={copy.charts.sessionsTitle}
-          subtitle={`${copy.charts.sessionsSubtitle} · ${formatNumber(locale, sessionsLast14DaysTotal)} ${copy.charts.sessionsSeries}`}
-          actionLabel={copy.common.viewAll}
-          actionHref="/practitioner/sessions"
-        >
-          <AreaTrendChart
-            locale={locale}
-            categories={trend.labels}
-            seriesName={copy.charts.sessionsSeries}
-            values={trend.values}
-            comparisonSeriesName={copy.charts.sessionsAverageSeries}
-            comparisonValues={trend.movingAverage}
-            color={INDIGO}
-            comparisonColor={ORANGE}
-            height={290}
-          />
-        </DashboardChartCard>
+      {/* ── Section 3: Analytics Row 1 (Sessions Trend + Upcoming Sessions) ── */}
+      <section className="grid gap-4 grid-cols-1 lg:grid-cols-12 items-start">
+        <div className="lg:col-span-8">
+          <PractitionerDashboardChartCard
+            title={copy.charts.sessionsTitle}
+            subtitle={`${copy.charts.sessionsSubtitle} · ${formatNumber(locale, sessionsLast14DaysTotal)} ${copy.charts.sessionsSeries}`}
+            actionLabel={copy.common.viewAll}
+            actionHref="/practitioner/sessions"
+          >
+            <AreaTrendChart
+              locale={locale}
+              categories={trend.labels}
+              seriesName={copy.charts.sessionsSeries}
+              values={trend.values}
+              comparisonSeriesName={copy.charts.sessionsAverageSeries}
+              comparisonValues={trend.movingAverage}
+              color={INDIGO}
+              comparisonColor={ORANGE}
+              height={260}
+            />
+          </PractitionerDashboardChartCard>
+        </div>
 
-        <DashboardChartCard
-          title={copy.charts.settlementsTitle}
-          subtitle={copy.charts.settlementsSubtitle}
-          actionLabel={copy.common.viewAll}
-          actionHref="/practitioner/settlements"
-        >
-          <BarTrendChart
-            locale={locale}
-            categories={
-              settlementCategories.length > 0 ? settlementCategories : [copy.common.noData]
-            }
-            seriesName={copy.charts.settlementsSeries}
-            values={settlementValues.length > 0 ? settlementValues : [0]}
-            currencyCode={settlementCurrency}
-            colors={[INDIGO, ORANGE, SKY, INDIGO, ORANGE, SKY, INDIGO, ORANGE]}
-            distributed
-            height={300}
+        <div className="lg:col-span-4">
+          <PractitionerDashboardQueueCard
+            title={copy.activity.upcomingSessionsTitle}
+            subtitle={copy.activity.upcomingSessionsSubtitle}
+            actionLabel={copy.common.viewAll}
+            actionHref="/practitioner/sessions"
+            emptyText={copy.activity.upcomingSessionsEmpty}
+            items={upcomingSessions.map((session) => ({
+              id: session.id,
+              title: safeText(session.patient?.displayName, copy.common.unknown),
+              subtitle: `${formatDateTime(locale, session.scheduledStartAt)} · ${session.durationMinutes}m`,
+              href: `/practitioner/sessions/${session.id}`,
+              badge: (() => {
+                const statusLabel = formatSessionStatus(session.status, locale);
+                const isReady = session.status === "READY_TO_JOIN" || session.status === "IN_PROGRESS";
+                return (
+                  <span className={cn(
+                    "rounded-full px-2.5 py-0.5 text-[10px] font-bold tracking-wide",
+                    isReady 
+                      ? "bg-teal-50 text-teal-700 dark:bg-teal-500/10 dark:text-teal-400"
+                      : "bg-slate-100 text-slate-600 dark:bg-white/10 dark:text-white/70"
+                  )}>
+                    {statusLabel}
+                  </span>
+                );
+              })(),
+            }))}
           />
-        </DashboardChartCard>
+        </div>
       </section>
 
-      <section className="space-y-4">
-        <DashboardSectionHeader title={copy.activity.heading} subtitle={copy.activity.subtitle} />
-        <div className="grid gap-4 xl:grid-cols-3">
-          <div className="xl:col-span-2">
-            <DashboardQueueCard
-              title={copy.activity.upcomingSessionsTitle}
-              subtitle={copy.activity.upcomingSessionsSubtitle}
-              actionLabel={copy.common.viewAll}
-              actionHref="/practitioner/sessions"
-              emptyText={copy.activity.upcomingSessionsEmpty}
-              items={upcomingSessions.map((session) => ({
-                id: session.id,
-                title: safeText(session.patient?.displayName, copy.common.unknown),
-                subtitle: `${formatDateTime(locale, session.scheduledStartAt)} · ${session.status}`,
-                href: `/practitioner/sessions/${session.id}`,
-                badge: (
-                  <span className="rounded-full bg-surface-tertiary px-2 py-0.5 text-[11px] font-semibold text-text-secondary dark:bg-white/10 dark:text-white/80">
-                    {session.durationMinutes}m
-                  </span>
-                ),
-              }))}
+      {/* ── Section 4: Analytics Row 2 (Settlements Trend + Quick Shortcuts) ── */}
+      <section className="grid gap-4 grid-cols-1 lg:grid-cols-12 items-start">
+        <div className="lg:col-span-8">
+          <PractitionerDashboardChartCard
+            title={copy.charts.settlementsTitle}
+            subtitle={copy.charts.settlementsSubtitle}
+            actionLabel={copy.common.viewAll}
+            actionHref="/practitioner/settlements"
+          >
+            <BarTrendChart
+              locale={locale}
+              categories={
+                settlementCategories.length > 0 ? settlementCategories : [copy.common.noData]
+              }
+              seriesName={copy.charts.settlementsSeries}
+              values={settlementValues.length > 0 ? settlementValues : [0]}
+              currencyCode={settlementCurrency}
+              colors={[INDIGO, ORANGE, SKY, INDIGO, ORANGE, SKY, INDIGO, ORANGE]}
+              distributed
+              height={260}
             />
-          </div>
+          </PractitionerDashboardChartCard>
+        </div>
 
-          <article className="app-panel rounded-3xl p-5">
-            <DashboardSectionHeader
-              title={copy.activity.quickActionsTitle}
-              subtitle={copy.activity.quickActionsSubtitle}
-            />
-            <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
-              {[
-                { href: "/practitioner/sessions", label: copy.actions.sessions, icon: <CalendarClock className="h-4 w-4" /> },
-                { href: "/practitioner/wallet", label: copy.actions.wallet, icon: <WalletCards className="h-4 w-4" /> },
-                { href: "/practitioner/settlements", label: copy.actions.settlements, icon: <Clock3 className="h-4 w-4" /> },
-              ].map((action) => (
-                <Link
-                  key={action.href}
-                  href={action.href as never}
-                  className="inline-flex items-center gap-2 rounded-xl border border-border-light bg-surface px-3 py-2.5 text-sm font-medium text-text-secondary transition hover:border-primary/30 hover:bg-primary-light hover:text-text-brand dark:border-white/10 dark:bg-white/[0.03] dark:text-white/85 dark:hover:bg-primary/10 dark:hover:text-primary-light"
-                >
-                  {action.icon}
-                  {action.label}
-                </Link>
-              ))}
+        <div className="lg:col-span-4">
+          <article className="flex flex-col justify-between h-full rounded-3xl border border-slate-200/70 bg-white p-5 dark:border-white/5 dark:bg-white/[0.03] shadow-sm sm:p-6 min-h-[350px]">
+            <div className="flex-1 flex flex-col">
+              <PractitionerDashboardSectionHeader
+                title={copy.activity.quickActionsTitle}
+                subtitle={copy.activity.quickActionsSubtitle}
+              />
+              <div className="grid gap-2 grid-cols-1 mt-2">
+                {[
+                  { href: "/practitioner/sessions", label: copy.actions.sessions, icon: <CalendarClock className="h-4 w-4" />, helper: locale === "ar" ? "عرض وإدارة الجلسات" : "View and manage sessions" },
+                  { href: "/practitioner/wallet", label: copy.actions.wallet, icon: <WalletCards className="h-4 w-4" />, helper: locale === "ar" ? "تفاصيل الأرباح والمحفظة" : "Wallet details and balances" },
+                  { href: "/practitioner/settlements", label: copy.actions.settlements, icon: <Clock3 className="h-4 w-4" />, helper: locale === "ar" ? "سجل دفعات التسوية" : "Settlement batch history" },
+                ].map((action) => (
+                  <Link
+                    key={action.href}
+                    href={action.href as never}
+                    className="flex items-center justify-between rounded-2xl border border-slate-100 bg-slate-50/30 px-4 py-3 transition duration-150 hover:border-primary/20 hover:bg-primary-light/10 dark:border-white/5 dark:bg-white/[0.01]"
+                  >
+                    <span className="flex items-center gap-3">
+                      <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-teal-50 text-teal-600 dark:bg-teal-500/10 dark:text-teal-400">
+                        {action.icon}
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <p className="text-sm font-semibold text-text-primary dark:text-white/95">
+                          {action.label}
+                        </p>
+                        <p className="text-[10px] text-text-secondary dark:text-slate-400">
+                          {action.helper}
+                        </p>
+                      </span>
+                    </span>
+                    <ArrowRight className="h-4 w-4 text-text-muted rtl:rotate-180" />
+                  </Link>
+                ))}
+              </div>
             </div>
-            <div className="mt-4 rounded-2xl border border-border-light bg-surface-tertiary/50 p-3 text-xs text-text-muted dark:border-white/10 dark:bg-white/[0.04]">
-              {copy.pendingBalanceLabel}: {formatFinanceMoney(normalizeLocale(locale), pendingBalance, wallet?.currency ?? null)}
+
+            <div className="mt-4 pt-4 border-t border-slate-100 dark:border-white/5 flex items-center justify-between text-xs">
+              <span className="text-text-secondary dark:text-slate-400 font-medium">{copy.pendingBalanceLabel}:</span>
+              <span className="font-bold text-text-primary dark:text-white">
+                {formatFinanceMoney(normalizeLocale(locale), pendingBalance, wallet?.currency ?? null)}
+              </span>
             </div>
           </article>
         </div>

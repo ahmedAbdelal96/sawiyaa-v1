@@ -8,6 +8,12 @@ import { ListStateSkeleton, StateCard } from "@/components/shared/ContentStates"
 import { toAppError } from "@/lib/api/errors";
 import FullHeightMessagesPage from "@/components/messages/FullHeightMessagesPage";
 import DirectionalArrowIcon from "@/components/ui/navigation/DirectionalArrowIcon";
+import {
+  ChatConversationPanel,
+  ChatConversationHeader,
+  ChatMessageBubble,
+  ChatComposer,
+} from "@/components/shared/chat/ChatKit";
 import { useCurrentUser } from "@/features/users/hooks/use-users";
 import { CareChatActivityChip } from "./CareChatStatusChip";
 import {
@@ -30,12 +36,14 @@ type Props = {
   conversationId: string;
   scope: "patient" | "practitioner" | "admin";
   backHref: string;
+  variant?: "page" | "embedded";
 };
 
 export default function CareChatConversationPanel({
   conversationId,
   scope,
   backHref,
+  variant = "page",
 }: Props) {
   const t = useTranslations("care-chat");
   const locale = useLocale();
@@ -102,6 +110,20 @@ export default function CareChatConversationPanel({
     }
   };
 
+  const handleSendEmbedded = async () => {
+    if (scope === "admin") return;
+    const clean = message.trim();
+    if (!clean) return;
+    try {
+      setIsSending(true);
+      realtimeThread.reportTypingActivity(false);
+      await realtimeThread.sendMessage(clean);
+      setMessage("");
+    } finally {
+      setIsSending(false);
+    }
+  };
+
   if (query.isLoading) {
     return (
       <div className="space-y-4">
@@ -141,6 +163,112 @@ export default function CareChatConversationPanel({
       : conversation.patient.displayName ?? t("common.fallbacks.patient");
 
   const currentUserId = meQuery.data?.userId ?? null;
+
+  if (variant === "embedded") {
+    return (
+      <ChatConversationPanel
+        header={
+          <ChatConversationHeader
+            title={counterpartName}
+            subtitle={
+              <div className="flex flex-col gap-1 mt-0.5">
+                <p className="text-xs text-text-muted dark:text-slate-400 font-medium">
+                  {t(`common.scopeEyebrows.${scope}` as Parameters<typeof t>[0])}
+                </p>
+                {conversation.expiresAt && (
+                  <p className="text-[10px] text-text-muted opacity-75 font-semibold font-mono tracking-wide">
+                    {t("common.expiresAt", {
+                      date: formatCareChatDateTime(conversation.expiresAt, locale),
+                    })}
+                  </p>
+                )}
+              </div>
+            }
+            avatarUrl={null}
+            online={false}
+            actions={
+              <div className="flex items-center gap-2">
+                <CareChatActivityChip activityState={conversation.activityState} />
+                <span className="rounded-full bg-teal-50/70 border border-teal-100/30 px-2.5 py-0.5 text-[10px] font-bold text-teal-700 dark:bg-teal-950/40 dark:text-teal-400 font-sans">
+                  {t(`common.conversationStatuses.${conversation.status}` as Parameters<typeof t>[0])}
+                </span>
+              </div>
+            }
+          />
+        }
+        composer={
+          scope === "admin" ? (
+            <div className="p-4 border-t border-slate-100 dark:border-white/10 bg-slate-50 dark:bg-slate-900 shrink-0 text-xs text-text-secondary leading-5 font-medium">
+              <p className="font-bold text-text-primary dark:text-white/90">
+                {locale.startsWith("ar") ? "هذه المحادثة للقراءة فقط." : "This conversation is read-only."}
+              </p>
+              <p className="mt-1">{t("admin.conversation.readOnlyNote")}</p>
+            </div>
+          ) : !conversation.canSendMessage ? (
+            <div className="p-4 border-t border-slate-100 dark:border-white/10 bg-slate-50 dark:bg-slate-900 shrink-0 text-xs text-text-secondary leading-5 font-medium">
+              <p className="font-bold text-text-primary dark:text-white/90">
+                {locale.startsWith("ar") ? "هذه المحادثة للقراءة فقط." : "This conversation is read-only."}
+              </p>
+            </div>
+          ) : (
+            <ChatComposer
+              placeholder={t("common.compose.placeholder")}
+              value={message}
+              onChange={(next) => {
+                setMessage(next);
+                if (conversation.canSendMessage) {
+                  realtimeThread.reportTypingActivity(next.trim().length > 0);
+                }
+              }}
+              onSubmit={handleSendEmbedded}
+              isSubmitting={isSending || sendMutation.isPending}
+              disabled={isSending || sendMutation.isPending || !conversation.canSendMessage}
+            />
+          )
+        }
+      >
+        {messages.length > 0 ? (
+          messages.map((entry) => {
+            const fromCurrentActor =
+              (currentUserId && entry.senderUserId
+                ? entry.senderUserId === currentUserId
+                : getCareChatSenderAlignment(entry.senderRole, scope)) ?? false;
+            return (
+              <ChatMessageBubble
+                key={entry.id}
+                message={{
+                  id: entry.id,
+                  body: entry.message,
+                  sentAt: formatCareChatDateTime(entry.createdAt, locale),
+                  direction: fromCurrentActor ? "outgoing" : "incoming",
+                  status: (fromCurrentActor ? entry.localStatus : undefined) as any,
+                }}
+              />
+            );
+          })
+        ) : (
+          <div className="flex flex-col items-center justify-center py-12 text-center">
+            <p className="text-sm font-semibold text-text-primary dark:text-white/95">
+              {t("common.thread.empty.heading")}
+            </p>
+            <p className="mt-1 text-xs text-text-secondary">
+              {t("common.thread.empty.note")}
+            </p>
+          </div>
+        )}
+        {scope !== "admin" && realtimeThread.isPeerTyping && (
+          <div className="flex justify-start mt-2">
+            <div className="inline-flex items-center gap-1 rounded-full border border-border-light bg-surface-secondary px-3 py-1 text-[11px] text-text-muted dark:border-white/10 dark:bg-white/10 dark:text-white/60">
+              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-current" />
+              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-current [animation-delay:120ms]" />
+              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-current [animation-delay:240ms]" />
+            </div>
+          </div>
+        )}
+        <div ref={endRef} />
+      </ChatConversationPanel>
+    );
+  }
 
   return (
     <FullHeightMessagesPage className="flex flex-col gap-3">

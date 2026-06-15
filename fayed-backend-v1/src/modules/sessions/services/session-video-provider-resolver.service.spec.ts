@@ -2,7 +2,9 @@ import { SessionProvider } from '@prisma/client';
 import { SessionVideoProviderResolverService } from './session-video-provider-resolver.service';
 
 describe('SessionVideoProviderResolverService', () => {
-  it('falls back to configured default provider when session has none', () => {
+  it('falls back to Daily when session has no provider and config is ZOOM (rejected)', () => {
+    // ZOOM is rejected at config load time; normalizeProvider returns null for
+    // unknown values, so resolveDefaultProvider falls back to DAILY.
     const service = new SessionVideoProviderResolverService({
       get: jest.fn().mockReturnValue('ZOOM'),
     } as never);
@@ -11,7 +13,7 @@ describe('SessionVideoProviderResolverService', () => {
       service.resolveDefaultProviderForSession({
         provider: SessionProvider.NONE,
       }),
-    ).toBe(SessionProvider.ZOOM);
+    ).toBe(SessionProvider.DAILY);
   });
 
   it('keeps the session provider when already set', () => {

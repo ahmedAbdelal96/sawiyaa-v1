@@ -21,6 +21,12 @@ describe('ResolveSessionJoinContractUseCase', () => {
     },
   };
 
+  // Backend join policy: LEAD=2 min, LAG=0 min
+  // joinOpensAt = 10:30 - 2min = 10:28
+  // joinClosesAt = 11:00 + 0min = 11:00
+  const expectedAvailableAt = new Date('2026-04-02T10:28:00.000Z').toISOString();
+  const expectedExpiresAt = new Date('2026-04-02T11:00:00.000Z').toISOString();
+
   function buildUseCase(overrides?: {
     canJoin?: boolean;
     blockedReason?: string | null;
@@ -28,6 +34,7 @@ describe('ResolveSessionJoinContractUseCase', () => {
     patientId?: string;
     provider?: SessionProvider;
   }) {
+    const createdEvents: Array<{ eventType: string; actorUserId: string }> = [];
     const prisma = {
       $transaction: jest.fn().mockImplementation(async (fn) => fn({})),
     };
@@ -40,7 +47,10 @@ describe('ResolveSessionJoinContractUseCase', () => {
         ...(overrides?.session ?? baseSession),
         status: SessionStatus.READY_TO_JOIN,
       }),
-      createEvent: jest.fn().mockResolvedValue({}),
+      createEvent: jest.fn().mockImplementation((data) => {
+        createdEvents.push(data);
+        return Promise.resolve({});
+      }),
     };
     const sessionPatientRepository = {
       findByUserId: jest
@@ -97,10 +107,12 @@ describe('ResolveSessionJoinContractUseCase', () => {
       prepareSessionRuntimeUseCase,
       sessionVideoProviderRegistryService,
       sessionVideoProviderResolverService,
+      sessionRepository,
+      createdEvents,
     };
   }
 
-  it('returns join token when session is joinable', async () => {
+  it('returns join token with authoritative window times when session is joinable', async () => {
     const setup = buildUseCase({ canJoin: true });
     const result = await setup.useCase.execute({
       userId: 'user_1',
@@ -110,6 +122,8 @@ describe('ResolveSessionJoinContractUseCase', () => {
 
     expect(result.item.canJoin).toBe(true);
     expect(result.item.joinToken).toBe('daily_token');
+    expect(result.item.availableAt).toBe(expectedAvailableAt);
+    expect(result.item.expiresAt).toBe(expectedExpiresAt);
     expect(result.item.providerRuntime).toMatchObject({
       name: SessionProvider.DAILY,
       roomId: 'room_1',
@@ -119,13 +133,41 @@ describe('ResolveSessionJoinContractUseCase', () => {
       joinMode: 'redirect_url',
       payload: {},
     });
-    expect(
-      setup.sessionVideoProviderResolverService
-        .resolvePreparedProviderForSession,
-    ).toHaveBeenCalledTimes(1);
   });
 
-  it('returns blocked contract when join is not allowed', async () => {
+  it('emits JOIN_ATTEMPTED, JOIN_TOKEN_ISSUED, and JOIN_ALLOWED on successful join', async () => {
+    const setup = buildUseCase({ canJoin: true });
+    await setup.useCase.execute({
+      userId: 'user_1',
+      actorType: 'PATIENT',
+      sessionId: 'session_1',
+    });
+
+    const eventTypes = setup.createdEvents.map((e) => e.eventType);
+    expect(eventTypes).toContain('JOIN_ATTEMPTED');
+    expect(eventTypes).toContain('JOIN_TOKEN_ISSUED');
+    expect(eventTypes).toContain('JOIN_ALLOWED');
+  });
+
+  it('emits JOIN_ATTEMPTED and JOIN_BLOCKED when join is not allowed', async () => {
+    const setup = buildUseCase({
+      canJoin: false,
+      blockedReason: 'SESSION_TIME_WINDOW_NOT_OPEN',
+    });
+    await setup.useCase.execute({
+      userId: 'user_1',
+      actorType: 'PATIENT',
+      sessionId: 'session_1',
+    });
+
+    const eventTypes = setup.createdEvents.map((e) => e.eventType);
+    expect(eventTypes).toContain('JOIN_ATTEMPTED');
+    expect(eventTypes).toContain('JOIN_BLOCKED');
+    expect(eventTypes).not.toContain('JOIN_ALLOWED');
+    expect(eventTypes).not.toContain('JOIN_TOKEN_ISSUED');
+  });
+
+  it('returns blocked contract with authoritative window times when join is not allowed', async () => {
     const setup = buildUseCase({
       canJoin: false,
       blockedReason: 'SESSION_TIME_WINDOW_NOT_OPEN',
@@ -138,6 +180,8 @@ describe('ResolveSessionJoinContractUseCase', () => {
 
     expect(result.item.canJoin).toBe(false);
     expect(result.item.joinToken).toBeNull();
+    expect(result.item.availableAt).toBe(expectedAvailableAt);
+    expect(result.item.expiresAt).toBe(expectedExpiresAt);
     expect(result.item.providerRuntime).toMatchObject({
       name: SessionProvider.DAILY,
       roomId: 'room_1',
@@ -167,12 +211,12 @@ describe('ResolveSessionJoinContractUseCase', () => {
   it('uses the effective session provider for join token creation', async () => {
     const setup = buildUseCase({
       canJoin: true,
-      provider: SessionProvider.ZOOM,
+      provider: SessionProvider.DAILY,
       session: {
         ...baseSession,
-        provider: SessionProvider.ZOOM,
-        providerRoomId: 'zoom_room_1',
-        providerSessionRef: 'https://zoom.example/room/zoom_room_1',
+        provider: SessionProvider.DAILY,
+        providerRoomId: 'fayed-session-session_1',
+        providerSessionRef: 'https://fayed-session-session_1.daily.co',
       },
     });
 
@@ -183,7 +227,7 @@ describe('ResolveSessionJoinContractUseCase', () => {
     });
 
     expect(setup.sessionVideoProviderRegistryService.get).toHaveBeenCalledWith(
-      SessionProvider.ZOOM,
+      SessionProvider.DAILY,
     );
   });
 

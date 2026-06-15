@@ -178,6 +178,7 @@ export class PatientPackagePurchasesController {
       userId: currentUser.id,
       purchaseId,
       acceptedRefundPolicyId: body.acceptedRefundPolicyId,
+      returnUrl: body.returnUrl ?? null,
       displayLocale: locale,
       userAgent:
         typeof request.headers['user-agent'] === 'string'

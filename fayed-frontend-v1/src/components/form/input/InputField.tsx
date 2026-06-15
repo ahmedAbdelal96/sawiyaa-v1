@@ -20,15 +20,15 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
     ref
   ) => {
     // Determine input styles based on state (disabled, success, error)
-    let inputClasses = `app-control h-11 w-full appearance-none px-4 py-2.5 ${className}`;
+    let inputClasses = `app-control bg-surface-tertiary dark:bg-surface-tertiary focus:ring-ring-focus focus:border-border-focus h-11 w-full appearance-none px-4 py-2.5 ${className}`;
 
     // Add styles for the different states
     if (disabled) {
       inputClasses += ` cursor-not-allowed bg-surface-tertiary text-text-muted dark:bg-surface-tertiary dark:text-text-muted`;
     } else if (error) {
-      inputClasses += ` border-error-500 text-error-800 focus:ring-error-500/10 dark:border-error-500 dark:text-error-400`;
+      inputClasses += ` border-status-danger text-status-danger focus:ring-status-danger/10`;
     } else if (success) {
-      inputClasses += ` border-success-400 text-success-600 focus:border-success-300 focus:ring-success-500/10 dark:border-success-500 dark:text-success-400`;
+      inputClasses += ` border-status-success text-status-success focus:ring-status-success/10`;
     }
 
     return (
@@ -46,9 +46,9 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
           <p
             className={`mt-1.5 text-xs ${
               error
-                ? "text-error-500"
+                ? "text-status-danger"
                 : success
-                  ? "text-success-500"
+                  ? "text-status-success"
                   : "text-text-secondary"
             }`}
           >

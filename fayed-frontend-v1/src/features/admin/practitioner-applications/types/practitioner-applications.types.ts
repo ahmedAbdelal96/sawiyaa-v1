@@ -181,6 +181,36 @@ export interface PractitionerApplicationDecisionResponse {
   application: PractitionerApplicationDecision;
 }
 
+export interface AdminDirectPractitionerSummary {
+  practitionerProfileId: string;
+  userId: string;
+  email: string;
+  displayName: string | null;
+  practitionerStatus: PractitionerStatus;
+  accountStatus: UserStatus;
+  credentialCount: number;
+  nextAction: string;
+  passwordRotationFollowUpRequired: boolean;
+}
+
+export interface AdminDirectPractitionerCreateResponse {
+  message: string;
+  application: PractitionerApplicationDecision;
+  practitioner: AdminDirectPractitionerSummary;
+}
+
+export interface AdminPreparedPractitionerCredential {
+  credentialType: CredentialType;
+  fileUrl: string;
+  expiresAt: string | null;
+  sizeBytes: number;
+}
+
+export interface AdminPreparedPractitionerCredentialResponse {
+  message: string;
+  credential: AdminPreparedPractitionerCredential;
+}
+
 export interface ListPractitionerApplicationsParams {
   view?: PractitionerApplicationListView;
   kind?: PractitionerApplicationKind;
@@ -247,20 +277,30 @@ export interface PractitionerApplicationCredentialDeleteResponse {
 export interface CreateAdminPractitionerRequest {
   email: string;
   password: string;
-  displayName?: string;
-  practitionerType?: PractitionerType;
+  displayName: string;
+  practitionerType: PractitionerType;
   practitionerGender?: PractitionerGender | null;
-  professionalTitle?: string;
-  bio?: string;
-  yearsOfExperience?: number;
-  countryCode?: string;
+  professionalTitle: string;
+  bio: string;
+  yearsOfExperience: number;
+  sessionPrice30Egp?: number | null;
+  sessionPrice30Usd?: number | null;
+  sessionPrice60Egp?: number | null;
+  sessionPrice60Usd?: number | null;
+  countryCode: string;
   languageCodes: string[];
   specialtySelection: PractitionerSpecialtySelectionInput;
   payoutDestination?: PractitionerPayoutDestinationInput | null;
-  credentials?: Array<{
+  credentials: Array<{
     credentialType: CredentialType;
     fileUrl: string;
     expiresAt?: string;
   }>;
   note?: string;
+}
+
+export interface UploadAdminPractitionerCredentialFileRequest {
+  credentialType: CredentialType;
+  expiresAt?: string;
+  file: File;
 }

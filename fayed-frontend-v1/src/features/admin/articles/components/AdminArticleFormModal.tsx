@@ -210,16 +210,16 @@ export default function AdminArticleFormModal({
     >
       <div className="grid gap-4 md:grid-cols-2">
         <div className="md:col-span-2">
-          <Label className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
+          <Label className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-secondary">
             {locale === "ar" ? "التخصص الرئيسي" : "Main specialty"}{" "}
-            <span className="text-error-500">*</span>
+            <span className="text-status-danger">*</span>
           </Label>
           <Select
             key={`article-main-category-${isOpen}-${mode}-${article?.id ?? "new"}`}
             options={categoryOptions}
             placeholder={locale === "ar" ? "اختر تخصص رئيسي" : "Choose main specialty"}
             defaultValue={form.categoryId}
-            className={fieldErrors.categoryId ? "border-error-500" : ""}
+            error={!!fieldErrors.categoryId}
             onChange={(value) =>
               setForm((current) => ({ ...current, categoryId: value, specialtyId: "" }))
             }
@@ -227,9 +227,9 @@ export default function AdminArticleFormModal({
         </div>
 
         <div className="md:col-span-2">
-          <Label className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
+          <Label className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-secondary">
             {locale === "ar" ? "التخصص الفرعي" : "Sub-specialty"}{" "}
-            <span className="text-error-500">*</span>
+            <span className="text-status-danger">*</span>
           </Label>
           <Select
             key={`article-specialty-${isOpen}-${mode}-${article?.id ?? "new"}`}
@@ -244,7 +244,7 @@ export default function AdminArticleFormModal({
                   : "Select main specialty first"
             }
             defaultValue={form.specialtyId}
-            className={fieldErrors.specialtyId ? "border-error-500" : ""}
+            error={!!fieldErrors.specialtyId}
             onChange={(value) => handleChange("specialtyId", value)}
           />
           {!form.categoryId ? (
@@ -257,8 +257,8 @@ export default function AdminArticleFormModal({
         </div>
 
         <div className="md:col-span-2">
-          <Label className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
-            {t("form.fields.title")} <span className="text-error-500">*</span>
+          <Label className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-secondary">
+            {t("form.fields.title")} <span className="text-status-danger">*</span>
           </Label>
           <InputField
             value={form.title}
@@ -271,8 +271,8 @@ export default function AdminArticleFormModal({
         </div>
 
         <div className="md:col-span-2">
-          <Label className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
-            {t("form.fields.content")} <span className="text-error-500">*</span>
+          <Label className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-secondary">
+            {t("form.fields.content")} <span className="text-status-danger">*</span>
           </Label>
           <TextArea
             rows={8}
@@ -285,7 +285,7 @@ export default function AdminArticleFormModal({
         </div>
 
         <div className="md:col-span-2">
-          <Label className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
+          <Label className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-secondary">
             {locale === "ar" ? "صورة الغلاف" : "Cover image"}
           </Label>
           <div className="space-y-2">
@@ -323,7 +323,7 @@ export default function AdminArticleFormModal({
       </div>
 
       {error ? (
-        <p className="mt-4 rounded-2xl border border-error-200 bg-error-50 px-4 py-3 text-sm text-error-700 dark:border-error-500/20 dark:bg-error-500/10 dark:text-error-300">
+        <p className="mt-4 rounded-2xl border border-status-danger-border bg-status-danger-soft px-4 py-3 text-sm text-status-danger">
           {error}
         </p>
       ) : null}

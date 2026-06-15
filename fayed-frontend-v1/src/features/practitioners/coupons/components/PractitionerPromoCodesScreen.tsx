@@ -73,7 +73,6 @@ const STATUS_FILTERS: Array<CouponStatus | "ALL"> = [
 type CouponFormValues = {
   code: string;
   discountValue: string;
-  maxDiscountAmount: string;
   usageLimitTotal: string;
   usageLimitPerPatient: string;
   startsAt: string;
@@ -138,6 +137,24 @@ function normalizeIntegerInput(value: string) {
   return value.replace(/\D/g, "");
 }
 
+const MAX_COUPON_PERCENT = 25;
+
+function normalizeCouponPercentInput(value: string): string {
+  // Reject negative values upfront
+  if (value.startsWith("-")) return "";
+  const cleaned = value.replace(/[^0-9.]/g, "");
+  if (!cleaned) return "";
+  const parts = cleaned.split(".");
+  const integerPart = parts[0];
+  const decimalPart = parts.length > 1 ? "." + parts.slice(1).join("") : "";
+  const numericValue = Number(integerPart + decimalPart);
+  if (!Number.isFinite(numericValue)) return "";
+  if (numericValue > MAX_COUPON_PERCENT) return String(MAX_COUPON_PERCENT);
+  // Normalize trailing .0
+  if (decimalPart === ".0") return integerPart;
+  return integerPart + decimalPart;
+}
+
 function getStatusTone(status: CouponStatus) {
   if (status === "ACTIVE" || status === "APPROVED") return "success";
   if (status === "EXPIRED" || status === "PENDING_REVIEW") return "warning";
@@ -173,7 +190,6 @@ function createEmptyFormValues(): CouponFormValues {
   return {
     code: "",
     discountValue: "",
-    maxDiscountAmount: "",
     usageLimitTotal: "",
     usageLimitPerPatient: "",
     startsAt: "",
@@ -188,7 +204,6 @@ function couponToFormValues(coupon: PractitionerCoupon | null): CouponFormValues
   return {
     code: coupon.code,
     discountValue: coupon.discountValue,
-    maxDiscountAmount: coupon.maxDiscountAmount ?? "",
     usageLimitTotal: coupon.usageLimitTotal?.toString() ?? "",
     usageLimitPerPatient: coupon.usageLimitPerPatient?.toString() ?? "",
     startsAt: formatDateInputValue(coupon.startsAt),
@@ -206,9 +221,6 @@ function validateCouponForm(
   const errors: FormErrors = {};
   const code = normalizeCode(values.code);
   const discount = Number(values.discountValue);
-  const maxDiscountAmount = values.maxDiscountAmount.trim()
-    ? Number(values.maxDiscountAmount)
-    : null;
   const usageLimitTotal = values.usageLimitTotal.trim()
     ? Number(values.usageLimitTotal)
     : null;
@@ -228,12 +240,8 @@ function validateCouponForm(
     errors.discountValue = t("form.validation.discountRequired");
   } else if (!Number.isFinite(discount) || discount <= 0) {
     errors.discountValue = t("form.validation.discountPositive");
-  } else if (discount > 20) {
+  } else if (discount > 25) {
     errors.discountValue = t("form.validation.discountTooHigh");
-  }
-
-  if (maxDiscountAmount !== null && (!Number.isFinite(maxDiscountAmount) || maxDiscountAmount <= 0)) {
-    errors.maxDiscountAmount = t("form.validation.moneyPositive");
   }
 
   if (usageLimitTotal !== null && (!Number.isFinite(usageLimitTotal) || usageLimitTotal <= 0)) {
@@ -275,10 +283,6 @@ function validateCouponForm(
     errors,
     normalizedCode: code,
     discountValue: Number.isFinite(discount) ? discount.toFixed(2) : "",
-    maxDiscountAmount:
-      maxDiscountAmount !== null && Number.isFinite(maxDiscountAmount)
-        ? maxDiscountAmount.toFixed(2)
-        : undefined,
     usageLimitTotal:
       usageLimitTotal !== null && Number.isFinite(usageLimitTotal)
         ? Math.trunc(usageLimitTotal)
@@ -298,9 +302,6 @@ function buildCreatePayload(values: CouponFormValues): CreatePractitionerCouponP
     code: normalizeCode(values.code),
     discountType: "PERCENTAGE",
     discountValue: Number(values.discountValue).toFixed(2),
-    maxDiscountAmount: values.maxDiscountAmount.trim()
-      ? Number(values.maxDiscountAmount).toFixed(2)
-      : undefined,
     usageLimitTotal: values.usageLimitTotal.trim()
       ? Math.trunc(Number(values.usageLimitTotal))
       : undefined,
@@ -322,12 +323,6 @@ function buildUpdatePayload(
 
   if (currentUsageCount === 0 && values.discountValue !== initial.discountValue) {
     payload.discountValue = Number(values.discountValue).toFixed(2);
-  }
-
-  if (values.maxDiscountAmount !== initial.maxDiscountAmount) {
-    payload.maxDiscountAmount = values.maxDiscountAmount.trim()
-      ? Number(values.maxDiscountAmount).toFixed(2)
-      : undefined;
   }
 
   if (values.usageLimitTotal !== initial.usageLimitTotal) {
@@ -427,13 +422,13 @@ function CouponFormFields({
               type="number"
               inputMode="decimal"
               min={0}
-              max={20}
+              max={25}
               step="0.01"
               value={values.discountValue}
               onChange={(event) =>
                 setValues((current) => ({
                   ...current,
-                  discountValue: normalizeMoneyInput(event.target.value),
+                  discountValue: normalizeCouponPercentInput(event.target.value),
                 }))
               }
               disabled={discountLocked}
@@ -450,29 +445,6 @@ function CouponFormFields({
             <p data-testid="promo-code-discount-error" className="text-xs text-error-500">
               {errors.discountValue ?? liveDiscountError}
             </p>
-          ) : null}
-        </label>
-
-        <label className="space-y-2 sm:col-span-1">
-          <span className="text-sm font-medium text-text-primary">{t("form.maxDiscountAmount")}</span>
-          <input
-            type="number"
-            inputMode="decimal"
-            min={0}
-            step="0.01"
-            value={values.maxDiscountAmount}
-            onChange={(event) =>
-              setValues((current) => ({
-                ...current,
-                maxDiscountAmount: normalizeMoneyInput(event.target.value),
-              }))
-            }
-            placeholder={t("form.maxDiscountAmountPlaceholder")}
-            className="app-control w-full px-4 py-3"
-          />
-          <p className="text-xs leading-5 text-text-muted">{t("form.maxDiscountAmountHint")}</p>
-          {errors.maxDiscountAmount ? (
-            <p className="text-xs text-error-500">{errors.maxDiscountAmount}</p>
           ) : null}
         </label>
 
@@ -1012,7 +984,6 @@ function CouponDetailDrawer({
                     <DetailRow label={t("detail.code")} value={coupon.code} />
                     <DetailRow label={t("detail.scope")} value={t("detail.sessionOnly")} />
                     <DetailRow label={t("detail.discountType")} value={t(`detail.discountTypes.${coupon.discountType}`)} />
-                    <DetailRow label={t("detail.maxDiscount")} value={coupon.maxDiscountAmount ? formatMoney(coupon.maxDiscountAmount, locale) : t("common.notSet")} />
                     <DetailRow label={t("detail.usageLimitTotal")} value={coupon.usageLimitTotal === null ? t("common.unlimited") : String(coupon.usageLimitTotal)} />
                     <DetailRow label={t("detail.usageLimitPerPatient")} value={coupon.usageLimitPerPatient === null ? t("common.unlimited") : String(coupon.usageLimitPerPatient)} />
                   </dl>
@@ -1190,9 +1161,6 @@ export default function PractitionerPromoCodesScreen() {
           <div className="space-y-1">
             <p className="text-sm font-semibold text-text-primary dark:text-white/95">
               {getDiscountLabel(row, locale)}
-            </p>
-            <p className="text-xs text-text-muted">
-              {row.maxDiscountAmount ? `${t("table.maxDiscount")}: ${formatMoney(row.maxDiscountAmount, locale)}` : t("table.noMaxDiscount")}
             </p>
           </div>
         ),

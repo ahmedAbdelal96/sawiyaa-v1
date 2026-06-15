@@ -27,7 +27,7 @@ const Checkbox: React.FC<CheckboxProps> = ({
         <input
           id={id}
           type="checkbox"
-          className={`h-5 w-5 appearance-none rounded-md border border-border-light bg-surface-secondary transition-colors checked:border-transparent checked:bg-primary disabled:opacity-60 
+          className={`h-5 w-5 appearance-none rounded-md border border-border-light bg-surface-tertiary text-primary accent-primary focus:ring-ring-focus focus:border-border-focus checked:bg-primary checked:border-primary disabled:bg-surface-tertiary/60 disabled:text-text-muted disabled:border-border-light disabled:opacity-60 disabled:cursor-not-allowed transition-colors
           ${className}`}
           checked={checked}
           onChange={(e) => onChange(e.target.checked)}
@@ -35,25 +35,9 @@ const Checkbox: React.FC<CheckboxProps> = ({
         />
         {checked && (
           <svg
-            className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 pointer-events-none"
-            xmlns="http://www.w3.org/2000/svg"
-            width="14"
-            height="14"
-            viewBox="0 0 14 14"
-            fill="none"
-          >
-            <path
-              d="M11.6666 3.5L5.24992 9.91667L2.33325 7"
-              stroke="white"
-              strokeWidth="1.94437"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        )}
-        {disabled && (
-          <svg
-            className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-border-strong"
+            className={`absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 pointer-events-none ${
+              disabled ? "text-text-muted" : "text-white"
+            }`}
             xmlns="http://www.w3.org/2000/svg"
             width="14"
             height="14"
@@ -63,7 +47,7 @@ const Checkbox: React.FC<CheckboxProps> = ({
             <path
               d="M11.6666 3.5L5.24992 9.91667L2.33325 7"
               stroke="currentColor"
-              strokeWidth="2.33333"
+              strokeWidth="1.94437"
               strokeLinecap="round"
               strokeLinejoin="round"
             />
@@ -71,7 +55,7 @@ const Checkbox: React.FC<CheckboxProps> = ({
         )}
       </div>
       {label && (
-        <span className="text-sm font-medium text-text-primary">
+        <span className="text-sm font-medium text-text-secondary select-none">
           {label}
         </span>
       )}

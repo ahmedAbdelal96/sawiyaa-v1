@@ -1,6 +1,5 @@
 "use client";
 
-import { useRef } from "react";
 import { MessageCircle } from "lucide-react";
 import type { UnifiedMessagingRole } from "../types/messages-shell.types";
 import { useUnifiedUnreadBadge } from "../hooks/use-unified-unread-badge";
@@ -12,28 +11,35 @@ type Props = {
 
 export default function MessagesHeaderButton({ role }: Props) {
   const unreadLikeCount = useUnifiedUnreadBadge(role);
-  const badgeValue = unreadLikeCount > 99 ? "99+" : String(unreadLikeCount);
-  const buttonRef = useRef<HTMLButtonElement | null>(null);
+  const badgeValue = unreadLikeCount > 9 ? "9+" : String(unreadLikeCount);
+
+  const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    dispatchToggleMessagesShell({
+      anchorRect: {
+        top: rect.top,
+        left: rect.left,
+        right: rect.right,
+        bottom: rect.bottom,
+      },
+    });
+  };
 
   return (
     <button
       type="button"
-      ref={buttonRef}
-      className="messages-header-toggle relative flex h-11 w-11 items-center justify-center rounded-full border border-border-light bg-surface-secondary text-text-secondary transition-colors hover:bg-primary-light hover:text-text-brand dark:border-border-light dark:bg-surface-secondary dark:text-text-secondary dark:hover:bg-surface-tertiary dark:hover:text-text-primary"
-      onClick={() =>
-        dispatchToggleMessagesShell({
-          anchorRect: buttonRef.current?.getBoundingClientRect(),
-        })
-      }
+      onClick={handleClick}
+      className="messages-header-toggle relative flex h-11 w-11 items-center justify-center rounded-2xl border border-border-light bg-surface-secondary text-teal-600 dark:text-teal-400 shadow-sm transition-all duration-200 hover:-translate-y-[1px] hover:shadow-md hover:bg-surface-tertiary hover:text-teal-700 dark:hover:text-teal-300 focus:outline-none overflow-visible"
       aria-label="Messages"
       title="Messages"
     >
       <MessageCircle className="h-5 w-5" />
       {unreadLikeCount > 0 ? (
-        <span className="absolute -end-1 -top-1 inline-flex min-h-5 min-w-5 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-semibold text-white">
+        <span className="absolute -top-1 -end-1 z-10 flex min-w-[20px] h-5 px-1.5 items-center justify-center rounded-full bg-rose-500 text-white text-[11px] font-bold ring-2 ring-white dark:ring-surface-secondary">
           {badgeValue}
         </span>
       ) : null}
     </button>
   );
 }
+

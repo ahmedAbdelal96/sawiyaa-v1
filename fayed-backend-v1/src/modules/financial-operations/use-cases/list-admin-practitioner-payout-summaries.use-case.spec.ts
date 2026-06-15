@@ -36,6 +36,16 @@ describe('ListAdminPractitionerPayoutSummariesUseCase', () => {
                 practitionerId: 'pr_1',
                 practitionerName: 'Dr. One',
                 currencyCode: 'EGP',
+                payoutDestinationSnapshot: {
+                  methodType: 'BANK_ACCOUNT',
+                  accountHolderName: 'Dr. One',
+                  bankName: 'National Bank',
+                  bankAccountNumber: '123456789',
+                  iban: null,
+                  walletProvider: null,
+                  walletIdentifier: null,
+                  otherDetails: null,
+                },
                 normalSessionPayableAmount: '120.00',
                 packageReleasedPayableAmount: '0.00',
                 packageHeldAmount: '0.00',
@@ -49,6 +59,16 @@ describe('ListAdminPractitionerPayoutSummariesUseCase', () => {
                 practitionerId: 'pr_1',
                 practitionerName: 'Dr. One',
                 currencyCode: 'USD',
+                payoutDestinationSnapshot: {
+                  methodType: 'BANK_ACCOUNT',
+                  accountHolderName: 'Dr. One',
+                  bankName: 'National Bank',
+                  bankAccountNumber: '123456789',
+                  iban: null,
+                  walletProvider: null,
+                  walletIdentifier: null,
+                  otherDetails: null,
+                },
                 normalSessionPayableAmount: '0.00',
                 packageReleasedPayableAmount: '25.00',
                 packageHeldAmount: '50.00',
@@ -61,6 +81,7 @@ describe('ListAdminPractitionerPayoutSummariesUseCase', () => {
               practitionerId: practitionerId,
               practitionerName: 'Dr. Two',
               currencyCode,
+              payoutDestinationSnapshot: null,
               normalSessionPayableAmount: '0.00',
               packageReleasedPayableAmount: '0.00',
               packageHeldAmount: '0.00',
@@ -100,6 +121,7 @@ describe('ListAdminPractitionerPayoutSummariesUseCase', () => {
     expect(result.items[0].practitionerId).toBe('pr_1');
     expect(result.items[0].egp.totalPayableAmount).toBe('120.00');
     expect(result.items[0].usd.packageHeldAmount).toBe('50.00');
+    expect(result.items[0].egp.payoutDestinationSnapshot?.methodType).toBe('BANK_ACCOUNT');
   });
 
   it('supports search filtering before computing balances', async () => {

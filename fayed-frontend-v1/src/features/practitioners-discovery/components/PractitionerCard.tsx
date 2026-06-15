@@ -2,6 +2,7 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { ArrowRight, BadgeCheck, Clock3, Globe, MessageSquare, Star } from "lucide-react";
 import type { PublicPractitioner } from "../types/practitioner";
+import PractitionerAvatar from "@/components/shared/PractitionerAvatar";
 
 type Props = {
   practitioner: PublicPractitioner;
@@ -89,10 +90,13 @@ export default async function PractitionerCard({
           </p>
         </div>
 
-        <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-full border border-border-light bg-primary-light/70">
-          <div className="flex h-full w-full items-center justify-center text-lg font-bold text-text-brand">
-            {avatarText(practitioner.initials)}
-          </div>
+        <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-full border border-border-light">
+          <PractitionerAvatar
+            src={practitioner.avatarUrl}
+            alt={name}
+            initials={avatarText(practitioner.initials)}
+            className="h-full w-full object-cover"
+          />
           {practitioner.isVerified ? (
             <span className={`absolute bottom-0 inline-flex h-5 min-w-5 items-center justify-center rounded-full border border-white bg-primary px-1 text-white ${isArabic ? "start-0" : "end-0"}`}>
               <BadgeCheck size={10} />

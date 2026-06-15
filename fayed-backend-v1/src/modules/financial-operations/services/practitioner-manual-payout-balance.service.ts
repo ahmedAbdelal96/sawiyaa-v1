@@ -19,6 +19,58 @@ export class PractitionerManualPayoutBalanceService {
     return tx ?? this.prisma;
   }
 
+  private maskIdentifier(value: string | null | undefined) {
+    const trimmed = value?.trim() ?? '';
+    if (!trimmed) return null;
+    if (trimmed.length <= 4) return '••••';
+    if (trimmed.length <= 8) return `••••${trimmed.slice(-4)}`;
+    return `${trimmed.slice(0, 4)}••••${trimmed.slice(-4)}`;
+  }
+
+  private buildPayoutDestinationSummary(
+    destination:
+      | {
+          methodType?: string | null;
+          accountHolderName?: string | null;
+          bankName?: string | null;
+          bankAccountNumber?: string | null;
+          iban?: string | null;
+          walletProvider?: string | null;
+          walletIdentifier?: string | null;
+          otherDetails?: string | null;
+        }
+      | null
+      | undefined,
+  ) {
+    if (!destination) return { payoutDestinationType: null, payoutDestinationSummaryMasked: null };
+
+    const methodType = destination.methodType ?? null;
+    const summaryParts: string[] = [];
+
+    if (destination.walletProvider?.trim()) {
+      summaryParts.push(destination.walletProvider.trim());
+    } else if (destination.bankName?.trim()) {
+      summaryParts.push(destination.bankName.trim());
+    }
+
+    const maskedIdentifier =
+      this.maskIdentifier(
+        destination.walletIdentifier ??
+          destination.bankAccountNumber ??
+          destination.iban ??
+          destination.otherDetails,
+      ) ?? null;
+
+    if (maskedIdentifier) {
+      summaryParts.push(maskedIdentifier);
+    }
+
+    return {
+      payoutDestinationType: methodType,
+      payoutDestinationSummaryMasked: summaryParts.join(' • ') || null,
+    };
+  }
+
   async getBalance(input: {
     practitionerId: string;
     currencyCode: string;
@@ -108,16 +160,35 @@ export class PractitionerManualPayoutBalanceService {
 
     const practitionerName =
       practitioner?.user.displayName ?? practitioner?.publicSlug ?? null;
+    const payoutDestinationSummary = this.buildPayoutDestinationSummary(
+      practitioner?.payoutDestination,
+    );
 
     return {
       practitionerId: input.practitionerId,
       practitionerName,
       currencyCode,
+      payoutDestinationSnapshot: practitioner?.payoutDestination
+        ? {
+            methodType: practitioner.payoutDestination.methodType ?? null,
+            accountHolderName:
+              practitioner.payoutDestination.accountHolderName ?? null,
+            bankName: practitioner.payoutDestination.bankName ?? null,
+            bankAccountNumber:
+              practitioner.payoutDestination.bankAccountNumber ?? null,
+            iban: practitioner.payoutDestination.iban ?? null,
+            walletProvider: practitioner.payoutDestination.walletProvider ?? null,
+            walletIdentifier:
+              practitioner.payoutDestination.walletIdentifier ?? null,
+            otherDetails: practitioner.payoutDestination.otherDetails ?? null,
+          }
+        : null,
       normalSessionPayableAmount: normalSessionPayableAmount.toFixed(2),
       packageReleasedPayableAmount: packageReleasedPayableAmount.toFixed(2),
       packageHeldAmount: packageHeldAmount.toFixed(2),
       totalPayableAmount: totalPayableAmount.toFixed(2),
       lastPayoutAt: lastPayoutAt?.toISOString() ?? null,
+      ...payoutDestinationSummary,
     };
   }
 }

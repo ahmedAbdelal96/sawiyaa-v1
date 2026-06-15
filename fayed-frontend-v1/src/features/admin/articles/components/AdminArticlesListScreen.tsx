@@ -10,6 +10,8 @@ import AdminOperationalListShell, { AdminSummaryCard } from "@/components/shared
 import ActionIconButton from "@/components/ui/action-icon-button/ActionIconButton";
 import Button from "@/components/ui/button/Button";
 import FilterClearButton from "@/components/ui/filters/FilterClearButton";
+import InputField from "@/components/form/input/InputField";
+import Select from "@/components/form/Select";
 import type { ColumnDef, SortConfig } from "@/components/ui/data-table";
 import { buildUpdatedSearchParams, parseEnumParam, parsePositiveIntParam, parseTextParam } from "@/components/ui/data-table";
 import { DestructiveConfirmModal } from "@/components/ui/modal";
@@ -38,14 +40,14 @@ const STATUS_FILTERS: Array<ArticleStatus | "ALL"> = [
 ];
 
 const STATUS_STYLES: Record<ArticleStatus, string> = {
-  DRAFT: "bg-surface-tertiary text-text-secondary",
-  SUBMITTED: "bg-primary-light text-text-brand",
-  IN_REVIEW: "bg-warning-50 text-warning-700 dark:bg-warning-500/10 dark:text-warning-300",
-  CHANGES_REQUESTED: "bg-warning-50 text-warning-700 dark:bg-warning-500/10 dark:text-warning-300",
-  APPROVED: "bg-success-50 text-success-700 dark:bg-success-500/10 dark:text-success-300",
-  REJECTED: "bg-error-50 text-error-700 dark:bg-error-500/10 dark:text-error-300",
-  PUBLISHED: "bg-primary-light text-text-brand",
-  ARCHIVED: "bg-surface-tertiary text-text-muted",
+  DRAFT: "border border-border-light bg-surface-tertiary text-text-secondary",
+  SUBMITTED: "border border-primary/20 bg-primary-light text-text-brand",
+  IN_REVIEW: "border border-status-warning-border bg-status-warning-soft text-status-warning",
+  CHANGES_REQUESTED: "border border-status-warning-border bg-status-warning-soft text-status-warning",
+  APPROVED: "border border-status-success-border bg-status-success-soft text-status-success",
+  REJECTED: "border border-status-danger-border bg-status-danger-soft text-status-danger",
+  PUBLISHED: "border border-primary/20 bg-primary-light text-text-brand",
+  ARCHIVED: "border border-border-light bg-surface-tertiary text-text-muted",
 };
 
 const PAGE_SIZE_OPTIONS = DEFAULT_PAGE_SIZE_OPTIONS;
@@ -192,7 +194,7 @@ export default function AdminArticlesListScreen() {
       sortable: true,
       cell: (row) => (
         <div className="min-w-0">
-          <p className="truncate text-sm font-semibold text-text-primary dark:text-white/95">{row.title}</p>
+          <p className="truncate text-sm font-semibold text-text-primary">{row.title}</p>
           <p className="mt-1 text-xs text-text-muted">{t("list.slug")}: {row.slug}</p>
           {row.excerpt ? <p className="mt-2 line-clamp-2 text-xs text-text-secondary">{row.excerpt}</p> : null}
         </div>
@@ -252,6 +254,17 @@ export default function AdminArticlesListScreen() {
     },
   ], [locale, t]);
 
+  const statusFilterOptions = useMemo(
+    () => [
+      { value: "ALL", label: t("filters.allStatuses") },
+      ...STATUS_FILTERS.filter((status) => status !== "ALL").map((status) => ({
+        value: status,
+        label: t(`statuses.${status}` as Parameters<typeof t>[0]),
+      })),
+    ],
+    [t],
+  );
+
   return (
     <AdminOperationalListShell
       eyebrow={t("list.eyebrow")}
@@ -271,36 +284,29 @@ export default function AdminArticlesListScreen() {
         />
       }
       filters={
-        <>
-          <div className="grid gap-3 lg:grid-cols-3">
+        <div className="grid gap-3 lg:grid-cols-3">
           <label className="block">
-            <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
+            <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-secondary">
               {t("filters.allStatuses")}
             </span>
-            <select
-              value={statusFilter}
-              onChange={(event) =>
+            <Select
+              key={`statusFilter-${statusFilter}`}
+              defaultValue={statusFilter}
+              onChange={(value) =>
                 updateListQuery({
-                  status: event.target.value === "ALL" ? null : event.target.value,
+                  status: value === "ALL" ? null : value,
                   page: 1,
                 })
               }
-              className="app-control w-full px-4 py-3"
-            >
-              <option value="ALL">{t("filters.allStatuses")}</option>
-              {STATUS_FILTERS.filter((status) => status !== "ALL").map((status) => (
-                <option key={status} value={status}>
-                  {t(`statuses.${status}` as Parameters<typeof t>[0])}
-                </option>
-              ))}
-            </select>
+              options={statusFilterOptions}
+            />
           </label>
 
           <label className="block lg:col-span-2">
-            <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
+            <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-secondary">
               {t("filters.search")}
             </span>
-            <input
+            <InputField
               value={searchQuery}
               onChange={(event) =>
                 updateListQuery({
@@ -309,11 +315,10 @@ export default function AdminArticlesListScreen() {
                 })
               }
               placeholder={t("filters.searchPlaceholder")}
-              className="app-control w-full px-4 py-3"
             />
           </label>
 
-          <div className="rounded-2xl border border-border-light bg-surface-secondary px-4 py-3 text-xs text-text-muted dark:bg-white/5 lg:col-span-3">
+          <div className="rounded-2xl border border-border-light bg-surface-secondary px-4 py-3 text-xs text-text-muted lg:col-span-3">
             <span className="flex items-center gap-2">
               <Globe className="h-4 w-4" />
               {t("filters.locale", { locale: locale === "ar" ? "AR" : "EN" })}
@@ -332,12 +337,10 @@ export default function AdminArticlesListScreen() {
             />
           </div>
         </div>
-        </>
       }
     >
-
       {actionFeedback ? (
-        <p className={`text-xs ${actionFeedback.tone === "success" ? "text-success-600 dark:text-success-300" : "text-error-600 dark:text-error-300"}`}>
+        <p className={`text-xs font-medium ${actionFeedback.tone === "success" ? "text-status-success" : "text-status-danger"}`}>
           {actionFeedback.message}
         </p>
       ) : null}
@@ -438,7 +441,7 @@ export default function AdminArticlesListScreen() {
         loading={archiveMutation.isPending}
       >
         {pendingArchiveArticle ? (
-          <div className="rounded-2xl border border-warning-200 bg-warning-50 px-4 py-4 text-sm text-warning-800 dark:border-warning-500/20 dark:bg-warning-500/10 dark:text-warning-300">
+          <div className="rounded-2xl border border-status-warning-border bg-status-warning-soft px-4 py-4 text-sm text-status-warning">
             <p className="font-medium">{pendingArchiveArticle.title}</p>
             <p className="mt-1 text-xs opacity-80">{pendingArchiveArticle.slug}</p>
           </div>

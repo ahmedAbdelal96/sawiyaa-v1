@@ -2,6 +2,7 @@ import { NotificationStatus } from '@prisma/client';
 import { NotificationOpsPresenter } from '../presenters/notification-ops.presenter';
 import { OperationalNotificationRepository } from '../repositories/operational-notification.repository';
 import { ListAdminOperationalNotificationsUseCase } from './list-admin-operational-notifications.use-case';
+import { NotificationContextEnrichmentService } from '../services/notification-context-enrichment.service';
 
 describe('ListAdminOperationalNotificationsUseCase', () => {
   const repository = {
@@ -16,10 +17,14 @@ describe('ListAdminOperationalNotificationsUseCase', () => {
       totalPages: 1,
     }),
   } as unknown as NotificationOpsPresenter;
+  const enrichmentService = {
+    enrichMany: jest.fn().mockResolvedValue(new Map()),
+  } as unknown as NotificationContextEnrichmentService;
 
   const useCase = new ListAdminOperationalNotificationsUseCase(
     repository,
     presenter,
+    enrichmentService,
   );
 
   beforeEach(() => {

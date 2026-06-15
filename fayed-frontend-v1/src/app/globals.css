@@ -34,6 +34,22 @@
   --border-focus: #44a194;
   --ring-focus: rgba(68, 161, 148, 0.18);
 
+  --success: #027a48;
+  --success-soft: #ecfdf3;
+  --success-border: #a6f4c5;
+
+  --warning: #b54708;
+  --warning-soft: #fffaeb;
+  --warning-border: #fedf89;
+
+  --danger: #b42318;
+  --danger-soft: #fef3f2;
+  --danger-border: #fecdca;
+
+  --info: #026aa2;
+  --info-soft: #f0f9ff;
+  --info-border: #b9e6fe;
+
   /* Role-aware layout width tokens */
   --layout-shell-max-admin: 90rem;
   --layout-shell-max-practitioner: 88rem;
@@ -60,11 +76,11 @@ html:not(.dark) .bg-white {
    SEMANTIC THEME COLORS - Dark Mode
    ============================================ */
 .dark {
-  --primary: #63c9bc;
-  --primary-hover: #74d1c5;
-  --primary-active: #86d9ce;
-  --primary-light: rgba(99, 201, 188, 0.16);
-  --primary-light-hover: rgba(99, 201, 188, 0.24);
+  --primary: #3ba89f;
+  --primary-hover: #4dbfb5;
+  --primary-active: #2f8e85;
+  --primary-light: rgba(59, 168, 159, 0.16);
+  --primary-light-hover: rgba(59, 168, 159, 0.24);
 
   --secondary: #7cb8b1;
   --secondary-hover: #8ac5bd;
@@ -72,20 +88,36 @@ html:not(.dark) .bg-white {
   --accent: #183432;
   --accent-hover: #1d403d;
 
-  --background: #0f1717;
-  --surface: #0f1717;
-  --surface-secondary: #15201f;
-  --surface-tertiary: #1a2827;
+  --background: #0b1212;
+  --surface: #101919;
+  --surface-secondary: #172424;
+  --surface-tertiary: #203131;
 
-  --text-primary: rgba(242, 247, 246, 0.96);
-  --text-secondary: rgba(212, 223, 221, 0.76);
-  --text-muted: rgba(181, 194, 192, 0.58);
-  --text-brand: #8edfd5;
+  --text-primary: rgba(245, 250, 249, 0.98);
+  --text-secondary: rgba(215, 228, 226, 0.85);
+  --text-muted: rgba(185, 200, 198, 0.65);
+  --text-brand: #7dd8cf;
 
-  --border-light: rgba(143, 198, 191, 0.16);
-  --border-strong: rgba(143, 198, 191, 0.28);
-  --border-focus: #63c9bc;
-  --ring-focus: rgba(99, 201, 188, 0.24);
+  --border-light: rgba(143, 198, 191, 0.22);
+  --border-strong: rgba(143, 198, 191, 0.35);
+  --border-focus: #3ba89f;
+  --ring-focus: rgba(59, 168, 159, 0.24);
+
+  --success: #32d583;
+  --success-soft: rgba(50, 213, 131, 0.12);
+  --success-border: rgba(50, 213, 131, 0.20);
+
+  --warning: #fec84b;
+  --warning-soft: rgba(254, 200, 75, 0.12);
+  --warning-border: rgba(254, 200, 75, 0.20);
+
+  --danger: #f97066;
+  --danger-soft: rgba(249, 112, 102, 0.12);
+  --danger-border: rgba(249, 112, 102, 0.20);
+
+  --info: #53b1fd;
+  --info-soft: rgba(83, 177, 253, 0.12);
+  --info-border: rgba(83, 177, 253, 0.20);
 }
 
 @theme {
@@ -147,6 +179,22 @@ html:not(.dark) .bg-white {
   --color-border-light: var(--border-light);
   --color-border-strong: var(--border-strong);
   --color-border-focus: var(--border-focus);
+
+  --color-status-success: var(--success);
+  --color-status-success-soft: var(--success-soft);
+  --color-status-success-border: var(--success-border);
+
+  --color-status-warning: var(--warning);
+  --color-status-warning-soft: var(--warning-soft);
+  --color-status-warning-border: var(--warning-border);
+
+  --color-status-danger: var(--danger);
+  --color-status-danger-soft: var(--danger-soft);
+  --color-status-danger-border: var(--danger-border);
+
+  --color-status-info: var(--info);
+  --color-status-info-soft: var(--info-soft);
+  --color-status-info-border: var(--info-border);
 
   --color-ring-primary: var(--primary);
 
@@ -775,3 +823,87 @@ span.flatpickr-weekday,
   opacity: 0.8;
   cursor: grabbing;
 }
+
+/* Global scrollbar styling */
+:root {
+  --scrollbar-track: var(--surface);
+  --scrollbar-thumb: var(--surface-tertiary);
+  --scrollbar-thumb-hover: var(--border-strong);
+}
+
+.dark {
+  --scrollbar-track: var(--surface);
+  --scrollbar-thumb: var(--surface-secondary);
+  --scrollbar-thumb-hover: var(--surface-tertiary);
+}
+
+html {
+  color-scheme: light;
+}
+
+.dark html,
+.dark body {
+  color-scheme: dark;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+}
+
+*::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 999px;
+  border: 2px solid var(--scrollbar-track);
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+}
+
+*::-webkit-scrollbar-corner {
+  background: var(--scrollbar-track);
+}
+
+/* Global Browser Autofill styling override */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active,
+input:autofill,
+input:autofill:hover,
+input:autofill:focus,
+input:autofill:active,
+textarea:-webkit-autofill,
+textarea:-webkit-autofill:hover,
+textarea:-webkit-autofill:focus,
+textarea:-webkit-autofill:active,
+textarea:autofill,
+textarea:autofill:hover,
+textarea:autofill:focus,
+textarea:autofill:active,
+select:-webkit-autofill,
+select:-webkit-autofill:hover,
+select:-webkit-autofill:focus,
+select:-webkit-autofill:active,
+select:autofill,
+select:autofill:hover,
+select:autofill:focus,
+select:autofill:active {
+  -webkit-box-shadow: 0 0 0 1000px var(--surface-tertiary) inset !important;
+  box-shadow: 0 0 0 1000px var(--surface-tertiary) inset !important;
+  -webkit-text-fill-color: var(--text-primary) !important;
+  color: var(--text-primary) !important;
+  caret-color: var(--text-primary);
+  border-color: var(--border-light);
+  transition: background-color 999999s ease-in-out 0s;
+}

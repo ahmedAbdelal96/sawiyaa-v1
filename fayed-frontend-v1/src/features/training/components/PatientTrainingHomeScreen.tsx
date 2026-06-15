@@ -259,7 +259,7 @@ export default function PatientTrainingHomeScreen() {
 
           <div className="flex flex-wrap gap-3">
             <Link
-              href="/patient/support"
+              href="/patient/messages?lane=support"
               className="inline-flex items-center justify-center rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary/90"
             >
               {t("patient.home.ctas.support")}
@@ -382,7 +382,7 @@ export default function PatientTrainingHomeScreen() {
                 label: t("patient.enrollments.states.empty.action"),
                 href: (
                   <Link
-                    href="/patient/support"
+                    href="/patient/messages?lane=support"
                     className="inline-flex items-center justify-center rounded-2xl border border-border-light bg-white px-5 py-2 text-sm text-text-secondary shadow-theme-xs transition hover:border-primary/30 hover:bg-primary-light hover:text-primary dark:bg-surface-tertiary dark:hover:bg-surface-tertiary/80"
                   >
                     {t("patient.enrollments.states.empty.action")}

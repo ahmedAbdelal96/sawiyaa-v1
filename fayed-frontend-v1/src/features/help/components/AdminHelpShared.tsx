@@ -444,13 +444,13 @@ export function QuestionViewModal({
                   </p>
                   <p className="mt-2 text-sm text-text-secondary">{question.questionEn || "-"}</p>
                 </section>
-                <section className="rounded-2xl border border-border-light bg-white px-4 py-4 md:col-span-2">
+                <section className="rounded-2xl border border-border-light bg-surface px-4 py-4 md:col-span-2">
                   <p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
                     {t("fields.answerAr")}
                   </p>
                   <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-text-primary">{getHelpQuestionBody(question, locale)}</p>
                 </section>
-                <section className="rounded-2xl border border-border-light bg-white px-4 py-4 md:col-span-2">
+                <section className="rounded-2xl border border-border-light bg-surface px-4 py-4 md:col-span-2">
                   <p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
                     {t("fields.answerEn")}
                   </p>

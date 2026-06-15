@@ -50,6 +50,17 @@ export interface RegisterData {
   password: string;
 }
 
+type RefreshedAuthSession = {
+  tokens: {
+    accessToken: string;
+    refreshToken: string;
+    accessTokenExpiresAt?: string;
+    refreshTokenExpiresAt?: string;
+  };
+};
+
+const inFlightRefreshSessions = new Map<string, Promise<RefreshedAuthSession | null>>();
+
 export async function setAuthCookies(session: AuthSession): Promise<void> {
   const cookieStore = await cookies();
 
@@ -238,6 +249,7 @@ function resolveRoleRefreshEndpoint(role: string | null): string | null {
     role === "PRACTITIONER_REVIEWER" ||
     role === "PATIENT_OPERATIONS" ||
     role === "SUPER_ADMIN" ||
+    role === "SUPPORT" ||
     role === "SUPPORT_AGENT" ||
     role === "CONTENT_REVIEWER"
   ) {
@@ -265,6 +277,7 @@ export async function getLogoutEndpointForCurrentRole(): Promise<string | null> 
     role === "PRACTITIONER_REVIEWER" ||
     role === "PATIENT_OPERATIONS" ||
     role === "SUPER_ADMIN" ||
+    role === "SUPPORT" ||
     role === "SUPPORT_AGENT" ||
     role === "CONTENT_REVIEWER"
   ) {
@@ -279,15 +292,17 @@ export async function hasValidSession(): Promise<boolean> {
   return !!accessToken;
 }
 
-export async function refreshAccessToken(): Promise<boolean> {
-  const refreshToken = await getRefreshToken();
-  const refreshEndpoint = resolveRoleRefreshEndpoint(await getSessionRole());
-
-  if (!refreshToken || !refreshEndpoint) {
-    return false;
+async function requestRefreshedAuthSession(
+  refreshToken: string,
+  refreshEndpoint: string
+): Promise<RefreshedAuthSession | null> {
+  const refreshKey = `${refreshEndpoint}:${refreshToken}`;
+  const existingRefresh = inFlightRefreshSessions.get(refreshKey);
+  if (existingRefresh) {
+    return existingRefresh;
   }
 
-  try {
+  const refreshPromise = (async (): Promise<RefreshedAuthSession | null> => {
     const requestUrl = await resolveAuthRequestUrl(refreshEndpoint);
     const response = await fetch(requestUrl, {
       method: "POST",
@@ -299,18 +314,49 @@ export async function refreshAccessToken(): Promise<boolean> {
     });
 
     if (!response.ok) {
-      await clearAuthCookies();
-      return false;
+      return null;
     }
 
     const data = await response.json();
     const tokens = data?.tokens;
 
     if (!tokens?.accessToken || !tokens?.refreshToken) {
+      return null;
+    }
+
+    return { tokens };
+  })();
+
+  inFlightRefreshSessions.set(refreshKey, refreshPromise);
+
+  try {
+    return await refreshPromise;
+  } finally {
+    inFlightRefreshSessions.delete(refreshKey);
+  }
+}
+
+export async function refreshAccessToken(): Promise<boolean> {
+  const refreshToken = await getRefreshToken();
+  const role = await getSessionRole();
+  const refreshEndpoint = resolveRoleRefreshEndpoint(role);
+
+  if (!refreshToken || !refreshEndpoint) {
+    return false;
+  }
+
+  try {
+    const refreshedSession = await requestRefreshedAuthSession(
+      refreshToken,
+      refreshEndpoint
+    );
+
+    if (!refreshedSession) {
       await clearAuthCookies();
       return false;
     }
 
+    const tokens = refreshedSession.tokens;
     const cookieStore = await cookies();
     const now = Date.now();
     const toMaxAgeFromIso = (isoValue?: string, fallback = ACCESS_TOKEN_MAX_AGE) => {
@@ -336,7 +382,6 @@ export async function refreshAccessToken(): Promise<boolean> {
       maxAge: refreshMaxAge,
     });
 
-    const role = await getSessionRole();
     if (role) {
       cookieStore.set(USER_ROLE_COOKIE, role, {
         ...PUBLIC_COOKIE_OPTIONS,

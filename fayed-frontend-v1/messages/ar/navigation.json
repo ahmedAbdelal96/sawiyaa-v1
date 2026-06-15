@@ -43,7 +43,7 @@
     "title": "نظرة عامة"
   },
   "operations": {
-    "title": "التشغيل والرعاية"
+    "title": "العمليات"
   },
   "catalog": {
     "title": "الخدمات والمحتوى"
@@ -53,6 +53,33 @@
   },
   "insights": {
     "title": "التقارير والحوكمة"
+  },
+  "core": {
+    "title": "الأساسيات"
+  },
+  "paymentsFinance": {
+    "title": "المدفوعات والمالية"
+  },
+  "contentMarketplace": {
+    "title": "المحتوى والسوق"
+  },
+  "oversight": {
+    "title": "الرقابة"
+  },
+  "practitionerWorkspaceTitle": {
+    "title": "مساحة العمل"
+  },
+  "practitionerSessions": {
+    "title": "الجلسات"
+  },
+  "practitionerAvailability": {
+    "title": "التوفر"
+  },
+  "practitionerMessagesSupport": {
+    "title": "الرسائل والدعم"
+  },
+  "practitionerProfileSettings": {
+    "title": "الملف الشخصي والإعدادات"
   },
   "practitionerMain": {
     "title": "العمل الأساسي"
@@ -80,6 +107,7 @@
   },
   "workspace": {
     "title": "مساحة العمل",
+    "messages": "الرسائل",
     "articles": "المقالات",
     "notifications": "الإشعارات",
     "auditLog": "سجل التدقيق",

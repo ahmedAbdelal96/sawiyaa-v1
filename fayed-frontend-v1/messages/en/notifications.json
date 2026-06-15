@@ -21,7 +21,150 @@
   },
   "context": {
     "patient": "Patient notifications",
-    "practitioner": "Practitioner notifications"
+    "practitioner": "Practitioner notifications",
+    "admin": "Admin notifications"
+  },
+  "slugs": {
+    "GENERAL_CHAT_MESSAGE": {
+      "title": "New chat message",
+      "subtitle": "Chat · Message"
+    },
+    "GENERAL-CHAT-MESSAGE": {
+      "title": "New chat message",
+      "subtitle": "Chat · Message"
+    },
+    "messages-session-message-received": {
+      "title": "New session chat message",
+      "subtitle": "Chat · Session"
+    },
+    "messages-support-message-received": {
+      "title": "New support message",
+      "subtitle": "Support · Ticket"
+    },
+    "messages-follow-up-message-received": {
+      "title": "New follow-up message",
+      "subtitle": "Follow-up · Chat"
+    },
+    "sessions-session-join-available": {
+      "title": "Session join reminder",
+      "subtitle": "Session · Push notification"
+    },
+    "sessions-session-reminder": {
+      "title": "Session reminder",
+      "subtitle": "Session · Reminder"
+    },
+    "sessions-session-booked": {
+      "title": "New session booked",
+      "subtitle": "Session · Booking"
+    },
+    "sessions-session-cancelled": {
+      "title": "Session cancelled",
+      "subtitle": "Session · Cancellation"
+    },
+    "sessions-session-rescheduled": {
+      "title": "Session rescheduled",
+      "subtitle": "Session · Schedule"
+    },
+    "support-ticket-created": {
+      "title": "New support ticket",
+      "subtitle": "Support · Operations"
+    },
+    "support-ticket-reply-received": {
+      "title": "New support reply",
+      "subtitle": "Support · Operations"
+    },
+    "payments-payment-succeeded": {
+      "title": "Payment succeeded",
+      "subtitle": "Finance · Payment"
+    },
+    "payments-payment-failed": {
+      "title": "Payment failed",
+      "subtitle": "Finance · Payment"
+    },
+    "payments-refund-created": {
+      "title": "Refund request created",
+      "subtitle": "Finance · Refund"
+    },
+    "payments-refund-completed": {
+      "title": "Refund request completed",
+      "subtitle": "Finance · Refund"
+    },
+    "fallback": {
+      "title": "System notification",
+      "subtitle": "System"
+    },
+    "messages": {
+      "session-message-received": {
+        "title": "New session chat message",
+        "subtitle": "Chat · Session"
+      },
+      "support-message-received": {
+        "title": "New support message",
+        "subtitle": "Support · Ticket"
+      },
+      "follow-up-message-received": {
+        "title": "New follow-up message",
+        "subtitle": "Follow-up · Chat"
+      }
+    },
+    "sessions": {
+      "session-join-available": {
+        "title": "Session join reminder",
+        "subtitle": "Session · Push notification"
+      },
+      "session-reminder": {
+        "title": "Session reminder",
+        "subtitle": "Session · Reminder"
+      },
+      "session-booked": {
+        "title": "New session booked",
+        "subtitle": "Session · Booking"
+      },
+      "session-cancelled": {
+        "title": "Session cancelled",
+        "subtitle": "Session · Cancellation"
+      },
+      "session-rescheduled": {
+        "title": "Session rescheduled",
+        "subtitle": "Session · Schedule"
+      }
+    },
+    "support": {
+      "ticket-created": {
+        "title": "New support ticket",
+        "subtitle": "Support · Operations"
+      },
+      "ticket-reply-received": {
+        "title": "New support reply",
+        "subtitle": "Support · Operations"
+      }
+    },
+    "payments": {
+      "payment-succeeded": {
+        "title": "Payment succeeded",
+        "subtitle": "Finance · Payment"
+      },
+      "payment-failed": {
+        "title": "Payment failed",
+        "subtitle": "Finance · Payment"
+      },
+      "refund-created": {
+        "title": "Refund request created",
+        "subtitle": "Finance · Refund"
+      },
+      "refund-completed": {
+        "title": "Refund request completed",
+        "subtitle": "Finance · Refund"
+      }
+    }
+  },
+  "errors": {
+    "PUSH_DEVICE_NOT_REGISTERED": "User device is not registered for push notifications",
+    "INVALID_EMAIL_ADDRESS": "Invalid email address",
+    "EMAIL_BOUNCED": "Email bounced from recipient mail server",
+    "SMS_PROVIDER_ERROR": "SMS provider delivery failure",
+    "SUPPRESSED_BY_USER": "Notification muted by user preferences",
+    "RATE_LIMIT_EXCEEDED": "Delivery rate limit exceeded",
+    "fallback": "Notification delivery failed"
   }
 }
-

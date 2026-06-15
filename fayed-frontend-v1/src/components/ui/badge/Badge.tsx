@@ -31,6 +31,7 @@ const Badge: React.FC<BadgeProps> = ({
   const baseStyles =
     "inline-flex items-center justify-center gap-1 rounded-full font-medium";
 
+
   // Define size styles
   const sizeStyles = {
     sm: "px-2.5 py-1 text-theme-xs",
@@ -43,27 +44,25 @@ const Badge: React.FC<BadgeProps> = ({
       primary:
         "app-chip",
       success:
-        "border border-success-200/70 bg-success-50 text-success-700 shadow-[0_8px_18px_-14px_rgba(16,185,129,0.28)] dark:bg-success-500/15 dark:text-success-300 dark:border-success-500/20",
+        "border bg-status-success-soft text-status-success border-status-success-border",
       error:
-        "border border-error-200/70 bg-error-50 text-error-700 shadow-[0_8px_18px_-14px_rgba(240,68,56,0.28)] dark:bg-error-500/15 dark:text-error-300 dark:border-error-500/20",
+        "border bg-status-danger-soft text-status-danger border-status-danger-border",
       warning:
-        "border border-warning-200/70 bg-warning-50 text-warning-700 shadow-[0_8px_18px_-14px_rgba(247,144,9,0.28)] dark:bg-warning-500/15 dark:text-warning-300 dark:border-warning-500/20",
-      info: "border border-primary/15 bg-primary-light text-text-brand shadow-[0_8px_18px_-14px_rgba(68,161,148,0.28)] dark:bg-primary/15 dark:text-primary-light dark:border-primary/20",
-      light: "app-panel-soft text-text-secondary dark:text-text-secondary",
+        "border bg-status-warning-soft text-status-warning border-status-warning-border",
+      info: "border bg-status-info-soft text-status-info border-status-info-border",
+      light: "border bg-surface-tertiary text-text-secondary border-border-light",
       dark: "bg-text-primary text-white shadow-[0_10px_22px_-14px_rgba(15,23,38,0.24)] dark:bg-text-primary dark:text-white",
     },
     solid: {
       primary: "bg-primary text-white shadow-[0_12px_24px_-14px_rgba(68,161,148,0.34)]",
-      success: "bg-success-500 text-white shadow-[0_12px_24px_-14px_rgba(16,185,129,0.28)] dark:text-white",
-      error: "bg-error-500 text-white shadow-[0_12px_24px_-14px_rgba(240,68,56,0.28)] dark:text-white",
-      warning: "bg-warning-500 text-white shadow-[0_12px_24px_-14px_rgba(247,144,9,0.3)] dark:text-white",
-      info: "bg-primary text-white shadow-[0_12px_24px_-14px_rgba(68,161,148,0.34)] dark:text-white",
-      light: "app-panel-soft text-text-primary dark:text-text-primary",
+      success: "bg-status-success text-white dark:text-white",
+      error: "bg-status-danger text-white dark:text-white",
+      warning: "bg-status-warning text-white dark:text-white",
+      info: "bg-status-info text-white dark:text-white",
+      light: "border bg-surface-tertiary text-text-primary border-border-light",
       dark: "bg-text-primary text-white dark:text-white",
     },
   };
-
-  // Get styles based on size and color variant
   const sizeClass = sizeStyles[size];
   const colorStyles = variants[variant][color];
 

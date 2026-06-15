@@ -4,7 +4,7 @@ import { InspectAdminSessionRuntimeUseCase } from './inspect-admin-session-runti
 describe('InspectAdminSessionRuntimeUseCase', () => {
   function buildUseCase() {
     const sessionRepository = {
-      findById: jest.fn().mockResolvedValue({
+      findByIdWithParticipants: jest.fn().mockResolvedValue({
         id: 'session_1',
         status: SessionStatus.UPCOMING,
         sessionMode: SessionMode.VIDEO,
@@ -13,6 +13,26 @@ describe('InspectAdminSessionRuntimeUseCase', () => {
         provider: SessionProvider.DAILY,
         providerRoomId: 'room_1',
         providerSessionRef: 'https://room.daily.co',
+        patientId: 'user_patient_1',
+        practitionerId: 'user_pract_1',
+        patient: {
+          id: 'patient_profile_1',
+          user: {
+            id: 'user_patient_1',
+            displayName: 'Layla Hassan',
+            emails: [{ email: 'layla@example.com', isPrimary: true }],
+            phones: [],
+          },
+        },
+        practitioner: {
+          id: 'pract_profile_1',
+          user: {
+            id: 'user_pract_1',
+            displayName: 'Dr. Karim Saleh',
+            emails: [],
+            phones: [],
+          },
+        },
       }),
     };
 
@@ -47,5 +67,21 @@ describe('InspectAdminSessionRuntimeUseCase', () => {
         blockedReason: null,
       }),
     );
+  });
+
+  it('exposes a participants identity summary in the inspection item', async () => {
+    const setup = buildUseCase();
+    const result = await setup.useCase.execute({ sessionId: 'session_1' });
+    expect(result.item.participants.patient.displayName).toBe('Layla Hassan');
+    expect(result.item.participants.patient.email).toBe('layla@example.com');
+    expect(result.item.participants.practitioner.displayName).toBe(
+      'Dr. Karim Saleh',
+    );
+  });
+
+  it('includes presentationStatus in the inspection item', async () => {
+    const setup = buildUseCase();
+    const result = await setup.useCase.execute({ sessionId: 'session_1' });
+    expect(typeof result.item.presentationStatus).toBe('string');
   });
 });

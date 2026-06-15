@@ -84,7 +84,7 @@ export function DataTableExport<T = any>({
   // Variant styles
   const variantClasses = {
     primary: 'bg-primary text-white hover:bg-primary-hover shadow-theme-xs border border-transparent',
-    secondary: 'border border-border-light bg-white text-text-primary hover:border-border-strong hover:bg-surface-tertiary shadow-theme-xs',
+    secondary: 'border border-border-light bg-surface-secondary text-text-primary hover:border-border-strong hover:bg-surface-tertiary shadow-theme-xs',
     ghost: 'text-text-secondary hover:bg-surface-tertiary hover:text-text-primary',
   };
   

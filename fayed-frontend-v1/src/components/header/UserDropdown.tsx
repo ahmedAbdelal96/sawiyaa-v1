@@ -72,15 +72,17 @@ export default function UserDropdown({ compact = false, quickLinks = [] }: UserD
     <div className="relative">
       <button
         onClick={() => setIsOpen((prev) => !prev)}
-        className={`dropdown-toggle flex items-center gap-3 rounded-full border border-border-light bg-surface-secondary px-2.5 py-1.5 text-text-primary transition hover:border-primary/40 hover:bg-primary-light dark:border-border-light dark:bg-surface-secondary dark:text-text-primary dark:hover:bg-surface-tertiary ${
-          compact ? "" : "pr-3"
+        className={`dropdown-toggle flex items-center justify-center rounded-2xl border border-border-light bg-surface-secondary text-text-primary shadow-sm hover:shadow-md hover:-translate-y-[1px] hover:border-emerald-500/40 hover:ring-2 hover:ring-emerald-500/10 transition-all duration-200 dark:hover:border-emerald-500/30 ${
+          compact ? "h-11 w-11" : "h-11 px-3.5 gap-3"
         }`}
         aria-label={t("account")}
       >
         <Avatar
           src={effectiveAvatar}
           name={displayName}
-          size="medium"
+          size="custom"
+          className="h-[34px] w-[34px] rounded-xl"
+          imgClassName="rounded-xl"
         />
 
         {!compact && (

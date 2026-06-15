@@ -143,7 +143,7 @@ describe('CreateMyPractitionerCouponUseCase', () => {
     expect(result.item.slug).toBe('dr-ahmed20-2');
   });
 
-  it('rejects discounts above 20%', async () => {
+  it('rejects discounts above 25%', async () => {
     (couponRepository.findPractitionerByUserId as jest.Mock).mockResolvedValue({
       id: 'practitioner-1',
       userId: 'user-1',
@@ -156,7 +156,7 @@ describe('CreateMyPractitionerCouponUseCase', () => {
         payload: {
           code: 'DR_AHMED25',
           discountType: DiscountType.PERCENTAGE,
-          discountValue: '21.00',
+          discountValue: '26.00',
         },
       }),
     ).rejects.toBeInstanceOf(BadRequestException);

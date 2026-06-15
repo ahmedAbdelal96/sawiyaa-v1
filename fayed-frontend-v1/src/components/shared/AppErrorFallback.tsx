@@ -18,12 +18,12 @@ type AppErrorFallbackProps = {
 function resolveSupportHref(pathname: string | null): string | null {
   if (!pathname) return null;
 
-  if (pathname.includes("/patient/")) return "/patient/support";
-  if (pathname.endsWith("/patient")) return "/patient/support";
-  if (pathname.includes("/practitioner/")) return "/practitioner/support";
-  if (pathname.endsWith("/practitioner")) return "/practitioner/support";
-  if (pathname.includes("/admin/")) return "/admin/support";
-  if (pathname.endsWith("/admin")) return "/admin/support";
+  if (pathname.includes("/patient/")) return "/patient/messages?lane=support";
+  if (pathname.endsWith("/patient")) return "/patient/messages?lane=support";
+  if (pathname.includes("/practitioner/")) return "/practitioner/messages?lane=support";
+  if (pathname.endsWith("/practitioner")) return "/practitioner/messages?lane=support";
+  if (pathname.includes("/admin/")) return "/admin/messages?lane=support";
+  if (pathname.endsWith("/admin")) return "/admin/messages?lane=support";
 
   return null;
 }

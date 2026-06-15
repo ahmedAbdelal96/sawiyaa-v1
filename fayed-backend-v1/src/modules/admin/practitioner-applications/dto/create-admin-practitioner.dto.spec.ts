@@ -6,11 +6,30 @@ describe('CreateAdminPractitionerDto', () => {
   const basePayload = {
     email: 'new.practitioner@example.com',
     password: 'StrongP@ssw0rd',
+    displayName: 'Dr. Nour',
+    practitionerType: 'PSYCHOLOGIST',
+    professionalTitle: 'Clinical Psychologist',
+    bio: 'Experienced psychologist focused on adult anxiety support.',
+    yearsOfExperience: 6,
+    countryCode: 'EG',
     languageCodes: ['en'],
     specialtySelection: {
       primarySpecialtyCategoryId: '11111111-1111-4111-8111-111111111111',
       specialtyIds: ['22222222-2222-4222-8222-222222222222'],
     },
+    payoutDestination: {
+      methodType: 'BANK_ACCOUNT',
+      accountHolderName: 'Dr. Nour',
+      bankName: 'Bank',
+      bankAccountNumber: '123456789',
+    },
+    credentials: [
+      {
+        credentialType: 'DEGREE',
+        fileUrl:
+          '/uploads/practitioners/admin-direct-create/credentials/degree.pdf',
+      },
+    ],
   };
 
   it('accepts positive dual-currency session prices', () => {
@@ -48,5 +67,24 @@ describe('CreateAdminPractitionerDto', () => {
     expect(errors.some((error) => error.property === 'sessionPrice60Usd')).toBe(
       true,
     );
+  });
+
+  it('rejects weak passwords and unmanaged credential file paths', () => {
+    const dto = plainToInstance(CreateAdminPractitionerDto, {
+      ...basePayload,
+      password: 'password',
+      credentials: [
+        {
+          credentialType: 'DEGREE',
+          fileUrl: 'https://files.example.com/degree.pdf',
+        },
+      ],
+    });
+
+    const errors = validateSync(dto);
+    expect(errors.some((error) => error.property === 'password')).toBe(true);
+    expect(
+      errors.some((error) => error.property === 'credentials'),
+    ).toBe(true);
   });
 });

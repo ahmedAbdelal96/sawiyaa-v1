@@ -33,7 +33,9 @@
     "placeholder": "Paste a session ID",
     "submit": "Inspect runtime",
     "helper": "Use a real session ID from payments, support, or session operations.",
-    "backToPayments": "Back to payments"
+    "backToPayments": "Back to payments",
+    "openInspector": "Open full runtime inspector",
+    "backToReadiness": "Back to runtime readiness check"
   },
   "sections": {
     "summary": {
@@ -178,5 +180,246 @@
   "errors": {
     "notFound": "Session was not found.",
     "generic": "Could not load runtime inspection right now."
+  },
+  "inspector": {
+    "metaTitle": "Session Evidence Review — Admin",
+    "metaDescription": "Manual review of attendance and runtime evidence. No automatic decision is taken from this screen.",
+    "page": {
+      "eyebrow": "Operations / Review",
+      "title": "Session Evidence Review",
+      "subtitle": "This page shows attendance and runtime evidence to support manual admin review. No decision is executed automatically here.",
+      "advisoryNotice": "Review recommendation only — final decision is manual",
+      "backToReadiness": "Back to runtime readiness check"
+    },
+    "notAvailable": "Not available",
+    "caseSummary": {
+      "title": "Case summary",
+      "sessionId": "Session ID",
+      "patient": "Patient",
+      "practitioner": "Practitioner",
+      "scheduledAt": "Scheduled",
+      "status": "Session status",
+      "provider": "Provider",
+      "providerValue": "Daily",
+      "outcome": "Recommended outcome",
+      "evidenceConfidence": "Evidence confidence",
+      "confidenceHigh": "High confidence",
+      "confidenceMedium": "Medium confidence",
+      "confidenceLow": "Low confidence",
+      "riskCount": "Risk flags",
+      "noPatient": "No patient assigned",
+      "noPractitioner": "No practitioner assigned"
+    },
+    "lookup": {
+      "heading": "Inspect a session by ID",
+      "fieldLabel": "Session ID",
+      "placeholder": "Paste a session ID",
+      "submit": "Review evidence",
+      "helper": "Enter a session ID to review its attendance and runtime evidence."
+    },
+    "recommendation": {
+      "title": "Recommendation",
+      "subtitle": "Advisory suggestion — not executed automatically",
+      "outcome": "Recommended outcome",
+      "reason": "Reason",
+      "isFinalDecision": "This is not a final decision",
+      "requiresAdminReview": "Requires admin review",
+      "topRiskFlags": "Top risk flags",
+      "showAllRisks": "Show all risk factors",
+      "hideAllRisks": "Hide risk factors",
+      "noRiskFlags": "No risk flags",
+      "noTopFlags": "No top flags"
+    },
+    "outcomes": {
+      "COMPLETION_CANDIDATE": "Completion candidate",
+      "PATIENT_NO_SHOW_CANDIDATE": "Patient no-show candidate",
+      "PRACTITIONER_NO_SHOW_CANDIDATE": "Practitioner no-show candidate",
+      "BOTH_NO_SHOW_CANDIDATE": "Both no-show candidate",
+      "TECHNICAL_REVIEW_CANDIDATE": "Technical review candidate",
+      "INSUFFICIENT_EVIDENCE": "Insufficient evidence",
+      "MANUAL_REVIEW_REQUIRED": "Manual review required"
+    },
+    "outcomeTone": {
+      "COMPLETION_CANDIDATE": "Positive",
+      "PATIENT_NO_SHOW_CANDIDATE": "Warning",
+      "PRACTITIONER_NO_SHOW_CANDIDATE": "Warning",
+      "BOTH_NO_SHOW_CANDIDATE": "Warning",
+      "TECHNICAL_REVIEW_CANDIDATE": "Technical",
+      "INSUFFICIENT_EVIDENCE": "Neutral",
+      "MANUAL_REVIEW_REQUIRED": "Neutral",
+      "POSITIVE": "Positive",
+      "WARNING": "Warning",
+      "TECHNICAL": "Technical",
+      "NEUTRAL": "Neutral"
+    },
+    "reasons": {
+      "INSUFFICIENT_EVIDENCE": "No attendance events were recorded and no platform join attempts were logged for this session.",
+      "MANUAL_REVIEW_REQUIRED": "This session needs a manual review because the evidence is not sufficient to make a clear recommendation.",
+      "COMPLETION_CANDIDATE": "There is enough attendance and overlap between patient and practitioner, and the session is a completion candidate pending admin review.",
+      "PATIENT_NO_SHOW_CANDIDATE": "The practitioner joined, but there is not enough evidence that the patient joined within the scheduled window.",
+      "PRACTITIONER_NO_SHOW_CANDIDATE": "The patient joined, but there is not enough evidence that the practitioner joined within the scheduled window.",
+      "BOTH_NO_SHOW_CANDIDATE": "There is not enough evidence that the patient or the practitioner joined.",
+      "TECHNICAL_REVIEW_CANDIDATE": "Both parties joined, but overlap or evidence quality suggests a possible technical issue.",
+      "FALLBACK": "This session needs a manual review."
+    },
+    "role": {
+      "patient": "Patient",
+      "practitioner": "Practitioner",
+      "attendanceStatus": "Status",
+      "statusJoined": "Joined",
+      "statusNotJoined": "Did not join",
+      "statusUncertain": "Uncertain",
+      "firstJoinedAt": "First joined",
+      "lastLeftAt": "Last left",
+      "totalPresence": "Total presence",
+      "joinCount": "Join count",
+      "platformAttempts": "Platform join attempts",
+      "blockedAttempts": "Blocked attempts",
+      "tokensIssued": "Join tokens issued",
+      "notes": "Notes",
+      "noShowNote": "No-show candidate",
+      "reconnectNote": "One or more reconnects",
+      "duplicateNote": "Duplicate join events",
+      "noNotes": "No notes"
+    },
+    "overlap": {
+      "title": "Overlap",
+      "subtitle": "Time both parties were present together",
+      "minutes": "Total minutes",
+      "hasMeaningfulOverlap": "Meaningful overlap?",
+      "yes": "Yes",
+      "no": "No",
+      "unreliableWarning": "Overlap may be incomplete because one or more intervals are still open or missing a safe close boundary."
+    },
+    "meeting": {
+      "title": "Meeting bounds",
+      "subtitle": "Daily meeting times",
+      "startedAt": "Started at",
+      "endedAt": "Ended at",
+      "firstJoinedAt": "First joined",
+      "lastLeftAt": "Last left"
+    },
+    "evidence": {
+      "title": "Risk factors & evidence quality",
+      "subtitle": "Compact signals from the engine",
+      "groups": {
+        "timing": "Timing risks",
+        "attendance": "Attendance risks",
+        "technical": "Technical risks",
+        "quality": "Evidence quality"
+      },
+      "totalFlags": "Total flags",
+      "noFlags": "No risk factors"
+    },
+    "riskFlagLookup": {
+      "TECHNICAL_RISK_DETECTED": "Potential technical risk",
+      "OUT_OF_ORDER_EVENTS": "Out-of-order events",
+      "MISSING_LEAVE_EVENT": "Join without leave",
+      "MISSING_JOIN_EVENT": "Leave without prior join",
+      "EXCESSIVE_PATIENT_RECONNECTS": "Excessive patient reconnects",
+      "EXCESSIVE_PRACTITIONER_RECONNECTS": "Excessive practitioner reconnects",
+      "UNKNOWN_PARTICIPANT_EVENTS": "Unknown participant events",
+      "DUPLICATE_LIKE_JOIN_EVENTS": "Duplicate-like join events",
+      "PREMATURE_DECISION_RISK": "Premature decision risk",
+      "LOW_CONFIDENCE_DURATION_MISSING": "Scheduled duration missing",
+      "UNRELIABLE_OVERLAP_OPEN_INTERVAL": "Unreliable overlap",
+      "OPEN_INTERVAL_WITHOUT_CLOSE_BOUNDARY": "Open interval without close",
+      "ONLY_PATIENT_JOINED": "Only patient joined",
+      "ONLY_PRACTITIONER_JOINED": "Only practitioner joined",
+      "NO_PARTICIPANTS": "No participants",
+      "RECONNECTS_PRESENT": "Reconnects detected"
+    },
+    "timeline": {
+      "title": "Attendance timeline",
+      "subtitle": "Chronological join and leave events",
+      "note": "Note: this timeline shows attendance events only. Platform join/token events are summarized above when they are not available as timeline events from the API.",
+      "noteUnified": "This timeline merges attendance events with platform-side events (join attempts, token issuance, meeting lifecycle) into one chronological view.",
+      "platformNote": "Join attempts and token events are shown as counters in the attendance cards. Showing them as timeline events requires the backend to expose them in the timeline.",
+      "empty": {
+        "heading": "No attendance evidence available",
+        "note": "No Daily attendance events arrived and no platform join attempts were recorded for this session.",
+        "nextStep": "Check the session time, payment status, and Webhook configuration if events were expected."
+      },
+      "fields": {
+        "provider": "Provider",
+        "providerEventType": "Provider event type",
+        "providerParticipantRef": "Provider participant reference",
+        "providerRoomRef": "Provider room reference",
+        "providerEventRef": "Provider event reference"
+      }
+    },
+    "raw": {
+      "title": "Technical details",
+      "subtitle": "For technical review only — contains no sensitive secrets.",
+      "toggleOpen": "Show all technical details",
+      "toggleClose": "Hide technical details",
+      "empty": "No technical details available."
+    },
+    "emptyExtended": {
+      "title": "No computed evidence available",
+      "note": "The extended attendance summary has not been emitted for this session yet."
+    },
+    "evidenceTimeline": {
+      "actorRoles": {
+        "ADMIN": "Admin",
+        "SYSTEM": "System",
+        "PATIENT": "Patient",
+        "PRACTITIONER": "Practitioner",
+        "UNKNOWN": "Unknown"
+      },
+      "eventTypes": {
+        "UNKNOWN_PLATFORM_EVENT": "Unknown platform event",
+        "JOIN_ATTEMPTED": "Join attempted",
+        "JOIN_ALLOWED": "Join allowed",
+        "JOIN_BLOCKED": "Join blocked",
+        "JOIN_TOKEN_ISSUED": "Join token issued",
+        "JOIN_TOKEN_FAILED": "Join token failed",
+        "MEETING_STARTED": "Daily meeting started",
+        "MEETING_ENDED": "Daily meeting ended",
+        "ATTENDANCE_JOINED": "Attendance joined",
+        "ATTENDANCE_LEFT": "Attendance left",
+        "SESSION_CREATED": "Session created",
+        "PAYMENT_PENDING": "Payment pending",
+        "PAYMENT_CONFIRMED": "Payment confirmed",
+        "PRACTITIONER_ACCEPTED": "Practitioner accepted",
+        "PRACTITIONER_REJECTED": "Practitioner rejected",
+        "SESSION_CONFIRMED": "Session confirmed",
+        "SESSION_READY_TO_JOIN": "Session ready to join",
+        "PATIENT_JOINED": "Patient joined",
+        "PRACTITIONER_JOINED": "Practitioner joined",
+        "SESSION_STARTED": "Session started",
+        "SESSION_COMPLETED": "Session completed",
+        "CANCELLED_BY_PATIENT": "Cancelled by patient",
+        "CANCELLED_BY_PRACTITIONER": "Cancelled by practitioner",
+        "EXPIRED_UNPAID": "Expired unpaid",
+        "NO_SHOW_PATIENT": "Patient no-show",
+        "NO_SHOW_PRACTITIONER": "Practitioner no-show",
+        "PROVIDER_ROOM_CREATED": "Provider room created",
+        "PROVIDER_ROOM_ENDED": "Provider room ended"
+      },
+      "sources": {
+        "PLATFORM": "Platform evidence",
+        "DAILY_WEBHOOK": "Attendance evidence",
+        "SYSTEM": "System event"
+      },
+      "severity": {
+        "INFO": "Info",
+        "SUCCESS": "Success",
+        "WARNING": "Warning",
+        "ERROR": "Error",
+        "NEUTRAL": "Neutral"
+      },
+      "meta": {
+        "recordedAt": "Recorded at",
+        "actor": "Actor",
+        "source": "Source",
+        "severity": "Severity",
+        "safeMetadata": "Safe metadata"
+      }
+    },
+    "states": {
+      "loading": "Loading evidence",
+      "notFound": "No session found for this ID."
+    }
   }
 }

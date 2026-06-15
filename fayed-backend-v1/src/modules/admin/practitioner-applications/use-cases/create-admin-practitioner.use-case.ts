@@ -6,6 +6,7 @@ import {
 import {
   AuthProvider,
   CredentialType,
+  CredentialReviewStatus,
   OtpChannel,
   PractitionerApplicationStatus,
   PractitionerPayoutMethodType,
@@ -24,6 +25,7 @@ import { PrismaService } from '@common/prisma/prisma.service';
 import { buildDraftPractitionerSlug } from '@modules/auth/utils/slug.util';
 import { PractitionerApplicationsAdminMapper } from '../mappers/practitioner-applications-admin.mapper';
 import { PractitionerApplicationSnapshotService } from '@modules/practitioners/services/practitioner-application-snapshot.service';
+import { PractitionerApplicationCompletionService } from '@modules/practitioners/services/practitioner-application-completion.service';
 import { PractitionerPayoutDestinationValidationService } from '@modules/practitioners/services/practitioner-payout-destination-validation.service';
 import { PractitionerSpecialtyIntegrityService } from '@modules/practitioners/services/practitioner-specialty-integrity.service';
 
@@ -41,6 +43,7 @@ export class CreateAdminPractitionerUseCase {
     private readonly practitionerSpecialtyIntegrityService: PractitionerSpecialtyIntegrityService,
     private readonly practitionerPayoutDestinationValidationService: PractitionerPayoutDestinationValidationService,
     private readonly practitionerApplicationSnapshotService: PractitionerApplicationSnapshotService,
+    private readonly practitionerApplicationCompletionService: PractitionerApplicationCompletionService,
   ) {}
 
   private async hashPassword(password: string): Promise<string> {
@@ -186,6 +189,18 @@ export class CreateAdminPractitionerUseCase {
       });
     }
 
+    if (
+      credentials.some(
+        (item) => item.expiresAt && item.expiresAt.getTime() <= now.getTime(),
+      )
+    ) {
+      throw new BadRequestException({
+        messageKey:
+          'admin.practitionerApplications.errors.invalidCredentialExpiry',
+        error: 'ADMIN_INVALID_CREDENTIAL_EXPIRY',
+      });
+    }
+
     if (languageCodes.length === 0) {
       throw new BadRequestException({
         messageKey: 'practitioners.errors.languageNotFound',
@@ -219,6 +234,58 @@ export class CreateAdminPractitionerUseCase {
     this.practitionerPayoutDestinationValidationService.validate(
       payoutDestination,
     );
+
+    const completion =
+      this.practitionerApplicationCompletionService.build({
+        displayName,
+        countryCode: normalizedCountryCode,
+        practitionerType,
+        practitionerGender,
+        professionalTitle,
+        bio,
+        yearsOfExperience,
+        languageCount: resolvedLanguages.length,
+        specialtyCount: specialtyIds.length,
+        primarySpecialtyCategoryId:
+          input.specialtySelection.primarySpecialtyCategoryId,
+        credentialSummary: {
+          totalCredentials: credentials.length,
+          approvedCount: credentials.length,
+          pendingCount: 0,
+          rejectedCount: 0,
+          expiredCount: credentials.filter(
+            (item) => item.expiresAt && item.expiresAt.getTime() < now.getTime(),
+          ).length,
+        },
+        credentialTypes: credentials.map((item) => item.credentialType),
+        payoutDestination,
+        isAccountActive: true,
+        isPractitionerOtpVerified: true,
+        applicationStatus: PractitionerApplicationStatus.DRAFT,
+        pricing: {
+          session30: {
+            egp: input.sessionPrice30Egp ?? null,
+            usd: input.sessionPrice30Usd ?? null,
+          },
+          session60: {
+            egp: input.sessionPrice60Egp ?? null,
+            usd: input.sessionPrice60Usd ?? null,
+          },
+        },
+      });
+
+    if (completion.blockers.length > 0) {
+      throw new BadRequestException({
+        messageKey:
+          'admin.practitionerApplications.errors.directCreateMissingRequirements',
+        error: 'ADMIN_DIRECT_CREATE_MISSING_REQUIREMENTS',
+        details: completion.blockers.map((issue) => ({
+          code: issue.code,
+          field: issue.field,
+          messageKey: issue.messageKey,
+        })),
+      });
+    }
 
     const specialties = await this.prisma.specialty.findMany({
       where: {
@@ -356,6 +423,9 @@ export class CreateAdminPractitionerUseCase {
               credentialType: item.credentialType,
               fileUrl: item.fileUrl,
               expiresAt: item.expiresAt,
+              reviewStatus: CredentialReviewStatus.APPROVED,
+              reviewedAt: now,
+              reviewedByUserId: input.adminUserId,
             })),
           });
         }
@@ -385,6 +455,10 @@ export class CreateAdminPractitionerUseCase {
                   countryCode: normalizedCountryCode,
                   primarySpecialtyCategoryId:
                     input.specialtySelection.primarySpecialtyCategoryId,
+                  sessionPrice30Egp: input.sessionPrice30Egp ?? null,
+                  sessionPrice30Usd: input.sessionPrice30Usd ?? null,
+                  sessionPrice60Egp: input.sessionPrice60Egp ?? null,
+                  sessionPrice60Usd: input.sessionPrice60Usd ?? null,
                 },
                 languageCodes,
                 specialties: specialtyIds.map((specialtyId, index) => ({
@@ -403,10 +477,10 @@ export class CreateAdminPractitionerUseCase {
                   credentialId: '',
                   credentialType: item.credentialType,
                   fileUrl: item.fileUrl,
-                  reviewStatus: 'PENDING',
+                  reviewStatus: CredentialReviewStatus.APPROVED,
                   expiresAt: item.expiresAt,
                   uploadedAt: now,
-                  reviewedAt: null,
+                  reviewedAt: now,
                   reviewNotes: null,
                 })),
                 payoutDestination,
@@ -433,6 +507,17 @@ export class CreateAdminPractitionerUseCase {
         reviewDecisionReason: created.application.reviewDecisionReason,
         reviewNotes: created.application.reviewNotes,
       }),
+      practitioner: {
+        practitionerProfileId: created.practitionerProfile.id,
+        userId: created.user.id,
+        email: normalizedEmail,
+        displayName,
+        practitionerStatus: created.practitionerProfile.status,
+        accountStatus: created.user.status,
+        credentialCount: credentials.length,
+        nextAction: 'share_temporary_password_securely',
+        passwordRotationFollowUpRequired: true,
+      },
     };
   }
 }

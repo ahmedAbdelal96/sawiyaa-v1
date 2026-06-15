@@ -140,13 +140,26 @@ export interface PractitionerSessionRuntime {
   roomUrl: string | null;
 }
 
+export interface PractitionerSessionProviderRuntime {
+  name: SessionProvider;
+  roomId: string | null;
+  roomUrl: string | null;
+  token: string | null;
+  tokenExpiresAt: string | null;
+  joinMode: "redirect_url" | "embedded" | "external_url" | null;
+  payload: Record<string, unknown>;
+}
+
 export interface PractitionerSessionJoinContract {
   sessionId: string;
   status: SessionStatus;
   provider: SessionProvider;
   canJoin: boolean;
   blockedReason: SessionJoinBlockedReason | null;
+  availableAt: string | null;
+  expiresAt: string | null;
   roomName: string | null;
   roomUrl: string | null;
   joinToken: string | null;
+  providerRuntime?: PractitionerSessionProviderRuntime | null;
 }

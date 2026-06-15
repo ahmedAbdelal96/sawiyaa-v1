@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import {
   Prisma,
   SessionAttendanceParticipantRole,
+  SessionEventType,
   SessionProvider,
 } from '@prisma/client';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
@@ -9,12 +10,14 @@ import { createHash } from 'crypto';
 import { AppLoggerService } from '@common/logging/app-logger.service';
 import { SessionRepository } from '../repositories/session.repository';
 import { ParseDailyAttendanceWebhookService } from '../services/parse-daily-attendance-webhook.service';
+import { DailyAttendanceWebhookParseResult } from '../types/session-attendance.types';
 
 type AttendanceWebhookHandledReason =
   | 'ATTENDANCE_EVENT_STORED'
   | 'ATTENDANCE_EVENT_DUPLICATE'
   | 'ATTENDANCE_EVENT_UNSUPPORTED'
-  | 'ATTENDANCE_EVENT_SESSION_UNMAPPABLE';
+  | 'ATTENDANCE_EVENT_SESSION_UNMAPPABLE'
+  | 'MEETING_EVENT_STORED';
 
 @Injectable()
 export class HandleDailyAttendanceWebhookUseCase {
@@ -60,6 +63,16 @@ export class HandleDailyAttendanceWebhookUseCase {
           sessionId: duplicateByProviderRef.sessionId,
         });
       }
+    }
+
+    // meeting.started / meeting.ended are evidence-only events.
+    // They are stored as SessionEvent records, not SessionAttendanceEvent.
+    // They do NOT change session state (no auto-complete, no no-show, no refund).
+    if (this.isMeetingEvent(parsed.providerEventType)) {
+      return this.handleMeetingEvent({
+        parsed,
+        ingestionKey,
+      });
     }
 
     if (!parsed.attendanceEventType) {
@@ -144,6 +157,88 @@ export class HandleDailyAttendanceWebhookUseCase {
     return this.buildResponse({
       handled: true,
       reason: 'ATTENDANCE_EVENT_STORED',
+      sessionId: session.id,
+    });
+  }
+
+  private isMeetingEvent(providerEventType: string): boolean {
+    const normalized = providerEventType.trim().toLowerCase();
+    return normalized === 'meeting.started' || normalized === 'meeting.ended';
+  }
+
+  private async handleMeetingEvent(input: {
+    parsed: DailyAttendanceWebhookParseResult;
+    ingestionKey: string;
+  }): Promise<{
+    received: boolean;
+    handled: boolean;
+    reason: AttendanceWebhookHandledReason;
+    sessionId: string | null;
+  }> {
+    const { parsed, ingestionKey } = input;
+    const normalized = parsed.providerEventType.trim().toLowerCase();
+    const eventType =
+      normalized === 'meeting.started'
+        ? SessionEventType.MEETING_STARTED
+        : SessionEventType.MEETING_ENDED;
+
+    const session = await this.sessionRepository.findByDailyRoomReference({
+      roomName: parsed.providerRoomName,
+      roomUrl: parsed.providerRoomUrl,
+    });
+
+    if (!session) {
+      this.logger.warn(
+        {
+          message: 'Daily meeting event could not be linked to a session',
+          providerEventType: parsed.providerEventType,
+          providerEventRef: parsed.providerEventRef,
+          providerRoomName: parsed.providerRoomName,
+          providerRoomUrl: parsed.providerRoomUrl,
+        },
+        'Sessions',
+      );
+
+      return this.buildResponse({
+        handled: false,
+        reason: 'ATTENDANCE_EVENT_SESSION_UNMAPPABLE',
+        sessionId: null,
+      });
+    }
+
+    // Deduplicate: check if this exact meeting event was already stored.
+    const existingEvent = await this.sessionRepository.findSessionEventByProviderEventRef({
+      sessionId: session.id,
+      eventType,
+      providerEventRef: parsed.providerEventRef,
+    });
+
+    if (existingEvent) {
+      return this.buildResponse({
+        handled: true,
+        reason: 'ATTENDANCE_EVENT_DUPLICATE',
+        sessionId: session.id,
+      });
+    }
+
+    await this.sessionRepository.createEvent({
+      sessionId: session.id,
+      eventType,
+      actorUserId: null,
+      metadataJson: this.toPrismaJson({
+        providerEventType: parsed.providerEventType,
+        providerEventRef: parsed.providerEventRef,
+        providerRoomRef: parsed.providerRoomName ?? parsed.providerRoomUrl,
+        occurredAt: parsed.occurredAt.toISOString(),
+        ingestionKey,
+        source: parsed.source,
+        payload: parsed.payload,
+      }),
+    });
+
+    return this.buildResponse({
+      handled: true,
+      reason: 'MEETING_EVENT_STORED',
       sessionId: session.id,
     });
   }
@@ -251,6 +346,10 @@ export class HandleDailyAttendanceWebhookUseCase {
     return (
       error instanceof PrismaClientKnownRequestError && error.code === 'P2002'
     );
+  }
+
+  private toPrismaJson(value: Record<string, unknown>): Prisma.InputJsonObject {
+    return JSON.parse(JSON.stringify(value)) as Prisma.InputJsonObject;
   }
 
   private buildResponse(input: {

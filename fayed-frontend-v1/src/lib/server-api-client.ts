@@ -1,4 +1,4 @@
-import { getAccessToken, refreshAccessToken } from "@/lib/auth/server";
+import { getAccessToken } from "@/lib/auth/server";
 import { API_BASE_URL } from "@/config/api";
 import { AppError, toAppError } from "@/lib/api/errors";
 
@@ -29,37 +29,23 @@ export async function serverFetch<T = any>(
       }
     }
 
-    let response = await fetch(url, {
+    const response = await fetch(url, {
       ...restOptions,
       headers: requestHeaders,
     });
 
     if (response.status === 401 && !skipAuth) {
-      const refreshSuccess = await refreshAccessToken();
-
-      if (refreshSuccess) {
-        const newAccessToken = await getAccessToken();
-        if (newAccessToken) {
-          requestHeaders.set("Authorization", `Bearer ${newAccessToken}`);
-        }
-
-        response = await fetch(url, {
-          ...restOptions,
-          headers: requestHeaders,
-        });
-      } else {
-        throw new AppError({
-          message: "Unauthorized: Session expired",
-          statusCode: 401,
-          code: "SESSION_EXPIRED",
-          errorType: "UNAUTHORIZED",
-          requestPath: endpoint,
-          diagnostics: {
-            client: "server-api-client",
-            skipAuth,
-          },
-        });
-      }
+      throw new AppError({
+        message: "Unauthorized: Session expired",
+        statusCode: 401,
+        code: "SESSION_EXPIRED",
+        errorType: "UNAUTHORIZED",
+        requestPath: endpoint,
+        diagnostics: {
+          client: "server-api-client",
+          skipAuth,
+        },
+      });
     }
 
     if (!response.ok) {

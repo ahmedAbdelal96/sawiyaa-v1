@@ -20,6 +20,7 @@ import { CreateTrainingScheduleUseCase } from './use-cases/create-training-sched
 import { CreateTrainingScheduleLectureUseCase } from './use-cases/create-training-schedule-lecture.use-case';
 import { GetAdminTrainingUseCase } from './use-cases/get-admin-training.use-case';
 import { GetPatientTrainingEnrollmentUseCase } from './use-cases/get-patient-training-enrollment.use-case';
+import { GetPatientTrainingEnrollmentPaymentRedirectUseCase } from './use-cases/get-patient-training-enrollment-payment-redirect.use-case';
 import { ListAdminTrainingSchedulesUseCase } from './use-cases/list-admin-training-schedules.use-case';
 import { ListAdminTrainingScheduleEnrollmentsUseCase } from './use-cases/list-admin-training-schedule-enrollments.use-case';
 import { ListAdminTrainingScheduleLecturesUseCase } from './use-cases/list-admin-training-schedule-lectures.use-case';
@@ -57,6 +58,7 @@ import { UpdateTrainingUseCase } from './use-cases/update-training.use-case';
     PublishTrainingUseCase,
     ArchiveTrainingUseCase,
     GetPatientTrainingEnrollmentUseCase,
+    GetPatientTrainingEnrollmentPaymentRedirectUseCase,
     ListPatientTrainingEnrollmentsUseCase,
     ResolvePatientTrainingJoinAccessUseCase,
     ListAdminTrainingScheduleEnrollmentsUseCase,

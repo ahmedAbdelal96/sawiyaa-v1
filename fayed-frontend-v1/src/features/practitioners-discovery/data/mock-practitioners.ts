@@ -18,6 +18,7 @@ export const MOCK_PRACTITIONERS: PublicPractitioner[] = [
     isVerified: true,
     acceptsPackage: true,
     initials: "سأ",
+    avatarUrl: null,
   },
   {
     id: "faisal-omar",
@@ -36,6 +37,7 @@ export const MOCK_PRACTITIONERS: PublicPractitioner[] = [
     isVerified: true,
     acceptsPackage: true,
     initials: "فع",
+    avatarUrl: null,
   },
   {
     id: "noura-khaled",
@@ -54,6 +56,7 @@ export const MOCK_PRACTITIONERS: PublicPractitioner[] = [
     isVerified: true,
     acceptsPackage: true,
     initials: "نخ",
+    avatarUrl: null,
   },
   {
     id: "hind-al-subai",
@@ -72,6 +75,7 @@ export const MOCK_PRACTITIONERS: PublicPractitioner[] = [
     isVerified: true,
     acceptsPackage: true,
     initials: "هس",
+    avatarUrl: null,
   },
   {
     id: "omar-al-qahtani",
@@ -90,6 +94,7 @@ export const MOCK_PRACTITIONERS: PublicPractitioner[] = [
     isVerified: true,
     acceptsPackage: true,
     initials: "عق",
+    avatarUrl: null,
   },
   {
     id: "layla-al-mansouri",
@@ -108,6 +113,7 @@ export const MOCK_PRACTITIONERS: PublicPractitioner[] = [
     isVerified: true,
     acceptsPackage: true,
     initials: "لم",
+    avatarUrl: null,
   },
   {
     id: "fahad-al-rashid",
@@ -126,6 +132,7 @@ export const MOCK_PRACTITIONERS: PublicPractitioner[] = [
     isVerified: true,
     acceptsPackage: true,
     initials: "فر",
+    avatarUrl: null,
   },
   {
     id: "ahmed-al-zayd",
@@ -144,6 +151,7 @@ export const MOCK_PRACTITIONERS: PublicPractitioner[] = [
     isVerified: true,
     acceptsPackage: true,
     initials: "أز",
+    avatarUrl: null,
   },
   {
     id: "reem-al-otaibi",
@@ -162,6 +170,7 @@ export const MOCK_PRACTITIONERS: PublicPractitioner[] = [
     isVerified: false,
     acceptsPackage: false,
     initials: "رع",
+    avatarUrl: null,
   },
 ];
 
@@ -192,5 +201,3 @@ export function filterAndSortPractitioners(
     return b.rating - a.rating;
   });
 }
-
-

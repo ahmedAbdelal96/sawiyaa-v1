@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
 
 export default async function AdminChatPage() {
-  redirect("/admin/care-chat");
+  redirect("/admin/messages?lane=all");
 }

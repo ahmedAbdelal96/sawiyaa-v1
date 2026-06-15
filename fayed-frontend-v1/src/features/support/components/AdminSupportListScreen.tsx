@@ -1,24 +1,27 @@
 "use client";
 
-import { useMemo } from "react";
+import { useState, useMemo } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { usePathname, useRouter } from "@/i18n/navigation";
 import { useSearchParams } from "next/navigation";
-import { Headset } from "lucide-react";
-import { DataTable } from "@/components/ui/data-table";
-import AdminOperationalListShell, { AdminSummaryCard } from "@/components/shared/admin/AdminOperationalListShell";
-import ActionIconButton from "@/components/ui/action-icon-button/ActionIconButton";
-import FilterClearButton from "@/components/ui/filters/FilterClearButton";
-import type { ColumnDef, SortConfig } from "@/components/ui/data-table";
-import { buildUpdatedSearchParams, parseEnumParam, parsePositiveIntParam } from "@/components/ui/data-table";
-import { DEFAULT_PAGE_LIMIT, DEFAULT_PAGE_SIZE_OPTIONS } from "@/constants/pagination";
+import { cn } from "@/lib/utils";
+import {
+  ChatWorkspaceShell,
+  ChatThreadList,
+  ChatThreadListItem,
+  ChatEmptyState,
+} from "@/components/shared/chat/ChatKit";
+import { DEFAULT_PAGE_LIMIT } from "@/constants/pagination";
 import { useAdminSupportTickets } from "../hooks/use-support";
 import type {
   AdminSupportListParams,
   SupportTicketPriority,
-  SupportTicketSummary,
   SupportTicketStatus,
+  SupportTicketCategory,
+  SupportTicketSummary,
 } from "../types/support.types";
+import AdminSupportTicketScreen from "./AdminSupportTicketScreen";
+import { buildUpdatedSearchParams, parseEnumParam, parsePositiveIntParam } from "@/components/ui/data-table";
 
 const STATUS_FILTERS: Array<SupportTicketStatus | "ALL"> = [
   "ALL",
@@ -30,29 +33,32 @@ const STATUS_FILTERS: Array<SupportTicketStatus | "ALL"> = [
   "CLOSED",
 ];
 
+const CATEGORY_FILTERS: Array<SupportTicketCategory | "ALL"> = [
+  "ALL",
+  "BOOKING",
+  "PAYMENT",
+  "SESSION",
+  "TECHNICAL",
+  "ACCOUNT",
+  "MATCHING",
+  "GENERAL",
+  "CONTENT",
+  "CHAT",
+  "OTHER",
+];
+
 const PRIORITY_FILTERS: Array<SupportTicketPriority | "ALL"> = [
   "ALL",
   "URGENT",
   "HIGH",
+  "MEDIUM",
   "NORMAL",
   "LOW",
 ];
-const PAGE_LIMIT = DEFAULT_PAGE_LIMIT;
-const PAGE_SIZE_OPTIONS = DEFAULT_PAGE_SIZE_OPTIONS;
-const SORTABLE_COLUMNS = ["createdAt", "lastMessageAt", "status", "priority", "subject"] as const;
-type SortableSupportColumn = (typeof SORTABLE_COLUMNS)[number];
 
-const PRIORITY_DOT: Record<SupportTicketPriority, string> = {
-  LOW: "bg-text-muted",
-  NORMAL: "bg-text-muted",
-  MEDIUM: "bg-text-muted",
-  HIGH: "bg-amber-400",
-  URGENT: "bg-rose-500",
-};
-
-function formatDateTime(iso: string | null, locale: string) {
-  if (!iso) return "";
-  return new Date(iso).toLocaleString(locale, {
+function formatDateTime(value: string | null, locale: string) {
+  if (!value) return "-";
+  return new Date(value).toLocaleString(locale === "ar" ? "ar-SA" : "en-US", {
     year: "numeric",
     month: "short",
     day: "numeric",
@@ -62,36 +68,23 @@ function formatDateTime(iso: string | null, locale: string) {
   });
 }
 
-function getStatusTone(status: SupportTicketStatus) {
-  switch (status) {
-    case "OPEN":
-      return "bg-primary-light text-text-brand";
-    case "IN_PROGRESS":
-      return "bg-primary-light text-text-brand";
-    case "WAITING_FOR_USER":
-      return "bg-warning-50 text-warning-700 dark:bg-warning-500/10 dark:text-warning-300";
-    case "ESCALATED":
-      return "bg-error-50 text-error-700 dark:bg-error-500/10 dark:text-error-300";
-    case "RESOLVED":
-      return "bg-success-50 text-success-700 dark:bg-success-500/10 dark:text-success-300";
-    case "CLOSED":
-      return "bg-surface-tertiary text-text-secondary";
-    default:
-      return "bg-surface-tertiary text-text-secondary";
-  }
-}
-
-export default function AdminSupportListScreen() {
+export default function AdminSupportListScreen({ ticketId }: { ticketId?: string | null }) {
   const t = useTranslations("support.admin");
   const locale = useLocale();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const numLocale = locale === "ar" ? "ar-SA" : "en-US";
+
+  const [searchQuery, setSearchQuery] = useState("");
 
   const statusFilter = parseEnumParam<SupportTicketStatus | "ALL">(
     searchParams.get("status"),
     STATUS_FILTERS,
+    "ALL",
+  );
+  const categoryFilter = parseEnumParam<SupportTicketCategory | "ALL">(
+    searchParams.get("category"),
+    CATEGORY_FILTERS,
     "ALL",
   );
   const priorityFilter = parseEnumParam<SupportTicketPriority | "ALL">(
@@ -101,23 +94,13 @@ export default function AdminSupportListScreen() {
   );
   const assignedToMe = searchParams.get("assignedToMe") === "true";
   const page = parsePositiveIntParam(searchParams.get("page"), 1, { min: 1 });
-  const limit = parsePositiveIntParam(searchParams.get("limit"), PAGE_LIMIT, {
+  const limit = parsePositiveIntParam(searchParams.get("limit"), DEFAULT_PAGE_LIMIT, {
     min: 1,
     max: 40,
   });
-  const sortColumn = parseEnumParam<SortableSupportColumn>(
-    searchParams.get("sortBy"),
-    SORTABLE_COLUMNS,
-    "createdAt",
-  );
-  const sortDirection = parseEnumParam<"asc" | "desc">(
-    searchParams.get("sortDir"),
-    ["asc", "desc"],
-    "desc",
-  );
-  const sortConfig: SortConfig = { column: sortColumn, direction: sortDirection };
+
   const hasActiveFilters =
-    statusFilter !== "ALL" || priorityFilter !== "ALL" || assignedToMe;
+    statusFilter !== "ALL" || categoryFilter !== "ALL" || priorityFilter !== "ALL" || assignedToMe;
 
   const updateListQuery = (updates: Record<string, string | number | null | undefined>) => {
     const next = buildUpdatedSearchParams(new URLSearchParams(searchParams.toString()), updates);
@@ -130,241 +113,220 @@ export default function AdminSupportListScreen() {
       page,
       limit,
       status: statusFilter === "ALL" ? undefined : statusFilter,
+      category: categoryFilter === "ALL" ? undefined : categoryFilter,
       priority: priorityFilter === "ALL" ? undefined : priorityFilter,
       assignedToMe: assignedToMe || undefined,
     }),
-    [assignedToMe, page, priorityFilter, statusFilter, limit],
+    [assignedToMe, categoryFilter, limit, page, priorityFilter, statusFilter],
   );
 
   const tickets = useAdminSupportTickets(params);
   const data = tickets.data;
 
-  const columns = useMemo<ColumnDef<SupportTicketSummary>[]>(() => [
-    {
-      id: "subject",
-      header: "Ticket",
-      accessor: (row) => row.subject,
-      sortable: true,
-      cell: (row) => (
-        <div className="min-w-0">
-          <div className="flex items-start justify-between gap-2">
-            <p className="truncate text-sm font-semibold text-text-primary dark:text-white/95">
-              {row.subject}
-            </p>
-            {row.hasUnread || row.unreadCount > 0 ? (
-              <span className="inline-flex shrink-0 items-center rounded-full bg-rose-500/10 px-2 py-1 text-[11px] font-semibold text-rose-700 dark:bg-rose-500/15 dark:text-rose-200">
-                <span className="me-1 inline-block h-2 w-2 rounded-full bg-rose-500" />
-                {row.unreadCount > 0 ? row.unreadCount : ""}
-              </span>
-            ) : null}
-          </div>
-          <p className="mt-1 text-xs text-text-muted">
-            {t(`categories.${row.category}` as Parameters<typeof t>[0])}
-          </p>
-        </div>
-      ),
-    },
-    {
-      id: "status",
-      header: "Status",
-      accessor: (row) => row.status,
-      sortable: true,
-      cell: (row) => (
-        <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${getStatusTone(row.status)}`}>
-          {t(`statuses.${row.status}` as Parameters<typeof t>[0])}
-        </span>
-      ),
-    },
-    {
-      id: "priority",
-      header: "Priority",
-      accessor: (row) => row.priority,
-      sortable: true,
-      cell: (row) => (
-        <span className="inline-flex items-center gap-1.5 text-xs text-text-secondary">
-          <span className={`inline-block h-2 w-2 rounded-full ${PRIORITY_DOT[row.priority]}`} />
-          {t(`priorities.${row.priority}` as Parameters<typeof t>[0])}
-        </span>
-      ),
-    },
-    {
-      id: "assignee",
-      header: "Assignee",
-      accessor: (row) => row.assignedAdminUserId ?? "",
-      cell: (row) =>
-        row.assignedAdminUserId ? (
-          <span className="font-mono text-xs text-text-secondary">
-            {row.assignedAdminUserId.slice(0, 8)}
-          </span>
-        ) : (
-          <span className="text-xs text-text-muted">{t("list.unassigned")}</span>
-        ),
-      hideOnMobile: true,
-    },
-    {
-      id: "createdAt",
-      header: "Created",
-      accessor: (row) => new Date(row.createdAt).getTime(),
-      sortable: true,
-      hideOnMobile: true,
-      cell: (row) => formatDateTime(row.createdAt, numLocale),
-    },
-    {
-      id: "lastMessageAt",
-      header: "Last reply",
-      accessor: (row) => (row.lastMessageAt ? new Date(row.lastMessageAt).getTime() : null),
-      sortable: true,
-      cell: (row) => (
-        <span className="text-xs text-text-secondary">
-          {row.lastMessageAt ? formatDateTime(row.lastMessageAt, numLocale) : "-"}
-        </span>
-      ),
-      hideOnMobile: true,
-    },
-  ], [numLocale, t]);
+  const filteredItems = useMemo(() => {
+    const items = data?.items ?? [];
+    if (!searchQuery.trim()) return items;
+    const q = searchQuery.toLowerCase();
+    return items.filter(
+      (item) =>
+        item.subject.toLowerCase().includes(q) ||
+        item.id.toLowerCase().includes(q)
+    );
+  }, [data?.items, searchQuery]);
+
+  const firstTicketId = data?.items?.[0]?.id || null;
+  const selectedTicketId = ticketId || firstTicketId;
+
+  const openTicket = (row: SupportTicketSummary) => {
+    router.push(`/admin/support/${row.id}` as never);
+  };
 
   return (
-    <AdminOperationalListShell
-      title={t("list.heading")}
-      description={t("list.note")}
-      summaryCards={
-        <AdminSummaryCard
-          label={t("list.heading")}
-          value={typeof data?.pagination.totalItems === "number" ? data.pagination.totalItems : "..."}
-          tone="primary"
-        />
-      }
-      filters={
-        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-          <label className="block">
-            <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
-              {t("filters.all")}
-            </span>
-            <select
-              value={statusFilter}
-              onChange={(event) =>
-                updateListQuery({
-                  status: event.target.value === "ALL" ? null : event.target.value,
-                  page: 1,
-                })
-              }
-              className="app-control w-full px-4 py-3"
-            >
-              <option value="ALL">{t("filters.all")}</option>
-              {STATUS_FILTERS.filter((status) => status !== "ALL").map((status) => (
-                <option key={status} value={status}>
-                  {t(`statuses.${status}` as Parameters<typeof t>[0])}
-                </option>
-              ))}
-            </select>
-          </label>
+    <section className="h-full min-h-0 w-full overflow-hidden">
+      <ChatWorkspaceShell>
+        {/* Left Thread List Column */}
+        <div className={cn("h-full flex flex-col min-h-0 overflow-hidden", ticketId ? "hidden lg:flex lg:w-[380px] lg:shrink-0" : "w-full flex lg:w-[380px] lg:shrink-0")}>
+          <ChatThreadList
+            searchValue={searchQuery}
+            onSearchChange={setSearchQuery}
+            searchPlaceholder={locale === "ar" ? "البحث عن تذكرة..." : "Search tickets..."}
+            header={
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-white/5">
+                <div>
+                  <h1 className="text-sm font-bold text-text-primary dark:text-white">
+                    {t("list.heading")}
+                  </h1>
+                </div>
+                {data && (
+                  <span className="rounded-full bg-teal-50 dark:bg-teal-950/40 px-2.5 py-0.5 text-[10px] font-bold text-teal-700 dark:text-teal-400 border border-teal-100/30">
+                    {data.pagination.totalItems}
+                  </span>
+                )}
+              </div>
+            }
+          >
+            {/* Filters row */}
+            <div className="px-3 pb-2 pt-1 border-b border-slate-100 dark:border-white/5 space-y-2 shrink-0">
+              <div className="grid grid-cols-3 gap-2">
+                <select
+                  value={statusFilter}
+                  onChange={(e) => updateListQuery({ status: e.target.value === "ALL" ? null : e.target.value, page: 1 })}
+                  className={cn(
+                    "h-11 px-2 w-full text-xs rounded-xl border transition-all duration-200 outline-none font-bold cursor-pointer text-center shadow-sm",
+                    statusFilter !== "ALL"
+                      ? "bg-teal-50 border-teal-200 text-teal-700 dark:bg-teal-950/40 dark:border-teal-900/60 dark:text-teal-400 font-extrabold"
+                      : "border-slate-200/80 dark:border-white/10 bg-slate-50 dark:bg-slate-900/40 text-text-secondary dark:text-slate-300 hover:bg-slate-100/60 hover:border-slate-300"
+                  )}
+                >
+                  <option value="ALL">{locale === "ar" ? "الحالة" : "Status"}</option>
+                  {STATUS_FILTERS.filter((status) => status !== "ALL").map((status) => (
+                    <option key={status} value={status}>
+                      {t(`statuses.${status}` as Parameters<typeof t>[0])}
+                    </option>
+                  ))}
+                </select>
 
-          <label className="block">
-            <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
-              {t("filters.all")}
-            </span>
-            <select
-              value={priorityFilter}
-              onChange={(event) =>
-                updateListQuery({
-                  priority: event.target.value === "ALL" ? null : event.target.value,
-                  page: 1,
-                })
-              }
-              className="app-control w-full px-4 py-3"
-            >
-              <option value="ALL">{t("filters.all")}</option>
-              {PRIORITY_FILTERS.filter((priority) => priority !== "ALL").map((priority) => (
-                <option key={priority} value={priority}>
-                  {t(`priorities.${priority}` as Parameters<typeof t>[0])}
-                </option>
-              ))}
-            </select>
-          </label>
+                <select
+                  value={categoryFilter}
+                  onChange={(e) => updateListQuery({ category: e.target.value === "ALL" ? null : e.target.value, page: 1 })}
+                  className={cn(
+                    "h-11 px-2 w-full text-xs rounded-xl border transition-all duration-200 outline-none font-bold cursor-pointer text-center shadow-sm",
+                    categoryFilter !== "ALL"
+                      ? "bg-teal-50 border-teal-200 text-teal-700 dark:bg-teal-950/40 dark:border-teal-900/60 dark:text-teal-400 font-extrabold"
+                      : "border-slate-200/80 dark:border-white/10 bg-slate-50 dark:bg-slate-900/40 text-text-secondary dark:text-slate-300 hover:bg-slate-100/60 hover:border-slate-300"
+                  )}
+                >
+                  <option value="ALL">{locale === "ar" ? "الفئة" : "Category"}</option>
+                  {CATEGORY_FILTERS.filter((category) => category !== "ALL").map((category) => (
+                    <option key={category} value={category}>
+                      {t(`categories.${category}` as Parameters<typeof t>[0])}
+                    </option>
+                  ))}
+                </select>
 
-          <label className="flex items-center gap-3 rounded-2xl border border-border-light bg-surface-secondary px-4 py-3 text-sm text-text-primary dark:bg-white/5 dark:text-white/90">
-            <input
-              type="checkbox"
-              checked={assignedToMe}
-              onChange={(event) =>
-                updateListQuery({
-                  assignedToMe: event.target.checked ? "true" : null,
-                  page: 1,
-                })
-              }
-              className="h-4 w-4 rounded border-border-light text-primary focus:ring-primary"
-            />
-            {t("filters.assignedToMe")}
-          </label>
-          <div className="md:col-span-2 lg:col-span-3 flex justify-end">
-            <FilterClearButton
-              disabled={!hasActiveFilters}
-              onClick={() =>
-                updateListQuery({
-                  status: null,
-                  priority: null,
-                  assignedToMe: null,
-                  page: 1,
-                })
-              }
-            />
-          </div>
+                <select
+                  value={priorityFilter}
+                  onChange={(e) => updateListQuery({ priority: e.target.value === "ALL" ? null : e.target.value, page: 1 })}
+                  className={cn(
+                    "h-11 px-2 w-full text-xs rounded-xl border transition-all duration-200 outline-none font-bold cursor-pointer text-center shadow-sm",
+                    priorityFilter !== "ALL"
+                      ? "bg-teal-50 border-teal-200 text-teal-700 dark:bg-teal-950/40 dark:border-teal-900/60 dark:text-teal-400 font-extrabold"
+                      : "border-slate-200/80 dark:border-white/10 bg-slate-50 dark:bg-slate-900/40 text-text-secondary dark:text-slate-300 hover:bg-slate-100/60 hover:border-slate-300"
+                  )}
+                >
+                  <option value="ALL">{locale === "ar" ? "الأولوية" : "Priority"}</option>
+                  {PRIORITY_FILTERS.filter((priority) => priority !== "ALL").map((priority) => (
+                    <option key={priority} value={priority}>
+                      {t(`priorities.${priority}` as Parameters<typeof t>[0])}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex items-center justify-between pt-1">
+                <label className="flex items-center gap-2 text-xs font-bold text-text-secondary dark:text-slate-300 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={assignedToMe}
+                    onChange={(e) => updateListQuery({ assignedToMe: e.target.checked ? "true" : null, page: 1 })}
+                    className="h-4 w-4 rounded border-slate-300 text-teal-600 focus:ring-teal-500/20 bg-white dark:bg-slate-950/20"
+                  />
+                  <span>{t("filters.assignedToMe")}</span>
+                </label>
+
+                {hasActiveFilters && (
+                  <button
+                    onClick={() =>
+                      updateListQuery({
+                        status: null,
+                        category: null,
+                        priority: null,
+                        assignedToMe: null,
+                        page: 1,
+                      })
+                    }
+                    className="text-[10px] font-bold text-teal-600 hover:text-teal-700 dark:text-teal-400 transition"
+                  >
+                    {locale === "ar" ? "إعادة تعيين" : "Reset"}
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Threads list */}
+            {tickets.isLoading ? (
+              <div className="flex items-center justify-center p-8 text-xs text-text-muted animate-pulse">
+                {t("list.countLoading")}...
+              </div>
+            ) : tickets.isError ? (
+              <div className="p-4 text-center">
+                <p className="text-xs text-rose-500 mb-2">{t("states.listError.note")}</p>
+                <button
+                  onClick={() => tickets.refetch()}
+                  className="text-xs font-semibold text-primary underline"
+                >
+                  {t("states.listError.retry")}
+                </button>
+              </div>
+            ) : filteredItems.length === 0 ? (
+              <div className="p-8 text-center text-xs text-text-muted">
+                {t("states.empty.heading")}
+              </div>
+            ) : (
+              filteredItems.map((ticket) => (
+                <ChatThreadListItem
+                  key={ticket.id}
+                  onClick={() => openTicket(ticket)}
+                  thread={{
+                    id: ticket.id,
+                    title: ticket.subject,
+                    subtitle: t(`categories.${ticket.category}` as Parameters<typeof t>[0]),
+                    lastMessage: locale === "ar" ? "اضغط لعرض المحادثة..." : "Click to view conversation...",
+                    lastMessageAt: formatDateTime(ticket.lastMessageAt || ticket.createdAt, locale),
+                    unreadCount: ticket.unreadCount,
+                    lane: "support",
+                    statusLabel: t(`statuses.${ticket.status}` as Parameters<typeof t>[0]),
+                    priorityLabel: t(`priorities.${ticket.priority}` as Parameters<typeof t>[0]),
+                    isActive: ticket.id === selectedTicketId,
+                  }}
+                />
+              ))
+            )}
+
+            {/* Compact pagination controls */}
+            {data && data.pagination.totalPages > 1 && (
+              <div className="mt-auto p-3 border-t border-slate-100 dark:border-white/5 flex items-center justify-between text-[11px] text-text-muted bg-white dark:bg-transparent shrink-0">
+                <button
+                  disabled={data.pagination.page <= 1}
+                  onClick={() => updateListQuery({ page: data.pagination.page - 1 })}
+                  className="px-2.5 py-1 rounded-lg border border-slate-200 dark:border-white/5 hover:bg-slate-50 dark:hover:bg-white/5 disabled:opacity-40"
+                >
+                  {locale.startsWith("ar") ? "السابق" : "Prev"}
+                </button>
+                <span>
+                  {data.pagination.page} / {data.pagination.totalPages}
+                </span>
+                <button
+                  disabled={data.pagination.page >= data.pagination.totalPages}
+                  onClick={() => updateListQuery({ page: data.pagination.page + 1 })}
+                  className="px-2.5 py-1 rounded-lg border border-slate-200 dark:border-white/5 hover:bg-slate-50 dark:hover:bg-white/5 disabled:opacity-40"
+                >
+                  {locale.startsWith("ar") ? "التالي" : "Next"}
+                </button>
+              </div>
+            )}
+          </ChatThreadList>
         </div>
-      }
-    >
 
-      <DataTable
-        data={data?.items ?? []}
-        columns={columns}
-        getRowId={(row) => row.id}
-        loading={tickets.isLoading}
-        error={tickets.isError ? t("states.listError.note") : null}
-        errorState={{
-          title: t("states.listError.heading"),
-          description: t("states.listError.note"),
-          action: {
-            label: t("states.listError.retry"),
-            onClick: () => tickets.refetch(),
-          },
-        }}
-        emptyState={{
-          icon: <Headset className="h-5 w-5 text-primary" />,
-          title: t("states.empty.heading"),
-          description: t("states.empty.note"),
-        }}
-        sortConfig={sortConfig}
-        onSortChange={(nextSort) =>
-          updateListQuery({
-            sortBy: nextSort.column,
-            sortDir: nextSort.direction,
-          })
-        }
-        rowActions={(row) => (
-          <ActionIconButton
-            intent="view"
-            label={t("list.openTicket")}
-            icon={<Headset className="h-4 w-4" />}
-            onClick={() => router.push(`/admin/support/${row.id}` as never)}
-          />
-        )}
-        pagination={
-          data
-            ? {
-                page: data.pagination.page,
-                limit: data.pagination.limit,
-                total: data.pagination.totalItems,
-                totalPages: data.pagination.totalPages,
-                hasPrevPage: data.pagination.page > 1,
-                hasNextPage: data.pagination.page < data.pagination.totalPages,
-              }
-            : undefined
-        }
-        onPageChange={(nextPage) => updateListQuery({ page: nextPage })}
-        onPageSizeChange={(nextLimit) => updateListQuery({ limit: nextLimit, page: 1 })}
-        pageSizeOptions={PAGE_SIZE_OPTIONS}
-        ariaLabel={t("list.heading")}
-        caption={t("list.heading")}
-      />
-    </AdminOperationalListShell>
+        {/* Right Conversation Panel / Empty State Column */}
+        <div className={cn("h-full flex flex-col flex-1", ticketId ? "w-full flex" : "hidden lg:flex")}>
+          {selectedTicketId ? (
+            <AdminSupportTicketScreen ticketId={selectedTicketId} />
+          ) : (
+            <ChatEmptyState message={t("states.empty.heading")} />
+          )}
+        </div>
+      </ChatWorkspaceShell>
+    </section>
   );
 }

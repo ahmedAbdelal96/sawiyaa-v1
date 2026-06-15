@@ -9,6 +9,7 @@ import {
   AlertTriangle,
   CalendarClock,
   Clock3,
+  Compass,
   Plus,
   RefreshCw,
   Search,
@@ -408,21 +409,21 @@ export default function AdminSessionsListScreen() {
           <>
             <Link
               href="/admin/sessions/cancellation-policies"
-              className="inline-flex items-center justify-center rounded-xl border border-border-light bg-white px-4 py-2 text-sm font-semibold text-text-primary shadow-theme-xs transition hover:border-primary/30 hover:bg-surface-secondary"
+              className="inline-flex items-center justify-center rounded-xl border border-border-light bg-surface-secondary px-4 py-2 text-sm font-semibold text-text-primary hover:bg-surface-tertiary"
             >
               {t("policy.actions.openEditor")}
             </Link>
             <button
               type="button"
               onClick={() => sessions.refetch()}
-              className="inline-flex items-center justify-center gap-2 rounded-xl border border-border-light bg-white px-4 py-2 text-sm font-semibold text-text-primary shadow-theme-xs transition hover:border-primary/30 hover:bg-surface-secondary"
+              className="inline-flex items-center justify-center gap-2 rounded-xl border border-border-light bg-surface-secondary px-4 py-2 text-sm font-semibold text-text-primary hover:bg-surface-tertiary"
             >
               <RefreshCw className="h-4 w-4" />
               {locale === "ar" ? "تحديث" : "Refresh"}
             </button>
             <button
               type="button"
-              className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white shadow-[0_10px_24px_-18px_rgba(0,106,96,0.45)] transition hover:bg-primary/90"
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary-hover"
             >
               <Plus className="h-4 w-4" />
               {locale === "ar" ? "جلسة جديدة" : "New Session"}
@@ -466,7 +467,7 @@ export default function AdminSessionsListScreen() {
                         page: 1,
                       })
                     }
-                    className="app-control w-full rounded-full bg-white px-4 py-3 ps-11 text-sm shadow-theme-xs"
+                    className="app-control w-full rounded-full bg-surface-tertiary px-4 py-3 ps-11 text-sm shadow-theme-xs"
                     placeholder={
                       locale === "ar"
                         ? "ابحث باسم المريض أو المعالج أو رقم الجلسة..."
@@ -479,12 +480,12 @@ export default function AdminSessionsListScreen() {
             </div>
 
             <div className="mt-4 flex flex-wrap items-end gap-3">
-              <div className="inline-flex items-center gap-2 rounded-full border border-border-light bg-white px-3 py-2 text-sm text-text-primary shadow-theme-xs">
+              <div className="inline-flex items-center gap-2 rounded-full border border-border-light bg-surface-tertiary px-3 py-2 text-sm text-text-secondary">
                 <span className="h-1.5 w-1.5 rounded-full bg-primary" />
                 {locale === "ar" ? "الفلاتر" : "Filters"}
               </div>
 
-              <label className="inline-flex items-center gap-2 rounded-full border border-border-light bg-white px-3 py-2 text-sm text-text-primary shadow-theme-xs">
+              <label className={cn("inline-flex items-center gap-2 rounded-full border px-3 py-2 text-sm shadow-theme-xs cursor-pointer transition", lateOnly ? "bg-primary-light border-primary/30 text-text-brand" : "bg-surface-tertiary border-border-light text-text-secondary hover:text-text-primary")}>
                 <input
                   type="checkbox"
                   checked={lateOnly}
@@ -499,7 +500,7 @@ export default function AdminSessionsListScreen() {
                 {locale === "ar" ? "الجلسات المتأخرة" : "Delayed sessions"}
               </label>
 
-              <label className="inline-flex items-center gap-2 rounded-full border border-border-light bg-white px-3 py-2 text-sm text-text-primary shadow-theme-xs">
+              <label className={cn("inline-flex items-center gap-2 rounded-full border px-3 py-2 text-sm shadow-theme-xs cursor-pointer transition", missingAttendanceOnly ? "bg-primary-light border-primary/30 text-text-brand" : "bg-surface-tertiary border-border-light text-text-secondary hover:text-text-primary")}>
                 <input
                   type="checkbox"
                   checked={missingAttendanceOnly}
@@ -574,7 +575,7 @@ export default function AdminSessionsListScreen() {
           <button
             type="button"
             onClick={() => sessions.refetch()}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-border-light bg-white px-3 py-1.5 text-xs font-semibold text-text-primary transition hover:border-primary/25 hover:bg-surface-secondary"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-border-light bg-surface-secondary px-3 py-1.5 text-xs font-semibold text-text-secondary transition hover:bg-surface-tertiary hover:text-text-primary"
           >
             <RefreshCw className="h-3.5 w-3.5" />
             {locale === "ar" ? "تحديث" : "Refresh"}
@@ -764,7 +765,7 @@ export default function AdminSessionsListScreen() {
                         </td>
 
                         <td className="px-4 py-4 sm:px-6">
-                          <div className="flex items-center justify-end">
+                          <div className="flex items-center justify-end gap-1.5">
                             <ActionIconButton
                               intent="view"
                               label={locale === "ar" ? "فتح المعاينة" : "Open runtime"}
@@ -772,6 +773,15 @@ export default function AdminSessionsListScreen() {
                               onClick={(event) => {
                                 event.stopPropagation();
                                 router.push(`/admin/sessions/runtime-inspection?sessionId=${row.id}` as never);
+                              }}
+                            />
+                            <ActionIconButton
+                              intent="view"
+                              label={locale === "ar" ? "فحص التشغيل التفصيلي" : "Open full inspector"}
+                              icon={<Compass className="h-4 w-4" />}
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                router.push(`/admin/sessions/runtime-inspector?sessionId=${row.id}` as never);
                               }}
                             />
                           </div>
@@ -795,6 +805,8 @@ export default function AdminSessionsListScreen() {
                     currentPage={activePage}
                     totalPages={paginationTotalPages}
                     onPageChange={(nextPage) => updateListQuery({ page: nextPage })}
+                    prevLabel={locale === "ar" ? "السابق" : "Previous"}
+                    nextLabel={locale === "ar" ? "التالي" : "Next"}
                   />
                 ) : null}
               </div>
@@ -852,7 +864,7 @@ export default function AdminSessionsListScreen() {
                   </p>
                 </div>
 
-                <div className="rounded-[22px] border border-border-light bg-white p-4 shadow-theme-xs">
+                <div className="rounded-[22px] border border-border-light bg-surface-tertiary p-4">
                   <p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
                     {locale === "ar" ? "المستفيد" : "Beneficiary"}
                   </p>
@@ -864,7 +876,7 @@ export default function AdminSessionsListScreen() {
                   </p>
                 </div>
 
-                <div className="rounded-[22px] border border-border-light bg-white p-4 shadow-theme-xs">
+                <div className="rounded-[22px] border border-border-light bg-surface-tertiary p-4">
                   <p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
                     {locale === "ar" ? "المعالج" : "Practitioner"}
                   </p>
@@ -875,7 +887,7 @@ export default function AdminSessionsListScreen() {
                 </div>
               </div>
 
-              <div className="rounded-[24px] border border-border-light bg-white p-4 shadow-theme-xs">
+              <div className="rounded-[24px] border border-border-light bg-surface-tertiary p-4">
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
@@ -914,29 +926,43 @@ export default function AdminSessionsListScreen() {
                         : "Live data from the runtime inspection endpoint."}
                     </p>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      router.push(
-                        `/admin/sessions/runtime-inspection?sessionId=${selectedSession.id}` as never,
-                      )
-                    }
-                    className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary/90"
-                  >
-                    <CalendarClock className="h-4 w-4" />
-                    {locale === "ar" ? "فتح الصفحة" : "Open page"}
-                  </button>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        router.push(
+                          `/admin/sessions/runtime-inspection?sessionId=${selectedSession.id}` as never,
+                        )
+                      }
+                      className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary/90"
+                    >
+                      <CalendarClock className="h-4 w-4" />
+                      {locale === "ar" ? "فتح الصفحة" : "Open page"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        router.push(
+                          `/admin/sessions/runtime-inspector?sessionId=${selectedSession.id}` as never,
+                        )
+                      }
+                      className="inline-flex items-center gap-2 rounded-xl border border-primary/30 bg-primary-light px-4 py-2 text-sm font-semibold text-primary transition hover:bg-primary/15"
+                    >
+                      <Compass className="h-4 w-4" />
+                      {locale === "ar" ? "فحص التشغيل التفصيلي" : "Full inspector"}
+                    </button>
+                  </div>
                 </div>
 
                 <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                  <div className="rounded-[20px] border border-border-light bg-white p-4">
+                  <div className="rounded-[20px] border border-border-light bg-surface-tertiary p-4">
                     <p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
                       {locale === "ar" ? "المزوّد" : "Provider"}
                     </p>
                     <p className="mt-2 text-sm font-semibold text-text-primary">{runtimeItem?.provider ?? "-"}</p>
                   </div>
 
-                  <div className="rounded-[20px] border border-border-light bg-white p-4">
+                  <div className="rounded-[20px] border border-border-light bg-surface-tertiary p-4">
                     <p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
                       {locale === "ar" ? "يمكن الانضمام" : "Can join"}
                     </p>
@@ -947,7 +973,7 @@ export default function AdminSessionsListScreen() {
                 </div>
               </div>
 
-              <div className="rounded-[24px] border border-border-light bg-white p-4 shadow-theme-xs">
+              <div className="rounded-[24px] border border-border-light bg-surface-tertiary p-4">
                 <p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
                   {locale === "ar" ? "الحضور" : "Attendance"}
                 </p>

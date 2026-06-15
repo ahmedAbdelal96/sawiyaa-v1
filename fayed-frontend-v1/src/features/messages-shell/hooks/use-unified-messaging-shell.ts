@@ -85,13 +85,7 @@ function buildCareHref(role: UnifiedMessagingRole, requestId: string) {
 }
 
 function buildSupportHref(role: UnifiedMessagingRole, ticketId: string) {
-  if (role === "patient") {
-    return `/patient/support/${ticketId}`;
-  }
-  if (role === "practitioner") {
-    return `/practitioner/support/${ticketId}`;
-  }
-  return `/admin/support/${ticketId}`;
+  return `/${role}/messages?lane=support&id=${ticketId}`;
 }
 
 function buildSessionRootHref(role: UnifiedMessagingRole) {
@@ -107,9 +101,7 @@ function buildCareRootHref(role: UnifiedMessagingRole) {
 }
 
 function buildSupportRootHref(role: UnifiedMessagingRole) {
-  if (role === "patient") return "/patient/support";
-  if (role === "practitioner") return "/practitioner/support";
-  return "/admin/support";
+  return `/${role}/messages?lane=support`;
 }
 
 function getSessionPriority(status: SessionPresentationStatus) {

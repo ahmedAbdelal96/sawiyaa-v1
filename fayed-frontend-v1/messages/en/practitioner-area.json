@@ -711,6 +711,7 @@
     "schedule": {
       "heading": "Weekly schedule",
       "description": "Choose a day, then set 30-minute and 60-minute slots independently.",
+      "recurrenceNote": "This is a recurring weekly schedule. It will be used for future weeks unless you edit it or add an exception for a specific day.",
       "timezoneLabel": "Timezone",
       "noTimezone": "No timezone is set on your profile. Please update your timezone in Profile before setting your schedule.",
       "noSlots": "No slots",
@@ -766,6 +767,7 @@
     "exceptions": {
       "heading": "Edit a specific day",
       "description": "Choose a date to adjust your availability without changing your weekly schedule.",
+      "dayNote": "Specific-day adjustments apply only to this date and do not change your recurring weekly schedule.",
       "dateMode": {
         "eyebrow": "Date",
         "title": "Edit a specific day",
@@ -790,30 +792,35 @@
         "delete": "Could not delete the exception. Please try again."
       },
       "labels": {
-        "blockTime": "Blocked time",
-        "dayOff": "Day off",
+        "blockTime": "Prevent bookings during a specific time",
+        "dayOff": "Prevent bookings for the full day",
         "extraAvailability": "Extra availability",
         "active": "Active",
-        "fullDay": "Full day"
+        "fullDay": "Full day",
+        "preventBookings": "Prevent bookings",
+        "blockedTimes": "Booking blocked times",
+        "duration": "Duration"
       },
       "modes": {
         "blockTimes": {
-          "title": "Block selected times",
-          "description": "Pick a start and end time to pause bookings within this day.",
-          "helper": "Tap the start slot and then the end slot. The blocked period will be saved directly.",
-          "cta": "Save blocked times"
+          "title": "Prevent bookings during specific times",
+          "description": "Choose times inside this day to stop bookings there.",
+          "helper": "Choose the range start and end, then save the booking-blocked times.",
+          "cta": "Save booking-blocked times"
         },
         "dayOff": {
-          "title": "Close the full day",
-          "description": "Make this full day unavailable for bookings.",
-          "helper": "Use this to close the whole day without entering any times.",
-          "cta": "Close this day"
+          "title": "Prevent bookings for the full day",
+          "description": "Make this day unavailable for bookings.",
+          "helper": "This prevents bookings for this day only. You can add an optional internal note.",
+          "cta": "Prevent bookings for this day",
+          "noteTitle": "Prevent bookings for the full day",
+          "note": "This action prevents bookings for this date only."
         },
         "extraAvailability": {
           "title": "Add extra times",
           "description": "Add bookable time outside your usual weekly schedule.",
-          "helper": "Choose an available time range for this day and save it.",
-          "cta": "Add available times"
+          "helper": "Choose the time range you want to open for bookings on this date.",
+          "cta": "Save extra times"
         }
       },
       "picker": {
@@ -859,10 +866,42 @@
         "dateRequired": "Date is required.",
         "slotRequired": "Choose a start and end slot for the range.",
         "endAfterStart": "End time must be after start time.",
-        "datesRequired": "Date, start time, and end time are required."
+        "datesRequired": "Date, start time, and end time are required.",
+        "actionRequired": "Choose an adjustment type."
       },
       "actions": {
         "remove": "Remove"
+      },
+      "steps": {
+        "eyebrow": "Specific-day adjustment",
+        "step1": "1. Choose date",
+        "step1Hint": "Pick the day you want to adjust.",
+        "step2": "2. Choose adjustment type",
+        "step2Hint": "Only the selected action expands.",
+        "step3": "3. Review current adjustments",
+        "step3Hint": "Check what is already saved for this date."
+      },
+      "actionHeading": "Choose one adjustment type",
+      "actionHint": "Only one action opens at a time, so the form stays compact and easy to scan.",
+      "selectedAction": "Selected",
+      "dateSummary": {
+        "noDateSelected": "Pick a date first",
+        "date": "Date",
+        "weekday": "Weekday",
+        "timezone": "Timezone",
+        "weeklyStatus": "Weekly schedule",
+        "followsWeeklySchedule": "Follows the weekly schedule",
+        "noWeeklySchedule": "Does not follow the weekly schedule",
+        "hasExceptions": "This day has an exception",
+        "noExceptionsForDay": "No exceptions for this day",
+        "note": "This adjustment applies only to this date and does not change your recurring weekly schedule.",
+        "dayHasExceptions": "This day has an exception",
+        "dayBlocked": "Bookings are prevented for this day"
+      },
+      "currentExceptions": {
+        "heading": "Exceptions for this day",
+        "subtitle": "Any adjustments added for this specific date appear here.",
+        "empty": "No exceptions added for this day."
       }
     },
     "application": {
@@ -1400,6 +1439,44 @@
     }
   },
   "application": {
+    "title": "Application",
+    "description": "Check your application status and submit when ready.",
+    "page": {
+      "title": "Application",
+      "subtitle": "Review your readiness and track your application status."
+    },
+    "readiness": {
+      "heading": "Readiness checks",
+      "allPassed": "All requirements met.",
+      "missing": "Missing requirements:"
+    },
+    "submit": {
+      "label": "Submit application",
+      "submitting": "Submitting...",
+      "notReady": "Complete all requirements before submitting.",
+      "confirmHint": "Once submitted, your application will be reviewed by the Fayed team."
+    },
+    "feedback": {
+      "loadError": "Could not load application status. Please try again.",
+      "retry": "Try again",
+      "submitSuccess": "Your application has been submitted successfully.",
+      "submitError": "Could not submit application. Please try again.",
+      "loadErrorNote": "The application summary could not be loaded right now.",
+      "saveSuccess": "Changes saved successfully.",
+      "saveError": "Could not save changes right now. Please try again."
+    },
+    "completion": {
+      "stepStatus": {
+        "complete": "Complete",
+        "warning": "Warning",
+        "incomplete": "Incomplete"
+      },
+      "severity": {
+        "BLOCKER": "Required",
+        "WARNING": "Warning",
+        "INFO": "Info"
+      }
+    },
     "pending": {
       "title": "Your application is under review",
       "subtitle": "We have received your application and the Fayed team is reviewing it now. We will notify you of any updates.",
@@ -1419,18 +1496,63 @@
       "APPROVED": "Your application has been successfully approved and your practitioner account is now active."
     },
     "wizard": {
+      "eyebrow": "Application wizard",
+      "title": "Complete your application",
+      "lockedTitle": "Application locked",
+      "goToDashboard": "Go to dashboard",
+      "reviewProfile": "Review profile",
       "qualificationsModalDescription": "Add or review the documents that support your application.",
+      "canSubmitBadge": "Ready to submit",
+      "cannotSubmitBadge": "Not ready yet",
+      "missingPrefix": "Missing:",
+      "stepIssuesTitle": "Issues in this step",
+      "stepIssuesBody": "These are the blockers, warnings, or info items that apply to the step you are viewing.",
+      "footerTitle": "Application actions",
+      "footerStepHint": "Save your progress and move to the next step when you are ready.",
+      "footerReviewHint": "Check the summary one last time before you submit.",
+      "actions": {
+        "previous": "Previous",
+        "next": "Next",
+        "saveDraft": "Save draft",
+        "saving": "Saving...",
+        "submit": "Submit application",
+        "submitting": "Submitting...",
+        "resubmit": "Resubmit"
+      },
+      "blockedTitle": "Cannot submit yet",
+      "submitBlocked": "Complete the blockers above before submitting.",
+      "readyTitle": "Ready to submit",
+      "readyBody": "You can submit now. The team will review the completed application.",
+      "requestChangesTitle": "Requested changes",
+      "rejectedTitle": "Application rejected",
+      "reviewHeading": "What the admin will review",
+      "reviewBody": "This summary shows the profile, credentials, pricing, and payout details the admin will check before making a decision.",
       "threeStep": {
+        "professionalSummaryTitle": "Professional summary",
+        "languagesSummary": "Languages",
+        "specialtiesSummary": "Specialties",
+        "credentialsSummary": "Credentials",
+        "languagesModalDescription": "Choose the languages you can work in. The wizard stays compact while you edit them.",
         "helpers": {
           "basic": "Keep your identity details accurate so the review team can easily verify your account.",
+          "professional": "Describe your practice briefly, then open the focused editors for languages, specialties, and credentials.",
+          "qualifications": "Add or review the credentials that support your professional profile.",
+          "documents": "Review the documents attached through your uploaded credentials.",
           "paymentSubmit": "Make sure to complete payout details to submit your application for review."
         }
       },
       "approvedTitle": "Your Application is Approved"
     },
     "status": {
+      "heading": "Application status",
+      "noApplication": "No application submitted yet.",
+      "DRAFT": "Draft",
       "SUBMITTED": "Submitted",
-      "APPROVED": "Approved"
+      "UNDER_REVIEW": "Under review",
+      "APPROVED": "Approved",
+      "REJECTED": "Rejected",
+      "CHANGES_REQUESTED": "Changes requested",
+      "ARCHIVED": "Archived"
     },
     "completionIssues": {
       "codes": {
@@ -1459,8 +1581,11 @@
     "steps": {
       "basicProfile": "Basic Information",
       "professionalDetails": "Professional Profile",
+      "pricing": "Payment & Submission",
       "qualifications": "Qualifications",
-      "pricing": "Payment & Submission"
+      "documents": "Documents",
+      "payoutDetails": "Payout Details",
+      "reviewSubmit": "Review & Submit"
     }
   }
 }

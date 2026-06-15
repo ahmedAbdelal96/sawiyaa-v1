@@ -22,6 +22,7 @@ import { buildUpdatedSearchParams, parseTextParam } from "@/components/ui/data-t
 import { useDebouncedValue } from "@/hooks/use-debounce";
 import { SurfaceCard } from "@/components/shared/SurfaceShell";
 import AdminOperationalListShell, { AdminSummaryCard } from "@/components/shared/admin/AdminOperationalListShell";
+import Select from "@/components/form/Select";
 import {
   useAdminSpecialties,
   useAdminSpecialtyCategories,
@@ -276,6 +277,15 @@ export default function AdminSpecialtiesCatalogScreen() {
     (viewFilter !== "secondary" && filteredCategories.length === 0) ||
     (viewFilter === "secondary" && filteredSecondaryRows.length === 0);
 
+  const filterOptions = useMemo(
+    () => [
+      { value: "all", label: t("specialtiesAdmin.structure.filters.all") },
+      { value: "primary", label: t("specialtiesAdmin.structure.filters.primaryOnly") },
+      { value: "secondary", label: t("specialtiesAdmin.structure.filters.secondaryOnly") },
+    ],
+    [t],
+  );
+
   return (
     <AdminOperationalListShell
       title={t("specialtiesAdmin.title")}
@@ -284,8 +294,8 @@ export default function AdminSpecialtiesCatalogScreen() {
           <div
             className={`rounded-2xl border px-4 py-3 text-sm ${
               feedback.tone === "success"
-                ? "border-primary/15 bg-primary-light text-text-brand dark:border-primary/20 dark:bg-primary/10 dark:text-primary-light"
-                : "border-error-200 bg-error-50 text-error-700 dark:border-error-500/20 dark:bg-error-500/10 dark:text-error-300"
+                ? "border-status-success-border bg-status-success-soft text-status-success"
+                : "border-status-danger-border bg-status-danger-soft text-status-danger"
             }`}
           >
             {feedback.message}
@@ -318,16 +328,13 @@ export default function AdminSpecialtiesCatalogScreen() {
             />
           </div>
 
-          <select
-            value={viewFilter}
-            onChange={(event) => setViewFilter(event.target.value as CatalogFilter)}
-            className="app-control h-11 w-full px-4 xl:w-56"
-            aria-label={t("specialtiesAdmin.structure.viewFilter")}
-          >
-            <option value="all">{t("specialtiesAdmin.structure.filters.all")}</option>
-            <option value="primary">{t("specialtiesAdmin.structure.filters.primaryOnly")}</option>
-            <option value="secondary">{t("specialtiesAdmin.structure.filters.secondaryOnly")}</option>
-          </select>
+          <Select
+            key={`viewFilter-${viewFilter}`}
+            defaultValue={viewFilter}
+            onChange={(value) => setViewFilter(value as CatalogFilter)}
+            options={filterOptions}
+            className="h-11 w-full xl:w-56"
+          />
 
           <div className="flex w-full flex-col gap-3 sm:flex-row xl:w-auto">
             <Button onClick={openCreateCategoryModal} startIcon={<Layers className="h-4 w-4" />}>
@@ -343,7 +350,7 @@ export default function AdminSpecialtiesCatalogScreen() {
       <section className="space-y-4">
         <SurfaceCard as="section" variant="section">
           <div className="border-b border-border-light px-5 py-4">
-            <h3 className="text-sm font-semibold text-text-primary dark:text-white/95">
+            <h3 className="text-sm font-semibold text-text-primary">
               {t("specialtiesAdmin.structure.tableHeading")}
             </h3>
           </div>
@@ -357,7 +364,7 @@ export default function AdminSpecialtiesCatalogScreen() {
 
           {isError ? (
             <div className="space-y-3 px-5 py-8">
-              <p className="text-sm text-error-700 dark:text-error-300">
+              <p className="text-sm text-status-danger">
                 {t("specialtiesAdmin.states.error.note")}
               </p>
               <Button
@@ -376,20 +383,20 @@ export default function AdminSpecialtiesCatalogScreen() {
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-border-light">
                 <thead>
-                  <tr className="bg-surface-secondary/45">
-                    <th className="px-5 py-3 text-start text-xs font-semibold uppercase tracking-wide text-text-muted">
+                  <tr className="bg-surface-tertiary border-b border-border-light">
+                    <th className="px-5 py-3 text-start text-xs font-semibold uppercase tracking-wide text-text-secondary">
                       {t("specialtiesAdmin.structure.columns.name")}
                     </th>
-                    <th className="px-5 py-3 text-start text-xs font-semibold uppercase tracking-wide text-text-muted">
+                    <th className="px-5 py-3 text-start text-xs font-semibold uppercase tracking-wide text-text-secondary">
                       {t("specialtiesAdmin.structure.columns.type")}
                     </th>
-                    <th className="px-5 py-3 text-start text-xs font-semibold uppercase tracking-wide text-text-muted">
+                    <th className="px-5 py-3 text-start text-xs font-semibold uppercase tracking-wide text-text-secondary">
                       {t("specialtiesAdmin.structure.columns.order")}
                     </th>
-                    <th className="px-5 py-3 text-start text-xs font-semibold uppercase tracking-wide text-text-muted">
+                    <th className="px-5 py-3 text-start text-xs font-semibold uppercase tracking-wide text-text-secondary">
                       {t("specialtiesAdmin.structure.columns.updated")}
                     </th>
-                    <th className="px-5 py-3 text-end text-xs font-semibold uppercase tracking-wide text-text-muted">
+                    <th className="px-5 py-3 text-end text-xs font-semibold uppercase tracking-wide text-text-secondary">
                       {t("specialtiesAdmin.structure.columns.actions")}
                     </th>
                   </tr>
@@ -402,7 +409,7 @@ export default function AdminSpecialtiesCatalogScreen() {
                       const isExpanded = expandedCategoryIds.has(category.id);
                       return (
                         <Fragment key={category.id}>
-                          <tr className="bg-primary-light/10 dark:bg-primary/10">
+                          <tr className="bg-surface-secondary hover:bg-surface-tertiary transition-colors">
                             <td className="px-5 py-4">
                               <div className="flex items-center gap-2">
                                 <button
@@ -418,7 +425,7 @@ export default function AdminSpecialtiesCatalogScreen() {
                                   )}
                                 </button>
                                 <div className="min-w-0">
-                                  <p className="truncate text-sm font-semibold text-text-primary dark:text-white/95">
+                                  <p className="truncate text-sm font-semibold text-text-primary">
                                     {category.name}
                                   </p>
                                   <p className="mt-0.5 text-xs text-text-muted">{category.slug}</p>
@@ -429,10 +436,10 @@ export default function AdminSpecialtiesCatalogScreen() {
                               <div className="flex items-center gap-2">
                                 <span>{t("specialtiesAdmin.structure.types.primary")}</span>
                                 <span
-                                  className={`app-chip rounded-full px-2.5 py-1 text-xs ${
+                                  className={`rounded-full border px-2.5 py-1 text-xs ${
                                     category.isActive
-                                      ? ""
-                                      : "border-warning-300 bg-warning-50 text-warning-800 dark:border-warning-500/30 dark:bg-warning-500/10 dark:text-warning-300"
+                                      ? "border-status-success-border bg-status-success-soft text-status-success"
+                                      : "border-status-warning-border bg-status-warning-soft text-status-warning"
                                   }`}
                                 >
                                   {category.isActive
@@ -479,14 +486,14 @@ export default function AdminSpecialtiesCatalogScreen() {
                           {isExpanded
                             ? categorySpecialties.length > 0
                               ? categorySpecialties.map((specialty) => (
-                                <tr key={specialty.id}>
+                                <tr key={specialty.id} className="bg-surface-secondary hover:bg-surface-tertiary transition-colors">
                                   <td className="px-5 py-4">
                                     <div className="flex items-center gap-2 ps-8">
                                       <span className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-primary-light text-primary dark:bg-primary/15 dark:text-primary-light">
                                         <Tag className="h-4 w-4" />
                                       </span>
                                       <div className="min-w-0">
-                                        <p className="truncate text-sm font-semibold text-text-primary dark:text-white/95">
+                                        <p className="truncate text-sm font-semibold text-text-primary">
                                           {specialty.name ?? specialty.slug}
                                         </p>
                                         <p className="mt-0.5 text-xs text-text-muted">{specialty.slug}</p>
@@ -497,10 +504,10 @@ export default function AdminSpecialtiesCatalogScreen() {
                                     <div className="flex items-center gap-2">
                                       <span>{t("specialtiesAdmin.structure.types.secondary")}</span>
                                       <span
-                                        className={`app-chip rounded-full px-2.5 py-1 text-xs ${
+                                        className={`rounded-full border px-2.5 py-1 text-xs ${
                                           specialty.isActive
-                                            ? ""
-                                            : "border-warning-300 bg-warning-50 text-warning-800 dark:border-warning-500/30 dark:bg-warning-500/10 dark:text-warning-300"
+                                            ? "border-status-success-border bg-status-success-soft text-status-success"
+                                            : "border-status-warning-border bg-status-warning-soft text-status-warning"
                                         }`}
                                       >
                                         {specialty.isActive
@@ -541,7 +548,7 @@ export default function AdminSpecialtiesCatalogScreen() {
                                 </tr>
                               ))
                               : (
-                                <tr>
+                                <tr className="bg-surface-secondary">
                                   <td colSpan={5} className="px-5 py-3 text-sm text-text-muted">
                                     {t("specialtiesAdmin.structure.emptySecondaryInCategory")}
                                   </td>
@@ -552,14 +559,14 @@ export default function AdminSpecialtiesCatalogScreen() {
                       );
                     })
                     : filteredSecondaryRows.map((specialty) => (
-                      <tr key={specialty.id}>
+                      <tr key={specialty.id} className="bg-surface-secondary hover:bg-surface-tertiary transition-colors">
                         <td className="px-5 py-4">
                           <div className="flex items-center gap-2">
                             <span className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-primary-light text-primary dark:bg-primary/15 dark:text-primary-light">
                               <Tag className="h-4 w-4" />
                             </span>
                             <div className="min-w-0">
-                              <p className="truncate text-sm font-semibold text-text-primary dark:text-white/95">
+                              <p className="truncate text-sm font-semibold text-text-primary">
                                 {specialty.name ?? specialty.slug}
                               </p>
                               <p className="mt-0.5 text-xs text-text-muted">{specialty.slug}</p>
@@ -574,10 +581,10 @@ export default function AdminSpecialtiesCatalogScreen() {
                                 : t("specialtiesAdmin.structure.types.secondary")}
                             </span>
                             <span
-                              className={`app-chip rounded-full px-2.5 py-1 text-xs ${
+                              className={`rounded-full border px-2.5 py-1 text-xs ${
                                 specialty.isActive
-                                  ? ""
-                                  : "border-warning-300 bg-warning-50 text-warning-800 dark:border-warning-500/30 dark:bg-warning-500/10 dark:text-warning-300"
+                                  ? "border-status-success-border bg-status-success-soft text-status-success"
+                                  : "border-status-warning-border bg-status-warning-soft text-status-warning"
                               }`}
                             >
                               {specialty.isActive
@@ -706,11 +713,11 @@ export default function AdminSpecialtiesCatalogScreen() {
         loading={toggleMutation.isPending}
       >
         {specialtyPendingDeactivate ? (
-          <div className="rounded-2xl border border-warning-200 bg-warning-50 px-4 py-4 text-sm text-warning-800 dark:border-warning-500/20 dark:bg-warning-500/10 dark:text-warning-300">
+          <div className="rounded-2xl border border-status-warning-border bg-status-warning-soft px-4 py-4 text-sm text-status-warning">
             <p className="font-medium">
               {specialtyPendingDeactivate.name ?? specialtyPendingDeactivate.slug}
             </p>
-            <p className="mt-1 text-xs text-warning-700/80 dark:text-warning-300/80">
+            <p className="mt-1 text-xs text-status-warning/80">
               {specialtyPendingDeactivate.slug}
             </p>
           </div>

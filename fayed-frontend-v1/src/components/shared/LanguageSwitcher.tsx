@@ -3,6 +3,7 @@
 import { useLocale } from "next-intl";
 import { useRouter, usePathname } from "@/i18n/navigation";
 import { useState, useRef, useEffect } from "react";
+import { Globe } from "lucide-react";
 
 const localeData: Record<string, { name: string; nativeName: string; flag: string }> = {
   ar: { name: "Arabic", nativeName: "العربية", flag: "AR" },
@@ -38,10 +39,13 @@ export function LanguageSwitcher() {
     <div className="relative" ref={dropdownRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm transition-all hover:border-gray-300 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary/20 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
+        className="flex items-center gap-2.5 h-11 rounded-2xl border border-border-light bg-surface-secondary px-3.5 text-sm font-medium shadow-sm transition-all duration-200 hover:-translate-y-[1px] hover:shadow-md hover:border-primary/20 hover:bg-primary-light/40 dark:hover:border-primary/30 dark:hover:bg-primary/10 focus:outline-none"
       >
-        <span className="text-xs font-semibold">{currentLocale.flag}</span>
-        <span className="hidden sm:inline">{currentLocale.nativeName}</span>
+        <Globe className="h-4 w-4 text-text-muted shrink-0" />
+        <div className="flex flex-col items-start leading-none gap-0.5 text-start">
+          <span className="text-xs font-bold text-text-primary">{currentLocale.nativeName}</span>
+          <span className="text-[9px] font-semibold text-text-muted uppercase tracking-wider">{currentLocale.flag}</span>
+        </div>
       </button>
 
       {isOpen && (

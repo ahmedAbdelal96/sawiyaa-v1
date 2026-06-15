@@ -321,6 +321,7 @@ export default function PackagePurchaseFlowModal({
         purchaseId,
         input: {
           acceptedRefundPolicyId: acceptedRefundPolicyId ?? "",
+          returnUrl: typeof window !== "undefined" ? window.location.href : undefined,
         },
       });
       const payment = paymentResponse.item;

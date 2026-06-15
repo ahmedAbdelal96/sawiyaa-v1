@@ -30,15 +30,15 @@ const Button: React.FC<ButtonProps> = ({
   // Variant Classes - Using semantic theme classes
   const variantClasses = {
     primary:
-      "bg-primary text-white shadow-[0_12px_24px_-16px_rgba(68,161,148,0.34)] hover:bg-primary-hover hover:shadow-[0_14px_28px_-18px_rgba(68,161,148,0.4)] disabled:opacity-50",
+      "bg-primary text-white shadow-[0_12px_24px_-16px_rgba(68,161,148,0.34)] hover:bg-primary-hover hover:shadow-[0_14px_28px_-18px_rgba(68,161,148,0.4)]",
     outline:
-      "border border-border-light bg-white text-text-primary shadow-[0_10px_20px_-16px_rgba(34,52,56,0.08)] hover:border-primary/30 hover:bg-brand-25 dark:bg-surface-secondary dark:text-text-primary dark:hover:bg-surface-tertiary",
+      "border border-border-light bg-surface-secondary text-text-primary hover:bg-surface-tertiary",
     secondary:
-      "bg-brand-50 text-text-brand hover:bg-brand-100 dark:bg-primary/15 dark:text-primary-light disabled:opacity-50",
+      "border border-border-light bg-surface-secondary text-text-primary hover:bg-surface-tertiary",
     ghost:
-      "bg-transparent text-text-primary hover:bg-primary-light dark:text-text-primary dark:hover:bg-surface-tertiary disabled:opacity-50",
+      "bg-transparent text-text-primary hover:bg-surface-tertiary",
     danger:
-      "bg-error-500 text-white shadow-[0_12px_24px_-16px_rgba(240,68,56,0.32)] hover:bg-error-600 disabled:opacity-50",
+      "bg-error-500 text-white shadow-[0_12px_24px_-16px_rgba(240,68,56,0.32)] hover:bg-error-600",
   };
 
   return (
@@ -46,8 +46,10 @@ const Button: React.FC<ButtonProps> = ({
       type={type}
       className={`app-lift inline-flex items-center justify-center gap-2 rounded-2xl font-medium transition-colors ${className} ${
         sizeClasses[size]
-      } ${variantClasses[variant]} ${
-        disabled ? "cursor-not-allowed opacity-50" : "hover:-translate-y-0.5"
+      } ${
+        disabled
+          ? "bg-surface-tertiary/60 text-text-muted border border-border-light opacity-60 cursor-not-allowed"
+          : `${variantClasses[variant]} hover:-translate-y-0.5`
       }`}
       onClick={onClick}
       disabled={disabled}

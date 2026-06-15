@@ -146,6 +146,7 @@ export type CreatePatientPackagePurchaseRequest = {
 
 export type InitiatePatientPackagePurchasePaymentInput = {
   acceptedRefundPolicyId: string;
+  returnUrl?: string;
 };
 
 export type PatientPackagePurchaseItemResponseData = {

@@ -39,6 +39,7 @@ import { extractApiErrorMessage } from "../../../../src/lib/api";
 import { resolveSupportedCurrencyCode } from "../../../../src/lib/currency";
 import { normalizeAllowedExternalUrl } from "../../../../src/lib/external-url";
 import { trackAnalyticsEvent } from "../../../../src/lib/analytics";
+import { logPaymentInitiationError } from "../../../../src/features/patient/payments/payment-initiation-errors";
 import type {
   PaymobCheckoutMethod,
   SessionPaymentCapabilityMethod,
@@ -343,19 +344,6 @@ function mapBrowserResultToRedirectStatus(
   }
 
   return undefined;
-}
-
-function toPatientSafePaymentError(input: string, fallback: string): string {
-  const normalized = input.trim();
-  if (!normalized) {
-    return fallback;
-  }
-
-  if (/^[A-Z0-9_]+$/.test(normalized) || normalized.includes("PAYMENT_")) {
-    return fallback;
-  }
-
-  return normalized;
 }
 
 export default function SessionPaymentCheckoutScreen() {
@@ -808,12 +796,8 @@ export default function SessionPaymentCheckoutScreen() {
         provider: capabilities?.provider || "unknown",
       });
     } catch (error) {
-      setFlowError(
-        toPatientSafePaymentError(
-          extractApiErrorMessage(error),
-          t("patientPaymentsFlow.checkout.requestFailed"),
-        ),
-      );
+      logPaymentInitiationError("session-payment-initiation", error);
+      setFlowError(t("patientPaymentsFlow.checkout.requestFailed"));
       trackAnalyticsEvent("payment_failed", {
         sessionId: id,
         reason: "initiate_failed",

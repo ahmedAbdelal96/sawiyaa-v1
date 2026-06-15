@@ -30,7 +30,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({ messagingRole }) => {
   return (
     <header
       className={cn(
-        "fixed top-0 z-[60] border-b border-border-light/80 bg-white/95 text-text-primary shadow-[0_10px_24px_-26px_rgba(31,42,45,0.18)] backdrop-blur-xl transition-all duration-300 ease-out",
+        "fixed top-0 z-[60] border-b border-border-light/80 bg-white/95 dark:bg-surface/95 text-text-primary shadow-[0_10px_24px_-26px_rgba(31,42,45,0.18)] backdrop-blur-xl transition-all duration-300 ease-out",
         isMobileOpen ? "inset-x-0" : headerOffsetClass,
       )}
     >
@@ -57,23 +57,24 @@ const AppHeader: React.FC<AppHeaderProps> = ({ messagingRole }) => {
           </div>
         </div>
 
-        <div className="hidden min-w-0 items-center gap-2.5 lg:flex">
+        <div className="hidden min-w-0 items-center gap-3 lg:flex">
           <LanguageSwitcher />
           <ThemeToggleButton />
           {messagingRole ? <MessagesHeaderButton role={messagingRole} /> : null}
-          {messagingRole && messagingRole !== "admin" ? (
+          {messagingRole === "admin" ? (
+            <NotificationDropdown />
+          ) : messagingRole ? (
             <UserNotificationDropdown role={messagingRole} />
           ) : null}
-          <NotificationDropdown />
-          <div className="ml-1.5 shrink-0">
+          <div className="ms-2 shrink-0">
             <UserDropdown compact />
           </div>
         </div>
 
-        <div className="flex items-center gap-2 lg:hidden">
+        <div className="flex items-center gap-3 lg:hidden">
           <LanguageSwitcher />
           <ThemeToggleButton />
-          <div className="ml-1 shrink-0">
+          <div className="ms-2 shrink-0">
             <UserDropdown compact />
           </div>
         </div>

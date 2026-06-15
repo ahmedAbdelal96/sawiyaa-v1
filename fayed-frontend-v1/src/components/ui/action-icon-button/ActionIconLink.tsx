@@ -22,19 +22,14 @@ interface ActionIconLinkProps {
 }
 
 const INTENT_STYLES: Record<ActionIntent, string> = {
-  view: "text-primary border-primary/30 bg-primary/10 hover:bg-primary/15",
-  manage: "text-primary border-primary/30 bg-primary/10 hover:bg-primary/15",
-  edit: "text-amber-700 border-amber-300/70 bg-amber-50 hover:bg-amber-100 dark:text-amber-300 dark:border-amber-500/30 dark:bg-amber-500/12",
-  publish:
-    "text-emerald-700 border-emerald-300/70 bg-emerald-50 hover:bg-emerald-100 dark:text-emerald-300 dark:border-emerald-500/30 dark:bg-emerald-500/12",
-  archive:
-    "text-rose-700 border-rose-300/70 bg-rose-50 hover:bg-rose-100 dark:text-rose-300 dark:border-rose-500/30 dark:bg-rose-500/12",
-  deactivate:
-    "text-rose-700 border-rose-300/70 bg-rose-50 hover:bg-rose-100 dark:text-rose-300 dark:border-rose-500/30 dark:bg-rose-500/12",
-  delete:
-    "text-rose-700 border-rose-300/70 bg-rose-50 hover:bg-rose-100 dark:text-rose-300 dark:border-rose-500/30 dark:bg-rose-500/12",
-  neutral:
-    "text-text-secondary border-border-light bg-surface-secondary hover:bg-surface-tertiary dark:bg-white/5",
+  view: "bg-surface-tertiary border-border-light text-text-secondary hover:text-text-brand hover:border-primary/30",
+  manage: "bg-surface-tertiary border-border-light text-text-secondary hover:text-text-brand hover:border-primary/30",
+  edit: "bg-status-warning-soft text-status-warning border-status-warning-border",
+  publish: "bg-status-success-soft text-status-success border-status-success-border",
+  archive: "bg-status-danger-soft text-status-danger border-status-danger-border",
+  deactivate: "bg-status-danger-soft text-status-danger border-status-danger-border",
+  delete: "bg-status-danger-soft text-status-danger border-status-danger-border",
+  neutral: "bg-surface-tertiary border-border-light text-text-secondary hover:text-text-brand hover:border-primary/30",
 };
 
 export default function ActionIconLink({

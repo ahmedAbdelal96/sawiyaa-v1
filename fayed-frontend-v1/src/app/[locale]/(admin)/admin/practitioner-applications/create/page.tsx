@@ -30,11 +30,11 @@ export default async function AdminCreatePractitionerRoute({ params }: Props) {
       <div className="space-y-4">
         <Link
           href="/admin/practitioner-applications"
-          className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200 dark:hover:bg-gray-800"
+          className="inline-flex items-center gap-1.5 rounded-lg border border-border-light bg-surface-secondary px-3 py-1.5 text-sm font-medium text-text-primary transition hover:bg-surface-tertiary"
         >
           {"<-"} {t("applicationDetails.page.back")}
         </Link>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+        <h1 className="text-2xl font-bold text-text-primary">
           {t("applications.directCreate.modalTitle")}
         </h1>
         <AdminPractitionerCreatePage />

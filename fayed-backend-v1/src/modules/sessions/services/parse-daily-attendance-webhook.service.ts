@@ -63,38 +63,43 @@ export class ParseDailyAttendanceWebhookService {
   }): 'SIGNED' | 'UNSIGNED' {
     const webhookSecret = this.videoCfg.daily.webhookSecret?.trim();
 
-    if (!webhookSecret) {
-      return 'UNSIGNED';
+    // When a webhook secret is configured it MUST be present and valid.
+    // An unsigned request with a configured secret is a rejected request.
+    if (webhookSecret) {
+      const signature = input.signatureHeader?.trim();
+
+      if (!signature) {
+        throw new BadRequestException({
+          messageKey: 'sessions.errors.invalidAttendanceWebhookSignature',
+          error: 'SESSION_ATTENDANCE_INVALID_WEBHOOK_SIGNATURE',
+          messageParams: { reason: 'MISSING_SIGNATURE' },
+        });
+      }
+
+      const candidate = this.extractSignatureCandidate(signature);
+      const expected = createHmac('sha256', webhookSecret)
+        .update(input.rawBody)
+        .digest('hex');
+
+      const candidateBuffer = Buffer.from(candidate, 'utf8');
+      const expectedBuffer = Buffer.from(expected, 'utf8');
+      const isValid =
+        candidateBuffer.length === expectedBuffer.length &&
+        timingSafeEqual(candidateBuffer, expectedBuffer);
+
+      if (!isValid) {
+        throw new BadRequestException({
+          messageKey: 'sessions.errors.invalidAttendanceWebhookSignature',
+          error: 'SESSION_ATTENDANCE_INVALID_WEBHOOK_SIGNATURE',
+          messageParams: { reason: 'INVALID_SIGNATURE' },
+        });
+      }
+
+      return 'SIGNED';
     }
 
-    const signature = input.signatureHeader?.trim();
-
-    if (!signature) {
-      throw new BadRequestException({
-        messageKey: 'sessions.errors.invalidAttendanceWebhookSignature',
-        error: 'SESSION_ATTENDANCE_INVALID_WEBHOOK_SIGNATURE',
-      });
-    }
-
-    const candidate = this.extractSignatureCandidate(signature);
-    const expected = createHmac('sha256', webhookSecret)
-      .update(input.rawBody)
-      .digest('hex');
-
-    const candidateBuffer = Buffer.from(candidate, 'utf8');
-    const expectedBuffer = Buffer.from(expected, 'utf8');
-    const isValid =
-      candidateBuffer.length === expectedBuffer.length &&
-      timingSafeEqual(candidateBuffer, expectedBuffer);
-
-    if (!isValid) {
-      throw new BadRequestException({
-        messageKey: 'sessions.errors.invalidAttendanceWebhookSignature',
-        error: 'SESSION_ATTENDANCE_INVALID_WEBHOOK_SIGNATURE',
-      });
-    }
-
-    return 'SIGNED';
+    // No secret configured — treat as unsigned (dev/preview only)
+    return 'UNSIGNED';
   }
 
   private extractSignatureCandidate(signature: string): string {
@@ -254,6 +259,9 @@ export class ParseDailyAttendanceWebhookService {
       return SessionAttendanceEventType.LEFT;
     }
 
+    // meeting.started / meeting.ended are handled in the use case as
+    // SessionEvent records (evidence only, no session state change).
+    // Return null so the use case can detect and handle them.
     return null;
   }
 

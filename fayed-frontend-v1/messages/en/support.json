@@ -257,6 +257,12 @@
       "MEDIUM": "Normal priority",
       "HIGH": "High priority",
       "URGENT": "Urgent"
+    },
+    "lanes": {
+      "support": "Support",
+      "session": "Session chat",
+      "care": "Care chat",
+      "followup": "Follow-up"
     }
   },
   "admin": {

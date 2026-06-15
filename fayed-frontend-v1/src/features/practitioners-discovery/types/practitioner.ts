@@ -56,6 +56,7 @@ export type PublicPractitioner = {
   yearsExperience: number;
   isVerified: boolean;
   initials: string;
+  avatarUrl: string | null;
 };
 
 /** Legacy filter params used by mock data helpers (not sent to backend). */
@@ -97,4 +98,3 @@ export type PractitionerPagination = {
 
 export const LANGUAGE_CODES: LanguageCode[] = ["ar", "en", "fr"];
 export const COUNTRY_CODES: CountryCode[] = [...SUPPORTED_COUNTRY_CODES];
-

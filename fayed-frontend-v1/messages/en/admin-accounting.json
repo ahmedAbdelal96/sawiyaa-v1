@@ -26,6 +26,9 @@
                  "title":  "Financial Reconciliation",
                  "description":  "Monitor payment, ledger, wallet, and settlement consistency without automatic financial correction.",
                  "safetyNotice":  "This page is for review and diagnostics only. It does not automatically modify balances or accounting entries.",
+                 "settlementCtaTitle":  "Need to record a practitioner settlement?",
+                 "settlementCtaDescription":  "Use the settlement workspace to record the amount actually transferred outside Fayed and keep the payout history in one place.",
+                 "settlementCtaAction":  "Open settlements",
                  "howToUseEyebrow":  "How to use",
                  "howToUseTitle":  "How to use this page",
                  "howToUseDescription":  "Use reconciliation to understand what changed, where it changed, and what to review next.",
@@ -350,12 +353,14 @@
                       "eyebrow":  "Accounting truth",
                       "title":  "Finance dashboard",
                       "note":  "This dashboard reads from General Ledger journals for admin finance visibility.",
+                      "currencyScopeNotice":  "Metrics are calculated for the selected currency only; EGP and USD are not combined into one figure.",
                       "actions":  {
                                       "openLedger":  "Open ledger explorer",
                                       "openOps":  "Open operations events",
                                       "openReconciliation":  "Open reconciliation",
                                       "exportCsv":  "Export CSV",
-                                      "exporting":  "Exporting..."
+                                      "exporting":  "Exporting...",
+                                      "viewDetails":  "View related ledger entries"
                                   },
                       "filters":  {
                                       "from":  "From",
@@ -366,17 +371,17 @@
                                   },
                       "kpis":  {
                                    "grossInflow":  "Gross inflow",
-                                   "grossInflowHint":  "Captured collections in selected range",
+                                   "grossInflowHint":  "Captured payments within the selected period",
                                    "platformRevenue":  "Platform revenue",
-                                   "platformRevenueHint":  "Net platform revenue from journals",
+                                   "platformRevenueHint":  "Net platform revenue from accounting entries",
                                    "practitionerPayable":  "Practitioner payable",
-                                   "practitionerPayableHint":  "Outstanding liability to practitioners",
+                                   "practitionerPayableHint":  "Outstanding unpaid practitioner liability",
                                    "refunds":  "Refund total",
-                                   "refundsHint":  "Succeeded refunds in selected range",
+                                   "refundsHint":  "Refunds generated within the selected period",
                                    "vat":  "VAT total",
-                                   "vatHint":  "VAT payable movement",
+                                   "vatHint":  "VAT movement due for the selected period",
                                    "fees":  "Fees total",
-                                   "feesHint":  "Gateway and transfer fees impact"
+                                   "feesHint":  "Gateway and transfer fee impact"
                                },
                       "charts":  {
                                      "revenue":  {

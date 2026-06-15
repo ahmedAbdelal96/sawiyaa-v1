@@ -58,60 +58,60 @@ const TONE_STYLES: Record<
   }
 > = {
   neutral: {
-    shell: "border-slate-200/80 bg-white shadow-[0_2px_12px_-6px_rgba(15,23,42,0.10)]",
-    value: "text-slate-800",
-    label: "text-slate-500",
-    hint: "text-slate-400",
-    iconShell: "bg-teal-50 text-teal-700 ring-1 ring-teal-200/60",
-    chip: "border-slate-200 bg-slate-50 text-slate-600",
+    shell: "border-border-light bg-surface-secondary",
+    value: "text-text-primary",
+    label: "text-text-secondary",
+    hint: "text-text-muted",
+    iconShell: "bg-primary-light text-text-brand ring-1 ring-primary/20",
+    chip: "border-border-light bg-surface-tertiary text-text-secondary",
   },
   primary: {
-    shell: "border-teal-200/70 bg-white shadow-[0_2px_12px_-6px_rgba(20,150,132,0.12)]",
-    value: "text-teal-800",
-    label: "text-teal-600",
-    hint: "text-teal-500",
-    iconShell: "bg-teal-600 text-white ring-1 ring-teal-700/20",
-    chip: "border-teal-200/80 bg-teal-50 text-teal-700",
+    shell: "border-border-light bg-surface-secondary",
+    value: "text-text-primary",
+    label: "text-text-secondary",
+    hint: "text-text-muted",
+    iconShell: "bg-primary text-white ring-1 ring-primary/20",
+    chip: "border-border-light bg-primary-light text-text-brand",
   },
   success: {
-    shell: "border-emerald-200/70 bg-white shadow-[0_2px_12px_-6px_rgba(16,185,129,0.10)]",
-    value: "text-emerald-800",
-    label: "text-emerald-600",
-    hint: "text-emerald-500",
-    iconShell: "bg-emerald-500 text-white ring-1 ring-emerald-600/20",
-    chip: "border-emerald-200/80 bg-emerald-50 text-emerald-700",
+    shell: "border-border-light bg-surface-secondary",
+    value: "text-text-primary",
+    label: "text-text-secondary",
+    hint: "text-text-muted",
+    iconShell: "bg-status-success-soft text-status-success border border-status-success-border",
+    chip: "bg-status-success-soft text-status-success border border-status-success-border",
   },
   warning: {
-    shell: "border-amber-200/70 bg-white shadow-[0_2px_12px_-6px_rgba(245,158,11,0.10)]",
-    value: "text-amber-800",
-    label: "text-amber-600",
-    hint: "text-amber-500",
-    iconShell: "bg-amber-500 text-white ring-1 ring-amber-600/20",
-    chip: "border-amber-200/80 bg-amber-50 text-amber-700",
+    shell: "border-border-light bg-surface-secondary",
+    value: "text-text-primary",
+    label: "text-text-secondary",
+    hint: "text-text-muted",
+    iconShell: "bg-status-warning-soft text-status-warning border border-status-warning-border",
+    chip: "bg-status-warning-soft text-status-warning border border-status-warning-border",
   },
   danger: {
-    shell: "border-rose-200/70 bg-white shadow-[0_2px_12px_-6px_rgba(244,63,94,0.10)]",
-    value: "text-rose-800",
-    label: "text-rose-600",
-    hint: "text-rose-500",
-    iconShell: "bg-rose-500 text-white ring-1 ring-rose-600/20",
-    chip: "border-rose-200/80 bg-rose-50 text-rose-700",
+    shell: "border-border-light bg-surface-secondary",
+    value: "text-text-primary",
+    label: "text-text-secondary",
+    hint: "text-text-muted",
+    iconShell: "bg-status-danger-soft text-status-danger border border-status-danger-border",
+    chip: "bg-status-danger-soft text-status-danger border border-status-danger-border",
   },
   info: {
-    shell: "border-sky-200/70 bg-white shadow-[0_2px_12px_-6px_rgba(14,165,233,0.10)]",
-    value: "text-sky-800",
-    label: "text-sky-600",
-    hint: "text-sky-500",
-    iconShell: "bg-sky-500 text-white ring-1 ring-sky-600/20",
-    chip: "border-sky-200/80 bg-sky-50 text-sky-700",
+    shell: "border-border-light bg-surface-secondary",
+    value: "text-text-primary",
+    label: "text-text-secondary",
+    hint: "text-text-muted",
+    iconShell: "bg-status-info-soft text-status-info border border-status-info-border",
+    chip: "bg-status-info-soft text-status-info border border-status-info-border",
   },
   finance: {
-    shell: "border-indigo-200/70 bg-white shadow-[0_2px_12px_-6px_rgba(99,102,241,0.10)]",
-    value: "text-indigo-800",
-    label: "text-indigo-600",
-    hint: "text-indigo-500",
-    iconShell: "bg-indigo-500 text-white ring-1 ring-indigo-600/20",
-    chip: "border-indigo-200/80 bg-indigo-50 text-indigo-700",
+    shell: "border-border-light bg-surface-secondary",
+    value: "text-text-primary",
+    label: "text-text-secondary",
+    hint: "text-text-muted",
+    iconShell: "bg-surface-tertiary text-text-secondary border border-border-light",
+    chip: "border-border-light bg-surface-tertiary text-text-secondary",
   },
 };
 
@@ -407,7 +407,7 @@ export function AdminFilterCard({
   return (
     <section
       className={cn(
-        "overflow-hidden rounded-xl border border-border-light bg-white shadow-[0_2px_8px_-4px_rgba(34,52,56,0.10)]",
+        "overflow-hidden rounded-xl border border-border-light bg-surface-secondary",
         className,
       )}
     >
@@ -457,7 +457,7 @@ export function AdminTableSection({
   return (
     <section
       className={cn(
-        "overflow-hidden rounded-xl border border-border-light bg-white shadow-[0_2px_8px_-4px_rgba(34,52,56,0.10)]",
+        "overflow-hidden rounded-xl border border-border-light bg-surface-secondary",
         className,
       )}
     >
@@ -508,7 +508,7 @@ export function AdminSectionCard({
   return (
     <section
       className={cn(
-        "overflow-hidden rounded-xl border border-border-light bg-white shadow-[0_2px_8px_-4px_rgba(34,52,56,0.10)]",
+        "overflow-hidden rounded-xl border border-border-light bg-surface-secondary",
         className,
       )}
     >
@@ -630,8 +630,8 @@ export function AdminTableTabs<T extends string>({
             className={cn(
               "inline-flex items-center gap-1.5 rounded-[14px] px-3 py-1.5 text-sm font-medium transition",
               active
-                ? "bg-white text-text-brand shadow-[0_4px_12px_-8px_rgba(34,52,56,0.20)]"
-                : "text-text-secondary hover:bg-white/70 hover:text-text-primary",
+                ? "bg-surface-secondary text-text-brand border border-border-light"
+                : "text-text-secondary hover:bg-surface-tertiary hover:text-text-primary",
             )}
           >
             <span>{tab.label}</span>
@@ -641,7 +641,7 @@ export function AdminTableTabs<T extends string>({
                   "rounded-full border px-1.5 py-px text-[10px] font-semibold",
                   active
                     ? "border-primary/15 bg-primary-light text-text-brand"
-                    : "border-border-light bg-white text-text-secondary",
+                    : "border-border-light bg-surface-tertiary text-text-secondary",
                 )}
               >
                 {tab.count}
@@ -758,7 +758,7 @@ export function AdminRowActionsMenu({
       <button
         type="button"
         onClick={() => setOpen((value) => !value)}
-        className="dropdown-toggle inline-flex h-8 w-8 items-center justify-center rounded-full border border-border-light bg-white text-text-secondary transition hover:border-primary/25 hover:bg-primary-light/50 hover:text-text-brand"
+        className="dropdown-toggle inline-flex h-8 w-8 items-center justify-center rounded-full border border-border-light bg-surface-secondary text-text-secondary transition hover:border-primary/25 hover:bg-primary-light/50 hover:text-text-brand"
         aria-label={label}
       >
         <MoreHorizontal className="h-3.5 w-3.5" />
@@ -780,8 +780,8 @@ export function AdminRowActionsMenu({
             baseClassName={cn(
               "flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-sm font-medium transition",
               item.danger
-                ? "text-error-700 hover:bg-error-50"
-                : "text-text-primary hover:bg-primary-light/50 hover:text-text-brand",
+                ? "text-status-danger hover:bg-status-danger-soft"
+                : "text-text-primary hover:bg-surface-tertiary hover:text-text-brand",
             )}
           >
             {item.icon ? (

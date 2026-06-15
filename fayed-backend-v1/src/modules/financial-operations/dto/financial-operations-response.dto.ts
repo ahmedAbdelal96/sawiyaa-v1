@@ -17,6 +17,7 @@ import {
   FinanceOperationSortOrderDto,
   FinanceOperationTypeDto,
 } from './list-finance-operation-events.dto';
+import { PractitionerPayoutDestinationResponseDto } from '@modules/practitioners/dto/practitioner-payout-destination.dto';
 
 export class WalletItemDto {
   @ApiProperty()
@@ -939,6 +940,12 @@ export class PractitionerManualPayoutBalanceDto {
   @ApiProperty()
   currencyCode!: string;
 
+  @ApiProperty({
+    type: PractitionerPayoutDestinationResponseDto,
+    nullable: true,
+  })
+  payoutDestinationSnapshot!: PractitionerPayoutDestinationResponseDto | null;
+
   @ApiProperty()
   normalSessionPayableAmount!: string;
 
@@ -964,6 +971,21 @@ export class PractitionerManualPayoutSummaryItemDto {
 
   @ApiProperty({ nullable: true })
   practitionerSlug!: string | null;
+
+  @ApiProperty()
+  safeDisplayCode!: string;
+
+  @ApiProperty({ nullable: true })
+  avatarUrl!: string | null;
+
+  @ApiProperty({ nullable: true })
+  primarySpecialtyName!: string | null;
+
+  @ApiProperty({ nullable: true })
+  payoutDestinationType!: string | null;
+
+  @ApiProperty({ nullable: true })
+  payoutDestinationSummaryMasked!: string | null;
 
   @ApiProperty({ type: PractitionerManualPayoutBalanceDto })
   egp!: PractitionerManualPayoutBalanceDto;

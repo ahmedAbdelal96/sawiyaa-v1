@@ -33,7 +33,9 @@
     "placeholder": "الصق رقم الجلسة",
     "submit": "فحص الجاهزية",
     "helper": "استخدم رقم جلسة من المدفوعات أو الدعم أو التشغيل.",
-    "backToPayments": "العودة إلى المدفوعات"
+    "backToPayments": "العودة إلى المدفوعات",
+    "openInspector": "فتح فحص التشغيل التفصيلي",
+    "backToReadiness": "العودة لفحص جاهزية التشغيل"
   },
   "sections": {
     "summary": {
@@ -178,5 +180,246 @@
   "errors": {
     "notFound": "لم يتم العثور على الجلسة.",
     "generic": "تعذر تحميل فحص الجاهزية الآن."
+  },
+  "inspector": {
+    "metaTitle": "مراجعة أدلة الجلسة — الإدارة",
+    "metaDescription": "مراجعة أدلة الحضور والتشغيل للجلسة. شاشة مراجعة يدوية فقط بدون أي قرار تلقائي.",
+    "page": {
+      "eyebrow": "تشغيل / مراجعة",
+      "title": "مراجعة أدلة الجلسة",
+      "subtitle": "تعرض هذه الصفحة أدلة الحضور والتشغيل لمساعدة الإدارة في المراجعة اليدوية. لا يتم تنفيذ أي قرار تلقائي من هنا.",
+      "advisoryNotice": "توصية للمراجعة فقط — القرار النهائي يدوي من الإدارة",
+      "backToReadiness": "العودة لفحص جاهزية التشغيل"
+    },
+    "notAvailable": "غير متاح",
+    "caseSummary": {
+      "title": "ملخص الحالة",
+      "sessionId": "رقم الجلسة",
+      "patient": "المريض",
+      "practitioner": "المعالج",
+      "scheduledAt": "الموعد",
+      "status": "حالة الجلسة",
+      "provider": "المزود",
+      "providerValue": "Daily",
+      "outcome": "التوصية المرشحة",
+      "evidenceConfidence": "مستوى الثقة بالأدلة",
+      "confidenceHigh": "ثقة عالية",
+      "confidenceMedium": "ثقة متوسطة",
+      "confidenceLow": "ثقة منخفضة",
+      "riskCount": "عدد علامات الخطر",
+      "noPatient": "لم يتم تعيين مريض",
+      "noPractitioner": "لم يتم تعيين معالج"
+    },
+    "lookup": {
+      "heading": "افحص جلسة برقمها",
+      "fieldLabel": "رقم الجلسة",
+      "placeholder": "الصق رقم الجلسة",
+      "submit": "عرض الأدلة",
+      "helper": "أدخل رقم جلسة لاستعراض أدلة الحضور والتشغيل."
+    },
+    "recommendation": {
+      "title": "التوصية",
+      "subtitle": "توصية استرشادية — لا يتم تنفيذها تلقائيًا",
+      "outcome": "النتيجة المرشحة",
+      "reason": "السبب",
+      "isFinalDecision": "هذه ليست قرارًا نهائيًا",
+      "requiresAdminReview": "تتطلب مراجعة الإدارة",
+      "topRiskFlags": "أبرز علامات الخطر",
+      "showAllRisks": "عرض كل عوامل الخطر",
+      "hideAllRisks": "إخفاء عوامل الخطر",
+      "noRiskFlags": "لا توجد علامات خطر",
+      "noTopFlags": "لا توجد أبرز مخاطر"
+    },
+    "outcomes": {
+      "COMPLETION_CANDIDATE": "إكمال الجلسة",
+      "PATIENT_NO_SHOW_CANDIDATE": "مرشح لعدم حضور المريض",
+      "PRACTITIONER_NO_SHOW_CANDIDATE": "مرشح لعدم حضور المعالج",
+      "BOTH_NO_SHOW_CANDIDATE": "مرشح لعدم حضور الطرفين",
+      "TECHNICAL_REVIEW_CANDIDATE": "مراجعة فنية",
+      "INSUFFICIENT_EVIDENCE": "أدلة غير كافية",
+      "MANUAL_REVIEW_REQUIRED": "مراجعة يدوية"
+    },
+    "outcomeTone": {
+      "COMPLETION_CANDIDATE": "إيجابي",
+      "PATIENT_NO_SHOW_CANDIDATE": "تحذير",
+      "PRACTITIONER_NO_SHOW_CANDIDATE": "تحذير",
+      "BOTH_NO_SHOW_CANDIDATE": "تحذير",
+      "TECHNICAL_REVIEW_CANDIDATE": "مراجعة فنية",
+      "INSUFFICIENT_EVIDENCE": "محايد",
+      "MANUAL_REVIEW_REQUIRED": "محايد",
+      "POSITIVE": "إيجابي",
+      "WARNING": "تحذير",
+      "TECHNICAL": "مراجعة فنية",
+      "NEUTRAL": "محايد"
+    },
+    "reasons": {
+      "INSUFFICIENT_EVIDENCE": "لا توجد أحداث حضور مسجلة ولا توجد محاولات دخول من المنصة لهذه الجلسة.",
+      "MANUAL_REVIEW_REQUIRED": "تحتاج هذه الجلسة إلى مراجعة يدوية لأن الأدلة غير كافية لاتخاذ توصية واضحة.",
+      "COMPLETION_CANDIDATE": "يوجد حضور وتداخل كافٍ بين المريض والمعالج، والجلسة مرشحة للاكتمال بعد مراجعة الإدارة.",
+      "PATIENT_NO_SHOW_CANDIDATE": "المعالج حضر لكن لا يوجد دليل كافٍ على حضور المريض خلال المدة المحددة.",
+      "PRACTITIONER_NO_SHOW_CANDIDATE": "المريض حضر لكن لا يوجد دليل كافٍ على حضور المعالج خلال المدة المحددة.",
+      "BOTH_NO_SHOW_CANDIDATE": "لا يوجد دليل كافٍ على حضور المريض أو المعالج.",
+      "TECHNICAL_REVIEW_CANDIDATE": "يوجد حضور من الطرفين لكن جودة التداخل أو الأدلة تشير لاحتمال وجود مشكلة تقنية.",
+      "FALLBACK": "تحتاج هذه الجلسة إلى مراجعة يدوية."
+    },
+    "role": {
+      "patient": "المريض",
+      "practitioner": "المعالج",
+      "attendanceStatus": "الحالة",
+      "statusJoined": "حضر",
+      "statusNotJoined": "لم يحضر",
+      "statusUncertain": "غير مؤكد",
+      "firstJoinedAt": "أول دخول",
+      "lastLeftAt": "آخر خروج",
+      "totalPresence": "إجمالي الحضور",
+      "joinCount": "مرات الدخول",
+      "platformAttempts": "محاولات دخول من المنصة",
+      "blockedAttempts": "محاولات مرفوضة",
+      "tokensIssued": "رموز دخول صادرة",
+      "notes": "ملاحظات",
+      "noShowNote": "مرشح لعدم الحضور",
+      "reconnectNote": "إعادة اتصال واحدة أو أكثر",
+      "duplicateNote": "أحداث دخول مكررة",
+      "noNotes": "لا توجد ملاحظات"
+    },
+    "overlap": {
+      "title": "التداخل",
+      "subtitle": "المدة التي تواجد فيها الطرفان معًا",
+      "minutes": "إجمالي الدقائق",
+      "hasMeaningfulOverlap": "هل يوجد تداخل فعلي؟",
+      "yes": "نعم",
+      "no": "لا",
+      "unreliableWarning": "قد يكون وقت التداخل غير مكتمل بسبب وجود فترة حضور مفتوحة بدون نهاية موثوقة."
+    },
+    "meeting": {
+      "title": "حدود الاجتماع",
+      "subtitle": "أوقات اجتماع Daily",
+      "startedAt": "وقت البدء",
+      "endedAt": "وقت الانتهاء",
+      "firstJoinedAt": "أول دخول",
+      "lastLeftAt": "آخر خروج"
+    },
+    "evidence": {
+      "title": "عوامل الخطر وجودة الأدلة",
+      "subtitle": "إشارات مختصرة من المحرك",
+      "groups": {
+        "timing": "مخاطر التوقيت",
+        "attendance": "مخاطر الحضور",
+        "technical": "مخاطر تقنية",
+        "quality": "جودة الأدلة"
+      },
+      "totalFlags": "إجمالي العلامات",
+      "noFlags": "لا توجد عوامل خطر"
+    },
+    "riskFlagLookup": {
+      "TECHNICAL_RISK_DETECTED": "خطر تقني محتمل",
+      "OUT_OF_ORDER_EVENTS": "أحداث بترتيب غير صحيح",
+      "MISSING_LEAVE_EVENT": "دخول بدون خروج",
+      "MISSING_JOIN_EVENT": "خروج بدون دخول",
+      "EXCESSIVE_PATIENT_RECONNECTS": "إعادة اتصال متكررة من المريض",
+      "EXCESSIVE_PRACTITIONER_RECONNECTS": "إعادة اتصال متكررة من المعالج",
+      "UNKNOWN_PARTICIPANT_EVENTS": "مشارك غير محدد",
+      "DUPLICATE_LIKE_JOIN_EVENTS": "أحداث دخول مكررة",
+      "PREMATURE_DECISION_RISK": "خطر قرار مبكر",
+      "LOW_CONFIDENCE_DURATION_MISSING": "المدة المجدولة مفقودة",
+      "UNRELIABLE_OVERLAP_OPEN_INTERVAL": "تداخل غير موثوق",
+      "OPEN_INTERVAL_WITHOUT_CLOSE_BOUNDARY": "فترة حضور مفتوحة",
+      "ONLY_PATIENT_JOINED": "المريض فقط",
+      "ONLY_PRACTITIONER_JOINED": "المعالج فقط",
+      "NO_PARTICIPANTS": "لا يوجد مشاركون",
+      "RECONNECTS_PRESENT": "إعادة اتصال"
+    },
+    "timeline": {
+      "title": "تسلسل أحداث الحضور",
+      "subtitle": "ترتيب زمني لأحداث الانضمام والخروج",
+      "note": "ملاحظة: يعرض هذا التسلسل أحداث الحضور فقط. أحداث محاولات الدخول وإصدار الرموز يتم تلخيصها في البطاقات أعلاه إذا لم تكن متاحة كتسلسل زمني من الـ API.",
+      "noteUnified": "يدمج هذا التسلسل أحداث الحضور مع أحداث المنصة (محاولات الدخول، إصدار الرموز، دورة حياة الاجتماع) في عرض زمني واحد.",
+      "platformNote": "محاولات الدخول وإصدار الرموز تظهر كأرقام في بطاقات الحضور. عرضها كتسلسل زمني يحتاج أن يرجعها الـ backend ضمن timeline.",
+      "empty": {
+        "heading": "لا توجد أدلة حضور كافية",
+        "note": "لم تصل أحداث حضور من Daily ولم تسجل المنصة محاولات دخول لهذه الجلسة.",
+        "nextStep": "راجع وقت الجلسة، حالة الدفع، وإعدادات Webhooks إذا كان من المفترض أن توجد أحداث."
+      },
+      "fields": {
+        "provider": "المزود",
+        "providerEventType": "نوع حدث المزود",
+        "providerParticipantRef": "معرف المشارك لدى المزود",
+        "providerRoomRef": "معرف الغرفة لدى المزود",
+        "providerEventRef": "مرجع الحدث لدى المزود"
+      }
+    },
+    "raw": {
+      "title": "تفاصيل تقنية",
+      "subtitle": "للمراجعة الفنية فقط — لا يحتوي على بيانات حساسة.",
+      "toggleOpen": "عرض كل التفاصيل التقنية",
+      "toggleClose": "إخفاء التفاصيل التقنية",
+      "empty": "لا توجد تفاصيل تقنية متاحة."
+    },
+    "emptyExtended": {
+      "title": "لا تتوفر أدلة محسوبة",
+      "note": "لم يتم إصدار ملخص الحضور الموسع لهذه الجلسة بعد."
+    },
+    "evidenceTimeline": {
+      "actorRoles": {
+        "ADMIN": "مشرف",
+        "SYSTEM": "النظام",
+        "PATIENT": "مريض",
+        "PRACTITIONER": "معالج",
+        "UNKNOWN": "غير معروف"
+      },
+      "eventTypes": {
+        "UNKNOWN_PLATFORM_EVENT": "حدث منصة غير معروف",
+        "JOIN_ATTEMPTED": "محاولة دخول",
+        "JOIN_ALLOWED": "تم السماح بالدخول",
+        "JOIN_BLOCKED": "تم رفض الدخول",
+        "JOIN_TOKEN_ISSUED": "تم إصدار رمز دخول",
+        "JOIN_TOKEN_FAILED": "فشل إصدار رمز الدخول",
+        "MEETING_STARTED": "بدأ اجتماع Daily",
+        "MEETING_ENDED": "انتهى اجتماع Daily",
+        "ATTENDANCE_JOINED": "انضم للحضور",
+        "ATTENDANCE_LEFT": "غادر الحضور",
+        "SESSION_CREATED": "تم إنشاء الجلسة",
+        "PAYMENT_PENDING": "بانتظار الدفع",
+        "PAYMENT_CONFIRMED": "تم تأكيد الدفع",
+        "PRACTITIONER_ACCEPTED": "قبل الممارس الجلسة",
+        "PRACTITIONER_REJECTED": "رفض الممارس الجلسة",
+        "SESSION_CONFIRMED": "تم تأكيد الجلسة",
+        "SESSION_READY_TO_JOIN": "الجلسة جاهزة للانضمام",
+        "PATIENT_JOINED": "انضم المريض",
+        "PRACTITIONER_JOINED": "انضم المعالج",
+        "SESSION_STARTED": "بدأت الجلسة",
+        "SESSION_COMPLETED": "اكتملت الجلسة",
+        "CANCELLED_BY_PATIENT": "ألغى المريض الجلسة",
+        "CANCELLED_BY_PRACTITIONER": "ألغى المعالج الجلسة",
+        "EXPIRED_UNPAID": "انتهت الجلسة بدون دفع",
+        "NO_SHOW_PATIENT": "المريض لم يحضر",
+        "NO_SHOW_PRACTITIONER": "المعالج لم يحضر",
+        "PROVIDER_ROOM_CREATED": "تم إنشاء غرفة المزود",
+        "PROVIDER_ROOM_ENDED": "انتهت غرفة المزود"
+      },
+      "sources": {
+        "PLATFORM": "أدلة المنصة",
+        "DAILY_WEBHOOK": "أدلة الحضور",
+        "SYSTEM": "حدث نظام"
+      },
+      "severity": {
+        "INFO": "معلومة",
+        "SUCCESS": "نجاح",
+        "WARNING": "تحذير",
+        "ERROR": "خطأ",
+        "NEUTRAL": "محايد"
+      },
+      "meta": {
+        "recordedAt": "وقت التسجيل",
+        "actor": "الفاعل",
+        "source": "المصدر",
+        "severity": "الخطورة",
+        "safeMetadata": "بيانات آمنة"
+      }
+    },
+    "states": {
+      "loading": "جاري تحميل الأدلة",
+      "notFound": "تعذر العثور على جلسة بهذا الرقم."
+    }
   }
 }

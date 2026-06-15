@@ -16,6 +16,7 @@ export class GetMyUnifiedMessagingUnreadSummaryUseCase {
   async execute(input: { authenticatedUser: AuthenticatedUser }) {
     const isAdminLike =
       input.authenticatedUser.roles.includes(AppRole.ADMIN) ||
+      input.authenticatedUser.roles.includes(AppRole.SUPER_ADMIN) ||
       input.authenticatedUser.roles.includes(AppRole.SUPPORT_AGENT);
 
     const [session, support, practitioner] = await Promise.all([

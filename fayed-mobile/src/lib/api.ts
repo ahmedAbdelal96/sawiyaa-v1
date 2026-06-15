@@ -115,6 +115,26 @@ async function triggerAuthFailure() {
   await authFailurePromise;
 }
 
+function refreshAccessTokenSingleFlight() {
+  if (!apiAuthSessionHandlers) {
+    return Promise.resolve(null);
+  }
+
+  if (!refreshAccessTokenPromise) {
+    const nextRefreshPromise = apiAuthSessionHandlers
+      .refreshAccessToken()
+      .finally(() => {
+        if (refreshAccessTokenPromise === nextRefreshPromise) {
+          refreshAccessTokenPromise = null;
+        }
+      });
+
+    refreshAccessTokenPromise = nextRefreshPromise;
+  }
+
+  return refreshAccessTokenPromise;
+}
+
 apiClient.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
@@ -134,11 +154,7 @@ apiClient.interceptors.response.use(
     originalRequest._retry = true;
 
     try {
-      if (!refreshAccessTokenPromise) {
-        refreshAccessTokenPromise = apiAuthSessionHandlers.refreshAccessToken();
-      }
-
-      const nextAccessToken = await refreshAccessTokenPromise;
+      const nextAccessToken = await refreshAccessTokenSingleFlight();
 
       if (!nextAccessToken) {
         await triggerAuthFailure();
@@ -146,14 +162,14 @@ apiClient.interceptors.response.use(
       }
 
       originalRequest.headers = originalRequest.headers ?? {};
+      delete originalRequest.headers.Authorization;
+      delete originalRequest.headers.authorization;
       originalRequest.headers.Authorization = `Bearer ${nextAccessToken}`;
 
       return apiClient(originalRequest);
     } catch (refreshError) {
       await triggerAuthFailure();
       return Promise.reject(refreshError);
-    } finally {
-      refreshAccessTokenPromise = null;
     }
   },
 );
@@ -179,6 +195,39 @@ export function extractApiData<T>(response: AxiosResponse<ApiEnvelope<T>>) {
 
 export function extractApiErrorMessage(error: unknown) {
   if (error instanceof AxiosError) {
+    if (error.response?.status === 401) {
+      const payload = error.response?.data as
+        | {
+            message?: string | string[];
+            error?: string;
+            data?: { message?: string };
+          }
+        | undefined;
+      const rawMessage =
+        typeof payload?.data?.message === "string"
+          ? payload.data.message
+          : typeof payload?.message === "string"
+            ? payload.message
+            : Array.isArray(payload?.message)
+              ? String(payload.message[0] ?? "")
+              : typeof payload?.error === "string"
+                ? payload.error
+                : error.message;
+      const normalizedRawMessage = rawMessage.trim().toLowerCase();
+      const isRawAuthMessage =
+        !normalizedRawMessage ||
+        normalizedRawMessage === "unauthorized" ||
+        normalizedRawMessage === "unauthorized exception" ||
+        normalizedRawMessage.includes("jwt") ||
+        normalizedRawMessage.includes("token");
+
+      if (isRawAuthMessage) {
+        return i18n.language?.startsWith("ar")
+          ? "انتهت صلاحية الجلسة. سجّل الدخول مرة أخرى."
+          : "Your session has expired. Please sign in again.";
+      }
+    }
+
     const payload = error.response?.data as
       | {
           message?: string | string[];

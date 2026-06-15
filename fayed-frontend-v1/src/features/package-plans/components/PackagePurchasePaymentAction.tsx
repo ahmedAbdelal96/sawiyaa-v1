@@ -125,6 +125,7 @@ export default function PackagePurchasePaymentAction({
         purchaseId: purchase.id,
         input: {
           acceptedRefundPolicyId: acceptedRefundPolicyId ?? "",
+          returnUrl: typeof window !== "undefined" ? window.location.href : undefined,
         },
       });
       const payment = response.item;

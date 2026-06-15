@@ -7,12 +7,14 @@ import { NotificationStatus } from '@prisma/client';
 import { AuthenticatedUser } from '@common/interfaces/authenticated-user.interface';
 import { UserNotificationsPresenter } from '../presenters/user-notifications.presenter';
 import { UserNotificationRepository } from '../repositories/user-notification.repository';
+import { NotificationContextEnrichmentService } from '../services/notification-context-enrichment.service';
 
 @Injectable()
 export class MarkMyNotificationReadUseCase {
   constructor(
     private readonly repository: UserNotificationRepository,
     private readonly presenter: UserNotificationsPresenter,
+    private readonly enrichmentService: NotificationContextEnrichmentService,
   ) {}
 
   async execute(input: {
@@ -52,7 +54,8 @@ export class MarkMyNotificationReadUseCase {
     }
 
     if (existing.readAt) {
-      return this.presenter.presentReadResult(existing);
+      const enrichment = await this.enrichmentService.enrichOne(existing);
+      return this.presenter.presentReadResult(existing, enrichment);
     }
 
     const now = new Date();
@@ -75,13 +78,16 @@ export class MarkMyNotificationReadUseCase {
         });
       }
 
-      return this.presenter.presentReadResult(reloaded);
+      const enrichment = await this.enrichmentService.enrichOne(reloaded);
+      return this.presenter.presentReadResult(reloaded, enrichment);
     }
 
-    return this.presenter.presentReadResult({
+    const updatedRow = {
       ...existing,
       readAt: now,
       status: NotificationStatus.READ,
-    });
+    };
+    const enrichment = await this.enrichmentService.enrichOne(updatedRow);
+    return this.presenter.presentReadResult(updatedRow, enrichment);
   }
 }

@@ -3,30 +3,22 @@ import type { NavigationConfig } from "./types";
 
 export const practitionerNavigation: NavigationConfig = [
   {
-    key: "practitionerOverview",
+    key: "practitionerWorkspaceTitle",
     titleKey: "title",
     namespace: "main",
     items: [
-      { key: "dashboard", icon: <NavigationIcons.dashboard />, path: "/dashboard" },
+      { key: "dashboard", icon: <NavigationIcons.dashboard />, path: "/dashboard", namespace: "main" },
+      { key: "sessions", icon: <NavigationIcons.calendar />, path: "/sessions", namespace: "main" },
+      { key: "availability", icon: <NavigationIcons.availability />, path: "/availability", namespace: "main" },
     ],
   },
   {
-    key: "practitionerWorkflow",
-    titleKey: "title",
-    namespace: "main",
-    items: [
-      { key: "sessions", icon: <NavigationIcons.calendar />, path: "/sessions" },
-      { key: "availability", icon: <NavigationIcons.availability />, path: "/availability" },
-    ],
-  },
-  {
-    key: "practitionerCommunication",
+    key: "practitionerMessagesSupport",
     titleKey: "title",
     namespace: "workspace",
     items: [
-      { key: "careChat", icon: <NavigationIcons.chat />, path: "/care-chat" },
-      { key: "support", icon: <NavigationIcons.support />, path: "/support" },
-      { key: "helpCenter", icon: <NavigationIcons.page />, path: "/help" },
+      { key: "messages", icon: <NavigationIcons.chat />, path: "/messages", namespace: "workspace" },
+      { key: "helpCenter", icon: <NavigationIcons.page />, path: "/help", namespace: "workspace" },
     ],
   },
   {
@@ -34,22 +26,22 @@ export const practitionerNavigation: NavigationConfig = [
     titleKey: "title",
     namespace: "main",
     items: [
-      { key: "wallet", icon: <NavigationIcons.wallet />, path: "/wallet" },
-      { key: "ledger", icon: <NavigationIcons.ledger />, path: "/ledger" },
-      { key: "promoCodes", icon: <NavigationIcons.promoCodes />, path: "/promo-codes" },
-      { key: "settlements", icon: <NavigationIcons.settlements />, path: "/settlements" },
+      { key: "wallet", icon: <NavigationIcons.wallet />, path: "/wallet", namespace: "main" },
+      { key: "ledger", icon: <NavigationIcons.ledger />, path: "/ledger", namespace: "main" },
+      { key: "promoCodes", icon: <NavigationIcons.promoCodes />, path: "/promo-codes", namespace: "main" },
+      { key: "settlements", icon: <NavigationIcons.settlements />, path: "/settlements", namespace: "main" },
     ],
   },
   {
-    key: "practitionerProfile",
+    key: "practitionerProfileSettings",
     titleKey: "title",
     namespace: "settings",
     items: [
-      { key: "profile", icon: <NavigationIcons.auth />, path: "/profile" },
-      { key: "specialties", icon: <NavigationIcons.practitioners />, path: "/specialties" },
-      { key: "credentials", icon: <NavigationIcons.page />, path: "/credentials" },
-      { key: "packageAvailability", icon: <NavigationIcons.settings />, path: "/settings" },
-      { key: "application", icon: <NavigationIcons.operations />, path: "/application" },
+      { key: "profile", icon: <NavigationIcons.auth />, path: "/profile", namespace: "settings" },
+      { key: "specialties", icon: <NavigationIcons.practitioners />, path: "/specialties", namespace: "settings" },
+      { key: "credentials", icon: <NavigationIcons.page />, path: "/credentials", namespace: "settings" },
+      { key: "packageAvailability", icon: <NavigationIcons.settings />, path: "/settings", namespace: "settings" },
+      { key: "application", icon: <NavigationIcons.operations />, path: "/application", namespace: "settings" },
     ],
   },
 ];

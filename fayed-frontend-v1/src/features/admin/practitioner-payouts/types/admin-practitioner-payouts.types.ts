@@ -1,9 +1,13 @@
 import type { SettlementPayoutMethod } from "../../settlements/types/admin-settlements.types";
+import type { PractitionerPayoutDestination } from "@/features/practitioners/types/practitioners.types";
 
 export type AdminPractitionerPayoutBalance = {
   practitionerId: string;
   practitionerName: string | null;
   currencyCode: string;
+  payoutDestinationSnapshot: PractitionerPayoutDestination | null;
+  payoutDestinationType: string | null;
+  payoutDestinationSummaryMasked: string | null;
   normalSessionPayableAmount: string;
   packageReleasedPayableAmount: string;
   packageHeldAmount: string;
@@ -35,6 +39,11 @@ export type AdminPractitionerPayoutSummary = {
   practitionerId: string;
   practitionerName: string | null;
   practitionerSlug: string | null;
+  safeDisplayCode: string;
+  avatarUrl: string | null;
+  primarySpecialtyName: string | null;
+  payoutDestinationType: string | null;
+  payoutDestinationSummaryMasked: string | null;
   egp: AdminPractitionerPayoutBalance;
   usd: AdminPractitionerPayoutBalance;
   hasPayable: boolean;

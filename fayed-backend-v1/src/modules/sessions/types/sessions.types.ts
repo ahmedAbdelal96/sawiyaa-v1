@@ -29,6 +29,8 @@ export interface SessionListItemViewModel {
   } | null;
   joinAvailability: SessionJoinAvailabilityViewModel;
   chatAvailability: GeneralChatAvailabilityViewModel;
+  unreadCount?: number;
+  hasUnread?: boolean;
 }
 
 export interface SessionDetailsViewModel extends SessionListItemViewModel {

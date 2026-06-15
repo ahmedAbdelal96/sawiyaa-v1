@@ -98,8 +98,8 @@ function resolveStepConfig(
     case "VIEW_SUPPORT_TICKET":
       return {
         href: journey.support.latestOpenTicket
-          ? `/patient/support/${journey.support.latestOpenTicket.id}`
-          : "/patient/support",
+          ? `/patient/messages?lane=support&id=${journey.support.latestOpenTicket.id}`
+          : "/patient/messages?lane=support",
         ctaKey: "nextSteps.types.VIEW_SUPPORT_TICKET.cta",
         supported: true,
       };
@@ -391,7 +391,7 @@ export default function PatientJourneyScreen() {
             tone="sky"
           />
           <PatientActionPanel
-            href="/patient/support"
+            href="/patient/messages?lane=support"
             label={t("support.heading")}
             description={t("support.empty")}
             icon={<LifeBuoy className="h-5 w-5" />}
@@ -767,7 +767,7 @@ export default function PatientJourneyScreen() {
                 </PatientStatusBadge>
               </div>
               <Link
-                href={`/patient/support/${journey.support.latestOpenTicket.id}` as never}
+                href={`/patient/messages?lane=support&id=${journey.support.latestOpenTicket.id}` as never}
                 className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline"
               >
                 {t("support.viewTicket")}
@@ -778,7 +778,7 @@ export default function PatientJourneyScreen() {
             <div>
               <p className="text-sm text-text-secondary">{t("support.empty")}</p>
               <Link
-                href="/patient/support"
+                href="/patient/messages?lane=support"
                 className="mt-3 inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline"
               >
                 {t("support.chatCta")}

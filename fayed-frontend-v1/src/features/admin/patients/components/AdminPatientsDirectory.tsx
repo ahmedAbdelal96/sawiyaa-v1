@@ -10,6 +10,7 @@ import AdminOperationalListShell, { AdminSummaryCard } from "@/components/shared
 import ActionIconButton from "@/components/ui/action-icon-button/ActionIconButton";
 import FilterClearButton from "@/components/ui/filters/FilterClearButton";
 import InputField from "@/components/form/input/InputField";
+import Select from "@/components/form/Select";
 import Label from "@/components/form/Label";
 import { DEFAULT_PAGE_LIMIT, DEFAULT_PAGE_SIZE_OPTIONS } from "@/constants/pagination";
 import { useDebouncedValue } from "@/hooks/use-debounce";
@@ -23,12 +24,12 @@ const PAGE_SIZE_OPTIONS = DEFAULT_PAGE_SIZE_OPTIONS;
 function StatusPill({ status, t }: { status: string; t: any }) {
   const tone =
     status === "ACTIVE"
-      ? "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/20 dark:text-emerald-400 dark:border-emerald-900/30"
+      ? "border-status-success-border bg-status-success-soft text-status-success"
       : status === "SUSPENDED"
-        ? "bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/20 dark:text-rose-400 dark:border-rose-900/30"
+        ? "border-status-danger-border bg-status-danger-soft text-status-danger"
         : status.startsWith("PENDING")
-          ? "bg-amber-50 text-amber-800 border-amber-200 dark:bg-amber-950/20 dark:text-amber-400 dark:border-amber-900/30"
-          : "bg-surface-secondary text-text-secondary border-border-light dark:bg-surface-secondary dark:text-text-secondary dark:border-border-light/20";
+          ? "border-status-warning-border bg-status-warning-soft text-status-warning"
+          : "border-border-light bg-surface-tertiary text-text-secondary";
 
   const normalized = status.toUpperCase();
   let label = status;
@@ -61,6 +62,20 @@ export default function AdminPatientsDirectory() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_LIMIT);
   const [countryChangePatient, setCountryChangePatient] = useState<AdminPatientListItem | null>(null);
+
+  const statusOptions = useMemo(() => [
+    { value: "", label: t("filters.statusAll") },
+    { value: "active", label: t("filters.statusActive") },
+    { value: "pending", label: t("filters.statusPending") },
+    { value: "suspended", label: t("filters.statusSuspended") },
+    { value: "inactive", label: t("filters.statusInactive") }
+  ], [t]);
+
+  const onboardingOptions = useMemo(() => [
+    { value: "all", label: t("filters.onboardingAll") },
+    { value: "completed", label: t("filters.onboardingCompleted") },
+    { value: "incomplete", label: t("filters.onboardingIncomplete") }
+  ], [t]);
 
   const debouncedSearch = useDebouncedValue(search, 300);
 
@@ -126,7 +141,7 @@ export default function AdminPatientsDirectory() {
         align: "start",
         cell: (row) => (
           <div className="min-w-0">
-            <p className="truncate text-sm font-semibold text-text-primary dark:text-white/95">
+            <p className="truncate text-sm font-semibold text-text-primary">
               {row.displayName ?? t("table.unknownName")}
             </p>
             <p className="mt-1 truncate text-xs text-text-muted">
@@ -141,7 +156,7 @@ export default function AdminPatientsDirectory() {
         accessor: (row) => resolveCountryLabel(row.countryCode, countries, locale),
         align: "center",
         cell: (row) => (
-          <span className="text-sm text-text-primary dark:text-white/90">
+          <span className="text-sm text-text-primary">
             {resolveCountryLabel(row.countryCode, countries, locale)}
           </span>
         ),
@@ -154,12 +169,12 @@ export default function AdminPatientsDirectory() {
         align: "center",
         cell: (row) =>
           row.onboardingCompletedAt ? (
-            <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-700 dark:border-emerald-900/30 dark:bg-emerald-950/20 dark:text-emerald-400">
+            <span className="inline-flex items-center gap-1 rounded-full border border-status-success-border bg-status-success-soft px-2 py-0.5 text-xs font-semibold text-status-success">
               <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />
               {t("states.completed")}
             </span>
           ) : (
-            <span className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-800 dark:border-amber-900/30 dark:bg-amber-950/20 dark:text-amber-400">
+            <span className="inline-flex items-center gap-1 rounded-full border border-status-warning-border bg-status-warning-soft px-2 py-0.5 text-xs font-semibold text-status-warning">
               <AlertCircle className="h-3.5 w-3.5" aria-hidden="true" />
               {t("states.incomplete")}
             </span>
@@ -231,7 +246,7 @@ export default function AdminPatientsDirectory() {
                 ? activeFilterChips.map((chip) => (
                     <span
                       key={chip.id}
-                      className="app-chip rounded-full px-3 py-1.5 text-xs text-text-secondary dark:text-white/80"
+                      className="app-chip rounded-full px-3 py-1.5 text-xs text-text-secondary"
                     >
                       {chip.label}
                     </span>
@@ -253,7 +268,7 @@ export default function AdminPatientsDirectory() {
               {isError ? (
                 <button
                   type="button"
-                  className="rounded-2xl border border-border-light bg-white px-4 py-2 text-sm font-semibold text-primary transition hover:border-primary/30 hover:bg-primary-light dark:bg-white/5"
+                  className="rounded-2xl border border-border-light bg-surface-secondary px-4 py-2 text-sm font-semibold text-text-primary transition hover:bg-surface-tertiary"
                   onClick={() => refetch()}
                 >
                   {t("actions.retry")}
@@ -275,43 +290,35 @@ export default function AdminPatientsDirectory() {
                       resetToFirstPage();
                     }}
                     placeholder={t("filters.searchPlaceholder")}
-                    className="ps-10"
+                    className="ps-10 bg-surface-tertiary dark:bg-surface-tertiary"
                   />
                 </div>
               </div>
 
               <div className="flex flex-col gap-2">
                 <Label>{t("filters.status")}</Label>
-                <select
-                  className="app-control h-11 w-full rounded-2xl px-3"
-                  value={status}
-                  onChange={(e) => {
-                    setStatus(e.target.value as any);
+                <Select
+                  key={`statusFilter-${status}`}
+                  defaultValue={status}
+                  onChange={(value) => {
+                    setStatus(value as any);
                     resetToFirstPage();
                   }}
-                >
-                  <option value="">{t("filters.statusAll")}</option>
-                  <option value="active">{t("filters.statusActive")}</option>
-                  <option value="pending">{t("filters.statusPending")}</option>
-                  <option value="suspended">{t("filters.statusSuspended")}</option>
-                  <option value="inactive">{t("filters.statusInactive")}</option>
-                </select>
+                  options={statusOptions}
+                />
               </div>
 
               <div className="flex flex-col gap-2">
                 <Label>{t("filters.onboarding")}</Label>
-                <select
-                  className="app-control h-11 w-full rounded-2xl px-3"
-                  value={onboarding}
-                  onChange={(e) => {
-                    setOnboarding(e.target.value as any);
+                <Select
+                  key={`onboardingFilter-${onboarding}`}
+                  defaultValue={onboarding}
+                  onChange={(value) => {
+                    setOnboarding(value as any);
                     resetToFirstPage();
                   }}
-                >
-                  <option value="all">{t("filters.onboardingAll")}</option>
-                  <option value="completed">{t("filters.onboardingCompleted")}</option>
-                  <option value="incomplete">{t("filters.onboardingIncomplete")}</option>
-                </select>
+                  options={onboardingOptions}
+                />
               </div>
             </div>
           </div>

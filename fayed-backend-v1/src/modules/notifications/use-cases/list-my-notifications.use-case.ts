@@ -3,12 +3,14 @@ import { AuthenticatedUser } from '@common/interfaces/authenticated-user.interfa
 import { ListMyNotificationsDto } from '../dto/list-my-notifications.dto';
 import { UserNotificationsPresenter } from '../presenters/user-notifications.presenter';
 import { UserNotificationRepository } from '../repositories/user-notification.repository';
+import { NotificationContextEnrichmentService } from '../services/notification-context-enrichment.service';
 
 @Injectable()
 export class ListMyNotificationsUseCase {
   constructor(
     private readonly repository: UserNotificationRepository,
     private readonly presenter: UserNotificationsPresenter,
+    private readonly enrichmentService: NotificationContextEnrichmentService,
   ) {}
 
   async execute(input: {
@@ -24,11 +26,14 @@ export class ListMyNotificationsUseCase {
       limit,
     });
 
+    const enrichment = await this.enrichmentService.enrichMany(rows);
+
     return this.presenter.presentList({
       items: rows,
       page,
       limit,
       hasNextPage,
+      enrichment,
     });
   }
 }

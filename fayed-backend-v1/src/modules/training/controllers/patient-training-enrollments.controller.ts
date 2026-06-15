@@ -5,6 +5,8 @@ import {
   Param,
   Post,
   Query,
+  Req,
+  Res,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -14,6 +16,7 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
+import { Request, Response } from 'express';
 import { RequireAccountStates } from '@common/decorators/account-state.decorator';
 import { CurrentUser } from '@common/decorators/current-user.decorator';
 import { Roles } from '@common/decorators/roles.decorator';
@@ -25,6 +28,7 @@ import { CurrentLocale } from '@common/i18n/decorators/current-locale.decorator'
 import { SupportedLocale } from '@common/i18n/types/locale.types';
 import { AuthenticatedUser } from '@common/interfaces/authenticated-user.interface';
 import { CreateTrainingEnrollmentDto } from '../dto/create-training-enrollment.dto';
+import { TrainingEnrollmentPaymentRedirectQueryDto } from '../dto/training-enrollment-payment-redirect.dto';
 import { ListPatientTrainingEnrollmentsDto } from '../dto/list-patient-training-enrollments.dto';
 import {
   PatientTrainingEnrollmentItemSuccessResponseDto,
@@ -33,6 +37,7 @@ import {
 } from '../dto/training-response.dto';
 import { CreateTrainingEnrollmentUseCase } from '../use-cases/create-training-enrollment.use-case';
 import { GetPatientTrainingEnrollmentUseCase } from '../use-cases/get-patient-training-enrollment.use-case';
+import { GetPatientTrainingEnrollmentPaymentRedirectUseCase } from '../use-cases/get-patient-training-enrollment-payment-redirect.use-case';
 import { ListPatientTrainingEnrollmentsUseCase } from '../use-cases/list-patient-training-enrollments.use-case';
 import { ResolvePatientTrainingJoinAccessUseCase } from '../use-cases/resolve-patient-training-join-access.use-case';
 
@@ -45,6 +50,7 @@ import { ResolvePatientTrainingJoinAccessUseCase } from '../use-cases/resolve-pa
 export class PatientTrainingEnrollmentsController {
   constructor(
     private readonly createTrainingEnrollmentUseCase: CreateTrainingEnrollmentUseCase,
+    private readonly getPatientTrainingEnrollmentPaymentRedirectUseCase: GetPatientTrainingEnrollmentPaymentRedirectUseCase,
     private readonly listPatientTrainingEnrollmentsUseCase: ListPatientTrainingEnrollmentsUseCase,
     private readonly getPatientTrainingEnrollmentUseCase: GetPatientTrainingEnrollmentUseCase,
     private readonly resolvePatientTrainingJoinAccessUseCase: ResolvePatientTrainingJoinAccessUseCase,
@@ -73,6 +79,35 @@ export class PatientTrainingEnrollmentsController {
         payload: body,
       })
       .then((data) => ({ success: true as const, data }));
+  }
+
+  @Get('enrollments/:id/pay/redirect')
+  @ApiOperation({
+    summary: 'Create a fresh payment checkout redirect for a training enrollment',
+  })
+  async redirectToEnrollmentPayment(
+    @CurrentUser() currentUser: AuthenticatedUser,
+    @CurrentLocale() locale: SupportedLocale,
+    @Param('id') enrollmentId: string,
+    @Query() query: TrainingEnrollmentPaymentRedirectQueryDto,
+    @Req() request: Request,
+    @Res() response: Response,
+  ) {
+    const result =
+      await this.getPatientTrainingEnrollmentPaymentRedirectUseCase.execute({
+        userId: currentUser.id,
+        locale,
+        enrollmentId,
+        returnUrl: query.returnUrl ?? null,
+        callerSurfaceUrl: this.resolveCallerSurfaceUrl(request),
+      });
+
+    response
+      .status(302)
+      .setHeader('Location', result.redirectUrl)
+      .setHeader('Cache-Control', 'no-store, max-age=0')
+      .setHeader('Pragma', 'no-cache')
+      .end();
   }
 
   @Get('enrollments')
@@ -133,5 +168,31 @@ export class PatientTrainingEnrollmentsController {
         enrollmentId,
       })
       .then((data) => ({ success: true as const, data }));
+  }
+
+  private resolveCallerSurfaceUrl(request: Request): string | null {
+    const headerCandidates = [
+      request.headers.origin,
+      request.headers.referer,
+      request.headers.referrer,
+    ].filter((value): value is string => typeof value === 'string');
+
+    for (const candidate of headerCandidates) {
+      try {
+        const parsed = new URL(candidate);
+
+        if (parsed.protocol === 'fayed:') {
+          return parsed.toString();
+        }
+
+        if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+          return parsed.origin;
+        }
+      } catch {
+        // Ignore invalid headers and continue scanning.
+      }
+    }
+
+    return null;
   }
 }

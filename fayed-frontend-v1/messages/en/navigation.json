@@ -43,7 +43,7 @@
     "title": "Overview"
   },
   "operations": {
-    "title": "Operations & care"
+    "title": "Operations"
   },
   "catalog": {
     "title": "Services & content"
@@ -53,6 +53,33 @@
   },
   "insights": {
     "title": "Reports & governance"
+  },
+  "core": {
+    "title": "Core"
+  },
+  "paymentsFinance": {
+    "title": "Payments & Finance"
+  },
+  "contentMarketplace": {
+    "title": "Content & Marketplace"
+  },
+  "oversight": {
+    "title": "Oversight"
+  },
+  "practitionerWorkspaceTitle": {
+    "title": "Workspace"
+  },
+  "practitionerSessions": {
+    "title": "Sessions"
+  },
+  "practitionerAvailability": {
+    "title": "Availability"
+  },
+  "practitionerMessagesSupport": {
+    "title": "Messages & Support"
+  },
+  "practitionerProfileSettings": {
+    "title": "Profile & Settings"
   },
   "practitionerMain": {
     "title": "Operational core"
@@ -80,6 +107,7 @@
   },
   "workspace": {
     "title": "Workspace",
+    "messages": "Messages",
     "articles": "Articles",
     "notifications": "Notifications",
     "auditLog": "Audit log",

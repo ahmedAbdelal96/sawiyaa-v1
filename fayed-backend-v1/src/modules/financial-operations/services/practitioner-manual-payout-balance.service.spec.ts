@@ -47,6 +47,16 @@ describe('PractitionerManualPayoutBalanceService', () => {
           publicSlug: 'practitioner-slug',
           user: { displayName: 'Dr. Lina' },
           country: { isoCode: 'EG' },
+          payoutDestination: {
+            methodType: 'WALLET',
+            accountHolderName: 'Dr. Lina',
+            bankName: null,
+            bankAccountNumber: null,
+            iban: null,
+            walletProvider: 'Vodafone Cash',
+            walletIdentifier: '01012345678',
+            otherDetails: null,
+          },
         },
       ),
     } as unknown as FinancialOperationsPractitionerRepository;
@@ -107,6 +117,8 @@ describe('PractitionerManualPayoutBalanceService', () => {
 
     expect(balance.practitionerName).toBe('Dr. Lina');
     expect(balance.currencyCode).toBe('EGP');
+    expect(balance.payoutDestinationSnapshot?.methodType).toBe('WALLET');
+    expect(balance.payoutDestinationSnapshot?.walletProvider).toBe('Vodafone Cash');
     expect(balance.normalSessionPayableAmount).toBe('70.00');
     expect(balance.packageReleasedPayableAmount).toBe('40.00');
     expect(balance.packageHeldAmount).toBe('120.00');

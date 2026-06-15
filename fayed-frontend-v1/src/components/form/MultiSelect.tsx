@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 
 interface Option {
   value: string;
@@ -31,148 +31,148 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
     useState<string[]>(defaultSelected);
   const [isOpen, setIsOpen] = useState(false);
 
+  useEffect(() => {
+    setSelectedOptions(defaultSelected);
+  }, [defaultSelected]);
+
+  const selectedItems = useMemo(
+    () =>
+      selectedOptions
+        .map((value) => options.find((option) => option.value === value))
+        .filter((option): option is Option => Boolean(option)),
+    [options, selectedOptions]
+  );
+
   const toggleDropdown = () => {
     if (disabled) return;
     setIsOpen((prev) => !prev);
   };
 
   const handleSelect = (optionValue: string) => {
-    const newSelectedOptions = selectedOptions.includes(optionValue)
+    const nextSelected = selectedOptions.includes(optionValue)
       ? selectedOptions.filter((value) => value !== optionValue)
       : [...selectedOptions, optionValue];
 
-    setSelectedOptions(newSelectedOptions);
-    if (onChange) onChange(newSelectedOptions);
+    setSelectedOptions(nextSelected);
+    onChange?.(nextSelected);
   };
 
-  const removeOption = (index: number, value: string) => {
-    const newSelectedOptions = selectedOptions.filter((opt) => opt !== value);
-    setSelectedOptions(newSelectedOptions);
-    if (onChange) onChange(newSelectedOptions);
+  const removeOption = (value: string) => {
+    if (disabled) return;
+    const nextSelected = selectedOptions.filter((option) => option !== value);
+    setSelectedOptions(nextSelected);
+    onChange?.(nextSelected);
   };
-
-  const selectedValuesText = selectedOptions.map(
-    (value) => options.find((option) => option.value === value)?.text || ""
-  );
 
   return (
     <div className="w-full">
-      <label className="mb-1.5 block text-sm font-medium text-text-primary">
-        {label}
-      </label>
+      {label ? (
+        <label className="mb-1.5 block text-sm font-medium text-text-secondary">
+          {label}
+        </label>
+      ) : null}
 
-      <div className="relative z-20 inline-block w-full">
-        <div className="relative flex flex-col items-center">
-          <div onClick={toggleDropdown}  className="w-full">
-            <div
-              className={`app-control mb-2 flex h-11 py-1.5 pl-3 pr-3 focus-within:border-border-focus focus-within:shadow-focus-ring ${
-                error ? "border-error-500 focus-within:border-error-500" : ""
-              }`}
-            >
-              <div className="flex flex-wrap flex-auto gap-2">
-                {selectedValuesText.length > 0 ? (
-                  selectedValuesText.map((text, index) => (
-                    <div
-                      key={index}
-                      className="group flex items-center justify-center rounded-full border border-transparent bg-primary-light py-1 pl-2.5 pr-2 text-sm text-text-brand hover:border-border-light"
-                    >
-                      <span className="flex-initial max-w-full">{text}</span>
-                      <div className="flex flex-row-reverse flex-auto">
-                        <div
-                          onClick={() =>
-                            removeOption(index, selectedOptions[index])
-                          }
-                          className="cursor-pointer pl-2 text-text-secondary group-hover:text-text-brand"
-                        >
-                          <svg
-                            className="fill-current"
-                            role="button"
-                            width="14"
-                            height="14"
-                            viewBox="0 0 14 14"
-                            xmlns="http://www.w3.org/2000/svg"
-                          >
-                            <path
-                              fillRule="evenodd"
-                              clipRule="evenodd"
-                              d="M3.40717 4.46881C3.11428 4.17591 3.11428 3.70104 3.40717 3.40815C3.70006 3.11525 4.17494 3.11525 4.46783 3.40815L6.99943 5.93975L9.53095 3.40822C9.82385 3.11533 10.2987 3.11533 10.5916 3.40822C10.8845 3.70112 10.8845 4.17599 10.5916 4.46888L8.06009 7.00041L10.5916 9.53193C10.8845 9.82482 10.8845 10.2997 10.5916 10.5926C10.2987 10.8855 9.82385 10.8855 9.53095 10.5926L6.99943 8.06107L4.46783 10.5927C4.17494 10.8856 3.70006 10.8856 3.40717 10.5927C3.11428 10.2998 3.11428 9.8249 3.40717 9.53201L5.93877 7.00041L3.40717 4.46881Z"
-                            />
-                          </svg>
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <input
-                    placeholder={placeholder}
-                    className="h-full w-full appearance-none border-0 bg-transparent p-1 pr-2 text-sm text-text-primary outline-hidden placeholder:text-text-muted focus:border-0 focus:outline-hidden focus:ring-0"
-                    readOnly
-                    value=""
-                  />
-                )}
-              </div>
-              <div className="flex items-center py-1 pl-1 pr-1 w-7">
-                <button
-                  type="button"
-                  onClick={toggleDropdown} 
-                  className="h-5 w-5 cursor-pointer text-text-secondary outline-hidden transition-colors hover:text-text-brand focus:outline-hidden"
+      <div className="relative z-20 w-full">
+        <button
+          type="button"
+          onClick={toggleDropdown}
+          disabled={disabled}
+          className={`app-control flex min-h-11 w-full items-center gap-2 rounded-xl border bg-surface-tertiary px-3 py-2 text-start transition-colors ${
+            error
+              ? "border-status-danger focus-visible:border-status-danger"
+              : "border-border-light focus-visible:border-border-focus"
+          } ${
+            disabled
+              ? "cursor-not-allowed border-border-light bg-surface-tertiary/60 text-text-muted opacity-60"
+              : "focus-visible:outline-hidden focus-visible:ring-3 focus-visible:ring-ring-focus"
+          }`}
+        >
+          <div className="flex min-w-0 flex-1 flex-wrap gap-2">
+            {selectedItems.length > 0 ? (
+              selectedItems.map((item) => (
+                <span
+                  key={item.value}
+                  className="inline-flex items-center gap-2 rounded-full bg-primary-light px-2.5 py-1 text-sm text-text-brand"
                 >
-                  <svg
-                    className={`stroke-current ${isOpen ? "rotate-180" : ""}`}
-                    width="20"
-                    height="20"
-                    viewBox="0 0 20 20"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
+                  <span className="truncate">{item.text}</span>
+                  <span
+                    role="button"
+                    tabIndex={disabled ? -1 : 0}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      removeOption(item.value);
+                    }}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        removeOption(item.value);
+                      }
+                    }}
+                    className={disabled ? "text-text-muted" : "cursor-pointer"}
                   >
-                    <path
-                      d="M4.79175 7.39551L10.0001 12.6038L15.2084 7.39551"
-                      stroke="currentColor"
-                      strokeWidth="1.5"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                </button>
-            </div>
+                    ×
+                  </span>
+                </span>
+              ))
+            ) : (
+              <span className="text-sm text-text-muted">{placeholder}</span>
+            )}
           </div>
-        </div>
+
+          <span
+            className={`shrink-0 text-text-muted transition-transform ${
+              isOpen ? "rotate-180" : ""
+            }`}
+          >
+            <svg
+              className="stroke-current"
+              width="20"
+              height="20"
+              viewBox="0 0 20 20"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M4.79175 7.39551L10.0001 12.6038L15.2084 7.39551"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </span>
+        </button>
+
         {hint ? (
-          <p className={`mt-1.5 text-xs ${error ? "text-error-500" : "text-text-secondary"}`}>
+          <p className={`mt-1.5 text-xs ${error ? "text-status-danger" : "text-text-secondary"}`}>
             {hint}
           </p>
         ) : null}
 
-          {isOpen && (
-            <div
-              className="absolute top-full left-0 z-40 max-h-select w-full overflow-y-auto rounded-xl border border-border-light bg-surface-secondary shadow-theme-sm"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="flex flex-col">
-                {options.map((option, index) => (
-                  <div key={index}>
-                    <div
-                      className="w-full cursor-pointer rounded-t border-b border-border-light hover:bg-primary-light"
-                      onClick={() => handleSelect(option.value)}
-                    >
-                      <div
-                        className={`relative flex w-full items-center p-2 pl-2 ${
-                          selectedOptions.includes(option.value)
-                            ? "bg-primary-light"
-                            : ""
-                        }`}
-                      >
-                        <div className="mx-2 leading-6 text-text-primary">
-                          {option.text}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
+        {isOpen ? (
+          <div className="absolute start-0 top-full z-40 mt-2 max-h-64 w-full overflow-y-auto rounded-xl border border-border-light bg-surface-secondary shadow-theme-sm">
+            <div className="flex flex-col p-1.5">
+              {options.map((option) => {
+                const checked = selectedOptions.includes(option.value);
+                return (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => handleSelect(option.value)}
+                    className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-start text-sm transition-colors ${
+                      checked
+                        ? "bg-primary-light text-text-brand"
+                        : "text-text-primary hover:bg-surface-tertiary"
+                    }`}
+                  >
+                    <span>{option.text}</span>
+                    {checked ? <span>✓</span> : null}
+                  </button>
+                );
+              })}
             </div>
-          )}
-        </div>
+          </div>
+        ) : null}
       </div>
     </div>
   );

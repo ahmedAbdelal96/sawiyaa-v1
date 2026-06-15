@@ -18,7 +18,7 @@
     "status": "Status",
     "startsAt": "Starts at",
     "endsAt": "Ends at",
-    "priority": "Order",
+    "priority": "Slot",
     "reason": "Reason",
     "badge": "Badge",
     "campaign": "Campaign",
@@ -105,13 +105,18 @@
     "status": "Status",
     "startsAt": "Start date",
     "endsAt": "End date",
-    "priority": "Order",
+    "duration": "Duration",
+    "endsAtHint": "Leave empty for an open-ended placement.",
+    "priority": "Display slot",
+    "slotOption": "Slot {{slot}}",
+    "priorityHint": "Choose a slot from 1 to 5. Slot 1 appears first on the homepage.",
     "badgeLabelAr": "Arabic badge label",
     "badgeLabelEn": "English badge label",
     "reason": "Reason",
     "campaignName": "Campaign name",
     "notesInternal": "Internal notes",
-    "noteOptional": "Optional note"
+    "noteOptional": "Optional note",
+    "advancedSettings": "Advanced settings"
   },
   "status": {
     "ACTIVE": "Active",
@@ -121,7 +126,7 @@
   "lifecycle": {
     "ACTIVE": "Active",
     "SCHEDULED": "Scheduled",
-    "EXPIRED": "Expired",
+    "EXPIRED": "Period ended",
     "PAUSED": "Paused"
   },
   "practitionerStatus": {
@@ -157,7 +162,7 @@
   "validation": {
     "practitionerRequired": "Select one practitioner.",
     "startsAtRequired": "Start date is required.",
-    "priorityPositive": "Order must be a positive number.",
+    "priorityPositive": "Choose a slot from 1 to 5.",
     "endsAtAfterStartsAt": "End date must be after start date."
   },
   "feedback": {
@@ -169,10 +174,13 @@
   "errors": {
     "notFound": "The requested placement was not found.",
     "invalidDateRange": "The date range is invalid.",
-    "invalidPriority": "The order value is invalid.",
-    "resumeExpired": "An expired placement cannot be resumed.",
+    "invalidPriority": "Display slot is invalid.",
+    "priorityOutOfRange": "Display slot must be between 1 and 5.",
+    "slotAlreadyTaken": "This slot is already taken during the same period. Choose a different slot or change the visibility period.",
+    "resumeExpired": "The display period has ended. Update the end date or create a new placement.",
     "invalidPractitioner": "The selected practitioner is not eligible.",
     "overlap": "Another active placement already exists for this practitioner and time window.",
+    "homeSlotsFull": "You've reached the maximum number of active display slots on the homepage.",
     "practitionerRequired": "Select a practitioner first.",
     "generic": "Something went wrong. Please try again."
   }

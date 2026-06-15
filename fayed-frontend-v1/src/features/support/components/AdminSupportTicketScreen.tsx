@@ -1,13 +1,20 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useLocale, useTranslations } from "next-intl";
+import { useRouter } from "@/i18n/navigation";
 import { Link } from "@/i18n/navigation";
-import { Loader2, Lock, StickyNote } from "lucide-react";
+import { Loader2, Lock, StickyNote, ArrowLeft } from "lucide-react";
 import { useCurrentUser } from "@/features/users/hooks/use-users";
-import FullHeightMessagesPage from "@/components/messages/FullHeightMessagesPage";
 import DirectionalArrowIcon from "@/components/ui/navigation/DirectionalArrowIcon";
-import SupportThreadPanel, { type SupportThreadMessageVM } from "./shared/SupportThreadPanel";
+import {
+  ChatConversationPanel,
+  ChatConversationHeader,
+  ChatMessageBubble,
+  ChatComposer,
+  ChatLoadingState,
+  ChatErrorState,
+} from "@/components/shared/chat/ChatKit";
 import {
   useAddAdminInternalNote,
   useAddAdminSupportMessage,
@@ -24,6 +31,7 @@ import type {
   SupportTicketPriority,
   SupportTicketStatus,
 } from "../types/support.types";
+import { cn } from "@/lib/utils";
 
 type Props = {
   ticketId: string;
@@ -37,9 +45,18 @@ const ASSIGNABLE_STATUSES: SupportTicketStatus[] = [
   "RESOLVED",
 ];
 
+function formatTime(iso: string | null, locale: string) {
+  if (!iso) return "";
+  return new Date(iso).toLocaleTimeString(locale === "ar" ? "ar-SA" : "en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
+}
+
 function formatDateTime(iso: string | null, locale: string) {
   if (!iso) return "";
-  return new Date(iso).toLocaleString(locale, {
+  return new Date(iso).toLocaleString(locale === "ar" ? "ar-SA" : "en-US", {
     year: "numeric",
     month: "short",
     day: "numeric",
@@ -64,31 +81,13 @@ function InternalNoteBubble({
   const numLocale = locale === "ar" ? "ar-SA" : "en-US";
 
   return (
-    <div className="rounded-[20px] border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-500/25 dark:bg-amber-500/10">
-      <p className="text-xs font-semibold text-amber-700 dark:text-amber-400">
+    <div className="rounded-2xl border border-amber-200 bg-amber-50/80 p-3.5 dark:border-amber-500/20 dark:bg-amber-500/10 shadow-sm">
+      <p className="text-[10px] font-bold text-amber-700 dark:text-amber-400">
         {t(`thread.senderRoles.${senderRole}` as Parameters<typeof t>[0])}
       </p>
-      <p className="mt-2 text-sm leading-6 text-text-primary dark:text-white/90">{message}</p>
-      <p className="mt-2 text-[11px] text-text-muted">{formatDateTime(createdAt, numLocale)}</p>
+      <p className="mt-1.5 text-xs font-semibold leading-relaxed text-text-primary dark:text-white/90 whitespace-pre-wrap">{message}</p>
+      <p className="mt-2 text-[9px] text-text-muted font-medium">{formatDateTime(createdAt, numLocale)}</p>
     </div>
-  );
-}
-
-function StatusChip({ status }: { status: SupportTicketStatus }) {
-  const t = useTranslations("support.admin");
-  return (
-    <span className="app-chip rounded-full px-3 py-1 text-xs font-medium">
-      {t(`statuses.${status}` as Parameters<typeof t>[0])}
-    </span>
-  );
-}
-
-function PriorityChip({ priority }: { priority: SupportTicketPriority }) {
-  const t = useTranslations("support.admin");
-  return (
-    <span className="app-chip rounded-full px-3 py-1 text-xs font-medium">
-      {t(`priorities.${priority}` as Parameters<typeof t>[0])}
-    </span>
   );
 }
 
@@ -153,21 +152,21 @@ function OperationsPanel({ ticketId }: { ticketId: string }) {
   return (
     <div className="space-y-4">
       {/* Status change */}
-      <div className="app-panel rounded-[24px] p-4">
-        <h3 className="text-sm font-semibold text-text-primary dark:text-white/95">
+      <div className="rounded-3xl border border-slate-200/85 dark:border-white/10 bg-white dark:bg-slate-900/40 p-4 shadow-sm">
+        <h3 className="text-xs font-bold text-text-primary dark:text-white">
           {t("operations.status.heading")}
         </h3>
 
         {isClosed ? (
-          <p className="mt-3 text-xs leading-5 text-text-muted">
+          <p className="mt-2 text-[11px] leading-relaxed text-text-muted">
             {t("operations.status.closedNote")}
           </p>
         ) : (
-          <div className="mt-3 space-y-3">
+          <div className="mt-3.5 space-y-3">
             <select
               value={selectedStatus}
               onChange={(e) => setSelectedStatus(e.target.value as SupportTicketStatus)}
-              className="w-full rounded-2xl border border-border-light bg-white px-3 py-2.5 text-sm text-text-primary outline-none focus:border-primary/35 dark:bg-white/5 dark:text-white"
+              className="w-full h-11 px-3 text-xs rounded-xl border border-slate-200/80 dark:border-white/10 bg-white dark:bg-slate-950/20 outline-none focus:border-teal-500 font-bold text-text-primary dark:text-white cursor-pointer"
             >
               <option value="">{t("operations.status.label")}</option>
               {ASSIGNABLE_STATUSES.map((s) => (
@@ -178,12 +177,12 @@ function OperationsPanel({ ticketId }: { ticketId: string }) {
             </select>
 
             {statusFeedback === "success" && (
-              <p className="text-xs text-emerald-600 dark:text-emerald-400">
+              <p className="text-[11px] text-emerald-600 dark:text-emerald-400">
                 {t("operations.status.success")}
               </p>
             )}
             {statusFeedback === "error" && (
-              <p className="text-xs text-rose-600 dark:text-rose-400">
+              <p className="text-[11px] text-rose-600 dark:text-rose-400">
                 {t("operations.status.error")}
               </p>
             )}
@@ -192,11 +191,11 @@ function OperationsPanel({ ticketId }: { ticketId: string }) {
               type="button"
               disabled={!selectedStatus || updateStatus.isPending}
               onClick={handleStatusSave}
-              className="inline-flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-xs font-semibold text-white transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
+              className="w-full h-11 rounded-full bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs transition active:scale-95 disabled:opacity-40 shadow-[0_4px_12px_rgba(13,148,136,0.15)] flex items-center justify-center gap-2"
             >
               {updateStatus.isPending ? (
                 <>
-                  <Loader2 className="h-3 w-3 animate-spin" />
+                  <Loader2 className="h-4 w-4 animate-spin" />
                   {t("operations.status.saving")}
                 </>
               ) : (
@@ -208,38 +207,38 @@ function OperationsPanel({ ticketId }: { ticketId: string }) {
       </div>
 
       {/* Assignment */}
-      <div className="app-panel rounded-[24px] p-4">
-        <h3 className="text-sm font-semibold text-text-primary dark:text-white/95">
+      <div className="rounded-3xl border border-slate-200/85 dark:border-white/10 bg-white dark:bg-slate-900/40 p-4 shadow-sm">
+        <h3 className="text-xs font-bold text-text-primary dark:text-white">
           {t("operations.assign.heading")}
         </h3>
 
         {item?.assignedAdminUserId && (
-          <p className="mt-2 text-xs text-text-secondary">
+          <p className="mt-2 text-[11px] text-text-secondary font-semibold">
             {t("operations.assign.currentLabel")}:{" "}
-            <span className="font-mono text-primary">{item.assignedAdminUserId.slice(0, 8)}</span>
+            <span className="font-mono text-teal-600 dark:text-teal-400">{item.assignedAdminUserId.slice(0, 8)}</span>
           </p>
         )}
 
         {!item?.assignedAdminUserId && (
-          <p className="mt-2 text-xs text-text-muted">{t("detail.unassigned")}</p>
+          <p className="mt-2 text-[11px] text-text-muted font-medium">{t("detail.unassigned")}</p>
         )}
 
-        <div className="mt-3 space-y-2">
+        <div className="mt-3.5 space-y-3">
           <input
             type="text"
             value={assigneeInput}
             onChange={(e) => setAssigneeInput(e.target.value)}
             placeholder={t("operations.assign.placeholder")}
-            className="w-full rounded-2xl border border-border-light bg-white px-3 py-2.5 text-sm text-text-primary outline-none placeholder:text-text-muted focus:border-primary/35 dark:bg-white/5 dark:text-white"
+            className="w-full h-11 px-3 text-xs rounded-xl border border-slate-200/80 dark:border-white/10 bg-white dark:bg-slate-950/20 outline-none focus:border-teal-500 font-semibold text-text-primary dark:text-white"
           />
 
           {assignFeedback === "success" && (
-            <p className="text-xs text-emerald-600 dark:text-emerald-400">
+            <p className="text-[11px] text-emerald-600 dark:text-emerald-400">
               {t("operations.assign.success")}
             </p>
           )}
           {assignFeedback === "error" && (
-            <p className="text-xs text-rose-600 dark:text-rose-400">
+            <p className="text-[11px] text-rose-600 dark:text-rose-400">
               {t("operations.assign.error")}
             </p>
           )}
@@ -249,11 +248,11 @@ function OperationsPanel({ ticketId }: { ticketId: string }) {
               type="button"
               disabled={!assigneeInput.trim() || assign.isPending}
               onClick={handleAssign}
-              className="inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-xs font-semibold text-white transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
+              className="flex-1 h-11 rounded-full bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs transition active:scale-95 disabled:opacity-40 shadow-[0_4px_12px_rgba(13,148,136,0.15)] flex items-center justify-center gap-2"
             >
               {pendingAssignAction === "assign" ? (
                 <>
-                  <Loader2 className="h-3 w-3 animate-spin" />
+                  <Loader2 className="h-4 w-4 animate-spin" />
                   {t("operations.assign.assigning")}
                 </>
               ) : (
@@ -266,13 +265,10 @@ function OperationsPanel({ ticketId }: { ticketId: string }) {
                 type="button"
                 disabled={assign.isPending}
                 onClick={handleUnassign}
-                className="inline-flex items-center gap-1.5 rounded-full border border-border-light px-4 py-2 text-xs font-semibold text-text-secondary transition hover:border-rose-300 hover:text-rose-600 disabled:opacity-60"
+                className="px-4 h-11 rounded-full border border-slate-200 dark:border-white/10 text-text-secondary dark:text-slate-300 font-bold text-xs transition hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/25 dark:hover:text-rose-400 flex items-center justify-center gap-2"
               >
                 {pendingAssignAction === "unassign" ? (
-                  <>
-                    <Loader2 className="h-3 w-3 animate-spin" />
-                    {t("operations.assign.unassigning")}
-                  </>
+                  <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
                   t("operations.assign.unassign")
                 )}
@@ -288,6 +284,7 @@ function OperationsPanel({ ticketId }: { ticketId: string }) {
 export default function AdminSupportTicketScreen({ ticketId }: Props) {
   const t = useTranslations("support.admin");
   const locale = useLocale();
+  const router = useRouter();
   const numLocale = locale === "ar" ? "ar-SA" : "en-US";
 
   const ticket = useAdminSupportTicket(ticketId);
@@ -298,8 +295,14 @@ export default function AdminSupportTicketScreen({ ticketId }: Props) {
   const [replyText, setReplyText] = useState("");
   const [noteText, setNoteText] = useState("");
   const [isSending, setIsSending] = useState(false);
-  const [replyFeedback, setReplyFeedback] = useState<"success" | "error" | null>(null);
   const [noteFeedback, setNoteFeedback] = useState<"success" | "error" | null>(null);
+
+  // Clear states when ticket shifts
+  useEffect(() => {
+    setReplyText("");
+    setNoteText("");
+    setNoteFeedback(null);
+  }, [ticketId]);
 
   const ticketItem = ticket.data?.item ?? null;
   const currentUserRole: SupportMessageSenderRole =
@@ -321,7 +324,7 @@ export default function AdminSupportTicketScreen({ ticketId }: Props) {
     [realtimeThread.messages],
   );
 
-  const threadMessages = useMemo<SupportThreadMessageVM[]>(() => {
+  const threadMessages = useMemo(() => {
     const myId = meQuery.data?.userId ?? null;
     return messages.map((msg) => {
       const mine = myId ? msg.senderUserId === myId : msg.senderRole === currentUserRole;
@@ -338,15 +341,11 @@ export default function AdminSupportTicketScreen({ ticketId }: Props) {
   const handleReply = async () => {
     const clean = replyText.trim();
     if (!clean) return;
-    setReplyFeedback(null);
     try {
       setIsSending(true);
       realtimeThread.reportTypingActivity(false);
       await realtimeThread.sendMessage(clean);
       setReplyText("");
-      setReplyFeedback("success");
-    } catch {
-      setReplyFeedback("error");
     } finally {
       setIsSending(false);
     }
@@ -365,39 +364,17 @@ export default function AdminSupportTicketScreen({ ticketId }: Props) {
   };
 
   if (ticket.isLoading) {
-    return (
-      <div className="space-y-4">
-        <div className="h-32 animate-pulse rounded-[28px] bg-surface-tertiary dark:bg-white/10" />
-        <div className="grid gap-5 lg:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)]">
-          <div className="space-y-4">
-            <div className="h-80 animate-pulse rounded-[28px] bg-surface-tertiary dark:bg-white/10" />
-            <div className="h-48 animate-pulse rounded-[28px] bg-surface-tertiary dark:bg-white/10" />
-          </div>
-          <div className="space-y-4">
-            <div className="h-40 animate-pulse rounded-[28px] bg-surface-tertiary dark:bg-white/10" />
-            <div className="h-40 animate-pulse rounded-[28px] bg-surface-tertiary dark:bg-white/10" />
-          </div>
-        </div>
-      </div>
-    );
+    return <ChatLoadingState />;
   }
 
   if (ticket.isError || !ticket.data) {
     return (
-      <div className="app-panel mx-auto max-w-2xl rounded-[28px] p-8 text-center">
-        <p className="text-base font-semibold text-text-primary dark:text-white/95">
-          {t("states.detailError.heading")}
-        </p>
-        <p className="mt-2 text-sm leading-6 text-text-secondary">
-          {t("states.detailError.note")}
-        </p>
-        <Link
-          href="/admin/support"
-          className="mt-5 inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-white hover:bg-primary-hover"
-        >
-          {t("states.detailError.back")}
-        </Link>
-      </div>
+      <ChatErrorState
+        title={t("states.detailError.heading")}
+        note={t("states.detailError.note")}
+        actionLabel={t("states.detailError.back")}
+        onAction={() => router.push("/admin/messages?lane=support" as never)}
+      />
     );
   }
 
@@ -405,188 +382,186 @@ export default function AdminSupportTicketScreen({ ticketId }: Props) {
   const isClosed = item.status === "CLOSED";
 
   return (
-    <FullHeightMessagesPage
-      className="w-full min-w-0 flex flex-col gap-4 sm:gap-5"
-    >
-      {/* Header */}
-      <section className="app-panel rounded-[28px] p-5 sm:p-6">
-        <Link
-          href="/admin/support"
-          className="mb-3 inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline"
-        >
-          <DirectionalArrowIcon direction="back" className="h-4 w-4" />
-          {t("detail.back")}
-        </Link>
-
-        <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-primary">
-          {t("detail.eyebrow")}
-        </p>
-        <h1 className="text-xl font-semibold text-text-primary dark:text-white/95 sm:text-2xl">
-          {item.subject}
-        </h1>
-        <p className="mt-3 text-sm leading-6 text-text-secondary">
-          {item.description ?? t("detail.noDescription")}
-        </p>
-
-        <div className="mt-4 flex flex-wrap gap-2">
-          <span className="app-chip rounded-full px-3 py-1 text-xs font-medium">
-            {t(`categories.${item.category}` as Parameters<typeof t>[0])}
-          </span>
-          <StatusChip status={item.status} />
-          <PriorityChip priority={item.priority} />
-        </div>
-
-        <div className="mt-3 flex flex-wrap gap-3 text-xs text-text-muted">
-          <span>{t("detail.createdAt", { date: formatDateTime(item.createdAt, numLocale) })}</span>
-          {item.lastMessageAt && (
-            <span>
-              {t("detail.lastReplyAt", { date: formatDateTime(item.lastMessageAt, numLocale) })}
-            </span>
-          )}
-          {item.resolvedAt && (
-            <span>
-              {t("detail.resolvedAt", { date: formatDateTime(item.resolvedAt, numLocale) })}
-            </span>
-          )}
-          {item.closedAt && (
-            <span>
-              {t("detail.closedAt", { date: formatDateTime(item.closedAt, numLocale) })}
-            </span>
-          )}
-          {item.assignedAdminUserId ? (
-            <span className="text-primary">
-              {t("detail.assignedTo", { id: item.assignedAdminUserId.slice(0, 8) })}
-            </span>
-          ) : (
-            <span>{t("detail.unassigned")}</span>
-          )}
-        </div>
-      </section>
-
-      {/* Two-column body */}
-      <div className="custom-scrollbar flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto lg:flex-row lg:items-stretch lg:overflow-hidden">
-        {/* Left: thread + reply */}
-        <div className="flex min-h-0 flex-col gap-5 lg:flex-1 lg:overflow-hidden">
-          {/* Message thread */}
-          <SupportThreadPanel
-            locale={locale}
-            title={t("thread.heading")}
-            note={t("thread.note")}
-            countLabel={t("thread.count", { value: threadMessages.length })}
-            messages={threadMessages}
-            isPeerTyping={realtimeThread.isPeerTyping}
-            emptyHeading={t("thread.empty.heading")}
-            emptyNote={t("thread.empty.note")}
-            composer={
-              isClosed
-                ? null
-                : {
-                    placeholder: t("reply.placeholder"),
-                    helperNote:
-                      replyFeedback === "success" ? t("reply.success") : t("reply.note"),
-                    errorNote: replyFeedback === "error" ? t("reply.error") : null,
-                    value: replyText,
-                    onChange: (next) => {
-                      setReplyText(next);
-                      realtimeThread.reportTypingActivity(next.trim().length > 0);
-                    },
-                    onSubmit: handleReply,
-                    isSubmitting: isSending || reply.isPending,
-                    disabled: reply.isPending,
-                    submitLabel: t("reply.submit"),
-                  }
-            }
-          />
-        </div>
-
-        {/* Right: internal notes + operations */}
-        <div className="flex flex-col gap-5 lg:min-h-0 lg:w-[360px] lg:shrink-0 lg:overflow-y-auto lg:pe-1 xl:w-[420px]">
-          <section className="rounded-[28px] border border-amber-200 bg-amber-50/60 p-5 dark:border-amber-500/20 dark:bg-amber-500/5 sm:p-6">
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2">
-                <Lock className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-                <h2 className="text-base font-semibold text-text-primary dark:text-white/95">
-                  {t("internalNotes.heading")}
-                </h2>
-              </div>
-              <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-medium text-amber-700 dark:bg-amber-500/15 dark:text-amber-400">
-                {t("internalNotes.count", { value: item.internalNotes.length })}
-              </span>
-            </div>
-            <p className="mt-1 text-xs text-amber-700 dark:text-amber-400">
-              {t("internalNotes.note")}
-            </p>
-
-            {item.internalNotes.length > 0 ? (
-              <div className="mt-4 space-y-3">
-                {item.internalNotes.map((n) => (
-                  <InternalNoteBubble
-                    key={n.id}
-                    senderRole="SUPPORT_AGENT"
-                    message={n.note}
-                    createdAt={n.createdAt}
-                    locale={locale}
-                  />
-                ))}
-              </div>
-            ) : (
-              <p className="mt-4 text-sm text-text-muted">{t("internalNotes.empty")}</p>
-            )}
-          </section>
-
-          {!isClosed && (
-            <section className="rounded-[28px] border border-amber-200 bg-amber-50/60 p-5 dark:border-amber-500/20 dark:bg-amber-500/5 sm:p-6">
-              <div className="flex items-center gap-2">
-                <StickyNote className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-                <h2 className="text-base font-semibold text-text-primary dark:text-white/95">
-                  {t("note.heading")}
-                </h2>
-              </div>
-              <p className="mt-1 text-xs text-amber-700 dark:text-amber-400">{t("note.note")}</p>
-
-              <form className="mt-4 space-y-3" onSubmit={handleNote}>
-                <textarea
-                  rows={3}
-                  maxLength={4000}
-                  value={noteText}
-                  onChange={(e) => setNoteText(e.target.value)}
-                  placeholder={t("note.placeholder")}
-                  className="w-full rounded-[20px] border border-amber-200 bg-white px-4 py-3 text-sm leading-6 text-text-primary outline-none placeholder:text-text-muted focus:border-amber-400 dark:border-amber-500/25 dark:bg-white/5 dark:text-white"
-                />
-
-                {noteFeedback === "success" && (
-                  <p className="text-xs text-emerald-600 dark:text-emerald-400">
-                    {t("note.success")}
+    <div className="flex flex-col lg:flex-row gap-4 lg:gap-5 h-full min-h-0 items-stretch w-full overflow-hidden">
+      {/* Left Column: Chat Conversation */}
+      <div className="flex-1 flex flex-col h-full min-h-0">
+        <ChatConversationPanel
+          header={
+            <ChatConversationHeader
+              title={item.subject}
+              subtitle={
+                <div className="flex flex-col gap-1.5 mt-1">
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <span className="rounded-full bg-teal-50 dark:bg-teal-950/40 px-2 py-0.5 text-[10px] font-bold text-teal-700 dark:text-teal-400 border border-teal-100/30">
+                      {t(`categories.${item.category}` as Parameters<typeof t>[0])}
+                    </span>
+                    <span className="rounded-full bg-slate-100 dark:bg-white/10 px-2 py-0.5 text-[10px] font-bold text-text-secondary dark:text-white">
+                      {t(`statuses.${item.status}` as Parameters<typeof t>[0])}
+                    </span>
+                    <span className={cn(
+                      "rounded-full px-2 py-0.5 text-[10px] font-bold shrink-0",
+                      item.priority === "URGENT" || item.priority === "HIGH"
+                        ? "bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-400"
+                        : "bg-slate-100 text-text-secondary dark:bg-white/10 dark:text-white"
+                    )}>
+                      {t(`priorities.${item.priority}` as Parameters<typeof t>[0])}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-text-muted mt-0.5 font-medium">
+                    {locale === "ar"
+                    ? `تم الإنشاء: ${formatDateTime(item.createdAt, locale)}`
+                    : `Created: ${formatDateTime(item.createdAt, locale)}`}
                   </p>
-                )}
-                {noteFeedback === "error" && (
-                  <p className="text-xs text-rose-600 dark:text-rose-400">{t("note.error")}</p>
-                )}
-
-                <button
-                  type="submit"
-                  disabled={note.isPending || noteText.trim().length === 0}
-                  className="inline-flex items-center gap-2 rounded-full bg-amber-500 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-amber-600 disabled:cursor-not-allowed disabled:opacity-60"
+                </div>
+              }
+              actions={
+                <Link
+                  href="/admin/messages?lane=support"
+                  className="lg:hidden p-2.5 hover:bg-slate-50 dark:hover:bg-white/5 rounded-xl transition flex items-center justify-center border border-slate-200/50 dark:border-white/10"
                 >
-                  {note.isPending ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      {t("note.submitting")}
-                    </>
-                  ) : (
-                    <>
-                      <StickyNote className="h-4 w-4" />
-                      {t("note.submit")}
-                    </>
-                  )}
-                </button>
-              </form>
-            </section>
+                  <DirectionalArrowIcon direction="back" className="h-4 w-4 text-text-primary" />
+                </Link>
+              }
+            />
+          }
+          composer={
+            !isClosed ? (
+              <ChatComposer
+                placeholder={t("reply.placeholder")}
+                value={replyText}
+                onChange={(next) => {
+                  setReplyText(next);
+                  realtimeThread.reportTypingActivity(next.trim().length > 0);
+                }}
+                onSubmit={handleReply}
+                isSubmitting={isSending || reply.isPending}
+                disabled={reply.isPending}
+              />
+            ) : undefined
+          }
+        >
+          {threadMessages.length > 0 ? (
+            threadMessages.map((msg) => (
+              <ChatMessageBubble
+                key={msg.id}
+                message={{
+                  id: msg.id,
+                  body: msg.message,
+                  sentAt: formatTime(msg.createdAt, numLocale),
+                  direction: msg.mine ? "outgoing" : "incoming",
+                  status: msg.localStatus as any,
+                }}
+              />
+            ))
+          ) : (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <p className="text-sm font-semibold text-text-primary dark:text-white/95">
+                {t("thread.empty.heading")}
+              </p>
+              <p className="mt-1 text-xs text-text-secondary">
+                {t("thread.empty.note")}
+              </p>
+            </div>
           )}
-
-          <OperationsPanel ticketId={ticketId} />
-        </div>
+          {realtimeThread.isPeerTyping && (
+            <div className="flex justify-start mt-2">
+              <div className="inline-flex items-center gap-1 rounded-full border border-border-light/80 bg-white px-2.5 py-1 text-[11px] text-text-muted dark:border-white/10 dark:bg-white/10 dark:text-white/60">
+                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-current" />
+                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-current [animation-delay:120ms]" />
+                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-current [animation-delay:240ms]" />
+              </div>
+            </div>
+          )}
+        </ChatConversationPanel>
       </div>
-    </FullHeightMessagesPage>
+
+      {/* Right Column: Internal Notes and Operations */}
+      <div className="flex flex-col gap-4 lg:w-[320px] xl:w-[360px] lg:shrink-0 lg:overflow-y-auto lg:h-full custom-scrollbar pr-1 pb-4 lg:pb-0">
+        <section className="rounded-3xl border border-amber-200 bg-amber-50/60 p-4 dark:border-amber-500/20 dark:bg-amber-500/5 shadow-sm">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <Lock className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+              <h2 className="text-sm font-bold text-text-primary dark:text-white/95">
+                {t("internalNotes.heading")}
+              </h2>
+            </div>
+            <span className="rounded-full bg-amber-100 dark:bg-amber-950/40 px-2.5 py-0.5 text-[10px] font-bold text-amber-700 dark:text-amber-400">
+              {item.internalNotes.length}
+            </span>
+          </div>
+          <p className="mt-1 text-[11px] text-amber-700 dark:text-amber-400">
+            {t("internalNotes.note")}
+          </p>
+
+          {item.internalNotes.length > 0 ? (
+            <div className="mt-3 space-y-2">
+              {item.internalNotes.map((n) => (
+                <InternalNoteBubble
+                  key={n.id}
+                  senderRole="SUPPORT_AGENT"
+                  message={n.note}
+                  createdAt={n.createdAt}
+                  locale={locale}
+                />
+              ))}
+            </div>
+          ) : (
+            <p className="mt-3 text-xs text-text-muted">{t("internalNotes.empty")}</p>
+          )}
+        </section>
+
+        {!isClosed && (
+          <section className="rounded-3xl border border-amber-200 bg-amber-50/60 p-4 dark:border-amber-500/20 dark:bg-amber-500/5 shadow-sm">
+            <div className="flex items-center gap-2">
+              <StickyNote className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+              <h2 className="text-sm font-bold text-text-primary dark:text-white/95">
+                {t("note.heading")}
+              </h2>
+            </div>
+            <p className="mt-1 text-[11px] text-amber-700 dark:text-amber-400">{t("note.note")}</p>
+
+            <form className="mt-3 space-y-2.5" onSubmit={handleNote}>
+              <textarea
+                rows={3}
+                maxLength={4000}
+                value={noteText}
+                onChange={(e) => setNoteText(e.target.value)}
+                placeholder={t("note.placeholder")}
+                className="w-full rounded-2xl border border-amber-200/80 bg-white px-3 py-2 text-xs leading-normal text-text-primary outline-none placeholder:text-text-muted focus:border-amber-400 dark:border-amber-500/25 dark:bg-slate-900/40 dark:text-white resize-none"
+              />
+
+              {noteFeedback === "success" && (
+                <p className="text-[11px] text-emerald-600 dark:text-emerald-400">
+                  {t("note.success")}
+                </p>
+              )}
+              {noteFeedback === "error" && (
+                <p className="text-[11px] text-rose-600 dark:text-rose-400">{t("note.error")}</p>
+              )}
+
+              <button
+                type="submit"
+                disabled={note.isPending || noteText.trim().length === 0}
+                className="inline-flex items-center gap-2 rounded-full bg-amber-500 px-4 py-2 text-xs font-semibold text-white transition hover:bg-amber-600 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {note.isPending ? (
+                  <>
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    {t("note.submitting")}
+                  </>
+                ) : (
+                  <>
+                    <StickyNote className="h-3.5 w-3.5" />
+                    {t("note.submit")}
+                  </>
+                )}
+              </button>
+            </form>
+          </section>
+        )}
+
+        <OperationsPanel ticketId={ticketId} />
+      </div>
+    </div>
   );
 }

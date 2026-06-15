@@ -10,6 +10,17 @@ import { getAdminNotificationStatusTone } from "@/features/admin/notifications/l
 import { formatAdminNotificationDateTime } from "@/features/admin/notifications/components/admin-notification-utils";
 import { useCurrentUserPermissions } from "@/features/users/hooks/use-users";
 import { PermissionKey } from "@/lib/auth/permissions";
+import { getNotificationVisualProps } from "@/features/notifications/lib/notification-visual-mapper";
+
+const TONE_CLASSES: Record<string, string> = {
+  message: "bg-teal-50/50 text-teal-700 border border-teal-100 dark:bg-teal-500/5 dark:text-teal-300 dark:border-teal-500/10",
+  session: "bg-teal-50/50 text-teal-700 border border-teal-100 dark:bg-teal-500/5 dark:text-teal-300 dark:border-teal-500/10",
+  support: "bg-teal-50/50 text-teal-700 border border-teal-100 dark:bg-teal-500/5 dark:text-teal-300 dark:border-teal-500/10",
+  payment: "bg-teal-50/50 text-teal-700 border border-teal-100 dark:bg-teal-500/5 dark:text-teal-300 dark:border-teal-500/10",
+  system: "bg-gray-50/50 text-gray-700 border border-gray-100 dark:bg-white/5 dark:text-white/70 dark:border-white/10",
+  warning: "bg-amber-50/50 text-amber-700 border border-amber-100 dark:bg-amber-500/5 dark:text-amber-300 dark:border-amber-500/10",
+  content: "bg-rose-50/50 text-rose-700 border border-rose-100 dark:bg-rose-500/5 dark:text-rose-300 dark:border-rose-500/10",
+};
 
 export default function NotificationDropdown() {
   const locale = useLocale();
@@ -38,7 +49,7 @@ export default function NotificationDropdown() {
   return (
     <div className="relative">
       <button
-        className="dropdown-toggle relative flex h-11 w-11 items-center justify-center rounded-full border border-border-light bg-surface-secondary text-text-secondary transition-colors hover:bg-primary-light hover:text-text-brand dark:border-border-light dark:bg-surface-secondary dark:text-text-secondary dark:hover:bg-surface-tertiary dark:hover:text-text-primary"
+        className="dropdown-toggle relative flex h-11 w-11 items-center justify-center rounded-2xl border border-border-light bg-surface-secondary text-amber-600 dark:text-amber-400 shadow-sm transition-all duration-200 hover:-translate-y-[1px] hover:shadow-md hover:bg-surface-tertiary hover:text-amber-700 dark:hover:text-amber-300 focus:outline-none overflow-visible"
         onClick={() => setIsOpen((prev) => !prev)}
         aria-label={t("notifications.dropdown.ariaLabel")}
       >
@@ -52,7 +63,7 @@ export default function NotificationDropdown() {
         </svg>
 
         {total > 0 ? (
-          <span className="absolute -end-1 -top-1 inline-flex min-h-5 min-w-5 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-semibold text-white">
+          <span className="absolute -top-1 -end-1 z-10 flex min-w-[20px] h-5 px-1.5 items-center justify-center rounded-full bg-rose-500 text-white text-[11px] font-bold ring-2 ring-white dark:ring-surface-secondary">
             {total > 9 ? "9+" : total}
           </span>
         ) : null}
@@ -98,35 +109,58 @@ export default function NotificationDropdown() {
             />
           ) : items.length > 0 ? (
             <div className="space-y-2">
-              {items.map((item) => (
-                <Link
-                  key={item.id}
-                  href={`/admin/notifications/${item.id}` as never}
-                  onClick={() => setIsOpen(false)}
-                  className="block rounded-2xl border border-border-light bg-surface-secondary px-4 py-3 transition hover:border-primary/25 hover:bg-primary-light/40 dark:bg-surface-secondary"
-                >
-                  <div className="flex items-center justify-between gap-3">
-                    <span
-                      className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${getAdminNotificationStatusTone(
-                        item.status,
-                      )}`}
-                    >
-                      {t(`notifications.statuses.${item.status}` as Parameters<typeof t>[0])}
-                    </span>
-                    <span className="text-[11px] text-text-muted">
-                      {formatAdminNotificationDateTime(item.updatedAt, locale)}
-                    </span>
-                  </div>
-                  <p className="mt-2 text-sm font-medium text-text-primary dark:text-white/95">
-                    {t("notifications.list.itemTitle", { slug: item.typeSlug })}
-                  </p>
-                  <p className="mt-1 text-xs leading-5 text-text-secondary">
-                    {t(`notifications.categories.${item.category}` as Parameters<typeof t>[0])}
-                    {" • "}
-                    {t(`notifications.channels.${item.channel}` as Parameters<typeof t>[0])}
-                  </p>
-                </Link>
-              ))}
+              {items.map((item) => {
+                const notificationSlug =
+                  item.typeSlug ??
+                  (item as any).type ??
+                  (item as any).notificationType;
+                
+                const visual = getNotificationVisualProps(
+                  notificationSlug,
+                  item.category,
+                  t,
+                  "admin",
+                  locale,
+                  item.context,
+                  item.primaryAction,
+                );
+                const toneClass = TONE_CLASSES[visual.tone] || TONE_CLASSES.system;
+
+                return (
+                  <Link
+                    key={item.id}
+                    href={`/admin/notifications/${item.id}` as never}
+                    onClick={() => setIsOpen(false)}
+                    className="block rounded-2xl border border-border-light bg-surface-secondary px-4 py-3 transition hover:border-primary/25 hover:bg-primary-light/40 dark:bg-surface-secondary text-start"
+                  >
+                    <div className="flex items-start gap-3 min-w-0">
+                      <div className={`p-2 rounded-xl shrink-0 ${toneClass}`}>
+                        {visual.icon}
+                      </div>
+                      <div className="min-w-0 flex-1 text-start">
+                        <div className="flex items-center justify-between gap-2">
+                          <span
+                            className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${getAdminNotificationStatusTone(
+                              item.status,
+                            )}`}
+                          >
+                            {t(`notifications.statuses.${item.status}` as Parameters<typeof t>[0])}
+                          </span>
+                          <span className="text-[10px] text-text-muted">
+                            {formatAdminNotificationDateTime(item.updatedAt, locale)}
+                          </span>
+                        </div>
+                        <p className="mt-2 text-sm font-semibold text-text-primary dark:text-white/95 leading-normal">
+                          {visual.title}
+                        </p>
+                        <p className="mt-1 text-xs text-text-secondary leading-normal font-medium">
+                          {visual.contextLine || visual.subtitle}
+                        </p>
+                      </div>
+                    </div>
+                  </Link>
+                );
+              })}
             </div>
           ) : (
             <StateCard

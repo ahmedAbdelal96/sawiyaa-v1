@@ -86,11 +86,12 @@ export class CreateFeaturedPractitionerPlacementDto {
   @IsDateString()
   endsAt?: string;
 
-  @ApiPropertyOptional({ minimum: 1, default: 100 })
+  @ApiPropertyOptional({ minimum: 1, maximum: 5, default: 1 })
   @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(1)
+  @Max(5)
   priority?: number;
 
   @ApiPropertyOptional({ default: 'مميز' })
@@ -146,11 +147,12 @@ export class UpdateFeaturedPractitionerPlacementDto {
   @IsDateString()
   endsAt?: string;
 
-  @ApiPropertyOptional({ minimum: 1 })
+  @ApiPropertyOptional({ minimum: 1, maximum: 5 })
   @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(1)
+  @Max(5)
   priority?: number;
 
   @ApiPropertyOptional({ default: 'مميز' })

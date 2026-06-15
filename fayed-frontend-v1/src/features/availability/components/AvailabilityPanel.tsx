@@ -78,6 +78,10 @@ export default function AvailabilityPanel() {
 
   return (
     <div className="space-y-6">
+      <div className="rounded-[22px] border border-primary/15 bg-primary-light/20 px-4 py-3 text-sm leading-6 text-text-secondary dark:border-primary/20 dark:bg-primary/10">
+        <p className="font-semibold text-text-primary dark:text-white/95">{t("schedule.heading")}</p>
+        <p className="mt-1">{t("schedule.recurrenceNote")}</p>
+      </div>
       <WeeklyScheduleEditor data={data} />
       <AvailabilityExceptionsList data={data} />
     </div>

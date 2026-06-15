@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import fs from "node:fs";
 import path from "node:path";
+import { validateNoDuplicateKeys } from "./i18n-duplicate-key-guard.mjs";
 
 const root = process.cwd();
 const messagesRoot = path.join(root, "messages");
@@ -126,6 +127,8 @@ function main() {
       validateLocaleFile(locale, namespace, baseMap, localeMap, errors);
     }
   }
+
+  errors.push(...validateNoDuplicateKeys(messagesRoot));
 
   if (errors.length > 0) {
     console.error("i18n validation failed:");

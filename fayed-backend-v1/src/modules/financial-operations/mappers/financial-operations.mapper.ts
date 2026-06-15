@@ -19,6 +19,7 @@ import {
   PackageSettlementViewModel,
   PractitionerManualPayoutViewModel,
   PractitionerManualPayoutSummaryViewModel,
+  PractitionerPayoutDestinationSnapshotViewModel,
   PractitionerPayoutBalanceViewModel,
   PractitionerStatementRowViewModel,
   PractitionerSettlementViewModel,
@@ -574,6 +575,9 @@ export class FinancialOperationsMapper {
     practitionerId: string;
     practitionerName: string | null;
     currencyCode: string;
+    payoutDestinationSnapshot: PractitionerPayoutDestinationSnapshotViewModel | null;
+    payoutDestinationType: string | null;
+    payoutDestinationSummaryMasked: string | null;
     normalSessionPayableAmount: Prisma.Decimal | string;
     packageReleasedPayableAmount: Prisma.Decimal | string;
     packageHeldAmount: Prisma.Decimal | string;
@@ -584,6 +588,9 @@ export class FinancialOperationsMapper {
       practitionerId: input.practitionerId,
       practitionerName: input.practitionerName,
       currencyCode: input.currencyCode,
+      payoutDestinationSnapshot: input.payoutDestinationSnapshot,
+      payoutDestinationType: input.payoutDestinationType,
+      payoutDestinationSummaryMasked: input.payoutDestinationSummaryMasked,
       normalSessionPayableAmount: input.normalSessionPayableAmount.toString(),
       packageReleasedPayableAmount:
         input.packageReleasedPayableAmount.toString(),
@@ -622,6 +629,11 @@ export class FinancialOperationsMapper {
     practitionerId: string;
     practitionerName: string | null;
     practitionerSlug: string | null;
+    safeDisplayCode: string;
+    avatarUrl: string | null;
+    primarySpecialtyName: string | null;
+    payoutDestinationType: string | null;
+    payoutDestinationSummaryMasked: string | null;
     egp: PractitionerPayoutBalanceViewModel;
     usd: PractitionerPayoutBalanceViewModel;
     hasPayable: boolean;

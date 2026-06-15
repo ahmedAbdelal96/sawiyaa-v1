@@ -7,7 +7,11 @@ import { StateCard } from "@/components/shared/ContentStates";
 import PaymentCheckoutShell from "@/features/payments/components/PaymentCheckoutShell";
 import StripePaymentForm from "@/features/payments/components/StripePaymentForm";
 import { usePatientTrainingEnrollment } from "../hooks/use-training";
-import { formatTrainingAmount } from "./training-utils";
+import {
+  buildTrainingPaymentRedirectUrl,
+  buildTrainingPaymentReturnUrl,
+  formatTrainingAmount,
+} from "./training-utils";
 
 type Props = {
   enrollmentId: string;
@@ -18,6 +22,21 @@ export default function TrainingEnrollmentPayPanel({ enrollmentId }: Props) {
   const locale = useLocale();
   const { data: enrollment, isLoading, isError, refetch } =
     usePatientTrainingEnrollment(enrollmentId);
+  const paymentReturnUrl =
+    typeof window !== "undefined"
+      ? buildTrainingPaymentReturnUrl({
+          locale,
+          enrollmentId,
+          origin: window.location.origin,
+        })
+      : "";
+  const paymentRedirectUrl =
+    paymentReturnUrl && enrollment?.payment
+      ? buildTrainingPaymentRedirectUrl({
+          enrollmentId: enrollment.id,
+          returnUrl: paymentReturnUrl,
+        })
+      : "";
 
   if (isLoading) {
     return (
@@ -111,7 +130,7 @@ export default function TrainingEnrollmentPayPanel({ enrollmentId }: Props) {
       summary={paymentSummary}
       sidebar={paymentSidebar}
     >
-      {enrollment.payment.checkoutUrl ? (
+      {enrollment.payment.checkoutUrl && enrollment.payment.provider !== "STRIPE" ? (
         <section className="rounded-[32px] border border-border-light bg-surface-primary p-6 dark:bg-white/5">
           <h2 className="text-sm font-semibold text-text-primary dark:text-white/95">
             {t("patient.pay.hostedCheckoutHeading")}
@@ -119,24 +138,26 @@ export default function TrainingEnrollmentPayPanel({ enrollmentId }: Props) {
           <p className="mt-2 text-sm text-text-secondary">
             {t("patient.pay.hostedCheckoutNote")}
           </p>
-          <a
-            href={enrollment.payment.checkoutUrl}
-            target="_blank"
-            rel="noreferrer"
+          <button
+            type="button"
+            onClick={() => {
+              if (!paymentRedirectUrl) return;
+              window.location.assign(paymentRedirectUrl);
+            }}
             className="mt-4 inline-flex items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-primary/90"
           >
             <ExternalLink className="h-4 w-4" />
             {t("patient.pay.openCheckout")}
-          </a>
+          </button>
         </section>
       ) : null}
 
-      {enrollment.payment.clientSecret ? (
+      {enrollment.payment.provider === "STRIPE" && enrollment.payment.clientSecret ? (
         <StripePaymentForm
           clientSecret={enrollment.payment.clientSecret}
           netPaidAmount={enrollment.payment.amount}
           currency={enrollment.payment.currency}
-          returnUrl={`${process.env.NEXT_PUBLIC_APP_URL ?? ""}/${locale}/patient/training/${enrollment.id}`}
+          returnUrl={paymentReturnUrl}
         />
       ) : null}
 

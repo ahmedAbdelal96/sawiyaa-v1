@@ -68,7 +68,7 @@ export default function DatePicker({
     <div className={className}>
       {label && (
         <Label htmlFor={id}>
-          {label} {required && <span className="text-error-600">*</span>}
+          {label} {required && <span className="text-status-danger">*</span>}
         </Label>
       )}
 
@@ -76,9 +76,9 @@ export default function DatePicker({
         <input
           id={id}
           placeholder={placeholder}
-          className={`h-11 w-full rounded-xl border appearance-none bg-surface-secondary px-4 py-2.5 text-sm text-text-primary shadow-theme-xs placeholder:text-text-muted focus:outline-hidden focus:ring-3 focus:ring-primary/20 dark:border-border-light dark:bg-surface-secondary dark:text-text-primary ${
+          className={`h-11 w-full rounded-xl border appearance-none bg-surface-tertiary px-4 py-2.5 text-sm text-text-primary shadow-theme-xs placeholder:text-text-muted focus:outline-hidden focus:ring-3 focus:ring-ring-focus dark:border-border-light dark:bg-surface-tertiary dark:text-text-primary ${
             error
-              ? "border-error-500 focus:border-error-500"
+              ? "border-status-danger focus:border-status-danger"
               : "border-border-light focus:border-border-focus"
           }`}
         />
@@ -87,7 +87,7 @@ export default function DatePicker({
           <CalenderIcon className="size-6" />
         </span>
       </div>
-       {error && <p className="mt-1 text-sm text-error-500">{error}</p>}
+       {error && <p className="mt-1 text-sm text-status-danger">{error}</p>}
     </div>
   );
 }

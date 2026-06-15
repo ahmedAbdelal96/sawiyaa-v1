@@ -27,6 +27,7 @@ export type NavigationSection = {
    * SUPER_ADMIN always sees all sections.
    */
   requiredPermissions?: PermissionKey[];
+  collapsible?: boolean;
 };
 
 export type NavigationConfig = NavigationSection[];

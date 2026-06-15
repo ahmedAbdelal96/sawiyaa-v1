@@ -1,5 +1,6 @@
 import {
   SessionAttendanceParticipantRole,
+  SessionEventType,
   SessionProvider,
 } from '@prisma/client';
 import { AppLoggerService } from '@common/logging/app-logger.service';
@@ -9,17 +10,30 @@ import { HandleDailyAttendanceWebhookUseCase } from './handle-daily-attendance-w
 
 describe('HandleDailyAttendanceWebhookUseCase', () => {
   function buildUseCase() {
+    const createdEvents: Array<{ eventType: string }> = [];
     const parserMocks = {
       parse: jest.fn(),
     };
     const parseDailyAttendanceWebhookService =
       parserMocks as unknown as ParseDailyAttendanceWebhookService;
 
+    const mockDb = {
+      sessionEvent: {
+        findFirst: jest.fn().mockResolvedValue(null),
+      },
+    };
+
     const sessionRepositoryMocks = {
       findAttendanceEventByIngestionKey: jest.fn(),
       findAttendanceEventByProviderEventRef: jest.fn(),
       findByDailyRoomReference: jest.fn(),
       createAttendanceEvent: jest.fn(),
+      createEvent: jest.fn().mockImplementation((data) => {
+        createdEvents.push(data);
+        return Promise.resolve({});
+      }),
+      findSessionEventByProviderEventRef: jest.fn().mockResolvedValue(null),
+      getDb: jest.fn().mockReturnValue(mockDb),
     };
     const sessionRepository =
       sessionRepositoryMocks as unknown as SessionRepository;
@@ -41,6 +55,8 @@ describe('HandleDailyAttendanceWebhookUseCase', () => {
       parserMocks,
       sessionRepositoryMocks,
       loggerMocks,
+      createdEvents,
+      mockDb,
     };
   }
 
@@ -176,11 +192,151 @@ describe('HandleDailyAttendanceWebhookUseCase', () => {
     ).not.toHaveBeenCalled();
   });
 
-  it('ignores unsupported provider event types explicitly', async () => {
+  it('stores meeting.started as SessionEvent with MEETING_STARTED type', async () => {
     const setup = buildUseCase();
     setup.parserMocks.parse.mockReturnValue({
       provider: SessionProvider.DAILY,
       providerEventType: 'meeting.started',
+      providerEventRef: 'evt_meeting_1',
+      providerRoomName: 'fayed-session-session_1',
+      providerRoomUrl: 'https://fayed-session-session_1.daily.co',
+      providerParticipantRef: null,
+      participantUserId: null,
+      participantDisplayName: null,
+      attendanceEventType: null,
+      occurredAt: new Date('2026-04-07T10:28:00.000Z'),
+      source: 'SIGNED',
+      payload: { event: 'meeting.started' },
+    });
+    setup.sessionRepositoryMocks.findAttendanceEventByIngestionKey.mockResolvedValue(
+      null,
+    );
+    setup.sessionRepositoryMocks.findAttendanceEventByProviderEventRef.mockResolvedValue(
+      null,
+    );
+    setup.sessionRepositoryMocks.findByDailyRoomReference.mockResolvedValue({
+      id: 'session_1',
+      patient: { user: { id: 'user_patient_1', displayName: 'Patient One' } },
+      practitioner: { user: { id: 'user_pract_1', displayName: 'Dr One' } },
+    });
+    setup.mockDb.sessionEvent.findFirst.mockResolvedValue(null);
+
+    const result = await setup.useCase.execute({
+      rawBody: Buffer.from('{}'),
+      headers: {},
+    });
+
+    expect(result.handled).toBe(true);
+    expect(result.reason).toBe('MEETING_EVENT_STORED');
+    expect(result.sessionId).toBe('session_1');
+    expect(setup.createdEvents).toContainEqual(
+      expect.objectContaining({
+        eventType: SessionEventType.MEETING_STARTED,
+        sessionId: 'session_1',
+      }),
+    );
+    expect(
+      setup.sessionRepositoryMocks.createAttendanceEvent,
+    ).not.toHaveBeenCalled();
+  });
+
+  it('stores meeting.ended as SessionEvent with MEETING_ENDED type', async () => {
+    const setup = buildUseCase();
+    setup.parserMocks.parse.mockReturnValue({
+      provider: SessionProvider.DAILY,
+      providerEventType: 'meeting.ended',
+      providerEventRef: 'evt_meeting_2',
+      providerRoomName: 'fayed-session-session_1',
+      providerRoomUrl: 'https://fayed-session-session_1.daily.co',
+      providerParticipantRef: null,
+      participantUserId: null,
+      participantDisplayName: null,
+      attendanceEventType: null,
+      occurredAt: new Date('2026-04-07T11:05:00.000Z'),
+      source: 'SIGNED',
+      payload: { event: 'meeting.ended' },
+    });
+    setup.sessionRepositoryMocks.findAttendanceEventByIngestionKey.mockResolvedValue(
+      null,
+    );
+    setup.sessionRepositoryMocks.findAttendanceEventByProviderEventRef.mockResolvedValue(
+      null,
+    );
+    setup.sessionRepositoryMocks.findByDailyRoomReference.mockResolvedValue({
+      id: 'session_1',
+      patient: { user: { id: 'user_patient_1', displayName: 'Patient One' } },
+      practitioner: { user: { id: 'user_pract_1', displayName: 'Dr One' } },
+    });
+    setup.mockDb.sessionEvent.findFirst.mockResolvedValue(null);
+
+    const result = await setup.useCase.execute({
+      rawBody: Buffer.from('{}'),
+      headers: {},
+    });
+
+    expect(result.handled).toBe(true);
+    expect(result.reason).toBe('MEETING_EVENT_STORED');
+    expect(result.sessionId).toBe('session_1');
+    expect(setup.createdEvents).toContainEqual(
+      expect.objectContaining({
+        eventType: SessionEventType.MEETING_ENDED,
+        sessionId: 'session_1',
+      }),
+    );
+  });
+
+  it('returns duplicate when meeting event was already stored', async () => {
+    const setup = buildUseCase();
+    setup.parserMocks.parse.mockReturnValue({
+      provider: SessionProvider.DAILY,
+      providerEventType: 'meeting.started',
+      providerEventRef: 'evt_meeting_dup',
+      providerRoomName: 'fayed-session-session_1',
+      providerRoomUrl: 'https://fayed-session-session_1.daily.co',
+      providerParticipantRef: null,
+      participantUserId: null,
+      participantDisplayName: null,
+      attendanceEventType: null,
+      occurredAt: new Date('2026-04-07T10:28:00.000Z'),
+      source: 'SIGNED',
+      payload: {},
+    });
+    setup.sessionRepositoryMocks.findAttendanceEventByIngestionKey.mockResolvedValue(
+      null,
+    );
+    setup.sessionRepositoryMocks.findAttendanceEventByProviderEventRef.mockResolvedValue(
+      null,
+    );
+    setup.sessionRepositoryMocks.findByDailyRoomReference.mockResolvedValue({
+      id: 'session_1',
+      patient: { user: { id: 'user_patient_1', displayName: 'Patient One' } },
+      practitioner: { user: { id: 'user_pract_1', displayName: 'Dr One' } },
+    });
+    // Simulate existing event found
+    setup.mockDb.sessionEvent.findFirst.mockResolvedValue({
+      id: 'event_existing',
+    });
+    setup.sessionRepositoryMocks.findSessionEventByProviderEventRef.mockResolvedValue({
+      id: 'event_existing',
+    });
+
+    const result = await setup.useCase.execute({
+      rawBody: Buffer.from('{}'),
+      headers: {},
+    });
+
+    expect(result.handled).toBe(true);
+    expect(result.reason).toBe('ATTENDANCE_EVENT_DUPLICATE');
+    expect(
+      setup.sessionRepositoryMocks.createAttendanceEvent,
+    ).not.toHaveBeenCalled();
+  });
+
+  it('ignores unsupported provider event types explicitly', async () => {
+    const setup = buildUseCase();
+    setup.parserMocks.parse.mockReturnValue({
+      provider: SessionProvider.DAILY,
+      providerEventType: 'some.other.event',
       providerEventRef: 'evt_unknown',
       providerRoomName: 'fayed-session-session_2',
       providerRoomUrl: 'https://fayed-session-session_2.daily.co',

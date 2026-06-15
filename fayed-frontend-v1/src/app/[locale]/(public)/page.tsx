@@ -39,11 +39,11 @@ export default async function HomePage({ params }: Props) {
     <>
       <HeroSection />
       <ReassuranceStrip />
+      <PractitionersSection />
       <GuidedEntrySection />
       <WhyFayedSection />
       <SpecialtiesSection />
       <HowItWorksSection />
-      <PractitionersSection />
       <GuidedCareSection />
       <BookingClaritySection />
       <ArticlesPreviewSection locale={locale} />

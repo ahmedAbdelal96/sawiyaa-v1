@@ -170,7 +170,7 @@ export default function SupportInboxView({
             {items.map((row) => (
               <SupportConversationCard
                 key={row.id}
-                href={scope === "patient" ? `/patient/support/${row.id}` : `/practitioner/support/${row.id}`}
+                href={scope === "patient" ? `/patient/messages?lane=support&id=${row.id}` : `/practitioner/messages?lane=support&id=${row.id}`}
                 subject={row.subject}
                 categoryLabel={tRoot(`categories.${row.category}` as Parameters<typeof tRoot>[0])}
                 statusLabel={t(`statuses.${row.status}` as Parameters<typeof t>[0])}

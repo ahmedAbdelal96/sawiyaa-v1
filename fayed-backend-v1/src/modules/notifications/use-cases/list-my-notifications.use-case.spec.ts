@@ -1,6 +1,7 @@
 import { UserNotificationsPresenter } from '../presenters/user-notifications.presenter';
 import { UserNotificationRepository } from '../repositories/user-notification.repository';
 import { ListMyNotificationsUseCase } from './list-my-notifications.use-case';
+import { NotificationContextEnrichmentService } from '../services/notification-context-enrichment.service';
 
 describe('ListMyNotificationsUseCase', () => {
   const repository = {
@@ -17,8 +18,11 @@ describe('ListMyNotificationsUseCase', () => {
       },
     }),
   } as unknown as UserNotificationsPresenter;
+  const enrichmentService = {
+    enrichMany: jest.fn().mockResolvedValue(new Map()),
+  } as unknown as NotificationContextEnrichmentService;
 
-  const useCase = new ListMyNotificationsUseCase(repository, presenter);
+  const useCase = new ListMyNotificationsUseCase(repository, presenter, enrichmentService);
 
   beforeEach(() => {
     jest.clearAllMocks();

@@ -7,6 +7,12 @@ import { Link } from "@/i18n/navigation";
 import { ListStateSkeleton, StateCard } from "@/components/shared/ContentStates";
 import FullHeightMessagesPage from "@/components/messages/FullHeightMessagesPage";
 import DirectionalArrowIcon from "@/components/ui/navigation/DirectionalArrowIcon";
+import {
+  ChatConversationPanel,
+  ChatConversationHeader,
+  ChatMessageBubble,
+  ChatComposer,
+} from "@/components/shared/chat/ChatKit";
 import httpClient from "@/lib/api/http-client";
 import { useCurrentUser } from "@/features/users/hooks/use-users";
 import {
@@ -42,6 +48,7 @@ import type {
 type Props = {
   sessionId: string;
   scope: "patient" | "practitioner";
+  variant?: "page" | "embedded";
 };
 
 function formatTime(iso: string, locale: string) {
@@ -60,7 +67,7 @@ function normalizeApiPath(pathOrUrl: string) {
   return pathOrUrl.startsWith("/api/v1/") ? pathOrUrl.slice("/api/v1".length) : pathOrUrl;
 }
 
-export default function SessionChatPanel({ sessionId, scope }: Props) {
+export default function SessionChatPanel({ sessionId, scope, variant = "page" }: Props) {
   const t = useTranslations("sessions");
   const locale = useLocale();
   const meQuery = useCurrentUser(true);
@@ -253,6 +260,24 @@ export default function SessionChatPanel({ sessionId, scope }: Props) {
     }
   };
 
+  const handleSendEmbedded = async () => {
+    if (!conversationId) return;
+
+    const content = message.trim();
+    if (content.length === 0) return;
+
+    try {
+      setIsSending(true);
+      realtimeThread.reportTypingActivity(false);
+      await realtimeThread.sendMessage({
+        message: content,
+      });
+      setMessage("");
+    } finally {
+      setIsSending(false);
+    }
+  };
+
   if (sessionQuery.isLoading || meQuery.isLoading) {
     return (
       <div className="space-y-4">
@@ -297,6 +322,115 @@ export default function SessionChatPanel({ sessionId, scope }: Props) {
 
   const myUserId = meQuery.data?.userId ?? null;
 
+  if (variant === "embedded") {
+    const counterpartNameForHeader = counterpartName || t("detail.chat.fallbackName");
+    return (
+      <ChatConversationPanel
+        header={
+          <ChatConversationHeader
+            title={counterpartNameForHeader}
+            subtitle={
+              <div className="flex flex-col gap-1 mt-0.5">
+                <p className="text-xs text-text-muted dark:text-slate-400 font-medium">
+                  {getConversationSubtitle(conversationIdentity, myUserId) || sessionTitle}
+                </p>
+                {session?.scheduledStartAt && (
+                  <p className="text-[10px] text-text-muted opacity-75 font-semibold font-mono tracking-wide">
+                    {locale.startsWith("ar") ? "الموعد: " : "Scheduled: "}
+                    {formatTime(session.scheduledStartAt, locale)}
+                  </p>
+                )}
+              </div>
+            }
+            avatarUrl={getParticipantAvatarUrl(
+              getConversationPrimaryParticipant(
+                conversationIdentity,
+                myUserId,
+              ),
+            )}
+            online={false}
+            actions={
+              <div className="flex items-center gap-2">
+                <span className="rounded-full bg-teal-50/70 border border-teal-100/30 px-2.5 py-0.5 text-[10px] font-bold text-teal-700 dark:bg-teal-950/40 dark:text-teal-400">
+                  {session?.presentationStatus.replaceAll("_", " ")}
+                </span>
+              </div>
+            }
+          />
+        }
+        composer={
+          showAvailabilityLoading ? (
+            <div className="p-4 border-t border-slate-100 dark:border-white/10 bg-slate-50 dark:bg-slate-900 shrink-0 text-xs text-text-secondary leading-5 font-semibold">
+              <p className="text-text-primary dark:text-white/90">
+                {t("detail.chat.states.availabilityLoading.heading")}
+              </p>
+            </div>
+          ) : showReadOnlyNotice ? (
+            <div className="p-4 border-t border-slate-100 dark:border-white/10 bg-slate-50 dark:bg-slate-900 shrink-0 text-xs text-text-secondary leading-5 font-medium">
+              <p className="font-bold text-text-primary dark:text-white/90">
+                {locale.startsWith("ar") ? "هذه المحادثة للقراءة فقط." : "This conversation is read-only."}
+              </p>
+              <p className="mt-1">{t("detail.chat.states.readOnly.review")}</p>
+              <p className="mt-1">{t("detail.chat.states.readOnly.sendBlocked")}</p>
+            </div>
+          ) : showComposer ? (
+            <ChatComposer
+              placeholder={t("detail.chat.compose.placeholder")}
+              value={message}
+              onChange={(next) => {
+                setMessage(next);
+                realtimeThread.reportTypingActivity(next.trim().length > 0);
+              }}
+              onSubmit={handleSendEmbedded}
+              isSubmitting={isSending || sendMutation.isPending}
+              disabled={!conversationId || isSending}
+            />
+          ) : null
+        }
+      >
+        {/* Scrollable messages area */}
+        {openMutation.isPending || messagesQuery.isLoading ? (
+          <div className="flex items-center justify-center p-8 text-xs text-text-muted animate-pulse font-semibold">
+            {locale === "ar" ? "جاري التحميل..." : "Loading..."}
+          </div>
+        ) : openMutation.isError || messagesQuery.isError ? (
+          <div className="p-4 text-center">
+            <p className="text-xs text-rose-500 mb-2">{t("detail.chat.states.messagesError.heading")}</p>
+          </div>
+        ) : ordered.length === 0 ? (
+          <div className="p-8 text-center text-xs text-text-muted font-medium">
+            {t("detail.chat.states.empty.heading")}
+          </div>
+        ) : (
+          ordered.map((entry) => {
+            const fromMe = Boolean(myUserId && entry.senderUserId === myUserId);
+            return (
+              <ChatMessageBubble
+                key={entry.messageId}
+                message={{
+                  id: entry.messageId,
+                  body: entry.contentText || "",
+                  sentAt: formatTime(entry.sentAt, locale),
+                  direction: fromMe ? "outgoing" : "incoming",
+                  status: (fromMe ? entry.localStatus : undefined) as any,
+                }}
+              />
+            );
+          })
+        )}
+        {realtimeThread.isPeerTyping && (
+          <div className="flex justify-start mt-2">
+            <div className="inline-flex items-center gap-1 rounded-full border border-border-light bg-surface-secondary px-3 py-1 text-[11px] text-text-muted dark:border-white/10 dark:bg-white/10 dark:text-white/60">
+              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-current" />
+              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-current [animation-delay:120ms]" />
+              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-current [animation-delay:240ms]" />
+            </div>
+          </div>
+        )}
+        <div ref={endRef} />
+      </ChatConversationPanel>
+    );
+  }
 
   return (
     <FullHeightMessagesPage className="mx-auto flex max-w-3xl flex-col gap-3">
@@ -552,7 +686,7 @@ export default function SessionChatPanel({ sessionId, scope }: Props) {
           ) : showReadOnlyNotice ? (
             <div className="rounded-2xl border border-border-light bg-surface-tertiary px-4 py-3 text-xs leading-6 text-text-secondary dark:bg-white/5">
               <p className="font-semibold text-text-primary dark:text-white/90">
-                {t("detail.chat.states.readOnly.heading")}
+                {locale.startsWith("ar") ? "هذه المحادثة للقراءة فقط." : "This conversation is read-only."}
               </p>
               <p className="mt-1">{t("detail.chat.states.readOnly.review")}</p>
               <p className="mt-1">{t("detail.chat.states.readOnly.sendBlocked")}</p>

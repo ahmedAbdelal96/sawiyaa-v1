@@ -133,6 +133,8 @@ export type SessionItem = {
   completedAt: string | null;
   expiredAt: string | null;
   timezone: string | null;
+  unreadCount?: number;
+  hasUnread?: boolean;
 };
 
 /**
@@ -170,6 +172,8 @@ export type SessionListItem = {
   patient: SessionPatientSummary | null;
   joinAvailability: SessionJoinAvailability;
   chatAvailability: SessionChatAvailability;
+  unreadCount?: number;
+  hasUnread?: boolean;
 };
 
 export type SessionsPagination = {
@@ -224,6 +228,8 @@ export type SessionJoinItem = {
   provider: SessionProvider;
   canJoin: boolean;
   blockedReason: SessionJoinBlockedReason | null;
+  availableAt: string | null;
+  expiresAt: string | null;
   roomName: string | null;
   roomUrl: string | null;
   joinToken: string | null;

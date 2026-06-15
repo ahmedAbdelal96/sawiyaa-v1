@@ -26,7 +26,7 @@ export const arFinancialRulesCatalog = {
     practitionerCouponPercentageOnly:
       'أكواد خصم الممارس تدعم النسبة المئوية فقط.',
     practitionerCouponDiscountTooHigh:
-      'خصم بروموكود الممارس لن يتجاوز 20%.',
+      'خصم بروموكود الممارس لن يتجاوز 25%.',
     practitionerCouponImmutableAfterRedemption:
       'لا يمكن تغيير قيمة الخصم بعد وجود استخدامات سابقة.',
     practitionerCouponInvalidMoney: 'قيمة الخصم المدخلة غير صالحة.',

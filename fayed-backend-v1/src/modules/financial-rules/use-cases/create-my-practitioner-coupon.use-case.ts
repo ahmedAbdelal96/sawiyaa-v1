@@ -10,6 +10,7 @@ import { CreateCouponUseCase } from './create-coupon.use-case';
 import { normalizeCouponCode, normalizeSlug } from '../utils/normalize-financial-identifiers.util';
 
 const PRACTITIONER_COUPON_CODE_PATTERN = /^[A-Z0-9_-]+$/;
+const PRACTITIONER_COUPON_MAX_PERCENT = 25;
 
 @Injectable()
 export class CreateMyPractitionerCouponUseCase {
@@ -138,7 +139,7 @@ export class CreateMyPractitionerCouponUseCase {
 
   private assertPercentageLimit(discountValue: string) {
     const value = Number(discountValue);
-    if (!Number.isFinite(value) || value <= 0 || value > 20) {
+    if (!Number.isFinite(value) || value <= 0 || value > PRACTITIONER_COUPON_MAX_PERCENT) {
       throw new BadRequestException({
         messageKey: 'financialRules.errors.practitionerCouponDiscountTooHigh',
         error: 'FINANCIAL_RULE_PRACTITIONER_COUPON_DISCOUNT_TOO_HIGH',

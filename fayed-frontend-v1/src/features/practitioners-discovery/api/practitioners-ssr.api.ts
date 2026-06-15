@@ -51,6 +51,7 @@ export type BackendPublicPractitionerListItem = {
   yearsExperience: number | null;
   ratingSummary: BackendRatingSummary;
   isVerified: boolean;
+  avatarUrl: string | null;
 };
 
 type PractitionersListData = {
@@ -121,6 +122,7 @@ export function mapBackendListItemToUi(item: BackendPublicPractitionerListItem):
     yearsExperience: item.yearsExperience ?? 0,
     isVerified: item.isVerified ?? false,
     initials: buildInitials(displayName),
+    avatarUrl: item.avatarUrl ?? null,
   };
 }
 
@@ -161,4 +163,3 @@ export async function fetchPublicPractitioners(
     pagination: data.pagination,
   };
 }
-

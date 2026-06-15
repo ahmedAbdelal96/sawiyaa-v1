@@ -31,7 +31,7 @@ const shortcuts = [
     icon: UserRound,
   },
   {
-    href: "/patient/support",
+    href: "/patient/messages?lane=support",
     labelKey: "shell.support",
     icon: LifeBuoy,
   },

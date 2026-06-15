@@ -8,6 +8,8 @@
     "patientDetailDescription": "Review your training enrollment, payment state, and join access when available.",
     "patientPayTitle": "Complete training payment | Patient",
     "patientPayDescription": "Complete payment for your training enrollment when payment is still required.",
+    "patientPaymentReturnTitle": "Training payment return | Patient",
+    "patientPaymentReturnDescription": "Review your training payment return state and wait for the backend to confirm the enrollment.",
     "adminTitle": "Training management | Admin",
     "adminDescription": "Manage the training catalog, publish states, and timings within the current admin contract.",
     "adminDetailTitle": "Training management detail | Admin",
@@ -196,13 +198,13 @@
     "pay": {
       "backToEnrollment": "Back to enrollment",
       "heading": "Complete training payment",
-      "note": "This payment stays inside the training enrollment flow. Once payment succeeds, the enrollment can become active according to the backend contract.",
+      "note": "This payment stays inside the training enrollment flow. Once payment succeeds, the backend confirms the enrollment and returns you to this page.",
       "summaryHeading": "Enrollment summary",
       "scheduleCode": "Timing {code}",
       "amount": "Payment due: {amount}",
-      "hostedCheckoutHeading": "Hosted checkout",
-      "hostedCheckoutNote": "Open the hosted checkout page to continue this training payment.",
-      "openCheckout": "Open checkout",
+      "hostedCheckoutHeading": "Continue payment",
+      "hostedCheckoutNote": "Open the hosted checkout page in the same tab so you can return here after payment.",
+      "openCheckout": "Complete payment",
       "states": {
         "error": {
           "heading": "Training payment is not available right now",
@@ -218,6 +220,45 @@
           "heading": "Payment runtime is not available right now",
           "note": "This enrollment does not currently expose a hosted checkout link or a payment form runtime.",
           "action": "Back to enrollment"
+        }
+      }
+    },
+    "return": {
+      "summaryHeading": "Payment summary",
+      "statusLabel": "Payment status",
+      "amountLabel": "Amount due",
+      "notAvailable": "Not available yet",
+      "startsAt": "Starts: {value}",
+      "verifying": {
+        "heading": "Confirming your payment",
+        "note": "We are checking the backend now. This usually takes only a moment."
+      },
+      "success": {
+        "heading": "Payment confirmed",
+        "note": "Your enrollment is now active and confirmed by the backend.",
+        "action": "Open enrollment"
+      },
+      "failed": {
+        "heading": "Payment did not go through",
+        "note": "You can try the payment again from the enrollment pay page.",
+        "action": "Try payment again"
+      },
+      "canceled": {
+        "heading": "Payment was canceled",
+        "note": "You can continue payment whenever you are ready.",
+        "action": "Continue payment"
+      },
+      "pending": {
+        "heading": "Payment still needs attention",
+        "note": "We could not confirm the payment yet. You can review the enrollment or try the payment again.",
+        "viewEnrollment": "View enrollment",
+        "action": "Try payment again"
+      },
+      "states": {
+        "error": {
+          "heading": "Training payment return is not available right now",
+          "note": "Could not load this enrollment payment return state.",
+          "retry": "Try again"
         }
       }
     }

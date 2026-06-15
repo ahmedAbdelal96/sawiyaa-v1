@@ -28,7 +28,7 @@ export const enFinancialRulesCatalog = {
     practitionerCouponPercentageOnly:
       'Practitioner promo codes support percentage discounts only.',
     practitionerCouponDiscountTooHigh:
-      'Practitioner promo code discount cannot exceed 20%.',
+      'Practitioner promo code discount cannot exceed 25%.',
     practitionerCouponImmutableAfterRedemption:
       'Discount value cannot be changed after redemptions exist.',
     practitionerCouponInvalidMoney:

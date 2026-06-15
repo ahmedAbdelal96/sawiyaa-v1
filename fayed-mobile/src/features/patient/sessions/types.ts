@@ -188,15 +188,28 @@ export interface CreateScheduledSessionResponse {
   item: SessionDetails;
 }
 
+export interface SessionProviderRuntime {
+  name: "NONE" | "DAILY";
+  roomId: string | null;
+  roomUrl: string | null;
+  token: string | null;
+  tokenExpiresAt: string | null;
+  joinMode: "redirect_url" | "embedded" | "external_url" | null;
+  payload: Record<string, unknown>;
+}
+
 export interface SessionJoinContract {
   sessionId: string;
   status: SessionStatus;
   provider: "NONE" | "DAILY";
   canJoin: boolean;
   blockedReason: SessionJoinBlockedReason | null;
+  availableAt: string | null;
+  expiresAt: string | null;
   roomName: string | null;
   roomUrl: string | null;
   joinToken: string | null;
+  providerRuntime?: SessionProviderRuntime | null;
 }
 
 export interface SessionJoinContractResponse {

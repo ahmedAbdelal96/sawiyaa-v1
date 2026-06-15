@@ -21,7 +21,150 @@
   },
   "context": {
     "patient": "إشعارات المستفيد",
-    "practitioner": "إشعارات الممارس"
+    "practitioner": "إشعارات الممارس",
+    "admin": "إشعارات المسؤول"
+  },
+  "slugs": {
+    "GENERAL_CHAT_MESSAGE": {
+      "title": "رسالة جديدة في المحادثة",
+      "subtitle": "محادثة · رسالة"
+    },
+    "GENERAL-CHAT-MESSAGE": {
+      "title": "رسالة جديدة في المحادثة",
+      "subtitle": "محادثة · رسالة"
+    },
+    "messages-session-message-received": {
+      "title": "رسالة جديدة في محادثة الجلسة",
+      "subtitle": "محادثة · جلسة"
+    },
+    "messages-support-message-received": {
+      "title": "رسالة دعم جديدة",
+      "subtitle": "دعم · عمليات"
+    },
+    "messages-follow-up-message-received": {
+      "title": "رسالة متابعة جديدة",
+      "subtitle": "متابعة · محادثة"
+    },
+    "sessions-session-join-available": {
+      "title": "تذكير بالانضمام للجلسة",
+      "subtitle": "جلسة · إشعار هاتف"
+    },
+    "sessions-session-reminder": {
+      "title": "تذكير بالجلسة",
+      "subtitle": "جلسة · تذكير"
+    },
+    "sessions-session-booked": {
+      "title": "تم حجز جلسة جديدة",
+      "subtitle": "جلسة · حجز"
+    },
+    "sessions-session-cancelled": {
+      "title": "تم إلغاء الجلسة",
+      "subtitle": "جلسة · إلغاء"
+    },
+    "sessions-session-rescheduled": {
+      "title": "تم إعادة جدولة الجلسة",
+      "subtitle": "جلسة · جدولة"
+    },
+    "support-ticket-created": {
+      "title": "تم إنشاء تذكرة دعم جديدة",
+      "subtitle": "دعم · عمليات"
+    },
+    "support-ticket-reply-received": {
+      "title": "رد جديد على تذكرة الدعم",
+      "subtitle": "دعم · عمليات"
+    },
+    "payments-payment-succeeded": {
+      "title": "تمت عملية الدفع بنجاح",
+      "subtitle": "مالية · عملية دفع"
+    },
+    "payments-payment-failed": {
+      "title": "فشلت عملية الدفع",
+      "subtitle": "مالية · عملية دفع"
+    },
+    "payments-refund-created": {
+      "title": "تم إنشاء طلب استرداد مالي",
+      "subtitle": "مالية · استرداد"
+    },
+    "payments-refund-completed": {
+      "title": "اكتمل طلب الاسترداد المالي",
+      "subtitle": "مالية · استرداد"
+    },
+    "fallback": {
+      "title": "إشعار نظام",
+      "subtitle": "نظام"
+    },
+    "messages": {
+      "session-message-received": {
+        "title": "رسالة جديدة في محادثة الجلسة",
+        "subtitle": "محادثة · جلسة"
+      },
+      "support-message-received": {
+        "title": "رسالة دعم جديدة",
+        "subtitle": "دعم · عمليات"
+      },
+      "follow-up-message-received": {
+        "title": "رسالة متابعة جديدة",
+        "subtitle": "متابعة · محادثة"
+      }
+    },
+    "sessions": {
+      "session-join-available": {
+        "title": "تذكير بالانضمام للجلسة",
+        "subtitle": "جلسة · إشعار هاتف"
+      },
+      "session-reminder": {
+        "title": "تذكير بالجلسة",
+        "subtitle": "جلسة · تذكير"
+      },
+      "session-booked": {
+        "title": "تم حجز جلسة جديدة",
+        "subtitle": "جلسة · حجز"
+      },
+      "session-cancelled": {
+        "title": "تم إلغاء الجلسة",
+        "subtitle": "جلسة · إلغاء"
+      },
+      "session-rescheduled": {
+        "title": "تم إعادة جدولة الجلسة",
+        "subtitle": "جلسة · جدولة"
+      }
+    },
+    "support": {
+      "ticket-created": {
+        "title": "تم إنشاء تذكرة دعم جديدة",
+        "subtitle": "دعم · عمليات"
+      },
+      "ticket-reply-received": {
+        "title": "رد جديد على تذكرة الدعم",
+        "subtitle": "دعم · عمليات"
+      }
+    },
+    "payments": {
+      "payment-succeeded": {
+        "title": "تمت عملية الدفع بنجاح",
+        "subtitle": "مالية · عملية دفع"
+      },
+      "payment-failed": {
+        "title": "فشلت عملية الدفع",
+        "subtitle": "مالية · عملية دفع"
+      },
+      "refund-created": {
+        "title": "تم إنشاء طلب استرداد مالي",
+        "subtitle": "مالية · استرداد"
+      },
+      "refund-completed": {
+        "title": "اكتمل طلب الاسترداد المالي",
+        "subtitle": "مالية · استرداد"
+      }
+    }
+  },
+  "errors": {
+    "PUSH_DEVICE_NOT_REGISTERED": "جهاز المستخدم غير مسجل لاستقبال إشعارات الهاتف",
+    "INVALID_EMAIL_ADDRESS": "عنوان البريد الإلكتروني غير صحيح",
+    "EMAIL_BOUNCED": "تم ارتداد البريد الإلكتروني من خادم المستلم",
+    "SMS_PROVIDER_ERROR": "فشل تسليم الرسالة النصية من المزود",
+    "SUPPRESSED_BY_USER": "تم كتم الإشعار بناءً على تفضيلات المستخدم",
+    "RATE_LIMIT_EXCEEDED": "تم تجاوز الحد المسموح به لمعدل الإرسال",
+    "fallback": "تعذر تسليم الإشعار"
   }
 }
-

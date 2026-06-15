@@ -3,6 +3,7 @@ import {
   getAdminNotificationFeedExcludedTypePrefixes,
   getAdminNotificationFeedExcludedTypeSlugs,
 } from '../policies/admin-notification-feed.policy';
+import { NotificationContextEnrichmentService } from '../services/notification-context-enrichment.service';
 import { NotificationOpsPresenter } from '../presenters/notification-ops.presenter';
 import { OperationalNotificationRepository } from '../repositories/operational-notification.repository';
 
@@ -11,6 +12,7 @@ export class GetAdminOperationalNotificationDetailsUseCase {
   constructor(
     private readonly repository: OperationalNotificationRepository,
     private readonly presenter: NotificationOpsPresenter,
+    private readonly enrichmentService: NotificationContextEnrichmentService,
   ) {}
 
   async execute(input: { notificationId: string }) {
@@ -27,8 +29,10 @@ export class GetAdminOperationalNotificationDetailsUseCase {
       });
     }
 
+    const enrichment = await this.enrichmentService.enrichOne(notification);
+
     return {
-      item: this.presenter.toDetailItem(notification),
+      item: this.presenter.toDetailItem(notification, enrichment),
     };
   }
 }

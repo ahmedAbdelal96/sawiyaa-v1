@@ -3,6 +3,8 @@ import {
   UserNotificationAction,
   UserNotificationFeedItem,
   UserNotificationFeedRow,
+  NotificationContext,
+  NotificationPrimaryAction,
 } from '../types/user-notifications.types';
 
 @Injectable()
@@ -12,8 +14,12 @@ export class UserNotificationsPresenter {
     page: number;
     limit: number;
     hasNextPage: boolean;
+    enrichment: Map<string, { context: NotificationContext; primaryAction: NotificationPrimaryAction }>;
   }) {
-    const items = input.items.map((row) => this.toListItem(row));
+    const items = input.items.map((row) => {
+      const enriched = input.enrichment.get(row.id) || { context: {}, primaryAction: { kind: 'details' } };
+      return this.toListItem(row, enriched.context, enriched.primaryAction);
+    });
 
     return {
       items,
@@ -34,11 +40,14 @@ export class UserNotificationsPresenter {
     };
   }
 
-  presentReadResult(item: UserNotificationFeedRow): {
+  presentReadResult(
+    item: UserNotificationFeedRow,
+    enrichment: { context: NotificationContext; primaryAction: NotificationPrimaryAction },
+  ): {
     item: UserNotificationFeedItem;
   } {
     return {
-      item: this.toListItem(item),
+      item: this.toListItem(item, enrichment.context, enrichment.primaryAction),
     };
   }
 
@@ -50,7 +59,11 @@ export class UserNotificationsPresenter {
     };
   }
 
-  toListItem(row: UserNotificationFeedRow): UserNotificationFeedItem {
+  toListItem(
+    row: UserNotificationFeedRow,
+    context?: NotificationContext,
+    primaryAction?: NotificationPrimaryAction,
+  ): UserNotificationFeedItem {
     const payload = this.normalizePayload(row.payloadJson);
     return {
       id: row.id,
@@ -62,6 +75,8 @@ export class UserNotificationsPresenter {
       readAt: row.readAt?.toISOString() ?? null,
       action: this.resolveAction(payload),
       payload,
+      context,
+      primaryAction,
     };
   }
 
