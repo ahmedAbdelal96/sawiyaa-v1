@@ -121,5 +121,34 @@ describe('ValidateInstantBookingEligibilityService', () => {
       endsAtUtc: new Date('2026-05-07T12:30:00.000Z'),
       timezone: 'Africa/Cairo',
     });
+
+    expect(resolvePractitionerTimezoneService.resolve).toHaveBeenCalledWith({
+      weeklySlots: [{ id: 'slot-1' }],
+      fallbackTimezone: 'Africa/Cairo',
+    });
+  });
+
+  it('rejects when the instant slot is outside the current availability window', async () => {
+    (
+      buildAvailabilityWindowsService.buildForRange as jest.Mock
+    ).mockReturnValueOnce([]);
+
+    await expect(
+      service.assertPractitionerCanReceiveInstantBooking(baseInput),
+    ).rejects.toMatchObject({
+      response: {
+        error: 'INSTANT_BOOKING_PRACTITIONER_NOT_AVAILABLE_NOW',
+      },
+    });
+  });
+
+  it('rejects when a session conflict blocks the instant slot', async () => {
+    (
+      validateSessionConflictsService.assertNoPractitionerConflict as jest.Mock
+    ).mockRejectedValueOnce(new Error('conflict'));
+
+    await expect(
+      service.assertPractitionerCanReceiveInstantBooking(baseInput),
+    ).rejects.toBeInstanceOf(Error);
   });
 });

@@ -114,4 +114,32 @@ describe('UpdateMySettingsPreferencesUseCase', () => {
       }),
     ).rejects.toBeInstanceOf(BadRequestException);
   });
+
+  it('falls back to the existing timezone when timezone input is blank', async () => {
+    (settingsRepository.findUserPreferences as jest.Mock).mockResolvedValue({
+      defaultLocale: ContentLocale.ar,
+      timezone: 'Africa/Cairo',
+    });
+    (settingsRepository.updateUserPreferences as jest.Mock).mockResolvedValue({
+      defaultLocale: ContentLocale.ar,
+      timezone: 'Africa/Cairo',
+    });
+
+    const result = await useCase.execute({
+      authenticatedUser: { id: 'user_5', roles: [] },
+      dto: {
+        timezone: '   ',
+      },
+    });
+
+    expect(settingsRepository.updateUserPreferences).toHaveBeenCalledWith({
+      userId: 'user_5',
+      locale: ContentLocale.ar,
+      timezone: 'Africa/Cairo',
+    });
+    expect(result.item).toEqual({
+      locale: ContentLocale.ar,
+      timezone: 'Africa/Cairo',
+    });
+  });
 });

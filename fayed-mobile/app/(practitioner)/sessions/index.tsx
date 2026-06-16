@@ -188,7 +188,7 @@ export default function PractitionerSessionsScreen() {
         if (joinUrl) {
           const safeJoinUrl = normalizeAllowedExternalUrl(joinUrl);
           if (!safeJoinUrl) {
-            setFeedback(t("practitioner.sessionDetail.joinError"));
+            setFeedback(t("practitioner.detail.joinError"));
             return;
           }
 
@@ -204,16 +204,16 @@ export default function PractitionerSessionsScreen() {
         }
 
         setFeedback(
-          t("practitioner.sessionDetail.joinBlocked", {
+          t("practitioner.detail.joinBlocked", {
             reason: t(
-              `practitioner.sessionDetail.blocked.${
+              `practitioner.detail.blocked.${
                 contract.blockedReason ?? "SESSION_NOT_JOINABLE_STATUS"
               }` as const,
             ),
           }),
         );
       } catch {
-        setFeedback(t("practitioner.sessionDetail.joinError"));
+        setFeedback(t("practitioner.detail.joinError"));
       } finally {
         setJoiningSessionId(null);
       }
@@ -541,7 +541,7 @@ function SessionWorkspaceCard({
             •
           </Text>
           <Text color={theme.colors.textSecondary} style={styles.metaTiny}>
-            {t(`practitioner.sessionDetail.modeValue.${session.sessionMode}`)}
+            {t(`practitioner.detail.modeValue.${session.sessionMode}`)}
           </Text>
         </View>
       </View>
@@ -551,8 +551,8 @@ function SessionWorkspaceCard({
           <Button
             title={
               isJoining
-                ? t("practitioner.sessionDetail.joining")
-                : t("practitioner.sessionDetail.join")
+                ? t("practitioner.detail.joining")
+                : t("practitioner.detail.join")
             }
             onPress={() => void onJoin(session)}
             disabled={isJoining}
@@ -679,7 +679,7 @@ function PrioritySessionCard({
               •
             </Text>
             <Text color={theme.colors.textSecondary} style={styles.metaTiny}>
-              {t(`practitioner.sessionDetail.modeValue.${session.sessionMode}`)}
+              {t(`practitioner.detail.modeValue.${session.sessionMode}`)}
             </Text>
           </View>
         </View>
@@ -689,8 +689,8 @@ function PrioritySessionCard({
             <Button
               title={
                 isJoining
-                  ? t("practitioner.sessionDetail.joining")
-                  : t("practitioner.sessionDetail.join")
+                  ? t("practitioner.detail.joining")
+                  : t("practitioner.detail.join")
               }
               onPress={() => void onJoin(session)}
               disabled={isJoining}
@@ -763,7 +763,7 @@ function buildSessionSummary(sessions: PractitionerSessionListItem[]): SessionSu
     ready: sessions.filter((session) => session.presentationStatus === "JOINABLE").length,
     live: sessions.filter((session) => session.presentationStatus === "IN_PROGRESS").length,
     closed: sessions.filter((session) =>
-      ["COMPLETED", "CANCELLED", "ENDED"].includes(session.presentationStatus),
+      ["COMPLETED", "CANCELLED", "ENDED", "NO_SHOW", "UNDER_REVIEW"].includes(session.presentationStatus),
     ).length,
   };
 }
@@ -833,11 +833,13 @@ function mapSessionPresentationTone(status: SessionPresentationStatus) {
       return "success" as const;
     case "UPCOMING":
     case "UNAVAILABLE":
+    case "UNDER_REVIEW":
       return "warning" as const;
     case "COMPLETED":
       return "default" as const;
     case "ENDED":
     case "CANCELLED":
+    case "NO_SHOW":
       return "error" as const;
     default:
       return "default" as const;

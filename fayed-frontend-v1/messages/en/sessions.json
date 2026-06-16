@@ -69,7 +69,9 @@
     "COMPLETED": "Completed",
     "CANCELLED": "Cancelled",
     "ENDED": "Ended",
-    "UNAVAILABLE": "Unavailable"
+    "UNAVAILABLE": "Unavailable",
+    "NO_SHOW": "No-show",
+    "UNDER_REVIEW": "Under review"
   },
   "detail": {
     "backToSessions": "Back to sessions",
@@ -834,7 +836,96 @@
         "back": "Keep open"
       },
       "acceptedNote": "Request accepted. A session has been created.",
-      "viewSession": "View session"
+      "viewSession": "View session",
+      "queue": {
+        "meta": {
+          "title": "Instant booking requests",
+          "description": "Review current and recent instant booking requests and respond before they expire."
+        },
+        "eyebrow": "Instant booking",
+        "title": "Instant booking requests",
+        "subtitle": "This page groups pending and recent requests in one place so you can respond quickly.",
+        "dashboardLink": "Open requests",
+        "summary": {
+          "pendingCount": "pending requests",
+          "nearestExpiry": "Nearest expiry",
+          "liveHintTitle": "Live readiness",
+          "liveHint": "Pending requests refresh automatically every few seconds so they stay visible.",
+          "noPending": "No pending requests right now."
+        },
+        "dashboardTitle": "{count} requests need your attention now",
+        "pendingHeading": "Pending requests",
+        "pendingNote": "These requests need a fast response before the timer runs out.",
+        "handledHeading": "Recent requests",
+        "handledNote": "Accepted, rejected, and expired requests appear here after they are handled.",
+        "empty": {
+          "title": "No instant booking requests right now",
+          "note": "When a new request arrives, it will appear here with a countdown and the right actions."
+        },
+        "patientLabel": "Patient",
+        "statuses": {
+          "PENDING": "Pending",
+          "ACCEPTED": "Accepted",
+          "REJECTED": "Rejected",
+          "EXPIRED": "Expired",
+          "CANCELLED": "Cancelled"
+        },
+        "durationLabel": "{n} min",
+        "expiresAtLabel": "Expires at",
+        "countdownLabel": "Countdown",
+        "expiredShort": "Expired",
+        "sessionModes": {
+          "VIDEO": "Video",
+          "AUDIO": "Audio"
+        },
+        "actions": {
+          "accept": "Accept request",
+          "accepting": "Accepting...",
+          "reject": "Decline request",
+          "rejecting": "Declining...",
+          "viewSession": "View session"
+        },
+        "notes": {
+          "pending": "This request is still waiting for your response. You can accept or decline it before the timer ends.",
+          "accepted": "This request was accepted. A session was created, and the patient is now completing payment.",
+          "rejected": "This request was declined and the patient has been notified.",
+          "expired": "This request expired automatically when the timer ran out.",
+          "cancelled": "The patient cancelled this request before you responded."
+        },
+        "rejectConfirm": {
+          "heading": "Decline this request?",
+          "note": "The patient will be notified immediately.",
+          "confirm": "Yes, decline request",
+          "cancel": "Go back"
+        },
+        "feedback": {
+          "accepted": "The request was accepted. Waiting for patient payment.",
+          "rejected": "The request was declined."
+        },
+        "errors": {
+          "loadingHeading": "Could not load instant booking requests.",
+          "loadingNote": "Try refreshing the page or come back in a moment.",
+          "retry": "Retry",
+          "generic": "We could not complete this action. Please try again.",
+          "unauthorized": "Please sign in again.",
+          "forbidden": "You do not have permission to do this.",
+          "requestNotFound": "This request is no longer available.",
+          "requestAlreadyAccepted": "This request was already accepted.",
+          "requestAlreadyRejected": "This request was already declined.",
+          "requestAlreadyCancelled": "This request was already cancelled.",
+          "pendingRequestAlreadyExists": "A pending instant booking request already exists.",
+          "requestAlreadyFinalized": "This request is already in a terminal state.",
+          "practitionerNotFound": "We could not find your practitioner profile.",
+          "practitionerNotOnline": "You need to be online to accept this request.",
+          "practitionerNotAvailableNow": "You are not available for this request right now.",
+          "practitionerBusy": "You are currently busy and cannot accept new requests.",
+          "practitionerNotEligible": "This request no longer matches your current readiness.",
+          "instantBookingDisabled": "Instant booking is currently turned off.",
+          "invalidSessionMode": "This session mode is not supported for the request.",
+          "invalidStatusTransition": "This request can no longer change status.",
+          "conflict": "A conflict occurred or the request changed before the action completed."
+        }
+      }
     }
   }
 }

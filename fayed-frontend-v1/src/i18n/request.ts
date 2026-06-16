@@ -32,6 +32,7 @@ export default getRequestConfig(async ({ requestLocale }) => {
     "patient-profile",
     "patient-dashboard",
     "patient-area",
+    "instant-booking",
     "package-purchases",
     "refund-policies",
     "practitioner-area",

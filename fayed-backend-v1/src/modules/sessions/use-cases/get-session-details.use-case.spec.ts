@@ -15,6 +15,8 @@ describe('GetSessionDetailsUseCase — ownership', () => {
   }) {
     const sessionRepository = {
       findById: jest.fn().mockResolvedValue(session),
+      findLatestActiveSessionAdminDecisionsForSessions: jest.fn().mockResolvedValue(new Map()),
+      findLatestActiveSessionAdminDecision: jest.fn().mockResolvedValue(null),
     };
     const sessionPatientRepository = {
       findByUserId: jest.fn().mockResolvedValue({
@@ -97,6 +99,8 @@ describe('GetSessionDetailsUseCase — ownership', () => {
     const { useCase } = (() => {
       const sessionRepository = {
         findById: jest.fn().mockResolvedValue(null),
+        findLatestActiveSessionAdminDecisionsForSessions: jest.fn().mockResolvedValue(new Map()),
+        findLatestActiveSessionAdminDecision: jest.fn().mockResolvedValue(null),
       };
       const uc = new GetSessionDetailsUseCase(
         sessionRepository as never,

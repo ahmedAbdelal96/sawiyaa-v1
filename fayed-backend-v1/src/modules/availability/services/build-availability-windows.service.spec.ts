@@ -8,6 +8,91 @@ import { BuildAvailabilityWindowsService } from './build-availability-windows.se
 describe('BuildAvailabilityWindowsService', () => {
   const service = new BuildAvailabilityWindowsService();
 
+  it.each([
+    [
+      'Africa/Cairo',
+      '2026-04-05T08:00:00.000Z',
+      '2026-04-05T09:00:00.000Z',
+    ],
+    [
+      'Asia/Riyadh',
+      '2026-04-05T07:00:00.000Z',
+      '2026-04-05T08:00:00.000Z',
+    ],
+    [
+      'Asia/Dubai',
+      '2026-04-05T06:00:00.000Z',
+      '2026-04-05T07:00:00.000Z',
+    ],
+  ])(
+    'expands weekly recurrence in %s using practitioner-local wall time',
+    (timezone, startsAt, endsAt) => {
+      const windows = service.buildForRange({
+        timezone,
+        fromUtc: new Date('2026-04-05T00:00:00.000Z'),
+        toUtc: new Date('2026-04-06T00:00:00.000Z'),
+        weeklySlots: [
+          {
+            id: 'slot-1',
+            practitionerId: 'practitioner-1',
+            weekday: AvailabilityWeekday.SUNDAY,
+            durationMinutes: 60,
+            startMinuteOfDay: 600,
+            endMinuteOfDay: 660,
+            timezone,
+            isActive: true,
+            effectiveFrom: null,
+            effectiveTo: null,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+        ],
+        exceptions: [],
+      });
+
+      expect(windows).toEqual([
+        {
+          startsAt,
+          endsAt,
+          durationMinutes: 60,
+        },
+      ]);
+    },
+  );
+
+  it('keeps a local midnight window on the previous UTC day in an east-of-UTC timezone', () => {
+    const windows = service.buildForRange({
+      timezone: 'Asia/Riyadh',
+      fromUtc: new Date('2026-04-04T20:00:00.000Z'),
+      toUtc: new Date('2026-04-05T03:00:00.000Z'),
+      weeklySlots: [
+        {
+          id: 'slot-midnight',
+          practitionerId: 'practitioner-1',
+          weekday: AvailabilityWeekday.SUNDAY,
+          durationMinutes: 30,
+          startMinuteOfDay: 30,
+          endMinuteOfDay: 60,
+          timezone: 'Asia/Riyadh',
+          isActive: true,
+          effectiveFrom: null,
+          effectiveTo: null,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      ],
+      exceptions: [],
+    });
+
+    expect(windows).toEqual([
+      {
+        startsAt: '2026-04-04T21:30:00.000Z',
+        endsAt: '2026-04-04T22:00:00.000Z',
+        durationMinutes: 30,
+      },
+    ]);
+  });
+
   it('applies OPEN_EXTRA and BLOCK exceptions over recurring weekly schedule', () => {
     const windows = service.buildForRange({
       timezone: 'UTC',

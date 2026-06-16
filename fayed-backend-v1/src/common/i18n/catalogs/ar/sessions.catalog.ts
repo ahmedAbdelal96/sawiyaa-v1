@@ -69,4 +69,13 @@ export const arSessionsCatalog = {
     cancellationOriginalMethodRefundNotSupported:
       'استرجاع الإلغاء إلى وسيلة الدفع الأصلية غير مدعوم في هذه المرحلة',
   },
+  // Phase 4A — Manual session decision types
+  decisionTypes: {
+    MARK_COMPLETED: 'تحديد مكتمل',
+    MARK_PATIENT_NO_SHOW: 'تحديد عدم حضور المريض',
+    MARK_PRACTITIONER_NO_SHOW: 'تحديد عدم حضور المعالج',
+    MARK_BOTH_NO_SHOW: 'تحديد عدم حضور الطرفين',
+    MARK_TECHNICAL_REVIEW: 'تحديد مراجعة تقنية',
+    MARK_INSUFFICIENT_EVIDENCE: 'تحديد أدلة غير كافية',
+  },
 };

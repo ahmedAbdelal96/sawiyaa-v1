@@ -30,7 +30,6 @@ enum UserStatus {
   PENDING_VERIFICATION
   PENDING_APPROVAL
   DELETED
-  
 }
 
 enum AuthProvider {
@@ -241,6 +240,15 @@ enum SessionProvider {
   ZOOM
 }
 
+enum SessionAdminDecisionType {
+  MARK_COMPLETED
+  MARK_PATIENT_NO_SHOW
+  MARK_PRACTITIONER_NO_SHOW
+  MARK_BOTH_NO_SHOW
+  MARK_TECHNICAL_REVIEW
+  MARK_INSUFFICIENT_EVIDENCE
+}
+
 enum SessionEventType {
   SESSION_CREATED
   PAYMENT_PENDING
@@ -267,6 +275,8 @@ enum SessionEventType {
   JOIN_TOKEN_FAILED
   MEETING_STARTED
   MEETING_ENDED
+  ADMIN_MANUAL_DECISION_CREATED
+  ADMIN_MANUAL_DECISION_SUPERSEDED
 }
 
 enum SessionReminderType {
@@ -1282,33 +1292,34 @@ model User {
   patientProfile      PatientProfile?
   practitionerProfile PractitionerProfile?
 
-  authoredArticles                              Article[]                       @relation("ArticleAuthorUser")
-  configChanges                                 ConfigChangeLog[]               @relation("ConfigChangeByUser")
-  auditEvents                                   AuditEvent[]                    @relation("AuditEventActorUser")
+  authoredArticles                              Article[]                               @relation("ArticleAuthorUser")
+  configChanges                                 ConfigChangeLog[]                       @relation("ConfigChangeByUser")
+  auditEvents                                   AuditEvent[]                            @relation("AuditEventActorUser")
   notificationPreferences                       NotificationPreference[]
   notifications                                 Notification[]
   notificationDevices                           NotificationDevice[]
   refundPolicyAcceptances                       RefundPolicyAcceptance[]
   inAppNotificationFeedStates                   InAppNotificationFeedState[]
-  sessionReminderQueueRecipientEntries           SessionReminderQueue[]
+  sessionReminderQueueRecipientEntries          SessionReminderQueue[]
   trainingInstructors                           TrainingInstructor[]
-  trainingCoursesCreated                        Course[]                        @relation("TrainingCourseCreatedByUser")
-  trainingCoursesPublished                      Course[]                        @relation("TrainingCoursePublishedByUser")
-  trainingCourseSchedulesCreated                CourseSchedule[]                @relation("TrainingCourseScheduleCreatedByUser")
-  trainingCourseSessionsCreated                 CourseSession[]                 @relation("TrainingCourseSessionCreatedByUser")
-  academyCoursesLecturesCreated                 AcademyCourseLecture[]          @relation("AcademyCourseLectureCreatedByUser")
+  trainingCoursesCreated                        Course[]                                @relation("TrainingCourseCreatedByUser")
+  trainingCoursesPublished                      Course[]                                @relation("TrainingCoursePublishedByUser")
+  trainingCourseSchedulesCreated                CourseSchedule[]                        @relation("TrainingCourseScheduleCreatedByUser")
+  trainingCourseSessionsCreated                 CourseSession[]                         @relation("TrainingCourseSessionCreatedByUser")
+  academyCoursesLecturesCreated                 AcademyCourseLecture[]                  @relation("AcademyCourseLectureCreatedByUser")
   enrollments                                   Enrollment[]
   settlementPayouts                             PractitionerSettlementPayout[]
   recordedManualPayouts                         PractitionerManualPayout[]
   financeReconciliationReviews                  FinanceReconciliationReview[]
   accountingReconciliationRuns                  AccountingReconciliationRun[]
-  accountingReconciliationIssueAcknowledgements AccountingReconciliationIssue[] @relation("AccountingReconciliationIssueAcknowledgedBy")
-  accountingReconciliationIssueResolutions      AccountingReconciliationIssue[] @relation("AccountingReconciliationIssueResolvedBy")
-  accountingReconciliationIssueIgnores          AccountingReconciliationIssue[] @relation("AccountingReconciliationIssueIgnoredBy")
-  sessionCancellationRecords                    SessionCancellationRecord[]     @relation("SessionCancellationRecordCancelledByUser")
-  createdMarketingPlacements                    PractitionerMarketingPlacement[] @relation("PractitionerMarketingPlacementCreatedByAdmin")
-  pausedMarketingPlacements                     PractitionerMarketingPlacement[] @relation("PractitionerMarketingPlacementPausedByAdmin")
+  accountingReconciliationIssueAcknowledgements AccountingReconciliationIssue[]         @relation("AccountingReconciliationIssueAcknowledgedBy")
+  accountingReconciliationIssueResolutions      AccountingReconciliationIssue[]         @relation("AccountingReconciliationIssueResolvedBy")
+  accountingReconciliationIssueIgnores          AccountingReconciliationIssue[]         @relation("AccountingReconciliationIssueIgnoredBy")
+  sessionCancellationRecords                    SessionCancellationRecord[]             @relation("SessionCancellationRecordCancelledByUser")
+  createdMarketingPlacements                    PractitionerMarketingPlacement[]        @relation("PractitionerMarketingPlacementCreatedByAdmin")
+  pausedMarketingPlacements                     PractitionerMarketingPlacement[]        @relation("PractitionerMarketingPlacementPausedByAdmin")
   marketingPlacementHistoryEntries              PractitionerMarketingPlacementHistory[]
+  sessionAdminDecisions                         SessionAdminDecision[]
 }
 
 model UserEmail {
@@ -1602,6 +1613,10 @@ model PractitionerProfile {
   sessionPrice30Usd          Decimal?            @db.Decimal(18, 2)
   sessionPrice60Egp          Decimal?            @db.Decimal(18, 2)
   sessionPrice60Usd          Decimal?            @db.Decimal(18, 2)
+  instantBookingPrice30Egp   Decimal?            @db.Decimal(18, 2)
+  instantBookingPrice30Usd   Decimal?            @db.Decimal(18, 2)
+  instantBookingPrice60Egp   Decimal?            @db.Decimal(18, 2)
+  instantBookingPrice60Usd   Decimal?            @db.Decimal(18, 2)
   avatarUrl                  String?             @db.Text
   coverImageUrl              String?             @db.VarChar(500)
   isPublicProfilePublished   Boolean             @default(false)
@@ -1673,27 +1688,27 @@ model PatientPractitionerView {
 }
 
 model PractitionerMarketingPlacement {
-  id            String                                @id @default(uuid()) @db.Uuid
-  practitionerId String                               @db.Uuid
-  surface       PractitionerMarketingPlacementSurface
-  status        PractitionerMarketingPlacementStatus  @default(ACTIVE)
-  startsAt      DateTime
-  endsAt        DateTime?
-  priority      Int                                   @default(100)
-  badgeLabelAr  String?                               @db.VarChar(191)
-  badgeLabelEn  String?                               @db.VarChar(191)
-  reason        PractitionerMarketingPlacementReason  @default(FEATURED)
-  campaignName  String?                               @db.VarChar(191)
-  notesInternal String?                               @db.VarChar(2000)
-  createdByAdminId String?                            @db.Uuid
-  pausedByAdminId  String?                            @db.Uuid
-  pausedAt      DateTime?
-  createdAt     DateTime                              @default(now())
-  updatedAt     DateTime                              @updatedAt
+  id               String                                @id @default(uuid()) @db.Uuid
+  practitionerId   String                                @db.Uuid
+  surface          PractitionerMarketingPlacementSurface
+  status           PractitionerMarketingPlacementStatus  @default(ACTIVE)
+  startsAt         DateTime
+  endsAt           DateTime?
+  priority         Int                                   @default(100)
+  badgeLabelAr     String?                               @db.VarChar(191)
+  badgeLabelEn     String?                               @db.VarChar(191)
+  reason           PractitionerMarketingPlacementReason  @default(FEATURED)
+  campaignName     String?                               @db.VarChar(191)
+  notesInternal    String?                               @db.VarChar(2000)
+  createdByAdminId String?                               @db.Uuid
+  pausedByAdminId  String?                               @db.Uuid
+  pausedAt         DateTime?
+  createdAt        DateTime                              @default(now())
+  updatedAt        DateTime                              @updatedAt
 
-  practitioner PractitionerProfile                   @relation(fields: [practitionerId], references: [id], onDelete: Cascade)
-  createdByAdmin User?                               @relation("PractitionerMarketingPlacementCreatedByAdmin", fields: [createdByAdminId], references: [id], onDelete: SetNull)
-  pausedByAdmin  User?                               @relation("PractitionerMarketingPlacementPausedByAdmin", fields: [pausedByAdminId], references: [id], onDelete: SetNull)
+  practitioner   PractitionerProfile                     @relation(fields: [practitionerId], references: [id], onDelete: Cascade)
+  createdByAdmin User?                                   @relation("PractitionerMarketingPlacementCreatedByAdmin", fields: [createdByAdminId], references: [id], onDelete: SetNull)
+  pausedByAdmin  User?                                   @relation("PractitionerMarketingPlacementPausedByAdmin", fields: [pausedByAdminId], references: [id], onDelete: SetNull)
   historyEntries PractitionerMarketingPlacementHistory[]
 
   @@index([surface, status, startsAt, endsAt, priority])
@@ -1702,17 +1717,17 @@ model PractitionerMarketingPlacement {
 }
 
 model PractitionerMarketingPlacementHistory {
-  id          String                                      @id @default(uuid()) @db.Uuid
-  placementId String                                      @db.Uuid
-  action      PractitionerMarketingPlacementHistoryAction
-  actorUserId String?                                     @db.Uuid
+  id             String                                      @id @default(uuid()) @db.Uuid
+  placementId    String                                      @db.Uuid
+  action         PractitionerMarketingPlacementHistoryAction
+  actorUserId    String?                                     @db.Uuid
   beforeSnapshot Json?
   afterSnapshot  Json?
-  note        String?                                     @db.VarChar(1000)
-  createdAt   DateTime                                    @default(now())
+  note           String?                                     @db.VarChar(1000)
+  createdAt      DateTime                                    @default(now())
 
   placement PractitionerMarketingPlacement @relation(fields: [placementId], references: [id], onDelete: Cascade)
-  actorUser  User?                        @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+  actorUser User?                          @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
 
   @@index([placementId, createdAt])
   @@index([actorUserId, createdAt])
@@ -2166,23 +2181,24 @@ model Session {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  patient                PatientProfile               @relation(fields: [patientId], references: [id], onDelete: Restrict)
-  practitioner           PractitionerProfile          @relation(fields: [practitionerId], references: [id], onDelete: Restrict)
-  packagePurchase        PatientPackagePurchase?      @relation("SessionPackagePurchase", fields: [packagePurchaseId], references: [id], onDelete: SetNull)
-  events                 SessionEvent[]
-  instantBookingRequest  InstantBookingRequest?
-  payments               Payment[]
-  refunds                Refund[]
-  customerWalletEntries  CustomerWalletEntry[]
-  conversations          Conversation[]
-  chatApprovalRequests   ChatApprovalRequest[]
-  reviews                SessionReview[]
-  ledgerEntries          LedgerEntry[]
-  couponRedemptions      CouponRedemption[]
-  attendanceEvents       SessionAttendanceEvent[]
-  cancellationRecord     SessionCancellationRecord?
-  corporateSponsorship   CorporateSessionSponsorship?
-  corporateLedgerEntries CorporateLedger[]
+  patient                     PatientProfile               @relation(fields: [patientId], references: [id], onDelete: Restrict)
+  practitioner                PractitionerProfile          @relation(fields: [practitionerId], references: [id], onDelete: Restrict)
+  packagePurchase             PatientPackagePurchase?      @relation("SessionPackagePurchase", fields: [packagePurchaseId], references: [id], onDelete: SetNull)
+  events                      SessionEvent[]
+  decisions                   SessionAdminDecision[]
+  instantBookingRequest       InstantBookingRequest?
+  payments                    Payment[]
+  refunds                     Refund[]
+  customerWalletEntries       CustomerWalletEntry[]
+  conversations               Conversation[]
+  chatApprovalRequests        ChatApprovalRequest[]
+  reviews                     SessionReview[]
+  ledgerEntries               LedgerEntry[]
+  couponRedemptions           CouponRedemption[]
+  attendanceEvents            SessionAttendanceEvent[]
+  cancellationRecord          SessionCancellationRecord?
+  corporateSponsorship        CorporateSessionSponsorship?
+  corporateLedgerEntries      CorporateLedger[]
   sessionReminderQueueEntries SessionReminderQueue[]
 
   @@unique([packagePurchaseId, packageSessionIndex])
@@ -2196,17 +2212,17 @@ model Session {
 }
 
 model SessionReminderQueue {
-  id              String             @id @default(uuid()) @db.Uuid
-  sessionId       String             @db.Uuid
-  recipientUserId String             @db.Uuid
+  id              String              @id @default(uuid()) @db.Uuid
+  sessionId       String              @db.Uuid
+  recipientUserId String              @db.Uuid
   recipientRole   UserRoleType
   reminderType    SessionReminderType
   dueAt           DateTime
   sentAt          DateTime?
   cancelledAt     DateTime?
-  idempotencyKey  String             @unique @db.VarChar(191)
-  createdAt       DateTime           @default(now())
-  updatedAt       DateTime           @updatedAt
+  idempotencyKey  String              @unique @db.VarChar(191)
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
 
   session       Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
   recipientUser User    @relation(fields: [recipientUserId], references: [id], onDelete: Cascade)
@@ -2319,6 +2335,33 @@ model SessionEvent {
   @@index([eventType, createdAt])
 }
 
+model SessionAdminDecision {
+  id                         String                   @id @default(uuid()) @db.Uuid
+  sessionId                  String                   @db.Uuid
+  decisionType               SessionAdminDecisionType
+  decidedByUserId            String                   @db.Uuid
+  previousSessionStatus      SessionStatus
+  nextSessionStatus          SessionStatus?
+  reasonCode                 String                   @db.VarChar(100)
+  adminNote                  String?                  @db.VarChar(2000)
+  recommendedOutcomeSnapshot Json?
+  attendanceSummarySnapshot  Json?
+  evidenceTimelineSnapshot   Json?
+  isFinal                    Boolean                  @default(true)
+  supersedesDecisionId       String?                  @unique @db.Uuid
+  createdAt                  DateTime                 @default(now())
+  updatedAt                  DateTime                 @updatedAt
+
+  session       Session               @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  supersedes    SessionAdminDecision? @relation("AdminDecisionSupersession", fields: [supersedesDecisionId], references: [id], onDelete: SetNull)
+  supersededBy  SessionAdminDecision? @relation("AdminDecisionSupersession")
+  adminUser     User                  @relation(fields: [decidedByUserId], references: [id], onDelete: Restrict)
+
+  @@index([sessionId, createdAt])
+  @@index([decidedByUserId])
+  @@index([sessionId, isFinal, createdAt])
+}
+
 model InstantBookingRequest {
   id              String  @id @default(uuid()) @db.Uuid
   patientId       String  @db.Uuid
@@ -2333,6 +2376,7 @@ model InstantBookingRequest {
   expiresAt      DateTime
   respondedAt    DateTime?
   responseReason String?   @db.VarChar(500)
+  metadataJson   Json?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

@@ -411,6 +411,10 @@ exports.Prisma.PractitionerProfileScalarFieldEnum = {
   sessionPrice30Usd: 'sessionPrice30Usd',
   sessionPrice60Egp: 'sessionPrice60Egp',
   sessionPrice60Usd: 'sessionPrice60Usd',
+  instantBookingPrice30Egp: 'instantBookingPrice30Egp',
+  instantBookingPrice30Usd: 'instantBookingPrice30Usd',
+  instantBookingPrice60Egp: 'instantBookingPrice60Egp',
+  instantBookingPrice60Usd: 'instantBookingPrice60Usd',
   avatarUrl: 'avatarUrl',
   coverImageUrl: 'coverImageUrl',
   isPublicProfilePublished: 'isPublicProfilePublished',
@@ -872,6 +876,24 @@ exports.Prisma.SessionEventScalarFieldEnum = {
   createdAt: 'createdAt'
 };
 
+exports.Prisma.SessionAdminDecisionScalarFieldEnum = {
+  id: 'id',
+  sessionId: 'sessionId',
+  decisionType: 'decisionType',
+  decidedByUserId: 'decidedByUserId',
+  previousSessionStatus: 'previousSessionStatus',
+  nextSessionStatus: 'nextSessionStatus',
+  reasonCode: 'reasonCode',
+  adminNote: 'adminNote',
+  recommendedOutcomeSnapshot: 'recommendedOutcomeSnapshot',
+  attendanceSummarySnapshot: 'attendanceSummarySnapshot',
+  evidenceTimelineSnapshot: 'evidenceTimelineSnapshot',
+  isFinal: 'isFinal',
+  supersedesDecisionId: 'supersedesDecisionId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
 exports.Prisma.InstantBookingRequestScalarFieldEnum = {
   id: 'id',
   patientId: 'patientId',
@@ -884,6 +906,7 @@ exports.Prisma.InstantBookingRequestScalarFieldEnum = {
   expiresAt: 'expiresAt',
   respondedAt: 'respondedAt',
   responseReason: 'responseReason',
+  metadataJson: 'metadataJson',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };
@@ -2732,7 +2755,18 @@ exports.SessionEventType = exports.$Enums.SessionEventType = {
   JOIN_TOKEN_ISSUED: 'JOIN_TOKEN_ISSUED',
   JOIN_TOKEN_FAILED: 'JOIN_TOKEN_FAILED',
   MEETING_STARTED: 'MEETING_STARTED',
-  MEETING_ENDED: 'MEETING_ENDED'
+  MEETING_ENDED: 'MEETING_ENDED',
+  ADMIN_MANUAL_DECISION_CREATED: 'ADMIN_MANUAL_DECISION_CREATED',
+  ADMIN_MANUAL_DECISION_SUPERSEDED: 'ADMIN_MANUAL_DECISION_SUPERSEDED'
+};
+
+exports.SessionAdminDecisionType = exports.$Enums.SessionAdminDecisionType = {
+  MARK_COMPLETED: 'MARK_COMPLETED',
+  MARK_PATIENT_NO_SHOW: 'MARK_PATIENT_NO_SHOW',
+  MARK_PRACTITIONER_NO_SHOW: 'MARK_PRACTITIONER_NO_SHOW',
+  MARK_BOTH_NO_SHOW: 'MARK_BOTH_NO_SHOW',
+  MARK_TECHNICAL_REVIEW: 'MARK_TECHNICAL_REVIEW',
+  MARK_INSUFFICIENT_EVIDENCE: 'MARK_INSUFFICIENT_EVIDENCE'
 };
 
 exports.InstantBookingRequestStatus = exports.$Enums.InstantBookingRequestStatus = {
@@ -3557,6 +3591,7 @@ exports.Prisma.ModelName = {
   SessionCancellationRecord: 'SessionCancellationRecord',
   SessionAttendanceEvent: 'SessionAttendanceEvent',
   SessionEvent: 'SessionEvent',
+  SessionAdminDecision: 'SessionAdminDecision',
   InstantBookingRequest: 'InstantBookingRequest',
   Payment: 'Payment',
   PaymentEvent: 'PaymentEvent',

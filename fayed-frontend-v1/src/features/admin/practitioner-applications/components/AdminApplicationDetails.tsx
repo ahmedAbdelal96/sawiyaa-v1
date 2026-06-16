@@ -577,6 +577,30 @@ export default function AdminApplicationDetails({ applicationId }: Props) {
       current: formatMoneyValue(liveProfile.pricing.session60.egp, locale),
       requested: formatMoneyValue(profile.pricing.session60.egp, locale),
     },
+    {
+      key: "instantBookingPrice30Egp",
+      label: t("applicationDetails.profile.instantBookingPrice30Egp"),
+      current: formatMoneyValue(liveProfile.instantBookingPrice30Egp, locale),
+      requested: formatMoneyValue(profile.instantBookingPrice30Egp, locale),
+    },
+    {
+      key: "instantBookingPrice60Egp",
+      label: t("applicationDetails.profile.instantBookingPrice60Egp"),
+      current: formatMoneyValue(liveProfile.instantBookingPrice60Egp, locale),
+      requested: formatMoneyValue(profile.instantBookingPrice60Egp, locale),
+    },
+    {
+      key: "instantBookingPrice30Usd",
+      label: t("applicationDetails.profile.instantBookingPrice30Usd"),
+      current: formatMoneyValue(liveProfile.instantBookingPrice30Usd, locale),
+      requested: formatMoneyValue(profile.instantBookingPrice30Usd, locale),
+    },
+    {
+      key: "instantBookingPrice60Usd",
+      label: t("applicationDetails.profile.instantBookingPrice60Usd"),
+      current: formatMoneyValue(liveProfile.instantBookingPrice60Usd, locale),
+      requested: formatMoneyValue(profile.instantBookingPrice60Usd, locale),
+    },
   ].filter((item) => normalizeForDiff(item.current) !== normalizeForDiff(item.requested));
 
   const payoutCountryCode =
@@ -806,6 +830,10 @@ export default function AdminApplicationDetails({ applicationId }: Props) {
               { label: t("applicationDetails.profile.sessionPrice60Egp"), value: formatMoneyValue(profile.pricing.session60.egp, locale) },
               { label: t("applicationDetails.profile.sessionPrice30Usd"), value: formatMoneyValue(profile.pricing.session30.usd, locale) },
               { label: t("applicationDetails.profile.sessionPrice60Usd"), value: formatMoneyValue(profile.pricing.session60.usd, locale) },
+              { label: t("applicationDetails.profile.instantBookingPrice30Egp"), value: formatMoneyValue(profile.instantBookingPrice30Egp, locale) },
+              { label: t("applicationDetails.profile.instantBookingPrice60Egp"), value: formatMoneyValue(profile.instantBookingPrice60Egp, locale) },
+              { label: t("applicationDetails.profile.instantBookingPrice30Usd"), value: formatMoneyValue(profile.instantBookingPrice30Usd, locale) },
+              { label: t("applicationDetails.profile.instantBookingPrice60Usd"), value: formatMoneyValue(profile.instantBookingPrice60Usd, locale) },
             ]}
             differences={professionalDifferences}
             noDifferencesLabel={t("applicationDetails.review.noImportantDifferences")}

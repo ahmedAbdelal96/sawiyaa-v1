@@ -19,6 +19,10 @@ export class PractitionerProfileMapper {
       sessionPrice30Usd: { toString(): string } | string | null;
       sessionPrice60Egp: { toString(): string } | string | null;
       sessionPrice60Usd: { toString(): string } | string | null;
+      instantBookingPrice30Egp: { toString(): string } | string | null;
+      instantBookingPrice30Usd: { toString(): string } | string | null;
+      instantBookingPrice60Egp: { toString(): string } | string | null;
+      instantBookingPrice60Usd: { toString(): string } | string | null;
       acceptsPackages?: boolean;
       practitionerType: PractitionerProfileViewModel['practitionerType'];
       practitionerGender: PractitionerProfileViewModel['practitionerGender'];
@@ -86,6 +90,26 @@ export class PractitionerProfileMapper {
               : Number(input.profile.sessionPrice60Usd),
         },
       },
+      instantBookingPrice30Egp:
+        input.profile.instantBookingPrice30Egp === null ||
+        input.profile.instantBookingPrice30Egp === undefined
+          ? null
+          : Number(input.profile.instantBookingPrice30Egp),
+      instantBookingPrice30Usd:
+        input.profile.instantBookingPrice30Usd === null ||
+        input.profile.instantBookingPrice30Usd === undefined
+          ? null
+          : Number(input.profile.instantBookingPrice30Usd),
+      instantBookingPrice60Egp:
+        input.profile.instantBookingPrice60Egp === null ||
+        input.profile.instantBookingPrice60Egp === undefined
+          ? null
+          : Number(input.profile.instantBookingPrice60Egp),
+      instantBookingPrice60Usd:
+        input.profile.instantBookingPrice60Usd === null ||
+        input.profile.instantBookingPrice60Usd === undefined
+          ? null
+          : Number(input.profile.instantBookingPrice60Usd),
       payoutDestination: input.profile.payoutDestination,
       profileStatus: input.profile.status,
       specialties: input.specialties,

@@ -16,6 +16,8 @@ interface ZonedDateTimeParts extends CalendarDateParts {
 
 const zonedDateTimeFormatterCache = new Map<string, Intl.DateTimeFormat>();
 
+export { isValidIanaTimeZone } from '@common/utils/timezone.util';
+
 function getZonedDateTimeFormatter(timeZone: string): Intl.DateTimeFormat {
   const cacheKey = `date-time:${timeZone}`;
   const existing = zonedDateTimeFormatterCache.get(cacheKey);
@@ -37,15 +39,6 @@ function getZonedDateTimeFormatter(timeZone: string): Intl.DateTimeFormat {
 
   zonedDateTimeFormatterCache.set(cacheKey, formatter);
   return formatter;
-}
-
-export function isValidIanaTimeZone(timeZone: string): boolean {
-  try {
-    getZonedDateTimeFormatter(timeZone).format(new Date());
-    return true;
-  } catch {
-    return false;
-  }
 }
 
 function formatPartsToObject(

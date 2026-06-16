@@ -28,6 +28,7 @@ import {
 } from '../dto/instant-booking-response.dto';
 import { RejectInstantBookingRequestDto } from '../dto/reject-instant-booking-request.dto';
 import { AcceptInstantBookingRequestUseCase } from '../use-cases/accept-instant-booking-request.use-case';
+import { ListPractitionerInstantBookingRequestsUseCase } from '../use-cases/list-practitioner-instant-booking-requests.use-case';
 import { ListPractitionerPendingInstantBookingRequestsUseCase } from '../use-cases/list-practitioner-pending-instant-booking-requests.use-case';
 import { RejectInstantBookingRequestUseCase } from '../use-cases/reject-instant-booking-request.use-case';
 
@@ -43,10 +44,33 @@ import { RejectInstantBookingRequestUseCase } from '../use-cases/reject-instant-
 @Controller('practitioners/me/instant-booking-requests')
 export class PractitionerInstantBookingController {
   constructor(
+    private readonly listPractitionerInstantBookingRequestsUseCase: ListPractitionerInstantBookingRequestsUseCase,
     private readonly listPractitionerPendingInstantBookingRequestsUseCase: ListPractitionerPendingInstantBookingRequestsUseCase,
     private readonly acceptInstantBookingRequestUseCase: AcceptInstantBookingRequestUseCase,
     private readonly rejectInstantBookingRequestUseCase: RejectInstantBookingRequestUseCase,
   ) {}
+
+  @Get()
+  @ApiOperation({
+    summary: 'List practitioner instant booking requests',
+    description:
+      'Returns the authenticated practitioner instant booking requests in reverse chronological order after expiring any stale pending requests.',
+  })
+  @ApiResponse({ status: 200, type: InstantBookingItemsSuccessResponseDto })
+  @ApiUnauthorizedResponse({ description: 'Access token is required' })
+  @ApiForbiddenResponse({
+    description:
+      'Route requires practitioner role, active account, and OTP-verified practitioner access',
+  })
+  listAll(
+    @CurrentUser() currentUser: AuthenticatedUser,
+    @CurrentLocale() locale: SupportedLocale,
+  ) {
+    return this.listPractitionerInstantBookingRequestsUseCase.execute({
+      userId: currentUser.id,
+      locale,
+    });
+  }
 
   @Get('pending')
   @ApiOperation({

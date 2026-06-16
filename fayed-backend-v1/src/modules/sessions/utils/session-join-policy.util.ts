@@ -1,5 +1,6 @@
 import {
   Prisma,
+  SessionAdminDecisionType,
   SessionMode,
   SessionProvider,
   SessionStatus,
@@ -20,7 +21,9 @@ export type SessionPresentationStatus =
   | 'COMPLETED'
   | 'CANCELLED'
   | 'ENDED'
-  | 'UNAVAILABLE';
+  | 'UNAVAILABLE'
+  | 'NO_SHOW'
+  | 'UNDER_REVIEW';
 
 export interface SessionJoinPolicyInput {
   status: SessionStatus;
@@ -32,6 +35,8 @@ export interface SessionJoinPolicyInput {
   providerSessionRef: string | null;
   now: Date;
   runtimePrepareLeadMinutes?: number;
+  /** If set, a final manual admin decision exists and should override presentationStatus */
+  finalManualDecision?: SessionAdminDecisionType | null;
 }
 
 export interface SessionJoinPolicyResolution {
@@ -212,6 +217,27 @@ export function buildSessionJoinAvailabilityViewModel(
 export function resolveSessionPresentationStatus(
   input: SessionJoinPolicyInput,
 ): SessionPresentationStatus {
+  // If a final manual admin decision exists, it overrides the raw status mapping.
+  // This ensures admin decisions are visible in all presentation surfaces.
+  if (input.finalManualDecision) {
+    switch (input.finalManualDecision) {
+      case SessionAdminDecisionType.MARK_PATIENT_NO_SHOW:
+      case SessionAdminDecisionType.MARK_BOTH_NO_SHOW:
+        return 'NO_SHOW';
+      case SessionAdminDecisionType.MARK_TECHNICAL_REVIEW:
+      case SessionAdminDecisionType.MARK_INSUFFICIENT_EVIDENCE:
+        return 'UNDER_REVIEW';
+      case SessionAdminDecisionType.MARK_COMPLETED:
+        // Already reflects as COMPLETED via status change; this is for completeness
+        return 'COMPLETED';
+      case SessionAdminDecisionType.MARK_PRACTITIONER_NO_SHOW:
+        // Practitioner no-show without patient no-show still counts as no-show
+        return 'NO_SHOW';
+      default:
+        break;
+    }
+  }
+
   const resolution = resolveSessionJoinPolicy(input);
   const hasScheduledWindow =
     input.scheduledStartAt !== null && input.scheduledEndAt !== null;

@@ -218,4 +218,20 @@ describe('ResolveSessionJoinReadinessService', () => {
     expect(result.canJoin).toBe(false);
     expect(result.blockedReason).toBe('SESSION_NOT_JOINABLE_STATUS');
   });
+
+  it('blocks pending-payment sessions from join before payment confirmation', () => {
+    const result = service.resolve({
+      status: SessionStatus.PENDING_PAYMENT,
+      sessionMode: SessionMode.VIDEO,
+      scheduledStartAt: start,
+      scheduledEndAt: end,
+      provider: SessionProvider.NONE,
+      providerRoomId: null,
+      providerSessionRef: null,
+      now,
+    });
+
+    expect(result.canJoin).toBe(false);
+    expect(result.blockedReason).toBe('SESSION_NOT_JOINABLE_STATUS');
+  });
 });

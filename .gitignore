@@ -81,6 +81,13 @@ patient_mobile_app_screen/whatsapp_image_*
 **/tmp/
 **/*.tmp*
 
+# Test screenshots and test artifacts
+**/test-results/
+**/test-results/**
+**/test/
+**/test/*.png
+**/test/*.html
+
 # Generated screenshot files used during debugging
 admin-*.png
 smoke-*.png

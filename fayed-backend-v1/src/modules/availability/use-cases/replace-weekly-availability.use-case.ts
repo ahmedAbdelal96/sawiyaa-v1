@@ -5,8 +5,8 @@ import { AvailabilityMapper } from '../mappers/availability.mapper';
 import { AvailabilityExceptionRepository } from '../repositories/availability-exception.repository';
 import { AvailabilityPractitionerRepository } from '../repositories/availability-practitioner.repository';
 import { AvailabilitySlotRepository } from '../repositories/availability-slot.repository';
-import { ResolvePractitionerTimezoneService } from '../services/resolve-practitioner-timezone.service';
 import { ValidateAvailabilityOverlapService } from '../services/validate-availability-overlap.service';
+import { assertIanaTimeZoneInput } from '@common/utils/timezone.util';
 import { WEEKDAY_INDEX_TO_ENUM } from '../utils/availability-weekday.util';
 import { WeeklyAvailabilitySlotDraftInput } from '../types/availability.types';
 
@@ -22,7 +22,6 @@ export class ReplaceWeeklyAvailabilityUseCase {
     private readonly availabilitySlotRepository: AvailabilitySlotRepository,
     private readonly availabilityExceptionRepository: AvailabilityExceptionRepository,
     private readonly availabilityMapper: AvailabilityMapper,
-    private readonly resolvePractitionerTimezoneService: ResolvePractitionerTimezoneService,
     private readonly validateAvailabilityOverlapService: ValidateAvailabilityOverlapService,
   ) {}
 
@@ -42,14 +41,17 @@ export class ReplaceWeeklyAvailabilityUseCase {
       });
     }
 
-    this.resolvePractitionerTimezoneService.assertValid(input.timezone);
+    const timezone = assertIanaTimeZoneInput(input.timezone, {
+      messageKey: 'availability.errors.invalidTimezone',
+      error: 'AVAILABILITY_INVALID_TIMEZONE',
+    });
     const normalizedSlots =
       this.validateAvailabilityOverlapService.validateWeeklySlots(input.slots);
 
     const weeklySlots =
       await this.availabilitySlotRepository.replaceWeeklySlots(
         practitioner.id,
-        input.timezone,
+        timezone,
         normalizedSlots.map((slot) => ({
           weekday: WEEKDAY_INDEX_TO_ENUM[slot.dayOfWeek],
           durationMinutes: slot.durationMinutes,
@@ -70,7 +72,7 @@ export class ReplaceWeeklyAvailabilityUseCase {
         input.locale,
       ),
       ...this.availabilityMapper.toCombinedViewModel({
-        timezone: input.timezone,
+        timezone,
         weeklySlots,
         exceptions,
       }),

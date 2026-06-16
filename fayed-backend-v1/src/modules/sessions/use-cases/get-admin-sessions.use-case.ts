@@ -47,9 +47,19 @@ export class GetAdminSessionsUseCase {
         take: limit,
       });
 
+    // Batch-fetch final manual decisions for all sessions in this page
+    const decisionMap = await this.sessionRepository.findLatestActiveSessionAdminDecisionsForSessions(
+      sessions.map((s) => s.id),
+    );
+
     return {
       items: sessions.map((session) => ({
-        ...this.sessionMapper.toListItem(session),
+        ...this.sessionMapper.toListItem(
+          session,
+          now,
+          0,
+          decisionMap.get(session.id) ?? null,
+        ),
         isDelayed: this.isDelayed(
           session.status,
           session.scheduledStartAt,

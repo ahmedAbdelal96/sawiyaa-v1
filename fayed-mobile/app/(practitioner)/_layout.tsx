@@ -183,6 +183,10 @@ export default function PractitionerLayout() {
         name="notifications"
         options={{ href: null }}
       />
+      <Tabs.Screen
+        name="instant-booking"
+        options={{ href: null }}
+      />
     </Tabs>
   );
 }

@@ -1,5 +1,6 @@
 import { SessionMode, SessionProvider, SessionStatus } from '@prisma/client';
 import {
+  buildSessionJoinAvailabilityViewModel,
   buildSessionPresentationFilterWhere,
   resolveSessionPresentationStatus,
   summarizeSessionPresentations,
@@ -326,6 +327,26 @@ describe('session-join-policy util', () => {
         not: null,
         gte: now,
       },
+    });
+  });
+
+  it('builds join availability from UTC scheduled times only', () => {
+    const joinAvailability = buildSessionJoinAvailabilityViewModel({
+      status: SessionStatus.CONFIRMED,
+      sessionMode: SessionMode.VIDEO,
+      scheduledStartAt: scheduledStartAt,
+      scheduledEndAt: scheduledEndAt,
+      provider: SessionProvider.DAILY,
+      providerRoomId: 'room-1',
+      providerSessionRef: 'room-ref-1',
+      now: new Date('2026-08-02T11:58:30.000Z'),
+    });
+
+    expect(joinAvailability).toEqual({
+      canJoin: true,
+      blockedReason: null,
+      availableAt: '2026-08-02T11:58:00.000Z',
+      expiresAt: '2026-08-02T12:30:00.000Z',
     });
   });
 });

@@ -79,4 +79,13 @@ export const enSessionsCatalog = {
     cancellationOriginalMethodRefundNotSupported:
       'Original-method cancellation refunds are not supported in this phase',
   },
+  // Phase 4A — Manual session decision types
+  decisionTypes: {
+    MARK_COMPLETED: 'Mark Completed',
+    MARK_PATIENT_NO_SHOW: 'Mark Patient No-Show',
+    MARK_PRACTITIONER_NO_SHOW: 'Mark Practitioner No-Show',
+    MARK_BOTH_NO_SHOW: 'Mark Both No-Show',
+    MARK_TECHNICAL_REVIEW: 'Mark Technical Review',
+    MARK_INSUFFICIENT_EVIDENCE: 'Mark Insufficient Evidence',
+  },
 };

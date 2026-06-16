@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { ContentLocale } from '@prisma/client';
-import { isValidIanaTimeZone } from '@modules/availability/utils/availability-timezone.util';
+import { normalizeIanaTimeZoneInput } from '@common/utils/timezone.util';
 import {
   SETTINGS_ERROR_CODES,
   SETTINGS_SUPPORTED_NOTIFICATION_CHANNELS,
@@ -31,16 +31,13 @@ export class ValidateSettingsContractInputService {
   }
 
   assertValidTimezone(timezone?: string | null): string | undefined {
-    if (timezone === undefined || timezone === null) {
-      return undefined;
-    }
+    const normalized = normalizeIanaTimeZoneInput(timezone, {
+      messageKey: 'settings.errors.invalidTimezone',
+      error: SETTINGS_ERROR_CODES.invalidTimezone,
+    });
 
-    const normalized = timezone.trim();
-    if (!normalized || !isValidIanaTimeZone(normalized)) {
-      throw new BadRequestException({
-        messageKey: 'settings.errors.invalidTimezone',
-        errorCode: SETTINGS_ERROR_CODES.invalidTimezone,
-      });
+    if (normalized === null || normalized === undefined) {
+      return undefined;
     }
 
     return normalized;

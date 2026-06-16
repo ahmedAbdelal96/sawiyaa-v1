@@ -29,6 +29,8 @@ const PACKAGE_PURCHASE_SESSION_PRESENTATION_STATUS_TO_TONE: Record<
   CANCELLED: "default",
   ENDED: "default",
   UNAVAILABLE: "default",
+  NO_SHOW: "default",
+  UNDER_REVIEW: "warning",
 };
 
 const warnedPackagePurchaseContractMismatches = new Set<string>();

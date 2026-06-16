@@ -82,6 +82,11 @@ export const permissionDefinitions: Array<{
       'Read minimal support-safe session summary for customer support operations',
   },
   {
+    key: 'sessions.manualDecisions.write',
+    description:
+      'Create and supersede admin manual session decisions (ADMIN-only; SUPPORT_AGENT must not receive this permission)',
+  },
+  {
     key: 'careChat.request.decide',
     description: 'Approve, reject, or revoke care chat requests',
   },

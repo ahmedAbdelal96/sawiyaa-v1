@@ -32,6 +32,10 @@ export class PractitionerApplicationSnapshotService {
       sessionPrice30Usd?: Prisma.Decimal | number | string | null;
       sessionPrice60Egp?: Prisma.Decimal | number | string | null;
       sessionPrice60Usd?: Prisma.Decimal | number | string | null;
+      instantBookingPrice30Egp?: Prisma.Decimal | number | string | null;
+      instantBookingPrice30Usd?: Prisma.Decimal | number | string | null;
+      instantBookingPrice60Egp?: Prisma.Decimal | number | string | null;
+      instantBookingPrice60Usd?: Prisma.Decimal | number | string | null;
     };
     languageCodes: string[];
     specialties: Array<{
@@ -87,6 +91,18 @@ export class PractitionerApplicationSnapshotService {
             usd: this.toNullableNumber(input.profile.sessionPrice60Usd),
           },
         },
+        instantBookingPrice30Egp: this.toNullableNumber(
+          input.profile.instantBookingPrice30Egp,
+        ),
+        instantBookingPrice30Usd: this.toNullableNumber(
+          input.profile.instantBookingPrice30Usd,
+        ),
+        instantBookingPrice60Egp: this.toNullableNumber(
+          input.profile.instantBookingPrice60Egp,
+        ),
+        instantBookingPrice60Usd: this.toNullableNumber(
+          input.profile.instantBookingPrice60Usd,
+        ),
       },
       specialtySelection: {
         primarySpecialtyCategoryId: input.profile.primarySpecialtyCategoryId,

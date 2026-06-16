@@ -144,7 +144,7 @@
   "modes": {
     "VIDEO": "فيديو",
     "AUDIO": "صوت",
-    "CHAT": "محادثة"
+    "CHAT": "دردشة"
   },
   "providers": {
     "NONE": "بدون مزود",
@@ -420,6 +420,102 @@
     "states": {
       "loading": "جاري تحميل الأدلة",
       "notFound": "تعذر العثور على جلسة بهذا الرقم."
+    },
+    "manualDecision": {
+      "title": "قرار إداري يدوي",
+      "subtitle": "تسجيل قرار يدوي بعد مراجعة الأدلة",
+      "safetyNotice": "هذا قرار إداري يدوي بعد مراجعة الأدلة. لا يتم إنشاء استرداد أو تحويل مستحقات تلقائيًا من هذه الشاشة.",
+      "decisionType": {
+        "label": "نوع القرار",
+        "placeholder": "اختر نوع القرار",
+        "MARK_COMPLETED": "اعتبار الجلسة مكتملة",
+        "MARK_PATIENT_NO_SHOW": "اعتبار المريض لم يحضر",
+        "MARK_PRACTITIONER_NO_SHOW": "اعتبار المختص لم يحضر",
+        "MARK_BOTH_NO_SHOW": "اعتبار الطرفين لم يحضرا",
+        "MARK_TECHNICAL_REVIEW": "إحالة لمراجعة تقنية",
+        "MARK_INSUFFICIENT_EVIDENCE": "الأدلة غير كافية"
+      },
+      "reasonCode": {
+        "label": "كود السبب",
+        "placeholder": "اختر كود السبب",
+        "EVIDENCE_SUPPORTS_COMPLETION": "الأدلة تدعم الإكمال",
+        "PATIENT_DID_NOT_JOIN": "المريض لم يحضر",
+        "PRACTITIONER_DID_NOT_JOIN": "المختص لم يحضر",
+        "BOTH_PARTIES_DID_NOT_JOIN": "الطرفان لم يحضرا",
+        "TECHNICAL_ISSUE_REVIEW": "مراجعة مشكلة تقنية",
+        "INSUFFICIENT_EVIDENCE": "الأدلة غير كافية",
+        "ADMIN_REVIEW_OVERRIDE": "قرار إدارة بمراجعة",
+        "LOCAL_ADMIN_REVIEW": "مراجعة إدارية محلية",
+        "LOCAL_RUNTIME_SMOKE_TEST": "اختبار تشغيل محلي",
+        "LOCAL_RUNTIME_SMOKE_SUPERSEDE": "اختبار محلي لاستبدال القرار"
+      },
+      "statusImpact": {
+        "label": "تأثير الحالة",
+        "willMutate": "سيتم تحديث حالة الجلسة إلى {status}.",
+        "noChange": "لن يتم تغيير حالة الجلسة. سيتم تسجيل القرار فقط.",
+        "mutates": "تغيير الحالة",
+        "noMutation": "بدون تغيير الحالة"
+      },
+      "confirmations": {
+        "evidenceReviewed": "راجعت أدلة الحضور وسجل الأحداث.",
+        "noAutomaticRefund": "أفهم أن هذا القرار لا ينشئ استردادًا تلقائيًا.",
+        "noAutomaticPayout": "أفهم أن هذا القرار لا ينشئ تحويل مستحقات تلقائيًا."
+      },
+      "supersede": {
+        "warningTitle": "قرار نهائي قائم",
+        "warningNote": "يوجد قرار نهائي مسجل لهذه الجلسة. يجب استبداله لتسجيل قرار جديد.",
+        "currentFinal": "القرار النهائي الحالي",
+        "checkboxLabel": "أريد استبدال القرار النهائي الحالي بقرار جديد.",
+        "supersededBadge": "تم استبداله"
+      },
+      "adminNote": {
+        "label": "ملاحظة المشرف",
+        "placeholder": "ملاحظة اختيارية (الحد الأقصى 2000 حرف)",
+        "remaining": "متبقي {count} حرف",
+        "noSensitiveData": "لا تتضمن بيانات شخصية حساسة في الملاحظات."
+      },
+      "actions": {
+        "submit": "تسجيل القرار اليدوي",
+        "submitting": "جارٍ التسجيل...",
+        "cancel": "إلغاء"
+      },
+      "errors": {
+        "SESSION_DECISION_ALREADY_FINAL": "يوجد قرار نهائي قائم. يجب استبداله أولاً.",
+        "SESSION_DECISION_REQUIRES_PAST_END": "لم تنتهِ الجلسة بعد. لا يمكن تسجيل القرار إلا بعد الموعد النهائي المجدول.",
+        "SESSION_DECISION_NOT_ALLOWED_STATUS": "حالة الجلسة الحالية لا تسمح بقرارات يدوية.",
+        "SESSION_DECISION_NOT_ELIGIBLE": "لا يمكن إصدار قرار إداري لهذه الجلسة لأنها غير مؤهلة حسب حالة الجلسة الحالية.",
+        "SESSION_DECISION_CONFIRMATION_REQUIRED": "يجب تأكيد البنود الثلاثة قبل تسجيل القرار.",
+        "forbidden": "ليس لديك صلاحية تسجيل القرارات اليدوية.",
+        "unauthorized": "مطلوب رمز الوصول.",
+        "generic": "تعذر تسجيل القرار الآن."
+      },
+      "success": {
+        "title": "تم تسجيل القرار",
+        "note": "تم تسجيل القرار اليدوي بنجاح."
+      },
+      "noPermission": "يمكنك عرض سجل القرارات، لكن ليست لديك صلاحية تسجيل قرار يدوي.",
+      "history": {
+        "title": "سجل القرارات",
+        "empty": "لا توجد قرارات يدوية مسجلة لهذه الجلسة.",
+        "finalBadge": "نهائي",
+        "supersededBadge": "تم استبداله",
+        "noStatusChange": "بدون تغيير الحالة",
+        "decidedBy": "بواسطة",
+        "decidedByUnknown": "غير معروف",
+        "previousStatus": "الحالة السابقة",
+        "supersedesRelation": "يحل محل قرار سابق",
+        "snapshot": {
+          "evidenceSnapshotAt": "ملخص الأدلة وقت القرار",
+          "toggleOpen": "عرض الملخص",
+          "toggleClose": "إخفاء الملخص",
+          "recommendedOutcome": "التوصية المرشحة",
+          "patientJoined": "المريض حضر",
+          "practitionerJoined": "المختص حضر",
+          "overlapMinutes": "التداخل",
+          "sourceConfidence": "مستوى الثقة",
+          "riskFlags": "علامات الخطر"
+        }
+      }
     }
   }
 }

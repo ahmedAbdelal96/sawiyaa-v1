@@ -43,6 +43,10 @@ export type BackendPublicPractitionerListItem = {
   sessionPrice30Usd: number | null;
   sessionPrice60Egp: number | null;
   sessionPrice60Usd: number | null;
+  instantBookingPrice30Egp: number | null;
+  instantBookingPrice30Usd: number | null;
+  instantBookingPrice60Egp: number | null;
+  instantBookingPrice60Usd: number | null;
   displaySessionPrice30: number | null;
   displaySessionPrice60: number | null;
   isOnlineNow: boolean;
@@ -101,6 +105,10 @@ export function mapBackendListItemToUi(item: BackendPublicPractitionerListItem):
     sessionPrice30Usd: item.sessionPrice30Usd ?? null,
     sessionPrice60Egp: item.sessionPrice60Egp ?? null,
     sessionPrice60Usd: item.sessionPrice60Usd ?? null,
+    instantBookingPrice30Egp: item.instantBookingPrice30Egp ?? null,
+    instantBookingPrice30Usd: item.instantBookingPrice30Usd ?? null,
+    instantBookingPrice60Egp: item.instantBookingPrice60Egp ?? null,
+    instantBookingPrice60Usd: item.instantBookingPrice60Usd ?? null,
     displaySessionPrice30: item.displaySessionPrice30 ?? null,
     displaySessionPrice60: item.displaySessionPrice60 ?? null,
     pricing: {

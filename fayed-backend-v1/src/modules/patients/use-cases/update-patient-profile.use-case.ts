@@ -10,6 +10,7 @@ import { normalizePatientProfileInput } from '../utils/normalize-patient-profile
 import { CompletePatientOnboardingUseCase } from './complete-patient-onboarding.use-case';
 import { CreatePatientProfileUseCase } from './create-patient-profile.use-case';
 import { PatientAvatarStorageService } from '../services/patient-avatar-storage.service';
+import { normalizeIanaTimeZoneInput } from '@common/utils/timezone.util';
 
 /**
  * Profile update owns the baseline write path for patient identity/preferences.
@@ -35,6 +36,10 @@ export class UpdatePatientProfileUseCase {
     data: UpdatePatientProfileInput;
   }) {
     const normalizedInput = normalizePatientProfileInput(input.data);
+    const timezone = normalizeIanaTimeZoneInput(normalizedInput.timezone, {
+      messageKey: 'settings.errors.invalidTimezone',
+      error: 'SETTINGS_INVALID_TIMEZONE',
+    });
 
     if (normalizedInput.countryCode !== undefined) {
       throw new BadRequestException({
@@ -60,7 +65,7 @@ export class UpdatePatientProfileUseCase {
         input.userId,
         {
           defaultLocale: normalizedInput.locale,
-          timezone: normalizedInput.timezone,
+          timezone,
         },
         tx,
       );

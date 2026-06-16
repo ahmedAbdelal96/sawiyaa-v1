@@ -54,9 +54,19 @@ export class GetMyPatientSessionsUseCase {
       sessionIds: sessions.map((s) => s.id),
     });
 
+    // Batch-fetch final manual decisions for all sessions in this page
+    const decisionMap = await this.sessionRepository.findLatestActiveSessionAdminDecisionsForSessions(
+      sessions.map((s) => s.id),
+    );
+
     return {
       items: sessions.map((session) =>
-        this.sessionMapper.toListItem(session, now, unreadMap.get(session.id) ?? 0)
+        this.sessionMapper.toListItem(
+          session,
+          now,
+          unreadMap.get(session.id) ?? 0,
+          decisionMap.get(session.id) ?? null,
+        ),
       ),
       pagination: {
         page,

@@ -69,6 +69,8 @@ Sessions uses the `SessionEvent` table for audit/evidence events. New Phase 1 ev
 | `JOIN_TOKEN_FAILED` | Daily meeting token generation failed (with error) |
 | `MEETING_STARTED` | Daily webhook `meeting.started` received (evidence only) |
 | `MEETING_ENDED` | Daily webhook `meeting.ended` received (evidence only) |
+| `ADMIN_MANUAL_DECISION_CREATED` | Admin created a manual session decision (Phase 4A) |
+| `ADMIN_MANUAL_DECISION_SUPERSEDED` | A prior manual decision was superseded by a new one (Phase 4A) |
 
 `PATIENT_JOINED` and `PRACTITIONER_JOINED` exist in the enum but are not currently emitted
 by any use case — future Phase 2 work may emit them from the attendance webhook handler.
@@ -98,6 +100,8 @@ by any use case — future Phase 2 work may emit them from the attendance webhoo
 - `GET /api/v1/admin/sessions`
 - `GET /api/v1/admin/sessions/:id/runtime-inspection`
 - `GET /api/v1/admin/sessions/:id/attendance`
+- `GET /api/v1/admin/sessions/:id/manual-decisions`
+- `POST /api/v1/admin/sessions/:id/manual-decisions`
 
 Admin sessions list returns visibility-first operational list data:
 
@@ -176,6 +180,84 @@ Daily attendance webhook ingestion is visibility-first and append-safe:
 - ignores unsupported provider event types explicitly without failing lifecycle ownership
 - **signature verification**: when `DAILY_WEBHOOK_SECRET` is configured, unsigned requests are rejected; when not configured (dev/preview only), requests are accepted without signature verification
 
+### Phase 4A — Admin Manual Session Decisions
+
+Admin manual decisions allow authorized admin users to formally record an outcome for a completed session. This is the only mechanism that marks sessions with no-show or technical-review outcomes — no automatic business logic (no refunds, no wallet operations, no automatic status changes beyond the explicit mapping below).
+
+#### Authorization
+
+| Endpoint | Permission | Role |
+|---|---|---|
+| `GET /api/v1/admin/sessions/:id/manual-decisions` | `SESSIONS_READ_ADMIN` | `ADMIN`, `SUPPORT_AGENT` |
+| `POST /api/v1/admin/sessions/:id/manual-decision` | `SESSIONS_MANUAL_DECISIONS_WRITE` | `ADMIN` only (SUPPORT_AGENT blocked) |
+
+#### Decision Types
+
+| Decision Type | Description | Status Mutation |
+|---|---|---|
+| `MARK_COMPLETED` | Session completed normally with meaningful overlap | → `COMPLETED` |
+| `MARK_PATIENT_NO_SHOW` | Patient did not join; practitioner was present | → `NO_SHOW` |
+| `MARK_PRACTITIONER_NO_SHOW` | Practitioner did not join; patient was present | None |
+| `MARK_BOTH_NO_SHOW` | Neither party joined | None |
+| `MARK_TECHNICAL_REVIEW` | Technical issue prevented the session; flagged for review | None |
+| `MARK_INSUFFICIENT_EVIDENCE` | Attendance data is inconclusive; needs manual resolution | None |
+
+#### Endpoints
+
+- `GET /api/v1/admin/sessions/:id/manual-decisions` — list all decisions for a session (most recent first)
+- `POST /api/v1/admin/sessions/:id/manual-decision` — create a new decision
+
+#### Eligibility Rules
+
+A decision can only be created when:
+
+1. The session exists and `scheduledEndAt` is in the past
+2. Session status is not one of: `PENDING_PAYMENT`, `CANCELLED`, `REFUNDED`, `REFUND_PENDING`, `EXPIRED`, `READY_TO_JOIN`, `IN_PROGRESS`
+3. No active final decision already exists, **or** `supersedePrevious: true` is provided
+
+#### Supersession
+
+Supersession is **not automatic** — the caller must explicitly pass `supersedePrevious: true` to replace an existing active final decision. The new record links to the prior decision via `supersedesDecisionId` (one-to-one, unique index). Only one *active* (`isFinal: true`) decision exists per session at any time.
+
+#### Required Confirmation Flags
+
+All three must be `true` in the request body:
+
+- `confirmEvidenceReviewed` — admin has reviewed the attendance evidence
+- `confirmNoAutomaticRefund` — no automatic refund will be triggered
+- `confirmNoAutomaticPayout` — no automatic payout will be triggered
+
+#### Required Fields
+
+- `decisionType` — one of the six decision types
+- `reasonCode` — short i18n key string (max 100 chars)
+- `adminNote` — optional free-text note (max 2000 chars)
+
+#### Server-Side Evidence Snapshot
+
+Evidence is **always built server-side** from `GetAdminSessionAttendanceUseCase`. The client **must not and cannot** provide `evidenceSnapshot`. The snapshot comprises:
+
+- `recommendedOutcomeSnapshot` — from `extendedSummary.recommendation` (sanitized via `sanitizeSafeMetadata`)
+- `attendanceSummarySnapshot` — patient + practitioner attendance summary (sanitized)
+- `evidenceTimelineSnapshot` — the raw evidence timeline array (sanitized)
+
+#### Audit Events
+
+On every decision creation:
+
+1. `ADMIN_MANUAL_DECISION_CREATED` — written for the new decision; metadata includes `decisionId`, `decisionType`, `previousSessionStatus`, `nextSessionStatus`, `reasonCode`
+2. `ADMIN_MANUAL_DECISION_SUPERSEDED` — written for the prior decision when a supersession occurs; metadata includes `supersededDecisionId`, `newDecisionId`
+
+#### Transaction
+
+Decision creation, optional status mutation, and audit event writes are wrapped in a single `Prisma.$transaction` for atomicity.
+
+#### No Automatic Side Effects
+
+- No automatic refund or payout is triggered by any decision type
+- No wallet operations are initiated
+- Only `MARK_COMPLETED` → `COMPLETED` and `MARK_PATIENT_NO_SHOW` → `NO_SHOW` mutate session status; all other types leave `nextSessionStatus` as `null`
+
 ## Guards Used
 
 ### Patient routes
@@ -203,6 +285,9 @@ Daily attendance webhook ingestion is visibility-first and append-safe:
 - `SessionRuntimeItemSuccessResponseDto`
 - `SessionJoinItemSuccessResponseDto`
 - `AdminSessionAttendanceSuccessResponseDto`
+- `CreateAdminSessionManualDecisionDto`
+- `AdminSessionManualDecisionSuccessResponseDto`
+- `AdminSessionManualDecisionListSuccessResponseDto`
 
 ## Main Use Cases
 
@@ -217,6 +302,8 @@ Daily attendance webhook ingestion is visibility-first and append-safe:
 - `ResolveSessionJoinContractUseCase`
 - `CancelSessionUseCase`
 - `ExpireUnpaidSessionUseCase`
+- `CreateAdminSessionManualDecisionUseCase`
+- `ListAdminSessionManualDecisionsUseCase`
 - `HandleDailyAttendanceWebhookUseCase`
 
 ## Lifecycle Notes

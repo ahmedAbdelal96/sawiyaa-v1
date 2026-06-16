@@ -965,6 +965,8 @@
       "summaryHeading": "What will happen",
       "passwordHint": "Use a strong temporary password and share it with the practitioner through a safe channel only.",
       "pricingHeading": "Pricing",
+      "instantPricingHeading": "Instant booking pricing",
+      "instantPricingNote": "Enter instant booking prices if you want to prepare them for the practitioner now.",
       "credentialsChecklistHeading": "Required documents before approval",
       "credentialsEmpty": "No credential files have been uploaded yet.",
       "credentialExpirySummary": "Expires on {date}",
@@ -1009,6 +1011,10 @@
         "sessionPrice30Usd": "30-minute session price (USD)",
         "sessionPrice60Egp": "60-minute session price (EGP)",
         "sessionPrice60Usd": "60-minute session price (USD)",
+        "instantBookingPrice30Egp": "Instant booking price (30 minutes, EGP)",
+        "instantBookingPrice30Usd": "Instant booking price (30 minutes, USD)",
+        "instantBookingPrice60Egp": "Instant booking price (60 minutes, EGP)",
+        "instantBookingPrice60Usd": "Instant booking price (60 minutes, USD)",
         "credentialType": "Document type",
         "credentialFile": "Document file",
         "credentialExpiresAt": "Expiry date (optional)",
@@ -1038,6 +1044,10 @@
         "sessionPrice30Usd": "Optional",
         "sessionPrice60Egp": "Optional",
         "sessionPrice60Usd": "Optional",
+        "instantBookingPrice30Egp": "Optional",
+        "instantBookingPrice30Usd": "Optional",
+        "instantBookingPrice60Egp": "Optional",
+        "instantBookingPrice60Usd": "Optional",
         "credentialType": "Select document type",
         "note": "Optional internal note for admin ops"
       },
@@ -1201,15 +1211,7 @@
       "back": "Back to applications"
     },
     "sections": {
-      "applicant": "Applicant",
-      "profile": "Practitioner profile",
-      "profileEdit": "Edit before decision",
-      "credentials": "Credentials",
-      "qualifications": "Qualifications",
-      "payout": "Payout destination",
-      "application": "Application",
-      "readiness": "Readiness snapshot",
-      "decision": "Decision"
+      "instantBookingPricing": "Instant booking pricing"
     },
     "applicant": {
       "displayName": "Display name",
@@ -1238,6 +1240,10 @@
       "sessionPrice30Usd": "30-minute session price in USD",
       "sessionPrice60Egp": "60-minute session price in EGP",
       "sessionPrice60Usd": "60-minute session price in USD",
+      "instantBookingPrice30Egp": "Instant booking price for 30 minutes in EGP",
+      "instantBookingPrice30Usd": "Instant booking price for 30 minutes in USD",
+      "instantBookingPrice60Egp": "Instant booking price for 60 minutes in EGP",
+      "instantBookingPrice60Usd": "Instant booking price for 60 minutes in USD",
       "languages": "Languages",
       "primarySpecialtyCategory": "Primary specialty category",
       "subSpecialties": "Sub-specialties",

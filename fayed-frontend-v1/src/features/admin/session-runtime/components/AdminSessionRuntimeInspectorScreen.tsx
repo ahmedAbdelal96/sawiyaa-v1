@@ -17,6 +17,11 @@ import {
   useAdminSessionAttendance,
   useAdminSessionRuntimeInspection,
 } from "../hooks/use-admin-session-runtime";
+import {
+  useAdminSessionManualDecisions,
+} from "../hooks/use-admin-session-manual-decisions";
+import { PermissionKey } from "@/lib/auth/permissions";
+import { useCurrentUserPermissions } from "@/features/users/hooks/use-users";
 import AdminSessionInspectorCaseSummary from "./AdminSessionInspectorCaseSummary";
 import AdminSessionInspectorEvidenceFlagsPanel from "./AdminSessionInspectorEvidenceFlagsPanel";
 import AdminSessionInspectorOverlapCard from "./AdminSessionInspectorOverlapCard";
@@ -24,6 +29,8 @@ import AdminSessionInspectorRawEvidence from "./AdminSessionInspectorRawEvidence
 import AdminSessionInspectorRecommendationPanel from "./AdminSessionInspectorRecommendationPanel";
 import AdminSessionInspectorRoleCard from "./AdminSessionInspectorRoleCard";
 import AdminSessionInspectorTimeline from "./AdminSessionInspectorTimeline";
+import AdminSessionManualDecisionHistory from "./AdminSessionManualDecisionHistory";
+import AdminSessionManualDecisionPanel from "./AdminSessionManualDecisionPanel";
 import { OUTCOME_TONE, type OutcomeTone } from "../lib/inspector-utils";
 import type { AdminSessionStatus } from "../types/admin-session-runtime.types";
 
@@ -89,12 +96,20 @@ export default function AdminSessionRuntimeInspectorScreen({
 
   const inspection = useAdminSessionRuntimeInspection(
     submittedId,
-    Boolean(submittedId),
   );
   const attendance = useAdminSessionAttendance(
     submittedId,
-    Boolean(submittedId),
   );
+
+  // Phase 4B — decisions list + permission check
+  const decisions = useAdminSessionManualDecisions(submittedId);
+  const { data: permissionData } = useCurrentUserPermissions(true);
+  const hasWritePermission = Boolean(
+    permissionData?.permissions?.includes(PermissionKey.SESSIONS_MANUAL_DECISIONS_WRITE),
+  );
+  const decisionItems = decisions.data?.items ?? [];
+  const latestFinal = decisionItems.find((d: { isFinal: boolean }) => d.isFinal) ?? null;
+  const hasExistingFinal = latestFinal !== null;
 
   const item = inspection.data?.item;
   const extended = attendance.data?.extendedSummary ?? null;
@@ -270,6 +285,17 @@ export default function AdminSessionRuntimeInspectorScreen({
           <AdminSessionInspectorRecommendationPanel
             recommendation={extended.recommendation}
           />
+
+          {/* Phase 4B — Manual Admin Decision panel */}
+          <AdminSessionManualDecisionPanel
+            sessionId={item.id}
+            hasWritePermission={hasWritePermission}
+            hasExistingFinal={hasExistingFinal}
+            latestFinalDecision={latestFinal}
+          />
+
+          {/* Phase 4B — Manual Decision History */}
+          <AdminSessionManualDecisionHistory sessionId={item.id} />
 
           <section className="space-y-3">
             <h2 className="text-[11px] font-semibold uppercase tracking-[0.18em] text-text-muted">

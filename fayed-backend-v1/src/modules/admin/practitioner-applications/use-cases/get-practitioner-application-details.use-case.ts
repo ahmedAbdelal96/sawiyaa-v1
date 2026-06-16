@@ -149,6 +149,18 @@ export class GetPractitionerApplicationDetailsUseCase {
             : null,
         },
       },
+      instantBookingPrice30Egp: profile.instantBookingPrice30Egp
+        ? Number(profile.instantBookingPrice30Egp)
+        : null,
+      instantBookingPrice30Usd: profile.instantBookingPrice30Usd
+        ? Number(profile.instantBookingPrice30Usd)
+        : null,
+      instantBookingPrice60Egp: profile.instantBookingPrice60Egp
+        ? Number(profile.instantBookingPrice60Egp)
+        : null,
+      instantBookingPrice60Usd: profile.instantBookingPrice60Usd
+        ? Number(profile.instantBookingPrice60Usd)
+        : null,
       languages: profile.languages.map((item) => item.language.code),
       specialties: liveSpecialties,
     };
@@ -190,6 +202,14 @@ export class GetPractitionerApplicationDetailsUseCase {
       primarySpecialtyCategoryId:
         snapshotSpecialtySelection?.primarySpecialtyCategoryId ??
         liveProfile.primarySpecialtyCategoryId,
+      instantBookingPrice30Egp:
+        snapshotProfile?.instantBookingPrice30Egp ?? liveProfile.instantBookingPrice30Egp,
+      instantBookingPrice30Usd:
+        snapshotProfile?.instantBookingPrice30Usd ?? liveProfile.instantBookingPrice30Usd,
+      instantBookingPrice60Egp:
+        snapshotProfile?.instantBookingPrice60Egp ?? liveProfile.instantBookingPrice60Egp,
+      instantBookingPrice60Usd:
+        snapshotProfile?.instantBookingPrice60Usd ?? liveProfile.instantBookingPrice60Usd,
       pricing: snapshotProfile?.pricing ?? liveProfile.pricing,
       languages: snapshotLanguageCodes ?? liveProfile.languages,
       specialties:

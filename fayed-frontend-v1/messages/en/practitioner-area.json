@@ -307,6 +307,9 @@
       "changeSummary": "Change summary",
       "modalTitle": "Submit profile change request"
     },
+    "instantBooking": {
+      "pricingNote": "Enter the prices that will be used when instant booking is enabled."
+    },
     "avatar": {
       "feedback": {
         "removeError": "Could not prepare the avatar removal request right now.",
@@ -351,11 +354,13 @@
       "displayNameMax": "Display name must be 80 characters or less",
       "payoutWalletIdentifierMax": "Wallet number must be 191 characters or less",
       "payoutBankNameMax": "Bank name must be 191 characters or less",
-      "sessionPriceInvalid": "Enter a valid price greater than zero."
+      "sessionPriceInvalid": "Enter a valid price greater than zero.",
+      "instantBookingPriceInvalid": "Enter a valid instant booking price greater than zero."
     },
     "sections": {
       "changeRequest": "Change request",
       "payoutDestination": "Payout details",
+      "payoutDestinationNote": "Choose the payout destination that receives your earnings.",
       "liveProfileNote": "This is the approved profile currently visible to patients.",
       "avatar": "Avatar",
       "professional": "Professional details",
@@ -365,6 +370,8 @@
       "specialties": "Specialties",
       "liveProfile": "Live profile",
       "sessionPricing": "Session pricing",
+      "sessionPricingNote": "Enter the regular prices patients will use for standard booking.",
+      "instantBookingPricing": "Instant booking pricing",
       "languages": "Session languages"
     },
     "readiness": {
@@ -517,6 +524,22 @@
       "sessionPrice60Usd": {
         "label": "60-minute price (USD)",
         "placeholder": "Enter the US dollar price"
+      },
+      "instantBookingPrice30Egp": {
+        "label": "Instant booking price (30 minutes, EGP)",
+        "placeholder": "Enter the instant booking price in Egyptian pounds"
+      },
+      "instantBookingPrice30Usd": {
+        "label": "Instant booking price (30 minutes, USD)",
+        "placeholder": "Enter the instant booking price in US dollars"
+      },
+      "instantBookingPrice60Egp": {
+        "label": "Instant booking price (60 minutes, EGP)",
+        "placeholder": "Enter the instant booking price in Egyptian pounds"
+      },
+      "instantBookingPrice60Usd": {
+        "label": "Instant booking price (60 minutes, USD)",
+        "placeholder": "Enter the instant booking price in US dollars"
       }
     },
     "practitionerType": {
@@ -899,9 +922,30 @@
         "dayBlocked": "Bookings are prevented for this day"
       },
       "currentExceptions": {
-        "heading": "Exceptions for this day",
-        "subtitle": "Any adjustments added for this specific date appear here.",
-        "empty": "No exceptions added for this day."
+        "heading": "Current exceptions",
+        "subtitle": "All current and upcoming schedule changes you added, whether booking blocks or extra availability, appear here.",
+        "empty": "No current or upcoming exceptions.",
+        "selectedDateMatch": "Matches selected date",
+        "filters": {
+          "all": "All",
+          "blocking": "Booking blocks",
+          "extra": "Extra availability"
+        },
+        "columns": {
+          "date": "Date",
+          "weekday": "Weekday",
+          "type": "Type",
+          "range": "Time",
+          "duration": "Duration",
+          "note": "Note",
+          "status": "Status"
+        },
+        "status": {
+          "active": "Active",
+          "ended": "Ended"
+        },
+        "noInternalNote": "No internal note",
+        "actions": "Actions"
       }
     },
     "application": {

@@ -10,6 +10,7 @@ import { GetAdminSessionAttendanceUseCase } from './get-admin-session-attendance
 describe('GetAdminSessionAttendanceUseCase', () => {
   function buildUseCase() {
     const sessionRepository = {
+      findLatestActiveSessionAdminDecision: jest.fn().mockResolvedValue(null),
       findByIdWithParticipants: jest.fn().mockResolvedValue({
         id: 'session_1',
         status: SessionStatus.UPCOMING,

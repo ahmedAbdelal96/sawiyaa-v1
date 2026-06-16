@@ -8,5 +8,7 @@ export const arPresenceCatalog = {
   errors: {
     practitionerNotFound: 'تعذر العثور على ملف المعالج',
     publicPresenceNotFound: 'تعذر العثور على حالة تواجد المعالج العامة',
+    instantBookingPricingRequired:
+      'أدخل أسعار الحجز الفوري قبل تفعيل الحجز الفوري',
   },
 };

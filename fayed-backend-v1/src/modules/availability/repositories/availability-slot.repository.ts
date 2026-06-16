@@ -34,6 +34,31 @@ export class AvailabilitySlotRepository {
     });
   }
 
+  listActiveByPractitioners(
+    practitionerIds: string[],
+    tx?: Prisma.TransactionClient,
+  ) {
+    if (practitionerIds.length === 0) {
+      return Promise.resolve([]);
+    }
+
+    return this.getDb(tx).availabilitySlot.findMany({
+      where: {
+        practitionerId: {
+          in: practitionerIds,
+        },
+        isActive: true,
+      },
+      orderBy: [
+        { practitionerId: 'asc' },
+        { weekday: 'asc' },
+        { durationMinutes: 'asc' },
+        { startMinuteOfDay: 'asc' },
+        { endMinuteOfDay: 'asc' },
+      ],
+    });
+  }
+
   replaceWeeklySlots(
     practitionerId: string,
     timezone: string,

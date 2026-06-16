@@ -158,6 +158,46 @@ export class CreateAdminPractitionerDto {
   @Min(0.01)
   sessionPrice60Usd?: number | null;
 
+  @ApiPropertyOptional({
+    example: 300,
+    description: '30-minute instant booking price in EGP',
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0.01)
+  instantBookingPrice30Egp?: number | null;
+
+  @ApiPropertyOptional({
+    example: 10,
+    description: '30-minute instant booking price in USD',
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0.01)
+  instantBookingPrice30Usd?: number | null;
+
+  @ApiPropertyOptional({
+    example: 520,
+    description: '60-minute instant booking price in EGP',
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0.01)
+  instantBookingPrice60Egp?: number | null;
+
+  @ApiPropertyOptional({
+    example: 18,
+    description: '60-minute instant booking price in USD',
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0.01)
+  instantBookingPrice60Usd?: number | null;
+
   @ApiProperty({
     example: 'EG',
     description: 'ISO-2 country code',

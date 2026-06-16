@@ -438,6 +438,8 @@ function formatPresentationStatusLabel(
     CANCELLED: t("patientSessionsFlow.presentationStatus.CANCELLED"),
     ENDED: t("patientSessionsFlow.presentationStatus.ENDED"),
     UNAVAILABLE: t("patientSessionsFlow.presentationStatus.UNAVAILABLE"),
+    NO_SHOW: t("patientSessionsFlow.presentationStatus.NO_SHOW"),
+    UNDER_REVIEW: t("patientSessionsFlow.presentationStatus.UNDER_REVIEW"),
   };
 
   return map[status] ?? status;
@@ -496,8 +498,9 @@ function getActionStateText(
             joinAvailableAtText ??
             t("patientSessionsFlow.detail.noImmediateAction");
     case "COMPLETED":
-      return t("patientSessionsFlow.detail.noImmediateAction");
     case "ENDED":
+    case "NO_SHOW":
+    case "UNDER_REVIEW":
       return t("patientSessionsFlow.detail.noImmediateAction");
     case "CANCELLED":
       return t("patientSessionsFlow.detail.stateNote.CANCELLED");

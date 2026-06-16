@@ -5,6 +5,7 @@ import {
   Param,
   ParseEnumPipe,
   Patch,
+  Post,
   Query,
   UseGuards,
 } from '@nestjs/common';
@@ -12,6 +13,7 @@ import {
   ApiBearerAuth,
   ApiBody,
   ApiConflictResponse,
+  ApiCreatedResponse,
   ApiForbiddenResponse,
   ApiNotFoundResponse,
   ApiOperation,
@@ -22,6 +24,7 @@ import {
 } from '@nestjs/swagger';
 import { SessionCancellationBookingType } from '@prisma/client';
 import { RequireAccountStates } from '@common/decorators/account-state.decorator';
+import { CurrentUser } from '@common/decorators/current-user.decorator';
 import { Permissions } from '@common/decorators/permissions.decorator';
 import { Roles } from '@common/decorators/roles.decorator';
 import { AccountStateRequirement } from '@common/enums/account-state-requirement.enum';
@@ -30,13 +33,23 @@ import { PermissionKey } from '@common/enums/permission-key.enum';
 import { JwtAccessAuthGuard } from '@common/guards/authentication/jwt-access-auth.guard';
 import { PermissionsGuard } from '@common/guards/authorization/permissions.guard';
 import { RolesGuard } from '@common/guards/authorization/roles.guard';
+import { AuthenticatedUser } from '@common/interfaces/authenticated-user.interface';
 import { AdminSessionAttendanceSuccessResponseDto } from '../dto/admin-session-attendance-response.dto';
 import { AdminSessionsListSuccessResponseDto } from '../dto/admin-sessions-list-response.dto';
 import { ListAdminSessionsDto } from '../dto/list-admin-sessions.dto';
 import { AdminSessionRuntimeInspectionSuccessResponseDto } from '../dto/admin-session-ops-response.dto';
+import {
+  AdminSessionManualDecisionSuccessResponseDto,
+} from '../dto/admin-session-manual-decision-response.dto';
+import {
+  AdminSessionManualDecisionListSuccessResponseDto,
+} from '../dto/admin-session-manual-decision-list-response.dto';
+import { CreateAdminSessionManualDecisionDto } from '../dto/create-admin-session-manual-decision.dto';
 import { GetAdminSessionAttendanceUseCase } from '../use-cases/get-admin-session-attendance.use-case';
 import { GetAdminSessionsUseCase } from '../use-cases/get-admin-sessions.use-case';
 import { InspectAdminSessionRuntimeUseCase } from '../use-cases/inspect-admin-session-runtime.use-case';
+import { CreateAdminSessionManualDecisionUseCase } from '../use-cases/create-admin-session-manual-decision.use-case';
+import { ListAdminSessionManualDecisionsUseCase } from '../use-cases/list-admin-session-manual-decisions.use-case';
 import {
   SessionCancellationPolicySuccessResponseDto,
   SessionCancellationPoliciesSuccessResponseDto,
@@ -65,6 +78,8 @@ export class AdminSessionsOperationsController {
     private readonly getAdminSessionAttendanceUseCase: GetAdminSessionAttendanceUseCase,
     private readonly getSessionCancellationPoliciesUseCase: GetSessionCancellationPoliciesUseCase,
     private readonly updateSessionCancellationPolicyUseCase: UpdateSessionCancellationPolicyUseCase,
+    private readonly createAdminSessionManualDecisionUseCase: CreateAdminSessionManualDecisionUseCase,
+    private readonly listAdminSessionManualDecisionsUseCase: ListAdminSessionManualDecisionsUseCase,
   ) {}
 
   @Get()
@@ -121,6 +136,62 @@ export class AdminSessionsOperationsController {
   @ApiNotFoundResponse({ description: 'Session was not found' })
   getAttendance(@Param('id') sessionId: string) {
     return this.getAdminSessionAttendanceUseCase.execute({ sessionId });
+  }
+
+  @Get(':id/manual-decisions')
+  @Permissions(PermissionKey.SESSIONS_READ_ADMIN)
+  @ApiOperation({
+    summary: 'List manual session decisions',
+    description:
+      'Returns all manual admin decisions recorded for a session, most recent first.',
+  })
+  @ApiResponse({
+    status: 200,
+    type: AdminSessionManualDecisionListSuccessResponseDto,
+  })
+  @ApiUnauthorizedResponse({ description: 'Access token is required' })
+  @ApiForbiddenResponse({
+    description: 'Only admin active accounts can access this route',
+  })
+  @ApiNotFoundResponse({ description: 'Session was not found' })
+  listManualDecisions(@Param('id') sessionId: string) {
+    return this.listAdminSessionManualDecisionsUseCase.execute({ sessionId });
+  }
+
+  @Post(':id/manual-decision')
+  @Roles(AppRole.ADMIN)
+  @Permissions(PermissionKey.SESSIONS_MANUAL_DECISIONS_WRITE)
+  @ApiOperation({
+    summary: 'Record a manual session decision',
+    description:
+      'Records an admin manual decision for a session. Evidence is built server-side from trusted attendance data. ' +
+      'Confirmation flags must all be true. Use supersedePrevious to replace an existing active decision.',
+  })
+  @ApiBody({ type: CreateAdminSessionManualDecisionDto })
+  @ApiCreatedResponse({
+    type: AdminSessionManualDecisionSuccessResponseDto,
+  })
+  @ApiUnauthorizedResponse({ description: 'Access token is required' })
+  @ApiForbiddenResponse({
+    description: 'Only admin active accounts with write permission can access this route',
+  })
+  @ApiNotFoundResponse({ description: 'Session was not found' })
+  createManualDecision(
+    @Param('id') sessionId: string,
+    @Body() body: CreateAdminSessionManualDecisionDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.createAdminSessionManualDecisionUseCase.execute({
+      sessionId,
+      decisionType: body.decisionType,
+      decidedByUserId: user.id,
+      reasonCode: body.reasonCode,
+      adminNote: body.adminNote,
+      confirmEvidenceReviewed: body.confirmEvidenceReviewed,
+      confirmNoAutomaticRefund: body.confirmNoAutomaticRefund,
+      confirmNoAutomaticPayout: body.confirmNoAutomaticPayout,
+      supersedePrevious: body.supersedePrevious,
+    });
   }
 
   @Get('cancellation-policies')

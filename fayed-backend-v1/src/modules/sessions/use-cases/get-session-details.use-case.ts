@@ -72,8 +72,18 @@ export class GetSessionDetailsUseCase {
       }
     }
 
+    // Fetch final manual decision if one exists to override presentationStatus
+    const latestDecision = await this.sessionRepository.findLatestActiveSessionAdminDecision(
+      input.sessionId,
+    );
+
     return {
-      item: this.sessionMapper.toDetails(session),
+      item: this.sessionMapper.toDetails(
+        session,
+        new Date(),
+        0,
+        latestDecision?.decisionType ?? null,
+      ),
     };
   }
 }

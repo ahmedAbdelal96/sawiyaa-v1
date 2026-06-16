@@ -376,7 +376,7 @@ export class InitiateSessionPaymentUseCase {
             userAgent: input.userAgent ?? null,
             ipAddress: input.ipAddress ?? null,
             metadataJson: {
-              paymentPurpose: PaymentPurpose.SESSION_BOOKING,
+              paymentPurpose: pricing.paymentPurpose,
               sessionId: session.id,
               policyType: RefundPolicyType.SESSION,
               ...(corporateSponsorshipMetadata ?? {}),
@@ -415,7 +415,7 @@ export class InitiateSessionPaymentUseCase {
         userAgent: input.userAgent ?? null,
         ipAddress: input.ipAddress ?? null,
         metadataJson: {
-          paymentPurpose: PaymentPurpose.SESSION_BOOKING,
+          paymentPurpose: pricing.paymentPurpose,
           sessionId: session.id,
           policyType: RefundPolicyType.SESSION,
         },

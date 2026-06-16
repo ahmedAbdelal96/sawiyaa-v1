@@ -53,6 +53,7 @@ const hiddenRoutes = [
   "care-chat/new",
   "care-chat/[id]",
   "care-chat/request/[id]",
+  "instant-booking",
 ];
 
 function fail(message) {

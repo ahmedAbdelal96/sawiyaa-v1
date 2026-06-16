@@ -213,6 +213,10 @@ export class UpdatePractitionerProfileUseCase {
           sessionPrice30Usd: normalizedInput.sessionPrice30Usd,
           sessionPrice60Egp: normalizedInput.sessionPrice60Egp,
           sessionPrice60Usd: normalizedInput.sessionPrice60Usd,
+          instantBookingPrice30Egp: normalizedInput.instantBookingPrice30Egp,
+          instantBookingPrice30Usd: normalizedInput.instantBookingPrice30Usd,
+          instantBookingPrice60Egp: normalizedInput.instantBookingPrice60Egp,
+          instantBookingPrice60Usd: normalizedInput.instantBookingPrice60Usd,
           acceptsPackages: normalizedInput.acceptsPackage,
           countryId:
             country === undefined ? undefined : country ? country.id : null,

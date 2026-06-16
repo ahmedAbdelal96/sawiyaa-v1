@@ -31,6 +31,7 @@ export const PermissionKey = {
   REFUNDS_RETRY: "refunds.retry",
   SESSIONS_READ_ADMIN: "sessions.read.admin",
   SESSIONS_READ_SUPPORT_SUMMARY: "sessions.read.supportSummary",
+  SESSIONS_MANUAL_DECISIONS_WRITE: "sessions.manualDecisions.write",
   CARE_CHAT_REQUEST_DECIDE: "careChat.request.decide",
   CARE_CHAT_REQUEST_READ_ADMIN: "careChat.request.read.admin",
   CARE_CHAT_CONVERSATION_READ_ADMIN: "careChat.conversation.read.admin",

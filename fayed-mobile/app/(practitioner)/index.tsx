@@ -359,8 +359,48 @@ export default function PractitionerHomeScreen() {
                   </View>
                 </View>
               ) : null}
-            </>
+            </> 
           )}
+        </Card>
+
+        <Card variant="outlined" padding="sm" style={styles.instantBookingCard}>
+          <CompactSectionHeader
+            title={t("instantBooking.practitioner.home.title")}
+            subtitle={t("instantBooking.practitioner.home.subtitle")}
+            action={
+              <StatusChip
+                label={
+                  presence?.isInstantBookingEnabled
+                    ? t("instantBooking.practitioner.home.enabled")
+                    : t("instantBooking.practitioner.home.disabled")
+                }
+                tone={presence?.isInstantBookingEnabled ? "success" : "warning"}
+                showDot={false}
+              />
+            }
+          />
+
+          <View style={styles.instantBookingBody}>
+            <View style={styles.instantBookingNote}>
+              <Ionicons
+                name={presence?.isInstantBookingEnabled ? "flash-outline" : "flash-off-outline"}
+                size={18}
+                color={presence?.isInstantBookingEnabled ? theme.colors.primary : theme.colors.textSecondary}
+              />
+              <Text color={theme.colors.textSecondary} style={[styles.instantBookingText, { textAlign }]}>
+                {presence?.isInstantBookingEnabled
+                  ? t("instantBooking.practitioner.home.enabledNote")
+                  : t("instantBooking.practitioner.home.disabledNote")}
+              </Text>
+            </View>
+
+            <CompactActionRow
+              label={t("instantBooking.practitioner.home.cta")}
+              onPress={() => router.push("/(practitioner)/instant-booking")}
+              accessibilityLabel={t("instantBooking.practitioner.home.cta")}
+              style={styles.instantBookingAction}
+            />
+          </View>
         </Card>
 
         {approvalBlocked ? (
@@ -632,6 +672,28 @@ const styles = StyleSheet.create({
   },
   workspaceCard: {
     gap: 8,
+  },
+  instantBookingCard: {
+    gap: 8,
+  },
+  instantBookingBody: {
+    gap: 8,
+  },
+  instantBookingNote: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 8,
+  },
+  instantBookingText: {
+    flex: 1,
+    fontSize: 12,
+    lineHeight: 18,
+  },
+  instantBookingAction: {
+    minHeight: 46,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 12,
   },
   workspaceRows: {
     gap: 2,

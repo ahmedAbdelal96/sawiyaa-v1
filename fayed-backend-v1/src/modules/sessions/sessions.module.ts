@@ -54,6 +54,8 @@ import { PrepareSessionRuntimeUseCase } from './use-cases/prepare-session-runtim
 import { ResolveSessionJoinContractUseCase } from './use-cases/resolve-session-join-contract.use-case';
 import { GetSessionCancellationPoliciesUseCase } from './use-cases/get-session-cancellation-policies.use-case';
 import { UpdateSessionCancellationPolicyUseCase } from './use-cases/update-session-cancellation-policy.use-case';
+import { CreateAdminSessionManualDecisionUseCase } from './use-cases/create-admin-session-manual-decision.use-case';
+import { ListAdminSessionManualDecisionsUseCase } from './use-cases/list-admin-session-manual-decisions.use-case';
 
 /**
  * Sessions Module is the operational source of truth for scheduled consultations.
@@ -116,6 +118,8 @@ import { UpdateSessionCancellationPolicyUseCase } from './use-cases/update-sessi
     ResolveSessionJoinContractUseCase,
     GetSessionCancellationPoliciesUseCase,
     UpdateSessionCancellationPolicyUseCase,
+    CreateAdminSessionManualDecisionUseCase,
+    ListAdminSessionManualDecisionsUseCase,
     CancelSessionUseCase,
     ExpireUnpaidSessionUseCase,
     SessionJoinAvailableNotificationSweeperService,

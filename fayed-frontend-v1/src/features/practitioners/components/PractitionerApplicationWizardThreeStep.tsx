@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useLocale, useTranslations } from "next-intl";
@@ -78,6 +78,10 @@ type WizardState = {
   sessionPrice30Usd: string;
   sessionPrice60Egp: string;
   sessionPrice60Usd: string;
+  instantBookingPrice30Egp: string;
+  instantBookingPrice30Usd: string;
+  instantBookingPrice60Egp: string;
+  instantBookingPrice60Usd: string;
   payoutMethodType: PractitionerPayoutMethodType | "";
   payoutCountryCode: string;
   payoutAccountHolderName: string;
@@ -171,6 +175,14 @@ function createInitialState(profile: NonNullable<ReturnType<typeof usePractition
     sessionPrice30Usd: profile.pricing.session30.usd != null ? String(profile.pricing.session30.usd) : "",
     sessionPrice60Egp: profile.pricing.session60.egp != null ? String(profile.pricing.session60.egp) : "",
     sessionPrice60Usd: profile.pricing.session60.usd != null ? String(profile.pricing.session60.usd) : "",
+    instantBookingPrice30Egp:
+      profile.instantBookingPrice30Egp != null ? String(profile.instantBookingPrice30Egp) : "",
+    instantBookingPrice30Usd:
+      profile.instantBookingPrice30Usd != null ? String(profile.instantBookingPrice30Usd) : "",
+    instantBookingPrice60Egp:
+      profile.instantBookingPrice60Egp != null ? String(profile.instantBookingPrice60Egp) : "",
+    instantBookingPrice60Usd:
+      profile.instantBookingPrice60Usd != null ? String(profile.instantBookingPrice60Usd) : "",
     payoutMethodType: profile.payoutDestination?.methodType ?? "",
     payoutCountryCode: profile.countryCode ?? "",
     payoutAccountHolderName: profile.payoutDestination?.accountHolderName ?? "",
@@ -253,6 +265,10 @@ function buildUpdatePayload(
       payload.sessionPrice30Usd = normalizeMoney(state.sessionPrice30Usd);
       payload.sessionPrice60Egp = normalizeMoney(state.sessionPrice60Egp);
       payload.sessionPrice60Usd = normalizeMoney(state.sessionPrice60Usd);
+      payload.instantBookingPrice30Egp = normalizeMoney(state.instantBookingPrice30Egp);
+      payload.instantBookingPrice30Usd = normalizeMoney(state.instantBookingPrice30Usd);
+      payload.instantBookingPrice60Egp = normalizeMoney(state.instantBookingPrice60Egp);
+      payload.instantBookingPrice60Usd = normalizeMoney(state.instantBookingPrice60Usd);
 
     if (state.payoutMethodType) {
       payload.payoutDestination = {
@@ -1606,6 +1622,63 @@ export default function PractitionerApplicationWizardThreeStep() {
                 value={effectiveState.sessionPrice60Usd}
                 onChange={(event) => patchState({ sessionPrice60Usd: event.target.value })}
                 placeholder={t("profile.fields.sessionPrice60Usd.placeholder")}
+                disabled={!canEdit}
+              />
+            </div>
+          </div>
+        </section>
+
+        <section className="rounded-2xl border border-border-light bg-surface-tertiary/50 p-5">
+          <div className="flex items-start gap-3">
+            <Sparkles className="mt-0.5 h-5 w-5 text-primary" />
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-text-primary">{t("profile.sections.instantBookingPricing")}</p>
+              <p className="mt-1 text-sm leading-6 text-text-secondary">{t("profile.instantBooking.pricingNote")}</p>
+            </div>
+          </div>
+
+          <div className="mt-4 grid gap-4 md:grid-cols-2">
+            <div>
+              <Label htmlFor="instant-price30egp">{t("profile.fields.instantBookingPrice30Egp.label")}</Label>
+              <InputField
+                id="instant-price30egp"
+                inputMode="decimal"
+                value={effectiveState.instantBookingPrice30Egp}
+                onChange={(event) => patchState({ instantBookingPrice30Egp: event.target.value })}
+                placeholder={t("profile.fields.instantBookingPrice30Egp.placeholder")}
+                disabled={!canEdit}
+              />
+            </div>
+            <div>
+              <Label htmlFor="instant-price30usd">{t("profile.fields.instantBookingPrice30Usd.label")}</Label>
+              <InputField
+                id="instant-price30usd"
+                inputMode="decimal"
+                value={effectiveState.instantBookingPrice30Usd}
+                onChange={(event) => patchState({ instantBookingPrice30Usd: event.target.value })}
+                placeholder={t("profile.fields.instantBookingPrice30Usd.placeholder")}
+                disabled={!canEdit}
+              />
+            </div>
+            <div>
+              <Label htmlFor="instant-price60egp">{t("profile.fields.instantBookingPrice60Egp.label")}</Label>
+              <InputField
+                id="instant-price60egp"
+                inputMode="decimal"
+                value={effectiveState.instantBookingPrice60Egp}
+                onChange={(event) => patchState({ instantBookingPrice60Egp: event.target.value })}
+                placeholder={t("profile.fields.instantBookingPrice60Egp.placeholder")}
+                disabled={!canEdit}
+              />
+            </div>
+            <div>
+              <Label htmlFor="instant-price60usd">{t("profile.fields.instantBookingPrice60Usd.label")}</Label>
+              <InputField
+                id="instant-price60usd"
+                inputMode="decimal"
+                value={effectiveState.instantBookingPrice60Usd}
+                onChange={(event) => patchState({ instantBookingPrice60Usd: event.target.value })}
+                placeholder={t("profile.fields.instantBookingPrice60Usd.placeholder")}
                 disabled={!canEdit}
               />
             </div>

@@ -276,7 +276,7 @@ export class AdminUsersRepository {
       userId: string;
       displayName?: string;
       defaultLocale?: string;
-      timezone?: string;
+      timezone?: string | null;
     },
     tx?: Prisma.TransactionClient,
   ) {

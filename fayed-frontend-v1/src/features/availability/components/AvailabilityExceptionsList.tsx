@@ -9,6 +9,9 @@ import {
   PlusCircle,
   ShieldAlert,
 } from "lucide-react";
+import { DataTable } from "@/components/ui/data-table";
+import type { ColumnDef } from "@/components/ui/data-table";
+import DataTableActionButton from "@/components/ui/data-table/DataTableActionButton";
 import {
   useCreateAvailabilityException,
   useDeleteAvailabilityException,
@@ -20,6 +23,7 @@ import type {
 } from "../types/availability.types";
 
 type ExceptionMode = "DAY_OFF" | "BLOCK_SELECTED_TIMES" | "ADD_EXTRA_TIMES";
+type OverviewFilter = "ALL" | "BLOCKING" | "EXTRA";
 
 type ExceptionFormState = {
   internalNote: string;
@@ -30,6 +34,19 @@ type ExceptionFormState = {
 type SlotSelection = {
   startIndex: number | null;
   endIndex: number | null;
+};
+
+type ExceptionOverviewRow = {
+  id: string;
+  dateLabel: string;
+  weekdayLabel: string;
+  typeMode: ExceptionMode;
+  timeRangeLabel: string;
+  durationLabel: string;
+  noteLabel: string;
+  statusLabel: string;
+  selectedDateMatch: boolean;
+  isEnded: boolean;
 };
 
 const SLOT_STEP_MINUTES = 30;
@@ -136,6 +153,17 @@ function buildDurationLabel(durationMinutes: number, locale: string): string {
   return locale === "ar" ? `${hourLabel} و ${minuteLabel}` : `${hourLabel} ${minuteLabel}`;
 }
 
+function buildWeekdayLabel(dateKey: string, timeZone: string, locale: string): string {
+  return new Intl.DateTimeFormat(locale, {
+    weekday: "long",
+    timeZone,
+  }).format(new Date(`${dateKey}T12:00:00`));
+}
+
+function getExceptionDateKey(exception: AvailabilityException, timeZone: string): string {
+  return getDateKeyInTimeZone(new Date(exception.startsAt), timeZone);
+}
+
 function toIsoFromDateKeyAndMinutes(dateKey: string, minutes: number): string {
   const base = new Date(`${dateKey}T00:00:00`);
   base.setMinutes(base.getMinutes() + minutes);
@@ -231,10 +259,12 @@ export default function AvailabilityExceptionsList({ data }: Props) {
   const dateInputRef = useRef<HTMLInputElement | null>(null);
 
   const [selectedMode, setSelectedMode] = useState<ExceptionMode | null>(null);
+  const [overviewFilter, setOverviewFilter] = useState<OverviewFilter>("ALL");
   const [selectedDate, setSelectedDate] = useState<string>(() => getDateKeyInTimeZone(new Date(), data.timezone));
   const [form, setForm] = useState<ExceptionFormState>(buildInitialForm);
   const [slotSelection, setSlotSelection] = useState<SlotSelection>(buildInitialSelection);
   const [showInternalNote, setShowInternalNote] = useState(false);
+  const nowTimestamp = Date.now();
 
   const activeExceptions = useMemo(
     () => data.exceptions.filter((exception) => exception.isActive),
@@ -244,10 +274,30 @@ export default function AvailabilityExceptionsList({ data }: Props) {
   const selectedDateExceptions = useMemo(
     () =>
       activeExceptions.filter(
-        (exception) => getDateKeyInTimeZone(new Date(exception.startsAt), data.timezone) === selectedDate,
+        (exception) => getExceptionDateKey(exception, data.timezone) === selectedDate,
       ),
     [activeExceptions, data.timezone, selectedDate],
   );
+
+  const currentAndFutureExceptions = useMemo(
+    () =>
+      activeExceptions
+        .filter((exception) => new Date(exception.endsAt).getTime() > nowTimestamp)
+        .sort((left, right) => new Date(left.startsAt).getTime() - new Date(right.startsAt).getTime()),
+    [activeExceptions, nowTimestamp],
+  );
+
+  const overviewExceptions = useMemo(() => {
+    if (overviewFilter === "BLOCKING") {
+      return currentAndFutureExceptions.filter((exception) => exception.type === "BLOCK");
+    }
+
+    if (overviewFilter === "EXTRA") {
+      return currentAndFutureExceptions.filter((exception) => exception.type === "OPEN_EXTRA");
+    }
+
+    return currentAndFutureExceptions;
+  }, [currentAndFutureExceptions, overviewFilter]);
 
   const dateInfo = useMemo(() => {
     if (!selectedDate) {
@@ -531,6 +581,130 @@ export default function AvailabilityExceptionsList({ data }: Props) {
       badge: t("labels.extraAvailability"),
     },
   ];
+
+  const overviewFilters = [
+    { id: "ALL" as const, label: t("currentExceptions.filters.all") },
+    { id: "BLOCKING" as const, label: t("currentExceptions.filters.blocking") },
+    { id: "EXTRA" as const, label: t("currentExceptions.filters.extra") },
+  ];
+
+  const exceptionRows = useMemo(
+    () =>
+      overviewExceptions.map((exception) => {
+        const dateKey = getExceptionDateKey(exception, data.timezone);
+        const isFullDay = isFullDayBlock(exception, data.timezone);
+        const startParts = getZonedDateParts(new Date(exception.startsAt), data.timezone);
+        const endParts = getZonedDateParts(new Date(exception.endsAt), data.timezone);
+        const startMinute = startParts.hour * 60 + startParts.minute;
+        const endMinute = endParts.hour * 60 + endParts.minute;
+        const typeMode = getModeFromException(exception, data.timezone);
+        const dateLabel = buildDateLabel(dateKey, data.timezone, locale);
+        const weekdayLabel = buildWeekdayLabel(dateKey, data.timezone, locale);
+        const timeRangeLabel = isFullDay
+          ? t("labels.fullDay")
+          : `${buildTimeLabel(startMinute, locale)} - ${buildTimeLabel(endMinute, locale)}`;
+        const durationMinutes = Math.max(
+          1,
+          Math.round((new Date(exception.endsAt).getTime() - new Date(exception.startsAt).getTime()) / 60_000),
+        );
+        const durationLabel = buildDurationLabel(durationMinutes, locale);
+        const noteLabel = exception.reason?.trim() || t("currentExceptions.noInternalNote");
+        const isEnded = new Date(exception.endsAt).getTime() <= Date.now();
+
+        return {
+          id: exception.id,
+          dateLabel,
+          weekdayLabel,
+          typeMode,
+          timeRangeLabel,
+          durationLabel,
+          noteLabel,
+          statusLabel: isEnded ? t("currentExceptions.status.ended") : t("currentExceptions.status.active"),
+          selectedDateMatch: dateKey === selectedDate,
+          isEnded,
+        };
+      }),
+    [data.timezone, locale, overviewExceptions, selectedDate, t],
+  );
+
+  const exceptionColumns = useMemo<ColumnDef<ExceptionOverviewRow>[]>(
+    () => [
+      {
+        id: "date",
+        header: t("currentExceptions.columns.date"),
+        cell: (row) => (
+          <div className="space-y-1">
+            <p className="text-sm font-semibold text-text-primary dark:text-white/95">{row.dateLabel}</p>
+            {row.selectedDateMatch ? (
+              <span className="inline-flex rounded-full border border-primary/20 bg-primary-light/70 px-2.5 py-1 text-[11px] font-semibold text-text-brand">
+                {t("currentExceptions.selectedDateMatch")}
+              </span>
+            ) : null}
+          </div>
+        ),
+        width: "220px",
+      },
+      {
+        id: "weekday",
+        header: t("currentExceptions.columns.weekday"),
+        cell: (row) => <span className="text-sm text-text-secondary">{row.weekdayLabel}</span>,
+        width: "150px",
+      },
+      {
+        id: "type",
+        header: t("currentExceptions.columns.type"),
+        cell: (row) => (
+          <span
+            className={[
+              "inline-flex rounded-full border px-3 py-1 text-xs font-semibold",
+              row.typeMode === "ADD_EXTRA_TIMES"
+                ? "border-primary/20 bg-primary-light/70 text-text-brand"
+                : "border-warning-200 bg-warning-50 text-warning-900",
+            ].join(" ")}
+          >
+            {row.typeMode === "ADD_EXTRA_TIMES" ? t("labels.extraAvailability") : row.typeMode === "DAY_OFF" ? t("labels.dayOff") : t("labels.blockTime")}
+          </span>
+        ),
+        width: "210px",
+      },
+      {
+        id: "time",
+        header: t("currentExceptions.columns.range"),
+        cell: (row) => <span className="text-sm text-text-secondary">{row.timeRangeLabel}</span>,
+        width: "160px",
+      },
+      {
+        id: "duration",
+        header: t("currentExceptions.columns.duration"),
+        cell: (row) => <span className="text-sm text-text-secondary">{row.durationLabel}</span>,
+        width: "140px",
+      },
+      {
+        id: "note",
+        header: t("currentExceptions.columns.note"),
+        cell: (row) => <span className="text-sm text-text-secondary">{row.noteLabel}</span>,
+        width: "240px",
+      },
+      {
+        id: "status",
+        header: t("currentExceptions.columns.status"),
+        cell: (row) => (
+          <span
+            className={[
+              "inline-flex rounded-full px-3 py-1 text-xs font-semibold",
+              row.isEnded
+                ? "border border-border-light bg-surface-tertiary text-text-secondary"
+                : "border border-success-200 bg-success-light text-success-700",
+            ].join(" ")}
+          >
+            {row.statusLabel}
+          </span>
+        ),
+        width: "130px",
+      },
+    ],
+    [t],
+  );
 
   return (
     <section className="rounded-[28px] border border-border-light bg-white p-5 shadow-sm dark:border-border-light dark:bg-surface-secondary">
@@ -1018,122 +1192,66 @@ export default function AvailabilityExceptionsList({ data }: Props) {
       </form>
 
       <div className="mt-6 rounded-[28px] border border-border-light bg-surface-secondary/50 p-5 shadow-sm">
-        <div className="mb-4 flex items-end justify-between gap-4">
+        <div className="mb-4 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div className="space-y-1">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">{t("steps.step3")}</p>
             <h3 className="text-sm font-semibold text-text-primary dark:text-white/90">{t("currentExceptions.heading")}</h3>
-            <p className="text-xs leading-5 text-text-secondary">{t("currentExceptions.subtitle")}</p>
+            <p className="max-w-3xl text-xs leading-5 text-text-secondary">{t("currentExceptions.subtitle")}</p>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            {overviewFilters.map((filter) => {
+              const isActive = overviewFilter === filter.id;
+              return (
+                <button
+                  key={filter.id}
+                  type="button"
+                  onClick={() => setOverviewFilter(filter.id)}
+                  className={[
+                    "rounded-full border px-3.5 py-2 text-xs font-semibold transition",
+                    isActive
+                      ? "border-primary/30 bg-primary-light/70 text-text-brand shadow-sm"
+                      : "border-border-light bg-white text-text-secondary hover:border-primary/30 hover:bg-surface-tertiary",
+                  ].join(" ")}
+                >
+                  {filter.label}
+                </button>
+              );
+            })}
           </div>
         </div>
 
-        {selectedDateExceptions.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-border-light bg-white px-4 py-6 text-sm text-text-muted shadow-sm dark:bg-surface-secondary">
-            {t("currentExceptions.empty")}
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {selectedDateExceptions.map((exception) => (
-              <ExceptionRow
-                key={exception.id}
-                exception={exception}
-                selectedDate={selectedDate}
-                timeZone={data.timezone}
-                locale={locale}
-                t={t}
-                onDelete={handleDelete}
-                deleting={deleteException.isPending}
-              />
-            ))}
-          </div>
-        )}
+        <DataTable
+          data={exceptionRows}
+          columns={exceptionColumns}
+          getRowId={(row) => row.id}
+          getRowClassName={(row) =>
+            row.selectedDateMatch ? "bg-primary-light/20 ring-1 ring-inset ring-primary/10" : ""
+          }
+          rowActionsHeader={t("currentExceptions.actions")}
+          rowActions={(row) => (
+            <DataTableActionButton
+              intent="outline"
+              label={t("actions.remove")}
+              onClick={() => handleDelete(row.id)}
+              disabled={deleteException.isPending}
+            />
+          )}
+          emptyState={{
+            icon: <ShieldAlert className="h-5 w-5 text-primary" />,
+            title: t("currentExceptions.empty"),
+            description: t("currentExceptions.subtitle"),
+          }}
+          className="shadow-none"
+          size="sm"
+          stickyHeader
+          ariaLabel={t("currentExceptions.heading")}
+          caption={t("currentExceptions.heading")}
+        />
 
         {deleteException.isError ? <p className="mt-3 text-sm text-error-500">{t("errors.delete")}</p> : null}
       </div>
     </section>
-  );
-}
-
-function ExceptionRow({
-  exception,
-  selectedDate,
-  timeZone,
-  locale,
-  t,
-  onDelete,
-  deleting,
-}: {
-  exception: AvailabilityException;
-  selectedDate: string;
-  timeZone: string;
-  locale: string;
-  t: ReturnType<typeof useTranslations>;
-  onDelete: (id: string) => void;
-  deleting: boolean;
-}) {
-  const mode = getModeFromException(exception, timeZone);
-  const internalNote = exception.reason?.trim();
-  const startParts = getZonedDateParts(new Date(exception.startsAt), timeZone);
-  const endParts = getZonedDateParts(new Date(exception.endsAt), timeZone);
-  const startMinute = startParts.hour * 60 + startParts.minute;
-  const endMinute = endParts.hour * 60 + endParts.minute;
-  const timeRange = isFullDayBlock(exception, timeZone)
-    ? t("labels.fullDay")
-    : `${buildTimeLabel(startMinute, locale)} - ${buildTimeLabel(endMinute, locale)}`;
-  const durationMinutes = Math.max(
-    1,
-    Math.round((new Date(exception.endsAt).getTime() - new Date(exception.startsAt).getTime()) / 60_000),
-  );
-  const durationLabel = buildDurationLabel(durationMinutes, locale);
-  const dateLabel = buildDateLabel(selectedDate, timeZone, locale);
-
-  const modeLabel =
-    mode === "DAY_OFF"
-      ? t("labels.dayOff")
-      : mode === "BLOCK_SELECTED_TIMES"
-        ? t("labels.blockTime")
-        : t("labels.extraAvailability");
-
-  return (
-    <div className="rounded-2xl border border-border-light bg-white p-4 shadow-sm dark:border-border-light dark:bg-surface-secondary">
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <span
-              className={[
-                "inline-flex rounded-full border px-3 py-1 text-xs font-semibold",
-                mode === "ADD_EXTRA_TIMES"
-                  ? "border-primary/20 bg-primary-light/70 text-text-brand"
-                  : "border-warning-200 bg-warning-50 text-warning-900",
-              ].join(" ")}
-            >
-              {modeLabel}
-            </span>
-            <span className="inline-flex rounded-full border border-border-light bg-surface-tertiary px-3 py-1 text-xs font-medium text-text-secondary">
-              {dateLabel}
-            </span>
-            <span className="inline-flex rounded-full border border-border-light bg-surface-tertiary px-3 py-1 text-xs font-medium text-text-secondary">
-              {timeRange}
-            </span>
-            <span className="inline-flex rounded-full border border-border-light bg-surface-tertiary px-3 py-1 text-xs font-medium text-text-secondary">
-              {t("labels.duration")}: {durationLabel}
-            </span>
-          </div>
-
-          {internalNote ? (
-            <p className="mt-3 text-sm leading-6 text-text-secondary">{internalNote}</p>
-          ) : null}
-        </div>
-
-        <button
-          type="button"
-          disabled={deleting}
-          onClick={() => onDelete(exception.id)}
-          className="inline-flex items-center justify-center rounded-xl border border-border-light bg-white px-3.5 py-2.5 text-sm font-medium text-text-secondary transition hover:bg-surface-tertiary disabled:cursor-not-allowed disabled:opacity-60 dark:border-border-light dark:bg-surface-secondary dark:hover:bg-white/5"
-        >
-          {t("actions.remove")}
-        </button>
-      </div>
-    </div>
   );
 }
 

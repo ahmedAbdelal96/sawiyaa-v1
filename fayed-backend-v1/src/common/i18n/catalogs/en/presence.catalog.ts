@@ -8,5 +8,7 @@ export const enPresenceCatalog = {
   errors: {
     practitionerNotFound: 'Practitioner profile was not found',
     publicPresenceNotFound: 'Public practitioner presence was not found',
+    instantBookingPricingRequired:
+      'Set all instant booking prices before enabling instant booking',
   },
 };

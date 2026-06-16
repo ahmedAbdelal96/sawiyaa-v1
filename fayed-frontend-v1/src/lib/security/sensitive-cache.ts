@@ -1,5 +1,3 @@
-"use client";
-
 export const SENSITIVE_CACHE_CLEAR_EVENT = "fayed:security:clear-sensitive-cache";
 
 export function requestSensitiveCacheClear(reason: string): void {

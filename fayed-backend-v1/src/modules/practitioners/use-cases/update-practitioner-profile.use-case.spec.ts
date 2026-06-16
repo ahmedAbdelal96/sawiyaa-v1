@@ -212,4 +212,20 @@ describe('UpdatePractitionerProfileUseCase', () => {
 
     expect(practitionerProfileRepository.updateByUserId).not.toHaveBeenCalled();
   });
+
+  it('rejects invalid timezone input on profile update', async () => {
+    await expect(
+      useCase.execute({
+        userId: 'user-1',
+        locale: 'ar',
+        currentUser,
+        data: {
+          timezone: '+02:00',
+        },
+      }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+
+    expect(practitionerProfileRepository.updateByUserId).not.toHaveBeenCalled();
+    expect(practitionerUserRepository.updateProfilePreferences).not.toHaveBeenCalled();
+  });
 });

@@ -25,7 +25,9 @@ export type SessionPresentationStatus =
   | "COMPLETED"
   | "CANCELLED"
   | "ENDED"
-  | "UNAVAILABLE";
+  | "UNAVAILABLE"
+  | "NO_SHOW"
+  | "UNDER_REVIEW";
 
 export type SessionPresentationFilter =
   | "all"

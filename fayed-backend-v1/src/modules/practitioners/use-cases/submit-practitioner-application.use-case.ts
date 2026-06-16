@@ -25,6 +25,7 @@ import { GetPractitionerApplicationStatusUseCase } from './get-practitioner-appl
 import { GetPractitionerProfileReadinessUseCase } from './get-practitioner-profile-readiness.use-case';
 import { CreatePractitionerProfileUseCase } from './create-practitioner-profile.use-case';
 import { SubmitPractitionerApplicationDto } from '../dto/submit-practitioner-application.dto';
+import { normalizeIanaTimeZoneInput } from '@common/utils/timezone.util';
 
 /**
  * Practitioner self-submission is review-gated and snapshot-based.
@@ -84,6 +85,14 @@ export class SubmitPractitionerApplicationUseCase {
       });
     }
 
+    const requestedTimezone = normalizeIanaTimeZoneInput(
+      input.data.timezone,
+      {
+        messageKey: 'availability.errors.invalidTimezone',
+        error: 'AVAILABILITY_INVALID_TIMEZONE',
+      },
+    );
+
     const mergedUser = {
       displayName:
         input.data.displayName !== undefined
@@ -94,9 +103,7 @@ export class SubmitPractitionerApplicationUseCase {
           ? input.data.locale
           : userState.defaultLocale,
       timezone:
-        input.data.timezone !== undefined
-          ? input.data.timezone
-          : userState.timezone,
+        requestedTimezone !== undefined ? requestedTimezone : userState.timezone,
     };
 
     const mergedProfile = {
@@ -138,6 +145,22 @@ export class SubmitPractitionerApplicationUseCase {
         input.data.sessionPrice60Usd !== undefined
           ? input.data.sessionPrice60Usd
           : (profileState.sessionPrice60Usd ?? null),
+      instantBookingPrice30Egp:
+        input.data.instantBookingPrice30Egp !== undefined
+          ? input.data.instantBookingPrice30Egp
+          : (profileState.instantBookingPrice30Egp ?? null),
+      instantBookingPrice30Usd:
+        input.data.instantBookingPrice30Usd !== undefined
+          ? input.data.instantBookingPrice30Usd
+          : (profileState.instantBookingPrice30Usd ?? null),
+      instantBookingPrice60Egp:
+        input.data.instantBookingPrice60Egp !== undefined
+          ? input.data.instantBookingPrice60Egp
+          : (profileState.instantBookingPrice60Egp ?? null),
+      instantBookingPrice60Usd:
+        input.data.instantBookingPrice60Usd !== undefined
+          ? input.data.instantBookingPrice60Usd
+          : (profileState.instantBookingPrice60Usd ?? null),
       primarySpecialtyCategoryId:
         profileState.primarySpecialtyCategoryId ?? null,
     };

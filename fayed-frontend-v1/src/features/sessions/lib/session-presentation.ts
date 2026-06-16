@@ -5,6 +5,8 @@ const SESSION_CHAT_OPEN_PRESENTATION_STATUSES: SessionPresentationStatus[] = [
   "IN_PROGRESS",
   "COMPLETED",
   "ENDED",
+  "NO_SHOW",
+  "UNDER_REVIEW",
 ];
 
 export function getSessionPresentationKey(

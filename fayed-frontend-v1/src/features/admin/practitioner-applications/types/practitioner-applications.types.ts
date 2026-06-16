@@ -111,6 +111,10 @@ export interface AdminPractitionerProfileSection {
       usd: number | null;
     };
   };
+  instantBookingPrice30Egp: number | null;
+  instantBookingPrice30Usd: number | null;
+  instantBookingPrice60Egp: number | null;
+  instantBookingPrice60Usd: number | null;
   languages: string[];
   specialties: AdminProfileSpecialty[];
 }
@@ -287,6 +291,10 @@ export interface CreateAdminPractitionerRequest {
   sessionPrice30Usd?: number | null;
   sessionPrice60Egp?: number | null;
   sessionPrice60Usd?: number | null;
+  instantBookingPrice30Egp?: number | null;
+  instantBookingPrice30Usd?: number | null;
+  instantBookingPrice60Egp?: number | null;
+  instantBookingPrice60Usd?: number | null;
   countryCode: string;
   languageCodes: string[];
   specialtySelection: PractitionerSpecialtySelectionInput;

@@ -48,6 +48,7 @@ describe('GetAdminSessionsUseCase', () => {
   function setup() {
     const sessionRepository = {
       listAdminSessions: jest.fn(),
+      findLatestActiveSessionAdminDecisionsForSessions: jest.fn().mockResolvedValue(new Map()),
     };
     const sessionMapper = {
       toListItem: jest.fn((session: SessionFixture) => ({

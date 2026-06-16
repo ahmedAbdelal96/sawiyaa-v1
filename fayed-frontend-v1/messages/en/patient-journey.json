@@ -8,6 +8,19 @@
     "title": "Start from the next step that fits you",
     "note": "Review your next session, payments, and support from one place."
   },
+  "instantBooking": {
+    "eyebrow": "Instant booking",
+    "title": "Book a session today with an available practitioner",
+    "note": "This path shows only practitioners who are available now, with live pricing from the backend.",
+    "cta": "Start instant booking",
+    "chips": {
+      "availableNow": "Practitioners available now",
+      "duration": "Session length",
+      "durationNote": "Choose 30 or 60 minutes when supported",
+      "pricing": "Pricing",
+      "pricingNote": "Prices come directly from the system with no manual estimate"
+    }
+  },
   "summary": {
     "suggested": {
       "COMPLETE_PAYMENT": "Pending payment",

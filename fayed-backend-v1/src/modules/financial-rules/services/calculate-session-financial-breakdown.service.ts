@@ -138,6 +138,31 @@ export class CalculateSessionFinancialBreakdownService {
     session: SessionFinancialContext,
     currencyCode: string,
   ) {
+    const latestPaymentAmount = session.payments?.[0]?.amountSubtotal ?? null;
+    if (latestPaymentAmount) {
+      return this.moneyMathService.toDecimal(latestPaymentAmount).toFixed(2);
+    }
+
+    if (session.flowType === 'INSTANT') {
+      const quoteAmount = this.resolveInstantBookingQuoteAmount(
+        session,
+        currencyCode,
+      );
+      if (quoteAmount) {
+        return this.moneyMathService.toDecimal(quoteAmount).toFixed(2);
+      }
+
+      const instantPractitionerAmount = this.resolveInstantBookingPractitionerAmount(
+        session,
+        currencyCode,
+      );
+      if (instantPractitionerAmount) {
+        return this.moneyMathService
+          .toDecimal(instantPractitionerAmount)
+          .toFixed(2);
+      }
+    }
+
     const amountFromPractitioner =
       currencyCode === 'EGP'
         ? session.durationMinutes === 30
@@ -159,14 +184,73 @@ export class CalculateSessionFinancialBreakdownService {
       return this.moneyMathService.toDecimal(amountFromPractitioner).toFixed(2);
     }
 
-    const latestPaymentAmount = session.payments?.[0]?.amountSubtotal ?? null;
-    if (latestPaymentAmount) {
-      return this.moneyMathService.toDecimal(latestPaymentAmount).toFixed(2);
-    }
-
     throw new BadRequestException({
       messageKey: 'financialRules.errors.pricingUnavailable',
       error: 'FINANCIAL_RULE_PRICING_UNAVAILABLE',
     });
+  }
+
+  private resolveInstantBookingQuoteAmount(
+    session: SessionFinancialContext,
+    currencyCode: string,
+  ): string | null {
+    const metadata = session.instantBookingRequest?.metadataJson;
+    if (!metadata || typeof metadata !== 'object') {
+      return null;
+    }
+
+    const snapshot = (metadata as Record<string, unknown>).pricingSnapshot;
+    if (!snapshot || typeof snapshot !== 'object') {
+      return null;
+    }
+
+    const currencySnapshot = (snapshot as Record<string, unknown>)[currencyCode];
+    if (!currencySnapshot || typeof currencySnapshot !== 'object') {
+      return null;
+    }
+
+    const durationSnapshot = (
+      currencySnapshot as Record<string, unknown>
+    )[String(session.durationMinutes)] as
+      | { toString(): string }
+      | string
+      | null
+      | undefined;
+
+    return this.toMaybeAmountString(durationSnapshot);
+  }
+
+  private resolveInstantBookingPractitionerAmount(
+    session: SessionFinancialContext,
+    currencyCode: string,
+  ): string | null {
+    if (currencyCode === 'EGP') {
+      return session.durationMinutes === 30
+        ? this.toMaybeAmountString(session.practitioner.instantBookingPrice30Egp)
+        : session.durationMinutes === 60
+          ? this.toMaybeAmountString(session.practitioner.instantBookingPrice60Egp)
+          : null;
+    }
+
+    if (currencyCode === 'USD') {
+      return session.durationMinutes === 30
+        ? this.toMaybeAmountString(session.practitioner.instantBookingPrice30Usd)
+        : session.durationMinutes === 60
+          ? this.toMaybeAmountString(session.practitioner.instantBookingPrice60Usd)
+          : null;
+    }
+
+    return null;
+  }
+
+  private toMaybeAmountString(
+    value: { toString(): string } | string | null | undefined,
+  ): string | null {
+    if (value === null || value === undefined) {
+      return null;
+    }
+
+    const normalized = value.toString().trim();
+    return normalized.length > 0 ? normalized : null;
   }
 }

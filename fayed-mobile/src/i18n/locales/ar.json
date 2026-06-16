@@ -861,7 +861,9 @@
       "COMPLETED": "مكتملة",
       "CANCELLED": "ملغاة",
       "ENDED": "منتهية",
-      "UNAVAILABLE": "غير متاح الآن"
+      "UNAVAILABLE": "غير متاح الآن",
+      "NO_SHOW": "لم يحضر",
+      "UNDER_REVIEW": "قيد المراجعة"
     },
     "selectTime": {
       "title": "اختر موعد الجلسة",
@@ -2354,7 +2356,9 @@
       "COMPLETED": "مكتملة",
       "CANCELLED": "ملغاة",
       "ENDED": "منتهية",
-      "UNAVAILABLE": "غير متاح الآن"
+      "UNAVAILABLE": "غير متاح الآن",
+      "NO_SHOW": "لم يحضر",
+      "UNDER_REVIEW": "قيد المراجعة"
     },
     "weekday": {
       "SUNDAY": "الأحد",
@@ -3297,6 +3301,182 @@
         "CANCELLED": "ملغي",
         "REFUNDED": "مسترد",
         "UNKNOWN": "غير معروف"
+      }
+    }
+  },
+  "instantBooking": {
+    "modes": {
+      "VIDEO": "فيديو",
+      "AUDIO": "صوتي"
+    },
+    "statuses": {
+      "PENDING": "بانتظار الرد",
+      "ACCEPTED": "تم القبول",
+      "REJECTED": "مرفوض",
+      "EXPIRED": "منتهي",
+      "CANCELLED": "ملغى"
+    },
+    "patient": {
+      "home": {
+        "title": "حجز فوري",
+        "subtitle": "احجز جلسة اليوم مع معالج متاح الآن.",
+        "cta": "ابدأ الآن"
+      },
+      "hero": {
+        "eyebrow": "متاح الآن",
+        "title": "حجز فوري مع معالج متاح الآن",
+        "note": "اطّلع على المعالجين المتاحين الآن واختر المدة المناسبة لك ثم أرسل الطلب مباشرة.",
+        "chips": {
+          "onlineNow": "متاحون الآن",
+          "durationOptions": "30 أو 60 دقيقة",
+          "backendPricing": "الأسعار من النظام"
+        }
+      },
+      "list": {
+        "title": "المعالجون المتاحون الآن",
+        "note": "اختر معالجًا ثم حدّد 30 أو 60 دقيقة لإرسال طلب الجلسة.",
+        "currencyLabel": "الأسعار محسوبة حسب عملتك"
+      },
+      "empty": {
+        "loading": "جارٍ تحميل المعالجين المتاحين الآن...",
+        "title": "لا يوجد معالجون متاحون الآن",
+        "note": "جرّب مرة أخرى بعد قليل أو تصفّح المعالجين من الصفحة الرئيسية.",
+        "action": "إعادة المحاولة"
+      },
+      "errors": {
+        "genericHeading": "تعذر بدء الحجز الفوري",
+        "pendingRequestAlreadyExists": "يوجد بالفعل طلب حجز فوري معلق لهذا المعالج.",
+        "practitionerNotFound": "لم نتمكن من العثور على هذا المعالج.",
+        "practitionerNotOnline": "المعالج غير متصل الآن.",
+        "practitionerNotAvailableNow": "المعالج غير متاح الآن للحجز الفوري.",
+        "practitionerBusy": "المعالج مشغول الآن.",
+        "practitionerNotEligible": "هذا المعالج غير مؤهل للحجز الفوري الآن.",
+        "instantBookingDisabled": "المعالج لا يقبل الحجوزات الفورية الآن.",
+        "invalidSessionMode": "نوع الجلسة المطلوب غير مدعوم.",
+        "invalidDuration": "المدة المختارة غير مدعومة.",
+        "timeout": "انتهت مهلة الطلب. حاول مرة أخرى.",
+        "generic": "تعذر تنفيذ هذا الإجراء الآن.",
+        "cancelFailed": "تعذر إلغاء الطلب الفوري. حاول مرة أخرى."
+      },
+      "card": {
+        "availableNow": "متاح الآن",
+        "until": "متاح حتى {{value}}",
+        "rating": "التقييم {{value}}",
+        "completedSessions": "{{count}} جلسة مكتملة",
+        "selectDuration": "اختر المدة",
+        "durationLabel": "{{minutes}} دقيقة",
+        "bioFallback": "التخصص",
+        "priceUnavailable": "السعر غير متاح",
+        "bookNow": "إرسال الطلب"
+      },
+      "request": {
+        "duration": "{{minutes}} دقيقة",
+        "fields": {
+          "practitioner": "المعالج",
+          "duration": "المدة",
+          "sessionMode": "وضع الجلسة",
+          "expiresAt": "ينتهي عند"
+        },
+        "titles": {
+          "PENDING": "طلبك الفوري قيد الانتظار",
+          "ACCEPTED": "تم قبول الطلب",
+          "REJECTED": "تم رفض الطلب",
+          "EXPIRED": "انتهت صلاحية الطلب",
+          "CANCELLED": "تم إلغاء الطلب"
+        },
+        "notes": {
+          "PENDING": "تم إرسال الطلب، وننتظر رد المعالج.",
+          "ACCEPTED": "تم قبول الطلب. أكمل الدفع الآن لتأكيد الجلسة.",
+          "REJECTED": "يمكنك اختيار معالج آخر أو بدء طلب جديد.",
+          "EXPIRED": "انتهت مهلة هذا الطلب. ابدأ طلبًا جديدًا عند الحاجة.",
+          "CANCELLED": "تم إلغاء طلب الحجز الفوري."
+        },
+        "cancelAction": "إلغاء الطلب",
+        "payAction": "إكمال الدفع",
+        "resetAction": "طلب جديد"
+      }
+    },
+    "practitioner": {
+      "home": {
+        "title": "الحجوزات الفورية",
+        "subtitle": "تابع الطلبات الفورية من هنا عندما تكون متاحًا.",
+        "enabled": "مفتوح",
+        "disabled": "متوقف",
+        "enabledNote": "الحجز الفوري مفتوح الآن، وستصلك الطلبات الجديدة ما دمت متاحًا.",
+        "disabledNote": "الحجز الفوري متوقف الآن، ولن تصلك طلبات جديدة حتى تفعّله.",
+        "cta": "عرض الطلبات"
+      },
+      "queue": {
+        "title": "طلبات الحجز الفوري",
+        "eyebrow": "الطلبات الفورية",
+        "subtitle": "راجع الطلبات الحية واتخذ قرارك بسرعة.",
+        "enabled": "الحجز الفوري مفتوح",
+        "disabled": "الحجز الفوري متوقف",
+        "summary": {
+          "pendingCount": "الطلبات المعلقة",
+          "nearestExpiry": "أقرب انتهاء",
+          "noPending": "لا توجد طلبات معلقة",
+          "liveHintTitle": "تنبيه مباشر",
+          "liveHint": "الرد السريع يحافظ على توفر النافذة الفورية."
+        },
+        "openAvailability": "فتح صفحة التوفر",
+        "pendingHeading": "الطلبات المعلقة",
+        "pendingNote": "هذه الطلبات تنتظر قبولك أو رفضك الآن.",
+        "handledHeading": "الطلبات السابقة",
+        "handledNote": "هنا تظهر الطلبات التي تمت معالجتها."
+      },
+      "empty": {
+        "title": "لا توجد طلبات فورية الآن",
+        "note": "عندما يرسل مريض طلبًا فوريًا جديدًا سيظهر هنا."
+      },
+      "feedback": {
+        "accepted": "تم قبول الطلب. تم إنشاء الجلسة المرتبطة.",
+        "rejected": "تم رفض الطلب."
+      },
+      "errors": {
+        "loadingHeading": "جارٍ تحميل طلبات الحجز الفوري...",
+        "loadingNote": "سيتم تحديث القائمة تلقائيًا عندما تصل طلبات جديدة.",
+        "generic": "تعذر تنفيذ هذا الإجراء الآن.",
+        "timeout": "انتهت مهلة الطلب. حاول مرة أخرى.",
+        "requestNotFound": "لم نتمكن من العثور على الطلب.",
+        "requestAlreadyAccepted": "تم قبول هذا الطلب بالفعل.",
+        "requestAlreadyRejected": "تم رفض هذا الطلب بالفعل.",
+        "requestAlreadyCancelled": "تم إلغاء هذا الطلب بالفعل.",
+        "pendingRequestAlreadyExists": "يوجد بالفعل طلب فوري معلق لهذا المعالج.",
+        "requestAlreadyFinalized": "تم إنهاء هذا الطلب بالفعل.",
+        "practitionerNotFound": "لم نتمكن من العثور على المعالج.",
+        "practitionerNotOnline": "المعالج غير متصل الآن.",
+        "practitionerNotAvailableNow": "المعالج غير متاح الآن للحجز الفوري.",
+        "practitionerBusy": "المعالج مشغول الآن.",
+        "practitionerNotEligible": "المعالج غير مؤهل للحجز الفوري الآن.",
+        "instantBookingDisabled": "المعالج لا يقبل الحجوزات الفورية الآن.",
+        "invalidSessionMode": "وضع الجلسة غير مدعوم.",
+        "invalidStatusTransition": "لا يمكن تغيير حالة الطلب بهذه الطريقة."
+      },
+      "request": {
+        "unknownPatient": "مريض غير معروف",
+        "duration": "{{minutes}} دقيقة",
+        "detailsLine": "{{duration}} · {{mode}}",
+        "fields": {
+          "expiresAt": "ينتهي عند"
+        },
+        "hasReason": "سبب مسجل",
+        "acceptAction": "قبول",
+        "rejectAction": "رفض",
+        "titles": {
+          "PENDING": "طلب فوري جديد",
+          "ACCEPTED": "تم قبول الطلب",
+          "REJECTED": "تم رفض الطلب",
+          "EXPIRED": "انتهت صلاحية الطلب",
+          "CANCELLED": "تم إلغاء الطلب"
+        },
+        "notes": {
+          "PENDING": "هذا الطلب ينتظر قرارك الآن.",
+          "ACCEPTED": "تم قبول الطلب، والجلسة المرتبطة جاهزة للإجراء التالي.",
+          "REJECTED": "تم رفض الطلب من قبل المعالج.",
+          "EXPIRED": "انتهت مهلة الرد على هذا الطلب.",
+          "CANCELLED": "تم إلغاء هذا الطلب."
+        }
       }
     }
   }

@@ -42,6 +42,11 @@ export class InspectAdminSessionRuntimeUseCase {
     const participants = buildParticipantsSummary(
       session as unknown as SessionWithParticipants,
     );
+    // Fetch final manual decision if one exists to override presentationStatus
+    const latestDecision = await this.sessionRepository.findLatestActiveSessionAdminDecision(
+      input.sessionId,
+    );
+
     const presentationStatus = resolveSessionPresentationStatus({
       status: session.status,
       sessionMode: session.sessionMode,
@@ -51,6 +56,7 @@ export class InspectAdminSessionRuntimeUseCase {
       providerRoomId: session.providerRoomId,
       providerSessionRef: session.providerSessionRef,
       now,
+      finalManualDecision: latestDecision?.decisionType ?? null,
     });
 
     return {

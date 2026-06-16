@@ -240,6 +240,15 @@ enum SessionProvider {
   ZOOM
 }
 
+enum SessionAdminDecisionType {
+  MARK_COMPLETED
+  MARK_PATIENT_NO_SHOW
+  MARK_PRACTITIONER_NO_SHOW
+  MARK_BOTH_NO_SHOW
+  MARK_TECHNICAL_REVIEW
+  MARK_INSUFFICIENT_EVIDENCE
+}
+
 enum SessionEventType {
   SESSION_CREATED
   PAYMENT_PENDING
@@ -266,6 +275,8 @@ enum SessionEventType {
   JOIN_TOKEN_FAILED
   MEETING_STARTED
   MEETING_ENDED
+  ADMIN_MANUAL_DECISION_CREATED
+  ADMIN_MANUAL_DECISION_SUPERSEDED
 }
 
 enum SessionReminderType {
@@ -1308,6 +1319,7 @@ model User {
   createdMarketingPlacements                    PractitionerMarketingPlacement[]        @relation("PractitionerMarketingPlacementCreatedByAdmin")
   pausedMarketingPlacements                     PractitionerMarketingPlacement[]        @relation("PractitionerMarketingPlacementPausedByAdmin")
   marketingPlacementHistoryEntries              PractitionerMarketingPlacementHistory[]
+  sessionAdminDecisions                         SessionAdminDecision[]
 }
 
 model UserEmail {
@@ -1601,6 +1613,10 @@ model PractitionerProfile {
   sessionPrice30Usd          Decimal?            @db.Decimal(18, 2)
   sessionPrice60Egp          Decimal?            @db.Decimal(18, 2)
   sessionPrice60Usd          Decimal?            @db.Decimal(18, 2)
+  instantBookingPrice30Egp   Decimal?            @db.Decimal(18, 2)
+  instantBookingPrice30Usd   Decimal?            @db.Decimal(18, 2)
+  instantBookingPrice60Egp   Decimal?            @db.Decimal(18, 2)
+  instantBookingPrice60Usd   Decimal?            @db.Decimal(18, 2)
   avatarUrl                  String?             @db.Text
   coverImageUrl              String?             @db.VarChar(500)
   isPublicProfilePublished   Boolean             @default(false)
@@ -2169,6 +2185,7 @@ model Session {
   practitioner                PractitionerProfile          @relation(fields: [practitionerId], references: [id], onDelete: Restrict)
   packagePurchase             PatientPackagePurchase?      @relation("SessionPackagePurchase", fields: [packagePurchaseId], references: [id], onDelete: SetNull)
   events                      SessionEvent[]
+  decisions                   SessionAdminDecision[]
   instantBookingRequest       InstantBookingRequest?
   payments                    Payment[]
   refunds                     Refund[]
@@ -2318,6 +2335,33 @@ model SessionEvent {
   @@index([eventType, createdAt])
 }
 
+model SessionAdminDecision {
+  id                         String                   @id @default(uuid()) @db.Uuid
+  sessionId                  String                   @db.Uuid
+  decisionType               SessionAdminDecisionType
+  decidedByUserId            String                   @db.Uuid
+  previousSessionStatus      SessionStatus
+  nextSessionStatus          SessionStatus?
+  reasonCode                 String                   @db.VarChar(100)
+  adminNote                  String?                  @db.VarChar(2000)
+  recommendedOutcomeSnapshot Json?
+  attendanceSummarySnapshot  Json?
+  evidenceTimelineSnapshot   Json?
+  isFinal                    Boolean                  @default(true)
+  supersedesDecisionId       String?                  @unique @db.Uuid
+  createdAt                  DateTime                 @default(now())
+  updatedAt                  DateTime                 @updatedAt
+
+  session      Session               @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  supersedes   SessionAdminDecision? @relation("AdminDecisionSupersession", fields: [supersedesDecisionId], references: [id], onDelete: SetNull)
+  supersededBy SessionAdminDecision? @relation("AdminDecisionSupersession")
+  adminUser    User                  @relation(fields: [decidedByUserId], references: [id], onDelete: Restrict)
+
+  @@index([sessionId, createdAt])
+  @@index([decidedByUserId])
+  @@index([sessionId, isFinal, createdAt])
+}
+
 model InstantBookingRequest {
   id              String  @id @default(uuid()) @db.Uuid
   patientId       String  @db.Uuid
@@ -2332,6 +2376,7 @@ model InstantBookingRequest {
   expiresAt      DateTime
   respondedAt    DateTime?
   responseReason String?   @db.VarChar(500)
+  metadataJson   Json?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

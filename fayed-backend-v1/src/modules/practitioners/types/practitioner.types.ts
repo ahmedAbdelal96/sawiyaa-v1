@@ -24,9 +24,13 @@ export interface UpdatePractitionerProfileInput {
   sessionPrice30Usd?: number | null;
   sessionPrice60Egp?: number | null;
   sessionPrice60Usd?: number | null;
+  instantBookingPrice30Egp?: number | null;
+  instantBookingPrice30Usd?: number | null;
+  instantBookingPrice60Egp?: number | null;
+  instantBookingPrice60Usd?: number | null;
   locale?: string;
   acceptsPackage?: boolean;
-  timezone?: string;
+  timezone?: string | null;
   languageCodes?: string[];
   payoutDestination?: PractitionerPayoutDestinationInput | null;
 }
@@ -185,6 +189,10 @@ export interface PractitionerProfileViewModel {
     session30: { egp: number | null; usd: number | null };
     session60: { egp: number | null; usd: number | null };
   };
+  instantBookingPrice30Egp: number | null;
+  instantBookingPrice30Usd: number | null;
+  instantBookingPrice60Egp: number | null;
+  instantBookingPrice60Usd: number | null;
   payoutDestination: PractitionerPayoutDestinationViewModel | null;
   profileStatus: PractitionerStatus;
   specialties: PractitionerSpecialtyViewModel[];

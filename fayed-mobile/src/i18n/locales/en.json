@@ -173,7 +173,7 @@
         },
         "preferences": {
           "title": "Preferences & language",
-          "subtitle": "{{language}} Â· {{timezone}}"
+          "subtitle": "{{language}} · {{timezone}}"
         },
         "notificationPreferences": {
           "title": "Notification preferences",
@@ -796,7 +796,9 @@
       "COMPLETED": "Completed",
       "CANCELLED": "Cancelled",
       "ENDED": "Ended",
-      "UNAVAILABLE": "Unavailable"
+      "UNAVAILABLE": "Unavailable",
+      "NO_SHOW": "No show",
+      "UNDER_REVIEW": "Under review"
     },
     "selectTime": {
       "title": "Choose session time",
@@ -2321,7 +2323,9 @@
       "COMPLETED": "Completed",
       "CANCELLED": "Cancelled",
       "ENDED": "Ended",
-      "UNAVAILABLE": "Unavailable"
+      "UNAVAILABLE": "Unavailable",
+      "NO_SHOW": "No show",
+      "UNDER_REVIEW": "Under review"
     },
     "weekday": {
       "SUNDAY": "Sunday",
@@ -3266,6 +3270,182 @@
         "CANCELLED": "Cancelled",
         "REFUNDED": "Refunded",
         "UNKNOWN": "Unknown"
+      }
+    }
+  },
+  "instantBooking": {
+    "modes": {
+      "VIDEO": "Video",
+      "AUDIO": "Audio"
+    },
+    "statuses": {
+      "PENDING": "Pending",
+      "ACCEPTED": "Accepted",
+      "REJECTED": "Rejected",
+      "EXPIRED": "Expired",
+      "CANCELLED": "Cancelled"
+    },
+    "patient": {
+      "home": {
+        "title": "Instant booking",
+        "subtitle": "Book a session today with a practitioner who is available now.",
+        "cta": "Start now"
+      },
+      "hero": {
+        "eyebrow": "Available now",
+        "title": "Instant booking with a practitioner who is available now",
+        "note": "Browse practitioners who are available right now, choose the right duration, and send the request immediately.",
+        "chips": {
+          "onlineNow": "Online now",
+          "durationOptions": "30 or 60 minutes",
+          "backendPricing": "Backend pricing"
+        }
+      },
+      "list": {
+        "title": "Practitioners available now",
+        "note": "Choose a practitioner, then pick 30 or 60 minutes to send the request.",
+        "currencyLabel": "Prices are calculated for your currency"
+      },
+      "empty": {
+        "loading": "Loading practitioners available now...",
+        "title": "No practitioners are available now",
+        "note": "Try again in a moment or browse practitioners from the main home screen.",
+        "action": "Try again"
+      },
+      "errors": {
+        "genericHeading": "We could not start instant booking",
+        "pendingRequestAlreadyExists": "A pending instant booking request already exists for this practitioner.",
+        "practitionerNotFound": "We could not find this practitioner.",
+        "practitionerNotOnline": "The practitioner is not online right now.",
+        "practitionerNotAvailableNow": "The practitioner is not available for instant booking right now.",
+        "practitionerBusy": "The practitioner is busy right now.",
+        "practitionerNotEligible": "This practitioner is not eligible for instant booking right now.",
+        "instantBookingDisabled": "The practitioner is not accepting instant bookings right now.",
+        "invalidSessionMode": "The selected session mode is not supported.",
+        "invalidDuration": "The selected duration is not supported.",
+        "timeout": "The request timed out. Please try again.",
+        "generic": "We could not complete this action right now.",
+        "cancelFailed": "We could not cancel the instant booking request. Please try again."
+      },
+      "card": {
+        "availableNow": "Available now",
+        "until": "Available until {{value}}",
+        "rating": "Rating {{value}}",
+        "completedSessions": "{{count}} completed sessions",
+        "selectDuration": "Choose duration",
+        "durationLabel": "{{minutes}} min",
+        "bioFallback": "Specialty",
+        "priceUnavailable": "Price unavailable",
+        "bookNow": "Send request"
+      },
+      "request": {
+        "duration": "{{minutes}} min",
+        "fields": {
+          "practitioner": "Practitioner",
+          "duration": "Duration",
+          "sessionMode": "Session mode",
+          "expiresAt": "Expires at"
+        },
+        "titles": {
+          "PENDING": "Your instant request is pending",
+          "ACCEPTED": "Request accepted",
+          "REJECTED": "Request rejected",
+          "EXPIRED": "Request expired",
+          "CANCELLED": "Request cancelled"
+        },
+        "notes": {
+          "PENDING": "The request was sent and we are waiting for the practitioner.",
+          "ACCEPTED": "The request was accepted. Complete payment now to confirm the session.",
+          "REJECTED": "You can pick another practitioner or start a new request.",
+          "EXPIRED": "This request expired. Start a new request if needed.",
+          "CANCELLED": "The instant booking request was cancelled."
+        },
+        "cancelAction": "Cancel request",
+        "payAction": "Complete payment",
+        "resetAction": "New request"
+      }
+    },
+    "practitioner": {
+      "home": {
+        "title": "Instant booking requests",
+        "subtitle": "Track instant requests here when you are ready.",
+        "enabled": "On",
+        "disabled": "Off",
+        "enabledNote": "Instant booking is on now, so new requests can reach you while you are available.",
+        "disabledNote": "Instant booking is off right now, so new requests will not reach you until you enable it.",
+        "cta": "View requests"
+      },
+      "queue": {
+        "title": "Instant booking queue",
+        "eyebrow": "Instant requests",
+        "subtitle": "Review live requests and respond quickly.",
+        "enabled": "Instant booking is on",
+        "disabled": "Instant booking is off",
+        "summary": {
+          "pendingCount": "Pending requests",
+          "nearestExpiry": "Nearest expiry",
+          "noPending": "No pending requests",
+          "liveHintTitle": "Live tip",
+          "liveHint": "Fast responses keep the instant window available."
+        },
+        "openAvailability": "Open availability",
+        "pendingHeading": "Pending requests",
+        "pendingNote": "These requests are waiting for your approval now.",
+        "handledHeading": "Previous requests",
+        "handledNote": "Requests you already handled appear here."
+      },
+      "empty": {
+        "title": "No instant requests right now",
+        "note": "When a patient sends a new instant request, it will appear here."
+      },
+      "feedback": {
+        "accepted": "Request accepted. The linked session was created.",
+        "rejected": "Request rejected."
+      },
+      "errors": {
+        "loadingHeading": "Loading instant booking requests...",
+        "loadingNote": "The list refreshes automatically when new requests arrive.",
+        "generic": "We could not complete this action right now.",
+        "timeout": "The request timed out. Please try again.",
+        "requestNotFound": "We could not find the request.",
+        "requestAlreadyAccepted": "This request was already accepted.",
+        "requestAlreadyRejected": "This request was already rejected.",
+        "requestAlreadyCancelled": "This request was already cancelled.",
+        "pendingRequestAlreadyExists": "A pending instant request already exists for this practitioner.",
+        "requestAlreadyFinalized": "This request has already been finalized.",
+        "practitionerNotFound": "We could not find the practitioner.",
+        "practitionerNotOnline": "The practitioner is not online right now.",
+        "practitionerNotAvailableNow": "The practitioner is not available for instant booking right now.",
+        "practitionerBusy": "The practitioner is busy right now.",
+        "practitionerNotEligible": "The practitioner is not eligible for instant booking right now.",
+        "instantBookingDisabled": "The practitioner is not accepting instant bookings right now.",
+        "invalidSessionMode": "The session mode is not supported.",
+        "invalidStatusTransition": "This request cannot move to that status."
+      },
+      "request": {
+        "unknownPatient": "Unknown patient",
+        "duration": "{{minutes}} min",
+        "detailsLine": "{{duration}} · {{mode}}",
+        "fields": {
+          "expiresAt": "Expires at"
+        },
+        "hasReason": "Saved reason",
+        "acceptAction": "Accept",
+        "rejectAction": "Reject",
+        "titles": {
+          "PENDING": "New instant request",
+          "ACCEPTED": "Request accepted",
+          "REJECTED": "Request rejected",
+          "EXPIRED": "Request expired",
+          "CANCELLED": "Request cancelled"
+        },
+        "notes": {
+          "PENDING": "This request is waiting for your response.",
+          "ACCEPTED": "The request was accepted and the linked session is ready for the next step.",
+          "REJECTED": "The request was rejected by the practitioner.",
+          "EXPIRED": "The response window for this request expired.",
+          "CANCELLED": "This request was cancelled."
+        }
       }
     }
   }

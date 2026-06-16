@@ -111,6 +111,18 @@ export class PublicPractitionerListItemResponseDto {
   sessionPrice60Usd!: number | null;
 
   @ApiProperty({ nullable: true })
+  instantBookingPrice30Egp!: number | null;
+
+  @ApiProperty({ nullable: true })
+  instantBookingPrice30Usd!: number | null;
+
+  @ApiProperty({ nullable: true })
+  instantBookingPrice60Egp!: number | null;
+
+  @ApiProperty({ nullable: true })
+  instantBookingPrice60Usd!: number | null;
+
+  @ApiProperty({ nullable: true })
   displaySessionPrice30!: number | null;
 
   @ApiProperty({ nullable: true })
@@ -195,6 +207,18 @@ export class PublicPractitionerDetailsResponseDto {
 
   @ApiProperty({ nullable: true })
   sessionPrice60Usd!: number | null;
+
+  @ApiProperty({ nullable: true })
+  instantBookingPrice30Egp!: number | null;
+
+  @ApiProperty({ nullable: true })
+  instantBookingPrice30Usd!: number | null;
+
+  @ApiProperty({ nullable: true })
+  instantBookingPrice60Egp!: number | null;
+
+  @ApiProperty({ nullable: true })
+  instantBookingPrice60Usd!: number | null;
 
   @ApiProperty({ nullable: true })
   displaySessionPrice30!: number | null;

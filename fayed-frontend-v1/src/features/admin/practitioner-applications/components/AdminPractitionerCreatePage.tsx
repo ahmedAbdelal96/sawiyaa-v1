@@ -82,6 +82,10 @@ type FormState = {
   sessionPrice30Usd: string;
   sessionPrice60Egp: string;
   sessionPrice60Usd: string;
+  instantBookingPrice30Egp: string;
+  instantBookingPrice30Usd: string;
+  instantBookingPrice60Egp: string;
+  instantBookingPrice60Usd: string;
   countryCode: string;
   languageCodes: string[];
   primarySpecialtyCategoryId: string;
@@ -118,6 +122,10 @@ const INITIAL_FORM: FormState = {
   sessionPrice30Usd: "",
   sessionPrice60Egp: "",
   sessionPrice60Usd: "",
+  instantBookingPrice30Egp: "",
+  instantBookingPrice30Usd: "",
+  instantBookingPrice60Egp: "",
+  instantBookingPrice60Usd: "",
   countryCode: "EG",
   languageCodes: ["ar"],
   primarySpecialtyCategoryId: "",
@@ -348,9 +356,22 @@ export default function AdminPractitionerCreatePage() {
     const sessionPrice30Usd = parseOptionalPrice(form.sessionPrice30Usd);
     const sessionPrice60Egp = parseOptionalPrice(form.sessionPrice60Egp);
     const sessionPrice60Usd = parseOptionalPrice(form.sessionPrice60Usd);
+    const instantBookingPrice30Egp = parseOptionalPrice(form.instantBookingPrice30Egp);
+    const instantBookingPrice30Usd = parseOptionalPrice(form.instantBookingPrice30Usd);
+    const instantBookingPrice60Egp = parseOptionalPrice(form.instantBookingPrice60Egp);
+    const instantBookingPrice60Usd = parseOptionalPrice(form.instantBookingPrice60Usd);
 
     if (
-      [sessionPrice30Egp, sessionPrice30Usd, sessionPrice60Egp, sessionPrice60Usd].some(
+      [
+        sessionPrice30Egp,
+        sessionPrice30Usd,
+        sessionPrice60Egp,
+        sessionPrice60Usd,
+        instantBookingPrice30Egp,
+        instantBookingPrice30Usd,
+        instantBookingPrice60Egp,
+        instantBookingPrice60Usd,
+      ].some(
         (value) => Number.isNaN(value)
       )
     ) {
@@ -372,6 +393,10 @@ export default function AdminPractitionerCreatePage() {
       sessionPrice30Usd,
       sessionPrice60Egp,
       sessionPrice60Usd,
+      instantBookingPrice30Egp,
+      instantBookingPrice30Usd,
+      instantBookingPrice60Egp,
+      instantBookingPrice60Usd,
       countryCode: form.countryCode.trim().toUpperCase(),
       languageCodes: form.languageCodes.filter(Boolean),
       specialtySelection: {
@@ -525,6 +550,10 @@ export default function AdminPractitionerCreatePage() {
       ["sessionPrice30Usd", parseOptionalPrice(form.sessionPrice30Usd)],
       ["sessionPrice60Egp", parseOptionalPrice(form.sessionPrice60Egp)],
       ["sessionPrice60Usd", parseOptionalPrice(form.sessionPrice60Usd)],
+      ["instantBookingPrice30Egp", parseOptionalPrice(form.instantBookingPrice30Egp)],
+      ["instantBookingPrice30Usd", parseOptionalPrice(form.instantBookingPrice30Usd)],
+      ["instantBookingPrice60Egp", parseOptionalPrice(form.instantBookingPrice60Egp)],
+      ["instantBookingPrice60Usd", parseOptionalPrice(form.instantBookingPrice60Usd)],
     ] as const) {
       if (Number.isNaN(value)) {
         nextErrors[key] = t("applications.directCreate.validation.pricePositive");
@@ -1292,6 +1321,73 @@ export default function AdminPractitionerCreatePage() {
                       hint={fieldError("sessionPrice60Usd")}
                       onChange={(event) =>
                         setField("sessionPrice60Usd", event.target.value)
+                      }
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-4 rounded-2xl border border-border-light bg-surface-tertiary p-4">
+                <h3 className="text-sm font-semibold text-text-primary">
+                  {t("applications.directCreate.instantPricingHeading")}
+                </h3>
+                <p className="mt-1 text-xs text-text-secondary">
+                  {t("applications.directCreate.instantPricingNote")}
+                </p>
+                <div className="mt-4 grid gap-4 md:grid-cols-2">
+                  <div>
+                    <Label>{t("applications.directCreate.fields.instantBookingPrice30Egp")}</Label>
+                    <InputField
+                      type="number"
+                      min={0}
+                      placeholder={t("applications.directCreate.placeholders.instantBookingPrice30Egp")}
+                      value={form.instantBookingPrice30Egp}
+                      error={Boolean(fieldError("instantBookingPrice30Egp"))}
+                      hint={fieldError("instantBookingPrice30Egp")}
+                      onChange={(event) =>
+                        setField("instantBookingPrice30Egp", event.target.value)
+                      }
+                    />
+                  </div>
+                  <div>
+                    <Label>{t("applications.directCreate.fields.instantBookingPrice30Usd")}</Label>
+                    <InputField
+                      type="number"
+                      min={0}
+                      placeholder={t("applications.directCreate.placeholders.instantBookingPrice30Usd")}
+                      value={form.instantBookingPrice30Usd}
+                      error={Boolean(fieldError("instantBookingPrice30Usd"))}
+                      hint={fieldError("instantBookingPrice30Usd")}
+                      onChange={(event) =>
+                        setField("instantBookingPrice30Usd", event.target.value)
+                      }
+                    />
+                  </div>
+                  <div>
+                    <Label>{t("applications.directCreate.fields.instantBookingPrice60Egp")}</Label>
+                    <InputField
+                      type="number"
+                      min={0}
+                      placeholder={t("applications.directCreate.placeholders.instantBookingPrice60Egp")}
+                      value={form.instantBookingPrice60Egp}
+                      error={Boolean(fieldError("instantBookingPrice60Egp"))}
+                      hint={fieldError("instantBookingPrice60Egp")}
+                      onChange={(event) =>
+                        setField("instantBookingPrice60Egp", event.target.value)
+                      }
+                    />
+                  </div>
+                  <div>
+                    <Label>{t("applications.directCreate.fields.instantBookingPrice60Usd")}</Label>
+                    <InputField
+                      type="number"
+                      min={0}
+                      placeholder={t("applications.directCreate.placeholders.instantBookingPrice60Usd")}
+                      value={form.instantBookingPrice60Usd}
+                      error={Boolean(fieldError("instantBookingPrice60Usd"))}
+                      hint={fieldError("instantBookingPrice60Usd")}
+                      onChange={(event) =>
+                        setField("instantBookingPrice60Usd", event.target.value)
                       }
                     />
                   </div>

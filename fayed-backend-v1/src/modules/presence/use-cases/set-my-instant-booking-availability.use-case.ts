@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { I18nService } from '@common/i18n/services/i18n.service';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
 import { PresenceMapper } from '../mappers/presence.mapper';
@@ -32,6 +32,35 @@ export class SetMyInstantBookingAvailabilityUseCase {
         messageKey: 'presence.errors.practitionerNotFound',
         error: 'PRESENCE_PRACTITIONER_NOT_FOUND',
       });
+    }
+
+    if (input.isInstantBookingEnabled) {
+      const hasPrice = (value: { toString(): string } | string | null) =>
+        value !== null && value !== undefined && String(value).trim().length > 0;
+
+      const missingInstantPricing: string[] = [];
+      if (!hasPrice(practitioner.instantBookingPrice30Egp)) {
+        missingInstantPricing.push('instantBookingPrice30Egp');
+      }
+      if (!hasPrice(practitioner.instantBookingPrice30Usd)) {
+        missingInstantPricing.push('instantBookingPrice30Usd');
+      }
+      if (!hasPrice(practitioner.instantBookingPrice60Egp)) {
+        missingInstantPricing.push('instantBookingPrice60Egp');
+      }
+      if (!hasPrice(practitioner.instantBookingPrice60Usd)) {
+        missingInstantPricing.push('instantBookingPrice60Usd');
+      }
+
+      if (missingInstantPricing.length > 0) {
+        throw new BadRequestException({
+          messageKey: 'presence.errors.instantBookingPricingRequired',
+          error: 'PRESENCE_INSTANT_BOOKING_PRICING_REQUIRED',
+          details: {
+            missingRequirements: missingInstantPricing,
+          },
+        });
+      }
     }
 
     const presence =

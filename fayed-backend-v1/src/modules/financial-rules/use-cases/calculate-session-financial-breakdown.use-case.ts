@@ -38,6 +38,8 @@ export class CalculateSessionFinancialBreakdownUseCase {
           durationMinutes: session.durationMinutes,
           practitioner: session.practitioner,
           patient: session.patient,
+          payments: session.payments,
+          instantBookingRequest: session.instantBookingRequest,
         },
         couponCode: input.couponCode ?? null,
       });

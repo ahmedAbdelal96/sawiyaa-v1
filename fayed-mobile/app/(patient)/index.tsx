@@ -74,6 +74,14 @@ export default function PatientHomeScreen() {
           </View>
 
           <HomeActionCard
+            title={t("instantBooking.patient.home.title")}
+            subtitle={t("instantBooking.patient.home.subtitle")}
+            ctaLabel={t("instantBooking.patient.home.cta")}
+            icon="flash-outline"
+            onPress={() => router.push("/(patient)/instant-booking" as any)}
+          />
+
+          <HomeActionCard
             title={matchingCard?.title || t("home.matching.title")}
             subtitle={
               matchingCard?.description ||

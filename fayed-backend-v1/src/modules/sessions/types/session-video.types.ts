@@ -14,7 +14,9 @@ export type SessionPresentationStatus =
   | 'COMPLETED'
   | 'CANCELLED'
   | 'ENDED'
-  | 'UNAVAILABLE';
+  | 'UNAVAILABLE'
+  | 'NO_SHOW'
+  | 'UNDER_REVIEW';
 
 export enum SessionPresentationFilter {
   ALL = 'all',

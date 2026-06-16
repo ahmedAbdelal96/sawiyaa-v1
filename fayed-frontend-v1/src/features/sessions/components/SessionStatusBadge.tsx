@@ -20,9 +20,11 @@ export default function SessionStatusBadge({
       ? "success"
       : displayStatus === "UPCOMING" || displayStatus === "UNAVAILABLE"
         ? "warning"
-      : displayStatus === "CANCELLED" || displayStatus === "ENDED"
+      : displayStatus === "CANCELLED" || displayStatus === "ENDED" || displayStatus === "NO_SHOW"
           ? "danger"
-          : "neutral"
+          : displayStatus === "UNDER_REVIEW"
+            ? "warning"
+            : "neutral"
     : status === "IN_PROGRESS"
       ? "success"
       : status === "PENDING_PAYMENT" ||

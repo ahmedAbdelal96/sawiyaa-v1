@@ -1,0 +1,102 @@
+{
+  "hero": {
+    "eyebrow": "Instant booking",
+    "title": "Book a session today with an available practitioner",
+    "note": "This path shows only practitioners who are available now, with live pricing from the backend.",
+    "secondaryAction": "Browse practitioners",
+    "chips": {
+      "onlineNow": "Available now",
+      "durationOptions": "30 or 60 minute options",
+      "backendPricing": "Live pricing from the backend"
+    }
+  },
+  "entry": {
+    "eyebrow": "Start here",
+    "title": "Open instant booking",
+    "note": "This path only shows practitioners who are available now, with duration and pricing confirmed by the backend.",
+    "cta": "Start instant booking",
+    "chips": {
+      "availableNow": "Practitioners available now",
+      "duration": "Session length",
+      "durationNote": "Choose 30 or 60 minutes when supported",
+      "pricing": "Pricing",
+      "pricingNote": "Prices come directly from the backend"
+    }
+  },
+  "list": {
+    "eyebrow": "Available now",
+    "title": "Practitioners available for instant booking",
+    "note": "We show only practitioners who are ready right now, with durations and live prices from the system."
+  },
+  "card": {
+    "availableNow": "Available now",
+    "until": "Available until {value}",
+    "rating": "Rating {value}",
+    "completedSessions": "{count} completed sessions",
+    "selectDuration": "Choose session length",
+    "durationLabel": "{minutes} min"
+  },
+  "request": {
+    "eyebrow": "Instant booking request",
+    "currentRequest": "Current request",
+    "detailsLine": "{duration} · {mode}",
+    "duration": "{minutes} min",
+    "sessionModes": {
+      "VIDEO": "Video",
+      "AUDIO": "Audio"
+    },
+    "fields": {
+      "practitioner": "Practitioner",
+      "duration": "Duration",
+      "sessionMode": "Session mode",
+      "expiresAt": "Request expires"
+    },
+    "titles": {
+      "PENDING": "Your request is waiting",
+      "ACCEPTED": "Your request was accepted",
+      "REJECTED": "Your request was rejected",
+      "EXPIRED": "Your request expired",
+      "CANCELLED": "Your request was cancelled"
+    },
+    "notes": {
+      "PENDING": "We are waiting for the practitioner to respond. The status refreshes automatically.",
+      "ACCEPTED": "The request was accepted, and you can continue to payment to complete the session.",
+      "REJECTED": "The request was rejected. You can start again and choose another practitioner.",
+      "EXPIRED": "The response window expired. You can create a new request now.",
+      "CANCELLED": "The request was cancelled. You can try again whenever you want."
+    },
+    "pendingNote": "The request stays fresh until the practitioner responds or the window expires.",
+    "acceptedNote": "The request is accepted. Pay now to confirm the session and continue.",
+    "rejectedNote": "You can try another practitioner or create a new request.",
+    "expiredNote": "You can create a new request with a different duration or practitioner.",
+    "cancelledNote": "You can try again any time.",
+    "cancelAction": "Cancel request",
+    "payAction": "Pay now to confirm the session",
+    "resetAction": "Start a new request"
+  },
+  "followUp": {
+    "eyebrow": "Request follow-up",
+    "archiveTitle": "Previous request summary",
+    "archiveNote": "You can keep this summary or start a new request."
+  },
+  "errors": {
+    "genericHeading": "We could not complete the action",
+    "loadingHeading": "We could not load instant booking",
+    "loadingNote": "Please try again in a moment.",
+    "createFailed": "We could not create the instant booking request. Please try again.",
+    "cancelFailed": "We could not cancel the request. Please try again.",
+    "retry": "Try again"
+  },
+  "empty": {
+    "heading": "No practitioners are available right now",
+    "note": "When a practitioner becomes available for instant booking, they will appear here with the live price and supported duration.",
+    "action": "Browse practitioners"
+  },
+  "statuses": {
+    "PENDING": "Pending",
+    "ACCEPTED": "Accepted",
+    "REJECTED": "Rejected",
+    "EXPIRED": "Expired",
+    "CANCELLED": "Cancelled"
+  }
+}

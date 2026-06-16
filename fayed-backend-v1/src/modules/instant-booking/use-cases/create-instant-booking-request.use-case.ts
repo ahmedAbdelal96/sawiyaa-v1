@@ -11,6 +11,17 @@ import { InstantBookingPractitionerRepository } from '../repositories/instant-bo
 import { InstantBookingRequestRepository } from '../repositories/instant-booking-request.repository';
 import { ValidateInstantBookingEligibilityService } from '../services/validate-instant-booking-eligibility.service';
 
+type InstantBookingPricingSnapshot = {
+  EGP?: {
+    30?: string | null;
+    60?: string | null;
+  };
+  USD?: {
+    30?: string | null;
+    60?: string | null;
+  };
+};
+
 /**
  * Patient instant booking creation is a request-layer operation only.
  * It checks current practitioner live readiness without creating a Session yet.
@@ -89,6 +100,17 @@ export class CreateInstantBookingRequestUseCase {
       },
     );
 
+    const pricingSnapshot: InstantBookingPricingSnapshot = {
+      EGP: {
+        30: this.toNullableString(practitioner.instantBookingPrice30Egp),
+        60: this.toNullableString(practitioner.instantBookingPrice60Egp),
+      },
+      USD: {
+        30: this.toNullableString(practitioner.instantBookingPrice30Usd),
+        60: this.toNullableString(practitioner.instantBookingPrice60Usd),
+      },
+    };
+
     const request = await this.instantBookingRequestRepository.createRequest({
       patientId: patient.id,
       practitionerId: practitioner.id,
@@ -97,10 +119,26 @@ export class CreateInstantBookingRequestUseCase {
       expiresAt: new Date(
         nowUtc.getTime() + this.requestTimeoutMinutes * 60 * 1000,
       ),
+      metadataJson: {
+        source: 'instant-booking-request',
+        capturedAt: nowUtc.toISOString(),
+        requestedDurationMinutes: input.durationMinutes,
+        pricingSnapshot,
+      },
     });
 
     return {
       item: this.instantBookingMapper.toViewModel(request),
     };
+  }
+
+  private toNullableString(
+    value: { toString(): string } | string | null | undefined,
+  ) {
+    if (value === null || value === undefined) {
+      return null;
+    }
+
+    return value.toString();
   }
 }

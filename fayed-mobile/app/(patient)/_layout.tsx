@@ -163,6 +163,7 @@ export default function PatientLayout() {
         name="care-chat/request/[id]"
         options={{ href: null }}
       />
+      <Tabs.Screen name="instant-booking" options={{ href: null }} />
     </Tabs>
   );
 }

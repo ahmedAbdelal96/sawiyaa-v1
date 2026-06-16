@@ -89,4 +89,172 @@ describe('UpdateTrainingScheduleUseCase', () => {
       }),
     ).rejects.toBeInstanceOf(BadRequestException);
   });
+
+  it('preserves the existing timezone when the payload omits timezone', async () => {
+    (trainingRepository.findCourseById as jest.Mock).mockResolvedValue({
+      id: 'course_1',
+      maxEnrollments: 10,
+    });
+    (trainingRepository.findScheduleById as jest.Mock).mockResolvedValue({
+      id: 'schedule_1',
+      courseId: 'course_1',
+      status: CourseScheduleStatus.OPEN_FOR_ENROLLMENT,
+      enrollmentOpenAt: new Date('2026-04-01T09:00:00.000Z'),
+      enrollmentCloseAt: new Date('2026-04-02T09:00:00.000Z'),
+      startsAt: new Date('2026-04-03T09:00:00.000Z'),
+      endsAt: new Date('2026-04-03T10:00:00.000Z'),
+      plannedDurationDays: 14,
+      plannedLectureCount: 4,
+      maxEnrollmentsOverride: 10,
+      timezone: 'Africa/Cairo',
+    });
+    (trainingRepository.countEnrollmentsByScheduleIds as jest.Mock).mockResolvedValue(
+      {
+        schedule_1: 8,
+      },
+    );
+    (
+      trainingRepository.countSessionsByScheduleIds as jest.Mock
+    ).mockResolvedValue({
+      schedule_1: 4,
+    });
+    (trainingRepository.updateSchedule as jest.Mock).mockResolvedValue({
+      id: 'schedule_1',
+      courseId: 'course_1',
+      status: CourseScheduleStatus.OPEN_FOR_ENROLLMENT,
+      enrollmentOpenAt: new Date('2026-04-01T09:00:00.000Z'),
+      enrollmentCloseAt: new Date('2026-04-02T09:00:00.000Z'),
+      startsAt: new Date('2026-04-03T09:00:00.000Z'),
+      endsAt: new Date('2026-04-03T10:00:00.000Z'),
+      plannedDurationDays: 14,
+      plannedLectureCount: 4,
+      maxEnrollmentsOverride: 10,
+      timezone: 'Africa/Cairo',
+      externalRoomProvider: null,
+      externalRoomJoinUrl: null,
+      externalRoomHostUrl: null,
+    });
+    (buildTrainingScheduleSnapshotsService.build as jest.Mock).mockReturnValue([
+      { id: 'schedule_1' },
+    ]);
+
+    await useCase.execute({
+      courseId: 'course_1',
+      scheduleId: 'schedule_1',
+      payload: {},
+    });
+
+    const updateCall = (trainingRepository.updateSchedule as jest.Mock).mock
+      .calls[0][1];
+    expect(updateCall).not.toHaveProperty('timezone');
+  });
+
+  it('accepts a valid IANA timezone during updates', async () => {
+    (trainingRepository.findCourseById as jest.Mock).mockResolvedValue({
+      id: 'course_1',
+      maxEnrollments: 10,
+    });
+    (trainingRepository.findScheduleById as jest.Mock).mockResolvedValue({
+      id: 'schedule_1',
+      courseId: 'course_1',
+      status: CourseScheduleStatus.OPEN_FOR_ENROLLMENT,
+      enrollmentOpenAt: new Date('2026-04-01T09:00:00.000Z'),
+      enrollmentCloseAt: new Date('2026-04-02T09:00:00.000Z'),
+      startsAt: new Date('2026-04-03T09:00:00.000Z'),
+      endsAt: new Date('2026-04-03T10:00:00.000Z'),
+      plannedDurationDays: 14,
+      plannedLectureCount: 4,
+      maxEnrollmentsOverride: 10,
+      timezone: 'Africa/Cairo',
+    });
+    (trainingRepository.countEnrollmentsByScheduleIds as jest.Mock).mockResolvedValue(
+      {
+        schedule_1: 8,
+      },
+    );
+    (
+      trainingRepository.countSessionsByScheduleIds as jest.Mock
+    ).mockResolvedValue({
+      schedule_1: 4,
+    });
+    (trainingRepository.updateSchedule as jest.Mock).mockResolvedValue({
+      id: 'schedule_1',
+      courseId: 'course_1',
+      status: CourseScheduleStatus.OPEN_FOR_ENROLLMENT,
+      enrollmentOpenAt: new Date('2026-04-01T09:00:00.000Z'),
+      enrollmentCloseAt: new Date('2026-04-02T09:00:00.000Z'),
+      startsAt: new Date('2026-04-03T09:00:00.000Z'),
+      endsAt: new Date('2026-04-03T10:00:00.000Z'),
+      plannedDurationDays: 14,
+      plannedLectureCount: 4,
+      maxEnrollmentsOverride: 10,
+      timezone: 'Europe/Berlin',
+      externalRoomProvider: null,
+      externalRoomJoinUrl: null,
+      externalRoomHostUrl: null,
+    });
+    (buildTrainingScheduleSnapshotsService.build as jest.Mock).mockReturnValue([
+      { id: 'schedule_1' },
+    ]);
+
+    await useCase.execute({
+      courseId: 'course_1',
+      scheduleId: 'schedule_1',
+      payload: {
+        timezone: 'Europe/Berlin',
+      },
+    });
+
+    expect(trainingRepository.updateSchedule).toHaveBeenCalledWith(
+      'schedule_1',
+      expect.objectContaining({
+        timezone: 'Europe/Berlin',
+      }),
+    );
+  });
+
+  it.each(['+02:00', 'UTC+2', 'Invalid/Timezone'])(
+    'rejects invalid timezone value %s during updates',
+    async (timezone) => {
+      (trainingRepository.findCourseById as jest.Mock).mockResolvedValue({
+        id: 'course_1',
+        maxEnrollments: 10,
+      });
+      (trainingRepository.findScheduleById as jest.Mock).mockResolvedValue({
+        id: 'schedule_1',
+        courseId: 'course_1',
+        status: CourseScheduleStatus.OPEN_FOR_ENROLLMENT,
+        enrollmentOpenAt: new Date('2026-04-01T09:00:00.000Z'),
+        enrollmentCloseAt: new Date('2026-04-02T09:00:00.000Z'),
+        startsAt: new Date('2026-04-03T09:00:00.000Z'),
+        endsAt: new Date('2026-04-03T10:00:00.000Z'),
+        plannedDurationDays: 14,
+        plannedLectureCount: 4,
+        maxEnrollmentsOverride: 10,
+        timezone: 'Africa/Cairo',
+      });
+      (
+        trainingRepository.countEnrollmentsByScheduleIds as jest.Mock
+      ).mockResolvedValue({
+        schedule_1: 8,
+      });
+      (
+        trainingRepository.countSessionsByScheduleIds as jest.Mock
+      ).mockResolvedValue({
+        schedule_1: 4,
+      });
+
+      await expect(
+        useCase.execute({
+          courseId: 'course_1',
+          scheduleId: 'schedule_1',
+          payload: {
+            timezone,
+          },
+        }),
+      ).rejects.toBeInstanceOf(BadRequestException);
+
+      expect(trainingRepository.updateSchedule).not.toHaveBeenCalled();
+    },
+  );
 });

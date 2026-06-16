@@ -420,6 +420,102 @@
     "states": {
       "loading": "Loading evidence",
       "notFound": "No session found for this ID."
+    },
+    "manualDecision": {
+      "title": "Manual admin decision",
+      "subtitle": "Record a manual decision after reviewing the evidence",
+      "safetyNotice": "This is a manual admin decision after evidence review. This screen does not create automatic refunds or payouts.",
+      "decisionType": {
+        "label": "Decision type",
+        "placeholder": "Select a decision type",
+        "MARK_COMPLETED": "Mark session completed",
+        "MARK_PATIENT_NO_SHOW": "Mark patient no-show",
+        "MARK_PRACTITIONER_NO_SHOW": "Mark practitioner no-show",
+        "MARK_BOTH_NO_SHOW": "Mark both no-show",
+        "MARK_TECHNICAL_REVIEW": "Send to technical review",
+        "MARK_INSUFFICIENT_EVIDENCE": "Insufficient evidence"
+      },
+      "reasonCode": {
+        "label": "Reason code",
+        "placeholder": "Select a reason code",
+        "EVIDENCE_SUPPORTS_COMPLETION": "Evidence supports completion",
+        "PATIENT_DID_NOT_JOIN": "Patient did not join",
+        "PRACTITIONER_DID_NOT_JOIN": "Practitioner did not join",
+        "BOTH_PARTIES_DID_NOT_JOIN": "Both parties did not join",
+        "TECHNICAL_ISSUE_REVIEW": "Technical issue review",
+        "INSUFFICIENT_EVIDENCE": "Insufficient evidence",
+        "ADMIN_REVIEW_OVERRIDE": "Admin review override",
+        "LOCAL_ADMIN_REVIEW": "Local admin review",
+        "LOCAL_RUNTIME_SMOKE_TEST": "Local smoke test",
+        "LOCAL_RUNTIME_SMOKE_SUPERSEDE": "Local smoke supersede test"
+      },
+      "statusImpact": {
+        "label": "Status impact",
+        "willMutate": "Session status will be updated to {status}.",
+        "noChange": "Session status will not change. The decision will only be recorded.",
+        "mutates": "Status change",
+        "noMutation": "No status change"
+      },
+      "confirmations": {
+        "evidenceReviewed": "I reviewed the attendance evidence and event log.",
+        "noAutomaticRefund": "I understand this decision does not create an automatic refund.",
+        "noAutomaticPayout": "I understand this decision does not create an automatic payout."
+      },
+      "supersede": {
+        "warningTitle": "Existing final decision",
+        "warningNote": "A final decision already exists for this session. You must supersede it to record a new one.",
+        "currentFinal": "Current final decision",
+        "checkboxLabel": "I want to supersede the current final decision with a new one.",
+        "supersededBadge": "Superseded"
+      },
+      "adminNote": {
+        "label": "Admin note",
+        "placeholder": "Optional note (max 2000 characters)",
+        "remaining": "{count} characters remaining",
+        "noSensitiveData": "Do not include sensitive personal data in notes."
+      },
+      "actions": {
+        "submit": "Record manual decision",
+        "submitting": "Recording...",
+        "cancel": "Cancel"
+      },
+      "errors": {
+        "SESSION_DECISION_ALREADY_FINAL": "A final decision already exists. You must supersede it first.",
+        "SESSION_DECISION_REQUIRES_PAST_END": "This session has not ended yet. Decisions can only be recorded after the scheduled end time.",
+        "SESSION_DECISION_NOT_ALLOWED_STATUS": "This session status does not allow manual decisions.",
+        "SESSION_DECISION_NOT_ELIGIBLE": "This session is not eligible for a manual admin decision in its current state.",
+        "SESSION_DECISION_CONFIRMATION_REQUIRED": "All three confirmations are required before submitting.",
+        "forbidden": "You do not have permission to record manual decisions.",
+        "unauthorized": "Access token is required.",
+        "generic": "Could not record the decision right now."
+      },
+      "success": {
+        "title": "Decision recorded",
+        "note": "The manual decision has been recorded successfully."
+      },
+      "noPermission": "You can view decision history, but you do not have permission to record a manual decision.",
+      "history": {
+        "title": "Decision history",
+        "empty": "No manual decisions have been recorded for this session.",
+        "finalBadge": "Final",
+        "supersededBadge": "Superseded",
+        "noStatusChange": "No status change",
+        "decidedBy": "By",
+        "decidedByUnknown": "Unknown",
+        "previousStatus": "Previous status",
+        "supersedesRelation": "Supersedes a previous decision",
+        "snapshot": {
+          "evidenceSnapshotAt": "Evidence snapshot at decision time",
+          "toggleOpen": "Show snapshot",
+          "toggleClose": "Hide snapshot",
+          "recommendedOutcome": "Recommended outcome",
+          "patientJoined": "Patient joined",
+          "practitionerJoined": "Practitioner joined",
+          "overlapMinutes": "Overlap",
+          "sourceConfidence": "Confidence",
+          "riskFlags": "Risk flags"
+        }
+      }
     }
   }
 }

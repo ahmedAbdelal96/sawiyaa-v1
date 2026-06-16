@@ -23,6 +23,7 @@ export class InstantBookingRequestRepository {
       requestedDurationMinutes: number;
       preferredMode: SessionMode;
       expiresAt: Date;
+      metadataJson?: Prisma.InputJsonValue;
     },
     tx?: Prisma.TransactionClient,
   ) {
@@ -55,6 +56,16 @@ export class InstantBookingRequestRepository {
         expiresAt: {
           gt: now,
         },
+      },
+      include: this.requestInclude,
+      orderBy: [{ createdAt: 'desc' }],
+    });
+  }
+
+  listPractitionerRequests(practitionerId: string) {
+    return this.prisma.instantBookingRequest.findMany({
+      where: {
+        practitionerId,
       },
       include: this.requestInclude,
       orderBy: [{ createdAt: 'desc' }],
@@ -123,6 +134,10 @@ export class InstantBookingRequestRepository {
       select: {
         id: true,
         publicSlug: true,
+        instantBookingPrice30Egp: true,
+        instantBookingPrice30Usd: true,
+        instantBookingPrice60Egp: true,
+        instantBookingPrice60Usd: true,
         user: {
           select: {
             displayName: true,

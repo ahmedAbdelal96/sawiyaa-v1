@@ -567,11 +567,13 @@ function mapSessionPresentationTone(status: SessionPresentationStatus) {
       return "success" as const;
     case "UPCOMING":
     case "UNAVAILABLE":
+    case "UNDER_REVIEW":
       return "warning" as const;
     case "COMPLETED":
       return "default" as const;
     case "CANCELLED":
     case "ENDED":
+    case "NO_SHOW":
       return "error" as const;
     default:
       return "default" as const;

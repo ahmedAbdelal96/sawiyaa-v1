@@ -29,7 +29,9 @@ function resolveSessionChatReason(
     | 'COMPLETED'
     | 'CANCELLED'
     | 'ENDED'
-    | 'UNAVAILABLE',
+    | 'UNAVAILABLE'
+    | 'NO_SHOW'
+    | 'UNDER_REVIEW',
 ): GeneralChatAvailabilityReason {
   switch (presentationStatus) {
     case 'JOINABLE':
@@ -37,6 +39,8 @@ function resolveSessionChatReason(
       return GENERAL_CHAT_AVAILABILITY_REASONS.allowed;
     case 'COMPLETED':
     case 'ENDED':
+    case 'NO_SHOW':
+    case 'UNDER_REVIEW':
       return GENERAL_CHAT_AVAILABILITY_REASONS.sessionEnded;
     case 'CANCELLED':
       return GENERAL_CHAT_AVAILABILITY_REASONS.sessionCancelled;

@@ -11,6 +11,7 @@ import { TrainingRepository } from '../repositories/training.repository';
 import { BuildTrainingScheduleSnapshotsService } from '../services/build-training-schedule-snapshots.service';
 import { ValidateTrainingSchedulePayloadService } from '../services/validate-training-schedule-payload.service';
 import { ValidateTrainingScheduleStatusTransitionService } from '../services/validate-training-schedule-status-transition.service';
+import { assertIanaTimeZoneInput } from '@common/utils/timezone.util';
 
 @Injectable()
 export class UpdateTrainingScheduleUseCase {
@@ -72,6 +73,18 @@ export class UpdateTrainingScheduleUseCase {
       input.payload.maxEnrollmentsOverride !== undefined
         ? input.payload.maxEnrollmentsOverride
         : schedule.maxEnrollmentsOverride;
+    const timezone =
+      input.payload.timezone !== undefined
+        ? (() => {
+            const providedTimezone = input.payload.timezone?.trim();
+            return providedTimezone
+              ? assertIanaTimeZoneInput(providedTimezone, {
+                  messageKey: 'training.errors.invalidTimezone',
+                  error: 'TRAINING_INVALID_TIMEZONE',
+                })
+              : null;
+          })()
+        : undefined;
 
     this.validateTrainingSchedulePayloadService.assertValid({
       enrollmentOpenAt,
@@ -139,9 +152,7 @@ export class UpdateTrainingScheduleUseCase {
           ...(input.payload.plannedLectureCount !== undefined
             ? { plannedLectureCount: input.payload.plannedLectureCount }
             : {}),
-          ...(input.payload.timezone !== undefined
-            ? { timezone: input.payload.timezone?.trim() || null }
-            : {}),
+          ...(timezone !== undefined ? { timezone } : {}),
           ...(input.payload.maxEnrollmentsOverride !== undefined
             ? { maxEnrollmentsOverride }
             : {}),

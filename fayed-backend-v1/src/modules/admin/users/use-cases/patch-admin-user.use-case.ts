@@ -3,6 +3,7 @@ import { I18nService } from '@common/i18n/services/i18n.service';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
 import { AuthenticatedUser } from '@common/interfaces/authenticated-user.interface';
 import { SecurityAuditService } from '@common/security-audit/security-audit.service';
+import { normalizeIanaTimeZoneInput } from '@common/utils/timezone.util';
 import { SecurityAuditOutcome } from '@prisma/client';
 import { PatchAdminUserDto } from '../dto/patch-admin-user.dto';
 import { AdminUserManagementPolicy } from '../policies/admin-user-management.policy';
@@ -37,7 +38,10 @@ export class PatchAdminUserUseCase {
       userId: input.userId,
       displayName: input.payload.displayName?.trim(),
       defaultLocale: input.payload.defaultLocale?.trim(),
-      timezone: input.payload.timezone?.trim(),
+      timezone: normalizeIanaTimeZoneInput(input.payload.timezone, {
+        messageKey: 'settings.errors.invalidTimezone',
+        error: 'SETTINGS_INVALID_TIMEZONE',
+      }),
     });
 
     this.securityAuditService.logAsync({

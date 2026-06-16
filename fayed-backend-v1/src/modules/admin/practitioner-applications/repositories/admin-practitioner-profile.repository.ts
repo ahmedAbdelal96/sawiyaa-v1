@@ -42,6 +42,10 @@ export class AdminPractitionerProfileRepository {
         sessionPrice30Usd: true,
         sessionPrice60Egp: true,
         sessionPrice60Usd: true,
+        instantBookingPrice30Egp: true,
+        instantBookingPrice30Usd: true,
+        instantBookingPrice60Egp: true,
+        instantBookingPrice60Usd: true,
         acceptsPackages: true,
         country: {
           select: {
@@ -104,6 +108,10 @@ export class AdminPractitionerProfileRepository {
       sessionPrice30Usd?: Prisma.Decimal | number | string | null;
       sessionPrice60Egp?: Prisma.Decimal | number | string | null;
       sessionPrice60Usd?: Prisma.Decimal | number | string | null;
+      instantBookingPrice30Egp?: Prisma.Decimal | number | string | null;
+      instantBookingPrice30Usd?: Prisma.Decimal | number | string | null;
+      instantBookingPrice60Egp?: Prisma.Decimal | number | string | null;
+      instantBookingPrice60Usd?: Prisma.Decimal | number | string | null;
       countryId?: string | null;
       primarySpecialtyCategoryId?: string | null;
     },
@@ -121,6 +129,10 @@ export class AdminPractitionerProfileRepository {
         sessionPrice30Usd: data.sessionPrice30Usd,
         sessionPrice60Egp: data.sessionPrice60Egp,
         sessionPrice60Usd: data.sessionPrice60Usd,
+        instantBookingPrice30Egp: data.instantBookingPrice30Egp,
+        instantBookingPrice30Usd: data.instantBookingPrice30Usd,
+        instantBookingPrice60Egp: data.instantBookingPrice60Egp,
+        instantBookingPrice60Usd: data.instantBookingPrice60Usd,
         countryId: data.countryId,
         primarySpecialtyCategoryId: data.primarySpecialtyCategoryId,
       },

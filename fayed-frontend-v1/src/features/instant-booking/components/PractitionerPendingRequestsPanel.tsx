@@ -1,198 +1,195 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
+import { Clock3, Loader2, Zap } from "lucide-react";
 import { Link } from "@/i18n/navigation";
-import { Clock, Loader2, Zap } from "lucide-react";
-import { DestructiveConfirmModal } from "@/components/ui/modal";
+import { useNowTick } from "../hooks/use-now-tick";
 import {
   useAcceptInstantBookingRequest,
   usePractitionerPendingBookingRequests,
   useRejectInstantBookingRequest,
 } from "../hooks/use-instant-booking";
-import type { InstantBookingRequest } from "../types/instant-booking.types";
+import { getPractitionerInstantBookingErrorKey } from "../lib/instant-booking-errors";
+import InstantBookingRequestCard from "./InstantBookingRequestCard";
 
-function formatExpiry(isoString: string, numLocale: string): string {
-  return new Date(isoString).toLocaleString(numLocale, {
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: !numLocale.startsWith("ar"),
-  });
-}
-
-type RequestCardProps = {
-  request: InstantBookingRequest;
-};
-
-function RequestCard({ request }: RequestCardProps) {
-  const t = useTranslations("sessions.practitioner.instantBooking");
-  const locale = useLocale();
-  const numLocale = locale === "ar" ? "ar-SA" : "en-US";
-
-  const acceptMutation = useAcceptInstantBookingRequest();
-  const rejectMutation = useRejectInstantBookingRequest();
-
-  const [confirmingReject, setConfirmingReject] = useState(false);
-  const [acceptedSessionId, setAcceptedSessionId] = useState<string | null>(null);
-
-  const handleAccept = async () => {
-    try {
-      const result = await acceptMutation.mutateAsync(request.id);
-      setAcceptedSessionId(result.createdSessionId);
-    } catch {
-      // error shown inline
-    }
-  };
-
-  const handleReject = async () => {
-    try {
-      await rejectMutation.mutateAsync({ requestId: request.id });
-      setConfirmingReject(false);
-    } catch {
-      // error shown inline
-    }
-  };
-
-  // After acceptance — show success state
-  if (acceptedSessionId) {
-    return (
-      <div className="rounded-2xl border border-green-200 bg-green-50 p-4 dark:border-green-800/40 dark:bg-green-900/10">
-        <p className="mb-2 text-sm text-green-700 dark:text-green-400">
-          {t("acceptedNote")}
-        </p>
-        <Link
-          href={`/practitioner/sessions/${acceptedSessionId}` as never}
-          className="inline-flex items-center justify-center rounded-2xl bg-primary px-4 py-2 text-xs font-semibold text-white hover:bg-primary/90"
-        >
-          {t("viewSession")}
-        </Link>
-      </div>
-    );
+function formatNearestExpiry(expiresAt: string, locale: string, nowMs: number) {
+  const diffMs = new Date(expiresAt).getTime() - nowMs;
+  if (diffMs <= 0) {
+    return locale === "ar" ? "انتهت صلاحية الطلب" : "Request expired";
   }
 
-  const isBusy = acceptMutation.isPending || rejectMutation.isPending;
+  const totalSeconds = Math.max(0, Math.floor(diffMs / 1000));
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  const numberFormat = new Intl.NumberFormat(locale === "ar" ? "ar-EG" : "en-US");
 
-  return (
-    <div className="rounded-2xl border border-border-light bg-surface-primary p-4 dark:bg-white/5">
-      <div className="mb-2 flex items-start justify-between gap-2">
-        <div>
-          <p className="text-sm font-semibold text-text-primary dark:text-white/90">
-            {t("requestFrom")}{" "}
-            {request.patient?.displayName ?? "—"}
-          </p>
-          <div className="mt-0.5 flex items-center gap-2 text-xs text-text-secondary">
-            <span>{t("duration", { n: request.requestedDurationMinutes })}</span>
-            <span>·</span>
-            <span className="flex items-center gap-1">
-              <Clock size={11} />
-              {t("expiresAt")} {formatExpiry(request.expiresAt, numLocale)}
-            </span>
-          </div>
-        </div>
-      </div>
+  if (minutes >= 60) {
+    const hours = Math.floor(minutes / 60);
+    const remainingMinutes = minutes % 60;
+    if (locale === "ar") {
+      return `أقرب انتهاء خلال ${numberFormat.format(hours)} س ${numberFormat.format(remainingMinutes)} د`;
+    }
+    return `Nearest expiry in ${numberFormat.format(hours)}h ${numberFormat.format(remainingMinutes)}m`;
+  }
 
-      {/* Error feedback */}
-      {acceptMutation.isError && (
-        <p className="mb-2 text-xs text-red-500">{t("acceptError")}</p>
-      )}
-      {rejectMutation.isError && (
-        <p className="mb-2 text-xs text-red-500">{t("rejectError")}</p>
-      )}
+  if (locale === "ar") {
+    return `أقرب انتهاء خلال ${numberFormat.format(minutes)} د ${numberFormat.format(seconds)} ث`;
+  }
 
-      <div className="flex flex-wrap gap-2">
-        <button
-          onClick={handleAccept}
-          disabled={isBusy}
-          className="inline-flex items-center gap-1.5 rounded-2xl bg-primary px-4 py-2 text-xs font-semibold text-white hover:bg-primary/90 disabled:opacity-60"
-        >
-          {acceptMutation.isPending ? (
-            <>
-              <Loader2 size={12} className="animate-spin" />
-              {t("accepting")}
-            </>
-          ) : (
-            t("accept")
-          )}
-        </button>
-        <button
-          onClick={() => setConfirmingReject(true)}
-          disabled={isBusy}
-          className="inline-flex items-center justify-center rounded-2xl border border-border-light px-4 py-2 text-xs text-text-secondary hover:bg-surface-tertiary dark:hover:bg-white/5 disabled:opacity-60"
-        >
-          {t("reject")}
-        </button>
-      </div>
-
-      <DestructiveConfirmModal
-        isOpen={confirmingReject}
-        onClose={() => {
-          setConfirmingReject(false);
-          rejectMutation.reset();
-        }}
-        size="sm"
-        title={t("rejectConfirm.heading")}
-        description={t("rejectConfirm.note")}
-        confirmLabel={
-          rejectMutation.isPending ? (
-            <>
-              <Loader2 size={12} className="animate-spin" />
-              {t("rejecting")}
-            </>
-          ) : (
-            t("rejectConfirm.confirm")
-          )
-        }
-        cancelLabel={t("rejectConfirm.back")}
-        onConfirm={handleReject}
-        loading={isBusy}
-      >
-        <div className="rounded-2xl border border-warning-200 bg-warning-50 px-4 py-4 text-sm text-warning-800 dark:border-warning-500/20 dark:bg-warning-500/10 dark:text-warning-300">
-          <p className="font-medium">{request.patient?.displayName ?? "-"}</p>
-          <p className="mt-1 text-xs opacity-80">
-            {t("duration", { n: request.requestedDurationMinutes })}
-          </p>
-        </div>
-      </DestructiveConfirmModal>
-    </div>
-  );
+  return `Nearest expiry in ${numberFormat.format(minutes)}m ${numberFormat.format(seconds)}s`;
 }
 
 export default function PractitionerPendingRequestsPanel() {
   const t = useTranslations("sessions.practitioner.instantBooking");
-  const { data: requests, isLoading, isError } = usePractitionerPendingBookingRequests();
+  const locale = useLocale();
+  const nowMs = useNowTick(1000);
+  const { data: requests, isLoading, isError, refetch } = usePractitionerPendingBookingRequests();
+  const acceptMutation = useAcceptInstantBookingRequest();
+  const rejectMutation = useRejectInstantBookingRequest();
+  const [pageMessage, setPageMessage] = useState<string | null>(null);
+  const [actionErrors, setActionErrors] = useState<Record<string, string>>({});
+
+  const pendingRequests = useMemo(
+    () => requests ?? [],
+    [requests],
+  );
+  const nearestRequest = pendingRequests.length
+    ? [...pendingRequests].sort(
+        (left, right) => new Date(left.expiresAt).getTime() - new Date(right.expiresAt).getTime(),
+      )[0]
+    : null;
+
+  const handleAccept = async (requestId: string) => {
+    setPageMessage(null);
+    setActionErrors((current) => {
+      const next = { ...current };
+      delete next[requestId];
+      return next;
+    });
+
+    try {
+      await acceptMutation.mutateAsync(requestId);
+      setPageMessage(t("queue.feedback.accepted"));
+      await refetch();
+    } catch (error) {
+      const messageKey = getPractitionerInstantBookingErrorKey(error);
+      setActionErrors((current) => ({
+        ...current,
+        [requestId]: t(messageKey as Parameters<typeof t>[0]),
+      }));
+      await refetch();
+    }
+  };
+
+  const handleReject = async (requestId: string) => {
+    setPageMessage(null);
+    setActionErrors((current) => {
+      const next = { ...current };
+      delete next[requestId];
+      return next;
+    });
+
+    try {
+      await rejectMutation.mutateAsync({ requestId });
+      setPageMessage(t("queue.feedback.rejected"));
+      await refetch();
+    } catch (error) {
+      const messageKey = getPractitionerInstantBookingErrorKey(error);
+      setActionErrors((current) => ({
+        ...current,
+        [requestId]: t(messageKey as Parameters<typeof t>[0]),
+      }));
+      await refetch();
+    }
+  };
 
   if (isLoading) {
     return (
-      <div className="h-20 animate-pulse rounded-2xl bg-surface-tertiary dark:bg-white/10" />
+      <div className="h-24 animate-pulse rounded-[28px] border border-border-light bg-surface-secondary dark:bg-white/5" />
     );
   }
 
   if (isError) {
     return (
-      <p className="rounded-2xl border border-border-light bg-surface-primary p-4 text-sm text-text-secondary dark:bg-white/5">
-        {t("errorNote")}
-      </p>
+      <div className="rounded-[28px] border border-border-light bg-surface-secondary p-4 text-sm text-text-secondary dark:bg-white/5">
+        <p className="mb-3 text-sm font-semibold text-text-primary dark:text-white/95">
+          {t("queue.errors.loadingHeading")}
+        </p>
+        <p>{t("queue.errors.loadingNote")}</p>
+        <button
+          type="button"
+          onClick={() => void refetch()}
+          className="mt-4 inline-flex items-center gap-2 rounded-2xl border border-border-light bg-white px-4 py-2 text-sm font-semibold text-text-primary transition hover:border-primary/25 hover:bg-primary-light/40 hover:text-primary"
+        >
+          <Clock3 className="h-4 w-4" />
+          {t("queue.errors.retry")}
+        </button>
+      </div>
     );
   }
 
-  if (!requests || requests.length === 0) {
-    return null; // No pending requests — render nothing (keeps sessions page clean)
+  if (!pendingRequests.length) {
+    return null;
   }
 
   return (
-    <section className="mb-6">
-      <div className="mb-3 flex items-center gap-2">
-        <Zap size={16} className="text-amber-500" />
-        <h2 className="text-sm font-semibold text-text-primary dark:text-white/90">
-          {t("sectionHeading")}
-        </h2>
+    <section className="mb-6 space-y-3">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <div className="inline-flex items-center gap-2 rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-800 ring-1 ring-amber-200/70 dark:bg-amber-500/10 dark:text-amber-200 dark:ring-amber-500/20">
+            <Zap className="h-3.5 w-3.5" />
+            {t("queue.eyebrow")}
+          </div>
+          <h2 className="mt-2 text-sm font-semibold text-text-primary dark:text-white/95">
+            {t("queue.title")}
+          </h2>
+          <p className="mt-1 text-xs leading-5 text-text-secondary">{t("queue.pendingNote")}</p>
+        </div>
+
+        <Link
+          href="/practitioner/instant-booking"
+          className="inline-flex items-center justify-center rounded-2xl border border-border-light bg-surface-secondary px-4 py-2.5 text-sm font-semibold text-text-primary transition hover:border-primary/25 hover:bg-primary-light/40 hover:text-primary"
+        >
+          {t("queue.dashboardLink")}
+        </Link>
       </div>
-      <p className="mb-3 text-xs text-text-secondary">{t("sectionNote")}</p>
-      <div className="space-y-3">
-        {requests.map((req) => (
-          <RequestCard key={req.id} request={req} />
-        ))}
+
+      <div className="grid gap-3 rounded-[28px] border border-amber-200/70 bg-amber-50/50 p-4 dark:border-amber-500/20 dark:bg-amber-500/8">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="rounded-full bg-white/80 px-3 py-1 text-xs font-semibold text-amber-800 ring-1 ring-amber-200/70 dark:bg-white/10 dark:text-amber-100 dark:ring-amber-500/20">
+            {pendingRequests.length} {t("queue.summary.pendingCount")}
+          </span>
+          {nearestRequest ? (
+            <span className="rounded-full bg-white/80 px-3 py-1 text-xs font-semibold text-text-secondary ring-1 ring-border-light dark:bg-white/10 dark:text-white/80 dark:ring-white/10">
+              {formatNearestExpiry(nearestRequest.expiresAt, locale, nowMs)}
+            </span>
+          ) : null}
+        </div>
+
+        <div className="space-y-3">
+          {pendingRequests.map((request) => (
+            <InstantBookingRequestCard
+              key={request.id}
+              request={request}
+              nowMs={nowMs}
+              onAccept={handleAccept}
+              onReject={handleReject}
+              acceptingRequestId={acceptMutation.isPending ? acceptMutation.variables ?? null : null}
+              rejectingRequestId={
+                rejectMutation.isPending ? rejectMutation.variables?.requestId ?? null : null
+              }
+              actionError={actionErrors[request.id] ?? null}
+            />
+          ))}
+        </div>
       </div>
+
+      {pageMessage ? (
+        <div className="rounded-[22px] border border-success-200 bg-success-light px-4 py-3 text-sm font-medium text-success-800 dark:border-success-500/20 dark:bg-success-500/10 dark:text-success-200">
+          {pageMessage}
+        </div>
+      ) : null}
     </section>
   );
 }

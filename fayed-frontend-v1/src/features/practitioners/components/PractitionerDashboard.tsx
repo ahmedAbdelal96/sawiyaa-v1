@@ -1,17 +1,19 @@
 "use client";
 
 import { useMemo, useState, useEffect } from "react";
-import { useLocale } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import {
   Activity,
   ArrowRight,
   CalendarClock,
   Clock3,
   WalletCards,
+  Zap,
 } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
 import { ListStateSkeleton, StateCard } from "@/components/shared/ContentStates";
+import { SurfaceActionLink, SurfaceCard } from "@/components/shared/SurfaceShell";
 import {
   AreaTrendChart,
   BarTrendChart,
@@ -22,6 +24,8 @@ import {
   PractitionerDashboardQueueCard,
   PractitionerDashboardSectionHeader,
 } from "./dashboard";
+import { useNowTick } from "@/features/instant-booking/hooks/use-now-tick";
+import { usePractitionerPendingBookingRequests } from "@/features/instant-booking/hooks/use-instant-booking";
 import { formatMoney as formatFinanceMoney } from "@/lib/finance-format";
 import { usePractitionerProfile } from "../hooks/use-practitioners";
 import { usePractitionerSessions } from "@/features/sessions/hooks/use-sessions";
@@ -216,6 +220,33 @@ function formatDateTime(locale: string, iso: string | null) {
   });
 }
 
+function formatTimeLeft(iso: string, locale: string, nowMs: number) {
+  const diffMs = new Date(iso).getTime() - nowMs;
+  if (diffMs <= 0) {
+    return locale === "ar" ? "انتهت صلاحية الطلب" : "Request expired";
+  }
+
+  const totalSeconds = Math.max(0, Math.floor(diffMs / 1000));
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  const numberFormat = new Intl.NumberFormat(locale === "ar" ? "ar-EG" : "en-US");
+
+  if (minutes >= 60) {
+    const hours = Math.floor(minutes / 60);
+    const remainingMinutes = minutes % 60;
+    if (locale === "ar") {
+      return `أقرب انتهاء خلال ${numberFormat.format(hours)} س ${numberFormat.format(remainingMinutes)} د`;
+    }
+    return `Nearest expiry in ${numberFormat.format(hours)}h ${numberFormat.format(remainingMinutes)}m`;
+  }
+
+  if (locale === "ar") {
+    return `أقرب انتهاء خلال ${numberFormat.format(minutes)} د ${numberFormat.format(seconds)} ث`;
+  }
+
+  return `Nearest expiry in ${numberFormat.format(minutes)}m ${numberFormat.format(seconds)}s`;
+}
+
 function formatShortDate(locale: string, iso: string | null) {
   if (!iso) return "-";
   return new Date(iso).toLocaleDateString(locale === "ar" ? "ar-SA" : "en-US", {
@@ -316,6 +347,9 @@ export default function PractitionerDashboard() {
   const locale = useLocale();
   const isArabic = locale === "ar";
   const copy = COPY[locale === "ar" ? "ar" : "en"];
+  const t = useTranslations("sessions.practitioner.instantBooking");
+  const nowMs = useNowTick(1000);
+  const pendingInstantBookingQuery = usePractitionerPendingBookingRequests();
 
   const [hasHydrated, setHasHydrated] = useState(false);
   useEffect(() => {
@@ -336,6 +370,10 @@ export default function PractitionerDashboard() {
   });
   const walletQuery = usePractitionerWallet();
   const settlementsQuery = usePractitionerSettlements({ page: 1, limit: 8 });
+  const pendingInstantRequests = pendingInstantBookingQuery.data ?? [];
+  const nearestPendingRequest = [...pendingInstantRequests].sort(
+    (left, right) => new Date(left.expiresAt).getTime() - new Date(right.expiresAt).getTime(),
+  )[0];
 
   const isLoadingCore =
     profileQuery.isLoading ||
@@ -432,6 +470,40 @@ export default function PractitionerDashboard() {
       </section>
 
       {/* ── Section 2: Compact KPI Grid ── */}
+      {pendingInstantRequests.length > 0 ? (
+        <SurfaceCard
+          variant="compact"
+          className="border-amber-200/70 bg-amber-50/80 dark:border-amber-500/20 dark:bg-amber-500/10"
+        >
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div className="min-w-0 space-y-2">
+              <div className="inline-flex items-center gap-2 rounded-full bg-white/80 px-3 py-1 text-xs font-semibold text-amber-800 ring-1 ring-amber-200/70 dark:bg-white/10 dark:text-amber-100 dark:ring-amber-500/20">
+                <Zap className="h-3.5 w-3.5" />
+                {t("queue.eyebrow")}
+              </div>
+              <h2 className="text-base font-semibold text-text-primary dark:text-white/95">
+                {t("queue.dashboardTitle", {
+                  count: pendingInstantRequests.length,
+                })}
+              </h2>
+              <p className="max-w-2xl text-sm leading-6 text-text-secondary">
+                {nearestPendingRequest
+                  ? formatTimeLeft(nearestPendingRequest.expiresAt, locale, nowMs)
+                  : t("queue.summary.noPending")}
+              </p>
+            </div>
+
+            <SurfaceActionLink
+              href="/practitioner/instant-booking"
+              variant="primary"
+              className="sm:self-center"
+            >
+              {t("queue.dashboardLink")}
+            </SurfaceActionLink>
+          </div>
+        </SurfaceCard>
+      ) : null}
+
       <section className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         <PractitionerDashboardKpiCard
           label={copy.kpi.sessionsToday}

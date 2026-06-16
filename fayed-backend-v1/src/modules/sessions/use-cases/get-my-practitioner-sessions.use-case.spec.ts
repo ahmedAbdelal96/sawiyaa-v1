@@ -46,6 +46,7 @@ describe('GetMyPractitionerSessionsUseCase', () => {
     const sessionRepository = {
       listPractitionerSessions: jest.fn().mockResolvedValue([sessions, 11]),
       countUnreadBySessionIdsForUser: jest.fn().mockResolvedValue(new Map()),
+      findLatestActiveSessionAdminDecisionsForSessions: jest.fn().mockResolvedValue(new Map()),
     } as unknown as SessionRepository;
 
     const sessionMapper = {

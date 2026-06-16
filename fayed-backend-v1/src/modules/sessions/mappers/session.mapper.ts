@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Session } from '@prisma/client';
+import { Session, SessionAdminDecisionType } from '@prisma/client';
 import {
   buildSessionJoinAvailabilityViewModel,
   DEFAULT_SESSION_RUNTIME_PREPARE_LEAD_MINUTES,
@@ -33,6 +33,7 @@ export class SessionMapper {
     session: SessionWithRelations,
     now = new Date(),
     unreadCount = 0,
+    finalManualDecision: SessionAdminDecisionType | null = null,
   ): SessionListItemViewModel {
     return {
       id: session.id,
@@ -48,6 +49,7 @@ export class SessionMapper {
         providerSessionRef: session.providerSessionRef,
         now,
         runtimePrepareLeadMinutes: DEFAULT_SESSION_RUNTIME_PREPARE_LEAD_MINUTES,
+        finalManualDecision,
       }),
       createdAt: session.createdAt.toISOString(),
       scheduledStartAt: session.scheduledStartAt?.toISOString() ?? null,
@@ -94,8 +96,9 @@ export class SessionMapper {
     session: SessionWithRelations,
     now = new Date(),
     unreadCount = 0,
+    finalManualDecision: SessionAdminDecisionType | null = null,
   ): SessionDetailsViewModel {
-    const base = this.toListItem(session, now, unreadCount);
+    const base = this.toListItem(session, now, unreadCount, finalManualDecision);
 
     return {
       ...base,

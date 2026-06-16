@@ -160,6 +160,10 @@ export interface PractitionerProfile {
       usd: number | null;
     };
   };
+  instantBookingPrice30Egp: number | null;
+  instantBookingPrice30Usd: number | null;
+  instantBookingPrice60Egp: number | null;
+  instantBookingPrice60Usd: number | null;
   payoutDestination: PractitionerPayoutDestination | null;
   profileStatus: PractitionerStatus;
   specialties: PractitionerSpecialty[];
@@ -276,6 +280,10 @@ export interface UpdatePractitionerProfileRequest {
   sessionPrice30Usd?: number | null;
   sessionPrice60Egp?: number | null;
   sessionPrice60Usd?: number | null;
+  instantBookingPrice30Egp?: number | null;
+  instantBookingPrice30Usd?: number | null;
+  instantBookingPrice60Egp?: number | null;
+  instantBookingPrice60Usd?: number | null;
   locale?: "ar" | "en";
   acceptsPackage?: boolean;
   timezone?: string;
@@ -297,6 +305,10 @@ export interface SubmitPractitionerApplicationRequest {
   sessionPrice30Usd?: number | null;
   sessionPrice60Egp?: number | null;
   sessionPrice60Usd?: number | null;
+  instantBookingPrice30Egp?: number | null;
+  instantBookingPrice30Usd?: number | null;
+  instantBookingPrice60Egp?: number | null;
+  instantBookingPrice60Usd?: number | null;
   locale?: "ar" | "en";
   timezone?: string;
   languageCodes?: string[];

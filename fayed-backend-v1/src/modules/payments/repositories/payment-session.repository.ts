@@ -37,6 +37,14 @@ export class PaymentSessionRepository {
             publicSlug: true,
             sessionPrice30: true,
             sessionPrice60: true,
+            sessionPrice30Egp: true,
+            sessionPrice30Usd: true,
+            sessionPrice60Egp: true,
+            sessionPrice60Usd: true,
+            instantBookingPrice30Egp: true,
+            instantBookingPrice30Usd: true,
+            instantBookingPrice60Egp: true,
+            instantBookingPrice60Usd: true,
             countryId: true,
             country: {
               select: {
@@ -56,6 +64,19 @@ export class PaymentSessionRepository {
                 displayName: true,
               },
             },
+          },
+        },
+        payments: {
+          select: {
+            amountSubtotal: true,
+            createdAt: true,
+          },
+          orderBy: [{ createdAt: 'desc' }],
+          take: 1,
+        },
+        instantBookingRequest: {
+          select: {
+            metadataJson: true,
           },
         },
       },

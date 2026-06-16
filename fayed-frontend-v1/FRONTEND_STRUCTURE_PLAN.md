@@ -933,6 +933,7 @@ Make the public funnel reflect the guided care vision and rely on backend trust 
 - [x] Strengthen guided public CTA structure
 - [x] Add real trust/content/review surfaces where backend trust/content layers are ready
 - [x] Harden public metadata / SEO / public error states
+- [x] Add patient-facing instant booking entry and request flow backed by live discovery/pricing
 
 ### Phase 4 - Training Runtime + Surrounding Product Expansion
 

@@ -12,6 +12,7 @@ import { BuildTrainingScheduleSnapshotsService } from '../services/build-trainin
 import { ValidateTrainingSchedulePayloadService } from '../services/validate-training-schedule-payload.service';
 import { ValidateTrainingScheduleStatusTransitionService } from '../services/validate-training-schedule-status-transition.service';
 import { TRAINING_DEFAULT_TIMEZONE } from '../types/training.types';
+import { assertIanaTimeZoneInput } from '@common/utils/timezone.util';
 
 @Injectable()
 export class CreateTrainingScheduleUseCase {
@@ -61,6 +62,14 @@ export class CreateTrainingScheduleUseCase {
       externalRoomJoinUrl: input.payload.externalRoomJoinUrl?.trim() ?? null,
     });
 
+    const providedTimezone = input.payload.timezone?.trim();
+    const timezone = providedTimezone
+      ? assertIanaTimeZoneInput(providedTimezone, {
+          messageKey: 'training.errors.invalidTimezone',
+          error: 'TRAINING_INVALID_TIMEZONE',
+        })
+      : TRAINING_DEFAULT_TIMEZONE;
+
     try {
       const created = await this.trainingRepository.createSchedule(
         input.courseId,
@@ -76,7 +85,7 @@ export class CreateTrainingScheduleUseCase {
           endsAt,
           plannedDurationDays: input.payload.plannedDurationDays ?? null,
           plannedLectureCount: input.payload.plannedLectureCount ?? null,
-          timezone: input.payload.timezone?.trim() || TRAINING_DEFAULT_TIMEZONE,
+          timezone,
           maxEnrollmentsOverride: input.payload.maxEnrollmentsOverride ?? null,
           waitlistEnabled: input.payload.waitlistEnabled ?? false,
           externalRoomProvider:

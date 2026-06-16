@@ -672,6 +672,52 @@ export class SessionRepository {
     });
   }
 
+  listBlockingSessionsInRangeForPractitioners(input: {
+    practitionerIds: string[];
+    startsBefore: Date;
+    endsAfter: Date;
+    now: Date;
+    tx?: Prisma.TransactionClient;
+  }) {
+    if (input.practitionerIds.length === 0) {
+      return Promise.resolve([]);
+    }
+
+    return this.getDb(input.tx).session.findMany({
+      where: {
+        practitionerId: {
+          in: input.practitionerIds,
+        },
+        scheduledStartAt: {
+          lt: input.startsBefore,
+        },
+        scheduledEndAt: {
+          gt: input.endsAfter,
+        },
+        OR: [
+          {
+            status: {
+              in: this.blockingStatuses.filter(
+                (status) => status !== SessionStatus.PENDING_PAYMENT,
+              ),
+            },
+          },
+          {
+            status: SessionStatus.PENDING_PAYMENT,
+            expiresAt: {
+              gt: input.now,
+            },
+          },
+        ],
+      },
+      select: {
+        practitionerId: true,
+        scheduledStartAt: true,
+        scheduledEndAt: true,
+      },
+    });
+  }
+
   listBlockingSessionRangesInRangeForPractitioner(
     practitionerId: string,
     startsBefore: Date,
@@ -693,6 +739,32 @@ export class SessionRepository {
         scheduledEndAt: true,
       },
     });
+  }
+
+  countCompletedSessionsByPractitioners(practitionerIds: string[]) {
+    if (practitionerIds.length === 0) {
+      return Promise.resolve(new Map<string, number>());
+    }
+
+    return this.prisma.session
+      .groupBy({
+        by: ['practitionerId'],
+        where: {
+          practitionerId: {
+            in: practitionerIds,
+          },
+          status: SessionStatus.COMPLETED,
+        },
+        _count: {
+          _all: true,
+        },
+      })
+      .then(
+        (rows) =>
+          new Map<string, number>(
+            rows.map((row) => [row.practitionerId, row._count._all]),
+          ),
+      );
   }
 
   expirePendingPaymentSessionsInRangeForPractitioner(input: {
@@ -863,6 +935,97 @@ export class SessionRepository {
     return this.prisma.sessionEvent.findMany({
       where: { sessionId },
       orderBy: { createdAt: 'asc' },
+    });
+  }
+
+  // ---------------------------------------------------------------------------
+  // Phase 4A — SessionAdminDecision repository
+  // ---------------------------------------------------------------------------
+
+  createSessionAdminDecision(
+    data: Prisma.SessionAdminDecisionUncheckedCreateInput,
+    tx?: Prisma.TransactionClient,
+  ) {
+    return this.getDb(tx).sessionAdminDecision.create({ data });
+  }
+
+  listSessionAdminDecisionsBySessionId(sessionId: string) {
+    return this.prisma.sessionAdminDecision.findMany({
+      where: { sessionId },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        adminUser: {
+          select: {
+            id: true,
+            displayName: true,
+          },
+        },
+      },
+    });
+  }
+
+  findLatestSessionAdminDecision(sessionId: string) {
+    return this.prisma.sessionAdminDecision.findFirst({
+      where: { sessionId },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  findLatestActiveSessionAdminDecision(sessionId: string) {
+    return this.prisma.sessionAdminDecision.findFirst({
+      where: { sessionId, isFinal: true },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  /**
+   * Batch fetch latest final decisions for multiple sessions.
+   * Returns a map of sessionId -> decisionType (or null if no final decision).
+   */
+  findLatestActiveSessionAdminDecisionsForSessions(sessionIds: string[]) {
+    if (sessionIds.length === 0) return Promise.resolve(new Map());
+    return this.prisma.sessionAdminDecision.groupBy({
+      by: ['sessionId'],
+      where: {
+        sessionId: { in: sessionIds },
+        isFinal: true,
+      },
+      _max: { createdAt: true },
+    }).then(async (groups) => {
+      if (groups.length === 0) return new Map();
+      const decisions = await this.prisma.sessionAdminDecision.findMany({
+        where: {
+          isFinal: true,
+          sessionId: { in: sessionIds },
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+      // Deduplicate: keep only the latest per sessionId
+      const seen = new Set<string>();
+      const filtered = decisions.filter(d => {
+        if (seen.has(d.sessionId)) return false;
+        seen.add(d.sessionId);
+        return true;
+      });
+      const map = new Map<string, string>();
+      for (const d of filtered) {
+        map.set(d.sessionId, d.decisionType);
+      }
+      return map;
+    });
+  }
+
+  findSessionAdminDecisionById(decisionId: string) {
+    return this.prisma.sessionAdminDecision.findUnique({
+      where: { id: decisionId },
+      include: {
+        adminUser: {
+          select: {
+            id: true,
+            displayName: true,
+          },
+        },
+      },
     });
   }
 

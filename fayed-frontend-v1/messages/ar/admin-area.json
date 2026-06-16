@@ -1012,7 +1012,11 @@
         "credentialType": "نوع المستند",
         "credentialFile": "ملف المستند",
         "credentialExpiresAt": "تاريخ الانتهاء (اختياري)",
-        "note": "ملاحظة إدارية"
+        "note": "ملاحظة إدارية",
+        "instantBookingPrice30Egp": "سعر الحجز الفوري 30 دقيقة بالجنيه المصري",
+        "instantBookingPrice30Usd": "سعر الحجز الفوري 30 دقيقة بالدولار",
+        "instantBookingPrice60Egp": "سعر الحجز الفوري 60 دقيقة بالجنيه المصري",
+        "instantBookingPrice60Usd": "سعر الحجز الفوري 60 دقيقة بالدولار"
       },
       "placeholders": {
         "email": "practitioner@example.com",
@@ -1039,7 +1043,11 @@
         "sessionPrice60Egp": "اختياري",
         "sessionPrice60Usd": "اختياري",
         "credentialType": "اختر نوع المستند",
-        "note": "ملاحظة داخلية اختيارية لفريق الإدارة"
+        "note": "ملاحظة داخلية اختيارية لفريق الإدارة",
+        "instantBookingPrice30Egp": "اختياري",
+        "instantBookingPrice30Usd": "اختياري",
+        "instantBookingPrice60Egp": "اختياري",
+        "instantBookingPrice60Usd": "اختياري"
       },
       "steps": {
         "account": {
@@ -1160,7 +1168,9 @@
           "passwordRotation": "اطلب من الممارس تغيير كلمة المرور المؤقتة بعد أول تسجيل دخول ناجح.",
           "profileReady": "يمكن للممارس الآن تسجيل الدخول والبدء في العمل الطبيعي على المنصة."
         }
-      }
+      },
+      "instantPricingHeading": "أسعار الحجز الفوري",
+      "instantPricingNote": "أدخل أسعار الحجز الفوري إذا كنت تريد تجهيزها الآن للممارس."
     }
   },
   "practitionersDirectory": {
@@ -1201,15 +1211,7 @@
       "back": "الرجوع للطلبات"
     },
     "sections": {
-      "applicant": "صاحب الطلب",
-      "profile": "الملف المهني",
-      "profileEdit": "تعديل قبل القرار",
-      "credentials": "مستندات الاعتماد",
-      "qualifications": "المؤهلات",
-      "payout": "بيانات استلام المستحقات",
-      "application": "الطلب",
-      "readiness": "ملخص الجاهزية",
-      "decision": "القرار"
+      "instantBookingPricing": "أسعار الحجز الفوري"
     },
     "applicant": {
       "displayName": "الاسم الظاهر",
@@ -1238,6 +1240,10 @@
       "sessionPrice30Usd": "سعر جلسة 30 دقيقة بالدولار",
       "sessionPrice60Egp": "سعر جلسة 60 دقيقة بالجنيه المصري",
       "sessionPrice60Usd": "سعر جلسة 60 دقيقة بالدولار",
+      "instantBookingPrice30Egp": "سعر الحجز الفوري 30 دقيقة بالجنيه المصري",
+      "instantBookingPrice30Usd": "سعر الحجز الفوري 30 دقيقة بالدولار",
+      "instantBookingPrice60Egp": "سعر الحجز الفوري 60 دقيقة بالجنيه المصري",
+      "instantBookingPrice60Usd": "سعر الحجز الفوري 60 دقيقة بالدولار",
       "languages": "اللغات",
       "primarySpecialtyCategory": "التخصص الرئيسي",
       "subSpecialties": "التخصصات الفرعية",

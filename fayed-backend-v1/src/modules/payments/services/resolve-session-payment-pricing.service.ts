@@ -23,6 +23,14 @@ export class ResolveSessionPaymentPricingService {
         publicSlug: string;
         sessionPrice30: { toString(): string } | null;
         sessionPrice60: { toString(): string } | null;
+        sessionPrice30Egp: { toString(): string } | null;
+        sessionPrice30Usd: { toString(): string } | null;
+        sessionPrice60Egp: { toString(): string } | null;
+        sessionPrice60Usd: { toString(): string } | null;
+        instantBookingPrice30Egp: { toString(): string } | null;
+        instantBookingPrice30Usd: { toString(): string } | null;
+        instantBookingPrice60Egp: { toString(): string } | null;
+        instantBookingPrice60Usd: { toString(): string } | null;
         countryId: string | null;
         country: {
           isoCode?: string | null;
@@ -38,8 +46,15 @@ export class ResolveSessionPaymentPricingService {
         countryId: string | null;
         country: {
           isoCode?: string | null;
+          currencyCode?: string | null;
         } | null;
       };
+      payments?: Array<{
+        amountSubtotal: { toString(): string } | string;
+      }>;
+      instantBookingRequest?: {
+        metadataJson?: unknown | null;
+      } | null;
     };
     couponCode?: string | null;
   }) {

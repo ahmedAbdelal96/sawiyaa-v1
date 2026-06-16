@@ -69,6 +69,10 @@ export class CreateAdminPractitionerUseCase {
     sessionPrice30Usd?: number | null;
     sessionPrice60Egp?: number | null;
     sessionPrice60Usd?: number | null;
+    instantBookingPrice30Egp?: number | null;
+    instantBookingPrice30Usd?: number | null;
+    instantBookingPrice60Egp?: number | null;
+    instantBookingPrice60Usd?: number | null;
     countryCode?: string | null;
     languageCodes: string[];
     specialtySelection: {
@@ -374,6 +378,10 @@ export class CreateAdminPractitionerUseCase {
             sessionPrice30Usd: input.sessionPrice30Usd ?? null,
             sessionPrice60Egp: input.sessionPrice60Egp ?? null,
             sessionPrice60Usd: input.sessionPrice60Usd ?? null,
+            instantBookingPrice30Egp: input.instantBookingPrice30Egp ?? null,
+            instantBookingPrice30Usd: input.instantBookingPrice30Usd ?? null,
+            instantBookingPrice60Egp: input.instantBookingPrice60Egp ?? null,
+            instantBookingPrice60Usd: input.instantBookingPrice60Usd ?? null,
             status: PractitionerStatus.APPROVED,
             countryId,
             primarySpecialtyCategoryId:
@@ -459,6 +467,14 @@ export class CreateAdminPractitionerUseCase {
                   sessionPrice30Usd: input.sessionPrice30Usd ?? null,
                   sessionPrice60Egp: input.sessionPrice60Egp ?? null,
                   sessionPrice60Usd: input.sessionPrice60Usd ?? null,
+                  instantBookingPrice30Egp:
+                    input.instantBookingPrice30Egp ?? null,
+                  instantBookingPrice30Usd:
+                    input.instantBookingPrice30Usd ?? null,
+                  instantBookingPrice60Egp:
+                    input.instantBookingPrice60Egp ?? null,
+                  instantBookingPrice60Usd:
+                    input.instantBookingPrice60Usd ?? null,
                 },
                 languageCodes,
                 specialties: specialtyIds.map((specialtyId, index) => ({

@@ -73,6 +73,10 @@ type ProfileRequestFormData = {
   sessionPrice30Usd?: string;
   sessionPrice60Egp?: string;
   sessionPrice60Usd?: string;
+  instantBookingPrice30Egp?: string;
+  instantBookingPrice30Usd?: string;
+  instantBookingPrice60Egp?: string;
+  instantBookingPrice60Usd?: string;
   practitionerType?: PractitionerType | "";
   practitionerGender?: PractitionerGender | "";
   countryCode?: string;
@@ -120,6 +124,10 @@ type ApplicationSnapshot = {
         usd?: number | null;
       } | null;
     } | null;
+    instantBookingPrice30Egp?: number | null;
+    instantBookingPrice30Usd?: number | null;
+    instantBookingPrice60Egp?: number | null;
+    instantBookingPrice60Usd?: number | null;
   };
   payoutDestination?: {
     methodType?: string | null;
@@ -310,6 +318,34 @@ function buildSnapshotChanges(
       : formatMoneyValue(requestedPricing.session60?.usd, locale),
   );
   addChange(
+    t("profile.fields.instantBookingPrice30Egp.label"),
+    formatMoneyValue(profile.instantBookingPrice30Egp, locale),
+    requestedProfile.instantBookingPrice30Egp === undefined
+      ? undefined
+      : formatMoneyValue(requestedProfile.instantBookingPrice30Egp, locale),
+  );
+  addChange(
+    t("profile.fields.instantBookingPrice30Usd.label"),
+    formatMoneyValue(profile.instantBookingPrice30Usd, locale),
+    requestedProfile.instantBookingPrice30Usd === undefined
+      ? undefined
+      : formatMoneyValue(requestedProfile.instantBookingPrice30Usd, locale),
+  );
+  addChange(
+    t("profile.fields.instantBookingPrice60Egp.label"),
+    formatMoneyValue(profile.instantBookingPrice60Egp, locale),
+    requestedProfile.instantBookingPrice60Egp === undefined
+      ? undefined
+      : formatMoneyValue(requestedProfile.instantBookingPrice60Egp, locale),
+  );
+  addChange(
+    t("profile.fields.instantBookingPrice60Usd.label"),
+    formatMoneyValue(profile.instantBookingPrice60Usd, locale),
+    requestedProfile.instantBookingPrice60Usd === undefined
+      ? undefined
+      : formatMoneyValue(requestedProfile.instantBookingPrice60Usd, locale),
+  );
+  addChange(
     t("profile.fields.practitionerType.label"),
     t(`profile.practitionerType.${profile.practitionerType}` as Parameters<typeof t>[0]),
     requestedProfile.practitionerType ? t(`profile.practitionerType.${requestedProfile.practitionerType}` as Parameters<typeof t>[0]) : undefined,
@@ -481,6 +517,10 @@ export default function PractitionerProfileWorkspace() {
       session30: { egp: 0, usd: 0 },
       session60: { egp: 0, usd: 0 },
     },
+    instantBookingPrice30Egp: 0,
+    instantBookingPrice30Usd: 0,
+    instantBookingPrice60Egp: 0,
+    instantBookingPrice60Usd: 0,
     yearsOfExperience: 0,
     languages: [],
     applicationStatusSummary: null,
@@ -552,6 +592,42 @@ export default function PractitionerProfileWorkspace() {
             return /^(\d+)(\.\d{1,2})?$/.test(trimmed) && Number(trimmed) > 0;
           },
           { message: t("profile.validation.sessionPriceInvalid") },
+        ),
+        instantBookingPrice30Egp: z.string().optional().refine(
+          (value) => {
+            if (!value) return true;
+            const trimmed = value.trim();
+            if (!trimmed) return true;
+            return /^(\d+)(\.\d{1,2})?$/.test(trimmed) && Number(trimmed) > 0;
+          },
+          { message: t("profile.validation.instantBookingPriceInvalid") },
+        ),
+        instantBookingPrice30Usd: z.string().optional().refine(
+          (value) => {
+            if (!value) return true;
+            const trimmed = value.trim();
+            if (!trimmed) return true;
+            return /^(\d+)(\.\d{1,2})?$/.test(trimmed) && Number(trimmed) > 0;
+          },
+          { message: t("profile.validation.instantBookingPriceInvalid") },
+        ),
+        instantBookingPrice60Egp: z.string().optional().refine(
+          (value) => {
+            if (!value) return true;
+            const trimmed = value.trim();
+            if (!trimmed) return true;
+            return /^(\d+)(\.\d{1,2})?$/.test(trimmed) && Number(trimmed) > 0;
+          },
+          { message: t("profile.validation.instantBookingPriceInvalid") },
+        ),
+        instantBookingPrice60Usd: z.string().optional().refine(
+          (value) => {
+            if (!value) return true;
+            const trimmed = value.trim();
+            if (!trimmed) return true;
+            return /^(\d+)(\.\d{1,2})?$/.test(trimmed) && Number(trimmed) > 0;
+          },
+          { message: t("profile.validation.instantBookingPriceInvalid") },
         ),
         practitionerType: z.string().optional(),
         practitionerGender: z.string().optional(),
@@ -668,6 +744,10 @@ export default function PractitionerProfileWorkspace() {
       sessionPrice30Usd: "",
       sessionPrice60Egp: "",
       sessionPrice60Usd: "",
+      instantBookingPrice30Egp: "",
+      instantBookingPrice30Usd: "",
+      instantBookingPrice60Egp: "",
+      instantBookingPrice60Usd: "",
       practitionerType: "",
       practitionerGender: "",
       countryCode: "",
@@ -855,6 +935,14 @@ export default function PractitionerProfileWorkspace() {
       sessionPrice30Usd: profile.pricing.session30.usd != null ? String(profile.pricing.session30.usd) : "",
       sessionPrice60Egp: profile.pricing.session60.egp != null ? String(profile.pricing.session60.egp) : "",
       sessionPrice60Usd: profile.pricing.session60.usd != null ? String(profile.pricing.session60.usd) : "",
+      instantBookingPrice30Egp:
+        profile.instantBookingPrice30Egp != null ? String(profile.instantBookingPrice30Egp) : "",
+      instantBookingPrice30Usd:
+        profile.instantBookingPrice30Usd != null ? String(profile.instantBookingPrice30Usd) : "",
+      instantBookingPrice60Egp:
+        profile.instantBookingPrice60Egp != null ? String(profile.instantBookingPrice60Egp) : "",
+      instantBookingPrice60Usd:
+        profile.instantBookingPrice60Usd != null ? String(profile.instantBookingPrice60Usd) : "",
       practitionerType: profile.practitionerType ?? "",
       practitionerGender: profile.practitionerGender ?? "",
       countryCode: profile.countryCode ?? "",
@@ -951,6 +1039,10 @@ export default function PractitionerProfileWorkspace() {
       sessionPrice30Usd: parseOptionalMoneyInput(formData.sessionPrice30Usd),
       sessionPrice60Egp: parseOptionalMoneyInput(formData.sessionPrice60Egp),
       sessionPrice60Usd: parseOptionalMoneyInput(formData.sessionPrice60Usd),
+      instantBookingPrice30Egp: parseOptionalMoneyInput(formData.instantBookingPrice30Egp),
+      instantBookingPrice30Usd: parseOptionalMoneyInput(formData.instantBookingPrice30Usd),
+      instantBookingPrice60Egp: parseOptionalMoneyInput(formData.instantBookingPrice60Egp),
+      instantBookingPrice60Usd: parseOptionalMoneyInput(formData.instantBookingPrice60Usd),
       payoutDestination:
         formData.payoutMethodType && formData.payoutMethodType.length > 0
           ? {
@@ -1964,6 +2056,80 @@ export default function PractitionerProfileWorkspace() {
                   />
                   {errors.sessionPrice60Usd ? (
                     <p className="mt-1.5 text-xs text-error-500">{errors.sessionPrice60Usd.message}</p>
+                  ) : null}
+                </div>
+              </div>
+            </section>
+
+            <section className={`${SOFT_CARD} lg:col-span-2`}>
+              <h3 className="text-sm font-semibold text-text-primary">
+                {t("profile.sections.instantBookingPricing")}
+              </h3>
+              <p className="mt-1 text-xs text-text-muted">
+                {t("profile.instantBooking.pricingNote")}
+              </p>
+              <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                <div>
+                  <Label htmlFor="instantBookingPrice30Egp">{t("profile.fields.instantBookingPrice30Egp.label")}</Label>
+                  <Input
+                    id="instantBookingPrice30Egp"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder={t("profile.fields.instantBookingPrice30Egp.placeholder")}
+                    error={!!errors.instantBookingPrice30Egp}
+                    {...register("instantBookingPrice30Egp")}
+                  />
+                  {errors.instantBookingPrice30Egp ? (
+                    <p className="mt-1.5 text-xs text-error-500">{errors.instantBookingPrice30Egp.message}</p>
+                  ) : null}
+                </div>
+
+                <div>
+                  <Label htmlFor="instantBookingPrice30Usd">{t("profile.fields.instantBookingPrice30Usd.label")}</Label>
+                  <Input
+                    id="instantBookingPrice30Usd"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder={t("profile.fields.instantBookingPrice30Usd.placeholder")}
+                    error={!!errors.instantBookingPrice30Usd}
+                    {...register("instantBookingPrice30Usd")}
+                  />
+                  {errors.instantBookingPrice30Usd ? (
+                    <p className="mt-1.5 text-xs text-error-500">{errors.instantBookingPrice30Usd.message}</p>
+                  ) : null}
+                </div>
+
+                <div>
+                  <Label htmlFor="instantBookingPrice60Egp">{t("profile.fields.instantBookingPrice60Egp.label")}</Label>
+                  <Input
+                    id="instantBookingPrice60Egp"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder={t("profile.fields.instantBookingPrice60Egp.placeholder")}
+                    error={!!errors.instantBookingPrice60Egp}
+                    {...register("instantBookingPrice60Egp")}
+                  />
+                  {errors.instantBookingPrice60Egp ? (
+                    <p className="mt-1.5 text-xs text-error-500">{errors.instantBookingPrice60Egp.message}</p>
+                  ) : null}
+                </div>
+
+                <div>
+                  <Label htmlFor="instantBookingPrice60Usd">{t("profile.fields.instantBookingPrice60Usd.label")}</Label>
+                  <Input
+                    id="instantBookingPrice60Usd"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder={t("profile.fields.instantBookingPrice60Usd.placeholder")}
+                    error={!!errors.instantBookingPrice60Usd}
+                    {...register("instantBookingPrice60Usd")}
+                  />
+                  {errors.instantBookingPrice60Usd ? (
+                    <p className="mt-1.5 text-xs text-error-500">{errors.instantBookingPrice60Usd.message}</p>
                   ) : null}
                 </div>
               </div>

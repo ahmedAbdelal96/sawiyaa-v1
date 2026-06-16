@@ -34,7 +34,7 @@ export class PractitionerUserRepository {
     data: {
       displayName?: string;
       defaultLocale?: string;
-      timezone?: string;
+      timezone?: string | null;
     },
     tx?: Prisma.TransactionClient,
   ) {

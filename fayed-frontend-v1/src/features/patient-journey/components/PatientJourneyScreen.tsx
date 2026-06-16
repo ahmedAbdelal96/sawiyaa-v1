@@ -11,6 +11,7 @@ import {
   Sparkles,
   Stethoscope,
   UserRound,
+  Zap,
 } from "lucide-react";
 import Button from "@/components/ui/button/Button";
 import { ListStateSkeleton } from "@/components/shared/ContentStates";
@@ -274,6 +275,47 @@ export default function PatientJourneyScreen() {
           </div>
         }
       />
+
+      <PatientSectionCard
+        eyebrow={t("instantBooking.eyebrow")}
+        title={t("instantBooking.title")}
+        description={t("instantBooking.note")}
+        actions={
+          <Link
+            href="/patient/instant-booking"
+            className="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-white shadow-sm shadow-primary/25 transition-all hover:bg-primary-hover hover:-translate-y-0.5"
+          >
+            {t("instantBooking.cta")}
+            <ArrowRight size={14} className="rtl:rotate-180" />
+          </Link>
+        }
+      >
+        <div className="grid gap-3 sm:grid-cols-3">
+          <div className="rounded-2xl bg-primary/8 px-4 py-3 ring-1 ring-primary/10">
+            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-primary">
+              <Zap className="h-3.5 w-3.5" />
+              <span>{t("instantBooking.chips.availableNow")}</span>
+            </div>
+            <p className="mt-1 text-sm leading-6 text-text-secondary">{t("instantBooking.note")}</p>
+          </div>
+          <div className="rounded-2xl bg-surface-tertiary px-4 py-3 ring-1 ring-border-light dark:bg-white/5 dark:ring-white/10">
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
+              {t("instantBooking.chips.duration")}
+            </p>
+            <p className="mt-1 text-sm leading-6 text-text-secondary">
+              {t("instantBooking.chips.durationNote")}
+            </p>
+          </div>
+          <div className="rounded-2xl bg-surface-tertiary px-4 py-3 ring-1 ring-border-light dark:bg-white/5 dark:ring-white/10">
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
+              {t("instantBooking.chips.pricing")}
+            </p>
+            <p className="mt-1 text-sm leading-6 text-text-secondary">
+              {t("instantBooking.chips.pricingNote")}
+            </p>
+          </div>
+        </div>
+      </PatientSectionCard>
 
       {/* ── Stat cards row ── */}
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">

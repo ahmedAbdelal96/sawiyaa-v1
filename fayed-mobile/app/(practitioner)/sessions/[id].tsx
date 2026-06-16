@@ -126,21 +126,21 @@ export default function PractitionerSessionDetailScreen() {
 
     return [
       {
-        label: t("practitioner.sessionDetail.sessionType"),
+        label: t("practitioner.detail.sessionType"),
         value: getFlowTypeLabel(session.flowType, t),
       },
       {
-        label: t("practitioner.sessionDetail.mode"),
-        value: t(`practitioner.sessionDetail.modeValue.${session.sessionMode}`),
+        label: t("practitioner.detail.mode"),
+        value: t(`practitioner.detail.modeValue.${session.sessionMode}`),
       },
       {
-        label: t("practitioner.sessionDetail.duration"),
+        label: t("practitioner.detail.duration"),
         value: t("practitioner.sessions.duration", {
           minutes: session.durationMinutes,
         }),
       },
       {
-        label: t("practitioner.sessionDetail.timezone"),
+        label: t("practitioner.detail.timezone"),
         value: formatTimezoneLabel(session.timezone, i18n.language, t),
       },
     ];
@@ -152,7 +152,7 @@ export default function PractitionerSessionDetailScreen() {
         <Header
           showBack
           onBack={handleBackToSessions}
-          title={t("practitioner.sessionDetail.title")}
+          title={t("practitioner.detail.title")}
         />
         <LoadingState fullScreen />
       </Screen>
@@ -165,7 +165,7 @@ export default function PractitionerSessionDetailScreen() {
         <Header
           showBack
           onBack={handleBackToSessions}
-          title={t("practitioner.sessionDetail.title")}
+          title={t("practitioner.detail.title")}
         />
         <ErrorState fullScreen onRetry={sessionQuery.refetch} />
       </Screen>
@@ -190,14 +190,14 @@ export default function PractitionerSessionDetailScreen() {
       const payload = await prepareMutation.mutateAsync(session.id);
       setFeedback(
         payload.item.isPrepared
-          ? t("practitioner.sessionDetail.prepareReady")
-          : t("practitioner.sessionDetail.preparePending"),
+          ? t("practitioner.detail.prepareReady")
+          : t("practitioner.detail.preparePending"),
       );
       if (shouldAutoCheckJoin(session.presentationStatus, session.sessionMode)) {
         await resolveJoinContract(session.id).catch(() => {});
       }
     } catch {
-      setFeedback(t("practitioner.sessionDetail.prepareError"));
+      setFeedback(t("practitioner.detail.prepareError"));
     }
   };
 
@@ -206,18 +206,18 @@ export default function PractitionerSessionDetailScreen() {
     try {
       const contract = await resolveJoinContract(session.id);
       if (contract.canJoin && buildJoinUrl(contract)) {
-        setFeedback(t("practitioner.sessionDetail.openRoomReady"));
+        setFeedback(t("practitioner.detail.openRoomReady"));
         return;
       }
       setFeedback(
-        t("practitioner.sessionDetail.joinBlocked", {
+        t("practitioner.detail.joinBlocked", {
           reason: t(
-            `practitioner.sessionDetail.blocked.${contract.blockedReason ?? "SESSION_NOT_JOINABLE_STATUS"}` as const,
+            `practitioner.detail.blocked.${contract.blockedReason ?? "SESSION_NOT_JOINABLE_STATUS"}` as const,
           ),
         }),
       );
     } catch {
-      setFeedback(t("practitioner.sessionDetail.joinError"));
+      setFeedback(t("practitioner.detail.joinError"));
     }
   };
 
@@ -227,7 +227,7 @@ export default function PractitionerSessionDetailScreen() {
     try {
       const safeJoinUrl = normalizeAllowedExternalUrl(joinUrl);
       if (!safeJoinUrl) {
-        setFeedback(t("practitioner.sessionDetail.joinError"));
+        setFeedback(t("practitioner.detail.joinError"));
         return;
       }
       await Linking.openURL(safeJoinUrl);
@@ -239,7 +239,7 @@ export default function PractitionerSessionDetailScreen() {
         source: "session_detail",
       });
     } catch {
-      setFeedback(t("practitioner.sessionDetail.openRoomError"));
+      setFeedback(t("practitioner.detail.openRoomError"));
     }
   };
 
@@ -249,7 +249,7 @@ export default function PractitionerSessionDetailScreen() {
       const payload = await openSessionGeneralChat(session.id);
       router.push(`/(practitioner)/messages/${payload.item.conversationId}` as any);
     } catch {
-      setFeedback(t("practitioner.sessionDetail.openMessagesError"));
+      setFeedback(t("practitioner.detail.openMessagesError"));
     }
   };
 
@@ -258,10 +258,10 @@ export default function PractitionerSessionDetailScreen() {
     try {
       await completeMutation.mutateAsync(session.id);
       setJoinContract(null);
-      setFeedback(t("practitioner.sessionDetail.completedFeedback"));
+      setFeedback(t("practitioner.detail.completedFeedback"));
       await sessionQuery.refetch();
     } catch {
-      setFeedback(t("practitioner.sessionDetail.closeoutError"));
+      setFeedback(t("practitioner.detail.closeoutError"));
     }
   };
 
@@ -270,40 +270,40 @@ export default function PractitionerSessionDetailScreen() {
     try {
       await noShowMutation.mutateAsync(session.id);
       setJoinContract(null);
-      setFeedback(t("practitioner.sessionDetail.noShowFeedback"));
+      setFeedback(t("practitioner.detail.noShowFeedback"));
       await sessionQuery.refetch();
     } catch {
-      setFeedback(t("practitioner.sessionDetail.closeoutError"));
+      setFeedback(t("practitioner.detail.closeoutError"));
     }
   };
 
   const primaryAction = canOpenJoinAction
     ? {
-        title: t("practitioner.sessionDetail.openRoom"),
+        title: t("practitioner.detail.openRoom"),
         onPress: () => void handleOpenRoom(),
         disabled: false,
       }
     : canPrepare
       ? {
           title: prepareMutation.isPending
-            ? t("practitioner.sessionDetail.preparing")
-            : t("practitioner.sessionDetail.prepare"),
+            ? t("practitioner.detail.preparing")
+            : t("practitioner.detail.prepare"),
           onPress: () => void handlePrepare(),
           disabled: prepareMutation.isPending,
         }
       : canCheckJoin
         ? {
             title: joinMutation.isPending
-              ? t("practitioner.sessionDetail.checkingJoin")
-              : t("practitioner.sessionDetail.checkJoin"),
+              ? t("practitioner.detail.checkingJoin")
+              : t("practitioner.detail.checkJoin"),
             onPress: () => void handleCheckJoin(),
             disabled: joinMutation.isPending,
           }
         : canComplete
           ? {
               title: completeMutation.isPending
-                ? t("practitioner.sessionDetail.completing")
-                : t("practitioner.sessionDetail.markCompleted"),
+                ? t("practitioner.detail.completing")
+                : t("practitioner.detail.markCompleted"),
               onPress: () => void handleComplete(),
               disabled: completeMutation.isPending,
             }
@@ -314,7 +314,7 @@ export default function PractitionerSessionDetailScreen() {
       <Header
         showBack
         onBack={handleBackToSessions}
-        title={t("practitioner.sessionDetail.title")}
+        title={t("practitioner.detail.title")}
       />
 
       <ScrollView contentContainerStyle={styles.content}>
@@ -348,7 +348,7 @@ export default function PractitionerSessionDetailScreen() {
 
           <Text color={theme.colors.textSecondary} style={[styles.summaryMeta, { textAlign }]}>
             {session.scheduledStartAt
-              ? t("practitioner.sessionDetail.sessionAt", {
+              ? t("practitioner.detail.sessionAt", {
                   datetime: formatSessionDate(session.scheduledStartAt, locale),
                 })
               : t("practitioner.sessions.noSchedule")}
@@ -369,7 +369,7 @@ export default function PractitionerSessionDetailScreen() {
             />
             <StatusChip
               label={t(
-                `practitioner.sessionDetail.modeValue.${session.sessionMode}`,
+                `practitioner.detail.modeValue.${session.sessionMode}`,
               )}
               tone="info"
               showDot={false}
@@ -386,7 +386,7 @@ export default function PractitionerSessionDetailScreen() {
             style={[styles.summaryCode, { textAlign }]}
             numberOfLines={1}
           >
-            {t("practitioner.sessionDetail.sessionCodeLabel", {
+            {t("practitioner.detail.sessionCodeLabel", {
               sessionCode: session.sessionCode,
             })}
           </Text>
@@ -394,7 +394,7 @@ export default function PractitionerSessionDetailScreen() {
 
         <Card variant="outlined" padding="md" style={styles.sectionCard}>
           <Text weight="600" style={[styles.sectionTitle, { textAlign }]}>
-            {t("practitioner.sessionDetail.actionsTitle")}
+            {t("practitioner.detail.actionsTitle")}
           </Text>
           <Text color={theme.colors.textSecondary} style={[styles.actionSummary, { textAlign }]}>
             {stateCopy.summary}
@@ -417,7 +417,7 @@ export default function PractitionerSessionDetailScreen() {
             {canOpenMessages ? (
               <View style={styles.messagesBlock}>
                 <SessionSecondaryActionRow
-                  label={t("practitioner.sessionDetail.messages")}
+                  label={t("practitioner.detail.messages")}
                   onPress={() => void handleOpenMessages()}
                   isRTL={isRTL}
                   textAlign={textAlign}
@@ -427,7 +427,7 @@ export default function PractitionerSessionDetailScreen() {
                     color={theme.colors.textSecondary}
                     style={[styles.helperText, { textAlign }]}
                   >
-                    {t("practitioner.sessionDetail.messagesReadOnly")}
+                    {t("practitioner.detail.messagesReadOnly")}
                   </Text>
                 ) : null}
               </View>
@@ -437,8 +437,8 @@ export default function PractitionerSessionDetailScreen() {
               <CompactActionRow
                 label={
                   noShowMutation.isPending
-                    ? t("practitioner.sessionDetail.markingNoShow")
-                    : t("practitioner.sessionDetail.markNoShow")
+                    ? t("practitioner.detail.markingNoShow")
+                    : t("practitioner.detail.markNoShow")
                 }
                 onPress={() => void handleNoShow()}
               />
@@ -447,19 +447,19 @@ export default function PractitionerSessionDetailScreen() {
 
           {joinMutation.isPending ? (
             <Text color={theme.colors.textSecondary} style={[styles.helperText, { textAlign }]}>
-              {t("practitioner.sessionDetail.checkingJoin")}
+              {t("practitioner.detail.checkingJoin")}
             </Text>
           ) : null}
           {prepareMutation.isPending ? (
             <Text color={theme.colors.textSecondary} style={[styles.helperText, { textAlign }]}>
-              {t("practitioner.sessionDetail.preparing")}
+              {t("practitioner.detail.preparing")}
             </Text>
           ) : null}
           {joinContract?.blockedReason ? (
             <Text color={theme.colors.textSecondary} style={[styles.helperText, { textAlign }]}>
-              {t("practitioner.sessionDetail.joinBlocked", {
+              {t("practitioner.detail.joinBlocked", {
                 reason: t(
-                  `practitioner.sessionDetail.blocked.${joinContract.blockedReason}` as const,
+                  `practitioner.detail.blocked.${joinContract.blockedReason}` as const,
                 ),
               })}
             </Text>
@@ -471,7 +471,7 @@ export default function PractitionerSessionDetailScreen() {
               color={theme.colors.textSecondary}
               style={[styles.helperText, { textAlign }]}
             >
-              {t("practitioner.sessionDetail.joinAvailableAt", {
+              {t("practitioner.detail.joinAvailableAt", {
                 datetime: formatSessionDate(
                   session.joinAvailability.availableAt,
                   locale,
@@ -483,7 +483,7 @@ export default function PractitionerSessionDetailScreen() {
 
         <Card variant="outlined" padding="md" style={styles.sectionCard}>
           <Text weight="600" style={[styles.sectionTitle, { textAlign }]}>
-            {t("practitioner.sessionDetail.sessionFacts")}
+            {t("practitioner.detail.sessionFacts")}
           </Text>
           {sessionFacts.map((fact, index) => (
             <SummaryRow
@@ -670,12 +670,12 @@ function getFlowTypeLabel(
   t: (key: string, options?: Record<string, unknown>) => string,
 ) {
   if (flowType === "SCHEDULED") {
-    return t("practitioner.sessionDetail.flowTypeValue.SCHEDULED");
+    return t("practitioner.detail.flowTypeValue.SCHEDULED");
   }
   if (flowType === "INSTANT") {
-    return t("practitioner.sessionDetail.flowTypeValue.INSTANT");
+    return t("practitioner.detail.flowTypeValue.INSTANT");
   }
-  return t("practitioner.sessionDetail.flowTypeValue.DEFAULT");
+  return t("practitioner.detail.flowTypeValue.DEFAULT");
 }
 
 function formatTimezoneLabel(
@@ -704,7 +704,7 @@ function formatTimezoneLabel(
         Doha: "Doha",
       };
 
-  return t("practitioner.sessionDetail.timezoneValue", {
+  return t("practitioner.detail.timezoneValue", {
     city: cityMap[cityToken as keyof typeof cityMap] ?? cityToken,
   });
 }
@@ -718,11 +718,11 @@ function getSessionStateCopy(
   switch (session.presentationStatus) {
     case "UPCOMING":
       return {
-        summary: t("practitioner.sessionDetail.stateNote.UPCOMING"),
+        summary: t("practitioner.detail.stateNote.UPCOMING"),
         hint:
           !session.joinAvailability?.canJoin &&
           session.joinAvailability?.availableAt
-            ? t("practitioner.sessionDetail.joinAvailableAt", {
+            ? t("practitioner.detail.joinAvailableAt", {
                 datetime: formatSessionDate(
                   session.joinAvailability.availableAt,
                   locale,
@@ -733,39 +733,49 @@ function getSessionStateCopy(
     case "JOINABLE":
       return {
         summary: joinContract?.canJoin
-          ? t("practitioner.sessionDetail.stateNote.READY_TO_JOIN_NOW")
-          : t("practitioner.sessionDetail.stateNote.READY_TO_JOIN_CHECK"),
+          ? t("practitioner.detail.stateNote.READY_TO_JOIN_NOW")
+          : t("practitioner.detail.stateNote.READY_TO_JOIN_CHECK"),
         hint:
           joinContract?.canJoin ||
           joinContract?.blockedReason !== "SESSION_RUNTIME_NOT_PREPARED"
             ? null
-            : t("practitioner.sessionDetail.stateNote.READY_TO_JOIN_PREPARE"),
+            : t("practitioner.detail.stateNote.READY_TO_JOIN_PREPARE"),
       };
     case "IN_PROGRESS":
       return {
         summary: joinContract?.canJoin
-          ? t("practitioner.sessionDetail.stateNote.IN_PROGRESS_OPEN")
-          : t("practitioner.sessionDetail.stateNote.IN_PROGRESS"),
+          ? t("practitioner.detail.stateNote.IN_PROGRESS_OPEN")
+          : t("practitioner.detail.stateNote.IN_PROGRESS"),
         hint: null,
       };
     case "COMPLETED":
       return {
-        summary: t("practitioner.sessionDetail.noImmediateAction"),
+        summary: t("practitioner.detail.noImmediateAction"),
         hint: null,
       };
     case "CANCELLED":
       return {
-        summary: t("practitioner.sessionDetail.stateNote.CANCELLED"),
+        summary: t("practitioner.detail.stateNote.CANCELLED"),
         hint: null,
       };
     case "ENDED":
       return {
-        summary: t("practitioner.sessionDetail.noImmediateAction"),
+        summary: t("practitioner.detail.noImmediateAction"),
         hint: null,
       };
     case "UNAVAILABLE":
       return {
-        summary: t("practitioner.sessionDetail.stateNote.UNAVAILABLE"),
+        summary: t("practitioner.detail.stateNote.UNAVAILABLE"),
+        hint: null,
+      };
+    case "NO_SHOW":
+      return {
+        summary: t("practitioner.detail.noImmediateAction"),
+        hint: null,
+      };
+    case "UNDER_REVIEW":
+      return {
+        summary: t("practitioner.detail.noImmediateAction"),
         hint: null,
       };
   }
@@ -777,14 +787,15 @@ function mapSessionBadge(status: SessionPresentationStatus) {
     case "IN_PROGRESS":
       return "success" as const;
     case "UPCOMING":
+    case "UNAVAILABLE":
+    case "UNDER_REVIEW":
       return "warning" as const;
     case "COMPLETED":
     case "ENDED":
       return "default" as const;
     case "CANCELLED":
+    case "NO_SHOW":
       return "error" as const;
-    case "UNAVAILABLE":
-      return "warning" as const;
   }
 }
 

@@ -96,6 +96,10 @@ export class GetPractitionerProfileUseCase {
           sessionPrice30Usd: profile.sessionPrice30Usd ?? null,
           sessionPrice60Egp: profile.sessionPrice60Egp ?? null,
           sessionPrice60Usd: profile.sessionPrice60Usd ?? null,
+          instantBookingPrice30Egp: profile.instantBookingPrice30Egp ?? null,
+          instantBookingPrice30Usd: profile.instantBookingPrice30Usd ?? null,
+          instantBookingPrice60Egp: profile.instantBookingPrice60Egp ?? null,
+          instantBookingPrice60Usd: profile.instantBookingPrice60Usd ?? null,
           payoutDestination: profile.payoutDestination
             ? {
                 methodType: profile.payoutDestination.methodType,

@@ -29,6 +29,10 @@ export type SessionFinancialContext = {
     sessionPrice30Usd?: { toString(): string } | string | null;
     sessionPrice60Egp?: { toString(): string } | string | null;
     sessionPrice60Usd?: { toString(): string } | string | null;
+    instantBookingPrice30Egp?: { toString(): string } | string | null;
+    instantBookingPrice30Usd?: { toString(): string } | string | null;
+    instantBookingPrice60Egp?: { toString(): string } | string | null;
+    instantBookingPrice60Usd?: { toString(): string } | string | null;
     countryId: string | null;
     country: {
       isoCode?: string | null;
@@ -49,6 +53,9 @@ export type SessionFinancialContext = {
   payments?: Array<{
     amountSubtotal: { toString(): string } | string;
   }>;
+  instantBookingRequest?: {
+    metadataJson?: unknown | null;
+  } | null;
 };
 
 export type ResolvedCommissionRuleViewModel = {

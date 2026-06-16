@@ -37,6 +37,37 @@ export class AvailabilityExceptionRepository {
     });
   }
 
+  listActiveForPractitionersBetween(
+    practitionerIds: string[],
+    fromUtc: Date,
+    toUtc: Date,
+    tx?: Prisma.TransactionClient,
+  ) {
+    if (practitionerIds.length === 0) {
+      return Promise.resolve([]);
+    }
+
+    return this.getDb(tx).availabilityException.findMany({
+      where: {
+        practitionerId: {
+          in: practitionerIds,
+        },
+        isActive: true,
+        startsAtUtc: {
+          lt: toUtc,
+        },
+        endsAtUtc: {
+          gt: fromUtc,
+        },
+      },
+      orderBy: [
+        { practitionerId: 'asc' },
+        { startsAtUtc: 'asc' },
+        { endsAtUtc: 'asc' },
+      ],
+    });
+  }
+
   listActiveForRange(
     practitionerId: string,
     fromUtc: Date,

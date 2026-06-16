@@ -54,6 +54,7 @@
     "viewSessions": "View my sessions",
     "proceedToPay": "Proceed to payment",
     "payWithAmount": "Pay {amount}",
+    "payNow": "Pay now",
     "initiating": "Preparing checkout...",
     "redirecting": "Opening checkout...",
     "redirectingToCheckout": "We are sending you to the secure checkout page now.",

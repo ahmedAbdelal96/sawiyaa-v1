@@ -1,4 +1,5 @@
 import { UpdatePractitionerProfileInput } from '../types/practitioner.types';
+import { normalizeIanaTimeZoneInput } from '@common/utils/timezone.util';
 
 /**
  * Normalization keeps profile update behavior deterministic:
@@ -25,7 +26,10 @@ export function normalizePractitionerProfileInput(
           : input.bio.trim(),
     locale: input.locale?.trim(),
     acceptsPackage: input.acceptsPackage,
-    timezone: input.timezone?.trim(),
+    timezone: normalizeIanaTimeZoneInput(input.timezone, {
+      messageKey: 'settings.errors.invalidTimezone',
+      error: 'SETTINGS_INVALID_TIMEZONE',
+    }),
     countryCode:
       input.countryCode === undefined
         ? undefined
