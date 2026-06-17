@@ -1,0 +1,283 @@
+================================================================================
+FAYED FRONTEND ROUTE INVENTORY
+Next.js App Router under fayed-frontend-v1/src/app/[locale]
+Phase 6 Audit - Route Inventory
+================================================================================
+
+Scope: All route files (page.tsx, layout.tsx) under:
+  D:\Web\full-projects\fayed\fayed-frontend-v1\src\app\[locale]
+
+Format: [route path] | [role group] | [component file] | [permission gate] | [notes]
+
+Sibling files legend:
+  * loading.tsx present
+  * error.tsx present
+  * not-found.tsx present
+
+================================================================================
+LOCALE-LEVEL FILES
+================================================================================
+
+[locale]/                       | public          | layout.tsx                  | none                         | Root locale layout; validates locale via next-intl, seeds auth store, sets dir (rtl/ltr)
+[locale]/                       | public          | error.tsx                   | none                         | Global error boundary
+
+================================================================================
+PUBLIC ROUTES  -- (public) route group
+================================================================================
+
+[locale]/                        | public          | page.tsx                    | none                         | Home page (/)
+[locale]/(public)/academy/       | public          | page.tsx                    | none                         | Academy listing
+[locale]/(public)/academy/[slug] | public          | page.tsx                    | none                         | Academy detail
+[locale]/(public)/articles/      | public          | page.tsx                    | none                         | Articles listing
+[locale]/(public)/articles/[slug]| public          | page.tsx                    | none                         | Article detail
+[locale]/(public)/error-404/     | public          | page.tsx                    | none                         | Custom 404 page
+[locale]/(public)/help/          | public          | page.tsx                    | none                         | Help center listing
+[locale]/(public)/help/[categorySlug] | public     | page.tsx                    | none                         | Help category detail
+[locale]/(public)/practitioners/ | public          | page.tsx                    | redirects PATIENT to /patient/practitioners | Public practitioners listing; has error.tsx sibling
+[locale]/(public)/practitioners/[slug] | public     | page.tsx                    | none                         | Public practitioner profile
+[locale]/(public)/refund-policies/ | public        | page.tsx                    | none                         | Refund policies listing
+[locale]/(public)/refund-policies/[policyType] | public | page.tsx               | none                         | Refund policy detail
+[locale]/(public)/specialties/   | public          | page.tsx                    | none                         | Specialties listing
+[locale]/(public)/specialties/[slug] | public       | page.tsx                    | none                         | Specialty detail
+[locale]/(public)/patient/sessions/[id]/payment-return | public | page.tsx      | none                         | Public payment return (post-payment flow)
+[locale]/(public)/               | public          | layout.tsx                  | none                         | Public route group layout
+[locale]/(public)/               | public          | not-found.tsx               | none                         | Public 404 handler
+
+Sibling files in (public):
+  - (public)/not-found.tsx
+  - (public)/practitioners/error.tsx
+
+================================================================================
+AUTH ROUTES  -- (auth) route group
+================================================================================
+
+[locale]/(auth)/                 | auth            | layout.tsx                  | none                         | Auth layout; no permission gate at layout level
+[locale]/(auth)/signin/          | auth            | page.tsx                    | none                         | Generic sign-in page
+[locale]/(auth)/signin/admin/    | auth            | page.tsx                    | none                         | Admin sign-in
+[locale]/(auth)/signin/patient/  | auth            | page.tsx                    | none                         | Patient sign-in
+[locale]/(auth)/signin/practitioner/ | auth        | page.tsx                    | none                         | Practitioner sign-in
+[locale]/(auth)/signup/          | auth            | page.tsx                    | none                         | Generic signup page
+[locale]/(auth)/signup/patient/  | auth            | page.tsx                    | none                         | Patient signup
+[locale]/(auth)/signup/practitioner/ | auth         | page.tsx                    | none                         | Practitioner signup
+
+No loading.tsx, error.tsx, or not-found.tsx siblings in (auth)
+
+================================================================================
+PATIENT ROUTES  -- (patient) route group
+================================================================================
+
+[locale]/(patient)/              | patient         | layout.tsx                  | requiresAuthenticatedArea(locale, "patient") at parent | Patient layout wrapper (redirects if not authenticated patient)
+[locale]/(patient)/patient/      | patient         | page.tsx                    | same as layout                | Patient root/landing page (PatientJourneyScreen)
+[locale]/(patient)/patient/articles/           | patient | page.tsx        | same as layout                 | Patient articles listing
+[locale]/(patient)/patient/articles/[slug]     | patient | page.tsx        | same as layout                 | Patient article detail
+[locale]/(patient)/patient/assessments/        | patient | page.tsx        | same as layout                 | Patient assessments listing
+[locale]/(patient)/patient/assessments/[slug]  | patient | page.tsx        | same as layout                 | Patient assessment detail
+[locale]/(patient)/patient/assessments/submissions/[submissionId] | patient | page.tsx | same as layout | Assessment submission detail
+[locale]/(patient)/patient/care-chat/          | patient | page.tsx        | same as layout                 | Patient care-chat inbox
+[locale]/(patient)/patient/care-chat/[id]      | patient | page.tsx        | same as layout                 | Patient care-chat thread
+[locale]/(patient)/patient/care-chat/conversations/[id] | patient | page.tsx | same as layout | Care-chat conversation detail
+[locale]/(patient)/patient/chat/               | patient | page.tsx        | same as layout                 | Patient general chat
+[locale]/(patient)/patient/dashboard/          | patient | page.tsx        | same as layout                 | Patient dashboard
+[locale]/(patient)/patient/help/               | patient | page.tsx        | same as layout                 | Patient help center
+[locale]/(patient)/patient/instant-booking/    | patient | page.tsx        | same as layout                 | Patient instant booking
+[locale]/(patient)/patient/matching/           | patient | page.tsx        | same as layout                 | Practitioner matching
+[locale]/(patient)/patient/matching/[id]       | patient | page.tsx        | same as layout                 | Matching session detail
+[locale]/(patient)/patient/messages/           | patient | page.tsx        | same as layout                 | Patient messages
+[locale]/(patient)/patient/package-purchases/  | patient | page.tsx        | same as layout                 | Package purchases listing
+[locale]/(patient)/patient/package-purchases/[id] | patient | page.tsx      | same as layout                 | Package purchase detail
+[locale]/(patient)/patient/payments/           | patient | page.tsx        | same as layout                 | Patient payments
+[locale]/(patient)/patient/practitioners/      | patient | page.tsx        | same as layout                 | Patient-perspective practitioners listing
+[locale]/(patient)/patient/practitioners/[slug]| patient | page.tsx        | same as layout                 | Patient-perspective practitioner profile
+[locale]/(patient)/patient/profile/            | patient | page.tsx        | same as layout                 | Patient profile/settings
+[locale]/(patient)/patient/reviews/           | patient | page.tsx        | same as layout                 | Patient reviews listing
+[locale]/(patient)/patient/reviews/[id]       | patient | page.tsx        | same as layout                 | Review detail
+[locale]/(patient)/patient/sessions/           | patient | page.tsx        | same as layout                 | Patient sessions listing
+[locale]/(patient)/patient/sessions/[id]       | patient | page.tsx        | same as layout                 | Session detail
+[locale]/(patient)/patient/sessions/[id]/chat  | patient | page.tsx        | same as layout                 | Session chat
+[locale]/(patient)/patient/sessions/[id]/pay   | patient | page.tsx        | same as layout                 | Session payment page
+[locale]/(patient)/patient/settings/           | patient | page.tsx        | same as layout                 | Patient settings
+[locale]/(patient)/patient/support/            | patient | page.tsx        | same as layout                 | Patient support
+[locale]/(patient)/patient/support/[id]        | patient | page.tsx        | same as layout                 | Support ticket detail
+[locale]/(patient)/patient/training/           | patient | page.tsx        | same as layout                 | Training catalog
+[locale]/(patient)/patient/training/[id]       | patient | page.tsx        | same as layout                 | Training detail
+[locale]/(patient)/patient/training/[id]/pay   | patient | page.tsx        | same as layout                 | Training payment page
+[locale]/(patient)/patient/training/[id]/payment-return | patient | page.tsx | same as layout | Training payment return
+[locale]/(patient)/patient/training/catalog/[slug] | patient | page.tsx      | same as layout                 | Training catalog item detail
+[locale]/(patient)/patient/wallet/             | patient | page.tsx        | same as layout                 | Patient wallet
+
+No loading.tsx, error.tsx, or not-found.tsx siblings in (patient)
+
+================================================================================
+PRACTITIONER ROUTES  -- (practitioner) route group
+================================================================================
+
+[locale]/(practitioner)/               | practitioner | layout.tsx         | requireAuthenticatedArea(locale, "practitioner") | Practitioner layout; redirects if not authenticated practitioner
+[locale]/(practitioner)/practitioner/  | practitioner | page.tsx           | same as layout                 | Practitioner root (redirects to /practitioner/dashboard)
+[locale]/(practitioner)/practitioner/application/   | practitioner | page.tsx | same as layout                 | Practitioner application
+[locale]/(practitioner)/practitioner/articles/      | practitioner | page.tsx | same as layout                 | Practitioner articles
+[locale]/(practitioner)/practitioner/availability/  | practitioner | page.tsx | same as layout                 | Availability management
+[locale]/(practitioner)/practitioner/care-chat/     | practitioner | page.tsx | same as layout                 | Practitioner care-chat inbox
+[locale]/(practitioner)/practitioner/care-chat/[id] | practitioner | page.tsx | same as layout                 | Care-chat thread
+[locale]/(practitioner)/practitioner/care-chat/conversations/[id] | practitioner | page.tsx | same as layout | Conversation detail
+[locale]/(practitioner)/practitioner/credentials/   | practitioner | page.tsx | same as layout                 | Practitioner credentials
+[locale]/(practitioner)/practitioner/dashboard/     | practitioner | page.tsx | same as layout                 | Practitioner dashboard
+[locale]/(practitioner)/practitioner/help/          | practitioner | page.tsx | same as layout                 | Practitioner help
+[locale]/(practitioner)/practitioner/instant-booking/ | practitioner | page.tsx | same as layout               | Instant booking management
+[locale]/(practitioner)/practitioner/ledger/        | practitioner | page.tsx | same as layout                 | Financial ledger
+[locale]/(practitioner)/practitioner/messages/      | practitioner | page.tsx | same as layout                 | Practitioner messages
+[locale]/(practitioner)/practitioner/patients/      | practitioner | page.tsx | same as layout                 | Practitioner patients list
+[locale]/(practitioner)/practitioner/profile/       | practitioner | page.tsx | same as layout                 | Practitioner profile
+[locale]/(practitioner)/practitioner/promo-codes/   | practitioner | page.tsx | same as layout                 | Promo codes management
+[locale]/(practitioner)/practitioner/reviews/       | practitioner | page.tsx | same as layout                 | Practitioner reviews
+[locale]/(practitioner)/practitioner/sessions/      | practitioner | page.tsx | same as layout                 | Practitioner sessions
+[locale]/(practitioner)/practitioner/sessions/[id]  | practitioner | page.tsx | same as layout                 | Session detail
+[locale]/(practitioner)/practitioner/sessions/[id]/chat | practitioner | page.tsx | same as layout           | Session chat
+[locale]/(practitioner)/practitioner/settings/      | practitioner | page.tsx | same as layout                 | Practitioner settings
+[locale]/(practitioner)/practitioner/settlements/   | practitioner | page.tsx | same as layout                 | Practitioner settlements
+[locale]/(practitioner)/practitioner/specialties/   | practitioner | page.tsx | same as layout                 | Practitioner specialties
+[locale]/(practitioner)/practitioner/support/       | practitioner | page.tsx | same as layout                 | Practitioner support
+[locale]/(practitioner)/practitioner/support/[id]   | practitioner | page.tsx | same as layout                 | Support ticket detail
+[locale]/(practitioner)/practitioner/wallet/        | practitioner | page.tsx | same as layout                 | Practitioner wallet
+
+No loading.tsx, error.tsx, or not-found.tsx siblings in (practitioner)
+
+================================================================================
+ADMIN ROUTES  -- (admin) route group
+================================================================================
+
+[locale]/(admin)/                 | admin           | layout.tsx           | requireAuthenticatedArea(locale, "admin") + getServerCurrentUserPermissions() | Admin layout; filters navigation by permissions
+[locale]/(admin)/admin/           | admin           | page.tsx             | same as layout                 | Admin root (redirects to /admin/dashboard)
+[locale]/(admin)/admin/academy/   | admin           | page.tsx             | same as layout                 | Academy management
+[locale]/(admin)/admin/academy/[id] | admin         | page.tsx             | same as layout                 | Academy detail/edit
+[locale]/(admin)/admin/admin-operations/ | admin     | page.tsx             | same as layout                 | Admin operations management
+[locale]/(admin)/admin/admin-operations/[id] | admin | page.tsx           | same as layout                 | Admin operation detail
+[locale]/(admin)/admin/articles/  | admin           | page.tsx             | same as layout                 | Articles management
+[locale]/(admin)/admin/assessments/ | admin         | page.tsx             | same as layout                 | Assessments management
+[locale]/(admin)/admin/assessments/[id] | admin       | page.tsx             | same as layout                 | Assessment detail/edit
+[locale]/(admin)/admin/audit/     | admin           | page.tsx             | same as layout                 | Audit logs
+[locale]/(admin)/admin/audit/[id] | admin           | page.tsx             | same as layout                 | Audit entry detail
+[locale]/(admin)/admin/care-chat/ | admin           | page.tsx             | same as layout                 | Care-chat management
+[locale]/(admin)/admin/care-chat/[id] | admin         | page.tsx             | same as layout                 | Care-chat thread management
+[locale]/(admin)/admin/care-chat/conversations/[id] | admin | page.tsx     | same as layout                 | Care-chat conversation detail
+[locale]/(admin)/admin/chat/      | admin           | page.tsx             | same as layout                 | Chat management
+[locale]/(admin)/admin/chat-conversations/ | admin     | page.tsx             | same as layout                 | Chat conversations list
+[locale]/(admin)/admin/chat-conversations/[conversationId] | admin | page.tsx | same as layout           | Chat conversation detail
+[locale]/(admin)/admin/dashboard/ | admin           | page.tsx             | same as layout                 | Admin dashboard
+[locale]/(admin)/admin/finance/   | admin           | page.tsx             | same as layout                 | Finance overview
+[locale]/(admin)/admin/finance/accounting/reconciliation/ | admin | page.tsx | same as layout           | Accounting reconciliation
+[locale]/(admin)/admin/finance/dashboard/ | admin     | page.tsx             | same as layout                 | Finance dashboard
+[locale]/(admin)/admin/finance/ledger/ | admin       | page.tsx             | same as layout                 | Financial ledger
+[locale]/(admin)/admin/finance/ledger/[journalEntryId] | admin | page.tsx  | same as layout                 | Ledger entry detail
+[locale]/(admin)/admin/finance/reconciliation/ | admin   | page.tsx             | same as layout                 | Reconciliation (duplicate? see accounting/reconciliation)
+[locale]/(admin)/admin/help/      | admin           | page.tsx             | same as layout                 | Help center management
+[locale]/(admin)/admin/help/categories/ | admin       | page.tsx             | same as layout                 | Help categories
+[locale]/(admin)/admin/help/questions/ | admin       | page.tsx             | same as layout                 | Help questions
+[locale]/(admin)/admin/messages/  | admin           | page.tsx             | same as layout                 | Messages management
+[locale]/(admin)/admin/moderation/reports/ | admin     | page.tsx             | same as layout                 | Moderation reports
+[locale]/(admin)/admin/moderation/reports/[id] | admin   | page.tsx             | same as layout                 | Report detail
+[locale]/(admin)/admin/notifications/ | admin       | page.tsx             | same as layout                 | Notifications management
+[locale]/(admin)/admin/notifications/[id] | admin     | page.tsx             | same as layout                 | Notification detail
+[locale]/(admin)/admin/package-plans/ | admin         | page.tsx             | same as layout                 | Package plans management
+[locale]/(admin)/admin/package-plans/[code] | admin     | page.tsx             | same as layout                 | Package plan detail/edit
+[locale]/(admin)/admin/package-settlements/ | admin     | page.tsx             | same as layout                 | Package settlements
+[locale]/(admin)/admin/package-settlements/[id] | admin   | page.tsx             | same as layout                 | Package settlement detail
+[locale]/(admin)/admin/patients/  | admin           | page.tsx             | same as layout                 | Patients management
+[locale]/(admin)/admin/patients/[patientId] | admin   | page.tsx             | same as layout                 | Patient detail
+[locale]/(admin)/admin/payments/  | admin           | page.tsx             | same as layout                 | Payments management
+[locale]/(admin)/admin/payments/[id] | admin         | page.tsx             | same as layout                 | Payment detail
+[locale]/(admin)/admin/payments/gateway-control/ | admin | page.tsx         | same as layout                 | Payment gateway control
+[locale]/(admin)/admin/practitioner-applications/ | admin | page.tsx         | same as layout                 | Practitioner applications list
+[locale]/(admin)/admin/practitioner-applications/[id] | admin | page.tsx     | same as layout                 | Application detail
+[locale]/(admin)/admin/practitioner-applications/create/ | admin | page.tsx   | same as layout                 | Create application
+[locale]/(admin)/admin/practitioner-payouts/ | admin     | page.tsx             | same as layout                 | Practitioner payouts
+[locale]/(admin)/admin/practitioner-payouts/[practitionerId] | admin | page.tsx | same as layout           | Practitioner payout detail
+[locale]/(admin)/admin/practitioner-payouts/history/ | admin | page.tsx     | same as layout                 | Payout history
+[locale]/(admin)/admin/practitioners/ | admin         | page.tsx             | same as layout                 | Practitioners management
+[locale]/(admin)/admin/practitioners/featured/ | admin   | page.tsx             | same as layout                 | Featured practitioners
+[locale]/(admin)/admin/profile/   | admin           | page.tsx             | same as layout                 | Admin profile
+[locale]/(admin)/admin/refund-policies/ | admin       | page.tsx             | same as layout                 | Refund policies
+[locale]/(admin)/admin/refund-policies/[policyType] | admin | page.tsx     | same as layout                 | Refund policy detail
+[locale]/(admin)/admin/refund-policies/[policyType]/versions/[versionId] | admin | page.tsx | same as layout | Policy version detail
+[locale]/(admin)/admin/reports/   | admin           | page.tsx             | same as layout                 | Reports overview
+[locale]/(admin)/admin/reports/care-requests/ | admin   | page.tsx             | same as layout                 | Care requests report
+[locale]/(admin)/admin/reports/payments-revenue/ | admin | page.tsx         | same as layout                 | Payments revenue report
+[locale]/(admin)/admin/reports/payouts/ | admin       | page.tsx             | same as layout                 | Payouts report
+[locale]/(admin)/admin/reports/sessions/ | admin       | page.tsx             | same as layout                 | Sessions report
+[locale]/(admin)/admin/reports/support/ | admin       | page.tsx             | same as layout                 | Support report
+[locale]/(admin)/admin/reviews/   | admin           | page.tsx             | same as layout                 | Reviews management
+[locale]/(admin)/admin/reviews/[id] | admin         | page.tsx             | same as layout                 | Review detail
+[locale]/(admin)/admin/sessions/  | admin           | page.tsx             | same as layout                 | Sessions management
+[locale]/(admin)/admin/sessions/cancellation-policies/ | admin | page.tsx   | same as layout                 | Cancellation policies
+[locale]/(admin)/admin/sessions/runtime-inspection/ | admin | page.tsx    | same as layout                 | Runtime inspection (no page-level permission gate)
+[locale]/(admin)/admin/sessions/runtime-inspector/ | admin | page.tsx     | AdminPermissionGate[PermissionKey.SESSIONS_READ_ADMIN] | Runtime inspector with permission gate
+[locale]/(admin)/admin/settings/  | admin           | page.tsx             | same as layout                 | Admin settings
+[locale]/(admin)/admin/settings/revenue-share/ | admin | page.tsx        | same as layout                 | Revenue share settings
+[locale]/(admin)/admin/settlements/ | admin         | page.tsx             | same as layout                 | Settlements
+[locale]/(admin)/admin/settlements/[id] | admin       | page.tsx             | same as layout                 | Settlement detail
+[locale]/(admin)/admin/settlements/dues/ | admin     | page.tsx             | same as layout                 | Settlement dues
+[locale]/(admin)/admin/settlements/payouts/ | admin   | page.tsx             | same as layout                 | Settlement payouts
+[locale]/(admin)/admin/settlements/statement/[practitionerId] | admin | page.tsx | same as layout           | Practitioner statement
+[locale]/(admin)/admin/specialties/ | admin         | page.tsx             | same as layout                 | Specialties management
+[locale]/(admin)/admin/support/   | admin           | page.tsx             | same as layout                 | Support tickets
+[locale]/(admin)/admin/support/[id] | admin         | page.tsx             | same as layout                 | Support ticket detail
+[locale]/(admin)/admin/training/  | admin           | page.tsx             | same as layout                 | Training management
+[locale]/(admin)/admin/training/[id] | admin         | page.tsx             | same as layout                 | Training detail/edit
+[locale]/(admin)/admin/users/     | admin           | page.tsx             | same as layout                 | Users management
+[locale]/(admin)/admin/users/[id] | admin           | page.tsx             | same as layout                 | User detail
+[locale]/(admin)/admin/users/[id]/permissions/ | admin | page.tsx         | same as layout                 | User permissions
+
+No loading.tsx, error.tsx, or not-found.tsx siblings in (admin)
+
+================================================================================
+SUMMARY STATISTICS
+================================================================================
+
+Route Groups:
+  - public:       17 page routes  + 1 layout + 1 not-found + 1 error = 20 files
+  - auth:          7 page routes  + 1 layout                          =  8 files
+  - patient:      37 page routes  + 1 layout                          = 38 files
+  - practitioner: 27 page routes  + 1 layout                          = 28 files
+  - admin:        73 page routes  + 1 layout                          = 74 files
+  - locale-level:                + 1 layout + 1 error                =  2 files
+
+Total page.tsx files: 161
+Total layout.tsx files: 6
+Total error.tsx files: 3 (locale-level, (public), (public)/practitioners)
+Total not-found.tsx files: 1 (only in (public))
+
+================================================================================
+KEY OBSERVATIONS
+================================================================================
+
+1. DUPLICATE/NEAR-DUPLICATE ROUTES DETECTED:
+   - admin/sessions/runtime-inspection/ vs admin/sessions/runtime-inspector/
+     Both exist as separate routes with slightly different implementations.
+     runtime-inspector/ has AdminPermissionGate with SESSIONS_READ_ADMIN.
+     runtime-inspection/ has NO page-level permission gate (only layout-level auth).
+   - admin/finance/reconciliation/ vs admin/finance/accounting/reconciliation/
+     Both exist as separate routes.
+
+2. PERMISSION GATE PATTERNS:
+   - Admin layout: requireAuthenticatedArea(locale, "admin") + getServerCurrentUserPermissions()
+   - Patient layout: requireAuthenticatedArea(locale, "patient")
+   - Practitioner layout: requireAuthenticatedArea(locale, "practitioner")
+   - Auth layout: NO permission gate (open to anonymous)
+   - Page-level gates: AdminPermissionGate used on runtime-inspector only
+
+3. REDIRECT PATTERNS:
+   - /admin/ -> /admin/dashboard
+   - /practitioner/ -> /practitioner/dashboard
+   - /practitioners/ (public) redirects PATIENT role to /patient/practitioners
+
+4. NO LOADING.TSX ANYWHERE:
+   No route group has loading.tsx sibling files, suggesting Suspense boundaries
+   may be handled differently (possibly via Suspense in parent layouts or not implemented).
+
+5. REAL VS PLACEHOLDER:
+   Most routes appear to be real implementations with feature components imported.
+   No purely placeholder pages (e.g., "coming soon" or "not implemented") detected.
+   All sampled pages import actual feature components.
+
+================================================================================
+END OF ROUTE INVENTORY
+================================================================================

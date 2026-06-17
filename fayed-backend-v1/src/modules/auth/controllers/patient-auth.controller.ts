@@ -5,8 +5,12 @@ import {
   HttpCode,
   Post,
   Req,
+  Res,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
+import { WebResponseHardeningInterceptor } from '@common/interceptors/web-response-hardening.interceptor';
+import { Response } from 'express';
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
@@ -46,6 +50,7 @@ import { getRequestDeviceContext } from '../utils/request-device-context.util';
 
 @ApiTags('Auth - Patient')
 @Controller('auth/patient')
+@UseInterceptors(WebResponseHardeningInterceptor)
 export class PatientAuthController {
   constructor(
     private readonly i18nService: I18nService,
@@ -73,12 +78,23 @@ export class PatientAuthController {
   async authenticateWithGoogle(
     @Body() dto: PatientGoogleAuthDto,
     @Req() request: Request,
+    @Res({ passthrough: true }) res: Response,
     @CurrentLocale() locale: SupportedLocale,
   ) {
     const result = await this.registerPatientWithGoogleUseCase.execute({
       idToken: dto.idToken,
       deviceContext: getRequestDeviceContext(request, dto.deviceId),
     });
+
+    if (result.tokens?.refreshToken) {
+      res.cookie('fayed_refresh_token', result.tokens.refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        path: '/',
+        maxAge: 30 * 24 * 60 * 60,
+      });
+    }
 
     return {
       message: this.i18nService.t(
@@ -103,6 +119,7 @@ export class PatientAuthController {
   async register(
     @Body() dto: PatientEmailPasswordRegisterDto,
     @Req() request: Request,
+    @Res({ passthrough: true }) res: Response,
     @CurrentLocale() locale: SupportedLocale,
   ) {
     const result = await this.registerPatientWithEmailPasswordUseCase.execute({
@@ -111,6 +128,16 @@ export class PatientAuthController {
       displayName: dto.displayName,
       deviceContext: getRequestDeviceContext(request, dto.deviceId),
     });
+
+    if (result.tokens?.refreshToken) {
+      res.cookie('fayed_refresh_token', result.tokens.refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        path: '/',
+        maxAge: 30 * 24 * 60 * 60,
+      });
+    }
 
     return {
       message: this.i18nService.t('auth.success.patientRegistered', locale),
@@ -132,6 +159,7 @@ export class PatientAuthController {
   async login(
     @Body() dto: PatientEmailPasswordLoginDto,
     @Req() request: Request,
+    @Res({ passthrough: true }) res: Response,
     @CurrentLocale() locale: SupportedLocale,
   ) {
     const result = await this.loginPatientWithEmailPasswordUseCase.execute({
@@ -139,6 +167,16 @@ export class PatientAuthController {
       password: dto.password,
       deviceContext: getRequestDeviceContext(request, dto.deviceId),
     });
+
+    if (result.tokens?.refreshToken) {
+      res.cookie('fayed_refresh_token', result.tokens.refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        path: '/',
+        maxAge: 30 * 24 * 60 * 60,
+      });
+    }
 
     return {
       message: this.i18nService.t('auth.success.patientLoggedIn', locale),
@@ -165,6 +203,7 @@ export class PatientAuthController {
   async refresh(
     @Body() dto: RefreshTokenDto,
     @Req() request: AuthenticatedRequest,
+    @Res({ passthrough: true }) res: Response,
     @CurrentLocale() locale: SupportedLocale,
   ) {
     const refreshToken = dto.refreshToken ?? request.authToken;
@@ -180,6 +219,16 @@ export class PatientAuthController {
       refreshToken,
       deviceContext: getRequestDeviceContext(request, dto.deviceId),
     });
+
+    if (result.tokens?.refreshToken) {
+      res.cookie('fayed_refresh_token', result.tokens.refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        path: '/',
+        maxAge: 30 * 24 * 60 * 60,
+      });
+    }
 
     return {
       message: this.i18nService.t(
@@ -203,9 +252,16 @@ export class PatientAuthController {
   })
   async logout(
     @Req() request: AuthenticatedRequest,
+    @Res({ passthrough: true }) res: Response,
     @CurrentLocale() locale: SupportedLocale,
   ) {
     await this.logoutPatientUseCase.execute(request.user!.sessionId!);
+    res.clearCookie('fayed_refresh_token', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      path: '/',
+    });
     return {
       message: this.i18nService.t('auth.success.patientLoggedOut', locale),
     };

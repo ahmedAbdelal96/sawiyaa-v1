@@ -1,0 +1,471 @@
+# Agent 6: i18n / RTL / Loading-Empty-Error States
+
+---
+
+## i18n Enum Leakage Findings
+
+### AUDIT-105: `practitioner.presentationStatus.*` namespace MISSING from translations
+
+**Evidence:**
+- `fayed-mobile/app/(practitioner)/sessions/[id].tsx` line 352:
+  ```typescript
+  label={t(`practitioner.presentationStatus.${session.presentationStatus}`)}
+  ```
+- `fayed-mobile/app/(practitioner)/sessions/[id].tsx` line 481:
+  ```typescript
+  session.presentationStatus === "UPCOMING" ?
+  ```
+- `fayed-mobile/app/(practitioner)/sessions/index.tsx` lines 521 and 663:
+  ```typescript
+  label={t(`practitioner.presentationStatus.${session.presentationStatus}`)}
+  ```
+
+**Impact:** All practitioner session status badges will render the raw enum key (e.g., "JOINABLE", "IN_PROGRESS", "NO_SHOW", "UNDER_REVIEW") as visible text since the `practitioner.presentationStatus` namespace does not exist in `en.json` or `ar.json`. Only `patientSessionsFlow.presentationStatus` and `packagePurchases.presentationStatuses` (plural, different key) are defined.
+
+**Translation file check:**
+- `en.json` line 792: `patientSessionsFlow.presentationStatus` exists (UPCOMING, JOINABLE, IN_PROGRESS, COMPLETED, CANCELLED, ENDED, UNAVAILABLE, NO_SHOW, UNDER_REVIEW)
+- `en.json` line 2319: duplicate `patientSessionsFlow.presentationStatus`
+- `en.json` line 1929: `practitioner` namespace begins but contains NO `presentationStatus` entries
+
+---
+
+### AUDIT-106: `replaceAll("_", " ")` fallback renders raw enums in messages
+
+**Evidence:**
+- `fayed-mobile/src/features/messages/utils.ts` line 146 (getParticipantStatusLabel):
+  ```typescript
+  default:
+    return value.replaceAll("_", " ");  // fallback for unknown status
+  ```
+- `fayed-mobile/src/features/messages/utils.ts` line 296 (getConversationStatusLabel):
+  ```typescript
+  if (!isArabicLocale(locale)) {
+    return status.replaceAll("_", " ");  // English fallback renders raw enum
+  }
+  ```
+- `fayed-mobile/src/features/messages/utils.ts` line 311 (same function default):
+  ```typescript
+  default:
+    return status.replaceAll("_", " ");  // fallback
+  ```
+- `fayed-mobile/src/features/messages/utils.ts` line 350 (getMessageStatusLabel default):
+  ```typescript
+  default:
+    return status.replaceAll("_", " ");  // fallback
+  ```
+- `fayed-mobile/src/features/messages/utils.ts` line 405 (getMessageSenderRoleLabel):
+  ```typescript
+  return isArabicLocale(locale) ? status.replaceAll("_", " ") : status;
+  ```
+- `fayed-mobile/src/features/messages/components/MessagesInboxScreen.tsx` line 98 (getHumanStatusFallback):
+  ```typescript
+  return value.replaceAll("_", " ");  // fallback for sourceType support/care
+  ```
+
+**Impact:** When backend returns a status enum not explicitly handled in the switch statements (e.g., a new `REASSIGNED` or `TRANSFERRED` status), the raw underscore-separated string is rendered directly in the UI. For English locale, the check `if (!isArabicLocale(locale)) { return status.replaceAll("_", " ") }` at line 296 means even common statuses fall through to the default English formatting. The Arabic locale has switch cases for OPEN, PENDING, CLOSED, etc. but English falls through for all unhandled statuses.
+
+---
+
+### AUDIT-107: `formatNotificationType` transforms `typeSlug` but is NOT i18n-aware
+
+**Evidence:**
+- `fayed-mobile/src/features/patient/profile/account-utils.ts` lines 16-22:
+  ```typescript
+  export function formatNotificationType(typeSlug: string) {
+    return typeSlug
+      .split("_")
+      .filter(Boolean)
+      .map((part) => part[0] + part.slice(1).toLowerCase())
+      .join(" ");
+  }
+  ```
+- `fayed-mobile/app/(patient)/profile-notifications.tsx` line 162:
+  ```typescript
+  {formatNotificationType(item.typeSlug)}
+  ```
+
+**Impact:** `typeSlug` values like `messages_session_message_received` are humanized to "Messages session message received" via string manipulation. No `t()` is used. There is no translation namespace for notification type slugs, so the humanized string appears in both English and Arabic without translation. Additionally, since this is client-side string manipulation rather than a lookup, any new notification types added by backend will automatically render in this format rather than being explicitly translated.
+
+---
+
+## Translation Coverage Findings
+
+### AUDIT-108: `practitioner.presentationStatus` missing - confirmed
+
+**Files referencing missing namespace:**
+- `fayed-mobile/app/(practitioner)/sessions/[id].tsx` lines 352, 481
+- `fayed-mobile/app/(practitioner)/sessions/index.tsx` lines 519-523, 661-665
+
+**Expected keys that need to be added to `en.json` under `practitioner.presentationStatus`:**
+```
+UPCOMING, JOINABLE, IN_PROGRESS, COMPLETED, CANCELLED, ENDED, UNAVAILABLE, NO_SHOW, UNDER_REVIEW
+```
+
+**Expected keys for `ar.json`:**
+```
+UPCOMING: "قادمة", JOINABLE: "جاهزة للانضمام", IN_PROGRESS: "جارية الآن", COMPLETED: "مكتملة", CANCELLED: "ملغاة", ENDED: "منتهية", UNAVAILABLE: "غير متاحة الآن", NO_SHOW: "لم يحضر", UNDER_REVIEW: "قيد المراجعة"
+```
+
+---
+
+### AUDIT-109: Arabic translations for `presentationStatus` in patient namespace are complete
+
+**Confirmed present in `ar.json` lines 857-866:**
+```json
+"presentationStatus": {
+  "UPCOMING": "قادمة",
+  "JOINABLE": "جاهزة للانضمام",
+  "IN_PROGRESS": "جارية الآن",
+  "COMPLETED": "مكتملة",
+  "CANCELLED": "ملغاة",
+  "ENDED": "منتهية",
+  "UNAVAILABLE": "غير متاح الآن",
+  "NO_SHOW": "لم يحضر",
+  "UNDER_REVIEW": "قيد المراجعة"
+}
+```
+
+---
+
+### AUDIT-110: `careChat.requestStatus` fully covered in both languages
+
+**Confirmed in `en.json` lines 1718-1724:**
+```json
+"requestStatus": {
+  "PENDING": "Pending Approval",
+  "APPROVED": "Approved",
+  "REJECTED": "Rejected",
+  "EXPIRED": "Expired",
+  "CANCELLED": "Cancelled",
+  "REVOKED": "Revoked"
+}
+```
+
+**Confirmed in `ar.json` lines 1812-1815:**
+```json
+"requestStatus": {
+  "PENDING": "بانتظار الموافقة",
+  "APPROVED": "موافق عليها",
+  "REJECTED": "مرفوضة",
+  "EXPIRED": "منتهية",
+  "CANCELLED": "ملغاة",
+  "REVOKED": "سحب"
+}
+```
+
+---
+
+### AUDIT-111: `support.statuses` fully covered in both languages
+
+**Confirmed in `en.json` lines 1665-1671:**
+```json
+"statuses": {
+  "OPEN": "Open",
+  "IN_PROGRESS": "In Progress",
+  "WAITING_FOR_USER": "Waiting for You",
+  "ESCALATED": "Escalated",
+  "RESOLVED": "Resolved",
+  "CLOSED": "Closed"
+}
+```
+
+**Confirmed in `ar.json` lines 1759-1765:**
+```json
+"statuses": {
+  "OPEN": "مفتوحة",
+  "IN_PROGRESS": "قيد المعالجة",
+  "WAITING_FOR_USER": "بانتظار ردك",
+  "ESCALATED": "تم التصعيد",
+  "RESOLVED": "تم الحل",
+  "CLOSED": "مغلقة"
+}
+```
+
+---
+
+### AUDIT-112: `patientPaymentsFlow.paymentCard.status` fully covered
+
+**Confirmed in `en.json` lines 1153-1164:**
+```json
+"status": {
+  "CREATED": "Created",
+  "PENDING": "Processing",
+  "REQUIRES_ACTION": "Requires action",
+  "AUTHORIZED": "Authorized",
+  "CAPTURED": "Completed",
+  "FAILED": "Failed",
+  "CANCELLED": "Cancelled",
+  "EXPIRED": "Expired",
+  "REFUND_PENDING": "Refund processing",
+  "PARTIALLY_REFUNDED": "Partially refunded",
+  "REFUNDED": "Refunded"
+}
+```
+
+---
+
+## RTL/LTR Direction Findings
+
+### AUDIT-113: `I18nManager.isRTL` used directly in practitioner `_layout.tsx` instead of centralized helper
+
+**Evidence:**
+- `fayed-mobile/app/(practitioner)/_layout.tsx` line 27:
+  ```typescript
+  const isRTL = I18nManager.isRTL;
+  ```
+
+**Contrast with correct pattern** in `fayed-mobile/app/(patient)/sessions.tsx` line 51:
+  ```typescript
+  const direction = getAppDirection(i18n.language);
+  ```
+
+**Impact:** The practitioner tab layout reads `isRTL` from the global `I18nManager` rather than from the current i18n language context. This could desynchronize from the actual language setting, especially during hot-reload or language changes. The `getAppDirection(i18n.language)` utility in `src/i18n/direction.ts` should be used consistently.
+
+---
+
+### AUDIT-114: Direction utility is well-centralized - `src/i18n/direction.ts`
+
+**Evidence:**
+- `fayed-mobile/src/i18n/direction.ts` lines 5-15:
+  ```typescript
+  export function isCurrentLanguageRtl(language?: string | null): boolean {
+    if (typeof language === "string" && language.length > 0) {
+      return language.toLowerCase().startsWith("ar");
+    }
+    return I18nManager.isRTL;
+  }
+
+  export function getAppDirection(language?: string | null): AppDirection {
+    return isCurrentLanguageRtl(language) ? "rtl" : "ltr";
+  }
+  ```
+
+**Status:** This is the correct pattern. It properly checks language code first and falls back to I18nManager.
+
+---
+
+### AUDIT-115: Chevron icons flip correctly for RTL
+
+**Evidence:**
+- `fayed-mobile/src/features/messages/components/MessagesInboxScreen.tsx` line 627:
+  ```typescript
+  name={isRTL ? "chevron-back" : "chevron-forward"}
+  ```
+- `fayed-mobile/app/(practitioner)/sessions/[id].tsx` line 609:
+  ```typescript
+  name={isRTL ? "chevron-back" : "chevron-forward"}
+  ```
+
+**Status:** Correct - chevrons flip to indicate back navigation direction in RTL.
+
+---
+
+### AUDIT-116: `flexDirection` consistently uses `isRTL ? "row-reverse" : "row"` pattern
+
+**Evidence across multiple files:**
+- `fayed-mobile/src/features/messages/components/MessagesInboxScreen.tsx` lines 298, 345, 573, 582, 589
+- `fayed-mobile/app/(practitioner)/sessions/[id].tsx` lines 333, 372, 539, 582, 589
+- `fayed-mobile/app/(patient)/sessions.tsx` line 275 passes `direction` prop
+
+**Status:** Correct RTL layout pattern used consistently.
+
+---
+
+### AUDIT-117: No hardcoded `dir="rtl"` or `dir="ltr"` found in mobile TSX files
+
+**Evidence:**
+- `fayed-mobile` search for `dir=` across TSX files returns `mobile-auth.md` only (documentation file)
+
+**Status:** Clean - no hardcoded direction attributes in JSX.
+
+---
+
+## Loading/Empty/Error State Findings
+
+### AUDIT-118: `ListPageScaffold` provides consistent Loading/Error/Empty handling
+
+**Evidence:**
+- `fayed-mobile/src/components/ui/PageScaffolds.tsx` lines 78-132
+
+**Status:** Well-implemented. The `ListPageScaffold` component accepts `loading`, `error`, `empty` boolean props and renders `LoadingState`, `ErrorState`, or `EmptyState` appropriately. Empty states include actionable CTAs (e.g., "Find a therapist" on empty sessions list).
+
+---
+
+### AUDIT-119: Patient sessions list has proper loading/empty/error states
+
+**Evidence:**
+- `fayed-mobile/app/(patient)/sessions.tsx` lines 199-214:
+  ```typescript
+  <ListPageScaffold
+    title={t("patientSessionsFlow.list.workspace.title")}
+    loading={sessionsQuery.isLoading}
+    loadingMessage={t("patientSessionsFlow.common.loading")}
+    error={sessionsQuery.isError}
+    errorTitle={t("patientSessionsFlow.common.loadError")}
+    errorMessage={t("patientSessionsFlow.common.loadError")}
+    onRetry={() => void sessionsQuery.refetch()}
+    retryText={t("patientSessionsFlow.common.retry")}
+    empty={!sessionsQuery.isLoading && !sessionsQuery.isError && sessions.length === 0}
+    emptyTitle={t("patientSessionsFlow.list.emptyTitle")}
+    emptyDescription={t("patientSessionsFlow.list.emptyDescription")}
+    emptyActionLabel={t("patientSessionsFlow.list.findTherapist")}
+    onEmptyAction={() => router.push("/(patient)/discovery")}
+  ```
+
+**Status:** Excellent - empty state is actionable with a CTA.
+
+---
+
+### AUDIT-120: Practitioner sessions list has proper states via `ListPageScaffold`
+
+**Evidence:**
+- `fayed-mobile/app/(practitioner)/sessions/index.tsx` lines 333-346:
+  ```typescript
+  <ListPageScaffold
+    title={t("practitioner.sessions.workspace.title")}
+    loading={sessionsQuery.isLoading}
+    error={sessionsQuery.isError}
+    empty={!sessionsQuery.isLoading && !sessionsQuery.isError && sessions.length === 0}
+    emptyTitle={t("practitioner.sessions.emptyTitle")}
+    emptyDescription={t("practitioner.sessions.emptyBody")}
+  ```
+
+**Status:** Good - uses ListPageScaffold correctly.
+
+---
+
+### AUDIT-121: Patient care-chat list has loading/error/empty states as overlays
+
+**Evidence:**
+- `fayed-mobile/app/(patient)/care-chat/index.tsx` lines 179-207:
+  ```typescript
+  {query.isLoading ? <LoadingState fullScreen /> : null}
+  {query.isError && !query.isLoading ? (
+    <ErrorState fullScreen onRetry={query.refetch} />
+  ) : null}
+  {!query.isLoading && !query.isError ? (
+    <>...content...</>
+  ) : null}
+  {filtered.length === 0 ? (
+    <EmptyState title={t("careChat.empty.title")} ... />
+  ) : null}
+  ```
+
+**Status:** Functional but renders loading/error as full-screen overlays on top of a ScrollView - different pattern from ListPageScaffold. Not a bug, but inconsistent with the scaffold pattern used in other routes.
+
+---
+
+### AUDIT-122: Practitioner care-chat list is just a redirect with hardcoded Arabic text
+
+**Evidence:**
+- `fayed-mobile/app/(practitioner)/care-chat/index.tsx` lines 12-16:
+  ```typescript
+  return (
+    <Screen bg="background">
+      <LoadingState fullScreen message="جارٍ التحويل..." />
+    </Screen>
+  );
+  ```
+
+**Impact:** This screen immediately redirects (via `useEffect` at line 8). The loading message "جارٍ التحويل..." is hardcoded Arabic with no `t()` call. If the redirect takes time, the user sees hardcoded Arabic text. Should use `t("common.redirecting")` or similar.
+
+---
+
+### AUDIT-123: Patient home screen has proper loading state
+
+**Evidence:**
+- `fayed-mobile/app/(patient)/index.tsx` lines 49-52:
+  ```typescript
+  {homeQuery.isLoading && !data ? (
+    <LoadingState fullScreen />
+  ) : (
+    <ScrollView ...>
+  ```
+
+**Status:** Good - full-screen loading state while data loads.
+
+---
+
+### AUDIT-124: Practitioner home screen has proper loading/error states
+
+**Evidence:**
+- `fayed-mobile/app/(practitioner)/index.tsx` lines 127-141:
+  ```typescript
+  if (profileQuery.isLoading) {
+    return (
+      <Screen bg="background">
+        <Header title={t("practitioner.home.title")} />
+        <LoadingState fullScreen />
+      </Screen>
+    );
+  }
+
+  if (profileQuery.isError || !profile) {
+    return (
+      <Screen bg="background">
+        <Header title={t("practitioner.home.title") />
+        <ErrorState fullScreen onRetry={profileQuery.refetch} />
+      </Screen>
+    );
+  }
+  ```
+
+**Status:** Good - proper LoadingState and ErrorState.
+
+---
+
+### AUDIT-125: No `[object Object]` visible text found in source files
+
+**Evidence:**
+- `fayed-mobile/phase5-mobile-smoke-test.js` contains `[object Object]` in a test file (test artifact, not production)
+- `fayed-mobile/src/providers/NavigationHistoryProvider.tsx` line 34:
+  ```typescript
+  if (value === "" || value === "[object Object]") continue;
+  ```
+  This is a defensive filter in URL param normalization, not visible UI text.
+
+**Status:** Clean - no `[object Object]` rendering in production UI.
+
+---
+
+## Open Questions
+
+1. **AUDIT-126 (Open):** Why does `en.json` have two identical `patientSessionsFlow.presentationStatus` entries (lines 792 and 2319)? This duplication should be investigated and deduplicated.
+
+2. **AUDIT-127 (Open):** The `packagePurchases.presentationStatuses` (plural, line 1510 in en.json) uses a different key name than `presentationStatus` (singular). Is this intentional or a naming inconsistency that could cause confusion?
+
+3. **AUDIT-128 (Open):** The practitioner sessions detail screen (`app/(practitioner)/sessions/[id].tsx`) uses `StatusBadge` with `t(\`practitioner.presentationStatus.${session.presentationStatus}\`)` at line 352, but the practitioner namespace in translations does NOT have a `presentationStatus` subtree. Was this intended to reuse `patientSessionsFlow.presentationStatus`?
+
+4. **AUDIT-129 (Open):** The `MessagesInboxScreen.tsx` uses `getHumanStatusFallback` which applies `replaceAll("_", " ")` as a catch-all for English, but the same function has explicit Arabic translations for OPEN, PENDING, CLOSED, etc. This means English gets "OPEN" as "Open" from the switch but other statuses like "ESCALATED" would render as "ESCALATED" (raw). Should all statuses be explicitly handled?
+
+---
+
+## Findings to Register (AUDIT-105 onwards)
+
+| ID | Severity | Category | Location | Summary |
+|----|----------|----------|----------|---------|
+| AUDIT-105 | HIGH | i18n Leakage | `app/(practitioner)/sessions/[id].tsx` line 352; `app/(practitioner)/sessions/index.tsx` lines 521, 663 | `practitioner.presentationStatus.*` namespace missing from translations - raw enums render as text |
+| AUDIT-106 | MEDIUM | i18n Leakage | `src/features/messages/utils.ts` lines 146, 296, 311, 350, 405; `src/features/messages/components/MessagesInboxScreen.tsx` line 98 | `replaceAll("_", " ")` fallback renders raw enum strings for unhandled statuses |
+| AUDIT-107 | LOW | i18n Coverage | `src/features/patient/profile/account-utils.ts` line 16; `app/(patient)/profile-notifications.tsx` line 162 | `formatNotificationType` transforms `typeSlug` via string manipulation, not i18n - not translatable |
+| AUDIT-108 | HIGH | Translation Missing | `en.json` / `ar.json` under `practitioner` namespace | `practitioner.presentationStatus` entries missing entirely - needs 9 status translations |
+| AUDIT-109 | INFO | Translation Coverage | `ar.json` lines 857-866 | Arabic `patientSessionsFlow.presentationStatus` fully covered |
+| AUDIT-110 | INFO | Translation Coverage | `en.json`/`ar.json` careChat.requestStatus | Fully covered in both languages |
+| AUDIT-111 | INFO | Translation Coverage | `en.json`/`ar.json` support.statuses | Fully covered in both languages |
+| AUDIT-112 | INFO | Translation Coverage | `en.json` patientPaymentsFlow.paymentCard.status | Fully covered |
+| AUDIT-113 | MEDIUM | RTL | `app/(practitioner)/_layout.tsx` line 27 | Uses `I18nManager.isRTL` directly instead of `getAppDirection(i18n.language)` |
+| AUDIT-114 | INFO | RTL | `src/i18n/direction.ts` | Direction utility is well-centralized and correct |
+| AUDIT-115 | INFO | RTL | Multiple files | Chevron icons flip correctly for RTL |
+| AUDIT-116 | INFO | RTL | Multiple files | `flexDirection` pattern consistent |
+| AUDIT-117 | INFO | RTL | `fayed-mobile/**/*.tsx` | No hardcoded `dir=` attributes found |
+| AUDIT-118 | INFO | State | `src/components/ui/PageScaffolds.tsx` | ListPageScaffold/DetailPageScaffold well-implemented |
+| AUDIT-119 | INFO | State | `app/(patient)/sessions.tsx` | Patient sessions list has proper Loading/Empty/Error with actionable CTA |
+| AUDIT-120 | INFO | State | `app/(practitioner)/sessions/index.tsx` | Practitioner sessions list uses ListPageScaffold correctly |
+| AUDIT-121 | INFO | State | `app/(patient)/care-chat/index.tsx` | Care-chat uses overlay pattern instead of scaffold - functional but inconsistent |
+| AUDIT-122 | LOW | i18n State | `app/(practitioner)/care-chat/index.tsx` lines 12-16 | Hardcoded Arabic "جارٍ التحويل..." instead of `t()` call |
+| AUDIT-123 | INFO | State | `app/(patient)/index.tsx` | Patient home has proper LoadingState |
+| AUDIT-124 | INFO | State | `app/(practitioner)/index.tsx` | Practitioner home has proper LoadingState and ErrorState |
+| AUDIT-125 | INFO | State | `fayed-mobile/**/*.tsx` | No `[object Object]` visible text in production UI |
+| AUDIT-126 | INFO | Code Quality | `en.json` lines 792, 2319 | Duplicate `patientSessionsFlow.presentationStatus` entries |
+| AUDIT-127 | INFO | Code Quality | `en.json` line 1510 | `presentationStatuses` (plural) vs `presentationStatus` (singular) naming inconsistency |
+| AUDIT-128 | INFO | i18n Intent | `app/(practitioner)/sessions/[id].tsx` | Intent unclear: reuse patient namespace or was practitioner namespace planned? |
+| AUDIT-129 | INFO | i18n Logic | `src/features/messages/components/MessagesInboxScreen.tsx` line 98 | English fallback via `replaceAll` leaves some statuses untranslated |

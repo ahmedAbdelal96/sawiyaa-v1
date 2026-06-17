@@ -5,10 +5,10 @@ import { useLocale, useTranslations } from "next-intl";
 import { CheckCircle2, AlertCircle, Clock3, Loader2, XCircle } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { ListStateSkeleton, StateCard } from "@/components/shared/ContentStates";
+import { formatViewerDateTime } from "@/lib/time-formatting";
 import { usePatientTrainingEnrollment } from "../hooks/use-training";
 import {
   formatTrainingAmount,
-  formatTrainingDatetime,
   getPaymentStatusTone,
   getStatusToneClasses,
 } from "./training-utils";
@@ -136,7 +136,9 @@ export default function TrainingEnrollmentPaymentReturnPanel({
         {enrollment.startsAt ? (
           <p className="mt-4 text-sm text-text-secondary">
             {t("patient.return.startsAt", {
-              value: formatTrainingDatetime(enrollment.startsAt, locale),
+              value: formatViewerDateTime(enrollment.startsAt, {
+                locale: locale === "ar" ? "ar-SA" : "en-US",
+              }),
             })}
           </p>
         ) : null}

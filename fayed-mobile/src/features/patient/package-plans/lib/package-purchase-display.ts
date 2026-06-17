@@ -1,4 +1,9 @@
 import type { PatientPackagePurchaseItem } from "../types";
+import {
+  formatViewerDate,
+  formatViewerDateTime,
+  formatViewerTime,
+} from "../../../../lib/time-formatting";
 
 const PACKAGE_PURCHASE_PLAN_CODE_TO_COUNT: Record<string, number> = {
   SESSIONS_4: 4,
@@ -61,14 +66,7 @@ export function formatDatetime(value: string | null | undefined, locale: string)
     return "-";
   }
 
-  return new Intl.DateTimeFormat(locale, {
-    weekday: "short",
-    day: "numeric",
-    month: "short",
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: !locale.startsWith("ar"),
-  }).format(new Date(value));
+  return formatViewerDateTime(value, { locale });
 }
 
 export function formatTimeRange(
@@ -80,14 +78,8 @@ export function formatTimeRange(
     return "-";
   }
 
-  const formatter = new Intl.DateTimeFormat(locale, {
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: !locale.startsWith("ar"),
-  });
-
-  const startLabel = startAt ? formatter.format(new Date(startAt)) : "-";
-  const endLabel = endAt ? formatter.format(new Date(endAt)) : "-";
+  const startLabel = startAt ? formatViewerTime(startAt, { locale }) : "-";
+  const endLabel = endAt ? formatViewerTime(endAt, { locale }) : "-";
   return `${startLabel} - ${endLabel}`;
 }
 
@@ -102,11 +94,7 @@ export function formatSessionDateTimeRange(
 
   const dateSource = startAt ?? endAt ?? null;
   const dateLabel = dateSource
-    ? new Intl.DateTimeFormat(locale, {
-        day: "numeric",
-        month: "long",
-        hour12: !locale.startsWith("ar"),
-      }).format(new Date(dateSource))
+    ? formatViewerDate(dateSource, { locale })
     : "-";
 
   const timeLabel = formatTimeRange(startAt, endAt, locale);

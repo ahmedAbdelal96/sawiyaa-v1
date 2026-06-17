@@ -20,6 +20,7 @@ import Button from "@/components/ui/button/Button";
 import { DestructiveConfirmModal } from "@/components/ui/modal";
 import { toAppError } from "@/lib/api/errors";
 import { formatMoney as formatFinanceMoney } from "@/lib/finance-format";
+import { formatViewerDate, formatViewerDateTime, formatViewerTime } from "@/lib/time-formatting";
 import {
   useCancelPatientSession,
   usePreviewPatientSessionCancellation,
@@ -51,15 +52,7 @@ import type {
 
 const CANCELLABLE_STATUSES: SessionStatus[] = ["CONFIRMED", "UPCOMING"];
 function formatDatetime(isoString: string | null, numLocale: string): string {
-  if (!isoString) return "";
-  return new Date(isoString).toLocaleString(numLocale, {
-    weekday: "long",
-    month: "long",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: !numLocale.startsWith("ar"),
-  });
+  return formatViewerDateTime(isoString, { locale: numLocale });
 }
 
 function formatPlainAmount(value: string, numLocale: string): string {
@@ -76,22 +69,11 @@ function formatSessionAmount(value: string, numLocale: string, currencyCode: str
 }
 
 function formatSessionDateLabel(isoString: string | null, numLocale: string): string {
-  if (!isoString) return "—";
-  return new Intl.DateTimeFormat(numLocale, {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  }).format(new Date(isoString));
+  return formatViewerDate(isoString, { locale: numLocale, fallbackText: "—" });
 }
 
 function formatSessionTimeLabel(isoString: string | null, numLocale: string): string {
-  if (!isoString) return "—";
-  return new Intl.DateTimeFormat(numLocale, {
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: !numLocale.startsWith("ar"),
-  }).format(new Date(isoString));
+  return formatViewerTime(isoString, { locale: numLocale, fallbackText: "—" });
 }
 
 function getInitials(name: string | null | undefined): string {
@@ -1051,4 +1033,3 @@ export default function PatientSessionDetailPanel({ sessionId }: Props) {
     </div>
   );
 }
-

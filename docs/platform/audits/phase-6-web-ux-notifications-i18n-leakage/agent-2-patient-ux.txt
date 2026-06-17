@@ -1,0 +1,310 @@
+PHASE 6 WEB UX AUDIT — AGENT 2: PATIENT-FACING UX INTEGRITY
+Auditor: Claude Code Agent 2
+Scope: Patient-facing surfaces, i18n leakage, Clinical Warmth
+Read-only audit — no files modified
+============================================================
+
+FINDING 1 — RAW ENUM LEAK IN CHAT EMBEDDED HEADER
+Severity: HIGH
+File: fayed-frontend-v1/src/features/chat/components/SessionChatPanel.tsx
+Lines: 354-356
+
+Code:
+  <span className="rounded-full bg-teal-50/70 border border-teal-100/30 px-2.5 py-0.5 text-[10px] font-bold text-teal-700 dark:bg-teal-950/40 dark:text-teal-400">
+    {session?.presentationStatus.replaceAll("_", " ")}
+  </span>
+
+Evidence: presentationStatus is rendered raw with replaceAll("_", " ") — it
+produces strings like "UNDER REVIEW", "READY TO JOIN", "NO SHOW". This is
+patient-visible in the chat header. It bypasses i18n entirely. The correct
+pattern is to use the t() function with the sessions namespace, e.g.:
+  t(`presentationStatus.${session.presentationStatus}` as Parameters<typeof t>[0])
+
+No other patient-facing component was found to render presentationStatus raw.
+This is the sole instance.
+
+Impact: Patient sees raw SCREAMING_SNAKE_CASE in the chat UI. Also a
+presentationStatus value of UNDER_REVIEW would produce "UNDER REVIEW" which
+carries a clinical/stigmatizing connotation when not properly localized.
+
+---
+FINDING 2 — MISSING i18n LABEL FOR UNDER_REVIEW IN detail.presentation
+Severity: MEDIUM
+Files:
+  fayed-frontend-v1/messages/en/sessions.json — line 66-76 (presentationStatus)
+  fayed-frontend-v1/messages/ar/sessions.json — line 66-76
+
+Evidence: The presentationStatus section in both locale files defines
+UNDER_REVIEW:
+  "presentationStatus": {
+    "UNDER_REVIEW": "Under review"   -- en
+    "UNDER_REVIEW": "قيد المراجعة"  -- ar
+  }
+
+However, the detail.presentation block (en lines 91-131, ar lines 91-132)
+has NO entry for UNDER_REVIEW. It only covers:
+  UPCOMING, JOINABLE, IN_PROGRESS, COMPLETED, CANCELLED, ENDED, UNAVAILABLE, NO_SHOW
+
+In PatientSessionDetailPanel.tsx lines 267-275, the code calls:
+  t(`detail.presentation.${session.presentationStatus}.title` as Parameters<typeof t>[0])
+  t(`detail.presentation.${session.presentationStatus}.note` as Parameters<typeof t>[0])
+  t(`detail.presentation.${session.presentationStatus}.closeout` as Parameters<typeof t>[0])
+
+If presentationStatus is UNDER_REVIEW, these t() calls will return the key
+itself as a fallback string (next-intl returns "[detail.presentation.UNDER_REVIEW.title]"
+on missing keys), producing raw key leakage in the session detail runtime section.
+
+Impact: If a session enters UNDER_REVIEW state, the detail page shows raw
+i18n key strings instead of human-readable labels. This is a fragile-state leak.
+
+---
+FINDING 3 — NO loading.tsx / error.tsx IN PATIENT ROUTES
+Severity: MEDIUM
+Path: fayed-frontend-v1/src/app/[locale]/(patient)/patient/*
+
+Evidence: Glob search for **/patient*/**/loading.tsx and **/patient*/**/error.tsx
+returned no matches. The patient route tree has 35+ page routes including:
+  patient/sessions/page.tsx
+  patient/sessions/[id]/page.tsx
+  patient/sessions/[id]/chat/page.tsx
+  patient/sessions/[id]/pay/page.tsx
+  patient/care-chat/page.tsx
+  patient/care-chat/[id]/page.tsx
+  patient/payments/page.tsx
+  patient/wallet/page.tsx
+  patient/messages/page.tsx
+
+None of these have Next.js loading.tsx or error.tsx boundary files. The
+components handle loading/error internally (via ListStateSkeleton and
+StateCard), which is acceptable for component-level loading states. However,
+route-level error.tsx boundaries are the standard Next.js pattern for catching
+Unexpected Runtime Errors in the segment.
+
+Impact: An unexpected error in a patient session page would show the default
+Next.js error overlay or a blank page rather than a coherent, branded error
+state, if no error boundary is provided by the parent layout.
+
+---
+FINDING 4 — joinAvailability?.canJoin USED CORRECTLY (NO ISSUE)
+File: fayed-frontend-v1/src/features/sessions/components/PatientSessionDetailPanel.tsx
+Line: 251
+
+Code:
+  const canJoinNow = session.joinAvailability?.canJoin === true;
+
+The joinAvailability.canJoin field is used as the authoritative gate for
+rendering the join button and the shouldShowJoinCheck logic (lines 262-265).
+This is correct. No raw enum gate issues found in the join flow.
+
+---
+FINDING 5 — chatAvailability CAN SEND / READ ONLY CORRECTLY USED (NO ISSUE)
+File: fayed-frontend-v1/src/features/chat/components/SessionChatPanel.tsx
+Lines: 182-190
+
+Code:
+  const showComposer =
+    Boolean(conversationId) &&
+    sessionChatAvailability?.canSend === true &&
+    sessionChatAvailability?.readOnly !== true;
+
+  const showReadOnlyNotice =
+    !showAvailabilityLoading &&
+    (sessionChatAvailability?.canSend !== true || sessionChatAvailability?.readOnly === true);
+
+Both the composer rendering gate and the read-only notice rendering are
+correctly driven by canSend and readOnly from chatAvailability. The embedded
+variant and full-page variant both use the same gating logic. No raw enum
+leakage in chat state rendering.
+
+---
+FINDING 6 — PaymentReturnPanel PAYMENT STATES (NO ISSUE)
+File: fayed-frontend-v1/src/features/payments/components/PaymentReturnPanel.tsx
+
+Evidence: All 7 payment states are handled with i18n:
+  - isSessionConfirmed (lines 161-232): CheckCircle + confirmed.i18n
+  - isSessionExpired (lines 235-274): Clock + expired.i18n
+  - isSessionCancelled (lines 277-310): XCircle + cancelled.i18n
+  - PENDING_PAYMENT + failed (lines 313-352): XCircle + failed.i18n
+  - PENDING_PAYMENT + canceled (lines 355-394): Clock + canceled.i18n
+  - PENDING_PAYMENT + succeeded + polling (lines 397-422): Loader2 + verifying.i18n
+  - PENDING_PAYMENT + succeeded + timeout (lines 425-457): Clock + pendingTimeout.i18n
+  - catch-all (lines 460-489): Clock + pendingTimeout.i18n
+
+All icons, headings, and notes go through the payments t() namespace.
+No misleading states found. Polling timeout re-uses the pendingTimeout
+heading which is appropriate for an ambiguous state.
+
+Note: REFUND_PENDING and REFUNDED do not appear as separate states in
+PaymentReturnPanel — they are not terminal redirect states reachable from
+the payment return URL, so this is correct.
+
+---
+FINDING 7 — SessionStatusBadge i18n PATTERN (NO ISSUE)
+File: fayed-frontend-v1/src/features/sessions/components/SessionStatusBadge.tsx
+Lines: 41-45
+
+Code:
+  const labelKey = presentationStatus
+    ? `presentationStatus.${displayStatus ?? "UNAVAILABLE"}`
+    : `status.${displayStatus ?? "DRAFT"}`;
+
+  return <AdminStatusBadge tone={tone}>{labelOverride ?? t(labelKey as Parameters<typeof t>[0])}</AdminStatusBadge>;
+
+This component always goes through t() with the correct namespace key.
+Both presentationStatus and status have full coverage in
+fayed-frontend-v1/messages/en/sessions.json and/ar/sessions.json.
+No raw enum leakage in badges.
+
+---
+FINDING 8 — presentationHints IN PATIENT SESSIONS LIST (NO ISSUE)
+File: fayed-frontend-v1/src/features/sessions/components/PatientSessionsPanel.tsx
+Lines: 686-689
+
+Code:
+  <div className="mt-2 text-xs leading-5 text-text-secondary">
+    {t(
+      `list.presentationHints.${session.presentationStatus}` as Parameters<typeof t>[0],
+    )}
+  </div>
+
+presentationHints are fully defined for both en (lines 31-39) and ar
+(lines 31-40). Both locales include entries for all active presentation
+statuses. No raw enum leakage in the sessions list hints.
+
+---
+FINDING 9 — SESSION RUNTIME BLOCKED REASON i18n (NO ISSUE)
+File: fayed-frontend-v1/src/features/sessions/components/PatientSessionDetailPanel.tsx
+Lines: 556-561
+
+Code:
+  {t(
+    `detail.runtime.blocked.${getRuntimeBlockedReasonKey(joinResult.blockedReason)}` as Parameters<typeof t>[0],
+  )}
+
+getRuntimeBlockedReasonKey (from session-runtime.ts) returns
+"SESSION_NOT_JOINABLE_STATUS" as the default when blockedReason is null.
+Both locale files have entries for all four blocked reason keys:
+  SESSION_NOT_JOINABLE_STATUS, SESSION_NOT_VIDEO_MODE,
+  SESSION_TIME_WINDOW_NOT_OPEN, SESSION_RUNTIME_NOT_PREPARED
+
+These are properly localized. No raw key leakage.
+
+---
+FINDING 10 — CANCELLATION DESTINATION ENUM LEAK IN CANCEL MODAL
+Severity: LOW
+File: fayed-frontend-v1/src/features/sessions/components/PatientSessionDetailPanel.tsx
+Lines: 324-330
+
+Code:
+  const cancellationRefundDestinationLabel = cancellationPreview?.refundDestination
+    ? t(
+        `detail.cancelConfirm.destinations.${cancellationPreview.refundDestination}` as Parameters<
+          typeof t
+        >[0],
+      )
+    : null;
+
+The refundDestination values (CUSTOMER_WALLET, ORIGINAL_METHOD) are
+correctly looked up through i18n. However, both locale files define these
+in the practitioner.cancelConfirm.destinations namespace (en line 409-411,
+ar line 413-416), but the patient namespace does NOT define a
+destinations block:
+
+Patient cancelConfirm keys (ar lines 413-416):
+  "destinations": {
+    "CUSTOMER_WALLET": "محفظة العميل",
+    "ORIGINAL_METHOD": "وسيلة الدفع الأصلية"
+  }
+
+Practitioner cancelConfirm destinations (ar lines 413-416) use the same keys.
+Actually checking again — patient destinations ARE defined at ar line 413
+and en line 409. So this is NOT a leak. Closing this finding.
+
+---
+FINDING 11 — notification-visual-mapper CANONICAL NAME LEAKAGE
+Severity: INFO (NOT A BUG — ACKNOWLEDGED PATTERN)
+File: fayed-frontend-v1/src/features/notifications/lib/notification-visual-mapper.tsx
+Lines: 35-36
+
+Code:
+  const safeSlug = normalizedSlug.replace(/\./g, "-");
+
+The notification slug normalization replaces dots with hyphens to create
+safe i18n keys. This is intentional. The system falls back gracefully to
+a generic "System notification" title when translation keys are not found
+(lines 95-100). No patient-visible raw enum or technical key leakage.
+
+---
+FINDING 12 — PAYMENT STATE SIDEBAR IN PATIENT SESSION DETAIL (NO ISSUE)
+File: fayed-frontend-v1/src/features/sessions/components/PatientSessionDetailPanel.tsx
+Lines: 229-244 (paymentStateKey), 639-738 (sidebar rendering)
+
+Evidence:
+  paymentStateKey is derived as:
+    PENDING_PAYMENT → "PENDING_PAYMENT"
+    REFUND_PENDING → "REFUND_PENDING"
+    REFUNDED → "REFUNDED"
+    EXPIRED → "EXPIRED"
+    Otherwise, if presentationStatus is UPCOMING/JOINABLE/IN_PROGRESS/
+      COMPLETED/ENDED → "SECURED"
+    Otherwise → null (sidebar not shown)
+
+All keys are resolved via tPayments(`sessionState.${paymentStateKey}.label`).
+All payment state notes are resolved via tPayments(`sessionState.${paymentStateKey}.note`).
+PaymentStateKey SECURED renders in green tones; PENDING_PAYMENT in primary
+tones; all others in amber. Appropriate visual distinction maintained.
+
+---
+FINDING 13 — MISSING UNDER_REVIEW IN detail.presentation CLINICAL WARMTH NOTE
+Severity: LOW (Contextual)
+Files:
+  fayed-frontend-v1/messages/en/sessions.json
+  fayed-frontend-v1/messages/ar/sessions.json
+
+Note: Even if the UNDER_REVIEW i18n gap (Finding 2) is fixed by adding
+title/note/closeout entries, the tone for UNDER_REVIEW is "warning" in
+SessionStatusBadge.tsx line 26. A "warning" amber tone for a clinical
+status that may reflect a session under clinical review could feel
+stigmatizing to a patient. The clinical warmth principle would suggest
+a more neutral or even informational tone for this state, not warning
+(which is reserved for actionable patient decisions).
+
+This is a design-level concern, not a bug.
+
+---
+SUMMARY TABLE
+
+| # | Finding                              | Severity | File(s)                              |
+|---|--------------------------------------|----------|--------------------------------------|
+| 1 | Raw presentationStatus in chat header | HIGH     | SessionChatPanel.tsx:355             |
+| 2 | UNDER_REVIEW missing detail.* i18n   | MEDIUM   | sessions.json (en/ar)                |
+| 3 | No loading.tsx/error.tsx in patient   | MEDIUM   | app/[locale]/(patient)/patient/*     |
+| 4 | joinAvailability.canJoin gate        | PASS     | PatientSessionDetailPanel.tsx:251     |
+| 5 | chatAvailability canSend/readOnly     | PASS     | SessionChatPanel.tsx:182-190         |
+| 6 | PaymentReturnPanel states            | PASS     | PaymentReturnPanel.tsx              |
+| 7 | SessionStatusBadge i18n              | PASS     | SessionStatusBadge.tsx:41-45          |
+| 8 | presentationHints in sessions list   | PASS     | PatientSessionsPanel.tsx:686-689      |
+| 9 | Runtime blocked reason i18n          | PASS     | PatientSessionDetailPanel.tsx:556-561|
+|10 | Cancellation destinations            | PASS (OK)| PatientSessionDetailPanel.tsx:324-330|
+|11 | Notification slug normalization       | INFO     | notification-visual-mapper.tsx:35     |
+|12 | Payment state sidebar detail         | PASS     | PatientSessionDetailPanel.tsx:229-244|
+|13 | UNDER_REVIEW tone in badge           | DESIGN   | SessionStatusBadge.tsx:26            |
+
+RECOMMENDATIONS (read-only — for future phase):
+1. [HIGH] Replace session?.presentationStatus.replaceAll("_", " ") in
+   SessionChatPanel.tsx line 355 with:
+   t(`sessions.presentationStatus.${session.presentationStatus}` as Parameters<typeof t>[0])
+   Also apply the same fix proactively to any other embedded session header
+   variant that may render presentationStatus raw.
+
+2. [MEDIUM] Add UNDER_REVIEW entries to detail.presentation in both
+   sessions.json locale files:
+   "UNDER_REVIEW": { "title": "...", "note": "...", "closeout": "..." }
+
+3. [MEDIUM] Consider adding Next.js error.tsx boundaries at the
+   app/[locale]/(patient)/patient/ route segment for unexpected error
+   catching, and loading.tsx at the same level for initial data loading.
+
+4. [DESIGN] Review the UNDER_REVIEW tone in SessionStatusBadge — consider
+   whether "warning" is the right tone for a clinical review state that
+   the patient did not choose and may feel anxious about.

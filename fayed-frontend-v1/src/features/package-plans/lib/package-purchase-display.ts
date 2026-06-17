@@ -1,3 +1,4 @@
+import { formatViewerDate, formatViewerDateTime } from "@/lib/time-formatting";
 import type { SessionStatus } from "@/features/sessions/types/sessions.types";
 import type {
   PatientPackagePurchaseItem,
@@ -40,24 +41,11 @@ function toTimeValue(isoString: string | null): number {
 }
 
 export function formatDatetime(isoString: string | null, locale: string): string {
-  if (!isoString) return "";
-  return new Date(isoString).toLocaleString(locale, {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: !locale.startsWith("ar"),
-  });
+  return formatViewerDateTime(isoString, { locale });
 }
 
 export function formatDate(isoString: string | null, locale: string): string {
-  if (!isoString) return "";
-  return new Date(isoString).toLocaleDateString(locale, {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
+  return formatViewerDate(isoString, { locale });
 }
 
 export function formatMoney(amount: string, currency: string, locale: string): string {

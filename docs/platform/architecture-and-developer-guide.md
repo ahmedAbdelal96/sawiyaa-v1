@@ -220,6 +220,7 @@ The safest first implementation step after this contract is to validate and norm
 - `/[locale]/patient/assessments/[slug]`
 - `/[locale]/patient/training`
 - `/[locale]/patient/package-purchases`
+- `/[locale]/patient/messages`
 - `/[locale]/patient/instant-booking`
 
 ### Practitioner web
@@ -235,6 +236,8 @@ The safest first implementation step after this contract is to validate and norm
 - `/[locale]/practitioner/wallet`
 - `/[locale]/practitioner/ledger`
 - `/[locale]/practitioner/promo-codes`
+- `/[locale]/practitioner/messages`
+- `/[locale]/practitioner/settings`
 - `/[locale]/practitioner/support`
 - `/[locale]/practitioner/help`
 
@@ -244,7 +247,10 @@ The safest first implementation step after this contract is to validate and norm
 - `/[locale]/admin/users`
 - `/[locale]/admin/patients`
 - `/[locale]/admin/practitioners`
+- `/[locale]/admin/practitioner-applications`
+- `/[locale]/admin/practitioner-applications/create`
 - `/[locale]/admin/sessions`
+- `/[locale]/admin/sessions/runtime-inspector`
 - `/[locale]/admin/chat`
 - `/[locale]/admin/chat-conversations`
 - `/[locale]/admin/payments`
@@ -278,6 +284,24 @@ This catalog is intentionally practical. It tells you what each module is for, w
 | Notifications | Reminders, presence nudges, request alerts, push behavior | Patients, practitioners, admins | notifications, push settings | in-app, email, SMS, push surfaces | Planned / partial | Important for instant booking and session reminders; not fully treated as core closure here. |
 
 ## Core Business Rules
+
+### Session contract implementation notes
+
+The session contract fields `presentationStatus`, `joinAvailability`, and `chatAvailability` are the authoritative source for all session UI state.
+
+Key implementation rules:
+
+- **React Query hooks for session detail** (`usePatientSession`, `usePractitionerSession`) must preserve the `SessionItem` response type explicitly. Do not let the `useQuery` return type degrade to `unknown` or `{}`. Pass the correct generic so that `sessionQuery.data` remains typed as `SessionItem`. This prevents cascade errors in consumer components that depend on `session.presentationStatus`, `session.joinAvailability`, or `session.chatAvailability`.
+- **Web and mobile must not infer join access from local clock or raw session status alone.** Only `joinAvailability.canJoin` from the backend response should control the Join CTA visibility.
+- **UI must not render raw enum values.** `presentationStatus` values like `NO_SHOW` and `UNDER_REVIEW` must be translated through the i18n system before display. The raw enum must not appear in visible user text.
+- **Adding a new `presentationStatus` value** requires updating all translation namespaces where session state copy appears: badge labels, list hints, patient detail copy, practitioner detail copy, and mobile equivalents. Ship the translations before or alongside the backend change.
+
+Phase 5A cleared a build blocker in `src/features/sessions/hooks/use-sessions.ts` where session detail hooks were missing explicit `SessionItem` generics, causing TypeScript to infer `unknown` and blocking the production build.
+
+- Backend contract fields: `presentationStatus`, `joinAvailability`, `chatAvailability`
+- Key files: `src/features/sessions/hooks/use-sessions.ts`, `messages/en/sessions.json`, `messages/ar/sessions.json`
+
+### General platform rules
 
 - The backend is the source of truth.
 - Frontend and mobile do not calculate session or instant booking prices.

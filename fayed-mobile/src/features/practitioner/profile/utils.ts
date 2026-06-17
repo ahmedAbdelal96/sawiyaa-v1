@@ -6,6 +6,10 @@ import type {
   PractitionerReadiness,
 } from "./types";
 import type { TFunction } from "i18next";
+import {
+  formatViewerDate,
+  formatViewerDateTime,
+} from "../../../lib/time-formatting";
 
 type Translate = TFunction<"translation", undefined>;
 
@@ -24,38 +28,16 @@ export function getInitials(name: string | null | undefined) {
 }
 
 export function formatDateTime(value: string | null | undefined, locale: string) {
-  if (!value) {
-    return "-";
-  }
-
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return "-";
-  }
-
-  return date.toLocaleString(locale, {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
+  return formatViewerDateTime(value, {
+    locale,
+    fallbackText: "-",
   });
 }
 
 export function formatDate(value: string | null | undefined, locale: string) {
-  if (!value) {
-    return "-";
-  }
-
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return "-";
-  }
-
-  return date.toLocaleDateString(locale, {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
+  return formatViewerDate(value, {
+    locale,
+    fallbackText: "-",
   });
 }
 

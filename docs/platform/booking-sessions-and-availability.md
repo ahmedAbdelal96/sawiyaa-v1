@@ -63,7 +63,11 @@ The exact states depend on the backend session model, but the UX usually needs t
 - expired
 - cancelled
 - closed
+- no-show
+- under review
 - read-only
+
+Admin operations can apply manual session decisions to move a session to `NO_SHOW` or `UNDER_REVIEW` outside the normal flow. These decisions are audited and do not automatically imply refund or payout unless the finance policy explicitly handles those outcomes.
 
 ## Join policy
 
@@ -111,6 +115,40 @@ That rule applies even if the payment-return screen opens in a browser or mobile
 
 When chat is not available, the user should see a calm explanation and a clear return action.
 It should never expose a raw route or technical enum as the main message.
+
+## Session presentation status and join availability contract
+
+The backend owns session display state through two primary fields:
+
+- **`presentationStatus`** — drives all user-facing status copy: badges, list labels, detail headings, session summary counts, and filter tabs. The UI must not derive its own display label from raw backend session state.
+- **`joinAvailability.canJoin`** — the only signal the UI should use to show or hide the Join CTA. No other condition, clock-based logic, or local status inference should control this.
+
+### Enforcing the join contract
+
+The Join CTA must stay hidden whenever `joinAvailability.canJoin` is `false`, including but not limited to these states:
+
+- `NO_SHOW` — session was closed as a no-show
+- `UNDER_REVIEW` — session is under operational review
+- session has ended or been cancelled
+- payment is not yet confirmed
+- the join window has not opened
+
+### Rendering session state
+
+The session detail page should always answer these questions from backend fields, not from client-side logic:
+
+- Who is the session with?
+- When is it scheduled?
+- Can the user join right now?
+- Is chat available?
+- What state is the session in?
+- What support or next action is available?
+
+### No-show and under-review states
+
+`NO_SHOW` and `UNDER_REVIEW` are session closeout states. They must render as human-readable copy, not raw enum values. For example, in Arabic the label should appear as `لم يحضر` for no-show. The raw enum must never appear in visible UI text.
+
+These states are set through admin manual decision operations and propagate through the same `presentationStatus` contract used across patient, practitioner, and admin surfaces. They do not automatically trigger refunds or payouts unless the finance policy explicitly handles that outcome.
 
 ## Instant Booking summary
 

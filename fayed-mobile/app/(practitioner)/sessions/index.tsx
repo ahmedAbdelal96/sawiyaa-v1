@@ -18,7 +18,6 @@ import {
   SectionHeader,
   StatusChip,
   Text,
-  formatDateTime,
 } from "../../../src/components/ui";
 import {
   useInfinitePractitionerSessions,
@@ -36,6 +35,7 @@ import { getAppDirection } from "../../../src/i18n/direction";
 import { useTheme } from "../../../src/providers/ThemeProvider";
 import { normalizeAllowedExternalUrl } from "../../../src/lib/external-url";
 import { trackAnalyticsEvent } from "../../../src/lib/analytics";
+import { formatViewerDateTime } from "../../../src/lib/time-formatting";
 
 type SessionFilterKey = "all" | "upcoming" | "ready" | "live" | "closed";
 
@@ -527,7 +527,10 @@ function SessionWorkspaceCard({
       <View style={styles.metaStack}>
         <Text color={theme.colors.textSecondary} style={styles.metaText}>
           {session.scheduledStartAt
-            ? formatDateTime(session.scheduledStartAt, locale)
+            ? formatViewerDateTime(session.scheduledStartAt, {
+                locale,
+                fallbackText: "-",
+              })
             : t("practitioner.sessions.noSchedule")}
         </Text>
 
@@ -665,10 +668,13 @@ function PrioritySessionCard({
 
         <View style={styles.metaStack}>
           <Text color={theme.colors.textSecondary} style={styles.metaText}>
-            {session.scheduledStartAt
-              ? formatDateTime(session.scheduledStartAt, locale)
-              : t("practitioner.sessions.noSchedule")}
-          </Text>
+          {session.scheduledStartAt
+            ? formatViewerDateTime(session.scheduledStartAt, {
+                locale,
+                fallbackText: "-",
+              })
+            : t("practitioner.sessions.noSchedule")}
+        </Text>
           <View style={styles.metaInlineRow}>
             <Text color={theme.colors.textSecondary} style={styles.metaTiny}>
               {t("practitioner.sessions.duration", {

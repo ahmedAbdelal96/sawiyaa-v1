@@ -5,6 +5,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { Link, useRouter } from "@/i18n/navigation";
 import { CheckCircle, XCircle, Clock, AlertCircle, Loader2 } from "lucide-react";
 import { ListStateSkeleton, StateCard } from "@/components/shared/ContentStates";
+import { formatViewerDateTime } from "@/lib/time-formatting";
 import { useSessionFinancialBreakdown } from "@/features/sessions/hooks/use-session-financial";
 import { usePatientSession } from "@/features/sessions/hooks/use-sessions";
 import type { SessionItem, SessionStatus } from "@/features/sessions/types/sessions.types";
@@ -26,15 +27,7 @@ const POLL_INTERVAL_MS = 3_000;
 const MAX_POLL_DURATION_MS = 15_000;
 
 function formatDatetime(isoString: string | null, numLocale: string): string {
-  if (!isoString) return "";
-  return new Date(isoString).toLocaleString(numLocale, {
-    weekday: "long",
-    month: "long",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: !numLocale.startsWith("ar"),
-  });
+  return formatViewerDateTime(isoString, { locale: numLocale });
 }
 
 type Props = {

@@ -1,0 +1,469 @@
+=================================================================
+PHASE 6 WEB UX AUDIT: Loading, Empty, Error & Permission-Denied States
+Audit Agent 8 | Fayed Platform
+=================================================================
+
+Evidence standard: file:line for each finding.
+Severity: P2 = missing critical state; P3 = polish/UX quality
+
+=================================================================
+1. LOADING STATES
+=================================================================
+
+[P2] FINDING: ZERO route-level loading.tsx files exist anywhere in the application.
+
+  Confirmed absent from ALL critical route groups:
+  - fayed-frontend-v1/src/app/[locale]/(patient)/patient/ -- NO loading.tsx
+  - fayed-frontend-v1/src/app/[locale]/(practitioner)/practitioner/ -- NO loading.tsx
+  - fayed-frontend-v1/src/app/[locale]/(admin)/admin/ -- NO loading.tsx
+  - fayed-frontend-v1/src/app/[locale]/(public)/ -- NO loading.tsx (only error.tsx at practitioners/)
+
+  Only two loading.tsx-equivalent state files exist in the entire app:
+  - fayed-frontend-v1/src/app/[locale]/error.tsx (this is a Next.js Error Boundary, not a streaming loader)
+  - fayed-frontend-v1/src/app/[locale]/(public)/practitioners/error.tsx (Error Boundary)
+
+  The app relies entirely on component-level isLoading checks (React Query hooks).
+  Next.js App Router streaming/suspense is effectively disabled for all 80+ routes.
+  No fallback UI is shown during initial route navigation -- users see a white screen
+  or the browser's default loading indicator.
+
+  Evidence: find output confirms zero loading.tsx files under (patient), (practitioner), (admin).
+
+---
+
+[P2] FINDING: Patient session detail has no loading skeleton for the Join CTA panel.
+
+  File: fayed-frontend-v1/src/features/sessions/components/PatientSessionDetailPanel.tsx:198-204
+
+  When isLoading is true, the component renders only:
+    <ListStateSkeleton items={3} heightClass="h-32" />
+
+  This skeleton has no placeholder for the session's Join/Cancel CTA panel,
+  payment state card, or chat card. The layout jumps significantly when data loads.
+  The placeholder does not resemble the actual content structure.
+
+  Evidence: line 198-204 -- only a 3-item list skeleton, no structural placeholder
+  for the multi-panel session detail layout.
+
+---
+
+[P2] FINDING: Practitioner ledger list has no loading skeleton while data fetches.
+
+  File: fayed-frontend-v1/src/features/financial-operations/components/PractitionerLedgerListScreen.tsx:100-160
+
+  The component calls usePractitionerLedger() at line 159 but has no isLoading
+  branch that renders a skeleton. The DataTable at line ~260+ receives loading={ledgerQuery.isLoading}
+  but the DataTable's built-in loading state is a full-table skeleton -- there is no
+ 提前/preview of the stats grid or filter bar above the table during the loading state.
+
+  Evidence: DataTable.tsx line 28 imports DataTableLoading; however the parent
+  PractitionerLedgerListScreen has no conditional rendering of a skeleton for the
+  surrounding page layout (stats grid at lines ~200+, filters at ~220+).
+
+---
+
+[P3] FINDING: PractitionerPendingRequestsPanel loading state is a bare pulsing div.
+
+  File: fayed-frontend-v1/src/features/instant-booking/components/PractitionerPendingRequestsPanel.tsx:114-118
+
+  When isLoading is true, the component renders:
+    <div className="h-24 animate-pulse rounded-[28px] border border-border-light bg-surface-secondary dark:bg-white/5" />
+
+  No label, no icon, no accessible text. A 24-unit-height pulsing box is shown
+  with no indication of what is loading. Not accessible to screen readers
+  (no role="status" or aria-label).
+
+  Evidence: lines 114-118.
+
+---
+
+[P3] FINDING: PatientPaymentsHistoryPanel refund count shows spinner text during loading.
+
+  File: fayed-frontend-v1/src/features/payments/components/PatientPaymentsHistoryPanel.tsx:266
+
+  The payment history section shows filteredPayments.length > 0 in the table
+  while payments are still loading (line 265: paymentsLoading || sessionsLoading),
+  but the refundCount at line 306 filters payments that may not yet be loaded.
+  The summary cards at lines 377-418 compute currency totals from payments that
+  are potentially undefined during loading.
+
+  Evidence: line 265-276 -- paymentsLoading/sessionsLoading guard only the
+  initial skeleton, not the filteredPayments/payment currency totals.
+
+---
+
+=================================================================
+2. EMPTY STATES
+=================================================================
+
+[P3] FINDING: Patient support empty state in list view lacks actionable copy.
+
+  File: fayed-frontend-v1/src/features/support/components/PatientSupportHomeScreen.tsx:377-380
+
+  When filteredItems.length === 0 and not loading:
+    <div className="p-8 text-center text-xs text-text-muted">
+      {t("states.empty.heading")}
+    </div>
+
+  This is plain centered text with no icon, no description, and no CTA.
+  The user sees "No tickets" but has no button to create a ticket from this view.
+  The "+ New Ticket" button is only in the thread list header (line 276-282),
+  not surfaced as a prominent empty state action.
+
+  Evidence: lines 377-380.
+
+---
+
+[P3] FINDING: Patient payments history empty state shows generic copy.
+
+  File: fayed-frontend-v1/src/features/payments/components/PatientPaymentsHistoryPanel.tsx:616-633
+
+  When visiblePayments.length === 0:
+    title={t("history.emptyHeading")}
+    note={t("history.emptyNote")}
+    action: link to "/patient/sessions"
+
+  The emptyHeading and emptyNote are defined in translation files.
+  The CTA links to sessions rather than to wallet or a help page.
+  The copy does not explain why a patient might have no payment history
+  (e.g., "You haven't booked any sessions yet").
+
+  Evidence: lines 616-633.
+
+---
+
+[P3] FINDING: Patient wallet activity empty state is present but its action is vague.
+
+  File: fayed-frontend-v1/src/features/payments/components/PatientWalletScreen.tsx:477-494
+
+  When entries.length === 0:
+    title={t("walletPage.activityEmpty.heading")}
+    note={t("walletPage.activityEmpty.note")}
+    action: link to "/patient/payments"
+
+  The note likely explains no transactions yet, but the action only says
+  "View Payments" -- does not guide user to make their first payment or add funds.
+
+  Evidence: lines 477-494.
+
+---
+
+[P3] FINDING: Practitioner instant booking empty state lacks "how to get requests" guidance.
+
+  File: fayed-frontend-v1/src/features/instant-booking/components/PractitionerInstantBookingRequestsScreen.tsx:292-307
+
+  When requests.length === 0:
+    title={t("queue.empty.title")}
+    note={t("queue.empty.note")}
+
+  The empty state shows a Zap icon and "No requests right now" copy.
+  There is no secondary action to configure availability or go to the dashboard.
+  A practitioner who has never received a request cannot distinguish "no requests yet"
+  from "your availability settings are blocking requests."
+
+  Evidence: lines 292-307.
+
+---
+
+[P2] FINDING: Practitioner ledger list has no empty state.
+
+  File: fayed-frontend-v1/src/features/financial-operations/components/PractitionerLedgerListScreen.tsx
+
+  The DataTable component receives emptyState prop only when data.items.length === 0
+  AND ledgerQuery.isLoading is false. If the practitioner has never had any ledger
+  entries, they see the DataTable's default empty state with no context-specific copy
+  explaining what a ledger is or how entries are created.
+
+  Evidence: DataTable.tsx lines 29, 93 (emptyState prop), PractitionerLedgerListScreen
+  around line 260+ passes emptyState={{ title: ..., description: ..., action: ... }}
+  but the description/note text comes from translation keys that may not be
+  context-specific for the financial operations domain.
+
+---
+
+[P3] FINDING: Patient care-chat request form -- when session is not pre-filled,
+       the empty state in the requests list (lines 280-297) is a StateCard with
+       a "Browse practitioners" CTA. However, the create form itself (lines 101-179)
+       shows a pre-filled practitioner chip but no error UI when the practitioner
+       slug is invalid -- it just silently fails on submit.
+
+  File: fayed-frontend-v1/src/features/care-chat/components/PatientCareChatHomeScreen.tsx:181-207
+
+  When hasPrefilledPractitioner is false, the component shows a StateCard empty
+  state. This is adequate but uses centered=false which is unusual.
+
+  Evidence: lines 181-207.
+
+---
+
+=================================================================
+3. ERROR STATES
+=================================================================
+
+[P2] FINDING: AppErrorFallback logs full stack traces to console in development.
+
+  File: fayed-frontend-v1/src/components/shared/AppErrorFallback.tsx:14-21
+
+  In development mode:
+    if (process.env.NODE_ENV === "development") {
+      console.error("[app] route error boundary:", {
+        name: error.name,
+        message: error.message,
+        stack: error.stack,    <-- FULL STACK TRACE
+      });
+    }
+
+  This means any patient-facing error that gets caught by the error boundary
+  (including auth failures, validation errors, network errors) will have its
+  full stack exposed in browser DevTools. While this is behind a development
+  guard, patient-facing errors on staging could leak implementation details.
+
+  Evidence: lines 14-21.
+
+---
+
+[P2] FINDING: AppErrorFallback does not distinguish error types in copy.
+
+  File: fayed-frontend-v1/src/components/shared/AppErrorFallback.tsx:57-73
+
+  All error types (UNAUTHORIZED, FORBIDDEN, NOT_FOUND, SERVICE_UNAVAILABLE, etc.)
+  render the same generic title and description:
+    title: t("errors.fallback.title")     <-- same for all types
+    description: t("errors.fallback.description")  <-- same for all types
+
+  A 403 Forbidden and a 500 Server Error show identical UI.
+  The ERROR_TYPE_STYLES at lines 31-39 color-code the error type badge,
+  but the main heading and description are identical across all error types.
+
+  Evidence: lines 57-73, 31-39.
+
+---
+
+[P3] FINDING: Patient session detail -- chat disabled state shows a disabled button
+       rather than an explanatory panel.
+
+  File: fayed-frontend-v1/src/features/sessions/components/PatientSessionDetailPanel.tsx:619-633
+
+  When canOpenSessionChat is false:
+    <button type="button" disabled className="...">
+      {t("detail.chatCard.open")}   <-- "Open Chat"
+    </button>
+    <div className="mt-3 rounded-2xl border...">
+      {chatNote}   <-- explanatory text below
+    </div>
+
+  The disabled button with no explanation above it leaves users uncertain.
+  The explanatory text appears below in a secondary panel, not next to the button.
+
+  Evidence: lines 619-633.
+
+---
+
+[P3] FINDING: App-level not-found.tsx is English-only with hardcoded text.
+
+  File: fayed-frontend-v1/src/app/not-found.tsx:6-34
+
+  The 404 page shows:
+    "The page you requested is not available right now."  <-- hardcoded EN
+    "Return home"  <-- hardcoded EN
+
+  This page is used by the root app layout for any locale, including Arabic.
+  It should use useTranslations() for i18n copy.
+
+  Evidence: lines 18, 24.
+
+---
+
+[P3] FINDING: Support home screen shows empty heading text while loading tickets.
+
+  File: fayed-frontend-v1/src/features/support/components/PatientSupportHomeScreen.tsx:363-366
+
+  While tickets.isLoading is true:
+    <div className="flex items-center justify-center p-8 text-xs text-text-muted animate-pulse">
+      {t("list.countLoading")}...
+    </div>
+
+  After this, if tickets.isError: shows error with retry.
+  Then if filteredItems.length === 0: shows empty heading text.
+  But at lines 258: "showCreateView = isCreating || (!selectedTicketId && filteredItems.length === 0 && !tickets.isLoading)"
+
+  This means on first load (isLoading=true), the user sees a spinner text.
+  On error, they see an error card. On empty, they see empty heading.
+  The transition between loading and empty could flash two different states.
+
+  Evidence: line 258.
+
+---
+
+=================================================================
+4. PERMISSION-DENIED UX
+=================================================================
+
+[P2] FINDING: AdminPermissionGate shows a raw "Loading..." text during permission check.
+
+  File: fayed-frontend-v1/src/components/admin/AdminPermissionGate.tsx:59-65
+
+  When isLoading is true:
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center px-4 text-sm text-text-muted">
+        Loading...
+      </div>
+    );
+
+  No skeleton component, no spinner, no "Checking permissions..." label.
+  This is the loading state for an authorization check -- should be more explicit.
+
+  Evidence: lines 59-65.
+
+---
+
+[P2] FINDING: AdminForbiddenView exists and is properly designed for admin routes.
+  File: fayed-frontend-v1/src/components/admin/AdminForbiddenView.tsx:17-54
+
+  The AdminForbiddenView is well-designed:
+  - Uses an SVG shield icon (not emoji)
+  - Title: "Access Denied" (clear and calm)
+  - Copy: "Contact your administrator if you believe this is a mistake."
+  - CTA: "Go to Dashboard" link
+  - No mention of which permission is missing
+  - No stack trace or technical details
+
+  This is the GOLD STANDARD for permission-denied UX in this codebase.
+  However, it is ONLY used inside AdminPermissionGate for admin routes.
+
+  Evidence: AdminPermissionGate.tsx lines 68, 76; AdminForbiddenView.tsx full file.
+
+---
+
+[P2] FINDING: Patient and practitioner routes have NO dedicated permission-denied component.
+
+  There is no PatientPermissionGate or PractitionerPermissionGate equivalent.
+  If a patient navigates to a route they don't have access to, the error
+  propagates to the nearest error boundary (AppErrorFallback), which shows
+  the generic "Something went wrong" page -- identical to a 500 error.
+
+  Evidence: No files matching PatientPermissionGate or PractitionerPermissionGate
+  exist in the codebase.
+
+---
+
+=================================================================
+5. SESSION-SPECIFIC STATES
+=================================================================
+
+[P3] FINDING: Patient session detail -- payment pending state shows inline copy
+       but the "Pay Now" CTA in the payment card (line 716-722) links to the
+       payment page. However, if payment has FAILED, the paymentStateKey is "EXPIRED"
+       and the card shows an amber/warning style with no specific retry action --
+       only a link to "/patient/payments" for history.
+
+  File: fayed-frontend-v1/src/features/sessions/components/PatientSessionDetailPanel.tsx:639-738
+
+  paymentStateKey === "EXPIRED" (line 646) shows amber styling but no "Retry Payment"
+  button -- only "View Payment History" and "View Wallet" links.
+
+  Evidence: lines 639-738 (paymentStateKey logic at lines 229-244, 639).
+
+---
+
+[P3] FINDING: Practitioner session detail (if separate from list) -- need to verify
+       PractitionerSessionDetailPanel for read-only chat copy.
+       [Not reviewed in full due to scope -- partial review only.]
+
+  File: fayed-frontend-v1/src/features/sessions/components/PractitionerSessionDetailPanel.tsx
+  (exists but not read in full -- scoped to feature-level states per task brief)
+
+---
+
+=================================================================
+6. CLINICAL WARMTH CHECK
+=================================================================
+
+[PASS] PatientSessionsPanel error copy (lines 90-92, 147-149) uses:
+  "Could not load sessions" / "Please try refreshing the page."
+  Does NOT blame the user ("You did something wrong") or expose stack traces.
+
+[PASS] Patient session cancellation modal (lines 759-763) shows:
+  "isCancellable ? t("detail.cancelConfirm.policyNote") : t("detail.cancelConfirm.cannotProceed")"
+  The cannotProceed message is calm: "Cancellation is not available for this session."
+  Does not say "You cannot cancel."
+
+[PASS] AppErrorFallback (lines 65-73) uses:
+  title: "Something went wrong" (not "Error!" or "Failure!")
+  description: calm explanatory text, not blaming the user.
+
+[FAIL] AppErrorFallback (lines 14-21) -- console.error with full stack in dev mode
+  could expose implementation errors to anyone with browser access in dev/staging.
+
+[OBSERVATION] The StateCard component (ContentStates.tsx lines 19-55) does not
+  have a variant that shows a warning/info tone -- it only handles error/empty states.
+  Error states that are non-critical (e.g., "could not load optional data") use the
+  same card style as critical errors.
+
+---
+
+=================================================================
+7. DATA TABLE STATES
+=================================================================
+
+[PASS] DataTable component has built-in support for loading, empty, and error states.
+  File: fayed-frontend-v1/src/components/ui/data-table/DataTable.tsx:83-93
+
+  Props:
+    loading = false
+    error = null
+    errorState: { title, description, action }
+    emptyState: { title, description, action }
+
+  Evidence: lines 90-93.
+
+---
+
+[PASS] DataTableEmpty component is well-designed.
+  File: fayed-frontend-v1/src/components/ui/data-table/DataTableEmpty.tsx:32-65
+
+  Has icon, title, description, and action button. Uses rounded-[24px] border
+  with primary-light bg. Accessible action button.
+
+  Evidence: full file.
+
+---
+
+[PASS] PractitionerSessionsPanel (DataTable usage) passes errorState and emptyState
+  correctly to DataTable.
+  File: fayed-frontend-v1/src/features/sessions/components/PractitionerSessionsPanel.tsx:314-332
+
+  Evidence: lines 314-332.
+
+---
+
+=================================================================
+8. SUMMARY TABLE
+=================================================================
+
+| # | Area          | File:Line                                | Severity | State Missing/Broken                   |
+|---|---------------|------------------------------------------|----------|----------------------------------------|
+| 1 | Loading       | (no file -- app-wide)                   | P2       | Zero loading.tsx files exist          |
+| 2 | Loading       | PatientSessionDetailPanel.tsx:198        | P2       | No Join CTA placeholder skeleton       |
+| 3 | Loading       | PractitionerLedgerListScreen.tsx:100    | P2       | No loading skeleton for page layout    |
+| 4 | Loading       | PractitionerPendingRequestsPanel.tsx:114 | P3       | Bare pulsing div, no accessible label  |
+| 5 | Empty         | PatientSupportHomeScreen.tsx:377         | P3       | Empty state lacks icon and CTA         |
+| 6 | Empty         | PatientPaymentsHistoryPanel.tsx:616     | P3       | Empty copy not context-specific        |
+| 7 | Empty         | PatientWalletScreen.tsx:477              | P3       | Wallet activity empty lacks next action|
+| 8 | Empty         | PractitionerInstantBookingRequests:292  | P3       | No guidance on getting first request   |
+| 9 | Empty         | PractitionerLedgerListScreen.tsx          | P2       | No empty state for zero ledger entries |
+|10 | Error         | AppErrorFallback.tsx:14                  | P2       | console.error with full stack in dev   |
+|11 | Error         | AppErrorFallback.tsx:57                  | P2       | All error types show identical copy    |
+|12 | Error         | PatientSessionDetailPanel.tsx:619        | P3       | Disabled chat button with no top explanation|
+|13 | Error         | not-found.tsx:18,24                      | P3       | English-only hardcoded 404 page        |
+|14 | Error         | PatientSupportHomeScreen.tsx:258         | P3       | Loading-to-empty transition not smooth|
+|15 | Permission    | AdminPermissionGate.tsx:59              | P2       | Raw "Loading..." during auth check      |
+|16 | Permission    | AdminForbiddenView.tsx:17                | PASS     | Well-designed permission-denied view   |
+|17 | Permission    | (no file)                               | P2       | No PatientPermissionGate/PractitionerGate|
+|18 | Session       | PatientSessionDetailPanel.tsx:639        | P3       | EXPIRED payment state lacks retry CTA  |
+|19 | ClinicalWarmth| AppErrorFallback.tsx:14                  | FAIL     | Dev-mode stack trace exposure          |
+|20 | ClinicalWarmth| All other error copy                     | PASS     | Calm, non-blaming language used       |
+
+=================================================================
+END OF FINDINGS
+=================================================================

@@ -6,6 +6,10 @@ import type {
   MessagesRole,
 } from "./types";
 import { safeDisplayText } from "./inbox-types";
+import {
+  formatViewerDateTime,
+  formatViewerTime,
+} from "../../lib/time-formatting";
 
 function isArabicLocale(locale?: string) {
   return locale?.startsWith("ar") ?? false;
@@ -15,40 +19,20 @@ export function formatMessageTimestamp(
   value: string | null | undefined,
   locale: string,
 ) {
-  if (!value) {
-    return "-";
-  }
-
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return "-";
-  }
-
-  return new Intl.DateTimeFormat(locale, {
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  }).format(date);
+  return formatViewerDateTime(value, {
+    locale,
+    fallbackText: "-",
+  });
 }
 
 export function formatMessageTime(
   value: string | null | undefined,
   locale: string,
 ) {
-  if (!value) {
-    return "-";
-  }
-
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return "-";
-  }
-
-  return new Intl.DateTimeFormat(locale, {
-    hour: "numeric",
-    minute: "2-digit",
-  }).format(date);
+  return formatViewerTime(value, {
+    locale,
+    fallbackText: "-",
+  });
 }
 
 export function sortMessagesChronologically(

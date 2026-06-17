@@ -12,6 +12,7 @@
     "title": "Review your wallet summary without jumping into ledger or settlement detail.",
     "note": "This summary is derived from the financial ledger. It shows balances and totals that are ready for visibility now.",
     "currency": "Currency: {currency}",
+    "timezoneLabel": "Timezone",
     "scopeHeading": "Available now",
     "scopeItems": {
       "balances": "Current balances split by availability state.",
@@ -34,7 +35,8 @@
     "detailsHeading": "Wallet details",
     "details": {
       "lastLedgerEntryAt": "Last ledger entry",
-      "updatedAt": "Last wallet update"
+      "updatedAt": "Last wallet update",
+      "timezoneLabel": "Timezone"
     }
   },
   "states": {
@@ -119,6 +121,7 @@
     "note": "This surface provides a visibility-first view of settlement batches and payout status updates.",
     "count": "{value} settlements",
     "countLoading": "Loading settlements",
+    "timezoneLabel": "Timezone",
     "scopeHeading": "Available now",
     "scopeItems": {
       "history": "Settlement history with timestamps and payout state.",

@@ -19,5 +19,18 @@ export const enInstantBookingCatalog = {
     requestAlreadyCancelled: 'Instant booking request is already cancelled',
     requestAlreadyAccepted: 'Instant booking request is already accepted',
     requestAlreadyRejected: 'Instant booking request is already rejected',
+    requestAlreadyFinalized:
+      'Instant booking request has already been handled',
+  },
+  notifications: {
+    requestAcceptedTitle: 'Instant booking request accepted',
+    requestAcceptedBody:
+      'Your instant booking request was accepted. Open it to continue with payment.',
+    requestRejectedTitle: 'Instant booking request rejected',
+    requestRejectedBody:
+      'Your instant booking request was rejected. You can request another instant session.',
+    requestExpiredTitle: 'Instant booking request expired',
+    requestExpiredBody:
+      'Your instant booking request expired before it was acted on.',
   },
 };

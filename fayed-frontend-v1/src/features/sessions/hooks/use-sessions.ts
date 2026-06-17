@@ -15,7 +15,7 @@ import {
   preparePractitionerSessionRuntime,
   resolvePractitionerSessionJoinContract,
 } from "../api/sessions.api";
-import type { ListSessionsParams } from "../types/sessions.types";
+import type { ListSessionsParams, SessionItem } from "../types/sessions.types";
 import type { SessionSummary } from "../types/sessions.types";
 
 function sanitizeListSessionsParams(params?: ListSessionsParams): ListSessionsParams | undefined {
@@ -36,7 +36,7 @@ type PatientSessionExtraOptions = {
   staleTime?: number;
   retry?: boolean | number | ((failureCount: number, error: unknown) => boolean);
   meta?: Record<string, unknown>;
-  refetchInterval?: number | false | ((query: Record<string, unknown>) => number | false);
+  refetchInterval?: number | false | ((query: { state: { data: SessionItem | undefined } }) => number | false);
   refetchIntervalInBackground?: boolean;
 };
 
@@ -48,7 +48,7 @@ export function usePatientSession(
   sessionId: string | null,
   extraOptions?: PatientSessionExtraOptions,
 ) {
-  return useQuery({
+  return useQuery<SessionItem>({
     queryKey: patientSessionQueryKeys.detail(sessionId ?? ""),
     queryFn: () => getPatientSession(sessionId!),
     enabled: Boolean(sessionId),
@@ -163,7 +163,7 @@ export function usePractitionerSessions(params?: ListSessionsParams) {
  * GET /practitioners/me/sessions/:id
  */
 export function usePractitionerSession(sessionId: string | null) {
-  return useQuery({
+  return useQuery<SessionItem>({
     queryKey: practitionerSessionQueryKeys.detail(sessionId ?? ""),
     queryFn: () => getPractitionerSession(sessionId!),
     enabled: Boolean(sessionId),

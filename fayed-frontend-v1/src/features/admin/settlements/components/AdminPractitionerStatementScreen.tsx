@@ -9,6 +9,7 @@ import { SurfaceCard, SurfaceHeader, SurfaceStatCard, SurfaceToolbar } from "@/c
 import Button from "@/components/ui/button/Button";
 import DirectionalArrowIcon from "@/components/ui/navigation/DirectionalArrowIcon";
 import { parseDownloadFilename, triggerBlobDownload } from "@/lib/downloads/file-download";
+import { formatUtcAuditDateTime } from "@/lib/time-formatting";
 import {
   useAdminPractitionerStatement,
   useDownloadAdminPractitionerStatementCsv,
@@ -20,15 +21,15 @@ import type {
 } from "../types/admin-settlements.types";
 
 function formatIsoDate(locale: string, value: string) {
-  return new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "short" }).format(
-    new Date(value),
-  );
+  return `UTC: ${formatUtcAuditDateTime(value, { locale })}`;
 }
 
 function formatMonthLabel(locale: string, value: string) {
-  return new Intl.DateTimeFormat(locale, { month: "long", year: "numeric" }).format(
-    new Date(value),
-  );
+  return new Intl.DateTimeFormat(locale, {
+    month: "long",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(new Date(value));
 }
 
 function shortId(value: string | null | undefined) {
@@ -112,9 +113,11 @@ export default function AdminPractitionerStatementScreen({
     const groups = new Map<string, PractitionerStatementRow[]>();
 
     for (const row of statement?.rows ?? []) {
-      const key = new Intl.DateTimeFormat(locale, { month: "2-digit", year: "numeric" }).format(
-        new Date(row.effectiveAt),
-      );
+      const key = new Intl.DateTimeFormat(locale, {
+        month: "2-digit",
+        year: "numeric",
+        timeZone: "UTC",
+      }).format(new Date(row.effectiveAt));
       const bucket = groups.get(key) ?? [];
       bucket.push(row);
       groups.set(key, bucket);

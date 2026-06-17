@@ -23,6 +23,11 @@ import {
   PractitionerFilterCard,
   PractitionerTableSection,
 } from "@/components/shared/practitioner/PractitionerWorkspaceKit";
+import { usePractitionerProfile } from "@/features/practitioners/hooks/use-practitioners";
+import {
+  formatPractitionerOrViewerDateTime,
+  formatTimeZoneLabel,
+} from "@/lib/time-formatting";
 import { getPractitionerSettlementsErrorKey } from "../lib/financial-operations-errors";
 import { usePractitionerSettlements } from "../hooks/use-financial-operations";
 import type {
@@ -62,15 +67,11 @@ function formatMoney(value: string, currency: string, locale: string) {
   }).format(numeric);
 }
 
-function formatDateTime(value: string | null, locale: string) {
+function formatDateTime(value: string | null, locale: string, timeZone?: string | null) {
   if (!value) return "-";
-  return new Date(value).toLocaleString(locale === "ar" ? "ar-SA" : "en-US", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: !locale.startsWith("ar"),
+  return formatPractitionerOrViewerDateTime(value, timeZone ?? null, {
+    locale: locale === "ar" ? "ar-SA" : "en-US",
+    fallbackText: "-",
   });
 }
 
@@ -89,6 +90,7 @@ export default function PractitionerSettlementsListScreen() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const profileQuery = usePractitionerProfile();
 
   const settlementStatus = parseEnumParam<PractitionerSettlementStatus | "ALL">(
     searchParams.get("status"),
@@ -127,6 +129,10 @@ export default function PractitionerSettlementsListScreen() {
 
   const settlementsQuery = usePractitionerSettlements(params);
   const data = settlementsQuery.data;
+  const practitionerTimeZone = profileQuery.data?.profile.timezone ?? null;
+  const practitionerTimeZoneLabel = practitionerTimeZone
+    ? formatTimeZoneLabel(practitionerTimeZone, { locale })
+    : null;
 
   const columns = useMemo<ColumnDef<PractitionerSettlementItem>[]>(
     () => [
@@ -183,20 +189,20 @@ export default function PractitionerSettlementsListScreen() {
         id: "createdAt",
         header: locale.startsWith("ar") ? "أُنشئت" : "Created",
         accessor: (row) => new Date(row.createdAt).getTime(),
-        cell: (row) => formatDateTime(row.createdAt, locale),
+        cell: (row) => formatDateTime(row.createdAt, locale, practitionerTimeZone),
       },
       {
         id: "paidAt",
         header: locale.startsWith("ar") ? "صُرفت" : "Paid",
         accessor: (row) => (row.paidAt ? new Date(row.paidAt).getTime() : 0),
-        cell: (row) => <span className="text-xs text-text-secondary">{formatDateTime(row.paidAt, locale)}</span>,
+        cell: (row) => <span className="text-xs text-text-secondary">{formatDateTime(row.paidAt, locale, practitionerTimeZone)}</span>,
         hideOnMobile: true,
       },
       {
         id: "failedAt",
         header: locale.startsWith("ar") ? "فشلت" : "Failed",
         accessor: (row) => (row.failedAt ? new Date(row.failedAt).getTime() : 0),
-        cell: (row) => <span className="text-xs text-text-secondary">{formatDateTime(row.failedAt, locale)}</span>,
+        cell: (row) => <span className="text-xs text-text-secondary">{formatDateTime(row.failedAt, locale, practitionerTimeZone)}</span>,
         hideOnMobile: true,
       },
     ],
@@ -210,9 +216,16 @@ export default function PractitionerSettlementsListScreen() {
         title={t("settlements.title")}
         description={t("settlements.note")}
         actions={
-          <span className="app-chip rounded-full px-3 py-1 text-xs font-medium">
-            {data ? t("settlements.count", { value: data.pagination.totalItems }) : t("settlements.countLoading")}
-          </span>
+          <div className="flex flex-wrap items-center gap-2">
+            {practitionerTimeZoneLabel ? (
+              <span className="app-chip rounded-full px-3 py-1 text-xs font-medium">
+                {t("settlements.timezoneLabel")}: {practitionerTimeZoneLabel}
+              </span>
+            ) : null}
+            <span className="app-chip rounded-full px-3 py-1 text-xs font-medium">
+              {data ? t("settlements.count", { value: data.pagination.totalItems }) : t("settlements.countLoading")}
+            </span>
+          </div>
         }
       />
 

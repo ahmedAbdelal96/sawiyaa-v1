@@ -187,6 +187,39 @@ export const notificationsSeedModule: SeedModule = {
         category: NotificationCategory.TRAINING,
       },
       {
+        slug: 'instant-booking.request-accepted',
+        displayName: 'Instant Booking Request Accepted',
+        description:
+          'Patient notification when an instant booking request is accepted',
+        category: NotificationCategory.SESSION,
+        supportsEmail: false,
+        supportsSms: false,
+        supportsPush: true,
+        supportsInApp: true,
+      },
+      {
+        slug: 'instant-booking.request-rejected',
+        displayName: 'Instant Booking Request Rejected',
+        description:
+          'Patient notification when an instant booking request is rejected',
+        category: NotificationCategory.SESSION,
+        supportsEmail: false,
+        supportsSms: false,
+        supportsPush: true,
+        supportsInApp: true,
+      },
+      {
+        slug: 'instant-booking.request-expired',
+        displayName: 'Instant Booking Request Expired',
+        description:
+          'Patient notification when an instant booking request expires',
+        category: NotificationCategory.SESSION,
+        supportsEmail: false,
+        supportsSms: false,
+        supportsPush: true,
+        supportsInApp: true,
+      },
+      {
         slug: 'dev.push-test',
         displayName: 'Dev Push Test',
         description: 'Developer-only Expo push test notification type',

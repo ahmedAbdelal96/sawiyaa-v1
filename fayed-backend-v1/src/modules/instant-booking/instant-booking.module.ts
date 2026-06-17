@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { JwtAccessAuthGuard } from '@common/guards/authentication/jwt-access-auth.guard';
 import { RolesGuard } from '@common/guards/authorization/roles.guard';
 import { AvailabilityModule } from '@modules/availability/availability.module';
+import { NotificationsModule } from '@modules/notifications/notifications.module';
 import { PresenceModule } from '@modules/presence/presence.module';
 import { PublicPractitionerVisibilityPolicy } from '@modules/practitioners/policies/public-practitioner-visibility.policy';
 import { SessionsModule } from '@modules/sessions/sessions.module';
@@ -13,6 +14,7 @@ import { InstantBookingPatientRepository } from './repositories/instant-booking-
 import { InstantBookingPractitionerRepository } from './repositories/instant-booking-practitioner.repository';
 import { InstantBookingRequestRepository } from './repositories/instant-booking-request.repository';
 import { CreateSessionFromInstantBookingService } from './services/create-session-from-instant-booking.service';
+import { InstantBookingExpirySweeperService } from './services/instant-booking-expiry-sweeper.service';
 import { ValidateInstantBookingEligibilityService } from './services/validate-instant-booking-eligibility.service';
 import { ValidateInstantBookingStatusTransitionService } from './services/validate-instant-booking-status-transition.service';
 import { AcceptInstantBookingRequestUseCase } from './use-cases/accept-instant-booking-request.use-case';
@@ -31,7 +33,7 @@ import { RejectInstantBookingRequestUseCase } from './use-cases/reject-instant-b
  * Session creation happens as a handoff so Session remains the actual booking source of truth.
  */
 @Module({
-  imports: [AvailabilityModule, PresenceModule, SessionsModule],
+  imports: [AvailabilityModule, NotificationsModule, PresenceModule, SessionsModule],
   controllers: [
     PatientInstantBookingDiscoveryController,
     PatientInstantBookingController,
@@ -48,6 +50,7 @@ import { RejectInstantBookingRequestUseCase } from './use-cases/reject-instant-b
     ValidateInstantBookingStatusTransitionService,
     ValidateInstantBookingEligibilityService,
     CreateSessionFromInstantBookingService,
+    InstantBookingExpirySweeperService,
     CreateInstantBookingRequestUseCase,
     GetPatientInstantBookingRequestUseCase,
     ListPatientInstantBookingPractitionersUseCase,

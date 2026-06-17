@@ -22,6 +22,7 @@ import FilterClearButton from "@/components/ui/filters/FilterClearButton";
 import { Drawer, ModalBody, ModalHeader } from "@/components/ui/modal";
 import Pagination from "@/components/tables/Pagination";
 import { cn } from "@/lib/utils";
+import { formatUtcAuditDateTime, formatUtcAuditTime } from "@/lib/time-formatting";
 import {
   buildUpdatedSearchParams,
   parseEnumParam,
@@ -75,23 +76,12 @@ type SessionTabValue =
 
 function formatDateTime(value: string | null, locale: string, fallback = "-") {
   if (!value) return fallback;
-  return new Intl.DateTimeFormat(locale === "ar" ? "ar-SA" : "en-US", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: !locale.startsWith("ar"),
-  }).format(new Date(value));
+  return `UTC: ${formatUtcAuditDateTime(value, { locale })}`;
 }
 
 function formatTimeOnly(value: string | null, locale: string, fallback = "-") {
   if (!value) return fallback;
-  return new Intl.DateTimeFormat(locale === "ar" ? "ar-SA" : "en-US", {
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: !locale.startsWith("ar"),
-  }).format(new Date(value));
+  return `UTC: ${formatUtcAuditTime(value, { locale })}`;
 }
 
 function parseBooleanParam(value: string | null): boolean | undefined {

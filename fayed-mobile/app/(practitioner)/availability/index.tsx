@@ -30,6 +30,15 @@ import type {
   AvailabilityExceptionType,
 } from "../../../src/features/practitioner/availability/types";
 import {
+  formatMinuteOfDay,
+  getDatePartsInTimeZone,
+  formatPractitionerDateTime,
+  formatTimeZoneLabel,
+  formatViewerDateTime,
+  formatWallTimeRange,
+  normalizeIanaTimeZone,
+} from "../../../src/lib/time-formatting";
+import {
   useMyPresence,
   useSetInstantBooking,
   useSetPresenceStatus,
@@ -103,6 +112,10 @@ export default function PractitionerAvailabilityScreen() {
 
   const hasLoadError = presenceQuery.isError || availabilityQuery.isError;
   const availabilityData = availabilityQuery.data ?? null;
+  const availabilityTimeZone = useMemo(
+    () => normalizeIanaTimeZone(availabilityData?.timezone),
+    [availabilityData?.timezone],
+  );
 
   useEffect(() => {
     if (!availabilityData) {
@@ -139,7 +152,6 @@ export default function PractitionerAvailabilityScreen() {
     () => (availabilityData?.exceptions ?? []).filter((item) => item.isActive),
     [availabilityData?.exceptions],
   );
-  const weeklySlotsCount = draftSlots.length;
   const isSaving = replaceWeeklyAvailability.isPending;
   const isDirtyState = isDirty(availabilityData, draftSlots);
 
@@ -148,24 +160,36 @@ export default function PractitionerAvailabilityScreen() {
     presenceQuery.data?.presence.isInstantBookingEnabled ?? false;
 
   const summaryCounts = useMemo(() => {
-    const now = new Date();
-    const today = now.getDay();
+    const scheduleDateParts = availabilityTimeZone
+      ? getDatePartsInTimeZone(new Date(), availabilityTimeZone)
+      : null;
     let todayCount = 0;
     let upcomingCount = 0;
     let activeCount = 0;
     let completedCount = 0;
+    let currentWeekday = 0;
+    let currentMinuteOfDay = 0;
+
+    if (scheduleDateParts) {
+      currentWeekday = scheduleDateParts.weekdayIndex;
+      currentMinuteOfDay = scheduleDateParts.minuteOfDay;
+    } else {
+      const fallbackNow = new Date();
+      currentWeekday = fallbackNow.getDay();
+      currentMinuteOfDay = fallbackNow.getHours() * 60 + fallbackNow.getMinutes();
+    }
 
     for (const slot of draftSlots) {
-      if (slot.dayOfWeek === today) {
+      if (slot.dayOfWeek === currentWeekday) {
         todayCount += 1;
       }
-      if (slot.dayOfWeek > today) {
+      if (slot.dayOfWeek > currentWeekday) {
         upcomingCount += 1;
       }
-      if (slot.dayOfWeek === today && slot.endMinuteOfDay > now.getHours() * 60 + now.getMinutes()) {
+      if (slot.dayOfWeek === currentWeekday && slot.endMinuteOfDay > currentMinuteOfDay) {
         activeCount += 1;
       }
-      if (slot.dayOfWeek === today && slot.endMinuteOfDay <= now.getHours() * 60 + now.getMinutes()) {
+      if (slot.dayOfWeek === currentWeekday && slot.endMinuteOfDay <= currentMinuteOfDay) {
         completedCount += 1;
       }
     }
@@ -176,7 +200,18 @@ export default function PractitionerAvailabilityScreen() {
       activeCount,
       completedCount,
     };
-  }, [draftSlots]);
+  }, [draftSlots, availabilityTimeZone]);
+
+  const scheduleTimeLabel = useMemo(
+    () =>
+      availabilityTimeZone
+        ? formatTimeZoneLabel(availabilityTimeZone, {
+            locale,
+            includeOffset: true,
+          })
+        : null,
+    [availabilityTimeZone, locale],
+  );
 
   const toggleSlot = (startMinuteOfDay: number) => {
     const endMinuteOfDay = startMinuteOfDay + selectedDuration;
@@ -428,12 +463,20 @@ export default function PractitionerAvailabilityScreen() {
               </View>
 
               <View style={[styles.timezoneRow, { flexDirection: rowDirection }]}>
-                <Text color={theme.colors.textMuted} style={styles.eyebrow}>
-                  {t("practitioner.availability.timezoneLabel")}
-                </Text>
-                <Text weight="600" style={styles.timezoneValue}>
-                  {formatTimezoneLabel(availabilityData.timezone, i18n.language)}
-                </Text>
+                {scheduleTimeLabel ? (
+                  <>
+                    <Text color={theme.colors.textMuted} style={styles.eyebrow}>
+                      {t("practitioner.availability.timezoneLabel")}
+                    </Text>
+                    <Text weight="600" style={styles.timezoneValue}>
+                      {scheduleTimeLabel}
+                    </Text>
+                  </>
+                ) : (
+                  <Text color={theme.colors.textMuted} style={styles.timezoneMissing}>
+                    {t("practitioner.availability.timezoneUnavailable")}
+                  </Text>
+                )}
               </View>
             </Card>
 
@@ -640,7 +683,7 @@ export default function PractitionerAvailabilityScreen() {
                         weight="600"
                         color={selected ? theme.colors.primary : theme.colors.textPrimary}
                       >
-                        {formatMinutes(minute)}
+                        {formatMinuteOfDay(minute, { locale })}
                       </Text>
                     </TouchableOpacity>
                   );
@@ -671,10 +714,8 @@ export default function PractitionerAvailabilityScreen() {
                       }
                     >
                       <Text color={theme.colors.primary} weight="600">
-                        {t("practitioner.availability.slotRange", {
-                          defaultValue: "{{start}} - {{end}}",
-                          start: formatMinutes(slot.startMinuteOfDay),
-                          end: formatMinutes(slot.endMinuteOfDay),
+                        {formatWallTimeRange(slot.startMinuteOfDay, slot.endMinuteOfDay, {
+                          locale,
                         })}
                       </Text>
                     </TouchableOpacity>
@@ -947,7 +988,12 @@ export default function PractitionerAvailabilityScreen() {
                             </Text>
                           </View>
                           <Text color={theme.colors.textSecondary} style={styles.exceptionMeta}>
-                            {formatExceptionRange(exception.startsAt, exception.endsAt, locale)}
+                            {formatAvailabilityExceptionRange(
+                              exception.startsAt,
+                              exception.endsAt,
+                              availabilityTimeZone,
+                              locale,
+                            )}
                           </Text>
                         </View>
                         {exception.reason ? (
@@ -1105,14 +1151,6 @@ function isDirty(data: AvailabilityData | null, draftSlots: DraftSlot[]) {
   return source.join("|") !== current.join("|");
 }
 
-function formatMinutes(minutes: number) {
-  const rawHour = Math.floor(minutes / 60);
-  const rawMinute = minutes % 60;
-  const hour = String(rawHour).padStart(2, "0");
-  const minute = String(rawMinute).padStart(2, "0");
-  return `${hour}:${minute}`;
-}
-
 function parseLocalDateTimeToIso(value: string) {
   const trimmed = normalizeDigits(value.trim());
   const match = trimmed.match(
@@ -1190,40 +1228,27 @@ function validateExceptionForm(
   return { ok: true as const, startsAt, endsAt };
 }
 
-function formatExceptionRange(isoStart: string, isoEnd: string, locale: string) {
-  const formatter = new Intl.DateTimeFormat(locale, {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: !locale.startsWith("ar"),
-  });
-  return `${formatter.format(new Date(isoStart))} - ${formatter.format(
-    new Date(isoEnd),
-  )}`;
+function formatAvailabilityExceptionRange(
+  isoStart: string,
+  isoEnd: string,
+  timeZone: string | null,
+  locale: string,
+) {
+  const formatInstant = timeZone
+    ? (value: string) =>
+        formatPractitionerDateTime(value, timeZone, {
+          locale,
+        })
+    : (value: string) =>
+        formatViewerDateTime(value, {
+          locale,
+        });
+
+  return `${formatInstant(isoStart)} - ${formatInstant(isoEnd)}`;
 }
 
 function formatCount(count: number, locale: string) {
   return new Intl.NumberFormat(locale, { useGrouping: false }).format(count);
-}
-
-function formatTimezoneLabel(timezone: string, language?: string) {
-  if (!timezone) {
-    return "-";
-  }
-  const cityToken = timezone.split("/").pop()?.replace(/_/g, " ") ?? timezone;
-  const arabicMap = {
-    Cairo: "القاهرة",
-    Riyadh: "الرياض",
-    Dubai: "دبي",
-    Kuwait: "الكويت",
-    Doha: "الدوحة",
-  } as const;
-  if (language?.startsWith("ar")) {
-    return arabicMap[cityToken as keyof typeof arabicMap] ?? cityToken;
-  }
-  return cityToken;
 }
 
 const styles = StyleSheet.create({
@@ -1269,6 +1294,11 @@ const styles = StyleSheet.create({
   },
   timezoneValue: {
     fontSize: 12,
+  },
+  timezoneMissing: {
+    fontSize: 10,
+    lineHeight: 15,
+    flex: 1,
   },
   eyebrow: {
     fontSize: 10,

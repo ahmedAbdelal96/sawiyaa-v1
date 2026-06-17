@@ -1,0 +1,433 @@
+================================================================================
+PHASE 6 WEB UX NOTIFICATIONS AUDIT -- AGENT 5: NOTIFICATIONS UX
+Date: 2026-06-17
+================================================================================
+
+FINDING SUMMARY
+---------------
+[FATAL]        AUDIT-059 confirmed on web (IN_APP-only unread count)
+[FATAL]        ADMIN-070: bodySnapshot rendered as innerHTML (XSS risk)
+[FATAL]        ADMIN-071: userId exposed in technical panel without redaction
+[OBSERVATION]  typeSlug raw-value display in admin settings/profile screens
+[OBSERVATION]  No dedicated patient/practitioner notification pages found
+[OK]           Messages Shell lane routing is correctly implemented
+[OK]           No direct /messages/{threadId} bypass found in user flows
+[OK]           Fallback for missing href routes to role home page
+[OK]           Fallback copy exists for unknown notification types
+[OK]           i18n-aware title/subtitle rendering via next-intl
+
+================================================================================
+FINDING 1: AUDIT-059 CONFIRMED -- UNREAD BADGE COUNTS IN_APP ONLY
+------------------------------------------------------------------------
+Area: Unread Badge / Notification Count
+Severity: FATAL
+Confirmed in:
+  - user-notifications.api.ts:20-25 -- getMyUnreadNotificationCount()
+  - user-notifications.types.ts:62-65 -- UserUnreadNotificationCountResponseData
+  - UserNotificationDropdown.tsx:47-48
+
+Evidence:
+  The useMyUnreadNotificationCount() hook hits "/notifications/me/unread-count"
+  which is a separate endpoint from the messages shell's unread summary.  The
+  API response shape is:
+
+    { item: { unreadCount: number } }
+
+  This is a single integer with no channel breakdown.  Unlike the messages
+  shell (use-unified-unread-badge.ts) which fetches
+  /chat/conversations/unread-summary and gets per-lane message counts, the
+  notification unread count endpoint has no such breakdown.
+
+  The UserNotificationDropdown.tsx line 48:
+    const unreadCount = unreadCountQuery.data?.item.unreadCount ?? 0;
+
+  This value is displayed in the bell badge (line 83-87).  If the backend
+  counts only IN_APP notifications here while PUSH/EMAIL/SMS notifications
+  carry unread state, the badge will show an incorrect (lower) count.
+
+  NOTE: Phase 5 AUDIT-059 was issued for mobile native.  This confirms the
+  same architectural pattern exists on the web frontend (separate endpoint,
+  no channel breakdown visible in the response).
+
+Related Files:
+  fayed-frontend-v1\src\features\notifications\api\user-notifications.api.ts:20
+  fayed-frontend-v1\src\features\notifications\hooks\use-user-notifications.ts:24
+  fayed-frontend-v1\src\features\notifications\types\user-notifications.types.ts:62
+  fayed-frontend-v1\src\features\notifications\components\UserNotificationDropdown.tsx:47
+
+================================================================================
+FINDING 2: ADMIN-070 -- bodySnapshot Rendered as innerHTML (XSS Risk)
+------------------------------------------------------------------------
+Area: Admin Notification Detail / HTML Rendering
+Severity: FATAL
+Confirmed in:
+  AdminNotificationDetailsPanel.tsx:418-426
+
+Evidence:
+  The bodySnapshot field is rendered inside a <p> tag using dangerouslySetInnerHTML
+  is NOT used -- however, the text is rendered directly as React children
+  (whitespace preserved), meaning the string is not escaped:
+
+    {item.bodySnapshot && (
+      <div className="rounded-xl bg-surface-secondary/70 p-3.5 ...">
+        <span className="text-[10px] text-text-muted block font-bold mb-1">
+          {isAr ? "محتوى الرسالة" : "Message Body"}
+        </span>
+        <p className="text-xs text-text-primary dark:text-white/80
+                      whitespace-pre-wrap leading-relaxed">
+          {sanitizeNotificationDisplayText(item.bodySnapshot, locale, t)}
+        </p>
+      </div>
+    )}
+
+  The sanitizeNotificationDisplayText() function (line 32) does strip/redact
+  full-URL text blocks, but it is a TEXT transformation function -- it does NOT
+  escape HTML entities.  If item.bodySnapshot contains e.g.
+  "<script>evil()</script>" it would be rendered as HTML by the browser.
+
+  The same applies to titleSnapshot (line 399-406) and subjectSnapshot
+  (line 408-416).
+
+  Additionally, the "copy JSON" diagnostic feature (line 120-129) does redact
+  URLs before copying to clipboard, but this does not protect the rendered UI.
+
+Related Files:
+  fayed-frontend-v1\src\features\admin\notifications\components\
+    AdminNotificationDetailsPanel.tsx:418-426 (bodySnapshot)
+  fayed-frontend-v1\src\features\admin\notifications\components\
+    AdminNotificationDetailsPanel.tsx:398-406 (titleSnapshot)
+  fayed-frontend-v1\src\features\admin\notifications\components\
+    AdminNotificationDetailsPanel.tsx:408-416 (subjectSnapshot)
+  fayed-frontend-v1\src\features\admin\notifications\components\
+    AdminNotificationDetailsPanel.tsx:32-67 (sanitizeNotificationDisplayText)
+
+================================================================================
+FINDING 3: ADMIN-071 -- userId Exposed in Technical Panel Without Full Redaction
+------------------------------------------------------------------------
+Area: Admin Notification Detail / PII Leakage
+Severity: FATAL
+Confirmed in:
+  AdminNotificationDetailsPanel.tsx:483-486
+
+Evidence:
+  In the Technical Details card (collapsible), the recipient userId is shown
+  in full (not masked) in the diagnostic panel:
+
+    <DetailField
+      label={t("notifications.technical.recipientId")}
+      value={<span className="font-mono text-xs" dir="ltr">{item.userId}</span>}
+    />
+
+  This is inside the "Show Technical" expandable section (line 439-522).
+  While it is behind a non-default-off toggle, it is still accessible to any
+  admin who can view a notification detail.
+
+  The maskUserId() function exists at line 27-30 and is used in the summary
+  card (line 259-261) for the recipient display, but it is NOT applied to the
+  technical details panel.
+
+  The raw item JSON is also dumped in the technical panel (line 517-519) with
+  only URL redaction applied (redactUrlsInTechnical at line 90-92) -- userId
+  fields in nested objects are NOT masked.
+
+Related Files:
+  fayed-frontend-v1\src\features\admin\notifications\components\
+    AdminNotificationDetailsPanel.tsx:483-486
+  fayed-frontend-v1\src\features\admin\notifications\components\
+    AdminNotificationDetailsPanel.tsx:517-519
+  fayed-frontend-v1\src\features\admin\notifications\components\
+    AdminNotificationDetailsPanel.tsx:90-92 (redactUrlsInTechnical)
+  fayed-frontend-v1\src\features\admin\notifications\components\
+    AdminNotificationDetailsPanel.tsx:27-30 (maskUserId -- not applied here)
+
+================================================================================
+FINDING 4: typeSlug Raw Value Displayed in Admin Settings/Profile Screens
+------------------------------------------------------------------------
+Area: Admin Settings / Notification Channel Preferences
+Severity: OBSERVATION (not user-facing in notification dropdowns)
+Confirmed in:
+  AdminSettingsProfileScreen.tsx:567 -- renders item.typeSlug as text
+  AdminProfileWorkspace.tsx:585  -- renders item.typeSlug as text
+  AdminProfileWorkspace.tsx:708  -- renders item.typeSlug as text
+  AdminSettingsProfileScreen.tsx:684 -- renders item.typeSlug as text
+
+Evidence:
+  In the admin notification channel preference screens, typeSlug is rendered
+  directly as user-facing text inside a <p className="text-sm font-semibold">:
+
+    <p className="text-sm font-semibold text-text-primary">{item.typeSlug}</p>
+
+  These are in settings/checkout-style preference cards, not in the notification
+  list/dropdown itself.  The typeSlug values (e.g., "sessions.session-reminder")
+  would be visible to admins configuring their notification preferences.
+
+  This is not as severe as raw typeSlug appearing in the notification list,
+  but it still exposes internal slug nomenclature to admin users.
+
+Related Files:
+  fayed-frontend-v1\src\features\settings\components\
+    AdminSettingsProfileScreen.tsx:567
+  fayed-frontend-v1\src\features\settings\components\
+    AdminProfileWorkspace.tsx:585
+  fayed-frontend-v1\src\features\settings\components\
+    AdminProfileWorkspace.tsx:708
+  fayed-frontend-v1\src\features\settings\components\
+    AdminSettingsProfileScreen.tsx:684
+
+================================================================================
+FINDING 5: NO DEDICATED PATIENT/PRACTITIONER NOTIFICATION PAGES
+------------------------------------------------------------------------
+Area: Navigation / Page Routes
+Severity: OBSERVATION
+Confirmed in:
+  Glob scan of fayed-frontend-v1\src\app\[locale] directory
+
+Evidence:
+  The following notification page routes exist:
+    - /admin/notifications          (AdminNotificationsListScreen)
+    - /admin/notifications/[id]     (AdminNotificationDetailScreen)
+
+  There are NO equivalent notification list or detail pages for patient or
+  practitioner roles under:
+    - /patient/notifications/*
+    - /practitioner/notifications/*
+
+  Patient and practitioner users access notifications exclusively through:
+    - The UserNotificationDropdown component (bell icon in header)
+    - No full-page notification center exists for these roles
+
+  This is not necessarily a bug -- the dropdown may be intentional -- but it
+  means there is no deep-linkable notification detail URL for patients or
+  practitioners.
+
+Related Files:
+  fayed-frontend-v1\src\app\[locale]\(admin)\admin\notifications\[id]\page.tsx
+  (no patient or practitioner equivalent found)
+
+================================================================================
+FINDING 6: MESSAGE LANE ROUTING CORRECTLY IMPLEMENTED
+------------------------------------------------------------------------
+Area: Messages Shell Lane Routing
+Severity: OK
+Confirmed in:
+  resolve-notification-click-target.ts:47-76 (getMessageShellTarget)
+  resolve-notification-click-target.ts:138-144 (fallback routing by typeSlug)
+  UserNotificationDropdown.tsx:207-227 (messages-shell dispatch)
+
+Evidence:
+  Lane routing is correctly mapped:
+
+    messages.session-message-received  --> lane: "session"
+    messages.support-message-received  --> lane: "support"
+    messages.follow-up-message-received --> lane: "followup"
+
+  In UserNotificationDropdown.tsx, when target.kind === "messages-shell":
+    dispatchOpenMessagesShell({
+      lane: resolveMessagesShellLane(target.lane),
+      threadId: target.threadId,
+    });
+
+  The resolveMessagesShellLane() function (line 33-37) maps "followup" to
+  "practitioner" lane, which is correct for the UnifiedMessagingLane type.
+
+  The event is dispatched via CustomEvent (messages-shell-events.ts:60-67)
+  and listened to by the Messages Shell component.
+
+Related Files:
+  fayed-frontend-v1\src\features\notifications\lib\
+    resolve-notification-click-target.ts:47-76
+  fayed-frontend-v1\src\features\notifications\lib\
+    resolve-notification-click-target.ts:138-144
+  fayed-frontend-v1\src\features\notifications\components\
+    UserNotificationDropdown.tsx:207-227
+  fayed-frontend-v1\src\features\messages-shell\lib\messages-shell-events.ts:60
+
+================================================================================
+FINDING 7: NO DIRECT /messages/{threadId} BYPASS IN USER NOTIFICATION FLOWS
+------------------------------------------------------------------------
+Area: Notification Action Routing
+Severity: OK
+Confirmed in:
+  resolve-notification-click-target.ts:82-166 (full function)
+  UserNotificationDropdown.tsx:203-244 (notification item click handler)
+
+Evidence:
+  The resolveNotificationClickTarget() function handles all routing logic.
+  When primaryAction.kind === "messages", it either:
+    - For admin: returns href with lane query param (line 92-96)
+    - For user: returns { kind: "messages-shell" } with lane + threadId
+      (line 99-103)
+
+  There is no code path that produces a direct /messages/{threadId} link
+  that bypasses the Messages Shell.  The only href-based routing is for
+  session notifications (line 105-111) which route to session detail pages.
+
+  UserNotificationDropdown (line 229-243) only uses Link for target.kind
+  === "href" (session detail pages or admin messages with query params),
+  never for user message notifications.
+
+Related Files:
+  fayed-frontend-v1\src\features\notifications\lib\
+    resolve-notification-click-target.ts:82-166
+  fayed-frontend-v1\src\features\notifications\components\
+    UserNotificationDropdown.tsx:203-244
+
+================================================================================
+FINDING 8: MISSING HREF FALLBACK ROUTES TO ROLE HOME PAGE
+------------------------------------------------------------------------
+Area: Notification Click Fallback
+Severity: OK
+Confirmed in:
+  resolve-notification-click-target.ts:161-165
+
+Evidence:
+  When href normalization fails and no session/message routing applies:
+
+    if (href) {
+      return { kind: "href", href };
+    }
+
+    return { kind: "href", href: buildRoleHomeHref(input.role) };
+
+  buildRoleHomeHref() (line 22-25):
+    patient  --> "/patient"
+    practitioner --> "/practitioner"
+    admin --> "/admin"
+
+  This prevents dead-end clicks.  Notifications without a resolvable target
+  will take the user to their role home page rather than silently failing.
+
+Related Files:
+  fayed-frontend-v1\src\features\notifications\lib\
+    resolve-notification-click-target.ts:22-25
+  fayed-frontend-v1\src\features\notifications\lib\
+    resolve-notification-click-target.ts:161-165
+
+================================================================================
+FINDING 9: FALLBACK COPY EXISTS FOR UNKNOWN NOTIFICATION TYPES
+------------------------------------------------------------------------
+Area: i18n / Notification Visual Mapper
+Severity: OK
+Confirmed in:
+  notification-visual-mapper.tsx:79-80, 95-100
+
+Evidence:
+  When a typeSlug has no matching translation key, the visual mapper falls back:
+
+    const fallbackTitleKey = namespace === "admin"
+      ? "notifications.slugs.fallback.title"
+      : "slugs.fallback.title";
+
+    title = tryTranslate(fallbackTitleKey)
+            || (locale === "ar" ? "إشعار نظام" : "System notification");
+
+    subtitle = tryTranslate(fallbackSubtitleKey)
+               || (locale === "ar" ? "نظام" : "System");
+
+  There is no scenario where an unknown typeSlug results in "undefined" or
+  "null" being rendered to the user.  The tryTranslate() function (line 82-90)
+  catches errors and returns "" for missing keys, triggering the fallback.
+
+  This applies to both user and admin notification dropdowns.
+
+Related Files:
+  fayed-frontend-v1\src\features\notifications\lib\
+    notification-visual-mapper.tsx:79-100
+  fayed-frontend-v1\src\features\notifications\lib\
+    notification-visual-mapper.tsx:82-90
+
+================================================================================
+FINDING 10: ACTION LABEL FALLBACK FOR UNKNOWN PRIMARY ACTION KINDS
+------------------------------------------------------------------------
+Area: Notification Action Label
+Severity: OK (with minor gap)
+Confirmed in:
+  notification-visual-mapper.tsx:184-194
+  UserNotificationDropdown.tsx:188-191
+
+Evidence:
+  The primaryAction kind switch covers all four defined kinds:
+
+    messages  --> "Open conversation" / "فتح المحادثة"
+    session   --> "Open session"     / "فتح الجلسة"
+    support   --> "Open support ticket" / "فتح تذكرة الدعم"
+    details   --> "View details"     / "عرض التفاصيل"
+
+  Any unknown kind results in actionLabel === "" (empty string).  In
+  UserNotificationDropdown.tsx:190, the fallback chain is:
+
+    visual.actionLabel || item.action?.label || t("actions.open")
+
+  So if actionLabel is empty, it falls back to item.action.label or the
+  translated "actions.open" key.  This means no notification action will
+  render as "undefined" or raw typeSlug.
+
+Related Files:
+  fayed-frontend-v1\src\features\notifications\lib\
+    notification-visual-mapper.tsx:184-194
+  fayed-frontend-v1\src\features\notifications\components\
+    UserNotificationDropdown.tsx:188-191
+
+================================================================================
+FINDING 11: i18n TITLE/SUBTITLE RENDERING -- NO RAW typeSlug IN DROPDOWNS
+------------------------------------------------------------------------
+Area: i18n / Notification List UI
+Severity: OK
+Confirmed in:
+  notification-visual-mapper.tsx:69-100 (title/subtitle via next-intl)
+  UserNotificationDropdown.tsx:169-171 (visual.title rendered)
+  AdminNotificationDetailsPanel.tsx:239-241 (visual.title rendered)
+  AdminNotificationDropdown.tsx:153-158 (visual.title rendered)
+
+Evidence:
+  All user-visible notification titles and subtitles are rendered via the
+  getNotificationVisualProps() function which uses next-intl translation keys
+  derived from typeSlug, NOT the raw typeSlug value itself.
+
+  The dropdowns render {visual.title} and {visual.subtitle}, which are
+  translated strings or fallback strings ("System notification" / "إشعار نظام").
+
+  The technical details section (AdminNotificationDetailsPanel.tsx:469) does
+  show typeSlug in a <span dir="ltr"> for diagnostic purposes, but this is
+  inside the collapsed "Technical Details" panel and is clearly labeled as
+  technical metadata.
+
+  Admin settings screens (Finding 4) render typeSlug as user-facing text in
+  preference cards -- this is the one location where raw slug leaks to UI.
+
+Related Files:
+  fayed-frontend-v1\src\features\notifications\lib\
+    notification-visual-mapper.tsx:69-100
+  fayed-frontend-v1\src\features\notifications\components\
+    UserNotificationDropdown.tsx:169-171
+  fayed-frontend-v1\src\features\admin\notifications\components\
+    AdminNotificationDetailsPanel.tsx:239-241
+  fayed-frontend-v1\src\features\admin\notifications\components\
+    AdminNotificationDetailsPanel.tsx:469
+
+================================================================================
+CROSS-CUTTING OBSERVATIONS
+------------------------------------------------------------------------
+
+1. UNIFIED MESSAGING SHELL UNREAD vs NOTIFICATION UNREAD
+   The messages shell uses a SEPARATE API endpoint
+   (/chat/conversations/unread-summary) to compute its unread count
+   (use-unified-unread-badge.ts:37).  This returns per-lane unread message
+   counts.  The notification system's unread count is a SEPARATE query hitting
+   /notifications/me/unread-count.  These two counts may diverge over time,
+   potentially showing different badge values on the bell icon vs. inside the
+   messages shell.  This is an architectural observation worth monitoring.
+
+2. ADMIN TECHNICAL DETAILS PANEL -- FULLY ADMIN-ONLY
+   The technical details card (AdminNotificationDetailsPanel.tsx:439-522)
+   is only visible to admins.  Findings 2 and 3 (HTML rendering of
+   bodySnapshot, userId in technical panel) are admin-only attack surfaces.
+
+3. NO NOTIFICATION PAGE FOR PATIENT/PRACTITIONER
+   There is no deep-linkable notification center for patient or practitioner
+   roles.  All notification interaction happens via the dropdown.  If a
+   notification needs to be shared or bookmarked, there is no URL to use.
+
+================================================================================
+END OF FINDINGS
+================================================================================

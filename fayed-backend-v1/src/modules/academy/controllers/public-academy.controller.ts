@@ -9,6 +9,7 @@ import {
   Req,
 } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Public } from '@common/decorators/public.decorator';
 import { CurrentUser } from '@common/decorators/current-user.decorator';
 import { CurrentLocale } from '@common/i18n/decorators/current-locale.decorator';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
@@ -37,6 +38,7 @@ export class PublicAcademyController {
   ) {}
 
   @Get('courses')
+  @Public()
   @ApiOperation({ summary: 'List published academy courses' })
   list(
     @Query() query: ListPublicAcademyCoursesDto,
@@ -49,6 +51,7 @@ export class PublicAcademyController {
   }
 
   @Get('courses/:slug')
+  @Public()
   @ApiOperation({ summary: 'Get published academy course by slug' })
   getBySlug(
     @Param('slug') slug: string,
@@ -60,6 +63,7 @@ export class PublicAcademyController {
     });
   }
 
+  @Public()
   @Post('courses/:slug/enrollments')
   @ThrottlePolicy('academy-public-enrollment')
   @ApiOperation({ summary: 'Create a public academy enrollment' })
@@ -76,6 +80,7 @@ export class PublicAcademyController {
   }
 
   @Get('enrollments/:id')
+  @Public()
   @ApiOperation({ summary: 'Get academy enrollment status by public token' })
   getEnrollment(
     @Param('id') enrollmentId: string,
@@ -88,6 +93,7 @@ export class PublicAcademyController {
   }
 
   @Get('enrollments/:id/pay/redirect')
+  @Public()
   @ApiOperation({
     summary: 'Create a fresh payment checkout redirect for a public enrollment',
   })

@@ -19,6 +19,8 @@ import {
 import { DEFAULT_PAGE_LIMIT, DEFAULT_PAGE_SIZE_OPTIONS } from "@/constants/pagination";
 import { useDebouncedValue } from "@/hooks/use-debounce";
 import { usePractitionerSessions } from "../hooks/use-sessions";
+import { usePractitionerProfile } from "@/features/practitioners/hooks/use-practitioners";
+import { formatPractitionerOrViewerDateTime, formatTimeZoneLabel } from "@/lib/time-formatting";
 import SessionStatusBadge from "./SessionStatusBadge";
 import type { SessionListItem } from "../types/sessions.types";
 
@@ -46,23 +48,17 @@ function parseDateOnlyToEndIso(value: string): string | undefined {
   return Number.isNaN(date.getTime()) ? undefined : date.toISOString();
 }
 
-function formatSessionDateTime(isoString: string | null, locale: string): string {
-  if (!isoString) return "";
-
-  return new Intl.DateTimeFormat(locale, {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: !locale.startsWith("ar"),
-  }).format(new Date(isoString));
-}
-
 export default function PractitionerSessionsPanel() {
   const t = useTranslations("sessions");
   const locale = useLocale();
   const router = useRouter();
+  const profileQuery = usePractitionerProfile();
+  const practitionerTimeZone = profileQuery.data?.profile.timezone ?? null;
+  const practitionerTimeZoneLabel = practitionerTimeZone
+    ? formatTimeZoneLabel(practitionerTimeZone, {
+        locale,
+      })
+    : null;
 
   const [search, setSearch] = useState("");
   const [presentationFilter, setPresentationFilter] =
@@ -141,7 +137,10 @@ export default function PractitionerSessionsPanel() {
           <div className="min-w-0">
             {row.scheduledStartAt ? (
               <p className="text-sm text-text-secondary">
-                {formatSessionDateTime(row.scheduledStartAt, locale)}
+                {formatPractitionerOrViewerDateTime(row.scheduledStartAt, practitionerTimeZone, {
+                  locale: locale === "ar" ? "ar-SA" : "en-US",
+                  fallbackText: "—",
+                })}
               </p>
             ) : (
               <p className="text-sm text-text-muted">{t("practitioner.list.table.notScheduled")}</p>
@@ -277,7 +276,16 @@ export default function PractitionerSessionsPanel() {
           </div>
 
           <div className="flex items-center justify-between gap-3 pt-1">
-            <p className="text-xs text-text-secondary">{t("practitioner.list.tableNote")}</p>
+            <div className="space-y-1">
+              <p className="text-xs text-text-secondary">{t("practitioner.list.tableNote")}</p>
+              {practitionerTimeZoneLabel ? (
+                <p className="text-xs text-text-muted">
+                  {t("practitioner.list.timezoneNote", {
+                    timezone: practitionerTimeZoneLabel,
+                  })}
+                </p>
+              ) : null}
+            </div>
 
             <Button
               type="button"

@@ -4,6 +4,10 @@ import type {
   PractitionerLedgerEntryType,
   PractitionerSettlementStatus,
 } from "./types";
+import {
+  formatViewerDate,
+  formatViewerDateTime,
+} from "../../../lib/time-formatting";
 
 function normalizeLocale(locale: string) {
   return locale.startsWith("ar") ? "ar-EG" : "en-US";
@@ -101,26 +105,16 @@ export function formatSignedMoney(
 }
 
 export function formatDateTime(value: string | null, locale: string) {
-  if (!value) return "-";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "-";
-  return date.toLocaleString(locale, {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
+  return formatViewerDateTime(value, {
+    locale,
+    fallbackText: "-",
   });
 }
 
 export function formatDateShort(value: string | null, locale: string) {
-  if (!value) return "-";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "-";
-  return date.toLocaleDateString(locale, {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
+  return formatViewerDate(value, {
+    locale,
+    fallbackText: "-",
   });
 }
 
@@ -135,10 +129,10 @@ export function monthYearLabel(
   locale: string,
 ) {
   const date = new Date(year, Math.max(month - 1, 0), 1);
-  return date.toLocaleDateString(locale, {
+  return new Intl.DateTimeFormat(locale, {
     month: "long",
     year: "numeric",
-  });
+  }).format(date);
 }
 
 export type FinancePeriodPreset = "ALL" | "THIS_MONTH" | "LAST_3_MONTHS" | "LAST_12_MONTHS";

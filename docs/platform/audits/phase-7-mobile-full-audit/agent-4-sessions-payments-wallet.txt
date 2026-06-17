@@ -1,0 +1,264 @@
+# Agent 4: Sessions / Join / Payments / Wallet / Presence
+
+## Sessions/Join Findings
+
+### Join CTA Gating (AUDIT-105)
+**Verdict: PASS**
+
+Patient session detail (`fayed-mobile/app/(patient)/sessions/[id].tsx`, line 55-58):
+```typescript
+const canAttemptJoin = useMemo(
+  () => sessionQuery.data?.joinAvailability?.canJoin === true,
+  [sessionQuery.data?.joinAvailability?.canJoin],
+);
+```
+The Join button (line 263-274) renders only when `canAttemptJoin === true`.
+
+Practitioner session detail (`fayed-mobile/app/(practitioner)/sessions/[id].tsx`, line 187):
+```typescript
+const canJoinNow = session.joinAvailability?.canJoin === true;
+```
+The Open Room primary action (line 288-293) is only shown when `canOpenJoinAction = canJoinNow && Boolean(joinUrl)`.
+
+Both screens use the `joinAvailability.canJoin` flag from the session detail query — they do NOT construct join permission locally from `presentationStatus`.
+
+### NO_SHOW / UNDER_REVIEW Join CTA Suppression (AUDIT-106)
+**Verdict: PASS**
+
+Patient session detail (line 79, 89-100): The action state text uses `presentationStatus` for display but the actual Join button is gated by `canAttemptJoin` (from `joinAvailability.canJoin`). For `NO_SHOW` and `UNDER_REVIEW` statuses, `joinAvailability.canJoin` is `false`, so the Join CTA is never shown. The `getActionStateText` function (lines 500-504) explicitly returns `noImmediateAction` for `NO_SHOW` and `UNDER_REVIEW`.
+
+Practitioner session detail (lines 791-800): `NO_SHOW` and `UNDER_REVIEW` both return `noImmediateAction` summary copy and the primary action chain (lines 288-318) does not produce a join action for these statuses.
+
+### Join Contract Resolution
+**Verdict: PASS**
+
+Patient (`fayed-mobile/app/(patient)/sessions/[id].tsx`, lines 119-161): `handleJoin` calls `joinMutation.mutateAsync(session.id)` which calls `resolvePatientSessionJoinContract` (API: `GET /patients/me/sessions/:id/runtime/join`). The contract's `canJoin` and `roomUrl` are validated before opening the URL. Join URL construction uses the token-safe pattern (lines 139-142).
+
+Practitioner (`fayed-mobile/app/(practitioner)/sessions/[id].tsx`, lines 82-89, 212-252): `resolveJoinContract` calls `resolvePractitionerSessionJoinContract` (API: `GET /practitioners/me/sessions/:id/runtime/join`). Same pattern — `canJoin` and `roomUrl` are validated before `Linking.openURL`.
+
+### roomUrl / joinToken Not Logged (AUDIT-107)
+**Verdict: PASS**
+
+No `console.log` statements containing `token`, `roomUrl`, or `joinToken` were found in `fayed-mobile/src/`. The join URL is constructed at line 139-142 (patient) and line 664-667 (practitioner) and passed directly to `normalizeAllowedExternalUrl` then `Linking.openURL` — it never passes through a logger.
+
+### Join URL Token Appending
+**Verdict: PASS — Safe**
+
+Patient (line 139-142):
+```typescript
+const joinUrl =
+  contract.joinToken && contract.provider === "DAILY"
+    ? `${contract.roomUrl}${contract.roomUrl.includes("?") ? "&" : "?"}t=${encodeURIComponent(contract.joinToken)}`
+    : contract.roomUrl;
+```
+Practitioner (line 664-666): Identical pattern. Both check `provider === "DAILY"` before appending the token as a query parameter `t`. The token is `encodeURIComponent`-encoded.
+
+---
+
+## Daily/External URL Findings
+
+### External URL Validation (AUDIT-108)
+**Verdict: PASS**
+
+Both screens use `normalizeAllowedExternalUrl` from `fayed-mobile/src/lib/external-url.ts`:
+
+```typescript
+const BASE_ALLOWED_EXTERNAL_PROTOCOLS = new Set(["https:", "fayed:"]);
+
+export function isAllowedExternalUrl(input: string) {
+  // ...
+  try {
+    const parsed = new URL(value);
+    if (BASE_ALLOWED_EXTERNAL_PROTOCOLS.has(parsed.protocol)) {
+      return true;
+    }
+    return typeof __DEV__ !== "undefined" && __DEV__ && parsed.protocol === "http:";
+  } catch {
+    return false;
+  }
+}
+```
+
+Patient (`fayed-mobile/app/(patient)/sessions/[id].tsx`, line 144-148):
+```typescript
+const safeJoinUrl = normalizeAllowedExternalUrl(joinUrl);
+if (!safeJoinUrl) {
+  setJoinError(t("patientSessionsFlow.detail.joinError"));
+  return;
+}
+await Linking.openURL(safeJoinUrl);
+```
+
+Practitioner (`fayed-mobile/app/(practitioner)/sessions/[id].tsx`, line 236-241): Same safe pattern with early return on null.
+
+**Dev-mode note**: `http:` is allowed in `__DEV__` builds only. This is expected for local development but must not be present in production builds.
+
+### roomUrl Origin is Backend-Controlled (AUDIT-109)
+**Verdict: PASS**
+
+The `roomUrl` and `joinToken` are returned by the backend (`GET /patients/me/sessions/:id/runtime/join` and `GET /practitioners/me/sessions/:id/runtime/join`). The mobile app does not construct or guess these values — it receives them from the backend contract and passes them through without modification (except appending the `t` query param for Daily rooms).
+
+---
+
+## Payment Return Findings
+
+### Payment Return State Handling (AUDIT-110)
+**Verdict: PASS**
+
+`fayed-mobile/app/(patient)/sessions/[id]/payment-return.tsx` handles the complete state matrix:
+
+- `isConfirmed` → success card with checkmark (line 204-215)
+- `isExpired` → expired card (line 218-229)
+- `isCancelled` → cancelled card (line 232-243)
+- `PENDING_PAYMENT + redirectStatus=failed` → failed card (line 246-251)
+- `PENDING_PAYMENT + redirectStatus=canceled` → canceled card (line 254-265)
+- `PENDING_PAYMENT + pollingActive` → verifying/syncing card (line 268-279)
+- `PENDING_PAYMENT + !pollingActive` → "check again" card (line 283-294)
+- Default fallback → generic pending card (line 297-307)
+
+The `normalizePaymentRedirectStatus` function (`fayed-mobile/src/features/patient/payments/return-utils.ts`) correctly normalizes `redirect_status`, `success`, and `pending` params from multiple providers (Paymob, Stripe hosted, wallet callback).
+
+### Expired Session Pay Now Suppression (AUDIT-111)
+**Verdict: PASS**
+
+`fayed-mobile/app/(patient)/sessions/[id]/pay.tsx` (lines 77-80, 420-422):
+```typescript
+function isSessionExpired(expiresAt: string | null): boolean {
+  if (!expiresAt) return false;
+  return new Date(expiresAt).getTime() <= Date.now();
+}
+
+const payableSession =
+  session?.status === "PENDING_PAYMENT" &&
+  !isSessionExpired(session.expiresAt ?? null);
+```
+
+The checkout screen returns early with a blocked message for any non-payable session (lines 837-853). The `resolveBlockedMessageKey` function (lines 91-109) explicitly handles `EXPIRED` status and maps it to `sessionExpired` copy.
+
+### Payment Amount from Backend (AUDIT-112)
+**Verdict: PASS**
+
+The final price shown in the checkout comes from `useSessionFinancialBreakdown`, which calls `POST /patients/me/sessions/:id/financial-breakdown` — a backend endpoint. The `pay.tsx` does not calculate prices. The `formatMoney` function (lines 63-70 in pay.tsx) formats the backend-provided `breakdown.netPaidAmount`, `breakdown.grossAmount`, and `breakdown.discountAmount` values for display only.
+
+`split.walletUsed` and `split.gatewayRemaining` (lines 407-418) are derived client-side from the backend `netPaidAmount` and the user's wallet balance, but the total is server-determined.
+
+### Reconciliation on Return (AUDIT-113)
+**Verdict: PASS**
+
+The payment-return screen (`payment-return.tsx`, lines 110-139) calls `useReconcileSessionPaymentReturn` when `normalizedRedirectStatus === "succeeded"`. This hits `POST /patients/me/sessions/:id/payments/reconcile-return` with `providerReference`, `redirectStatus`, and boolean flags. The session is then polled to confirm the new status.
+
+---
+
+## Wallet/Finance Findings
+
+### Currency Formatting (AUDIT-114)
+**Verdict: PASS**
+
+Practitioner wallet (`fayed-mobile/app/(practitioner)/finance/wallet.tsx`) uses `formatMoney` from `fayed-mobile/src/features/practitioner/finance/utils.ts` (line 99-105, 113-120, etc.):
+
+```typescript
+export function formatMoney(
+  amount: string | number,
+  currency: string | null | undefined,
+  locale: string,
+  fallbackText = "-",
+) {
+  const currencyCode = currency?.trim().toUpperCase();
+  if (!currencyCode) {
+    return fallbackText;
+  }
+  return new Intl.NumberFormat(normalizeLocale(locale), {
+    style: "currency",
+    currency: currencyCode,
+    maximumFractionDigits: 2,
+  }).format(safeNumber(amount));
+}
+```
+
+Uses native `Intl.NumberFormat` with the currency code from the backend. For EGP amounts the locale is normalized to `ar-EG` which produces EGP-appropriate formatting.
+
+### Wallet Balance from Backend (AUDIT-115)
+**Verdict: PASS**
+
+`usePractitionerWalletSummary` calls `GET /practitioners/me/wallet`. The wallet screen displays `wallet?.availableBalance`, `wallet?.pendingBalance`, `wallet?.reservedBalance`, `wallet?.totalEarned`, `wallet?.lifetimePaidOut` — all fields from the backend. No local calculation of balances.
+
+Patient wallet (`fayed-mobile/app/(patient)/sessions/[id]/pay.tsx`): `wallet?.availableBalance` from `usePatientWalletSummary` (backend: `GET /patients/me/wallet`) is used to compute `split.walletUsed` against the backend-provided `breakdown.netPaidAmount`.
+
+### Settlement Status Labels (AUDIT-116)
+**Verdict: PASS**
+
+`settlementStatusLabel` in `fayed-mobile/src/features/practitioner/finance/utils.ts` (lines 175-198) provides bilingual AR/EN labels for all settlement statuses: `DRAFT`, `READY`, `PROCESSING`, `PAID`, `FAILED`, `CANCELLED`. Used in `wallet.tsx` line 297.
+
+---
+
+## Presence/Availability Findings
+
+### Presence Status from Backend (AUDIT-117)
+**Verdict: PASS**
+
+Practitioner presence (`fayed-mobile/app/(practitioner)/availability/index.tsx`): `currentStatus` is sourced from `presenceQuery.data?.presence.status` (line 158), which comes from `useMyPresence` → `GET /practitioners/me/presence`. The UI shows toggle buttons for `ONLINE`, `AWY`, `BUSY`, `OFFLINE` (line 50), sourced exclusively from the backend. No local presence state is computed.
+
+### Presence Heartbeat (AUDIT-118)
+**Verdict: PASS**
+
+`usePractitionerPresenceHeartbeat` in `fayed-mobile/src/features/practitioner/presence/hooks.ts` (lines 64-114) sends a heartbeat every 60 seconds (`HEARTBEAT_INTERVAL_MS = 60_000`) via `POST /practitioners/me/presence/heartbeat` when the app is in the `active` state. The `AppState` listener triggers an immediate heartbeat on app activation.
+
+### Availability Timezone-Aware (AUDIT-119)
+**Verdict: PASS**
+
+Practitioner availability (`fayed-mobile/app/(practitioner)/availability/index.tsx`):
+- `availabilityTimeZone` (line 115-118): derived from `normalizeIanaTimeZone(availabilityData?.timezone)` — the timezone comes from the backend's availability record.
+- `summaryCounts` (lines 162-203): Uses `getDatePartsInTimeZone(new Date(), availabilityTimeZone)` to compute current weekday and minute-of-day in the correct timezone. Falls back to local JS clock only if the backend timezone is unavailable (lines 176-179).
+- `scheduleTimeLabel` (lines 205-214): Displays `formatTimeZoneLabel(availabilityTimeZone, { locale, includeOffset: true })` — the timezone label comes from the backend, formatted with the correct offset.
+- Weekly slots are saved with `timezone: availabilityData.timezone` (line 278), sent to `PUT /practitioners/me/availability` — preserving the backend's timezone, not the device's local timezone.
+
+### No Hardcoded Timezone City Names
+**Verdict: PASS**
+
+The `_formatTimezoneLabel` function (lines 700-729 in the practitioner session detail screen) contains hardcoded city maps (Cairo, Riyadh, Dubai, Kuwait, Doha), but this function is defined and never called — it is dead code. The actual timezone display on the availability screen uses `formatTimeZoneLabel` from `time-formatting.ts`, which uses the IANA timezone name directly.
+
+### Availability Summary Counts Timezone Awareness (AUDIT-120)
+**Verdict: PASS with minor fallback concern**
+
+`fayed-mobile/app/(practitioner)/availability/index.tsx`, lines 162-203: When computing `currentWeekday` and `currentMinuteOfDay` for the availability summary chips (today/upcoming/active/completed counts), the code uses `getDatePartsInTimeZone(new Date(), availabilityTimeZone)` when `availabilityTimeZone` is available. If `availabilityTimeZone` is null (no backend data), it falls back to `new Date().getDay()` and `new Date().getHours() * 60 + new Date().getMinutes()` — which uses the device's local timezone. This is a minor edge case; the fallback only affects the visual counts if the backend timezone is unavailable.
+
+---
+
+## Open Questions
+
+1. **Dev-mode http: allowance**: `normalizeAllowedExternalUrl` allows `http:` in `__DEV__` builds. Is there a production build flag that also enables this? If so, this should be audited separately as a security concern. Evidence: `fayed-mobile/src/lib/external-url.ts` line 15.
+
+2. **Wallet-only payment flow**: In `pay.tsx` (lines 741-750), when `payment.status === "CAPTURED" || payment.status === "AUTHORIZED"` (wallet-only, no redirect), the screen navigates to `payment-return` with `redirect_status: succeeded`. Is the 45-second polling timeout (line 29: `MAX_POLL_DURATION_MS = 45_000`) sufficient for wallet-only payments, or could it resolve faster and show a false "pending" state?
+
+3. **Join URL token encoding**: The Daily join URL appends `?t=<token>` or `&t=<token>`. Is there a maximum URL length consideration for extremely long room URLs? This is low risk but worth confirming with the backend team.
+
+4. **`READY_TO_JOIN` status in confirmed statuses set**: `payment-return.tsx` line 23 includes `READY_TO_JOIN` in `CONFIRMED_SESSION_STATUSES`. This is used to stop polling. If a session is `READY_TO_JOIN` but the payment webhook is delayed, could the screen redirect prematurely before payment confirmation?
+
+5. **Availability exception timezone**: When creating an exception via `handleCreateOrUpdateException` (line 331), the `startsAt`/`endsAt` are parsed from local datetime input (via `parseLocalDateTimeToIso`) and sent as ISO strings. The backend stores them and `formatAvailabilityExceptionRange` (line 1231) formats them back using the availability's timezone. Is the input assumed to be in the availability timezone or the device timezone?
+
+---
+
+## Findings to Register (AUDIT-105 onwards)
+
+| ID | Area | Severity | File | Line(s) | Description |
+|----|------|----------|------|---------|-------------|
+| AUDIT-105 | Sessions/Join | PASS | `fayed-mobile/app/(patient)/sessions/[id].tsx` | 55-58, 263-274 | Join CTA gated by `joinAvailability.canJoin === true` |
+| AUDIT-105 | Sessions/Join | PASS | `fayed-mobile/app/(practitioner)/sessions/[id].tsx` | 187, 288-293 | Practitioner open room gated by `joinAvailability.canJoin` |
+| AUDIT-106 | Sessions/Join | PASS | `fayed-mobile/app/(patient)/sessions/[id].tsx` | 89-100, 500-504 | NO_SHOW/UNDER_REVIEW show no Join CTA |
+| AUDIT-106 | Sessions/Join | PASS | `fayed-mobile/app/(practitioner)/sessions/[id].tsx` | 791-800, 288-318 | NO_SHOW/UNDER_REVIEW practitioner state is `noImmediateAction` |
+| AUDIT-107 | Sessions/Join | PASS | `fayed-mobile/src/` | Grep result | No `console.log` of `token`, `roomUrl`, or `joinToken` found |
+| AUDIT-108 | Daily/URL | PASS | `fayed-mobile/src/lib/external-url.ts` | 1-24 | URL validation restricts to `https:` and `fayed:` protocols |
+| AUDIT-108 | Daily/URL | PASS | `fayed-mobile/app/(patient)/sessions/[id].tsx` | 144-150 | `normalizeAllowedExternalUrl` guard before `Linking.openURL` |
+| AUDIT-108 | Daily/URL | PASS | `fayed-mobile/app/(practitioner)/sessions/[id].tsx` | 236-241 | Same guard in practitioner flow |
+| AUDIT-109 | Sessions/Join | PASS | `fayed-mobile/src/features/patient/sessions/api.ts` | 68-73 | `roomUrl`/`joinToken` sourced from backend contract only |
+| AUDIT-110 | Payments | PASS | `fayed-mobile/app/(patient)/sessions/[id]/payment-return.tsx` | 203-307 | All payment states (confirmed/expired/failed/canceled/pending) handled |
+| AUDIT-111 | Payments | PASS | `fayed-mobile/app/(patient)/sessions/[id]/pay.tsx` | 77-80, 420-422 | `isSessionExpired` check blocks Pay Now on expired sessions |
+| AUDIT-112 | Payments | PASS | `fayed-mobile/app/(patient)/sessions/[id]/pay.tsx` | 370-418 | `netPaidAmount` from backend `financial-breakdown` endpoint; no client-side price calculation |
+| AUDIT-113 | Payments | PASS | `fayed-mobile/app/(patient)/sessions/[id]/payment-return.tsx` | 110-139 | `useReconcileSessionPaymentReturn` called on successful redirect |
+| AUDIT-114 | Wallet | PASS | `fayed-mobile/src/features/practitioner/finance/utils.ts` | 77-93 | `formatMoney` uses `Intl.NumberFormat` with backend currency code |
+| AUDIT-115 | Wallet | PASS | `fayed-mobile/app/(practitioner)/finance/wallet.tsx` | 99-105, 113-151 | All wallet balances from `GET /practitioners/me/wallet` |
+| AUDIT-116 | Wallet | PASS | `fayed-mobile/src/features/practitioner/finance/utils.ts` | 175-198 | Bilingual settlement status labels for all 6 states |
+| AUDIT-117 | Presence | PASS | `fayed-mobile/app/(practitioner)/availability/index.tsx` | 158, 488-519 | Presence status from `GET /practitioners/me/presence`, no local computation |
+| AUDIT-118 | Presence | PASS | `fayed-mobile/src/features/practitioner/presence/hooks.ts` | 64-114 | `usePractitionerPresenceHeartbeat` sends `POST /heartbeat` every 60s when active |
+| AUDIT-119 | Presence | PASS | `fayed-mobile/app/(practitioner)/availability/index.tsx` | 115-118, 163-180, 205-214 | All timezone operations use `availabilityTimeZone` from backend |
+| AUDIT-120 | Presence | INFO | `fayed-mobile/app/(practitioner)/availability/index.tsx` | 176-179 | Fallback to device timezone for summary counts only when backend timezone unavailable |

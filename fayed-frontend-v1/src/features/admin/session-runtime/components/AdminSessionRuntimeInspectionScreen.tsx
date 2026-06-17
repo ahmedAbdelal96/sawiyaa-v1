@@ -5,6 +5,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { Activity, Compass, MonitorPlay, Radar } from "lucide-react";
 import { ListStateSkeleton, StateCard } from "@/components/shared/ContentStates";
+import { formatUtcAuditDateTime } from "@/lib/time-formatting";
 import DirectionalArrowIcon from "@/components/ui/navigation/DirectionalArrowIcon";
 import { getAdminSessionRuntimeErrorKey } from "../lib/admin-session-runtime-errors";
 import { useAdminSessionRuntimeInspection } from "../hooks/use-admin-session-runtime";
@@ -29,14 +30,7 @@ const STATUS_STYLES: Partial<Record<AdminSessionStatus, string>> = {
 
 function formatDateTime(value: string | null, locale: string) {
   if (!value) return "-";
-  return new Date(value).toLocaleString(locale === "ar" ? "ar-SA" : "en-US", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: !locale.startsWith("ar"),
-  });
+  return `UTC: ${formatUtcAuditDateTime(value, { locale })}`;
 }
 
 function DetailRow({

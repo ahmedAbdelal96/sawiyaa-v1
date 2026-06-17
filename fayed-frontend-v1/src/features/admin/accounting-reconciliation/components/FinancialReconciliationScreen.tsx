@@ -36,6 +36,7 @@ import { DEFAULT_PAGE_LIMIT, DEFAULT_PAGE_SIZE_OPTIONS } from "@/constants/pagin
 import { useCurrentUserPermissions } from "@/features/users/hooks/use-users";
 import { Link } from "@/i18n/navigation";
 import { PermissionKey } from "@/lib/auth/permissions";
+import { formatUtcAuditDateTime } from "@/lib/time-formatting";
 import { isStepUpRequiredError, toAppError } from "@/lib/api/errors";
 import { getReconciliationIssueCopy } from "../issue-code-copy";
 import {
@@ -104,10 +105,7 @@ function normalizeLocale(locale: string) {
 
 function formatDateTime(locale: string, value: string | null | undefined) {
   if (!value) return "—";
-  return new Intl.DateTimeFormat(normalizeLocale(locale), {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(new Date(value));
+  return `UTC: ${formatUtcAuditDateTime(value, { locale })}`;
 }
 
 function shortId(value: string | null | undefined) {

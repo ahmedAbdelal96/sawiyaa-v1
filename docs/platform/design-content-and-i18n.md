@@ -94,3 +94,34 @@ Examples:
 - RTL and LTR must both read naturally.
 - Clinical Warmth is a product rule, not just a visual palette.
 
+## Session state localization rules
+
+Session display state comes from backend `presentationStatus` values. These values must always be translated through the i18n system before appearing in the UI. Raw enum values must never be visible to users.
+
+### What must not appear raw in UI
+
+- `NO_SHOW` — user-facing label should be translated, for example `لم يحذر` in Arabic or `No-show` in English
+- `UNDER_REVIEW` — user-facing label should be translated, for example `قيد المراجعة` in Arabic
+- `SESSION_NOT_JOINABLE_STATUS` — this is an internal gate value, not a user-facing state
+- Internal i18n key paths such as `sessions.practitioner.detail.presentation.NO_SHOW.title` should not appear as visible text
+
+### Translation namespace coverage
+
+Every `presentationStatus` value that can appear in a user-visible context must have translations in all namespaces where it renders, including:
+
+- general badge and status labels (`sessions.presentationStatus`)
+- list row hints (`sessions.list.presentationHints`)
+- patient session detail presentation copy (`sessions.detail.presentation`)
+- practitioner session detail presentation copy (`sessions.practitioner.detail.presentation`)
+- mobile equivalents if present
+
+When adding a new `presentationStatus` value, update all relevant EN and AR translation keys before shipping. QA must verify visible DOM text in patient, practitioner, and admin journeys — not just the Next.js internal serialized payload.
+
+### QA check for session state copy
+
+Verify by checking the rendered page text in the target locale:
+
+- The status badge shows a human-readable label, not a raw enum
+- The session detail shows translated state copy, not a key path or enum string
+- No `undefined`, `null`, `[object Object]`, or raw enum appears in the visible content area
+- The Join CTA is hidden when `joinAvailability.canJoin` is false

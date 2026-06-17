@@ -26,6 +26,7 @@ import {
   RollingDateScheduleTable,
   type SelectTimeDateColumn,
 } from "../../../src/features/patient/sessions/components/SelectTimePanels";
+import { formatViewerDateTime } from "../../../src/lib/time-formatting";
 
 const VISIBLE_DATE_COLUMNS = 5;
 type ScheduleSlot = {
@@ -326,17 +327,10 @@ export default function SelectSessionTimeScreen() {
   const practitionerAvatarUrl = params.practitionerAvatarUrl ?? practitioner?.avatarUrl ?? "";
 
   const selectedAppointmentLabel = selectedAppointmentSlot
-    ? (() => {
-        const day = dateColumns.find((col) =>
-          col.slots.some((slot) => slot.startsAt === selectedAppointmentSlot),
-        );
-        if (!day) return t("patientSessionsFlow.selectTime.noSelectedSlot");
-        return `${day.dayLabelShort} ${day.dayNumber}${isArabicUi ? "، " : ", "}${new Intl.DateTimeFormat(locale, {
-          hour: "numeric",
-          minute: "2-digit",
-          hour12: !locale.startsWith("ar"),
-        }).format(new Date(selectedAppointmentSlot))}`;
-      })()
+    ? formatViewerDateTime(selectedAppointmentSlot, {
+        locale,
+        fallbackText: t("patientSessionsFlow.selectTime.noSelectedSlot"),
+      })
     : t("patientSessionsFlow.selectTime.noSelectedSlot");
 
   const packageSelectedSummary =

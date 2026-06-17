@@ -18,6 +18,7 @@ import {
   usePatientWalletSummary,
 } from "../../../src/features/patient/payments/hooks";
 import { resolveSupportedCurrencyCode } from "../../../src/lib/currency";
+import { formatViewerDate } from "../../../src/lib/time-formatting";
 import type {
   CustomerWalletEntryItem,
   CustomerWalletEntryType,
@@ -86,11 +87,7 @@ function formatDayLabel(
   ) {
     return todayLabel;
   }
-  return d.toLocaleDateString(locale, {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
+  return formatViewerDate(d, { locale });
 }
 
 function groupByDay(entries: CustomerWalletEntryItem[]): {

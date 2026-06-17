@@ -11,12 +11,12 @@ import {
   SectionHeader,
   StatusChip,
   Text,
-  formatDate,
 } from "../../../../components/ui";
 import { useTheme } from "../../../../providers/ThemeProvider";
 import { getAppDirection } from "../../../../i18n/direction";
 import { resolveMediaUrl } from "../../../../lib/resolve-media-url";
 import { resolveSupportedCurrencyCode } from "../../../../lib/currency";
+import { formatViewerDate } from "../../../../lib/time-formatting";
 import { usePublicAcademyCourse } from "../hooks";
 import { formatAcademyLectureDateRange, formatAcademyMoney, isAcademyCourseFree } from "../display";
 
@@ -34,7 +34,7 @@ export default function AcademyDetailScreen({
   const course = courseQuery.data ?? null;
   const isRtl = getAppDirection(i18n.language) === "rtl";
   const coverUri = resolveMediaUrl(course?.coverImageUrl ?? course?.thumbnailUrl);
-  const startLabel = course?.startsAt ? formatDate(course.startsAt, locale) : null;
+  const startLabel = course?.startsAt ? formatViewerDate(course.startsAt, { locale }) : null;
   const displayCurrency = resolveSupportedCurrencyCode({
     currencyCode: course?.currencyCode,
     regionalPricingMode: course?.regionalPricingMode,

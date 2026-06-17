@@ -11,6 +11,7 @@ import {
 import { Link } from "@/i18n/navigation";
 import AvatarText from "@/components/ui/avatar/AvatarText";
 import { ListStateSkeleton, StateCard } from "@/components/shared/ContentStates";
+import { formatViewerDate } from "@/lib/time-formatting";
 import { useCurrentUser } from "@/features/users/hooks/use-users";
 import { usePatientProfile } from "@/features/patients/hooks/use-patients";
 import { usePatientWalletEntries, usePatientWalletSummary } from "../hooks/use-payments";
@@ -18,11 +19,7 @@ import { formatPatientMoney } from "../lib/patient-money-format";
 import type { CustomerWalletEntryItem, CustomerWalletSummaryItem } from "../types/payments.types";
 
 function formatDate(isoString: string, numLocale: string): string {
-  return new Date(isoString).toLocaleDateString(numLocale, {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
+  return formatViewerDate(isoString, { locale: numLocale });
 }
 
 function resolveWalletEntryStatusKey(entry: CustomerWalletEntryItem): string {

@@ -41,6 +41,30 @@ The session loop covers:
 - live session state
 - cancellation handling
 - post-session history
+- manual session decisions for exceptional closeout
+
+### Manual session decision operations
+
+Admins can apply explicit manual decisions to close a session outside the normal flow. This is used for operational exceptions such as no-shows or sessions that require review before final handling.
+
+The admin decision endpoint accepts:
+
+- `decisionType` — the target state such as `NO_SHOW` or `UNDER_REVIEW`
+- `reasonCode` — operational reason for the decision
+- `confirmEvidenceReviewed` — confirms the admin has reviewed the relevant context
+- `confirmNoAutomaticRefund` — explicitly confirms no automatic refund should trigger
+- `confirmNoAutomaticPayout` — explicitly confirms no automatic payout should trigger
+
+**Propagation**: Manual decisions update the session `presentationStatus` through the backend contract. The change propagates to all surfaces that read session state:
+
+- admin session surfaces and session detail
+- patient web and mobile session list and detail
+- practitioner web and mobile session list and detail
+- support and operations context where session state appears
+
+**Financial side effects**: Manual session decisions are operational and auditable states. They do not automatically imply refund or payout unless the finance policy explicitly handles that outcome for the given decision type. The explicit confirmation fields on the decision endpoint make this intentional for each action.
+
+**Support communication**: When a session is marked `NO_SHOW` or `UNDER_REVIEW`, support staff should communicate this in human language to the patient and practitioner. Do not reference raw enum values or technical decision codes in user-facing communication.
 
 ### 2. Money operations
 

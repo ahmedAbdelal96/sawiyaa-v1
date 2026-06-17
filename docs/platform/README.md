@@ -23,7 +23,7 @@ Start here when you need the product model, the current status, or the practical
 | Payments | Closed for internal flows | Session, package, and training payment returns are documented; provider-side Paymob QA stays deferred. |
 | Mobile parity | Closed | Patient and practitioner Expo flows mirror the core booking and payment surfaces. |
 | Known external blockers | Deferred | Paymob sandbox/provider checkout QA. |
-| Known technical blockers | None product-critical in this docs set | Any remaining repo-local issues should be tracked separately from the product docs. |
+| Known technical blockers | None — Phase 5A/5B cleared | Web release-candidate P0/P1 blockers from Phase 5 were cleared; session presentation and `joinAvailability` are closed across backend, web, and mobile. Repo-local issues are tracked separately from product documentation. |
 
 ## Feature status matrix
 
@@ -34,13 +34,13 @@ Start here when you need the product model, the current status, or the practical
 | Availability | Exceptions table | Closed | Closed | Closed | Closed | Global current/future exception visibility exists. |
 | Booking | Scheduled booking | Closed | Closed | Closed | Closed | Normal booking depends on availability and payment. |
 | Booking | Instant Booking | Closed | Closed | Closed | Closed | Phase 5 remains externally blocked by Paymob QA. |
-| Sessions | Session join / joinAvailability | Closed | Closed | Closed | Closed | No join before backend confirmation. |
+| Sessions | Session join / joinAvailability | Closed | Closed | Closed | Closed | `presentationStatus` and `joinAvailability.canJoin` are closed across backend, web, and mobile. Manual no-show/under-review decisions propagate via backend contract without automatic refund/payout side effects unless finance policy explicitly handles them. |
 | Sessions | Session chat | Closed | Closed | Closed | Closed | Read-only/disabled states are documented. |
 | Finance | Payments | Closed | Closed | Closed | Closed | Session, package, and training payments documented. |
 | Finance | Wallet / refunds / settlements | Closed | Closed | Closed | Closed | Backend remains the source of truth. |
 | Practitioner | Onboarding / profile | Closed | Closed | Closed | Closed | Includes application, review, and pricing contract. |
 | Admin | Operations | Closed | Closed | Closed | Closed | Finance, moderation, support, and reporting are documented. |
-| Mobile | Patient and practitioner parity | Closed | Closed | Closed | Closed | Mirror surfaces exist for the main care flows. |
+| Mobile | Patient and practitioner parity | Closed | Closed | Closed | Closed | Patient and practitioner Expo flows mirror the core booking and payment surfaces. Session presentation states (`presentationStatus`, `joinAvailability`) are consistent with web. |
 | External | Paymob provider QA | Deferred | Deferred | Deferred | Deferred | Sandbox/provider checkout still returns `403 Forbidden` in this environment. |
 | Platform | Notifications / push | Planned | Planned | Planned | Planned | Important related area; not the core closure focus of this docs set. |
 

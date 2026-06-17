@@ -5,8 +5,12 @@ import {
   HttpCode,
   Post,
   Req,
+  Res,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
+import { WebResponseHardeningInterceptor } from '@common/interceptors/web-response-hardening.interceptor';
+import { Response } from 'express';
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
@@ -48,6 +52,7 @@ import { getRequestDeviceContext } from '../utils/request-device-context.util';
 
 @ApiTags('Auth - Practitioner')
 @Controller('auth/practitioner')
+@UseInterceptors(WebResponseHardeningInterceptor)
 export class PractitionerAuthController {
   constructor(
     private readonly i18nService: I18nService,
@@ -157,6 +162,7 @@ export class PractitionerAuthController {
   async verifyOtp(
     @Body() dto: PractitionerVerifyOtpDto,
     @Req() request: Request,
+    @Res({ passthrough: true }) res: Response,
     @CurrentLocale() locale: SupportedLocale,
   ) {
     const result = await this.verifyPractitionerLoginOtpUseCase.execute({
@@ -165,6 +171,16 @@ export class PractitionerAuthController {
       deviceContext: getRequestDeviceContext(request, dto.deviceId),
       locale,
     });
+
+    if (result.tokens?.refreshToken) {
+      res.cookie('fayed_refresh_token', result.tokens.refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        path: '/',
+        maxAge: 30 * 24 * 60 * 60,
+      });
+    }
 
     return {
       message: this.i18nService.t(
@@ -194,6 +210,7 @@ export class PractitionerAuthController {
   async refresh(
     @Body() dto: RefreshTokenDto,
     @Req() request: AuthenticatedRequest,
+    @Res({ passthrough: true }) res: Response,
     @CurrentLocale() locale: SupportedLocale,
   ) {
     const refreshToken = dto.refreshToken ?? request.authToken;
@@ -209,6 +226,16 @@ export class PractitionerAuthController {
       refreshToken,
       deviceContext: getRequestDeviceContext(request, dto.deviceId),
     });
+
+    if (result.tokens?.refreshToken) {
+      res.cookie('fayed_refresh_token', result.tokens.refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        path: '/',
+        maxAge: 30 * 24 * 60 * 60,
+      });
+    }
 
     return {
       message: this.i18nService.t(
@@ -232,9 +259,16 @@ export class PractitionerAuthController {
   })
   async logout(
     @Req() request: AuthenticatedRequest,
+    @Res({ passthrough: true }) res: Response,
     @CurrentLocale() locale: SupportedLocale,
   ) {
     await this.logoutPractitionerUseCase.execute(request.user!.sessionId!);
+    res.clearCookie('fayed_refresh_token', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      path: '/',
+    });
     return {
       message: this.i18nService.t('auth.success.practitionerLoggedOut', locale),
     };

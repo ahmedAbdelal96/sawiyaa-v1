@@ -47,9 +47,6 @@ export class PublicPractitionerCredentialsSummaryResponseDto {
 }
 
 export class PublicPractitionerListItemResponseDto {
-  @ApiProperty()
-  id!: string;
-
   @ApiProperty({
     description:
       'SEO-friendly stable public identifier used by frontend route: /practitioners/[slug]',
@@ -151,9 +148,6 @@ export class PublicPractitionerListItemResponseDto {
 }
 
 export class PublicPractitionerDetailsResponseDto {
-  @ApiProperty()
-  id!: string;
-
   @ApiProperty()
   slug!: string;
 

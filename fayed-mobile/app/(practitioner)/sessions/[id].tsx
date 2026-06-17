@@ -31,6 +31,11 @@ import { normalizeAllowedExternalUrl } from "../../../src/lib/external-url";
 import { trackAnalyticsEvent } from "../../../src/lib/analytics";
 import { openSessionGeneralChat } from "../../../src/features/messages/api";
 import { getAppDirection } from "../../../src/i18n/direction";
+import {
+  formatPractitionerDateTime,
+  formatTimeZoneLabel,
+  formatViewerDateTime,
+} from "../../../src/lib/time-formatting";
 import { Linking, ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
 
 const COMPLETE_ALLOWED: SessionPresentationStatus[] = ["JOINABLE", "IN_PROGRESS"];
@@ -141,7 +146,10 @@ export default function PractitionerSessionDetailScreen() {
       },
       {
         label: t("practitioner.detail.timezone"),
-        value: formatTimezoneLabel(session.timezone, i18n.language, t),
+        value: formatTimeZoneLabel(session.timezone, {
+          locale: i18n.language,
+          fallbackText: t("practitioner.common.notAvailable"),
+        }),
       },
     ];
   }, [i18n.language, session, t]);
@@ -349,7 +357,11 @@ export default function PractitionerSessionDetailScreen() {
           <Text color={theme.colors.textSecondary} style={[styles.summaryMeta, { textAlign }]}>
             {session.scheduledStartAt
               ? t("practitioner.detail.sessionAt", {
-                  datetime: formatSessionDate(session.scheduledStartAt, locale),
+                  datetime: formatSessionDate(
+                    session.scheduledStartAt,
+                    locale,
+                    session.timezone,
+                  ),
                 })
               : t("practitioner.sessions.noSchedule")}
           </Text>
@@ -475,6 +487,7 @@ export default function PractitionerSessionDetailScreen() {
                 datetime: formatSessionDate(
                   session.joinAvailability.availableAt,
                   locale,
+                  session.timezone,
                 ),
               })}
             </Text>
@@ -654,15 +667,21 @@ function buildJoinUrl(joinContract: PractitionerSessionJoinContract | null) {
   return joinContract.roomUrl;
 }
 
-function formatSessionDate(isoString: string, locale: string) {
-  return new Date(isoString).toLocaleString(locale, {
-    weekday: "long",
-    month: "long",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: !locale.startsWith("ar"),
-  });
+function formatSessionDate(
+  isoString: string,
+  locale: string,
+  timeZone: string | null | undefined,
+) {
+  return (
+    formatPractitionerDateTime(isoString, timeZone, {
+      locale,
+      fallbackText: "",
+    }) ||
+    formatViewerDateTime(isoString, {
+      locale,
+      fallbackText: "-",
+    })
+  );
 }
 
 function getFlowTypeLabel(
@@ -678,7 +697,7 @@ function getFlowTypeLabel(
   return t("practitioner.detail.flowTypeValue.DEFAULT");
 }
 
-function formatTimezoneLabel(
+function _formatTimezoneLabel(
   timezone: string | null,
   language: string,
   t: (key: string, options?: Record<string, unknown>) => string,
@@ -726,6 +745,7 @@ function getSessionStateCopy(
                 datetime: formatSessionDate(
                   session.joinAvailability.availableAt,
                   locale,
+                  session.timezone,
                 ),
               })
             : null,

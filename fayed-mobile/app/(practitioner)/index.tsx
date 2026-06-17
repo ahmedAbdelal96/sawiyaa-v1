@@ -14,7 +14,6 @@ import {
   StatusBadge,
   StatusChip,
   SummaryRow,
-  formatDateTime,
   Text,
 } from "../../src/components/ui";
 import {
@@ -33,6 +32,10 @@ import {
   resolvePractitionerTone,
   type PractitionerTone,
 } from "../../src/features/practitioner/ui/compact";
+import {
+  formatPractitionerDateTime,
+  formatViewerDateTime,
+} from "../../src/lib/time-formatting";
 
 export default function PractitionerHomeScreen() {
   const { t, i18n } = useTranslation();
@@ -50,6 +53,7 @@ export default function PractitionerHomeScreen() {
   const locale = i18n.language?.startsWith("ar") ? "ar-SA" : "en-US";
   const isArabic = i18n.language?.startsWith("ar");
   const textAlign = isArabic ? "right" : "left";
+  const profileTimeZone = profileQuery.data?.profile?.timezone ?? null;
 
   const upcomingItems = useMemo(() => {
     return (sessionsQuery.data?.items ?? []).filter((item) =>
@@ -74,7 +78,14 @@ export default function PractitionerHomeScreen() {
   const todaySnapshot = useMemo(() => {
     const totalUpcoming = upcomingItems.length;
     const nextStart = upcomingSession?.scheduledStartAt
-      ? formatDateTime(upcomingSession.scheduledStartAt, locale)
+      ? formatPractitionerDateTime(
+          upcomingSession.scheduledStartAt,
+          profileTimeZone,
+          { locale, fallbackText: "" },
+        ) || formatViewerDateTime(upcomingSession.scheduledStartAt, {
+          locale,
+          fallbackText: "-",
+        })
       : t("practitioner.home.noSessions");
 
     return [
@@ -103,7 +114,14 @@ export default function PractitionerHomeScreen() {
           : t("common.disabled"),
       },
     ];
-  }, [locale, t, upcomingItems.length, upcomingSession, presence]);
+  }, [
+    locale,
+    t,
+    upcomingItems.length,
+    upcomingSession,
+    presence,
+    profileTimeZone,
+  ]);
 
   if (profileQuery.isLoading) {
     return (
@@ -249,7 +267,14 @@ export default function PractitionerHomeScreen() {
               </Text>
               <Text color={theme.colors.textSecondary} style={[styles.nextSessionTime, { textAlign }]}>
                 {upcomingSession.scheduledStartAt
-                  ? formatDateTime(upcomingSession.scheduledStartAt, locale)
+                  ? formatPractitionerDateTime(
+                      upcomingSession.scheduledStartAt,
+                      profileTimeZone,
+                      { locale, fallbackText: "" },
+                    ) || formatViewerDateTime(upcomingSession.scheduledStartAt, {
+                      locale,
+                      fallbackText: "-",
+                    })
                   : t("practitioner.sessions.noSchedule")}
               </Text>
               <View style={styles.nextSessionMetaRow}>

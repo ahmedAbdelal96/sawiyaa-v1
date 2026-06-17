@@ -7,7 +7,7 @@ import { Header, Screen, ScreenHeading, Text, Card, Button } from "../../../src/
 import { useTheme } from "../../../src/providers/ThemeProvider";
 import { useCreateScheduledSession } from "../../../src/features/patient/sessions/hooks";
 import { useSessionFinancialBreakdown } from "../../../src/features/patient/payments/hooks";
-import { formatLocalizedDateTime } from "../../../src/features/patient/sessions/slot-utils";
+import { formatTimeZoneLabel, formatViewerDateTime } from "../../../src/lib/time-formatting";
 import { extractApiErrorMessage } from "../../../src/lib/api";
 import { trackAnalyticsEvent } from "../../../src/lib/analytics";
 import { resolveSupportedCurrencyCode } from "../../../src/lib/currency";
@@ -64,7 +64,7 @@ export default function BookingConfirmationScreen() {
     if (!params.selectedStartAt) {
       return t("patientSessionsFlow.common.notAvailable");
     }
-    return formatLocalizedDateTime(params.selectedStartAt, locale);
+    return formatViewerDateTime(params.selectedStartAt, { locale });
   }, [params.selectedStartAt, locale, t]);
 
   const totalLabel = useMemo(() => {
@@ -83,18 +83,7 @@ export default function BookingConfirmationScreen() {
   const hasRequiredParams = Boolean(params.slug && params.selectedStartAt);
   const footerSummary = useMemo(() => {
     if (!params.selectedStartAt) return "";
-    const when = new Date(params.selectedStartAt);
-    const weekday = new Intl.DateTimeFormat(locale, { weekday: "long" }).format(when);
-    const date = new Intl.DateTimeFormat(locale, {
-      day: "numeric",
-      month: "long",
-    }).format(when);
-    const time = new Intl.DateTimeFormat(locale, {
-      hour: "numeric",
-      minute: "2-digit",
-      hour12: !locale.startsWith("ar"),
-    }).format(when);
-    return `${weekday}، ${date} · ${time}`;
+    return formatViewerDateTime(params.selectedStartAt, { locale });
   }, [locale, params.selectedStartAt]);
 
   const handleConfirm = async () => {
@@ -241,10 +230,10 @@ export default function BookingConfirmationScreen() {
             </View>
             <View style={styles.infoTextWrap}>
               <Text color={theme.colors.textMuted} style={styles.metaLabel}>
-                {t("patientSessionsFlow.common.videoSession")}
+                {t("patientSessionsFlow.detail.timezone")}
               </Text>
               <Text weight="600" style={styles.metaValueSmall}>
-                {timezone}
+                {formatTimeZoneLabel(timezone, { locale, includeOffset: true })}
               </Text>
             </View>
           </View>

@@ -64,6 +64,7 @@
     "loading": "Checking availability...",
     "loadError": "Could not load availability.",
     "retry": "Try again",
+    "localTimeLabel": "Your local time",
     "timezoneNote": "Times shown in your local timezone.",
     "browseNextWeek": "Show next week",
     "browseOtherPractitioners": "Choose another practitioner"

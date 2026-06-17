@@ -9,6 +9,7 @@ import { ListStateSkeleton, StateCard } from "@/components/shared/ContentStates"
 import Badge from "@/components/ui/badge/Badge";
 import { Modal, ModalBody, ModalFooter, ModalHeader } from "@/components/ui/modal";
 import { usePatientSession } from "@/features/sessions/hooks/use-sessions";
+import { formatViewerDateTime } from "@/lib/time-formatting";
 import { useSessionFinancialBreakdown } from "@/features/sessions/hooks/use-session-financial";
 import { resolvePatientCurrencyCode } from "@/features/payments/lib/patient-currency";
 import { formatMoney as formatFinanceMoney } from "@/lib/finance-format";
@@ -30,15 +31,7 @@ import type { PaymobCheckoutMethod } from "../types/payments.types";
 type Phase = "pricing" | "checkout";
 
 function formatDatetime(isoString: string | null, numLocale: string): string {
-  if (!isoString) return "";
-  return new Date(isoString).toLocaleString(numLocale, {
-    weekday: "long",
-    month: "long",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: !numLocale.startsWith("ar"),
-  });
+  return formatViewerDateTime(isoString, { locale: numLocale });
 }
 
 function normalizeAmount(amount: string): number {

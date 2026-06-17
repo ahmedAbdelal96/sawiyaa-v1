@@ -3,6 +3,7 @@
 import { useLocale, useTranslations } from "next-intl";
 import { Activity, Clock3, ListTree, UserRound } from "lucide-react";
 import { ListStateSkeleton, StateCard } from "@/components/shared/ContentStates";
+import { formatUtcAuditDateTime } from "@/lib/time-formatting";
 import { getAdminSessionAttendanceErrorKey } from "../lib/admin-session-runtime-errors";
 import { useAdminSessionAttendance } from "../hooks/use-admin-session-runtime";
 import type {
@@ -12,14 +13,7 @@ import type {
 
 function formatDateTime(value: string | null, locale: string) {
   if (!value) return "-";
-  return new Date(value).toLocaleString(locale === "ar" ? "ar-SA" : "en-US", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: !locale.startsWith("ar"),
-  });
+  return `UTC: ${formatUtcAuditDateTime(value, { locale })}`;
 }
 
 function SummaryLine({

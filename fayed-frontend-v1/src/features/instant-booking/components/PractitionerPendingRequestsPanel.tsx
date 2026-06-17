@@ -4,6 +4,8 @@ import { useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Clock3, Loader2, Zap } from "lucide-react";
 import { Link } from "@/i18n/navigation";
+import { usePractitionerProfile } from "@/features/practitioners/hooks/use-practitioners";
+import { formatTimeZoneLabel } from "@/lib/time-formatting";
 import { useNowTick } from "../hooks/use-now-tick";
 import {
   useAcceptInstantBookingRequest,
@@ -44,6 +46,7 @@ export default function PractitionerPendingRequestsPanel() {
   const t = useTranslations("sessions.practitioner.instantBooking");
   const locale = useLocale();
   const nowMs = useNowTick(1000);
+  const profileQuery = usePractitionerProfile();
   const { data: requests, isLoading, isError, refetch } = usePractitionerPendingBookingRequests();
   const acceptMutation = useAcceptInstantBookingRequest();
   const rejectMutation = useRejectInstantBookingRequest();
@@ -54,6 +57,10 @@ export default function PractitionerPendingRequestsPanel() {
     () => requests ?? [],
     [requests],
   );
+  const practitionerTimeZone = profileQuery.data?.profile.timezone ?? null;
+  const practitionerTimeZoneLabel = practitionerTimeZone
+    ? formatTimeZoneLabel(practitionerTimeZone, { locale })
+    : null;
   const nearestRequest = pendingRequests.length
     ? [...pendingRequests].sort(
         (left, right) => new Date(left.expiresAt).getTime() - new Date(right.expiresAt).getTime(),
@@ -166,6 +173,11 @@ export default function PractitionerPendingRequestsPanel() {
             </span>
           ) : null}
         </div>
+        {practitionerTimeZoneLabel ? (
+          <p className="text-xs text-text-muted">
+            {t("queue.summary.timezoneNote", { timeZone: practitionerTimeZoneLabel })}
+          </p>
+        ) : null}
 
         <div className="space-y-3">
           {pendingRequests.map((request) => (
@@ -173,6 +185,7 @@ export default function PractitionerPendingRequestsPanel() {
               key={request.id}
               request={request}
               nowMs={nowMs}
+              timeZone={practitionerTimeZone}
               onAccept={handleAccept}
               onReject={handleReject}
               acceptingRequestId={acceptMutation.isPending ? acceptMutation.variables ?? null : null}

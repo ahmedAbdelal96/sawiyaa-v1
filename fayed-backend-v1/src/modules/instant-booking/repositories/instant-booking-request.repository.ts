@@ -33,8 +33,8 @@ export class InstantBookingRequestRepository {
     });
   }
 
-  findById(requestId: string) {
-    return this.prisma.instantBookingRequest.findUnique({
+  findById(requestId: string, tx?: Prisma.TransactionClient) {
+    return this.getDb(tx).instantBookingRequest.findUnique({
       where: { id: requestId },
       include: this.requestInclude,
     });
@@ -72,6 +72,20 @@ export class InstantBookingRequestRepository {
     });
   }
 
+  listPendingRequestsDueForExpiry(now: Date, limit = 50) {
+    return this.prisma.instantBookingRequest.findMany({
+      where: {
+        status: InstantBookingRequestStatus.PENDING,
+        expiresAt: {
+          lte: now,
+        },
+      },
+      include: this.requestInclude,
+      orderBy: [{ expiresAt: 'asc' }, { createdAt: 'asc' }],
+      take: Math.max(1, limit),
+    });
+  }
+
   findConflictingPendingRequests(input: {
     patientId?: string;
     practitionerId?: string;
@@ -102,6 +116,84 @@ export class InstantBookingRequestRepository {
       where: { id: requestId },
       data,
       include: this.requestInclude,
+    });
+  }
+
+  claimPendingRequestForAcceptance(
+    input: {
+      requestId: string;
+      practitionerId: string;
+      now: Date;
+    },
+    tx?: Prisma.TransactionClient,
+  ) {
+    return this.getDb(tx).instantBookingRequest.updateMany({
+      where: {
+        id: input.requestId,
+        practitionerId: input.practitionerId,
+        status: InstantBookingRequestStatus.PENDING,
+        linkedSessionId: null,
+        expiresAt: {
+          gt: input.now,
+        },
+      },
+      data: {
+        status: InstantBookingRequestStatus.ACCEPTED,
+        respondedAt: input.now,
+      },
+    });
+  }
+
+  rejectPendingRequest(
+    input: {
+      requestId: string;
+      practitionerId: string;
+      now: Date;
+      reason?: string | null;
+    },
+    tx?: Prisma.TransactionClient,
+  ) {
+    return this.getDb(tx).instantBookingRequest.updateMany({
+      where: {
+        id: input.requestId,
+        practitionerId: input.practitionerId,
+        status: InstantBookingRequestStatus.PENDING,
+        linkedSessionId: null,
+        expiresAt: {
+          gt: input.now,
+        },
+      },
+      data: {
+        status: InstantBookingRequestStatus.REJECTED,
+        respondedAt: input.now,
+        responseReason: input.reason ?? null,
+      },
+    });
+  }
+
+  expirePendingRequest(
+    input: {
+      requestId: string;
+      now: Date;
+      practitionerId?: string | null;
+    },
+    tx?: Prisma.TransactionClient,
+  ) {
+    return this.getDb(tx).instantBookingRequest.updateMany({
+      where: {
+        id: input.requestId,
+        status: InstantBookingRequestStatus.PENDING,
+        linkedSessionId: null,
+        expiresAt: {
+          lte: input.now,
+        },
+        ...(input.practitionerId ? { practitionerId: input.practitionerId } : {}),
+      },
+      data: {
+        status: InstantBookingRequestStatus.EXPIRED,
+        respondedAt: input.now,
+        responseReason: 'expired',
+      },
     });
   }
 

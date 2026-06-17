@@ -38,6 +38,7 @@ import { extractHostedCheckoutReturnParams } from "../../../../src/features/pati
 import { extractApiErrorMessage } from "../../../../src/lib/api";
 import { resolveSupportedCurrencyCode } from "../../../../src/lib/currency";
 import { normalizeAllowedExternalUrl } from "../../../../src/lib/external-url";
+import { formatViewerDateTime } from "../../../../src/lib/time-formatting";
 import { trackAnalyticsEvent } from "../../../../src/lib/analytics";
 import { logPaymentInitiationError } from "../../../../src/features/patient/payments/payment-initiation-errors";
 import type {
@@ -70,14 +71,7 @@ function formatMoney(amount: string, currencyCode: string): string {
 
 function formatDateTime(isoString: string | null, locale: string): string {
   if (!isoString) return "";
-  return new Date(isoString).toLocaleString(locale, {
-    weekday: "long",
-    month: "long",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: !locale.startsWith("ar"),
-  });
+  return formatViewerDateTime(isoString, { locale });
 }
 
 function isSessionExpired(expiresAt: string | null): boolean {

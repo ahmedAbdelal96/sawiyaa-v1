@@ -5,8 +5,12 @@ import {
   HttpCode,
   Post,
   Req,
+  Res,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
+import { WebResponseHardeningInterceptor } from '@common/interceptors/web-response-hardening.interceptor';
+import { Response } from 'express';
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
@@ -45,6 +49,7 @@ import { getRequestDeviceContext } from '../utils/request-device-context.util';
 
 @ApiTags('Auth - Admin')
 @Controller('auth/admin')
+@UseInterceptors(WebResponseHardeningInterceptor)
 export class AdminAuthController {
   constructor(
     private readonly i18nService: I18nService,
@@ -70,6 +75,7 @@ export class AdminAuthController {
   async login(
     @Body() dto: AdminLoginDto,
     @Req() request: Request,
+    @Res({ passthrough: true }) res: Response,
     @CurrentLocale() locale: SupportedLocale,
   ) {
     const result = await this.loginAdminUseCase.execute({
@@ -77,6 +83,16 @@ export class AdminAuthController {
       password: dto.password,
       deviceContext: getRequestDeviceContext(request, dto.deviceId),
     });
+
+    if (result.tokens?.refreshToken) {
+      res.cookie('fayed_refresh_token', result.tokens.refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        path: '/',
+        maxAge: 30 * 24 * 60 * 60,
+      });
+    }
 
     return {
       message: this.i18nService.t('auth.success.adminLoggedIn', locale),
@@ -103,6 +119,7 @@ export class AdminAuthController {
   async refresh(
     @Body() dto: RefreshTokenDto,
     @Req() request: AuthenticatedRequest,
+    @Res({ passthrough: true }) res: Response,
     @CurrentLocale() locale: SupportedLocale,
   ) {
     const refreshToken = dto.refreshToken ?? request.authToken;
@@ -118,6 +135,16 @@ export class AdminAuthController {
       refreshToken,
       deviceContext: getRequestDeviceContext(request, dto.deviceId),
     });
+
+    if (result.tokens?.refreshToken) {
+      res.cookie('fayed_refresh_token', result.tokens.refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        path: '/',
+        maxAge: 30 * 24 * 60 * 60,
+      });
+    }
 
     return {
       message: this.i18nService.t('auth.success.adminTokensRefreshed', locale),
@@ -138,9 +165,16 @@ export class AdminAuthController {
   })
   async logout(
     @Req() request: AuthenticatedRequest,
+    @Res({ passthrough: true }) res: Response,
     @CurrentLocale() locale: SupportedLocale,
   ) {
     await this.logoutAdminUseCase.execute(request.user!.sessionId!);
+    res.clearCookie('fayed_refresh_token', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      path: '/',
+    });
     return {
       message: this.i18nService.t('auth.success.adminLoggedOut', locale),
     };

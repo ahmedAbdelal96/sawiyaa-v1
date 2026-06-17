@@ -42,6 +42,8 @@ import {
 } from "@/components/shared/practitioner/PractitionerWorkspaceKit";
 import { useDebouncedValue } from "@/hooks/use-debounce";
 import { toAppError } from "@/lib/api/errors";
+import { usePractitionerProfile } from "@/features/practitioners/hooks/use-practitioners";
+import { formatPractitionerOrViewerDateTime } from "@/lib/time-formatting";
 import {
   useCreatePractitionerCoupon,
   useDisablePractitionerCoupon,
@@ -83,15 +85,11 @@ type CouponFormValues = {
 type FormErrors = Partial<Record<keyof CouponFormValues | "root", string>>;
 type DetailTab = "overview" | "redemptions";
 
-function formatDateTime(value: string | null, locale: string) {
+function formatDateTime(value: string | null, locale: string, timeZone: string | null = null) {
   if (!value) return "—";
-  return new Date(value).toLocaleString(locale === "ar" ? "ar-SA" : "en-US", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: !locale.startsWith("ar"),
+  return formatPractitionerOrViewerDateTime(value, timeZone, {
+    locale: locale === "ar" ? "ar-SA" : "en-US",
+    fallbackText: "—",
   });
 }
 
@@ -172,13 +170,28 @@ function getUsageLabel(coupon: PractitionerCoupon, t: ReturnType<typeof useTrans
   return `${coupon.currentUsageCount} / ${totalLimit}, ${t("detail.perPatient")}: ${perPatientLimit}`;
 }
 
-function getDateWindowLabel(coupon: PractitionerCoupon, locale: string, t: ReturnType<typeof useTranslations<"practitioner-promo-codes">>) {
+function getDateWindowLabel(
+  coupon: PractitionerCoupon,
+  locale: string,
+  timeZone: string | null,
+  t: ReturnType<typeof useTranslations<"practitioner-promo-codes">>,
+) {
   if (!coupon.startsAt && !coupon.endsAt) {
     return t("common.alwaysActive");
   }
 
-  const start = coupon.startsAt ? formatDateTime(coupon.startsAt, locale) : t("common.noStartDate");
-  const end = coupon.endsAt ? formatDateTime(coupon.endsAt, locale) : t("common.noEndDate");
+  const start = coupon.startsAt
+    ? formatPractitionerOrViewerDateTime(coupon.startsAt, timeZone, {
+        locale: locale === "ar" ? "ar-SA" : "en-US",
+        fallbackText: t("common.noStartDate"),
+      })
+    : t("common.noStartDate");
+  const end = coupon.endsAt
+    ? formatPractitionerOrViewerDateTime(coupon.endsAt, timeZone, {
+        locale: locale === "ar" ? "ar-SA" : "en-US",
+        fallbackText: t("common.noEndDate"),
+      })
+    : t("common.noEndDate");
   return `${start} → ${end}`;
 }
 
@@ -669,6 +682,8 @@ function CouponRedemptionsTable({
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(5);
   const query = usePractitionerCouponRedemptions(coupon.id, { page, limit });
+  const profileQuery = usePractitionerProfile();
+  const practitionerTimeZone = profileQuery.data?.profile.timezone ?? null;
   const redemptions = query.data?.items ?? [];
   const pagination = query.data?.pagination;
 
@@ -692,7 +707,9 @@ function CouponRedemptionsTable({
         cell: (row) => (
           <div className="space-y-1">
             <p className="font-mono text-sm text-text-primary dark:text-white/95">{row.paymentId}</p>
-            <p className="text-xs text-text-muted">{formatDateTime(row.redeemedAt, locale)}</p>
+            <p className="text-xs text-text-muted">
+              {formatDateTime(row.redeemedAt, locale, practitionerTimeZone)}
+            </p>
           </div>
         ),
       },
@@ -838,6 +855,8 @@ function CouponDetailDrawer({
 }) {
   const t = useTranslations("practitioner-promo-codes");
   const locale = useLocale();
+  const profileQuery = usePractitionerProfile();
+  const practitionerTimeZone = profileQuery.data?.profile.timezone ?? null;
   const query = usePractitionerCoupon(couponId ?? undefined, Boolean(couponId));
   const coupon = query.data?.item ?? null;
 
@@ -962,7 +981,7 @@ function CouponDetailDrawer({
                 <PractitionerStatCard
                   label={t("detail.stats.window")}
                   value={coupon.startsAt || coupon.endsAt ? t("detail.stats.windowDefined") : t("common.alwaysActive")}
-                  hint={getDateWindowLabel(coupon, locale, t)}
+                  hint={getDateWindowLabel(coupon, locale, practitionerTimeZone, t)}
                   tone="neutral"
                   icon={<CalendarClock className="h-4 w-4" />}
                 />
@@ -996,10 +1015,22 @@ function CouponDetailDrawer({
                   <dl className="space-y-3 text-sm">
                     <DetailRow label={t("detail.status")} value={getStatusLabel(t, coupon.status)} />
                     <DetailRow label={t("detail.isActive")} value={coupon.isActive ? t("common.yes") : t("common.no")} />
-                    <DetailRow label={t("detail.startsAt")} value={formatDateTime(coupon.startsAt, locale)} />
-                    <DetailRow label={t("detail.endsAt")} value={formatDateTime(coupon.endsAt, locale)} />
-                    <DetailRow label={t("detail.createdAt")} value={formatDateTime(coupon.createdAt, locale)} />
-                    <DetailRow label={t("detail.updatedAt")} value={formatDateTime(coupon.updatedAt, locale)} />
+                    <DetailRow
+                      label={t("detail.startsAt")}
+                      value={formatDateTime(coupon.startsAt, locale, practitionerTimeZone)}
+                    />
+                    <DetailRow
+                      label={t("detail.endsAt")}
+                      value={formatDateTime(coupon.endsAt, locale, practitionerTimeZone)}
+                    />
+                    <DetailRow
+                      label={t("detail.createdAt")}
+                      value={formatDateTime(coupon.createdAt, locale, practitionerTimeZone)}
+                    />
+                    <DetailRow
+                      label={t("detail.updatedAt")}
+                      value={formatDateTime(coupon.updatedAt, locale, practitionerTimeZone)}
+                    />
                   </dl>
                 </PractitionerSectionCard>
               </div>
@@ -1049,6 +1080,8 @@ export default function PractitionerPromoCodesScreen() {
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const profileQuery = usePractitionerProfile();
+  const practitionerTimeZone = profileQuery.data?.profile.timezone ?? null;
 
   const activeStatusFilter = parseEnumParam<CouponStatus | "ALL">(
     searchParams.get("status"),
@@ -1199,7 +1232,9 @@ export default function PractitionerPromoCodesScreen() {
         accessor: (row) => row.startsAt ?? row.endsAt ?? "",
         cell: (row) => (
           <div className="space-y-1 text-sm text-text-secondary">
-            <p className="font-medium text-text-primary dark:text-white/95">{getDateWindowLabel(row, locale, t)}</p>
+            <p className="font-medium text-text-primary dark:text-white/95">
+              {getDateWindowLabel(row, locale, practitionerTimeZone, t)}
+            </p>
             <p className="text-xs text-text-muted">{t("table.windowHint")}</p>
           </div>
         ),

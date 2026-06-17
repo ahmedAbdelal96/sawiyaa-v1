@@ -1,0 +1,330 @@
+================================================================================
+FAYED MOBILE — PATIENT-FACING ROUTES UX AUDIT
+Phase 7 | Agent 2 | Findings AUDIT-105 onwards
+Read-only evidence-based audit. No fixes applied.
+================================================================================
+
+Scope: All patient-facing routes under fayed-mobile/app/(patient)/
+Criteria: Critical journey checks, copy checks (no undefined/null/[object Object]/
+raw backend enums), empty/error/loading states, i18n fidelity.
+
+================================================================================
+SECTION A — CRITICAL BUGS (User-facing defects)
+================================================================================
+
+AUDIT-105 --------------------------------------------------------- CRITICAL
+File: fayed-mobile/app/(patient)/sessions/success.tsx
+Lines: 87-89
+Issue: Raw backend session-status enums displayed directly to users as i18n keys
+Evidence:
+  {params.status === "PENDING_PAYMENT"
+    ? t("patientSessionsFlow.statuses.PENDING_PAYMENT")
+    : t("patientSessionsFlow.statuses.CONFIRMED")}
+Severity: Users see raw enum strings "PENDING_PAYMENT" / "CONFIRMED" when the
+  i18n keys are not found in the translation files. Payment confirmation is a
+  critical post-payment state — users may be confused about their booking status.
+Labels: [CRITICAL] [RAW-ENUM] [COPY] [i18n]
+
+AUDIT-106 --------------------------------------------------------- CRITICAL
+File: fayed-mobile/app/(patient)/support/new.tsx
+Line: 109
+Issue: Raw SupportTicketType enum values used as both i18n key and fallback
+Evidence:
+  {t(`support.categories.${category}`, category)}
+  category values include: GENERAL, BOOKING, PAYMENT, SESSION, TECHNICAL,
+  ACCOUNT, CHAT, OTHER
+Severity: When the i18n key is missing, the fallback is the raw enum string
+  (e.g., "BOOKING"). Users see backend enum values instead of human-readable
+  category labels.
+Labels: [CRITICAL] [RAW-ENUM] [COPY] [i18n]
+
+AUDIT-107 --------------------------------------------------------- HIGH
+File: fayed-mobile/app/(patient)/profile-notifications.tsx
+Line: 162
+Issue: formatNotificationType() produces humanized slugs WITHOUT i18n
+Evidence:
+  <Text weight="500">
+    {formatNotificationType(item.typeSlug)}
+  </Text>
+  formatNotificationType (account-utils.ts:16-22) does:
+    return typeSlug.split("_").map(part => part[0]+part.slice(1).toLowerCase()).join(" ");
+  e.g. "SESSION_REMINDER" → "Session Reminder", "PAYMENT_CONFIRMED" → "Payment Confirmed"
+Severity: Output is locale-agnostic (not AR-aware) and not sourced from the i18n
+  system. In Arabic mode, notification type labels remain in English sentence-case.
+  If a typeSlug has no underscores (e.g. "NEWS"), output is unchanged.
+Labels: [HIGH] [COPY] [i18n] [RTL]
+
+================================================================================
+SECTION B — CRITICAL JOURNEY CHECKS
+================================================================================
+
+Journey: Session Join / Detail
+File: fayed-mobile/app/(patient)/sessions/[id].tsx
+Status: PASS
+Evidence:
+  - presentationStatus displayed via t("patientSessionsFlow.presentationStatus.${session.presentationStatus}")
+  - joinAvailability.canJoin gating: const canAttemptJoin = sessionQuery.data?.joinAvailability?.canJoin === true
+  - Join CTA conditionally rendered: {canAttemptJoin ? <Button title={...join.../> : null}
+  - chatAvailability checked before exposing chat composer
+
+Journey: Session List
+File: fayed-mobile/app/(patient)/sessions.tsx
+Status: PASS
+Evidence:
+  - StatusChip uses t("patientSessionsFlow.presentationStatus.${session.presentationStatus}")
+  - No raw enum display; proper t() usage throughout
+
+Journey: Session Chat Gating
+File: fayed-mobile/app/(patient)/messages/[id].tsx (via MessageThreadScreen)
+Status: PASS
+Evidence:
+  - chatAvailability = conversation?.chatAvailability ?? null
+  - showComposer = chatAvailability?.canSend === true && chatAvailability?.readOnly !== true
+  - showReadOnlyNotice rendered when canSend !== true or readOnly === true
+  - Loading/Error states present for availability check
+
+Journey: Payment Return States
+File: fayed-mobile/app/(patient)/sessions/[id]/payment-return.tsx
+Status: PASS (per earlier reading in this session)
+Evidence:
+  - Uses normalizePaymentRedirectStatus() for all payment states
+  - 45-second polling with MAX_POLL_DURATION_MS
+  - All states handled: confirmed, expired, cancelled, failed, canceled,
+    verifying, pendingStill, pending
+
+Journey: Instant Booking Status Badge i18n
+File: fayed-mobile/app/(patient)/instant-booking.tsx (delegate)
+  fayed-mobile/src/features/instant-booking/components/PatientInstantBookingScreen.tsx
+Status: PASS
+Evidence:
+  - request.status i18n: t(`instantBooking.statuses.${request.status}` as const)  [line 290]
+  - sessionMode i18n: t(`instantBooking.modes.${request.sessionMode}` as const) [line 296]
+  - request card titles/notes: t(`instantBooking.patient.request.titles.${request.status}`)
+    and t(`instantBooking.patient.request.notes.${request.status}`) [lines 331-334]
+  - Status tones properly mapped via requestTone() switch
+
+Journey: Discovery Raw Enum Visibility
+File: fayed-mobile/app/(patient)/discovery/[slug].tsx
+Status: PASS (per earlier reading)
+Evidence:
+  - presence.status === "ONLINE" checked, i18n used:
+    t("discovery.profile.statusAvailable", { defaultValue: isArabicUi ? "متاح الآن" : "Available now" })
+  - practitioner specialties displayed from structured data, not raw enums
+
+================================================================================
+SECTION C — COPY / i18n AUDIT (remaining routes)
+================================================================================
+
+Route: care-chat/index.tsx, care-chat/[id].tsx, care-chat/request/[id].tsx
+Status: PASS
+Evidence (request/[id].tsx:100):
+  {t(`careChat.requestStatus.${request.status}`, request.status)}
+  ChatApprovalStatus enum values PENDING/APPROVED/REJECTED are used as i18n key
+  suffix with enum value as fallback (harmless — keys likely exist).
+  request.practitioner.displayName guarded with t("careChat.unknownPractitioner") fallback.
+  request.reason displayed as raw string (backend-provided, safe).
+
+Route: messages/index.tsx
+Status: PASS
+Evidence: Delegates to MessagesInboxScreen with VALID_TABS = ["all","sessions","support","followup"]
+  tab enforcement prevents invalid tab states.
+
+Route: instant-booking (PatientInstantBookingScreen)
+Status: PASS — see Journey section above
+
+Route: profile.tsx
+Status: PASS
+Evidence:
+  - genderLabel via normalizeProfileGender() + t(`profileScreen.details.genderOptions.${genderKey}`)
+  - displayName/email/phone all have t("profileScreen.none") fallbacks
+  - locale/timezone displayed via t() with proper interpolation
+  - Missing profile fields handled with onboarding banner + completion count
+
+Route: profile-details.tsx
+Status: PASS
+Evidence:
+  - genderLabel via normalizeProfileGender() + t() [line 87-89]
+  - countryLabel via getCountryLabel() — returns human-readable name or none
+  - displayName fallbacks: user?.displayName ?? t("profileScreen.fallbackName")
+  - All InfoRow values are user-facing safe strings
+
+Route: profile-details/edit.tsx
+Status: PASS
+Evidence:
+  - genderDisplayValue via normalizeProfileGender() + t()
+  - All form errors use t() keys (displayNameRequired, dateOfBirthRequired, etc.)
+  - Country field is read-only (locked icon), not editable
+
+Route: profile-preferences.tsx
+Status: PASS
+Evidence:
+  - Language options: t(`profileScreen.language.options.${value}`) [line 133]
+  - All labels i18n-keyed; no raw enums visible
+
+Route: profile-notifications.tsx
+Status: FAIL (AUDIT-107)
+Evidence: See AUDIT-107 above. formatNotificationType() bypasses i18n.
+
+Route: notifications.tsx
+Status: PASS
+Evidence:
+  - item.title and item.body are backend-provided human-readable strings
+  - pushRegistrationStatus i18n: t(`patientNotifications.pushStatus.${pushRegistrationStatus}`) [line 167]
+  - Supported channels joined with " • " (locale-agnostic separator) [line 59]
+  - Read/Unread status: t("patientNotifications.statusUnread") / t("patientNotifications.statusRead")
+
+Route: academy/index.tsx (AcademyBrowseScreen)
+Status: PASS
+Evidence:
+  - Course price: isFreeCourse ? t("academyMobile.free") : formatAcademyMoney()
+  - StatusChip: t("academyMobile.available") — hardcoded, acceptable
+  - Duration label: t("academyMobile.durationDays", { count: ... })
+  - Lecture count: t("academyMobile.lectureCount", { count: ... })
+  - Empty state: t("academyMobile.emptyTitle"), t("academyMobile.emptyDescription")
+  - Error state: t("academyMobile.errorTitle"), t("academyMobile.errorMessage")
+  - All loading states use t() keys
+
+Route: academy/[slug].tsx (AcademyDetailScreen delegate)
+Status: PASS (delegation to feature component)
+
+Route: academy/enroll/[slug].tsx (AcademyEnrollmentCreateScreen delegate)
+Status: PASS (delegation to feature component)
+
+Route: academy/enrollments/[id].tsx (AcademyEnrollmentDetailScreen delegate)
+Status: PASS (delegation to feature component)
+
+Route: academy/enrollments/[id]/payment-return.tsx
+  (AcademyEnrollmentPaymentReturnScreen delegate)
+Status: PASS (delegation to feature component)
+
+Route: package-purchases/index.tsx (PackagePurchasesScreen delegate)
+Status: PASS (delegation to feature component)
+
+Route: package-purchases/[id].tsx
+Status: PASS
+Evidence:
+  - presentationStatus i18n via getPackagePurchaseSessionPresentationStatusTranslationKey()
+    which maps to packagePurchases.presentationStatuses.* [package-purchase-display.ts:200-220]
+  - sessionMode i18n via getPackagePurchaseSessionModeTranslationKey()
+    which maps to packagePurchases.sessionModes.* [package-purchase-display.ts:229-239]
+  - Status chip uses getPackagePurchaseStatusTranslationKey() + getPackagePurchaseStatusTone()
+  - All summary text uses t() with proper interpolation
+  - Empty state: t("packagePurchases.detail.notFoundTitle/Description")
+  - Error state: t("packagePurchases.detail.errorTitle/errorMessage")
+  - Loading state: t("packagePurchases.detail.loading")
+
+Route: package-purchases/create.tsx (PackagePurchaseCreateScreen delegate)
+Status: PASS (delegation to feature component)
+
+Route: package-purchases/[id]/pay.tsx (PackagePurchasePayScreen delegate)
+Status: PASS (delegation to feature component)
+
+Route: payments.tsx
+Status: PASS
+Evidence:
+  - Payment status badges via STATUS_BADGE_MAP (internal constant, not user-facing)
+  - Status labels: t(`patientPaymentsFlow.paymentCard.status.${payment.status}`)
+  - Provider labels: t(`patientPaymentsFlow.paymentCard.provider.${payment.provider}`)
+  - Date labels: t(`patientPaymentsFlow.paymentCard.${labelKey}`)
+  - entryTypeLabel via t(`patientPaymentsFlow.transactions.entryTypes.${entry.entryType}`)
+  - All user-facing text from i18n keys; no raw backend enums as text
+
+Route: payments/transactions.tsx
+Status: PASS
+Evidence:
+  - entryTypeLabel: t(`patientPaymentsFlow.transactions.entryTypes.${entry.entryType}`) [line 127]
+  - Filter tab keys: all i18n
+  - Status badge: t("patientPaymentsFlow.transactions.completed") / .pending
+  - Empty state: t("patientPaymentsFlow.transactions.emptyTitle/emptyNote")
+  - Balance label: t("patientPaymentsFlow.wallet.balanceLabel")
+  - Fallback currency handling: resolveSupportedCurrencyCode()
+
+Route: sessions/confirm.tsx (BookingConfirmationScreen)
+Status: PASS
+Evidence:
+  - All section titles, labels, buttons use t() keys
+  - practitionerName fallback: t("patientSessionsFlow.common.practitionerFallback")
+  - submitError: extractApiErrorMessage(error) — error msg from API or fallback
+  - pending payment label: t("patientSessionsFlow.confirmation.pendingPayment")
+  - breakdownError: t("patientSessionsFlow.confirmation.breakdownError") with defaultValue
+
+================================================================================
+SECTION D — EMPTY / ERROR / LOADING STATE AUDIT
+================================================================================
+
+Route: sessions/[id].tsx
+Loading: <LoadingState fullScreen /> with no message — acceptable
+Error: <ErrorState fullScreen onRetry={sessionQuery.refetch} /> — user-safe
+Empty (no session found): routes to ErrorState via isError guard
+
+Route: messages/[id].tsx (MessageThreadScreen)
+Loading: LoadingState with t("messages.common.loading") — PASS
+Error: ErrorState with t("messages.common.errorTitle") + t("messages.common.errorMessage") — PASS
+Empty: ConversationEmptyState with t("messages.thread.emptyTitle") — PASS
+Chat unavailable: readOnlyNotice with t("messages.thread.readOnlyTitle") — PASS
+
+Route: notifications.tsx
+Loading: <LoadingState fullScreen /> — no i18n label, but full-screen blocking state
+Error: <ErrorState> with t("patientNotifications.errorTitle") + t("patientNotifications.errorBody") — PASS
+Empty: EmptyState with t("patientNotifications.emptyTitle") + t("patientNotifications.emptyBody") — PASS
+
+Route: package-purchases/[id].tsx
+Loading: DetailPageScaffold with loading prop + t("packagePurchases.detail.loading") — PASS
+Error: DetailPageScaffold with errorTitle/errorMessage + onRetry — PASS
+Not found: EmptyState with t("packagePurchases.detail.notFoundTitle/Description") — PASS
+
+Route: academy/index.tsx (AcademyBrowseScreen)
+Loading: ListPageScaffold loading prop + t("academyMobile.loading") — PASS
+Error: ListPageScaffold errorTitle/errorMessage + onRetry — PASS
+Empty: ListPageScaffold emptyTitle/emptyDescription — PASS
+
+================================================================================
+SECTION E — MINOR OBSERVATIONS
+================================================================================
+
+OBS-1: matching/questions.tsx:206 — HARDCODED PROGRESS
+  const progress = 60;
+  Progress indicator always shows 60% regardless of actual form completion.
+  Not a user-facing string bug, but a UX inaccuracy. No i18n impact.
+  Labels: [MINOR] [UX]
+
+OBS-2: care-chat/new.tsx:307-313 — INLINE ERROR EXTRACTOR
+  function extractApiErrorMessage(err: unknown): string {
+    if (typeof err === "object" && err !== null && "message" in err) {
+      const e = err as { message: string };
+      return e.message;
+    }
+    return "An error occurred. Please try again.";
+  }
+  Fallback string is hardcoded English. Should use t() key for AR mode.
+  Impact: Low — only fires on truly unknown error shape.
+  Labels: [MINOR] [i18n]
+
+OBS-3: profile.tsx:161 — ID PILL DISPLAY
+  ID: P-{(user?.id ?? "0000").slice(0, 4).toUpperCase()}
+  Displaying truncated user ID as a user-facing identifier. Not an enum display
+  issue but may confuse users who expect a full ID or named identifier.
+  Labels: [MINOR] [UX]
+
+================================================================================
+SECTION F — SUMMARY TABLE
+================================================================================
+
+Finding  | Severity | Route(s)                        | Issue
+---------|----------|---------------------------------|----------------------------------
+AUDIT-105| CRITICAL | sessions/success.tsx            | Raw PENDING_PAYMENT/CONFIRMED enums
+AUDIT-106| CRITICAL | support/new.tsx                 | Raw SupportTicketType enums as i18n key
+AUDIT-107| HIGH     | profile-notifications.tsx       | formatNotificationType bypasses i18n
+OBS-1    | MINOR    | matching/questions.tsx          | Hardcoded 60% progress indicator
+OBS-2    | MINOR    | care-chat/new.tsx               | Hardcoded English error fallback
+OBS-3    | MINOR    | profile.tsx                     | Truncated user ID pill display
+
+PASS routes (30+): sessions/[id], sessions/confirm, sessions/list,
+  messages/[id], messages/index, notifications, care-chat/*,
+  instant-booking, profile, profile-details, profile-details/edit,
+  profile-preferences, payments, payments/transactions,
+  package-purchases/*, academy/*, discovery/[slug]
+
+================================================================================
+END OF AUDIT REPORT — Agent 2, Patient UX
+================================================================================

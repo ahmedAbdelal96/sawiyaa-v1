@@ -10,6 +10,8 @@ import { Modal, ModalBody, ModalHeader } from "@/components/ui/modal";
 import DateField from "@/components/form/input/DateField";
 import Label from "@/components/form/Label";
 import { ListStateSkeleton, StateCard } from "@/components/shared/ContentStates";
+import { usePractitionerProfile } from "../hooks/use-practitioners";
+import { formatPractitionerOrViewerDate } from "@/lib/time-formatting";
 import { toAppError } from "@/lib/api/errors";
 import { usePractitionerCredentials, useUploadPractitionerCredential } from "../hooks/use-practitioners";
 import type { CredentialReviewStatus, CredentialType, PractitionerCredential } from "../types/practitioners.types";
@@ -51,10 +53,6 @@ type PractitionerCredentialsListProps = {
   compact?: boolean;
 };
 
-function formatDate(iso: string, locale: string) {
-  return new Date(iso).toLocaleDateString(locale);
-}
-
 function resolveFileLink(fileUrl: string) {
   if (/^https?:\/\//i.test(fileUrl)) return fileUrl;
   return `${API_BASE_URL}${fileUrl.startsWith("/") ? "" : "/"}${fileUrl}`;
@@ -84,6 +82,8 @@ export default function PractitionerCredentialsList({
   const locale = useLocale();
   const isArabic = locale === "ar";
   const dateLocale = isArabic ? "ar-SA" : "en-US";
+  const profileQuery = usePractitionerProfile();
+  const practitionerTimeZone = profileQuery.data?.profile.timezone ?? null;
 
   const query = usePractitionerCredentials();
   const uploadCredential = useUploadPractitionerCredential();
@@ -240,7 +240,12 @@ export default function PractitionerCredentialsList({
                   </span>
                 </div>
                 <div className="col-span-3 text-text-secondary">
-                  {item.expiresAt ? formatDate(item.expiresAt, dateLocale) : t("credentials.noExpiry")}
+                  {item.expiresAt
+                    ? formatPractitionerOrViewerDate(item.expiresAt, practitionerTimeZone, {
+                        locale: dateLocale,
+                        fallbackText: t("credentials.noExpiry"),
+                      })
+                    : t("credentials.noExpiry")}
                 </div>
                 <div className="col-span-1">
                   <button

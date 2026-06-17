@@ -4,6 +4,7 @@ import {
   Injectable,
 } from '@nestjs/common';
 import { AuthenticatedUser } from '@common/interfaces/authenticated-user.interface';
+import { normalizeIanaTimeZoneInput } from '@common/utils/timezone.util';
 import {
   NotificationDeviceRole,
   RegisterNotificationDeviceDto,
@@ -21,6 +22,7 @@ export class RegisterNotificationDeviceUseCase {
     dto: RegisterNotificationDeviceDto;
   }) {
     this.assertRoleAllowed(input.authenticatedUser, input.dto.role);
+    const timezone = this.normalizeDeviceTimezoneMetadata(input.dto.timezone);
 
     const item = await this.notificationDeviceRepository.registerOrUpdate({
       userId: input.authenticatedUser.id,
@@ -31,7 +33,7 @@ export class RegisterNotificationDeviceUseCase {
       deviceId: input.dto.deviceId ?? null,
       appVersion: input.dto.appVersion ?? null,
       locale: input.dto.locale ?? null,
-      timezone: input.dto.timezone ?? null,
+      timezone,
       enabled: input.dto.enabled ?? true,
     });
 
@@ -70,6 +72,21 @@ export class RegisterNotificationDeviceUseCase {
         messageKey: 'notifications.errors.invalidDeviceRole',
         error: 'NOTIFICATION_DEVICE_ROLE_INVALID',
       });
+    }
+  }
+
+  private normalizeDeviceTimezoneMetadata(
+    timezone?: string | null,
+  ): string | null {
+    try {
+      const normalized = normalizeIanaTimeZoneInput(timezone, {
+        messageKey: 'notifications.errors.invalidDeviceTimezone',
+        error: 'NOTIFICATION_DEVICE_INVALID_TIMEZONE',
+      });
+
+      return typeof normalized === 'string' ? normalized : null;
+    } catch {
+      return null;
     }
   }
 }

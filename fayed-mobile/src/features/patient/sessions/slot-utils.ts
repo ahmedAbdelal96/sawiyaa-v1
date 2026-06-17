@@ -1,4 +1,9 @@
 import type { AvailabilityWindow } from "./types";
+import {
+  formatViewerDate,
+  formatViewerDateTime,
+  formatViewerTime,
+} from "../../../lib/time-formatting";
 
 export interface SelectableSlot {
   startsAt: string;
@@ -130,30 +135,15 @@ export function splitDaySlotsByPart(daySlots: SelectableSlot[]) {
 }
 
 export function formatLocalizedDateTime(value: string, locale: string) {
-  return new Intl.DateTimeFormat(locale, {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: !locale.startsWith("ar"),
-  }).format(new Date(value));
+  return formatViewerDateTime(value, { locale });
 }
 
 export function formatLocalizedDate(value: string, locale: string) {
-  return new Intl.DateTimeFormat(locale, {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-  }).format(new Date(value));
+  return formatViewerDate(value, { locale });
 }
 
 export function formatLocalizedTime(value: string, locale: string) {
-  return new Intl.DateTimeFormat(locale, {
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: !locale.startsWith("ar"),
-  }).format(new Date(value));
+  return formatViewerTime(value, { locale });
 }
 
 export function formatLocalizedDateRange(
@@ -164,14 +154,5 @@ export function formatLocalizedDateRange(
   const fromDate = new Date(from);
   const toDate = new Date(to);
   toDate.setDate(toDate.getDate() - 1);
-
-  const dayFormatter = new Intl.DateTimeFormat(locale, {
-    day: "numeric",
-    month: "short",
-  });
-  const yearFormatter = new Intl.DateTimeFormat(locale, {
-    year: "numeric",
-  });
-
-  return `${dayFormatter.format(fromDate)} - ${dayFormatter.format(toDate)}, ${yearFormatter.format(toDate)}`;
+  return `${formatViewerDate(fromDate, { locale })} - ${formatViewerDate(toDate, { locale })}`;
 }

@@ -7,6 +7,7 @@ import { AlertCircle, CheckCircle2, Loader2, Star } from "lucide-react";
 import Button from "@/components/ui/button/Button";
 import TextArea from "@/components/form/input/TextArea";
 import { toAppError } from "@/lib/api/errors";
+import { formatViewerDateTime } from "@/lib/time-formatting";
 import {
   usePatientReviews,
   useSubmitPatientSessionReview,
@@ -26,15 +27,7 @@ type SessionTranslator = (
 ) => string;
 
 function formatDateTime(isoString: string | null, locale: string): string {
-  if (!isoString) return "";
-  return new Date(isoString).toLocaleString(locale === "ar" ? "ar-SA" : "en-US", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: locale !== "ar",
-  });
+  return formatViewerDateTime(isoString, { locale: locale === "ar" ? "ar-SA" : "en-US" });
 }
 
 function StarButton({

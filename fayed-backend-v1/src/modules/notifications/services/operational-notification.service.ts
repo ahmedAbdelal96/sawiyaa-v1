@@ -44,6 +44,11 @@ type SessionReminderNotificationInput = {
   scheduledStartAt: Date | null;
 };
 
+type InstantBookingRequestNotificationInput = {
+  patientProfileId: string;
+  requestId: string;
+};
+
 type ScheduledSessionReminderDispatch = {
   reminder: SessionReminderQueueItem;
 };
@@ -148,6 +153,84 @@ export class OperationalNotificationService {
       relatedEntityType: 'REFUND',
       relatedEntityId: input.refundId,
       category: NotificationCategory.PAYMENT,
+    });
+  }
+
+  async notifyInstantBookingAccepted(
+    input: InstantBookingRequestNotificationInput,
+  ): Promise<void> {
+    const recipient = await this.resolvePatientRecipient(input.patientProfileId);
+
+    await this.sendBySlug({
+      recipient,
+      slug: 'instant-booking.request-accepted',
+      titleKey: 'instantBooking.notifications.requestAcceptedTitle',
+      bodyKey: 'instantBooking.notifications.requestAcceptedBody',
+      relatedEntityType: 'INSTANT_BOOKING_REQUEST',
+      relatedEntityId: input.requestId,
+      category: NotificationCategory.SESSION,
+      routePath: this.buildInstantBookingRoutePath(
+        recipient?.locale ?? null,
+        input.requestId,
+      ),
+      idempotencyKey: this.buildInstantBookingNotificationIdempotencyKey(
+        'instant-booking.request-accepted',
+        input.requestId,
+        recipient?.userId ?? null,
+      ),
+      targetRole: 'PATIENT',
+    });
+  }
+
+  async notifyInstantBookingRejected(
+    input: InstantBookingRequestNotificationInput,
+  ): Promise<void> {
+    const recipient = await this.resolvePatientRecipient(input.patientProfileId);
+
+    await this.sendBySlug({
+      recipient,
+      slug: 'instant-booking.request-rejected',
+      titleKey: 'instantBooking.notifications.requestRejectedTitle',
+      bodyKey: 'instantBooking.notifications.requestRejectedBody',
+      relatedEntityType: 'INSTANT_BOOKING_REQUEST',
+      relatedEntityId: input.requestId,
+      category: NotificationCategory.SESSION,
+      routePath: this.buildInstantBookingRoutePath(
+        recipient?.locale ?? null,
+        input.requestId,
+      ),
+      idempotencyKey: this.buildInstantBookingNotificationIdempotencyKey(
+        'instant-booking.request-rejected',
+        input.requestId,
+        recipient?.userId ?? null,
+      ),
+      targetRole: 'PATIENT',
+    });
+  }
+
+  async notifyInstantBookingExpired(
+    input: InstantBookingRequestNotificationInput,
+  ): Promise<void> {
+    const recipient = await this.resolvePatientRecipient(input.patientProfileId);
+
+    await this.sendBySlug({
+      recipient,
+      slug: 'instant-booking.request-expired',
+      titleKey: 'instantBooking.notifications.requestExpiredTitle',
+      bodyKey: 'instantBooking.notifications.requestExpiredBody',
+      relatedEntityType: 'INSTANT_BOOKING_REQUEST',
+      relatedEntityId: input.requestId,
+      category: NotificationCategory.SESSION,
+      routePath: this.buildInstantBookingRoutePath(
+        recipient?.locale ?? null,
+        input.requestId,
+      ),
+      idempotencyKey: this.buildInstantBookingNotificationIdempotencyKey(
+        'instant-booking.request-expired',
+        input.requestId,
+        recipient?.userId ?? null,
+      ),
+      targetRole: 'PATIENT',
     });
   }
 
@@ -694,6 +777,19 @@ export class OperationalNotificationService {
     return `/${locale}/${role.toLowerCase()}/sessions/${sessionId}`;
   }
 
+  private buildInstantBookingRoutePath(
+    locale: SupportedLocale | null,
+    requestId: string,
+  ): string | null {
+    if (!locale) {
+      return null;
+    }
+
+    return `/${locale}/patient/instant-booking?requestId=${encodeURIComponent(
+      requestId,
+    )}`;
+  }
+
   private buildMessageRoutePath(
     locale: SupportedLocale | null,
     role: SessionReminderRecipientRole,
@@ -719,6 +815,18 @@ export class OperationalNotificationService {
     }
 
     return `${slug}:${sessionId}:${userId}`;
+  }
+
+  private buildInstantBookingNotificationIdempotencyKey(
+    slug: string,
+    requestId: string,
+    userId: string | null,
+  ): string | null {
+    if (!userId) {
+      return null;
+    }
+
+    return `${slug}:${requestId}:${userId}`;
   }
 
   private resolveSessionReminderSlug(

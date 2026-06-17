@@ -6,6 +6,7 @@ import { ArrowLeft, ChevronLeft, Search, Wallet } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { ListStateSkeleton, StateCard } from "@/components/shared/ContentStates";
 import { groupAmountsByCurrency } from "@/lib/finance-format";
+import { formatViewerDate } from "@/lib/time-formatting";
 import { usePatientPayments } from "../hooks/use-payments";
 import { usePatientSessions } from "@/features/sessions/hooks/use-sessions";
 import { canContinuePayment, canRetryPayment } from "../lib/payment-status";
@@ -47,11 +48,7 @@ const PAYMENT_STATUS_FILTERS: PaymentStatus[] = [
 const PAYMENT_ROWS_PER_PAGE = 6;
 
 function formatDate(isoString: string, numLocale: string): string {
-  return new Date(isoString).toLocaleDateString(numLocale, {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
+  return formatViewerDate(isoString, { locale: numLocale });
 }
 
 function resolveRelevantDate(

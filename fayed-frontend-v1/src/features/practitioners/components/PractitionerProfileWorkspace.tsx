@@ -45,6 +45,7 @@ import {
 } from "@/components/shared/practitioner/PractitionerWorkspaceKit";
 import Avatar from "@/components/ui/avatar/Avatar";
 import { cn } from "@/lib/utils";
+import { formatPractitionerOrViewerDateTime } from "@/lib/time-formatting";
 import {
   getLocalizedBankOptions,
   getLocalizedWalletProviderOptions,
@@ -164,31 +165,18 @@ function getInitials(name: string | null | undefined): string {
     .join("");
 }
 
-function formatDateTime(value: string | null | undefined, locale: string): string {
+function formatDateTime(
+  value: string | null | undefined,
+  locale: string,
+  timeZone: string | null | undefined,
+): string {
   if (!value) return "-";
 
   try {
-    return new Intl.DateTimeFormat(locale.startsWith("ar") ? "ar-EG" : "en-GB", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    }).format(new Date(value));
-  } catch {
-    return value;
-  }
-}
-
-function formatDate(value: string | null | undefined, locale: string): string {
-  if (!value) return "-";
-
-  try {
-    return new Intl.DateTimeFormat(locale.startsWith("ar") ? "ar-EG" : "en-GB", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    }).format(new Date(value));
+    return formatPractitionerOrViewerDateTime(value, timeZone, {
+      locale: locale.startsWith("ar") ? "ar-SA" : "en-GB",
+      fallbackText: "-",
+    });
   } catch {
     return value;
   }
@@ -1372,7 +1360,11 @@ export default function PractitionerProfileWorkspace() {
                           </div>
                           <p className="text-[10px] font-bold text-slate-400 dark:text-white/40 uppercase tracking-wider">{t("profile.request.submittedAt")}</p>
                           <p className="text-sm font-bold text-slate-800 dark:text-white/90 mt-0.5">
-                            {formatDateTime(application?.submittedAt ?? null, locale) || t("profile.request.emptyValue")}
+                            {formatDateTime(
+                              application?.submittedAt ?? null,
+                              locale,
+                              profileOrFallback.timezone ?? null,
+                            ) || t("profile.request.emptyValue")}
                           </p>
                         </div>
 
@@ -1391,7 +1383,11 @@ export default function PractitionerProfileWorkspace() {
                           </div>
                           <p className="text-[10px] font-bold text-slate-400 dark:text-white/40 uppercase tracking-wider">{t("profile.request.reviewedAt")}</p>
                           <p className="text-sm font-bold text-slate-800 dark:text-white/90 mt-0.5">
-                            {formatDateTime(application?.reviewedAt ?? null, locale) || t("profile.request.emptyValue")}
+                            {formatDateTime(
+                              application?.reviewedAt ?? null,
+                              locale,
+                              profileOrFallback.timezone ?? null,
+                            ) || t("profile.request.emptyValue")}
                             {application?.reviewedByUserId ? ` (${t("profile.request.reviewedBy")}: ${application.reviewedByUserId})` : ""}
                           </p>
                         </div>

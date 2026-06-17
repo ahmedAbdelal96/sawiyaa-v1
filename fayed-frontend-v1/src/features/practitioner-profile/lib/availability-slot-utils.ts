@@ -1,3 +1,4 @@
+import { formatViewerDate, formatViewerDateTime, formatViewerTime } from "@/lib/time-formatting";
 import type { PublicAvailabilityWindow } from "../types/public-availability.types";
 
 export function getWeekBounds(weekOffset: number): { from: string; to: string } {
@@ -13,25 +14,17 @@ export function formatWeekLabel(from: string, to: string, numLocale: string): st
   const start = new Date(from);
   const end = new Date(to);
   end.setDate(end.getDate() - 1);
-  const dayFmt = new Intl.DateTimeFormat(numLocale, { month: "short", day: "numeric" });
-  const yearFmt = new Intl.DateTimeFormat(numLocale, { year: "numeric" });
-  return `${dayFmt.format(start)} - ${dayFmt.format(end)}, ${yearFmt.format(end)}`;
+  return `${formatViewerDate(start, { locale: numLocale })} - ${formatViewerDate(end, {
+    locale: numLocale,
+  })}`;
 }
 
 export function formatDayLabel(isoString: string, numLocale: string): string {
-  return new Date(isoString).toLocaleDateString(numLocale, {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-  });
+  return formatViewerDate(isoString, { locale: numLocale });
 }
 
 export function formatTimeLabel(isoString: string, numLocale: string): string {
-  return new Date(isoString).toLocaleTimeString(numLocale, {
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: !numLocale.startsWith("ar"),
-  });
+  return formatViewerTime(isoString, { locale: numLocale });
 }
 
 export function normalizeUtcIso(isoString: string): string {
@@ -39,15 +32,7 @@ export function normalizeUtcIso(isoString: string): string {
 }
 
 export function formatFullDatetime(isoString: string | null, numLocale: string): string {
-  if (!isoString) return "";
-  return new Date(isoString).toLocaleString(numLocale, {
-    weekday: "long",
-    month: "long",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: !numLocale.startsWith("ar"),
-  });
+  return formatViewerDateTime(isoString, { locale: numLocale });
 }
 
 export type SelectableSlot = {

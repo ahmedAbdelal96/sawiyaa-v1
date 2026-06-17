@@ -1,17 +1,7 @@
+import { formatViewerDateTime } from "@/lib/time-formatting";
+
 export function formatDateTime(value: string | null | undefined, locale: string) {
-  if (!value) return "-";
-  try {
-    return new Date(value).toLocaleString(locale === "ar" ? "ar-SA" : "en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-      hour: "numeric",
-      minute: "2-digit",
-      hour12: !locale.startsWith("ar"),
-    });
-  } catch {
-    return "-";
-  }
+  return formatViewerDateTime(value, { locale: locale === "ar" ? "ar-SA" : "en-US", fallbackText: "-" });
 }
 
 export function mapCareStatus(status: string, locale: string) {

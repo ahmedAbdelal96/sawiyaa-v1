@@ -1,0 +1,460 @@
+# Agent 1: Route Inventory + Auth/Token Storage
+
+## Route Inventory Table
+
+### (auth) Group — public (no auth required)
+
+| File | Route Path | Role Gate | Loading.tsx | Error.tsx | Notes |
+|------|-----------|-----------|-------------|-----------|-------|
+| `(auth)/index.tsx` | `/` (entry) | public | no | no | Entry screen with patient sign-in/sign-up and practitioner link |
+| `(auth)/signin/patient.tsx` | `(auth)/signin/patient` | public | no | no | Patient email/password login |
+| `(auth)/signin/practitioner.tsx` | `(auth)/signin/practitioner` | public | no | no | Practitioner login; OTP challenge flow; DEV hardcoded accounts |
+| `(auth)/signup/patient.tsx` | `(auth)/signup/patient` | public | no | no | Patient registration |
+| `(auth)/signup/practitioner.tsx` | `(auth)/signup/practitioner` | public | no | no | Practitioner signup (redirects to web) |
+| `(auth)/forgot-password-patient.tsx` | `(auth)/forgot-password-patient` | public | no | no | Patient password reset |
+| `(auth)/practitioner-forgot-password.tsx` | `(auth)/practitioner-forgot-password` | public | no | no | Practitioner password reset |
+
+### (patient) Group — patient role enforced by AuthProvider segments guard
+
+| File | Route Path | Role Gate | Loading.tsx | Error.tsx | Notes |
+|------|-----------|-----------|-------------|-----------|-------|
+| `(patient)/index.tsx` | `(patient)` | patient-only | no | no | Patient home tab |
+| `(patient)/sessions.tsx` | `(patient)/sessions` | patient-only | no | no | Patient sessions list |
+| `(patient)/sessions/[id].tsx` | `(patient)/sessions/[id]` | patient-only | no | no | Session detail |
+| `(patient)/sessions/select-time.tsx` | `(patient)/sessions/select-time` | patient-only | no | no | Booking time selection |
+| `(patient)/sessions/confirm.tsx` | `(patient)/sessions/confirm` | patient-only | no | no | Booking confirmation |
+| `(patient)/sessions/success.tsx` | `(patient)/sessions/success` | patient-only | no | no | Post-booking success |
+| `(patient)/sessions/[id]/pay.tsx` | `(patient)/sessions/[id]/pay` | patient-only | no | no | Session payment |
+| `(patient)/sessions/[id]/payment-return.tsx` | `(patient)/sessions/[id]/payment-return` | patient-only | no | no | Payment return handler |
+| `(patient)/sessions/[id]/cancel-preview.tsx` | `(patient)/sessions/[id]/cancel-preview` | patient-only | no | no | Cancellation preview |
+| `(patient)/notifications.tsx` | `(patient)/notifications` | patient-only | no | no | Notifications tab |
+| `(patient)/profile.tsx` | `(patient)/profile` | patient-only | no | no | Profile tab (menu) |
+| `(patient)/profile-details.tsx` | `(patient)/profile-details` | patient-only | no | no | Profile details |
+| `(patient)/profile-details/edit.tsx` | `(patient)/profile-details/edit` | patient-only | no | no | Edit profile |
+| `(patient)/profile-preferences.tsx` | `(patient)/profile-preferences` | patient-only | no | no | Preferences |
+| `(patient)/profile-notifications.tsx` | `(patient)/profile-notifications` | patient-only | no | no | Notification settings |
+| `(patient)/discovery/index.tsx` | `(patient)/discovery` | patient-only | no | no | Practitioner discovery |
+| `(patient)/discovery/[slug].tsx` | `(patient)/discovery/[slug]` | patient-only | no | no | Practitioner profile from discovery |
+| `(patient)/discovery/filters.tsx` | `(patient)/discovery/filters` | patient-only | no | no | Discovery filters |
+| `(patient)/assessments/index.tsx` | `(patient)/assessments` | patient-only | no | no | Assessments list |
+| `(patient)/assessments/[slug].tsx` | `(patient)/assessments/[slug]` | patient-only | no | no | Assessment detail |
+| `(patient)/assessments/[slug]/questions.tsx` | `(patient)/assessments/[slug]/questions` | patient-only | no | no | Assessment questions |
+| `(patient)/assessments/submissions/[submissionId].tsx` | `(patient)/assessments/submissions/[submissionId]` | patient-only | no | no | Assessment submission result |
+| `(patient)/articles/index.tsx` | `(patient)/articles` | patient-only | no | no | Articles list |
+| `(patient)/articles/[slug].tsx` | `(patient)/articles/[slug]` | patient-only | no | no | Article detail |
+| `(patient)/academy/index.tsx` | `(patient)/academy` | patient-only | no | no | Academy |
+| `(patient)/academy/[slug].tsx` | `(patient)/academy/[slug]` | patient-only | no | no | Academy detail |
+| `(patient)/academy/enroll/[slug].tsx` | `(patient)/academy/enroll/[slug]` | patient-only | no | no | Academy enrollment |
+| `(patient)/academy/enrollments/[id].tsx` | `(patient)/academy/enrollments/[id]` | patient-only | no | no | Enrollment detail |
+| `(patient)/academy/enrollments/[id]/payment-return.tsx` | `(patient)/academy/enrollments/[id]/payment-return` | patient-only | no | no | Enrollment payment return |
+| `(patient)/package-purchases/index.tsx` | `(patient)/package-purchases` | patient-only | no | no | Package purchases |
+| `(patient)/package-purchases/[id].tsx` | `(patient)/package-purchases/[id]` | patient-only | no | no | Package purchase detail |
+| `(patient)/package-purchases/create.tsx` | `(patient)/package-purchases/create` | patient-only | no | no | Create package purchase |
+| `(patient)/package-purchases/[id]/pay.tsx` | `(patient)/package-purchases/[id]/pay` | patient-only | no | no | Package payment |
+| `(patient)/messages/index.tsx` | `(patient)/messages` | patient-only | no | no | Messages list |
+| `(patient)/messages/[id].tsx` | `(patient)/messages/[id]` | patient-only | no | no | Message thread |
+| `(patient)/care-chat/index.tsx` | `(patient)/care-chat` | patient-only | no | no | Care chat list |
+| `(patient)/care-chat/new.tsx` | `(patient)/care-chat/new` | patient-only | no | no | New care chat |
+| `(patient)/care-chat/[id].tsx` | `(patient)/care-chat/[id]` | patient-only | no | no | Care chat thread |
+| `(patient)/care-chat/request/[id].tsx` | `(patient)/care-chat/request/[id]` | patient-only | no | no | Care chat request |
+| `(patient)/matching/intro.tsx` | `(patient)/matching/intro` | patient-only | no | no | Matching intro |
+| `(patient)/matching/questions.tsx` | `(patient)/matching/questions` | patient-only | no | no | Matching questions |
+| `(patient)/matching/results.tsx` | `(patient)/matching/results` | patient-only | no | no | Matching results |
+| `(patient)/support/index.tsx` | `(patient)/support` | patient-only | no | no | Support |
+| `(patient)/support/new.tsx` | `(patient)/support/new` | patient-only | no | no | New support ticket |
+| `(patient)/support/[id].tsx` | `(patient)/support/[id]` | patient-only | no | no | Support thread |
+| `(patient)/payments.tsx` | `(patient)/payments` | patient-only | no | no | Payments hub |
+| `(patient)/payments/transactions.tsx` | `(patient)/payments/transactions` | patient-only | no | no | Transaction history |
+| `(patient)/instant-booking.tsx` | `(patient)/instant-booking` | patient-only | no | no | Instant booking entry point |
+
+### (practitioner) Group — practitioner role enforced by AuthProvider segments guard
+
+| File | Route Path | Role Gate | Loading.tsx | Error.tsx | Notes |
+|------|-----------|-----------|-------------|-----------|-------|
+| `(practitioner)/index.tsx` | `(practitioner)` | practitioner-only (approved) | no | no | Dashboard tab; hidden if not APPROVED |
+| `(practitioner)/sessions/index.tsx` | `(practitioner)/sessions` | practitioner-only (approved) | no | no | Sessions tab; hidden if not APPROVED |
+| `(practitioner)/sessions/[id].tsx` | `(practitioner)/sessions/[id]` | practitioner-only | no | no | Session detail; hidden route |
+| `(practitioner)/availability/index.tsx` | `(practitioner)/availability` | practitioner-only (approved) | no | no | Availability tab; hidden if not APPROVED |
+| `(practitioner)/application-status.tsx` | `(practitioner)/application-status` | practitioner-only | no | no | Shown ONLY when not APPROVED; hidden tab |
+| `(practitioner)/account.tsx` | `(practitioner)/account` | practitioner-only | no | no | Account settings; hidden route |
+| `(practitioner)/onboarding.tsx` | `(practitioner)/onboarding` | practitioner-only | no | no | Full onboarding workspace; hidden route |
+| `(practitioner)/messages/index.tsx` | `(practitioner)/messages` | practitioner-only | no | no | Messages; hidden route |
+| `(practitioner)/messages/[id].tsx` | `(practitioner)/messages/[id]` | practitioner-only | no | no | Message thread; hidden route |
+| `(practitioner)/care-chat/index.tsx` | `(practitioner)/care-chat` | practitioner-only | no | no | Care chat; hidden route |
+| `(practitioner)/care-chat/[id].tsx` | `(practitioner)/care-chat/[id]` | practitioner-only | no | no | Care chat thread; hidden route |
+| `(practitioner)/care-chat/request/[id].tsx` | `(practitioner)/care-chat/request/[id]` | practitioner-only | no | no | Care chat request; hidden route |
+| `(practitioner)/finance/index.tsx` | `(practitioner)/finance` | practitioner-only | no | no | Finance hub; hidden route |
+| `(practitioner)/finance/wallet.tsx` | `(practitioner)/finance/wallet` | practitioner-only | no | no | Wallet; hidden route |
+| `(practitioner)/finance/ledger.tsx` | `(practitioner)/finance/ledger` | practitioner-only | no | no | Ledger; hidden route |
+| `(practitioner)/finance/settlements.tsx` | `(practitioner)/finance/settlements` | practitioner-only | no | no | Settlements; hidden route |
+| `(practitioner)/promo-codes.tsx` | `(practitioner)/promo-codes` | practitioner-only | no | no | Promo codes; hidden route |
+| `(practitioner)/support/index.tsx` | `(practitioner)/support` | practitioner-only | no | no | Support; hidden route |
+| `(practitioner)/support/new.tsx` | `(practitioner)/support/new` | practitioner-only | no | no | New support; hidden route |
+| `(practitioner)/support/[id].tsx` | `(practitioner)/support/[id]` | practitioner-only | no | no | Support thread; hidden route |
+| `(practitioner)/notifications.tsx` | `(practitioner)/notifications` | practitioner-only | no | no | Notifications; hidden route |
+| `(practitioner)/instant-booking.tsx` | `(practitioner)/instant-booking` | practitioner-only | no | no | Instant booking; hidden route |
+| `(practitioner)/more.tsx` | `(practitioner)/more` | practitioner-only (approved) | no | no | More tab; hidden if not APPROVED |
+
+### Root Group
+
+| File | Route Path | Role Gate | Notes |
+|------|-----------|-----------|-------|
+| `index.tsx` | `/` | public | Splash/entry redirect screen |
+| `+not-found.tsx` | `*` | public | 404 handler |
+
+---
+
+## Auth Layout Analysis
+
+### 1. Root Layout — `app/_layout.tsx`
+**File:** `fayed-mobile/app/_layout.tsx`
+
+```
+- Providers: SafeAreaProvider → QueryClientProvider → ThemeProvider → AuthProvider → NavigationHistoryProvider
+- No auth checking here; all auth logic delegated to AuthProvider
+- Renders <Slot /> for route outlet
+```
+
+### 2. (auth) Layout — `app/(auth)/_layout.tsx`
+**File:** `fayed-mobile/app/(auth)/_layout.tsx`
+
+```
+- No auth state check whatsoever
+- No role verification
+- Simply renders <Stack screenOptions={{ headerShown: false }} />
+- Auth routes are public; no redirect logic present
+- Unauthenticated users can freely access all (auth) routes
+```
+
+### 3. (patient) Layout — `app/(patient)/_layout.tsx`
+**File:** `fayed-mobile/app/(patient)/_layout.tsx`
+
+```
+- No auth state check whatsoever
+- No role verification
+- Renders <Tabs> with patient-facing tabs (home, sessions, notifications, profile)
+- Uses href={null} to hide nested stack routes from tab bar
+- Role protection is handled exclusively by AuthProvider's useEffect segments guard
+- This layout does NOT prevent a practitioner from reaching these routes
+```
+
+### 4. (practitioner) Layout — `app/(practitioner)/_layout.tsx`
+**File:** `fayed-mobile/app/(practitioner)/_layout.tsx`
+
+```
+- No explicit auth check (auth state read via useAuth() but no redirect)
+- Role verified via useAuth().role
+- Checks practitionerStatus === "APPROVED" to show/hide primary tabs
+- Tab href logic:
+    - index, sessions/index, availability/index, more: href=isApprovedPractitioner ? undefined : null
+      (shown only when APPROVED)
+    - application-status: href=isApprovedPractitioner ? null : undefined
+      (hidden when APPROVED, visible when not APPROVED)
+- Hidden routes (href={null}) are NOT protected by the layout; they are accessible if
+  a practitioner navigates directly via router.push()
+- Role protection is handled by AuthProvider's segments guard (same as patient)
+```
+
+### 5. AuthProvider Segments Guard (in `src/providers/AuthProvider.tsx`)
+**File:** `fayed-mobile/src/providers/AuthProvider.tsx`, lines 408-501
+
+```
+- useEffect on [isBootstrapping, router, segments, session]
+- Uses useSegments() to read first route segment
+- If no session and not in (auth) group: router.replace("/(auth)")
+- If patient session and in (auth) or (practitioner): router.replace("/(patient)")
+- If practitioner session and in (auth) or (patient): router.replace("/(practitioner)")
+- If practitioner session with practitionerStatus !== "APPROVED" and NOT on application-status:
+    router.replace("/(practitioner)/application-status")
+- If practitioner APPROVED and on application-status: router.replace("/(practitioner)")
+- Race condition risk: redirect fires in useEffect after route renders; brief exposure window
+```
+
+---
+
+## Token Storage Findings
+
+### Token Storage Architecture
+**Files:**
+- `fayed-mobile/src/features/auth/secure-token-storage.ts`
+- `fayed-mobile/src/features/auth/storage.ts`
+
+### Token Storage Details
+
+**Native (iOS/Android):**
+- Access token: `SecureStore` key `fayed.mobile.auth.tokens.access.v1`
+- Refresh token: `SecureStore` key `fayed.mobile.auth.tokens.refresh.v1`
+- Access expiry: `SecureStore` key `fayed.mobile.auth.tokens.access.expiresAt.v1`
+- Refresh expiry: `SecureStore` key `fayed.mobile.auth.tokens.refresh.expiresAt.v1`
+- Session metadata (role, user): `AsyncStorage` key `fayed.mobile.auth.session.v2`
+- **Tokens properly stored in SecureStore on native — NO plain AsyncStorage for tokens on native**
+
+**Web:**
+- Tokens stored in `AsyncStorage` with the same keys as native SecureStore
+- **AUDIT-072 / P1 ISSUE:** Web uses AsyncStorage for tokens (no Keychain on web — acknowledged in comments at line 30-34 of secure-token-storage.ts)
+- Comment explicitly states: "Web/Expo web: AsyncStorage (browser-compatible, no Keychain on web)"
+
+### Refresh Token Logic
+**File:** `fayed-mobile/src/providers/AuthProvider.tsx`, lines 408-449
+
+```
+- configureApiAuthSessionHandlers registers:
+    refreshAccessToken: calls patientRefresh or practitionerRefresh with stored refreshToken
+    onAuthFailure: clears session, redirects to /(auth)
+- Axios interceptor at api.ts lines 138-175 handles 401 by:
+    1. Retrying the request once after refresh
+    2. If refresh fails (null returned), calls onAuthFailure → clearStoredAuthSession + router.replace("/(auth)")
+- Refresh failure properly clears tokens via clearAuthenticatedState() → clearStoredAuthSession()
+- No token left uncleared on refresh failure — fail-closed behavior
+```
+
+### Logout Clearing
+**File:** `fayed-mobile/src/providers/AuthProvider.tsx`, lines 550-567
+
+```
+- signOut:
+    1. Calls revokeCurrentPushRegistration()
+    2. Calls patientLogout or practitionerLogout API (refresh token sent)
+    3. Errors ignored (transport errors don't block local clear)
+    4. clearAuthenticatedState() always called in finally block
+    5. router.replace("/(auth)")
+- clearStoredAuthSession() clears both SecureStore tokens AND AsyncStorage session metadata
+- Properly clears ALL token artifacts
+```
+
+### Token Console Logging
+**Grep result:** No matches for `console.*[Tt]oken` or `console.*[Aa]ccess` or `console.*[Rr]efresh`
+**No evidence of token values being logged to console**
+
+### Device ID
+**File:** `fayed-mobile/src/features/auth/storage.ts`, lines 15, 154-163
+- Device ID stored in `AsyncStorage` key `fayed.mobile.device.id.v1`
+- Created as `device_${Date.now()}_${Math.random().toString(36).slice(2, 12)}`
+- Not a security issue (device identifier, not a secret)
+
+### Deep Link Tokens in URL
+**No evidence found** of token values being passed in deep link URLs.
+Deep link routing uses `extractNotificationHref(data)` from notification data payloads, not URL query params.
+
+---
+
+## Route Protection Findings
+
+### Role Segregation
+- **(auth) group**: Completely public. No guard prevents access.
+- **(patient) group**: AuthProvider segments guard (useEffect on segments). Patient role required.
+- **(practitioner) group**: AuthProvider segments guard. Practitioner role required.
+- **No mixing**: Patient routes are NOT under (practitioner) group and vice versa. Strict file-system separation.
+
+### Layout-Level vs. Route-Level Protection
+- **Layout-level:** (patient) and (practitioner) layouts render tabs with no auth checks
+- **Route-level:** AuthProvider's segments-based useEffect is the ONLY auth gate
+- **Hidden routes (href={null}):** These are NOT protected by the layout; they are accessible if navigated to directly. However, the AuthProvider segments guard would redirect an unauthorized user before they could access them.
+
+### Race Condition Window
+- The segments guard fires in a `useEffect` after the component mounts
+- A brief window exists where an unauthorized user could see route content before redirect
+- **This is standard React Router behavior but worth noting for high-security screens**
+
+### Patient Layout Cannot Access Practitioner Routes
+- File-system separation: no patient routes inside `(practitioner)` folder
+- AuthProvider redirects practitioner trying to access `(patient)` routes
+- **Confirmed: No route group mixing**
+
+### Practitioner Layout Cannot Access Patient Routes
+- File-system separation: no practitioner routes inside `(patient)` folder
+- AuthProvider redirects patient trying to access `(practitioner)` routes
+- **Confirmed: No route group mixing**
+
+---
+
+## Practitioner OTP/Account State Findings
+
+### OTP Verification Flow
+**File:** `fayed-mobile/app/(auth)/signin/practitioner.tsx`, lines 52-122
+
+```
+- Practitioner login starts with startPractitionerLogin() (AuthProvider.tsx line 530)
+- Backend returns either:
+    1. AuthSuccessResponse (full session) — dev mode compatibility
+    2. OtpChallengeResponse (requires OTP) — production flow
+- If OtpChallengeResponse: UI shows OTP input screen
+- verifyPractitionerOtp() called with challengeId + code
+- On success: consumeAuthSuccess → session persisted → redirect based on role
+- OTP challenge has expiresAt field — UI displays expiry time
+```
+
+### Account Approval Gate
+**File:** `fayed-mobile/src/providers/AuthProvider.tsx`, lines 486-500
+
+```
+- After login, if session.role === "practitioner":
+    - If practitionerStatus !== "APPROVED" AND NOT on application-status route:
+        → router.replace("/(practitioner)/application-status")
+    - If practitionerStatus === "APPROVED" AND on application-status route:
+        → router.replace("/(practitioner)")
+- application-status is the ONLY dedicated pending-approval screen
+```
+
+### Screens Accessible Before Account Approval
+**File:** `fayed-mobile/app/(practitioner)/application-status.tsx`
+
+```
+- practitioner/application-status.tsx: accessible to non-approved practitioners
+  (not redirected because it's the application-status route itself)
+- practitioner/onboarding.tsx: hidden route (href={null} in layout) — accessible only
+  if navigated to directly. Would not be accessible via tabs but can be reached via
+  router.push() by a non-approved practitioner
+- No other operational screens are accessible to non-approved practitioners
+  (tabs hidden, other routes blocked by AuthProvider redirect)
+```
+
+### Practitioner Presence Heartbeat
+**File:** `fayed-mobile/app/(practitioner)/_layout.tsx`, lines 31-33
+
+```
+- usePractitionerPresenceHeartbeat called with condition:
+    role === "practitioner" && isApprovedPractitioner
+- Heartbeat is NOT started for non-approved practitioners
+- This is correct — non-approved practitioners shouldn't appear as "online"
+```
+
+### No Per-Screen Auth Middleware
+- There is no expo-router middleware or per-screen auth wrapper
+- All auth is centralized in AuthProvider's segments-based useEffect
+- This means every protected screen relies on the same single guard
+
+---
+
+## Open Questions
+
+1. **What happens if a practitioner's OTP expires during the login flow?** The UI shows `challenge.expiresAt` but there's no visible handling for expiry. If the user submits after expiry, the API would presumably return an error.
+
+2. **What is the backend behavior if a practitioner tries to access operational routes without being APPROVED?** The mobile guard is client-side only — if the backend also enforces this, the mobile guard is defense-in-depth.
+
+3. **Is there any server-side validation that the practitionerStatus in the session matches the database state?** If a practitioner is approved in-session but later revoked, does the app detect this?
+
+4. **What happens if the `restoreSession()` bootstrap in AuthProvider fails partially?** E.g., getStoredAuthSession succeeds but getAuthMe fails and refresh also fails — the user is logged out. This is correct behavior but worth confirming UX is graceful.
+
+5. **The `(practitioner)/onboarding.tsx` is a hidden route. How is it navigated to?** The only reference found is in `(practitioner)/onboarding.tsx` itself (line 554) where it navigates to `/(practitioner)/account`. Direct navigation to `/onboarding` is possible but would be caught by the approval gate redirect.
+
+---
+
+## Findings to Register (AUDIT-105 onwards)
+
+---
+
+### AUDIT-105
+**Title:** No loading.tsx or error.tsx files exist in any route folder
+**Severity:** Low
+**Evidence:** Glob pattern `**/loading.tsx` and `**/error.tsx` in `fayed-mobile/app/` returned no matches
+**Module:** Route Infrastructure
+**Risk:** Loading and error states for individual routes are not handled via Expo Router's file-based error/loading conventions. All loading states are handled inline in components, which is inconsistent with Expo Router best practices and provides no route-level error boundary.
+
+---
+
+### AUDIT-106
+**Title:** (auth) layout has no authentication check — relies entirely on downstream guard
+**Severity:** Low
+**Evidence:** `fayed-mobile/app/(auth)/_layout.tsx` is a bare `Stack` with no auth check. Any user (including authenticated patients/practitioners) can navigate to `(auth)` routes freely. The redirect back to the appropriate group is handled by `AuthProvider.tsx` useEffect.
+**Module:** Auth Layout
+**Risk:** While the downstream guard works, unauthenticated users can briefly render auth screens while the redirect fires. This is a defense-in-depth gap — the auth layout should also redirect authenticated users away from auth routes.
+
+---
+
+### AUDIT-107
+**Title:** Hidden practitioner routes (href={null}) are not protected at the layout level
+**Severity:** Low
+**Evidence:** `fayed-mobile/app/(practitioner)/_layout.tsx` lines 119-189 list many routes with `href={null}` (hidden from tab bar). These routes (e.g., finance, messages, care-chat) are accessible if navigated to directly via `router.push()`, because the layout has no per-route auth check. The AuthProvider segments guard provides protection, but there is no layout-level enforcement.
+**Module:** Route Protection
+**Risk:** If the AuthProvider segments guard has a race condition or is bypassed, hidden routes could be accessed directly. Layout-level route protection would provide defense-in-depth.
+
+---
+
+### AUDIT-108
+**Title:** Web platform stores auth tokens in plain AsyncStorage
+**Severity:** Medium
+**Evidence:** `fayed-mobile/src/features/auth/secure-token-storage.ts` lines 36-53 and 73-81. For `Platform.OS === "web"`, tokens are stored in `AsyncStorage` (browser localStorage), not a secure enclave. The code explicitly acknowledges this: "Web/Expo web: AsyncStorage (browser-compatible, no Keychain on web)."
+**Module:** Token Storage
+**Risk:** On web, tokens are stored in plain browser storage and could be read by JavaScript running on the same origin. This is a known limitation (no Keychain equivalent on web), but should be documented and, if possible, mitigated with additional measures such as httpOnly cookie fallback for web.
+
+---
+
+### AUDIT-109
+**Title:** Practitioner OTP login has no client-side expiry enforcement
+**Severity:** Low
+**Evidence:** `fayed-mobile/app/(auth)/signin/practitioner.tsx` displays `challenge.expiresAt` in the UI (line 265-268) but the `submitOtp()` function (lines 104-121) does not check if the challenge has expired before sending the OTP code to the backend. The API presumably rejects expired OTPs, but the UX does not prevent the submission.
+**Module:** Practitioner Auth
+**Risk:** User submits an OTP after the challenge has expired without immediate client-side feedback, leading to a confusing error before they can request a new challenge.
+
+---
+
+### AUDIT-110
+**Title:** All route protection is centralized in a single AuthProvider useEffect with a race condition window
+**Severity:** Low
+**Evidence:** `fayed-mobile/src/providers/AuthProvider.tsx` lines 408-501. The segments-based redirect runs in a `useEffect`. On initial load, the route component renders before the redirect fires. No per-route auth wrapper exists.
+**Module:** Route Protection
+**Risk:** For a brief moment after app launch and before the redirect fires, a user could see content of a route they are not authorized for. This is especially relevant if the user refreshes the app on a protected route.
+
+---
+
+### AUDIT-111
+**Title:** (practitioner)/onboarding.tsx is accessible as a hidden route via direct navigation
+**Severity:** Low
+**Evidence:** `fayed-mobile/app/(practitioner)/_layout.tsx` line 135-137: `onboarding` is listed with `href={null}`. It is hidden from the tab bar but has no route guard preventing direct navigation. The AuthProvider approval gate at `AuthProvider.tsx` lines 486-500 redirects to `/application-status` for non-approved practitioners, but only if they are NOT already on the application-status route. A direct navigation to `/onboarding` would render the full onboarding workspace for a non-approved practitioner.
+**Module:** Practitioner Route Protection
+**Risk:** A non-approved practitioner could access the full onboarding workspace directly via `router.push('/(practitioner)/onboarding')`. While the data is likely filtered by the backend based on the practitioner's actual status, the UI should enforce the same restrictions as the tab bar.
+
+---
+
+### AUDIT-112
+**Title:** Device ID is generated using Math.random() which is not cryptographically secure
+**Severity:** Low
+**Evidence:** `fayed-mobile/src/features/auth/storage.ts` line 18: `Math.random()` is used to generate device IDs: `device_${Date.now()}_${Math.random().toString(36).slice(2, 12)}`
+**Module:** Token Storage
+**Risk:** `Math.random()` is not cryptographically random. While device IDs are not secrets, a more secure random generator (e.g., `crypto.getRandomValues()` or `expo-crypto`) should be used to generate device identifiers to prevent potential device ID collision or prediction.
+
+---
+
+### AUDIT-113
+**Title:** No explicit handling for PENDING_REVIEW practitioner status distinction
+**Severity:** Low
+**Evidence:** `fayed-mobile/src/providers/AuthProvider.tsx` lines 486-500 only checks `practitionerStatus === "APPROVED"`. Any status other than "APPROVED" (including PENDING_REVIEW, SUSPENDED, REJECTED) is redirected to `application-status`. The `application-status.tsx` screen handles these states, but the redirect logic lumps all non-APPROVED statuses together. The practitioner dashboard tabs (index, sessions, availability, more) are hidden for all non-APPROVED statuses, which is correct.
+**Module:** Practitioner Auth
+**Risk:** A practitioner with status SUSPENDED or REJECTED is treated the same as PENDING_REVIEW in terms of routing (redirected to application-status). The application-status screen then shows the correct state, but the routing decision doesn't distinguish between them. Functionally acceptable since all non-APPROVED practitioners are blocked from operational routes.
+
+---
+
+### AUDIT-114
+**Title:** Patient layout renders all patient routes as hidden (href={null}) — not lazily loaded
+**Severity:** Info
+**Evidence:** `fayed-mobile/app/(patient)/_layout.tsx` lines 102-166 register ~50 routes with `href={null}`. These are all registered in the tab navigator even though they are hidden. This increases the initial JavaScript bundle parsing and memory footprint but does not affect runtime behavior.
+**Module:** Route Infrastructure
+**Risk:** Performance / memory bloat from registering many hidden routes in the tab navigator. Consider using nested Stack navigators for hidden routes instead of registering all as hidden tabs.
+
+---
+
+### AUDIT-115
+**Title:** No evidence of token values being logged to console — CLEAN
+**Severity:** Info
+**Evidence:** Grep for `console.*(log|debug|info).*(access|refresh|token)` returned no matches in the codebase.
+**Module:** Token Storage
+**Risk:** None. Token values are not written to console logs.
+
+---
+
+### AUDIT-116
+**Title:** Refresh token failure properly clears all token artifacts — CLEAN
+**Severity:** Info
+**Evidence:** `fayed-mobile/src/providers/AuthProvider.tsx` lines 408-449 and `clearStoredAuthSession()` in `storage.ts` lines 146-152. On refresh failure, `clearAuthenticatedState()` is called which calls `clearStoredAuthSession()` clearing both SecureStore tokens AND AsyncStorage session metadata. No token artifact is left behind.
+**Module:** Token Storage
+**Risk:** None. Fail-closed behavior confirmed.
+
+---
+
+### AUDIT-117
+**Title:** Practitioner presence heartbeat correctly gated on APPROVED status
+**Severity:** Info
+**Evidence:** `fayed-mobile/app/(practitioner)/_layout.tsx` lines 31-33: `usePractitionerPresenceHeartbeat(!isLoading && role === "practitioner" && isApprovedPractitioner)`. Presence heartbeat only starts for APPROVED practitioners.
+**Module:** Practitioner Auth
+**Risk:** None. Non-approved practitioners do not send presence heartbeats.

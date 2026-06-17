@@ -1,0 +1,391 @@
+RTL/LTR INTEGRITY AND RESPONSIVE BEHAVIOR AUDIT
+Phase 6 Web UX - Agent 7 Findings
+=============================================
+Date: 2026-06-17
+Auditor: Claude Code (impeccable skill)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 1: DIRECTIONAL PRIMITIVES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Finding 1.1: Toast Provider Hardcoded RTL
+------------------------------------------
+File: D:\Web\full-projects\fayed\fayed-frontend-v1\src\providers\toast-provider.tsx:9
+Issue: dir="rtl" is hardcoded on the Toaster component. The toast toastOptions.classNames also hardcode "rtl" on line 15.
+Severity: P2
+Description: The toast provider always sets dir="rtl" regardless of locale. This means toast positioning and animations will be incorrect for LTR locales (English). The toast provider should dynamically set dir based on locale (ar = rtl, en = ltr).
+
+Finding 1.2: SignUpForm Email/Password Fields Hardcoded dir="ltr"
+---------------------------------------------------------------
+File: D:\Web\full-projects\fayed\fayed-frontend-v1\src\components\auth\SignUpForm.tsx:289, 308, 337
+Issue: Input fields for email and password have dir="ltr" hardcoded. This is intentional for email/password input fields since they contain LTR text (email addresses, passwords), but the same pattern appears in PatientSignUpForm.tsx (lines 374, 404, 451, 488), RegisterBusinessForm.tsx (lines 169, 213, 233, 254), and SignInForm.tsx (lines 526, 545, 614).
+Severity: P3
+Description: These hardcoded dir="ltr" attributes on form inputs are actually CORRECT behavior since email addresses and passwords are inherently LTR content. This is a valid pattern, not an issue.
+
+Finding 1.3: Charts Component Hardcoded dir="ltr"
+-----------------------------------------------
+File: D:\Web\full-projects\fayed\fayed-frontend-v1\src\components\charts\ApexChart.tsx:23
+Issue: <div dir="ltr"> wraps the chart. Charts typically have numerical scales that render LTR regardless of language, so this is intentional.
+Severity: P3 (informational - correct behavior for charts)
+
+Finding 1.4: ChatKit Message Bubbles Hardcoded dir="ltr"
+-------------------------------------------------------
+File: D:\Web\full-projects\fayed\fayed-frontend-v1\src\components\shared\chat\ChatKit.tsx:262
+Issue: Outgoing message container has dir="ltr" hardcoded. This is likely incorrect for Arabic - messages should display RTL.
+Severity: P2
+Description: Chat messages are wrapped in dir="ltr" which will cause Arabic text in messages to render incorrectly (numbers and Latin characters will be left-to-right, Arabic text will still render RTL but the container direction affects text flow).
+
+Finding 1.5: Admin Notification Details Panel Hardcoded dir="ltr"
+---------------------------------------------------------------
+File: D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\admin\notifications\components\AdminNotificationDetailsPanel.tsx:300, 469, 473, 477, 481, 485, 489, 517
+Issue: Multiple <span className="font-mono" dir="ltr"> elements displaying technical data (entity IDs, slugs, categories, user IDs, error codes).
+Severity: P3
+Description: Technical identifiers (UUIDs, slugs, category names) are correctly displayed LTR since they are machine identifiers, not natural language text. This is acceptable.
+
+Finding 1.6: Admin Chat Conversation Detail Screen Hardcoded dir="ltr"
+--------------------------------------------------------------------
+File: D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\admin\chat-conversations\components\AdminChatConversationDetailScreen.tsx:798
+Issue: <div dir="ltr" className="mx-auto flex w-full max-w-[68rem] flex-col space-y-6 px-2 sm:px-4">
+Severity: P3
+Description: The chat detail screen container is set to dir="ltr" which affects the entire conversation layout. This could be problematic for Arabic users viewing chat conversations with Arabic messages.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 2: LAYOUT COMPONENTS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Finding 2.1: DynamicSidebar Correctly Implements RTL
+----------------------------------------------------
+File: D:\Web\full-projects\fayed\fayed-frontend-v1\src\layout\DynamicSidebar.tsx
+Evidence:
+- Line 233: const isRTL = locale === "ar";
+- Line 124: isRTL ? "right-0" : "left-0" (active indicator positioning)
+- Line 133: isRTL ? "rotate-90" : "-rotate-90" (chevron rotation for collapse state)
+- Line 325: isRTL ? "rotate-90" : "-rotate-90" (section header chevron)
+- Line 439: isRTL ? "right-0 border-l" : "left-0 border-r" (sidebar position and border)
+- Line 442-443: isRTL ? "translate-x-full lg:translate-x-0" : "-translate-x-full lg:translate-x-0" (mobile slide-in direction)
+- Line 402: isRTL ? "mr-[25px] pr-1.5" : "ml-[25px] pl-1.5" (submenu indent)
+- Line 216: isRTL ? "ml-2" : "mr-2" (sidebar dot indicator margin)
+Severity: P3 (no issues found - sidebar correctly handles RTL)
+
+Finding 2.2: AppHeader Correctly Implements RTL
+-----------------------------------------------
+File: D:\Web\full-projects\fayed\fayed-frontend-v1\src\layout\AppHeader.tsx
+Evidence:
+- Line 23: const locale = useLocale();
+- Line 24: const isRTL = locale === "ar";
+- Lines 26-28: headerOffsetClass uses isRTL to adjust lg:right vs lg:left for sidebar width
+Severity: P3 (no issues found - header correctly handles RTL offset)
+
+Finding 2.3: DashboardLayout Correctly Implements RTL
+----------------------------------------------------
+File: D:\Web\full-projects\fayed\fayed-frontend-v1\src\layout\DashboardLayout.tsx
+Evidence:
+- Line 35: const isRTL = locale === "ar";
+- Line 36: const mainContentLayout = isRTL ? "lg:mr-[304px]" : "lg:ml-[304px]";
+Severity: P3 (no issues found - layout correctly handles RTL margin for sidebar)
+
+Finding 2.4: Locale Layout Correctly Sets dir Attribute
+-------------------------------------------------------
+File: D:\Web\full-projects\fayed\fayed-frontend-v1\src\app\[locale]\layout.tsx
+Evidence:
+- Line 37: const dir = locale === "ar" ? "rtl" : "ltr";
+- Line 40: <div dir={dir} className={locale === "ar" ? "font-arabic" : ""}>
+Severity: P3 (no issues found - root layout correctly sets dir and font)
+
+Finding 2.5: PatientAppShell Drawer Side Correctly Uses Locale
+--------------------------------------------------------------
+File: D:\Web\full-projects\fayed\fayed-frontend-v1\src\components\patient\PatientAppShell.tsx
+Evidence:
+- Line 230: side={locale === "ar" ? "right" : "left"}
+- Line 232: locale === "ar" ? "rounded-l-[28px]" : "rounded-r-[28px]"
+Severity: P3 (no issues found - drawer correctly flips for RTL)
+
+Finding 2.6: LanguageSwitcher Dropdown Positioning Uses RTL Classes
+------------------------------------------------------------------
+File: D:\Web\full-projects\fayed\fayed-frontend-v1\src\components\shared\LanguageSwitcher.tsx:52
+Evidence:
+- <div ... ltr:right-0 rtl:left-0>
+This correctly positions the dropdown on the correct side for each locale.
+Severity: P3 (correct behavior)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 3: ICON DIRECTIONALITY (CHEVRONS & ARROWS)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Finding 3.1: DirectionalArrowIcon Component Correctly Handles RTL
+----------------------------------------------------------------
+File: D:\Web\full-projects\fayed\fayed-frontend-v1\src\components\ui\navigation\DirectionalArrowIcon.tsx:16-26
+Evidence:
+- Uses isArabic = locale.startsWith("ar") to determine arrow direction
+- For "back" direction: Arabic shows ArrowRight, English shows ArrowLeft
+- For "forward" direction: Arabic shows ArrowLeft, English shows ArrowRight
+Severity: P3 (correct behavior)
+
+Finding 3.2: Extensive Use of rtl:rotate-180 Pattern
+----------------------------------------------------
+Evidence found across 70+ instances:
+- GuidedMatchingStartScreen.tsx:786, 791 (ChevronLeft/Right with rtl:rotate-180)
+- PatientJourneyScreen.tsx:289, 385, 454, 485, 519, 565, 779, 816, 827
+- PatientAssessmentsHomeScreen.tsx:314
+- PatientAssessmentDefinitionScreen.tsx:368
+- SpecialtyPractitionersTeaser.tsx:67, 83
+- SpecialtyDetailHero.tsx:18
+- SpecialtyCard.tsx:63
+- PractitionersSection.tsx:111, 271, 287
+- PractitionersListingView.tsx:403, 455
+- PatientInstantBookingScreen.tsx:573
+- GuidedEntrySection.tsx:63
+- GuidedCareSection.tsx:85
+- AdminDashboardSectionHeader.tsx:34
+- AdminSessionRuntimeInspectorScreen.tsx:192
+- AdminChatConversationDetailScreen.tsx:548
+- AdminSupportTicketScreen.tsx:338 (ArrowLeft without RTL rotation - P2)
+- AdminUserPermissionsScreen.tsx:338, 659 (ArrowLeft without RTL rotation - P2)
+- AdminUserDetailScreen.tsx:400, 419 (ArrowLeft without RTL rotation - P2)
+Severity: P2 (for admin screens where back arrows don't flip)
+
+Finding 3.3: Admin User/Support Screens Back Arrows Don't Flip
+--------------------------------------------------------------
+Files:
+- D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\admin\users\components\AdminUserPermissionsScreen.tsx:338
+- D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\admin\users\components\AdminUserDetailScreen.tsx:400, 419
+- D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\support\components\AdminSupportTicketScreen.tsx:338
+Issue: <ArrowLeft className="h-4 w-4" /> without rtl:rotate-180
+Severity: P2
+Description: Back navigation arrows on admin user detail, permissions, and support ticket screens do not flip direction in RTL mode. In RTL, "back" should point right (forward), but these always point left.
+
+Finding 3.4: Auth Forms ChevronLeft Doesn't Use RTL Rotation
+-------------------------------------------------------------
+Files:
+- D:\Web\full-projects\fayed\fayed-frontend-v1\src\components\auth\SignInForm.tsx:374
+- D:\Web\full-projects\fayed\fayed-frontend-v1\src\components\auth\RegisterBusinessForm.tsx:119
+Issue: <ChevronLeft className="h-4 w-4" /> without RTL rotation
+Severity: P3
+Description: Auth form back buttons use ChevronLeft without rtl:rotate-180. While these point "back" which is contextually correct in LTR, in RTL the navigation direction reverses. However, auth screens may intentionally keep a consistent back button position.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 4: TEXT ALIGNMENT AND JUSTIFICATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Finding 4.1: Article Detail Pages Use rtl:text-right Extensively
+----------------------------------------------------------------
+File: D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\articles-public\components\PublicArticleDetailScreen.tsx
+Evidence:
+- Line 44: rtl:flex-row-reverse on meta row
+- Line 57: rtl:text-right on h1 title
+- Line 63: rtl:text-right on excerpt
+- Line 83: rtl:text-right on content container
+- Lines 98, 108, 118, 128, 143, 146: rtl:text-right on headings and paragraphs
+Severity: P3 (correct behavior - article content is properly right-aligned for RTL)
+
+Finding 4.2: Article Detail Back Arrow Uses Inline rtl:rotate-180
+-----------------------------------------------------------------
+File: D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\articles-public\components\PublicArticleDetailScreen.tsx:35
+Evidence:
+- <span className={isAr ? "rotate-180" : ""}>←</span>
+Severity: P3 (correct - the unicode arrow character is rotated for RTL)
+
+Finding 4.3: ChatKit Messages Use rtl:text-right
+------------------------------------------------
+File: D:\Web\full-projects\fayed\fayed-frontend-v1\src\components\shared\chat\ChatKit.tsx
+Evidence:
+- Line 91: "text-left rtl:text-right" on thread list items
+- Line 93: border-s-4 (left border) with rtl:pr-2.5 override
+- Line 110: "text-left rtl:text-right" on message text container
+- Line 237: "text-left rtl:text-right" on message content
+Severity: P3 (correct - message text alignment flips for RTL)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 5: DATA TABLE RTL SUPPORT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Finding 5.1: DataTable Correctly Implements RTL Column Handling
+--------------------------------------------------------------
+File: D:\Web\full-projects\fayed\fayed-frontend-v1\src\components\ui\data-table\DataTable.tsx
+Evidence:
+- Line 139: const rtl = locale === 'ar';
+- Line 388: const { textClass, justifyClass } = resolveColumnAlignment(column, rtl);
+- Line 504: const { textClass } = resolveColumnAlignment(column, rtl);
+Severity: P3 (DataTable has comprehensive RTL support with dynamic column alignment)
+
+Finding 5.2: DataTableUtils RTL Helper Functions
+------------------------------------------------
+File: D:\Web\full-projects\fayed\fayed-frontend-v1\src\components\ui\data-table\utils.ts
+Evidence:
+- Lines 24-25: resolveColumnAlignment checks dir === 'rtl' vs 'ltr'
+- Line 76: justifyClass: rtl ? 'justify-end' : 'justify-start'
+- Line 82: justifyClass: rtl ? 'justify-start' : 'justify-end'
+- Line 103: return rtl ? 'right' : 'left' (text alignment)
+- Line 106: return rtl ? 'left' : 'right' (text alignment)
+Severity: P3 (utils correctly handle RTL column alignment)
+
+Finding 5.3: DataTableExport Uses isRTL() Function
+-------------------------------------------------
+File: D:\Web\full-projects\fayed\fayed-frontend-v1\src\components\ui\data-table\DataTableExport.tsx
+Evidence:
+- Line 44: const rtl = isRTL();
+- Lines 72, 77: RTL-aware success/error messages
+- Line 109: aria-label uses RTL for Arabic label
+- Lines 114, 117: Button order reverses in RTL (rtl ? ... : ...)
+Severity: P3 (correct behavior)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 6: GUIDED MATCHING / BOOKING FLOW
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Finding 6.1: GuidedMatchingStartScreen Button Order Uses rtl:rotate-180
+-----------------------------------------------------------------------
+File: D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\guided-matching\components\GuidedMatchingStartScreen.tsx
+Evidence:
+- Line 786: <ChevronLeft className="h-4 w-4 rtl:rotate-180" /> for Back button
+- Line 791: <ChevronRight className="h-4 w-4 rtl:rotate-180" /> for Next button
+- Lines 784-808: Button container uses flex-col-reverse on mobile, normal flex on desktop
+Severity: P3 (correct - step navigation buttons properly flip in RTL)
+
+Finding 6.2: Patient Instant Booking Screen Arrow Direction
+-----------------------------------------------------------
+File: D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\instant-booking\components\PatientInstantBookingScreen.tsx:573
+Evidence:
+- <ArrowRight size={14} className="rtl:rotate-180" />
+Severity: P3 (correct)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 7: PAYMENT RETURN PANEL
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Finding 7.1: PaymentReturnPanel Uses Locale-Aware Date Formatting
+-----------------------------------------------------------------
+File: D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\payments\components\PaymentReturnPanel.tsx
+Evidence:
+- Line 47: const numLocale = locale === "ar" ? "ar-SA" : "en-US";
+- Line 174: formatDatetime(session.scheduledStartAt, numLocale)
+- Lines 199-221: formatFinanceMoney uses numLocale for currency formatting
+Severity: P3 (correct - payment panel uses locale-aware number and date formatting)
+
+Finding 7.2: PaymentReturnPanel Button Layout
+--------------------------------------------
+File: D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\payments\components\PaymentReturnPanel.tsx
+Evidence:
+- Lines 246-259, 324-337, 366-379: Button pairs use flex-col gap-2 sm:flex-row sm:justify-center
+- Primary action (Retry/Book Again) appears first in the markup
+- On mobile: stacked vertically (primary on top)
+- On desktop: horizontally centered
+Severity: P3 (button order is appropriate - primary action is visually prioritized in both orientations)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 8: PRACTITIONER AVAILABILITY EDITOR
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Note: No practitioner availability editor component was found in the inspected paths.
+The file D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\package-plans\components\PackagePurchaseSlotPicker.tsx contains slot picking UI but no availability editor.
+
+Finding 8.1: PackagePurchaseSlotPicker Uses rtl:rotate-180
+----------------------------------------------------------
+File: D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\package-plans\components\PackagePurchaseSlotPicker.tsx:159, 167
+Evidence:
+- <ChevronLeft className="rtl:rotate-180" size={16} />
+- <ChevronRight className="rtl:rotate-180" size={16} />
+Severity: P3 (correct - slot picker navigation flips in RTL)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 9: ADMIN TABLES HORIZONTAL SCROLL
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Finding 9.1: Admin Sessions List Has Fixed Width Constraints
+------------------------------------------------------------
+File: D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\admin\sessions\components\AdminSessionsListScreen.tsx:448, 810
+Evidence:
+- Line 448: xl:max-w-[32rem] xl:justify-self-start
+- Line 810: max-w-[42rem]
+Severity: P3 (reasonable constraints - content doesn't overflow unexpectedly)
+
+Finding 9.2: Admin Practitioner Settlement Drawer Uses calc() for Width
+----------------------------------------------------------------------
+File: D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\admin\practitioner-payouts\components\AdminPractitionerSettlementDrawer.tsx:811
+Evidence:
+- !w-[min(calc(100vw-48px),1040px)] !max-w-[min(calc(100vw-48px),1040px)]
+Severity: P3 (responsive drawer width using viewport calculations - correct behavior)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 10: BUTTON ORDERING IN RTL
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Finding 10.1: GuidedMatchingStartScreen Button Order
+----------------------------------------------------
+File: D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\guided-matching\components\GuidedMatchingStartScreen.tsx:784
+Evidence:
+- <div className="flex w-full flex-col-reverse gap-2 sm:w-auto sm:flex-row">
+- Back button (ChevronLeft) and Next/Submit button (ChevronRight) are in correct order
+- flex-col-reverse ensures mobile: secondary (Back) is below primary (Next/Submit)
+Severity: P3 (correct button ordering for both mobile and desktop)
+
+Finding 10.2: PaymentReturnPanel Uses flex-col-reverse for Mobile
+-----------------------------------------------------------------
+File: D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\payments\components\PaymentReturnPanel.tsx:324, 366
+Evidence:
+- flex flex-col gap-2 sm:flex-row sm:justify-center (no reverse)
+- Primary action (Retry) appears first, secondary (View Sessions) appears second
+- In RTL, button order should be considered: "Cancel" left of "Confirm" pattern
+Severity: P3 (current pattern puts primary action first in LTR; in RTL, the visual order would reverse naturally due to text direction, but button pair order is not explicitly RTL-aware)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 11: HARDCODED PIXEL WIDTHS (RESPONSIVE BEHAVIOR)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Finding 11.1: Article Detail Page Uses Fixed px Values
+------------------------------------------------------
+File: D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\articles-public\components\PublicArticleDetailScreen.tsx:29
+Evidence:
+- px-4 sm:px-5 (acceptable - responsive with sm breakpoint)
+- Multiple rounded-[20px], px-5 py-[18px] values (design tokens)
+Severity: P3 (acceptable - these are design system values, not arbitrary pixel values)
+
+Finding 11.2: Admin Chat Conversation Max Width
+-----------------------------------------------
+File: D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\admin\chat-conversations\components\AdminChatConversationDetailScreen.tsx:798
+Evidence:
+- max-w-[68rem] on dir="ltr" container
+Severity: P3 (acceptable constraint)
+
+Finding 11.3: Patient Sessions Page Uses max-w-[18rem]
+-----------------------------------------------------
+File: D:\Web\full-projects\fayed\fayed-frontend-v1\src\features\sessions\components\PatientSessionsPanel.tsx:256
+Evidence:
+- max-w-[18rem] for skeleton loader element
+Severity: P3 (acceptable - skeleton loading placeholder)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 12: SPECIAL CASE - isRTL() FUNCTION REFERENCE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Finding 12.1: isRTL() Function Used in DataTableExport
+------------------------------------------------------
+File: D:\Web\full-projects\fayed\fayed-frontend-v1\src\components\ui\data-table\DataTableExport.tsx:44
+Evidence:
+- const rtl = isRTL();
+- isRTL is imported from ./utils (line 44 shows this pattern)
+Severity: P3 (correct usage)
+
+Note: The isRTL() utility function was found referenced but its full implementation was not examined. The function appears to be a wrapper around locale checking similar to const isRTL = locale === "ar".
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SUMMARY OF P2 (CORE USABILITY) FINDINGS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. Toast Provider Hardcoded RTL (toast-provider.tsx:9, 15)
+   - Toast notifications always render in RTL mode regardless of locale
+   - Impact: English users see reversed toast positioning and animations
+
+2. ChatKit Message Bubbles Hardcoded dir="ltr" (ChatKit.tsx:262)
+   - Outgoing message containers use dir="ltr" which affects text flow
+   - Impact: Arabic messages may not display correctly within LTR containers
+
+3. Admin Back Arrows Missing RTL Rotation (3 files)
+   - AdminUserPermissionsScreen.tsx:338
+   - AdminUserDetailScreen.tsx:400, 419
+   - AdminSupportTicketScreen.tsx:338
+   - Impact: Back navigation arrows point wrong direction in RTL mode
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+END OF FINDINGS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

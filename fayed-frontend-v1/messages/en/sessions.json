@@ -35,7 +35,8 @@
       "COMPLETED": "This session has ended.",
       "CANCELLED": "This session was cancelled.",
       "ENDED": "This session has finished.",
-      "UNAVAILABLE": "Live access is not available right now."
+      "UNAVAILABLE": "Live access is not available right now.",
+      "NO_SHOW": "This session was marked as no-show."
     }
   },
   "card": {
@@ -122,6 +123,11 @@
         "title": "Unavailable",
         "note": "Live access is not available right now.",
         "closeout": "Closeout actions are not available right now."
+      },
+      "NO_SHOW": {
+        "title": "No-show",
+        "note": "This session was marked as no-show.",
+        "closeout": "This session was closed as no-show."
       }
     },
     "chatCard": {
@@ -458,6 +464,7 @@
         "REFUNDED": "This session has been refunded."
       },
       "note": "Search and filter to review sessions quickly.",
+      "timezoneNote": "Times shown in {timezone}",
       "filteredEmptyHeading": "No matching sessions",
       "filteredEmptyNote": "Try adjusting or clearing the filters to show the rest of your sessions.",
       "summary": {
@@ -497,6 +504,9 @@
     "detail": {
       "backToSessions": "Back to sessions",
       "heading": "Session Details",
+      "summary": {
+        "timezoneLabel": "Timezone"
+      },
       "chatCard": {
         "heading": "Chat",
         "note": "Open a chat with your patient for this session.",
@@ -504,6 +514,48 @@
         "open": "Open chat"
       },
       "currentStateHeading": "Current session state",
+      "presentation": {
+        "UPCOMING": {
+          "title": "Coming up soon",
+          "note": "This session is confirmed and will open shortly before it starts.",
+          "closeout": "Closeout actions are not open yet."
+        },
+        "JOINABLE": {
+          "title": "Ready to join",
+          "note": "You can enter this session now.",
+          "closeout": "Closeout actions are available now."
+        },
+        "IN_PROGRESS": {
+          "title": "Live now",
+          "note": "This session is live now.",
+          "closeout": "Closeout actions remain available while the session is live."
+        },
+        "COMPLETED": {
+          "title": "Completed",
+          "note": "This session has ended.",
+          "closeout": "This session has already been closed."
+        },
+        "CANCELLED": {
+          "title": "Cancelled",
+          "note": "This session was cancelled.",
+          "closeout": "This session is cancelled and closed."
+        },
+        "ENDED": {
+          "title": "Ended",
+          "note": "This session has finished.",
+          "closeout": "Closeout actions are available when needed."
+        },
+        "UNAVAILABLE": {
+          "title": "Unavailable",
+          "note": "Live access is not available right now.",
+          "closeout": "Closeout actions are not available right now."
+        },
+        "NO_SHOW": {
+          "title": "No-show",
+          "note": "This session was marked as no-show.",
+          "closeout": "This session was closed as no-show."
+        }
+      },
       "reviewCard": {
         "eyebrow": "Feedback",
         "heading": "Share your session feedback",
@@ -851,7 +903,8 @@
           "nearestExpiry": "Nearest expiry",
           "liveHintTitle": "Live readiness",
           "liveHint": "Pending requests refresh automatically every few seconds so they stay visible.",
-          "noPending": "No pending requests right now."
+          "noPending": "No pending requests right now.",
+          "timezoneNote": "Times shown in {timezone}"
         },
         "dashboardTitle": "{count} requests need your attention now",
         "pendingHeading": "Pending requests",

@@ -1,0 +1,267 @@
+# Agent 3: Practitioner Mobile UX
+
+## Inspected Files
+
+### Route Files
+- `fayed-mobile/app/(practitioner)/index.tsx` (dashboard)
+- `fayed-mobile/app/(practitioner)/sessions/index.tsx`
+- `fayed-mobile/app/(practitioner)/sessions/[id].tsx`
+- `fayed-mobile/app/(practitioner)/availability/index.tsx`
+- `fayed-mobile/app/(practitioner)/instant-booking.tsx`
+- `fayed-mobile/app/(practitioner)/finance/index.tsx`
+- `fayed-mobile/app/(practitioner)/finance/wallet.tsx`
+- `fayed-mobile/app/(practitioner)/finance/ledger.tsx`
+- `fayed-mobile/app/(practitioner)/finance/settlements.tsx`
+- `fayed-mobile/app/(practitioner)/messages/index.tsx`
+- `fayed-mobile/app/(practitioner)/messages/[id].tsx`
+- `fayed-mobile/app/(practitioner)/support/index.tsx`
+- `fayed-mobile/app/(practitioner)/support/[id].tsx`
+- `fayed-mobile/app/(practitioner)/support/new.tsx`
+- `fayed-mobile/app/(practitioner)/care-chat/index.tsx`
+- `fayed-mobile/app/(practitioner)/care-chat/[id].tsx`
+- `fayed-mobile/app/(practitioner)/care-chat/request/[id].tsx`
+- `fayed-mobile/app/(practitioner)/account.tsx`
+- `fayed-mobile/app/(practitioner)/onboarding.tsx`
+- `fayed-mobile/app/(practitioner)/application-status.tsx`
+- `fayed-mobile/app/(practitioner)/notifications.tsx`
+- `fayed-mobile/app/(practitioner)/promo-codes.tsx`
+- `fayed-mobile/app/(practitioner)/more.tsx`
+
+### Feature Directories
+- `fayed-mobile/src/features/instant-booking/components/PractitionerInstantBookingRequestsScreen.tsx`
+- `fayed-mobile/src/features/practitioner/sessions/types.ts`
+- `fayed-mobile/src/features/practitioner/notifications/utils.ts`
+- `fayed-mobile/src/features/practitioner/finance/utils.ts`
+
+---
+
+## OTP/Account State Findings
+
+### Dashboard (`index.tsx`)
+- Lines 147-149: `approvalBlocked` is set when `profile.profileStatus !== "APPROVED"`. A `noticeCard` is conditionally rendered (lines 431-440) with hardcoded Arabic "في انتظار الموافقة" / English "Your account is pending approval." This is a fallback, not i18n-driven.
+- Lines 150-163: `verificationLabel` is derived from `readiness.checks` (OTP verified vs not, account active vs inactive) and rendered as a `StatusChip`. This is i18n'd via `t("practitioner.account.otpVerified")` and `t("practitioner.account.otpNotVerified")`.
+- Lines 340-342: Application status uses `t(\`practitioner.account.applicationStatuses.${applicationStatus}\`, applicationStatus)` — passes raw backend enum as fallback, which is correct fallback behavior.
+- Lines 370-386: `missingRequirements` are displayed using `formatRequirementLabel(item)` which title-cases the raw requirement key (e.g., "PRACTITIONER_OTP_VERIFIED" becomes "Practitioner Otp Verified"). These are NOT i18n'd labels — they display as English title-case strings. **AUDIT-105**
+- Lines 171-177: `upcomingSessionActionLabel` uses hardcoded Arabic "انضم الآن" / English "Join now" — not i18n.
+
+### Account Screen (`account.tsx`)
+- Lines 387-421: More detail section displays verification badges (OTP, email, phone, account active) using `t("practitioner.account.otpVerified")`, `t("practitioner.account.otpNotVerified")` etc. These ARE i18n'd.
+- Lines 430-436: `missingRequirementLabels` from `readiness.missingRequirements` are mapped through `practitionerMissingRequirementLabel(item, t)`. These ARE i18n'd via a dedicated utility function. **Better than dashboard which uses `formatRequirementLabel`.**
+- Lines 109, 182, 185: Profile status and application status labels use `t(\`practitioner.profileStatus.${profile.profileStatus}\`)` and `practitionerApplicationStatusLabel(application?.status ?? null, t)` — both i18n'd.
+- Line 532: `value && String(value).trim() ? value : t("practitioner.account.unknown")` — safe null handling for info fields.
+
+### Application Status Screen (`application-status.tsx`)
+- Lines 41-55: `statusKey` derived from `profileStatus` / `applicationStatus` drives which i18n key is used: `t(\`auth.practitionerApprovalStatus.states.${statusKey}.chip\`)`, `.title`, `.body`. Properly i18n'd.
+- Line 56-61: `rejectionReason` is cleaned with `cleanReasonText()` before display.
+- Lines 70-74: Auto-redirect to dashboard if `isApproved`. Proper guard.
+- **Finding**: Line 223 `cleanReasonText` uses regex that only handles "Reason|سبب الرفض" prefix. If the backend sends reasons with other prefixes, they would not be cleaned. **AUDIT-106**
+
+### Onboarding Screen (`onboarding.tsx`)
+- Lines 248-260: Profile status and application status labels use i18n with fallback to raw enum.
+- Lines 529: Missing requirements displayed with `formatRequirementLabel(item)` (same issue as dashboard — title-cased raw key, not i18n'd).
+- Lines 988-1005: Credential items display `item.fileUrl` as raw text in `credentialMeta`. **AUDIT-107** — this exposes internal URLs directly to the practitioner, which may be unintended.
+- Lines 872-876, 923-927: Hardcoded emoji "⏳" used in checklist item status text. **AUDIT-108**
+
+---
+
+## Session Join/Detail
+
+### Session List (`sessions/index.tsx`)
+- Lines 520-524: `presentationStatus` is used for badges: `t(\`practitioner.presentationStatus.${session.presentationStatus}\`)`. Properly i18n'd.
+- Lines 485, 553-562: Join button visibility gated by `isSessionJoinableNow(session)` which checks `session.joinAvailability?.canJoin === true`. **Correct.**
+- Lines 824-826: `isSessionJoinableNow` returns `session.joinAvailability?.canJoin === true`. **Correct — uses backend `canJoin`.**
+- Lines 835-853: `mapSessionPresentationTone` maps `JOINABLE` and `IN_PROGRESS` to "success", `UPCOMING`/`UNAVAILABLE`/`UNDER_REVIEW` to "warning", `ENDED`/`CANCELLED`/`NO_SHOW` to "error". Properly handled.
+- Lines 814-822: `getSessionSortTimestamp` uses `scheduledStartAt ?? scheduledEndAt` — gracefully handles null.
+- Lines 765-773: `buildSessionSummary` uses `presentationStatus` values (`"UNAVAILABLE"`, `"JOINABLE"`, `"IN_PROGRESS"`, `"COMPLETED"`, `"CANCELLED"`, `"ENDED"`, `"NO_SHOW"`, `"UNDER_REVIEW"`) — consistent with `SessionPresentationStatus` type.
+
+### Session Detail (`sessions/[id].tsx`)
+- Line 187: `canJoinNow = session.joinAvailability?.canJoin === true`. **Correct.**
+- Lines 188-190: `canOpenMessages = session.chatAvailability?.canRead === true`, `messagesAreReadOnly = session.chatAvailability.readOnly`. Uses `chatAvailability` field from backend.
+- Lines 288-318: `primaryAction` logic correctly gates:
+  - `canOpenJoinAction` → Open Room (only when `canJoinNow && joinUrl`)
+  - `canPrepare` → Prepare action
+  - `canCheckJoin` → Check Join
+  - `canComplete` → Mark Completed
+- Lines 352-353: `t(\`practitioner.presentationStatus.${session.presentationStatus}\`)` used for badge label. i18n'd.
+- Lines 384-385: `t(\`practitioner.detail.modeValue.${session.sessionMode}\`)` used for session mode chip. i18n'd.
+- Lines 479-494: `joinAvailableAt` display uses `formatSessionDate` with timezone-aware formatting. **Correct.**
+- Lines 687-698: `getFlowTypeLabel` uses `t("practitioner.detail.flowTypeValue.SCHEDULED")`, `.INSTANT`, `.DEFAULT`. All i18n'd.
+- Lines 731-802: `getSessionStateCopy` uses `t("practitioner.detail.stateNote.UPCOMING")`, `.READY_TO_JOIN_NOW`, `.READY_TO_JOIN_CHECK`, `.IN_PROGRESS_OPEN`, `.IN_PROGRESS`, etc. All i18n'd.
+- Lines 474-476: `t(\`practitioner.detail.blocked.${joinContract.blockedReason}\` as const)` — blocked reason i18n'd.
+
+---
+
+## Availability/Instant Booking
+
+### Availability (`availability/index.tsx`)
+- Lines 205-214: `scheduleTimeLabel` uses `formatTimeZoneLabel(availabilityTimeZone, { locale, includeOffset: true })`. **Timezone-aware.** Proper i18n.
+- Lines 163-203: `summaryCounts` is computed using `getDatePartsInTimeZone` with the practitioner's `availabilityTimeZone`. **Correctly timezone-aware.**
+- Lines 631-632: Weekday labels use `t(\`practitioner.weekday.${day.weekday}\`)`. i18n'd.
+- Lines 686-687: Time slot display uses `formatMinuteOfDay(minute, { locale })`. Properly localized.
+- Lines 717-719: Selected slot range uses `formatWallTimeRange(slot.startMinuteOfDay, slot.endMinuteOfDay, { locale })`. Properly localized.
+- Lines 871: Exception type uses `t(\`practitioner.availability.exceptionType.${type}\`)`. i18n'd for `BLOCK` and `OPEN_EXTRA`.
+- Lines 1214-1228: `validateExceptionForm` returns i18n'd error messages: `t("practitioner.availability.validation.exceptionDatesRequired")` and `t("practitioner.availability.validation.invalidDateTime")`.
+- **Issue — Line 91**: `const isRTL = I18nManager.isRTL` — this reads the device RTL flag, NOT the app language direction. Should use `getAppDirection(i18n.language)` for consistency with other screens. **AUDIT-109**
+- Lines 240-244: Overlap validation message uses `t("practitioner.availability.validation.overlap", { defaultValue: "لا يمكن إضافة وقت متداخل." })` — hardcoded Arabic defaultValue inline. **AUDIT-110**
+
+### Instant Booking (`instant-booking.tsx`)
+- Delegates entirely to `PractitionerInstantBookingRequestsScreen` component.
+- Lines 90-91 in `PractitionerInstantBookingRequestsScreen`: `statusLabel = t(\`instantBooking.statuses.${request.status}\` as const)` — properly i18n'd for all statuses: PENDING, ACCEPTED, REJECTED, EXPIRED, CANCELLED. **Good.**
+- Lines 88: `modeLabel = t(\`instantBooking.modes.${request.sessionMode}\` as const)` — i18n'd.
+- Lines 202-217: Accept/Reject CTAs only shown when `isPending = request.status === "PENDING"`. **Correctly gated by state.**
+- Lines 335-369: `handleAccept` and `handleReject` show feedback messages via `t("instantBooking.practitioner.feedback.accepted")` and `.rejected`. i18n'd.
+- Lines 342, 365: Error messages use `t(getPractitionerInstantBookingErrorKey(error) as never)`. The error key is mapped through a dedicated error mapping utility. Good pattern.
+
+---
+
+## Finance/Wallet
+
+### Finance Overview (`finance/index.tsx`)
+- Lines 151-156: `formatMoney(wallet?.availableBalance ?? "0", wallet?.currency ?? null, locale, t("practitioner.finance.common.currencyUnavailable"))` — currency formatting with Intl.NumberFormat, proper locale, fallback for missing currency. **Correct.**
+- Lines 445-448: `safeFinanceText(item.description, ledgerEntryTypeLabel(item.entryType, locale))` — uses `safeFinanceText` to guard against internal seed/dev strings. **Good.**
+- Lines 515-518: `settlementStatusLabel(item.status, locale)` and `settlementStatusTone(item.status)` used for settlement badges. Both are i18n'd and properly toned.
+
+### Ledger (`finance/ledger.tsx`)
+- Lines 354-357: `safeFinanceText(item.description, ledgerEntryTypeLabel(item.entryType, locale))` — same safe pattern.
+- Lines 375-379: `ledgerEntryTypeLabel(item.entryType, locale)` used for badge. i18n'd via lookup tables in `utils.ts`.
+- Lines 425-443: `humanizeReferenceType` has hardcoded Arabic labels (e.g., "جلسة", "عملية دفع", "تسوية", "كود خصم", "تعديل مالي", "مرجع") and English labels. **Natural Arabic copy.** Good.
+- Lines 377-379: Source/reference type displayed in expanded view. If `item.referenceType` is null, shows `t("practitioner.finance.ledger.details.none")` which is i18n'd. **Good.**
+
+### Settlements (`finance/settlements.tsx`)
+- Lines 316-319: `settlementStatusLabel(item.status, locale)` and `settlementStatusTone(item.status)` for badges. i18n'd.
+- Lines 298-305: In expanded body, `settlementStatusLabel(item.batchStatus, locale)` for batch status label. i18n'd.
+
+### Wallet (`finance/wallet.tsx`)
+- Lines 99-104: `formatMoney` with currency fallback. Same pattern as finance overview.
+
+---
+
+## Messages/Chat
+
+### Messages Index (`messages/index.tsx`)
+- Delegates to `MessagesInboxScreen` with `role="practitioner"` and `initialTab`. Proper abstraction.
+- Valid tabs: `["all", "sessions", "support", "followup"]` — correctly mapped to `useLocalSearchParams`.
+
+### Messages Thread (`messages/[id].tsx`)
+- Lines 12-22: Guards against missing `conversationId` with `ErrorState` with hardcoded English strings "Conversation unavailable" / "We could not open this conversation." **AUDIT-111** — not i18n'd.
+- Lines 24-28: Routes to `PractitionerCareChatThreadScreen` if `source === "care"`, otherwise `MessageThreadScreen`. Correct routing.
+- No other issues detected — delegates to feature components.
+
+### Support List (`support/index.tsx`)
+- Lines 8-9: Redirects to `/(practitioner)/messages?tab=support`. This is intentional — support tickets live in the messages tab. No issues.
+
+### Support Conversation (`support/[id].tsx`)
+- Lines 119-141: Message bubbles display `message.message` and `formatViewerTime(message.createdAt, { locale })`. No raw enum display.
+- Line 151-153: Closed banner uses hardcoded Arabic "هذه المحادثة لا تقبل رسائل جديدة حاليًا." **AUDIT-112** — not i18n'd.
+- Line 163: Composer placeholder uses `t("support.detail.replyPlaceholder", "اكتب رسالتك")` — has Arabic default value inline.
+- Line 76, 100: Header title uses `t("messages.inbox.sourceSupport", "محادثة الدعم")` — has Arabic default inline.
+
+### Support New (`support/new.tsx`)
+- Line 41: Error uses `t("support.new.messageRequired", "اكتب رسالة واحدة على الأقل قبل الإرسال.")` — Arabic default inline.
+- Line 112, 119-122: Hero card uses `t("messages.inbox.newSupportTitle", "راسل الدعم")` and `t("messages.inbox.newSupportCardDesc", "سيظهر تواصلك مع فريق الدعم هنا.")` — Arabic defaults inline.
+- Line 142-144: Helper bubble uses `t("support.new.samplePrompt", "اكتب سؤالك أو مشكلتك مباشرة...")` — Arabic default inline.
+- Line 186-187: Input placeholder uses `t("messages.thread.composerPlaceholder", "اكتب رسالة قصيرة وواضحة")` — Arabic default inline.
+
+### Care Chat (`care-chat/index.tsx`, `[id].tsx`, `request/[id].tsx`)
+- All three files are redirect stubs to `/(practitioner)/messages?tab=followup`. No operational UI.
+
+---
+
+## Support/Care-chat
+
+### Support tickets use `CLOSED_STATUSES: SupportTicketStatus[] = ["RESOLVED", "CLOSED"]` (line 33 of support/[id].tsx). The composer is hidden when `isClosed` is true. Correct.
+
+### Care-chat routes are all redirects — no operational UI at these routes. The actual care-chat thread component is rendered inside the messages tab.
+
+---
+
+## Loading/Empty/Error States
+
+### Session List
+- Line 342-346: `empty` prop on `ListPageScaffold` when `sessions.length === 0` — shows `emptyTitle` and `emptyDescription` via i18n. Good.
+- Lines 366-381: `ListEmptyComponent` with `EmptyState` for filtered empty state. i18n'd. Good.
+- Lines 422-459: `renderSessionsFooter` handles loading more, load error, end of list states. All i18n'd.
+
+### Availability
+- Lines 403-415: Loading state (`<LoadingState fullScreen />`) when queries loading; error state (`<ErrorState onRetry.../>`) on hasLoadError. Good.
+- Lines 1027-1032: Empty exceptions uses `t("practitioner.availability.emptyExceptions", { defaultValue: "لا توجد استثناءات حاليًا" })` — Arabic default inline. **AUDIT-113**
+- Lines 725-729: Selected slots empty state uses Arabic default: `t("practitioner.availability.selectedSlotsEmpty", { defaultValue: "لم تحدد أوقاتًا لهذا اليوم بعد" })`. **AUDIT-113**
+
+### Instant Booking
+- Lines 484-489: Empty state uses `t("instantBooking.practitioner.empty.title")` and `.note`. i18n'd.
+
+### Finance Overview
+- Lines 278-282: Ledger empty uses `CompactEmptyState` with i18n'd title/description.
+- Lines 317-321: Settlements empty uses `CompactEmptyState` with i18n'd title/description.
+
+### Ledger
+- Lines 297-301: Empty state uses `CompactEmptyState` with i18n'd title/description.
+
+### Settlements
+- Lines 233-237: Empty state uses `CompactEmptyState` with i18n'd title/description.
+
+### Notifications
+- Lines 272-281: Empty state uses `EmptyState` with i18n'd title/description.
+- Lines 283-302: Filtered empty (read/unread) states use i18n'd title/description.
+- Lines 145-152: Error state uses i18n'd title/message.
+
+---
+
+## Open Questions
+
+1. **Care-chat operational UI**: The care-chat route files are all redirects to the messages tab. Is there a dedicated care-chat thread screen that renders inside `MessagesInboxScreen`? The `PractitionerCareChatThreadScreen` is imported in `messages/[id].tsx` but only used when `source === "care"`. This appears intentional — care chat threads are embedded in the messages inbox. Confirmed working as designed.
+
+2. **Support ticket status translation**: The support/[id].tsx does not display the ticket's status anywhere in the UI (only shows messages and composer). Is the status meant to be shown somewhere? Not found in the current UI.
+
+3. **Onboarding credential `fileUrl` display**: Line 995 displays `item.fileUrl` directly as a `credentialMeta` text. Is this intentional to show practitioners their uploaded credential URLs? Could be a security/UX concern if those URLs are sensitive. **AUDIT-107**.
+
+4. **Application status `cleanReasonText`**: The regex on line 222 only strips "Reason|سبب الرفض" prefixes. What if the backend sends reasons prefixed differently? This may silently pass through unwanted prefixes.
+
+---
+
+## Findings to Register (AUDIT-105 onwards)
+
+**AUDIT-105 — `formatRequirementLabel` used instead of i18n utility in dashboard and onboarding**
+- Files: `fayed-mobile/app/(practitioner)/index.tsx` line 798-804; `fayed-mobile/app/(practitioner)/onboarding.tsx` line 529
+- Evidence: `formatRequirementLabel(item)` title-cases raw requirement keys (e.g., "PRACTITIONER_OTP_VERIFIED" becomes "Practitioner Otp Verified") displayed as chip labels without Arabic translation.
+- Impact: Practitioner sees English labels for missing requirements on the dashboard even when app is in Arabic.
+
+**AUDIT-106 — `cleanReasonText` regex is fragile for rejection reason cleaning**
+- File: `fayed-mobile/app/(practitioner)/application-status.tsx` line 222
+- Evidence: `value.replace(/^(Reason|سبب الرفض)\s*:\s*/i, "").trim()` — only handles two prefix variants. Backend may send other formats.
+- Impact: Rejection reason may display with prefix artifacts.
+
+**AUDIT-107 — Credential `fileUrl` displayed as raw text in onboarding**
+- File: `fayed-mobile/app/(practitioner)/onboarding.tsx` line 995
+- Evidence: `<Text color={theme.colors.textSecondary} style={styles.credentialMeta}>{item.fileUrl}</Text>`
+- Impact: Internal credential URLs exposed to practitioner in onboarding screen.
+
+**AUDIT-108 — Hardcoded emoji "⏳" in onboarding checklist status text**
+- File: `fayed-mobile/app/(practitioner)/onboarding.tsx` lines 873, 925
+- Evidence: `<Text>⏳ {t("practitioner.onboarding.requiredDocuments.pendingReview")}</Text>`
+- Impact: Emoji used alongside i18n string — not portable across all locales/fonts.
+
+**AUDIT-109 — `I18nManager.isRTL` used instead of `getAppDirection(i18n.language)` in availability screen**
+- File: `fayed-mobile/app/(practitioner)/availability/index.tsx` line 91
+- Evidence: `const isRTL = I18nManager.isRTL` — reads device system RTL flag, not the app's language direction.
+- Impact: Availability screen may display incorrectly when app language differs from device RTL setting.
+
+**AUDIT-110 — Inline Arabic default values in availability validation messages**
+- File: `fayed-mobile/app/(practitioner)/availability/index.tsx` lines 240-244, 268-272, 286-289, 296-299, 365-367, 370-373, 381-384, 390-394
+- Evidence: Multiple uses of `t("key", { defaultValue: "Arabic text" })` pattern throughout the availability screen.
+- Impact: These Arabic defaults suggest the i18n translation keys may not be fully populated for Arabic. If the translation system falls back to the default value, the app functions but the translation files are incomplete.
+
+**AUDIT-111 — Hardcoded English error strings in messages thread screen**
+- File: `fayed-mobile/app/(practitioner)/messages/[id].tsx` lines 17-20
+- Evidence: `title="Conversation unavailable" message="We could not open this conversation."` — not i18n'd.
+- Impact: Error state shown when `conversationId` is missing displays English text regardless of app locale.
+
+**AUDIT-112 — Hardcoded Arabic strings in support conversation screen**
+- File: `fayed-mobile/app/(practitioner)/support/[id].tsx` lines 76, 100 (header title), 121 (empty state), 152 (closed banner), 163 (composer placeholder)
+- Evidence: `t("messages.inbox.sourceSupport", "محادثة الدعم")` — Arabic default inline. Closed banner has `"هذه المحادثة لا تقبل رسائل جديدة حاليًا."` hardcoded.
+- Impact: Same pattern as AUDIT-110 — suggests i18n keys may not be fully registered in translation files.
+
+**AUDIT-113 — Inline Arabic defaults in availability empty/placeholder states**
+- File: `fayed-mobile/app/(practitioner)/availability/index.tsx` lines 725-729, 1027-1032
+- Evidence: `t("practitioner.availability.selectedSlotsEmpty", { defaultValue: "لم تحدد أوقاتًا..." })`, `t("practitioner.availability.emptyExceptions", { defaultValue: "لا توجد استثناءات..." })`
+- Impact: Same AUDIT-110 pattern — translation file gaps.

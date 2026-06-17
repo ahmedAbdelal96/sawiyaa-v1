@@ -6,6 +6,8 @@ import { AlertCircle, Clock3, RefreshCw, Zap } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { ListStateSkeleton, StateCard } from "@/components/shared/ContentStates";
 import { SurfaceActionLink, SurfaceCard, SurfaceHeader } from "@/components/shared/SurfaceShell";
+import { usePractitionerProfile } from "@/features/practitioners/hooks/use-practitioners";
+import { formatTimeZoneLabel } from "@/lib/time-formatting";
 import { useNowTick } from "../hooks/use-now-tick";
 import {
   useAcceptInstantBookingRequest,
@@ -48,6 +50,7 @@ type QueueSectionProps = {
   subtitle?: string;
   requests: InstantBookingRequest[];
   nowMs: number;
+  timeZone: string | null;
   acceptingRequestId: string | null;
   rejectingRequestId: string | null;
   actionErrors: Record<string, string>;
@@ -60,6 +63,7 @@ function QueueSection({
   subtitle,
   requests,
   nowMs,
+  timeZone,
   acceptingRequestId,
   rejectingRequestId,
   actionErrors,
@@ -85,6 +89,7 @@ function QueueSection({
             key={request.id}
             request={request}
             nowMs={nowMs}
+            timeZone={timeZone}
             onAccept={async (requestId) => {
               onAccept(requestId);
             }}
@@ -105,6 +110,7 @@ export default function PractitionerInstantBookingRequestsScreen() {
   const t = useTranslations("sessions.practitioner.instantBooking");
   const locale = useLocale();
   const nowMs = useNowTick(1000);
+  const profileQuery = usePractitionerProfile();
   const requestsQuery = usePractitionerInstantBookingRequests();
   const acceptMutation = useAcceptInstantBookingRequest();
   const rejectMutation = useRejectInstantBookingRequest();
@@ -124,6 +130,10 @@ export default function PractitionerInstantBookingRequestsScreen() {
   }, [pageMessage]);
 
   const requests = requestsQuery.data ?? [];
+  const practitionerTimeZone = profileQuery.data?.profile.timezone ?? null;
+  const practitionerTimeZoneLabel = practitionerTimeZone
+    ? formatTimeZoneLabel(practitionerTimeZone, { locale })
+    : null;
   const pendingRequests = useMemo(
     () => requests.filter((request) => request.status === "PENDING"),
     [requests],
@@ -266,6 +276,11 @@ export default function PractitionerInstantBookingRequestsScreen() {
             </p>
           </div>
         </div>
+        {practitionerTimeZoneLabel ? (
+          <p className="text-xs text-text-muted">
+            {t("queue.summary.timezoneNote", { timeZone: practitionerTimeZoneLabel })}
+          </p>
+        ) : null}
       </SurfaceCard>
 
       {pageMessage ? (
@@ -295,30 +310,32 @@ export default function PractitionerInstantBookingRequestsScreen() {
           <QueueSection
             title={t("queue.pendingHeading")}
             subtitle={t("queue.pendingNote")}
-          requests={pendingRequests}
-          nowMs={nowMs}
-          acceptingRequestId={acceptMutation.isPending ? acceptMutation.variables ?? null : null}
-          rejectingRequestId={
-            rejectMutation.isPending ? rejectMutation.variables?.requestId ?? null : null
-          }
-          actionErrors={actionErrors}
-          onAccept={handleAccept}
-          onReject={handleReject}
-        />
+            requests={pendingRequests}
+            nowMs={nowMs}
+            timeZone={practitionerTimeZone}
+            acceptingRequestId={acceptMutation.isPending ? acceptMutation.variables ?? null : null}
+            rejectingRequestId={
+              rejectMutation.isPending ? rejectMutation.variables?.requestId ?? null : null
+            }
+            actionErrors={actionErrors}
+            onAccept={handleAccept}
+            onReject={handleReject}
+          />
 
           <QueueSection
             title={t("queue.handledHeading")}
             subtitle={t("queue.handledNote")}
-          requests={handledRequests}
-          nowMs={nowMs}
-          acceptingRequestId={acceptMutation.isPending ? acceptMutation.variables ?? null : null}
-          rejectingRequestId={
-            rejectMutation.isPending ? rejectMutation.variables?.requestId ?? null : null
-          }
-          actionErrors={actionErrors}
-          onAccept={handleAccept}
-          onReject={handleReject}
-        />
+            requests={handledRequests}
+            nowMs={nowMs}
+            timeZone={practitionerTimeZone}
+            acceptingRequestId={acceptMutation.isPending ? acceptMutation.variables ?? null : null}
+            rejectingRequestId={
+              rejectMutation.isPending ? rejectMutation.variables?.requestId ?? null : null
+            }
+            actionErrors={actionErrors}
+            onAccept={handleAccept}
+            onReject={handleReject}
+          />
         </div>
       )}
     </div>

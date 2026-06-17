@@ -33,17 +33,10 @@ import {
   SurfaceStatCard,
   SurfaceToolbar,
 } from "@/components/shared/SurfaceShell";
+import { formatViewerDateTime } from "@/lib/time-formatting";
 
 function formatScheduledAt(isoString: string | null, numLocale: string): string {
-  if (!isoString) return "";
-  return new Date(isoString).toLocaleString(numLocale, {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: !numLocale.startsWith("ar"),
-  });
+  return formatViewerDateTime(isoString, { locale: numLocale });
 }
 
 function getBucket(presentationStatus: SessionPresentationStatus) {

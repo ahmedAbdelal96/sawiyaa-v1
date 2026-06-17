@@ -1,4 +1,8 @@
 import type { AcademyCourseItem, AcademyEnrollmentItem } from "./types";
+import {
+  formatViewerDate,
+  formatViewerTime,
+} from "../../../lib/time-formatting";
 
 export function formatAcademyMoney(
   amount: string | null | undefined,
@@ -44,23 +48,10 @@ export function formatAcademyLectureDateRange(
   if (!startAt && !endAt) {
     return "-";
   }
-
-  const formatter = new Intl.DateTimeFormat(locale, {
-    day: "numeric",
-    month: "long",
-    hour12: !locale.startsWith("ar"),
-  });
-
-  const timeFormatter = new Intl.DateTimeFormat(locale, {
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: !locale.startsWith("ar"),
-  });
-
   const dateSource = startAt ?? endAt;
-  const dateLabel = dateSource ? formatter.format(new Date(dateSource)) : "-";
-  const startLabel = startAt ? timeFormatter.format(new Date(startAt)) : "-";
-  const endLabel = endAt ? timeFormatter.format(new Date(endAt)) : "-";
+  const dateLabel = dateSource ? formatViewerDate(dateSource, { locale }) : "-";
+  const startLabel = startAt ? formatViewerTime(startAt, { locale }) : "-";
+  const endLabel = endAt ? formatViewerTime(endAt, { locale }) : "-";
 
   return `${dateLabel} · ${startLabel} - ${endLabel}`;
 }

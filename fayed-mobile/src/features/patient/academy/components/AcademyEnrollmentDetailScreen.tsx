@@ -12,9 +12,9 @@ import {
   StatusChip,
   SummaryRow,
   Text,
-  formatDate,
 } from "../../../../components/ui";
 import { useTheme } from "../../../../providers/ThemeProvider";
+import { formatViewerDateTime } from "../../../../lib/time-formatting";
 import { usePublicAcademyEnrollment } from "../hooks";
 import {
   buildAcademyEnrollmentPaymentRedirectUrl,
@@ -132,7 +132,7 @@ export default function AcademyEnrollmentDetailScreen({
             <View style={styles.summary}>
               <SummaryRow
                 label={t("academy.enrollment.registeredAt")}
-                value={formatDate(enrollment.registeredAt, locale)}
+                value={formatViewerDateTime(enrollment.registeredAt, { locale })}
               />
               {!isPendingPaymentFlow ? (
                 <>

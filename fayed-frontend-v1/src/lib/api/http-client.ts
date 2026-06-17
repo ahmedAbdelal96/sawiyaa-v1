@@ -18,6 +18,7 @@ const AUTH_COOKIE_OPTIONS = {
   path: "/",
   secure: process.env.NODE_ENV === "production",
   sameSite: "lax" as const,
+  httpOnly: true,
 };
 
 const httpClient: AxiosInstance = axios.create({
@@ -281,20 +282,22 @@ function handleLogout(): void {
 }
 
 export const tokenManager = {
-  setTokens(accessToken: string, refreshToken?: string): void {
+  setTokens(accessToken: string, _refreshToken?: string): void {
+    // Access token uses lax sameSite to survive cross-site redirects from
+    // external payment providers (Paymob/Stripe return to the app).
     Cookies.set(TOKEN_CONFIG.ACCESS_TOKEN_KEY, accessToken, {
       expires: TOKEN_CONFIG.ACCESS_TOKEN_EXPIRY,
       ...AUTH_COOKIE_OPTIONS,
-      // Top-level redirects from external payment providers need the auth
-      // cookies to survive the return navigation back into the app.
+      sameSite: "lax",
     });
 
-    if (refreshToken) {
-      Cookies.set(TOKEN_CONFIG.REFRESH_TOKEN_KEY, refreshToken, {
-        expires: TOKEN_CONFIG.REFRESH_TOKEN_EXPIRY,
-        ...AUTH_COOKIE_OPTIONS,
-      });
-    }
+    // NOTE: The refresh token is set as an HttpOnly cookie by the backend
+    // on login/register/refresh. js-cookie cannot set real HttpOnly cookies —
+    // passing httpOnly: true to Cookies.set() has no effect (browser enforces
+    // HttpOnly as a server-side attribute). The backend sets and clears the
+    // httpOnly refresh cookie via Set-Cookie header. This function intentionally
+    // skips setting the refresh token here to avoid overwriting the secure
+    // server-set HttpOnly cookie with a readable one.
   },
 
   getAccessToken(): string | undefined {
@@ -356,11 +359,12 @@ export const tokenManager = {
 
   clearAll(): void {
     Cookies.remove(TOKEN_CONFIG.ACCESS_TOKEN_KEY, { path: "/" });
-    Cookies.remove(TOKEN_CONFIG.REFRESH_TOKEN_KEY, { path: "/" });
+    // Refresh token is an HttpOnly cookie set by the backend — the backend
+    // clears it via Set-Cookie on logout. js-cookie cannot delete HttpOnly
+    // cookies, so we skip Cookies.remove() for the refresh token key.
     Cookies.remove(TOKEN_CONFIG.CONTEXT_ID_KEY, { path: "/" });
     Cookies.remove(USER_DATA_COOKIE, { path: "/" });
     Cookies.remove(USER_ROLE_COOKIE, { path: "/" });
-
   },
 
   logout(): void {

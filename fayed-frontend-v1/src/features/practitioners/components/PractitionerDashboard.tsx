@@ -30,6 +30,11 @@ import { formatMoney as formatFinanceMoney } from "@/lib/finance-format";
 import { usePractitionerProfile } from "../hooks/use-practitioners";
 import { usePractitionerSessions } from "@/features/sessions/hooks/use-sessions";
 import { usePractitionerSettlements, usePractitionerWallet } from "@/features/financial-operations/hooks/use-financial-operations";
+import {
+  formatPractitionerOrViewerDate,
+  formatPractitionerOrViewerDateTime,
+  formatTimeZoneLabel,
+} from "@/lib/time-formatting";
 import type { SessionListItem } from "@/features/sessions/types/sessions.types";
 
 type LocaleCopy = {
@@ -84,6 +89,7 @@ type LocaleCopy = {
     settlements: string;
   };
   pendingBalanceLabel: string;
+  timezoneLabel: string;
 };
 
 const COPY: Record<"en" | "ar", LocaleCopy> = {
@@ -141,6 +147,7 @@ const COPY: Record<"en" | "ar", LocaleCopy> = {
       settlements: "Settlements",
     },
     pendingBalanceLabel: "Pending from ledger",
+    timezoneLabel: "Times shown in your timezone",
   },
   ar: {
     pageTitle: "لوحة المعالج",
@@ -194,6 +201,7 @@ const COPY: Record<"en" | "ar", LocaleCopy> = {
       settlements: "التسويات",
     },
     pendingBalanceLabel: "الرصيد المعلق من الدفتر",
+    timezoneLabel: "الأوقات معروضة بوقتك المحلي",
   },
 };
 
@@ -209,14 +217,11 @@ function formatNumber(locale: string, value: number) {
   return new Intl.NumberFormat(normalizeLocale(locale)).format(value);
 }
 
-function formatDateTime(locale: string, iso: string | null) {
+function formatDateTime(locale: string, iso: string | null, timeZone?: string | null) {
   if (!iso) return "-";
-  return new Date(iso).toLocaleString(locale === "ar" ? "ar-SA" : "en-US", {
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: locale !== "ar",
+  return formatPractitionerOrViewerDateTime(iso, timeZone ?? null, {
+    locale: locale === "ar" ? "ar-SA" : "en-US",
+    fallbackText: "-",
   });
 }
 
@@ -247,15 +252,15 @@ function formatTimeLeft(iso: string, locale: string, nowMs: number) {
   return `Nearest expiry in ${numberFormat.format(minutes)}m ${numberFormat.format(seconds)}s`;
 }
 
-function formatShortDate(locale: string, iso: string | null) {
+function formatShortDate(locale: string, iso: string | null, timeZone?: string | null) {
   if (!iso) return "-";
-  return new Date(iso).toLocaleDateString(locale === "ar" ? "ar-SA" : "en-US", {
-    month: "short",
-    day: "numeric",
+  return formatPractitionerOrViewerDate(iso, timeZone ?? null, {
+    locale: locale === "ar" ? "ar-SA" : "en-US",
+    fallbackText: "-",
   });
 }
 
-function buildLast14DaysSeries(locale: string, sessions: SessionListItem[]) {
+function buildLast14DaysSeries(locale: string, sessions: SessionListItem[], timeZone?: string | null) {
   const now = new Date();
   const dayStarts: Date[] = [];
   for (let i = 13; i >= 0; i -= 1) {
@@ -266,9 +271,9 @@ function buildLast14DaysSeries(locale: string, sessions: SessionListItem[]) {
   }
 
   const labels = dayStarts.map((day) =>
-    day.toLocaleDateString(locale === "ar" ? "ar-SA" : "en-US", {
-      month: "short",
-      day: "numeric",
+    formatPractitionerOrViewerDate(day.toISOString(), timeZone ?? null, {
+      locale: locale === "ar" ? "ar-SA" : "en-US",
+      fallbackText: "-",
     }),
   );
 
@@ -384,10 +389,12 @@ export default function PractitionerDashboard() {
     settlementsQuery.isLoading;
 
   const profile = profileQuery.data?.profile;
+  const profileTimeZone = profile?.timezone ?? null;
+  const profileTimeZoneLabel = profileTimeZone ? formatTimeZoneLabel(profileTimeZone, { locale }) : null;
   const greetingName = safeText(profile?.displayName ?? null, copy.common.unknown);
 
   const sessions = sessionsQuery.data?.items ?? [];
-  const trend = buildLast14DaysSeries(locale, sessions);
+  const trend = buildLast14DaysSeries(locale, sessions, profileTimeZone);
   const sessionsDelta = calculateTodayDelta(trend.values);
   const sessionsToday = trend.values.at(-1) ?? 0;
   const sessionsLast14DaysTotal = trend.values.reduce((sum, value) => sum + value, 0);
@@ -404,7 +411,7 @@ export default function PractitionerDashboard() {
     (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
   );
   const settlementCategories = settlements.map((item) =>
-    formatShortDate(locale, item.createdAt),
+    formatShortDate(locale, item.createdAt, profileTimeZone),
   );
   const settlementValues = settlements.map((item) => Number(item.amountNet) || 0);
   const settlementCurrency = settlements[0]?.currency ?? wallet?.currency ?? null;
@@ -458,11 +465,19 @@ export default function PractitionerDashboard() {
               {profile ? `${greetingName}` : copy.pageTitle}
             </h1>
             <p className="mt-1 text-sm text-text-secondary">{copy.pageSubtitle}</p>
+            {profileTimeZoneLabel ? (
+              <p className="mt-2 inline-flex items-center gap-2 rounded-full bg-surface-tertiary px-3 py-1 text-xs font-medium text-text-secondary dark:bg-white/5 dark:text-white/80">
+                <span className="font-semibold text-text-primary dark:text-white/95">
+                  {copy.timezoneLabel}
+                </span>
+                <span>{profileTimeZoneLabel}</span>
+              </p>
+            ) : null}
           </div>
           <div className="flex flex-wrap items-center gap-2 sm:self-center">
             {hasHydrated && (
               <span className="app-chip rounded-full bg-primary-light px-3.5 py-1.5 text-xs font-semibold text-text-brand dark:bg-primary/15 dark:text-primary-light">
-                {copy.common.updatedLabel}: {formatDateTime(locale, new Date().toISOString())}
+                {copy.common.updatedLabel}: {formatDateTime(locale, new Date().toISOString(), profileTimeZone)}
               </span>
             )}
           </div>
@@ -570,7 +585,7 @@ export default function PractitionerDashboard() {
             items={upcomingSessions.map((session) => ({
               id: session.id,
               title: safeText(session.patient?.displayName, copy.common.unknown),
-              subtitle: `${formatDateTime(locale, session.scheduledStartAt)} · ${session.durationMinutes}m`,
+              subtitle: `${formatDateTime(locale, session.scheduledStartAt, profileTimeZone)} · ${session.durationMinutes}m`,
               href: `/practitioner/sessions/${session.id}`,
               badge: (() => {
                 const statusLabel = formatSessionStatus(session.status, locale);

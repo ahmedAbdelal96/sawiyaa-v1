@@ -1,0 +1,397 @@
+================================================================================
+PHASE 6 WEB UX AUDIT — ADMIN SURFACES
+Fayed Healthcare Platform
+Agent 4: Admin UX, Permission Gates, Diagnostic Exposure
+================================================================================
+Date: 2026-06-17
+Auditor: Claude Code Agent 4
+Scope: fayed-frontend-v1/src/app/[locale]/(admin)/admin/, features/admin/, components/admin/, lib/auth/
+
+================================================================================
+FINDING 1: MISSING PERMISSION GATE ON care-chat/[id] — AUDIT-068 REGRESSION
+================================================================================
+Severity: HIGH
+Status: UNMITIGATED (previously flagged in Phase 5)
+
+File: fayed-frontend-v1/src/app/[locale]/(admin)/admin/care-chat/[id]/page.tsx
+Lines: 1-22 (entire file)
+
+Finding:
+  The route /admin/care-chat/[id] has NO AdminPermissionGate wrapping its
+  content. The parent /admin/care-chat page (line 24-32) correctly gates
+  access with requiredPermissions for CARE_CHAT_REQUEST_READ_ADMIN,
+  CARE_CHAT_CONVERSATION_READ_ADMIN, and CARE_CHAT_REQUEST_DECIDE, but the
+  detail page [id] passes through directly to AdminCareChatRequestScreen
+  without any permission check.
+
+Evidence:
+  ------
+  18: export default async function AdminCareChatRequestPage({ params }: Props) {
+  19:   const { locale, id } = await params;
+  20:   setRequestLocale(locale);
+  21:   return <AdminCareChatRequestScreen requestId={id} />;
+  22: }
+  ------
+
+Compare with parent route (care-chat/page.tsx, lines 24-32):
+  <AdminPermissionGate
+    requiredPermissions={[
+      PermissionKey.CARE_CHAT_REQUEST_READ_ADMIN,
+      PermissionKey.CARE_CHAT_CONVERSATION_READ_ADMIN,
+      PermissionKey.CARE_CHAT_REQUEST_DECIDE,
+    ]}
+  >
+
+Impact:
+  Any admin-class user who can guess or navigate to a care-chat request ID
+  can view its detail page, bypassing the permission check present on the
+  list view.
+
+Recommendation:
+  Wrap AdminCareChatRequestScreen with AdminPermissionGate using the same
+  requiredPermissions array as the list page.
+
+================================================================================
+FINDING 2: MISSING PERMISSION GATE ON sessions/runtime-inspection
+================================================================================
+Severity: HIGH
+Status: UNMITIGATED (previously flagged in Phase 5 as AUDIT-069)
+
+File: fayed-frontend-v1/src/app/[locale]/(admin)/admin/sessions/runtime-inspection/page.tsx
+Lines: 1-32 (entire file)
+
+Finding:
+  The /admin/sessions/runtime-inspection route (older naming) renders
+  AdminSessionRuntimeInspectionScreen directly without any AdminPermissionGate.
+
+Evidence:
+  ------
+  19: export default async function AdminSessionRuntimeInspectionPage({
+  20:   params,
+  21:   searchParams,
+  22: }: Props) {
+  ...
+  27:   return (
+  28:     <div className="px-4 py-8">
+  29:       <AdminSessionRuntimeInspectionScreen initialSessionId={sessionId} />
+  30:     </div>
+  31:   );
+  32: }
+  ------
+
+Note: The sibling route /admin/sessions/runtime-inspector (line 34) correctly
+uses AdminPermissionGate with PermissionKey.SESSIONS_READ_ADMIN. The
+runtime-inspection route appears to be an older/deprecated variant that
+bypasses the gate.
+
+Impact:
+  Any admin-class user can access the runtime inspection screen without
+  SESSIONS_READ_ADMIN permission, potentially exposing session join tokens
+  and room references (see Finding 4).
+
+Recommendation:
+  Either add AdminPermissionGate with SESSIONS_READ_ADMIN to this route, or
+  ensure it redirects to /admin/sessions/runtime-inspector.
+
+================================================================================
+FINDING 3: MISSING PERMISSION GATE ON notifications/[id] — AUDIT-070/071 REGRESSION
+================================================================================
+Severity: MEDIUM
+Status: UNMITIGATED (previously flagged in Phase 5)
+
+File: fayed-frontend-v1/src/app/[locale]/(admin)/admin/notifications/[id]/page.tsx
+Lines: 19-24 (entire file)
+
+Finding:
+  The /admin/notifications/[id] detail route has NO AdminPermissionGate.
+  The list route /admin/notifications (line 26) correctly gates with
+  NOTIFICATION_OPS_READ, but the detail route passes through.
+
+Evidence:
+  ------
+  19: export default async function AdminNotificationDetailPage({ params }: Props) {
+  20:   const { locale, id } = await params;
+  21:   setRequestLocale(locale);
+  22:
+  23:   return <AdminNotificationDetailScreen notificationId={id} />;
+  24: }
+  ------
+
+Compare with list route (notifications/page.tsx, line 26):
+  <AdminPermissionGate requiredPermissions={[PermissionKey.NOTIFICATION_OPS_READ]}>
+
+Impact:
+  Any admin-class user who can guess/navigate to a notification ID can view
+  its full detail panel, including raw notification payloads, recipient IDs,
+  and delivery attempt history (see also Finding 6 re: userId masking).
+
+================================================================================
+FINDING 4: providerRoomRef DIAGNOSTIC IDENTIFIER EXPOSURE IN ATTENDANCE TIMELINE
+================================================================================
+Severity: MEDIUM
+Status: NEW FINDING
+
+File: fayed-frontend-v1/src/features/admin/session-runtime/components/AdminSessionAttendanceSection.tsx
+Lines: 119-124
+
+File: fayed-frontend-v1/src/features/admin/session-runtime/components/AdminSessionInspectorTimeline.tsx
+Lines: 106-114
+
+Finding:
+  The providerRoomRef field is rendered in the expandable "providerDetails"
+  section of each timeline event. This is a provider-specific room identifier
+  that, depending on the provider implementation, could function as a join
+  token, room URL component, or session credential.
+
+Evidence (AdminSessionAttendanceSection.tsx):
+  ------
+  119:           <p className="break-all">
+  120:             <span className="font-semibold text-text-primary dark:text-white/90">
+  121:               {t("attendance.timeline.fields.providerRoomRef")}
+  122:             </span>
+  123:             {item.providerRoomRef ?? "-"}
+  124:           </p>
+  ------
+
+Evidence (AdminSessionInspectorTimeline.tsx, lines 106-114):
+  ------
+  106:             {event.providerRoomRef ? (
+  107:               <div className="flex items-center justify-between gap-3 border-b border-border-light py-1.5 dark:border-white/8">
+  108:                 <span className="text-[11px] text-text-muted">
+  109:                   {providerRoomRefLabel}
+  110:                 </span>
+  111:                 <span className="font-mono text-[11px] text-text-secondary break-all">
+  112:                   {event.providerRoomRef}
+  113:                 </span>
+  114:               </div>
+  115:             ) : null}
+  ------
+
+Note: AdminSessionInspectorRawEvidence.tsx (line 21) DOES sanitize this field
+in its raw JSON export — it includes providerRoomRef in the sanitized payload
+shown to admins, which is appropriate for diagnostic purposes but confirms
+the field is considered sensitive.
+
+Impact:
+  Admins viewing session attendance timeline events can see raw provider room
+  references. If these are session join tokens or contain embedded secrets,
+  this could enable unauthorized session access.
+
+Recommendation:
+  Treat providerRoomRef as a session credential. Consider:
+  1. Masking the value (showing only last 4 characters) in the timeline UI
+  2. Requiring an elevated permission (e.g., SESSIONS_MANUAL_DECISIONS_WRITE)
+     to reveal the full value
+  3. Confirming with backend whether providerRoomRef is a secrets-bearing
+     token or merely an opaque room identifier
+
+================================================================================
+FINDING 5: MISSING PERMISSION GATE ON refund-policies PAGE
+================================================================================
+Severity: MEDIUM
+Status: NEW FINDING
+
+File: fayed-frontend-v1/src/app/[locale]/(admin)/admin/refund-policies/page.tsx
+Lines: 19-24 (entire file)
+
+Finding:
+  The /admin/refund-policies list page has NO AdminPermissionGate.
+
+Evidence:
+  ------
+  19: export default async function AdminRefundPoliciesPage({ params }: Props) {
+  20:   const { locale } = await params;
+  21:   setRequestLocale(locale);
+  22:
+  23:   return <AdminRefundPoliciesScreen />;
+  24: }
+  ------
+
+Context: Refund policy management is a sensitive financial surface. The
+  REFUNDS_APPROVE and REFUNDS_RETRY permissions exist and are used on
+  /admin/payments. The refund-policies pages should likely require similar
+  gatekeeping.
+
+Impact:
+  Any admin-class user can view and manage refund policies, including creating
+  new policies or modifying existing ones, without explicit permission check.
+
+Recommendation:
+  Add AdminPermissionGate with appropriate requiredPermissions (e.g.,
+  REFUNDS_APPROVE or a new refund-policies.read permission).
+
+================================================================================
+FINDING 6: userId FULLY VISIBLE IN TECHNICAL DETAILS PANEL
+================================================================================
+Severity: MEDIUM
+Status: PARTIALLY MITIGATED (detail panel masks in summary, but not in technical)
+
+File: fayed-frontend-v1/src/features/admin/notifications/components/AdminNotificationDetailsPanel.tsx
+Lines: 484-486 (technical panel recipientId), 259-262 (summary card)
+
+Finding:
+  The recipient userId is masked in the summary card area (line 259-262
+  using maskUserId()) but is shown in full in the technical details panel
+  (lines 484-486, value={item.userId}).
+
+Evidence (summary card, lines 259-262):
+  ------
+  259:         {item.context?.recipientName
+  260:           ? `${item.context.recipientName} (${item.context.recipientRole || "USER"})`
+  261:           : maskUserId(item.userId, locale)}
+  ------
+
+Evidence (technical panel, lines 484-486):
+  ------
+  484:             <DetailField
+  485:               label={t("notifications.technical.recipientId")}
+  486:               value={<span className="font-mono text-xs" dir="ltr">{item.userId}</span>}
+  ------
+
+The "Show Technical" section is an expandable accordion (lines 439-522).
+By default it is collapsed (showTechnical state starts as false at line 99).
+
+Impact:
+  While the technical details are behind a collapsed accordion (reducing
+  accidental exposure), an admin who expands this panel sees the full userId
+  in monospace font. This is a low-severity issue given the mitigation
+  present in the summary card, but is inconsistent.
+
+================================================================================
+FINDING 7: RAW PERMISSION KEYS IN ADMIN PERMISSION CATALOG (LOW RISK)
+================================================================================
+Severity: INFO
+Status: ACCEPTABLE — internal diagnostic/tooling use
+
+File: fayed-frontend-v1/src/features/admin/users/constants/admin-permission-catalog.ts
+Lines: 18-345 (entire file)
+
+Finding:
+  The file admin-permission-catalog.ts maps every PermissionKey enum value
+  to a labelKey, descriptionKey, module, and risk rating. This is a catalog
+  used for the admin user permissions management UI (used by
+  AdminUserPermissionsScreen to render the permission matrix).
+
+These keys are used internally by the permissions management screen and do
+not appear to be rendered directly as raw strings in user-facing labels.
+The PermissionKey values are used as `key` fields in the catalog items,
+which are then used to look up i18n labels via labelKey/descriptionKey.
+
+The raw PermissionKey strings (e.g., "admin-users.read") do NOT appear in
+any user-facing UI — they are only in the internal catalog data structure.
+
+This is acceptable because:
+1. The catalog is only loaded for the permissions management screen
+2. i18n label keys are used for all displayed text
+3. Permission keys are a documented internal API contract, not secrets
+
+================================================================================
+FINDING 8: EMPTY/ERROR STATE DISTINGUISHABILITY
+================================================================================
+Severity: LOW
+Status: GOOD — error states distinguish NOT_FOUND from other errors
+
+File: fayed-frontend-v1/src/features/admin/notifications/components/AdminNotificationDetailScreen.tsx
+Lines: 27-68
+
+File: fayed-frontend-v1/src/features/admin/settlements/components/AdminSettlementDetailScreen.tsx
+Lines: 276-313
+
+Finding:
+  Both screens properly distinguish NOT_FOUND errors from generic errors.
+  AdminNotificationDetailScreen checks isAppError(error) && error.errorType
+  === "NOT_FOUND" to render different copy (lines 29, 45-48).
+  AdminSettlementDetailScreen checks error?.statusCode === 404 or
+  error?.code === "FINANCIAL_OPERATIONS_SETTLEMENT_BATCH_NOT_FOUND" (lines
+  278-280).
+
+The permission-denied AdminForbiddenView (components/admin/AdminForbiddenView)
+does NOT leak which permission is missing, and provides a safe escape
+hatch (Go to Dashboard link).
+
+This is GOOD. No remedial action required.
+
+================================================================================
+FINDING 9: DESTRUCTIVE ACTION CONFIRMATION DIALOGS
+================================================================================
+Severity: LOW (GOOD)
+Status: PRESENT AND ADEQUATE
+
+File: fayed-frontend-v1/src/features/admin/chat-conversations/components/AdminChatConversationDetailScreen.tsx
+Lines: 849-935
+
+File: fayed-frontend-v1/src/features/admin/settlements/components/AdminSettlementDetailScreen.tsx
+Lines: 577-685
+
+Finding:
+  Chat conversation disable/enable actions use FormModal confirmation dialogs
+  (lines 849-935 in AdminChatConversationDetailScreen), with a warning callout
+  about the destructive nature of disabling.
+
+  Settlement mark-paid and mark-failed actions in AdminSettlementDetailScreen
+  use form submissions with descriptive text explaining consequences (lines
+  577-685). They do NOT use modal confirmations, but they do have:
+  - Disabled state when action is not available (actionState.canMarkPaid)
+  - Explanatory text about what "mark paid" means (line 637)
+  - Explanatory text about what "mark failed" means (line 672)
+  - Descriptive field labels
+
+  The settlement destructive actions are lower risk than chat disable because:
+  1. They are gated by role check (canOperate = ADMIN or SUPER_ADMIN, line 184)
+  2. They affect financial records rather than communication
+  3. They produce a feedback message (success/error) after API response
+
+Overall: Adequate. Consider adding explicit modal confirmations for
+mark-paid and mark-failed if they are considered high-risk financial ops.
+
+================================================================================
+FINDING 10: ADMIN SIDEBAR NAVIGATION PERMISSION FILTERING
+================================================================================
+Severity: INFO
+Status: CORRECTLY IMPLEMENTED
+
+File: fayed-frontend-v1/src/app/[locale]/(admin)/layout.tsx
+Lines: 13-34
+
+File: fayed-frontend-v1/src/config/navigation/admin.tsx
+Lines: 1-223 (entire file)
+
+File: fayed-frontend-v1/src/config/navigation/filter.ts
+Lines: 1-81 (entire file)
+
+Finding:
+  Admin navigation is correctly filtered based on user permissions:
+  1. layout.tsx fetches real permissions from getServerCurrentUserPermissions()
+     (line 17) and filters navigation via filterAdminNavigation (line 23)
+  2. filterAdminNavigation() checks requiredPermissions on nav items and
+     sections, using hasAnyPermission() for permission checking
+  3. Nav items and sections that the user lacks permissions for are
+     removed from the filtered navigation
+  4. Empty sections (all items filtered) are also removed
+
+  Navigation permission requirements are correctly specified in admin.tsx
+  for sensitive sections (payments, settlements, sessions, notifications,
+  audit log, admin users, etc.).
+
+  This is GOOD. No remedial action required.
+
+================================================================================
+SUMMARY TABLE
+================================================================================
+| Finding | Severity | Status          | File (line)                               |
+|---------|----------|-----------------|-------------------------------------------|
+| 1       | HIGH     | UNMITIGATED     | care-chat/[id]/page.tsx:18-22             |
+| 2       | HIGH     | UNMITIGATED     | sessions/runtime-inspection/page.tsx:19-32 |
+| 3       | MEDIUM   | UNMITIGATED     | notifications/[id]/page.tsx:19-24         |
+| 4       | MEDIUM   | NEW FINDING     | AdminSessionAttendanceSection.tsx:119-124 |
+|         |          |                 | AdminSessionInspectorTimeline.tsx:106-114 |
+| 5       | MEDIUM   | NEW FINDING     | refund-policies/page.tsx:19-24            |
+| 6       | MEDIUM   | PART. MITIGATED | AdminNotificationDetailsPanel.tsx:484-486|
+| 7       | INFO     | ACCEPTABLE      | admin-permission-catalog.ts:18-345         |
+| 8       | LOW      | GOOD            | (multiple screens)                        |
+| 9       | LOW      | GOOD            | AdminChatConversationDetailScreen.tsx:849 |
+| 10      | INFO     | GOOD            | layout.tsx:23, filter.ts:72-80            |
+
+================================================================================
+END OF REPORT
+================================================================================

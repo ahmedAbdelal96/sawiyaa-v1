@@ -34,8 +34,10 @@
     "detailsHeading": "تفاصيل المحفظة",
     "details": {
       "lastLedgerEntryAt": "آخر إدخال في الدفتر",
-      "updatedAt": "آخر تحديث للمحفظة"
-    }
+      "updatedAt": "آخر تحديث للمحفظة",
+      "timezoneLabel": "المنطقة الزمنية"
+    },
+    "timezoneLabel": "المنطقة الزمنية"
   },
   "states": {
     "empty": {
@@ -167,7 +169,8 @@
         "heading": "تعذر عرض التسويات الآن",
         "retry": "حاول مرة أخرى"
       }
-    }
+    },
+    "timezoneLabel": "المنطقة الزمنية"
   },
   "errors": {
     "practitionerNotFound": "لم نتمكن من العثور على ملف الممارس.",

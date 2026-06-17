@@ -8,6 +8,7 @@ import { StateCard } from "@/components/shared/ContentStates";
 import { SurfaceCard, SurfaceHeader } from "@/components/shared/SurfaceShell";
 import Button from "@/components/ui/button/Button";
 import DirectionalArrowIcon from "@/components/ui/navigation/DirectionalArrowIcon";
+import { formatUtcAuditDateTime } from "@/lib/time-formatting";
 import { useAdminLedgerJournalEntry } from "../hooks/use-admin-accounting";
 
 function normalizeLocale(locale: string) {
@@ -24,10 +25,7 @@ function formatMoney(locale: string, value: string, currencyCode: string) {
 }
 
 function formatDateTime(locale: string, value: string) {
-  return new Intl.DateTimeFormat(normalizeLocale(locale), {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(new Date(value));
+  return `UTC: ${formatUtcAuditDateTime(value, { locale })}`;
 }
 
 function shortId(value: string) {
@@ -221,4 +219,3 @@ export default function AdminLedgerJournalEntryScreen({
     </div>
   );
 }
-

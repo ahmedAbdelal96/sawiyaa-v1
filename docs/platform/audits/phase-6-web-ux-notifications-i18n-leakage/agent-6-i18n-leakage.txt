@@ -1,0 +1,414 @@
+================================================================================
+PHASE 6 WEB UX I18N LEAKAGE AUDIT — FAYED FRONTEND V1
+Auditor: Agent 6 (Claude Code)
+Date: 2026-06-17
+Scope: fayed-frontend-v1 (all *.tsx files, messages/*.json)
+================================================================================
+
+SUMMARY
+-------
+Seven distinct leakage patterns found across the frontend. Raw backend enums
+are rendered directly to users via replaceAll("_", " ") in session chat and
+workspace components. i18n key namespaces are well-structured overall, but two
+presentationStatus values (IN_PROGRESS, JOINABLE) are missing from the
+presentationStatus namespace in both locale files. PermissionKey values appear
+in visible admin UI labels on the permissions screen.
+
+================================================================================
+PATTERN 1 — RAW ENUM RENDERED VIA replaceAll("_", " ") IN VISIBLE JSX
+================================================================================
+
+FINDING P-1-1: presentationStatus raw enum displayed in session chat badge
+File:  fayed-frontend-v1/src/features/chat/components/SessionChatPanel.tsx
+Line:  355
+Code:
+  {session?.presentationStatus.replaceAll("_", " ")}
+
+The raw backend enum value (e.g. "IN_PROGRESS", "JOINABLE", "NO_SHOW") has its
+underscores replaced with spaces and is rendered directly as a visible badge
+text. This bypasses the i18n layer entirely. Users see "IN PROGRESS" instead
+of the translated "In progress" / "قيد التنفيذ".
+
+---
+
+FINDING P-1-2: presentationStatus raw enum displayed in session lane workspace
+File:  fayed-frontend-v1/src/components/shared/chat/messages-workspace/SessionLaneWorkspace.tsx
+Line:  134
+Code:
+  statusLabel: item.presentationStatus.replaceAll("_", " "),
+
+Same pattern — raw enum is string-manipulated and displayed as a visible label
+in the session lane list. The key "statusLabel" is passed to a list item
+component and rendered to the user.
+
+---
+
+FINDING P-1-3: Raw enum displayed via replace(/_/g, " ") in admin moderation report
+File:  fayed-frontend-v1/src/features/admin/moderation-reports/components/AdminModerationReportDetailScreen.tsx
+Line:  59
+Code:
+  .replace(/_/g, " ")
+
+This is used in formatSnapshotLabel() which formats moderation report field
+labels. While it formats keys (not values), the same underscore-replacement
+pattern is applied to backend enum keys that may not have i18n entries.
+
+================================================================================
+PATTERN 2 — MISSING presentationStatus i18n KEYS
+================================================================================
+
+FINDING P-2-1: presentationStatus namespace missing IN_PROGRESS and JOINABLE
+Files:
+  - fayed-frontend-v1/messages/en/sessions.json (lines 66-76)
+  - fayed-frontend-v1/messages/ar/sessions.json (lines 66-76)
+
+presentationStatus namespace content (EN):
+  UPCOMING, JOINABLE, IN_PROGRESS, COMPLETED, CANCELLED, ENDED, UNAVAILABLE,
+  NO_SHOW, UNDER_REVIEW
+
+Actual keys present in presentationStatus object:
+  UPCOMING         ✓
+  JOINABLE         ✗ MISSING
+  IN_PROGRESS      ✗ MISSING
+  COMPLETED        ✓
+  CANCELLED        ✓
+  ENDED            ✓
+  UNAVAILABLE      ✓
+  NO_SHOW          ✓
+  UNDER_REVIEW     ✓
+
+The two active/live statuses (JOINABLE, IN_PROGRESS) have NO i18n entry in the
+presentationStatus namespace. Components that use t(`detail.presentation.${session.presentationStatus}.note`)
+will fail to resolve JOINABLE and IN_PROGRESS keys, falling back to the raw key
+or rendering nothing. Meanwhile the list.presentationHints namespace DOES have
+JOINABLE and IN_PROGRESS entries, creating an inconsistency.
+
+---
+
+FINDING P-2-2: presentationHints IN_PROGRESS key present but inconsistent
+File:  fayed-frontend-v1/messages/en/sessions.json (line 34)
+File:  fayed-frontend-v1/messages/ar/sessions.json (line 34)
+
+list.presentationHints.IN_PROGRESS = "This session is live now." (EN)
+list.presentationHints.JOINABLE    = "You can enter this session now." (EN)
+
+But there is no matching presentationStatus.IN_PROGRESS or
+presentationStatus.JOINABLE entry. Components that use the presentationStatus
+namespace for these values will not find translations.
+
+================================================================================
+PATTERN 3 — RAW BACKEND ENUM VALUES IN JSX (NO replace, NO t())
+================================================================================
+
+FINDING P-3-1: Raw SESSION_ error codes rendered in error messages
+File:  fayed-frontend-v1/src/features/sessions/components/PatientSessionDetailPanel.tsx
+Lines: 299, 312
+Code (line 299):
+  ? cancellationPreview.blockingReasonCode === "SESSION_CANCELLATION_REFUND_DESTINATION_NOT_SUPPORTED"
+Code (line 312):
+  ? cancellationPreview.blockingReasonCode === "SESSION_CANCELLATION_REFUND_DESTINATION_NOT_SUPPORTED"
+
+These are used in boolean comparisons (not visible output), so the impact is
+limited to logic. However, the pattern shows backend enum values are present
+in the component without any abstraction layer.
+
+---
+
+FINDING P-3-2: SESSION_CANCELLATION_ and PAYMENT_STATE_ codes in comparison logic
+File:  fayed-frontend-v1/src/features/sessions/components/PatientSessionDetailPanel.tsx
+Lines: 307, 320, 333, 341, 348
+Code:
+  cancellationPreview.outcomeType === "PAYMENT_STATE_NOT_REFUNDABLE"
+  cancellationPreview.outcomeType === "REFUND_TO_WALLET"
+
+These are used in conditional logic. While not directly rendered to the user,
+these raw backend codes are scattered through the component.
+
+---
+
+FINDING P-3-3: PAYMENT_CAPTURED and REFUND_SUCCEEDED in source type display
+File:  fayed-frontend-v1/src/features/admin/accounting/components/AdminAccountingDashboardScreen.tsx
+Line:  387
+Code:
+  drilldownHref="/admin/finance/ledger?sourceType=PAYMENT_CAPTURED"
+
+Raw backend enum values appear in URL query parameters and filter options
+in admin finance screens. These are filtered programmatically but are visible
+in the URL for admin users.
+
+---
+
+FINDING P-3-4: REFUND_POLICY_ERROR_CODES used in error handling
+File:  fayed-frontend-v1/src/features/payments/components/PaySessionPanel.tsx
+Lines:  206, 219, 232, 582, 600, 661, 669, 674
+File:  fayed-frontend-v1/src/features/package-plans/components/PackagePurchasePaymentAction.tsx
+Lines:  113, 150, 156, 161
+File:  fayed-frontend-v1/src/features/package-plans/components/PackagePurchaseFlowModal.tsx
+Lines:  288, 353, 359, 364
+File:  fayed-frontend-v1/src/features/refund-policies/components/RefundPolicyAcceptanceCard.tsx
+Lines:  91, 104, 117
+
+REFUND_POLICY_ERROR_CODES is a typed enum imported from the refund-policies
+lib. Error codes (activeNotFound, staleAcceptance, wrongType) are compared
+directly against appError.code. Not directly user-visible but represents
+tight coupling to backend enum structure.
+
+================================================================================
+PATTERN 4 — PermissionKey VALUES IN VISIBLE ADMIN UI LABELS
+================================================================================
+
+FINDING P-4-1: PermissionKey values visible in admin permissions screen search/display
+File:  fayed-frontend-v1/src/features/admin/users/components/AdminUserPermissionsScreen.tsx
+Lines:  228, 252, 253, 257
+Code:
+  const normalizedSearch = search.trim().toLowerCase();
+  const label = formatPermissionLabel(t, row).toLowerCase();
+  const description = formatPermissionDescription(t, row).toLowerCase();
+  row.key.toLowerCase().includes(normalizedSearch)
+
+The raw PermissionKey enum key (e.g. "ADMIN_USERS_READ",
+"PRACTITIONER_APPLICATIONS_APPROVE") is used in search/filter logic. If
+formatPermissionLabel() does not fully translate all keys, the raw backend
+PermissionKey string could appear in the admin permissions UI.
+
+---
+
+FINDING P-4-2: PermissionKey values used in AdminPermissionGate requiredPermissions
+File:  fayed-frontend-v1/src/features/admin/components/AdminDashboard.tsx
+Lines:  383-395
+Code:
+  const canReadSessions = hasPermission(PermissionKey.SESSIONS_READ_ADMIN);
+  const canReadSupport = hasPermission(PermissionKey.SUPPORT_TICKET_ASSIGN) ||
+                         hasPermission(PermissionKey.SUPPORT_TICKET_NOTE_INTERNAL);
+  const canReadCareChat = hasPermission(PermissionKey.CARE_CHAT_REQUEST_READ_ADMIN) ||
+                          hasPermission(PermissionKey.CARE_CHAT_CONVERSATION_READ_ADMIN) ||
+                          hasPermission(PermissionKey.CARE_CHAT_REQUEST_DECIDE);
+  const canReadApplications = hasPermission(PermissionKey.PRACTITIONER_APPLICATIONS_READ);
+  const canReadFinance = hasPermission(PermissionKey.SETTLEMENTS_READ) ||
+                         hasPermission(PermissionKey.FINANCE_EVENTS_READ) ||
+                         hasPermission(PermissionKey.ACCOUNTING_READ) ||
+                         hasPermission(PermissionKey.PRACTITIONER_PAYOUTS_READ);
+  const canReadNotifications = hasPermission(PermissionKey.NOTIFICATION_OPS_READ);
+
+PermissionKey values are used in capability checks throughout the admin
+dashboard. These are not directly rendered to users but are the underlying
+authorization model.
+
+---
+
+FINDING P-4-3: PermissionKey in JSX requiredPermissions props (route-level guards)
+File:  fayed-frontend-v1/src/app/[locale]/(admin)/admin/sessions/page.tsx (line 25)
+File:  fayed-frontend-v1/src/app/[locale]/(admin)/admin/sessions/runtime-inspector/page.tsx (line 34)
+File:  fayed-frontend-v1/src/app/[locale]/(admin)/admin/payments/page.tsx (line 8)
+[+ many more route files]
+
+AdminPermissionGate components receive raw PermissionKey enum values as
+requiredPermissions props. These are implementation details (not visible
+output) but represent tight backend coupling.
+
+================================================================================
+PATTERN 5 — ENUM VALUES IN VISIBLE STATUS BADGES AND LABELS (WITHOUT i18n)
+================================================================================
+
+FINDING P-5-1: NO_SHOW hardcoded inline label in admin sessions list
+File:  fayed-frontend-v1/src/features/admin/sessions/components/AdminSessionsListScreen.tsx
+Lines:  119, 132, 266
+Code (line 119):
+  NO_SHOW: locale === "ar" ? "فاتت" : "Missed",
+
+This is actually correct i18n usage — the enum is used as a key in a lookup
+object with inline translations. However, it demonstrates the pattern of
+enum-to-label mapping that is NOT centralized in the messages files.
+
+---
+
+FINDING P-5-2: READY_TO_JOIN hardcoded inline label
+File:  fayed-frontend-v1/src/features/admin/sessions/components/AdminSessionsListScreen.tsx
+Line:   115
+Code:
+  READY_TO_JOIN: locale === "ar" ? "جاهزة للانضمام" : "Ready to Join",
+
+Same pattern as P-5-1 — inline translation instead of using the i18n t() function
+with the sessions.json namespace.
+
+---
+
+FINDING P-5-3: REFUND_PENDING hardcoded inline label
+File:  fayed-frontend-v1/src/features/admin/sessions/components/AdminSessionsListScreen.tsx
+Lines:  121
+Code:
+  REFUND_PENDING: locale === "ar" ? "استرداد قيد المعالجة" : "Refund Pending",
+
+Same pattern — inline translation bypasses the i18n system.
+
+---
+
+FINDING P-5-4: SESSION_STATUS_CLASS mapping raw enum to Tailwind classes
+File:  fayed-frontend-v1/src/features/patients/components/PatientHubPanel.tsx
+Line:   26
+Code:
+  const SESSION_STATUS_CLASS: Partial<Record<SessionStatus, string>> = {
+    ...
+  };
+
+The raw SessionStatus enum values are keys in a style mapping object. This is
+used at line 186 to display a colored badge. While the class assignment uses
+the enum as a key (not displayed), the pattern shows raw enum values in
+visible output code.
+
+---
+
+FINDING P-5-5: TERMINAL_SESSION_STATUSES hardcoded enum set in practitioner dashboard
+File:  fayed-frontend-v1/src/features/practitioners/components/PractitionerDashboard.tsx
+Lines:  326, 423
+Code (line 326):
+  const TERMINAL_SESSION_STATUSES = new Set<SessionListItem["status"]>([
+    "NO_SHOW", "CANCELLED", "ENDED", "EXPIRED", "REFUND_PENDING", "REFUNDED"
+  ]);
+
+Raw enum values used in Set definition. These drive filter logic that affects
+what is displayed to practitioners.
+
+================================================================================
+PATTERN 6 — NULL/UNDEFINED EXPOSURE IN JSX
+================================================================================
+
+FINDING P-6-1: src={undefined} in PractitionersSection image
+File:  fayed-frontend-v1/src/features/home/components/PractitionersSection.tsx
+Line:   209
+Code:
+  src={undefined}
+
+An image src is set to undefined, which will result in a broken image icon or
+empty placeholder. This is a runtime quality issue.
+
+---
+
+FINDING P-6-2: avatarUrl={null} in CareChatConversationPanel
+File:  fayed-frontend-v1/src/features/care-chat/components/CareChatConversationPanel.tsx
+Line:   187
+Code:
+  avatarUrl={null}
+
+Avatar URL explicitly set to null. Depending on the component's null handling,
+this may result in a broken avatar or fallback icon.
+
+---
+
+FINDING P-6-3: coupon={null} in PractitionerPromoCodesScreen
+File:  fayed-frontend-v1/src/features/practitioners/coupons/components/PractitionerPromoCodesScreen.tsx
+Line:   1436
+Code:
+  coupon={null}
+
+A null coupon prop passed to a component. This may cause runtime errors or
+blank display in the promo codes screen.
+
+================================================================================
+PATTERN 7 — toLowerCase() ON ENUM-LIKE VALUES IN VISIBLE CONTEXT
+================================================================================
+
+FINDING P-7-1: toLowerCase() on currency codes in patient payments history
+File:  fayed-frontend-v1/src/features/payments/components/PatientPaymentsHistoryPanel.tsx
+Lines:  340, 342, 381
+Code (line 381):
+  label={t(`history.summary.${item.currencyCode.toLowerCase()}` as Parameters<typeof t>[0])}
+
+Currency codes (e.g. "USD", "EUR") are lowercased and used as i18n keys. If
+the i18n file uses uppercase keys (e.g. "USD" not "usd"), this will fail to
+resolve. The fallback behavior depends on the i18n library configuration.
+
+---
+
+FINDING P-7-2: toLowerCase() on run/scope/trigger values in accounting reconciliation
+File:  fayed-frontend-v1/src/features/admin/accounting-reconciliation/components/FinancialReconciliationScreen.tsx
+Lines:  461, 486, 530, 532, 539, 579, 621, 795, 801, 807, 863, 869, 875, 951, 963, 964, 992, 1044, 1045, 1046
+
+Extensive use of toLowerCase() on backend enum values (run.status, run.scope,
+run.trigger, issue.severity, issue.status) to construct i18n keys. If the i18n
+files use uppercase or camelCase keys, all these lookups will fail silently.
+Example (line 539):
+  {t(`runs.status.${row.status.toLowerCase()}`)}
+
+---
+
+FINDING P-7-3: toLowerCase() on permission effect values in admin permissions screen
+File:  fayed-frontend-v1/src/features/admin/users/components/AdminUserPermissionsScreen.tsx
+Line:   667
+Code:
+  {t(`permissions.states.${item.effect.toLowerCase()}`)}
+
+The permission effect ("ALLOW", "DENY") is lowercased before being used as an
+i18n key. If the i18n file uses uppercase keys, this will fail.
+
+---
+
+FINDING P-7-4: toLowerCase() on rowTypeFilter in practitioner statement screen
+File:  fayed-frontend-v1/src/features/admin/settlements/components/AdminPractitionerStatementScreen.tsx
+Line:   143
+Code:
+  t(`statement.filters.rowTypeOptions.${rowTypeFilter === "ALL" ? "all" : rowTypeFilter.toLowerCase()}`)
+
+Row type filter is lowercased. Inconsistent use of "all" (lowercase literal)
+vs. toLowerCase() on enum values.
+
+================================================================================
+I18N NAMESPACE COVERAGE AUDIT
+================================================================================
+
+presentationStatus namespace — EN (messages/en/sessions.json, lines 66-76):
+  UPCOMING         ✓  "Upcoming"
+  JOINABLE         ✗  MISSING
+  IN_PROGRESS      ✗  MISSING
+  COMPLETED        ✓  "Completed"
+  CANCELLED        ✓  "Cancelled"
+  ENDED            ✓  "Ended"
+  UNAVAILABLE      ✓  "Unavailable"
+  NO_SHOW          ✓  "No-show"
+  UNDER_REVIEW     ✓  "Under review"
+
+presentationStatus namespace — AR (messages/ar/sessions.json, lines 66-76):
+  UPCOMING         ✓  "قادمة"
+  JOINABLE         ✗  MISSING
+  IN_PROGRESS      ✗  MISSING
+  COMPLETED        ✓  "مكتملة"
+  CANCELLED        ✓  "ملغاة"
+  ENDED            ✓  "منتهية"
+  UNAVAILABLE      ✓  "غير متاحة"
+  NO_SHOW          ✓  "لم يحضر"
+  UNDER_REVIEW     ✓  "قيد المراجعة"
+
+IMPACT: Components using t(`detail.presentation.${status}.note`) with
+status = "JOINABLE" or "IN_PROGRESS" will not resolve translations from the
+presentationStatus namespace. They will fall back to the raw key or return
+undefined.
+
+================================================================================
+CRITICALITY SUMMARY
+================================================================================
+
+[CRITICAL] P-1-1  — Raw presentationStatus enum rendered in session chat badge
+                   (visible to end users in session context)
+
+[CRITICAL] P-1-2  — Raw presentationStatus enum rendered in session lane list
+                   (visible in the practitioner's session sidebar)
+
+[CRITICAL] P-2-1  — JOINABLE and IN_PROGRESS missing from presentationStatus
+                   i18n namespace (causes missing translations for active sessions)
+
+[HIGH]     P-5-1/2/3 — Inline hardcoded translations in AdminSessionsListScreen
+                   bypass the centralized i18n system (maintenance risk)
+
+[HIGH]     P-7-2  — Extensive toLowerCase() on backend enum values in
+                   FinancialReconciliationScreen i18n lookups (silent failures)
+
+[MEDIUM]   P-4-1  — PermissionKey values in admin permissions screen search
+                   (visible in admin UI if formatPermissionLabel() is incomplete)
+
+[MEDIUM]   P-6-1/2/3 — Null/undefined props passed to components (runtime bugs)
+
+[LOW]      P-3-3  — PAYMENT_CAPTURED enum in URL query strings (admin context)
+
+[LOW]      P-3-4  — REFUND_POLICY_ERROR_CODES in error handling (internal logic)
+
+================================================================================

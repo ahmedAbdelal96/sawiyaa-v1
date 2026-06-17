@@ -3,14 +3,11 @@
 import { useLocale, useTranslations } from "next-intl";
 import { ArrowDownLeft, ArrowUpRight } from "lucide-react";
 import { formatMoney as formatFinanceMoney } from "@/lib/finance-format";
+import { formatViewerDate } from "@/lib/time-formatting";
 import type { CustomerWalletEntryItem, CustomerWalletEntryType } from "../types/payments.types";
 
 function formatDate(isoString: string, numLocale: string): string {
-  return new Date(isoString).toLocaleDateString(numLocale, {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
+  return formatViewerDate(isoString, { locale: numLocale });
 }
 
 function resolveWalletEntryLabelKey(entryType: CustomerWalletEntryType): string {

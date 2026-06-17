@@ -57,14 +57,15 @@ It must feel clear, gentle, and reliable from first visit to follow-up.
 
 - `/[locale]/patient`
 - `/[locale]/patient/sessions`
-- `/[locale]/patient/instant-booking`
 - `/[locale]/patient/sessions/[id]`
 - `/[locale]/patient/sessions/[id]/chat`
+- `/[locale]/patient/messages`
 - `/[locale]/patient/wallet`
 - `/[locale]/patient/payments`
 - `/[locale]/patient/profile`
 - `/[locale]/patient/support`
 - `/[locale]/patient/help`
+- `/[locale]/patient/instant-booking`
 
 ### UX expectations
 
@@ -74,6 +75,8 @@ It must feel clear, gentle, and reliable from first visit to follow-up.
 - The patient should know whether chat is available.
 - The patient should know whether cancellation is allowed.
 - The patient should know what happened with the money.
+- Session states must appear as human-readable translated labels. For example, `NO_SHOW` should render as `لم يحذر` in Arabic, not as the raw enum value.
+- The Join CTA must be hidden when `joinAvailability.canJoin` is `false`, including for no-show, under-review, ended, or payment-locked sessions.
 - Accepted instant-booking sessions should stay locked until backend payment confirmation arrives.
 
 ### Failure states
@@ -127,6 +130,8 @@ Practitioners use the platform to manage their professional presence, schedule, 
 - `/[locale]/practitioner/sessions`
 - `/[locale]/practitioner/sessions/[id]`
 - `/[locale]/practitioner/sessions/[id]/chat`
+- `/[locale]/practitioner/messages`
+- `/[locale]/practitioner/settings`
 - `/[locale]/practitioner/wallet`
 - `/[locale]/practitioner/ledger`
 - `/[locale]/practitioner/promo-codes`
@@ -138,7 +143,8 @@ Practitioners use the platform to manage their professional presence, schedule, 
 - Availability must be simple to edit and easy to trust.
 - Instant booking requests should be easy to scan and should expire clearly if not acted on in time.
 - Earnings and ledger values must be currency-aware.
-- Session states must be obvious.
+- Session states must be obvious and human-readable. Session detail must not leak raw enum values or internal i18n key paths.
+- The session presentation and join availability contract follows the same backend field contract as patient surfaces. `presentationStatus` and `joinAvailability` drive the UI consistently.
 - Chat should show whether sending is allowed.
 - The dashboard should help practitioners act, not just inspect data.
 
@@ -172,7 +178,10 @@ It should prioritize control, clarity, auditing, and safe moderation.
 - `/[locale]/admin/users`
 - `/[locale]/admin/patients`
 - `/[locale]/admin/practitioners`
+- `/[locale]/admin/practitioner-applications`
+- `/[locale]/admin/practitioner-applications/create`
 - `/[locale]/admin/sessions`
+- `/[locale]/admin/sessions/runtime-inspector`
 - `/[locale]/admin/chat`
 - `/[locale]/admin/chat-conversations`
 - `/[locale]/admin/payments`

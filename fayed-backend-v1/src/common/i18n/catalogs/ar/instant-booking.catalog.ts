@@ -17,5 +17,17 @@ export const arInstantBookingCatalog = {
     requestAlreadyCancelled: 'تم إلغاء طلب الحجز الفوري بالفعل',
     requestAlreadyAccepted: 'تم قبول طلب الحجز الفوري بالفعل',
     requestAlreadyRejected: 'تم رفض طلب الحجز الفوري بالفعل',
+    requestAlreadyFinalized: 'تمت معالجة طلب الحجز الفوري بالفعل',
+  },
+  notifications: {
+    requestAcceptedTitle: 'تم قبول طلب الحجز الفوري',
+    requestAcceptedBody:
+      'تم قبول طلب الحجز الفوري الخاص بك. افتح الطلب للمتابعة إلى الدفع.',
+    requestRejectedTitle: 'تم رفض طلب الحجز الفوري',
+    requestRejectedBody:
+      'تم رفض طلب الحجز الفوري الخاص بك. يمكنك طلب جلسة فورية أخرى.',
+    requestExpiredTitle: 'انتهت صلاحية طلب الحجز الفوري',
+    requestExpiredBody:
+      'انتهت صلاحية طلب الحجز الفوري قبل اتخاذ إجراء عليه.',
   },
 };

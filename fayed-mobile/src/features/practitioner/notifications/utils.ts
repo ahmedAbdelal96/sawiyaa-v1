@@ -1,4 +1,5 @@
 import type { UserNotificationItem } from "../../patient/notifications/types";
+import { formatViewerDateTime } from "../../../lib/time-formatting";
 
 type Translate = (key: string, options?: Record<string, unknown>) => string;
 
@@ -122,14 +123,9 @@ export function formatPractitionerNotificationDateTime(
   dateString: string,
   locale: string,
 ) {
-  const resolvedLocale = isArabicLocale(locale) ? "ar-EG" : "en-US";
-
-  return new Date(dateString).toLocaleString(resolvedLocale, {
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: !isArabicLocale(locale),
+  return formatViewerDateTime(dateString, {
+    locale: isArabicLocale(locale) ? "ar-EG" : "en-US",
+    fallbackText: "-",
   });
 }
 

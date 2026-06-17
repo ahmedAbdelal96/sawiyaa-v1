@@ -4,6 +4,7 @@ import { useCallback, useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
 import { Link } from "@/i18n/navigation";
+import { formatViewerDate, formatViewerDateTime, formatViewerTime } from "@/lib/time-formatting";
 import { toAppError } from "@/lib/api/errors";
 import { usePublicAvailabilityWindows } from "../hooks/use-public-availability";
 import { useCreateScheduledSession } from "@/features/sessions/hooks/use-sessions";
@@ -61,37 +62,25 @@ function formatDateWindowLabel(from: string, to: string, numLocale: string): str
   const start = new Date(from);
   const end = new Date(to);
   end.setDate(end.getDate() - 1);
-  const dayFmt = new Intl.DateTimeFormat(numLocale, { month: "short", day: "numeric" });
-  const yearFmt = new Intl.DateTimeFormat(numLocale, { year: "numeric" });
-  return `${dayFmt.format(start)} - ${dayFmt.format(end)}, ${yearFmt.format(end)}`;
+  return `${formatViewerDate(start, { locale: numLocale })} - ${formatViewerDate(end, {
+    locale: numLocale,
+  })}`;
 }
 
 function formatDayHeader(iso: string, numLocale: string): { short: string; dayNumber: string } {
   const d = new Date(iso);
   return {
-    short: d.toLocaleDateString(numLocale, { weekday: "short" }),
-    dayNumber: d.toLocaleDateString(numLocale, { day: "numeric" }),
+    short: new Intl.DateTimeFormat(numLocale, { weekday: "short" }).format(d),
+    dayNumber: new Intl.DateTimeFormat(numLocale, { day: "numeric" }).format(d),
   };
 }
 
 function formatTimeLabel(isoString: string, numLocale: string): string {
-  return new Date(isoString).toLocaleTimeString(numLocale, {
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: !numLocale.startsWith("ar"),
-  });
+  return formatViewerTime(isoString, { locale: numLocale });
 }
 
 function formatFullDatetime(isoString: string | null, numLocale: string): string {
-  if (!isoString) return "";
-  return new Date(isoString).toLocaleString(numLocale, {
-    weekday: "long",
-    month: "long",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: !numLocale.startsWith("ar"),
-  });
+  return formatViewerDateTime(isoString, { locale: numLocale });
 }
 
 function buildSlotsFromWindow(window: PublicAvailabilityWindow): SelectableSlot[] {
@@ -124,7 +113,11 @@ function groupByLocalDay(windows: PublicAvailabilityWindow[], numLocale: string)
       if (!map.has(sortKey)) {
         map.set(sortKey, {
           sortKey,
-          dayLabel: d.toLocaleDateString(numLocale, { weekday: "short", month: "short", day: "numeric" }),
+          dayLabel: new Intl.DateTimeFormat(numLocale, {
+            weekday: "short",
+            month: "short",
+            day: "numeric",
+          }).format(d),
           slots: new Map<string, SelectableSlot>(),
         });
       }
@@ -500,6 +493,7 @@ export default function PublicAvailabilityViewer({ slug }: Props) {
 
           <div className="mt-3 flex items-center justify-between gap-3 rounded-lg border border-border-light bg-surface-tertiary px-3 py-2 dark:bg-white/5">
             <div className="flex items-center gap-2 text-[11px] text-text-secondary">
+              <span className="font-medium text-text-muted">{tAvail("localTimeLabel")}</span>
               <span>{Intl.DateTimeFormat().resolvedOptions().timeZone}</span>
             </div>
             <div className="flex items-center gap-2">

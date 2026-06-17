@@ -19,6 +19,12 @@ import {
   PractitionerSectionCard,
   PractitionerEmptyState,
 } from "@/components/shared/practitioner/PractitionerWorkspaceKit";
+import { usePractitionerProfile } from "@/features/practitioners/hooks/use-practitioners";
+import {
+  formatPractitionerOrViewerDateTime,
+  formatPractitionerOrViewerDate,
+  formatTimeZoneLabel,
+} from "@/lib/time-formatting";
 import { getPractitionerSettlementsErrorKey, getPractitionerWalletErrorKey } from "../lib/financial-operations-errors";
 import { usePractitionerSettlements, usePractitionerWallet } from "../hooks/use-financial-operations";
 import type {
@@ -49,24 +55,19 @@ function formatMoney(value: string, currency: string, locale: string) {
   }).format(numeric);
 }
 
-function formatDateTime(value: string | null, locale: string) {
+function formatDateTime(value: string | null, locale: string, timeZone: string | null = null) {
   if (!value) return "-";
-  return new Date(value).toLocaleString(locale === "ar" ? "ar-SA" : "en-US", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: !locale.startsWith("ar"),
+  return formatPractitionerOrViewerDateTime(value, timeZone, {
+    locale: locale === "ar" ? "ar-SA" : "en-US",
+    fallbackText: "-",
   });
 }
 
-function formatDate(value: string | null, locale: string) {
+function formatDate(value: string | null, locale: string, timeZone: string | null = null) {
   if (!value) return "-";
-  return new Date(value).toLocaleDateString(locale === "ar" ? "ar-SA" : "en-US", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
+  return formatPractitionerOrViewerDate(value, timeZone, {
+    locale: locale === "ar" ? "ar-SA" : "en-US",
+    fallbackText: "-",
   });
 }
 
@@ -94,6 +95,7 @@ export default function PractitionerWalletSummaryScreen() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const profileQuery = usePractitionerProfile();
   const walletQuery = usePractitionerWallet();
 
   const settlementStatus = parseEnumParam<PractitionerSettlementStatus | "ALL">(
@@ -119,6 +121,10 @@ export default function PractitionerWalletSummaryScreen() {
   const settlementsQuery = usePractitionerSettlements(settlementParams);
   const wallet = walletQuery.data;
   const settlements = settlementsQuery.data;
+  const practitionerTimeZone = profileQuery.data?.profile.timezone ?? null;
+  const practitionerTimeZoneLabel = practitionerTimeZone
+    ? formatTimeZoneLabel(practitionerTimeZone, { locale })
+    : null;
 
   const updateListQuery = (updates: Record<string, string | number | null | undefined>) => {
     const next = buildUpdatedSearchParams(new URLSearchParams(searchParams.toString()), updates);
@@ -257,9 +263,16 @@ export default function PractitionerWalletSummaryScreen() {
         title={t("summary.title")}
         description={t("summary.note")}
         actions={
-          <span className="app-chip rounded-full px-3 py-1 text-xs font-medium">
-            {t("summary.currency", { currency: summary.currency })}
-          </span>
+          <div className="flex flex-wrap items-center gap-2">
+            {practitionerTimeZoneLabel ? (
+              <span className="app-chip rounded-full px-3 py-1 text-xs font-medium">
+                {t("summary.timezoneLabel")}: {practitionerTimeZoneLabel}
+              </span>
+            ) : null}
+            <span className="app-chip rounded-full px-3 py-1 text-xs font-medium">
+              {t("summary.currency", { currency: summary.currency })}
+            </span>
+          </div>
         }
       />
 
@@ -384,11 +397,15 @@ export default function PractitionerWalletSummaryScreen() {
         <div className="mt-4">
           <div className="flex items-start justify-between gap-4 border-b border-border-light py-3 last:border-b-0 dark:border-white/8">
             <span className="text-xs font-medium text-text-muted">{t("summary.details.lastLedgerEntryAt")}</span>
-            <span className="text-sm text-text-primary dark:text-white/90">{summary.lastLedgerEntryAt}</span>
+            <span className="text-sm text-text-primary dark:text-white/90">
+              {formatDateTime(wallet?.lastLedgerEntryAt ?? null, locale, practitionerTimeZone)}
+            </span>
           </div>
           <div className="flex items-start justify-between gap-4 border-b border-border-light py-3 last:border-b-0 dark:border-white/8">
             <span className="text-xs font-medium text-text-muted">{t("summary.details.updatedAt")}</span>
-            <span className="text-sm text-text-primary dark:text-white/90">{summary.updatedAt}</span>
+            <span className="text-sm text-text-primary dark:text-white/90">
+              {formatDateTime(wallet?.updatedAt ?? null, locale, practitionerTimeZone)}
+            </span>
           </div>
         </div>
       </PractitionerSectionCard>

@@ -7,6 +7,7 @@ import { Link } from "@/i18n/navigation";
 import Button from "@/components/ui/button/Button";
 import { DestructiveConfirmModal } from "@/components/ui/modal";
 import { cn } from "@/lib/utils";
+import { formatPractitionerOrViewerDateTime } from "@/lib/time-formatting";
 import type { InstantBookingRequest } from "../types/instant-booking.types";
 
 type Props = {
@@ -17,18 +18,8 @@ type Props = {
   acceptingRequestId: string | null;
   rejectingRequestId: string | null;
   actionError: string | null;
+  timeZone: string | null;
 };
-
-function formatDateTime(isoString: string, locale: string): string {
-  return new Date(isoString).toLocaleString(locale === "ar" ? "ar-EG" : "en-US", {
-    weekday: "long",
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: locale !== "ar",
-  });
-}
 
 function formatTimeLeft(expiresAt: string, nowMs: number, locale: string): string {
   const diffMs = new Date(expiresAt).getTime() - nowMs;
@@ -93,6 +84,7 @@ export default function InstantBookingRequestCard({
   acceptingRequestId,
   rejectingRequestId,
   actionError,
+  timeZone,
 }: Props) {
   const t = useTranslations("sessions.practitioner.instantBooking");
   const locale = useLocale();
@@ -107,8 +99,14 @@ export default function InstantBookingRequestCard({
     n: request.requestedDurationMinutes,
   });
   const modeLabel = t(`queue.sessionModes.${request.sessionMode}` as Parameters<typeof t>[0]);
-  const requestedAtLabel = formatDateTime(request.requestedAt, locale);
-  const expiresAtLabel = formatDateTime(request.expiresAt, locale);
+  const requestedAtLabel = formatPractitionerOrViewerDateTime(request.requestedAt, timeZone, {
+    locale: locale === "ar" ? "ar-SA" : "en-US",
+    fallbackText: "-",
+  });
+  const expiresAtLabel = formatPractitionerOrViewerDateTime(request.expiresAt, timeZone, {
+    locale: locale === "ar" ? "ar-SA" : "en-US",
+    fallbackText: "-",
+  });
   const timeLeftLabel = formatTimeLeft(request.expiresAt, nowMs, locale);
   const requestStatusLabel = t(`queue.statuses.${request.status}` as Parameters<typeof t>[0]);
   const responseReason = request.responseReason?.trim() ?? "";

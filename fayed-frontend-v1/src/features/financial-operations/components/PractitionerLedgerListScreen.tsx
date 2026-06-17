@@ -5,6 +5,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { usePathname, useRouter } from "@/i18n/navigation";
 import { useSearchParams } from "next/navigation";
 import { FileText } from "lucide-react";
+import { usePractitionerProfile } from "@/features/practitioners/hooks/use-practitioners";
 import { DataTable } from "@/components/ui/data-table";
 import type { ColumnDef } from "@/components/ui/data-table";
 import { buildUpdatedSearchParams, parseEnumParam, parsePositiveIntParam, parseTextParam } from "@/components/ui/data-table";
@@ -20,6 +21,7 @@ import {
 } from "@/components/shared/practitioner/PractitionerWorkspaceKit";
 import { getPractitionerLedgerErrorKey } from "../lib/financial-operations-errors";
 import { usePractitionerLedger } from "../hooks/use-financial-operations";
+import { formatPractitionerOrViewerDateTime } from "@/lib/time-formatting";
 import type {
   LedgerEntryType,
   PractitionerLedgerEntry,
@@ -53,17 +55,6 @@ function formatMoney(value: string, currency: string, locale: string) {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(numeric);
-}
-
-function formatDateTime(value: string, locale: string) {
-  return new Date(value).toLocaleString(locale === "ar" ? "ar-SA" : "en-US", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: !locale.startsWith("ar"),
-  });
 }
 
 const shortId = (value: string) => {
@@ -112,6 +103,8 @@ export default function PractitionerLedgerListScreen() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const profileQuery = usePractitionerProfile();
+  const practitionerTimeZone = profileQuery.data?.profile.timezone ?? null;
 
   const entryType = parseEnumParam<LedgerEntryType | "ALL">(searchParams.get("entryType"), ENTRY_TYPE_FILTERS, "ALL");
   const balanceBucket = parseEnumParam<WalletBalanceBucket | "ALL">(
@@ -212,13 +205,21 @@ export default function PractitionerLedgerListScreen() {
         id: "effectiveAt",
         header: locale.startsWith("ar") ? "سريان القيد" : "Effective",
         accessor: (row) => new Date(row.effectiveAt).getTime(),
-        cell: (row) => formatDateTime(row.effectiveAt, locale),
+        cell: (row) =>
+          formatPractitionerOrViewerDateTime(row.effectiveAt, practitionerTimeZone, {
+            locale: locale === "ar" ? "ar-SA" : "en-US",
+            fallbackText: "-",
+          }),
       },
       {
         id: "createdAt",
         header: locale.startsWith("ar") ? "التسجيل" : "Recorded",
         accessor: (row) => new Date(row.createdAt).getTime(),
-        cell: (row) => formatDateTime(row.createdAt, locale),
+        cell: (row) =>
+          formatPractitionerOrViewerDateTime(row.createdAt, practitionerTimeZone, {
+            locale: locale === "ar" ? "ar-SA" : "en-US",
+            fallbackText: "-",
+          }),
         hideOnMobile: true,
       },
       {

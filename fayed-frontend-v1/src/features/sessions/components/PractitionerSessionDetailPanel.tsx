@@ -18,6 +18,11 @@ import {
 import { ListStateSkeleton, StateCard } from "@/components/shared/ContentStates";
 import Button from "@/components/ui/button/Button";
 import { ConfirmModal, DestructiveConfirmModal } from "@/components/ui/modal";
+import { usePractitionerProfile } from "@/features/practitioners/hooks/use-practitioners";
+import {
+  formatPractitionerOrViewerDateTime,
+  formatTimeZoneLabel,
+} from "@/lib/time-formatting";
 import {
   useMarkPractitionerSessionCompleted,
   useMarkPractitionerSessionNoShow,
@@ -56,18 +61,6 @@ const NO_SHOW_ALLOWED_PRESENTATION_STATUSES: SessionPresentationStatus[] = [
   "IN_PROGRESS",
 ];
 
-function formatDatetime(isoString: string | null, numLocale: string): string {
-  if (!isoString) return "";
-  return new Date(isoString).toLocaleString(numLocale, {
-    weekday: "long",
-    month: "long",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: !numLocale.startsWith("ar"),
-  });
-}
-
 type Props = {
   sessionId: string;
 };
@@ -77,6 +70,7 @@ export default function PractitionerSessionDetailPanel({ sessionId }: Props) {
   const commonT = useTranslations("sessions");
   const locale = useLocale();
   const numLocale = locale === "ar" ? "ar-SA" : "en-US";
+  const profileQuery = usePractitionerProfile();
 
   const [confirmingAction, setConfirmingAction] = useState<"complete" | "no-show" | null>(
     null,
@@ -90,6 +84,10 @@ export default function PractitionerSessionDetailPanel({ sessionId }: Props) {
   const noShowMutation = useMarkPractitionerSessionNoShow();
   const prepareMutation = usePreparePractitionerSessionRuntime();
   const joinMutation = useResolvePractitionerSessionJoinContract();
+  const practitionerTimeZone = profileQuery.data?.profile.timezone ?? session?.timezone ?? null;
+  const practitionerTimeZoneLabel = practitionerTimeZone
+    ? formatTimeZoneLabel(practitionerTimeZone, { locale })
+    : null;
 
   if (isLoading) {
     return (
@@ -240,7 +238,12 @@ export default function PractitionerSessionDetailPanel({ sessionId }: Props) {
             <div className="flex items-center gap-2">
               <CalendarDays size={14} className="shrink-0 text-text-muted" />
               {session.scheduledStartAt ? (
-                <span>{formatDatetime(session.scheduledStartAt, numLocale)}</span>
+                <span>
+                  {formatPractitionerOrViewerDateTime(session.scheduledStartAt, practitionerTimeZone, {
+                    locale: numLocale,
+                    fallbackText: "—",
+                  })}
+                </span>
               ) : (
                 <span className="text-text-muted">{t("detail.noSchedule")}</span>
               )}
@@ -249,13 +252,26 @@ export default function PractitionerSessionDetailPanel({ sessionId }: Props) {
               <CalendarClock size={14} className="mt-0.5 shrink-0 text-text-muted" />
               <div className="min-w-0">
                 <p className="text-xs font-medium text-text-muted">{t("detail.bookedAt")}</p>
-                <p>{formatDatetime(session.createdAt, numLocale)}</p>
+                <p>
+                  {formatPractitionerOrViewerDateTime(session.createdAt, practitionerTimeZone, {
+                    locale: numLocale,
+                    fallbackText: "—",
+                  })}
+                </p>
               </div>
             </div>
             <div className="flex items-center gap-2">
               <Clock size={14} className="shrink-0 text-text-muted" />
               <span>{commonT("card.duration", { n: session.durationMinutes })}</span>
             </div>
+            {practitionerTimeZoneLabel ? (
+              <div className="flex items-center gap-2">
+                <Clock size={14} className="shrink-0 text-text-muted" />
+                <span className="text-text-secondary">
+                  {t("detail.summary.timezoneLabel")}: {practitionerTimeZoneLabel}
+                </span>
+              </div>
+            ) : null}
             <div className="flex items-center gap-2">
               <Video size={14} className="shrink-0 text-text-muted" />
               <span>{commonT("detail.mode.VIDEO")}</span>
@@ -393,7 +409,10 @@ export default function PractitionerSessionDetailPanel({ sessionId }: Props) {
             </p>
             <p className="mt-1 text-sm font-medium text-text-primary dark:text-white/90">
               {session.scheduledStartAt
-                ? formatDatetime(session.scheduledStartAt, numLocale)
+                ? formatPractitionerOrViewerDateTime(session.scheduledStartAt, practitionerTimeZone, {
+                    locale: numLocale,
+                    fallbackText: "—",
+                  })
                 : t("detail.noSchedule")}
             </p>
           </div>
@@ -410,7 +429,10 @@ export default function PractitionerSessionDetailPanel({ sessionId }: Props) {
         {session.completedAt && (
           <p className="mt-4 text-sm text-text-secondary">
             {t("detail.handlingNow.completedAt", {
-              datetime: formatDatetime(session.completedAt, numLocale),
+              datetime: formatPractitionerOrViewerDateTime(session.completedAt, practitionerTimeZone, {
+                locale: numLocale,
+                fallbackText: "—",
+              }),
             })}
           </p>
         )}
@@ -623,7 +645,10 @@ export default function PractitionerSessionDetailPanel({ sessionId }: Props) {
               <p className="font-medium">{session.patient?.displayName ?? "-"}</p>
               <p className="mt-1 text-xs opacity-80">
                 {session.scheduledStartAt
-                  ? formatDatetime(session.scheduledStartAt, numLocale)
+                  ? formatPractitionerOrViewerDateTime(session.scheduledStartAt, practitionerTimeZone, {
+                      locale: numLocale,
+                      fallbackText: "—",
+                    })
                   : t("detail.noSchedule")}
               </p>
             </div>
@@ -661,7 +686,10 @@ export default function PractitionerSessionDetailPanel({ sessionId }: Props) {
               <p className="font-medium">{session.patient?.displayName ?? "-"}</p>
               <p className="mt-1 text-xs opacity-80">
                 {session.scheduledStartAt
-                  ? formatDatetime(session.scheduledStartAt, numLocale)
+                  ? formatPractitionerOrViewerDateTime(session.scheduledStartAt, practitionerTimeZone, {
+                      locale: numLocale,
+                      fallbackText: "—",
+                    })
                   : t("detail.noSchedule")}
               </p>
             </div>

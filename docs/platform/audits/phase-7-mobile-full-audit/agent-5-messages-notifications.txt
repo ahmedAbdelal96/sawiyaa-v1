@@ -1,0 +1,462 @@
+# Agent 5: Messages / Notifications / Push / Deep Links
+
+Auditor: Agent 5 (Claude Code)
+Phase: 7 — Mobile Full Audit
+Scope: Messages Shell, Notification Surface, Push Registration, Deep Links
+Mobile Root: D:\Web\full-projects\fayed\fayed-mobile
+
+================================================================================
+## Messages Shell Findings
+================================================================================
+
+### 1. Architecture — Unified Feature, Dual Route Wrappers
+
+There is NO separate "messages-shell" or "messages/" feature directory. The
+messages inbox and thread are implemented as a single unified feature:
+
+  src/features/messages/
+    api.ts              — API calls (list conversations, messages, send, mark read)
+    query-keys.ts       — TanStack Query keys
+    hooks.ts            — All chat mutations and queries
+    types.ts            — TypeScript types (GeneralChatConversation*, GeneralChatMessage*)
+    utils.ts            — Formatting utilities
+    inbox-types.ts      — NormalizedInboxItem, buildSessionInboxItem, buildSupportInboxItem, buildCareInboxItem
+    components/
+      MessagesInboxScreen.tsx  — Shared inbox UI (tabs: all/sessions/support/followup)
+      MessageThreadScreen.tsx  — Shared thread UI (chat bubbles + composer)
+      ConversationPrimitives.tsx — Bubble and composer UI primitives
+
+Route wrappers (thin, no logic):
+  app/(patient)/messages/index.tsx    → <MessagesInboxScreen role="patient" />
+  app/(practitioner)/messages/index.tsx → <MessagesInboxScreen role="practitioner" />
+  app/(patient)/messages/[id].tsx     → <MessageThreadScreen role="patient" />
+  app/(practitioner)/messages/[id].tsx → <MessageThreadScreen role="practitioner" />
+
+Evidence: Glob of src/features/ shows messages/ as a flat unified feature.
+Route wrappers pass `role` prop which drives all API calls and route construction.
+
+### 2. Lane Structure (session / support / followup)
+
+The inbox uses a 4-tab structure: "all" | "sessions" | "support" | "followup"
+
+Tab rendering is in MessagesInboxScreen.tsx lines 302-337 using TAB_ORDER array.
+
+Sources for each lane:
+  sessions  → useInfiniteGeneralChatConversations(role) → general chat API
+  support   → usePatientSupportTickets / usePractitionerSupportTickets → support ticket API
+  followup  → useMyCareChatRequests / usePractitionerCareChatRequests → care-chat requests
+
+Evidence:
+  MessagesInboxScreen.tsx:171-180 (query hooks per tab source)
+  MessagesInboxScreen.tsx:205-211 (tabItems filter by sourceType)
+
+### 3. typeSlug Mapping to Lane
+
+Notification tap → messages lane routing is handled in two parallel files:
+
+**Patient** (src/features/patient/notifications/routes.ts:1-15):
+  typeSlug === "messages.session-message-received"  → /messages?tab=sessions
+  typeSlug === "messages.support-message-received"  → /messages?tab=support
+  typeSlug === "messages.follow-up-message-received" → /messages?tab=followup
+
+**Practitioner** (src/features/practitioner/notifications/utils.ts:132-146):
+  typeSlug === "messages.session-message-received"  → /(practitioner)/messages?tab=sessions
+  typeSlug === "messages.support-message-received"  → /(practitioner)/messages?tab=support
+  typeSlug === "messages.follow-up-message-received" → /(practitioner)/messages?tab=followup
+
+Both resolvePatientNotificationRoute and resolvePractitionerNotificationRoute
+call their respective lane route resolver FIRST before any href-based routing.
+
+Evidence: routes.ts:21-24 and utils.ts:152-155 (early return if lane match found)
+
+### 4. Chat Send State Using chatAvailability
+
+MessageThreadScreen.tsx:206-212 reads chatAvailability from the conversation object:
+
+  const chatAvailability = conversation?.chatAvailability ?? null;
+  const showComposer =
+    chatAvailability?.canSend === true && chatAvailability?.readOnly !== true;
+  const showAvailabilityLoading = chatAvailability == null;
+  const showReadOnlyNotice =
+    !showAvailabilityLoading &&
+    (chatAvailability?.canSend !== true || chatAvailability?.readOnly === true);
+
+The composer is hidden when:
+  - canSend is false, OR
+  - readOnly is true
+
+Evidence: MessageThreadScreen.tsx:206-212
+
+The GeneralChatAvailability type is defined in src/features/messages/types.ts:33-38:
+  canRead: boolean
+  canSend: boolean
+  readOnly: boolean
+  reason: GeneralChatAvailabilityReason
+
+### 5. No Bypass Routes
+
+All message routes are hidden from the tab bar (href: null in Tab.Screen options).
+Access is only via router.push() from within the app — no direct deep-link bypass.
+
+Patient _layout.tsx:144-147 — messages/index and messages/[id] have href: null
+Practitioner _layout.tsx:139-144 — same pattern
+
+Evidence: app/(patient)/_layout.tsx:144-147, app/(practitioner)/_layout.tsx:139-144
+
+================================================================================
+## Notification Surface Findings
+================================================================================
+
+### 6. Notification Screens
+
+Patient:   app/(patient)/notifications.tsx   — full notification list + push status card
+Practitioner: app/(practitioner)/notifications.tsx — full notification list + mark-read UI
+
+Both use role-specific hooks from:
+  src/features/patient/notifications/hooks.ts
+  src/features/practitioner/notifications/hooks.ts
+
+Evidence: app/(patient)/notifications.tsx, app/(practitioner)/notifications.tsx
+
+### 7. Notification Tap Routing
+
+Both notification screens use role-specific route resolvers:
+
+**Patient** — resolvePatientNotificationRoute (src/features/patient/notifications/routes.ts)
+**Practitioner** — resolvePractitionerNotificationRoute (src/features/practitioner/notifications/utils.ts)
+
+Both resolve message-lane typeSlugs BEFORE attempting href-based routing.
+Both reject hrefs that:
+  - Don't start with "/"
+  - Start with "//"
+  - Contain a URL protocol scheme (regex: /^[a-zA-Z][a-zA-Z0-9+.-]*:/)
+
+Evidence: routes.ts:31-36, utils.ts:162-167
+
+### 8. Notification typeSlug Coverage
+
+Patient route resolver covers ONLY the 3 message-lane typeSlugs:
+  messages.session-message-received
+  messages.support-message-received
+  messages.follow-up-message-received
+
+Practitioner route resolver covers the same 3 message typeSlugs (utils.ts:133-143)
+PLUS a wide range of session, finance, availability, account, promo-codes, etc.
+routes.ts (patient) does NOT have explicit coverage for session notifications
+(only the 3 message typeSlugs are mapped; other typeSlugs fall through to href parsing).
+
+Evidence: utils.ts:71-92 (practitioner body/title resolution for session typeSlugs),
+routes.ts:1-15 (patient only has message typeSlugs)
+
+### 9. Notification List API
+
+Both patient and practitioner use the same backend endpoint:
+  GET  /notifications/me           — list notifications
+  GET  /notifications/me/unread-count
+  PATCH /notifications/me/{id}/read
+  PATCH /notifications/me/read-all
+
+Evidence: src/features/patient/notifications/api.ts:10-29
+Both practitioner hooks (src/features/practitioner/notifications/hooks.ts:8) import
+from the patient notifications API.
+
+### 10. expo-notifications Plugin
+
+app.json:38 — expo-notifications is listed in the plugins array:
+  "plugins": ["expo-router", "expo-localization", "expo-notifications", "expo-secure-store"]
+
+Evidence: app.json:35-40
+
+================================================================================
+## Push Registration Findings
+================================================================================
+
+### 11. Push Registration Only Happens When Authenticated
+
+syncPushRegistration() in src/features/push/service.ts:65-128 takes a
+PersistedAuthSession and uses it to resolve the role for registration.
+
+The AuthProvider calls runPushRegistration (service.ts:187-209) which checks
+sessionRef.current before proceeding. If no session, it only updates the
+permission status display — it does NOT call the API.
+
+Evidence: service.ts:189-195 (early return if no currentSession, only permission check)
+
+### 12. Device Token Tied to Correct User/Role
+
+On registration (service.ts:101-114), the role is resolved from the session via
+resolveNotificationDeviceRole() which maps "patient" → "PATIENT", "practitioner" → "PRACTITIONER".
+
+The stored registration (service.ts:116-122) includes:
+  token, deviceId, role, userId
+
+The stored userId is session.user.id, binding the token to the authenticated user.
+
+Evidence: service.ts:69, 101-121, src/features/push/types.ts:75-87
+
+### 13. Logout Clears/Revokes Device Token
+
+signOut in AuthProvider.tsx:550-567 calls revokeCurrentPushRegistration() BEFORE
+the API logout call:
+
+  await revokeCurrentPushRegistration();
+  if (current?.role === "patient") { await patientLogout(...) }
+  ...
+
+revokeCurrentPushRegistration (service.ts:130-144):
+  - Reads stored registration (token, deviceId)
+  - Calls POST /notifications/devices/revoke
+  - Always calls clearStoredPushRegistration() in finally block
+
+Evidence: AuthProvider.tsx:554, service.ts:130-144
+
+### 14. No Device Token Logged to Console
+
+Grep for "console.log.*token" across the entire fayed-mobile directory
+returned no matches related to device/push tokens.
+
+Evidence: Grep search — no matches found for console.*token patterns
+
+### 15. Push Registration Storage
+
+Stored locally via AsyncStorage key "fayed.mobile.push.registration.v1"
+Contains: token, deviceId, role, userId
+
+Evidence: src/features/push/storage.ts:4, 20-27
+
+### 16. Expo Push Token Retrieval
+
+getExpoPushToken() (service.ts:195-211) tries to get projectId from:
+  1. Constants.easConfig?.projectId
+  2. Constants.expoConfig?.extra?.eas?.projectId
+
+If projectId is found, uses Notifications.getExpoPushTokenAsync({ projectId }).
+Otherwise falls back to Notifications.getExpoPushTokenAsync() with no args.
+
+Evidence: service.ts:195-211
+
+### 17. Push Permission Status Checks
+
+getPushPermissionStatus() (service.ts:48-63) returns:
+  "not-supported" — if Platform.OS === "web" or !Device.isDevice
+  "granted"       — if settings.status === "granted"
+  "denied"        — if settings.status === "denied"
+  "undetermined"  — otherwise
+
+Evidence: service.ts:48-63
+
+================================================================================
+## Deep Link Findings
+================================================================================
+
+### 18. Deep Link Scheme
+
+app.json:5 — "scheme": "fayed"
+
+Deep links will be: fayed://* or fayed://
+
+Evidence: app.json:5
+
+### 19. No expo-linking Configuration Found
+
+app/_layout.tsx does NOT configure any Linking options.
+No getContainingDirectory, no getActionFromURL, no linking prop on Slot.
+
+There is NO explicit expo-linking configuration in the mobile codebase.
+The app relies entirely on expo-notifications' addNotificationResponseReceivedListener
+for handling notification taps (which are NOT deep links in the traditional sense —
+they use the notification response handler, not URL parsing).
+
+Evidence: app/_layout.tsx:1-26 (no linking config), Grep for "expo-linking" and
+"Linking.parse" across fayed-mobile — no configuration found.
+
+### 20. Notification Tap Handling — Not True Deep Links
+
+Notification tap routing is handled in AuthProvider.tsx:327-406 via:
+  Notifications.addNotificationResponseReceivedListener(handleResponse)
+  Notifications.getLastNotificationResponseAsync()
+
+This is NOT the same as handling deeplinks via Linking API. The notification
+payload's data field is read for routePath/href/action.href rather than parsing
+a URL. The routing uses the internal resolvePractitionerNotificationRoute /
+resolvePatientNotificationRoute functions.
+
+Evidence: AuthProvider.tsx:393-397, service.ts:146-169 (extractNotificationHref)
+
+### 21. extractNotificationHref Priority Order
+
+service.ts:146-169 — extracts route in priority order:
+  1. payload.routePath (string)
+  2. payload.href (string)
+  3. payload.action.href (object)
+
+Evidence: service.ts:151-166
+
+### 22. Notification Response Deduplication
+
+lastHandledNotificationIdentifierRef (AuthProvider.tsx:159, 378-382) prevents
+the same notification from being handled twice when addNotificationResponseReceivedListener
+and getLastNotificationResponseAsync both fire for the same notification.
+
+Evidence: AuthProvider.tsx:378-382
+
+### 23. Role Override from Notification Payload
+
+resolveTargetRoute in AuthProvider.tsx:332-368 reads data.targetRole from the
+notification payload to determine routing if the stored session role doesn't match.
+effectiveRole is set to rawTargetRole if it's "patient" or "practitioner",
+otherwise falls back to sessionRef.current?.role ?? null.
+
+Evidence: AuthProvider.tsx:343-351
+
+================================================================================
+## Open Questions
+================================================================================
+
+Q1: Is there a backend-side validation that prevents a PATIENT device token
+    from being used to send notifications to a PRACTITIONER (and vice versa)?
+    The mobile app correctly sends role at registration time, but the backend
+    enforcement is not auditable from the mobile codebase.
+
+Q2: Does the backend verify that the deviceId used during push registration
+    matches the deviceId stored in the user's session? If not, a token could
+    potentially be re-registered to a different user on the same device.
+
+Q3: What happens if a user is logged out while a notification is being tapped?
+    The sessionRef.current check in handleResponse (AuthProvider.tsx:370-391)
+    happens asynchronously after the tap is received. Could stale session data
+    cause incorrect routing?
+
+Q4: The practitioner notifications screen (app/(practitioner)/notifications.tsx)
+    does NOT have a push status card (unlike the patient screen). Is there a
+    deliberate UX reason, or should a push status display be added for consistency?
+
+Q5: The notification tap routing for patient role falls back to href parsing
+    for any typeSlug that is NOT one of the 3 message typeSlugs. Is this
+    intentional, or should session-type notifications also have explicit routes?
+
+Q6: The MessagesInboxScreen uses a hardcoded TAB_ORDER array (["all","sessions","support","followup"])
+    while the route wrappers validate against VALID_TABS. Is there a risk of
+    mismatch if a new tab is added to one but not the other?
+
+Q7: Are there any rate limits or throttling on POST /notifications/devices/register
+    that could cause push registration to silently fail after repeated app opens?
+
+Q8: What is the exact schema/validation of the notification payload on the backend?
+    The extractNotificationHref function handles routePath, href, and action.href
+    but it's unclear which field the backend actually populates.
+
+================================================================================
+## Findings to Register (AUDIT-105 onwards)
+================================================================================
+
+AUDIT-105 — INFORMATIONAL
+File: src/features/messages/components/MessagesInboxScreen.tsx
+Lines: 171-180
+Issue: Messages inbox aggregates three separate data sources (general chat
+       conversations, support tickets, care-chat requests) in a single inbox.
+       Each source has independent stale times and error states. If one source
+       fails (e.g., support tickets), the error banner is shown but the other
+       tabs (sessions, followup) may still display stale data without indication.
+       This could confuse users about whether the failure affects all lanes or
+       only one.
+
+AUDIT-106 — INFORMATIONAL
+File: src/features/practitioner/notifications/utils.ts
+Lines: 71-92
+Issue: resolveNotificationBody for practitioner handles only 4 session-related
+       typeSlugs in Arabic locale (session-confirmed-practitioner,
+       session-confirmed, session-join-available, session-cancelled-practitioner).
+       All other typeSlugs fall through to safeText(item.body). If the backend
+       sends new Arabic notification types in the future, they will display the
+       raw body instead of a translated version. No fallback i18n key resolution.
+
+AUDIT-107 — LOW
+File: src/features/patient/notifications/routes.ts
+Lines: 1-15
+Issue: resolvePatientNotificationRoute only maps 3 message typeSlugs to routes.
+       All other patient notification typeSlugs (e.g., session-confirmed,
+       payment-received, etc.) rely entirely on href parsing. If the backend
+       sends a valid notification with a non-message typeSlug but without a
+       properly formatted href, the notification tap will show an "unsupported"
+       alert. The practitioner resolver has explicit handling for more typeSlugs;
+       the patient resolver does not.
+
+AUDIT-108 — INFORMATIONAL
+File: src/features/push/service.ts
+Lines: 195-211
+Issue: getExpoPushToken falls back to Notifications.getExpoPushTokenAsync()
+       with no projectId if Constants.easConfig?.projectId is not set. In EAS
+       Build/Update scenarios, the projectId MUST be configured for the push
+       token to be valid. There is no warning or error logged when falling back
+       to the no-projectId path. If misconfigured, push notifications will silently
+       fail with no indication to the developer or user.
+
+AUDIT-109 — INFORMATIONAL
+File: app/_layout.tsx
+Lines: 1-26
+Issue: No expo-linking configuration exists in the app. There is no
+       getLinkingConfig or linking prop on the root Slot. If the app needs to
+       respond to generic URLs (not just notification taps), the infrastructure
+       is not in place. The only URL handling is via
+       Notifications.addNotificationResponseReceivedListener, which only handles
+       notification tap events, not general app URL schemes.
+
+AUDIT-110 — INFORMATIONAL
+File: src/providers/AuthProvider.tsx
+Lines: 370-391
+Issue: handleResponse in the notification tap handler is asynchronous but does
+       not check if the session has changed between the notification tap and
+       route resolution. If a user logs out and logs back in as a different role
+       between tapping a notification and router.push(targetRoute), the role
+       used for route resolution (sessionRef.current) may not match the role
+       that the notification was originally sent to. The effectiveRole logic
+       attempts to handle this via rawTargetRole from the payload, but if that
+       field is absent, stale session data could cause incorrect routing.
+
+AUDIT-111 — LOW
+File: src/features/messages/components/MessageThreadScreen.tsx
+Lines: 206-212
+Issue: The composer is shown when chatAvailability?.canSend === true AND
+       chatAvailability?.readOnly !== true. However, the actual send mutation
+       (handleSend at line 219) only checks conversationId and isSending state.
+       If canSend flips from true to false between render and send (race condition),
+       the send could appear to succeed from the UI perspective while the backend
+       rejects it. The error catch block (line 239) handles failures, but the
+       user could receive misleading feedback.
+
+AUDIT-112 — INFORMATIONAL
+File: src/features/push/service.ts
+Lines: 130-144
+Issue: revokeCurrentPushRegistration() catches errors from the revoke API call
+       but still clears local storage in the finally block. If the API call fails,
+       the backend may still consider the device registered. On the next login,
+       syncPushRegistration will attempt to re-register the same token, which
+       may create a duplicate device entry depending on backend idempotency.
+       The error is silently swallowed (line 125-127 returns "failed" status but
+       signOut does not surface this to the user).
+
+AUDIT-113 — INFORMATIONAL
+File: app/(practitioner)/notifications.tsx
+Lines: 1-572
+Issue: The practitioner notifications screen has no push status card or
+       enablePushNotifications control, unlike the patient notifications screen
+       (which shows push registration status and a refresh/enable button at
+       app/(patient)/notifications.tsx:135-184). If a practitioner's push
+       permissions are denied or push registration fails, there is no UI surface
+       in the app to alert the practitioner or guide them to fix it.
+
+AUDIT-114 — INFORMATIONAL
+File: src/features/messages/inbox-types.ts
+Lines: 175-176
+Issue: buildCareInboxItem for the practitioner role with no linkedConversationId
+       returns "/(practitioner)/messages?tab=followup" as the destinationRoute.
+       This navigates to the messages tab on the followup lane but does NOT
+       indicate which specific care request/conversation the user should look at.
+       The user sees the followup tab list but has no context about which new
+       follow-up they received. The patient side correctly navigates to
+       /care-chat/request/${request.id} for pending requests.
+
+================================================================================
+## End of Report
+================================================================================

@@ -1,0 +1,434 @@
+================================================================================
+PHASE 6 WEB UX AUDIT — PRACTITIONER-FACING SURFACES
+Agent 3 — Practitioner UX Integrity
+Audit Date: 2026-06-17
+Scope: practitioner-facing web surfaces, enum leakage, i18n coverage,
+       Clinical Warmth violations, instant booking states
+================================================================================
+
+METHODOLOGY
+-----------
+- Read-only file inspection across practitioner pages, session components,
+  instant booking, availability, financial operations, messages shell,
+  support, and care-chat features.
+- i18n namespace files (en/ar) for sessions and instant-booking reviewed.
+- PresentationStatus and instant-booking request status flows traced
+  from data layer to rendered output.
+- joinAvailability.canJoin gate verified in PractitionerSessionDetailPanel.
+- Financial formatting, timezone display, and empty/error states checked.
+
+================================================================================
+FINDING 1 — CRITICAL: Raw presentationStatus Enum Leak in Session Chat Badge
+================================================================================
+File: fayed-frontend-v1/src/features/chat/components/SessionChatPanel.tsx
+Line: 355
+Evidence:
+  {session?.presentationStatus.replaceAll("_", " ")}
+
+The SessionChatPanel renders a badge showing the raw session.presentationStatus
+string (e.g., "IN_PROGRESS", "JOINABLE", "NO_SHOW") with underscores replaced
+by spaces but NEVER passed through i18n t(). The underscore replacement
+produces English-readable labels ("IN PROGRESS") but these are hard-coded
+English strings — no translation, no locale adaptation.
+
+This is the AUDIT-053 regression: practitioner chat panel showing raw enum.
+
+Impact: practitioner sees raw status labels in the chat panel status badge,
+bypassing all i18n infrastructure. A practitioner with Arabic locale still
+sees "IN PROGRESS" not "قيد التنفيذ".
+
+Recommendation: Replace with t(`sessions.presentationStatus.${session.presentationStatus}`).
+
+---
+
+FINDING 2 — JOIN CTA GATE CORRECTLY IMPLEMENTED
+================================================================================
+File: fayed-frontend-v1/src/features/sessions/components/PractitionerSessionDetailPanel.tsx
+Line: 141
+Evidence:
+  const canJoinNow = session.joinAvailability?.canJoin === true;
+
+The join CTA (line 344) renders "Get session access" only when canJoinNow is true:
+  {canJoinNow ? t("detail.runtime.actions.joinNow")
+   : t("detail.runtime.actions.checkAccess")}
+
+Verdict: PASS — joinAvailability.canJoin is properly used to gate the CTA.
+
+---
+
+FINDING 3 — INSTANT BOOKING STATUSES: PROPERLY i18n'd
+================================================================================
+Files:
+  - fayed-frontend-v1/src/features/instant-booking/components/InstantBookingRequestCard.tsx (line 111)
+  - fayed-frontend-v1/src/features/instant-booking/components/PractitionerInstantBookingRequestsScreen.tsx (line 138)
+  - fayed-frontend-v1/src/features/instant-booking/components/PractitionerPendingRequestsPanel.tsx (line 56)
+
+Evidence (InstantBookingRequestCard.tsx line 111):
+  const requestStatusLabel = t(`queue.statuses.${request.status}` as Parameters<typeof t>[0]);
+
+The instant booking request card uses t() with the queue.statuses namespace for
+all status labels (PENDING, ACCEPTED, REJECTED, EXPIRED, CANCELLED). The i18n
+files (both ar and en) have complete coverage:
+  sessions.json (en): queue.statuses.PENDING = "Pending", ACCEPTED = "Accepted", etc.
+  sessions.json (ar): queue.statuses.PENDING = "قيد الانتظار", ACCEPTED = "مقبول", etc.
+
+Verdict: PASS — no raw enum leakage in instant booking UI.
+
+---
+
+FINDING 4 — SESSION STATUS BADGE: CORRECTLY i18n'd via presentationStatus
+================================================================================
+File: fayed-frontend-v1/src/features/sessions/components/SessionStatusBadge.tsx
+Lines: 41-45
+Evidence:
+  const labelKey = presentationStatus
+    ? `presentationStatus.${displayStatus ?? "UNAVAILABLE"}`
+    : `status.${displayStatus ?? "DRAFT"}`;
+
+  return <AdminStatusBadge tone={tone}>{labelOverride ?? t(labelKey as Parameters<typeof t>[0])}</AdminStatusBadge>;
+
+The SessionStatusBadge correctly routes both presentationStatus and status
+through i18n t() lookups. The presentationStatus namespace is fully populated
+in both en and ar sessions.json files.
+
+Verdict: PASS — no leakage in the badge component itself.
+
+---
+
+FINDING 5 — PRACTITIONER APPLICATION STATUS: ENUM LEAK via Hard-Coded Map
+================================================================================
+File: fayed-frontend-v1/src/features/practitioners/components/PractitionerApplicationStatus.tsx
+Lines: 17-25
+Evidence:
+  const statusColour: Record<AppStatus, string> = {
+    DRAFT: "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300",
+    SUBMITTED: "bg-primary-light text-text-brand dark:bg-primary/20 dark:text-primary-light",
+    UNDER_REVIEW: "bg-yellow-50 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-400",
+    APPROVED: "bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400",
+    REJECTED: "bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400",
+    CHANGES_REQUESTED: "bg-orange-50 text-orange-700 dark:bg-orange-900/20 dark:text-orange-400",
+    ARCHIVED: "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-500",
+  };
+
+The status colour map uses raw enum keys (DRAFT, SUBMITTED, UNDER_REVIEW, etc.)
+as JavaScript object keys. While these are never rendered to the DOM directly —
+the label at line 133 uses t(`application.status.${app.status as AppStatus}`) —
+the map key names constitute a raw enum naming pattern in source code.
+
+More critically, the component is in a practitioner-specific context where
+practitioner onboarding state (PENDING_APPROVAL, APPROVED, REJECTED) should be
+clearly communicated. The component uses the generic practitioner application
+status enums which are appropriate. The display label IS i18n'd (line 133).
+
+Verdict: MINOR — enum key names in JS object are not rendered; display IS i18n'd.
+         No user-facing raw enum leakage detected.
+
+---
+
+FINDING 6 — FINANCIAL OPERATIONS: PROPER CURRENCY FORMATTING
+================================================================================
+Files:
+  - fayed-frontend-v1/src/features/financial-operations/components/PractitionerWalletSummaryScreen.tsx
+  - fayed-frontend-v1/src/features/financial-operations/components/PractitionerLedgerListScreen.tsx
+
+Evidence (WalletSummaryScreen line 46):
+  function formatMoney(value: string, currency: string, locale: string) {
+    const numeric = Number(value);
+    if (Number.isNaN(numeric)) return `${value} ${currency}`;
+    return new Intl.NumberFormat(locale === "ar" ? "ar-EG" : "en-US", {
+      style: "currency",
+      currency,
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(numeric);
+  }
+
+All monetary values in wallet and ledger screens are formatted with
+Intl.NumberFormat using the correct locale and currency. Amounts are never
+displayed as raw numeric strings.
+
+Verdict: PASS — currency formatting is correctly applied.
+
+---
+
+FINDING 7 — AVAILABILITY EDITOR: TIMEZONE DISPLAY
+================================================================================
+File: fayed-frontend-v1/src/features/availability/components/WeeklyScheduleEditor.tsx
+Lines: 387-395
+Evidence:
+  {!hasTimezone ? (
+    <div className="rounded-[22px] border border-warning-200 bg-warning-50 px-4 py-3 text-sm text-warning-700 dark:border-warning-500/20 dark:bg-warning-500/10 dark:text-warning-300">
+      {t("timezoneLabel")}: {t("noTimezone")}
+    </div>
+  ) : (
+    <div className="rounded-[22px] border border-border-light bg-white px-4 py-3 text-sm text-text-secondary dark:border-border-light dark:bg-surface-secondary">
+      {t("timezoneLabel")}: <span className="font-semibold text-text-primary">{data.timezone}</span>
+    </div>
+  )}
+
+The editor shows a warning when no timezone is set and displays the raw
+IANA timezone string (e.g., "Africa/Cairo") when set. Duration display (30/60
+minute slots) is clear and properly labelled via i18n (t("duration30"),
+t("duration60")).
+
+Verdict: PASS — timezone shown via i18n label + raw IANA string is acceptable
+         for an internal tool. Duration labels are i18n'd.
+
+---
+
+FINDING 8 — CARE CHAT CONVERSATION STATUS: PROPERLY i18n'd
+================================================================================
+File: fayed-frontend-v1/src/features/care-chat/components/CareChatConversationPanel.tsx
+Lines: 193, 304
+Evidence:
+  <span className="rounded-full bg-teal-50/70 border border-teal-100/30 px-2.5 py-0.5 text-[10px] font-bold text-teal-700 dark:bg-teal-950/40 dark:text-teal-400 font-sans">
+    {t(`common.conversationStatuses.${conversation.status}` as Parameters<typeof t>[0])}
+  </span>
+
+Care chat conversation status uses t() with the common.conversationStatuses
+namespace. No raw enum leakage detected.
+
+Verdict: PASS.
+
+---
+
+FINDING 9 — SUPPORT TICKET STATUS: PROPERLY i18n'd
+================================================================================
+File: fayed-frontend-v1/src/features/support/components/PractitionerSupportHomeScreen.tsx
+Lines: 180, 198, 216, 268, 273
+Evidence (line 180):
+  {t(`statuses.${status}` as Parameters<typeof t>[0])}
+
+All support ticket statuses (OPEN, IN_PROGRESS, WAITING_FOR_USER, ESCALATED,
+RESOLVED, CLOSED) are passed through t() lookups. Category and priority
+filters similarly use t() for all labels.
+
+Verdict: PASS.
+
+---
+
+FINDING 10 — EMPTY/ERROR STATES: SESSIONS
+================================================================================
+File: fayed-frontend-v1/src/features/sessions/components/PractitionerSessionsPanel.tsx
+Lines: 178-183, 315-321
+Evidence:
+  const emptyStateTitle = hasActiveFilters
+    ? t("practitioner.list.filteredEmptyHeading")
+    : t("practitioner.list.emptyHeading");
+
+  errorState={{
+    title: t("practitioner.list.errorHeading"),
+    description: t("practitioner.list.errorNote"),
+    action: { label: t("practitioner.list.retry"), onClick: () => refetch() },
+  }}
+  emptyState={{
+    title: emptyStateTitle,
+    description: emptyStateDescription,
+    action: hasActiveFilters
+      ? { label: t("practitioner.list.filters.clear"), onClick: clearFilters }
+      : undefined,
+  }}
+
+Loading state uses ListStateSkeleton with heightClass="h-32".
+
+Verdict: PASS — all states have i18n text.
+
+---
+
+FINDING 11 — EMPTY/ERROR STATES: INSTANT BOOKING
+================================================================================
+File: fayed-frontend-v1/src/features/instant-booking/components/PractitionerInstantBookingRequestsScreen.tsx
+Lines: 200-216 (loading skeleton), 220-234 (error), 292-307 (empty)
+Evidence:
+  if (requestsQuery.isLoading) {
+    return (
+      <div className="space-y-4">
+        <SurfaceCard variant="section" className="space-y-4">
+          <SurfaceHeader eyebrow={t("queue.eyebrow")} title={t("queue.title")} ... />
+          <div className="grid gap-3 sm:grid-cols-3">
+            <div className="h-24 rounded-[22px] bg-surface-tertiary" />
+            <div className="h-24 rounded-[22px] bg-surface-tertiary" />
+            <div className="h-24 rounded-[22px] bg-surface-tertiary" />
+          </div>
+        </SurfaceCard>
+        <ListStateSkeleton items={3} heightClass="h-[220px]" />
+      </div>
+    );
+  }
+
+Loading, error, and empty states are all properly implemented with i18n text.
+Empty state shows a Zap icon, contextual title, and explanatory note.
+
+Verdict: PASS.
+
+---
+
+FINDING 12 — CLINICAL WARMTH: SESSION DETAIL PANEL
+================================================================================
+File: fayed-frontend-v1/src/features/sessions/components/PractitionerSessionDetailPanel.tsx
+Multiple sections inspected.
+
+Overall tone: The panel uses a professional teal primary colour with warm
+off-white/light gray backgrounds. Sections are clearly delineated with
+rounded corners and subtle borders. Typography is readable with appropriate
+contrast. The "Clinical Warmth" principle (all-teal screens, aggressive copy,
+raw technical language) is NOT violated — copy throughout is measured and
+empathetic.
+
+Example positive patterns:
+- Line 221: "{t('detail.with')} {session.patient?.displayName ?? '-'}" — warm
+- Lines 387-388: "Current session state" heading + contextual title/note
+- Lines 494-530: Chat card with clear, non-aggressive copy
+- Lines 563-604: Closeout actions with explanatory copy in i18n
+
+Verdict: PASS — no Clinical Warmth violations detected in practitioner
+         session detail.
+
+---
+
+FINDING 13 — CLINICAL WARMTH: APPLICATION STATUS
+================================================================================
+File: fayed-frontend-v1/src/features/practitioners/components/PractitionerApplicationStatus.tsx
+
+The application status component (lines 119-225) uses a clean card layout
+with status badge, readiness checklist, contextual message for non-interactive
+statuses, and a submit section. Copy is calm and informative, not aggressive.
+No all-teal dominance, no raw technical language.
+
+Verdict: PASS — Clinical Warmth principle upheld.
+
+---
+
+FINDING 14 — SESSION LANE THREAD: SESSION STATUS LABEL
+================================================================================
+File: fayed-frontend-v1/src/features/messages-shell/components/SessionLaneThread.tsx
+Line: 165
+Evidence:
+  {sessionTitle}
+  {sessionStatusLabel ? ` - ${sessionStatusLabel}` : ""}
+
+The sessionStatusLabel prop is passed from the parent component. If the parent
+passes a raw enum value, it would display raw. Need to verify what
+sessionStatusLabel contains in the context where this component is used.
+
+Verdict: UNKNOWN — requires tracing sessionStatusLabel prop from caller.
+         Recommend audit of callers to confirm sessionStatusLabel is i18n'd
+         before passing to SessionLaneThread.
+
+---
+
+FINDING 15 — CARE CHAT HOME: STATUS STYLES FROM MAP
+================================================================================
+File: fayed-frontend-v1/src/features/care-chat/components/PractitionerCareChatHomeScreen.tsx
+Lines: 17, 103
+Evidence:
+  import { CARE_CHAT_REQUEST_STATUS_STYLES, formatCareChatDateTime } from "../lib/care-chat-ui";
+
+  <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${CARE_CHAT_REQUEST_STATUS_STYLES[row.status]}`}>
+    {t(`common.requestStatuses.${row.status}` as Parameters<typeof t>[0])}
+  </span>
+
+The display label uses t() correctly. The CARE_CHAT_REQUEST_STATUS_STYLES map
+contains CSS class names keyed by enum string — these are not rendered as text,
+only as CSS classes, so this is acceptable.
+
+Verdict: PASS.
+
+---
+
+FINDING 16 — PRACTITIONER SUPPORT HOME: CATEGORY/TICKET ENUMS IN JS KEYS
+================================================================================
+File: fayed-frontend-v1/src/features/support/components/PractitionerSupportHomeScreen.tsx
+Lines: 25-56
+Evidence:
+  const STATUS_FILTERS: Array<SupportTicketStatus | "ALL"> = [
+    "ALL", "OPEN", "IN_PROGRESS", "WAITING_FOR_USER", "ESCALATED", "RESOLVED", "CLOSED",
+  ];
+  const CATEGORY_FILTERS = [
+    "ALL", "BOOKING", "PAYMENT", "SESSION", "TECHNICAL", "ACCOUNT",
+    "MATCHING", "GENERAL", "CONTENT", "CHAT", "OTHER",
+  ] as const;
+  const PRIORITY_FILTERS: Array<SupportTicketPriority | "ALL"> = [
+    "ALL", "URGENT", "HIGH", "MEDIUM", "NORMAL", "LOW",
+  ];
+
+These are TypeScript const arrays used as filter options. The display labels
+for these filters use t() at lines 180, 198, 216 (e.g., t(`statuses.${status}`)).
+The raw enum strings appear as HTML option values (line 179: option key={status}),
+which is standard HTML select behavior and not user-visible as raw text.
+
+Verdict: PASS — display labels are i18n'd.
+
+---
+
+FINDING 17 — FINANCIAL OPERATIONS: LEDGER ENTRY TYPES IN JS KEYS
+================================================================================
+File: fayed-frontend-v1/src/features/financial-operations/components/PractitionerLedgerListScreen.tsx
+Lines: 32-44
+Evidence:
+  const ENTRY_TYPE_FILTERS: Array<LedgerEntryType | "ALL"> = [
+    "ALL", "SESSION_GROSS", "PLATFORM_COMMISSION", "PRACTITIONER_EARNING",
+    "COUPON_PLATFORM_SHARE", "COUPON_PRACTITIONER_SHARE", "REFUND_PLATFORM_REVERSAL",
+    "REFUND_PRACTITIONER_REVERSAL", "MANUAL_ADJUSTMENT", "SETTLEMENT_PAYOUT",
+    "SETTLEMENT_REVERSAL",
+  ];
+
+Display at line 310: {t(`ledger.entryTypes.${value}` as Parameters<typeof t>[0])}
+
+Verdict: PASS — display labels are i18n'd.
+
+---
+
+FINDING 18 — FINANCIAL OPERATIONS: SETTLEMENT STATUSES IN JS KEYS
+================================================================================
+File: fayed-frontend-v1/src/features/financial-operations/components/PractitionerWalletSummaryScreen.tsx
+Lines: 36-44
+Evidence:
+  const STATUS_FILTERS: Array<PractitionerSettlementStatus | "ALL"> = [
+    "ALL", "DRAFT", "READY", "PROCESSING", "PAID", "FAILED", "CANCELLED",
+  ];
+
+Display at line 329: {t(`settlements.statuses.${status}` as Parameters<typeof t>[0])}
+
+Verdict: PASS — display labels are i18n'd.
+
+================================================================================
+SUMMARY TABLE
+================================================================================
+
+| # | Finding                              | Severity | File (line)                          | Status   |
+|---|--------------------------------------|----------|--------------------------------------|----------|
+| 1 | Raw presentationStatus in chat badge | CRITICAL | SessionChatPanel.tsx:355             | OPEN     |
+| 2 | Join CTA: canJoin gate               | —        | PractitionerSessionDetailPanel.tsx:141 | PASS     |
+| 3 | Instant booking statuses i18n        | —        | InstantBookingRequestCard.tsx:111    | PASS     |
+| 4 | SessionStatusBadge i18n              | —        | SessionStatusBadge.tsx:41-45         | PASS     |
+| 5 | Application status enum in JS map    | MINOR    | PractitionerApplicationStatus.tsx:17 | OBSERVED |
+| 6 | Currency formatting                  | —        | PractitionerWalletSummaryScreen.tsx:46 | PASS     |
+| 7 | Availability editor timezone         | —        | WeeklyScheduleEditor.tsx:387-395     | PASS     |
+| 8 | Care chat status i18n                | —        | CareChatConversationPanel.tsx:193    | PASS     |
+| 9 | Support ticket status i18n           | —        | PractitionerSupportHomeScreen.tsx:180| PASS     |
+|10 | Sessions empty/error states          | —        | PractitionerSessionsPanel.tsx:178    | PASS     |
+|11 | Instant booking empty/error states   | —        | PractitionerInstantBookingRequestsScreen.tsx:200 | PASS |
+|12 | Clinical Warmth: session detail      | —        | PractitionerSessionDetailPanel.tsx   | PASS     |
+|13 | Clinical Warmth: application status  | —        | PractitionerApplicationStatus.tsx    | PASS     |
+|14 | SessionLaneThread sessionStatusLabel | UNKNOWN  | SessionLaneThread.tsx:165            | REQUIRES CALLER TRACE |
+|15 | Care chat home status styles map     | —        | PractitionerCareChatHomeScreen.tsx:17| PASS     |
+|16 | Support home filter enum keys        | —        | PractitionerSupportHomeScreen.tsx:25 | PASS     |
+|17 | Ledger entry type keys               | —        | PractitionerLedgerListScreen.tsx:32  | PASS     |
+|18 | Settlement status keys               | —        | PractitionerWalletSummaryScreen.tsx:36 | PASS     |
+
+================================================================================
+OPEN ITEMS REQUIRING FOLLOW-UP
+================================================================================
+
+1. AUDIT-053 / Finding 1: SessionChatPanel.tsx:355 — raw presentationStatus
+   displayed directly. Needs fix: replace with t(`sessions.presentationStatus.${session.presentationStatus}`).
+   This is a confirmed regression from Phase 5.
+
+2. Finding 14: SessionLaneThread.tsx:165 — sessionStatusLabel prop origin
+   needs verification. If callers pass raw enums, those would leak in the
+   session messaging lane thread.
+
+================================================================================
+END OF REPORT
+================================================================================

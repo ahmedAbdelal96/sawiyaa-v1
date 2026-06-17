@@ -12,13 +12,13 @@ import {
   Loader2,
 } from "lucide-react";
 import { ListStateSkeleton, StateCard } from "@/components/shared/ContentStates";
+import { formatViewerDateTime } from "@/lib/time-formatting";
 import {
   usePatientTrainingEnrollment,
   useResolvePatientTrainingJoinAccess,
 } from "../hooks/use-training";
 import {
   formatTrainingAmount,
-  formatTrainingDatetime,
   getAttendanceStatusTone,
   getEnrollmentStatusTone,
   getPaymentStatusTone,
@@ -140,7 +140,9 @@ export default function PatientTrainingEnrollmentDetailScreen({ enrollmentId }: 
                 </p>
                 <p className="mt-1 text-sm font-medium text-text-primary dark:text-white/90">
                   {enrollment.startsAt
-                    ? formatTrainingDatetime(enrollment.startsAt, locale)
+                    ? formatViewerDateTime(enrollment.startsAt, {
+                        locale: locale === "ar" ? "ar-SA" : "en-US",
+                      })
                     : t("patient.detail.notScheduled")}
                 </p>
               </div>

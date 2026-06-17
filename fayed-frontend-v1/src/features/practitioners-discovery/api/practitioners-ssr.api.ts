@@ -25,7 +25,6 @@ type BackendRatingSummary = {
 };
 
 export type BackendPublicPractitionerListItem = {
-  id: string;
   slug: string;
   displayName: string | null;
   professionalTitle: string | null;
@@ -80,7 +79,7 @@ export function mapBackendListItemToUi(item: BackendPublicPractitionerListItem):
   const title = item.professionalTitle ?? "";
 
   return {
-    id: item.id,
+    id: item.slug,
     slug: item.slug,
     nameAr: displayName,
     nameEn: displayName,

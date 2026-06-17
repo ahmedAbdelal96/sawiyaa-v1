@@ -30,6 +30,7 @@ import {
   usePatientWalletSummary,
 } from "../../src/features/patient/payments/hooks";
 import { resolveSupportedCurrencyCode } from "../../src/lib/currency";
+import { formatViewerDate } from "../../src/lib/time-formatting";
 import type {
   CustomerWalletEntryItem,
   CustomerWalletEntryType,
@@ -60,11 +61,7 @@ function formatMoney(amount: string, currencyCode: string, locale = "en"): strin
 }
 
 function formatDate(isoString: string, locale: string): string {
-  return new Date(isoString).toLocaleDateString(locale, {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
+  return formatViewerDate(isoString, { locale });
 }
 
 function resolveRelevantDate(payment: PaymentItem): {

@@ -11,10 +11,10 @@ import {
 } from "lucide-react";
 import { ListStateSkeleton, StateCard } from "@/components/shared/ContentStates";
 import { PatientQuickNav } from "@/components/patient/PatientSectionFrame";
+import { formatViewerDateTime } from "@/lib/time-formatting";
 import { usePatientTrainingEnrollments } from "../hooks/use-training";
 import type { PatientTrainingEnrollmentItem } from "../types/training.types";
 import {
-  formatTrainingDatetime,
   getEnrollmentStatusTone,
   getStatusToneClasses,
 } from "./training-utils";
@@ -86,7 +86,7 @@ function EnrollmentCard({
             {enrollment.startsAt ? (
               <span className="inline-flex items-center gap-1">
                 <Clock3 className="h-3.5 w-3.5" />
-                {formatTrainingDatetime(enrollment.startsAt, locale)}
+                {formatViewerDateTime(enrollment.startsAt, { locale: locale === "ar" ? "ar-SA" : "en-US" })}
               </span>
             ) : null}
             <span>
@@ -196,7 +196,7 @@ function NextStepCard({
           </span>
           {enrollment.startsAt ? (
             <span className="rounded-full bg-surface-secondary px-3 py-1 dark:bg-white/5">
-              {formatTrainingDatetime(enrollment.startsAt, locale)}
+              {formatViewerDateTime(enrollment.startsAt, { locale: locale === "ar" ? "ar-SA" : "en-US" })}
             </span>
           ) : null}
           <span className="rounded-full bg-surface-secondary px-3 py-1 dark:bg-white/5">

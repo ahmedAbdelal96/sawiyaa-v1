@@ -21,6 +21,7 @@ import {
   usePractitionerSupportTicket,
 } from "../../../src/features/practitioner/support/hooks";
 import { extractApiErrorMessage } from "../../../src/lib/api";
+import { formatViewerTime } from "../../../src/lib/time-formatting";
 import type { SupportTicketStatus } from "../../../src/features/practitioner/support/types";
 import { useAuth } from "../../../src/providers/AuthProvider";
 import {
@@ -52,13 +53,6 @@ export default function PractitionerSupportConversationScreen() {
   const ticket = ticketQuery.data;
   const isClosed = ticket ? CLOSED_STATUSES.includes(ticket.status) : false;
   const canReply = Boolean(ticket) && !isClosed;
-
-  function formatTime(dateStr: string): string {
-    return new Date(dateStr).toLocaleTimeString(
-      i18n.language?.startsWith("ar") ? "ar-SA" : "en-US",
-      { hour: "2-digit", minute: "2-digit" },
-    );
-  }
 
   async function handleSend() {
     if (!draft.trim()) return;
@@ -137,7 +131,10 @@ export default function PractitionerSupportConversationScreen() {
                   key={message.id ?? idx}
                   isMine={Boolean(isMine)}
                   text={message.message}
-                  timeLabel={formatTime(message.createdAt)}
+                  timeLabel={formatViewerTime(message.createdAt, {
+                    locale: i18n.language?.startsWith("ar") ? "ar-SA" : "en-US",
+                    fallbackText: "-",
+                  })}
                 />
               );
             })

@@ -76,6 +76,9 @@ describe('OperationalNotificationService', () => {
 
     return {
       service,
+      findPatientRecipient,
+      findPractitionerRecipient,
+      findUserRecipient,
       findPreference,
       createNotification,
       updateNotificationStatus,
@@ -265,6 +268,57 @@ describe('OperationalNotificationService', () => {
       }),
     );
     expect(setup.updateNotificationStatus).not.toHaveBeenCalled();
+  });
+
+  it('attaches route paths and idempotency keys to instant booking notifications', async () => {
+    const setup = buildService({ emailEnabled: false, pushEnabled: true });
+
+    await setup.service.notifyInstantBookingAccepted({
+      patientProfileId: 'patient_1',
+      requestId: 'request_1',
+    });
+
+    expect(setup.createNotification).toHaveBeenCalledWith(
+      expect.objectContaining({
+        channel: NotificationChannel.IN_APP,
+        relatedEntityType: 'INSTANT_BOOKING_REQUEST',
+        relatedEntityId: 'request_1',
+        idempotencyKey:
+          'instant-booking.request-accepted:request_1:user_1:in-app',
+        payloadJson: expect.objectContaining({
+          routePath: '/en/patient/instant-booking?requestId=request_1',
+          targetRole: 'PATIENT',
+          relatedEntityType: 'INSTANT_BOOKING_REQUEST',
+          relatedEntityId: 'request_1',
+          category: 'SESSION',
+        }),
+      }),
+    );
+    expect(setup.createNotification).toHaveBeenCalledWith(
+      expect.objectContaining({
+        channel: NotificationChannel.PUSH,
+        relatedEntityType: 'INSTANT_BOOKING_REQUEST',
+        relatedEntityId: 'request_1',
+        idempotencyKey:
+          'instant-booking.request-accepted:request_1:user_1:push',
+        payloadJson: expect.objectContaining({
+          routePath: '/en/patient/instant-booking?requestId=request_1',
+          targetRole: 'PATIENT',
+        }),
+      }),
+    );
+  });
+
+  it('skips instant booking notifications when the patient cannot be resolved', async () => {
+    const setup = buildService({ emailEnabled: false, pushEnabled: true });
+    setup.findPatientRecipient.mockResolvedValueOnce(null);
+
+    await setup.service.notifyInstantBookingExpired({
+      patientProfileId: 'patient_1',
+      requestId: 'request_1',
+    });
+
+    expect(setup.createNotification).not.toHaveBeenCalled();
   });
 
   it('sends session confirmation notifications to patient and practitioner', async () => {
