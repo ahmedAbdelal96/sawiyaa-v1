@@ -18,6 +18,7 @@ import {
   usePractitionerProfile,
 } from "../../src/features/practitioner/profile/hooks";
 import { useTheme } from "../../src/providers/ThemeProvider";
+import type { ThemeShape } from "../../src/constants/theme";
 import { getAppDirection } from "../../src/i18n/direction";
 
 function normalizeBaseUrl(url: string) {
@@ -26,7 +27,7 @@ function normalizeBaseUrl(url: string) {
 
 export default function PractitionerApprovalStatusScreen() {
   const { t, i18n } = useTranslation();
-  const { theme } = useTheme();
+  const { theme } = useTheme() as { theme: ThemeShape };
   const router = useRouter();
   const { user, signOut } = useAuth();
   const profileQuery = usePractitionerProfile();
@@ -130,11 +131,11 @@ export default function PractitionerApprovalStatusScreen() {
             <View
               style={[
                 styles.reasonBox,
-                {
-                  borderColor: theme.colors.errorLight ?? theme.colors.borderLight,
-                  backgroundColor: theme.colors.surface,
-                },
-              ]}
+              {
+                  borderColor: theme.colors.errorLight ?? theme.colors.border,
+                  backgroundColor: theme.colors.surfaceRaised,
+              },
+            ]}
             >
               <Text weight="600" style={{ textAlign: isRtl ? "right" : "left" }}>
                 {t("auth.practitionerApprovalStatus.rejectionReason")}

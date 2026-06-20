@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { ForbiddenException, Injectable } from '@nestjs/common';
 import {
   ConversationParticipantRole,
   ConversationType,
@@ -213,6 +213,121 @@ export class SupportTicketRepository {
       const ticket = await tx.supportTicket.findUniqueOrThrow({
         where: { id: input.ticketId },
       });
+
+      await tx.conversationParticipant.upsert({
+        where: {
+          conversationId_userId: {
+            conversationId: ticket.conversationId,
+            userId: input.senderUserId,
+          },
+        },
+        create: {
+          conversationId: ticket.conversationId,
+          userId: input.senderUserId,
+          participantRole: input.senderRole,
+        },
+        update: {
+          participantRole: input.senderRole,
+          isActive: true,
+          leftAt: null,
+        },
+      });
+
+      await tx.message.create({
+        data: {
+          conversationId: ticket.conversationId,
+          senderUserId: input.senderUserId,
+          messageType: MessageType.TEXT,
+          status: MessageStatus.SENT,
+          visibility: MessageVisibility.NORMAL,
+          contentText: input.message,
+        },
+      });
+
+      await tx.supportTicket.update({
+        where: { id: input.ticketId },
+        data: {
+          lastMessageAt: new Date(),
+        },
+      });
+
+      await tx.supportTicketEvent.create({
+        data: {
+          supportTicketId: input.ticketId,
+          eventType: SupportTicketEventType.MESSAGE_ADDED,
+          actorUserId: input.senderUserId,
+          actorRole: input.senderRole,
+        },
+      });
+
+      return tx.supportTicket.findUniqueOrThrow({
+        where: { id: input.ticketId },
+        include: this.detailsInclude(),
+      });
+      });
+  }
+
+  async addPublicSupportMessage(input: {
+    ticketId: string;
+    senderUserId: string;
+    senderRole: ConversationParticipantRole;
+    message: string;
+  }) {
+    return this.prisma.$transaction(async (tx) => {
+      const ticket = await tx.supportTicket.findUniqueOrThrow({
+        where: { id: input.ticketId },
+        select: {
+          id: true,
+          conversationId: true,
+          assignedToUserId: true,
+        },
+      });
+
+      if (ticket.assignedToUserId === null) {
+        const claimResult = await tx.supportTicket.updateMany({
+          where: {
+            id: input.ticketId,
+            assignedToUserId: null,
+          },
+          data: {
+            assignedToUserId: input.senderUserId,
+          },
+        });
+
+        if (claimResult.count > 0) {
+          await tx.supportTicketEvent.create({
+            data: {
+              supportTicketId: input.ticketId,
+              eventType: SupportTicketEventType.ASSIGNED,
+              actorUserId: input.senderUserId,
+              actorRole: input.senderRole,
+              payloadJson: {
+                assignedToUserId: input.senderUserId,
+                claimedOnFirstPublicReply: true,
+              },
+            },
+          });
+        } else {
+          const latestTicket = await tx.supportTicket.findUniqueOrThrow({
+            where: { id: input.ticketId },
+            select: {
+              assignedToUserId: true,
+            },
+          });
+
+          if (latestTicket.assignedToUserId !== input.senderUserId) {
+            throw new ForbiddenException({
+              messageKey: 'support.errors.ticketAssignedToAnotherAgent',
+              error: 'SUPPORT_TICKET_ASSIGNED_TO_ANOTHER_AGENT',
+            });
+          }
+        }
+      } else if (ticket.assignedToUserId !== input.senderUserId) {
+        throw new ForbiddenException({
+          messageKey: 'support.errors.ticketAssignedToAnotherAgent',
+          error: 'SUPPORT_TICKET_ASSIGNED_TO_ANOTHER_AGENT',
+        });
+      }
 
       await tx.conversationParticipant.upsert({
         where: {

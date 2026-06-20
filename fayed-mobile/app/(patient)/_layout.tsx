@@ -1,6 +1,7 @@
 import React from "react";
 import { Tabs } from "expo-router";
 import { useTranslation } from "react-i18next";
+import { StyleSheet } from "react-native";
 import { useTheme } from "../../src/providers/ThemeProvider";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -21,32 +22,35 @@ export default function PatientLayout() {
         tabBarHideOnKeyboard: true,
         tabBarActiveTintColor: theme.colors.primary,
         tabBarInactiveTintColor: theme.colors.textMuted,
-        tabBarActiveBackgroundColor: theme.colors.primaryLight,
-        tabBarInactiveBackgroundColor: theme.colors.surface,
+        tabBarActiveBackgroundColor: theme.colors.primarySoft,
+        tabBarInactiveBackgroundColor: theme.colors.surfaceRaised,
         tabBarStyle: {
-          backgroundColor: theme.colors.surface,
-          borderTopColor: theme.colors.borderLight,
-          borderTopWidth: 1,
-          elevation: 12,
-          shadowColor: "#000",
-          shadowOffset: { width: 0, height: -8 },
-          shadowOpacity: 0.04,
-          shadowRadius: 14,
+          backgroundColor: theme.colors.surfaceRaised,
+          borderTopColor: theme.colors.divider,
+          borderTopWidth: StyleSheet.hairlineWidth,
+          ...theme.shadows.sm,
           height: MOBILE_TAB_BAR_HEIGHT + insets.bottom,
-          paddingBottom: Math.max(10, insets.bottom),
-          paddingTop: 10,
-          paddingHorizontal: 12,
+          paddingBottom: Math.max(insets.bottom, theme.spacing.sm),
+          paddingTop: theme.spacing.sm,
+          paddingHorizontal: theme.spacing.sm,
         },
         tabBarItemStyle: {
-          paddingVertical: 8,
-          borderRadius: 16,
+          minHeight: theme.touchTargets.md,
+          paddingVertical: 6,
+          paddingHorizontal: 8,
+          borderRadius: theme.radius.md,
+          marginHorizontal: 2,
         },
         tabBarLabelStyle: {
-          fontSize: 11,
-          fontWeight: "600",
+          fontSize: theme.typography.tabLabel.fontSize,
+          lineHeight: theme.typography.tabLabel.lineHeight,
+          fontWeight: theme.typography.tabLabel.fontWeight,
         },
         tabBarIconStyle: {
-          marginBottom: -2,
+          marginBottom: -1,
+        },
+        tabBarBadgeStyle: {
+          backgroundColor: theme.colors.error,
         },
       }}
     >

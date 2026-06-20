@@ -1,85 +1,113 @@
 import React from 'react';
 import {
   ActivityIndicator,
+  I18nManager,
   StyleSheet,
   TouchableOpacity,
   TouchableOpacityProps,
   View,
 } from 'react-native';
-import { Text } from './Text';
 import { useTheme } from '../../providers/ThemeProvider';
+import { Text } from './Text';
 
-interface ButtonProps extends TouchableOpacityProps {
+type ButtonVariant = 'primary' | 'secondary';
+
+export interface ButtonProps extends TouchableOpacityProps {
   title: string;
-  variant?: 'primary' | 'secondary';
+  variant?: ButtonVariant;
   loading?: boolean;
+  leftIcon?: React.ReactNode;
+  rightIcon?: React.ReactNode;
+  accessibilityLabel?: string;
 }
 
-export const Button = ({
+function ButtonBase({
   title,
   variant = 'primary',
   loading = false,
+  leftIcon,
+  rightIcon,
   style,
   disabled,
+  accessibilityLabel,
   ...props
-}: ButtonProps) => {
+}: ButtonProps) {
   const { theme } = useTheme();
-
+  const isRTL = I18nManager.isRTL;
   const isPrimary = variant === 'primary';
-  const backgroundColor = isPrimary ? theme.colors.primary : theme.colors.surfaceSecondary;
-  const textColor = isPrimary ? '#ffffff' : theme.colors.textPrimary;
-  const borderColor = isPrimary ? 'transparent' : theme.colors.borderStrong;
-  const isDisabled = disabled || loading;
+  const isDisabled = Boolean(disabled || loading);
+
+  const backgroundColor = isPrimary ? theme.colors.primary : theme.colors.surfaceRaised;
+  const borderColor = isPrimary ? theme.colors.primary : theme.colors.border;
+  const textColor = isPrimary ? theme.colors.onPrimary : theme.colors.textPrimary;
 
   return (
-      <TouchableOpacity
+    <TouchableOpacity
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel || title}
+      activeOpacity={0.85}
+      disabled={isDisabled}
       style={[
         styles.button,
-        { backgroundColor, borderColor, borderWidth: isPrimary ? 0 : 1 },
-        isDisabled ? styles.buttonDisabled : null,
+        {
+          minHeight: theme.touchTargets.lg,
+          borderRadius: theme.radius.md,
+          backgroundColor,
+          borderColor,
+          borderWidth: isPrimary ? 0 : StyleSheet.hairlineWidth,
+          flexDirection: isRTL ? 'row-reverse' : 'row',
+        },
+        isDisabled ? { opacity: 0.56 } : null,
         style,
       ]}
-      activeOpacity={0.8}
-      disabled={isDisabled}
       {...props}
     >
       {loading ? (
-        <View style={styles.loadingRow}>
+        <View style={[styles.contentRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
           <ActivityIndicator size="small" color={textColor} />
-          <Text color={textColor} weight="600" style={styles.text}>
+          <Text variant="button" color={textColor} style={styles.label}>
             {title}
           </Text>
         </View>
       ) : (
-        <Text color={textColor} weight="600" style={styles.text}>
-          {title}
-        </Text>
+        <View style={[styles.contentRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+          {leftIcon ? <View style={styles.iconSlot}>{leftIcon}</View> : null}
+          <Text variant="button" color={textColor} style={styles.label}>
+            {title}
+          </Text>
+          {rightIcon ? <View style={styles.iconSlot}>{rightIcon}</View> : null}
+        </View>
       )}
     </TouchableOpacity>
   );
-};
+}
+
+export const Button = ButtonBase;
+export const PrimaryButton = (props: Omit<ButtonProps, 'variant'>) => (
+  <ButtonBase {...props} variant="primary" />
+);
+export const SecondaryButton = (props: Omit<ButtonProps, 'variant'>) => (
+  <ButtonBase {...props} variant="secondary" />
+);
 
 const styles = StyleSheet.create({
   button: {
-    minHeight: 60,
-    paddingVertical: 17,
-    paddingHorizontal: 32,
-    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
+    paddingHorizontal: 18,
+    paddingVertical: 14,
     width: '100%',
   },
-  text: {
-    fontSize: 16,
-    textAlign: 'center',
-  },
-  loadingRow: {
-    flexDirection: 'row',
+  contentRow: {
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 10,
+    gap: 8,
   },
-  buttonDisabled: {
-    opacity: 0.7,
+  iconSlot: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  label: {
+    textAlign: 'center',
   },
 });

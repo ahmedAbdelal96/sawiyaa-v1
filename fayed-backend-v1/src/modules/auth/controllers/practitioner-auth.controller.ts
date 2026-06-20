@@ -132,7 +132,9 @@ export class PractitionerAuthController {
       email: dto.email,
       password: dto.password,
       locale,
-      deviceContext: getRequestDeviceContext(request),
+      deviceContext: getRequestDeviceContext(request, dto.deviceId),
+      ipAddress: request.ip ?? null,
+      userAgent: request.headers['user-agent'] ?? null,
     });
 
     return {
@@ -170,6 +172,8 @@ export class PractitionerAuthController {
       code: dto.code,
       deviceContext: getRequestDeviceContext(request, dto.deviceId),
       locale,
+      ipAddress: request.ip ?? null,
+      userAgent: request.headers['user-agent'] ?? null,
     });
 
     if (result.tokens?.refreshToken) {

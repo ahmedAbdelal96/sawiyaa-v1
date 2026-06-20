@@ -12,9 +12,9 @@ export interface FilterChipProps {
 export const FilterChip = ({ label, selected = false, onPress }: FilterChipProps) => {
   const { theme } = useTheme();
 
-  const backgroundColor = selected ? theme.colors.primary : theme.colors.surfaceSecondary;
-  const borderColor = selected ? theme.colors.primary : theme.colors.borderLight;
-  const textColor = selected ? '#ffffff' : theme.colors.textSecondary;
+  const backgroundColor = selected ? theme.colors.primarySoft : theme.colors.surfaceContainer;
+  const borderColor = selected ? theme.colors.primary : theme.colors.border;
+  const textColor = selected ? theme.colors.primary : theme.colors.textSecondary;
 
   return (
     <TouchableOpacity
@@ -40,7 +40,7 @@ const styles = StyleSheet.create({
   chip: {
     paddingHorizontal: 16,
     paddingVertical: 8,
-    borderRadius: 20,
+    borderRadius: 999,
     borderWidth: 1,
     marginEnd: 10,
     marginBottom: 8,

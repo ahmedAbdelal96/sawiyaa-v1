@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
+import AdminPermissionGate from "@/components/admin/AdminPermissionGate";
+import { PermissionKey } from "@/lib/auth/permissions";
 import AdminSessionRuntimeInspectionScreen from "@/features/admin/session-runtime/components/AdminSessionRuntimeInspectionScreen";
 
 type Props = {
@@ -25,8 +27,12 @@ export default async function AdminSessionRuntimeInspectionPage({
   const { sessionId } = await searchParams;
 
   return (
-    <div className="px-4 py-8">
-      <AdminSessionRuntimeInspectionScreen initialSessionId={sessionId} />
-    </div>
+    <AdminPermissionGate
+      requiredPermissions={[PermissionKey.SESSIONS_READ_ADMIN]}
+    >
+      <div className="px-4 py-8">
+        <AdminSessionRuntimeInspectionScreen initialSessionId={sessionId} />
+      </div>
+    </AdminPermissionGate>
   );
 }

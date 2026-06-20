@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+
+<html class="light" dir="rtl" lang="ar"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport"/>
+<title>Select Time / Booking</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600;700&amp;family=Source+Serif+4:opsz,wght@8..144,400;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-primary-fixed-variant": "#004f50",
+                        "primary-fixed-dim": "#5cd8da",
+                        "surface-container-lowest": "#ffffff",
+                        "tertiary-fixed-dim": "#c8c6c5",
+                        "on-secondary": "#ffffff",
+                        "secondary-container": "#e0e0dd",
+                        "cream-accent": "#FFF9EE",
+                        "alert-red": "#FCECEC",
+                        "on-tertiary-container": "#2d2c2c",
+                        "surface-container": "#e9efee",
+                        "on-background": "#171d1d",
+                        "on-tertiary-fixed-variant": "#474746",
+                        "on-tertiary": "#ffffff",
+                        "on-tertiary-fixed": "#1c1b1b",
+                        "on-secondary-fixed": "#1a1c1a",
+                        "surface": "#f5fafa",
+                        "tertiary-container": "#959393",
+                        "surface-tint": "#00696b",
+                        "primary": "#00696b",
+                        "surface-bright": "#f5fafa",
+                        "surface-dim": "#d5dbda",
+                        "tertiary": "#5f5e5e",
+                        "on-primary-fixed": "#002020",
+                        "inverse-primary": "#5cd8da",
+                        "on-surface-variant": "#3d4949",
+                        "surface-variant": "#dee4e3",
+                        "error-container": "#ffdad6",
+                        "mint-accent": "#E8F5F1",
+                        "outline": "#6d7a79",
+                        "on-primary": "#ffffff",
+                        "on-secondary-container": "#626361",
+                        "on-surface": "#171d1d",
+                        "outline-variant": "#bcc9c9",
+                        "inverse-on-surface": "#ecf2f1",
+                        "surface-container-highest": "#dee4e3",
+                        "secondary-fixed-dim": "#c7c6c4",
+                        "secondary": "#5e5f5d",
+                        "blue-accent": "#E8F1F8",
+                        "on-secondary-fixed-variant": "#464745",
+                        "surface-container-low": "#eff5f4",
+                        "surface-container-high": "#e4e9e9",
+                        "error": "#ba1a1a",
+                        "on-primary-container": "#003233",
+                        "amber-accent": "#FFF3E0",
+                        "on-error-container": "#93000a",
+                        "primary-fixed": "#7cf5f7",
+                        "secondary-fixed": "#e3e2e0",
+                        "inverse-surface": "#2c3131",
+                        "background": "#f5fafa",
+                        "tertiary-fixed": "#e5e2e1",
+                        "on-error": "#ffffff",
+                        "primary-container": "#00a4a6"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "sm": "16px",
+                        "lg": "32px",
+                        "base": "4px",
+                        "xs": "8px",
+                        "gutter-mobile": "12px",
+                        "xl": "48px",
+                        "md": "24px",
+                        "margin-mobile": "20px"
+                    },
+                    "fontFamily": {
+                        "body-lg": ["\"Source Sans 3\""],
+                        "headline-sm": ["\"Source Serif 4\""],
+                        "display-lg-mobile": ["\"Source Serif 4\""],
+                        "label-md": ["\"Source Sans 3\""],
+                        "label-sm": ["\"Source Sans 3\""],
+                        "headline-md": ["\"Source Serif 4\""],
+                        "body-md": ["\"Source Sans 3\""],
+                        "display-lg": ["\"Source Serif 4\""]
+                    },
+                    "fontSize": {
+                        "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                        "headline-sm": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                        "display-lg-mobile": ["28px", {"lineHeight": "36px", "fontWeight": "700"}],
+                        "label-md": ["14px", {"lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "600"}],
+                        "label-sm": ["12px", {"lineHeight": "16px", "fontWeight": "500"}],
+                        "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                        "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "display-lg": ["34px", {"lineHeight": "42px", "letterSpacing": "-0.02em", "fontWeight": "700"}]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { background-color: #FAF9F6; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="font-body-md text-on-background bg-[#FAF9F6] antialiased pb-32">
+<!-- Top App Bar (Suppressed for transactional screen, but replacing with a simple back header) -->
+<header class="sticky top-0 z-40 bg-[#FAF9F6]/90 backdrop-blur-md px-margin-mobile py-sm flex items-center justify-between">
+<button class="p-2 -mr-2 rounded-full hover:bg-surface-container-low transition-colors duration-200 text-on-surface">
+<span class="material-symbols-outlined">arrow_forward</span>
+</button>
+<h1 class="font-headline-sm text-headline-sm text-on-surface">تحديد الموعد</h1>
+<div class="w-10"></div> <!-- Spacer -->
+</header>
+<main class="px-margin-mobile mt-4 space-y-md md:space-y-lg max-w-3xl mx-auto">
+<!-- Practitioner Mini-Summary -->
+<section class="bg-surface-container-lowest rounded-xl p-md shadow-[0_4px_20px_rgba(22,22,22,0.05)] flex items-center gap-md">
+<div class="w-16 h-16 rounded-full overflow-hidden flex-shrink-0 border-2 border-surface-container-lowest ring-2 ring-primary-container/20">
+<img class="w-full h-full object-cover" data-alt="A professional headshot of a Middle Eastern male doctor with a warm, empathetic smile. He is wearing a crisp white coat over a light blue shirt. The background is softly blurred showing a bright, modern clinic setting with natural light and hints of Fayed Teal. High-end editorial clinical warmth style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDHErsMY7CrFBut-kFuPTZv4-hTf8xbHlaS_LWnv6gWzNx2xh39Ui9FhYdVD1eOwTYp5nfHJidjsCKHxTPXNjYOGdxsQNYIE73WbxtEALpzEY9iZPk_ChOM30vT3i29Gjl-AgGtL41_PETVE3AoDrJDxYS0uk-gF3tq8nr9DvbCXetQrngglACRWGtc_ao21qprPzcgyGO-bb8SS9JA-Ig-o4HOBViT7E3yv2ZCBGiaiX-yEXmaEXnyXHpskZb0-mxomjwPYrq48RMO"/>
+</div>
+<div>
+<h2 class="font-headline-sm text-headline-sm text-on-surface">د. أحمد عبد الله</h2>
+<p class="font-body-md text-body-md text-on-surface-variant">استشاري أمراض القلب</p>
+<div class="flex items-center gap-1 mt-1 text-tertiary">
+<span class="material-symbols-outlined text-[16px]">star</span>
+<span class="font-label-md text-label-md">4.9 (120 تقييم)</span>
+</div>
+</div>
+</section>
+<!-- Booking Type Selector -->
+<section class="space-y-xs">
+<h3 class="font-label-md text-label-md text-on-surface-variant">نوع الاستشارة</h3>
+<div class="grid grid-cols-2 gap-sm">
+<button class="bg-primary-container/10 border border-primary text-primary rounded-lg p-sm flex flex-col items-center justify-center gap-2 hover:bg-primary-container/20 transition-colors">
+<span class="material-symbols-outlined text-2xl">videocam</span>
+<span class="font-label-md text-label-md">مكالمة فيديو</span>
+</button>
+<button class="bg-surface-container-lowest border border-surface-variant text-on-surface-variant rounded-lg p-sm flex flex-col items-center justify-center gap-2 hover:bg-surface-container-low transition-colors">
+<span class="material-symbols-outlined text-2xl">clinical_notes</span>
+<span class="font-label-md text-label-md">حضور للعيادة</span>
+</button>
+</div>
+</section>
+<!-- Duration Selector -->
+<section class="space-y-xs">
+<h3 class="font-label-md text-label-md text-on-surface-variant">المدة</h3>
+<div class="flex gap-sm">
+<button class="bg-surface-container-lowest border border-surface-variant text-on-surface-variant rounded-full px-lg py-2 font-label-md text-label-md hover:bg-surface-container-low transition-colors">30 دقيقة</button>
+<button class="bg-primary text-on-primary rounded-full px-lg py-2 font-label-md text-label-md shadow-[0_4px_20px_rgba(22,22,22,0.05)]">60 دقيقة</button>
+</div>
+</section>
+<!-- Date Carousel -->
+<section class="space-y-xs">
+<div class="flex justify-between items-end mb-2">
+<h3 class="font-label-md text-label-md text-on-surface-variant">التاريخ</h3>
+<span class="font-label-sm text-label-sm text-tertiary flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">calendar_month</span>
+                    أكتوبر 2023
+                </span>
+</div>
+<div class="flex gap-sm overflow-x-auto no-scrollbar pb-2 snap-x">
+<!-- Day 1 -->
+<button class="flex-shrink-0 w-16 h-20 bg-surface-container-lowest border border-surface-variant rounded-xl flex flex-col items-center justify-center gap-1 snap-center hover:bg-surface-container-low transition-colors">
+<span class="font-label-sm text-label-sm text-tertiary">أحد</span>
+<span class="font-headline-sm text-headline-sm text-on-surface">15</span>
+</button>
+<!-- Day 2 (Active) -->
+<button class="flex-shrink-0 w-16 h-20 bg-primary-container text-on-primary-container rounded-xl flex flex-col items-center justify-center gap-1 snap-center shadow-[0_4px_20px_rgba(22,22,22,0.05)]">
+<span class="font-label-sm text-label-sm">إثنين</span>
+<span class="font-headline-sm text-headline-sm">16</span>
+</button>
+<!-- Day 3 -->
+<button class="flex-shrink-0 w-16 h-20 bg-surface-container-lowest border border-surface-variant rounded-xl flex flex-col items-center justify-center gap-1 snap-center hover:bg-surface-container-low transition-colors">
+<span class="font-label-sm text-label-sm text-tertiary">ثلاثاء</span>
+<span class="font-headline-sm text-headline-sm text-on-surface">17</span>
+</button>
+<!-- Day 4 -->
+<button class="flex-shrink-0 w-16 h-20 bg-surface-container-lowest border border-surface-variant rounded-xl flex flex-col items-center justify-center gap-1 snap-center hover:bg-surface-container-low transition-colors">
+<span class="font-label-sm text-label-sm text-tertiary">أربعاء</span>
+<span class="font-headline-sm text-headline-sm text-on-surface">18</span>
+</button>
+<!-- Day 5 -->
+<button class="flex-shrink-0 w-16 h-20 bg-surface-container-lowest border border-surface-variant rounded-xl flex flex-col items-center justify-center gap-1 snap-center hover:bg-surface-container-low transition-colors opacity-50 cursor-not-allowed">
+<span class="font-label-sm text-label-sm text-tertiary">خميس</span>
+<span class="font-headline-sm text-headline-sm text-on-surface">19</span>
+</button>
+</div>
+</section>
+<!-- Time Slot Grid -->
+<section class="space-y-4">
+<div class="space-y-xs">
+<h4 class="font-label-sm text-label-sm text-tertiary flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px]">light_mode</span>
+                    الصباح
+                </h4>
+<div class="grid grid-cols-3 gap-sm">
+<button class="bg-surface-container-lowest border border-surface-variant text-on-surface-variant py-2 rounded-lg font-label-md text-label-md hover:border-primary hover:text-primary transition-colors">09:00 ص</button>
+<button class="bg-surface-container-lowest border border-surface-variant text-on-surface-variant py-2 rounded-lg font-label-md text-label-md hover:border-primary hover:text-primary transition-colors">10:00 ص</button>
+<button class="bg-surface-container-lowest border border-surface-variant text-on-surface-variant py-2 rounded-lg font-label-md text-label-md hover:border-primary hover:text-primary transition-colors opacity-50 cursor-not-allowed bg-surface-variant/20">11:00 ص</button>
+</div>
+</div>
+<div class="space-y-xs">
+<h4 class="font-label-sm text-label-sm text-tertiary flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px]">wb_sunny</span>
+                    بعد الظهر
+                </h4>
+<div class="grid grid-cols-3 gap-sm">
+<button class="bg-surface-container-lowest border border-surface-variant text-on-surface-variant py-2 rounded-lg font-label-md text-label-md hover:border-primary hover:text-primary transition-colors">01:00 م</button>
+<button class="bg-primary text-on-primary py-2 rounded-lg font-label-md text-label-md shadow-sm">02:00 م</button>
+<button class="bg-surface-container-lowest border border-surface-variant text-on-surface-variant py-2 rounded-lg font-label-md text-label-md hover:border-primary hover:text-primary transition-colors">03:00 م</button>
+</div>
+</div>
+</section>
+<p class="text-center font-label-sm text-label-sm text-tertiary mt-4">
+            الأوقات المعروضة حسب توقيت المملكة العربية السعودية (AST)
+        </p>
+</main>
+<!-- Bottom Action Bar (Contextual FAB Replacement for Transaction) -->
+<div class="fixed bottom-0 left-0 w-full bg-surface-container-lowest/90 backdrop-blur-md border-t border-outline-variant/20 p-margin-mobile pb-safe shadow-[0_-4px_20px_rgba(22,22,22,0.05)] z-50">
+<button class="w-full bg-primary text-on-primary font-headline-sm text-headline-sm py-4 rounded-xl shadow-sm hover:opacity-90 transition-opacity flex items-center justify-center gap-2">
+            متابعة
+            <span class="material-symbols-outlined text-[20px] rotate-180">arrow_forward</span>
+</button>
+</div>
+</body></html>

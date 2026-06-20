@@ -34,6 +34,8 @@ import {
   SurfaceToolbar,
 } from "@/components/shared/SurfaceShell";
 import { formatViewerDateTime } from "@/lib/time-formatting";
+import Avatar from "@/components/ui/avatar/Avatar";
+import { Skeleton } from "@/components/shared/LoadingStates";
 
 function formatScheduledAt(isoString: string | null, numLocale: string): string {
   return formatViewerDateTime(isoString, { locale: numLocale });
@@ -43,14 +45,6 @@ function getBucket(presentationStatus: SessionPresentationStatus) {
   if (presentationStatus === "JOINABLE" || presentationStatus === "IN_PROGRESS") return "live";
   if (presentationStatus === "UPCOMING" || presentationStatus === "UNAVAILABLE") return "action";
   return "archive";
-}
-
-function countPresentationStatuses(
-  items: SessionListItem[],
-  statuses: SessionPresentationStatus[],
-) {
-  const statusSet = new Set(statuses);
-  return items.filter((item) => statusSet.has(item.presentationStatus)).length;
 }
 
 function sortSessions(items: SessionListItem[], sortOrder: "newest" | "oldest") {
@@ -73,20 +67,19 @@ function getCopy(locale: string) {
     return {
       eyebrow: "جدول الجلسات",
       title: "جلساتي",
-      note:
-        "\u0627\u0644\u062a\u0631\u062a\u064a\u0628 \u0627\u0644\u0627\u0641\u062a\u0631\u0627\u0636\u064a \u064a\u0638\u0647\u0631 \u0627\u0644\u062c\u0644\u0633\u0627\u062a \u0627\u0644\u0623\u062d\u062f\u062b \u0623\u0648\u0644\u0627\u064b\u060c \u0648\u064a\u0645\u0643\u0646\u0643 \u062a\u063a\u064a\u064a\u0631 \u0627\u0644\u062a\u0631\u062a\u064a\u0628 \u0645\u0646 \u0627\u0644\u0642\u0627\u0626\u0645\u0629.",
-      paymentExpiredNote:
-        "الجلسات التي انتهت مهلة دفعها تظهر كحالة مستقلة، وليست جلسات منتهية.",
-      summaryLabel: "\u0625\u062c\u0645\u0627\u0644\u064a \u0627\u0644\u062c\u0644\u0633\u0627\u062a",
-      sortLabel: "\u062a\u0631\u062a\u064a\u0628 \u0627\u0644\u062c\u0644\u0633\u0627\u062a",
-      sortNewest: "\u0627\u0644\u0623\u062d\u062f\u062b \u0623\u0648\u0644\u0627\u064b",
-      sortOldest: "\u0627\u0644\u0623\u0642\u062f\u0645 \u0623\u0648\u0644\u0627\u064b",
+      note: "الترتيب الافتراضي يظهر الجلسات الأحدث أولاً، ويمكنك تغيير الترتيب من القائمة.",
+      paymentExpiredNote: "الجلسات التي انتهت مهلة دفعها تظهر كحالة مستقلة، وليست جلسات منتهية.",
+      summaryLabel: "إجمالي الجلسات",
+      sortLabel: "ترتيب الجلسات",
+      sortNewest: "الأحدث أولاً",
+      sortOldest: "الأقدم أولاً",
       pageLabel: (page: number, totalPages: number) => `الصفحة ${page} من ${totalPages}`,
       loading: "جارٍ تحميل الجلسات...",
       emptyTitle: "لا توجد جلسات بعد",
-      emptyNote:
-        "ابدأ بالمطابقة الموجهة أو احجز جلسة مع أحد المختصين، وستظهر هنا.",
+      emptyNote: "ابدأ بالمطابقة الموجهة أو احجز جلسة مع أحد المختصين، وستظهر هنا.",
       emptyAction: "تواصل للمختص المناسب",
+      emptyTabTitle: "لا توجد جلسات في هذا القسم",
+      emptyTabNote: "لا توجد جلسات تطابق هذا التصنيف حالياً.",
       errorTitle: "تعذّر تحميل الجلسات",
       errorNote: "يرجى تحديث الصفحة والمحاولة مجددًا.",
       retry: "إعادة المحاولة",
@@ -101,6 +94,12 @@ function getCopy(locale: string) {
         actions: "الإجراء",
         open: "عرض التفاصيل",
         noSchedule: "لم يُحدد الموعد بعد",
+      },
+      tabs: {
+        all: "الكل",
+        upcoming: "النشطة والقادمة",
+        completed: "المكتملة",
+        cancelled: "الملغاة",
       },
       summary: {
         total: {
@@ -130,10 +129,8 @@ function getCopy(locale: string) {
   return {
     eyebrow: "Session dashboard",
     title: "My Sessions",
-    note:
-      "A clear layout that defaults to newest sessions first, while letting you change the order from the toolbar.",
-    paymentExpiredNote:
-      "Sessions with expired payment windows appear as their own state, not as finished sessions.",
+    note: "A clear layout that defaults to newest sessions first, while letting you change the order from the toolbar.",
+    paymentExpiredNote: "Sessions with expired payment windows appear as their own state, not as finished sessions.",
     summaryLabel: "Total sessions",
     sortLabel: "Sort sessions",
     sortNewest: "Newest first",
@@ -141,9 +138,10 @@ function getCopy(locale: string) {
     pageLabel: (page: number, totalPages: number) => `Page ${page} of ${totalPages}`,
     loading: "Loading sessions...",
     emptyTitle: "No sessions yet",
-    emptyNote:
-      "Start with guided matching or book a session with a practitioner, and it will appear here.",
+    emptyNote: "Start with guided matching or book a session with a practitioner, and it will appear here.",
     emptyAction: "Start guided matching",
+    emptyTabTitle: "No sessions in this section",
+    emptyTabNote: "There are no sessions matching this category right now.",
     errorTitle: "Could not load sessions",
     errorNote: "Please try refreshing the page.",
     retry: "Try again",
@@ -158,6 +156,12 @@ function getCopy(locale: string) {
       actions: "Actions",
       open: "View details",
       noSchedule: "Not scheduled yet",
+    },
+    tabs: {
+      all: "All",
+      upcoming: "Active & Upcoming",
+      completed: "Completed",
+      cancelled: "Cancelled",
     },
     summary: {
       total: {
@@ -226,48 +230,37 @@ function TablePagination({
   );
 }
 
-function countStatuses(items: SessionListItem[], statuses: SessionStatus[]) {
-  const statusSet = new Set(statuses);
-  return items.filter((item) => statusSet.has(item.status)).length;
-}
-
-function SessionsTableSkeleton() {
+function SessionsTimelineSkeleton() {
   return (
-    <section className="overflow-hidden rounded-[28px] border border-border-light bg-white shadow-theme-xs dark:bg-white/5">
-      <div className="overflow-hidden">
-        <div className="border-b border-border-light px-4 py-4 sm:px-6">
+    <div className="space-y-4">
+      {Array.from({ length: 3 }).map((_, index) => (
+        <div
+          key={index}
+          className="rounded-[26px] border border-border-light bg-surface-secondary p-5 shadow-theme-xs space-y-4"
+        >
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="space-y-2">
-              <div className="h-3 w-24 rounded-full bg-surface-tertiary/80 dark:bg-white/10" />
-              <div className="h-4 w-56 rounded-full bg-surface-tertiary/80 dark:bg-white/10" />
+            <div className="flex items-center gap-3">
+              <Skeleton variant="circular" className="h-10 w-10 shrink-0" />
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-3 w-20" />
+              </div>
             </div>
-            <div className="h-10 w-32 rounded-2xl bg-surface-tertiary/80 dark:bg-white/10" />
+            <Skeleton className="h-7 w-24 rounded-full" />
+          </div>
+          <div className="h-px bg-border-light/60" />
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Skeleton className="h-4 w-40" />
+            <Skeleton className="h-4 w-28" />
+          </div>
+          <div className="h-px bg-border-light/60" />
+          <div className="flex items-center justify-between gap-4">
+            <Skeleton className="h-3 w-48" />
+            <Skeleton className="h-9 w-28 rounded-2xl" />
           </div>
         </div>
-        <div className="divide-y divide-border-light">
-          {Array.from({ length: 4 }).map((_, index) => (
-            <div key={index} className="grid gap-4 px-4 py-5 sm:px-6 lg:grid-cols-6">
-              <div className="space-y-2 lg:col-span-1">
-                <div className="h-3 w-20 rounded-full bg-surface-tertiary/80 dark:bg-white/10" />
-                <div className="h-4 w-28 rounded-full bg-surface-tertiary/80 dark:bg-white/10" />
-              </div>
-              <div className="space-y-2 lg:col-span-2">
-                <div className="h-3 w-16 rounded-full bg-surface-tertiary/80 dark:bg-white/10" />
-                <div className="h-4 w-full max-w-[18rem] rounded-full bg-surface-tertiary/80 dark:bg-white/10" />
-              </div>
-              <div className="space-y-2 lg:col-span-1">
-                <div className="h-3 w-14 rounded-full bg-surface-tertiary/80 dark:bg-white/10" />
-                <div className="h-4 w-24 rounded-full bg-surface-tertiary/80 dark:bg-white/10" />
-              </div>
-              <div className="space-y-2 lg:col-span-1">
-                <div className="h-3 w-20 rounded-full bg-surface-tertiary/80 dark:bg-white/10" />
-                <div className="h-7 w-28 rounded-2xl bg-surface-tertiary/80 dark:bg-white/10" />
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
+      ))}
+    </div>
   );
 }
 
@@ -309,7 +302,7 @@ function SessionsLoadingState({ locale }: { locale: string }) {
         <div className="h-11 w-36 rounded-2xl bg-surface-tertiary/80 dark:bg-white/10" />
       </SurfaceToolbar>
 
-      <SessionsTableSkeleton />
+      <SessionsTimelineSkeleton />
 
       <p className={`text-sm text-text-secondary ${isRtl ? "text-right" : ""}`}>
         {isRtl ? "جارٍ تجهيز جلساتك..." : "Preparing your sessions..."}
@@ -323,7 +316,7 @@ function SessionsEmptyState({ locale }: { locale: string }) {
   const primaryCta = (
     <Link
       href="/patient/matching"
-      className="inline-flex items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-3 text-sm font-semibold text-white shadow-[0_14px_28px_-18px_rgba(68,161,148,0.4)] transition hover:bg-primary-hover"
+      className="sawiyaa-btn-press inline-flex items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-3 text-sm font-semibold text-white shadow-[0_14px_28px_-18px_rgba(68,161,148,0.4)] transition hover:bg-primary-hover hover:-translate-y-0.5"
     >
       <Sparkles size={16} />
       {locale === "ar" ? "ابدأ الحجز" : "Start booking"}
@@ -427,7 +420,7 @@ function SessionsEmptyState({ locale }: { locale: string }) {
             {primaryCta}
             <Link
               href="/patient/sessions"
-              className="inline-flex items-center justify-center gap-2 rounded-2xl border border-border-light bg-white px-5 py-3 text-sm font-semibold text-text-primary transition hover:border-primary/30 hover:text-primary dark:bg-white/5"
+              className="sawiyaa-btn-press inline-flex items-center justify-center gap-2 rounded-2xl border border-border-light bg-white px-5 py-3 text-sm font-semibold text-text-primary transition hover:border-primary/30 hover:text-primary hover:-translate-y-0.5 dark:bg-white/5"
             >
               <Search size={16} />
               {locale === "ar" ? "استكشف الجلسات" : "Explore sessions"}
@@ -439,6 +432,102 @@ function SessionsEmptyState({ locale }: { locale: string }) {
   );
 }
 
+function PatientSessionTimelineCard({
+  session,
+  locale,
+  t,
+  copy,
+}: {
+  session: SessionListItem;
+  locale: string;
+  t: any;
+  copy: any;
+}) {
+  const isRtl = locale.startsWith("ar");
+  const bucket = getBucket(session.presentationStatus);
+
+  const borderTone =
+    session.presentationStatus === "UNAVAILABLE"
+      ? "border-s-warning-500"
+      : bucket === "action"
+        ? "border-s-warning-500"
+        : bucket === "live"
+          ? "border-s-primary"
+          : "border-s-text-muted";
+
+  const numLocale = locale === "ar" ? "ar-SA" : "en-US";
+
+  return (
+    <SurfaceCard
+      variant="compact"
+      className={`border-s-4 ${borderTone} sawiyaa-hover-lift sawiyaa-animate-fade-in transition-all duration-300`}
+    >
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-start gap-3">
+          <Avatar
+            src={null}
+            alt={session.practitioner.displayName ?? session.practitioner.slug}
+            size="medium"
+            className="shrink-0"
+          />
+          <div className="space-y-1">
+            <h4 className="text-sm font-semibold text-text-primary dark:text-white/95">
+              {t("card.with")} {session.practitioner.displayName ?? session.practitioner.slug}
+            </h4>
+            <div className="flex flex-wrap items-center gap-2 text-xs text-text-secondary">
+              <span className="font-mono text-text-muted bg-surface-tertiary/60 px-2 py-0.5 rounded">
+                {session.sessionCode}
+              </span>
+              <span aria-hidden="true" className="text-border-light">•</span>
+              <span>{t(`detail.mode.${session.sessionMode}` as any)}</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-3">
+          <SessionStatusBadge
+            status={session.status}
+            presentationStatus={session.presentationStatus}
+            labelOverride={
+              session.status === "EXPIRED" ? copy.expiredPaymentBadge : undefined
+            }
+          />
+        </div>
+      </div>
+
+      <div className="mt-4 grid gap-3 border-t border-border-light/60 pt-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="flex items-center gap-2 text-sm text-text-primary dark:text-white/90">
+          <CalendarDays className="h-4 w-4 shrink-0 text-text-muted" />
+          <span>
+            {session.scheduledStartAt
+              ? formatScheduledAt(session.scheduledStartAt, numLocale)
+              : copy.table.noSchedule}
+          </span>
+        </div>
+
+        <div className="flex items-center gap-2 text-sm text-text-primary dark:text-white/90">
+          <Clock className="h-4 w-4 shrink-0 text-text-muted" />
+          <span>{t("card.duration", { n: session.durationMinutes })}</span>
+        </div>
+      </div>
+
+      <div className="mt-4 flex flex-col gap-3 border-t border-border-light/60 pt-4 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-xs text-text-secondary leading-normal">
+          {t(`list.presentationHints.${session.presentationStatus}` as any)}
+        </p>
+
+        <Link
+          href={`/patient/sessions/${session.id}` as never}
+          className="sawiyaa-btn-press inline-flex items-center justify-center gap-1.5 rounded-2xl border border-border-light bg-white px-4 py-2 text-sm font-medium text-text-primary transition hover:border-primary/30 hover:bg-surface-tertiary/20 hover:text-primary dark:bg-white/5 dark:text-white/90 shrink-0 self-end sm:self-auto hover:-translate-y-0.5"
+        >
+          <span>{copy.table.open}</span>
+          {isRtl ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+        </Link>
+      </div>
+    </SurfaceCard>
+  );
+}
+
 export default function PatientSessionsPanel() {
   const t = useTranslations("sessions");
   const locale = useLocale();
@@ -446,12 +535,26 @@ export default function PatientSessionsPanel() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_LIMIT);
   const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
+  const [activeTab, setActiveTab] = useState<"all" | "upcoming" | "completed" | "cancelled">("all");
 
   const { data: summary } = usePatientSessionSummary();
-  const { data, isLoading, isError, refetch } = usePatientSessions({
-    page,
-    limit: pageSize,
-  });
+
+  const queryParams = useMemo(() => {
+    const params: any = {
+      page,
+      limit: pageSize,
+    };
+    if (activeTab === "upcoming") {
+      params.presentationFilter = "upcoming";
+    } else if (activeTab === "completed") {
+      params.presentationFilter = "finished";
+    } else if (activeTab === "cancelled") {
+      params.status = "CANCELLED";
+    }
+    return params;
+  }, [page, pageSize, activeTab]);
+
+  const { data, isLoading, isError, refetch } = usePatientSessions(queryParams);
 
   const sessions = useMemo(
     () => sortSessions(data?.items ?? [], sortOrder),
@@ -459,23 +562,36 @@ export default function PatientSessionsPanel() {
   );
   const pagination = data?.pagination;
 
-  const pageSummary = useMemo(
-    () => ({
-      pendingPayment: countStatuses(sessions, ["PENDING_PAYMENT"]),
-      pendingPractitionerResponse: countStatuses(sessions, ["PENDING_PRACTITIONER_RESPONSE"]),
-      readyToJoin: countPresentationStatuses(sessions, ["JOINABLE"]),
-      confirmed: countStatuses(sessions, ["CONFIRMED"]),
-      upcoming: countStatuses(sessions, ["UPCOMING"]),
-      inProgress: countStatuses(sessions, ["IN_PROGRESS"]),
-      completed: countStatuses(sessions, ["COMPLETED"]),
-      cancelled: countStatuses(sessions, ["CANCELLED"]),
-      noShow: countStatuses(sessions, ["NO_SHOW"]),
-      expired: countStatuses(sessions, ["EXPIRED"]),
-      refundPending: countStatuses(sessions, ["REFUND_PENDING"]),
-      refunded: countStatuses(sessions, ["REFUNDED"]),
-    }),
-    [sessions],
-  );
+  const handleTabChange = (tab: "all" | "upcoming" | "completed" | "cancelled") => {
+    setActiveTab(tab);
+    setPage(1);
+  };
+
+  const pageSummary = useMemo(() => {
+    const countStatus = (statuses: SessionStatus[]) => {
+      const statusSet = new Set(statuses);
+      return (data?.items ?? []).filter((item) => statusSet.has(item.status)).length;
+    };
+    const countPres = (statuses: SessionPresentationStatus[]) => {
+      const statusSet = new Set(statuses);
+      return (data?.items ?? []).filter((item) => statusSet.has(item.presentationStatus)).length;
+    };
+
+    return {
+      pendingPayment: countStatus(["PENDING_PAYMENT"]),
+      pendingPractitionerResponse: countStatus(["PENDING_PRACTITIONER_RESPONSE"]),
+      readyToJoin: countPres(["JOINABLE"]),
+      confirmed: countStatus(["CONFIRMED"]),
+      upcoming: countStatus(["UPCOMING"]),
+      inProgress: countStatus(["IN_PROGRESS"]),
+      completed: countStatus(["COMPLETED"]),
+      cancelled: countStatus(["CANCELLED"]),
+      noShow: countStatus(["NO_SHOW"]),
+      expired: countStatus(["EXPIRED"]),
+      refundPending: countStatus(["REFUND_PENDING"]),
+      refunded: countStatus(["REFUNDED"]),
+    };
+  }, [data?.items]);
 
   if (isLoading) {
     return <SessionsLoadingState locale={locale} />;
@@ -491,7 +607,9 @@ export default function PatientSessionsPanel() {
     );
   }
 
-  if (sessions.length === 0) {
+  const hasOverallSessions = (summary?.totalItems ?? 0) > 0;
+
+  if (sessions.length === 0 && activeTab === "all" && !hasOverallSessions) {
     return <SessionsEmptyState locale={locale} />;
   }
 
@@ -503,6 +621,13 @@ export default function PatientSessionsPanel() {
     pageSummary.confirmed + pageSummary.upcoming + pageSummary.readyToJoin + pageSummary.inProgress;
   const totalExpired = summary?.paymentExpired ?? pageSummary.expired;
   const totalArchive = summary?.history ?? pageSummary.completed + pageSummary.cancelled + pageSummary.noShow + pageSummary.expired + pageSummary.refundPending + pageSummary.refunded;
+
+  const TABS = [
+    { id: "all", label: copy.tabs.all },
+    { id: "upcoming", label: copy.tabs.upcoming },
+    { id: "completed", label: copy.tabs.completed },
+    { id: "cancelled", label: copy.tabs.cancelled },
+  ] as const;
 
   return (
     <div className="space-y-5">
@@ -546,6 +671,27 @@ export default function PatientSessionsPanel() {
         />
       </SurfaceCard>
 
+      {/* Tab Segment Pills */}
+      <div className="flex items-center gap-1.5 overflow-x-auto rounded-[20px] bg-surface-tertiary/60 p-1.5 dark:bg-white/5">
+        {TABS.map((tab) => {
+          const isActive = activeTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => handleTabChange(tab.id)}
+              className={`sawiyaa-btn-press inline-flex items-center justify-center rounded-[14px] px-4 py-2.5 text-sm font-semibold transition-all duration-200 shrink-0 ${
+                isActive
+                  ? "bg-white text-text-primary shadow-sm dark:bg-surface-secondary dark:text-white"
+                  : "text-text-secondary hover:bg-white/40 hover:text-text-primary dark:hover:bg-white/5"
+              }`}
+            >
+              {tab.label}
+            </button>
+          );
+        })}
+      </div>
+
       <SurfaceToolbar className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div className="space-y-1.5">
           <p className="text-sm font-medium text-text-primary dark:text-white/90">
@@ -555,7 +701,7 @@ export default function PatientSessionsPanel() {
             <span>
               {copy.summary.expired.label}: {String(totalExpired)}
             </span>
-            <span aria-hidden="true">·</span>
+            <span aria-hidden="true" className="text-border-light">•</span>
             <span>{copy.pageLabel(page, totalPages)}</span>
           </div>
         </div>
@@ -602,121 +748,41 @@ export default function PatientSessionsPanel() {
         </div>
       </SurfaceToolbar>
 
-      <section className="overflow-hidden rounded-[28px] border border-border-light bg-white shadow-theme-xs dark:bg-white/5">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-border-light">
-            <thead className="bg-surface-tertiary/60 dark:bg-white/5">
-              <tr>
-                <th className="px-4 py-3 text-start text-xs font-semibold uppercase tracking-[0.14em] text-text-muted">
-                  {copy.table.reference}
-                </th>
-                <th className="px-4 py-3 text-start text-xs font-semibold uppercase tracking-[0.14em] text-text-muted">
-                  {copy.table.practitioner}
-                </th>
-                <th className="px-4 py-3 text-start text-xs font-semibold uppercase tracking-[0.14em] text-text-muted">
-                  {copy.table.scheduledAt}
-                </th>
-                <th className="px-4 py-3 text-start text-xs font-semibold uppercase tracking-[0.14em] text-text-muted">
-                  {copy.table.duration}
-                </th>
-                <th className="px-4 py-3 text-start text-xs font-semibold uppercase tracking-[0.14em] text-text-muted">
-                  {copy.table.status}
-                </th>
-                <th className="px-4 py-3 text-start text-xs font-semibold uppercase tracking-[0.14em] text-text-muted">
-                  {copy.table.actions}
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border-light">
-              {sessions.map((session) => {
-                const bucket = getBucket(session.presentationStatus);
-                const rowTone =
-                  session.presentationStatus === "UNAVAILABLE"
-                    ? "bg-warning-50/50 dark:bg-warning-500/10"
-                    : bucket === "action"
-                      ? "bg-warning-50/40 dark:bg-warning-500/5"
-                      : bucket === "live"
-                        ? "bg-primary-light/10 dark:bg-primary/5"
-                        : "bg-transparent";
+      {sessions.length === 0 ? (
+        <StateCard
+          title={copy.emptyTabTitle}
+          note={copy.emptyTabNote}
+          centered={true}
+          className="sawiyaa-animate-fade-in"
+        />
+      ) : (
+        <div className="space-y-4">
+          {sessions.map((session) => (
+            <PatientSessionTimelineCard
+              key={session.id}
+              session={session}
+              locale={locale}
+              t={t}
+              copy={copy}
+            />
+          ))}
 
-                return (
-                  <tr
-                    key={session.id}
-                    className={`transition hover:bg-surface-secondary/40 ${rowTone}`}
-                  >
-                    <td className="px-4 py-4 align-top">
-                      <div className="font-mono text-xs tracking-[0.12em] text-text-muted">
-                        {session.sessionCode}
-                      </div>
-                    </td>
-                    <td className="px-4 py-4 align-top">
-                      <div className="min-w-0">
-                        <div className="text-sm font-semibold text-text-primary dark:text-white/95">
-                          {t("card.with")} {session.practitioner.displayName ?? session.practitioner.slug}
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-4 py-4 align-top">
-                      <div className="flex items-start gap-2 text-sm text-text-primary dark:text-white/90">
-                        <CalendarDays className="mt-0.5 h-4 w-4 shrink-0 text-text-muted" />
-                        <span>
-                          {session.scheduledStartAt
-                            ? formatScheduledAt(
-                                session.scheduledStartAt,
-                                locale === "ar" ? "ar-SA" : "en-US",
-                              )
-                            : copy.table.noSchedule}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-4 align-top">
-                      <div className="flex items-center gap-2 text-sm text-text-primary dark:text-white/90">
-                        <Clock className="h-4 w-4 shrink-0 text-text-muted" />
-                        <span>{t("card.duration", { n: session.durationMinutes })}</span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-4 align-top">
-                      <SessionStatusBadge
-                        status={session.status}
-                        presentationStatus={session.presentationStatus}
-                        labelOverride={
-                          session.status === "EXPIRED" ? copy.expiredPaymentBadge : undefined
-                        }
-                      />
-                      <div className="mt-2 text-xs leading-5 text-text-secondary">
-                        {t(
-                          `list.presentationHints.${session.presentationStatus}` as Parameters<typeof t>[0],
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-4 py-4 align-top">
-                      <Link
-                        href={`/patient/sessions/${session.id}` as never}
-                        className="inline-flex items-center gap-1.5 rounded-2xl border border-border-light bg-white px-3 py-2 text-sm font-medium text-text-primary transition hover:border-primary/30 hover:text-primary dark:bg-white/5"
-                      >
-                        {copy.table.open}
-                      </Link>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+          {totalPages > 1 ? (
+            <div className="rounded-[28px] border border-border-light bg-white shadow-theme-xs dark:bg-white/5">
+              <TablePagination
+                page={page}
+                totalPages={totalPages}
+                onPageChange={(nextPage) => {
+                  if (nextPage < 1 || nextPage > totalPages) return;
+                  setPage(nextPage);
+                }}
+                pageLabel={copy.pageLabel}
+                locale={locale}
+              />
+            </div>
+          ) : null}
         </div>
-
-        {totalPages > 1 ? (
-          <TablePagination
-            page={page}
-            totalPages={totalPages}
-            onPageChange={(nextPage) => {
-              if (nextPage < 1 || nextPage > totalPages) return;
-              setPage(nextPage);
-            }}
-            pageLabel={copy.pageLabel}
-            locale={locale}
-          />
-        ) : null}
-      </section>
+      )}
     </div>
   );
 }

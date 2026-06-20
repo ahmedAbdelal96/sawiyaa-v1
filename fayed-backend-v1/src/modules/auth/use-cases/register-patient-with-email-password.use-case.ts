@@ -10,6 +10,7 @@ import { UserEmailRepository } from '../repositories/user-email.repository';
 import { UserPhoneRepository } from '../repositories/user-phone.repository';
 import { UserRepository } from '../repositories/user.repository';
 import { AuthSessionDeviceContext } from '../types/auth-session.types';
+import { isAuthUniqueConstraintError } from '../utils/is-auth-unique-constraint-error';
 
 /**
  * Patient email/password registration creates the patient account baseline and issues a session immediately.
@@ -55,59 +56,70 @@ export class RegisterPatientWithEmailPasswordUseCase {
       : null;
 
     const passwordHash = await this.hashPasswordUseCase.execute(input.password);
-    const createdUser = await this.prisma.$transaction(async (tx) => {
-      const user = await this.userRepository.createUser(
-        {
-          displayName: input.displayName ?? null,
-          status: UserStatus.ACTIVE,
-        },
-        tx,
-      );
+    const createdUser = await this.prisma
+      .$transaction(async (tx) => {
+        const user = await this.userRepository.createUser(
+          {
+            displayName: input.displayName ?? null,
+            status: UserStatus.ACTIVE,
+          },
+          tx,
+        );
 
-      await this.userRepository.ensureRole(user.id, UserRoleType.PATIENT, tx);
-      await this.userRepository.createPatientProfileIfMissing(
-        user.id,
-        input.displayName ?? null,
-        countryId,
-        tx,
-      );
-      await this.userEmailRepository.upsertPrimaryEmail(
-        user.id,
-        normalizedEmail,
-        false,
-        tx,
-      );
-      await this.authIdentityRepository.createPasswordIdentity(
-        user.id,
-        passwordHash,
-        tx,
-      );
+        await this.userRepository.ensureRole(user.id, UserRoleType.PATIENT, tx);
+        await this.userRepository.createPatientProfileIfMissing(
+          user.id,
+          input.displayName ?? null,
+          countryId,
+          tx,
+        );
+        await this.userEmailRepository.upsertPrimaryEmail(
+          user.id,
+          normalizedEmail,
+          false,
+          tx,
+        );
+        await this.authIdentityRepository.createPasswordIdentity(
+          user.id,
+          passwordHash,
+          tx,
+        );
 
-      if (input.phone) {
-        const normalizedPhone = input.phone.trim();
-        try {
-          await this.userPhoneRepository.upsertPrimaryPhone(
-            user.id,
-            normalizedPhone,
-            false,
-            tx,
-          );
-        } catch (error) {
-          if (
-            error instanceof PrismaClientKnownRequestError &&
-            error.code === 'P2002'
-          ) {
-            throw new ConflictException({
-              messageKey: 'auth.errors.phoneAlreadyRegistered',
-              error: 'PHONE_ALREADY_REGISTERED',
-            });
+        if (input.phone) {
+          const normalizedPhone = input.phone.trim();
+          try {
+            await this.userPhoneRepository.upsertPrimaryPhone(
+              user.id,
+              normalizedPhone,
+              false,
+              tx,
+            );
+          } catch (error) {
+            if (
+              error instanceof PrismaClientKnownRequestError &&
+              error.code === 'P2002'
+            ) {
+              throw new ConflictException({
+                messageKey: 'auth.errors.phoneAlreadyRegistered',
+                error: 'PHONE_ALREADY_REGISTERED',
+              });
+            }
+            throw error;
           }
-          throw error;
         }
-      }
 
-      return user;
-    });
+        return user;
+      })
+      .catch((error: unknown) => {
+        if (isAuthUniqueConstraintError(error)) {
+          throw new ConflictException({
+            messageKey: 'auth.errors.emailAlreadyRegistered',
+            error: 'EMAIL_ALREADY_REGISTERED',
+          });
+        }
+
+        throw error;
+      });
 
     return this.issueAuthTokensUseCase.execute({
       userId: createdUser.id,

@@ -8,7 +8,7 @@ import { OperationalNotificationService } from '@modules/notifications/services/
 describe('AddAdminSupportMessageUseCase', () => {
   const supportTicketRepository = {
     findByIdForAdmin: jest.fn(),
-    addMessage: jest.fn(),
+    addPublicSupportMessage: jest.fn(),
   } as unknown as SupportTicketRepository;
 
   const resolveSupportAdminActorRoleService = {
@@ -39,7 +39,7 @@ describe('AddAdminSupportMessageUseCase', () => {
     (supportTicketRepository.findByIdForAdmin as jest.Mock).mockResolvedValue({
       id: 'ticket-1',
     });
-    (supportTicketRepository.addMessage as jest.Mock).mockResolvedValue({
+    (supportTicketRepository.addPublicSupportMessage as jest.Mock).mockResolvedValue({
       conversation: {
         messages: [{ id: 'msg-1' }],
         participants: [

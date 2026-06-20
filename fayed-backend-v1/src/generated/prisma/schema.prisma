@@ -1320,6 +1320,8 @@ model User {
   pausedMarketingPlacements                     PractitionerMarketingPlacement[]        @relation("PractitionerMarketingPlacementPausedByAdmin")
   marketingPlacementHistoryEntries              PractitionerMarketingPlacementHistory[]
   sessionAdminDecisions                         SessionAdminDecision[]
+
+  @@index([status, createdAt])
 }
 
 model UserEmail {
@@ -2204,6 +2206,11 @@ model Session {
   @@unique([packagePurchaseId, packageSessionIndex])
   @@index([patientId, status])
   @@index([practitionerId, status])
+  @@index([patientId, status, scheduledStartAt])
+  @@index([practitionerId, status, scheduledStartAt])
+  @@index([status, scheduledStartAt])
+  @@index([status, expiresAt])
+  @@index([status, joinOpenAt])
   @@index([scheduledStartAt])
   @@index([scheduledEndAt])
   @@index([flowType, status])
@@ -2387,6 +2394,8 @@ model InstantBookingRequest {
 
   @@index([patientId, status])
   @@index([practitionerId, status])
+  @@index([practitionerId, status, expiresAt, createdAt])
+  @@index([patientId, status, createdAt])
   @@index([requestedAt])
   @@index([expiresAt])
 }
@@ -2460,6 +2469,7 @@ model Payment {
   patientPackagePurchase           PatientPackagePurchase?           @relation("PatientPackagePurchasePayment")
 
   @@unique([provider, providerPaymentRef], map: "uq_payment_provider_payment_ref")
+  @@index([provider, providerOrderRef])
   @@index([sessionId])
   @@index([patientId, status])
   @@index([practitionerId, status])
@@ -2479,6 +2489,7 @@ model PaymentEvent {
 
   @@index([paymentId, createdAt])
   @@index([eventType, createdAt])
+  @@index([providerEventRef])
 }
 
 model Refund {
@@ -2504,10 +2515,12 @@ model Refund {
   session       Session?              @relation(fields: [sessionId], references: [id], onDelete: SetNull)
   walletEntries CustomerWalletEntry[]
 
+  @@index([paymentId, requestedAt])
   @@index([paymentId, status])
   @@index([sessionId, status])
   @@index([destination, status])
   @@index([requestedAt])
+  @@index([providerRefundRef])
 }
 
 model CustomerWallet {
@@ -2562,6 +2575,7 @@ model CustomerWalletEntry {
   @@index([walletId, effectiveAt])
   @@index([paymentId])
   @@index([refundId])
+  @@index([refundId, entryType])
   @@index([sessionId])
   @@index([entryType, effectiveAt])
   @@index([referenceType, referenceId])
@@ -3276,6 +3290,7 @@ model Conversation {
   chatApprovalRequest ChatApprovalRequest?
 
   @@index([conversationType, status, startedAt])
+  @@index([conversationType, status, updatedAt])
   @@index([patientId, status])
   @@index([practitionerId, status])
   @@index([supportTicketId])
@@ -3386,6 +3401,10 @@ model SupportTicket {
   tagAssignments SupportTicketTagAssignment[]
   events         SupportTicketEvent[]
 
+  @@index([status, ticketType, priority, updatedAt])
+  @@index([assignedToUserId, status, updatedAt])
+  @@index([patientId, status, updatedAt])
+  @@index([practitionerId, status, updatedAt])
   @@index([status, priority, createdAt])
   @@index([assignedToUserId, status])
   @@index([openedByUserId, createdAt])
@@ -3755,6 +3774,7 @@ model Notification {
   feedStates       InAppNotificationFeedState[]
 
   @@unique([idempotencyKey])
+  @@index([userId, channel, status, scheduledFor, createdAt])
   @@index([userId, status, createdAt])
   @@index([userId, channel, createdAt])
   @@index([notificationTypeId, channel, createdAt])

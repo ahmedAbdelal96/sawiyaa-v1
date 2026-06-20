@@ -110,6 +110,7 @@ Questions are organized by priority. Each question states why it matters and whi
 **Why it matters:** The mobile routing logic has a priority order. If the backend populates `routePath` for some types and `href` for others differently than expected, routing will be wrong.
 **Verification method:** Instrument backend to log notification payloads for all types, or inspect backend notification service source.
 **Wave blocking:** Wave 0 (for PHI field removal) and Wave 1 (for routing fix)
+**Resolution:** ✅ ANSWERED (source-level) — Phase 9b Sprint 3 backend inspection confirmed all populated payload fields. `threadId`, `relatedEntityType`, `category`, `relatedEntityId`, `scheduledStartAt`, `packagePlanTitle` removed from push payloads. `{{sessionAt}}` removed from push body via push-specific i18n keys. Remaining fields (`routePath`, `targetRole`) are non-PHI routing data. 🟡 IMPLEMENTED — VERIFICATION PENDING: runtime/device verification still required to confirm actual Expo payload on device.
 
 ---
 

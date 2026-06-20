@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { Text } from "../../../../components/ui";
 import { useTheme } from "../../../../providers/ThemeProvider";
 import type { PatientHomePractitionerItemDto } from "../types";
+import { usePatientProfile } from "../../profile/hooks";
 
 const viewportWidth = Dimensions.get("window").width;
 const CARD_WIDTH = Math.max(260, Math.min(316, Math.round(viewportWidth * 0.78)));
@@ -31,6 +32,10 @@ export function SpecialistCompactCard({
   const [isRemoteLoaded, setIsRemoteLoaded] = useState(false);
   const normalizedAvatarUrl = typeof item.avatarUrl === "string" ? item.avatarUrl.trim() : "";
   const hasRemoteAvatar = normalizedAvatarUrl.length > 0 && !failedAvatarUrls.has(normalizedAvatarUrl);
+
+  const profileQuery = usePatientProfile();
+  const countryCode = profileQuery.data?.profile?.countryCode;
+  const currencyCode = countryCode === "EG" || countryCode === "EGY" ? "EGP" : "USD";
 
   useEffect(() => {
     setHasImageError(false);
@@ -148,7 +153,7 @@ export function SpecialistCompactCard({
       <View style={[styles.metaRow, isRTL ? styles.rowRtl : null]}>
         {item.averageRating != null && variant !== "topRated" ? (
           <View style={[styles.ratingWrap]}>
-            <Ionicons name="star" size={12} color="#EAB308" />
+            <Ionicons name="star" size={12} color="#C8A979" />
             <Text variant="caption" color={theme.colors.textSecondary} weight="500">
               {item.averageRating.toFixed(1)}
             </Text>
@@ -159,7 +164,7 @@ export function SpecialistCompactCard({
 
         {(item.displaySessionPrice30 ?? item.displaySessionPrice60) != null ? (
           <Text variant="caption" weight="600" color={theme.colors.primary} numberOfLines={1}>
-            {formatSpecialistPrice(item, locale)}
+            {formatSpecialistPrice(item, currencyCode, locale)}
           </Text>
         ) : (
           <View />
@@ -179,7 +184,16 @@ export function SpecialistCompactCard({
         </View>
       ) : null}
 
-      <View style={[styles.profileChip, { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary }]}>
+      <View
+        style={[
+          styles.profileChip,
+          {
+            backgroundColor: "#24564F",
+            borderColor: "#24564F",
+            borderWidth: 1,
+          },
+        ]}
+      >
         <Text variant="caption" weight="600" color="#FFFFFF">
           {t("discovery.list.viewProfile")}
         </Text>
@@ -193,6 +207,7 @@ export const SPECIALIST_CARD_GAP = 12;
 
 function formatSpecialistPrice(
   item: Pick<PatientHomePractitionerItemDto, "displaySessionPrice30" | "displaySessionPrice60">,
+  currencyCode: string,
   locale: string,
 ) {
   const value = item.displaySessionPrice30 ?? item.displaySessionPrice60;
@@ -200,15 +215,21 @@ function formatSpecialistPrice(
     return "";
   }
 
-  return new Intl.NumberFormat(locale, {
-    maximumFractionDigits: 0,
-  }).format(value);
+  try {
+    return new Intl.NumberFormat(locale, {
+      style: "currency",
+      currency: currencyCode,
+      maximumFractionDigits: 0,
+    }).format(value);
+  } catch {
+    return `${currencyCode} ${value}`;
+  }
 }
 
 const styles = StyleSheet.create({
   card: {
     width: CARD_WIDTH,
-    borderRadius: 16,
+    borderRadius: 20,
     borderWidth: 1,
     paddingHorizontal: 14,
     paddingTop: 12,

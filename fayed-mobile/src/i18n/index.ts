@@ -99,12 +99,12 @@ i18n.t = ((key: unknown, options?: unknown) => {
   if (typeof key === "string" && process.env.NODE_ENV !== "production") {
     const namespace = resolveTranslationNamespace(options);
     const language = resolveTranslationLanguage(options);
-    const existsInCurrentLanguage = i18n.exists(key, {
-      ...(typeof options === "object" && options !== null ? (options as Record<string, unknown>) : {}),
-      lng: language,
-      ns: namespace,
-      fallbackLng: [] as never,
-    } as never);
+    const resource = i18n.getResource(
+      language,
+      namespace ?? "translation",
+      key,
+    );
+    const existsInCurrentLanguage = resource !== undefined;
 
     const isPluralizedKey = typeof options === "object" && options !== null && "count" in options;
 

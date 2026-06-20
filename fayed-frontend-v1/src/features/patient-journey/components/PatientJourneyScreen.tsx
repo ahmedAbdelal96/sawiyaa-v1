@@ -15,11 +15,10 @@ import {
 } from "lucide-react";
 import Button from "@/components/ui/button/Button";
 import { ListStateSkeleton } from "@/components/shared/ContentStates";
+import { Skeleton } from "@/components/shared/LoadingStates";
 import {
-  PatientActionPanel,
   PatientPageHeader,
   PatientSectionCard,
-  PatientStatCard,
   PatientStatusBadge,
 } from "@/components/patient/PatientChrome";
 import { usePatientJourney } from "../hooks/use-patient-journey";
@@ -134,6 +133,109 @@ function StepIcon({ type }: { type: PatientJourneyNextStepType }) {
   }
 }
 
+function PatientJourneySkeleton() {
+  return (
+    <div className="app-max-content mx-auto space-y-5 sawiyaa-animate-fade-in">
+      {/* ── Welcome Hero Skeleton ── */}
+      <div className="rounded-[24px] border border-border-light bg-surface-tertiary p-6 md:p-8 border-s-4 border-s-primary shadow-sawiyaa-card">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+          <div className="space-y-3 max-w-2xl w-full">
+            <div className="flex items-center gap-2">
+              <Skeleton className="h-5 w-24 rounded-full" />
+            </div>
+            <Skeleton className="h-8 w-2/3" />
+            <Skeleton className="h-4 w-5/6" />
+            <Skeleton className="h-4 w-4/5" />
+          </div>
+          {/* Next Action Widget Skeleton */}
+          <div className="shrink-0 flex flex-col items-start gap-4 p-5 rounded-2xl bg-white border border-border-light shadow-theme-sm max-w-sm w-full lg:w-80">
+            <div className="flex items-center gap-2">
+              <Skeleton className="h-9 w-9 rounded-xl" />
+              <Skeleton className="h-3 w-16" />
+            </div>
+            <div className="space-y-1.5 w-full">
+              <Skeleton className="h-4 w-5/6" />
+              <Skeleton className="h-3 w-full" />
+            </div>
+            <Skeleton className="h-9 w-full rounded-xl" />
+          </div>
+        </div>
+      </div>
+
+      {/* ── Active Care Timeline Skeleton ── */}
+      <div className="rounded-[24px] border border-border-light bg-white p-4 shadow-sawiyaa-card">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex items-center gap-3 w-full">
+            <Skeleton className="h-10 w-10 rounded-xl shrink-0" />
+            <div className="space-y-2 w-full max-w-xl">
+              <Skeleton className="h-4 w-1/3" />
+              <Skeleton className="h-3.5 w-3/4" />
+            </div>
+          </div>
+          <Skeleton className="h-9 w-32 rounded-xl shrink-0" />
+        </div>
+      </div>
+
+      {/* ── Instant Booking Pathway Skeleton ── */}
+      <div className="rounded-[24px] border border-border-light bg-white p-6 shadow-sawiyaa-card space-y-4">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+          <div className="space-y-2 w-full max-w-xl">
+            <Skeleton className="h-4 w-20" />
+            <Skeleton className="h-6 w-3/4" />
+            <Skeleton className="h-3.5 w-5/6" />
+          </div>
+          <Skeleton className="h-10 w-36 rounded-xl shrink-0" />
+        </div>
+        <div className="grid gap-3 sm:grid-cols-3 mt-6 pt-6 border-t border-border-light">
+          <Skeleton className="h-16 rounded-xl" />
+          <Skeleton className="h-16 rounded-xl" />
+          <Skeleton className="h-16 rounded-xl" />
+        </div>
+      </div>
+
+      {/* ── Service Shortcuts Skeleton ── */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="flex items-center gap-4 p-5 rounded-2xl bg-white border border-border-light">
+            <Skeleton className="h-11 w-11 rounded-xl shrink-0" />
+            <div className="space-y-1.5 w-full">
+              <Skeleton className="h-4 w-2/3" />
+              <Skeleton className="h-3 w-5/6" />
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* ── Care Journey Columns Skeleton ── */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        <div className="rounded-[24px] border border-border-light bg-white p-6 shadow-sawiyaa-card space-y-4">
+          <Skeleton className="h-5 w-24" />
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="p-4 rounded-xl border border-border-light bg-surface-tertiary space-y-3">
+              <Skeleton className="h-8 w-8 rounded-lg" />
+              <Skeleton className="h-4 w-3/4" />
+              <Skeleton className="h-3 w-5/6" />
+            </div>
+            <div className="p-4 rounded-xl border border-border-light bg-surface-tertiary space-y-3">
+              <Skeleton className="h-8 w-8 rounded-lg" />
+              <Skeleton className="h-4 w-3/4" />
+              <Skeleton className="h-3 w-5/6" />
+            </div>
+          </div>
+        </div>
+        <div className="rounded-[24px] border border-border-light bg-white p-6 shadow-sawiyaa-card flex flex-col justify-between">
+          <div className="space-y-3">
+            <Skeleton className="h-5 w-24" />
+            <Skeleton className="h-4 w-5/6" />
+            <Skeleton className="h-6 w-1/3" />
+          </div>
+          <Skeleton className="h-9 w-32 rounded-xl" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function PatientJourneyScreen() {
   const t = useTranslations("patient-journey");
   const tSessions = useTranslations("sessions");
@@ -143,18 +245,7 @@ export default function PatientJourneyScreen() {
   const { data: journey, isLoading, isError, refetch } = usePatientJourney();
 
   if (isLoading) {
-    return (
-      <div className="app-max-content mx-auto space-y-5 sm:space-y-6">
-        <PatientPageHeader
-          eyebrow={t("hero.eyebrow")}
-          title={t("hero.title")}
-          description={t("hero.note")}
-        />
-        <PatientSectionCard tone="subtle">
-          <ListStateSkeleton items={3} heightClass="h-36" />
-        </PatientSectionCard>
-      </div>
-    );
+    return <PatientJourneySkeleton />;
   }
 
   if (isError || !journey) {
@@ -253,449 +344,578 @@ export default function PatientJourneyScreen() {
   }
 
   return (
-    <div className="app-max-content mx-auto space-y-5 sm:space-y-6">
-      {/* ── Hero ── */}
-      <PatientPageHeader
-        eyebrow={t("hero.eyebrow")}
-        title={t("hero.title")}
-        meta={
-          <div className="flex flex-wrap gap-2">
-            {summaryBadges.length > 0 ? (
-              summaryBadges
-            ) : (
-              <span className="text-sm text-text-muted">{t("hero.note")}</span>
+    <div className="app-max-content mx-auto space-y-5 sawiyaa-animate-fade-in">
+      {/* ── Welcome Hero & Dynamic Journey Action Banner ── */}
+      <div className="rounded-[24px] border border-border-light bg-surface-tertiary p-6 md:p-8 border-s-4 border-s-primary shadow-sawiyaa-card">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+          <div className="space-y-3 max-w-2xl">
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-primary-light px-3 py-1 text-xs font-semibold text-primary">
+                <Sparkles className="h-3.5 w-3.5 text-accent" />
+                {t("hero.eyebrow")}
+              </span>
+            </div>
+            <h1 className="text-2xl md:text-3xl font-extrabold text-text-primary tracking-tight leading-tight">
+              {t("hero.title")}
+            </h1>
+            <p className="text-sm md:text-base text-text-secondary leading-relaxed max-w-xl">
+              {t("hero.note")}
+            </p>
+            
+            {/* Live Context badges */}
+            {summaryBadges.length > 0 && (
+              <div className="flex flex-wrap gap-2 pt-2">
+                {summaryBadges}
+              </div>
             )}
           </div>
-        }
-        actions={
-          <div className="rounded-full bg-primary-light px-4 py-2 text-sm font-semibold text-primary dark:bg-primary/15 dark:text-primary-light">
-            {t(
-              `summary.suggested.${journey.summary.suggestedNextAction}` as Parameters<typeof t>[0],
-            )}
-          </div>
-        }
-      />
 
-      <PatientSectionCard
-        eyebrow={t("instantBooking.eyebrow")}
-        title={t("instantBooking.title")}
-        description={t("instantBooking.note")}
-        actions={
-          <Link
-            href="/patient/instant-booking"
-            className="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-white shadow-sm shadow-primary/25 transition-all hover:bg-primary-hover hover:-translate-y-0.5"
-          >
-            {t("instantBooking.cta")}
-            <ArrowRight size={14} className="rtl:rotate-180" />
-          </Link>
-        }
-      >
-        <div className="grid gap-3 sm:grid-cols-3">
-          <div className="rounded-2xl bg-primary/8 px-4 py-3 ring-1 ring-primary/10">
-            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-primary">
-              <Zap className="h-3.5 w-3.5" />
+          {/* Next Best Action Widget */}
+          {primaryStep && primaryConfig && (
+            <div className="shrink-0 flex flex-col items-start gap-4 p-5 rounded-2xl bg-white border border-border-light shadow-theme-sm max-w-sm w-full lg:w-80 sawiyaa-hover-lift">
+              <div className="flex items-center gap-2">
+                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary-light text-primary">
+                  <StepIcon type={primaryStep.type} />
+                </span>
+                <span className="text-xs font-semibold tracking-wider uppercase text-text-muted">
+                  {t("primaryAction.eyebrow")}
+                </span>
+              </div>
+              
+              <div className="space-y-1">
+                <h4 className="text-sm font-bold text-text-primary">
+                  {t(`nextSteps.types.${primaryStep.type}.title` as any)}
+                </h4>
+                <p className="text-xs text-text-secondary leading-relaxed">
+                  {t(`nextSteps.types.${primaryStep.type}.note` as any)}
+                </p>
+              </div>
+
+              <div className="flex flex-col gap-2 w-full pt-1">
+                {primaryConfig.href ? (
+                  <Link
+                    href={primaryConfig.href as any}
+                    className="inline-flex items-center justify-center gap-2 w-full rounded-xl bg-primary px-4 py-2.5 text-xs font-bold text-white shadow-sm transition-all hover:bg-primary-hover sawiyaa-btn-press"
+                  >
+                    {t(primaryConfig.ctaKey as any)}
+                    <ArrowRight size={13} className="rtl:rotate-180" />
+                  </Link>
+                ) : (
+                  <div className="w-full text-center text-xs text-text-muted py-2 bg-surface-tertiary rounded-xl border border-border-light">
+                    {t("nextSteps.unavailable")}
+                  </div>
+                )}
+                
+                {/* Secondary CTAs */}
+                {primaryStep.type === "START_GUIDED_MATCHING" && (
+                  <Link
+                    href="/patient/practitioners"
+                    className="inline-flex items-center justify-center gap-2 w-full rounded-xl border border-primary px-4 py-2 text-xs font-semibold text-primary hover:bg-primary-light transition-all sawiyaa-btn-press"
+                  >
+                    {t("quickLinks.practitioners")}
+                  </Link>
+                )}
+                {primaryStep.type === "COMPLETE_PAYMENT" && (
+                  <Link
+                    href="/patient/payments"
+                    className="inline-flex items-center justify-center gap-2 w-full rounded-xl border border-primary px-4 py-2 text-xs font-semibold text-primary hover:bg-primary-light transition-all sawiyaa-btn-press"
+                  >
+                    {t("quickLinks.payments")}
+                  </Link>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ── Active Care Timeline Panel ── */}
+      {hasUpcomingItems ? (
+        <div className="rounded-[24px] border border-border-light bg-white p-6 shadow-sawiyaa-card">
+          <div className="flex items-center gap-2 mb-6 border-b border-border-light pb-4">
+            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary-light text-primary">
+              <CalendarDays className="h-5 w-5" />
+            </span>
+            <div>
+              <h2 className="text-lg font-bold text-text-primary">
+                {t("upcoming.session.heading")}
+              </h2>
+              <p className="text-xs text-text-secondary">
+                {t("upcoming.empty.heading")}
+              </p>
+            </div>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            {/* Active Pending payment */}
+            {activePendingPayment && pendingPayment ? (
+              <div className="rounded-[22px] border border-border-light bg-surface-tertiary p-5 relative overflow-hidden sawiyaa-hover-lift">
+                <div className="absolute top-0 start-0 h-1 w-full bg-warning" />
+                <div className="mb-3 flex items-center justify-between">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-text-muted">
+                    {t("upcoming.pendingPayment.heading")}
+                  </p>
+                  <span className="inline-flex items-center rounded-full bg-warning-soft px-2.5 py-0.5 text-xs font-medium text-warning">
+                    {t("summary.chips.pendingPayment")}
+                  </span>
+                </div>
+                <p className="text-2xl font-black text-text-primary">
+                  {formatAmount(pendingPayment.amount, pendingPayment.currency, numLocale)}
+                </p>
+                <p className="mt-1.5 text-xs text-text-secondary">
+                  {tPayments(`history.status.${pendingPayment.status}` as any)}
+                </p>
+                <Link
+                  href={
+                    pendingPayment.sessionId
+                      ? `/patient/sessions/${pendingPayment.sessionId}/pay`
+                      : "/patient/payments"
+                  }
+                  className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-warning px-4 py-2.5 text-xs font-bold text-white shadow-sm transition-all hover:bg-warning/90 sawiyaa-btn-press"
+                >
+                  {t("upcoming.pendingPayment.cta")}
+                  <ArrowRight size={12} className="rtl:rotate-180" />
+                </Link>
+              </div>
+            ) : null}
+
+            {/* Active Upcoming session */}
+            {upcomingSession ? (
+              <div className="rounded-[22px] border border-border-light bg-surface-tertiary p-5 relative overflow-hidden sawiyaa-hover-lift">
+                <div className="absolute top-0 start-0 h-1 w-full bg-primary" />
+                <div className="mb-3 flex items-center justify-between">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-text-muted">
+                    {t("upcoming.session.heading")}
+                  </p>
+                  <span className="inline-flex items-center rounded-full bg-primary-light px-2.5 py-0.5 text-xs font-medium text-primary">
+                    {tSessions(`status.${upcomingSession.status}` as any)}
+                  </span>
+                </div>
+                <p className="text-lg font-bold text-text-primary leading-tight">
+                  {upcomingSession.practitioner.displayName ?? upcomingSession.practitioner.slug}
+                </p>
+                {upcomingSession.scheduledStartAt ? (
+                  <p className="mt-1 text-xs text-text-secondary">
+                    {formatDatetime(upcomingSession.scheduledStartAt, numLocale)}
+                  </p>
+                ) : null}
+                <Link
+                  href={`/patient/sessions/${upcomingSession.id}` as any}
+                  className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2.5 text-xs font-bold text-white shadow-sm transition-all hover:bg-primary-hover sawiyaa-btn-press"
+                >
+                  {t("upcoming.session.cta")}
+                  <ArrowRight size={12} className="rtl:rotate-180" />
+                </Link>
+              </div>
+            ) : null}
+
+            {/* Instant booking request */}
+            {instantRequest ? (
+              <div className="rounded-[22px] border border-primary/20 bg-primary-light/40 p-5 relative overflow-hidden">
+                <div className="mb-3 flex items-center justify-between">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-primary">
+                    {t("upcoming.instantBooking.heading")}
+                  </p>
+                  <span className="h-2 w-2 rounded-full bg-primary animate-ping" />
+                </div>
+                <p className="text-sm font-bold text-text-primary">
+                  {t("upcoming.instantBooking.note", {
+                    practitioner: instantRequest.practitioner.displayName ?? instantRequest.practitioner.slug,
+                  })}
+                </p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <span className="inline-flex items-center rounded-full bg-white px-2.5 py-0.5 text-xs font-medium text-primary border border-primary/10">
+                    {t("upcoming.instantBooking.duration", { n: instantRequest.durationMinutes })}
+                  </span>
+                  <span className="inline-flex items-center rounded-full bg-white px-2.5 py-0.5 text-xs font-medium text-text-muted border border-border-light">
+                    {t("upcoming.instantBooking.expiresAt", { date: formatDatetime(instantRequest.expiresAt, numLocale) })}
+                  </span>
+                </div>
+              </div>
+            ) : null}
+          </div>
+        </div>
+      ) : (
+        /* Compact empty state visually grouped with primary content */
+        <div className="rounded-[24px] border border-border-light bg-white p-4 shadow-sawiyaa-card sawiyaa-hover-lift">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-light text-primary">
+                <CalendarDays className="h-5 w-5" />
+              </div>
+              <div className="space-y-0.5 text-start">
+                <h2 className="text-sm font-bold text-text-primary">
+                  {t("upcoming.session.heading")}
+                </h2>
+                <p className="text-xs text-text-secondary leading-normal max-w-xl">
+                  {t("upcoming.empty.note")}
+                </p>
+              </div>
+            </div>
+            <Link
+              href={fallbackNextStep.href as any}
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-xs font-bold text-white shadow-sm transition-all hover:bg-primary-hover sawiyaa-btn-press shrink-0"
+            >
+              {t(fallbackNextStep.ctaKey as any)}
+              <ArrowRight size={12} className="rtl:rotate-180" />
+            </Link>
+          </div>
+        </div>
+      )}
+
+      {/* ── Instant Booking Pathway ── */}
+      <div className="rounded-[24px] border border-border-light bg-white p-6 shadow-sawiyaa-card relative overflow-hidden sawiyaa-hover-lift">
+        <div className="absolute top-0 end-0 h-full w-32 bg-primary-light/30 rounded-e-[24px] pointer-events-none transform translate-x-12 skew-x-12" />
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 relative z-1">
+          <div className="space-y-2 max-w-xl">
+            <span className="text-xs font-bold uppercase tracking-[0.16em] text-primary">
+              {t("instantBooking.eyebrow")}
+            </span>
+            <h3 className="text-xl font-bold text-text-primary">
+              {t("instantBooking.title")}
+            </h3>
+            <p className="text-xs text-text-secondary leading-relaxed">
+              {t("instantBooking.note")}
+            </p>
+          </div>
+          <div className="shrink-0">
+            <Link
+              href="/patient/instant-booking"
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-xs font-bold text-white shadow-sm transition-all hover:bg-primary-hover sawiyaa-btn-press"
+            >
+              {t("instantBooking.cta")}
+              <ArrowRight size={13} className="rtl:rotate-180" />
+            </Link>
+          </div>
+        </div>
+
+        {/* Feature info */}
+        <div className="grid gap-3 sm:grid-cols-3 mt-6 pt-6 border-t border-border-light">
+          <div className="rounded-xl bg-primary-light/50 p-4 border border-primary/10">
+            <div className="flex items-center gap-2 text-xs font-bold uppercase text-primary">
+              <Zap className="h-4 w-4" />
               <span>{t("instantBooking.chips.availableNow")}</span>
             </div>
-            <p className="mt-1 text-sm leading-6 text-text-secondary">{t("instantBooking.note")}</p>
-          </div>
-          <div className="rounded-2xl bg-surface-tertiary px-4 py-3 ring-1 ring-border-light dark:bg-white/5 dark:ring-white/10">
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
-              {t("instantBooking.chips.duration")}
+            <p className="mt-1 text-[11px] leading-relaxed text-text-secondary">
+              {t("instantBooking.note")}
             </p>
-            <p className="mt-1 text-sm leading-6 text-text-secondary">
+          </div>
+          <div className="rounded-xl bg-surface-tertiary p-4 border border-border-light">
+            <span className="text-xs font-bold uppercase text-text-muted">
+              {t("instantBooking.chips.duration")}
+            </span>
+            <p className="mt-1 text-[11px] leading-relaxed text-text-secondary">
               {t("instantBooking.chips.durationNote")}
             </p>
           </div>
-          <div className="rounded-2xl bg-surface-tertiary px-4 py-3 ring-1 ring-border-light dark:bg-white/5 dark:ring-white/10">
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
+          <div className="rounded-xl bg-surface-tertiary p-4 border border-border-light">
+            <span className="text-xs font-bold uppercase text-text-muted">
               {t("instantBooking.chips.pricing")}
-            </p>
-            <p className="mt-1 text-sm leading-6 text-text-secondary">
+            </span>
+            <p className="mt-1 text-[11px] leading-relaxed text-text-secondary">
               {t("instantBooking.chips.pricingNote")}
             </p>
           </div>
         </div>
-      </PatientSectionCard>
-
-      {/* ── Stat cards row ── */}
-      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-        <PatientStatCard
-          label={t("upcoming.session.heading")}
-          value={
-            journey.summary.nextSessionAt && upcomingSession
-              ? formatDate(journey.summary.nextSessionAt, numLocale)
-              : "-"
-          }
-          hint={
-            upcomingSession?.practitioner.displayName ??
-            upcomingSession?.practitioner.slug ??
-            (!hasUpcomingItems ? t("upcoming.session.noSession") : "")
-          }
-          icon={<CalendarDays className="h-4 w-4" />}
-          tone={upcomingSession ? "brand" : "neutral"}
-        />
-        <PatientStatCard
-          label={t("recent.sessions.heading")}
-          value={journey.recentHistory.sessions.length > 0 ? String(journey.recentHistory.sessions.length) : "-"}
-          hint={journey.recentHistory.sessions.length > 0 ? t("recent.sessions.viewAll") : t("recent.sessions.zeroHint")}
-          icon={<CalendarDays className="h-4 w-4" />}
-          tone="neutral"
-        />
-        <PatientStatCard
-          label={t("support.heading")}
-          value={journey.support.hasOpenTicket ? "1" : "-"}
-          hint={journey.support.hasOpenTicket ? t("support.openTicketBody") : t("support.zeroHint")}
-          icon={<LifeBuoy className="h-4 w-4" />}
-          tone={journey.support.hasOpenTicket ? "warning" : "neutral"}
-        />
-        <PatientStatCard
-          label={t("upcoming.pendingPayment.heading")}
-          value={
-            activePendingPayment && pendingPayment
-              ? formatAmount(pendingPayment.amount, pendingPayment.currency, numLocale)
-              : "-"
-          }
-          hint={
-            activePendingPayment
-              ? t("summary.chips.pendingPayment")
-              : t("upcoming.pendingPayment.zeroHint")
-          }
-          icon={<CreditCard className="h-4 w-4" />}
-          tone={activePendingPayment ? "warning" : "neutral"}
-        />
       </div>
 
-      {/* ── Primary action card ── */}
-      {primaryStep && (
-        <PatientSectionCard
-          eyebrow={t("primaryAction.eyebrow")}
-          title={t(
-            `nextSteps.types.${primaryStep.type}.title` as Parameters<typeof t>[0],
-          )}
-          description={t(
-            `nextSteps.types.${primaryStep.type}.note` as Parameters<typeof t>[0],
-          )}
-          actions={
-            primaryConfig?.supported && primaryConfig.href && primaryConfig.ctaKey ? (
+      {/* ── Service Shortcuts ── */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <Link
+          href="/patient/practitioners"
+          className="group flex items-center gap-4 p-5 rounded-2xl bg-white border border-border-light sawiyaa-hover-lift sawiyaa-btn-press"
+        >
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary-light text-primary group-hover:scale-105 transition-transform">
+            <Stethoscope className="h-5 w-5" />
+          </span>
+          <div className="min-w-0">
+            <span className="block text-sm font-bold text-text-primary group-hover:text-primary transition-colors">
+              {t("quickLinks.practitioners")}
+            </span>
+            <span className="block text-[11px] text-text-secondary truncate">
+              {t("nextSteps.types.BOOK_NEXT_SESSION.note")}
+            </span>
+          </div>
+        </Link>
+        
+        <Link
+          href="/patient/sessions"
+          className="group flex items-center gap-4 p-5 rounded-2xl bg-white border border-border-light sawiyaa-hover-lift sawiyaa-btn-press"
+        >
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary-light text-primary group-hover:scale-105 transition-transform">
+            <CalendarDays className="h-5 w-5" />
+          </span>
+          <div className="min-w-0">
+            <span className="block text-sm font-bold text-text-primary group-hover:text-primary transition-colors">
+              {t("quickLinks.sessions")}
+            </span>
+            <span className="block text-[11px] text-text-secondary truncate">
+              {t("nextSteps.types.JOIN_UPCOMING_SESSION.note")}
+            </span>
+          </div>
+        </Link>
+        
+        <Link
+          href="/patient/payments"
+          className="group flex items-center gap-4 p-5 rounded-2xl bg-white border border-border-light sawiyaa-hover-lift sawiyaa-btn-press"
+        >
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary-light text-primary group-hover:scale-105 transition-transform">
+            <CreditCard className="h-5 w-5" />
+          </span>
+          <div className="min-w-0">
+            <span className="block text-sm font-bold text-text-primary group-hover:text-primary transition-colors">
+              {t("quickLinks.payments")}
+            </span>
+            <span className="block text-[11px] text-text-secondary truncate">
+              {t("nextSteps.types.COMPLETE_PAYMENT.note")}
+            </span>
+          </div>
+        </Link>
+        
+        <Link
+          href="/patient/messages?lane=support"
+          className="group flex items-center gap-4 p-5 rounded-2xl bg-white border border-border-light sawiyaa-hover-lift sawiyaa-btn-press"
+        >
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary-light text-primary group-hover:scale-105 transition-transform">
+            <LifeBuoy className="h-5 w-5" />
+          </span>
+          <div className="min-w-0">
+            <span className="block text-sm font-bold text-text-primary group-hover:text-primary transition-colors">
+              {t("support.heading")}
+            </span>
+            <span className="block text-[11px] text-text-secondary truncate">
+              {t("support.chatCta")}
+            </span>
+          </div>
+        </Link>
+      </div>
+
+      {/* ── Care Journey & Support columns ── */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        {/* Care Journey Cards */}
+        <div className="rounded-[24px] border border-border-light bg-white p-6 shadow-sawiyaa-card">
+          <h3 className="text-lg font-bold text-text-primary mb-4 pb-2 border-b border-border-light">
+            {t("quickLinks.careHeading")}
+          </h3>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Link
+              href="/patient/matching"
+              className="group flex flex-col justify-between p-4 rounded-xl border border-border-light bg-surface-tertiary sawiyaa-hover-lift sawiyaa-btn-press"
+            >
+              <div>
+                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 mb-3 group-hover:scale-105 transition-transform">
+                  <HeartHandshake className="h-4 w-4" />
+                </span>
+                <h4 className="text-sm font-bold text-text-primary group-hover:text-primary transition-colors">
+                  {t("nextSteps.types.START_GUIDED_MATCHING.cta")}
+                </h4>
+                <p className="mt-1 text-[11px] leading-normal text-text-secondary">
+                  {t("nextSteps.types.START_GUIDED_MATCHING.note")}
+                </p>
+              </div>
+              <span className="mt-4 text-xs font-semibold text-primary inline-flex items-center gap-1">
+                {t("nextSteps.types.START_GUIDED_MATCHING.cta")}
+                <ArrowRight size={10} className="rtl:rotate-180 group-hover:translate-x-0.5 transition-transform" />
+              </span>
+            </Link>
+
+            <Link
+              href="/patient/assessments"
+              className="group flex flex-col justify-between p-4 rounded-xl border border-border-light bg-surface-tertiary sawiyaa-hover-lift sawiyaa-btn-press"
+            >
+              <div>
+                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 mb-3 group-hover:scale-105 transition-transform">
+                  <Sparkles className="h-4 w-4" />
+                </span>
+                <h4 className="text-sm font-bold text-text-primary group-hover:text-primary transition-colors">
+                  {t("nextSteps.types.TAKE_ASSESSMENT.cta")}
+                </h4>
+                <p className="mt-1 text-[11px] leading-normal text-text-secondary">
+                  {t("nextSteps.types.TAKE_ASSESSMENT.note")}
+                </p>
+              </div>
+              <span className="mt-4 text-xs font-semibold text-primary inline-flex items-center gap-1">
+                {t("nextSteps.types.TAKE_ASSESSMENT.cta")}
+                <ArrowRight size={10} className="rtl:rotate-180 group-hover:translate-x-0.5 transition-transform" />
+              </span>
+            </Link>
+          </div>
+        </div>
+
+        {/* Support ticket card */}
+        <div className="rounded-[24px] border border-border-light bg-white p-6 shadow-sawiyaa-card flex flex-col justify-between">
+          <div>
+            <h3 className="text-lg font-bold text-text-primary mb-4 pb-2 border-b border-border-light">
+              {t("support.heading")}
+            </h3>
+            
+            {journey.support.latestOpenTicket ? (
+              <div className="space-y-4">
+                <p className="text-sm text-text-secondary leading-relaxed">
+                  {t("support.openTicket")}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <PatientStatusBadge>
+                    {t(`support.categories.${journey.support.latestOpenTicket.category}` as any)}
+                  </PatientStatusBadge>
+                  <PatientStatusBadge>
+                    {t(`support.statuses.${journey.support.latestOpenTicket.status}` as any)}
+                  </PatientStatusBadge>
+                  <span className="inline-flex items-center rounded-full bg-surface-tertiary border border-border-soft px-3 py-1.5 text-xs font-medium text-text-secondary">
+                    {t("support.updatedAt", {
+                      date: formatDate(journey.support.latestOpenTicket.updatedAt, numLocale),
+                    })}
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <p className="text-sm text-text-secondary leading-relaxed">
+                  {t("support.empty")}
+                </p>
+              </div>
+            )}
+          </div>
+
+          <div className="mt-6 pt-4 border-t border-border-light">
+            {journey.support.latestOpenTicket ? (
               <Link
-                href={primaryConfig.href as never}
-                className="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-white shadow-sm shadow-primary/25 transition-all hover:bg-primary-hover hover:-translate-y-0.5"
+                href={`/patient/messages?lane=support&id=${journey.support.latestOpenTicket.id}` as any}
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-xs font-bold text-white shadow-sm transition-all hover:bg-primary-hover sawiyaa-btn-press"
               >
-                {t(primaryConfig.ctaKey as Parameters<typeof t>[0])}
-                <ArrowRight size={14} className="rtl:rotate-180" />
+                {t("support.viewTicket")}
+                <ArrowRight size={13} className="rtl:rotate-180" />
               </Link>
             ) : (
-              <div className="rounded-2xl border border-border-light bg-surface-secondary px-4 py-3 text-sm text-text-secondary dark:bg-white/5">
-                {t("nextSteps.unavailable")}
-              </div>
-            )
-          }
-        >
-          <div className="flex items-start gap-3">
-            <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600 ring-1 ring-inset ring-emerald-200">
-              <StepIcon type={primaryStep.type} />
-            </span>
-            <p className="min-w-0 flex-1 text-sm leading-6 text-text-secondary">
-              {t(
-                `nextSteps.types.${primaryStep.type}.note` as Parameters<typeof t>[0],
-              )}
-            </p>
+              <Link
+                href="/patient/messages?lane=support"
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-xs font-bold text-white shadow-sm transition-all hover:bg-primary-hover sawiyaa-btn-press"
+              >
+                {t("support.chatCta")}
+                <ArrowRight size={13} className="rtl:rotate-180" />
+              </Link>
+            )}
           </div>
-        </PatientSectionCard>
-      )}
-
-      {/* ── Care shortcuts ── */}
-      <PatientSectionCard
-        eyebrow={t("quickLinks.careHeading")}
-        title={t("quickLinks.careHeading")}
-        description={t("quickLinks.careNote")}
-      >
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <PatientActionPanel
-            href="/patient/matching"
-            label={t("nextSteps.types.START_GUIDED_MATCHING.cta")}
-            description={t("nextSteps.types.START_GUIDED_MATCHING.note")}
-            icon={<HeartHandshake className="h-5 w-5" />}
-            tone="emerald"
-          />
-          <PatientActionPanel
-            href="/patient/assessments"
-            label={t("nextSteps.types.TAKE_ASSESSMENT.cta")}
-            description={t("nextSteps.types.TAKE_ASSESSMENT.note")}
-            icon={<Sparkles className="h-5 w-5" />}
-            tone="indigo"
-          />
-          <PatientActionPanel
-            href="/patient/practitioners"
-            label={t("nextSteps.types.BOOK_NEXT_SESSION.cta")}
-            description={t("nextSteps.types.BOOK_NEXT_SESSION.note")}
-            icon={<Stethoscope className="h-5 w-5" />}
-            tone="sky"
-          />
-          <PatientActionPanel
-            href="/patient/messages?lane=support"
-            label={t("support.heading")}
-            description={t("support.empty")}
-            icon={<LifeBuoy className="h-5 w-5" />}
-            tone="amber"
-          />
         </div>
-      </PatientSectionCard>
+      </div>
 
-      {/* ── Upcoming session area ── */}
-      <PatientSectionCard
-        title={t("upcoming.session.heading")}
-        actions={
-          <Link
-            href="/patient/sessions"
-            className="inline-flex items-center gap-1.5 text-sm font-medium text-primary transition-colors hover:text-primary-hover"
-          >
-            {t("recent.sessions.viewAll")}
-            <ArrowRight size={13} className="rtl:rotate-180" />
-          </Link>
-        }
-      >
-        <div className="grid gap-4 sm:grid-cols-2">
-          {/* Pending payment */}
-          {activePendingPayment && pendingPayment ? (
-            <div className="app-panel rounded-[24px] p-5">
-              <div className="mb-3 flex items-center justify-between">
-                <p className="text-xs font-semibold uppercase tracking-wider text-text-muted">
-                  {t("upcoming.pendingPayment.heading")}
-                </p>
-                <div className="h-2 w-2 rounded-full bg-warning animate-pulse" />
-              </div>
-              <p className="text-xl font-bold text-text-primary dark:text-white">
-                {formatAmount(pendingPayment.amount, pendingPayment.currency, numLocale)}
-              </p>
-              <p className="mt-1 text-sm text-text-secondary">
-                {tPayments(
-                  `history.status.${pendingPayment.status}` as Parameters<typeof tPayments>[0],
-                )}
-              </p>
-              <Link
-                href={
-                  pendingPayment.sessionId
-                    ? `/patient/sessions/${pendingPayment.sessionId}/pay`
-                    : "/patient/payments"
-                }
-                className="mt-4 inline-flex items-center gap-2 rounded-full bg-warning-light px-4 py-2 text-sm font-semibold text-warning transition-all hover:bg-warning hover:text-white"
-              >
-                {t("upcoming.pendingPayment.cta")}
-                <ArrowRight size={13} className="rtl:rotate-180" />
-              </Link>
-            </div>
-          ) : null}
-
-          {/* Upcoming session */}
-          {upcomingSession ? (
-            <div className="app-panel rounded-[24px] p-5">
-              <div className="mb-3 flex items-center justify-between">
-                <p className="text-xs font-semibold uppercase tracking-wider text-text-muted">
-                  {t("upcoming.session.heading")}
-                </p>
-                <CalendarDays className="h-5 w-5 text-indigo-500" />
-              </div>
-              <p className="text-lg font-semibold text-text-primary dark:text-white">
-                {upcomingSession.practitioner.displayName ?? upcomingSession.practitioner.slug}
-              </p>
-              {upcomingSession.scheduledStartAt ? (
-                <p className="mt-1 text-sm text-text-secondary">
-                  {formatDatetime(upcomingSession.scheduledStartAt, numLocale)}
-                </p>
-              ) : null}
-              <div className="mt-3">
-                <PatientStatusBadge className="px-2.5 py-1 text-[11px]">
-                  {tSessions(
-                    `status.${upcomingSession.status}` as Parameters<typeof tSessions>[0],
-                  )}
-                </PatientStatusBadge>
-              </div>
-              <Link
-                href={`/patient/sessions/${upcomingSession.id}` as never}
-                className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline"
-              >
-                {t("upcoming.session.cta")}
-                <ArrowRight size={13} className="rtl:rotate-180" />
-              </Link>
-            </div>
-          ) : null}
-
-          {/* Instant booking request */}
-          {instantRequest ? (
-            <div className="app-panel rounded-[24px] border border-indigo-200 bg-indigo-50/40 p-5">
-              <p className="text-sm font-semibold text-text-primary dark:text-white/95">
-                {t("upcoming.instantBooking.heading")}
-              </p>
-              <p className="mt-1.5 text-sm text-text-secondary">
-                {t("upcoming.instantBooking.note", {
-                  practitioner:
-                    instantRequest.practitioner.displayName ?? instantRequest.practitioner.slug,
-                })}
-              </p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                <PatientStatusBadge>
-                  {t("upcoming.instantBooking.duration", {
-                    n: instantRequest.durationMinutes,
-                  })}
-                </PatientStatusBadge>
-                <PatientStatusBadge>
-                  {t("upcoming.instantBooking.expiresAt", {
-                    date: formatDatetime(instantRequest.expiresAt, numLocale),
-                  })}
-                </PatientStatusBadge>
-              </div>
-            </div>
-          ) : null}
-
-          {/* All empty */}
-          {!hasUpcomingItems ? (
-            <div className="app-panel rounded-[24px] p-5">
-              <p className="text-sm font-semibold text-text-primary dark:text-white/95">
-                {t("upcoming.empty.heading")}
-              </p>
-              <p className="mt-1.5 text-sm text-text-secondary">
-                {t("upcoming.empty.note")}
-              </p>
-              <Link
-                href={fallbackNextStep.href as never}
-                className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline"
-              >
-                {t(fallbackNextStep.ctaKey as Parameters<typeof t>[0])}
-                <ArrowRight size={13} className="rtl:rotate-180" />
-              </Link>
-            </div>
-          ) : null}
+      {/* ── Recent Activity Section ── */}
+      <div className="rounded-[24px] border border-border-light bg-white p-6 shadow-sawiyaa-card">
+        <div className="space-y-1 mb-6 pb-4 border-b border-border-light">
+          <h3 className="text-lg font-bold text-text-primary">
+            {t("recent.heading")}
+          </h3>
+          <p className="text-xs text-text-secondary">
+            {t("recent.note")}
+          </p>
         </div>
-      </PatientSectionCard>
 
-      {/* ── Recent activity ── */}
-      <PatientSectionCard title={t("recent.heading")} description={t("recent.note")}>
         {hasRecentHistory ? (
-          <div className="mt-4 grid gap-4 lg:grid-cols-2">
-            {recentSessionsExcludingUpcoming.length > 0 ? (
-              <div className="app-panel-soft rounded-[22px] p-4">
-                <div className="mb-3 flex items-center justify-between gap-3">
-                  <p className="text-sm font-semibold text-text-primary dark:text-white/95">
+          <div className="grid gap-6 md:grid-cols-2">
+            {/* Sessions */}
+            {recentSessionsExcludingUpcoming.length > 0 && (
+              <div className="rounded-xl border border-border-light bg-surface-tertiary p-5">
+                <div className="mb-4 flex items-center justify-between">
+                  <h4 className="text-sm font-bold text-text-primary">
                     {t("recent.sessions.heading")}
-                  </p>
-                  <Link
-                    href="/patient/sessions"
-                    className="text-xs font-medium text-primary hover:underline"
-                  >
+                  </h4>
+                  <Link href="/patient/sessions" className="text-xs font-bold text-primary hover:underline">
                     {t("recent.sessions.viewAll")}
                   </Link>
                 </div>
-                <div className="space-y-2">
+                <div className="space-y-3">
                   {recentSessionsExcludingUpcoming.slice(0, 3).map((session) => (
                     <Link
                       key={session.id}
-                      href={`/patient/sessions/${session.id}` as never}
-                      className="flex items-center justify-between gap-3 rounded-2xl bg-white/80 px-3.5 py-3 transition-all hover:-translate-y-0.5 hover:bg-white hover:shadow-sm dark:bg-white/5 dark:hover:bg-white/10"
+                      href={`/patient/sessions/${session.id}` as any}
+                      className="flex items-center justify-between gap-4 rounded-xl bg-white p-3 border border-border-light sawiyaa-hover-lift sawiyaa-btn-press"
                     >
                       <div className="min-w-0">
-                        <p className="line-clamp-2 text-sm font-medium text-text-primary dark:text-white/90">
+                        <p className="text-xs font-bold text-text-primary truncate">
                           {session.practitioner.displayName ?? session.practitioner.slug}
                         </p>
-                        {session.scheduledStartAt ? (
-                          <p className="mt-1 text-xs text-text-muted">
+                        {session.scheduledStartAt && (
+                          <p className="mt-0.5 text-[10px] text-text-secondary">
                             {formatDatetime(session.scheduledStartAt, numLocale)}
                           </p>
-                        ) : null}
-                      </div>
-                      <PatientStatusBadge className="shrink-0 px-2.5 py-1 text-[11px]">
-                        {tSessions(
-                          `status.${session.status}` as Parameters<typeof tSessions>[0],
                         )}
-                      </PatientStatusBadge>
+                      </div>
+                      <span className="shrink-0 inline-flex rounded-full bg-primary-light px-2.5 py-1 text-[10px] font-semibold text-primary border border-primary/10">
+                        {tSessions(`status.${session.status}` as any)}
+                      </span>
                     </Link>
                   ))}
                 </div>
               </div>
-            ) : null}
+            )}
 
-            {journey.recentHistory.payments.length > 0 ? (
-              <div className="app-panel-soft rounded-[22px] p-4">
-                <div className="mb-3 flex items-center justify-between gap-3">
-                  <p className="text-sm font-semibold text-text-primary dark:text-white/95">
+            {/* Payments */}
+            {journey.recentHistory.payments.length > 0 && (
+              <div className="rounded-xl border border-border-light bg-surface-tertiary p-5">
+                <div className="mb-4 flex items-center justify-between">
+                  <h4 className="text-sm font-bold text-text-primary">
                     {t("recent.payments.heading")}
-                  </p>
-                  <Link
-                    href="/patient/payments"
-                    className="text-xs font-medium text-primary hover:underline"
-                  >
+                  </h4>
+                  <Link href="/patient/payments" className="text-xs font-bold text-primary hover:underline">
                     {t("recent.payments.viewAll")}
                   </Link>
                 </div>
-                <div className="space-y-2">
-                  {journey.recentHistory.payments.slice(0, 2).map((payment) => (
-                    <div
-                      key={payment.id}
-                      className="rounded-2xl bg-white/80 px-3.5 py-3 dark:bg-white/5"
-                    >
-                      <div className="flex items-center justify-between gap-3">
-                        <p className="text-sm font-medium text-text-primary dark:text-white/90">
+                <div className="space-y-3">
+                  {journey.recentHistory.payments.slice(0, 3).map((payment) => (
+                    <div key={payment.id} className="rounded-xl bg-white p-3 border border-border-light">
+                      <div className="flex items-center justify-between gap-4">
+                        <span className="text-xs font-bold text-text-primary">
                           {formatAmount(payment.amount, payment.currency, numLocale)}
-                        </p>
-                        <PatientStatusBadge className="px-2.5 py-1 text-[11px]">
-                          {tPayments(
-                            `history.status.${payment.status}` as Parameters<typeof tPayments>[0],
-                          )}
-                        </PatientStatusBadge>
+                        </span>
+                        <span className="inline-flex rounded-full bg-primary-light px-2.5 py-1 text-[10px] font-semibold text-primary border border-primary/10">
+                          {tPayments(`history.status.${payment.status}` as any)}
+                        </span>
                       </div>
-                      <div className="mt-1.5 flex flex-wrap items-center gap-3 text-xs text-text-muted">
+                      <div className="mt-2 flex items-center justify-between text-[10px] text-text-secondary">
                         <span>{formatDate(payment.createdAt, numLocale)}</span>
-                        {payment.sessionId ? (
+                        {payment.sessionId && (
                           <Link
-                            href={`/patient/sessions/${payment.sessionId}` as never}
-                            className="font-medium text-primary hover:underline"
+                            href={`/patient/sessions/${payment.sessionId}` as any}
+                            className="font-bold text-primary hover:underline"
                           >
                             {t("recent.payments.viewSession")}
                           </Link>
-                        ) : null}
+                        )}
                       </div>
                     </div>
                   ))}
                 </div>
               </div>
-            ) : null}
+            )}
 
-            {journey.recentHistory.assessments.length > 0 ? (
-              <div className="app-panel-soft rounded-[22px] p-4">
-                <div className="mb-3 flex items-center justify-between gap-3">
-                  <p className="text-sm font-semibold text-text-primary dark:text-white/95">
+            {/* Assessments */}
+            {journey.recentHistory.assessments.length > 0 && (
+              <div className="rounded-xl border border-border-light bg-surface-tertiary p-5">
+                <div className="mb-4 flex items-center justify-between">
+                  <h4 className="text-sm font-bold text-text-primary">
                     {t("recent.assessments.heading")}
-                  </p>
-                  <Link
-                    href="/patient/assessments"
-                    className="text-xs font-medium text-primary hover:underline"
-                  >
+                  </h4>
+                  <Link href="/patient/assessments" className="text-xs font-bold text-primary hover:underline">
                     {t("recent.assessments.viewAll")}
                   </Link>
                 </div>
-                <div className="space-y-2">
-                  {journey.recentHistory.assessments.slice(0, 2).map((assessment) => (
-                    <div
-                      key={assessment.id}
-                      className="rounded-2xl bg-white/80 px-3.5 py-3 dark:bg-white/5"
-                    >
-                      <p className="text-sm font-medium text-text-primary dark:text-white/90">
+                <div className="space-y-3">
+                  {journey.recentHistory.assessments.slice(0, 3).map((assessment) => (
+                    <div key={assessment.id} className="rounded-xl bg-white p-3 border border-border-light">
+                      <p className="text-xs font-bold text-text-primary line-clamp-1">
                         {assessment.assessmentTitle}
                       </p>
-                      <div className="mt-1.5 flex flex-wrap gap-3 text-xs text-text-muted">
-                        {assessment.completedAt ? (
+                      <div className="mt-2 flex items-center justify-between text-[10px] text-text-secondary">
+                        {assessment.completedAt && (
                           <span>
                             {t("recent.assessments.completedAt", {
                               date: formatDate(assessment.completedAt, numLocale),
                             })}
                           </span>
-                        ) : null}
-                        {assessment.score !== null ? (
-                          <span>{t("recent.assessments.score", { score: assessment.score })}</span>
-                        ) : null}
+                        )}
                         <Link
-                          href={`/patient/assessments/submissions/${assessment.id}` as never}
-                          className="font-medium text-primary hover:underline"
+                          href={`/patient/assessments/submissions/${assessment.id}` as any}
+                          className="font-bold text-primary hover:underline"
                         >
                           {t("recent.assessments.viewResult")}
                         </Link>
@@ -704,28 +924,23 @@ export default function PatientJourneyScreen() {
                   ))}
                 </div>
               </div>
-            ) : null}
+            )}
 
-            {journey.recentHistory.matching.length > 0 ? (
-              <div className="app-panel-soft rounded-[22px] p-4">
-                <div className="mb-3 flex items-center justify-between gap-3">
-                  <p className="text-sm font-semibold text-text-primary dark:text-white/95">
+            {/* Matching */}
+            {journey.recentHistory.matching.length > 0 && (
+              <div className="rounded-xl border border-border-light bg-surface-tertiary p-5">
+                <div className="mb-4 flex items-center justify-between">
+                  <h4 className="text-sm font-bold text-text-primary">
                     {t("recent.matching.heading")}
-                  </p>
-                  <Link
-                    href="/patient/matching"
-                    className="text-xs font-medium text-primary hover:underline"
-                  >
+                  </h4>
+                  <Link href="/patient/matching" className="text-xs font-bold text-primary hover:underline">
                     {t("recent.matching.viewAll")}
                   </Link>
                 </div>
-                <div className="space-y-2">
-                  {journey.recentHistory.matching.slice(0, 2).map((matching) => (
-                    <div
-                      key={matching.id}
-                      className="rounded-2xl bg-white/80 px-3.5 py-3 dark:bg-white/5"
-                    >
-                      <p className="text-sm font-medium text-text-primary dark:text-white/90">
+                <div className="space-y-3">
+                  {journey.recentHistory.matching.slice(0, 3).map((matching) => (
+                    <div key={matching.id} className="rounded-xl bg-white p-3 border border-border-light">
+                      <p className="text-xs font-bold text-text-primary line-clamp-1">
                         {matching.topRecommendation
                           ? t("recent.matching.recommendation", {
                               practitioner:
@@ -734,131 +949,47 @@ export default function PatientJourneyScreen() {
                             })
                           : t("recent.matching.noRecommendation")}
                       </p>
-                      <div className="mt-1.5 flex flex-wrap items-center gap-3 text-xs text-text-muted">
-                        {matching.completedAt ? (
+                      <div className="mt-2 flex items-center justify-between text-[10px] text-text-secondary">
+                        {matching.completedAt && (
                           <span>
                             {t("recent.matching.completedAt", {
                               date: formatDate(matching.completedAt, numLocale),
                             })}
                           </span>
-                        ) : null}
+                        )}
                         <Link
-                          href={`/patient/matching/${matching.id}` as never}
-                          className="font-medium text-primary hover:underline"
+                          href={`/patient/matching/${matching.id}` as any}
+                          className="font-bold text-primary hover:underline"
                         >
                           {t("recent.matching.viewMatching")}
                         </Link>
-                        {matching.topRecommendation ? (
-                          <Link
-                            href={`/practitioners/${matching.topRecommendation.practitionerSlug}` as never}
-                            className="font-medium text-primary hover:underline"
-                          >
-                            {t("recent.matching.viewPractitioner")}
-                          </Link>
-                        ) : null}
                       </div>
                     </div>
                   ))}
                 </div>
               </div>
-            ) : null}
+            )}
           </div>
         ) : (
-          <div className="app-panel-soft mt-4 rounded-[22px] p-5">
-            <p className="text-sm font-semibold text-text-primary dark:text-white/95">
+          <div className="rounded-xl border border-border-light bg-surface-tertiary p-4 text-center max-w-sm mx-auto my-2">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-light text-primary mx-auto mb-2">
+              <Zap className="h-5 w-5" />
+            </div>
+            <h4 className="text-xs font-bold text-text-primary">
               {t("recent.empty.heading")}
-            </p>
-            <p className="mt-1.5 text-sm text-text-secondary">
+            </h4>
+            <p className="mt-1 text-[11px] text-text-secondary leading-relaxed">
               {t("recent.empty.note")}
             </p>
             <Link
-              href={fallbackNextStep.href as never}
-              className="mt-3 inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline"
+              href={fallbackNextStep.href as any}
+              className="mt-3 inline-flex items-center justify-center gap-1.5 text-[11px] font-semibold text-primary hover:underline"
             >
-              {t(fallbackNextStep.ctaKey as Parameters<typeof t>[0])}
-              <ArrowRight size={13} className="rtl:rotate-180" />
+              {t(fallbackNextStep.ctaKey as any)}
+              <ArrowRight size={10} className="rtl:rotate-180" />
             </Link>
           </div>
         )}
-      </PatientSectionCard>
-
-      {/* ── Support + quick actions 2-col ── */}
-      <div className="grid gap-4 sm:grid-cols-2">
-        {/* Support card */}
-        <PatientSectionCard
-          title={t("support.heading")}
-        >
-          {journey.support.latestOpenTicket ? (
-            <div>
-              <p className="text-sm text-text-secondary">{t("support.openTicket")}</p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                <PatientStatusBadge>
-                  {t(
-                    `support.categories.${journey.support.latestOpenTicket.category}` as Parameters<typeof t>[0],
-                  )}
-                </PatientStatusBadge>
-                <PatientStatusBadge>
-                  {t(
-                    `support.statuses.${journey.support.latestOpenTicket.status}` as Parameters<typeof t>[0],
-                  )}
-                </PatientStatusBadge>
-                <PatientStatusBadge>
-                  {t("support.updatedAt", {
-                    date: formatDate(journey.support.latestOpenTicket.updatedAt, numLocale),
-                  })}
-                </PatientStatusBadge>
-              </div>
-              <Link
-                href={`/patient/messages?lane=support&id=${journey.support.latestOpenTicket.id}` as never}
-                className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline"
-              >
-                {t("support.viewTicket")}
-                <ArrowRight size={13} className="rtl:rotate-180" />
-              </Link>
-            </div>
-          ) : (
-            <div>
-              <p className="text-sm text-text-secondary">{t("support.empty")}</p>
-              <Link
-                href="/patient/messages?lane=support"
-                className="mt-3 inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline"
-              >
-                {t("support.chatCta")}
-                <ArrowRight size={13} className="rtl:rotate-180" />
-              </Link>
-            </div>
-          )}
-        </PatientSectionCard>
-
-        {/* Quick actions card */}
-        <PatientSectionCard title={t("quickLinks.utilityHeading")}>
-          <div className="grid grid-cols-2 gap-3">
-            <PatientActionPanel
-              href="/patient/sessions"
-              label={t("quickLinks.sessions")}
-              icon={<CalendarDays className="h-5 w-5" />}
-              tone="indigo"
-            />
-            <PatientActionPanel
-              href="/patient/payments"
-              label={t("quickLinks.payments")}
-              icon={<CreditCard className="h-5 w-5" />}
-              tone="sky"
-            />
-            <PatientActionPanel
-              href="/patient/practitioners"
-              label={t("quickLinks.practitioners")}
-              icon={<Stethoscope className="h-5 w-5" />}
-              tone="emerald"
-            />
-            <PatientActionPanel
-              href="/patient/profile"
-              label={t("quickLinks.profile")}
-              icon={<UserRound className="h-5 w-5" />}
-              tone="teal"
-            />
-          </div>
-        </PatientSectionCard>
       </div>
     </div>
   );

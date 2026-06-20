@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import {
   ScrollView,
   StyleSheet,
@@ -11,7 +11,6 @@ import { useTranslation } from "react-i18next";
 import {
   Button,
   Card,
-  EmptyState,
   ErrorState,
   Header,
   LoadingState,
@@ -20,6 +19,7 @@ import {
   Text,
 } from "../../src/components/ui";
 import { useTheme } from "../../src/providers/ThemeProvider";
+import { useAppDirection } from "../../src/i18n/direction";
 import {
   MOBILE_HORIZONTAL_PADDING,
   MOBILE_SECTION_GAP,
@@ -29,7 +29,6 @@ import {
   usePatientWalletEntries,
   usePatientWalletSummary,
 } from "../../src/features/patient/payments/hooks";
-import { resolveSupportedCurrencyCode } from "../../src/lib/currency";
 import { formatViewerDate } from "../../src/lib/time-formatting";
 import type {
   CustomerWalletEntryItem,
@@ -43,37 +42,28 @@ import type {
 // ---------------------------------------------------------------------------
 
 /**
- * Money formatter — outputs "1,350 EGP" (EN) or "1,350 ج.م" (AR).
+ * Money formatter — outputs formatted amount with currency code from backend.
  * Uses simple digit grouping without Intl.NumberFormat (unreliable in Hermes).
- * locale can be "en", "ar", "ar-SA", etc.
+ *
+ * NOTE: currencyCode always comes from backend data. Never hardcode a currency
+ * symbol or code in screen components.
+ * locale param is reserved for future locale-aware digit formatting (e.g. Arabic numerals).
  */
-function formatMoney(amount: string, currencyCode: string, locale = "en"): string {
+function formatMoney(amount: string, currencyCode: string, _locale = "en"): string {
   const num = Number(amount);
   if (!Number.isFinite(num)) return `${amount} ${currencyCode.toUpperCase()}`;
   const rounded = parseFloat(num.toFixed(2));
   const fixed = rounded % 1 === 0 ? rounded.toFixed(0) : rounded.toFixed(2);
-  const isArabic = locale.startsWith("ar");
   const withCommas = fixed.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-  const currencyLabel = isArabic
-    ? currencyCode === "EGP" ? "ج.م" : currencyCode.toUpperCase()
-    : currencyCode.toUpperCase();
-  return `${withCommas} ${currencyLabel}`;
+  return `${withCommas} ${currencyCode.toUpperCase()}`;
 }
 
 function formatDate(isoString: string, locale: string): string {
   return formatViewerDate(isoString, { locale });
 }
 
-function resolveRelevantDate(payment: PaymentItem): {
-  labelKey: string;
-  iso: string;
-} {
-  if (payment.paidAt) return { labelKey: "dateLabels.paidOn", iso: payment.paidAt };
-  if (payment.refundedAt) return { labelKey: "dateLabels.refundedOn", iso: payment.refundedAt };
-  if (payment.failedAt) return { labelKey: "dateLabels.failedOn", iso: payment.failedAt };
-  if (payment.expiredAt) return { labelKey: "dateLabels.expiredOn", iso: payment.expiredAt };
-  return { labelKey: "dateLabels.initiatedOn", iso: payment.createdAt };
-}
+// resolveRelevantDate was used by the legacy collapsible PaymentHistoryCard
+// which has been replaced by TransactionHistoryNavCard. Removed to avoid dead code.
 
 const STATUS_BADGE_MAP: Record<PaymentStatus, "success" | "warning" | "error" | "info" | "default"> = {
   CREATED: "default",
@@ -156,75 +146,86 @@ function WalletBalanceCard({
   locale: string;
 }) {
   const { theme } = useTheme();
-  const { t, i18n } = useTranslation();
-  const isRtl = i18n.language?.startsWith("ar") ?? false;
+  const { t } = useTranslation();
+  const { isRtl, rowDirection, textAlign } = useAppDirection();
 
   if (isLoading) {
     return (
-      <Card variant="elevated" padding="md" style={ss.balanceCard}>
+      <View style={[ss.heroCard, { backgroundColor: theme.colors.primary }]}>
         <LoadingState />
-      </Card>
+      </View>
     );
   }
 
   if (isError || !wallet) {
     return (
-      <Card variant="elevated" padding="md" style={ss.balanceCard}>
-        <TouchableOpacity onPress={onRetry} style={ss.balanceCardError}>
-          <Ionicons name="alert-circle-outline" size={20} color={theme.colors.textMuted} />
-          <Text color={theme.colors.textMuted} style={ss.errorText}>
+      <View style={[ss.heroCard, { backgroundColor: theme.colors.primary }]}>
+        <TouchableOpacity onPress={onRetry} style={ss.heroErrorWrap}>
+          <Ionicons name="alert-circle-outline" size={20} color="rgba(255,255,255,0.7)" />
+          <Text style={[ss.heroErrorText, { textAlign }]}>
             {t("patientPaymentsFlow.wallet.errorNote")}
           </Text>
-          <Text color={theme.colors.primary} weight="600" style={ss.retryText}>
+          <Text weight="600" style={[ss.heroRetryText, { textAlign }]}>
             {t("patientPaymentsFlow.wallet.retry")}
           </Text>
         </TouchableOpacity>
-      </Card>
+      </View>
     );
   }
 
   return (
-    <Card variant="elevated" padding="md" style={ss.balanceCard}>
-      {/* Icon + label row */}
-      <View style={[ss.balanceTopRow, isRtl && ss.rowRtl]}>
-        <View style={[ss.balanceIconWrap, { backgroundColor: theme.colors.primaryLight }]}>
-          <Ionicons name="wallet-outline" size={15} color={theme.colors.primary} />
+    <View style={[ss.heroCard, { backgroundColor: theme.colors.primary }]}>
+      {/* Top label row */}
+      <View style={[ss.heroTopRow, { flexDirection: rowDirection }]}>
+        <View style={ss.heroIconWrap}>
+          <Ionicons name="wallet-outline" size={14} color="rgba(255,255,255,0.8)" />
         </View>
-        <Text color={theme.colors.textSecondary} style={ss.balanceLabel}>
+        <Text style={[ss.heroLabel, { textAlign }]}>
           {t("patientPaymentsFlow.wallet.balanceLabel")}
         </Text>
       </View>
 
-      {/* Main amount */}
-      <Text weight="700" style={ss.balanceAmount}>
+      {/* Main balance */}
+      <Text weight="700" style={[ss.heroAmount, { textAlign }]}>
         {formatMoney(wallet.availableBalance, wallet.currencyCode, locale)}
       </Text>
 
-      {/* Hint */}
-      <Text color={theme.colors.textMuted} style={ss.balanceHint}>
+      {/* Available hint */}
+      <Text style={[ss.heroHint, { textAlign }]}>
         {t("patientPaymentsFlow.wallet.availableHint")}
       </Text>
 
-      {/* Stats: reserved + last updated */}
-      <View style={[ss.balanceStatsRow, isRtl && ss.rowRtl]}>
-        <View style={[ss.balanceStatChip, { backgroundColor: theme.colors.surfaceSecondary }]}>
-          <Text color={theme.colors.textMuted} style={ss.statChipLabel}>
+      {/* Thin gold accent divider */}
+      <View
+        style={[
+          ss.heroAccentLine,
+          { alignSelf: isRtl ? "flex-end" : "flex-start" },
+        ]}
+      />
+
+      {/* Secondary stats row */}
+      <View style={[ss.heroStatsRow, { flexDirection: rowDirection }]}>
+        {/* Reserved */}
+        <View style={[ss.heroStat, { alignItems: isRtl ? "flex-end" : "flex-start" }]}>
+          <Text style={[ss.heroStatLabel, { textAlign }]}>
             {t("patientPaymentsFlow.wallet.reservedLabel")}
           </Text>
-          <Text weight="600" style={ss.statChipValue}>
+          <Text weight="600" style={[ss.heroStatValue, { textAlign }]}>
             {formatMoney(wallet.reservedBalance, wallet.currencyCode, locale)}
           </Text>
         </View>
-        <View style={[ss.balanceStatChip, { backgroundColor: theme.colors.primaryLight }]}>
-          <Text color={theme.colors.primary} style={ss.statChipLabel}>
+
+        {/* Last updated */}
+        <View style={[ss.heroStat, { alignItems: isRtl ? "flex-end" : "flex-start" }]}>
+          <Text style={[ss.heroStatLabel, { textAlign }]}>
             {t("patientPaymentsFlow.wallet.lastUpdatedLabel")}
           </Text>
-          <Text weight="600" style={[ss.statChipValue, { color: theme.colors.primary }]}>
+          <Text weight="600" style={[ss.heroStatValueGold, { textAlign }]}>
             {formatDate(wallet.updatedAt, locale)}
           </Text>
         </View>
       </View>
-    </Card>
+    </View>
   );
 }
 
@@ -246,9 +247,9 @@ function PaymentStatusCard({
   locale: string;
 }) {
   const { theme } = useTheme();
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const router = useRouter();
-  const isRtl = i18n.language?.startsWith("ar") ?? false;
+  const { isRtl, rowDirection, textAlign } = useAppDirection();
 
   const action = resolvePaymentAction(payments);
 
@@ -263,18 +264,42 @@ function PaymentStatusCard({
   if (isError) {
     return (
       <Card variant="elevated" padding="md" style={ss.statusCard}>
-        <TouchableOpacity onPress={onRetry}>
-          <Text color={theme.colors.primary}>{t("patientPaymentsFlow.wallet.retry")}</Text>
-        </TouchableOpacity>
+        <ErrorState onRetry={onRetry} />
       </Card>
     );
   }
 
+  // ── Calm / Completed: compact reassurance banner ──
+  if (action.kind === "calm" || action.kind === "completed") {
+    return (
+      <View
+        style={[
+          ss.reassuranceBanner,
+          { backgroundColor: theme.colors.successLight, flexDirection: rowDirection },
+        ]}
+      >
+        <Ionicons
+          name="checkmark-circle"
+          size={18}
+          color={theme.colors.success}
+        />
+        <Text
+          weight="600"
+          color={theme.colors.success}
+          style={[ss.reassuranceText, { textAlign }]}
+        >
+          {t("patientPaymentsFlow.wallet.statusAllGood")}
+        </Text>
+      </View>
+    );
+  }
+
+  // ── Actionable / Attention states ──
   return (
     <Card variant="elevated" padding="md" style={ss.statusCard}>
-      {/* Header — title + primary badge always visible */}
-      <View style={[ss.statusHeader, isRtl && ss.rowRtl]}>
-        <Text weight="600" style={ss.sectionTitle}>
+      {/* Header row */}
+      <View style={[ss.statusHeader, { flexDirection: rowDirection }]}>
+        <Text weight="600" style={[ss.sectionTitle, { textAlign }]}>
           {t("patientPaymentsFlow.wallet.statusTitle")}
         </Text>
         <StatusBadge
@@ -285,189 +310,78 @@ function PaymentStatusCard({
               ? t("patientPaymentsFlow.paymentCard.status.PENDING")
               : action.kind === "failed"
               ? t("patientPaymentsFlow.paymentCard.status.FAILED")
-              : action.kind === "expired"
-              ? t("patientPaymentsFlow.paymentCard.status.EXPIRED")
-              : t("patientPaymentsFlow.wallet.statusAllGood")
+              : t("patientPaymentsFlow.paymentCard.status.EXPIRED")
           }
           status={
-            action.kind === "payable" || action.kind === "processing" || action.kind === "failed"
+            action.kind === "payable"
               ? "warning"
-              : action.kind === "expired"
-              ? "default"
-              : "success"
+              : action.kind === "processing"
+              ? "warning"
+              : action.kind === "failed"
+              ? "error"
+              : "default"
           }
         />
       </View>
 
-      {/* Body — varies by action kind */}
-      {action.kind === "payable" && (
-        <View style={ss.statusBody}>
-          {/* Amount summary */}
-          <View style={[ss.txRow, isRtl && ss.rowReverse]}>
-            <View style={ss.txContent}>
-              <Text weight="700" style={ss.actionableAmount}>
-                {formatMoney(action.payment.amountTotal, action.payment.currency, locale)}
-              </Text>
-              <Text color={theme.colors.textMuted} style={ss.txDate}>
-                {t(`patientPaymentsFlow.paymentCard.provider.${action.payment.provider}` as Parameters<typeof t>[0])}
-              </Text>
-            </View>
-            <StatusBadge
-              label={t(`patientPaymentsFlow.paymentCard.status.${action.payment.status}` as Parameters<typeof t>[0])}
-              status={STATUS_BADGE_MAP[action.payment.status]}
-            />
-          </View>
-
-          {/* Date */}
-          <Text color={theme.colors.textMuted} style={ss.statusDate}>
-            {t("patientPaymentsFlow.wallet.statusPaymentDate")}{" "}
-            {formatDate(action.payment.createdAt, locale)}
+      {/* Amount + provider row */}
+      <View style={[ss.statusAmountRow, { flexDirection: rowDirection }]}>
+        <View style={[ss.statusAmountContent, { alignItems: isRtl ? "flex-end" : "flex-start" }]}>
+          <Text weight="700" style={[ss.statusAmount, { textAlign }]}>
+            {formatMoney(action.payment.amountTotal, action.payment.currency, locale)}
           </Text>
-
-          {/* Primary CTA — full width, stacked below */}
-          <View style={ss.statusActionBlock}>
-            <Button
-              title={t("patientPaymentsFlow.paymentCard.payNow")}
-              onPress={() => router.push(`/(patient)/sessions/${action.payment.sessionId}/pay`)}
-              style={ss.statusPrimaryBtn}
-            />
-          </View>
-
-          {/* Secondary: view session */}
-          <TouchableOpacity
-            onPress={() => router.push(`/(patient)/sessions/${action.payment.sessionId}`)}
-            style={ss.statusSecondaryAction}
-          >
-            <Text color={theme.colors.primary} weight="600" style={ss.statusSecondaryLink}>
-              {t("patientPaymentsFlow.paymentCard.viewSession")}
-            </Text>
-          </TouchableOpacity>
-        </View>
-      )}
-
-      {action.kind === "failed" && (
-        <View style={ss.statusBody}>
-          {/* Amount + failed badge */}
-          <View style={[ss.txRow, isRtl && ss.rowReverse]}>
-            <View style={ss.txContent}>
-              <Text weight="700" style={ss.actionableAmount}>
-                {formatMoney(action.payment.amountTotal, action.payment.currency, locale)}
-              </Text>
-              <Text color={theme.colors.textMuted} style={ss.txDate}>
-                {t(`patientPaymentsFlow.paymentCard.provider.${action.payment.provider}` as Parameters<typeof t>[0])}
-              </Text>
-            </View>
-            <StatusBadge
-              label={t("patientPaymentsFlow.paymentCard.status.FAILED")}
-              status="error"
-            />
-          </View>
-
-          <Text color={theme.colors.textMuted} style={ss.statusDate}>
-            {t("patientPaymentsFlow.wallet.statusPaymentDate")}{" "}
-            {formatDate(action.payment.failedAt ?? action.payment.createdAt, locale)}
-          </Text>
-
-          {/* No retry CTA — session eligibility unknown. Session pay screen is source of truth. */}
-          {action.payment.sessionId && (
-            <TouchableOpacity
-              onPress={() => router.push(`/(patient)/sessions/${action.payment.sessionId}`)}
-              style={ss.statusSecondaryAction}
-            >
-              <Text color={theme.colors.primary} weight="600" style={ss.statusSecondaryLink}>
-                {t("patientPaymentsFlow.paymentCard.viewSession")}
-              </Text>
-            </TouchableOpacity>
-          )}
-        </View>
-      )}
-
-      {action.kind === "processing" && (
-        <View style={ss.statusBody}>
-          {/* Amount + processing badge */}
-          <View style={[ss.txRow, isRtl && ss.rowReverse]}>
-            <View style={ss.txContent}>
-              <Text weight="700" style={ss.actionableAmount}>
-                {formatMoney(action.payment.amountTotal, action.payment.currency, locale)}
-              </Text>
-              <Text color={theme.colors.textMuted} style={ss.txDate}>
-                {t(`patientPaymentsFlow.paymentCard.provider.${action.payment.provider}` as Parameters<typeof t>[0])}
-              </Text>
-            </View>
-            <StatusBadge
-              label={t("patientPaymentsFlow.paymentCard.status.PENDING")}
-              status="warning"
-            />
-          </View>
-
-          <Text color={theme.colors.textMuted} style={ss.statusDate}>
-            {t("patientPaymentsFlow.wallet.statusPaymentDate")}{" "}
-            {formatDate(action.payment.createdAt, locale)}
-          </Text>
-
-          {/* No CTA — processing, user cannot act. Session is source of truth. */}
-          <Text color={theme.colors.textMuted} style={ss.statusProcessingNote}>
-            {t("patientPaymentsFlow.wallet.statusClearBody")}
+          <Text color={theme.colors.textMuted} style={[ss.statusProvider, { textAlign }]}>
+            {t(`patientPaymentsFlow.paymentCard.provider.${action.payment.provider}` as Parameters<typeof t>[0])}
           </Text>
         </View>
-      )}
-
-      {action.kind === "expired" && (
-        <View style={ss.statusBody}>
-          <View style={[ss.txRow, isRtl && ss.rowReverse]}>
-            <View style={ss.txContent}>
-              <Text weight="700" style={ss.actionableAmount}>
-                {formatMoney(action.payment.amountTotal, action.payment.currency, locale)}
-              </Text>
-            </View>
-            <StatusBadge
-              label={t("patientPaymentsFlow.paymentCard.status.EXPIRED")}
-              status="default"
-            />
-          </View>
-
-          <Text color={theme.colors.textMuted} style={ss.statusDate}>
-            {formatDate(action.payment.expiredAt ?? action.payment.createdAt, locale)}
-          </Text>
-
-          <Text color={theme.colors.textMuted} style={ss.statusProcessingNote}>
-            {t("patientPaymentsFlow.wallet.statusClearBody")}
-          </Text>
-
-          {/* Session link only — pay CTA never shown for expired */}
-          {action.payment.sessionId && (
-            <TouchableOpacity
-              onPress={() => router.push(`/(patient)/sessions/${action.payment.sessionId}`)}
-              style={ss.statusSecondaryAction}
-            >
-              <Text color={theme.colors.primary} weight="600" style={ss.statusSecondaryLink}>
-                {t("patientPaymentsFlow.paymentCard.viewSession")}
-              </Text>
-            </TouchableOpacity>
-          )}
-        </View>
-      )}
-
-      {(action.kind === "completed" || action.kind === "calm") && (
-        <View style={ss.statusBody}>
-          <Text color={theme.colors.textMuted} style={ss.statusClearText}>
-            {t("patientPaymentsFlow.wallet.statusClearBody")}
-          </Text>
-        </View>
-      )}
-
-      {/* Footer notes */}
-      <View style={[ss.statusFooter, isRtl && ss.alignEnd]}>
-        <View style={ss.footerNote}>
-          <Ionicons name="card-outline" size={12} color={theme.colors.textMuted} />
-          <Text color={theme.colors.textMuted} style={ss.footerNoteText}>
-            {t("patientPaymentsFlow.wallet.paymentMethodsUnavailable")}
-          </Text>
-        </View>
-        <Text color={theme.colors.textMuted} style={ss.footerNoteText}>
-          {t("patientPaymentsFlow.wallet.addFundsUnavailable")}
-        </Text>
+        <StatusBadge
+          label={t(`patientPaymentsFlow.paymentCard.status.${action.payment.status}` as Parameters<typeof t>[0])}
+          status={STATUS_BADGE_MAP[action.payment.status]}
+        />
       </View>
+
+      {/* Date */}
+      <Text color={theme.colors.textMuted} style={[ss.statusDate, { textAlign }]}>
+        {t("patientPaymentsFlow.wallet.statusPaymentDate")}{" "}
+        {formatDate(
+          action.kind === "failed"
+            ? (action.payment.failedAt ?? action.payment.createdAt)
+            : action.kind === "expired"
+            ? (action.payment.expiredAt ?? action.payment.createdAt)
+            : action.payment.createdAt,
+          locale,
+        )}
+      </Text>
+
+      {/* Processing note */}
+      {(action.kind === "processing" || action.kind === "expired") && (
+        <Text color={theme.colors.textMuted} style={[ss.statusNote, { textAlign }]}>
+          {t("patientPaymentsFlow.wallet.statusClearBody")}
+        </Text>
+      )}
+
+      {/* Pay now CTA (payable only) */}
+      {action.kind === "payable" && (
+        <View style={ss.statusCtaBlock}>
+          <Button
+            title={t("patientPaymentsFlow.paymentCard.payNow")}
+            onPress={() => router.push(`/(patient)/sessions/${action.payment.sessionId}/pay`)}
+            style={ss.statusPrimaryBtn}
+          />
+        </View>
+      )}
+
+      {/* View session link */}
+      {action.payment.sessionId && (
+        <TouchableOpacity
+          onPress={() => router.push(`/(patient)/sessions/${action.payment.sessionId}`)}
+          style={[ss.statusSecondaryLink, { alignSelf: isRtl ? "flex-end" : "flex-start" }]}
+        >
+          <Text color={theme.colors.primary} weight="600" style={ss.statusLinkText}>
+            {t("patientPaymentsFlow.paymentCard.viewSession")}
+          </Text>
+        </TouchableOpacity>
+      )}
     </Card>
   );
 }
@@ -476,62 +390,71 @@ function PaymentStatusCard({
 // TransactionRow
 // ---------------------------------------------------------------------------
 
-function TransactionRow({ entry }: { entry: CustomerWalletEntryItem }) {
+function TransactionRow({
+  entry,
+  locale,
+  showDivider,
+}: {
+  entry: CustomerWalletEntryItem;
+  locale: string;
+  showDivider: boolean;
+}) {
   const { theme } = useTheme();
-  const { t, i18n } = useTranslation();
-  const locale = i18n.language?.startsWith("ar") ? "ar-SA" : "en-US";
-  const isRtl = i18n.language?.startsWith("ar") ?? false;
+  const { t } = useTranslation();
+  const { isRtl, rowDirection, textAlign, oppositeTextAlign } = useAppDirection();
   const isCredit = entry.direction === "CREDIT";
 
   return (
-    <View style={ss.txRow}>
-      {/* Direction icon */}
-      <View
-        style={[
-          ss.txIcon,
-          {
-            backgroundColor: isCredit
-              ? theme.colors.primaryLight
-              : theme.colors.surfaceSecondary,
-          },
-        ]}
-      >
-        <Ionicons
-          name={isRtl ? "arrow-up" : "arrow-up"}
-          size={13}
-          color={isCredit ? theme.colors.primary : theme.colors.textSecondary}
-        />
+    <>
+      <View style={[ss.txRow, { flexDirection: rowDirection }]}>
+        {/* Direction icon */}
+        <View
+          style={[
+            ss.txIcon,
+            {
+              backgroundColor: isCredit
+                ? theme.colors.statusSuccessBg
+                : theme.colors.surfaceMuted,
+            },
+          ]}
+        >
+          <Ionicons
+            name={isCredit ? "arrow-down" : "arrow-up"}
+            size={13}
+            color={isCredit ? theme.colors.success : theme.colors.textSecondary}
+          />
+        </View>
+
+        {/* Content */}
+        <View style={[ss.txContent, { alignItems: isRtl ? "flex-end" : "flex-start" }]}>
+          <Text weight="600" style={[ss.txTitle, { textAlign }]} numberOfLines={1}>
+            {entryTypeLabel(entry.entryType, t)}
+          </Text>
+          <Text color={theme.colors.textMuted} style={[ss.txDate, { textAlign }]}>
+            {formatDate(entry.effectiveAt, locale)}
+          </Text>
+        </View>
+
+        {/* Amount */}
+        <Text
+          weight="700"
+          style={[
+            ss.txAmount,
+            {
+              color: isCredit ? theme.colors.success : theme.colors.textPrimary,
+              textAlign: oppositeTextAlign,
+            },
+          ]}
+        >
+          {isCredit ? "+" : "−"}
+          {formatMoney(entry.amount, entry.currencyCode, locale)}
+        </Text>
       </View>
 
-      {/* Content — in RTL, this naturally flows right */}
-      <View style={ss.txContent}>
-        <Text
-          weight="600"
-          style={[ss.txTitle, isRtl && ss.textRight]}
-          numberOfLines={1}
-        >
-          {entryTypeLabel(entry.entryType, t)}
-        </Text>
-        <Text
-          color={theme.colors.textMuted}
-          style={[ss.txDate, isRtl && ss.textRight]}
-        >
-          {formatDate(entry.effectiveAt, locale)}
-        </Text>
-      </View>
-
-      {/* Amount — always on the left side */}
-      <Text
-        weight="700"
-        style={[
-          ss.txAmount,
-          { color: isCredit ? theme.colors.primary : theme.colors.textPrimary },
-        ]}
-      >
-        {isCredit ? "+" : "-"}
-        {formatMoney(entry.amount, entry.currencyCode, locale)}
-      </Text>
-    </View>
+      {showDivider && (
+        <View style={[ss.txDivider, { backgroundColor: theme.colors.divider }]} />
+      )}
+    </>
   );
 }
 
@@ -557,21 +480,25 @@ function TransactionsCard({
   locale: string;
 }) {
   const { theme } = useTheme();
-  const { t, i18n } = useTranslation();
-  const isRtl = i18n.language?.startsWith("ar") ?? false;
+  const { t } = useTranslation();
+  const { rowDirection, textAlign, chevronForward } = useAppDirection();
 
   return (
     <Card variant="elevated" padding="md" style={ss.sectionCard}>
       {/* Header */}
-      <View style={[ss.sectionHeader, isRtl && ss.rowRtl]}>
-        <Text weight="600" style={ss.sectionTitle}>
+      <View style={[ss.sectionHeader, { flexDirection: rowDirection }]}>
+        <Text weight="600" style={[ss.sectionTitle, { textAlign }]}>
           {t("patientPaymentsFlow.wallet.recentTitle")}
         </Text>
         {hasMore && (
-          <TouchableOpacity onPress={onViewAll}>
-            <Text color={theme.colors.primary} weight="600" style={ss.viewAllLink}>
+          <TouchableOpacity
+            onPress={onViewAll}
+            style={[ss.viewAllBtn, { flexDirection: rowDirection }]}
+          >
+            <Text color={theme.colors.primary} weight="600" style={ss.viewAllText}>
               {t("patientPaymentsFlow.wallet.viewAll")}
             </Text>
+            <Ionicons name={chevronForward} size={14} color={theme.colors.primary} />
           </TouchableOpacity>
         )}
       </View>
@@ -585,8 +512,13 @@ function TransactionsCard({
         </TouchableOpacity>
       ) : entries.length > 0 ? (
         <View style={ss.txList}>
-          {entries.slice(0, 4).map((entry) => (
-            <TransactionRow key={entry.id} entry={entry} />
+          {entries.slice(0, 4).map((entry, idx) => (
+            <TransactionRow
+              key={entry.id}
+              entry={entry}
+              locale={locale}
+              showDivider={idx < Math.min(entries.length, 4) - 1}
+            />
           ))}
         </View>
       ) : (
@@ -599,117 +531,49 @@ function TransactionsCard({
 }
 
 // ---------------------------------------------------------------------------
-// PaymentHistoryCard
+// TransactionHistoryNavCard
+// Replaces the legacy collapsible PaymentHistoryCard.
+// The collapsible only showed payments[].slice(0,3) with amount + status badge —
+// no hidden data. Navigation to the dedicated history screen is clearer UX.
 // ---------------------------------------------------------------------------
 
-function PaymentHistoryCard({
-  payments,
-  isLoading,
-  isError,
-  onRetry,
-  locale,
-}: {
-  payments: PaymentItem[];
-  isLoading: boolean;
-  isError: boolean;
-  onRetry: () => void;
-  locale: string;
-}) {
-  const { theme } = useTheme();
-  const { t, i18n } = useTranslation();
-  const [expanded, setExpanded] = useState(false);
-  const isRtl = i18n.language?.startsWith("ar") ?? false;
-
-  return (
-    <Card variant="elevated" padding="md" style={ss.sectionCard}>
-      {/* Collapsible header */}
-      <TouchableOpacity
-        onPress={() => setExpanded((v) => !v)}
-        activeOpacity={0.8}
-        style={[ss.historyToggle, isRtl && ss.rowReverse]}
-      >
-        <View style={ss.historyToggleLeft}>
-          <Text weight="600" style={ss.sectionTitle}>
-            {t("patientPaymentsFlow.payments.sectionTitle")}
-          </Text>
-          <Text color={theme.colors.textMuted} style={ss.historyHint}>
-            {t("patientPaymentsFlow.wallet.historyHint")}
-          </Text>
-        </View>
-        <Ionicons
-          name={expanded ? "chevron-up" : "chevron-down"}
-          size={18}
-          color={theme.colors.textMuted}
-        />
-      </TouchableOpacity>
-
-      {/* Expanded body */}
-      {expanded && (
-        <View style={ss.historyBody}>
-          {isLoading ? (
-            <LoadingState />
-          ) : isError ? (
-            <ErrorState onRetry={onRetry} />
-          ) : payments.length > 0 ? (
-            <View style={ss.historyPaymentList}>
-              {payments.slice(0, 3).map((p) => (
-                <HistoryPaymentRow key={p.id} payment={p} locale={locale} isRtl={isRtl} />
-              ))}
-            </View>
-          ) : (
-            <View style={ss.historyEmpty}>
-              <Ionicons name="card-outline" size={28} color={theme.colors.textMuted} />
-              <Text color={theme.colors.textMuted} style={ss.historyEmptyText}>
-                {t("patientPaymentsFlow.payments.emptyNote")}
-              </Text>
-            </View>
-          )}
-        </View>
-      )}
-
-      {/* Collapsed note */}
-      {!expanded && (
-        <Text color={theme.colors.textMuted} style={ss.historyCollapsedNote}>
-          {t("patientPaymentsFlow.wallet.historyCollapsed")}
-        </Text>
-      )}
-    </Card>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// HistoryPaymentRow
-// ---------------------------------------------------------------------------
-
-function HistoryPaymentRow({
-  payment,
-  locale,
-  isRtl,
-}: {
-  payment: PaymentItem;
-  locale: string;
-  isRtl: boolean;
-}) {
+function TransactionHistoryNavCard({ onPress }: { onPress: () => void }) {
   const { theme } = useTheme();
   const { t } = useTranslation();
-  const { iso, labelKey } = resolveRelevantDate(payment);
+  const { rowDirection, textAlign, chevronForward, isRtl } = useAppDirection();
 
   return (
-    <View style={[ss.paymentRow, isRtl && ss.rowReverse]}>
-      <View style={ss.paymentRowLeft}>
-        <Text weight="600" style={ss.paymentRowAmount}>
-          {formatMoney(payment.amountTotal, payment.currency, locale)}
-        </Text>
-        <Text color={theme.colors.textMuted} style={ss.paymentRowDate}>
-          {t(`patientPaymentsFlow.paymentCard.${labelKey}` as Parameters<typeof t>[0])}{" "}
-          {formatDate(iso, locale)}
-        </Text>
+    <TouchableOpacity
+      onPress={onPress}
+      activeOpacity={0.8}
+      style={[
+        ss.historyNavCard,
+        {
+          backgroundColor: theme.colors.surfaceRaised,
+          borderColor: theme.colors.border,
+        },
+      ]}
+    >
+      <View style={[ss.historyNavRow, { flexDirection: rowDirection }]}>
+        {/* Icon */}
+        <View style={[ss.historyNavIconWrap, { backgroundColor: theme.colors.primaryLight }]}>
+          <Ionicons name="receipt-outline" size={18} color={theme.colors.primary} />
+        </View>
+
+        {/* Text */}
+        <View style={[ss.historyNavText, { alignItems: isRtl ? "flex-end" : "flex-start" }]}>
+          <Text weight="600" style={[ss.historyNavTitle, { textAlign }]}>
+            {t("patientPaymentsFlow.payments.sectionTitle")}
+          </Text>
+          <Text color={theme.colors.textMuted} style={[ss.historyNavSubtitle, { textAlign }]}>
+            {t("patientPaymentsFlow.wallet.historyViewAll")}
+          </Text>
+        </View>
+
+        {/* Chevron */}
+        <Ionicons name={chevronForward} size={18} color={theme.colors.textMuted} />
       </View>
-      <StatusBadge
-        label={t(`patientPaymentsFlow.paymentCard.status.${payment.status}` as Parameters<typeof t>[0])}
-        status={STATUS_BADGE_MAP[payment.status]}
-      />
-    </View>
+    </TouchableOpacity>
   );
 }
 
@@ -722,7 +586,7 @@ export default function PatientPaymentsScreen() {
   const { t, i18n } = useTranslation();
   const router = useRouter();
   const locale = i18n.language?.startsWith("ar") ? "ar-SA" : "en-US";
-  const isRtl = i18n.language?.startsWith("ar") ?? false;
+  const { isRtl, rowDirection, textAlign } = useAppDirection();
 
   const walletQuery = usePatientWalletSummary();
   const paymentsQuery = usePatientPayments({ limit: 6 });
@@ -733,10 +597,6 @@ export default function PatientPaymentsScreen() {
   const entries = entriesQuery.data?.items ?? [];
   const recentEntries = entries.slice(0, 4);
   const hasMoreEntries = (entriesQuery.data?.pagination.totalItems ?? 0) > recentEntries.length;
-
-  const fallbackCurrency = resolveSupportedCurrencyCode({
-    currencyCode: wallet?.currencyCode ?? entries[0]?.currencyCode ?? payments[0]?.currency ?? null,
-  });
 
   const isLoading =
     walletQuery.isLoading && paymentsQuery.isLoading && entriesQuery.isLoading;
@@ -760,23 +620,23 @@ export default function PatientPaymentsScreen() {
         keyboardShouldPersistTaps="handled"
       >
         {/* Page heading */}
-        <View style={ss.pageHeading}>
+        <View style={[ss.pageHeading, { alignItems: isRtl ? "flex-end" : "flex-start" }]}>
           <Text
             variant="h2"
             weight="600"
-            style={[ss.pageTitle, isRtl ? ss.textRight : ss.textLeft]}
+            style={[ss.pageTitle, { textAlign }]}
           >
             {t("patientPaymentsFlow.wallet.title")}
           </Text>
           <Text
             color={theme.colors.textSecondary}
-            style={[ss.pageSubtitle, isRtl ? ss.textRight : ss.textLeft]}
+            style={[ss.pageSubtitle, { textAlign }]}
           >
             {t("patientPaymentsFlow.wallet.subtitle")}
           </Text>
         </View>
 
-        {/* Balance summary */}
+        {/* Balance hero */}
         <WalletBalanceCard
           wallet={wallet}
           isLoading={walletQuery.isLoading}
@@ -805,19 +665,15 @@ export default function PatientPaymentsScreen() {
           locale={locale}
         />
 
-        {/* Payment history */}
-        <PaymentHistoryCard
-          payments={payments}
-          isLoading={paymentsQuery.isLoading}
-          isError={paymentsQuery.isError ?? false}
-          onRetry={() => paymentsQuery.refetch()}
-          locale={locale}
+        {/* Transaction history navigation card */}
+        <TransactionHistoryNavCard
+          onPress={() => router.push("/(patient)/payments/transactions")}
         />
 
         {/* Trust footer */}
-        <View style={ss.trustFooter}>
+        <View style={[ss.trustFooter, { flexDirection: rowDirection }]}>
           <Ionicons name="shield-checkmark-outline" size={13} color={theme.colors.textMuted} />
-          <Text color={theme.colors.textMuted} style={ss.trustText}>
+          <Text color={theme.colors.textMuted} style={[ss.trustText, { textAlign }]}>
             {t("patientPaymentsFlow.wallet.secureHint")}
           </Text>
         </View>
@@ -835,144 +691,149 @@ const ss = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: MOBILE_HORIZONTAL_PADDING,
     paddingTop: MOBILE_SECTION_GAP,
-    paddingBottom: 32,
+    paddingBottom: 40,
     gap: MOBILE_SECTION_GAP,
   },
 
   // ── Page heading ──
-  pageHeading: { gap: 4, marginBottom: 2 },
+  pageHeading: { gap: 4 },
   pageTitle: { fontSize: 22, lineHeight: 28, fontWeight: "600" },
   pageSubtitle: { fontSize: 13, lineHeight: 19 },
 
-  // ── Balance card ──
-  balanceCard: {},
-  balanceCardError: { alignItems: "center", gap: 6, paddingVertical: 8 },
-  errorText: { fontSize: 13 },
-  retryText: { fontSize: 13 },
-  balanceTopRow: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 6 },
-  balanceIconWrap: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
+  // ── Hero card (teal background) ──
+  heroCard: {
+    borderRadius: 20,
+    paddingHorizontal: 20,
+    paddingVertical: 22,
+    overflow: "hidden",
+  },
+  heroErrorWrap: { alignItems: "center", gap: 8, paddingVertical: 12 },
+  heroErrorText: { fontSize: 13, lineHeight: 18, color: "rgba(255,255,255,0.7)" },
+  heroRetryText: { fontSize: 13, lineHeight: 18, color: "#FFFFFF" },
+  heroTopRow: { alignItems: "center", gap: 8, marginBottom: 12 },
+  heroIconWrap: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: "rgba(255,255,255,0.15)",
     alignItems: "center",
     justifyContent: "center",
   },
-  balanceLabel: { fontSize: 13 },
-  balanceAmount: { fontSize: 28, lineHeight: 34, fontWeight: "700", marginBottom: 2 },
-  balanceHint: { fontSize: 12, marginBottom: 10 },
-  balanceStatsRow: { flexDirection: "row", gap: 8 },
-  balanceStatChip: {
-    flexGrow: 1,
-    borderRadius: 10,
-    paddingHorizontal: 10,
-    paddingVertical: 7,
-    gap: 2,
+  heroLabel: { fontSize: 12, lineHeight: 17, color: "rgba(255,255,255,0.75)" },
+  heroAmount: {
+    fontSize: 34,
+    lineHeight: 42,
+    fontWeight: "700",
+    color: "#FFFFFF",
+    letterSpacing: -0.5,
   },
-  statChipLabel: { fontSize: 11 },
-  statChipValue: { fontSize: 13, lineHeight: 18 },
+  heroHint: { fontSize: 12, lineHeight: 17, color: "rgba(255,255,255,0.6)", marginTop: 2 },
+  heroAccentLine: {
+    width: 28,
+    height: 2,
+    borderRadius: 1,
+    backgroundColor: "#C8A979", // Warm Gold — used only as a thin accent detail
+    marginTop: 14,
+    marginBottom: 14,
+  },
+  heroStatsRow: { gap: 16 },
+  heroStat: { gap: 2 },
+  heroStatLabel: { fontSize: 11, lineHeight: 16, color: "rgba(255,255,255,0.6)" },
+  heroStatValue: { fontSize: 13, lineHeight: 18, color: "rgba(255,255,255,0.9)" },
+  heroStatValueGold: {
+    fontSize: 13,
+    lineHeight: 18,
+    color: "#C8A979", // Warm Gold for the last updated value only — restrained accent
+  },
+
+  // ── Reassurance banner ──
+  reassuranceBanner: {
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    alignItems: "center",
+    gap: 8,
+  },
+  reassuranceText: { fontSize: 14, lineHeight: 20, flex: 1 },
 
   // ── Status card ──
   statusCard: {},
   statusHeader: {
-    flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 10,
+    marginBottom: 12,
   },
-  statusBody: { gap: 8 },
-  actionableRow: {
-    flexDirection: "row",
+  statusAmountRow: {
     alignItems: "flex-start",
     justifyContent: "space-between",
-    gap: 8,
+    gap: 10,
+    marginBottom: 6,
   },
-  actionableAmountWrap: { flex: 1 },
-  actionableAmount: { fontSize: 20, lineHeight: 26, fontWeight: "700" },
-  actionableProvider: { fontSize: 12, marginTop: 2 },
-  statusDate: { fontSize: 12, lineHeight: 17 },
-  statusActions: { flexDirection: "row", alignItems: "center", gap: 14, marginTop: 4 },
-  statusActionBtn: { flexGrow: 1 },
-  viewSessionLink: { fontSize: 13, lineHeight: 19 },
-  statusActionBlock: { marginTop: 8 },
+  statusAmountContent: { flex: 1, gap: 2 },
+  statusAmount: { fontSize: 20, lineHeight: 26, fontWeight: "700" },
+  statusProvider: { fontSize: 12, lineHeight: 17 },
+  statusDate: { fontSize: 12, lineHeight: 17, marginTop: 2 },
+  statusNote: { fontSize: 12, lineHeight: 17, marginTop: 6 },
+  statusCtaBlock: { marginTop: 12 },
   statusPrimaryBtn: { width: "100%" },
-  statusSecondaryAction: { alignSelf: "flex-start", marginTop: 6 },
-  statusSecondaryLink: { fontSize: 13, lineHeight: 19 },
-  statusProcessingNote: { fontSize: 12, lineHeight: 17, marginTop: 4 },
-  statusClearText: { fontSize: 13, lineHeight: 19 },
-  statusFooter: { gap: 4, marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: "#f0f0f0" },
-  footerNote: { flexDirection: "row", alignItems: "center", gap: 5 },
-  footerNoteText: { fontSize: 12, lineHeight: 17 },
+  statusSecondaryLink: { marginTop: 10 },
+  statusLinkText: { fontSize: 13, lineHeight: 19 },
 
   // ── Shared section ──
   sectionCard: {},
   sectionHeader: {
-    flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 10,
+    marginBottom: 12,
   },
   sectionTitle: { fontSize: 15, lineHeight: 21, fontWeight: "600" },
-  viewAllLink: { fontSize: 13, lineHeight: 19 },
+  viewAllBtn: { alignItems: "center", gap: 4 },
+  viewAllText: { fontSize: 13, lineHeight: 19 },
   emptyNote: { fontSize: 13, lineHeight: 19, marginTop: 4 },
 
   // ── Transaction rows ──
-  txList: { gap: 12 },
-  txRow: { flexDirection: "row", alignItems: "center", gap: 10 },
+  txList: { gap: 0 },
+  txRow: { alignItems: "center", gap: 10, paddingVertical: 11 },
   txIcon: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     alignItems: "center",
     justifyContent: "center",
     flexShrink: 0,
   },
-  txContent: { flex: 1 },
+  txContent: { flex: 1, gap: 2 },
   txTitle: { fontSize: 13, lineHeight: 18, fontWeight: "600" },
-  txDate: { fontSize: 12, lineHeight: 17, marginTop: 1 },
-  txAmount: { fontSize: 13, lineHeight: 18, fontWeight: "700" },
-  txAmountRtl: { textAlign: "left" },
+  txDate: { fontSize: 12, lineHeight: 17 },
+  txAmount: { fontSize: 13, lineHeight: 18, fontWeight: "700", minWidth: 76 },
+  txDivider: { height: 1, opacity: 0.6 },
 
-  // ── Payment history ──
-  historyToggle: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    justifyContent: "space-between",
-    gap: 12,
+  // ── History nav card ──
+  historyNavCard: {
+    borderRadius: 16,
+    borderWidth: 1,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
   },
-  historyToggleLeft: { flex: 1, gap: 3 },
-  historyHint: { fontSize: 12, lineHeight: 17 },
-  historyBody: { marginTop: 12, gap: 10 },
-  historyEmpty: { alignItems: "center", gap: 8, paddingVertical: 16 },
-  historyEmptyText: { fontSize: 13, textAlign: "center" },
-  historyPaymentList: { gap: 2 },
-  paymentRow: {
-    flexDirection: "row",
+  historyNavRow: { alignItems: "center", gap: 12 },
+  historyNavIconWrap: {
+    width: 38,
+    height: 38,
+    borderRadius: 10,
     alignItems: "center",
-    justifyContent: "space-between",
-    gap: 8,
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
+    justifyContent: "center",
+    flexShrink: 0,
   },
-  paymentRowLeft: { flex: 1 },
-  paymentRowAmount: { fontSize: 14, fontWeight: "600" },
-  paymentRowDate: { fontSize: 12, marginTop: 2 },
-  historyCollapsedNote: { fontSize: 12, lineHeight: 17, marginTop: 8 },
+  historyNavText: { flex: 1, gap: 2 },
+  historyNavTitle: { fontSize: 14, lineHeight: 20, fontWeight: "600" },
+  historyNavSubtitle: { fontSize: 12, lineHeight: 17 },
 
   // ── Trust footer ──
   trustFooter: {
-    flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 5,
     paddingTop: 4,
   },
   trustText: { fontSize: 12, lineHeight: 17 },
-
-  // ── Layout helpers ──
-  rowRtl: { flexDirection: "row-reverse" },
-  rowReverse: { flexDirection: "row-reverse" },
-  alignEnd: { alignItems: "flex-end" },
-  textRight: { textAlign: "right" },
-  textLeft: { textAlign: "left" },
 });

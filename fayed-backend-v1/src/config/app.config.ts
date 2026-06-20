@@ -20,7 +20,8 @@ export default registerAs('app', () => {
     nodeEnv: process.env.NODE_ENV ?? 'development',
     port: parseInt(process.env.PORT ?? '3000', 10),
     name: process.env.APP_NAME ?? 'fayed-backend-v1',
-    url: process.env.APP_URL ?? 'http://localhost:3000',
+    // APP_URL is validated by env.schema.ts at startup — will throw if missing/invalid
+    url: process.env.APP_URL!,
     defaultLocale: process.env.APP_DEFAULT_LOCALE ?? 'ar',
     corsOrigins: Array.from(
       new Set([...defaultCorsOrigins, ...envCorsOrigins]),

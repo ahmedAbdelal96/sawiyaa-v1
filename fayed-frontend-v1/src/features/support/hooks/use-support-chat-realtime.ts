@@ -524,7 +524,7 @@ export function useSupportChatRealtime({
   }, [currentUserId, currentUserRole, isSocketConnected, messages, ticketId]);
 
   const sendMessage = useCallback(
-    async (message: string) => {
+    async (message: string): Promise<BasicAck | void> => {
       if (!ticketId) {
         throw new Error("SUPPORT_TICKET_REQUIRED");
       }
@@ -566,13 +566,13 @@ export function useSupportChatRealtime({
               toRealtimeMessage(item),
             ),
           );
-          return;
+          return ack;
         }
 
         // Do not automatically fall back to REST on socket failure/timeouts because that can create duplicates.
         // Instead mark the optimistic entry as failed; user can retry and we also refetch for safety.
         const ackMessage = ack && !ack.ok ? ack.message : null;
-        setSocketError(ackMessage ?? "SUPPORT_SEND_FAILED");
+        setSocketError((ack && !ack.ok ? ack.code : null) ?? ackMessage ?? "SUPPORT_SEND_FAILED");
         setPendingMessages((current) =>
           current.map((entry) =>
             entry.clientMessageId === clientMessageId
@@ -581,7 +581,7 @@ export function useSupportChatRealtime({
           ),
         );
         void refetchTicketRef.current();
-        return;
+        return ack;
       }
 
       try {
@@ -590,6 +590,10 @@ export function useSupportChatRealtime({
         setPendingMessages((current) =>
           current.filter((entry) => entry.clientMessageId !== clientMessageId),
         );
+        return {
+          ok: true,
+          conversationId: ticketId,
+        };
       } catch (error) {
         setPendingMessages((current) =>
           current.map((entry) =>

@@ -17,7 +17,7 @@ These findings represent active security exploits or data-integrity violations. 
 **Exploit path:** `POST /api/v1/academy/enrollments` accepts enrollment creation requests without any authentication token. Anyone on the internet can create fraudulent enrollments, poisoning platform data and enabling unverified users to access academy content.
 **Fix requirement:** Add `@UseGuards(AuthGuard)` + `@Roles(Role.PATIENT)` to the enrollment endpoint. Confirm whether `APP_GUARD` global guard already covers this endpoint.
 **Gate:** Backend must confirm auth guard is applied. Source must be verified post-fix.
-**Sprint 1-R3 status:** ✅ Reclassified / Accepted Risk — `createEnrollment` POST endpoint intentionally public (phone/email-based enrollment, no authenticated user required). Sprint 1-R2 removed class-level `@Public()`, added `@Public()` to individual GET methods only. Sprint 1-R3 added explicit `@Public()` to `createEnrollment`, making the intentional public design unambiguous. `CreateAcademyEnrollmentUseCase.execute()` has no `currentUserId` parameter. No global JWT APP_GUARD exists. Adding `@UseGuards(JwtAccessAuthGuard)` would break the phone/email enrollment flow. Accepted Risk documented. Full closure: `sprints/sprint-1-r3-final-p0-gate-closure.md`.
+**Sprint 1-R3 status:** ✅ Reclassified / Accepted Risk — `createEnrollment` POST endpoint intentionally public (phone/email-based enrollment, no authenticated user required). Sprint 1-R2 removed class-level `@Public()`, added `@Public()` to individual GET methods only. Sprint 1-R3 added explicit `@Public()` to `createEnrollment`, making the intentional public design unambiguous. `CreateAcademyEnrollmentUseCase.execute()` has no `currentUserId` parameter. No global JWT APP_GUARD exists. Adding `@UseGuards(JwtAccessAuthGuard)` would break the phone/email enrollment flow. Accepted Risk documented. Full closure: `phase-9a-security-first-fix-sprint/sprint-1-r3-final-p0-gate-closure.md`.
 
 ### 🔴 AUDIT-032 — Internal UUID Exposed in Public Practitioner DTOs
 **Surface:** Backend → Public API
@@ -34,7 +34,7 @@ These findings represent active security exploits or data-integrity violations. 
 **Exploit path:** The web refresh token is stored in a browser cookie without the `httpOnly` flag. Any JavaScript XSS on the domain (e.g., via a reflected XSS in a search parameter, a malicious browser extension, or a supply-chain attack on a dependency) can read the refresh token and send it to an attacker-controlled server, enabling account takeover.
 **Fix requirement:** Set `httpOnly: true` on the refresh token cookie. Also set `sameSite: 'strict'` and `secure: true` in production. Confirm backend sets these flags on cookie issuance.
 **Gate:** Browser DevTools inspection of the `refreshToken` cookie must show `HttpOnly`, `Secure`, and `SameSite` attributes set. An XSS payload must not be able to read the cookie.
-**Sprint 1-R3 status:** ✅ Fixed + Verified — Backend sets `Set-Cookie: fayed_refresh_token=...; HttpOnly; Secure; SameSite=Strict` on login/register/refresh/logout in all three auth controllers. Frontend `tokenManager.setTokens()` no longer overwrites the server-set httpOnly cookie. Sprint 1-R3 hardening: `WebResponseHardeningInterceptor` strips `refreshToken` from JSON response body for web clients (Origin-header detection). Browser JavaScript at login/refresh time can no longer read refreshToken from response body — only from the HttpOnly cookie (inaccessible to JS). Native/mobile clients receive full token body. TypeScript `tsc --noEmit`: ✅ pass (0 src/ errors). Full closure: `sprints/sprint-1-r3-final-p0-gate-closure.md`.
+**Sprint 1-R3 status:** ✅ Fixed + Verified — Backend sets `Set-Cookie: fayed_refresh_token=...; HttpOnly; Secure; SameSite=Strict` on login/register/refresh/logout in all three auth controllers. Frontend `tokenManager.setTokens()` no longer overwrites the server-set httpOnly cookie. Sprint 1-R3 hardening: `WebResponseHardeningInterceptor` strips `refreshToken` from JSON response body for web clients (Origin-header detection). Browser JavaScript at login/refresh time can no longer read refreshToken from response body — only from the HttpOnly cookie (inaccessible to JS). Native/mobile clients receive full token body. TypeScript `tsc --noEmit`: ✅ pass (0 src/ errors). Full closure: `phase-9a-security-first-fix-sprint/sprint-1-r3-final-p0-gate-closure.md`.
 
 ### 🔴 AUDIT-010 — Instant Booking Accept Race Condition / Unhandled Prisma Exception
 **Surface:** Backend
@@ -81,11 +81,11 @@ These findings represent security gaps, data-integrity risks, or user-facing def
 | AUDIT-022 | No booking acceptance confirmation UI | Web Patient | Instant Booking | Acceptance flow must show confirmation screen. |
 | AUDIT-034 | Practitioner support bypasses OTP verification | Backend | Support | `PRACTITIONER_OTP_VERIFIED` guard must be applied to ticket creation. |
 | AUDIT-035 | Practitioner financial ops bypass OTP verification | Backend | Financial | `PRACTITIONER_OTP_VERIFIED` guard must be applied to payout operations. |
-| AUDIT-037 | Practitioner approval/rejection not logged | Backend | Audit | Security audit log entry required for each approval/rejection action. |
-| AUDIT-038 | Manual payout not logged | Backend | Audit | Security audit log entry required for each manual payout. |
-| AUDIT-039 | No account lockout on failed login | Backend | Auth | Account lockout after N failed attempts (N to be defined, typically 5–10). |
+| AUDIT-037 | Practitioner approval/rejection not logged | Backend | Audit | ✅ Fixed — Phase 9b Sprint 2: `ApprovePractitionerApplicationUseCase` and `RejectPractitionerApplicationUseCase` now call `SecurityAuditService.logAsync` on all failure and success paths. |
+| AUDIT-038 | Manual payout not logged | Backend | Audit | ✅ Fixed — Phase 9b Sprint 2: `AdminPractitionerManualPayoutsController` now calls `SecurityAuditService.logAsync` on successful manual payout recording. |
+| AUDIT-039 | No account lockout on failed login | Backend | Auth | 🔴 BLOCKED — schema change required; rate limiting partial mitigation |
 | AUDIT-040 | No global JWT auth guard | Backend | Auth | New endpoints must not default to unprotected. Global guard or explicit `@Public()` decorator required. |
-| AUDIT-041 | Practitioner login missing `deviceId` | Backend | Auth | Device ID binding must be included in practitioner login. |
+| AUDIT-041 | Practitioner login missing `deviceId` | Backend | Auth | 🟡 Implemented — Verification Pending (Phase 9b Sprint 4): backend+mobile done; web gap noted |
 | AUDIT-044 | `__DEV__` URL allowlist active in production | Web | Auth | `__DEV__` check must be stripped or verified absent from production builds. |
 | AUDIT-045 | AdminPermissionGate not auto-applied | Web Admin | Permissions | Systematic audit: all admin routes must have permission gates. |
 | AUDIT-047 | GeneralChatConversationsController lacks RolesGuard | Backend | Chat | `RolesGuard` must be applied to the conversations controller. |
@@ -93,17 +93,17 @@ These findings represent security gaps, data-integrity risks, or user-facing def
 | AUDIT-054 | Daily room expiry mismatch | Backend | Daily | Room expiry must match session actual duration, not a fixed buffer. |
 | AUDIT-055 | DISPLAY_NAME_MATCH fallback enables fraud | Backend | Attendance | Fallback behavior must be reconsidered; manual attendance confirmation recommended. |
 | AUDIT-056 | No notifications on instant booking events | Backend | Notifications | Notification dispatch required for accept/reject/expire events. |
-| AUDIT-057 | Push payload includes PHI fields | Backend | Notifications | `threadId`, `relatedEntityType` must be removed from push payload. |
+| AUDIT-057 | Push payload includes PHI fields | Backend | Notifications | 🟡 Implemented — Verification Pending (Phase 9b Sprint 3): `threadId`, `relatedEntityType`, `category`, `relatedEntityId`, `scheduledStartAt`, `packagePlanTitle` removed from push payloads; `{{sessionAt}}` removed from push body via push-specific i18n keys; `relatedEntityType`/`relatedEntityId`/`category` removed from Expo `data` object. Runtime verification pending. |
 | AUDIT-058 | Notification routePath bypasses Messages Shell | Mobile | Notifications | `/messages/{threadId}` notifications must go through Messages Shell. |
-| AUDIT-062 | APP_URL falls back to localhost:3000 | Backend | Config | Production `APP_URL` must be configured; no localhost fallback permitted for push. |
+| AUDIT-062 | APP_URL falls back to localhost:3000 | Backend | Config | 🟡 Implemented — Verification Pending (Phase 9b Sprint 3): `app.config.ts` removed localhost fallback; `SessionJoinAvailableNotificationSweeperService` uses `@Inject(appConfig.KEY)`; `env.schema.ts` added `superRefine` rejecting localhost in production. Missing `APP_URL` throws at startup. Runtime verification pending. |
 | AUDIT-067 | Care-chat notifications bypass Messages Shell | Mobile | Notifications | Care-chat notification lane routing must be consistent with Messages Shell. |
-| AUDIT-068 | `admin/care-chat/[id]` missing AdminPermissionGate | Web Admin | Permissions | Permission gate required. |
-| AUDIT-069 | `admin/sessions/runtime-inspection` missing gate | Web Admin | Permissions | Permission gate required. |
+| AUDIT-068 | `admin/care-chat/[id]` missing AdminPermissionGate | Web Admin | Permissions | ✅ Fixed — Phase 9b Sprint 1 Wave 0 Batch 1: `AdminPermissionGate` + `CARE_CHAT_REQUEST_READ_ADMIN` added to page; backend guard already existed |
+| AUDIT-069 | `admin/sessions/runtime-inspection` missing gate | Web Admin | Permissions | ✅ Fixed — Phase 9b Sprint 1 Wave 0 Batch 1: `AdminPermissionGate` + `SESSIONS_READ_ADMIN` added to page; backend guard already existed |
 | AUDIT-070 | AdminNotificationDetailsPanel HTML render gap | Web Admin | Notifications | Add HTML sanitization as defense-in-depth even though XSS not confirmed. |
 | AUDIT-072 | Join token in URL query parameter | Web | Session Join | Join token must be sent via POST body or secure channel, not URL. |
 | AUDIT-075 | Runtime inspector has no audit log | Web Admin | Runtime Inspector | Instrument key actions in the inspector with audit log entries. |
-| AUDIT-102 | `admin/refund-policies` missing AdminPermissionGate | Web Admin | Permissions | Permission gate required. |
-| AUDIT-103 | `admin/notifications/[id]` missing gate | Web Admin | Permissions | Permission gate required. |
+| AUDIT-102 | `admin/refund-policies` missing AdminPermissionGate + weak backend | Web Admin | Permissions | ✅ Fixed — Phase 9b Sprint 1 Wave 0 Batch 1: `AdminPermissionGate` + `REFUNDS_APPROVE` added to page; backend `PermissionsGuard` added with method-level permission split (`REFUNDS_RETRY` for GETs, `REFUNDS_APPROVE` for writes; was only `RolesGuard` + `ADMIN` role) |
+| AUDIT-103 | `admin/notifications/[id]` missing gate | Web Admin | Permissions | ✅ Fixed — Phase 9b Sprint 1 Wave 0 Batch 1: `AdminPermissionGate` + `NOTIFICATION_OPS_READ` added to page; backend guard already existed |
 | AUDIT-105 | Raw `PENDING_PAYMENT`/`CONFIRMED` in success.tsx | Mobile Patient | Payments | All payment status labels must use `t()` with fallback. |
 | AUDIT-106 | Raw `SupportTicketType` enum in support/new.tsx | Mobile Patient | Support | All support category labels must use `t()` with fallback. |
 | AUDIT-107 | `formatNotificationType()` bypasses i18n | Mobile Patient | Notifications | Function must use `t()` or locale-aware string lookup. |
@@ -213,14 +213,14 @@ These findings are polish or observations. They may be addressed in a post-launc
 
 ## Must Not Launch Until (Explicit Gate List)
 
-1. **Academy enrollment endpoint has auth guard** (AUDIT-031) — ✅ RESOLVED (Sprint 1-R3): `createEnrollment` explicitly marked `@Public()`; enrollment is by phone/email, not user account. Reclassified as Accepted Risk — no user account required for public course enrollment. `CreateAcademyEnrollmentUseCase` has no `currentUserId` parameter.
+1. **Academy enrollment access model resolved as public phone/email enrollment** (AUDIT-031) — ✅ RESOLVED (Sprint 1-R3): `createEnrollment` explicitly marked `@Public()`; enrollment is by phone/email, not user account. Reclassified as Accepted Risk — no user account required for public course enrollment. `CreateAcademyEnrollmentUseCase` has no `currentUserId` parameter.
 2. **Public practitioner DTOs contain no internal UUIDs** (AUDIT-032) — ✅ RESOLVED (Phase 9a Sprint 1) — Verified in Sprint 1-R1
 3. **Web refresh token cookie has httpOnly + secure + sameSite** (AUDIT-033) — ✅ RESOLVED + VERIFIED (Sprint 1-R3): backend sets `Set-Cookie` header with `HttpOnly; Secure; SameSite=Strict` on all auth endpoints. `WebResponseHardeningInterceptor` strips `refreshToken` from JSON response body for web clients — browser JS cannot read it at login/refresh time.
 4. **Instant booking accept returns 409 (not 500) under race condition** (AUDIT-010) — ✅ RESOLVED (Phase 9a Sprint 1) — Verified in Sprint 1-R1
 5. **Admin refund panel has amount cap + confirmation dialog** (AUDIT-003)
 6. **Settlement mark-paid/mark-failed has confirmation dialog** (AUDIT-004)
-7. **Push notifications contain no `threadId` or `relatedEntityType`** (AUDIT-057)
-8. **APP_URL production value is set; no localhost fallback in push** (AUDIT-062)
+7. **Push notifications contain no `threadId` or `relatedEntityType`** (AUDIT-057) — 🟡 IMPLEMENTED — VERIFICATION PENDING (Phase 9b Sprint 3): `threadId`, `relatedEntityType`, `category`, `relatedEntityId`, `scheduledStartAt`, `packagePlanTitle` removed from push payloads. `{{sessionAt}}` removed from push body via push-specific i18n keys. Runtime verification pending.
+8. **APP_URL production value is set; no localhost fallback in push** (AUDIT-062) — 🟡 IMPLEMENTED — VERIFICATION PENDING (Phase 9b Sprint 3): `app.config.ts` uses `process.env.APP_URL!` with no fallback; sweeper uses ConfigService DI; `env.schema.ts` rejects localhost in production. Runtime verification pending.
 9. **`providerRoomRef` sensitivity verified — if token, not exposed in inspector** (AUDIT-095)
 10. **All 5 missing admin permission gates are applied** (AUDIT-068, 069, 102, 103, 045)
 

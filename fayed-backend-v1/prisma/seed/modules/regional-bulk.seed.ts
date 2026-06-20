@@ -628,7 +628,7 @@ export const regionalBulkSeedModule: SeedModule = {
       const patient = pick(patientUsers, i);
       const practitioner = pick(practitionerUsers, i + 7);
       const startAt = hoursAgo((i % 24) + 5);
-      const endAt = new Date(startAt.getTime() + 45 * 60 * 1000);
+      const endAt = new Date(startAt.getTime() + 60 * 60 * 1000);
       const status = pick(
         [
           SessionStatus.COMPLETED,
@@ -656,7 +656,7 @@ export const regionalBulkSeedModule: SeedModule = {
             [SessionMode.VIDEO, SessionMode.CHAT, SessionMode.AUDIO],
             i,
           ),
-          durationMinutes: 45,
+          durationMinutes: 60,
           status,
           requestedStartAt: startAt,
           scheduledStartAt: startAt,

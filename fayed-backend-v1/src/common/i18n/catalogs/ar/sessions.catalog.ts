@@ -3,21 +3,30 @@ export const arSessionsCatalog = {
     sessionConfirmedTitle: 'تم تأكيد الجلسة',
     sessionConfirmedBody:
       'تم تأكيد جلستك في {{sessionAt}}.{{packageContext}} يمكنك التحضير للانضمام من صفحة الجلسات.',
+    sessionConfirmedPushBody:
+      'تم تأكيد جلستك. افتح صفحة الجلسات للتحضير.',
     sessionConfirmedPractitionerTitle: 'جلسة جديدة مؤكدة',
     sessionConfirmedPractitionerBody:
       'تم تأكيد جلسة بتاريخ {{sessionAt}}.{{packageContext}}',
+    sessionConfirmedPractitionerPushBody:
+      'تم تأكيد جلسة جديدة. راجع التفاصيل واستعد للانضمام.',
     sessionJoinAvailableTitle: 'جلستك جاهزة للدخول',
     sessionJoinAvailableBody:
       'تبدأ جلستك قريبًا.{{packageContext}} افتح صفحة الجلسة للانضمام بأمان.',
+    sessionJoinAvailablePushBody:
+      'جلستك جاهزة. افتح صفحة الجلسة للانضمام بأمان.',
     sessionJoinAvailableEmailSubject: 'جلستك على فايد جاهزة للدخول',
     sessionJoinAvailableEmailTitle: 'جلستك جاهزة للدخول',
     sessionJoinAvailableEmailBody:
       'تبدأ جلستك قريبًا.{{packageContext}} افتح صفحة الجلسة للانضمام بأمان.',
     sessionCancelledTitle: 'تم إلغاء الجلسة',
     sessionCancelledBody: 'تم إلغاء جلستك المجدولة في {{sessionAt}}.',
+    sessionCancelledPushBody: 'تم إلغاء جلستك.',
     sessionCancelledPractitionerTitle: 'تم إلغاء الجلسة بواسطة المريض',
     sessionCancelledPractitionerBody:
       'قام المريض بإلغاء جلسة مجدولة في {{sessionAt}}.',
+    sessionCancelledPractitionerPushBody:
+      'قام المريض بإلغاء جلسة.',
     sessionReminder60Title: 'تذكير بموعد الجلسة',
     sessionReminder60Body: 'جلستك ستبدأ بعد حوالي ساعة.',
     sessionReminder60PractitionerTitle: 'تذكير بموعد الجلسة',

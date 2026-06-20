@@ -529,7 +529,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const startPractitionerLogin = useCallback(
     async (payload: PractitionerLoginRequest) => {
-      const response = await practitionerLogin(payload);
+      const deviceId = await getOrCreateDeviceId();
+      const response = await practitionerLogin({ ...payload, deviceId });
       if (isAuthSuccessResponse(response)) {
         await consumeAuthSuccess(response, "practitioner");
       }

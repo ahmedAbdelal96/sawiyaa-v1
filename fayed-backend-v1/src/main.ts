@@ -59,6 +59,7 @@ async function bootstrap(): Promise<void> {
       'x-lang',
       'Accept-Language',
       'x-request-id',
+      'x-client-platform',
     ],
     credentials: true,
   });

@@ -1,5 +1,10 @@
 {
-  "welcome": "مرحباً بك في فايد",
+  "welcome": "مرحباً بك في سويّـة",
+  "brand": {
+    "name": "سويّـة",
+    "tagline": "رعاية للعقل والجسم والتوازن",
+    "initial": "س"
+  },
   "retry": "إعادة المحاولة",
   "home": {
     "tabLabel": "الرئيسية",
@@ -361,6 +366,20 @@
     "notifications": {
       "title": "الإشعارات",
       "subtitle": "تذكيرات الجلسات وتنبيهات الحساب",
+      "categories": {
+        "sessions": {
+          "title": "الجلسات والمواعيد",
+          "subtitle": "تنبيهات حول تأكيد الحجز وإمكانية الانضمام"
+        },
+        "messages": {
+          "title": "المحادثات والرسائل",
+          "subtitle": "تنبيهات عندما تتلقى رسالة من الممارسين أو الدعم"
+        },
+        "general": {
+          "title": "تنبيهات عامة",
+          "subtitle": "تنبيهات وتحديثات النظام الأخرى"
+        }
+      },
       "unavailableSubtitle": "تفضيلات الإشعارات غير متاحة لهذا الحساب حالياً",
       "modalTitle": "تفضيلات الإشعارات",
       "screenTitle": "تفضيلات التنبيهات",
@@ -451,7 +470,18 @@
     "unsupportedAlertBody": "هذا الإشعار لا يملك وجهة مدعومة على الموبايل حتى الآن.",
     "actionFailedTitle": "تعذر فتح الإشعار",
     "actionFailedBody": "حاول مرة أخرى بعد قليل.",
-    "profileEntrySubtitle": "افتح موجز الإشعارات والتنبيهات غير المقروءة"
+    "profileEntrySubtitle": "افتح موجز الإشعارات والتنبيهات غير المقروءة",
+    "feedTypes": {
+      "packageSessionContext": "الجلسة {{packageSessionIndex}} من أصل {{packageSessionCount}} ضمن باقتك.",
+      "sessionConfirmedPractitionerTitle": "جلسة جديدة مؤكدة",
+      "sessionConfirmedPractitionerBody": "تم تأكيد جلسة جديدة لك{{packageContext}}. افتح صفحة الجلسات لمراجعة التفاصيل.",
+      "sessionConfirmedTitle": "تم تأكيد الجلسة",
+      "sessionConfirmedBody": "تم تأكيد جلستك{{packageContext}}. يمكنك مراجعة التفاصيل من صفحة الجلسات.",
+      "sessionJoinAvailableTitle": "جلستك جاهزة للدخول",
+      "sessionJoinAvailableBody": "جلستك جاهزة للدخول{{packageContext}}. افتح صفحة الجلسة للانضمام بأمان.",
+      "sessionCancelledPractitionerTitle": "تم إلغاء الجلسة بواسطة المريض",
+      "sessionCancelledPractitionerBody": "قام المريض بإلغاء جلسة مجدولة لك{{packageContext}}."
+    }
   },
   "practitionerNotifications": {
     "title": "الإشعارات",
@@ -772,6 +802,7 @@
   },
   "articlesMobile": {
     "header": "المقالات",
+    "detailTitle": "المقال",
     "loading": "جاري تحميل المقالات...",
     "error": "تعذر تحميل المقالات حالياً. حاول مرة أخرى.",
     "emptyTitle": "لا توجد مقالات حالياً",
@@ -837,6 +868,7 @@
       "duration": "المدة",
       "status": "الحالة",
       "notAvailable": "غير متاح",
+      "sessionMode": "نوع الجلسة",
       "videoSession": "جلسة فيديو"
     },
     "statuses": {
@@ -987,6 +1019,11 @@
             "subtitle": "الجلسات المكتملة أو المغلقة."
           }
         }
+      },
+      "filters": {
+        "upcoming": "القادمة",
+        "previous": "السابقة",
+        "cancelled": "الملغاة"
       }
     },
     "detail": {
@@ -1153,6 +1190,12 @@
         "INSTANT_NO_CANCEL": "لا يسمح بإلغاء الحجوزات الفورية",
         "UNKNOWN": "سياسة غير محددة"
       }
+    },
+    "sessionModes": {
+      "VIDEO": "فيديو",
+      "AUDIO": "صوتي",
+      "CHAT": "محادثة",
+      "UNKNOWN": "غير محدد"
     }
   },
   "commonNotFound": {
@@ -2543,7 +2586,7 @@
       "unverifiedPhone": "الهاتف غير موثق",
       "healthTitle": "حالة الحساب",
       "summary": {
-        "helper": "بيانات حسابك المهني وحالة اعتمادك على Fayed.",
+        "helper": "بيانات حسابك المهني وحالة اعتمادك على سويّة.",
         "nextStep": "الخطوة التالية",
         "payout": "وسيلة الصرف",
         "account": "الحساب"
@@ -2558,7 +2601,7 @@
         "basicInfo": "البيانات الأساسية",
         "workInfo": "إعدادات العمل",
         "professional": "المعلومات المهنية",
-        "professionalSubtitle": "بياناتك المهنية الأساسية كما تظهر داخل Fayed.",
+        "professionalSubtitle": "بياناتك المهنية الأساسية كما تظهر داخل سويّة.",
         "financial": "البيانات المالية",
         "financialSubtitle": "ملخص وسيلة الصرف والبيانات المرتبطة بها."
       },
@@ -3164,6 +3207,7 @@
       "scheduleTitle": "محتوى البرنامج",
       "scheduleSubtitle": "الوحدات المتاحة وترتيبها الزمني.",
       "unnamedLesson": "وحدة",
+      "priceTitle": "رسوم التسجيل",
       "enrollTitle": "ابدأ التسجيل",
       "enrollSubtitle": "أكمل بياناتك في شاشة مستقلة ومخصصة للتسجيل.",
       "form": {
@@ -3482,4 +3526,3 @@
     }
   }
 }
-

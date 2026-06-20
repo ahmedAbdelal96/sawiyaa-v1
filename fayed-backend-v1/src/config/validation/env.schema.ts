@@ -162,6 +162,20 @@ export const envSchema = baseEnvSchema.superRefine((env, ctx) => {
     env.PAYMENT_STRIPE_ENABLED === 'true' ||
     env.PAYMENT_PAYMOB_ENABLED === 'true';
 
+  // Reject localhost/loopback addresses in production to prevent silent push to wrong domain
+  if (effectiveAppEnv === 'production' && env.APP_URL) {
+    const url = env.APP_URL.toLowerCase();
+    const localhostPattern = /^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0)(:\d+)?(\/|$)/;
+    if (localhostPattern.test(url)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['APP_URL'],
+        message:
+          'APP_URL cannot use localhost, 127.0.0.1, or 0.0.0.0 in production',
+      });
+    }
+  }
+
   if (env.THROTTLE_STORE === 'redis') {
     // Prefer fail-fast in prod; ThrottleStoreService also enforces this at runtime.
     if (effectiveAppEnv === 'production' && !env.REDIS_URL?.trim()) {

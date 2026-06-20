@@ -1,15 +1,18 @@
 import {
   ConflictException,
   Injectable,
+  Inject,
   OnApplicationBootstrap,
   OnModuleDestroy,
 } from '@nestjs/common';
+import { ConfigType } from '@nestjs/config';
 import {
   NotificationCategory,
   SessionEventType,
   SessionStatus,
 } from '@prisma/client';
 import { AppLoggerService } from '@common/logging/app-logger.service';
+import appConfig from '@config/app.config';
 import { I18nService } from '@common/i18n/services/i18n.service';
 import { PrismaService } from '@common/prisma/prisma.service';
 import { NotificationIntentWriterService } from '@modules/notifications/services/notification-intent-writer.service';
@@ -43,6 +46,8 @@ export class SessionJoinAvailableNotificationSweeperService
     private readonly notificationIntentWriterService: NotificationIntentWriterService,
     private readonly i18nService: I18nService,
     private readonly logger: AppLoggerService,
+    @Inject(appConfig.KEY)
+    private readonly appCfg: ConfigType<typeof appConfig>,
   ) {}
 
   onApplicationBootstrap(): void {
@@ -460,8 +465,9 @@ export class SessionJoinAvailableNotificationSweeperService
       'sessions.notifications.sessionJoinAvailableTitle',
       input.locale,
     );
+    // Use push-specific body (no PHI like {{sessionAt}} ISO timestamps)
     const body = this.i18nService.t(
-      'sessions.notifications.sessionJoinAvailableBody',
+      'sessions.notifications.sessionJoinAvailablePushBody',
       input.locale,
       {
         packageContext: packageContextText,
@@ -636,7 +642,7 @@ export class SessionJoinAvailableNotificationSweeperService
   }
 
   private resolveAppUrl(): string {
-    const rawAppUrl = process.env.APP_URL ?? 'http://localhost:3000';
+    const rawAppUrl = this.appCfg.url;
     return rawAppUrl.endsWith('/') ? rawAppUrl.slice(0, -1) : rawAppUrl;
   }
 }

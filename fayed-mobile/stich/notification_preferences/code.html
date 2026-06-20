@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+
+<html dir="rtl" lang="ar"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>إعدادات الإشعارات</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600;700&amp;family=Source+Serif+4:opsz,wght@8..60,400;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "on-primary-fixed-variant": "#004f50",
+                      "primary-fixed-dim": "#5cd8da",
+                      "surface-container-lowest": "#ffffff",
+                      "tertiary-fixed-dim": "#c8c6c5",
+                      "on-secondary": "#ffffff",
+                      "secondary-container": "#e0e0dd",
+                      "cream-accent": "#FFF9EE",
+                      "alert-red": "#FCECEC",
+                      "on-tertiary-container": "#2d2c2c",
+                      "surface-container": "#e9efee",
+                      "on-background": "#171d1d",
+                      "on-tertiary-fixed-variant": "#474746",
+                      "on-tertiary": "#ffffff",
+                      "on-tertiary-fixed": "#1c1b1b",
+                      "on-secondary-fixed": "#1a1c1a",
+                      "surface": "#f5fafa",
+                      "tertiary-container": "#959393",
+                      "surface-tint": "#00696b",
+                      "primary": "#00696b",
+                      "surface-bright": "#f5fafa",
+                      "surface-dim": "#d5dbda",
+                      "tertiary": "#5f5e5e",
+                      "on-primary-fixed": "#002020",
+                      "inverse-primary": "#5cd8da",
+                      "on-surface-variant": "#3d4949",
+                      "surface-variant": "#dee4e3",
+                      "error-container": "#ffdad6",
+                      "mint-accent": "#E8F5F1",
+                      "outline": "#6d7a79",
+                      "on-primary": "#ffffff",
+                      "on-secondary-container": "#626361",
+                      "on-surface": "#171d1d",
+                      "outline-variant": "#bcc9c9",
+                      "inverse-on-surface": "#ecf2f1",
+                      "surface-container-highest": "#dee4e3",
+                      "secondary-fixed-dim": "#c7c6c4",
+                      "secondary": "#5e5f5d",
+                      "blue-accent": "#E8F1F8",
+                      "on-secondary-fixed-variant": "#464745",
+                      "surface-container-low": "#eff5f4",
+                      "surface-container-high": "#e4e9e9",
+                      "error": "#ba1a1a",
+                      "on-primary-container": "#003233",
+                      "amber-accent": "#FFF3E0",
+                      "on-error-container": "#93000a",
+                      "primary-fixed": "#7cf5f7",
+                      "secondary-fixed": "#e3e2e0",
+                      "inverse-surface": "#2c3131",
+                      "background": "#f5fafa",
+                      "tertiary-fixed": "#e5e2e1",
+                      "on-error": "#ffffff",
+                      "primary-container": "#00a4a6"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "sm": "16px",
+                      "lg": "32px",
+                      "base": "4px",
+                      "xs": "8px",
+                      "gutter-mobile": "12px",
+                      "xl": "48px",
+                      "md": "24px",
+                      "margin-mobile": "20px"
+              },
+              "fontFamily": {
+                      "body-lg": [
+                              "\"Source Sans 3\""
+                      ],
+                      "headline-sm": [
+                              "\"Source Serif 4\""
+                      ],
+                      "display-lg-mobile": [
+                              "\"Source Serif 4\""
+                      ],
+                      "label-md": [
+                              "\"Source Sans 3\""
+                      ],
+                      "label-sm": [
+                              "\"Source Sans 3\""
+                      ],
+                      "headline-md": [
+                              "\"Source Serif 4\""
+                      ],
+                      "body-md": [
+                              "\"Source Sans 3\""
+                      ],
+                      "display-lg": [
+                              "\"Source Serif 4\""
+                      ]
+              },
+              "fontSize": {
+                      "body-lg": [
+                              "18px",
+                              {
+                                      "lineHeight": "28px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "headline-sm": [
+                              "20px",
+                              {
+                                      "lineHeight": "28px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "display-lg-mobile": [
+                              "28px",
+                              {
+                                      "lineHeight": "36px",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "label-md": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "letterSpacing": "0.01em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "label-sm": [
+                              "12px",
+                              {
+                                      "lineHeight": "16px",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "headline-md": [
+                              "24px",
+                              {
+                                      "lineHeight": "32px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-md": [
+                              "16px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "display-lg": [
+                              "34px",
+                              {
+                                      "lineHeight": "42px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ]
+              }
+            },
+          },
+        }
+    </script>
+<style>
+        /* Custom Toggle Switch Styles */
+        .toggle-checkbox:checked {
+            right: 0;
+            border-color: #00696b;
+        }
+        .toggle-checkbox:checked + .toggle-label {
+            background-color: #00696b;
+        }
+        .toggle-checkbox:checked + .toggle-label:after {
+            transform: translateX(-100%);
+        }
+        
+        /* Smooth transitions for toggles */
+        .toggle-label {
+            transition: background-color 0.2s ease-in-out;
+        }
+        .toggle-label:after {
+            transition: transform 0.2s ease-in-out;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background antialiased selection:bg-primary-container selection:text-on-primary-container min-h-screen flex flex-col">
+<!-- Top App Bar - Intentionally excluding Navigation drawer icon as this is a sub-page (Settings) -->
+<header class="bg-surface dark:bg-background flat no shadows flex justify-between items-center w-full px-margin-mobile py-xs max-w-full sticky top-0 z-40 transition-shadow duration-300" id="topAppBar">
+<div class="flex items-center gap-sm">
+<button aria-label="العودة" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-variant/50 text-primary dark:text-primary-fixed-dim transition-colors">
+<span class="material-symbols-outlined" style="font-variation-settings: 'wght' 400, 'FILL' 0;">arrow_forward</span>
+</button>
+<h1 class="font-headline-md text-headline-md font-bold text-primary dark:text-primary-fixed-dim tracking-tight">Fayed</h1>
+</div>
+<div class="flex items-center gap-sm">
+<button aria-label="تواصل معنا" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-variant/50 text-on-surface-variant transition-colors">
+<span class="material-symbols-outlined" style="font-variation-settings: 'wght' 400, 'FILL' 0;">mail</span>
+</button>
+<div class="w-10 h-10 rounded-full bg-surface-container-highest overflow-hidden border border-outline-variant/30 flex items-center justify-center">
+<img alt="صورة المستخدم" class="object-cover w-full h-full" data-alt="A professional headshot of a person looking friendly and approachable, set against a soft, light background with clinical warmth styling, ensuring a bright, modern light-mode aesthetic, 400x400 resolution." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDGBKOfSVD6y3rfZLPzAiS0Jgiy2_EyvJzLtfmmtPXwD9Bp88gNdomUT1QyOdf7e-tQa6FBMiIRi8a14EL6AwG38JI7CTrO_tocwDk3gdYC2sIrlukoieIiqTVZbtGzCACsTHTk9iEY4GaW0PClJocGH1ks99-xghB9o3W1alaaWngasBWsKOKwYgIcA3CVrvlaDAsqACHh7nBS8weEfnkFbZ3v1_sT7BgL4nsIX1_jstu-3HLXNp14Evu7k_RdiTxFFybHjplmc68y"/>
+</div>
+</div>
+</header>
+<!-- Main Content Area -->
+<main class="flex-grow w-full max-w-4xl mx-auto px-margin-mobile py-lg pb-32">
+<!-- Page Header -->
+<div class="mb-lg space-y-xs">
+<h2 class="font-display-lg-mobile md:font-display-lg text-display-lg-mobile md:text-display-lg text-on-background">إعدادات الإشعارات</h2>
+<p class="font-body-md text-body-md text-on-surface-variant max-w-2xl">
+                تحكم في كيفية تلقيك للتحديثات والتنبيهات. اختر القنوات المفضلة لكل نوع من أنواع الإشعارات للحفاظ على تركيزك.
+            </p>
+</div>
+<!-- Notification Categories Grid (Bento-style layout) -->
+<div class="grid grid-cols-1 gap-md">
+<!-- Category: Sessions -->
+<section class="bg-surface-container-lowest rounded-xl p-md border border-outline-variant/30 shadow-sm transition-all hover:border-primary/20">
+<div class="flex items-center gap-sm mb-md border-b border-surface-variant pb-xs">
+<div class="w-10 h-10 rounded-full bg-mint-accent text-primary flex items-center justify-center">
+<span class="material-symbols-outlined" style="font-variation-settings: 'wght' 400, 'FILL' 1;">calendar_month</span>
+</div>
+<h3 class="font-headline-sm text-headline-sm text-on-background">الجلسات والمواعيد</h3>
+</div>
+<div class="space-y-sm">
+<!-- Preference Row -->
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-sm bg-surface-container-low/50 p-sm rounded-lg">
+<div class="flex-1">
+<h4 class="font-label-md text-label-md text-on-surface">تأكيدات الحجز</h4>
+<p class="font-body-md text-body-md text-sm text-on-surface-variant mt-1">عند تأكيد جلسة جديدة بنجاح.</p>
+</div>
+<div class="flex gap-md md:gap-sm items-center">
+<label class="flex items-center gap-xs cursor-pointer group">
+<div class="relative">
+<input checked="" class="sr-only toggle-checkbox" id="sess-conf-inapp" type="checkbox"/>
+<div class="block w-10 h-6 bg-surface-variant rounded-full toggle-label border border-outline-variant/30 relative after:content-[''] after:absolute after:top-0.5 after:right-0.5 after:bg-white after:rounded-full after:h-5 after:w-5 after:shadow-sm after:border after:border-outline-variant/20"></div>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant group-hover:text-primary transition-colors">داخل التطبيق</span>
+</label>
+<label class="flex items-center gap-xs cursor-pointer group">
+<div class="relative">
+<input checked="" class="sr-only toggle-checkbox" id="sess-conf-email" type="checkbox"/>
+<div class="block w-10 h-6 bg-surface-variant rounded-full toggle-label border border-outline-variant/30 relative after:content-[''] after:absolute after:top-0.5 after:right-0.5 after:bg-white after:rounded-full after:h-5 after:w-5 after:shadow-sm after:border after:border-outline-variant/20"></div>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant group-hover:text-primary transition-colors">البريد</span>
+</label>
+<label class="flex items-center gap-xs cursor-pointer group">
+<div class="relative">
+<input checked="" class="sr-only toggle-checkbox" id="sess-conf-push" type="checkbox"/>
+<div class="block w-10 h-6 bg-surface-variant rounded-full toggle-label border border-outline-variant/30 relative after:content-[''] after:absolute after:top-0.5 after:right-0.5 after:bg-white after:rounded-full after:h-5 after:w-5 after:shadow-sm after:border after:border-outline-variant/20"></div>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant group-hover:text-primary transition-colors">تنبيهات</span>
+</label>
+</div>
+</div>
+<!-- Preference Row -->
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-sm bg-surface-container-low/50 p-sm rounded-lg">
+<div class="flex-1">
+<h4 class="font-label-md text-label-md text-on-surface">تذكيرات الجلسة</h4>
+<p class="font-body-md text-body-md text-sm text-on-surface-variant mt-1">تنبيه قبل 24 ساعة وساعة واحدة من الجلسة.</p>
+</div>
+<div class="flex gap-md md:gap-sm items-center">
+<label class="flex items-center gap-xs cursor-pointer group">
+<div class="relative">
+<input checked="" class="sr-only toggle-checkbox" type="checkbox"/>
+<div class="block w-10 h-6 bg-surface-variant rounded-full toggle-label border border-outline-variant/30 relative after:content-[''] after:absolute after:top-0.5 after:right-0.5 after:bg-white after:rounded-full after:h-5 after:w-5 after:shadow-sm after:border after:border-outline-variant/20"></div>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant group-hover:text-primary transition-colors">داخل التطبيق</span>
+</label>
+<label class="flex items-center gap-xs cursor-pointer group">
+<div class="relative">
+<input class="sr-only toggle-checkbox" type="checkbox"/>
+<div class="block w-10 h-6 bg-surface-variant rounded-full toggle-label border border-outline-variant/30 relative after:content-[''] after:absolute after:top-0.5 after:right-0.5 after:bg-white after:rounded-full after:h-5 after:w-5 after:shadow-sm after:border after:border-outline-variant/20"></div>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant group-hover:text-primary transition-colors">البريد</span>
+</label>
+<label class="flex items-center gap-xs cursor-pointer group">
+<div class="relative">
+<input checked="" class="sr-only toggle-checkbox" type="checkbox"/>
+<div class="block w-10 h-6 bg-surface-variant rounded-full toggle-label border border-outline-variant/30 relative after:content-[''] after:absolute after:top-0.5 after:right-0.5 after:bg-white after:rounded-full after:h-5 after:w-5 after:shadow-sm after:border after:border-outline-variant/20"></div>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant group-hover:text-primary transition-colors">تنبيهات</span>
+</label>
+</div>
+</div>
+</div>
+</section>
+</div>
+</main>
+<!-- Contextual suppression of Navigation Shells: Settings page implies a focused task, so BottomNav/Drawer are omitted to prioritize the canvas. -->
+<script>
+        // Optional: Add intersection observer for top app bar shadow on scroll
+        const topAppBar = document.getElementById('topAppBar');
+        window.addEventListener('scroll', () => {
+            if (window.scrollY > 10) {
+                topAppBar.classList.add('shadow-sm');
+                topAppBar.classList.remove('flat', 'no', 'shadows');
+            } else {
+                topAppBar.classList.remove('shadow-sm');
+                topAppBar.classList.add('flat', 'no', 'shadows');
+            }
+        });
+    </script>
+</body></html>

@@ -233,9 +233,9 @@
 - [ ] Public DTOs contain no internal UUIDs (AUDIT-032)
 - [ ] Refresh token cookie is httpOnly (AUDIT-033)
 - [ ] Instant booking accept returns 409, not 500 (AUDIT-010)
-- [ ] APP_URL configured (no localhost in push) (AUDIT-062)
+- [ ] APP_URL configured (no localhost in push) (AUDIT-062) — 🟡 Implemented — Verification Pending (Phase 9b Sprint 3) — code changes complete; runtime verification required
 - [ ] All 5 missing admin permission gates are present (AUDIT-068, 069, 102, 103, 045)
-- [ ] Push payloads contain no PHI (AUDIT-057)
+- [ ] Push payloads contain no PHI (AUDIT-057) — 🟡 Implemented — Verification Pending (Phase 9b Sprint 3) — code changes complete; runtime verification required
 
 ### Must Pass Before Production Launch
 

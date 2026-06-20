@@ -2,13 +2,13 @@
 import Input from "@/components/form/input/InputField";
 import Label from "@/components/form/Label";
 import { ChevronLeftIcon, EyeCloseIcon, EyeIcon } from "@/icons";
-import { Link, useRouter } from "@/i18n/navigation";
+import { Link } from "@/i18n/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useAuthState, useAuthActions } from "@/stores";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 
 // Validation Schema
 const registerSchema = z.object({
@@ -45,7 +45,7 @@ export default function RegisterBusinessForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const t = useTranslations("auth");
-  const router = useRouter();
+  const locale = useLocale();
 
   // Use Zustand Auth Store - SSR-safe hooks
   const { isLoading } = useAuthState();
@@ -93,8 +93,7 @@ export default function RegisterBusinessForm() {
 
       if (result.success) {
         // Redirect to the admin area on success
-        router.push("/admin/dashboard");
-        router.refresh();
+        window.location.replace(`/${locale}/admin/dashboard`);
       } else {
         setError(result.error || t("registrationError"));
       }

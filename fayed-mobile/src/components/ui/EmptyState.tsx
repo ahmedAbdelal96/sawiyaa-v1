@@ -1,9 +1,9 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { Text } from './Text';
 import { Button } from './Button';
 import { useTheme } from '../../providers/ThemeProvider';
-import { Ionicons } from '@expo/vector-icons';
 
 export interface EmptyStateProps {
   title: string;
@@ -24,29 +24,35 @@ export const EmptyState = ({
 
   return (
     <View style={styles.container}>
-      {icon ? (
-        <View style={styles.iconContainer}>{icon}</View>
-      ) : (
-        <View style={styles.iconContainer}>
-          <Ionicons name="document-text-outline" size={48} color={theme.colors.textMuted} />
-        </View>
-      )}
-      
-      <Text weight="bold" style={styles.title} color={theme.colors.textPrimary}>
+      <View
+        style={[
+          styles.iconContainer,
+          {
+            backgroundColor: theme.colors.iconContainerMuted,
+            borderColor: theme.colors.border,
+          },
+        ]}
+      >
+        {icon || (
+          <Ionicons name="document-text-outline" size={28} color={theme.colors.primary} />
+        )}
+      </View>
+
+      <Text variant="title" weight="700" style={styles.title} color={theme.colors.textPrimary}>
         {title}
       </Text>
-      
-      {description && (
+
+      {description ? (
         <Text style={styles.description} color={theme.colors.textSecondary}>
           {description}
         </Text>
-      )}
+      ) : null}
 
-      {actionLabel && onAction && (
-        <View style={styles.buttonContainer}>
+      {actionLabel && onAction ? (
+        <View style={styles.action}>
           <Button title={actionLabel} onPress={onAction} />
         </View>
-      )}
+      ) : null}
     </View>
   );
 };
@@ -54,30 +60,32 @@ export const EmptyState = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    width: "100%",
-    maxWidth: 360,
+    width: '100%',
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 24,
     paddingVertical: 28,
-    alignSelf: "center",
+    gap: 12,
   },
   iconContainer: {
-    marginBottom: 16,
+    width: 56,
+    height: 56,
+    borderRadius: 18,
+    borderWidth: StyleSheet.hairlineWidth,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   title: {
-    fontSize: 18,
     textAlign: 'center',
-    marginBottom: 8,
   },
   description: {
-    fontSize: 14,
     textAlign: 'center',
-    marginBottom: 24,
-    maxWidth: '100%',
-    lineHeight: 22,
+    lineHeight: 21,
+    maxWidth: 320,
   },
-  buttonContainer: {
+  action: {
+    marginTop: 4,
     width: '100%',
+    maxWidth: 320,
   },
 });

@@ -42,6 +42,8 @@ import { ListAdminPractitionerManualPayoutsUseCase } from '../use-cases/list-adm
 import { RecordAdminPractitionerManualPayoutUseCase } from '../use-cases/record-admin-practitioner-manual-payout.use-case';
 import { CurrentUser } from '@common/decorators/current-user.decorator';
 import { AuthenticatedUser } from '@common/interfaces/authenticated-user.interface';
+import { SecurityAuditService } from '@common/security-audit/security-audit.service';
+import { SecurityAuditOutcome } from '@prisma/client';
 
 @ApiTags('Admin - Practitioner Manual Payouts')
 @ApiBearerAuth()
@@ -55,6 +57,7 @@ export class AdminPractitionerManualPayoutsController {
     private readonly getBalanceUseCase: GetAdminPractitionerPayoutBalanceUseCase,
     private readonly listPayoutsUseCase: ListAdminPractitionerManualPayoutsUseCase,
     private readonly recordPayoutUseCase: RecordAdminPractitionerManualPayoutUseCase,
+    private readonly securityAuditService: SecurityAuditService,
   ) {}
 
   @Get('practitioners')
@@ -157,9 +160,27 @@ export class AdminPractitionerManualPayoutsController {
     @CurrentUser() currentUser: AuthenticatedUser,
     @Body() body: RecordAdminPractitionerManualPayoutDto,
   ) {
-    return this.recordPayoutUseCase.execute({
-      body,
-      operatorUserId: currentUser.id,
-    });
+    return this.recordPayoutUseCase
+      .execute({
+        body,
+        operatorUserId: currentUser.id,
+      })
+      .then((result) => {
+        this.securityAuditService.logAsync({
+          action: 'finance.practitioner_payout.record',
+          outcome: SecurityAuditOutcome.SUCCESS,
+          actorUserId: currentUser.id,
+          actorRoles: currentUser.roles,
+          resourceType: 'PractitionerPayout',
+          resourceId: (result as { item?: { id?: string } }).item?.id ?? null,
+          targetUserId: body.practitionerId,
+          metadata: {
+            amountPaid: body.amountPaid,
+            currencyCode: body.currencyCode,
+            notes: body.notes ?? null,
+          },
+        });
+        return result;
+      });
   }
 }

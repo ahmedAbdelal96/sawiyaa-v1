@@ -1,4 +1,8 @@
-import { BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  NotFoundException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
   SessionMode,
@@ -409,5 +413,48 @@ describe('CreatePackagePurchaseUseCase', () => {
         ],
       }),
     ).rejects.toThrow('session-create-failed');
+  });
+
+  it('maps session overlap exclusion violations to a conflict exception', async () => {
+    setHappyPathMocks();
+    (sessionRepository.reserveNextSessionCode as jest.Mock).mockReset();
+    (sessionRepository.createSession as jest.Mock).mockReset();
+    (sessionRepository.reserveNextSessionCode as jest.Mock).mockResolvedValueOnce(
+      'SES-2999-000001',
+    );
+    (sessionRepository.createSession as jest.Mock).mockRejectedValueOnce({
+      code: '23P01',
+      message:
+        'conflicting key value violates exclusion constraint "Session_practitioner_time_no_overlap_excl"',
+      meta: {
+        constraint: 'Session_practitioner_time_no_overlap_excl',
+      },
+    });
+
+    const error = await useCase
+      .execute({
+        userId: 'user-1',
+        locale: 'en',
+        packagePlanCode: 'SESSIONS_4',
+        practitionerSlug: 'dr-youssef-abdallah',
+        durationMinutes: 60,
+        sessionMode: SessionMode.VIDEO,
+        selectedCurrencyCode: 'EGP',
+        selectedSessionSlots: [
+          { scheduledStartAt: '2999-01-01T10:00:00.000Z' },
+          { scheduledStartAt: '2999-01-01T11:30:00.000Z' },
+          { scheduledStartAt: '2999-01-01T13:00:00.000Z' },
+          { scheduledStartAt: '2999-01-01T14:30:00.000Z' },
+        ],
+      })
+      .catch((caught: unknown) => caught);
+
+    expect(error).toBeInstanceOf(ConflictException);
+    expect(
+      JSON.stringify((error as ConflictException).getResponse()),
+    ).not.toContain('23P01');
+    expect(
+      JSON.stringify((error as ConflictException).getResponse()),
+    ).not.toContain('Session_practitioner_time_no_overlap_excl');
   });
 });

@@ -246,7 +246,6 @@ export class OperationalNotificationService {
       ? {
           packagePurchaseId: input.packageContext.packagePurchaseId,
           packagePlanCode: input.packageContext.packagePlanCode,
-          packagePlanTitle: input.packageContext.packagePlanTitle ?? null,
           packageSessionIndex: input.packageContext.packageSessionIndex,
           packageSessionCount: input.packageContext.packageSessionCount,
           packageDiscountPercent:
@@ -273,6 +272,7 @@ export class OperationalNotificationService {
         slug: 'sessions.session-confirmed',
         titleKey: 'sessions.notifications.sessionConfirmedTitle',
         bodyKey: 'sessions.notifications.sessionConfirmedBody',
+        pushBodyKey: 'sessions.notifications.sessionConfirmedPushBody',
         params: { sessionAt, packageContext: patientPackageContextText },
         relatedEntityType: 'SESSION',
         relatedEntityId: input.sessionId,
@@ -295,6 +295,7 @@ export class OperationalNotificationService {
         slug: 'sessions.session-confirmed-practitioner',
         titleKey: 'sessions.notifications.sessionConfirmedPractitionerTitle',
         bodyKey: 'sessions.notifications.sessionConfirmedPractitionerBody',
+        pushBodyKey: 'sessions.notifications.sessionConfirmedPractitionerPushBody',
         params: {
           sessionAt,
           packageContext: practitionerPackageContextText,
@@ -344,6 +345,7 @@ export class OperationalNotificationService {
         slug: 'sessions.session-cancelled',
         titleKey: 'sessions.notifications.sessionCancelledTitle',
         bodyKey: 'sessions.notifications.sessionCancelledBody',
+        pushBodyKey: 'sessions.notifications.sessionCancelledPushBody',
         params: { sessionAt },
         relatedEntityType: 'SESSION',
         relatedEntityId: input.sessionId,
@@ -365,6 +367,7 @@ export class OperationalNotificationService {
         slug: 'sessions.session-cancelled-practitioner',
         titleKey: 'sessions.notifications.sessionCancelledPractitionerTitle',
         bodyKey: 'sessions.notifications.sessionCancelledPractitionerBody',
+        pushBodyKey: 'sessions.notifications.sessionCancelledPractitionerPushBody',
         params: { sessionAt },
         relatedEntityType: 'SESSION',
         relatedEntityId: input.sessionId,
@@ -576,7 +579,6 @@ export class OperationalNotificationService {
           reminder.reminderType === SessionReminderType.REMINDER_60 ? 60 : 15,
         recipientRole: reminder.recipientRole,
         targetRole: reminder.recipientRole,
-        scheduledStartAt: session.scheduledStartAt.toISOString(),
         reminderType: reminder.reminderType,
       },
     });
@@ -655,12 +657,8 @@ export class OperationalNotificationService {
           ),
           targetRole: recipient.participantRole as SessionReminderRecipientRole,
           payload: {
-            threadId: input.threadId,
             routePath,
             targetRole: recipient.participantRole,
-            relatedEntityType,
-            relatedEntityId: input.messageId,
-            category,
           },
         });
       }),
@@ -899,6 +897,10 @@ export class OperationalNotificationService {
     idempotencyKey?: string | null;
     targetRole?: SessionReminderRecipientRole | null;
     payload?: Record<string, unknown> | null;
+    /** Optional push-specific body key to use instead of bodyKey when rendering push notification body.
+     *  Use when the default body contains PHI (e.g. {{sessionAt}} timestamps) that should not appear on lock screen.
+     */
+    pushBodyKey?: string;
   }): Promise<void> {
     if (!input.recipient) {
       return;
@@ -923,6 +925,11 @@ export class OperationalNotificationService {
         input.recipient.locale,
         input.params,
       );
+      // Push-specific body: use pushBodyKey i18n string if provided, otherwise same as body
+      // This prevents PHI (e.g. {{sessionAt}} ISO timestamps) from appearing on lock screen
+      const pushBody = input.pushBodyKey
+        ? this.i18nService.t(input.pushBodyKey, input.recipient.locale, input.params)
+        : body;
 
       if (notificationType.supportsInApp) {
         await this.queueInApp({
@@ -939,9 +946,6 @@ export class OperationalNotificationService {
             ...(input.payload ?? {}),
             ...(input.routePath ? { routePath: input.routePath } : {}),
             ...(input.targetRole ? { targetRole: input.targetRole } : {}),
-            relatedEntityType: input.relatedEntityType,
-            relatedEntityId: input.relatedEntityId,
-            category: input.category,
           },
           relatedEntityType: input.relatedEntityType,
           relatedEntityId: input.relatedEntityId,
@@ -985,14 +989,11 @@ export class OperationalNotificationService {
             )?.id ?? null,
           locale: input.recipient.locale,
           title,
-          body,
+          body: pushBody,
           payload: {
             ...(input.payload ?? {}),
             ...(input.routePath ? { routePath: input.routePath } : {}),
             ...(input.targetRole ? { targetRole: input.targetRole } : {}),
-            relatedEntityType: input.relatedEntityType,
-            relatedEntityId: input.relatedEntityId,
-            category: input.category,
           },
           relatedEntityType: input.relatedEntityType,
           relatedEntityId: input.relatedEntityId,
@@ -1334,6 +1335,10 @@ export class OperationalNotificationService {
     idempotencyKey?: string | null;
     targetRole?: SessionReminderRecipientRole | null;
     payload?: Record<string, unknown> | null;
+    /** Optional push-specific body key to use instead of bodyKey for push notifications.
+     *  Use when the default body contains PHI (e.g. {{sessionAt}} timestamps).
+     */
+    pushBodyKey?: string;
   }): Promise<void> {
     if (!input.recipient) {
       return;
@@ -1358,6 +1363,11 @@ export class OperationalNotificationService {
         input.recipient.locale,
         input.params,
       );
+      // Push-specific body: use pushBodyKey i18n string if provided, otherwise same as body
+      // This prevents PHI (e.g. {{sessionAt}} ISO timestamps) from appearing on lock screen
+      const pushBody = input.pushBodyKey
+        ? this.i18nService.t(input.pushBodyKey, input.recipient.locale, input.params)
+        : body;
 
       if (notificationType.supportsInApp) {
         const inAppPref = await this.repository.findPreference({
@@ -1463,7 +1473,7 @@ export class OperationalNotificationService {
               : NotificationStatus.PENDING,
           locale: input.recipient.locale,
           titleSnapshot: title,
-          bodySnapshot: body,
+          bodySnapshot: pushBody,
           payloadJson: {
             ...(input.payload ?? {}),
             ...(input.routePath ? { routePath: input.routePath } : {}),

@@ -1,10 +1,8 @@
 import React, { useMemo, useState } from "react";
 import { ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import {
-  Card,
   ErrorState,
   FilterChip,
   Header,
@@ -13,6 +11,7 @@ import {
   Text,
 } from "../../../src/components/ui";
 import { useTheme } from "../../../src/providers/ThemeProvider";
+import { useAppDirection } from "../../../src/i18n/direction";
 import {
   usePatientWalletEntries,
   usePatientWalletSummary,
@@ -60,9 +59,11 @@ function filterEntry(entry: CustomerWalletEntryItem, tab: FilterTab): boolean {
 // ---------------------------------------------------------------------------
 
 /**
- * Product-grade money formatter — avoids Intl.NumberFormat currency style
- * which is unreliable in React Native Hermes.
- * Output stays tied to the resolved patient currency from backend metadata.
+ * Money formatter — avoids Intl.NumberFormat currency style which is
+ * unreliable in React Native Hermes.
+ *
+ * NOTE: currencyCode always comes from backend data. Never hardcode currency
+ * symbols or codes in screen components.
  */
 function formatMoney(amount: string, currencyCode: string): string {
   const num = Number(amount);
@@ -118,83 +119,97 @@ function groupByDay(entries: CustomerWalletEntryItem[]): {
 // Entry row
 // ---------------------------------------------------------------------------
 
-function EntryRow({ entry }: { entry: CustomerWalletEntryItem }) {
+function EntryRow({
+  entry,
+  showDivider,
+}: {
+  entry: CustomerWalletEntryItem;
+  showDivider: boolean;
+}) {
   const { theme } = useTheme();
-  const { t, i18n } = useTranslation();
-  const locale = i18n.language?.startsWith("ar") ? "ar-SA" : "en-US";
+  const { t } = useTranslation();
+  const { isRtl, rowDirection, textAlign, oppositeTextAlign } = useAppDirection();
   const isCredit = entry.direction === "CREDIT";
   const typeKey =
     `patientPaymentsFlow.transactions.entryTypes.${entry.entryType}` as const;
 
-  // Show "completed" badge for CAPTURE/CREDIT; "pending" for RESERVE
+  // Badge: completed for CAPTURE/CREDIT/REFUND; pending for RESERVE
   const isCompleted =
     entry.entryType === "SESSION_PAYMENT_CAPTURE" ||
     entry.entryType === "REFUND_CREDIT" ||
     entry.entryType === "MANUAL_CREDIT";
 
   return (
-    <View style={styles.entryRow}>
-      {/* Icon */}
-      <View
-        style={[
-          styles.entryIcon,
-          {
-            backgroundColor: isCredit
-              ? theme.colors.primaryLight
-              : theme.colors.surfaceSecondary,
-          },
-        ]}
-      >
-        <Ionicons
-          name={isCredit ? "arrow-down" : "arrow-up"}
-          size={14}
-          color={isCredit ? theme.colors.primary : theme.colors.textSecondary}
-        />
-      </View>
-
-      {/* Text */}
-      <View style={styles.entryTextBlock}>
-        <Text weight="600" style={styles.entryType}>
-          {t(typeKey)}
-        </Text>
-        {entry.description ? (
-          <Text color={theme.colors.textMuted} style={styles.entryDescription}>
-            {entry.description}
-          </Text>
-        ) : null}
+    <>
+      <View style={[styles.entryRow, { flexDirection: rowDirection }]}>
+        {/* Icon */}
         <View
           style={[
-            styles.entryBadge,
+            styles.entryIcon,
             {
-              backgroundColor: isCompleted
-                ? theme.colors.primaryLight
-                : theme.colors.surfaceSecondary,
+              backgroundColor: isCredit
+                ? theme.colors.statusSuccessBg
+                : theme.colors.surfaceMuted,
             },
           ]}
         >
-          <Text
-            color={isCompleted ? theme.colors.primary : theme.colors.textMuted}
-            style={styles.entryBadgeText}
-          >
-            {t(
-              isCompleted
-                ? "patientPaymentsFlow.transactions.completed"
-                : "patientPaymentsFlow.transactions.pending",
-            )}
-          </Text>
+          <Ionicons
+            name={isCredit ? "arrow-down" : "arrow-up"}
+            size={13}
+            color={isCredit ? theme.colors.success : theme.colors.textSecondary}
+          />
         </View>
+
+        {/* Text block */}
+        <View style={[styles.entryTextBlock, { alignItems: isRtl ? "flex-end" : "flex-start" }]}>
+          <Text weight="600" style={[styles.entryType, { textAlign }]}>
+            {t(typeKey)}
+          </Text>
+          {entry.description ? (
+            <Text color={theme.colors.textMuted} style={[styles.entryDescription, { textAlign }]}>
+              {entry.description}
+            </Text>
+          ) : null}
+          {/* Completed / Pending badge */}
+          <View
+            style={[
+              styles.entryBadge,
+              {
+                backgroundColor: isCompleted
+                  ? theme.colors.statusSuccessBg
+                  : theme.colors.surfaceContainer,
+                alignSelf: isRtl ? "flex-end" : "flex-start",
+              },
+            ]}
+          >
+            <Text
+              color={isCompleted ? theme.colors.success : theme.colors.textMuted}
+              style={styles.entryBadgeText}
+            >
+              {t(
+                isCompleted
+                  ? "patientPaymentsFlow.transactions.completed"
+                  : "patientPaymentsFlow.transactions.pending",
+              )}
+            </Text>
+          </View>
+        </View>
+
+        {/* Amount */}
+        <Text
+          weight="bold"
+          color={isCredit ? theme.colors.success : theme.colors.textPrimary}
+          style={[styles.entryAmount, { textAlign: oppositeTextAlign }]}
+        >
+          {isCredit ? "+" : "−"}
+          {formatMoney(entry.amount, entry.currencyCode)}
+        </Text>
       </View>
 
-      {/* Amount */}
-      <Text
-        weight="bold"
-        color={isCredit ? theme.colors.primary : theme.colors.textPrimary}
-        style={styles.entryAmount}
-      >
-        {isCredit ? "+" : "-"}
-        {formatMoney(entry.amount, entry.currencyCode)}
-      </Text>
-    </View>
+      {showDivider && (
+        <View style={[styles.itemDivider, { backgroundColor: theme.colors.divider }]} />
+      )}
+    </>
   );
 }
 
@@ -205,8 +220,8 @@ function EntryRow({ entry }: { entry: CustomerWalletEntryItem }) {
 export default function TransactionHistoryScreen() {
   const { theme } = useTheme();
   const { t, i18n } = useTranslation();
-  const router = useRouter();
   const locale = i18n.language?.startsWith("ar") ? "ar-SA" : "en-US";
+  const { rowDirection, textAlign } = useAppDirection();
 
   const [activeFilter, setActiveFilter] = useState<FilterTab>("all");
 
@@ -215,17 +230,17 @@ export default function TransactionHistoryScreen() {
   const walletQuery = usePatientWalletSummary();
 
   const wallet = walletQuery.data?.item ?? null;
-  const allEntries = entriesQuery.data?.items ?? [];
+  const rawEntries = entriesQuery.data?.items;
 
   const filteredEntries = useMemo(
-    () => allEntries.filter((e) => filterEntry(e, activeFilter)),
-    [allEntries, activeFilter],
+    () => (rawEntries ?? []).filter((e) => filterEntry(e, activeFilter)),
+    [rawEntries, activeFilter],
   );
 
   const groups = useMemo(() => groupByDay(filteredEntries), [filteredEntries]);
   const todayLabel = t("patientPaymentsFlow.transactions.today");
   const fallbackCurrency = resolveSupportedCurrencyCode({
-    currencyCode: wallet?.currencyCode ?? allEntries[0]?.currencyCode ?? null,
+    currencyCode: wallet?.currencyCode ?? rawEntries?.[0]?.currencyCode ?? null,
   });
 
   const filters: { key: FilterTab; labelKey: string }[] = [
@@ -255,37 +270,24 @@ export default function TransactionHistoryScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* ── Balance hero ── */}
-        <Card
-          variant="elevated"
-          padding="lg"
-          style={[
-            styles.heroCard,
-            {
-              borderLeftWidth: i18n.language?.startsWith("ar") ? 3 : 0,
-              borderLeftColor: theme.colors.primary,
-              borderRightWidth: i18n.language?.startsWith("ar") ? 0 : 3,
-              borderRightColor: theme.colors.primary,
-            },
-          ]}
-        >
-          <Text color={theme.colors.textSecondary} style={styles.heroLabel}>
+        {/* ── Balance hero — matches teal wallet card ── */}
+        <View style={[styles.heroCard, { backgroundColor: theme.colors.primary }]}>
+          <Text style={[styles.heroLabel, { textAlign }]}>
             {t("patientPaymentsFlow.wallet.balanceLabel")}
           </Text>
-          <Text weight="bold" style={styles.heroAmount}>
+          <Text weight="bold" style={[styles.heroAmount, { textAlign }]}>
             {formatMoney(wallet?.availableBalance ?? "0", fallbackCurrency)}
           </Text>
-          {/* Clarify scope: wallet entries ≠ all payments */}
-          <Text color={theme.colors.textMuted} style={styles.heroScopeNote}>
+          <Text style={[styles.heroScopeNote, { textAlign }]}>
             {t("patientPaymentsFlow.transactions.walletScopeNote")}
           </Text>
-        </Card>
+        </View>
 
         {/* ── Filter tabs ── */}
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.filterBar}
+          contentContainerStyle={[styles.filterBar, { flexDirection: rowDirection }]}
         >
           {filters.map((f) => (
             <FilterChip
@@ -304,20 +306,24 @@ export default function TransactionHistoryScreen() {
           <ErrorState onRetry={() => entriesQuery.refetch()} />
         ) : groups.length === 0 ? (
           <View style={styles.emptyWrapper}>
+            <Ionicons
+              name="receipt-outline"
+              size={32}
+              color={theme.colors.textMuted}
+            />
             <Text
               color={theme.colors.textMuted}
-              style={styles.emptyTitle}
+              style={[styles.emptyTitle, { textAlign }]}
               weight="600"
             >
               {t("patientPaymentsFlow.transactions.emptyTitle")}
             </Text>
-            <Text color={theme.colors.textMuted} style={styles.emptyNote}>
+            <Text color={theme.colors.textMuted} style={[styles.emptyNote, { textAlign }]}>
               {t("patientPaymentsFlow.transactions.emptyNote")}
             </Text>
-            {/* Data truth note: wallet entries ≠ all payments */}
             <Text
               color={theme.colors.textMuted}
-              style={[styles.emptyNote, styles.emptyDataNote]}
+              style={[styles.emptyNote, styles.emptyDataNote, { textAlign }]}
             >
               {t("patientPaymentsFlow.transactions.walletOnlyNote")}
             </Text>
@@ -326,32 +332,45 @@ export default function TransactionHistoryScreen() {
           <View style={styles.groupList}>
             {groups.map((group) => (
               <View key={group.day}>
+                {/* Day label */}
                 <Text
                   color={theme.colors.textMuted}
-                  style={styles.dayLabel}
+                  style={[styles.dayLabel, { textAlign }]}
                   weight="600"
                 >
                   {formatDayLabel(group.iso, locale, todayLabel)}
                 </Text>
-                <Card variant="elevated" padding="md" style={styles.groupCard}>
+
+                {/* Group card */}
+                <View
+                  style={[
+                    styles.groupCard,
+                    {
+                      backgroundColor: theme.colors.surfaceRaised,
+                      borderColor: theme.colors.border,
+                    },
+                  ]}
+                >
                   {group.items.map((entry, idx) => (
-                    <View key={entry.id}>
-                      <EntryRow entry={entry} />
-                      {idx < group.items.length - 1 && (
-                        <View
-                          style={[
-                            styles.itemDivider,
-                            {
-                              backgroundColor: theme.colors.borderLight,
-                            },
-                          ]}
-                        />
-                      )}
-                    </View>
+                    <EntryRow
+                      key={entry.id}
+                      entry={entry}
+                      showDivider={idx < group.items.length - 1}
+                    />
                   ))}
-                </Card>
+                </View>
               </View>
             ))}
+
+            {/* Data scope note */}
+            <TouchableOpacity disabled>
+              <Text
+                color={theme.colors.textMuted}
+                style={[styles.scopeNote, { textAlign }]}
+              >
+                {t("patientPaymentsFlow.transactions.walletOnlyNote")}
+              </Text>
+            </TouchableOpacity>
           </View>
         )}
       </ScrollView>
@@ -359,46 +378,92 @@ export default function TransactionHistoryScreen() {
   );
 }
 
+// ---------------------------------------------------------------------------
+// Styles
+// ---------------------------------------------------------------------------
+
 const styles = StyleSheet.create({
-  scrollContent: { padding: 16, paddingBottom: 32, gap: 12 },
-  heroCard: { marginBottom: 0 },
-  heroLabel: { fontSize: 13, marginBottom: 4 },
-  heroAmount: { fontSize: 32, letterSpacing: -0.5 },
-  heroScopeNote: { fontSize: 12, marginTop: 6 },
-  filterBar: { gap: 8, paddingVertical: 4 },
-  emptyWrapper: { alignItems: "center", paddingTop: 48, gap: 8 },
-  emptyTitle: { fontSize: 16 },
-  emptyNote: { fontSize: 13, textAlign: "center", paddingHorizontal: 24 },
-  emptyDataNote: { marginTop: 8, lineHeight: 20 },
-  groupList: { gap: 12 },
-  dayLabel: { fontSize: 13, marginBottom: 8 },
-  groupCard: { marginBottom: 0 },
-  entryRow: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 10,
+  scrollContent: { padding: 16, paddingBottom: 40, gap: 12 },
+
+  // ── Hero card (teal background — matches payments.tsx wallet card) ──
+  heroCard: {
+    borderRadius: 20,
+    paddingHorizontal: 20,
+    paddingVertical: 20,
+    gap: 4,
+  },
+  heroLabel: {
+    fontSize: 12,
+    lineHeight: 17,
+    color: "rgba(255,255,255,0.75)",
+  },
+  heroAmount: {
+    fontSize: 30,
+    lineHeight: 38,
+    letterSpacing: -0.5,
+    color: "#FFFFFF",
+  },
+  heroScopeNote: {
+    fontSize: 12,
+    lineHeight: 17,
+    color: "rgba(255,255,255,0.55)",
+    marginTop: 4,
+  },
+
+  // ── Filter bar ──
+  filterBar: { gap: 8, paddingVertical: 2 },
+
+  // ── Empty state ──
+  emptyWrapper: { alignItems: "center", paddingTop: 48, gap: 10 },
+  emptyTitle: { fontSize: 16, lineHeight: 22 },
+  emptyNote: { fontSize: 13, lineHeight: 19, paddingHorizontal: 24 },
+  emptyDataNote: { marginTop: 6, opacity: 0.8 },
+
+  // ── Group list ──
+  groupList: { gap: 16 },
+  dayLabel: { fontSize: 12, lineHeight: 17, marginBottom: 6, paddingHorizontal: 2 },
+
+  // ── Group card ──
+  groupCard: {
+    borderRadius: 16,
+    borderWidth: 1,
+    overflow: "hidden",
+    paddingHorizontal: 14,
     paddingVertical: 4,
   },
+
+  // ── Entry row ──
+  entryRow: {
+    alignItems: "flex-start",
+    gap: 10,
+    paddingVertical: 12,
+  },
   entryIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     alignItems: "center",
     justifyContent: "center",
     marginTop: 2,
+    flexShrink: 0,
   },
   entryTextBlock: { flex: 1, gap: 3 },
-  entryType: { fontSize: 14 },
-  entryDescription: { fontSize: 12 },
+  entryType: { fontSize: 13, lineHeight: 18 },
+  entryDescription: { fontSize: 12, lineHeight: 17 },
   entryBadge: {
-    alignSelf: "flex-start",
-    paddingHorizontal: 8,
+    paddingHorizontal: 7,
     paddingVertical: 2,
     borderRadius: 6,
-    marginTop: 2,
+    marginTop: 3,
   },
-  entryBadgeText: { fontSize: 11 },
-  entryAmount: { fontSize: 15, minWidth: 80, textAlign: "right" },
-  itemDivider: { height: 1, marginVertical: 8 },
-});
+  entryBadgeText: { fontSize: 11, lineHeight: 16 },
+  entryAmount: {
+    fontSize: 14,
+    lineHeight: 20,
+    minWidth: 80,
+  },
+  itemDivider: { height: 1, opacity: 0.5 },
 
+  // ── Scope note ──
+  scopeNote: { fontSize: 12, lineHeight: 17, paddingHorizontal: 4 },
+});

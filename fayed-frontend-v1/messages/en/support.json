@@ -312,6 +312,7 @@
       "assign": {
         "heading": "Assignment",
         "currentLabel": "Currently assigned",
+        "assignedToYou": "You",
         "label": "Admin user ID",
         "placeholder": "Paste admin user ID...",
         "assign": "Assign",
@@ -352,7 +353,9 @@
       "submit": "Send reply",
       "submitting": "Sending...",
       "success": "Reply sent.",
-      "error": "Could not send reply. Please try again."
+      "error": "Could not send reply. Please try again.",
+      "blockedOtherAgent": "This ticket is assigned to another support agent. Transfer ownership before replying.",
+      "unassignedNotice": "Your first reply will assign this ticket to you."
     },
     "note": {
       "heading": "Add internal note",

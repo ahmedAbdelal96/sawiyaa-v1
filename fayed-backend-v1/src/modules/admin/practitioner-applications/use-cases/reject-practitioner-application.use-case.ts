@@ -4,6 +4,8 @@ import {
   PractitionerStatus,
   Prisma,
 } from '@prisma/client';
+import { SecurityAuditOutcome } from '@prisma/client';
+import { SecurityAuditService } from '@common/security-audit/security-audit.service';
 import { I18nService } from '@common/i18n/services/i18n.service';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
 import { PrismaService } from '@common/prisma/prisma.service';
@@ -27,18 +29,29 @@ export class RejectPractitionerApplicationUseCase {
     private readonly applicationRepository: AdminPractitionerApplicationRepository,
     private readonly profileRepository: AdminPractitionerProfileRepository,
     private readonly notificationService: AdminPractitionerApplicationNotificationService,
+    private readonly securityAuditService: SecurityAuditService,
   ) {}
 
   async execute(input: {
     id: string;
     locale: SupportedLocale;
     adminUserId: string;
+    operatorRoles: string[];
     reason: string;
     note?: string;
   }) {
     const existing = await this.applicationRepository.findById(input.id);
 
     if (!existing) {
+      this.securityAuditService.logAsync({
+        action: 'security.practitioner.application.reject',
+        outcome: SecurityAuditOutcome.FAILURE,
+        actorUserId: input.adminUserId,
+        actorRoles: input.operatorRoles,
+        resourceType: 'PractitionerApplication',
+        resourceId: input.id,
+        reason: 'APPLICATION_NOT_FOUND',
+      });
       throw new NotFoundException({
         messageKey: 'admin.practitionerApplications.errors.applicationNotFound',
         error: 'ADMIN_PRACTITIONER_APPLICATION_NOT_FOUND',
@@ -57,6 +70,15 @@ export class RejectPractitionerApplicationUseCase {
         const latest = await this.applicationRepository.findById(input.id, tx);
 
         if (!latest) {
+          this.securityAuditService.logAsync({
+            action: 'security.practitioner.application.reject',
+            outcome: SecurityAuditOutcome.FAILURE,
+            actorUserId: input.adminUserId,
+            actorRoles: input.operatorRoles,
+            resourceType: 'PractitionerApplication',
+            resourceId: input.id,
+            reason: 'APPLICATION_NOT_FOUND_IN_TRANSACTION',
+          });
           throw new NotFoundException({
             messageKey:
               'admin.practitionerApplications.errors.applicationNotFound',

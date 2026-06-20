@@ -25,6 +25,7 @@ import {
   useRemovePatientAvatar,
   useUploadPatientAvatar,
 } from "../../src/features/patient/profile/hooks";
+import { useAppDirection } from "../../src/i18n/direction";
 import { normalizeProfileGender } from "../../src/features/patient/profile/gender-utils";
 import {
   formatProfileDate,
@@ -35,24 +36,36 @@ import {
 } from "../../src/features/patient/profile/country-utils";
 import { extractApiErrorMessage } from "../../src/lib/api";
 
-
 function InfoRow({
   label,
   value,
-  isRtl,
 }: {
   label: string;
   value: string;
-  isRtl: boolean;
 }) {
   const { theme } = useTheme();
+  const { rowDirection, textAlign, oppositeTextAlign } = useAppDirection();
 
   return (
-    <View style={[styles.infoRow, isRtl ? styles.infoRowRtl : null]}>
-      <Text color={theme.colors.textSecondary} style={styles.infoLabel}>
+    <View style={[styles.infoRow, { flexDirection: rowDirection }]}>
+      <Text
+        color={theme.colors.textSecondary}
+        style={[styles.infoLabel, { textAlign, flexShrink: 1 }]}
+      >
         {label}
       </Text>
-      <Text weight="600" style={styles.infoValue}>
+      <Text
+        weight="600"
+        style={[
+          styles.infoValue,
+          {
+            textAlign: oppositeTextAlign,
+            writingDirection: "ltr",
+            flexShrink: 1,
+          },
+        ]}
+        color={theme.colors.textPrimary}
+      >
         {value}
       </Text>
     </View>
@@ -64,7 +77,7 @@ export default function PatientProfileDetailsScreen() {
   const { user } = useAuth();
   const { theme } = useTheme();
   const { t, i18n } = useTranslation();
-  const isRtl = i18n.language?.startsWith("ar") ?? false;
+  const { isRtl, rowDirection } = useAppDirection();
 
   const profileQuery = usePatientProfile();
   const uploadAvatar = useUploadPatientAvatar();
@@ -158,49 +171,69 @@ export default function PatientProfileDetailsScreen() {
     <Screen bg="background">
       <Header title={t("profileScreen.details.screenTitle")} showBack />
 
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Avatar card */}
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        {/* Avatar Card */}
         <Card
           variant="elevated"
-          style={[
-            styles.card,
-            { borderColor: theme.colors.borderLight },
-          ]}
+          style={styles.avatarCard}
+          padding="none"
         >
-          <View style={[styles.avatarRow, isRtl ? styles.avatarRowRtl : null]}>
-            {isAvatarLoading ? (
-              <View
+          {/* Subtle gold accent indicator line at the top */}
+          <View style={[styles.goldAccentLine, { backgroundColor: theme.colors.tertiary }]} />
+
+          <View style={[styles.avatarRow, { flexDirection: rowDirection }]}>
+            <View style={styles.avatarContainer}>
+              {isAvatarLoading ? (
+                <View
+                  style={[
+                    styles.avatarFallback,
+                    styles.avatarLoading,
+                    { backgroundColor: theme.colors.primarySoft },
+                  ]}
+                >
+                  <Ionicons
+                    name="cloud-upload-outline"
+                    size={24}
+                    color={theme.colors.primary}
+                  />
+                </View>
+              ) : avatarUri ? (
+                <Image source={{ uri: avatarUri }} style={styles.avatarImage} />
+              ) : (
+                <View
+                  style={[
+                    styles.avatarFallback,
+                    { backgroundColor: theme.colors.primarySoft },
+                  ]}
+                >
+                  <Text
+                    weight="bold"
+                    style={[styles.avatarText, { color: theme.colors.primary }]}
+                  >
+                    {initials}
+                  </Text>
+                </View>
+              )}
+              {/* Overlapping Camera Edit Button */}
+              <TouchableOpacity
+                activeOpacity={0.8}
+                onPress={() => setAvatarActionSheetVisible(true)}
+                disabled={isAvatarLoading}
                 style={[
-                  styles.avatarFallback,
-                  styles.avatarLoading,
-                  { backgroundColor: theme.colors.primaryLight },
+                  isRtl ? styles.cameraOverlayRtl : styles.cameraOverlayLtr,
+                  { backgroundColor: theme.colors.primary }
                 ]}
               >
                 <Ionicons
-                  name="cloud-upload-outline"
-                  size={24}
-                  color={theme.colors.primary}
+                  name="camera-outline"
+                  size={16}
+                  color="#FFFFFF"
                 />
-              </View>
-            ) : avatarUri ? (
-              <Image source={{ uri: avatarUri }} style={styles.avatarImage} />
-            ) : (
-              <View
-                style={[
-                  styles.avatarFallback,
-                  { backgroundColor: theme.colors.primaryLight },
-                ]}
-              >
-                <Text
-                  weight="bold"
-                  style={[styles.avatarText, { color: theme.colors.primary }]}
-                >
-                  {initials}
-                </Text>
-              </View>
-            )}
-            <View style={styles.avatarMeta}>
-              <Text weight="bold" style={styles.avatarName}>
+              </TouchableOpacity>
+            </View>
+
+            <View style={[styles.avatarMeta, { alignItems: isRtl ? "flex-end" : "flex-start" }]}>
+              <Text weight="bold" style={styles.avatarName} color={theme.colors.primary}>
                 {displayName}
               </Text>
               <Text color={theme.colors.textSecondary} style={styles.avatarHint}>
@@ -214,104 +247,94 @@ export default function PatientProfileDetailsScreen() {
                 </Text>
               ) : null}
             </View>
-            <TouchableOpacity
-              activeOpacity={0.7}
-              onPress={() => setAvatarActionSheetVisible(true)}
-              disabled={isAvatarLoading}
-              style={isRtl ? styles.editButtonRtl : styles.editButtonLtr}
-            >
-              <Ionicons
-                name="camera-outline"
-                size={18}
-                color={isAvatarLoading ? theme.colors.textMuted : theme.colors.primary}
-              />
-            </TouchableOpacity>
           </View>
         </Card>
 
-        {/* Personal information card */}
+        {/* Personal Information Card */}
         <Card
           variant="elevated"
-          style={[
-            styles.card,
-            { borderColor: theme.colors.borderLight },
-          ]}
+          style={styles.card}
+          padding="none"
         >
-          <View style={[styles.sectionHeader, isRtl ? styles.sectionHeaderRtl : null]}>
-            <Text weight="bold" style={styles.sectionTitle}>
-              {t("profileScreen.details.personalSectionTitle")}
-            </Text>
+          {/* Subtle gold accent indicator line at the top */}
+          <View style={[styles.goldAccentLine, { backgroundColor: theme.colors.tertiary }]} />
+
+          <View style={styles.cardInnerPadding}>
+            <View style={[styles.sectionHeader, isRtl ? styles.sectionHeaderRtl : null]}>
+              <Text weight="bold" style={styles.sectionTitle} color={theme.colors.textPrimary}>
+                {t("profileScreen.details.personalSectionTitle")}
+              </Text>
+            </View>
+
+            <InfoRow
+              label={t("profileScreen.details.fields.displayName")}
+              value={displayName !== t("profileScreen.fallbackName") ? displayName : t("profileScreen.none")}
+            />
+
+            <View style={[styles.divider, { backgroundColor: theme.colors.divider }]} />
+
+            <InfoRow
+              label={t("profileScreen.details.fields.dateOfBirth")}
+              value={birthDateLabel}
+            />
+
+            <View style={[styles.divider, { backgroundColor: theme.colors.divider }]} />
+
+            <InfoRow
+              label={t("profileScreen.details.fields.gender")}
+              value={genderLabel}
+            />
+
+            <View style={[styles.divider, { backgroundColor: theme.colors.divider }]} />
+
+            <InfoRow
+              label={t("profileScreen.details.fields.countryCode")}
+              value={countryLabel || t("profileScreen.none")}
+            />
           </View>
-
-          <InfoRow
-            label={t("profileScreen.details.fields.displayName")}
-            value={displayName !== t("profileScreen.fallbackName") ? displayName : t("profileScreen.none")}
-            isRtl={isRtl}
-          />
-
-          <View style={[styles.divider, { backgroundColor: theme.colors.borderLight }]} />
-
-          <InfoRow
-            label={t("profileScreen.details.fields.dateOfBirth")}
-            value={birthDateLabel}
-            isRtl={isRtl}
-          />
-
-          <View style={[styles.divider, { backgroundColor: theme.colors.borderLight }]} />
-
-          <InfoRow
-            label={t("profileScreen.details.fields.gender")}
-            value={genderLabel}
-            isRtl={isRtl}
-          />
-
-          <View style={[styles.divider, { backgroundColor: theme.colors.borderLight }]} />
-
-          <InfoRow
-            label={t("profileScreen.details.fields.countryCode")}
-            value={countryLabel || t("profileScreen.none")}
-            isRtl={isRtl}
-          />
         </Card>
 
-        {/* Account contact card */}
+        {/* Account Contact Card - Warm Card layout with Lock Indicator */}
         <Card
           variant="elevated"
-          style={[
-            styles.card,
-            { borderColor: theme.colors.borderLight },
-          ]}
+          style={[styles.warmCard, { backgroundColor: theme.colors.surface }]}
+          padding="none"
         >
-          <View style={[styles.sectionHeader, isRtl ? styles.sectionHeaderRtl : null]}>
-            <Text weight="bold" style={styles.sectionTitle}>
-              {t("profileScreen.details.accountTitle")}
-            </Text>
+          <View style={styles.cardInnerPadding}>
+            <View style={[styles.sectionHeader, isRtl ? styles.sectionHeaderRtl : null, styles.lockTitleRow, { flexDirection: rowDirection }]}>
+              <Ionicons name="lock-closed-outline" size={16} color={theme.colors.textMuted} style={{ marginEnd: 6 }} />
+              <Text weight="bold" style={styles.sectionTitle} color={theme.colors.textPrimary}>
+                {t("profileScreen.details.accountTitle")}
+              </Text>
+            </View>
+
+            <InfoRow
+              label={t("profileScreen.details.readOnly.email")}
+              value={user?.primaryEmail || t("profileScreen.fallbackEmail")}
+            />
+
+            <View style={[styles.divider, { backgroundColor: theme.colors.divider }]} />
+
+            <InfoRow
+              label={t("profileScreen.details.readOnly.phone")}
+              value={user?.primaryPhone || t("profileScreen.none")}
+            />
+
+            <View style={[styles.noteRow, { flexDirection: rowDirection }]}>
+              <Ionicons name="information-circle-outline" size={16} color={theme.colors.textMuted} style={{ marginEnd: 6, marginTop: 2 }} />
+              <Text color={theme.colors.textSecondary} style={styles.contactNote}>
+                {t("profileScreen.details.readOnly.note")}
+              </Text>
+            </View>
           </View>
-
-          <InfoRow
-            label={t("profileScreen.details.readOnly.email")}
-            value={user?.primaryEmail || t("profileScreen.fallbackEmail")}
-            isRtl={isRtl}
-          />
-
-          <View style={[styles.divider, { backgroundColor: theme.colors.borderLight }]} />
-
-          <InfoRow
-            label={t("profileScreen.details.readOnly.phone")}
-            value={user?.primaryPhone || t("profileScreen.none")}
-            isRtl={isRtl}
-          />
-
-          <Text color={theme.colors.textSecondary} style={styles.contactNote}>
-            {t("profileScreen.details.readOnly.note")}
-          </Text>
         </Card>
 
-        {/* Edit button */}
+        {/* Edit Button */}
         <Button
           title={t("profileScreen.details.editButton")}
           onPress={() => router.push("/(patient)/profile-details/edit" as any)}
           variant="secondary"
+          style={styles.editButton}
         />
       </ScrollView>
 
@@ -336,37 +359,103 @@ const styles = StyleSheet.create({
     gap: 14,
   },
   card: {
+    borderRadius: 20,
+    backgroundColor: "#FFFFFF",
     borderWidth: 1,
+    borderColor: "#E8DED0",
+    overflow: "hidden",
+  },
+  avatarCard: {
+    borderRadius: 20,
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "#E8DED0",
+    overflow: "hidden",
+  },
+  warmCard: {
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "#E8DED0",
+    overflow: "hidden",
+  },
+  goldAccentLine: {
+    height: 3,
+    width: "100%",
+  },
+  cardInnerPadding: {
+    padding: 16,
   },
   avatarRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 14,
+    padding: 16,
+    gap: 16,
   },
   avatarRowRtl: {
     flexDirection: "row-reverse",
+  },
+  avatarContainer: {
+    position: "relative",
+    width: 72,
+    height: 72,
   },
   avatarImage: {
     width: 72,
     height: 72,
     borderRadius: 36,
+    borderWidth: 2,
+    borderColor: "#24564F",
   },
   avatarFallback: {
     width: 72,
     height: 72,
     borderRadius: 36,
+    borderWidth: 2,
+    borderColor: "#24564F",
     alignItems: "center",
     justifyContent: "center",
   },
   avatarText: {
-    fontSize: 26,
+    fontSize: 24,
+  },
+  cameraOverlayLtr: {
+    position: "absolute",
+    bottom: -2,
+    right: -2,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  cameraOverlayRtl: {
+    position: "absolute",
+    bottom: -2,
+    left: -2,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 3,
+    elevation: 2,
   },
   avatarMeta: {
     flex: 1,
-    gap: 4,
+    gap: 2,
+    alignItems: "flex-start",
   },
   avatarName: {
     fontSize: 20,
+    lineHeight: 25,
   },
   avatarHint: {
     fontSize: 13,
@@ -377,9 +466,14 @@ const styles = StyleSheet.create({
   },
   sectionHeader: {
     marginBottom: 12,
+    alignItems: "flex-start",
   },
   sectionHeaderRtl: {
     alignItems: "flex-end",
+  },
+  lockTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
   },
   sectionTitle: {
     fontSize: 16,
@@ -388,7 +482,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingVertical: 10,
+    paddingVertical: 12,
   },
   infoRowRtl: {
     flexDirection: "row-reverse",
@@ -396,6 +490,7 @@ const styles = StyleSheet.create({
   infoLabel: {
     fontSize: 13,
     flex: 1,
+    textAlign: "left",
   },
   infoValue: {
     fontSize: 15,
@@ -405,18 +500,26 @@ const styles = StyleSheet.create({
   divider: {
     height: 1,
   },
-  contactNote: {
+  noteRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
     marginTop: 12,
+  },
+  rowRtl: {
+    flexDirection: "row-reverse",
+  },
+  rowLtr: {
+    flexDirection: "row",
+  },
+  contactNote: {
     fontSize: 12,
     lineHeight: 18,
+    flex: 1,
   },
-  editButtonLtr: {
-    marginLeft: 8,
-    padding: 6,
-  },
-  editButtonRtl: {
-    marginRight: 8,
-    padding: 6,
+  editButton: {
+    height: 52,
+    borderRadius: 14,
+    marginTop: 6,
   },
   avatarLoading: {
     alignItems: "center",
@@ -482,7 +585,7 @@ function AvatarActionSheet({
       <View
         style={[
           styles.avatarActionSheet,
-          { backgroundColor: theme.colors.surface },
+          { backgroundColor: theme.colors.surfaceBright },
         ]}
       >
         <View

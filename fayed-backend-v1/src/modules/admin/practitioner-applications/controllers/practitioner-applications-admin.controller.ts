@@ -570,6 +570,7 @@ export class PractitionerApplicationsAdminController {
         id,
         locale,
         adminUserId: currentUser.id,
+        operatorRoles: currentUser.roles,
         reason: body.reason,
         note: body.note,
       })
@@ -631,6 +632,7 @@ export class PractitionerApplicationsAdminController {
         id,
         locale,
         adminUserId: currentUser.id,
+        operatorRoles: currentUser.roles,
         reason: body.reason,
         note: body.note,
       })

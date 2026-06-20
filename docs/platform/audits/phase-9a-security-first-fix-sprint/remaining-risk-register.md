@@ -9,17 +9,24 @@
 
 ## Documented Gaps (Not Fixed in Sprint 1)
 
-### 🔴 AUDIT-033 — SSR Token Reader Gap — ✅ FIXED + VERIFIED in Sprint 1-R3
+### 🔴 AUDIT-033 — Web Refresh Token HttpOnly + Response Body — ✅ FIXED + VERIFIED in Sprint 1-R3 + R3.1 + R3.2
 
 **Sprint 1 (R1) state:** `httpOnly: true` added to js-cookie's `Cookies.set()` — this was ineffective (browser ignores httpOnly when set via JavaScript).
 
 **Sprint 1-R2 correction:** Backend now sets `Set-Cookie: fayed_refresh_token=...; HttpOnly; Secure; SameSite=Strict` via `res.cookie()` in all auth controllers. Frontend `tokenManager.setTokens()` no longer overwrites the server-set httpOnly cookie. `AuthRequestContextMiddleware` already reads `fayed_refresh_token` from cookies.
 
-**Sprint 1-R3 hardening:** `WebResponseHardeningInterceptor` strips `refreshToken` from the JSON response body for web clients (detected by `Origin` header matching Fayed web origins). Browser JavaScript at login/refresh time can no longer read the refresh token from `fetch(...).then(r => r.json())`. Native/mobile clients receive full token body for SecureStore flow.
+**Sprint 1-R3 hardening + R3.1 corrections:** `WebResponseHardeningInterceptor` deletes `refreshToken` and `refreshTokenExpiresAt` from the JSON response body for direct browser auth requests. Detection: `X-Client-Platform: web` header (primary, explicit frontend signal on direct browser API calls) + `Origin` header matching known Fayed origins (fallback for direct browser calls). Browser JavaScript at login/refresh time cannot read the refresh token from `fetch(...).then(r => r.json())`. The `httpOnly` cookie continues to carry the real refresh token on `Set-Cookie` — independent of response body.
+
+**Sprint 1-R3.2 CORS fix:** `x-client-platform` added to CORS `allowedHeaders` in `main.ts` — enables the header for cross-domain API deployments.
+
+**Three-tier architecture (R3.2 clarification):**
+- **Tier 1 — Direct browser auth (hardened):** `httpClient` sends `X-Client-Platform: web` on all requests. Backend interceptor strips `refreshToken` from response body. Browser JS cannot read it.
+- **Tier 2 — Next.js server-side refresh (trusted internal, not hardened):** `server.ts` intentionally does NOT forward `X-Client-Platform` to backend. This is required: `server.ts` reads `tokens.refreshToken` from the backend response body to set the `httpOnly` cookie server-side (`cookieStore.set(REFRESH_TOKEN_COOKIE, tokens.refreshToken, {...SECURE_COOKIE_OPTIONS})`). If `refreshToken` were stripped, line 323 in `server.ts` would return `null` and refresh would fail. Browser only sees `{ success: true }` from `POST /api/auth/refresh` — the refresh token is consumed by Next.js server-side code before the browser can access it.
+- **Tier 3 — Native/mobile (unchanged):** No `X-Client-Platform` header sent. `isWebClient()` returns `false`. Full token body returned. Used for SecureStore/AsyncStorage.
 
 **SSR status:** Access token remains readable by js-cookie (not httpOnly) — SSR token reader gap is **not applicable to the refresh token**. Access token is intentionally non-httpOnly for payment redirect compatibility (Paymob/Stripe return to app). Refresh token is httpOnly and not needed by SSR — browser sends it automatically via `credentials: "include"` on refresh calls.
 
-**Status:** ✅ RESOLVED + VERIFIED (Sprint 1-R3)
+**Status:** ✅ RESOLVED + VERIFIED (Sprint 1-R3 + R3.1 + R3.2)
 
 ---
 
@@ -65,12 +72,12 @@
 |----|-------|----------|------|
 | AUDIT-034 | Practitioner support ticket endpoints bypass OTP verification | P1 | Wave 0–1 |
 | AUDIT-035 | Practitioner financial operations bypass OTP verification | P1 | Wave 0–1 |
-| AUDIT-036 | Login failures not security-audit logged | P1 | Wave 0 |
-| AUDIT-037 | Practitioner approval/rejection not security-audit logged | P1 | Wave 0 |
-| AUDIT-038 | Manual payout not security-audit logged | P1 | Wave 0 |
-| AUDIT-039 | No account lockout after repeated failed login attempts | P1 | Wave 0 |
+| AUDIT-036 | Login failures not security-audit logged | P1 | ✅ Fixed — Phase 9b Sprint 2: all 4 primary login use cases (admin, patient, practitioner password, practitioner OTP) now log via `SecurityAuditService.logAsync` on all failure and success paths |
+| AUDIT-037 | Practitioner approval/rejection not security-audit logged | P1 | ✅ Fixed — Phase 9b Sprint 2: `ApprovePractitionerApplicationUseCase` and `RejectPractitionerApplicationUseCase` now log via `SecurityAuditService.logAsync` |
+| AUDIT-038 | Manual payout not security-audit logged | P1 | ✅ Fixed — Phase 9b Sprint 2: `AdminPractitionerManualPayoutsController.record()` now logs via `SecurityAuditService.logAsync` |
+| AUDIT-039 | No account lockout after repeated failed login attempts | P1 | 🔴 Blocked — requires DB schema change (User model lockout fields); rate limiting partial mitigation |
 | AUDIT-040 | No global JWT auth guard — new endpoints default to unprotected | P1 | Wave 0 |
-| AUDIT-041 | Practitioner login missing deviceId | P1 | Wave 0–1 |
+| AUDIT-041 | Practitioner login missing deviceId | P1 | 🟡 Implemented — Verification Pending (Phase 9b Sprint 4): mobile+backend done; web does not send deviceId |
 | AUDIT-043 | Web session access token 7-day expiry | P1 | Wave 1 |
 | AUDIT-044 | `__DEV__` URL allowlist could be active in production | P1 | Wave 0 |
 | AUDIT-045 | AdminPermissionGate not auto-applied to all admin pages | P1 | Wave 0–1 |
@@ -79,17 +86,17 @@
 | AUDIT-053 | Room name/URL exposed in blocked join contract | P1 | Wave 0 |
 | AUDIT-054 | Daily room expiry mismatch | P1 | Wave 1 |
 | AUDIT-055 | DISPLAY_NAME_MATCH fallback enables attendance fraud | P1 | Wave 1 |
-| AUDIT-057 | Push payload includes PHI fields | P1 | Wave 0 |
+| AUDIT-057 | Push payload includes PHI fields | P1 | 🟡 Implemented — Verification Pending — Phase 9b Sprint 3: threadId, relatedEntityType, category, relatedEntityId, scheduledStartAt, packagePlanTitle removed from push payloads; `{{sessionAt}}` removed from push body via push-specific i18n keys. Runtime verification pending. |
 | AUDIT-058 | Notification routePath bypasses Messages Shell | P1 | Wave 1 |
-| AUDIT-062 | APP_URL falls back to localhost:3000 in push | P1 | Wave 0 |
+| AUDIT-062 | APP_URL falls back to localhost:3000 in push | P1 | 🟡 Implemented — Verification Pending — Phase 9b Sprint 3: app.config.ts removed localhost fallback; sweeper uses ConfigService DI; env.schema.ts rejects localhost in production. Runtime verification pending. |
 | AUDIT-067 | Care-chat notifications bypass Messages Shell | P1 | Wave 1 |
-| AUDIT-068 | `admin/care-chat/[id]` missing AdminPermissionGate | P1 | Wave 0 |
-| AUDIT-069 | `admin/sessions/runtime-inspection` missing gate | P1 | Wave 0 |
+| AUDIT-068 | `admin/care-chat/[id]` missing AdminPermissionGate | P1 | ✅ Fixed — Phase 9b Sprint 1 Wave 0 Batch 1 (frontend gate added; backend guard already existed) |
+| AUDIT-069 | `admin/sessions/runtime-inspection` missing gate | P1 | ✅ Fixed — Phase 9b Sprint 1 Wave 0 Batch 1 (frontend gate added; backend guard already existed) |
 | AUDIT-070 | AdminNotificationDetailsPanel HTML render gap | P1 | Wave 1 |
 | AUDIT-072 | Join token in URL query parameter | P1 | Wave 0 |
 | AUDIT-075 | Runtime inspector has no audit log | P1 | Wave 1 |
-| AUDIT-102 | `admin/refund-policies` missing AdminPermissionGate | P1 | Wave 0 |
-| AUDIT-103 | `admin/notifications/[id]` missing gate | P1 | Wave 0 |
+| AUDIT-102 | `admin/refund-policies` missing AdminPermissionGate + weak backend | P1 | ✅ Fixed — Phase 9b Sprint 1 Wave 0 Batch 1 (frontend gate + backend `PermissionsGuard` + method-level permissions: `REFUNDS_RETRY` for GETs, `REFUNDS_APPROVE` for writes) |
+| AUDIT-103 | `admin/notifications/[id]` missing gate | P1 | ✅ Fixed — Phase 9b Sprint 1 Wave 0 Batch 1 (frontend gate added; backend guard already existed) |
 | AUDIT-105 | Raw payment status enum in success screen | P1 | Wave 1 |
 | AUDIT-106 | Raw support category enum in support/new.tsx | P1 | Wave 1 |
 | AUDIT-107 | formatNotificationType bypasses i18n | P1 | Wave 1 |
@@ -177,9 +184,9 @@
 
 ## Summary
 
-| Category | Count | Sprint 1 Addressed | Sprint 1-R2 Addressed | Sprint 1-R3 Addressed |
-|----------|-------|-------------------|----------------------|-----------------------|
-| P0 release blockers | 4 | ✅ All 4 initially marked resolved | 3 fully resolved; 1 partial (AUDIT-031 design gap) | 1 reclassified / accepted risk (AUDIT-031); 1 verified hardening (AUDIT-033) |
+| Category | Count | Sprint 1 Addressed | Sprint 1-R2 Addressed | Sprint 1-R3 + R3.1 + R3.2 Addressed |
+|----------|-------|-------------------|----------------------|------------------------|
+| P0 release blockers | 4 | ✅ All 4 initially marked resolved | 3 fully resolved; 1 partial (AUDIT-031 design gap) | 1 reclassified / accepted risk (AUDIT-031); 1 verified hardening (AUDIT-033); 1 CORS fix added (AUDIT-033 R3.2) |
 | P1 launch blockers | 33 | ❌ Not in sprint scope | ❌ Not in sprint scope | ❌ Not in sprint scope |
 | P2 rollout blockers | 64 | ❌ Not in sprint scope | ❌ Not in sprint scope | ❌ Not in sprint scope |
 | **Total remaining** | **97** | **4 (P0s only)** | **97 + 1 partial** | **97 + 0 partial** |

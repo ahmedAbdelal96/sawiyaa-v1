@@ -1,43 +1,42 @@
 import React, { useMemo } from "react";
-import { Image, StyleSheet, View } from "react-native";
+import { Image, StyleSheet, TouchableOpacity, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import {
   Card,
   ListPageScaffold,
-  SectionHeader,
-  StatusChip,
   Text,
 } from "../../../../components/ui";
 import { useTheme } from "../../../../providers/ThemeProvider";
 import { useAuth } from "../../../../providers/AuthProvider";
-import { getAppDirection } from "../../../../i18n/direction";
 import { resolveSupportedCurrencyCode } from "../../../../lib/currency";
 import { resolveMediaUrl } from "../../../../lib/resolve-media-url";
 import { useInfinitePublicAcademyCourses } from "../hooks";
 import type { AcademyCourseItem } from "../types";
 import { formatAcademyMoney, isAcademyCourseFree } from "../display";
+import { useAppDirection } from "../../../../i18n/direction";
 
 function CourseCard({ course }: { course: AcademyCourseItem }) {
   const router = useRouter();
   const { t, i18n } = useTranslation();
   const { theme } = useTheme();
   const locale = i18n.language?.startsWith("ar") ? "ar-EG" : "en-US";
-  const isRtl = getAppDirection(i18n.language) === "rtl";
+  const { rowDirection, textAlign, chevronForward } = useAppDirection();
   const coverUri = resolveMediaUrl(course.coverImageUrl ?? course.thumbnailUrl);
   const displayCurrency = resolveSupportedCurrencyCode({
     currencyCode: course.currencyCode,
     regionalPricingMode: course.regionalPricingMode,
     resolvedCountryIsoCode: course.resolvedCountryIsoCode,
   });
-  const isFreeCourse = isAcademyCourseFree(course);
-  const priceLabel =
-    isFreeCourse
+  const hasPrice = course.priceAmount !== null && course.priceAmount !== undefined;
+  const isFreeCourse = hasPrice && isAcademyCourseFree(course);
+  const priceLabel = hasPrice
+    ? (isFreeCourse
       ? t("academyMobile.free")
-      : formatAcademyMoney(course.priceAmount, displayCurrency, locale) ??
-        t("academyMobile.paid");
-  const lectureCount = course.plannedLectureCount ?? course.lectures?.length ?? null;
+      : formatAcademyMoney(course.priceAmount, displayCurrency, locale))
+    : null;
+  const lectureCount = course.plannedLectureCount;
   const durationLabel = course.plannedDurationDays
     ? t("academyMobile.durationDays", {
         count: course.plannedDurationDays,
@@ -49,81 +48,95 @@ function CourseCard({ course }: { course: AcademyCourseItem }) {
   return (
     <Card
       variant="outlined"
-      padding="sm"
+      padding="none"
       style={styles.card}
-      onPress={() => router.push(`/(patient)/academy/${course.slug}` as never)}
-      accessibilityRole="button"
-      accessibilityLabel={t("academyMobile.card.accessibilityLabel", {
-        title: course.title,
-      })}
     >
-      <View style={[styles.cardLayout, isRtl && styles.cardLayoutRtl]}>
-        <View
-          style={[
-            styles.mediaBox,
-            { backgroundColor: theme.colors.primaryLight },
-            !coverUri && styles.mediaPlaceholder,
-          ]}
-        >
-          {coverUri ? (
-            <Image source={{ uri: coverUri }} style={styles.mediaImage} resizeMode="cover" />
-          ) : (
-            <Ionicons name="library-outline" size={22} color={theme.colors.primary} />
-          )}
-        </View>
-
-        <View style={styles.content}>
-          <View style={[styles.topRow, isRtl && styles.topRowRtl]}>
-            <StatusChip
-              label={t("academyMobile.available")}
-              tone="success"
-              showDot={false}
-            />
-            <Text color={theme.colors.textMuted} style={styles.price}>
-              {priceLabel}
-            </Text>
+      <View
+        style={[
+          styles.imageContainer,
+          { backgroundColor: theme.colors.primaryLight },
+        ]}
+      >
+        {coverUri ? (
+          <Image source={{ uri: coverUri }} style={styles.cardImage} resizeMode="cover" />
+        ) : (
+          <View style={styles.imagePlaceholder}>
+            <Ionicons name="library-outline" size={32} color={theme.colors.primary} />
           </View>
+        )}
+      </View>
 
-          <Text weight="600" style={styles.title} numberOfLines={2}>
-            {course.title}
+      <View style={styles.cardDetails}>
+        <Text weight="700" style={[styles.title, { textAlign, color: theme.colors.primary }]} numberOfLines={2}>
+          {course.title}
+        </Text>
+
+        {description ? (
+          <Text
+            color={theme.colors.textSecondary}
+            style={[styles.description, { textAlign }]}
+            numberOfLines={2}
+          >
+            {description}
           </Text>
+        ) : null}
 
-          {description ? (
-            <Text
-              color={theme.colors.textSecondary}
-              style={styles.description}
-              numberOfLines={2}
-            >
-              {description}
-            </Text>
-          ) : null}
-
-          <View style={styles.metaRow}>
-            {durationLabel ? (
-              <Text color={theme.colors.textMuted} style={styles.metaText}>
+        <View style={[styles.metaRow, { flexDirection: rowDirection }]}>
+          {durationLabel ? (
+            <View style={[styles.metaBadge, { backgroundColor: theme.colors.surfaceMuted }]}>
+              <Ionicons name="time-outline" size={13} color={theme.colors.textSecondary} />
+              <Text color={theme.colors.textSecondary} style={styles.metaText}>
                 {durationLabel}
               </Text>
-            ) : null}
-            {lectureCount ? (
-              <Text color={theme.colors.textMuted} style={styles.metaText}>
+            </View>
+          ) : null}
+          {lectureCount ? (
+            <View style={[styles.metaBadge, { backgroundColor: theme.colors.surfaceMuted }]}>
+              <Ionicons name="book-outline" size={13} color={theme.colors.textSecondary} />
+              <Text color={theme.colors.textSecondary} style={styles.metaText}>
                 {t("academyMobile.lectureCount", {
                   count: lectureCount,
                 })}
               </Text>
-            ) : null}
-          </View>
+            </View>
+          ) : null}
         </View>
-      </View>
 
-      <View style={[styles.actionHint, isRtl && styles.actionHintRtl]}>
-        <Text color={theme.colors.primary} weight="600" style={styles.actionHintText}>
-          {detailsLabel}
-        </Text>
-        <Ionicons
-          name={isRtl ? "chevron-back" : "chevron-forward"}
-          size={16}
-          color={theme.colors.primary}
-        />
+        <View style={[styles.bottomRow, { flexDirection: rowDirection }]}>
+          {priceLabel ? (
+            <View style={[styles.priceTag, { backgroundColor: theme.colors.primaryLight }]}>
+              <Text color={theme.colors.primary} weight="700" style={styles.price}>
+                {priceLabel}
+              </Text>
+            </View>
+          ) : <View />}
+
+          <TouchableOpacity
+            activeOpacity={0.78}
+            onPress={() => router.push(`/(patient)/academy/${course.slug}` as never)}
+            accessibilityRole="button"
+            accessibilityLabel={t("academyMobile.card.accessibilityLabel", {
+              title: course.title,
+            })}
+            style={[
+              styles.actionHint,
+              {
+                flexDirection: rowDirection,
+                backgroundColor: theme.colors.surfaceSecondary,
+                borderColor: theme.colors.borderLight,
+              },
+            ]}
+          >
+            <Text color={theme.colors.primary} weight="600" style={styles.actionHintText}>
+              {detailsLabel}
+            </Text>
+            <Ionicons
+              name={chevronForward}
+              size={16}
+              color={theme.colors.primary}
+            />
+          </TouchableOpacity>
+        </View>
       </View>
     </Card>
   );
@@ -132,6 +145,7 @@ function CourseCard({ course }: { course: AcademyCourseItem }) {
 export default function AcademyBrowseScreen() {
   const { t } = useTranslation();
   const { theme } = useTheme();
+  const { rowDirection, textAlign } = useAppDirection();
   const { user, role, isLoading: isAuthLoading } = useAuth();
   const authScopeKey = useMemo(() => {
     if (isAuthLoading) {
@@ -170,10 +184,19 @@ export default function AcademyBrowseScreen() {
       contentContainerStyle={styles.scaffold}
     >
       <View style={styles.headerStack}>
-        <SectionHeader
-          title={t("academyMobile.sectionTitle")}
-          subtitle={t("academyMobile.sectionSubtitle")}
-        />
+        <Card variant="outlined" padding="md" style={[styles.heroCard, { backgroundColor: theme.colors.surface }]} >
+          <View style={[styles.heroRow, { flexDirection: rowDirection }]}>
+            <View style={[styles.heroAccentLine, { backgroundColor: theme.colors.primary }]} />
+            <View style={styles.heroContent}>
+              <Text weight="bold" style={[styles.heroTitle, { textAlign, color: theme.colors.primary }]}>
+                {t("academyMobile.sectionTitle")}
+              </Text>
+              <Text color={theme.colors.textSecondary} style={[styles.heroSubtitle, { textAlign }]}>
+                {t("academyMobile.sectionSubtitle")}
+              </Text>
+            </View>
+          </View>
+        </Card>
       </View>
 
       <View style={styles.listStack}>
@@ -182,7 +205,7 @@ export default function AcademyBrowseScreen() {
         ))}
       </View>
 
-      <Text color={theme.colors.textSecondary} style={styles.resultsCount}>
+      <Text color={theme.colors.textSecondary} style={[styles.resultsCount, { textAlign }]}>
         {latestPage
           ? t("academyMobile.resultsCount", {
               shown: items.length,
@@ -193,23 +216,23 @@ export default function AcademyBrowseScreen() {
 
       {coursesQuery.isFetchingNextPage ? (
         <View style={styles.footerState}>
-          <Text color={theme.colors.textSecondary} style={styles.footerText}>
+          <Text color={theme.colors.textSecondary} style={[styles.footerText, { textAlign: "center" }]}>
             {t("academyMobile.loadingMore")}
           </Text>
         </View>
       ) : coursesQuery.isFetchNextPageError ? (
         <View style={styles.footerState}>
-          <Text weight="bold" style={styles.footerTitle} color={theme.colors.textPrimary}>
+          <Text weight="bold" style={[styles.footerTitle, { textAlign: "center" }]} color={theme.colors.textPrimary}>
             {t("academyMobile.loadMoreErrorTitle")}
           </Text>
-          <Text color={theme.colors.textSecondary} style={styles.footerText}>
+          <Text color={theme.colors.textSecondary} style={[styles.footerText, { textAlign: "center" }]}>
             {t("academyMobile.loadMoreErrorSubtitle")}
           </Text>
           <View style={styles.footerButton}>
             <Text
               color={theme.colors.primary}
               weight="600"
-              style={styles.retryLink}
+              style={[styles.retryLink, { textAlign: "center" }]}
               onPress={() => coursesQuery.fetchNextPage()}
             >
               {t("retry")}
@@ -218,7 +241,7 @@ export default function AcademyBrowseScreen() {
         </View>
       ) : coursesQuery.hasNextPage === false && items.length > 0 ? (
         <View style={styles.footerState}>
-          <Text color={theme.colors.textSecondary} style={styles.footerText}>
+          <Text color={theme.colors.textSecondary} style={[styles.footerText, { textAlign: "center" }]}>
             {t("academyMobile.endOfList")}
           </Text>
         </View>
@@ -235,50 +258,77 @@ const styles = StyleSheet.create({
     gap: 10,
     marginBottom: 10,
   },
+  heroCard: {
+    marginHorizontal: 0,
+    borderRadius: 20,
+  },
+  heroRow: {
+    alignItems: "stretch",
+    gap: 12,
+  },
+  heroAccentLine: {
+    width: 4,
+    borderRadius: 2,
+  },
+  heroContent: {
+    flex: 1,
+    gap: 2,
+  },
+  heroTitle: {
+    fontSize: 17,
+    lineHeight: 24,
+  },
+  heroSubtitle: {
+    fontSize: 12.5,
+    lineHeight: 18,
+  },
   listStack: {
     gap: 12,
   },
   card: {
     marginHorizontal: 0,
-  },
-  cardLayout: {
-    flexDirection: "row",
-    gap: 12,
-  },
-  cardLayoutRtl: {
-    flexDirection: "row-reverse",
-  },
-  mediaBox: {
-    width: 68,
-    height: 68,
-    borderRadius: 18,
-    alignItems: "center",
-    justifyContent: "center",
+    borderRadius: 20,
     overflow: "hidden",
   },
-  mediaPlaceholder: {
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.25)",
+  imageContainer: {
+    width: "100%",
+    height: 140,
+    overflow: "hidden",
   },
-  mediaImage: {
+  cardImage: {
     width: "100%",
     height: "100%",
   },
-  content: {
+  imagePlaceholder: {
     flex: 1,
-    gap: 8,
-  },
-  topRow: {
-    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
+    justifyContent: "center",
+  },
+  cardDetails: {
+    padding: 16,
     gap: 10,
   },
-  topRowRtl: {
-    flexDirection: "row-reverse",
+  bottomRow: {
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: 6,
   },
   price: {
     fontSize: 13,
+  },
+  priceTag: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+    alignSelf: "flex-start",
+  },
+  metaBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    gap: 4,
   },
   title: {
     fontSize: 18,
@@ -289,7 +339,6 @@ const styles = StyleSheet.create({
     lineHeight: 19,
   },
   metaRow: {
-    flexDirection: "row",
     flexWrap: "wrap",
     gap: 8,
   },
@@ -298,14 +347,14 @@ const styles = StyleSheet.create({
     lineHeight: 16,
   },
   actionHint: {
-    marginTop: 12,
-    flexDirection: "row",
+    minHeight: 40,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 14,
+    borderWidth: 1,
     alignItems: "center",
-    alignSelf: "flex-start",
-    gap: 6,
-  },
-  actionHintRtl: {
-    flexDirection: "row-reverse",
+    justifyContent: "space-between",
+    gap: 10,
   },
   actionHintText: {
     fontSize: 13,
@@ -325,15 +374,13 @@ const styles = StyleSheet.create({
   footerTitle: {
     fontSize: 15,
     marginBottom: 6,
-    textAlign: "center",
   },
   footerText: {
     fontSize: 13,
     lineHeight: 19,
-    textAlign: "center",
     marginBottom: 12,
   },
   retryLink: {
-    textAlign: "center",
+    // Center alignment is handled in inline styles
   },
 });

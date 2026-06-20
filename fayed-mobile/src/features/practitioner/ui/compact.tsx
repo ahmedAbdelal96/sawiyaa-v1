@@ -3,6 +3,7 @@ import { I18nManager, StyleSheet, TouchableOpacity, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Text, Button } from "../../../components/ui";
 import { useTheme } from "../../../providers/ThemeProvider";
+import type { ThemeShape } from "../../../constants/theme";
 
 export type PractitionerTone =
   | "daily"
@@ -17,7 +18,7 @@ export type PractitionerTone =
   | "info";
 
 export function resolvePractitionerTone(
-  theme: ReturnType<typeof useTheme>["theme"],
+  theme: ThemeShape,
   tone: PractitionerTone,
 ) {
   const palette = {

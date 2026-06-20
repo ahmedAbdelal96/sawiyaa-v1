@@ -665,7 +665,7 @@ export const practitionerFinanceSeedModule: SeedModule = {
         const sessionId = uuid(`practitioner-finance-session-${plan.key}`);
         const paymentId = uuid(`practitioner-finance-payment-${plan.key}`);
         const sessionStartAt = daysAgo(plan.daysAgo);
-        const sessionEndAt = new Date(sessionStartAt.getTime() + 45 * 60 * 1000);
+        const sessionEndAt = new Date(sessionStartAt.getTime() + 60 * 60 * 1000);
         const paymentDate = daysAgo(plan.daysAgo);
         const activeCoupon = couponIdByKey.get(activeCouponKey)!;
         const couponSnapshot =
@@ -694,7 +694,7 @@ export const practitionerFinanceSeedModule: SeedModule = {
             practitionerId,
             flowType: SessionFlowType.SCHEDULED,
             sessionMode: SessionMode.VIDEO,
-            durationMinutes: 45,
+            durationMinutes: 60,
             status: SessionStatus.COMPLETED,
             requestedStartAt: sessionStartAt,
             scheduledStartAt: sessionStartAt,
@@ -715,7 +715,7 @@ export const practitionerFinanceSeedModule: SeedModule = {
             practitionerId,
             flowType: SessionFlowType.SCHEDULED,
             sessionMode: SessionMode.VIDEO,
-            durationMinutes: 45,
+            durationMinutes: 60,
             status: SessionStatus.COMPLETED,
             requestedStartAt: sessionStartAt,
             scheduledStartAt: sessionStartAt,

@@ -1,8 +1,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useColorScheme } from 'react-native';
-import { lightTheme, darkTheme } from '../constants/theme';
+import { lightTheme, darkTheme, type ThemeShape } from '../constants/theme';
 
-type ThemeType = typeof lightTheme;
+type ThemeType = ThemeShape;
 
 interface ThemeContextProps {
   theme: ThemeType;

@@ -23,6 +23,7 @@ import {
   usePatchPatientProfile,
   usePatientProfile,
 } from "../../../src/features/patient/profile/hooks";
+import { useAppDirection } from "../../../src/i18n/direction";
 import {
   formatProfileDate,
   getInitials,
@@ -46,7 +47,7 @@ export default function EditPatientProfileScreen() {
   const router = useRouter();
   const { theme } = useTheme();
   const { t, i18n } = useTranslation();
-  const isRtl = i18n.language?.startsWith("ar") ?? false;
+  const { isRtl, rowDirection, textAlign, writingDirection } = useAppDirection();
 
   const profileQuery = usePatientProfile();
   const patchProfile = usePatchPatientProfile();
@@ -60,6 +61,9 @@ export default function EditPatientProfileScreen() {
     dateOfBirth?: string;
     gender?: string;
   }>({});
+
+  // Focus states
+  const [nameFocused, setNameFocused] = useState(false);
 
   // Modals
   const [datePickerVisible, setDatePickerVisible] = useState(false);
@@ -151,18 +155,17 @@ export default function EditPatientProfileScreen() {
     <Screen bg="background">
       <Header title={t("profileScreen.edit.screenTitle")} showBack />
 
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Avatar card — read-only context, photo update is on /profile-details */}
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        {/* Avatar Card (Read-only context) */}
         <Card
           variant="elevated"
-          style={[styles.card, { borderColor: theme.colors.borderLight }]}
+          style={styles.avatarCard}
+          padding="none"
         >
-          <View
-            style={[
-              styles.avatarRow,
-              isRtl ? styles.avatarRowRtl : null,
-            ]}
-          >
+          {/* Subtle gold accent indicator line at the top */}
+          <View style={[styles.goldAccentLine, { backgroundColor: theme.colors.tertiary }]} />
+
+          <View style={[styles.avatarRow, { flexDirection: rowDirection }]}>
             {profile?.avatarDataUrl || profile?.avatarUrl ? (
               <Image
                 source={{ uri: profile?.avatarDataUrl ?? profile?.avatarUrl ?? "" }}
@@ -172,7 +175,7 @@ export default function EditPatientProfileScreen() {
               <View
                 style={[
                   styles.avatarFallback,
-                  { backgroundColor: theme.colors.primaryLight },
+                  { backgroundColor: theme.colors.primarySoft },
                 ]}
               >
                 <Text
@@ -186,8 +189,8 @@ export default function EditPatientProfileScreen() {
                 </Text>
               </View>
             )}
-            <View style={styles.avatarMeta}>
-              <Text weight="600" style={styles.avatarName}>
+            <View style={[styles.avatarMeta, { alignItems: isRtl ? "flex-end" : "flex-start" }]}>
+              <Text weight="bold" style={styles.avatarName} color={theme.colors.primary}>
                 {displayName.trim() ||
                   profile?.displayName ||
                   t("profileScreen.fallbackName")}
@@ -202,246 +205,268 @@ export default function EditPatientProfileScreen() {
           </View>
         </Card>
 
-        {/* Personal data card */}
+        {/* Personal Data Form Card */}
         <Card
           variant="elevated"
-          style={[styles.card, { borderColor: theme.colors.borderLight }]}
+          style={styles.card}
+          padding="none"
         >
-          <Text weight="bold" style={styles.sectionTitle}>
-            {t("profileScreen.edit.sectionTitle")}
-          </Text>
+          {/* Subtle gold accent indicator line at the top */}
+          <View style={[styles.goldAccentLine, { backgroundColor: theme.colors.tertiary }]} />
 
-          <View style={styles.formStack}>
-            {/* Display name */}
-            <View style={styles.fieldWrap}>
-              <Text
-                weight="500"
-                color={theme.colors.textSecondary}
-                style={styles.fieldLabel}
-              >
-                {t("profileScreen.edit.fields.displayName")}
-              </Text>
-              <View
-                style={[
-                  styles.textInputContainer,
-                  {
-                    borderColor: fieldErrors.displayName
-                      ? "#ef4444"
-                      : theme.colors.borderLight,
-                    backgroundColor: theme.colors.surface,
-                  },
-                ]}
-              >
+          <View style={styles.cardInnerPadding}>
+            <Text weight="bold" style={styles.sectionTitle} color={theme.colors.textPrimary}>
+              {t("profileScreen.edit.sectionTitle")}
+            </Text>
+
+            <View style={styles.formStack}>
+              {/* Display Name Input */}
+              <View style={styles.fieldWrap}>
+                <Text
+                  weight="600"
+                  color={theme.colors.textSecondary}
+                  style={styles.fieldLabel}
+                >
+                  {t("profileScreen.edit.fields.displayName")}
+                </Text>
+                
                 <View
                   style={[
-                    styles.inputWrapper,
-                    { flexDirection: isRtl ? "row-reverse" : "row" },
+                    styles.inputContainer,
+                    {
+                      borderColor: fieldErrors.displayName
+                        ? "#ef4444"
+                        : nameFocused
+                        ? theme.colors.primary
+                        : theme.colors.borderLight,
+                      backgroundColor: theme.colors.surfaceBright,
+                    },
                   ]}
                 >
-                  <View style={styles.inputFlex}>
-                    <TouchableOpacity
-                      activeOpacity={1}
-                      onPress={() => {}}
-                      style={styles.nameInputTouchable}
-                    >
-                      <View
-                        style={[
-                          styles.nameInputInner,
-                          { flexDirection: isRtl ? "row-reverse" : "row" },
-                        ]}
-                      >
-                        <View style={styles.inputTextWrap}>
-                          <TextInput
-                            value={displayName}
-                            onChangeText={(val: string) => {
-                              setDisplayName(val);
-                              if (fieldErrors.displayName) {
-                                setFieldErrors((e) => ({
-                                  ...e,
-                                  displayName: undefined,
-                                }));
-                              }
-                            }}
-                            placeholder={
-                              t(
-                                "profileScreen.edit.fields.displayNamePlaceholder",
-                              ) ?? ""
-                            }
-                            placeholderTextColor={theme.colors.textMuted}
-                            maxLength={80}
-                            style={[
-                              styles.nameInput,
-                              {
-                                color: theme.colors.textPrimary,
-                                textAlign: isRtl ? "right" : "left",
-                              },
-                            ]}
-                          />
-                        </View>
-                      </View>
-                    </TouchableOpacity>
+                  <View style={[styles.inputRow, { flexDirection: rowDirection }]}>
+                    <Ionicons
+                      name="person-outline"
+                      size={20}
+                      color={nameFocused ? theme.colors.primary : theme.colors.textMuted}
+                      style={{ marginEnd: 10 }}
+                    />
+                    <TextInput
+                      value={displayName}
+                      onFocus={() => setNameFocused(true)}
+                      onBlur={() => setNameFocused(false)}
+                      onChangeText={(val: string) => {
+                        setDisplayName(val);
+                        if (fieldErrors.displayName) {
+                          setFieldErrors((e) => ({
+                            ...e,
+                            displayName: undefined,
+                          }));
+                        }
+                      }}
+                      placeholder={
+                        t("profileScreen.edit.fields.displayNamePlaceholder") ?? ""
+                      }
+                      placeholderTextColor={theme.colors.textMuted}
+                      maxLength={80}
+                      style={[
+                        styles.textInput,
+                        {
+                          color: theme.colors.textPrimary,
+                          textAlign,
+                          writingDirection,
+                        },
+                      ]}
+                    />
                   </View>
                 </View>
+                {fieldErrors.displayName ? (
+                  <Text color="#ef4444" style={styles.fieldError}>
+                    {fieldErrors.displayName}
+                  </Text>
+                ) : null}
               </View>
-              {fieldErrors.displayName ? (
-                <Text color="#ef4444" style={styles.fieldError}>
-                  {fieldErrors.displayName}
-                </Text>
-              ) : null}
-            </View>
 
-            {/* Date of birth */}
-            <View style={styles.fieldWrap}>
-              <Text
-                weight="500"
-                color={theme.colors.textSecondary}
-                style={styles.fieldLabel}
-              >
-                {t("profileScreen.edit.fields.dateOfBirth")}
-              </Text>
-              <TouchableOpacity
-                activeOpacity={0.7}
-                onPress={() => setDatePickerVisible(true)}
-                style={[
-                  styles.selectorButton,
-                  {
-                    borderColor: fieldErrors.dateOfBirth
-                      ? "#ef4444"
-                      : theme.colors.borderLight,
-                    backgroundColor: theme.colors.surface,
-                    flexDirection: isRtl ? "row-reverse" : "row",
-                  },
-                ]}
-              >
+              {/* Date of Birth Picker */}
+              <View style={styles.fieldWrap}>
                 <Text
+                  weight="600"
+                  color={theme.colors.textSecondary}
+                  style={styles.fieldLabel}
+                >
+                  {t("profileScreen.edit.fields.dateOfBirth")}
+                </Text>
+                
+                <TouchableOpacity
+                  activeOpacity={0.7}
+                  onPress={() => setDatePickerVisible(true)}
                   style={[
-                    styles.selectorText,
+                    styles.selectorButton,
                     {
-                      color: dateDisplayValue
-                        ? theme.colors.textPrimary
-                        : theme.colors.textMuted,
-                      textAlign: isRtl ? "right" : "left",
+                      borderColor: fieldErrors.dateOfBirth
+                        ? "#ef4444"
+                        : theme.colors.borderLight,
+                      backgroundColor: theme.colors.surfaceBright,
+                      flexDirection: rowDirection,
                     },
                   ]}
                 >
-                  {dateDisplayValue ||
-                    t("profileScreen.edit.datePicker.placeholder")}
-                </Text>
-                <Ionicons
-                  name="calendar-outline"
-                  size={20}
-                  color={theme.colors.textMuted}
-                  style={isRtl ? { marginLeft: 0 } : {}}
-                />
-              </TouchableOpacity>
-              {fieldErrors.dateOfBirth ? (
-                <Text color="#ef4444" style={styles.fieldError}>
-                  {fieldErrors.dateOfBirth}
-                </Text>
-              ) : null}
-            </View>
+                  <View style={[styles.selectorLeftRow, { flexDirection: rowDirection }]}>
+                    <Ionicons
+                      name="calendar-outline"
+                      size={20}
+                      color={theme.colors.textMuted}
+                      style={{ marginEnd: 10 }}
+                    />
+                    <Text
+                      style={[
+                        styles.selectorText,
+                        {
+                          color: dateDisplayValue
+                            ? theme.colors.textPrimary
+                            : theme.colors.textMuted,
+                          textAlign,
+                        },
+                      ]}
+                    >
+                      {dateDisplayValue ||
+                        t("profileScreen.edit.datePicker.placeholder")}
+                    </Text>
+                  </View>
+                  <Ionicons
+                    name="chevron-down"
+                    size={16}
+                    color={theme.colors.textMuted}
+                  />
+                </TouchableOpacity>
+                {fieldErrors.dateOfBirth ? (
+                  <Text color="#ef4444" style={styles.fieldError}>
+                    {fieldErrors.dateOfBirth}
+                  </Text>
+                ) : null}
+              </View>
 
-            {/* Gender */}
-            <View style={styles.fieldWrap}>
-              <Text
-                weight="500"
-                color={theme.colors.textSecondary}
-                style={styles.fieldLabel}
-              >
-                {t("profileScreen.edit.fields.gender")}
-              </Text>
-              <TouchableOpacity
-                activeOpacity={0.7}
-                onPress={() => setGenderModalVisible(true)}
-                style={[
-                  styles.selectorButton,
-                  {
-                    borderColor: fieldErrors.gender
-                      ? "#ef4444"
-                      : theme.colors.borderLight,
-                    backgroundColor: theme.colors.surface,
-                    flexDirection: isRtl ? "row-reverse" : "row",
-                  },
-                ]}
-              >
+              {/* Gender Selector */}
+              <View style={styles.fieldWrap}>
                 <Text
+                  weight="600"
+                  color={theme.colors.textSecondary}
+                  style={styles.fieldLabel}
+                >
+                  {t("profileScreen.edit.fields.gender")}
+                </Text>
+                
+                <TouchableOpacity
+                  activeOpacity={0.7}
+                  onPress={() => setGenderModalVisible(true)}
                   style={[
-                    styles.selectorText,
+                    styles.selectorButton,
                     {
-                      color: genderDisplayValue
-                        ? theme.colors.textPrimary
-                        : theme.colors.textMuted,
-                      textAlign: isRtl ? "right" : "left",
+                      borderColor: fieldErrors.gender
+                        ? "#ef4444"
+                        : theme.colors.borderLight,
+                      backgroundColor: theme.colors.surfaceBright,
+                      flexDirection: rowDirection,
                     },
                   ]}
                 >
-                  {genderDisplayValue}
-                </Text>
-                <Ionicons
-                  name="chevron-down"
-                  size={18}
-                  color={theme.colors.textMuted}
-                />
-              </TouchableOpacity>
-              {fieldErrors.gender ? (
-                <Text color="#ef4444" style={styles.fieldError}>
-                  {fieldErrors.gender}
-                </Text>
-              ) : null}
-            </View>
+                  <View style={[styles.selectorLeftRow, { flexDirection: rowDirection }]}>
+                    <Ionicons
+                      name="transgender-outline"
+                      size={20}
+                      color={theme.colors.textMuted}
+                      style={{ marginEnd: 10 }}
+                    />
+                    <Text
+                      style={[
+                        styles.selectorText,
+                        {
+                          color: genderDisplayValue && genderDisplayValue !== t("profileScreen.none")
+                            ? theme.colors.textPrimary
+                            : theme.colors.textMuted,
+                          textAlign,
+                        },
+                      ]}
+                    >
+                      {genderDisplayValue}
+                    </Text>
+                  </View>
+                  <Ionicons
+                    name="chevron-down"
+                    size={16}
+                    color={theme.colors.textMuted}
+                  />
+                </TouchableOpacity>
+                {fieldErrors.gender ? (
+                  <Text color="#ef4444" style={styles.fieldError}>
+                    {fieldErrors.gender}
+                  </Text>
+                ) : null}
+              </View>
 
-            {/* Country — read-only, detected at registration */}
-            <View style={styles.fieldWrap}>
-              <Text
-                weight="500"
-                color={theme.colors.textSecondary}
-                style={styles.fieldLabel}
-              >
-                {t("profileScreen.edit.fields.countryCode")}
-              </Text>
-              <View
-                style={[
-                  styles.selectorButton,
-                  {
-                    borderColor: theme.colors.borderLight,
-                    backgroundColor: theme.colors.surface,
-                    flexDirection: isRtl ? "row-reverse" : "row",
-                  },
-                ]}
-              >
+              {/* Country (Read-only, visually styled as Warm Card) */}
+              <View style={styles.fieldWrap}>
                 <Text
+                  weight="600"
+                  color={theme.colors.textSecondary}
+                  style={styles.fieldLabel}
+                >
+                  {t("profileScreen.edit.fields.countryCode")}
+                </Text>
+                <View
                   style={[
-                    styles.selectorText,
+                    styles.selectorButtonReadOnly,
                     {
-                      color: theme.colors.textPrimary,
-                      textAlign: isRtl ? "right" : "left",
+                      borderColor: theme.colors.borderLight,
+                      backgroundColor: theme.colors.surface,
+                      flexDirection: rowDirection,
                     },
                   ]}
                 >
-                  {countryDisplayValue}
-                </Text>
-                <Ionicons
-                  name="lock-closed-outline"
-                  size={18}
-                  color={theme.colors.textMuted}
-                />
+                  <View style={[styles.selectorLeftRow, { flexDirection: rowDirection }]}>
+                    <Ionicons
+                      name="globe-outline"
+                      size={20}
+                      color={theme.colors.textMuted}
+                      style={{ marginEnd: 10 }}
+                    />
+                    <Text
+                      style={[
+                        styles.selectorText,
+                        {
+                          color: theme.colors.textSecondary,
+                          textAlign,
+                        },
+                      ]}
+                    >
+                      {countryDisplayValue}
+                    </Text>
+                  </View>
+                  <Ionicons
+                    name="lock-closed-outline"
+                    size={16}
+                    color={theme.colors.textMuted}
+                  />
+                </View>
               </View>
             </View>
           </View>
         </Card>
 
-        {/* Contact info note */}
+        {/* Contact Info Note Card */}
         <Card
           variant="flat"
-          style={[styles.noteCard, { borderColor: theme.colors.borderLight }]}
+          style={styles.noteCard}
         >
-          <Text color={theme.colors.textSecondary} style={styles.noteText}>
-            {t("profileScreen.edit.contactNote")}
-          </Text>
+          <View style={[styles.noteRow, { flexDirection: rowDirection }]}>
+            <Ionicons name="information-circle-outline" size={18} color={theme.colors.textMuted} style={{ marginEnd: 8 }} />
+            <Text color={theme.colors.textSecondary} style={styles.noteText}>
+              {t("profileScreen.edit.contactNote")}
+            </Text>
+          </View>
         </Card>
 
-        {/* Save / Cancel */}
-        <View style={styles.actionRow}>
+        {/* Save / Cancel Action Buttons */}
+        <View style={[styles.actionRow, { flexDirection: rowDirection }]}>
           <Button
             title={t("profileScreen.edit.cancel")}
             variant="secondary"
@@ -496,15 +521,31 @@ const styles = StyleSheet.create({
     gap: 14,
   },
   card: {
+    borderRadius: 20,
+    backgroundColor: "#FFFFFF",
     borderWidth: 1,
+    borderColor: "#E8DED0",
+    overflow: "hidden",
   },
-  noteCard: {
+  avatarCard: {
+    borderRadius: 20,
+    backgroundColor: "#FFFFFF",
     borderWidth: 1,
+    borderColor: "#E8DED0",
+    overflow: "hidden",
+  },
+  goldAccentLine: {
+    height: 3,
+    width: "100%",
+  },
+  cardInnerPadding: {
+    padding: 16,
   },
   avatarRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 14,
+    padding: 16,
+    gap: 16,
   },
   avatarRowRtl: {
     flexDirection: "row-reverse",
@@ -526,10 +567,12 @@ const styles = StyleSheet.create({
   },
   avatarMeta: {
     flex: 1,
-    gap: 4,
+    gap: 2,
+    alignItems: "flex-start",
   },
   avatarName: {
     fontSize: 18,
+    lineHeight: 23,
   },
   avatarHint: {
     fontSize: 12,
@@ -537,7 +580,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 17,
-    marginBottom: 14,
+    marginBottom: 16,
   },
   formStack: {
     gap: 4,
@@ -549,33 +592,21 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginBottom: 8,
   },
-  textInputContainer: {
+  inputContainer: {
     borderWidth: 1,
     borderRadius: 12,
     minHeight: 52,
-  },
-  inputWrapper: {
-    flex: 1,
-    alignItems: "center",
-  },
-  inputFlex: {
-    flex: 1,
-  },
-  nameInputTouchable: {
-    flex: 1,
-  },
-  nameInputInner: {
-    flex: 1,
-    alignItems: "center",
-  },
-  inputTextWrap: {
-    flex: 1,
-    justifyContent: "center",
     paddingHorizontal: 16,
+    justifyContent: "center",
   },
-  nameInput: {
-    fontSize: 16,
-    paddingVertical: 0,
+  inputRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  textInput: {
+    fontSize: 15,
+    flex: 1,
+    paddingVertical: 8,
   },
   selectorButton: {
     borderWidth: 1,
@@ -585,19 +616,45 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    gap: 8,
+  },
+  selectorButtonReadOnly: {
+    borderWidth: 1,
+    borderRadius: 12,
+    minHeight: 52,
+    paddingHorizontal: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    opacity: 0.8,
+  },
+  selectorLeftRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
   },
   selectorText: {
-    fontSize: 16,
+    fontSize: 15,
     flex: 1,
   },
   fieldError: {
     fontSize: 12,
     marginTop: 4,
   },
+  noteCard: {
+    borderRadius: 20,
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "#E8DED0",
+    padding: 16,
+  },
+  noteRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+  },
   noteText: {
     fontSize: 13,
     lineHeight: 20,
+    flex: 1,
   },
   actionRow: {
     flexDirection: "row",
@@ -607,9 +664,17 @@ const styles = StyleSheet.create({
   cancelButton: {
     flex: 1,
     borderRadius: 14,
+    height: 52,
   },
   saveButton: {
-    flex: 2,
+    flex: 1.5,
     borderRadius: 14,
+    height: 52,
+  },
+  rowRtl: {
+    flexDirection: "row-reverse",
+  },
+  rowLtr: {
+    flexDirection: "row",
   },
 });

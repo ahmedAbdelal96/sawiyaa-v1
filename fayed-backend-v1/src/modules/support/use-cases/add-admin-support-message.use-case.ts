@@ -36,7 +36,7 @@ export class AddAdminSupportMessageUseCase {
     const actorRole = this.resolveSupportAdminActorRoleService.resolve(
       input.roles,
     );
-    const updated = await this.supportTicketRepository.addMessage({
+    const updated = await this.supportTicketRepository.addPublicSupportMessage({
       ticketId: input.ticketId,
       senderUserId: input.userId,
       senderRole: actorRole,

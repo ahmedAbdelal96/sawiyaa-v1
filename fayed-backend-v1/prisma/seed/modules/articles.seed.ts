@@ -90,6 +90,7 @@ export const articlesSeedModule: SeedModule = {
         },
         update: { sortOrder: cat.sortOrder, isActive: true },
       });
+      catIdBySlugRoot[cat.slugRoot] = catId;
 
       // Upsert translations — the category FK must match the REAL catId
       await prisma.articleCategoryTranslation.upsert({

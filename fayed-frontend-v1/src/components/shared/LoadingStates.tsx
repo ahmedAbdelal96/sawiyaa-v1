@@ -91,7 +91,7 @@ export function Skeleton({ className, variant = "rectangular", style }: Skeleton
 
   return (
     <div
-      className={cn("animate-pulse bg-gray-200 dark:bg-gray-700", variantClasses[variant], className)}
+      className={cn("sawiyaa-skeleton", variantClasses[variant], className)}
       style={style}
       aria-hidden="true"
     />

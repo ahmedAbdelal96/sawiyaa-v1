@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+
+<html class="light" dir="rtl" lang="ar"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>باقات التدريب</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600&amp;family=Source+Serif+4:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-primary-fixed-variant": "#004f50",
+                        "primary-fixed-dim": "#5cd8da",
+                        "surface-container-lowest": "#ffffff",
+                        "tertiary-fixed-dim": "#c8c6c5",
+                        "on-secondary": "#ffffff",
+                        "secondary-container": "#e0e0dd",
+                        "cream-accent": "#FFF9EE",
+                        "alert-red": "#FCECEC",
+                        "on-tertiary-container": "#2d2c2c",
+                        "surface-container": "#e9efee",
+                        "on-background": "#171d1d",
+                        "on-tertiary-fixed-variant": "#474746",
+                        "on-tertiary": "#ffffff",
+                        "on-tertiary-fixed": "#1c1b1b",
+                        "on-secondary-fixed": "#1a1c1a",
+                        "surface": "#f5fafa",
+                        "tertiary-container": "#959393",
+                        "surface-tint": "#00696b",
+                        "primary": "#00696b",
+                        "surface-bright": "#f5fafa",
+                        "surface-dim": "#d5dbda",
+                        "tertiary": "#5f5e5e",
+                        "on-primary-fixed": "#002020",
+                        "inverse-primary": "#5cd8da",
+                        "on-surface-variant": "#3d4949",
+                        "surface-variant": "#dee4e3",
+                        "error-container": "#ffdad6",
+                        "mint-accent": "#E8F5F1",
+                        "outline": "#6d7a79",
+                        "on-primary": "#ffffff",
+                        "on-secondary-container": "#626361",
+                        "on-surface": "#171d1d",
+                        "outline-variant": "#bcc9c9",
+                        "inverse-on-surface": "#ecf2f1",
+                        "surface-container-highest": "#dee4e3",
+                        "secondary-fixed-dim": "#c7c6c4",
+                        "secondary": "#5e5f5d",
+                        "blue-accent": "#E8F1F8",
+                        "on-secondary-fixed-variant": "#464745",
+                        "surface-container-low": "#eff5f4",
+                        "surface-container-high": "#e4e9e9",
+                        "error": "#ba1a1a",
+                        "on-primary-container": "#003233",
+                        "amber-accent": "#FFF3E0",
+                        "on-error-container": "#93000a",
+                        "primary-fixed": "#7cf5f7",
+                        "secondary-fixed": "#e3e2e0",
+                        "inverse-surface": "#2c3131",
+                        "background": "#f5fafa",
+                        "tertiary-fixed": "#e5e2e1",
+                        "on-error": "#ffffff",
+                        "primary-container": "#00a4a6"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px",
+                        "2xl": "1rem",
+                        "3xl": "1.5rem"
+                    },
+                    "spacing": {
+                        "sm": "16px",
+                        "lg": "32px",
+                        "base": "4px",
+                        "xs": "8px",
+                        "gutter-mobile": "12px",
+                        "xl": "48px",
+                        "md": "24px",
+                        "margin-mobile": "20px",
+                        "safe": "env(safe-area-inset-bottom)"
+                    },
+                    "fontFamily": {
+                        "body-lg": ["\"Source Sans 3\""],
+                        "headline-sm": ["\"Source Serif 4\""],
+                        "display-lg-mobile": ["\"Source Serif 4\""],
+                        "label-md": ["\"Source Sans 3\""],
+                        "label-sm": ["\"Source Sans 3\""],
+                        "headline-md": ["\"Source Serif 4\""],
+                        "body-md": ["\"Source Sans 3\""],
+                        "display-lg": ["\"Source Serif 4\""]
+                    },
+                    "fontSize": {
+                        "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }],
+                        "headline-sm": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "display-lg-mobile": ["28px", { "lineHeight": "36px", "fontWeight": "700" }],
+                        "label-md": ["14px", { "lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "600" }],
+                        "label-sm": ["12px", { "lineHeight": "16px", "fontWeight": "500" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "display-lg": ["34px", { "lineHeight": "42px", "letterSpacing": "-0.02em", "fontWeight": "700" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body {
+            background-color: theme('colors.background');
+            color: theme('colors.on-background');
+        }
+        .soft-shadow {
+            box-shadow: 0 4px 20px rgba(22, 22, 22, 0.05);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="antialiased min-h-screen flex flex-col pb-24 md:pb-0">
+<!-- TopAppBar -->
+<header class="bg-surface dark:bg-background docked full-width top-0 z-40 sticky">
+<div class="flex justify-between items-center w-full px-margin-mobile py-xs max-w-full">
+<!-- Leading Avatar -->
+<div class="w-10 h-10 rounded-full overflow-hidden bg-surface-variant flex items-center justify-center">
+<img alt="User Profile Avatar" class="w-full h-full object-cover" data-alt="A professional medical profile portrait of a confident clinician in a modern, warm, well-lit healthcare setting. Subtle cream and mint background. Light mode aesthetic, sharp focus, serene expression." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBJU7wmgjDFM94gY8F-DkfutqLuTHIxUljpMZMZ7IbxwFgiYTCTAKe-bwdcoSlJNei-ZtbmzXS3JV1tDGHSma1JcNdHaW3alGiD77YdIGcg073-pMFF-VrEeldXnxr53iykyCDwy_9t6a6fS0237vD8oDZcNHOxU5x46SBKxY7sXc1ggKclyRarp2oQ5U_jJOHXYFtecMOAglJZNWRi-oL8YBcCMEpbvN91DiXKlqdjNKD26PUGt91444KZKQgQ6XGv3fj_Rl2DftkZ"/>
+</div>
+<!-- Headline / Brand -->
+<div class="font-headline-md text-headline-md font-bold text-primary dark:text-primary-fixed-dim">
+                Fayed
+            </div>
+<!-- Trailing Icon -->
+<button class="w-10 h-10 rounded-full flex items-center justify-center text-primary dark:text-primary-fixed-dim hover:opacity-80 scale-95 transition-transform duration-200">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">mail</span>
+</button>
+</div>
+</header>
+<!-- Main Canvas -->
+<main class="flex-grow w-full max-w-7xl mx-auto px-margin-mobile md:px-lg py-md md:py-lg flex flex-col gap-lg">
+<!-- Page Header -->
+<section class="flex flex-col gap-xs">
+<h1 class="font-display-lg-mobile md:font-display-lg text-display-lg-mobile md:text-display-lg text-primary">باقات العناية المتكاملة</h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant max-w-2xl">
+                برامج تدريبية وعلاجية مصممة خصيصاً لتلبية احتياجاتك، مع خبراء متخصصين في بيئة مريحة وداعمة.
+            </p>
+</section>
+<!-- Packages Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-md">
+<!-- Premium Package Card 1 -->
+<article class="bg-surface-container-lowest rounded-3xl soft-shadow overflow-hidden flex flex-col transition-transform duration-300 hover:scale-[1.02]">
+<!-- Decorative Top -->
+<div class="h-32 bg-mint-accent relative p-md flex flex-col justify-between">
+<div class="flex justify-between items-start">
+<span class="bg-primary text-on-primary font-label-md text-label-md px-3 py-1 rounded-full">
+                            نشط
+                        </span>
+<div class="w-12 h-12 bg-surface-container-lowest rounded-full flex items-center justify-center shadow-sm text-primary">
+<span class="material-symbols-outlined">psychiatry</span>
+</div>
+</div>
+</div>
+<!-- Content -->
+<div class="p-md flex flex-col gap-md flex-grow">
+<div>
+<h2 class="font-headline-md text-headline-md text-on-surface mb-2">برنامج التعافي الشامل</h2>
+<p class="font-body-md text-body-md text-on-surface-variant">
+                            برنامج متكامل يركز على الصحة النفسية والجسدية من خلال جلسات أسبوعية مع نخبة من الأخصائيين.
+                        </p>
+</div>
+<!-- Meta Info -->
+<div class="flex flex-col gap-sm py-sm border-y border-surface-variant/50">
+<div class="flex items-center gap-xs text-on-surface-variant">
+<span class="material-symbols-outlined text-primary">schedule</span>
+<span class="font-label-md text-label-md">المدة: 3 أشهر</span>
+</div>
+<div class="flex items-center gap-xs text-on-surface-variant">
+<span class="material-symbols-outlined text-primary">event_available</span>
+<span class="font-label-md text-label-md">12 جلسة (جلسة أسبوعياً)</span>
+</div>
+</div>
+<!-- Footer / Price / CTA -->
+<div class="mt-auto pt-sm flex items-center justify-between">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-on-surface-variant">السعر الإجمالي</span>
+<span class="font-headline-sm text-headline-sm text-primary">2,400 ر.س</span>
+</div>
+<button class="bg-primary text-on-primary font-label-md text-label-md px-6 py-3 rounded-2xl hover:opacity-90 transition-opacity">
+                            احجز الآن
+                        </button>
+</div>
+</div>
+</article>
+<!-- Premium Package Card 2 -->
+<article class="bg-surface-container-lowest rounded-3xl soft-shadow overflow-hidden flex flex-col transition-transform duration-300 hover:scale-[1.02]">
+<!-- Decorative Top -->
+<div class="h-32 bg-cream-accent relative p-md flex flex-col justify-between">
+<div class="flex justify-between items-start">
+<span class="bg-surface-variant text-on-surface-variant font-label-md text-label-md px-3 py-1 rounded-full">
+                            متاح قريباً
+                        </span>
+<div class="w-12 h-12 bg-surface-container-lowest rounded-full flex items-center justify-center shadow-sm text-primary">
+<span class="material-symbols-outlined">self_improvement</span>
+</div>
+</div>
+</div>
+<!-- Content -->
+<div class="p-md flex flex-col gap-md flex-grow">
+<div>
+<h2 class="font-headline-md text-headline-md text-on-surface mb-2">باقة التأمل والهدوء</h2>
+<p class="font-body-md text-body-md text-on-surface-variant">
+                            جلسات مكثفة لتعلم تقنيات الاسترخاء والتأمل للتعامل مع ضغوط الحياة اليومية بفعالية.
+                        </p>
+</div>
+<!-- Meta Info -->
+<div class="flex flex-col gap-sm py-sm border-y border-surface-variant/50">
+<div class="flex items-center gap-xs text-on-surface-variant">
+<span class="material-symbols-outlined text-primary">schedule</span>
+<span class="font-label-md text-label-md">المدة: شهر واحد</span>
+</div>
+<div class="flex items-center gap-xs text-on-surface-variant">
+<span class="material-symbols-outlined text-primary">event_available</span>
+<span class="font-label-md text-label-md">8 جلسات (مرتين أسبوعياً)</span>
+</div>
+</div>
+<!-- Footer / Price / CTA -->
+<div class="mt-auto pt-sm flex items-center justify-between">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-on-surface-variant">السعر الإجمالي</span>
+<span class="font-headline-sm text-headline-sm text-primary">1,200 ر.س</span>
+</div>
+<button class="bg-surface-variant text-on-surface-variant font-label-md text-label-md px-6 py-3 rounded-2xl cursor-not-allowed">
+                            أعلمني
+                        </button>
+</div>
+</div>
+</article>
+<!-- Premium Package Card 3 -->
+<article class="bg-surface-container-lowest rounded-3xl soft-shadow overflow-hidden flex flex-col transition-transform duration-300 hover:scale-[1.02]">
+<!-- Decorative Top -->
+<div class="h-32 bg-blue-accent relative p-md flex flex-col justify-between">
+<div class="flex justify-between items-start">
+<span class="bg-primary text-on-primary font-label-md text-label-md px-3 py-1 rounded-full">
+                            نشط
+                        </span>
+<div class="w-12 h-12 bg-surface-container-lowest rounded-full flex items-center justify-center shadow-sm text-primary">
+<span class="material-symbols-outlined">family_restroom</span>
+</div>
+</div>
+</div>
+<!-- Content -->
+<div class="p-md flex flex-col gap-md flex-grow">
+<div>
+<h2 class="font-headline-md text-headline-md text-on-surface mb-2">الإرشاد الأسري</h2>
+<p class="font-body-md text-body-md text-on-surface-variant">
+                            مساحة آمنة للعائلة لحل النزاعات وتحسين التواصل وبناء علاقات صحية ومستدامة.
+                        </p>
+</div>
+<!-- Meta Info -->
+<div class="flex flex-col gap-sm py-sm border-y border-surface-variant/50">
+<div class="flex items-center gap-xs text-on-surface-variant">
+<span class="material-symbols-outlined text-primary">schedule</span>
+<span class="font-label-md text-label-md">المدة: 6 أشهر</span>
+</div>
+<div class="flex items-center gap-xs text-on-surface-variant">
+<span class="material-symbols-outlined text-primary">event_available</span>
+<span class="font-label-md text-label-md">24 جلسة (مرنة)</span>
+</div>
+</div>
+<!-- Footer / Price / CTA -->
+<div class="mt-auto pt-sm flex items-center justify-between">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-on-surface-variant">السعر الإجمالي</span>
+<span class="font-headline-sm text-headline-sm text-primary">4,500 ر.س</span>
+</div>
+<button class="bg-primary text-on-primary font-label-md text-label-md px-6 py-3 rounded-2xl hover:opacity-90 transition-opacity">
+                            احجز الآن
+                        </button>
+</div>
+</div>
+</article>
+</div>
+</main>
+<!-- BottomNavBar (Mobile Only) -->
+<nav class="md:hidden bg-surface/80 backdrop-blur-md dark:bg-inverse-surface/80 fixed bottom-0 w-full z-50 pb-safe shadow-sm border-t-0 flex justify-around items-center px-4 py-2">
+<!-- Tab 1: Home (Inactive) -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant hover:bg-surface-container-low dark:hover:bg-surface-container-highest rounded-full w-16 h-16 scale-98 transition-all duration-200" href="#">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 0;">home</span>
+<span class="font-label-sm text-label-sm">Home</span>
+</a>
+<!-- Tab 2: Sessions (Active - Maps best to "Training Programs/Packages") -->
+<a class="flex flex-col items-center justify-center text-primary dark:text-primary-fixed-dim font-bold hover:bg-surface-container-low dark:hover:bg-surface-container-highest rounded-full w-16 h-16 scale-98 transition-all duration-200" href="#">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 1;">calendar_today</span>
+<span class="font-label-sm text-label-sm">Sessions</span>
+<div class="w-1 h-1 bg-primary rounded-full mt-1"></div>
+</a>
+<!-- Tab 3: Notifications (Inactive) -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant hover:bg-surface-container-low dark:hover:bg-surface-container-highest rounded-full w-16 h-16 scale-98 transition-all duration-200" href="#">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 0;">notifications</span>
+<span class="font-label-sm text-label-sm">Notifications</span>
+</a>
+<!-- Tab 4: More (Inactive) -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant hover:bg-surface-container-low dark:hover:bg-surface-container-highest rounded-full w-16 h-16 scale-98 transition-all duration-200" href="#">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 0;">grid_view</span>
+<span class="font-label-sm text-label-sm">More</span>
+</a>
+</nav>
+</body></html>

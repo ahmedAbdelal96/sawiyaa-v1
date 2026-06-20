@@ -12,6 +12,7 @@ import { UserEmailRepository } from '../repositories/user-email.repository';
 import { UserRepository } from '../repositories/user.repository';
 import { GoogleIdentityService } from '../services/google-identity.service';
 import { AuthSessionDeviceContext } from '../types/auth-session.types';
+import { isAuthUniqueConstraintError } from '../utils/is-auth-unique-constraint-error';
 
 /**
  * Google patient auth behaves as register-or-login.
@@ -84,72 +85,83 @@ export class RegisterPatientWithGoogleUseCase {
       });
     }
 
-    const user = await this.prisma.$transaction(async (tx) => {
-      const countryId = input.deviceContext.countryCode
-        ? (await this.countryRepository.findByIsoCode(input.deviceContext.countryCode))?.id
-        : null;
+    const user = await this.prisma
+      .$transaction(async (tx) => {
+        const countryId = input.deviceContext.countryCode
+          ? (await this.countryRepository.findByIsoCode(input.deviceContext.countryCode))?.id
+          : null;
 
-      if (existingEmail) {
-        if (existingEmail.user.status !== UserStatus.ACTIVE) {
-          throw new ForbiddenException({
-            messageKey: 'auth.errors.accountNotActive',
-            error: 'ACCOUNT_NOT_ACTIVE',
-          });
+        if (existingEmail) {
+          if (existingEmail.user.status !== UserStatus.ACTIVE) {
+            throw new ForbiddenException({
+              messageKey: 'auth.errors.accountNotActive',
+              error: 'ACCOUNT_NOT_ACTIVE',
+            });
+          }
+
+          await this.authIdentityRepository.upsertGoogleIdentity(
+            existingEmail.user.id,
+            googleIdentity.providerSubject,
+            tx,
+          );
+          await this.userEmailRepository.upsertPrimaryEmail(
+            existingEmail.user.id,
+            googleIdentity.email,
+            googleIdentity.emailVerified,
+            tx,
+          );
+          await this.userRepository.createPatientProfileIfMissing(
+            existingEmail.user.id,
+            googleIdentity.displayName,
+            countryId,
+            tx,
+          );
+          return existingEmail.user;
         }
 
-        await this.authIdentityRepository.upsertGoogleIdentity(
-          existingEmail.user.id,
-          googleIdentity.providerSubject,
+        const createdUser = await this.userRepository.createUser(
+          {
+            displayName: googleIdentity.displayName,
+            status: UserStatus.ACTIVE,
+          },
           tx,
         );
-        await this.userEmailRepository.upsertPrimaryEmail(
-          existingEmail.user.id,
-          googleIdentity.email,
-          googleIdentity.emailVerified,
+
+        await this.userRepository.ensureRole(
+          createdUser.id,
+          UserRoleType.PATIENT,
           tx,
         );
         await this.userRepository.createPatientProfileIfMissing(
-          existingEmail.user.id,
+          createdUser.id,
           googleIdentity.displayName,
           countryId,
           tx,
         );
-        return existingEmail.user;
-      }
+        await this.userEmailRepository.upsertPrimaryEmail(
+          createdUser.id,
+          googleIdentity.email,
+          googleIdentity.emailVerified,
+          tx,
+        );
+        await this.authIdentityRepository.upsertGoogleIdentity(
+          createdUser.id,
+          googleIdentity.providerSubject,
+          tx,
+        );
 
-      const createdUser = await this.userRepository.createUser(
-        {
-          displayName: googleIdentity.displayName,
-          status: UserStatus.ACTIVE,
-        },
-        tx,
-      );
+        return createdUser;
+      })
+      .catch((error: unknown) => {
+        if (isAuthUniqueConstraintError(error)) {
+          throw new ConflictException({
+            messageKey: 'auth.errors.emailAlreadyRegistered',
+            error: 'EMAIL_ALREADY_REGISTERED',
+          });
+        }
 
-      await this.userRepository.ensureRole(
-        createdUser.id,
-        UserRoleType.PATIENT,
-        tx,
-      );
-      await this.userRepository.createPatientProfileIfMissing(
-        createdUser.id,
-        googleIdentity.displayName,
-        countryId,
-        tx,
-      );
-      await this.userEmailRepository.upsertPrimaryEmail(
-        createdUser.id,
-        googleIdentity.email,
-        googleIdentity.emailVerified,
-        tx,
-      );
-      await this.authIdentityRepository.upsertGoogleIdentity(
-        createdUser.id,
-        googleIdentity.providerSubject,
-        tx,
-      );
-
-      return createdUser;
-    });
+        throw error;
+      });
 
     return this.issueAuthTokensUseCase.execute({
       userId: user.id,

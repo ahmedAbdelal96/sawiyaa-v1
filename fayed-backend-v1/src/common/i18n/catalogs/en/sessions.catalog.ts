@@ -3,12 +3,18 @@ export const enSessionsCatalog = {
     sessionConfirmedTitle: 'Session confirmed',
     sessionConfirmedBody:
       'Your session is confirmed for {{sessionAt}}.{{packageContext}} You can prepare to join from your sessions screen.',
+    sessionConfirmedPushBody:
+      'Your session is confirmed. Open your sessions to prepare.',
     sessionConfirmedPractitionerTitle: 'New confirmed session',
     sessionConfirmedPractitionerBody:
       'A session has been confirmed for {{sessionAt}}.{{packageContext}}',
+    sessionConfirmedPractitionerPushBody:
+      'A session has been confirmed. Review the details and prepare to join.',
     sessionJoinAvailableTitle: 'Session ready to join',
     sessionJoinAvailableBody:
       'Your session starts soon.{{packageContext}} Open the session page to join securely.',
+    sessionJoinAvailablePushBody:
+      'Your session is ready. Open the session page to join securely.',
     sessionJoinAvailableEmailSubject: 'Your Fayed session is ready to join',
     sessionJoinAvailableEmailTitle: 'Your session is ready',
     sessionJoinAvailableEmailBody:
@@ -16,9 +22,12 @@ export const enSessionsCatalog = {
     sessionCancelledTitle: 'Session cancelled',
     sessionCancelledBody:
       'Your session scheduled at {{sessionAt}} was cancelled.',
+    sessionCancelledPushBody: 'Your session has been cancelled.',
     sessionCancelledPractitionerTitle: 'Session cancelled by patient',
     sessionCancelledPractitionerBody:
       'A patient cancelled a session scheduled at {{sessionAt}}.',
+    sessionCancelledPractitionerPushBody:
+      'A session has been cancelled by the patient.',
     sessionReminder60Title: 'Session reminder',
     sessionReminder60Body: 'Your session starts in an hour.',
     sessionReminder60PractitionerTitle: 'You have a session in an hour',

@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
+import { Ionicons } from "@expo/vector-icons";
 import {
   Button,
   Card,
@@ -9,11 +10,10 @@ import {
   EmptyState,
   Input,
   SectionHeader,
-  StatusChip,
   Text,
 } from "../../../../components/ui";
 import { useTheme } from "../../../../providers/ThemeProvider";
-import { getAppDirection } from "../../../../i18n/direction";
+import { useAppDirection } from "../../../../i18n/direction";
 import { resolveSupportedCurrencyCode } from "../../../../lib/currency";
 import { extractApiErrorMessage } from "../../../../lib/api";
 import { useCreatePublicAcademyEnrollment, usePublicAcademyCourse } from "../hooks";
@@ -29,8 +29,7 @@ export default function AcademyEnrollmentCreateScreen({
   const router = useRouter();
   const { theme } = useTheme();
   const { t, i18n } = useTranslation();
-  const direction = getAppDirection(i18n.language);
-  const isRtl = direction === "rtl";
+  const { rowDirection, textAlign } = useAppDirection();
   const courseQuery = usePublicAcademyCourse(slug, { cacheScopeKey: "guest" });
   const enrollMutation = useCreatePublicAcademyEnrollment();
   const [form, setForm] = useState<CreateAcademyEnrollmentInput>({
@@ -49,12 +48,13 @@ export default function AcademyEnrollmentCreateScreen({
     regionalPricingMode: course?.regionalPricingMode,
     resolvedCountryIsoCode: course?.resolvedCountryIsoCode,
   });
-  const isFreeCourse = isAcademyCourseFree(course);
-  const priceLabel =
-    isFreeCourse
+  const hasPrice = course?.priceAmount !== null && course?.priceAmount !== undefined;
+  const isFreeCourse = hasPrice && isAcademyCourseFree(course);
+  const priceLabel = hasPrice
+    ? (isFreeCourse
       ? t("academy.detail.free")
-      : formatAcademyMoney(course?.priceAmount ?? null, displayCurrency, i18n.language) ??
-        t("academy.detail.paid");
+      : formatAcademyMoney(course?.priceAmount ?? null, displayCurrency, i18n.language))
+    : null;
   const isNotFound = courseQuery.isSuccess && !course;
 
   const lectureLabel = course?.plannedLectureCount
@@ -98,33 +98,38 @@ export default function AcademyEnrollmentCreateScreen({
             <View
               style={[
                 styles.summaryTopRow,
-                isRtl ? styles.summaryTopRowRtl : styles.summaryTopRowLtr,
+                { flexDirection: rowDirection },
               ]}
             >
-              <StatusChip
-                label={t("academy.detail.available")}
-                tone="success"
-                showDot={false}
-              />
-              <Text color={theme.colors.textMuted} style={styles.price}>
-                {priceLabel}
-              </Text>
+              {priceLabel ? (
+                <View style={[styles.priceTag, { backgroundColor: theme.colors.primaryLight }]}>
+                  <Text color={theme.colors.primary} weight="700" style={styles.price}>
+                    {priceLabel}
+                  </Text>
+                </View>
+              ) : <View />}
             </View>
             <View
               style={[
                 styles.summaryMetaRow,
-                isRtl ? styles.summaryMetaRowRtl : styles.summaryMetaRowLtr,
+                { flexDirection: rowDirection },
               ]}
             >
               {lectureLabel ? (
-                <Text color={theme.colors.textMuted} style={styles.summaryMetaText}>
-                  {lectureLabel}
-                </Text>
+                <View style={[styles.metaBadge, { backgroundColor: theme.colors.surfaceMuted }]}>
+                  <Ionicons name="book-outline" size={13} color={theme.colors.textSecondary} />
+                  <Text color={theme.colors.textSecondary} style={styles.summaryMetaText}>
+                    {lectureLabel}
+                  </Text>
+                </View>
               ) : null}
               {durationLabel ? (
-                <Text color={theme.colors.textMuted} style={styles.summaryMetaText}>
-                  {durationLabel}
-                </Text>
+                <View style={[styles.metaBadge, { backgroundColor: theme.colors.surfaceMuted }]}>
+                  <Ionicons name="time-outline" size={13} color={theme.colors.textSecondary} />
+                  <Text color={theme.colors.textSecondary} style={styles.summaryMetaText}>
+                    {durationLabel}
+                  </Text>
+                </View>
               ) : null}
             </View>
           </Card>
@@ -181,8 +186,23 @@ export default function AcademyEnrollmentCreateScreen({
                 autoComplete="email"
               />
               {errorMessage ? (
-                <Card variant="flat" padding="sm" style={styles.noticeCard}>
-                  <Text color="#ba1a1a">{errorMessage}</Text>
+                <Card
+                  variant="outlined"
+                  padding="sm"
+                  style={[
+                    styles.noticeCard,
+                    {
+                      backgroundColor: theme.colors.statusErrorBg,
+                      borderColor: theme.colors.error,
+                    },
+                  ]}
+                >
+                  <View style={[{ flexDirection: rowDirection, alignItems: "center", gap: 8 }]}>
+                    <Ionicons name="alert-circle" size={16} color={theme.colors.error} />
+                    <Text color={theme.colors.error} style={{ textAlign, flex: 1 }}>
+                      {errorMessage}
+                    </Text>
+                  </View>
                 </Card>
               ) : null}
               <Button
@@ -261,32 +281,32 @@ const styles = StyleSheet.create({
     marginHorizontal: 0,
   },
   summaryTopRow: {
-    flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     gap: 10,
     marginTop: 10,
   },
-  summaryTopRowLtr: {
-    flexDirection: "row",
-  },
-  summaryTopRowRtl: {
-    flexDirection: "row-reverse",
-  },
   price: {
     fontSize: 13,
   },
+  priceTag: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+    alignSelf: "flex-start",
+  },
+  metaBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    gap: 4,
+  },
   summaryMetaRow: {
     marginTop: 12,
-    flexDirection: "row",
     flexWrap: "wrap",
     gap: 8,
-  },
-  summaryMetaRowLtr: {
-    flexDirection: "row",
-  },
-  summaryMetaRowRtl: {
-    flexDirection: "row-reverse",
   },
   summaryMetaText: {
     fontSize: 12.5,

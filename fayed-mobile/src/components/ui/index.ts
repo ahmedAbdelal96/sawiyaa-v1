@@ -15,4 +15,5 @@ export * from './Section';
 export * from './ListRow';
 export * from './PageScaffolds';
 export * from './SharedPrimitives';
+export * from './Primitives';
 export * from './ScreenHeading';

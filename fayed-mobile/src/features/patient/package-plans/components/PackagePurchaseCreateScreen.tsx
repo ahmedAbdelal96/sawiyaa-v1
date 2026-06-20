@@ -23,6 +23,7 @@ import { usePublicAvailabilityWindows } from "../../sessions/hooks";
 import { getPatientPreferredCurrency } from "../../../../lib/currency";
 import { usePatientProfile } from "../../profile/hooks";
 import { useGetPublicPractitionerDetails } from "../../discovery/api";
+import { useAppDirection } from "../../../../i18n/direction";
 import { getPackagePurchasePlanTranslationKey } from "../lib";
 import {
   buildSlotsFromWindows,
@@ -75,6 +76,7 @@ export default function PackagePurchaseCreateScreen() {
   const { theme } = useTheme();
   const { t, i18n } = useTranslation();
   const { user, role, isLoading: isAuthLoading } = useAuth();
+  const { rowDirection, textAlign, chevronBack, chevronForward } = useAppDirection();
   const locale = i18n.language?.startsWith("ar") ? "ar-SA" : "en-US";
   const params = useLocalSearchParams<{
     practitionerSlug: string;
@@ -292,20 +294,22 @@ export default function PackagePurchaseCreateScreen() {
           titleVariant="h2"
         />
         <Card variant="elevated" padding="none" style={styles.heroCard}>
-          <View style={styles.heroTop}>
+          <View style={[styles.heroTop, { flexDirection: rowDirection }]}>
             <View style={styles.heroCopy}>
-              <StatusChip
-                label={t("packagePurchases.create.badge", "Package purchase")}
-                tone="info"
-                showDot={false}
-              />
-              <Text weight="bold" style={styles.title}>
+              <View style={[styles.badgeRow, { flexDirection: rowDirection }]}>
+                <StatusChip
+                  label={t("packagePurchases.create.badge", "Package purchase")}
+                  tone="info"
+                  showDot={false}
+                />
+              </View>
+              <Text weight="bold" style={[styles.title, { textAlign }]}>
                 {t(getPackagePurchasePlanTranslationKey(plan.item.code), {
                   count: plan.item.sessionCount,
                   defaultValue: plan.item.title,
                 })}
               </Text>
-              <Text color={theme.colors.textSecondary} style={styles.subtitle}>
+              <Text color={theme.colors.textSecondary} style={[styles.subtitle, { textAlign }]}>
                 {params.practitionerName || params.practitionerSlug}
               </Text>
               <View style={styles.heroMeta}>
@@ -340,41 +344,41 @@ export default function PackagePurchaseCreateScreen() {
             )}
           />
           <View style={styles.selectionNote}>
-            <Text color={theme.colors.textSecondary} style={styles.noteText}>
+            <Text color={theme.colors.textSecondary} style={[styles.noteText, { textAlign }]}>
               {t("packagePurchases.create.weekNote", {
                 defaultValue: `Use the next weeks to select all ${sessionCount || 0} sessions.`,
               })}
             </Text>
           </View>
 
-          <View style={styles.weekRow}>
-            <Text weight="600" style={styles.weekLabel}>
+          <View style={[styles.weekRow, { flexDirection: rowDirection }]}>
+            <Text weight="600" style={[styles.weekLabel, { textAlign }]}>
               {formatLocalizedDateRange(currentWeek.fromIso, currentWeek.toIso, locale)}
             </Text>
-            <View style={styles.weekButtons}>
+            <View style={[styles.weekButtons, { flexDirection: rowDirection }]}>
               <TouchableOpacity
                 disabled={weekOffset === 0}
                 onPress={() => setWeekOffset((value) => Math.max(0, value - 1))}
                 style={[styles.weekButton, { opacity: weekOffset === 0 ? 0.35 : 1 }]}
               >
-                <Ionicons name="chevron-back" size={20} color={theme.colors.textSecondary} />
+                <Ionicons name={chevronBack} size={20} color={theme.colors.textSecondary} />
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={() => setWeekOffset((value) => value + 1)}
                 style={styles.weekButton}
               >
-                <Ionicons name="chevron-forward" size={20} color={theme.colors.textSecondary} />
+                <Ionicons name={chevronForward} size={20} color={theme.colors.textSecondary} />
               </TouchableOpacity>
             </View>
           </View>
 
           {availabilityQuery.isLoading ? (
-            <Text color={theme.colors.textSecondary} style={styles.helperText}>
+            <Text color={theme.colors.textSecondary} style={[styles.helperText, { textAlign }]}>
               {t("packagePurchases.create.loadingSlots", "Loading availability...")}
             </Text>
           ) : availabilityQuery.isError ? (
             <Card variant="flat" padding="md" style={styles.noticeCard}>
-              <Text color="#ba1a1a">
+              <Text color="#ba1a1a" style={{ textAlign }}>
                 {t("packagePurchases.create.loadError", "We could not load availability right now.")}
               </Text>
               <Button
@@ -386,7 +390,7 @@ export default function PackagePurchaseCreateScreen() {
             </Card>
           ) : groupedSlots.length === 0 ? (
             <Card variant="flat" padding="md" style={styles.noticeCard}>
-              <Text color={theme.colors.textSecondary}>
+              <Text color={theme.colors.textSecondary} style={{ textAlign }}>
                 {t("packagePurchases.create.noSlots", "No open time found in this week.")}
               </Text>
             </Card>
@@ -399,8 +403,8 @@ export default function PackagePurchaseCreateScreen() {
                 ).length;
                 return (
                   <Card key={group.dayKey} variant="outlined" padding="md" style={styles.dayCard}>
-                    <View style={styles.dayHeader}>
-                      <Text weight="600" style={styles.dayLabel}>
+                    <View style={[styles.dayHeader, { flexDirection: rowDirection }]}>
+                      <Text weight="600" style={[styles.dayLabel, { textAlign }]}>
                         {group.dayLabel}
                       </Text>
                       <StatusChip
@@ -419,10 +423,10 @@ export default function PackagePurchaseCreateScreen() {
 
                         return (
                           <View key={label} style={styles.partBlock}>
-                            <Text color={theme.colors.textMuted} style={styles.partLabel}>
+                            <Text color={theme.colors.textMuted} style={[styles.partLabel, { textAlign }]}>
                               {t(`packagePurchases.create.parts.${label}`, label)}
                             </Text>
-                            <View style={styles.slotGrid}>
+                            <View style={[styles.slotGrid, { flexDirection: rowDirection }]}>
                               {slots.map((slot) => {
                                 const selected = selectedStartsAt.includes(slot.startsAt);
                                 const disabled = !selected && selectedStartsAt.length >= sessionCount;
@@ -502,14 +506,14 @@ export default function PackagePurchaseCreateScreen() {
 
           {selectedSlots.length > 0 ? (
             <Card variant="flat" padding="md" style={styles.selectedCard}>
-              <Text weight="600" style={styles.selectedTitle}>
+              <Text weight="600" style={[styles.selectedTitle, { textAlign }]}>
                 {t("packagePurchases.create.selectedTimes", "Selected times")}
               </Text>
               <View style={styles.selectedList}>
                 {selectedSlots.map((slot) => (
-                  <View key={slot!.startsAt} style={styles.selectedItem}>
+                  <View key={slot!.startsAt} style={[styles.selectedItem, { flexDirection: rowDirection }]}>
                     <Ionicons name="time-outline" size={14} color={theme.colors.primary} />
-                    <Text color={theme.colors.textSecondary} style={styles.selectedText}>
+                    <Text color={theme.colors.textSecondary} style={[styles.selectedText, { textAlign }]}>
                       {formatLocalizedDateTime(slot!.startsAt, locale)}
                     </Text>
                   </View>
@@ -520,12 +524,12 @@ export default function PackagePurchaseCreateScreen() {
 
           {submitError ? (
             <Card variant="flat" padding="sm" style={styles.noticeCard}>
-              <Text color="#ba1a1a">{submitError}</Text>
+              <Text color="#ba1a1a" style={{ textAlign }}>{submitError}</Text>
             </Card>
           ) : null}
           {prefillNotice ? (
             <Card variant="flat" padding="sm" style={styles.noticeCard}>
-              <Text color={theme.colors.textSecondary}>{prefillNotice}</Text>
+              <Text color={theme.colors.textSecondary} style={{ textAlign }}>{prefillNotice}</Text>
             </Card>
           ) : null}
 
@@ -582,16 +586,21 @@ const styles = StyleSheet.create({
   },
   heroCard: {
     marginHorizontal: 0,
+    borderRadius: 20,
+    overflow: "hidden",
   },
   heroTop: {
-    flexDirection: "row",
     alignItems: "flex-start",
     justifyContent: "space-between",
-    gap: 12,
+    gap: 16,
+    padding: 20,
   },
   heroCopy: {
     flex: 1,
     gap: 8,
+  },
+  badgeRow: {
+    alignItems: "center",
   },
   title: {
     fontSize: 18,
@@ -612,6 +621,7 @@ const styles = StyleSheet.create({
   },
   sectionCard: {
     marginHorizontal: 0,
+    borderRadius: 20,
   },
   selectionNote: {
     marginTop: 10,
@@ -622,7 +632,6 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   weekRow: {
-    flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     gap: 12,
@@ -633,7 +642,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
   weekButtons: {
-    flexDirection: "row",
     gap: 8,
   },
   weekButton: {
@@ -658,9 +666,9 @@ const styles = StyleSheet.create({
   },
   dayCard: {
     marginHorizontal: 0,
+    borderRadius: 16,
   },
   dayHeader: {
-    flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     gap: 12,
@@ -702,6 +710,7 @@ const styles = StyleSheet.create({
   selectedCard: {
     marginHorizontal: 0,
     marginTop: 10,
+    borderRadius: 16,
   },
   selectedTitle: {
     fontSize: 14,
@@ -711,7 +720,6 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   selectedItem: {
-    flexDirection: "row",
     alignItems: "center",
     gap: 6,
   },

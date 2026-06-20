@@ -154,7 +154,7 @@ export default function PatientSignUpScreen() {
               <Ionicons name="water" size={16} color={theme.colors.primary} />
             </View>
             <Text style={[styles.brandName, { color: theme.colors.primary }]} weight="600">
-              Fayed
+              Sawiyaa
             </Text>
           </View>
 

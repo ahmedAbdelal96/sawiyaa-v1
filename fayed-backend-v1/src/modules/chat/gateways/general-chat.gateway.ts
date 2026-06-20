@@ -7,7 +7,7 @@ import {
   WebSocketGateway,
   WebSocketServer,
 } from '@nestjs/websockets';
-import { Injectable, Logger } from '@nestjs/common';
+import { HttpException, Injectable, Logger } from '@nestjs/common';
 import { AppRole } from '@common/enums/app-role.enum';
 import { Server, Socket } from 'socket.io';
 import { AuthRequestContextService } from '@modules/auth/services/auth-request-context.service';
@@ -1137,11 +1137,55 @@ export class GeneralChatGateway implements OnGatewayConnection, OnGatewayInit {
   }
 
   private toAckFailure(error: unknown): AckFailure {
-    const code = error instanceof Error ? error.message : 'UNKNOWN_ERROR';
+    const code = this.extractAckCode(error);
     return {
       ok: false,
       code,
       message: 'Chat realtime operation failed',
     };
+  }
+
+  private extractAckCode(error: unknown): string {
+    if (error instanceof HttpException) {
+      const response = error.getResponse();
+      if (typeof response === 'string') {
+        return response || error.message || 'UNKNOWN_ERROR';
+      }
+
+      if (response && typeof response === 'object') {
+        const payload = response as Record<string, unknown>;
+        const candidates = [
+          payload.error,
+          payload.errorCode,
+          payload.code,
+          payload.messageKey,
+          payload.message,
+        ];
+
+        for (const candidate of candidates) {
+          if (typeof candidate === 'string' && candidate.trim()) {
+            return candidate;
+          }
+          if (Array.isArray(candidate) && candidate.length > 0) {
+            const first = candidate[0];
+            if (typeof first === 'string' && first.trim()) {
+              return first;
+            }
+          }
+        }
+      }
+
+      return error.message || 'UNKNOWN_ERROR';
+    }
+
+    if (error instanceof Error) {
+      return error.message || 'UNKNOWN_ERROR';
+    }
+
+    if (typeof error === 'string' && error.trim()) {
+      return error;
+    }
+
+    return 'UNKNOWN_ERROR';
   }
 }

@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+
+<html class="dark" dir="rtl" lang="ar"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>الإشعارات - Fayed</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600;700&amp;family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-primary-fixed-variant": "#004f50",
+                        "primary-fixed-dim": "#5cd8da",
+                        "surface-container-lowest": "#ffffff",
+                        "tertiary-fixed-dim": "#c8c6c5",
+                        "on-secondary": "#ffffff",
+                        "secondary-container": "#e0e0dd",
+                        "cream-accent": "#FFF9EE",
+                        "alert-red": "#FCECEC",
+                        "on-tertiary-container": "#2d2c2c",
+                        "surface-container": "#e9efee",
+                        "on-background": "#171d1d",
+                        "on-tertiary-fixed-variant": "#474746",
+                        "on-tertiary": "#ffffff",
+                        "on-tertiary-fixed": "#1c1b1b",
+                        "on-secondary-fixed": "#1a1c1a",
+                        "surface": "#f5fafa",
+                        "tertiary-container": "#959393",
+                        "surface-tint": "#00696b",
+                        "primary": "#00696b",
+                        "surface-bright": "#f5fafa",
+                        "surface-dim": "#d5dbda",
+                        "tertiary": "#5f5e5e",
+                        "on-primary-fixed": "#002020",
+                        "inverse-primary": "#5cd8da",
+                        "on-surface-variant": "#3d4949",
+                        "surface-variant": "#dee4e3",
+                        "error-container": "#ffdad6",
+                        "mint-accent": "#E8F5F1",
+                        "outline": "#6d7a79",
+                        "on-primary": "#ffffff",
+                        "on-secondary-container": "#626361",
+                        "on-surface": "#171d1d",
+                        "outline-variant": "#bcc9c9",
+                        "inverse-on-surface": "#ecf2f1",
+                        "surface-container-highest": "#dee4e3",
+                        "secondary-fixed-dim": "#c7c6c4",
+                        "secondary": "#5e5f5d",
+                        "blue-accent": "#E8F1F8",
+                        "on-secondary-fixed-variant": "#464745",
+                        "surface-container-low": "#eff5f4",
+                        "surface-container-high": "#e4e9e9",
+                        "error": "#ba1a1a",
+                        "on-primary-container": "#003233",
+                        "amber-accent": "#FFF3E0",
+                        "on-error-container": "#93000a",
+                        "primary-fixed": "#7cf5f7",
+                        "secondary-fixed": "#e3e2e0",
+                        "inverse-surface": "#2c3131",
+                        "background": "#f5fafa",
+                        "tertiary-fixed": "#e5e2e1",
+                        "on-error": "#ffffff",
+                        "primary-container": "#00a4a6"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "sm": "16px",
+                        "lg": "32px",
+                        "base": "4px",
+                        "xs": "8px",
+                        "gutter-mobile": "12px",
+                        "xl": "48px",
+                        "md": "24px",
+                        "margin-mobile": "20px"
+                    },
+                    "fontFamily": {
+                        "body-lg": ["\"Source Sans 3\""],
+                        "headline-sm": ["\"Source Serif 4\""],
+                        "display-lg-mobile": ["\"Source Serif 4\""],
+                        "label-md": ["\"Source Sans 3\""],
+                        "label-sm": ["\"Source Sans 3\""],
+                        "headline-md": ["\"Source Serif 4\""],
+                        "body-md": ["\"Source Sans 3\""],
+                        "display-lg": ["\"Source Serif 4\""]
+                    },
+                    "fontSize": {
+                        "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }],
+                        "headline-sm": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "display-lg-mobile": ["28px", { "lineHeight": "36px", "fontWeight": "700" }],
+                        "label-md": ["14px", { "lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "600" }],
+                        "label-sm": ["12px", { "lineHeight": "16px", "fontWeight": "500" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "display-lg": ["34px", { "lineHeight": "42px", "letterSpacing": "-0.02em", "fontWeight": "700" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body {
+            background-color: #f5fafa; /* light mode explicit */
+            color: #171d1d;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background min-h-screen pb-24 md:pb-0">
+<!-- TopAppBar -->
+<header class="bg-surface dark:bg-background docked full-width top-0 flat no shadows flex justify-between items-center w-full px-margin-mobile py-xs max-w-full sticky z-40">
+<div class="flex items-center gap-xs">
+<img class="w-10 h-10 rounded-full object-cover" data-alt="A small, professional user avatar portrait of a modern individual, warmly lit, against a clean white background. High quality photography." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBnSdWq22LJqRMrMdSYq7pZOa4_F9SsYxkLNdmfbv_UjuhWISZ3gJh529ox07jNL-8JWMjhiyV-0hiDDBFrpVRRC6To41e3s2xDehDSW3ZKjD11XG8Z-M2e8cYr7KvV2qHBr8oNnPsewUbVsEMveDYRTtrOUPk9h7Jg790IElRCr13lEbzHLx1C9G3375qMFHp0LK-tZAImZl682O5vkRpfID79hp8UGjAJrL44NPC8sAfu9NI3ANfP4eKFrF7XwDM22TsCpENIkSTE"/>
+</div>
+<div class="font-headline-md text-headline-md font-bold text-primary dark:text-primary-fixed-dim">
+            Fayed
+        </div>
+<div class="flex items-center gap-sm">
+<button class="relative text-primary dark:text-primary-fixed-dim hover:opacity-80 scale-95 transition-transform duration-200">
+<span class="material-symbols-outlined" data-icon="mail">mail</span>
+<span class="absolute top-0 right-0 w-2 h-2 bg-error rounded-full border border-surface"></span>
+</button>
+<button class="relative text-primary dark:text-primary-fixed-dim hover:opacity-80 scale-95 transition-transform duration-200">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+<span class="absolute top-0 right-0 w-2 h-2 bg-error rounded-full border border-surface"></span>
+</button>
+</div>
+</header>
+<!-- Main Content Area -->
+<main class="max-w-3xl mx-auto px-margin-mobile pt-md">
+<h1 class="font-display-lg-mobile text-display-lg-mobile text-on-surface mb-lg">الإشعارات</h1>
+<div class="space-y-lg">
+<!-- Section: Today -->
+<section>
+<h2 class="font-label-md text-label-md text-on-surface-variant mb-sm uppercase tracking-wider">اليوم</h2>
+<div class="space-y-sm">
+<!-- Unread Notification: Session -->
+<div class="bg-surface-container-lowest rounded-xl p-md flex gap-md items-start shadow-[0_4px_20px_rgba(22,22,22,0.05)] relative overflow-hidden group hover:scale-[0.98] transition-transform duration-200">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-primary"></div>
+<div class="flex-shrink-0 w-12 h-12 rounded-full bg-mint-accent flex items-center justify-center text-primary">
+<span class="material-symbols-outlined" data-icon="calendar_today" data-weight="fill" style="font-variation-settings: 'FILL' 1;">calendar_today</span>
+</div>
+<div class="flex-1">
+<div class="flex justify-between items-start mb-1">
+<h3 class="font-headline-sm text-headline-sm text-on-surface">تذكير بالجلسة القادمة</h3>
+<span class="font-label-sm text-label-sm text-primary font-bold">منذ ساعتين</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant line-clamp-2">لديك جلسة مجدولة مع د. أحمد في تمام الساعة 4:00 مساءً. يرجى التواجد قبل الموعد بـ 10 دقائق.</p>
+</div>
+</div>
+<!-- Unread Notification: Message -->
+<div class="bg-surface-container-lowest rounded-xl p-md flex gap-md items-start shadow-[0_4px_20px_rgba(22,22,22,0.05)] relative overflow-hidden group hover:scale-[0.98] transition-transform duration-200">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-primary"></div>
+<div class="flex-shrink-0 w-12 h-12 rounded-full bg-blue-accent flex items-center justify-center text-primary">
+<span class="material-symbols-outlined" data-icon="mail" data-weight="fill" style="font-variation-settings: 'FILL' 1;">mail</span>
+</div>
+<div class="flex-1">
+<div class="flex justify-between items-start mb-1">
+<h3 class="font-headline-sm text-headline-sm text-on-surface">رسالة جديدة من العيادة</h3>
+<span class="font-label-sm text-label-sm text-primary font-bold">منذ 5 ساعات</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant line-clamp-2">تم تحديث نتائج التحاليل الخاصة بك. يمكنك الاطلاع عليها من خلال التطبيق الآن.</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Section: Yesterday -->
+<section>
+<h2 class="font-label-md text-label-md text-on-surface-variant mb-sm uppercase tracking-wider">أمس</h2>
+<div class="space-y-sm">
+<!-- Read Notification: Generic -->
+<div class="bg-surface-container-lowest/70 rounded-xl p-md flex gap-md items-start border border-surface-variant/50 hover:scale-[0.98] transition-transform duration-200 opacity-80">
+<div class="flex-shrink-0 w-12 h-12 rounded-full bg-surface-container-high flex items-center justify-center text-on-surface-variant">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</div>
+<div class="flex-1">
+<div class="flex justify-between items-start mb-1">
+<h3 class="font-body-lg text-body-lg text-on-surface font-medium">تحديث النظام</h3>
+<span class="font-label-sm text-label-sm text-on-surface-variant">10:30 ص</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant line-clamp-2">تم تحديث التطبيق بميزات جديدة لتحسين تجربتك. يرجى مراجعة التغييرات.</p>
+</div>
+</div>
+<!-- Read Notification: Payment -->
+<div class="bg-surface-container-lowest/70 rounded-xl p-md flex gap-md items-start border border-surface-variant/50 hover:scale-[0.98] transition-transform duration-200 opacity-80">
+<div class="flex-shrink-0 w-12 h-12 rounded-full bg-surface-container-high flex items-center justify-center text-on-surface-variant">
+<span class="material-symbols-outlined" data-icon="payments">payments</span>
+</div>
+<div class="flex-1">
+<div class="flex justify-between items-start mb-1">
+<h3 class="font-body-lg text-body-lg text-on-surface font-medium">تأكيد الدفع</h3>
+<span class="font-label-sm text-label-sm text-on-surface-variant">09:15 ص</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant line-clamp-2">تم استلام الدفعة الخاصة بالجلسة الأخيرة بنجاح. شكراً لك.</p>
+</div>
+</div>
+</div>
+</section>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="md:hidden bg-surface/80 backdrop-blur-md dark:bg-inverse-surface/80 fixed bottom-0 w-full z-50 pb-safe shadow-sm fixed bottom-0 w-full z-50 flex justify-around items-center px-4 py-2 border-t border-outline-variant/20">
+<button class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant hover:bg-surface-container-low dark:hover:bg-surface-container-highest rounded-full scale-98 transition-all duration-200 w-16 h-16">
+<span class="material-symbols-outlined mb-1" data-icon="home">home</span>
+<span class="font-label-sm text-label-sm">Home</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant hover:bg-surface-container-low dark:hover:bg-surface-container-highest rounded-full scale-98 transition-all duration-200 w-16 h-16">
+<span class="material-symbols-outlined mb-1" data-icon="calendar_today">calendar_today</span>
+<span class="font-label-sm text-label-sm">Sessions</span>
+</button>
+<button class="flex flex-col items-center justify-center text-primary dark:text-primary-fixed-dim font-bold hover:bg-surface-container-low dark:hover:bg-surface-container-highest rounded-full scale-98 transition-all duration-200 w-16 h-16 relative">
+<span class="material-symbols-outlined mb-1" data-icon="notifications" data-weight="fill" style="font-variation-settings: 'FILL' 1;">notifications</span>
+<span class="font-label-sm text-label-sm">Notifications</span>
+<span class="absolute bottom-2 w-1 h-1 bg-primary rounded-full"></span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant hover:bg-surface-container-low dark:hover:bg-surface-container-highest rounded-full scale-98 transition-all duration-200 w-16 h-16">
+<span class="material-symbols-outlined mb-1" data-icon="grid_view">grid_view</span>
+<span class="font-label-sm text-label-sm">More</span>
+</button>
+</nav>
+</body></html>

@@ -1,162 +1,180 @@
 import React from "react";
-import { StyleSheet, TouchableOpacity, View } from "react-native";
+import { Image, I18nManager, ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { Screen, Button } from "../../src/components/ui";
-import { Text } from "../../src/components/ui";
-import { useTheme } from "../../src/providers/ThemeProvider";
 import { useTranslation } from "react-i18next";
+import { PrimaryButton, SecondaryButton, Screen, Text } from "../../src/components/ui";
+import { useTheme } from "../../src/providers/ThemeProvider";
 
 export default function AuthEntryScreen() {
   const router = useRouter();
   const { theme } = useTheme();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const isRTL = i18n.language?.startsWith("ar") ?? I18nManager.isRTL;
+  const logoAccessibilityLabel = isRTL ? "شعار سويّـة" : "Sawiyaa logo";
 
   return (
     <Screen safeArea bg="background" style={styles.screen}>
-      <View
-        style={[
-          styles.radialTop,
-          styles.noPointerEvents,
-          { backgroundColor: theme.colors.accent },
-        ]}
-      />
-      <View
-        style={[
-          styles.radialBottom,
-          styles.noPointerEvents,
-          { backgroundColor: theme.colors.primaryLight },
-        ]}
-      />
+      <View style={[styles.blobTop, { backgroundColor: theme.colors.mintAccent }]} />
+      <View style={[styles.blobBottom, { backgroundColor: theme.colors.creamAccent }]} />
 
-      <View style={styles.centerWrap}>
-        <View
-          style={[
-            styles.logoGlow,
-            { backgroundColor: theme.colors.primaryLight },
-          ]}
-        />
-        <View
-          style={[styles.logoCircle, { backgroundColor: theme.colors.surface }]}
-        >
-          <Ionicons name="water" size={38} color={theme.colors.primary} />
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.brandWrap}>
+          <Image
+            source={require("../../assets/logo.png")}
+            style={styles.brandLogo}
+            resizeMode="contain"
+            accessible
+            accessibilityRole="image"
+            accessibilityLabel={logoAccessibilityLabel}
+          />
+          <Text
+            variant="title"
+            color={theme.colors.textPrimary}
+            style={styles.title}
+          >
+            {t("brand.tagline")}
+          </Text>
+          <Text
+            variant="body"
+            color={theme.colors.textSecondary}
+            style={styles.subtitle}
+          >
+            {t("auth.entry.subtitle")}
+          </Text>
         </View>
 
-        <Text
-          style={styles.title}
-          weight="bold"
-          color={theme.colors.textPrimary}
-        >
-          {t("auth.entry.title")}
-        </Text>
-        <Text style={styles.subtitle} color={theme.colors.textSecondary}>
-          {t("auth.entry.subtitle")}
-        </Text>
-      </View>
+        <View style={styles.actions}>
+          <PrimaryButton
+            title={t("auth.patientSignUp.submit")}
+            onPress={() => router.push("/(auth)/signup/patient")}
+            rightIcon={
+              <Ionicons
+                name={isRTL ? "arrow-back" : "arrow-forward"}
+                size={18}
+                color={theme.colors.onPrimary}
+              />
+            }
+            style={styles.primaryButton}
+          />
 
-      <View style={styles.bottomWrap}>
-        <Button
-          title={t("auth.patientSignUp.submit")}
-          onPress={() => router.push("/(auth)/signup/patient")}
-          style={styles.cta}
-        />
+          <SecondaryButton
+            title={t("auth.patientSignIn.submit")}
+            onPress={() => router.push("/(auth)/signin/patient")}
+            style={styles.secondaryButton}
+          />
 
-        <TouchableOpacity
-          onPress={() => router.push("/(auth)/signin/patient")}
-          activeOpacity={0.85}
-        >
-          <Text style={styles.link} color={theme.colors.textBrand} weight="600">
-            {t("auth.patientSignIn.submit")}
+          <TouchableOpacity
+            onPress={() => router.push("/(auth)/signin/practitioner")}
+            activeOpacity={0.8}
+            style={styles.practitionerLink}
+          >
+            <Text
+              color={theme.colors.textSecondary}
+              style={styles.practitionerLabel}
+            >
+              {t("auth.entry.practitionerTitle")}
+            </Text>
+            <Ionicons
+              name="medical-outline"
+              size={18}
+              color={theme.colors.textMuted}
+            />
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.footerTrust}>
+          <Ionicons name="lock-closed-outline" size={16} color={theme.colors.textMuted} />
+          <Text variant="caption" color={theme.colors.textMuted} style={styles.footerText}>
+            {t("brand.tagline")}
           </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          onPress={() => router.push("/(auth)/signin/practitioner")}
-          activeOpacity={0.85}
-        >
-          <Text style={styles.secondaryLink} color={theme.colors.textMuted}>
-            {t("auth.entry.practitionerTitle")}
-          </Text>
-        </TouchableOpacity>
-      </View>
+        </View>
+      </ScrollView>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
   screen: {
-    justifyContent: "space-between",
-    paddingHorizontal: 22,
-    paddingTop: 20,
-    paddingBottom: 28,
-  },
-  radialTop: {
-    position: "absolute",
-    width: 420,
-    height: 420,
-    borderRadius: 220,
-    top: -240,
-    left: -80,
-    opacity: 0.46,
-  },
-  radialBottom: {
-    position: "absolute",
-    width: 420,
-    height: 420,
-    borderRadius: 220,
-    bottom: -280,
-    right: -120,
-    opacity: 0.38,
-  },
-  noPointerEvents: {
-    pointerEvents: "none",
-  },
-  centerWrap: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  logoGlow: {
-    position: "absolute",
-    width: 188,
-    height: 188,
-    borderRadius: 94,
-    opacity: 0.55,
-  },
-  logoCircle: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 36,
-  },
-  title: {
-    fontSize: 48,
-    lineHeight: 56,
-    textAlign: "center",
-    marginBottom: 14,
-  },
-  subtitle: {
-    fontSize: 22,
-    lineHeight: 30,
-    textAlign: "center",
+    overflow: "hidden",
     paddingHorizontal: 20,
   },
-  bottomWrap: {
-    gap: 16,
-    paddingBottom: 8,
+  scrollContent: {
+    flexGrow: 1,
+    justifyContent: "space-between",
+    paddingTop: 18,
+    paddingBottom: 24,
   },
-  cta: {
-    borderRadius: 999,
+  blobTop: {
+    position: "absolute",
+    width: 360,
+    height: 360,
+    borderRadius: 180,
+    top: -170,
+    left: -120,
+    opacity: 0.54,
+  },
+  blobBottom: {
+    position: "absolute",
+    width: 380,
+    height: 380,
+    borderRadius: 190,
+    bottom: -220,
+    right: -140,
+    opacity: 0.36,
+  },
+  brandWrap: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingVertical: 32,
+  },
+  brandLogo: {
+    width: 210,
+    height: 76,
+    marginBottom: 18,
+  },
+  title: {
+    textAlign: "center",
+    marginBottom: 8,
+  },
+  subtitle: {
+    textAlign: "center",
+    maxWidth: 280,
+  },
+  actions: {
+    gap: 12,
+  },
+  primaryButton: {
+    borderRadius: 20,
+    paddingVertical: 17,
+  },
+  secondaryButton: {
+    borderRadius: 20,
     paddingVertical: 16,
   },
-  link: {
-    fontSize: 20,
-    textAlign: "center",
+  practitionerLink: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    paddingVertical: 10,
   },
-  secondaryLink: {
+  practitionerLabel: {
     fontSize: 14,
+  },
+  footerTrust: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    paddingTop: 18,
+  },
+  footerText: {
     textAlign: "center",
   },
 });

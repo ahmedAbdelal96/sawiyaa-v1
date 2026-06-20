@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo } from "react";
-import { FlatList, I18nManager, StyleSheet, View } from "react-native";
+import { FlatList, StyleSheet, TouchableOpacity, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
@@ -14,6 +14,7 @@ import { MOBILE_TAB_BAR_HEIGHT } from "../../../../components/mobile-shell";
 import { useTheme } from "../../../../providers/ThemeProvider";
 import { resolveSupportedCurrencyCode } from "../../../../lib/currency";
 import { useInfiniteMyPackagePurchases } from "../hooks";
+import { useAppDirection } from "../../../../i18n/direction";
 import {
   canContinuePackagePurchasePayment,
   formatDatetime,
@@ -29,18 +30,24 @@ import type { PatientPackagePurchaseItem } from "../types";
 
 function PackagePurchaseDetailsHint({
   label,
+  onPress,
 }: {
   label: string;
+  onPress: () => void;
 }) {
   const { theme } = useTheme();
-  const isRTL = I18nManager.isRTL;
+  const { rowDirection, chevronForward } = useAppDirection();
 
   return (
-    <View
+    <TouchableOpacity
+      activeOpacity={0.78}
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={label}
       style={[
         styles.actionHint,
         {
-          flexDirection: isRTL ? "row-reverse" : "row",
+          flexDirection: rowDirection,
           backgroundColor: theme.colors.surfaceSecondary,
           borderColor: theme.colors.borderLight,
         },
@@ -50,11 +57,11 @@ function PackagePurchaseDetailsHint({
         {label}
       </Text>
       <Ionicons
-        name={isRTL ? "chevron-back" : "chevron-forward"}
+        name={chevronForward}
         size={15}
         color={theme.colors.primary}
       />
-    </View>
+    </TouchableOpacity>
   );
 }
 
@@ -68,7 +75,8 @@ function PackagePurchaseCard({
   const router = useRouter();
   const { t } = useTranslation();
   const { theme } = useTheme();
-  const isRTL = I18nManager.isRTL;
+  const { rowDirection, textAlign } = useAppDirection();
+
   const currency = resolveSupportedCurrencyCode({
     currencyCode: purchase.selectedCurrencyCode,
     regionalPricingMode: purchase.regionalPricingMode,
@@ -125,17 +133,11 @@ function PackagePurchaseCard({
     <Card
       variant="outlined"
       padding="sm"
-      onPress={handleOpenDetails}
-      accessibilityRole="button"
-      accessibilityLabel={t("packagePurchases.card.accessibilityLabel", {
-        count: purchase.sessionCount,
-        defaultValue: `View details for a ${purchase.sessionCount}-session package`,
-      })}
       style={styles.card}
     >
-      <View style={[styles.topRow, isRTL && styles.topRowRtl]}>
+      <View style={[styles.topRow, { flexDirection: rowDirection }]}>
         <View style={styles.titleCol}>
-          <Text weight="600" style={styles.planTitle}>
+          <Text weight="600" style={[styles.planTitle, { textAlign }]}>
             {title}
           </Text>
         </View>
@@ -143,40 +145,51 @@ function PackagePurchaseCard({
       </View>
 
       <View style={styles.metaStack}>
-        <Text color={theme.colors.textSecondary} style={styles.metaLine}>
-          {t("packagePurchases.card.usedSummary", {
-            completed: completedCount,
-            total: purchase.sessionCount,
-            remaining: remainingCount,
-          })}
-        </Text>
-        <Text color={theme.colors.textSecondary} style={styles.metaLine}>
-          {t("packagePurchases.card.priceSummary", {
-            value: formatMoney(purchase.patientPayableTotal, currency, locale),
-            discount: `${purchase.discountPercent}%`,
-          })}
-        </Text>
-        <Text color={theme.colors.textSecondary} style={styles.metaLine}>
-          {purchase.status === "PENDING_PAYMENT" && dueDate
-            ? t("packagePurchases.card.paymentDueSummary", {
-                value: dueDate,
-              })
-            : nextUpcomingSession
-              ? t("packagePurchases.card.nextSessionSummary", {
-                  value: formatDatetime(nextUpcomingSession.scheduledStartAt, locale),
+        <View style={[styles.metaRow, { flexDirection: rowDirection }]}>
+          <Ionicons name="calendar-outline" size={15} color={theme.colors.textSecondary} style={styles.metaIcon} />
+          <Text color={theme.colors.textSecondary} style={[styles.metaLine, { textAlign }]}>
+            {t("packagePurchases.card.usedSummary", {
+              completed: completedCount,
+              total: purchase.sessionCount,
+              remaining: remainingCount,
+            })}
+          </Text>
+        </View>
+        
+        <View style={[styles.metaRow, { flexDirection: rowDirection }]}>
+          <Ionicons name="cash-outline" size={15} color={theme.colors.textSecondary} style={styles.metaIcon} />
+          <Text color={theme.colors.textSecondary} style={[styles.metaLine, { textAlign }]}>
+            {t("packagePurchases.card.priceSummary", {
+              value: formatMoney(purchase.patientPayableTotal, currency, locale),
+              discount: `${purchase.discountPercent}%`,
+            })}
+          </Text>
+        </View>
+
+        <View style={[styles.metaRow, { flexDirection: rowDirection }]}>
+          <Ionicons name="time-outline" size={15} color={theme.colors.textSecondary} style={styles.metaIcon} />
+          <Text color={theme.colors.textSecondary} style={[styles.metaLine, { textAlign }]}>
+            {purchase.status === "PENDING_PAYMENT" && dueDate
+              ? t("packagePurchases.card.paymentDueSummary", {
+                  value: dueDate,
                 })
-              : t("packagePurchases.card.noNextSession")}
-        </Text>
+              : nextUpcomingSession
+                ? t("packagePurchases.card.nextSessionSummary", {
+                    value: formatDatetime(nextUpcomingSession.scheduledStartAt, locale),
+                  })
+                : t("packagePurchases.card.noNextSession")}
+          </Text>
+        </View>
       </View>
 
-      <PackagePurchaseDetailsHint label={t("packagePurchases.card.viewDetails")} />
+      <PackagePurchaseDetailsHint label={t("packagePurchases.card.viewDetails")} onPress={handleOpenDetails} />
 
       {purchase.status === "PENDING_PAYMENT" && canContinuePayment ? (
         <CompactActionRow
           label={t("packagePurchases.card.continuePayment")}
           onPress={handleContinuePayment}
           accessibilityLabel={t("packagePurchases.card.continuePayment")}
-          style={styles.paymentAction}
+          style={[styles.paymentAction, { alignSelf: rowDirection === "row" ? "flex-start" : "flex-end" }]}
         />
       ) : null}
     </Card>
@@ -187,6 +200,7 @@ export default function PackagePurchasesScreen() {
   const router = useRouter();
   const { t, i18n } = useTranslation();
   const { theme } = useTheme();
+  const { rowDirection, textAlign } = useAppDirection();
   const locale = i18n.language?.startsWith("ar") ? "ar-SA" : "en-US";
   const purchasesQuery = useInfiniteMyPackagePurchases({ limit: 12 });
 
@@ -241,13 +255,18 @@ export default function PackagePurchasesScreen() {
         onEndReachedThreshold={0.4}
         ListHeaderComponent={
           <View style={styles.stack}>
-            <Card variant="outlined" padding="sm" style={styles.heroCard}>
-              <Text weight="bold" style={styles.heroTitle}>
-                {t("packagePurchases.heroTitle")}
-              </Text>
-              <Text color={theme.colors.textSecondary} style={styles.heroSubtitle}>
-                {t("packagePurchases.heroSubtitle")}
-              </Text>
+            <Card variant="flat" padding="md" style={styles.heroCard}>
+              <View style={[styles.heroRow, { flexDirection: rowDirection }]}>
+                <View style={[styles.heroAccentLine, { backgroundColor: theme.colors.primary }]} />
+                <View style={styles.heroContent}>
+                  <Text weight="bold" style={[styles.heroTitle, { textAlign }]}>
+                    {t("packagePurchases.heroTitle")}
+                  </Text>
+                  <Text color={theme.colors.textSecondary} style={[styles.heroSubtitle, { textAlign }]}>
+                    {t("packagePurchases.heroSubtitle")}
+                  </Text>
+                </View>
+              </View>
             </Card>
           </View>
         }
@@ -286,28 +305,37 @@ const styles = StyleSheet.create({
   },
   heroCard: {
     marginHorizontal: 0,
-    gap: 4,
+    borderRadius: 20,
+  },
+  heroRow: {
+    alignItems: "stretch",
+    gap: 12,
+  },
+  heroAccentLine: {
+    width: 4,
+    borderRadius: 2,
+  },
+  heroContent: {
+    flex: 1,
+    gap: 2,
   },
   heroTitle: {
     fontSize: 17,
     lineHeight: 24,
   },
   heroSubtitle: {
-    fontSize: 12,
+    fontSize: 12.5,
     lineHeight: 18,
   },
   card: {
     marginHorizontal: 0,
-    gap: 6,
+    gap: 10,
+    borderRadius: 20,
   },
   topRow: {
-    flexDirection: "row",
     alignItems: "flex-start",
     justifyContent: "space-between",
     gap: 12,
-  },
-  topRowRtl: {
-    flexDirection: "row-reverse",
   },
   titleCol: {
     flex: 1,
@@ -317,11 +345,21 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   metaStack: {
-    gap: 3,
+    gap: 6,
+    paddingVertical: 4,
+  },
+  metaRow: {
+    alignItems: "center",
+    gap: 8,
+  },
+  metaIcon: {
+    width: 16,
+    textAlign: "center",
   },
   metaLine: {
-    fontSize: 11.5,
-    lineHeight: 16,
+    flex: 1,
+    fontSize: 12,
+    lineHeight: 17,
   },
   actionHint: {
     minHeight: 40,
@@ -339,7 +377,6 @@ const styles = StyleSheet.create({
   },
   paymentAction: {
     marginTop: 2,
-    alignSelf: "flex-start",
   },
   footerStack: {
     gap: 8,

@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useLocale, useTranslations } from "next-intl";
 import { useSearchParams } from "next/navigation";
-import { Link, useRouter } from "@/i18n/navigation";
+import { Link } from "@/i18n/navigation";
 import Input from "@/components/form/input/InputField";
 import Label from "@/components/form/Label";
 import Select from "@/components/form/Select";
@@ -70,7 +70,6 @@ export default function SignUpForm({ mode }: SignUpFormProps) {
   const t = useTranslations("auth");
   const locale = useLocale();
   const isRtl = locale.startsWith("ar");
-  const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl");
   const normalizedCallbackUrl = normalizeCallbackPath(callbackUrl);
@@ -127,8 +126,9 @@ export default function SignUpForm({ mode }: SignUpFormProps) {
     try {
       if (mode === "patient") {
         await patientRegister.mutateAsync(data);
-        router.replace(normalizedCallbackUrl ?? "/practitioners");
-        router.refresh();
+        window.location.replace(
+          `/${locale}${normalizedCallbackUrl ?? "/practitioners"}`
+        );
         return;
       }
 
@@ -152,10 +152,12 @@ export default function SignUpForm({ mode }: SignUpFormProps) {
         specialtyIds: selectedSpecialties,
       });
       form.reset();
-      router.replace(
-        buildAuthHref("/signin", { callbackUrl: normalizedCallbackUrl, mode: "practitioner" })
+      window.location.replace(
+        `/${locale}${buildAuthHref("/signin", {
+          callbackUrl: normalizedCallbackUrl,
+          mode: "practitioner",
+        })}`
       );
-      router.refresh();
     } catch (submissionError) {
       setError(
         submissionError instanceof Error ? submissionError.message : t("registrationError")

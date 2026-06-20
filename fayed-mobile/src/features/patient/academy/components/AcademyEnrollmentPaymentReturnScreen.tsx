@@ -15,6 +15,7 @@ import {
   Text,
 } from "../../../../components/ui";
 import { useTheme } from "../../../../providers/ThemeProvider";
+import { useAppDirection } from "../../../../i18n/direction";
 import {
   extractHostedCheckoutReturnParams,
   normalizePaymentRedirectStatus,
@@ -95,6 +96,7 @@ export default function AcademyEnrollmentPaymentReturnScreen({
   const router = useRouter();
   const { theme } = useTheme();
   const { t } = useTranslation();
+  const { textAlign } = useAppDirection();
   const params = useLocalSearchParams<{
     redirect_status?: string;
     redirectStatus?: string;
@@ -251,45 +253,49 @@ export default function AcademyEnrollmentPaymentReturnScreen({
           <Ionicons
             name="checkmark-circle"
             size={52}
-            color={theme.colors.primary}
+            color={theme.colors.success}
           />
         ),
         title: t("academy.enrollment.paymentReturnSuccessTitle"),
         note: t("academy.enrollment.paymentReturnSuccessSubtitle"),
+        bgColor: theme.colors.statusSuccessBg,
+        borderColor: theme.colors.success,
+        textColor: theme.colors.statusSuccessText,
       };
     }
 
-    if (enrollment?.enrollmentStatus === "PAYMENT_FAILED") {
+    if (enrollment?.enrollmentStatus === "PAYMENT_FAILED" || normalizedRedirectStatus === "failed") {
       return {
-        icon: <Ionicons name="close-circle" size={48} color="#ba1a1a" />,
+        icon: <Ionicons name="close-circle" size={48} color={theme.colors.error} />,
         title: t("academy.enrollment.paymentReturnFailedTitle"),
         note: t("academy.enrollment.paymentReturnFailedSubtitle"),
-      };
-    }
-
-    if (normalizedRedirectStatus === "failed") {
-      return {
-        icon: <Ionicons name="close-circle" size={48} color="#ba1a1a" />,
-        title: t("academy.enrollment.paymentReturnFailedTitle"),
-        note: t("academy.enrollment.paymentReturnFailedSubtitle"),
+        bgColor: theme.colors.statusErrorBg,
+        borderColor: theme.colors.error,
+        textColor: theme.colors.statusErrorText,
       };
     }
 
     if (normalizedRedirectStatus === "payment_expired") {
       return {
-        icon: <Ionicons name="time-outline" size={48} color="#ba1a1a" />,
+        icon: <Ionicons name="time-outline" size={48} color={theme.colors.error} />,
         title: getFriendlyExpiredCopy(t).title,
         note: getFriendlyExpiredCopy(t).note,
+        bgColor: theme.colors.statusErrorBg,
+        borderColor: theme.colors.error,
+        textColor: theme.colors.statusErrorText,
       };
     }
 
     if (normalizedRedirectStatus === "payment_unavailable") {
       return {
         icon: (
-          <Ionicons name="alert-circle-outline" size={48} color="#ba1a1a" />
+          <Ionicons name="alert-circle-outline" size={48} color={theme.colors.error} />
         ),
         title: getFriendlyUnavailableCopy(t).title,
         note: getFriendlyUnavailableCopy(t).note,
+        bgColor: theme.colors.statusErrorBg,
+        borderColor: theme.colors.error,
+        textColor: theme.colors.statusErrorText,
       };
     }
 
@@ -304,6 +310,9 @@ export default function AcademyEnrollmentPaymentReturnScreen({
         ),
         title: t("academy.enrollment.paymentReturnCancelledTitle"),
         note: t("academy.enrollment.paymentReturnCancelledSubtitle"),
+        bgColor: theme.colors.surfaceMuted,
+        borderColor: theme.colors.border,
+        textColor: theme.colors.textSecondary,
       };
     }
 
@@ -318,6 +327,9 @@ export default function AcademyEnrollmentPaymentReturnScreen({
         ),
         title: t("academy.enrollment.paymentReturnVerifyingTitle"),
         note: t("academy.enrollment.paymentReturnVerifyingSubtitle"),
+        bgColor: theme.colors.primaryLight,
+        borderColor: theme.colors.primary,
+        textColor: theme.colors.primary,
       };
     }
 
@@ -332,6 +344,9 @@ export default function AcademyEnrollmentPaymentReturnScreen({
         ),
         title: t("academy.enrollment.paymentReturnPendingTitle"),
         note: t("academy.enrollment.paymentReturnPendingSubtitle"),
+        bgColor: theme.colors.primaryLight,
+        borderColor: theme.colors.primary,
+        textColor: theme.colors.primary,
       };
     }
 
@@ -345,6 +360,9 @@ export default function AcademyEnrollmentPaymentReturnScreen({
       ),
       title: t("academy.enrollment.paymentReturnPendingTitle"),
       note: t("academy.enrollment.paymentReturnPendingSubtitle"),
+      bgColor: theme.colors.surfaceMuted,
+      borderColor: theme.colors.border,
+      textColor: theme.colors.textSecondary,
     };
   }, [
     browserResult,
@@ -353,8 +371,7 @@ export default function AcademyEnrollmentPaymentReturnScreen({
     normalizedRedirectStatus,
     pollingActive,
     t,
-    theme.colors.primary,
-    theme.colors.textMuted,
+    theme.colors,
     enrollment?.enrollmentStatus,
   ]);
 
@@ -413,12 +430,22 @@ export default function AcademyEnrollmentPaymentReturnScreen({
       <Header showBack title={t("academy.enrollment.paymentReturnTitle")} />
 
       <ScrollView contentContainerStyle={styles.content}>
-        <Card variant="elevated" padding="md" style={styles.stateCard}>
+        <Card
+          variant="outlined"
+          padding="md"
+          style={[
+            styles.stateCard,
+            {
+              backgroundColor: stateCard.bgColor,
+              borderColor: stateCard.borderColor,
+            },
+          ]}
+        >
           <View style={styles.iconWrap}>{stateCard.icon}</View>
-          <Text weight="600" style={styles.title}>
+          <Text weight="700" style={[styles.title, { textAlign: "center", color: stateCard.textColor }]}>
             {stateCard.title}
           </Text>
-          <Text color={theme.colors.textSecondary} style={styles.note}>
+          <Text color={theme.colors.textSecondary} style={[styles.note, { textAlign: "center" }]}>
             {stateCard.note}
           </Text>
         </Card>
@@ -484,12 +511,12 @@ export default function AcademyEnrollmentPaymentReturnScreen({
               </View>
             ) : null}
             {isPendingPayment ? (
-              <Text color={theme.colors.textSecondary} style={styles.helperText}>
+              <Text color={theme.colors.textSecondary} style={[styles.helperText, { textAlign }]}>
                 {pendingPaymentHelperText}
               </Text>
             ) : null}
             {isTerminal ? (
-              <Text color={theme.colors.textSecondary} style={styles.helperText}>
+              <Text color={theme.colors.textSecondary} style={[styles.helperText, { textAlign }]}>
                 {t("academy.enrollment.paymentReturnSupportNote")}
               </Text>
             ) : null}
@@ -561,12 +588,10 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 20,
-    textAlign: "center",
     marginBottom: 8,
   },
   note: {
     fontSize: 14,
-    textAlign: "center",
     lineHeight: 22,
   },
   sectionCard: {

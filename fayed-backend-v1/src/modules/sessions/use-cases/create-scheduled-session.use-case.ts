@@ -17,6 +17,7 @@ import { ValidateSessionBookingRequestService } from '../services/validate-sessi
 import { ValidateSessionConflictsService } from '../services/validate-session-conflicts.service';
 import { ValidateSessionDurationService } from '../services/validate-session-duration.service';
 import { ValidateSessionScheduleCompatibilityService } from '../services/validate-session-schedule-compatibility.service';
+import { toSessionOverlapConflictException } from '../utils/session-overlap-conflict.util';
 
 /**
  * Scheduled session creation is the Phase 2 booking baseline.
@@ -138,60 +139,69 @@ export class CreateScheduledSessionUseCase {
       Date.now() + this.paymentReservationMinutes * 60 * 1000,
     );
 
-    const session = await this.prisma.$transaction(async (tx) => {
-      const sessionCode = await this.sessionRepository.reserveNextSessionCode(
-        scheduledStartAtUtc,
-        tx,
-      );
+    try {
+      const session = await this.prisma.$transaction(async (tx) => {
+        const sessionCode = await this.sessionRepository.reserveNextSessionCode(
+          scheduledStartAtUtc,
+          tx,
+        );
 
-      const createdSession = await this.sessionRepository.createSession(
-        {
-          sessionCode,
-          patientId: patient.id,
-          practitionerId: practitioner.id,
-          flowType: SessionFlowType.SCHEDULED,
-          sessionMode: input.sessionMode,
-          durationMinutes: input.durationMinutes,
-          status: SessionStatus.PENDING_PAYMENT,
-          requestedStartAt: scheduledStartAtUtc,
-          scheduledStartAt: scheduledStartAtUtc,
-          scheduledEndAt: scheduledEndAtUtc,
-          expiresAt,
-          timezoneSnapshot: availabilityResult.timezone,
-        },
-        tx,
-      );
-
-      await this.sessionRepository.createEvent(
-        {
-          sessionId: createdSession.id,
-          eventType: SessionEventType.SESSION_CREATED,
-          actorUserId: input.userId,
-          metadataJson: {
-            source: 'patientScheduledBooking',
-            locale: input.locale,
+        const createdSession = await this.sessionRepository.createSession(
+          {
+            sessionCode,
+            patientId: patient.id,
+            practitionerId: practitioner.id,
+            flowType: SessionFlowType.SCHEDULED,
+            sessionMode: input.sessionMode,
+            durationMinutes: input.durationMinutes,
+            status: SessionStatus.PENDING_PAYMENT,
+            requestedStartAt: scheduledStartAtUtc,
+            scheduledStartAt: scheduledStartAtUtc,
+            scheduledEndAt: scheduledEndAtUtc,
+            expiresAt,
+            timezoneSnapshot: availabilityResult.timezone,
           },
-        },
-        tx,
-      );
+          tx,
+        );
 
-      await this.sessionRepository.createEvent(
-        {
-          sessionId: createdSession.id,
-          eventType: SessionEventType.PAYMENT_PENDING,
-          actorUserId: input.userId,
-          metadataJson: {
-            expiresAt: expiresAt.toISOString(),
+        await this.sessionRepository.createEvent(
+          {
+            sessionId: createdSession.id,
+            eventType: SessionEventType.SESSION_CREATED,
+            actorUserId: input.userId,
+            metadataJson: {
+              source: 'patientScheduledBooking',
+              locale: input.locale,
+            },
           },
-        },
-        tx,
-      );
+          tx,
+        );
 
-      return createdSession;
-    });
+        await this.sessionRepository.createEvent(
+          {
+            sessionId: createdSession.id,
+            eventType: SessionEventType.PAYMENT_PENDING,
+            actorUserId: input.userId,
+            metadataJson: {
+              expiresAt: expiresAt.toISOString(),
+            },
+          },
+          tx,
+        );
 
-    return {
-      item: this.sessionMapper.toDetails(session),
-    };
+        return createdSession;
+      });
+
+      return {
+        item: this.sessionMapper.toDetails(session),
+      };
+    } catch (error) {
+      const overlapConflict = toSessionOverlapConflictException(error);
+      if (overlapConflict) {
+        throw overlapConflict;
+      }
+
+      throw error;
+    }
   }
 }

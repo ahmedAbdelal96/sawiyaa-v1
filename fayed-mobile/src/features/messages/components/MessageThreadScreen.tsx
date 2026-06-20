@@ -18,10 +18,9 @@ import {
   Text,
 } from "../../../components/ui";
 import { useAuth } from "../../../providers/AuthProvider";
-import { useTheme } from "../../../providers/ThemeProvider";
+import { useAppDirection } from "../../../i18n/direction";
 import {
   formatMessageTime,
-  formatMessageTimestamp,
   getConversationDisplayName,
   getConversationSubLabel,
   getMessageSenderLabel,
@@ -55,7 +54,37 @@ type ThreadMessageRow = {
   isGroupStart: boolean;
   senderLabel: string;
   senderRoleLabel: string;
+  showDateSeparator: boolean;
+  dateSeparatorText?: string;
 };
+
+// Helper function to format date cleanly like WhatsApp
+function getMessageDateString(sentAt: string, locale: string): string {
+  const date = new Date(sentAt);
+  const today = new Date();
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+
+  const isSameDay = (d1: Date, d2: Date) =>
+    d1.getFullYear() === d2.getFullYear() &&
+    d1.getMonth() === d2.getMonth() &&
+    d1.getDate() === d2.getDate();
+
+  const isArabic = locale.startsWith("ar");
+
+  if (isSameDay(date, today)) {
+    return isArabic ? "اليوم" : "Today";
+  }
+  if (isSameDay(date, yesterday)) {
+    return isArabic ? "أمس" : "Yesterday";
+  }
+
+  return date.toLocaleDateString(locale, {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+}
 
 export function MessageThreadScreen({
   role,
@@ -63,8 +92,8 @@ export function MessageThreadScreen({
 }: MessageThreadScreenProps) {
   const { user } = useAuth();
   const { t, i18n } = useTranslation();
-  const { theme } = useTheme();
   const insets = useSafeAreaInsets();
+  const { isRtl } = useAppDirection();
   const locale = i18n.language || "en";
 
   const conversationQuery = useGeneralChatConversation(role, conversationId);
@@ -107,6 +136,26 @@ export function MessageThreadScreen({
     return messages.map((message, index) => {
       const previous = index > 0 ? messages[index - 1] : null;
 
+      let showDateSeparator = false;
+      let dateSeparatorText = "";
+
+      if (!previous) {
+        showDateSeparator = true;
+        dateSeparatorText = getMessageDateString(message.sentAt, locale);
+      } else {
+        const prevDate = new Date(previous.sentAt);
+        const currDate = new Date(message.sentAt);
+        const isDifferentDay =
+          prevDate.getFullYear() !== currDate.getFullYear() ||
+          prevDate.getMonth() !== currDate.getMonth() ||
+          prevDate.getDate() !== currDate.getDate();
+
+        if (isDifferentDay) {
+          showDateSeparator = true;
+          dateSeparatorText = getMessageDateString(message.sentAt, locale);
+        }
+      }
+
       return {
         message,
         isGroupStart: !previous || !isSameSenderMessage(previous, message),
@@ -117,24 +166,28 @@ export function MessageThreadScreen({
           role,
           locale,
         ),
+        showDateSeparator,
+        dateSeparatorText,
       };
     });
   }, [locale, messages, role, user?.id]);
 
   const threadTitle = t("messages.thread.sessionTitle", "Session chat");
-  const contextLabel = useMemo(() => {
+
+  // Counterpart Details for Header title/subtitle context
+  const headerTitle = useMemo(() => {
     if (!conversation) {
-      return null;
+      return threadTitle;
     }
+    return getConversationDisplayName(conversation, role, user?.id ?? null, locale);
+  }, [conversation, role, user?.id, locale, threadTitle]);
 
-    const parts = [
-      getConversationDisplayName(conversation, role, user?.id ?? null, locale),
-      getConversationSubLabel(conversation, user?.id ?? null, locale),
-      formatMessageTimestamp(conversation.latestActivityAt, locale),
-    ].filter((value, index, arr) => Boolean(value) && arr.indexOf(value) === index) as string[];
-
-    return parts.join(" · ");
-  }, [conversation, locale, role, user?.id]);
+  const headerSubtitle = useMemo(() => {
+    if (!conversation) {
+      return undefined;
+    }
+    return getConversationSubLabel(conversation, user?.id ?? null, locale) || undefined;
+  }, [conversation, user?.id, locale]);
 
   const isInitialLoading =
     (conversationQuery.isLoading && !conversationQuery.data) ||
@@ -277,7 +330,11 @@ export function MessageThreadScreen({
 
   return (
     <Screen bg="background">
-      <Header showBack title={threadTitle} />
+      <Header
+        showBack
+        title={headerTitle}
+        subtitle={headerSubtitle}
+      />
 
       <KeyboardAvoidingView
         style={styles.flex}
@@ -301,8 +358,8 @@ export function MessageThreadScreen({
             <RefreshControl
               refreshing={isRefreshing}
               onRefresh={handleRefresh}
-              tintColor={theme.colors.primary}
-              colors={[theme.colors.primary]}
+              tintColor="#24564F"
+              colors={["#24564F"]}
             />
           }
           onScroll={(event) => {
@@ -324,30 +381,10 @@ export function MessageThreadScreen({
           showsVerticalScrollIndicator={false}
           ListHeaderComponent={
             <View style={styles.headerWrap}>
-              {contextLabel ? (
-                <View
-                  style={[
-                    styles.contextStrip,
-                    {
-                      backgroundColor: theme.colors.surface,
-                      borderBottomColor: theme.colors.borderLight,
-                    },
-                  ]}
-                >
-                  <Text
-                    color={theme.colors.textSecondary}
-                    style={styles.contextText}
-                    numberOfLines={1}
-                  >
-                    {contextLabel}
-                  </Text>
-                </View>
-              ) : null}
-
               {messagesQuery.isFetchingNextPage ? (
                 <View style={styles.topState}>
-                  <ActivityIndicator color={theme.colors.primary} />
-                  <Text color={theme.colors.textSecondary} style={styles.topStateText}>
+                  <ActivityIndicator color="#24564F" size="small" />
+                  <Text color="#6F7E78" style={styles.topStateText}>
                     {t(
                       "messages.common.loadingOlder",
                       "Loading older messages...",
@@ -359,17 +396,17 @@ export function MessageThreadScreen({
                   style={[
                     styles.topRetry,
                     {
-                      borderColor: theme.colors.borderLight,
-                      backgroundColor: theme.colors.surfaceSecondary,
+                      borderColor: "#E8DED0",
+                      backgroundColor: "#FCFAF6",
                     },
                   ]}
                 >
-                  <Text weight="600" style={{ color: theme.colors.primary }}>
+                  <Text weight="600" style={{ color: "#24564F" }}>
                     {t("messages.common.retryNext", "Try again")}
                   </Text>
                 </View>
               ) : !messagesQuery.hasNextPage && messages.length > 0 ? (
-                <Text color={theme.colors.textSecondary} style={styles.startHint}>
+                <Text color="#6F7E78" style={styles.startHint}>
                   {t(
                     "messages.common.startOfConversation",
                     "You have reached the start of this conversation.",
@@ -384,14 +421,25 @@ export function MessageThreadScreen({
             />
           }
           renderItem={({ item }) => (
-            <MessageBubble
-              message={item.message}
-              locale={locale}
-              isMine={item.message.senderUserId === user?.id}
-              showIdentity={item.isGroupStart}
-              senderLabel={item.senderLabel}
-              senderRoleLabel={item.senderRoleLabel}
-            />
+            <View>
+              {item.showDateSeparator && item.dateSeparatorText ? (
+                <View style={styles.dateSeparatorWrap}>
+                  <View style={styles.dateSeparatorBubble}>
+                    <Text style={styles.dateSeparatorText} color="#6F7E78" weight="600">
+                      {item.dateSeparatorText}
+                    </Text>
+                  </View>
+                </View>
+              ) : null}
+              <MessageBubble
+                message={item.message}
+                locale={locale}
+                isMine={item.message.senderUserId === user?.id}
+                showIdentity={item.isGroupStart}
+                senderLabel={item.senderLabel}
+                senderRoleLabel={item.senderRoleLabel}
+              />
+            </View>
           )}
         />
 
@@ -401,15 +449,15 @@ export function MessageThreadScreen({
               style={[
                 styles.readOnlyNotice,
                 {
-                  borderColor: theme.colors.borderLight,
-                  backgroundColor: theme.colors.surfaceSecondary,
+                  borderColor: "#E8DED0",
+                  backgroundColor: "#FCFAF6",
                 },
               ]}
             >
-              <Text weight="600" color={theme.colors.textPrimary} style={styles.readOnlyTitle}>
+              <Text weight="600" color="#1F332F" style={[styles.readOnlyTitle, { textAlign: isRtl ? "right" : "left" }]}>
                 {t("messages.thread.availabilityLoadingTitle")}
               </Text>
-              <Text color={theme.colors.textSecondary} style={styles.readOnlyLine}>
+              <Text color="#6F7E78" style={[styles.readOnlyLine, { textAlign: isRtl ? "right" : "left" }]}>
                 {t("messages.thread.availabilityLoadingNote")}
               </Text>
             </View>
@@ -418,18 +466,18 @@ export function MessageThreadScreen({
               style={[
                 styles.readOnlyNotice,
                 {
-                  borderColor: theme.colors.borderLight,
-                  backgroundColor: theme.colors.surfaceSecondary,
+                  borderColor: "#E8DED0",
+                  backgroundColor: "#EEF4EF", // Green Surface soft
                 },
               ]}
             >
-              <Text weight="600" color={theme.colors.textPrimary} style={styles.readOnlyTitle}>
+              <Text weight="700" color="#24564F" style={[styles.readOnlyTitle, { textAlign: isRtl ? "right" : "left" }]}>
                 {t("messages.thread.readOnlyTitle")}
               </Text>
-              <Text color={theme.colors.textSecondary} style={styles.readOnlyLine}>
+              <Text color="#6F7E78" style={[styles.readOnlyLine, { textAlign: isRtl ? "right" : "left" }]}>
                 {t("messages.thread.readOnlyReviewNote")}
               </Text>
-              <Text color={theme.colors.textSecondary} style={styles.readOnlyLine}>
+              <Text color="#6F7E78" style={[styles.readOnlyLine, { textAlign: isRtl ? "right" : "left" }]}>
                 {t("messages.thread.readOnlySendNote")}
               </Text>
             </View>
@@ -467,11 +515,10 @@ function MessageBubble({
   senderLabel: string;
   senderRoleLabel: string;
 }) {
-  const { theme } = useTheme();
-
   const contentText = resolveMessageText(message, locale);
   const timeValue = formatMessageTime(message.sentAt, locale);
   const statusLabel = isMine ? getMessageStatusLabel(message.status, locale) : null;
+  const avatarUrl = message.senderIdentity?.avatarUrl || null;
 
   if (message.messageType === "SYSTEM") {
     return (
@@ -480,12 +527,12 @@ function MessageBubble({
           style={[
             styles.systemBubble,
             {
-              backgroundColor: theme.colors.surfaceSecondary,
-              borderColor: theme.colors.borderLight,
+              backgroundColor: "#EEF4EF", // Soft Green Tint
+              borderColor: "#D9E4DB",
             },
           ]}
         >
-          <Text color={theme.colors.textSecondary} style={styles.systemText}>
+          <Text color="#6F7E78" style={styles.systemText}>
             {contentText}
           </Text>
         </View>
@@ -499,17 +546,19 @@ function MessageBubble({
       text={contentText}
       timeLabel={timeValue}
       statusLabel={statusLabel}
+      avatarUrl={avatarUrl}
+      senderLabel={senderLabel}
       header={
         showIdentity && !isMine ? (
           <View style={styles.identityHeader}>
             <Text
               weight="600"
-              color={theme.colors.textPrimary}
+              color="#1F332F"
               style={styles.identityName}
             >
               {senderLabel}
             </Text>
-            <Text color={theme.colors.textMuted} style={styles.identityRole}>
+            <Text color="#6F7E78" style={styles.identityRole}>
               {senderRoleLabel}
             </Text>
           </View>
@@ -555,22 +604,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   listContent: {
-    paddingBottom: 12,
+    paddingVertical: 16,
   },
   headerWrap: {
     gap: 8,
     marginBottom: 4,
-  },
-  contextStrip: {
-    minHeight: 42,
-    justifyContent: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-  },
-  contextText: {
-    fontSize: 13,
-    textAlign: "center",
   },
   topState: {
     flexDirection: "row",
@@ -595,10 +633,26 @@ const styles = StyleSheet.create({
     marginTop: 4,
     marginBottom: 2,
   },
+  dateSeparatorWrap: {
+    alignItems: "center",
+    justifyContent: "center",
+    marginVertical: 12,
+  },
+  dateSeparatorBubble: {
+    backgroundColor: "#EEF4EF",
+    paddingHorizontal: 14,
+    paddingVertical: 4,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#D9E4DB",
+  },
+  dateSeparatorText: {
+    fontSize: 11,
+  },
   identityHeader: {
-    alignItems: "flex-start",
     gap: 1,
     marginBottom: 2,
+    alignItems: "flex-start",
   },
   identityName: {
     fontSize: 12,
@@ -621,7 +675,7 @@ const styles = StyleSheet.create({
   },
   systemText: {
     fontSize: 12,
-    lineHeight: 17,
+    lineHeight: 18,
     textAlign: "center",
   },
   readOnlyNotice: {
@@ -630,7 +684,12 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     paddingHorizontal: 14,
     paddingVertical: 12,
-    gap: 4,
+    gap: 6,
+    elevation: 1,
+    shadowColor: "#24564F",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
   },
   readOnlyTitle: {
     fontSize: 13,

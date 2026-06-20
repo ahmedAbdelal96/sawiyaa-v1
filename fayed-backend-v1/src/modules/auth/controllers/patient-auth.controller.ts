@@ -166,6 +166,8 @@ export class PatientAuthController {
       email: dto.email,
       password: dto.password,
       deviceContext: getRequestDeviceContext(request, dto.deviceId),
+      ipAddress: request.ip ?? null,
+      userAgent: request.headers['user-agent'] ?? null,
     });
 
     if (result.tokens?.refreshToken) {

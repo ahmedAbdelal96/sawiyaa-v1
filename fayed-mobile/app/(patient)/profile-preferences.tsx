@@ -3,9 +3,9 @@ import {
   Alert,
   ScrollView,
   StyleSheet,
-  TouchableOpacity,
   View,
 } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import {
   Header,
   Screen,
@@ -13,6 +13,7 @@ import {
   Text,
   Input,
   Button,
+  SegmentedControl,
 } from "../../src/components/ui";
 import { useTheme } from "../../src/providers/ThemeProvider";
 import { useTranslation } from "react-i18next";
@@ -23,6 +24,7 @@ import {
 } from "../../src/features/settings/hooks";
 import type { SettingsLocale } from "../../src/features/settings/types";
 import { setAppLanguage } from "../../src/i18n";
+import { useAppDirection } from "../../src/i18n/direction";
 import { extractApiErrorMessage } from "../../src/lib/api";
 
 export default function PatientProfilePreferencesScreen() {
@@ -38,6 +40,8 @@ export default function PatientProfilePreferencesScreen() {
     i18n.language.startsWith("ar") ? "ar" : "en",
   );
   const [timezone, setTimezone] = useState("");
+
+  const { rowDirection } = useAppDirection();
 
   useEffect(() => {
     const nextLanguage = (settings?.preferences.locale ??
@@ -90,90 +94,104 @@ export default function PatientProfilePreferencesScreen() {
   return (
     <Screen bg="background">
       <Header title={t("profileScreen.preferences.screenTitle")} showBack />
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        {/* Language Selection Card */}
         <Card
           variant="elevated"
-          style={[
-            styles.card,
-            { borderWidth: 1, borderColor: theme.colors.borderLight },
-          ]}
+          style={styles.card}
+          padding="none"
         >
-          <Text weight="bold" style={styles.cardTitle}>
-            {t("profileScreen.preferences.languageTitle")}
-          </Text>
-          <Text color={theme.colors.textSecondary} style={styles.bodyText}>
-            {t("profileScreen.preferences.languageBody")}
-          </Text>
-          <View style={styles.choiceWrap}>
-            {(["ar", "en"] as const).map((value) => {
-              const selected = selectedLanguage === value;
-              return (
-                <TouchableOpacity
-                  key={value}
-                  activeOpacity={0.85}
-                  style={[
-                    styles.choiceButton,
-                    {
-                      borderColor: selected
-                        ? theme.colors.primary
-                        : theme.colors.borderLight,
-                      backgroundColor: selected
-                        ? theme.colors.primaryLight
-                        : theme.colors.surface,
-                    },
-                  ]}
-                  onPress={() => setSelectedLanguage(value)}
-                >
-                  <Text
-                    weight={selected ? "600" : "500"}
-                    color={
-                      selected ? theme.colors.primary : theme.colors.textPrimary
-                    }
-                  >
-                    {t(`profileScreen.language.options.${value}`)}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
+          {/* Subtle gold accent indicator line at the top */}
+          <View style={[styles.goldAccentLine, { backgroundColor: theme.colors.tertiary }]} />
+
+          <View style={styles.cardInnerPadding}>
+            <View style={[styles.cardHeaderRow, { flexDirection: rowDirection }]}>
+              <Ionicons name="language-outline" size={20} color={theme.colors.primary} style={{ marginEnd: 8 }} />
+              <Text weight="bold" style={styles.cardTitle} color={theme.colors.textPrimary}>
+                {t("profileScreen.preferences.languageTitle")}
+              </Text>
+            </View>
+            <Text color={theme.colors.textSecondary} style={styles.bodyText}>
+              {t("profileScreen.preferences.languageBody")}
+            </Text>
+            <View style={styles.choiceWrap}>
+              <SegmentedControl
+                options={[
+                  { key: "ar", label: t("profileScreen.language.options.ar") },
+                  { key: "en", label: t("profileScreen.language.options.en") },
+                ]}
+                value={selectedLanguage}
+                onChange={(val) => setSelectedLanguage(val as SettingsLocale)}
+              />
+            </View>
           </View>
         </Card>
 
+        {/* Timezone Selection Card */}
         <Card
           variant="elevated"
-          style={[
-            styles.card,
-            { borderWidth: 1, borderColor: theme.colors.borderLight },
-          ]}
+          style={styles.card}
+          padding="none"
         >
-          <Text weight="bold" style={styles.cardTitle}>
-            {t("profileScreen.preferences.timezoneTitle")}
-          </Text>
-          <Text color={theme.colors.textSecondary} style={styles.bodyText}>
-            {t("profileScreen.preferences.timezoneBody")}
-          </Text>
-          <View style={styles.formSpacer}>
-            <Input
-              label={t("profileScreen.details.fields.timezone")}
-              value={timezone}
-              placeholder={t("profileScreen.preferences.timezonePlaceholder")}
-              onChangeText={setTimezone}
-            />
+          {/* Subtle gold accent indicator line at the top */}
+          <View style={[styles.goldAccentLine, { backgroundColor: theme.colors.tertiary }]} />
+
+          <View style={styles.cardInnerPadding}>
+            <View style={[styles.cardHeaderRow, { flexDirection: rowDirection }]}>
+              <Ionicons name="time-outline" size={20} color={theme.colors.primary} style={{ marginEnd: 8 }} />
+              <Text weight="bold" style={styles.cardTitle} color={theme.colors.textPrimary}>
+                {t("profileScreen.preferences.timezoneTitle")}
+              </Text>
+            </View>
+            
+            {/* Informative calm green care tip, no harsh warnings */}
+            <View
+              style={[
+                styles.infoNoteCard,
+                {
+                  backgroundColor: theme.colors.mintAccent,
+                },
+              ]}
+            >
+              <View style={[styles.infoNoteRow, { flexDirection: rowDirection }]}>
+                <Ionicons name="sparkles-outline" size={16} color={theme.colors.primary} style={{ marginEnd: 8, marginTop: 2 }} />
+                <Text color={theme.colors.textPrimary} style={styles.infoNoteText}>
+                  {t("profileScreen.preferences.timezoneBody")}
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.formSpacer}>
+              <Input
+                label={t("profileScreen.details.fields.timezone")}
+                value={timezone}
+                placeholder={t("profileScreen.preferences.timezonePlaceholder")}
+                onChangeText={setTimezone}
+              />
+            </View>
           </View>
         </Card>
 
+        {/* Boundary Info Card - Warm Card layout */}
         <Card
           variant="elevated"
-          style={[
-            styles.card,
-            { borderWidth: 1, borderColor: theme.colors.borderLight },
-          ]}
+          style={[styles.warmCard, { backgroundColor: theme.colors.surface }]}
+          padding="none"
         >
-          <Text weight="bold" style={styles.cardTitle}>
-            {t("profileScreen.preferences.boundaryTitle")}
-          </Text>
-          <Text color={theme.colors.textSecondary} style={styles.bodyText}>
-            {t("profileScreen.preferences.boundaryBody")}
-          </Text>
+          {/* Subtle gold accent indicator line at the top */}
+          <View style={[styles.goldAccentLine, { backgroundColor: theme.colors.tertiary }]} />
+
+          <View style={styles.cardInnerPadding}>
+            <View style={[styles.cardHeaderRow, { flexDirection: rowDirection }]}>
+              <Ionicons name="shield-checkmark-outline" size={20} color={theme.colors.textSecondary} style={{ marginEnd: 8 }} />
+              <Text weight="bold" style={styles.cardTitle} color={theme.colors.textPrimary}>
+                {t("profileScreen.preferences.boundaryTitle")}
+              </Text>
+            </View>
+            <Text color={theme.colors.textSecondary} style={styles.bodyText}>
+              {t("profileScreen.preferences.boundaryBody")}
+            </Text>
+          </View>
         </Card>
 
         <Button
@@ -186,6 +204,7 @@ export default function PatientProfilePreferencesScreen() {
           disabled={
             patchSettingsPreferences.isPending || settingsQuery.isLoading
           }
+          style={styles.saveButton}
         />
       </ScrollView>
     </Screen>
@@ -200,30 +219,66 @@ const styles = StyleSheet.create({
     gap: 14,
   },
   card: {
-    gap: 10,
+    borderRadius: 20,
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "#E8DED0",
+    overflow: "hidden",
+  },
+  warmCard: {
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "#E8DED0",
+    overflow: "hidden",
+  },
+  goldAccentLine: {
+    height: 3,
+    width: "100%",
+  },
+  cardInnerPadding: {
+    padding: 16,
+    gap: 12,
+  },
+  cardHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
   },
   cardTitle: {
-    fontSize: 18,
-    marginBottom: 4,
+    fontSize: 16,
   },
   bodyText: {
     fontSize: 13,
     lineHeight: 20,
   },
   choiceWrap: {
-    marginTop: 12,
-    flexDirection: "row",
-    gap: 10,
-  },
-  choiceButton: {
-    flex: 1,
-    borderWidth: 1,
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 14,
-    alignItems: "center",
+    marginTop: 4,
+    width: "100%",
   },
   formSpacer: {
-    marginTop: 12,
+    marginTop: 4,
+  },
+  infoNoteCard: {
+    borderRadius: 12,
+    padding: 12,
+  },
+  infoNoteRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+  },
+  infoNoteText: {
+    fontSize: 12,
+    lineHeight: 18,
+    flex: 1,
+  },
+  saveButton: {
+    height: 52,
+    borderRadius: 14,
+    marginTop: 6,
+  },
+  rowRtl: {
+    flexDirection: "row-reverse",
+  },
+  rowLtr: {
+    flexDirection: "row",
   },
 });

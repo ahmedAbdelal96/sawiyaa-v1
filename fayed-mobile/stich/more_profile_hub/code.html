@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+
+<html class="light" dir="rtl" lang="ar"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-width=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/>
+<title>More - Fayed Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600;700&amp;family=Source+Serif+4:opsz,wght@8..144,400;8..144,600;8..144,700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-primary-fixed-variant": "#004f50",
+                        "primary-fixed-dim": "#5cd8da",
+                        "surface-container-lowest": "#ffffff",
+                        "tertiary-fixed-dim": "#c8c6c5",
+                        "on-secondary": "#ffffff",
+                        "secondary-container": "#e0e0dd",
+                        "cream-accent": "#FFF9EE",
+                        "alert-red": "#FCECEC",
+                        "on-tertiary-container": "#2d2c2c",
+                        "surface-container": "#e9efee",
+                        "on-background": "#171d1d",
+                        "on-tertiary-fixed-variant": "#474746",
+                        "on-tertiary": "#ffffff",
+                        "on-tertiary-fixed": "#1c1b1b",
+                        "on-secondary-fixed": "#1a1c1a",
+                        "surface": "#f5fafa",
+                        "tertiary-container": "#959393",
+                        "surface-tint": "#00696b",
+                        "primary": "#00696b",
+                        "surface-bright": "#f5fafa",
+                        "surface-dim": "#d5dbda",
+                        "tertiary": "#5f5e5e",
+                        "on-primary-fixed": "#002020",
+                        "inverse-primary": "#5cd8da",
+                        "on-surface-variant": "#3d4949",
+                        "surface-variant": "#dee4e3",
+                        "error-container": "#ffdad6",
+                        "mint-accent": "#E8F5F1",
+                        "outline": "#6d7a79",
+                        "on-primary": "#ffffff",
+                        "on-secondary-container": "#626361",
+                        "on-surface": "#171d1d",
+                        "outline-variant": "#bcc9c9",
+                        "inverse-on-surface": "#ecf2f1",
+                        "surface-container-highest": "#dee4e3",
+                        "secondary-fixed-dim": "#c7c6c4",
+                        "secondary": "#5e5f5d",
+                        "blue-accent": "#E8F1F8",
+                        "on-secondary-fixed-variant": "#464745",
+                        "surface-container-low": "#eff5f4",
+                        "surface-container-high": "#e4e9e9",
+                        "error": "#ba1a1a",
+                        "on-primary-container": "#003233",
+                        "amber-accent": "#FFF3E0",
+                        "on-error-container": "#93000a",
+                        "primary-fixed": "#7cf5f7",
+                        "secondary-fixed": "#e3e2e0",
+                        "inverse-surface": "#2c3131",
+                        "background": "#f5fafa",
+                        "tertiary-fixed": "#e5e2e1",
+                        "on-error": "#ffffff",
+                        "primary-container": "#00a4a6"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "sm": "16px",
+                        "lg": "32px",
+                        "base": "4px",
+                        "xs": "8px",
+                        "gutter-mobile": "12px",
+                        "xl": "48px",
+                        "md": "24px",
+                        "margin-mobile": "20px"
+                    },
+                    "fontFamily": {
+                        "body-lg": ["\"Source Sans 3\""],
+                        "headline-sm": ["\"Source Serif 4\""],
+                        "display-lg-mobile": ["\"Source Serif 4\""],
+                        "label-md": ["\"Source Sans 3\""],
+                        "label-sm": ["\"Source Sans 3\""],
+                        "headline-md": ["\"Source Serif 4\""],
+                        "body-md": ["\"Source Sans 3\""],
+                        "display-lg": ["\"Source Serif 4\""]
+                    },
+                    "fontSize": {
+                        "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                        "headline-sm": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                        "display-lg-mobile": ["28px", {"lineHeight": "36px", "fontWeight": "700"}],
+                        "label-md": ["14px", {"lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "600"}],
+                        "label-sm": ["12px", {"lineHeight": "16px", "fontWeight": "500"}],
+                        "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                        "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "display-lg": ["34px", {"lineHeight": "42px", "letterSpacing": "-0.02em", "fontWeight": "700"}]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .pb-safe { padding-bottom: env(safe-area-inset-bottom, 20px); }
+        .pt-safe { padding-top: env(safe-area-inset-top, 20px); }
+        /* Clinical Warmth shadow */
+        .shadow-clinical { box-shadow: 0 4px 20px rgba(22, 22, 22, 0.05); }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background min-h-screen font-body-md antialiased pb-24 md:pb-0">
+<!-- TopAppBar -->
+<header class="bg-surface dark:bg-background docked full-width top-0 flat no shadows flex justify-between items-center w-full px-margin-mobile py-xs max-w-full sticky z-40 pt-safe">
+<div class="flex items-center gap-sm">
+<div class="w-10 h-10 rounded-full bg-surface-variant flex items-center justify-center overflow-hidden">
+<img alt="User Avatar" class="w-full h-full object-cover" data-alt="A professional portrait photograph of a confident healthcare professional in soft, warm lighting. The individual has a gentle smile, conveying trust and empathy. The background is a highly diffused, airy clinical setting with subtle Fayed Teal accents. High-quality editorial style, maintaining the modern corporate aesthetic of the application." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDgc6jnPT-pwIPVd8AHV_uB8wZ01z_0gFaMRnuEuVHLN0eW9YXZwKUoW-2-KXsMq4W9bCxy9tXuLRf8GxaeHjUE00K74X5D_R40VtJDS2vxD4oScqwuD3CRpIixLfzb-v6O4-uoecxQYSdGb587IEzcnMfxr_osnKHVKAIqnMVfjkzEVPQHJwdu01CssjnxmxVStLDjexe26ApjhD1cbL9M1PN7OgRud7Jt8JFcmoHAHe4W3iCr6b-oeaLCIAmGQYnkouRYkzE7w6rn"/>
+</div>
+<h1 class="font-headline-md text-headline-md font-bold text-primary dark:text-primary-fixed-dim">Fayed</h1>
+</div>
+<button aria-label="Messages" class="w-10 h-10 flex items-center justify-center rounded-full text-primary dark:text-primary-fixed-dim hover:opacity-80 scale-95 transition-transform duration-200">
+<span class="material-symbols-outlined relative" style="font-variation-settings: 'FILL' 0;">mail
+                <span class="absolute top-0 right-0 w-2 h-2 bg-error rounded-full border border-surface"></span>
+</span>
+</button>
+</header>
+<!-- Main Content Canvas -->
+<main class="w-full max-w-3xl mx-auto px-margin-mobile md:px-0 mt-md space-y-lg pb-xl">
+<!-- Profile Header Area -->
+<section class="flex items-center gap-md bg-surface-container-lowest p-md rounded-xl shadow-clinical">
+<div class="w-20 h-20 rounded-full bg-surface-container-low overflow-hidden border-2 border-primary/10">
+<img alt="User Avatar Large" class="w-full h-full object-cover" data-alt="A professional portrait photograph of a confident healthcare professional in soft, warm lighting. The individual has a gentle smile, conveying trust and empathy. The background is a highly diffused, airy clinical setting with subtle Fayed Teal accents. High-quality editorial style, maintaining the modern corporate aesthetic of the application." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBhg5Da_yGRdOeQMUC40JgfaA0cEiOPnW3da0MIVaNVOACzYAXSVC88v1ePzWtrl5oKS9jkT9dlndQvZ1QfZmYRw0g5Fl_-G-MwaxNzyDTPb9fnrZ2vsn1pNtYdMGqmFujPERljKkxtk29uqfoihhL-hOU8b--fUVRtDycmZQzt09j7J4YfNegtboONO_EajAVkAiICLCrlra_ahbW_VI00-uGvW8vBqCxE-7lbWNPyvuo2ZvKyNWEGQj-cRx4BcfJVyPKkJAvCS5kN"/>
+</div>
+<div class="flex flex-col">
+<h2 class="font-headline-sm text-headline-sm text-on-surface">أحمد محمد</h2>
+<a class="font-label-md text-label-md text-primary mt-base flex items-center gap-1 hover:underline" href="#">
+                    عرض الملف الشخصي
+                    <span class="material-symbols-outlined text-[16px] rtl:rotate-180">arrow_forward</span>
+</a>
+</div>
+</section>
+<!-- Account & Care Settings Group -->
+<section class="space-y-sm">
+<h3 class="font-label-md text-label-md text-on-surface-variant px-sm">الحساب والرعاية</h3>
+<div class="bg-surface-container-lowest rounded-xl shadow-clinical overflow-hidden flex flex-col divide-y divide-surface-variant">
+<button class="w-full flex items-center justify-between p-md hover:bg-surface-container-low transition-colors duration-200">
+<div class="flex items-center gap-sm">
+<div class="w-10 h-10 rounded-full bg-mint-accent flex items-center justify-center text-primary">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">calendar_today</span>
+</div>
+<span class="font-body-md text-body-md text-on-surface">جلساتي</span>
+</div>
+<span class="material-symbols-outlined text-outline-variant rtl:rotate-180">chevron_right</span>
+</button>
+<button class="w-full flex items-center justify-between p-md hover:bg-surface-container-low transition-colors duration-200">
+<div class="flex items-center gap-sm">
+<div class="w-10 h-10 rounded-full bg-mint-accent flex items-center justify-center text-primary">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">payments</span>
+</div>
+<span class="font-body-md text-body-md text-on-surface">المدفوعات والمحفظة</span>
+</div>
+<span class="material-symbols-outlined text-outline-variant rtl:rotate-180">chevron_right</span>
+</button>
+<button class="w-full flex items-center justify-between p-md hover:bg-surface-container-low transition-colors duration-200">
+<div class="flex items-center gap-sm">
+<div class="w-10 h-10 rounded-full bg-mint-accent flex items-center justify-center text-primary">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">article</span>
+</div>
+<span class="font-body-md text-body-md text-on-surface">المقالات</span>
+</div>
+<span class="material-symbols-outlined text-outline-variant rtl:rotate-180">chevron_right</span>
+</button>
+<button class="w-full flex items-center justify-between p-md hover:bg-surface-container-low transition-colors duration-200">
+<div class="flex items-center gap-sm">
+<div class="w-10 h-10 rounded-full bg-mint-accent flex items-center justify-center text-primary">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">school</span>
+</div>
+<span class="font-body-md text-body-md text-on-surface">التدريب</span>
+</div>
+<span class="material-symbols-outlined text-outline-variant rtl:rotate-180">chevron_right</span>
+</button>
+</div>
+</section>
+<!-- Preferences Group -->
+<section class="space-y-sm">
+<h3 class="font-label-md text-label-md text-on-surface-variant px-sm">التفضيلات</h3>
+<div class="bg-surface-container-lowest rounded-xl shadow-clinical overflow-hidden flex flex-col divide-y divide-surface-variant">
+<button class="w-full flex items-center justify-between p-md hover:bg-surface-container-low transition-colors duration-200">
+<div class="flex items-center gap-sm">
+<div class="w-10 h-10 rounded-full bg-blue-accent flex items-center justify-center text-surface-tint">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">language</span>
+</div>
+<span class="font-body-md text-body-md text-on-surface">اللغة</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="font-label-md text-label-md text-on-surface-variant">العربية</span>
+<span class="material-symbols-outlined text-outline-variant rtl:rotate-180">chevron_right</span>
+</div>
+</button>
+<button class="w-full flex items-center justify-between p-md hover:bg-surface-container-low transition-colors duration-200">
+<div class="flex items-center gap-sm">
+<div class="w-10 h-10 rounded-full bg-blue-accent flex items-center justify-center text-surface-tint">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">schedule</span>
+</div>
+<span class="font-body-md text-body-md text-on-surface">المنطقة الزمنية</span>
+</div>
+<span class="material-symbols-outlined text-outline-variant rtl:rotate-180">chevron_right</span>
+</button>
+<button class="w-full flex items-center justify-between p-md hover:bg-surface-container-low transition-colors duration-200">
+<div class="flex items-center gap-sm">
+<div class="w-10 h-10 rounded-full bg-blue-accent flex items-center justify-center text-surface-tint">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">notifications</span>
+</div>
+<span class="font-body-md text-body-md text-on-surface">إعدادات الإشعارات</span>
+</div>
+<span class="material-symbols-outlined text-outline-variant rtl:rotate-180">chevron_right</span>
+</button>
+</div>
+</section>
+<!-- Support Group -->
+<section class="space-y-sm">
+<h3 class="font-label-md text-label-md text-on-surface-variant px-sm">الدعم</h3>
+<div class="bg-surface-container-lowest rounded-xl shadow-clinical overflow-hidden flex flex-col divide-y divide-surface-variant">
+<button class="w-full flex items-center justify-between p-md hover:bg-surface-container-low transition-colors duration-200">
+<div class="flex items-center gap-sm">
+<div class="w-10 h-10 rounded-full bg-amber-accent flex items-center justify-center text-on-tertiary-container">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">help</span>
+</div>
+<span class="font-body-md text-body-md text-on-surface">مركز المساعدة</span>
+</div>
+<span class="material-symbols-outlined text-outline-variant rtl:rotate-180">chevron_right</span>
+</button>
+<button class="w-full flex items-center justify-between p-md hover:bg-surface-container-low transition-colors duration-200">
+<div class="flex items-center gap-sm">
+<div class="w-10 h-10 rounded-full bg-amber-accent flex items-center justify-center text-on-tertiary-container">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">support_agent</span>
+</div>
+<span class="font-body-md text-body-md text-on-surface">تواصل مع الدعم</span>
+</div>
+<span class="material-symbols-outlined text-outline-variant rtl:rotate-180">chevron_right</span>
+</button>
+</div>
+</section>
+<!-- Logout Action -->
+<section class="pt-md">
+<button class="w-full bg-surface-container-lowest rounded-xl shadow-clinical p-md flex items-center justify-center gap-sm hover:bg-alert-red transition-colors duration-200 group">
+<span class="material-symbols-outlined text-error" style="font-variation-settings: 'FILL' 0;">logout</span>
+<span class="font-label-md text-label-md text-error">تسجيل الخروج</span>
+</button>
+</section>
+</main>
+<!-- BottomNavBar (Mobile Only) -->
+<nav class="md:hidden fixed bottom-0 w-full z-50 flex justify-around items-center px-4 py-2 bg-surface/80 dark:bg-inverse-surface/80 backdrop-blur-md pb-safe border-t-0 shadow-sm">
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant hover:bg-surface-container-low dark:hover:bg-surface-container-highest rounded-full w-16 h-14 scale-98 transition-all duration-200" href="#">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 0;">home</span>
+<span class="font-label-sm text-label-sm">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant hover:bg-surface-container-low dark:hover:bg-surface-container-highest rounded-full w-16 h-14 scale-98 transition-all duration-200" href="#">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 0;">calendar_today</span>
+<span class="font-label-sm text-label-sm">Sessions</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant hover:bg-surface-container-low dark:hover:bg-surface-container-highest rounded-full w-16 h-14 scale-98 transition-all duration-200 relative" href="#">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 0;">notifications</span>
+<span class="font-label-sm text-label-sm">Notifications</span>
+<span class="absolute top-2 right-4 w-2 h-2 bg-error rounded-full"></span>
+</a>
+<a class="flex flex-col items-center justify-center text-primary dark:text-primary-fixed-dim font-bold hover:bg-surface-container-low dark:hover:bg-surface-container-highest rounded-full w-16 h-14 scale-98 transition-all duration-200 relative" href="#">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 1;">grid_view</span>
+<span class="font-label-sm text-label-sm">More</span>
+<span class="absolute bottom-1 w-1 h-1 bg-primary rounded-full"></span>
+</a>
+</nav>
+</body></html>

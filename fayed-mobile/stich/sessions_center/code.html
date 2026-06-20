@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+
+<html class="light" dir="rtl" lang="ar"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>مركز الجلسات - Fayed</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600&amp;family=Source+Serif+4:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "on-primary-fixed-variant": "#004f50",
+                      "primary-fixed-dim": "#5cd8da",
+                      "surface-container-lowest": "#ffffff",
+                      "tertiary-fixed-dim": "#c8c6c5",
+                      "on-secondary": "#ffffff",
+                      "secondary-container": "#e0e0dd",
+                      "cream-accent": "#FFF9EE",
+                      "alert-red": "#FCECEC",
+                      "on-tertiary-container": "#2d2c2c",
+                      "surface-container": "#e9efee",
+                      "on-background": "#171d1d",
+                      "on-tertiary-fixed-variant": "#474746",
+                      "on-tertiary": "#ffffff",
+                      "on-tertiary-fixed": "#1c1b1b",
+                      "on-secondary-fixed": "#1a1c1a",
+                      "surface": "#f5fafa",
+                      "tertiary-container": "#959393",
+                      "surface-tint": "#00696b",
+                      "primary": "#00696b",
+                      "surface-bright": "#f5fafa",
+                      "surface-dim": "#d5dbda",
+                      "tertiary": "#5f5e5e",
+                      "on-primary-fixed": "#002020",
+                      "inverse-primary": "#5cd8da",
+                      "on-surface-variant": "#3d4949",
+                      "surface-variant": "#dee4e3",
+                      "error-container": "#ffdad6",
+                      "mint-accent": "#E8F5F1",
+                      "outline": "#6d7a79",
+                      "on-primary": "#ffffff",
+                      "on-secondary-container": "#626361",
+                      "on-surface": "#171d1d",
+                      "outline-variant": "#bcc9c9",
+                      "inverse-on-surface": "#ecf2f1",
+                      "surface-container-highest": "#dee4e3",
+                      "secondary-fixed-dim": "#c7c6c4",
+                      "secondary": "#5e5f5d",
+                      "blue-accent": "#E8F1F8",
+                      "on-secondary-fixed-variant": "#464745",
+                      "surface-container-low": "#eff5f4",
+                      "surface-container-high": "#e4e9e9",
+                      "error": "#ba1a1a",
+                      "on-primary-container": "#003233",
+                      "amber-accent": "#FFF3E0",
+                      "on-error-container": "#93000a",
+                      "primary-fixed": "#7cf5f7",
+                      "secondary-fixed": "#e3e2e0",
+                      "inverse-surface": "#2c3131",
+                      "background": "#f5fafa",
+                      "tertiary-fixed": "#e5e2e1",
+                      "on-error": "#ffffff",
+                      "primary-container": "#00a4a6"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "sm": "16px",
+                      "lg": "32px",
+                      "base": "4px",
+                      "xs": "8px",
+                      "gutter-mobile": "12px",
+                      "xl": "48px",
+                      "md": "24px",
+                      "margin-mobile": "20px"
+              },
+              "fontFamily": {
+                      "body-lg": ["\"Source Sans 3\""],
+                      "headline-sm": ["\"Source Serif 4\""],
+                      "display-lg-mobile": ["\"Source Serif 4\""],
+                      "label-md": ["\"Source Sans 3\""],
+                      "label-sm": ["\"Source Sans 3\""],
+                      "headline-md": ["\"Source Serif 4\""],
+                      "body-md": ["\"Source Sans 3\""],
+                      "display-lg": ["\"Source Serif 4\""]
+              },
+              "fontSize": {
+                      "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                      "headline-sm": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                      "display-lg-mobile": ["28px", {"lineHeight": "36px", "fontWeight": "700"}],
+                      "label-md": ["14px", {"lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "600"}],
+                      "label-sm": ["12px", {"lineHeight": "16px", "fontWeight": "500"}],
+                      "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                      "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                      "display-lg": ["34px", {"lineHeight": "42px", "letterSpacing": "-0.02em", "fontWeight": "700"}]
+              }
+            }
+          }
+        }
+    </script>
+<style>
+        /* Custom styles for clinical warmth aesthetic */
+        body {
+            background-color: theme('colors.background');
+            color: theme('colors.on-background');
+        }
+        
+        .soft-shadow {
+            box-shadow: 0px 4px 20px rgba(22, 22, 22, 0.05);
+        }
+        
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(12px);
+        }
+
+        /* Timeline specific */
+        .timeline-line::before {
+            content: '';
+            position: absolute;
+            top: 24px;
+            bottom: -24px;
+            right: 15px; /* RTL adjusted */
+            width: 2px;
+            background-color: theme('colors.primary');
+            z-index: 0;
+        }
+        
+        .timeline-item:last-child .timeline-line::before {
+            display: none;
+        }
+
+        /* Hide scrollbar for segmented control */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="antialiased min-h-screen flex flex-col md:flex-row font-body-md text-body-md">
+<!-- Desktop Side Nav (Hidden on Mobile) -->
+<nav class="hidden md:flex flex-col h-full w-80 rounded-l-xl bg-surface dark:bg-surface-container-low shadow-lg p-sm fixed right-0 top-0 z-40">
+<!-- Header -->
+<div class="flex items-center gap-sm mb-lg px-sm">
+<img class="w-12 h-12 rounded-full object-cover border-2 border-surface-container-highest" data-alt="A professional headshot of a middle-eastern woman in her 30s, wearing business casual attire. She has a warm, approachable smile. The background is a soft, out-of-focus modern clinic office with warm lighting and a hint of a teal accent wall. The overall image exudes trust and clinical excellence." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC_ws5qIZJTnlr2mK1QQCgO0q-L2M5lQTWiAyiJUAdh8tNNJPzTDeqCKTcE8E-8u6frc3z9dBQiHduYCiT9a_96XhakJo1lu-oBEG8xEBZtoSVGPOvX--092gz00QIXrII78C_7O15BWUTBBseJq_5S3zasK7JB19TdNkyQrQNYeYXm6S_xwUz-DYfrRVcOtDXCWt3mtIhsBlWFABHuHG1fOD4fbHF80FC9C8uvdNw8Rm-FMH4GtAQstVroWFTv5SK575AibXajrXrM"/>
+<div class="flex flex-col">
+<span class="font-headline-md text-headline-md text-primary">Fayed Member</span>
+<span class="font-body-md text-body-md text-on-surface-variant">View Profile</span>
+</div>
+</div>
+<!-- Navigation Links -->
+<div class="flex flex-col gap-xs flex-grow">
+<a class="flex items-center gap-sm px-sm py-xs rounded-full text-on-surface-variant hover:bg-surface-variant/50 transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">person</span>
+<span class="font-label-md text-label-md">My Profile</span>
+</a>
+<a class="flex items-center gap-sm px-sm py-xs rounded-full bg-primary-container text-on-primary-container transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">calendar_today</span>
+<span class="font-label-md text-label-md">Sessions</span>
+</a>
+<a class="flex items-center gap-sm px-sm py-xs rounded-full text-on-surface-variant hover:bg-surface-variant/50 transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">description</span>
+<span class="font-label-md text-label-md">Medical Records</span>
+</a>
+<a class="flex items-center gap-sm px-sm py-xs rounded-full text-on-surface-variant hover:bg-surface-variant/50 transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">payments</span>
+<span class="font-label-md text-label-md">Payments</span>
+</a>
+<a class="flex items-center gap-sm px-sm py-xs rounded-full text-on-surface-variant hover:bg-surface-variant/50 transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">help</span>
+<span class="font-label-md text-label-md">Help Center</span>
+</a>
+</div>
+<!-- Logout -->
+<div class="mt-auto">
+<a class="flex items-center gap-sm px-sm py-xs rounded-full text-on-surface-variant hover:bg-surface-variant/50 transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">logout</span>
+<span class="font-label-md text-label-md">Logout</span>
+</a>
+</div>
+</nav>
+<!-- Main Content Area -->
+<main class="flex-1 w-full md:mr-80 pb-[80px] md:pb-0">
+<!-- Mobile TopAppBar -->
+<header class="md:hidden flex justify-between items-center w-full px-margin-mobile py-xs max-w-full bg-surface dark:bg-background flat no shadows sticky top-0 z-30 transition-transform duration-200">
+<div class="flex items-center gap-sm">
+<img class="w-8 h-8 rounded-full object-cover" data-alt="A professional headshot of a middle-eastern woman in her 30s, wearing business casual attire. She has a warm, approachable smile. The background is a soft, out-of-focus modern clinic office with warm lighting and a hint of a teal accent wall. The overall image exudes trust and clinical excellence." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAyuU3Uft8FV6AggugpqVDyNGSyQay1awEzi7Nh8ZzqsyaK6zBkHqHaqf-nPjhY-E5xq1UYAmpllWHRyhnevJ7fspBInuD77wrYIf8_nMfiwhoZyVBgovlOW_tkZaWKdJ7ENMYWVG8dkJ9I0E-fzkhofo9r7BEI74qA7JyRP5Km7wq0MXzVyKiHceKA5db1m36SRhksH10aUpVC6GgprlO8epDtbsmF4tL_aYMCDLqFykLldvWrGzNcGsgxplarPBpBeQLJQenh6y4A"/>
+<span class="font-headline-md text-headline-md font-bold text-primary dark:text-primary-fixed-dim">Fayed</span>
+</div>
+<button class="text-on-surface-variant hover:opacity-80 transition-opacity">
+<span class="material-symbols-outlined relative">
+                    mail
+                    <span class="absolute top-0 right-0 w-2 h-2 bg-error rounded-full"></span>
+</span>
+</button>
+</header>
+<!-- Page Content Canvas -->
+<div class="px-margin-mobile md:px-md py-md max-w-4xl mx-auto flex flex-col gap-lg">
+<!-- Page Title -->
+<div class="flex flex-col gap-base">
+<h1 class="font-display-lg-mobile md:font-display-lg text-display-lg-mobile md:text-display-lg text-on-surface">مركز الجلسات</h1>
+<p class="font-body-md text-body-md text-on-surface-variant">إدارة وتتبع مواعيدك الطبية</p>
+</div>
+<!-- Summary Strip -->
+<div class="grid grid-cols-2 gap-sm">
+<div class="bg-surface-container-lowest soft-shadow rounded-xl p-md flex flex-col gap-xs">
+<span class="font-label-md text-label-md text-on-surface-variant">إجمالي الجلسات</span>
+<span class="font-headline-md text-headline-md text-primary">24</span>
+</div>
+<div class="bg-surface-container-lowest soft-shadow rounded-xl p-md flex flex-col gap-xs border-r-4 border-mint-accent">
+<span class="font-label-md text-label-md text-on-surface-variant">القادمة</span>
+<span class="font-headline-md text-headline-md text-primary">2</span>
+</div>
+</div>
+<!-- Segmented Control Filters -->
+<div class="flex gap-xs overflow-x-auto no-scrollbar pb-2">
+<button class="whitespace-nowrap px-md py-xs rounded-full bg-primary text-on-primary font-label-md text-label-md transition-all">القادمة</button>
+<button class="whitespace-nowrap px-md py-xs rounded-full bg-surface-container-lowest text-on-surface-variant font-label-md text-label-md border border-surface-container-highest hover:bg-surface-container-low transition-all">السابقة</button>
+<button class="whitespace-nowrap px-md py-xs rounded-full bg-surface-container-lowest text-on-surface-variant font-label-md text-label-md border border-surface-container-highest hover:bg-surface-container-low transition-all">الملغاة</button>
+</div>
+<!-- Upcoming Sessions Section -->
+<section class="flex flex-col gap-md">
+<h2 class="font-headline-sm text-headline-sm text-on-surface">الجلسات القادمة</h2>
+<!-- Active Session Card (Join Available) -->
+<div class="bg-surface-container-lowest soft-shadow rounded-xl p-md flex flex-col gap-md relative overflow-hidden border border-mint-accent/50">
+<div class="absolute top-0 right-0 w-full h-1 bg-mint-accent"></div>
+<div class="flex justify-between items-start">
+<div class="flex gap-sm items-center">
+<img class="w-12 h-12 rounded-full object-cover" data-alt="A portrait of a male doctor in his 40s wearing a white lab coat over a light blue shirt. He has short dark hair and a professional, calm expression. The lighting is bright and even, set in a modern medical consulting room with subtle teal accents in the blurred background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAH3lD-AX4ELQKWzqfFeGC225HEGkBrpzubsCEm1GVhU3NWjzHwnB8v9j-RzCh6GOkT5Zdiq6k9EtnMs5NMCw7htnrJtrGUKQSR9l1PVYjG5TMUK3dtGktT64i7K6tIqfdChcKP230IamGP6Rdtl4vlC_K4A_-lN2ApbPPEOBHDV5M19adpSP_4wi-rmHuKo1YhKHFhDhbCehwpC573uTUA0YHTR6XyRjePo7zZxUlmaRF28lAO_kxpXMiII208yxjh33ZK-UdF2J_4"/>
+<div class="flex flex-col">
+<span class="font-headline-sm text-headline-sm text-on-surface">د. أحمد محمود</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">طب نفسي</span>
+</div>
+</div>
+<div class="bg-mint-accent text-on-primary-fixed-variant px-xs py-base rounded-full font-label-sm text-label-sm flex items-center gap-base">
+<span class="w-2 h-2 rounded-full bg-primary-container"></span>
+                            مؤكد
+                        </div>
+</div>
+<div class="grid grid-cols-2 gap-sm bg-surface-container-low p-sm rounded-lg">
+<div class="flex items-center gap-xs">
+<span class="material-symbols-outlined text-primary" style="font-size: 20px;">calendar_month</span>
+<span class="font-label-md text-label-md text-on-surface-variant">اليوم، 15 مايو</span>
+</div>
+<div class="flex items-center gap-xs">
+<span class="material-symbols-outlined text-primary" style="font-size: 20px;">schedule</span>
+<span class="font-label-md text-label-md text-on-surface-variant">10:00 صباحاً (45 د)</span>
+</div>
+<div class="flex items-center gap-xs col-span-2">
+<span class="material-symbols-outlined text-primary" style="font-size: 20px;">videocam</span>
+<span class="font-label-md text-label-md text-on-surface-variant">استشارة فيديو</span>
+</div>
+</div>
+<div class="flex justify-end pt-xs">
+<button class="bg-primary text-on-primary px-lg py-xs rounded-lg font-label-md text-label-md hover:bg-surface-tint transition-colors flex items-center gap-xs">
+<span class="material-symbols-outlined" style="font-size: 18px;">videocam</span>
+                            انضم الآن
+                        </button>
+</div>
+</div>
+<!-- Upcoming Session Card (Join NOT Available) -->
+<div class="bg-surface-container-lowest soft-shadow rounded-xl p-md flex flex-col gap-md">
+<div class="flex justify-between items-start">
+<div class="flex gap-sm items-center">
+<img class="w-12 h-12 rounded-full object-cover" data-alt="A portrait of a female therapist in her late 20s with a warm, empathetic smile. She is wearing a soft cream-colored blouse. The setting is a cozy, brightly lit office with a plant subtly visible in the out-of-focus background. The overall tone is inviting and clinical-warm." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAOKvdUHV-xnx2JCjJT-sg5N2tQk8EvrWUhn2PdiiFkRZSwn4oNapWF2F9h1FsKzLmwEyfjs0romCmlJkfzUYOjS4t2ww6aguDx9X4YE94YWHMU09Q0kknNvxwExySeRPOVerWORpMmPw1_PF5F1nMC3iiar2PUI--IOQx15f7ZFhS1AceoULqQlMsssYukenuC_fjSbGi56ppT5qrS-VF1kcx1oSY276Tw0vRqmvhgd7PQocDoApBr9oFMuiJFnve_me8nRNSTSH7p"/>
+<div class="flex flex-col">
+<span class="font-headline-sm text-headline-sm text-on-surface">د. سارة خليل</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">علاج سلوكي</span>
+</div>
+</div>
+<div class="bg-amber-accent text-on-tertiary-container px-xs py-base rounded-full font-label-sm text-label-sm flex items-center gap-base">
+<span class="w-2 h-2 rounded-full bg-[#f59e0b]"></span>
+                            قيد الانتظار
+                        </div>
+</div>
+<div class="grid grid-cols-2 gap-sm bg-surface-container-low p-sm rounded-lg">
+<div class="flex items-center gap-xs">
+<span class="material-symbols-outlined text-on-surface-variant" style="font-size: 20px;">calendar_month</span>
+<span class="font-label-md text-label-md text-on-surface-variant">الخميس، 18 مايو</span>
+</div>
+<div class="flex items-center gap-xs">
+<span class="material-symbols-outlined text-on-surface-variant" style="font-size: 20px;">schedule</span>
+<span class="font-label-md text-label-md text-on-surface-variant">02:30 مساءً (60 د)</span>
+</div>
+<div class="flex items-center gap-xs col-span-2">
+<span class="material-symbols-outlined text-on-surface-variant" style="font-size: 20px;">location_on</span>
+<span class="font-label-md text-label-md text-on-surface-variant">العيادة الرئيسية، الدور الثاني</span>
+</div>
+</div>
+<!-- No Join button here as canJoin is false -->
+</div>
+</section>
+<!-- History Section (Timeline) -->
+<section class="flex flex-col gap-md mt-sm">
+<h2 class="font-headline-sm text-headline-sm text-on-surface">سجل الجلسات</h2>
+<div class="flex flex-col relative pl-md rtl:pl-0 rtl:pr-md">
+<!-- Timeline Item 1 -->
+<div class="timeline-item relative pl-lg rtl:pl-0 rtl:pr-lg pb-lg timeline-line">
+<div class="absolute right-0 top-1 w-8 h-8 rounded-full bg-mint-accent border-2 border-surface flex items-center justify-center z-10 translate-x-1/2 rtl:translate-x-0 rtl:translate-x-1/2">
+<span class="material-symbols-outlined text-primary text-sm" style="font-size: 16px;">check</span>
+</div>
+<div class="bg-surface-container-lowest soft-shadow rounded-xl p-sm">
+<div class="flex justify-between items-start mb-xs">
+<span class="font-label-md text-label-md text-on-surface">10 مايو 2023</span>
+<div class="bg-surface-container-low text-on-surface-variant px-xs py-base rounded-full font-label-sm text-label-sm">
+                                    مكتمل
+                                </div>
+</div>
+<div class="flex gap-sm items-center mt-xs">
+<img class="w-8 h-8 rounded-full object-cover" data-alt="A portrait of a male doctor in his 40s wearing a white lab coat over a light blue shirt. He has short dark hair and a professional, calm expression. The lighting is bright and even, set in a modern medical consulting room with subtle teal accents in the blurred background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDR8BfxtNRuZHj8TKeq6uIbH_9n0Xkm96kofgOQb8rXWTt2X29vgV7x1Krwb0OqoXvQF_Arb8vRgwteBI4U--cHOfyXKIv3-Wr0q5jKwkzMDdIpASvK-P15p-Gg3oBPcPp_MGlsBMQicAafAleX1LZsmyz9r6Y1qVOVrB8Mgfu7b5y543O00pgDmajXXi15XEN5W21u8Ppr4jTV57m8SAmeht65j5Vm8Mq4cx1NXRQPeyko8d3vX-CoIAv1wqgY3Gw7_FCHZ2oVnIWR"/>
+<div class="flex flex-col">
+<span class="font-label-md text-label-md text-on-surface">د. أحمد محمود</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">متابعة شهرية</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Timeline Item 2 -->
+<div class="timeline-item relative pl-lg rtl:pl-0 rtl:pr-lg pb-lg timeline-line">
+<div class="absolute right-0 top-1 w-8 h-8 rounded-full bg-alert-red border-2 border-surface flex items-center justify-center z-10 translate-x-1/2 rtl:translate-x-0 rtl:translate-x-1/2">
+<span class="material-symbols-outlined text-error text-sm" style="font-size: 16px;">close</span>
+</div>
+<div class="bg-surface-container-lowest soft-shadow rounded-xl p-sm opacity-80">
+<div class="flex justify-between items-start mb-xs">
+<span class="font-label-md text-label-md text-on-surface">3 مايو 2023</span>
+<div class="bg-alert-red text-on-error-container px-xs py-base rounded-full font-label-sm text-label-sm">
+                                    ملغى
+                                </div>
+</div>
+<div class="flex gap-sm items-center mt-xs">
+<div class="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center">
+<span class="material-symbols-outlined text-on-surface-variant" style="font-size: 16px;">person</span>
+</div>
+<div class="flex flex-col">
+<span class="font-label-md text-label-md text-on-surface">د. سارة خليل</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">تم الإلغاء من قبل المريض</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+</div>
+</main>
+<!-- Mobile Bottom Navigation (Hidden on Desktop) -->
+<nav class="md:hidden fixed bottom-0 w-full z-50 flex justify-around items-center px-4 py-2 border-t border-outline-variant/20 bg-surface/80 backdrop-blur-md dark:bg-inverse-surface/80 pb-safe shadow-sm">
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant hover:bg-surface-container-low dark:hover:bg-surface-container-highest rounded-full p-2 scale-98 transition-all duration-200" href="#">
+<span class="material-symbols-outlined">home</span>
+<span class="font-label-sm text-label-sm mt-1">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-primary dark:text-primary-fixed-dim font-bold hover:bg-surface-container-low dark:hover:bg-surface-container-highest rounded-full p-2 scale-98 transition-all duration-200 relative" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">calendar_today</span>
+<span class="font-label-sm text-label-sm mt-1">Sessions</span>
+<span class="absolute bottom-1 w-1 h-1 rounded-full bg-primary"></span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant hover:bg-surface-container-low dark:hover:bg-surface-container-highest rounded-full p-2 scale-98 transition-all duration-200" href="#">
+<span class="material-symbols-outlined">notifications</span>
+<span class="font-label-sm text-label-sm mt-1">Notifications</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant hover:bg-surface-container-low dark:hover:bg-surface-container-highest rounded-full p-2 scale-98 transition-all duration-200" href="#">
+<span class="material-symbols-outlined">grid_view</span>
+<span class="font-label-sm text-label-sm mt-1">More</span>
+</a>
+</nav>
+</body></html>

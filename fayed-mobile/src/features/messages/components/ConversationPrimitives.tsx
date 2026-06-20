@@ -1,18 +1,34 @@
 import React from "react";
 import {
-  I18nManager,
   StyleSheet,
   TouchableOpacity,
   View,
+  TextInput,
+  Image,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { Input, Text } from "../../../components/ui";
+import { Text } from "../../../components/ui";
 import { useTheme } from "../../../providers/ThemeProvider";
+import { useAppDirection } from "../../../i18n/direction";
 
 type AttachmentItem = {
   key: string;
   label: string;
 };
+
+// Helper function to check if text starts with English letters
+function isTextEnglish(text?: string | null): boolean {
+  if (!text) return false;
+  const trimmed = text.trim();
+  if (trimmed.length === 0) return false;
+  const firstAlpha = trimmed.match(/[a-zA-Z]/);
+  const firstArabic = trimmed.match(/[\u0600-\u06FF]/);
+  if (firstAlpha) {
+    if (!firstArabic) return true;
+    return trimmed.indexOf(firstAlpha[0]) < trimmed.indexOf(firstArabic[0]);
+  }
+  return false;
+}
 
 export function ConversationBubble({
   isMine,
@@ -21,6 +37,8 @@ export function ConversationBubble({
   statusLabel,
   header,
   attachments,
+  avatarUrl,
+  senderLabel: _senderLabel,
 }: {
   isMine: boolean;
   text: string;
@@ -28,111 +46,193 @@ export function ConversationBubble({
   statusLabel?: string | null;
   header?: React.ReactNode;
   attachments?: AttachmentItem[];
+  avatarUrl?: string | null;
+  senderLabel?: string;
 }) {
-  const { theme } = useTheme();
-  const isRTL = I18nManager.isRTL;
+  const { isRtl } = useAppDirection();
+
+  // Clinical Warmth Colors
+  const outgoingBg = "#24564F"; // Deep Teal
+  const incomingBg = "#FFFFFF"; // Pure White
+  const incomingBorder = "#E8DED0"; // Soft Border
+  const textPrimary = "#1F332F"; // Main Text
+  const textMuted = "#6F7E78"; // Muted Text
+
+  const isEng = isTextEnglish(text);
+  const textAlignment = isEng ? "left" : (isRtl ? "right" : "left");
+  const textDir = isEng ? "ltr" : (isRtl ? "rtl" : "ltr");
+
+  // Sender Avatar Rendering
+  const avatarComponent = (
+    <View style={bubbleStyles.avatarContainer}>
+      <Image
+        source={avatarUrl ? { uri: avatarUrl } : require("../../../../assets/user.avif")}
+        style={bubbleStyles.avatarImage}
+        resizeMode="cover"
+      />
+    </View>
+  );
+
+  const bubbleComponent = (
+    <View
+      style={[
+        bubbleStyles.bubble,
+        isMine
+          ? [
+              bubbleStyles.bubbleMine,
+              {
+                backgroundColor: outgoingBg,
+                borderTopLeftRadius: 18,
+                borderTopRightRadius: 18,
+                borderBottomLeftRadius: 18,
+                borderBottomRightRadius: 4,
+              },
+            ]
+          : [
+              bubbleStyles.bubbleTheirs,
+              {
+                backgroundColor: incomingBg,
+                borderColor: incomingBorder,
+                borderTopLeftRadius: 18,
+                borderTopRightRadius: 18,
+                borderBottomLeftRadius: 4,
+                borderBottomRightRadius: 18,
+                borderWidth: 1,
+              },
+            ],
+      ]}
+    >
+      <Text
+        style={[
+          bubbleStyles.text,
+          {
+            color: isMine ? "#FFFFFF" : textPrimary,
+            textAlign: textAlignment,
+            writingDirection: textDir,
+          },
+        ]}
+      >
+        {text}
+      </Text>
+
+      {attachments?.length ? (
+        <View style={bubbleStyles.attachmentsWrap}>
+          {attachments.map((attachment) => (
+            <View
+              key={attachment.key}
+              style={[
+                bubbleStyles.attachmentChip,
+                {
+                  backgroundColor: isMine
+                    ? "rgba(255, 255, 255, 0.15)"
+                    : "#EEF4EF",
+                  borderColor: isMine ? "transparent" : "#D9E4DB",
+                  borderWidth: isMine ? 0 : 1,
+                  direction: textDir,
+                },
+              ]}
+            >
+              <Ionicons
+                name="attach-outline"
+                size={14}
+                color={isMine ? "#FFFFFF" : textMuted}
+              />
+              <Text
+                style={[
+                  bubbleStyles.attachmentText,
+                  { color: isMine ? "#FFFFFF" : textPrimary },
+                ]}
+                numberOfLines={1}
+              >
+                {attachment.label}
+              </Text>
+            </View>
+          ))}
+        </View>
+      ) : null}
+
+      <View
+        style={[
+          bubbleStyles.metaRow,
+          {
+            flexDirection: "row" as const,
+            justifyContent: isMine ? "flex-end" : "flex-start",
+            direction: "ltr" as const,
+          },
+        ]}
+      >
+        <Text
+          style={[
+            bubbleStyles.metaText,
+            { color: isMine ? "rgba(255, 255, 255, 0.7)" : textMuted },
+          ]}
+        >
+          {timeLabel}
+        </Text>
+        {statusLabel ? (
+          <>
+            <Text
+              style={[
+                bubbleStyles.metaText,
+                { color: isMine ? "rgba(255, 255, 255, 0.7)" : textMuted },
+              ]}
+            >
+              •
+            </Text>
+            <Text
+              style={[
+                bubbleStyles.metaText,
+                { color: isMine ? "rgba(255, 255, 255, 0.7)" : textMuted },
+              ]}
+            >
+              {statusLabel}
+            </Text>
+          </>
+        ) : null}
+      </View>
+    </View>
+  );
+
+  const bubbleColumn = (
+    <View
+      style={[
+        bubbleStyles.bubbleColumn,
+        {
+          alignItems: isMine ? "flex-end" : "flex-start",
+        },
+      ]}
+    >
+      {header ? (
+        <View style={bubbleStyles.headerWrap}>
+          {header}
+        </View>
+      ) : null}
+      {bubbleComponent}
+    </View>
+  );
 
   return (
     <View
       style={[
         bubbleStyles.row,
-        isMine ? bubbleStyles.rowMine : bubbleStyles.rowTheirs,
+        {
+          flexDirection: "row" as const,
+          justifyContent: isMine ? "flex-end" : "flex-start",
+          direction: "ltr" as const,
+        },
       ]}
     >
-      {header ? <View style={bubbleStyles.headerWrap}>{header}</View> : null}
-      <View
-        style={[
-          bubbleStyles.bubble,
-          isMine
-            ? [bubbleStyles.bubbleMine, { backgroundColor: theme.colors.primary }]
-            : [
-                bubbleStyles.bubbleTheirs,
-                {
-                  backgroundColor: theme.colors.surface,
-                  borderColor: theme.colors.borderLight,
-                },
-              ],
-        ]}
-      >
-        <Text
-          style={[
-            bubbleStyles.text,
-            { color: isMine ? "#fff" : theme.colors.textPrimary },
-            isRTL ? bubbleStyles.textRtl : null,
-          ]}
-        >
-          {text}
-        </Text>
-
-        {attachments?.length ? (
-          <View style={bubbleStyles.attachmentsWrap}>
-            {attachments.map((attachment) => (
-              <View
-                key={attachment.key}
-                style={[
-                  bubbleStyles.attachmentChip,
-                  {
-                    backgroundColor: isMine
-                      ? "rgba(255,255,255,0.14)"
-                      : theme.colors.surfaceTertiary,
-                  },
-                ]}
-              >
-                <Ionicons
-                  name="attach-outline"
-                  size={14}
-                  color={isMine ? "#fff" : theme.colors.textMuted}
-                />
-                <Text
-                  style={[
-                    bubbleStyles.attachmentText,
-                    { color: isMine ? "#fff" : theme.colors.textSecondary },
-                  ]}
-                  numberOfLines={1}
-                >
-                  {attachment.label}
-                </Text>
-              </View>
-            ))}
-          </View>
-        ) : null}
-
-        <View
-          style={[
-            bubbleStyles.metaRow,
-            isRTL ? bubbleStyles.metaRowRtl : null,
-          ]}
-        >
-          <Text
-            style={[
-              bubbleStyles.metaText,
-              { color: isMine ? "rgba(255,255,255,0.68)" : theme.colors.textMuted },
-            ]}
-          >
-            {timeLabel}
-          </Text>
-          {statusLabel ? (
-            <>
-              <Text
-                style={[
-                  bubbleStyles.metaText,
-                  { color: isMine ? "rgba(255,255,255,0.68)" : theme.colors.textMuted },
-                ]}
-              >
-                •
-              </Text>
-              <Text
-                style={[
-                  bubbleStyles.metaText,
-                  { color: isMine ? "rgba(255,255,255,0.68)" : theme.colors.textMuted },
-                ]}
-              >
-                {statusLabel}
-              </Text>
-            </>
-          ) : null}
-        </View>
-      </View>
+      {isMine ? (
+        <>
+          {bubbleColumn}
+          {avatarComponent}
+        </>
+      ) : (
+        <>
+          {avatarComponent}
+          {bubbleColumn}
+        </>
+      )}
     </View>
   );
 }
@@ -149,13 +249,13 @@ export function ConversationEmptyState({
       <View
         style={[
           emptyStyles.iconWrap,
-          { backgroundColor: theme.colors.primaryLight },
+          { backgroundColor: "#EEF4EF" },
         ]}
       >
         <Ionicons
           name="chatbubble-ellipses-outline"
           size={20}
-          color={theme.colors.primary}
+          color="#24564F"
         />
       </View>
       <Text color={theme.colors.textMuted} style={emptyStyles.text}>
@@ -183,15 +283,19 @@ export function ConversationComposer({
   hint?: string | null;
 }) {
   const { theme } = useTheme();
-  const isRTL = I18nManager.isRTL;
+  const { isRtl, rowDirection, arrowForward } = useAppDirection();
+
+  const isEng = isTextEnglish(value);
+  const inputAlign = value.trim() ? (isEng ? "left" : "right") : (isRtl ? "right" : "left");
+  const inputDir = value.trim() ? (isEng ? "ltr" : "rtl") : (isRtl ? "rtl" : "ltr");
 
   return (
     <View
       style={[
         composerStyles.wrap,
         {
-          borderTopColor: theme.colors.borderLight,
-          backgroundColor: theme.colors.surface,
+          borderTopColor: "#E8DED0",
+          backgroundColor: "#FFFFFF",
         },
       ]}
     >
@@ -200,8 +304,8 @@ export function ConversationComposer({
           style={[
             composerStyles.errorRow,
             {
-              backgroundColor: theme.colors.error + "12",
-              flexDirection: isRTL ? "row-reverse" : "row",
+              backgroundColor: `${theme.colors.error}12`,
+              flexDirection: rowDirection,
             },
           ]}
         >
@@ -215,44 +319,67 @@ export function ConversationComposer({
       <View
         style={[
           composerStyles.row,
-          { flexDirection: isRTL ? "row-reverse" : "row" },
+          { flexDirection: rowDirection },
         ]}
       >
-        <View style={composerStyles.inputWrap}>
-          <Input
+        <View
+          style={[
+            composerStyles.inputContainer,
+            {
+              borderColor: "#E8DED0",
+              backgroundColor: "#FCFAF6",
+              flexDirection: rowDirection,
+            },
+          ]}
+        >
+          <TextInput
             value={value}
             onChangeText={onChangeText}
             placeholder={placeholder}
-            placeholderTextColor={theme.colors.textMuted}
+            placeholderTextColor="#6F7E78"
             multiline
-            style={[composerStyles.input, isRTL ? composerStyles.inputRtl : null]}
-            containerStyle={composerStyles.inputContainer}
             maxLength={4000}
+            style={[
+              composerStyles.input,
+              {
+                color: "#1F332F",
+                textAlign: inputAlign,
+                writingDirection: inputDir,
+              },
+            ]}
           />
         </View>
 
         <TouchableOpacity
           onPress={onSend}
           disabled={disabled}
+          accessibilityRole="button"
+          accessibilityLabel={isRtl ? "إرسال" : "Send"}
           style={[
             composerStyles.sendBtn,
             {
-              backgroundColor: theme.colors.primary,
-              opacity: disabled ? 0.45 : 1,
+              backgroundColor: "#24564F",
+              opacity: disabled ? 0.35 : 1,
             },
           ]}
-          activeOpacity={0.85}
+          activeOpacity={0.8}
         >
           <Ionicons
-            name={isRTL ? "arrow-back" : "arrow-forward"}
-            size={19}
-            color="#fff"
+            name={arrowForward as any}
+            size={18}
+            color="#FFFFFF"
           />
         </TouchableOpacity>
       </View>
 
       {hint ? (
-        <Text color={theme.colors.textMuted} style={composerStyles.hint}>
+        <Text
+          color={theme.colors.textMuted}
+          style={[
+            composerStyles.hint,
+            { textAlign: isRtl ? "right" : "left" },
+          ]}
+        >
           {hint}
         </Text>
       ) : null}
@@ -264,6 +391,13 @@ const bubbleStyles = StyleSheet.create({
   row: {
     width: "100%",
     marginTop: 6,
+    paddingHorizontal: 8,
+    alignItems: "flex-end",
+    gap: 6,
+  },
+  bubbleColumn: {
+    maxWidth: "80%",
+    flexDirection: "column",
   },
   rowMine: {
     alignItems: "flex-end",
@@ -273,30 +407,67 @@ const bubbleStyles = StyleSheet.create({
   },
   headerWrap: {
     marginBottom: 4,
+    width: "100%",
+  },
+  bubbleAndAvatarRow: {
+    alignItems: "flex-end",
+    gap: 8,
+    maxWidth: "80%",
+  },
+  avatarContainer: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    overflow: "hidden",
+    alignSelf: "flex-end",
+  },
+  avatarImage: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+  },
+  avatarFallback: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: "#EEF4EF",
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "#D9E4DB",
+  },
+  avatarFallbackText: {
+    fontSize: 10,
+    color: "#24564F",
+    fontWeight: "700",
   },
   bubble: {
-    maxWidth: "82%",
-    borderRadius: 18,
-    paddingHorizontal: 13,
+    flexShrink: 1,
+    paddingHorizontal: 14,
     paddingVertical: 10,
     gap: 6,
   },
   bubbleMine: {
-    borderBottomRightRadius: 4,
+    elevation: 1,
+    shadowColor: "#24564F",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 1,
   },
   bubbleTheirs: {
-    borderWidth: 1,
-    borderBottomLeftRadius: 4,
+    elevation: 1,
+    shadowColor: "#24564F",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 1,
   },
   text: {
     fontSize: 14,
     lineHeight: 20,
   },
-  textRtl: {
-    textAlign: "right",
-  },
   attachmentsWrap: {
     gap: 6,
+    marginTop: 4,
   },
   attachmentChip: {
     flexDirection: "row",
@@ -305,7 +476,7 @@ const bubbleStyles = StyleSheet.create({
     alignSelf: "flex-start",
     borderRadius: 12,
     paddingHorizontal: 10,
-    paddingVertical: 7,
+    paddingVertical: 6,
     maxWidth: "100%",
   },
   attachmentText: {
@@ -314,13 +485,10 @@ const bubbleStyles = StyleSheet.create({
     flexShrink: 1,
   },
   metaRow: {
-    flexDirection: "row",
     alignItems: "center",
     gap: 5,
     flexWrap: "wrap",
-  },
-  metaRowRtl: {
-    flexDirection: "row-reverse",
+    marginTop: 2,
   },
   metaText: {
     fontSize: 10,
@@ -331,12 +499,12 @@ const bubbleStyles = StyleSheet.create({
 const emptyStyles = StyleSheet.create({
   wrap: {
     alignItems: "center",
-    paddingTop: 42,
-    gap: 10,
+    paddingTop: 48,
+    gap: 12,
   },
   iconWrap: {
-    width: 42,
-    height: 42,
+    width: 44,
+    height: 44,
     borderRadius: 14,
     alignItems: "center",
     justifyContent: "center",
@@ -352,7 +520,7 @@ const composerStyles = StyleSheet.create({
     borderTopWidth: 1,
     paddingHorizontal: 12,
     paddingTop: 10,
-    paddingBottom: 12,
+    paddingBottom: 10,
     gap: 8,
   },
   errorRow: {
@@ -368,40 +536,44 @@ const composerStyles = StyleSheet.create({
   },
   row: {
     alignItems: "flex-end",
-    gap: 8,
-  },
-  inputWrap: {
-    flex: 1,
-    minHeight: 44,
-    maxHeight: 108,
+    gap: 10,
   },
   inputContainer: {
     flex: 1,
-    marginBottom: 0,
+    borderWidth: 1,
+    borderRadius: 22,
+    minHeight: 40,
+    maxHeight: 120,
+    paddingHorizontal: 12,
+    alignItems: "center",
   },
   input: {
     flex: 1,
-    minHeight: 44,
-    maxHeight: 108,
-    paddingTop: 12,
-    paddingHorizontal: 12,
+    minHeight: 38,
+    maxHeight: 110,
+    paddingTop: 8,
+    paddingBottom: 8,
+    paddingHorizontal: 4,
     fontSize: 15,
-    lineHeight: 21,
-    textAlignVertical: "top",
-  },
-  inputRtl: {
-    textAlign: "right",
+    lineHeight: 20,
+    textAlignVertical: "center",
   },
   sendBtn: {
-    width: 46,
-    height: 46,
-    borderRadius: 14,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     alignItems: "center",
     justifyContent: "center",
     flexShrink: 0,
+    elevation: 2,
+    shadowColor: "#24564F",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
   },
   hint: {
-    fontSize: 12,
-    lineHeight: 18,
+    fontSize: 11,
+    lineHeight: 16,
+    marginTop: 2,
   },
 });

@@ -48,10 +48,9 @@ import { UpdateSupportTicketStatusUseCase } from '../use-cases/update-support-ti
 @ApiBearerAuth()
 @UseGuards(JwtAccessAuthGuard, RolesGuard, PermissionsGuard)
 @RequireAccountStates(AccountStateRequirement.ACTIVE_ACCOUNT)
-// BUSINESS DECISION: All ADMIN and SUPPORT_AGENT roles can read and reply to any ticket.
-// Ticket read/reply access is intentionally open to all support staff (not scoped to assigned-only).
-// If assignment-scoped access is needed in the future, introduce a SupportTicketAssignmentPolicy
-// and filter by assignedToUserId at the use-case level.
+// BUSINESS DECISION: ADMIN and SUPPORT_AGENT roles can read support tickets.
+// Public replies are ownership-controlled in the use-case and claim the ticket on first reply
+// when it is unassigned. Assignment changes continue to flow through the existing assign action.
 @Roles(AppRole.ADMIN, AppRole.SUPPORT_AGENT)
 @Controller('admin/support/tickets')
 export class AdminSupportController {

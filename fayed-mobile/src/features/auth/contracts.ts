@@ -164,6 +164,7 @@ export interface PractitionerRegisterRequest {
 export interface PractitionerLoginRequest {
   email: string;
   password: string;
+  deviceId?: string;
 }
 
 export interface PractitionerVerifyOtpRequest {

@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, type ReactNode } from "react";
 import { useLocale, useTranslations } from "next-intl";
@@ -14,8 +14,10 @@ import {
   MessageSquareText,
   Video,
   Wallet,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
-import { ListStateSkeleton, StateCard } from "@/components/shared/ContentStates";
+import { StateCard } from "@/components/shared/ContentStates";
 import Button from "@/components/ui/button/Button";
 import { DestructiveConfirmModal } from "@/components/ui/modal";
 import { toAppError } from "@/lib/api/errors";
@@ -49,6 +51,10 @@ import type {
   SessionRuntimeItem,
   SessionStatus,
 } from "../types/sessions.types";
+import Avatar from "@/components/ui/avatar/Avatar";
+import { Skeleton } from "@/components/shared/LoadingStates";
+import { SurfaceCard, SurfaceHeader, SurfaceStatCard } from "@/components/shared/SurfaceShell";
+import { PatientSectionCard } from "@/components/patient/PatientChrome";
 
 const CANCELLABLE_STATUSES: SessionStatus[] = ["CONFIRMED", "UPCOMING"];
 function formatDatetime(isoString: string | null, numLocale: string): string {
@@ -76,17 +82,6 @@ function formatSessionTimeLabel(isoString: string | null, numLocale: string): st
   return formatViewerTime(isoString, { locale: numLocale, fallbackText: "—" });
 }
 
-function getInitials(name: string | null | undefined): string {
-  if (!name) return "F";
-  return name
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase())
-    .join("")
-    .slice(0, 2);
-}
-
 type SummaryFieldProps = {
   icon: ReactNode;
   label: string;
@@ -112,9 +107,9 @@ type LabeledValueProps = {
 
 function SummaryField({ icon, label, value, note }: SummaryFieldProps) {
   return (
-    <div className="rounded-2xl border border-border-light bg-surface-tertiary px-4 py-4 dark:bg-white/5">
+    <div className="rounded-2xl border border-border-light bg-surface-tertiary px-4 py-4 dark:bg-white/5 transition-all duration-300">
       <div className="flex items-start gap-3">
-        <span className="mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-white text-text-secondary dark:bg-white/8 dark:text-white/75">
+        <span className="mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-white text-text-secondary dark:bg-white/8 dark:text-white/75 shadow-sm">
           {icon}
         </span>
         <div className="min-w-0 flex-1">
@@ -140,7 +135,7 @@ function FinanceStat({ label, value, note, tone = "neutral" }: FinanceStatProps)
         : "border-border-light bg-surface-tertiary dark:bg-white/5";
 
   return (
-    <div className={`rounded-2xl border px-4 py-4 ${toneClassName}`}>
+    <div className={`rounded-2xl border px-4 py-4 ${toneClassName} transition-all duration-300`}>
       <p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">{label}</p>
       <div className="mt-2 break-words text-lg font-semibold text-text-primary dark:text-white/95">
         {value}
@@ -161,10 +156,92 @@ function LabeledValue({ label, value, helper, tone = "neutral" }: LabeledValuePr
           : "border-border-light bg-surface-primary dark:bg-white/5";
 
   return (
-    <div className={`rounded-2xl border px-4 py-3 ${toneClassName}`}>
+    <div className={`rounded-2xl border px-4 py-3 ${toneClassName} transition-all duration-300`}>
       <p className="text-xs font-medium text-text-muted">{label}</p>
       <div className="mt-1 text-sm font-semibold text-text-primary dark:text-white/95">{value}</div>
       {helper ? <p className="mt-1 text-xs leading-5 text-text-secondary">{helper}</p> : null}
+    </div>
+  );
+}
+
+function PatientSessionDetailSkeleton() {
+  return (
+    <div className="grid gap-6 xl:grid-cols-[minmax(0,1.72fr)_minmax(340px,0.95fr)]">
+      <div className="space-y-6">
+        {/* Summary Card Skeleton */}
+        <SurfaceCard variant="section" className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="space-y-2">
+              <Skeleton className="h-3 w-20" />
+              <Skeleton className="h-6 w-48" />
+            </div>
+            <Skeleton className="h-7 w-24 rounded-full" />
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4 pt-2">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="rounded-2xl border border-border-light bg-surface-tertiary p-4 space-y-2">
+                <Skeleton className="h-3 w-16" />
+                <Skeleton className="h-4 w-28" />
+                <Skeleton className="h-3 w-20" />
+              </div>
+            ))}
+          </div>
+        </SurfaceCard>
+
+        {/* Runtime Card Skeleton */}
+        <SurfaceCard variant="section" className="space-y-3">
+          <Skeleton className="h-3 w-24" />
+          <Skeleton className="h-6 w-56" />
+          <Skeleton className="h-4 w-3/4" />
+          <div className="pt-2 flex gap-3">
+            <Skeleton className="h-10 w-32 rounded-2xl" />
+          </div>
+        </SurfaceCard>
+
+        {/* Chat Card Skeleton */}
+        <SurfaceCard variant="section" className="space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="space-y-2">
+              <Skeleton className="h-3 w-20" />
+              <Skeleton className="h-6 w-36" />
+            </div>
+            <Skeleton variant="circular" className="h-10 w-10 shrink-0" />
+          </div>
+          <Skeleton className="h-4 w-5/6" />
+          <div className="pt-2">
+            <Skeleton className="h-10 w-28 rounded-2xl" />
+          </div>
+        </SurfaceCard>
+      </div>
+
+      <aside className="space-y-6">
+        {/* Payment Card Skeleton */}
+        <SurfaceCard variant="section" className="space-y-4">
+          <Skeleton className="h-3 w-24" />
+          <Skeleton className="h-6 w-40" />
+          <Skeleton className="h-4 w-5/6" />
+          <div className="grid gap-3 sm:grid-cols-3 pt-2">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="rounded-2xl border border-border-light bg-surface-tertiary p-3 space-y-2">
+                <Skeleton className="h-3 w-16" />
+                <Skeleton className="h-5 w-20" />
+              </div>
+            ))}
+          </div>
+        </SurfaceCard>
+
+        {/* Cancel Card Skeleton */}
+        <SurfaceCard variant="section" className="space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="space-y-2">
+              <Skeleton className="h-3 w-20" />
+              <Skeleton className="h-6 w-36" />
+            </div>
+            <Skeleton className="h-9 w-24 rounded-2xl" />
+          </div>
+          <Skeleton className="h-4 w-5/6" />
+        </SurfaceCard>
+      </aside>
     </div>
   );
 }
@@ -178,6 +255,7 @@ export default function PatientSessionDetailPanel({ sessionId }: Props) {
   const tPayments = useTranslations("payments");
   const locale = useLocale();
   const numLocale = locale === "ar" ? "ar-SA" : "en-US";
+  const isRtl = locale.startsWith("ar");
 
   const { data: session, isLoading, isError } = usePatientSession(sessionId);
   const { data: paymentsData } = usePatientPayments({ limit: 20 });
@@ -196,11 +274,7 @@ export default function PatientSessionDetailPanel({ sessionId }: Props) {
   const [prepareResult, setPrepareResult] = useState<SessionRuntimeItem | null>(null);
 
   if (isLoading) {
-    return (
-      <div className="app-max-content mx-auto">
-        <ListStateSkeleton items={3} heightClass="h-32" />
-      </div>
-    );
+    return <PatientSessionDetailSkeleton />;
   }
 
   if (isError || !session) {
@@ -214,7 +288,7 @@ export default function PatientSessionDetailPanel({ sessionId }: Props) {
           href: (
             <Link
               href="/patient/sessions"
-              className="inline-flex items-center justify-center rounded-2xl border border-border-light px-5 py-2 text-sm text-text-secondary hover:bg-surface-tertiary dark:hover:bg-white/5"
+              className="sawiyaa-btn-press inline-flex items-center justify-center rounded-2xl border border-border-light px-5 py-2 text-sm text-text-secondary hover:bg-surface-tertiary dark:hover:bg-white/5"
             >
               {t("detail.backToSessions")}
             </Link>
@@ -233,9 +307,9 @@ export default function PatientSessionDetailPanel({ sessionId }: Props) {
         ? "REFUND_PENDING"
       : session.status === "REFUNDED"
         ? "REFUNDED"
-        : session.status === "EXPIRED"
-          ? "EXPIRED"
-          : session.presentationStatus === "UPCOMING" ||
+      : session.status === "EXPIRED"
+        ? "EXPIRED"
+        : session.presentationStatus === "UPCOMING" ||
               session.presentationStatus === "JOINABLE" ||
               session.presentationStatus === "IN_PROGRESS" ||
               session.presentationStatus === "COMPLETED" ||
@@ -409,354 +483,328 @@ export default function PatientSessionDetailPanel({ sessionId }: Props) {
   return (
     <div className="grid gap-6 xl:grid-cols-[minmax(0,1.72fr)_minmax(340px,0.95fr)]">
       <div className="space-y-6">
-        <section className="rounded-[28px] border border-border-light bg-white p-5 shadow-[0_18px_38px_-30px_rgba(34,52,56,0.14)] dark:bg-surface-secondary">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">
-              {t("detail.summary.eyebrow")}
-            </p>
-            <h2 className="mt-1 text-lg font-semibold text-text-primary dark:text-white/95">
-              {t("detail.summary.heading")}
-            </h2>
-            <p className="mt-2 text-sm leading-6 text-text-secondary">{t("detail.summary.note")}</p>
+        <PatientSectionCard
+          eyebrow={t("detail.summary.eyebrow")}
+          title={t("detail.summary.heading")}
+          description={t("detail.summary.note")}
+          actions={
+            <SessionStatusBadge
+              status={session.status}
+              presentationStatus={session.presentationStatus}
+            />
+          }
+        >
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <SummaryField
+              icon={<MessageSquareText className="h-4 w-4" />}
+              label={t("detail.summary.practitioner")}
+              value={session.practitioner.displayName ?? session.practitioner.slug}
+              note={session.practitioner.slug}
+            />
+            <SummaryField
+              icon={<CalendarClock className="h-4 w-4" />}
+              label={t("detail.summary.sessionCode")}
+              value={session.sessionCode}
+              note={sessionModeLabel}
+            />
+            <SummaryField
+              icon={<CalendarDays className="h-4 w-4" />}
+              label={t("detail.summary.scheduledAt")}
+              value={
+                session.scheduledStartAt
+                  ? formatDatetime(session.scheduledStartAt, numLocale)
+                  : t("detail.notScheduled")
+              }
+              note={
+                session.scheduledEndAt
+                  ? formatDatetime(session.scheduledEndAt, numLocale)
+                  : undefined
+              }
+            />
+            <SummaryField
+              icon={<Clock className="h-4 w-4" />}
+              label={t("detail.summary.duration")}
+              value={t("detail.duration", { n: session.durationMinutes })}
+              note={sessionModeLabel}
+            />
           </div>
-          <SessionStatusBadge
-            status={session.status}
-            presentationStatus={session.presentationStatus}
-          />
-        </div>
+        </PatientSectionCard>
 
-        <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <SummaryField
-            icon={<MessageSquareText className="h-4 w-4" />}
-            label={t("detail.summary.practitioner")}
-            value={session.practitioner.displayName ?? session.practitioner.slug}
-            note={session.practitioner.slug}
-          />
-          <SummaryField
-            icon={<CalendarClock className="h-4 w-4" />}
-            label={t("detail.summary.sessionCode")}
-            value={session.sessionCode}
-            note={sessionModeLabel}
-          />
-          <SummaryField
-            icon={<CalendarDays className="h-4 w-4" />}
-            label={t("detail.summary.scheduledAt")}
-            value={
-              session.scheduledStartAt
-                ? formatDatetime(session.scheduledStartAt, numLocale)
-                : t("detail.notScheduled")
-            }
-            note={
-              session.scheduledEndAt
-                ? formatDatetime(session.scheduledEndAt, numLocale)
-                : undefined
-            }
-          />
-          <SummaryField
-            icon={<Clock className="h-4 w-4" />}
-            label={t("detail.summary.duration")}
-            value={t("detail.duration", { n: session.durationMinutes })}
-            note={sessionModeLabel}
-          />
-        </div>
-      </section>
+        <PatientSectionCard
+          eyebrow={t("detail.runtime.heading")}
+          title={t("detail.runtime.heading")}
+          description={runtimeStatusNote}
+          actions={
+            session.status === "PENDING_PAYMENT" && hasActivePendingPayment ? (
+              <Link
+                href={`/patient/sessions/${session.id}/pay` as never}
+                className="sawiyaa-btn-press inline-flex items-center justify-center rounded-2xl bg-primary px-5 py-2.5 text-sm font-semibold text-white hover:bg-primary-hover hover:-translate-y-0.5 transition-all duration-200"
+              >
+                {t("detail.PENDING_PAYMENT.action")}
+              </Link>
+            ) : undefined
+          }
+        >
+          {hasRuntimeAccess ? (
+            <div className="space-y-3">
+              {joinResult?.canJoin && joinUrl ? (
+                <>
+                  <div className="rounded-2xl border border-primary/15 bg-primary-light px-4 py-3 text-sm text-text-primary dark:border-primary/20 dark:bg-primary/10 dark:text-white/90">
+                    <div className="flex items-start gap-2">
+                      <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-primary" />
+                      <p>{t("detail.runtime.ready")}</p>
+                    </div>
+                  </div>
+                  <a
+                    href={joinUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="sawiyaa-btn-press inline-flex items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-2.5 text-sm font-semibold text-white hover:bg-primary-hover hover:-translate-y-0.5 transition-all duration-200"
+                  >
+                    <ExternalLink size={16} />
+                    {t("detail.runtime.actions.openRoom")}
+                  </a>
+                </>
+              ) : (
+                <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+                  {prepareAllowed && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handlePrepareRuntime}
+                      disabled={prepareMutation.isPending}
+                      className="sawiyaa-btn-press sawiyaa-hover-lift w-full sm:w-auto transition-all"
+                    >
+                      {prepareMutation.isPending ? (
+                        <>
+                          <Loader2 size={14} className="animate-spin" />
+                          {t("detail.runtime.actions.preparing")}
+                        </>
+                      ) : (
+                        t("detail.runtime.actions.prepare")
+                      )}
+                    </Button>
+                  )}
+                  {shouldShowJoinCheck && (
+                    <Button
+                      size="sm"
+                      onClick={handleResolveJoin}
+                      disabled={joinMutation.isPending}
+                      className="sawiyaa-btn-press sawiyaa-hover-lift w-full sm:w-auto transition-all"
+                    >
+                      {joinMutation.isPending ? (
+                        <>
+                          <Loader2 size={14} className="animate-spin" />
+                          {t("detail.runtime.actions.checking")}
+                        </>
+                      ) : canJoinNow ? t("detail.runtime.actions.joinNow") : t("detail.runtime.actions.checkAccess")}
+                    </Button>
+                  )}
+                </div>
+              )}
 
-      <section className="rounded-[28px] border border-border-light bg-white p-5 shadow-[0_18px_38px_-30px_rgba(34,52,56,0.14)] dark:bg-surface-secondary">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="min-w-0">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">
-              {t("detail.runtime.heading")}
-            </p>
-            <h2 className="mt-1 text-lg font-semibold text-text-primary dark:text-white/95">
-              {t("detail.runtime.heading")}
-            </h2>
-            <p className="mt-2 text-sm leading-6 text-text-secondary">{runtimeStatusNote}</p>
-          </div>
-
-          {session.status === "PENDING_PAYMENT" && hasActivePendingPayment && (
-            <Link
-              href={`/patient/sessions/${session.id}/pay` as never}
-              className="inline-flex items-center justify-center rounded-2xl bg-primary px-5 py-2.5 text-sm font-semibold text-white hover:bg-primary/90"
-            >
-              {t("detail.PENDING_PAYMENT.action")}
-            </Link>
-          )}
-        </div>
-
-        {hasRuntimeAccess ? (
-          <div className="mt-4 space-y-3">
-            {joinResult?.canJoin && joinUrl ? (
-              <>
+              {prepareResult?.isPrepared && !joinResult?.canJoin && (
                 <div className="rounded-2xl border border-primary/15 bg-primary-light px-4 py-3 text-sm text-text-primary dark:border-primary/20 dark:bg-primary/10 dark:text-white/90">
                   <div className="flex items-start gap-2">
                     <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-primary" />
-                    <p>{t("detail.runtime.ready")}</p>
+                    <p>{t("detail.runtime.prepared")}</p>
                   </div>
                 </div>
-                <a
-                  href={joinUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-2.5 text-sm font-semibold text-white hover:bg-primary/90"
-                >
-                  <ExternalLink size={16} />
-                  {t("detail.runtime.actions.openRoom")}
-                </a>
-              </>
-            ) : (
-              <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-                {prepareAllowed && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handlePrepareRuntime}
-                    disabled={prepareMutation.isPending}
-                    className="w-full sm:w-auto"
-                  >
-                    {prepareMutation.isPending ? (
-                      <>
-                        <Loader2 size={14} className="animate-spin" />
-                        {t("detail.runtime.actions.preparing")}
-                      </>
-                    ) : (
-                      t("detail.runtime.actions.prepare")
-                    )}
-                  </Button>
-                )}
-                {shouldShowJoinCheck && (
-                  <Button
-                    size="sm"
-                    onClick={handleResolveJoin}
-                    disabled={joinMutation.isPending}
-                    className="w-full sm:w-auto"
-                  >
-                    {joinMutation.isPending ? (
-                      <>
-                        <Loader2 size={14} className="animate-spin" />
-                        {t("detail.runtime.actions.checking")}
-                      </>
-                    ) : canJoinNow ? t("detail.runtime.actions.joinNow") : t("detail.runtime.actions.checkAccess")}
-                  </Button>
-                )}
-              </div>
-            )}
+              )}
 
-            {prepareResult?.isPrepared && !joinResult?.canJoin && (
-              <div className="rounded-2xl border border-primary/15 bg-primary-light px-4 py-3 text-sm text-text-primary dark:border-primary/20 dark:bg-primary/10 dark:text-white/90">
-                <div className="flex items-start gap-2">
-                  <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-primary" />
-                  <p>{t("detail.runtime.prepared")}</p>
+              {joinResult && !joinResult.canJoin && (
+                <div className="rounded-2xl border border-border-light bg-surface-tertiary px-4 py-3 text-sm text-text-secondary dark:bg-white/5">
+                  {t(
+                    `detail.runtime.blocked.${getRuntimeBlockedReasonKey(joinResult.blockedReason)}` as Parameters<
+                      typeof t
+                    >[0],
+                  )}
                 </div>
-              </div>
-            )}
+              )}
 
-            {joinResult && !joinResult.canJoin && (
-              <div className="rounded-2xl border border-border-light bg-surface-tertiary px-4 py-3 text-sm text-text-secondary dark:bg-white/5">
-                {t(
-                  `detail.runtime.blocked.${getRuntimeBlockedReasonKey(joinResult.blockedReason)}` as Parameters<
-                    typeof t
-                  >[0],
-                )}
-              </div>
-            )}
+              {!joinResult?.canJoin && !prepareAllowed && !shouldShowJoinCheck && (
+                <div className="rounded-2xl border border-border-light bg-surface-tertiary px-4 py-3 text-sm text-text-secondary dark:bg-white/5">
+                  <p className="font-medium text-text-primary dark:text-white/90">
+                    {t("detail.liveFlow.phases.awaitingWindow.title")}
+                  </p>
+                  <p className="mt-1">{t("detail.liveFlow.phases.awaitingWindow.note")}</p>
+                </div>
+              )}
 
-            {!joinResult?.canJoin && !prepareAllowed && !shouldShowJoinCheck && (
-              <div className="rounded-2xl border border-border-light bg-surface-tertiary px-4 py-3 text-sm text-text-secondary dark:bg-white/5">
-                <p className="font-medium text-text-primary dark:text-white/90">
-                  {t("detail.liveFlow.phases.awaitingWindow.title")}
-                </p>
-                <p className="mt-1">{t("detail.liveFlow.phases.awaitingWindow.note")}</p>
-              </div>
-            )}
+              {prepareMutation.isError && (
+                <div className="rounded-2xl border border-accent/20 bg-accent/10 px-4 py-3 text-sm text-text-primary dark:border-accent/25 dark:bg-accent/10 dark:text-white/90">
+                  {t("detail.runtime.prepareError")}
+                </div>
+              )}
 
-            {prepareMutation.isError && (
-              <div className="rounded-2xl border border-accent/20 bg-accent/10 px-4 py-3 text-sm text-text-primary dark:border-accent/25 dark:bg-accent/10 dark:text-white/90">
-                {t("detail.runtime.prepareError")}
-              </div>
-            )}
-
-            {joinMutation.isError && (
-              <div className="rounded-2xl border border-accent/20 bg-accent/10 px-4 py-3 text-sm text-text-primary dark:border-accent/25 dark:bg-accent/10 dark:text-white/90">
-                {t("detail.runtime.error")}
-              </div>
-            )}
-          </div>
-        ) : (
-          <div className="mt-4 rounded-2xl border border-border-light bg-surface-tertiary px-4 py-4 text-sm text-text-secondary dark:bg-white/5">
-            <p className="font-medium text-text-primary dark:text-white/90">
-              {t("detail.liveFlow.phases.awaitingWindow.title")}
-            </p>
-            <p className="mt-1">{t("detail.liveFlow.phases.awaitingWindow.note")}</p>
-          </div>
-        )}
-      </section>
-
-      <section className="rounded-[28px] border border-border-light bg-white p-5 shadow-[0_18px_38px_-30px_rgba(34,52,56,0.14)] dark:bg-surface-secondary">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="min-w-0">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">
-              {t("detail.chat.eyebrow")}
-            </p>
-            <h2 className="mt-1 text-lg font-semibold text-text-primary dark:text-white/95">
-              {t("detail.chatCard.heading")}
-            </h2>
-            <p className="mt-2 text-sm leading-6 text-text-secondary">{chatNote}</p>
-          </div>
-
-          <MessageSquareText className="mt-1 h-5 w-5 shrink-0 text-text-muted" />
-        </div>
-
-        <div className="mt-4 flex flex-wrap gap-3">
-          {canOpenSessionChat ? (
-            <Link
-              href={`/patient/sessions/${session.id}/chat` as never}
-              className="inline-flex items-center justify-center rounded-2xl bg-primary px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-primary-hover"
-            >
-              {t("detail.chatCard.open")}
-            </Link>
+              {joinMutation.isError && (
+                <div className="rounded-2xl border border-accent/20 bg-accent/10 px-4 py-3 text-sm text-text-primary dark:border-accent/25 dark:bg-accent/10 dark:text-white/90">
+                  {t("detail.runtime.error")}
+                </div>
+              )}
+            </div>
           ) : (
-            <button
-              type="button"
-              disabled
-              className="inline-flex cursor-not-allowed items-center justify-center rounded-2xl border border-border-light px-5 py-2.5 text-sm font-medium text-text-muted opacity-80"
-            >
-              {t("detail.chatCard.open")}
-            </button>
+            <div className="rounded-2xl border border-border-light bg-surface-tertiary px-4 py-4 text-sm text-text-secondary dark:bg-white/5">
+              <p className="font-medium text-text-primary dark:text-white/90">
+                {t("detail.liveFlow.phases.awaitingWindow.title")}
+              </p>
+              <p className="mt-1">{t("detail.liveFlow.phases.awaitingWindow.note")}</p>
+            </div>
           )}
-        </div>
+        </PatientSectionCard>
 
-        {!canOpenSessionChat && (
-          <div className="mt-3 rounded-2xl border border-border-light bg-surface-tertiary px-4 py-3 text-sm text-text-secondary dark:bg-white/5">
-            {chatNote}
+        <PatientSectionCard
+          eyebrow={t("detail.chat.eyebrow")}
+          title={t("detail.chatCard.heading")}
+          description={chatNote}
+          actions={<MessageSquareText className="mt-1 h-5 w-5 shrink-0 text-text-muted" />}
+        >
+          <div className="flex flex-wrap gap-3">
+            {canOpenSessionChat ? (
+              <Link
+                href={`/patient/sessions/${session.id}/chat` as never}
+                className="sawiyaa-btn-press inline-flex items-center justify-center rounded-2xl bg-primary px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-primary-hover hover:-translate-y-0.5"
+              >
+                {t("detail.chatCard.open")}
+              </Link>
+            ) : (
+              <button
+                type="button"
+                disabled
+                className="inline-flex cursor-not-allowed items-center justify-center rounded-2xl border border-border-light px-5 py-2.5 text-sm font-medium text-text-muted opacity-80"
+              >
+                {t("detail.chatCard.open")}
+              </button>
+            )}
           </div>
-        )}
-      </section>
 
+          {!canOpenSessionChat && (
+            <div className="mt-3 rounded-2xl border border-border-light bg-surface-tertiary px-4 py-3 text-sm text-text-secondary dark:bg-white/5">
+              {chatNote}
+            </div>
+          )}
+        </PatientSectionCard>
       </div>
 
       <aside className="space-y-6 xl:sticky xl:top-6 self-start">
         {paymentStateKey && (
-          <section
-          className={
-            paymentStateKey === "SECURED"
-              ? "rounded-[28px] border border-green-200 bg-green-50 p-5 shadow-[0_18px_38px_-30px_rgba(34,52,56,0.14)] dark:border-green-700/40 dark:bg-green-900/10"
-              : paymentStateKey === "PENDING_PAYMENT"
-                ? "rounded-[28px] border border-primary/15 bg-primary-light p-5 shadow-[0_18px_38px_-30px_rgba(34,52,56,0.14)] dark:border-primary/20 dark:bg-primary/10"
-                : "rounded-[28px] border border-amber-200 bg-amber-50 p-5 shadow-[0_18px_38px_-30px_rgba(34,52,56,0.14)] dark:border-amber-700/40 dark:bg-amber-900/10"
-          }
+          <SurfaceCard
+            variant="section"
+            className={
+              paymentStateKey === "SECURED"
+                ? "border-green-200 bg-green-50/50 dark:border-green-700/40 dark:bg-green-900/10 text-green-800 dark:text-green-300"
+                : paymentStateKey === "PENDING_PAYMENT"
+                  ? "border-primary/15 bg-primary-light dark:border-primary/20 dark:bg-primary/10 text-text-primary"
+                  : "border-amber-200 bg-amber-50/50 dark:border-amber-700/40 dark:bg-amber-900/10 text-amber-800 dark:text-amber-300"
+            }
           >
             <div className="flex flex-wrap items-start justify-between gap-4">
-            <div className="min-w-0">
-              <p
-                className={
-                  paymentStateKey === "SECURED"
-                    ? "text-xs font-semibold uppercase tracking-[0.18em] text-green-700 dark:text-green-300"
-                    : paymentStateKey === "PENDING_PAYMENT"
-                      ? "text-xs font-semibold uppercase tracking-[0.18em] text-primary"
-                      : "text-xs font-semibold uppercase tracking-[0.18em] text-amber-700 dark:text-amber-300"
-                }
-              >
-                {tPayments("breakdown.heading")}
-              </p>
-              <h2
-                className={
-                  paymentStateKey === "SECURED"
-                    ? "mt-1 text-lg font-semibold text-green-800 dark:text-green-300"
-                    : paymentStateKey === "PENDING_PAYMENT"
-                      ? "mt-1 text-lg font-semibold text-text-primary dark:text-white/95"
-                      : "mt-1 text-lg font-semibold text-amber-800 dark:text-amber-300"
-                }
-              >
-                {tPayments(
-                  `sessionState.${paymentStateKey}.label` as Parameters<typeof tPayments>[0],
-                )}
-              </h2>
-              <p
-                className={
-                  paymentStateKey === "SECURED"
-                    ? "mt-2 text-sm leading-6 text-green-700 dark:text-green-400"
-                    : paymentStateKey === "PENDING_PAYMENT"
-                      ? "mt-2 text-sm leading-6 text-text-secondary"
-                      : "mt-2 text-sm leading-6 text-amber-700 dark:text-amber-400"
-                }
-              >
-                {paymentStateNote}
-              </p>
-            </div>
+              <div className="min-w-0">
+                <p
+                  className={
+                    paymentStateKey === "SECURED"
+                      ? "text-xs font-semibold uppercase tracking-[0.18em] text-green-700 dark:text-green-300"
+                      : paymentStateKey === "PENDING_PAYMENT"
+                        ? "text-xs font-semibold uppercase tracking-[0.18em] text-primary"
+                        : "text-xs font-semibold uppercase tracking-[0.18em] text-amber-700 dark:text-amber-300"
+                  }
+                >
+                  {tPayments("breakdown.heading")}
+                </p>
+                <h2
+                  className={
+                    paymentStateKey === "SECURED"
+                      ? "mt-1 text-lg font-semibold text-green-800 dark:text-green-300"
+                      : paymentStateKey === "PENDING_PAYMENT"
+                        ? "mt-1 text-lg font-semibold text-text-primary dark:text-white/95"
+                        : "mt-1 text-lg font-semibold text-amber-800 dark:text-amber-300"
+                  }
+                >
+                  {tPayments(
+                    `sessionState.${paymentStateKey}.label` as Parameters<typeof tPayments>[0],
+                  )}
+                </h2>
+                <p
+                  className={
+                    paymentStateKey === "SECURED"
+                      ? "mt-2 text-sm leading-6 text-green-700 dark:text-green-400"
+                      : paymentStateKey === "PENDING_PAYMENT"
+                        ? "mt-2 text-sm leading-6 text-text-secondary"
+                        : "mt-2 text-sm leading-6 text-amber-700 dark:text-amber-400"
+                  }
+                >
+                  {paymentStateNote}
+                </p>
+              </div>
 
-            <Wallet className="mt-1 h-5 w-5 shrink-0 text-text-muted" />
-          </div>
+              <Wallet className="mt-1 h-5 w-5 shrink-0 text-text-muted" />
+            </div>
 
             <div className="mt-5 grid gap-3 sm:grid-cols-3">
-            <FinanceStat
-              label={tPayments("breakdown.grossAmount")}
-              value={sessionPriceValue}
-              note={tPayments("breakdown.loading")}
-            />
-            <FinanceStat
-              label={tPayments("breakdown.discount")}
-              value={sessionDiscountValue}
-              note={
-                sessionPaymentHasDiscount
-                  ? tPayments("breakdown.couponApplied")
-                  : tPayments("breakdown.discount")
-              }
-              tone={sessionPaymentHasDiscount ? "primary" : "neutral"}
-            />
-            <FinanceStat
-              label={tPayments("breakdown.netPaid")}
-              value={sessionNetValue}
-              note={paymentStateNote ?? undefined}
-              tone="success"
-            />
-          </div>
+              <FinanceStat
+                label={tPayments("breakdown.grossAmount")}
+                value={sessionPriceValue}
+                note={tPayments("breakdown.loading")}
+              />
+              <FinanceStat
+                label={tPayments("breakdown.discount")}
+                value={sessionDiscountValue}
+                note={
+                  sessionPaymentHasDiscount
+                    ? tPayments("breakdown.couponApplied")
+                    : tPayments("breakdown.discount")
+                }
+                tone={sessionPaymentHasDiscount ? "primary" : "neutral"}
+              />
+              <FinanceStat
+                label={tPayments("breakdown.netPaid")}
+                value={sessionNetValue}
+                note={paymentStateNote ?? undefined}
+                tone="success"
+              />
+            </div>
 
             <div className="mt-4 flex flex-wrap gap-3">
-            {paymentStateKey === "PENDING_PAYMENT" && hasActivePendingPayment && (
+              {paymentStateKey === "PENDING_PAYMENT" && hasActivePendingPayment && (
+                <Link
+                  href={`/patient/sessions/${session.id}/pay` as never}
+                  className="sawiyaa-btn-press inline-flex items-center justify-center rounded-2xl bg-primary px-5 py-2.5 text-sm font-semibold text-white hover:bg-primary-hover hover:-translate-y-0.5 transition-all duration-200"
+                >
+                  {tPayments("sessionState.PENDING_PAYMENT.action")}
+                </Link>
+              )}
               <Link
-                href={`/patient/sessions/${session.id}/pay` as never}
-                className="inline-flex items-center justify-center rounded-2xl bg-primary px-5 py-2.5 text-sm font-semibold text-white hover:bg-primary/90"
+                href="/patient/payments"
+                className="sawiyaa-btn-press inline-flex items-center justify-center rounded-2xl border border-border-light bg-white px-4 py-2.5 text-sm font-medium text-text-primary hover:border-primary/30 hover:text-primary hover:-translate-y-0.5 transition-all duration-200 dark:bg-white/5 dark:text-white/90"
               >
-                {tPayments("sessionState.PENDING_PAYMENT.action")}
+                {tPayments("sessionMoney.actions.history")}
               </Link>
-            )}
-            <Link
-              href="/patient/payments"
-              className="inline-flex items-center justify-center rounded-2xl border border-border-light bg-white px-4 py-2.5 text-sm font-medium text-text-primary hover:border-primary/30 hover:text-primary dark:bg-white/5 dark:text-white/90"
-            >
-              {tPayments("sessionMoney.actions.history")}
-            </Link>
-            <Link
-              href="/patient/wallet"
-              className="inline-flex items-center justify-center rounded-2xl border border-border-light bg-white px-4 py-2.5 text-sm font-medium text-text-primary hover:border-primary/30 hover:text-primary dark:bg-white/5 dark:text-white/90"
-            >
-              {tPayments("sessionMoney.actions.wallet")}
-            </Link>
+              <Link
+                href="/patient/wallet"
+                className="sawiyaa-btn-press inline-flex items-center justify-center rounded-2xl border border-border-light bg-white px-4 py-2.5 text-sm font-medium text-text-primary hover:border-primary/30 hover:text-primary hover:-translate-y-0.5 transition-all duration-200 dark:bg-white/5 dark:text-white/90"
+              >
+                {tPayments("sessionMoney.actions.wallet")}
+              </Link>
             </div>
-          </section>
+          </SurfaceCard>
         )}
 
-        <section className="rounded-[28px] border border-border-light bg-white p-5 shadow-[0_18px_38px_-30px_rgba(34,52,56,0.14)] dark:bg-surface-secondary">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="min-w-0">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-danger">
+        <PatientSectionCard
+          eyebrow={t("detail.cancelAction")}
+          title={t("detail.cancelAction")}
+          description={t("detail.cancelConfirm.note")}
+          actions={
+            <Button
+              variant="danger"
+              size="sm"
+              onClick={openCancelModal}
+              className="sawiyaa-btn-press sawiyaa-hover-lift transition-all"
+            >
               {t("detail.cancelAction")}
-            </p>
-            <h2 className="mt-1 text-lg font-semibold text-text-primary dark:text-white/95">
-              {t("detail.cancelAction")}
-            </h2>
-            <p className="mt-2 text-sm leading-6 text-text-secondary">
-              {t("detail.cancelConfirm.note")}
-            </p>
-          </div>
-
-          <Button variant="danger" size="sm" onClick={openCancelModal}>
-            {t("detail.cancelAction")}
-          </Button>
-          </div>
-
-          <p className="mt-3 text-sm text-text-secondary">
+            </Button>
+          }
+        >
+          <p className="text-sm text-text-secondary">
             {isCancellable
               ? t("detail.cancelConfirm.policyNote")
               : t("detail.cancelConfirm.cannotProceed")}
@@ -777,8 +825,7 @@ export default function PatientSessionDetailPanel({ sessionId }: Props) {
               {t("detail.cancelResult.failed")}
             </div>
           ) : null}
-        </section>
-
+        </PatientSectionCard>
       </aside>
 
       <DestructiveConfirmModal
@@ -820,11 +867,14 @@ export default function PatientSessionDetailPanel({ sessionId }: Props) {
       >
         <div className="space-y-5">
           <div className="grid gap-4 lg:grid-cols-[minmax(0,1.08fr)_minmax(0,0.92fr)]">
-            <section className="rounded-[28px] border border-border-light bg-white p-5 shadow-[0_1px_2px_rgba(16,24,40,0.04)] dark:bg-surface-secondary">
+            <SurfaceCard variant="section" className="bg-white dark:bg-surface-secondary">
               <div className="flex items-start gap-4">
-                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-primary-light text-lg font-semibold text-primary">
-                  {getInitials(practitionerDisplayName)}
-                </div>
+                <Avatar
+                  src={null}
+                  alt={practitionerDisplayName}
+                  size="xlarge"
+                  className="shrink-0"
+                />
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-semibold text-text-brand">
                     {t("detail.cancelConfirm.summaryHeading")}
@@ -860,9 +910,9 @@ export default function PatientSessionDetailPanel({ sessionId }: Props) {
                   }
                 />
               </div>
-            </section>
+            </SurfaceCard>
 
-            <section className="rounded-[28px] border border-border-light bg-primary-light/40 p-5 dark:bg-primary/10">
+            <SurfaceCard variant="section" className="bg-primary-light/40 dark:bg-primary/10">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <p className="text-sm font-semibold text-text-brand">
@@ -917,7 +967,7 @@ export default function PatientSessionDetailPanel({ sessionId }: Props) {
               <div className="mt-4 rounded-2xl border border-border-light bg-white/70 p-4 dark:bg-white/5">
                 <Link
                   href={cancellationPolicyPath}
-                  className="inline-flex items-center gap-2 rounded-full border border-border-light bg-white px-4 py-2 text-sm font-medium text-text-primary transition hover:border-primary/30 hover:text-primary dark:bg-white/5 dark:text-white/90"
+                  className="sawiyaa-btn-press inline-flex items-center gap-2 rounded-full border border-border-light bg-white px-4 py-2 text-sm font-medium text-text-primary transition hover:border-primary/30 hover:text-primary hover:-translate-y-0.5 duration-200 dark:bg-white/5 dark:text-white/90"
                 >
                   {t("detail.cancelConfirm.policyAccessAction")}
                   <ExternalLink size={14} />
@@ -929,10 +979,10 @@ export default function PatientSessionDetailPanel({ sessionId }: Props) {
                   {t("detail.cancelConfirm.policyAccessHelper")}
                 </p>
               </div>
-            </section>
+            </SurfaceCard>
           </div>
 
-          <section className="rounded-[28px] border border-border-light bg-surface-tertiary p-5 dark:bg-white/5">
+          <SurfaceCard variant="section" className="bg-surface-tertiary dark:bg-white/5">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <p className="text-sm font-semibold text-text-brand">
@@ -1008,9 +1058,9 @@ export default function PatientSessionDetailPanel({ sessionId }: Props) {
                 </div>
               )}
             </div>
-          </section>
+          </SurfaceCard>
 
-          <section className="rounded-[28px] border border-border-light bg-white p-4 dark:bg-surface-secondary">
+          <SurfaceCard variant="compact" className="bg-white dark:bg-surface-secondary">
             <label className="block text-sm font-semibold text-text-primary dark:text-white/90">
               {t("detail.cancelConfirm.noteLabel")}
             </label>
@@ -1027,7 +1077,7 @@ export default function PatientSessionDetailPanel({ sessionId }: Props) {
                 {t("detail.cancelConfirm.confirmDisabled")}
               </p>
             ) : null}
-          </section>
+          </SurfaceCard>
         </div>
       </DestructiveConfirmModal>
     </div>

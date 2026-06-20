@@ -1,9 +1,10 @@
 import React from 'react';
 import {
-  View,
+  I18nManager,
+  Image,
   StyleSheet,
   TouchableOpacity,
-  I18nManager,
+  View,
   ViewProps,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -16,6 +17,7 @@ export interface StatusChipProps {
   label: string;
   tone?: StatusTone;
   showDot?: boolean;
+  accessibilityLabel?: string;
 }
 
 export interface SummaryRowProps extends ViewProps {
@@ -39,81 +41,55 @@ export interface CompactActionRowProps extends ViewProps {
   accessibilityLabel?: string;
 }
 
-const toneStyles = {
+const toneSelectors: Record<
+  StatusTone,
+  {
+    bg: keyof ReturnType<typeof useTheme>['theme']['colors'];
+    text: keyof ReturnType<typeof useTheme>['theme']['colors'];
+    border: keyof ReturnType<typeof useTheme>['theme']['colors'];
+    dot: keyof ReturnType<typeof useTheme>['theme']['colors'];
+  }
+> = {
   default: {
-    light: {
-      backgroundColor: '#f3f4f6',
-      borderColor: '#e5e7eb',
-      textColor: '#374151',
-      dotColor: '#9ca3af',
-    },
-    dark: {
-      backgroundColor: 'rgba(173, 191, 224, 0.12)',
-      borderColor: 'rgba(173, 191, 224, 0.16)',
-      textColor: 'rgba(244, 247, 255, 0.86)',
-      dotColor: 'rgba(194, 206, 229, 0.58)',
-    },
+    bg: 'surfaceContainer',
+    text: 'textSecondary',
+    border: 'border',
+    dot: 'textMuted',
   },
   info: {
-    light: {
-      backgroundColor: '#dbeafe',
-      borderColor: '#bfdbfe',
-      textColor: '#1e40af',
-      dotColor: '#2563eb',
-    },
-    dark: {
-      backgroundColor: 'rgba(56, 189, 248, 0.12)',
-      borderColor: 'rgba(56, 189, 248, 0.18)',
-      textColor: '#7dd3fc',
-      dotColor: '#38bdf8',
-    },
+    bg: 'statusInfoBg',
+    text: 'statusInfoText',
+    border: 'statusInfoBg',
+    dot: 'info',
   },
   success: {
-    light: {
-      backgroundColor: '#dcfce7',
-      borderColor: '#bbf7d0',
-      textColor: '#166534',
-      dotColor: '#16a34a',
-    },
-    dark: {
-      backgroundColor: 'rgba(74, 222, 128, 0.12)',
-      borderColor: 'rgba(74, 222, 128, 0.18)',
-      textColor: '#86efac',
-      dotColor: '#4ade80',
-    },
+    bg: 'statusSuccessBg',
+    text: 'statusSuccessText',
+    border: 'statusSuccessBg',
+    dot: 'success',
   },
   warning: {
-    light: {
-      backgroundColor: '#fef9c3',
-      borderColor: '#fde68a',
-      textColor: '#854d0e',
-      dotColor: '#d97706',
-    },
-    dark: {
-      backgroundColor: 'rgba(251, 191, 36, 0.12)',
-      borderColor: 'rgba(251, 191, 36, 0.18)',
-      textColor: '#fcd34d',
-      dotColor: '#fbbf24',
-    },
+    bg: 'statusWarningBg',
+    text: 'statusWarningText',
+    border: 'statusWarningBg',
+    dot: 'warning',
   },
   error: {
-    light: {
-      backgroundColor: '#fee2e2',
-      borderColor: '#fecaca',
-      textColor: '#991b1b',
-      dotColor: '#dc2626',
-    },
-    dark: {
-      backgroundColor: 'rgba(248, 113, 113, 0.12)',
-      borderColor: 'rgba(248, 113, 113, 0.18)',
-      textColor: '#fca5a5',
-      dotColor: '#f87171',
-    },
+    bg: 'statusErrorBg',
+    text: 'statusErrorText',
+    border: 'statusErrorBg',
+    dot: 'error',
   },
-} as const;
+};
 
-function resolveTone(themeIsDark: boolean, tone: StatusTone) {
-  return toneStyles[tone][themeIsDark ? 'dark' : 'light'];
+function resolveTone(theme: ReturnType<typeof useTheme>['theme'], tone: StatusTone) {
+  const selector = toneSelectors[tone];
+  return {
+    backgroundColor: theme.colors[selector.bg],
+    textColor: theme.colors[selector.text],
+    borderColor: theme.colors[selector.border],
+    dotColor: theme.colors[selector.dot],
+  };
 }
 
 function parseDateValue(value: string | null | undefined) {
@@ -167,44 +143,39 @@ export function formatTime(value: string | null | undefined, locale?: string) {
   });
 }
 
-export const StatusChip = ({
+export const StatusPill = ({
   label,
   tone = 'default',
   showDot = true,
+  accessibilityLabel,
 }: StatusChipProps) => {
-  const { theme, isDark } = useTheme();
-  const palette = resolveTone(isDark, tone);
+  const { theme } = useTheme();
+  const colors = resolveTone(theme, tone);
 
   return (
     <View
       style={[
         styles.chip,
         {
-          backgroundColor: palette.backgroundColor,
-          borderColor: palette.borderColor,
+          backgroundColor: colors.backgroundColor,
+          borderColor: colors.borderColor,
         },
       ]}
+      accessible
+      accessibilityRole="text"
+      accessibilityLabel={accessibilityLabel || label}
     >
       {showDot ? (
-        <View
-          style={[
-            styles.dot,
-            {
-              backgroundColor: palette.dotColor,
-            },
-          ]}
-        />
+        <View style={[styles.dot, { backgroundColor: colors.dotColor }]} />
       ) : null}
-      <Text
-        weight="600"
-        style={styles.chipLabel}
-        color={palette.textColor}
-      >
+      <Text variant="caption" weight="600" style={styles.chipLabel} color={colors.textColor}>
         {label}
       </Text>
     </View>
   );
 };
+
+export const StatusChip = StatusPill;
 
 export const SectionHeader = ({
   title,
@@ -220,19 +191,17 @@ export const SectionHeader = ({
     <View
       style={[
         styles.sectionHeader,
-        {
-          flexDirection: isRTL ? 'row-reverse' : 'row',
-        },
+        { flexDirection: isRTL ? 'row-reverse' : 'row' },
         style,
       ]}
       {...props}
     >
       <View style={styles.sectionHeaderText}>
-        <Text weight="bold" style={styles.sectionTitle} color={theme.colors.textPrimary}>
+        <Text variant="title" weight="700" style={styles.sectionTitle} color={theme.colors.textPrimary}>
           {title}
         </Text>
         {subtitle ? (
-          <Text style={styles.sectionSubtitle} color={theme.colors.textSecondary}>
+          <Text variant="bodySmall" style={styles.sectionSubtitle} color={theme.colors.textSecondary}>
             {subtitle}
           </Text>
         ) : null}
@@ -242,7 +211,7 @@ export const SectionHeader = ({
   );
 };
 
-export const SummaryRow = ({
+export const InfoRow = ({
   label,
   value,
   helperText,
@@ -255,19 +224,19 @@ export const SummaryRow = ({
   const { theme } = useTheme();
   const isRTL = I18nManager.isRTL;
   const Container: React.ElementType = onPress ? TouchableOpacity : View;
-  const containerProps = onPress ? { activeOpacity: 0.75, onPress } : {};
+  const containerProps = onPress ? { activeOpacity: 0.78, onPress } : {};
+
   const Chevron = () => (
     <Ionicons
       name={isRTL ? 'chevron-back' : 'chevron-forward'}
       size={18}
       color={theme.colors.textMuted}
-      style={{ opacity: 0.7 }}
     />
   );
 
   const valueNode =
     typeof value === 'string' || typeof value === 'number' ? (
-      <Text weight="600" style={styles.rowValueText} color={theme.colors.textPrimary}>
+      <Text variant="body" weight="600" style={styles.rowValueText} color={theme.colors.textPrimary}>
         {value}
       </Text>
     ) : (
@@ -279,7 +248,7 @@ export const SummaryRow = ({
       style={[
         styles.row,
         {
-          borderBottomColor: theme.colors.borderLight,
+          borderBottomColor: theme.colors.divider,
           flexDirection: isRTL ? 'row-reverse' : 'row',
         },
         style,
@@ -288,11 +257,11 @@ export const SummaryRow = ({
       {...props}
     >
       <View style={styles.rowContent}>
-        <Text style={styles.rowLabel} color={theme.colors.textSecondary}>
+        <Text variant="body" color={theme.colors.textPrimary} style={styles.rowLabel}>
           {label}
         </Text>
         {helperText ? (
-          <Text style={styles.rowHelper} color={theme.colors.textMuted}>
+          <Text variant="caption" color={theme.colors.textMuted} style={styles.rowHelper}>
             {helperText}
           </Text>
         ) : null}
@@ -309,7 +278,9 @@ export const SummaryRow = ({
   );
 };
 
-export const CompactActionRow = ({
+export const SummaryRow = InfoRow;
+
+export const IconRow = ({
   label,
   onPress,
   accessibilityLabel,
@@ -317,6 +288,7 @@ export const CompactActionRow = ({
   ...props
 }: CompactActionRowProps) => {
   const { theme } = useTheme();
+  const isRTL = I18nManager.isRTL;
 
   return (
     <TouchableOpacity
@@ -324,27 +296,76 @@ export const CompactActionRow = ({
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
-      style={[styles.compactActionRow, style]}
+      style={[
+        styles.compactActionRow,
+        { flexDirection: isRTL ? 'row-reverse' : 'row' },
+        style,
+      ]}
       {...props}
     >
       {typeof label === 'string' || typeof label === 'number' ? (
-        <Text
-          color={theme.colors.primary}
-          weight="600"
-          style={styles.compactActionLabel}
-        >
+        <Text variant="bodySmall" color={theme.colors.primary} weight="600" style={styles.compactActionLabel}>
           {label}
         </Text>
       ) : (
         label
       )}
       <Ionicons
-        name="arrow-forward"
+        name={isRTL ? 'arrow-back' : 'arrow-forward'}
         size={16}
         color={theme.colors.primary}
         style={styles.compactActionIcon}
       />
     </TouchableOpacity>
+  );
+};
+
+export const CompactActionRow = IconRow;
+
+export const Avatar = ({
+  name,
+  source,
+  size = 40,
+  label,
+}: {
+  name?: string;
+  source?: { uri: string } | null;
+  size?: number;
+  label?: string;
+}) => {
+  const { theme } = useTheme();
+  const initials =
+    name
+      ?.split(' ')
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part[0]?.toUpperCase())
+      .join('') || '?';
+
+  return (
+    <View
+      style={[
+        styles.avatar,
+        {
+          width: size,
+          height: size,
+          borderRadius: size / 2,
+          backgroundColor: theme.colors.primarySoft,
+          borderColor: theme.colors.border,
+        },
+      ]}
+      accessible
+      accessibilityRole="image"
+      accessibilityLabel={label || name || 'Avatar'}
+    >
+      {source ? (
+        <Image source={source} resizeMode="cover" style={styles.avatarImage} />
+      ) : (
+        <Text variant="caption" weight="700" color={theme.colors.primary}>
+          {initials}
+        </Text>
+      )}
+    </View>
   );
 };
 
@@ -365,7 +386,6 @@ const styles = StyleSheet.create({
     marginEnd: 8,
   },
   chipLabel: {
-    fontSize: 12,
     lineHeight: 16,
   },
   sectionHeader: {
@@ -377,13 +397,11 @@ const styles = StyleSheet.create({
     marginEnd: 12,
   },
   sectionTitle: {
-    fontSize: 18,
     lineHeight: 24,
   },
   sectionSubtitle: {
-    fontSize: 13,
-    lineHeight: 20,
     marginTop: 4,
+    lineHeight: 19,
   },
   sectionAction: {
     alignItems: 'flex-end',
@@ -399,13 +417,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   rowLabel: {
-    fontSize: 15,
     lineHeight: 22,
   },
   rowHelper: {
-    fontSize: 12,
-    lineHeight: 18,
     marginTop: 2,
+    lineHeight: 18,
   },
   rowRight: {
     flexDirection: 'row',
@@ -413,8 +429,6 @@ const styles = StyleSheet.create({
     marginStart: 12,
   },
   rowValueText: {
-    fontSize: 15,
-    lineHeight: 22,
     textAlign: 'right',
   },
   rowRightElement: {
@@ -424,14 +438,23 @@ const styles = StyleSheet.create({
     marginStart: 6,
   },
   compactActionRow: {
-    flexDirection: 'row',
     alignItems: 'center',
     alignSelf: 'flex-start',
   },
   compactActionLabel: {
-    fontSize: 13,
+    lineHeight: 18,
   },
   compactActionIcon: {
     marginStart: 6,
+  },
+  avatar: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: StyleSheet.hairlineWidth,
+    overflow: 'hidden',
+  },
+  avatarImage: {
+    width: '100%',
+    height: '100%',
   },
 });

@@ -134,7 +134,7 @@ export function SpecialistHorizontalRail({
 
 const styles = StyleSheet.create({
   section: {
-    marginBottom: 14,
+    marginBottom: 18,
   },
   railContent: {
     paddingHorizontal: RAIL_SIDE_PADDING,

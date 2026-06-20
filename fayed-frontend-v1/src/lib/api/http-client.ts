@@ -18,8 +18,49 @@ const AUTH_COOKIE_OPTIONS = {
   path: "/",
   secure: process.env.NODE_ENV === "production",
   sameSite: "lax" as const,
-  httpOnly: true,
 };
+
+function writeBrowserCookie(
+  name: string,
+  value: string,
+  options: {
+    expiresDays?: number;
+    path?: string;
+    secure?: boolean;
+    sameSite?: "lax" | "strict" | "none";
+  } = {}
+): void {
+  if (typeof document === "undefined") {
+    return;
+  }
+
+  const segments = [`${name}=${encodeURIComponent(value)}`];
+  segments.push(`path=${options.path ?? "/"}`);
+
+  if (typeof options.expiresDays === "number") {
+    const expiresAt = new Date(Date.now() + options.expiresDays * 24 * 60 * 60 * 1000);
+    segments.push(`expires=${expiresAt.toUTCString()}`);
+  }
+
+  if (options.secure) {
+    segments.push("Secure");
+  }
+
+  if (options.sameSite) {
+    const sameSite = options.sameSite[0].toUpperCase() + options.sameSite.slice(1);
+    segments.push(`SameSite=${sameSite}`);
+  }
+
+  document.cookie = segments.join("; ");
+}
+
+function clearBrowserCookie(name: string): void {
+  if (typeof document === "undefined") {
+    return;
+  }
+
+  document.cookie = `${name}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
+}
 
 const httpClient: AxiosInstance = axios.create({
   baseURL: API_CONFIG.baseURL,
@@ -159,6 +200,11 @@ httpClient.interceptors.request.use(
     const language = Cookies.get("preferred_language") || "ar";
     config.headers["Accept-Language"] = language;
 
+    // Explicit web platform signal — used by backend WebResponseHardeningInterceptor
+    // to suppress refreshToken from the JSON response body for web browsers.
+    // Native/mobile clients do not send this header and receive the full token body.
+    config.headers["X-Client-Platform"] = "web";
+
     if (process.env.NODE_ENV === "development") {
       console.log(
         `[API] ${config.method?.toUpperCase()} ${config.url}`,
@@ -285,10 +331,11 @@ export const tokenManager = {
   setTokens(accessToken: string, _refreshToken?: string): void {
     // Access token uses lax sameSite to survive cross-site redirects from
     // external payment providers (Paymob/Stripe return to the app).
-    Cookies.set(TOKEN_CONFIG.ACCESS_TOKEN_KEY, accessToken, {
-      expires: TOKEN_CONFIG.ACCESS_TOKEN_EXPIRY,
-      ...AUTH_COOKIE_OPTIONS,
-      sameSite: "lax",
+    writeBrowserCookie(TOKEN_CONFIG.ACCESS_TOKEN_KEY, accessToken, {
+      expiresDays: TOKEN_CONFIG.ACCESS_TOKEN_EXPIRY,
+      path: AUTH_COOKIE_OPTIONS.path,
+      secure: AUTH_COOKIE_OPTIONS.secure,
+      sameSite: AUTH_COOKIE_OPTIONS.sameSite,
     });
 
     // NOTE: The refresh token is set as an HttpOnly cookie by the backend
@@ -324,8 +371,7 @@ export const tokenManager = {
   setUser(user: any): void {
     const primaryRole =
       Array.isArray(user?.roles) && user.roles.length > 0 ? user.roles[0] : undefined;
-
-    Cookies.set(
+    writeBrowserCookie(
       USER_DATA_COOKIE,
       JSON.stringify({
         id: user?.id ?? null,
@@ -337,20 +383,23 @@ export const tokenManager = {
         practitionerStatus: user?.practitionerStatus ?? null,
       }),
       {
-        expires: TOKEN_CONFIG.REFRESH_TOKEN_EXPIRY,
-        ...AUTH_COOKIE_OPTIONS,
+        expiresDays: TOKEN_CONFIG.REFRESH_TOKEN_EXPIRY,
+        path: AUTH_COOKIE_OPTIONS.path,
+        secure: AUTH_COOKIE_OPTIONS.secure,
+        sameSite: AUTH_COOKIE_OPTIONS.sameSite,
       }
     );
 
     if (primaryRole) {
-      Cookies.set(USER_ROLE_COOKIE, primaryRole, {
-        expires: TOKEN_CONFIG.REFRESH_TOKEN_EXPIRY,
-        ...AUTH_COOKIE_OPTIONS,
+      writeBrowserCookie(USER_ROLE_COOKIE, primaryRole, {
+        expiresDays: TOKEN_CONFIG.REFRESH_TOKEN_EXPIRY,
+        path: AUTH_COOKIE_OPTIONS.path,
+        secure: AUTH_COOKIE_OPTIONS.secure,
+        sameSite: AUTH_COOKIE_OPTIONS.sameSite,
       });
     } else {
-      Cookies.remove(USER_ROLE_COOKIE, { path: "/" });
+      clearBrowserCookie(USER_ROLE_COOKIE);
     }
-
   },
 
   isAuthenticated(): boolean {
@@ -358,13 +407,13 @@ export const tokenManager = {
   },
 
   clearAll(): void {
-    Cookies.remove(TOKEN_CONFIG.ACCESS_TOKEN_KEY, { path: "/" });
+    clearBrowserCookie(TOKEN_CONFIG.ACCESS_TOKEN_KEY);
     // Refresh token is an HttpOnly cookie set by the backend — the backend
     // clears it via Set-Cookie on logout. js-cookie cannot delete HttpOnly
     // cookies, so we skip Cookies.remove() for the refresh token key.
-    Cookies.remove(TOKEN_CONFIG.CONTEXT_ID_KEY, { path: "/" });
-    Cookies.remove(USER_DATA_COOKIE, { path: "/" });
-    Cookies.remove(USER_ROLE_COOKIE, { path: "/" });
+    clearBrowserCookie(TOKEN_CONFIG.CONTEXT_ID_KEY);
+    clearBrowserCookie(USER_DATA_COOKIE);
+    clearBrowserCookie(USER_ROLE_COOKIE);
   },
 
   logout(): void {

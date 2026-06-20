@@ -523,7 +523,7 @@ export const settlementsLabSeedModule: SeedModule = {
             `settlements-lab-payment-${plan.practitionerId}-${sessionPlan.sessionSuffix}`,
           );
           const sessionDate = daysAgo(sessionPlan.daysAgo);
-          const endAt = new Date(sessionDate.getTime() + 45 * 60 * 1000);
+          const endAt = new Date(sessionDate.getTime() + 60 * 60 * 1000);
           const subtotal = sessionPlan.subtotal;
           const discount = sessionPlan.discount;
           const total = subtotal - discount;
@@ -541,7 +541,7 @@ export const settlementsLabSeedModule: SeedModule = {
               practitionerId: plan.practitionerId,
               flowType: SessionFlowType.SCHEDULED,
               sessionMode: SessionMode.VIDEO,
-              durationMinutes: 45,
+              durationMinutes: 60,
               status: SessionStatus.COMPLETED,
               requestedStartAt: sessionDate,
               scheduledStartAt: sessionDate,
@@ -560,7 +560,7 @@ export const settlementsLabSeedModule: SeedModule = {
               practitionerId: plan.practitionerId,
               flowType: SessionFlowType.SCHEDULED,
               sessionMode: SessionMode.VIDEO,
-              durationMinutes: 45,
+              durationMinutes: 60,
               status: SessionStatus.COMPLETED,
               requestedStartAt: sessionDate,
               scheduledStartAt: sessionDate,

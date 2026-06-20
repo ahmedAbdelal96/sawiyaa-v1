@@ -24,6 +24,7 @@ import { PatientPackagePurchaseRepository } from '../repositories/package-purcha
 import { PackagePlanPolicyService } from '../services/package-plan-policy.service';
 import { PackageQuoteCalculatorService } from '../services/package-quote-calculator.service';
 import { ValidatePackagePurchaseSlotsService } from '../services/validate-package-purchase-slots.service';
+import { toSessionOverlapConflictException } from '@modules/sessions/utils/session-overlap-conflict.util';
 import { PatientPackagePurchaseResultViewModel } from '../types/package-purchases.types';
 
 type CreatedSessionRecord = Awaited<
@@ -171,121 +172,131 @@ export class CreatePackagePurchaseUseCase {
       Date.now() + this.paymentReservationMinutes * 60 * 1000,
     );
 
-    const created = await this.prisma.$transaction(async (tx) => {
-      const validatedSlots =
-        await this.validatePackagePurchaseSlotsService.validate({
-          practitionerId: practitioner.id,
-          practitionerTimezone: practitioner.user.timezone,
-          patientId: patientProfile.id,
-          durationMinutes: input.durationMinutes,
-          sessionMode: input.sessionMode,
-          expectedSlotCount: packagePlan.sessionCount,
-          selectedSessionSlots: input.selectedSessionSlots,
-          tx,
-        });
-
-      const purchase = await this.packagePurchaseRepository.create(
-        {
-          packagePlanId: packagePlan.id,
-          practitionerId: practitioner.id,
-          patientId: patientProfile.id,
-          paymentId: null,
-          status: PatientPackagePurchaseStatus.PENDING_PAYMENT,
-          paymentInitiatedAt: null,
-          paymentExpiresAt,
-          paidAt: null,
-          activatedAt: null,
-          completedAt: null,
-          expiredAt: null,
-          cancelledAt: null,
-          refundedAt: null,
-          titleSnapshot: packagePlan.title,
-          descriptionSnapshot: packagePlan.description,
-          slugSnapshot: packagePlan.code,
-          packageVersionSnapshot: 1,
-          planIdSnapshot: packagePlan.id,
-          planCodeSnapshot: packagePlan.code,
-          sessionCountSnapshot: packagePlan.sessionCount,
-          discountPercentSnapshot: quote.discountPercent,
-          baseSessionPriceEgpSnapshot: quote.baseSessionPriceEgp ?? null,
-          baseSessionPriceUsdSnapshot: quote.baseSessionPriceUsd ?? null,
-          currencyCodeSnapshot: quote.selectedCurrencyCode,
-          selectedBaseSessionPriceSnapshot: quote.selectedBaseSessionPrice,
-          undiscountedTotalSnapshot: quote.undiscountedTotal,
-          discountAmountSnapshot: quote.discountAmount,
-          patientPayableTotalSnapshot: quote.patientPayableTotal,
-          platformDiscountShareSnapshot: quote.platformDiscountShare,
-          practitionerDiscountShareSnapshot: quote.practitionerDiscountShare,
-          commissionModeSnapshot: quote.commissionMode,
-          platformOriginalShareSnapshot: quote.platformOriginalShare,
-          practitionerOriginalShareSnapshot: quote.practitionerOriginalShare,
-          platformFinalShareSnapshot: quote.platformFinalShare,
-          practitionerFinalShareSnapshot: quote.practitionerFinalShare,
-          sessionDurationMinutesSnapshot: input.durationMinutes,
-          sessionModeSnapshot: input.sessionMode,
-          schedulePolicySnapshot:
-            PackageSchedulePolicy.REQUIRE_ALL_SESSIONS_AT_PURCHASE,
-          priceEgpSnapshot: quote.baseSessionPriceEgp ?? null,
-          priceUsdSnapshot: quote.baseSessionPriceUsd ?? null,
-          selectedCurrencyCode: quote.selectedCurrencyCode,
-          selectedAmountSnapshot: quote.patientPayableTotal,
-          metadataJson: {
-            source: 'package-purchase',
-            packagePlanCode: packagePlan.code,
-            practitionerSlug: practitioner.publicSlug,
-            selectedSessionSlots: validatedSlots.slots.map((slot) => ({
-              scheduledStartAt: slot.scheduledStartAt.toISOString(),
-              scheduledEndAt: slot.scheduledEndAt.toISOString(),
-            })),
-          },
-        },
-        tx,
-      );
-
-      const createdSessions: CreatedSessionRecord[] = [];
-      for (const [index, slot] of validatedSlots.slots.entries()) {
-        const sessionCode = await this.sessionRepository.reserveNextSessionCode(
-          slot.scheduledStartAt,
-          tx,
-        );
-
-        const createdSession = await this.sessionRepository.createSession(
-          {
-            sessionCode,
-            patientId: patientProfile.id,
+    try {
+      const created = await this.prisma.$transaction(async (tx) => {
+        const validatedSlots =
+          await this.validatePackagePurchaseSlotsService.validate({
             practitionerId: practitioner.id,
-            flowType: SessionFlowType.SCHEDULED,
-            sessionMode: input.sessionMode,
+            practitionerTimezone: practitioner.user.timezone,
+            patientId: patientProfile.id,
             durationMinutes: input.durationMinutes,
-            status: SessionStatus.PENDING_PAYMENT,
-            requestedStartAt: slot.scheduledStartAt,
-            scheduledStartAt: slot.scheduledStartAt,
-            scheduledEndAt: slot.scheduledEndAt,
-            expiresAt: paymentExpiresAt,
-            timezoneSnapshot: validatedSlots.timezone,
-            packagePurchaseId: purchase.id,
-            packageSessionIndex: index + 1,
-            packageSessionCount: packagePlan.sessionCount,
-            paymentCoverageType: SessionPaymentCoverageType.PACKAGE,
+            sessionMode: input.sessionMode,
+            expectedSlotCount: packagePlan.sessionCount,
+            selectedSessionSlots: input.selectedSessionSlots,
+            tx,
+          });
+
+        const purchase = await this.packagePurchaseRepository.create(
+          {
+            packagePlanId: packagePlan.id,
+            practitionerId: practitioner.id,
+            patientId: patientProfile.id,
+            paymentId: null,
+            status: PatientPackagePurchaseStatus.PENDING_PAYMENT,
+            paymentInitiatedAt: null,
+            paymentExpiresAt,
+            paidAt: null,
+            activatedAt: null,
+            completedAt: null,
+            expiredAt: null,
+            cancelledAt: null,
+            refundedAt: null,
+            titleSnapshot: packagePlan.title,
+            descriptionSnapshot: packagePlan.description,
+            slugSnapshot: packagePlan.code,
+            packageVersionSnapshot: 1,
+            planIdSnapshot: packagePlan.id,
+            planCodeSnapshot: packagePlan.code,
+            sessionCountSnapshot: packagePlan.sessionCount,
+            discountPercentSnapshot: quote.discountPercent,
+            baseSessionPriceEgpSnapshot: quote.baseSessionPriceEgp ?? null,
+            baseSessionPriceUsdSnapshot: quote.baseSessionPriceUsd ?? null,
+            currencyCodeSnapshot: quote.selectedCurrencyCode,
+            selectedBaseSessionPriceSnapshot: quote.selectedBaseSessionPrice,
+            undiscountedTotalSnapshot: quote.undiscountedTotal,
+            discountAmountSnapshot: quote.discountAmount,
+            patientPayableTotalSnapshot: quote.patientPayableTotal,
+            platformDiscountShareSnapshot: quote.platformDiscountShare,
+            practitionerDiscountShareSnapshot: quote.practitionerDiscountShare,
+            commissionModeSnapshot: quote.commissionMode,
+            platformOriginalShareSnapshot: quote.platformOriginalShare,
+            practitionerOriginalShareSnapshot: quote.practitionerOriginalShare,
+            platformFinalShareSnapshot: quote.platformFinalShare,
+            practitionerFinalShareSnapshot: quote.practitionerFinalShare,
+            sessionDurationMinutesSnapshot: input.durationMinutes,
+            sessionModeSnapshot: input.sessionMode,
+            schedulePolicySnapshot:
+              PackageSchedulePolicy.REQUIRE_ALL_SESSIONS_AT_PURCHASE,
+            priceEgpSnapshot: quote.baseSessionPriceEgp ?? null,
+            priceUsdSnapshot: quote.baseSessionPriceUsd ?? null,
+            selectedCurrencyCode: quote.selectedCurrencyCode,
+            selectedAmountSnapshot: quote.patientPayableTotal,
+            metadataJson: {
+              source: 'package-purchase',
+              packagePlanCode: packagePlan.code,
+              practitionerSlug: practitioner.publicSlug,
+              selectedSessionSlots: validatedSlots.slots.map((slot) => ({
+                scheduledStartAt: slot.scheduledStartAt.toISOString(),
+                scheduledEndAt: slot.scheduledEndAt.toISOString(),
+              })),
+            },
           },
           tx,
         );
 
-        createdSessions.push(createdSession);
-      }
+        const createdSessions: CreatedSessionRecord[] = [];
+        for (const [index, slot] of validatedSlots.slots.entries()) {
+          const sessionCode =
+            await this.sessionRepository.reserveNextSessionCode(
+              slot.scheduledStartAt,
+              tx,
+            );
+
+          const createdSession = await this.sessionRepository.createSession(
+            {
+              sessionCode,
+              patientId: patientProfile.id,
+              practitionerId: practitioner.id,
+              flowType: SessionFlowType.SCHEDULED,
+              sessionMode: input.sessionMode,
+              durationMinutes: input.durationMinutes,
+              status: SessionStatus.PENDING_PAYMENT,
+              requestedStartAt: slot.scheduledStartAt,
+              scheduledStartAt: slot.scheduledStartAt,
+              scheduledEndAt: slot.scheduledEndAt,
+              expiresAt: paymentExpiresAt,
+              timezoneSnapshot: validatedSlots.timezone,
+              packagePurchaseId: purchase.id,
+              packageSessionIndex: index + 1,
+              packageSessionCount: packagePlan.sessionCount,
+              paymentCoverageType: SessionPaymentCoverageType.PACKAGE,
+            },
+            tx,
+          );
+
+          createdSessions.push(createdSession);
+        }
+
+        return {
+          purchase,
+          sessions: createdSessions,
+        };
+      });
 
       return {
-        purchase,
-        sessions: createdSessions,
+        item: this.packagePurchasePresenter.toViewModel({
+          purchase: created.purchase,
+          sessions: created.sessions,
+        }),
       };
-    });
+    } catch (error) {
+      const overlapConflict = toSessionOverlapConflictException(error);
+      if (overlapConflict) {
+        throw overlapConflict;
+      }
 
-    return {
-      item: this.packagePurchasePresenter.toViewModel({
-        purchase: created.purchase,
-        sessions: created.sessions,
-      }),
-    };
+      throw error;
+    }
   }
 
   private assertInternalQuoteFields(quote: {

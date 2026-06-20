@@ -4,14 +4,19 @@ import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
 import {
-  Card,
   EmptyState,
   Header,
   Screen,
   Text,
 } from "../../../components/ui";
 import { useTheme } from "../../../providers/ThemeProvider";
-import { MOBILE_CARD_RADIUS, MOBILE_CARD_PADDING, MOBILE_SECTION_GAP } from "../../../components/mobile-shell";
+import { useAppDirection } from "../../../i18n/direction";
+import {
+  MOBILE_CARD_RADIUS,
+  MOBILE_CARD_PADDING,
+  MOBILE_SECTION_GAP,
+  MOBILE_HORIZONTAL_PADDING,
+} from "../../../components/mobile-shell";
 import { apiClient } from "../../../lib/api";
 import { useArticleBySlug } from "../hooks";
 import { resolveArticleLocale } from "../types";
@@ -110,20 +115,24 @@ function parseContent(markdown: string): Block[] {
 }
 
 // ─── Block renderer ──────────────────────────────────────────────────────────────
-function ContentBlock({ block, isRTL }: { block: Block; isRTL: boolean }) {
+function ContentBlock({ block }: { block: Block }) {
   const { theme } = useTheme();
+  const { rowDirection, textAlign } = useAppDirection();
 
   switch (block.kind) {
     case "h2":
       return (
-        <Text weight="700" style={[s.h2, { color: theme.colors.textPrimary }]}>
-          {block.text}
-        </Text>
+        <View style={[s.h2Container, { flexDirection: rowDirection }]}>
+          <View style={[s.h2AccentBar, { backgroundColor: theme.colors.primary }]} />
+          <Text weight="700" style={[s.h2Text, { color: theme.colors.textPrimary, textAlign }]}>
+            {block.text}
+          </Text>
+        </View>
       );
 
     case "h3":
       return (
-        <Text weight="600" style={[s.h3, { color: theme.colors.textPrimary }]}>
+        <Text weight="600" style={[s.h3, { color: theme.colors.textPrimary, textAlign }]}>
           {block.text}
         </Text>
       );
@@ -132,9 +141,9 @@ function ContentBlock({ block, isRTL }: { block: Block; isRTL: boolean }) {
       return (
         <View style={s.list}>
           {block.items.map((item, idx) => (
-            <View key={idx} style={[s.listItem, isRTL && s.listItemRtl]}>
+            <View key={idx} style={[s.listItem, { flexDirection: rowDirection }]}>
               <Text style={[s.bullet, { color: theme.colors.primary }]}>•</Text>
-              <Text style={[s.listText, { color: theme.colors.textSecondary }]}>
+              <Text style={[s.listText, { color: theme.colors.textSecondary, textAlign }]}>
                 {item}
               </Text>
             </View>
@@ -146,11 +155,11 @@ function ContentBlock({ block, isRTL }: { block: Block; isRTL: boolean }) {
       return (
         <View style={s.list}>
           {block.items.map((item, idx) => (
-            <View key={idx} style={[s.listItem, isRTL && s.listItemRtl]}>
-              <Text style={[s.number, { color: theme.colors.primary }]}>
+            <View key={idx} style={[s.listItem, { flexDirection: rowDirection }]}>
+              <Text style={[s.number, { color: theme.colors.primary, textAlign: textAlign }]}>
                 {idx + 1}.
               </Text>
-              <Text style={[s.listText, { color: theme.colors.textSecondary }]}>
+              <Text style={[s.listText, { color: theme.colors.textSecondary, textAlign }]}>
                 {item}
               </Text>
             </View>
@@ -160,14 +169,14 @@ function ContentBlock({ block, isRTL }: { block: Block; isRTL: boolean }) {
 
     case "p":
       return (
-        <Text style={[s.para, { color: theme.colors.textSecondary }]}>
+        <Text style={[s.para, { color: theme.colors.textSecondary, textAlign }]}>
           {block.text}
         </Text>
       );
 
     case "hr":
       return (
-        <View style={[s.divider, { backgroundColor: theme.colors.borderLight }]} />
+        <View style={[s.divider, { backgroundColor: theme.colors.border }]} />
       );
 
     default:
@@ -186,6 +195,7 @@ export function ArticleDetailScreen({
   const router = useRouter();
   const { t, i18n } = useTranslation();
   const { theme } = useTheme();
+  const { rowDirection, textAlign } = useAppDirection();
   const resolvedLocale = resolveArticleLocale(locale ?? i18n.language);
   const isRTL = i18n.language?.startsWith("ar") ?? false;
   const articleSlug =
@@ -230,11 +240,11 @@ export function ArticleDetailScreen({
           showsVerticalScrollIndicator={false}
         >
           <View style={s.loadingInner}>
-            <View style={[s.loadingChip, { backgroundColor: theme.colors.borderLight }]} />
-            <View style={[s.loadingTitle, { backgroundColor: theme.colors.borderLight }]} />
-            <View style={[s.loadingLine, { backgroundColor: theme.colors.borderLight }]} />
-            <View style={[s.loadingLine, { backgroundColor: theme.colors.borderLight }]} />
-            <View style={[s.loadingLineShort, { backgroundColor: theme.colors.borderLight }]} />
+            <View style={[s.loadingChip, { backgroundColor: theme.colors.divider }]} />
+            <View style={[s.loadingTitle, { backgroundColor: theme.colors.divider }]} />
+            <View style={[s.loadingLine, { backgroundColor: theme.colors.divider }]} />
+            <View style={[s.loadingLine, { backgroundColor: theme.colors.divider }]} />
+            <View style={[s.loadingLineShort, { backgroundColor: theme.colors.divider }]} />
           </View>
         </ScrollView>
       </Screen>
@@ -267,7 +277,7 @@ export function ArticleDetailScreen({
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        {/* ── 1. Cover image (full-width card, optional) ── */}
+        {/* ── 1. Cover image (optional) ── */}
         {coverUri ? (
           <View style={s.coverWrapper}>
             <Image
@@ -280,68 +290,74 @@ export function ArticleDetailScreen({
           </View>
         ) : null}
 
-        {/* ── 2. Article header card ── */}
-        <Card variant="elevated" padding="none" style={s.headerCard}>
-          <View style={[s.headerCardInner, { padding: MOBILE_CARD_PADDING }]}>
-
-            {/* Category + Date row */}
-            <View style={[s.metaRow, isRTL && s.metaRowRtl]}>
-              {categoryLabel ? (
-                <View style={[s.chip, { backgroundColor: theme.colors.primaryLight }]}>
-                  <Text style={[s.chipText, { color: theme.colors.primary }]}>
-                    {categoryLabel}
-                  </Text>
-                </View>
-              ) : null}
-              {publishedLabel ? (
-                <View style={[s.metaItem, isRTL && s.metaItemRtl]}>
-                  <Ionicons
-                    name="calendar-outline"
-                    size={12}
-                    color={theme.colors.textMuted}
-                  />
-                  <Text style={s.metaText}>{publishedLabel}</Text>
-                </View>
-              ) : null}
-              {authorLabel ? (
-                <View style={[s.metaItem, isRTL && s.metaItemRtl]}>
-                  <Ionicons
-                    name="person-outline"
-                    size={12}
-                    color={theme.colors.textMuted}
-                  />
-                  <Text style={s.metaText}>{authorLabel}</Text>
-                </View>
-              ) : null}
-            </View>
-
-            {/* Title */}
-            <Text
-              weight="700"
-              style={[s.title, { color: theme.colors.textPrimary }]}
-            >
-              {article.title}
-            </Text>
-
-            {/* Excerpt/lead */}
-            {article.excerpt ? (
-              <Text style={[s.excerpt, { color: theme.colors.textSecondary }]}>
-                {article.excerpt}
-              </Text>
+        {/* ── 2. Unified Editorial Article Layout ── */}
+        <View style={s.articleContainer}>
+          {/* Category + Date + Author row */}
+          <View style={[s.metaRow, { flexDirection: rowDirection }]}>
+            {categoryLabel ? (
+              <View style={[s.chip, { backgroundColor: theme.colors.primaryLight }]}>
+                <Text style={[s.chipText, { color: theme.colors.primary }]}>
+                  {categoryLabel}
+                </Text>
+              </View>
+            ) : null}
+            {publishedLabel ? (
+              <View style={[s.metaItem, { flexDirection: rowDirection }]}>
+                <Ionicons
+                  name="calendar-outline"
+                  size={12}
+                  color={theme.colors.textMuted}
+                />
+                <Text style={s.metaText}>{publishedLabel}</Text>
+              </View>
+            ) : null}
+            {authorLabel ? (
+              <View style={[s.metaItem, { flexDirection: rowDirection }]}>
+                <Ionicons
+                  name="person-outline"
+                  size={12}
+                  color={theme.colors.textMuted}
+                />
+                <Text style={s.metaText}>{authorLabel}</Text>
+              </View>
             ) : null}
           </View>
-        </Card>
 
-        {/* ── 3. Article content card ── */}
-        {blocks.length > 0 ? (
-          <Card variant="elevated" padding="none" style={s.contentCard}>
-            <View style={[s.contentInner, { padding: MOBILE_CARD_PADDING }]}>
-              {blocks.map((block, idx) => (
-                <ContentBlock key={`${block.kind}-${idx}`} block={block} isRTL={isRTL} />
-              ))}
+          {/* Title */}
+          <Text
+            weight="700"
+            style={[s.title, { color: theme.colors.textPrimary, textAlign }]}
+          >
+            {article.title}
+          </Text>
+
+          {/* Excerpt/lead */}
+          {article.excerpt ? (
+            <Text style={[s.excerpt, { color: theme.colors.textSecondary, textAlign }]}>
+              {article.excerpt}
+            </Text>
+          ) : null}
+
+          {/* Elegant Divider line separating intro and body */}
+          <View style={[s.sectionDivider, { backgroundColor: theme.colors.divider }]} />
+
+          {/* Body Content blocks rendering parsed markdown */}
+          {blocks.length > 0 ? (
+            <View style={s.bodyContainer}>
+              {blocks.map((block, idx) => {
+                const showDivider = block.kind === "h2" && idx > 0;
+                return (
+                  <React.Fragment key={`${block.kind}-${idx}`}>
+                    {showDivider && (
+                      <View style={[s.sectionHeaderDivider, { backgroundColor: theme.colors.divider }]} />
+                    )}
+                    <ContentBlock block={block} />
+                  </React.Fragment>
+                );
+              })}
             </View>
-          </Card>
-        ) : null}
+          ) : null}
+        </View>
 
         {/* Bottom safe spacer */}
         <View style={s.bottomSpacer} />
@@ -361,49 +377,43 @@ function formatDate(dateString: string, locale: string): string {
   }
 }
 
-// ─── Styles ──────────────────────────────────────────────────────────────────
+// ─── Styles — flat and editorial, no boxy card panels ───────────────────────
 const s = StyleSheet.create({
   screen: { flex: 1 },
-  scrollContent: { paddingBottom: 0, paddingTop: MOBILE_SECTION_GAP },
+  scrollContent: { paddingBottom: 0, paddingTop: MOBILE_SECTION_GAP, paddingHorizontal: MOBILE_HORIZONTAL_PADDING },
 
-  // Cover
+  // Cover image
   coverWrapper: {
     borderRadius: MOBILE_CARD_RADIUS,
     overflow: "hidden",
-    marginBottom: 14,
+    marginBottom: 16,
   },
   coverImage: {
     width: "100%",
     height: 200,
-    backgroundColor: "#eef2f5",
+    backgroundColor: "#EEF4EF",
   },
 
-  // Header card
-  headerCard: {
-    borderRadius: MOBILE_CARD_RADIUS,
-    marginBottom: 14,
-    overflow: "hidden",
+  // Article text container
+  articleContainer: {
+    width: "100%",
   },
-  headerCardInner: { gap: 0 },
 
   // Meta row
   metaRow: {
-    flexDirection: "row",
     alignItems: "center",
     flexWrap: "wrap",
     gap: 8,
     marginBottom: 12,
   },
-  metaRowRtl: { flexDirection: "row-reverse" },
-  metaItem: { flexDirection: "row", alignItems: "center", gap: 4 },
-  metaItemRtl: { flexDirection: "row-reverse" },
-  metaText: { fontSize: 12, color: "#7a8891" },
+  metaItem: { alignItems: "center", gap: 4 },
+  metaText: { fontSize: 12, color: "#61716C" },
 
   // Category chip
   chip: {
-    paddingHorizontal: 10,
-    paddingVertical: 3,
-    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 8,
     overflow: "hidden",
   },
   chipText: { fontSize: 11, fontWeight: "600" },
@@ -412,26 +422,52 @@ const s = StyleSheet.create({
   title: { fontSize: 22, lineHeight: 30, fontWeight: "700", marginBottom: 8 },
 
   // Excerpt
-  excerpt: { fontSize: 15, lineHeight: 24 },
+  excerpt: { fontSize: 15, lineHeight: 24, opacity: 0.9 },
 
-  // Content card
-  contentCard: {
-    borderRadius: MOBILE_CARD_RADIUS,
-    overflow: "hidden",
+  // Separator
+  sectionDivider: {
+    height: 1,
+    marginVertical: 16,
+    opacity: 0.6,
   },
-  contentInner: { gap: 0 },
+
+  // Body container
+  bodyContainer: {
+    width: "100%",
+  },
 
   // Reading typography
-  h2: { fontSize: 18, lineHeight: 26, fontWeight: "700", marginBottom: 8, marginTop: 4 },
-  h3: { fontSize: 16, lineHeight: 24, fontWeight: "600", marginBottom: 6, marginTop: 2 },
-  para: { fontSize: 15, lineHeight: 28, marginBottom: 12 },
-  list: { marginBottom: 12, gap: 0 },
-  listItem: { flexDirection: "row", alignItems: "flex-start", gap: 8, marginBottom: 6 },
-  listItemRtl: { flexDirection: "row-reverse" },
-  bullet: { fontSize: 15, lineHeight: 28, minWidth: 14, textAlign: "center" },
-  number: { fontSize: 15, lineHeight: 28, minWidth: 18 },
-  listText: { flex: 1, fontSize: 15, lineHeight: 28 },
-  divider: { height: 1, marginVertical: 16 },
+  h2Container: {
+    gap: 8,
+    marginTop: 28,
+    marginBottom: 12,
+    alignItems: "center",
+  },
+  h2AccentBar: {
+    width: 4,
+    height: 18,
+    borderRadius: 2,
+  },
+  h2Text: {
+    flex: 1,
+    fontSize: 18,
+    lineHeight: 26,
+    fontWeight: "700",
+  },
+  sectionHeaderDivider: {
+    height: 1,
+    marginTop: 24,
+    marginBottom: 8,
+    opacity: 0.5,
+  },
+  h3: { fontSize: 16, lineHeight: 24, fontWeight: "600", marginBottom: 8, marginTop: 10 },
+  para: { fontSize: 15, lineHeight: 28, marginBottom: 14 },
+  list: { marginBottom: 16, gap: 6, paddingStart: 14 },
+  listItem: { alignItems: "flex-start", gap: 10 },
+  bullet: { fontSize: 16, lineHeight: 26, minWidth: 12, textAlign: "center" },
+  number: { fontSize: 14, lineHeight: 26, minWidth: 20 },
+  listText: { flex: 1, fontSize: 15, lineHeight: 26 },
+  divider: { height: 1, marginVertical: 16, opacity: 0.5 },
 
   // Loading skeleton
   loadingInner: { padding: MOBILE_CARD_PADDING, gap: 12 },
@@ -440,6 +476,6 @@ const s = StyleSheet.create({
   loadingLine: { width: "100%", height: 15, borderRadius: 6 },
   loadingLineShort: { width: "60%", height: 15, borderRadius: 6 },
 
-  // Bottom
-  bottomSpacer: { height: 40 },
+  // Bottom spacer
+  bottomSpacer: { height: 60 },
 });

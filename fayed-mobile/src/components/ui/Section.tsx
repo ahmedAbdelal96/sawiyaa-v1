@@ -27,7 +27,7 @@ export const Section = ({
           style={[
             styles.header,
             {
-              paddingHorizontal: noPadding ? 0 : 28,
+              paddingHorizontal: noPadding ? 0 : 20,
               flexDirection: isRTL ? "row-reverse" : "row",
             },
           ]}
@@ -53,17 +53,17 @@ export const Section = ({
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: 30,
+    marginBottom: 24,
   },
   header: {
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 14,
+    marginBottom: 12,
   },
   title: {
     fontSize: 18,
   },
   contentPadding: {
-    paddingHorizontal: 32,
+    paddingHorizontal: 20,
   },
 });

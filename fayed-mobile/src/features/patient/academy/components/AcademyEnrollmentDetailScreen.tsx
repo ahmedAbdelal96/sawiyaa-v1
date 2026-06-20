@@ -3,6 +3,7 @@ import { Linking, Platform, StyleSheet, View } from "react-native";
 import * as WebBrowser from "expo-web-browser";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
+import { Ionicons } from "@expo/vector-icons";
 import {
   Button,
   Card,
@@ -14,6 +15,7 @@ import {
   Text,
 } from "../../../../components/ui";
 import { useTheme } from "../../../../providers/ThemeProvider";
+import { useAppDirection } from "../../../../i18n/direction";
 import { formatViewerDateTime } from "../../../../lib/time-formatting";
 import { usePublicAcademyEnrollment } from "../hooks";
 import {
@@ -41,6 +43,7 @@ export default function AcademyEnrollmentDetailScreen({
   const router = useRouter();
   const { theme } = useTheme();
   const { t } = useTranslation();
+  const { rowDirection, textAlign } = useAppDirection();
   const enrollmentQuery = usePublicAcademyEnrollment(enrollmentId, token);
   const enrollment = enrollmentQuery.data ?? null;
   const isMissingAccessLink = !enrollmentId || !token;
@@ -116,7 +119,7 @@ export default function AcademyEnrollmentDetailScreen({
               title={enrollment.courseTitle}
               subtitle={t("academy.enrollment.course")}
             />
-            <View style={styles.statusRow}>
+            <View style={[styles.statusRow, { flexDirection: rowDirection }]}>
               <StatusChip
                 label={t(
                   getAcademyEnrollmentStatusTranslationKey(
@@ -181,7 +184,7 @@ export default function AcademyEnrollmentDetailScreen({
               {isPendingPaymentFlow && accessLockedCopy ? (
                 <Text
                   color={theme.colors.textSecondary}
-                  style={styles.helperText}
+                  style={[styles.helperText, { textAlign }]}
                 >
                   {accessLockedCopy}
                 </Text>
@@ -207,6 +210,7 @@ export default function AcademyEnrollmentDetailScreen({
                   <Button
                     title={t("academy.enrollment.openMeeting")}
                     variant="secondary"
+                    leftIcon={<Ionicons name="videocam-outline" size={18} color={theme.colors.primary} />}
                     onPress={async () => {
                       const safe = normalizeAllowedExternalUrl(
                         joinAccess.meetingUrl ?? "",
@@ -223,6 +227,7 @@ export default function AcademyEnrollmentDetailScreen({
                   <Button
                     title={t("academy.enrollment.openGroup")}
                     variant="secondary"
+                    leftIcon={<Ionicons name="logo-whatsapp" size={18} color={theme.colors.primary} />}
                     onPress={async () => {
                       const safe = normalizeAllowedExternalUrl(
                         joinAccess.whatsappGroupUrl ?? "",
@@ -255,7 +260,6 @@ const styles = StyleSheet.create({
     marginHorizontal: 0,
   },
   statusRow: {
-    flexDirection: "row",
     flexWrap: "wrap",
     gap: 8,
     marginTop: 10,

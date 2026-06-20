@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+
+<html dir="rtl" lang="ar"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>تعديل الملف الشخصي</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600&amp;family=Source+Serif+4:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-primary-fixed-variant": "#004f50",
+                        "primary-fixed-dim": "#5cd8da",
+                        "surface-container-lowest": "#ffffff",
+                        "tertiary-fixed-dim": "#c8c6c5",
+                        "on-secondary": "#ffffff",
+                        "secondary-container": "#e0e0dd",
+                        "cream-accent": "#FFF9EE",
+                        "alert-red": "#FCECEC",
+                        "on-tertiary-container": "#2d2c2c",
+                        "surface-container": "#e9efee",
+                        "on-background": "#171d1d",
+                        "on-tertiary-fixed-variant": "#474746",
+                        "on-tertiary": "#ffffff",
+                        "on-tertiary-fixed": "#1c1b1b",
+                        "on-secondary-fixed": "#1a1c1a",
+                        "surface": "#f5fafa",
+                        "tertiary-container": "#959393",
+                        "surface-tint": "#00696b",
+                        "primary": "#00696b",
+                        "surface-bright": "#f5fafa",
+                        "surface-dim": "#d5dbda",
+                        "tertiary": "#5f5e5e",
+                        "on-primary-fixed": "#002020",
+                        "inverse-primary": "#5cd8da",
+                        "on-surface-variant": "#3d4949",
+                        "surface-variant": "#dee4e3",
+                        "error-container": "#ffdad6",
+                        "mint-accent": "#E8F5F1",
+                        "outline": "#6d7a79",
+                        "on-primary": "#ffffff",
+                        "on-secondary-container": "#626361",
+                        "on-surface": "#171d1d",
+                        "outline-variant": "#bcc9c9",
+                        "inverse-on-surface": "#ecf2f1",
+                        "surface-container-highest": "#dee4e3",
+                        "secondary-fixed-dim": "#c7c6c4",
+                        "secondary": "#5e5f5d",
+                        "blue-accent": "#E8F1F8",
+                        "on-secondary-fixed-variant": "#464745",
+                        "surface-container-low": "#eff5f4",
+                        "surface-container-high": "#e4e9e9",
+                        "error": "#ba1a1a",
+                        "on-primary-container": "#003233",
+                        "amber-accent": "#FFF3E0",
+                        "on-error-container": "#93000a",
+                        "primary-fixed": "#7cf5f7",
+                        "secondary-fixed": "#e3e2e0",
+                        "inverse-surface": "#2c3131",
+                        "background": "#f5fafa",
+                        "tertiary-fixed": "#e5e2e1",
+                        "on-error": "#ffffff",
+                        "primary-container": "#00a4a6"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "sm": "16px",
+                        "lg": "32px",
+                        "base": "4px",
+                        "xs": "8px",
+                        "gutter-mobile": "12px",
+                        "xl": "48px",
+                        "md": "24px",
+                        "margin-mobile": "20px"
+                    },
+                    "fontFamily": {
+                        "body-lg": ["\"Source Sans 3\""],
+                        "headline-sm": ["\"Source Serif 4\""],
+                        "display-lg-mobile": ["\"Source Serif 4\""],
+                        "label-md": ["\"Source Sans 3\""],
+                        "label-sm": ["\"Source Sans 3\""],
+                        "headline-md": ["\"Source Serif 4\""],
+                        "body-md": ["\"Source Sans 3\""],
+                        "display-lg": ["\"Source Serif 4\""]
+                    },
+                    "fontSize": {
+                        "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }],
+                        "headline-sm": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "display-lg-mobile": ["28px", { "lineHeight": "36px", "fontWeight": "700" }],
+                        "label-md": ["14px", { "lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "600" }],
+                        "label-sm": ["12px", { "lineHeight": "16px", "fontWeight": "500" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "display-lg": ["34px", { "lineHeight": "42px", "letterSpacing": "-0.02em", "fontWeight": "700" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { background-color: #FAF9F6; }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+        }
+        .soft-shadow {
+            box-shadow: 0 4px 20px rgba(22, 22, 22, 0.05);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="text-on-background min-h-screen font-body-lg">
+<!-- Top App Bar (Semantic Shell suppressed for linear task, but kept as a simple header) -->
+<header class="bg-surface sticky top-0 z-40 px-margin-mobile py-xs flex items-center justify-between">
+<div class="flex items-center gap-sm">
+<button aria-label="العودة" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-variant transition-colors">
+<span class="material-symbols-outlined text-on-surface">arrow_forward</span>
+</button>
+<h1 class="font-headline-sm text-headline-sm text-on-surface">المعلومات الشخصية</h1>
+</div>
+</header>
+<main class="px-margin-mobile pb-32 pt-md max-w-2xl mx-auto space-y-md">
+<!-- Avatar Section -->
+<section class="flex flex-col items-center justify-center space-y-sm bg-surface-container-lowest rounded-xl p-md soft-shadow">
+<div class="relative inline-block">
+<img class="w-24 h-24 rounded-full object-cover border-4 border-surface-container-lowest soft-shadow" data-alt="A professional, warm portrait of a Middle Eastern male patient, late 30s, looking approachable and calm, against a soft, light cream background. The lighting is high-key and flattering, emphasizing a modern healthcare aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBQw8EXo0oynMybEuL9LsvhCvq7nDC3en1hS1pcpi7tPN64UKoBVtzfLCPsRy1EbroxQwNK1903ToAOZkXYM8PLtoz-iIvjQSb-amhjko3P5eNGidtnCAk_vT8jmLa7b1lrZqcbrXbGFC8ur75zZd_fhyURxwL_6UQBx0D9NgCHJrv9VZXiDfeS6jFJtZEYSEMxCWSU4mDtnGsC1YieUiXFqG09SzGJYbspGRerG_zIWMzKr6oUZMogypj3lR_L0-Zbn0E3kdegRH9I"/>
+<button class="absolute bottom-0 left-0 bg-primary text-on-primary w-8 h-8 rounded-full flex items-center justify-center shadow-sm hover:scale-95 transition-transform">
+<span class="material-symbols-outlined text-[18px]">edit</span>
+</button>
+</div>
+<div class="text-center">
+<h2 class="font-headline-sm text-headline-sm text-on-surface">أحمد عبد الله</h2>
+<p class="font-label-md text-label-md text-on-surface-variant mt-1">ahmed@example.com</p>
+</div>
+</section>
+<!-- Form Section -->
+<section class="bg-surface-container-lowest rounded-xl p-md soft-shadow space-y-md">
+<h3 class="font-headline-sm text-headline-sm text-on-surface border-b border-surface-variant pb-2">التفاصيل الأساسية</h3>
+<form class="space-y-sm">
+<!-- Editable Field: Name -->
+<div class="space-y-base">
+<label class="font-label-md text-label-md text-on-surface" for="fullName">الاسم الكامل</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant">person</span>
+<input class="w-full bg-surface border border-surface-variant rounded-lg py-3 pl-3 pr-10 font-body-md text-body-md text-on-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors" id="fullName" type="text" value="أحمد عبد الله"/>
+</div>
+</div>
+<!-- Editable Field: Phone -->
+<div class="space-y-base">
+<label class="font-label-md text-label-md text-on-surface" for="phone">رقم الهاتف</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant">phone</span>
+<input class="w-full bg-surface border border-surface-variant rounded-lg py-3 pl-3 pr-10 font-body-md text-body-md text-on-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors text-right" dir="ltr" id="phone" type="tel" value="+966 50 123 4567"/>
+</div>
+<p class="font-label-sm text-label-sm text-on-surface-variant">سيتم استخدام هذا الرقم للتواصل وتأكيد المواعيد.</p>
+</div>
+<div class="grid grid-cols-2 gap-sm pt-xs">
+<!-- Editable Field: DOB -->
+<div class="space-y-base">
+<label class="font-label-md text-label-md text-on-surface" for="dob">تاريخ الميلاد</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant">calendar_month</span>
+<input class="w-full bg-surface border border-surface-variant rounded-lg py-3 pl-3 pr-10 font-body-md text-body-md text-on-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors text-right" id="dob" type="date" value="1985-10-15"/>
+</div>
+</div>
+<!-- Editable Field: Gender -->
+<div class="space-y-base">
+<label class="font-label-md text-label-md text-on-surface" for="gender">الجنس</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant">wc</span>
+<select class="w-full bg-surface border border-surface-variant rounded-lg py-3 pl-3 pr-10 font-body-md text-body-md text-on-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors appearance-none" id="gender">
+<option selected="" value="male">ذكر</option>
+<option value="female">أنثى</option>
+</select>
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none">expand_more</span>
+</div>
+</div>
+</div>
+<!-- Disabled Field: National ID -->
+<div class="space-y-base pt-sm">
+<label class="font-label-md text-label-md text-on-surface opacity-60" for="nationalId">رقم الهوية الوطنية</label>
+<div class="relative opacity-60">
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant">badge</span>
+<input class="w-full bg-surface-variant border-none rounded-lg py-3 pl-3 pr-10 font-body-md text-body-md text-on-surface cursor-not-allowed" disabled="" id="nationalId" type="text" value="105****456"/>
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant">lock</span>
+</div>
+<p class="font-label-sm text-label-sm text-on-surface-variant opacity-60">لتغيير رقم الهوية، يرجى التواصل مع الدعم الفني.</p>
+</div>
+</form>
+</section>
+</main>
+<!-- Bottom Action Bar (Contextual Task) -->
+<div class="fixed bottom-0 w-full z-50 glass-panel border-t border-outline-variant/20 px-margin-mobile py-sm pb-safe max-w-2xl left-1/2 -translate-x-1/2">
+<div class="flex gap-sm">
+<button class="flex-1 bg-primary text-on-primary font-label-md text-label-md rounded-[16px] py-3 hover:opacity-90 transition-opacity flex items-center justify-center gap-2">
+                حفظ التغييرات
+            </button>
+<button class="flex-1 bg-surface border border-outline-variant text-on-surface font-label-md text-label-md rounded-[16px] py-3 hover:bg-surface-variant transition-colors flex items-center justify-center gap-2">
+                إلغاء
+            </button>
+</div>
+</div>
+</body></html>

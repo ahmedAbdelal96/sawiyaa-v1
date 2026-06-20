@@ -8,9 +8,11 @@ import { SupportedLocale } from '@common/i18n/types/locale.types';
 import {
   OtpPurpose,
   PractitionerStatus,
+  SecurityAuditOutcome,
   UserRoleType,
   UserStatus,
 } from '@prisma/client';
+import { SecurityAuditService } from '@common/security-audit/security-audit.service';
 import { AuthIdentityRepository } from '../repositories/auth-identity.repository';
 import { IssueAuthTokensUseCase } from './issue-auth-tokens.use-case';
 import { TwoFactorSettingRepository } from '../repositories/two-factor-setting.repository';
@@ -39,6 +41,7 @@ export class LoginPractitionerPasswordUseCase {
     private readonly practitionerOtpChannelService: PractitionerOtpChannelService,
     private readonly createOtpChallengeUseCase: CreateOtpChallengeUseCase,
     private readonly sendOtpChallengeUseCase: SendOtpChallengeUseCase,
+    private readonly securityAuditService: SecurityAuditService,
   ) {}
 
   async execute(input: {
@@ -46,6 +49,8 @@ export class LoginPractitionerPasswordUseCase {
     password: string;
     locale: SupportedLocale;
     deviceContext: AuthSessionDeviceContext;
+    ipAddress?: string | null;
+    userAgent?: string | null;
   }) {
     const normalizedEmail = input.email.trim().toLowerCase();
     const userEmail =
@@ -53,13 +58,15 @@ export class LoginPractitionerPasswordUseCase {
         normalizedEmail,
       );
 
-    if (!userEmail) {
-      throw new UnauthorizedException({
-        messageKey: 'auth.errors.invalidCredentials',
-        error: 'INVALID_CREDENTIALS',
+    if (!userEmail || !userEmail.isPrimary) {
+      this.securityAuditService.logAsync({
+        action: 'auth.practitioner.login.failure',
+        outcome: SecurityAuditOutcome.FAILURE,
+        reason: !userEmail ? 'USER_NOT_FOUND' : 'NOT_PRIMARY_EMAIL',
+        metadata: { emailDomain: normalizedEmail.split('@')[1] ?? null },
+        ipAddress: input.ipAddress ?? null,
+        userAgent: input.userAgent ?? null,
       });
-    }
-    if (!userEmail.isPrimary) {
       throw new UnauthorizedException({
         messageKey: 'auth.errors.invalidCredentials',
         error: 'INVALID_CREDENTIALS',
@@ -71,6 +78,15 @@ export class LoginPractitionerPasswordUseCase {
     );
 
     if (!hasPractitionerRole) {
+      this.securityAuditService.logAsync({
+        action: 'auth.practitioner.login.failure',
+        outcome: SecurityAuditOutcome.FAILURE,
+        actorUserId: userEmail.user.id,
+        actorRoles: userEmail.user.roles.map((r) => r.role),
+        reason: 'PRACTITIONER_ROLE_REQUIRED',
+        ipAddress: input.ipAddress ?? null,
+        userAgent: input.userAgent ?? null,
+      });
       throw new ForbiddenException({
         messageKey: 'auth.errors.practitionerRoleRequired',
         error: 'PRACTITIONER_ROLE_REQUIRED',
@@ -79,6 +95,15 @@ export class LoginPractitionerPasswordUseCase {
 
     const practitionerProfile = userEmail.user.practitionerProfile;
     if (!practitionerProfile) {
+      this.securityAuditService.logAsync({
+        action: 'auth.practitioner.login.failure',
+        outcome: SecurityAuditOutcome.FAILURE,
+        actorUserId: userEmail.user.id,
+        actorRoles: userEmail.user.roles.map((r) => r.role),
+        reason: 'PRACTITIONER_PROFILE_NOT_FOUND',
+        ipAddress: input.ipAddress ?? null,
+        userAgent: input.userAgent ?? null,
+      });
       throw new ForbiddenException({
         messageKey: 'practitioners.errors.applicationNotEligible',
         error: 'PRACTITIONER_NOT_APPROVED',
@@ -89,6 +114,15 @@ export class LoginPractitionerPasswordUseCase {
       practitionerProfile.status === PractitionerStatus.SUSPENDED ||
       practitionerProfile.status === PractitionerStatus.INACTIVE
     ) {
+      this.securityAuditService.logAsync({
+        action: 'auth.practitioner.login.failure',
+        outcome: SecurityAuditOutcome.FAILURE,
+        actorUserId: userEmail.user.id,
+        actorRoles: userEmail.user.roles.map((r) => r.role),
+        reason: `PRACTITIONER_STATUS_${practitionerProfile.status}`,
+        ipAddress: input.ipAddress ?? null,
+        userAgent: input.userAgent ?? null,
+      });
       throw new ForbiddenException({
         messageKey: 'practitioners.errors.applicationNotEligible',
         error: 'PRACTITIONER_NOT_APPROVED',
@@ -96,6 +130,15 @@ export class LoginPractitionerPasswordUseCase {
     }
 
     if (userEmail.user.status !== UserStatus.ACTIVE) {
+      this.securityAuditService.logAsync({
+        action: 'auth.practitioner.login.failure',
+        outcome: SecurityAuditOutcome.FAILURE,
+        actorUserId: userEmail.user.id,
+        actorRoles: userEmail.user.roles.map((r) => r.role),
+        reason: 'ACCOUNT_NOT_ACTIVE',
+        ipAddress: input.ipAddress ?? null,
+        userAgent: input.userAgent ?? null,
+      });
       throw new ForbiddenException({
         messageKey: 'auth.errors.accountNotActive',
         error: 'ACCOUNT_NOT_ACTIVE',
@@ -108,6 +151,15 @@ export class LoginPractitionerPasswordUseCase {
       );
 
     if (!passwordIdentity?.passwordHash) {
+      this.securityAuditService.logAsync({
+        action: 'auth.practitioner.login.failure',
+        outcome: SecurityAuditOutcome.FAILURE,
+        actorUserId: userEmail.user.id,
+        actorRoles: userEmail.user.roles.map((r) => r.role),
+        reason: 'NO_PASSWORD_IDENTITY',
+        ipAddress: input.ipAddress ?? null,
+        userAgent: input.userAgent ?? null,
+      });
       throw new UnauthorizedException({
         messageKey: 'auth.errors.invalidCredentials',
         error: 'INVALID_CREDENTIALS',
@@ -120,6 +172,15 @@ export class LoginPractitionerPasswordUseCase {
     );
 
     if (!isValidPassword) {
+      this.securityAuditService.logAsync({
+        action: 'auth.practitioner.login.failure',
+        outcome: SecurityAuditOutcome.FAILURE,
+        actorUserId: userEmail.user.id,
+        actorRoles: userEmail.user.roles.map((r) => r.role),
+        reason: 'INVALID_PASSWORD',
+        ipAddress: input.ipAddress ?? null,
+        userAgent: input.userAgent ?? null,
+      });
       throw new UnauthorizedException({
         messageKey: 'auth.errors.invalidCredentials',
         error: 'INVALID_CREDENTIALS',
@@ -143,6 +204,15 @@ export class LoginPractitionerPasswordUseCase {
         userId: userEmail.user.id,
         role: UserRoleType.PRACTITIONER,
         deviceContext: input.deviceContext,
+      });
+
+      this.securityAuditService.logAsync({
+        action: 'auth.practitioner.login.success',
+        outcome: SecurityAuditOutcome.SUCCESS,
+        actorUserId: userEmail.user.id,
+        actorRoles: [UserRoleType.PRACTITIONER],
+        ipAddress: input.ipAddress ?? null,
+        userAgent: input.userAgent ?? null,
       });
 
       return result;
@@ -177,6 +247,19 @@ export class LoginPractitionerPasswordUseCase {
       code: challenge.code,
       expiresAt: challenge.expiresAt,
       locale: input.locale,
+    });
+
+    this.securityAuditService.logAsync({
+      action: 'auth.practitioner.login.success',
+      outcome: SecurityAuditOutcome.SUCCESS,
+      actorUserId: userEmail.user.id,
+      actorRoles: [UserRoleType.PRACTITIONER],
+      metadata: {
+        challengeId: challenge.challengeId,
+        channel: challenge.channel,
+      },
+      ipAddress: input.ipAddress ?? null,
+      userAgent: input.userAgent ?? null,
     });
 
     return {

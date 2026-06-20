@@ -31,27 +31,27 @@
 |----|-------|---------|--------|---------------|
 | AUDIT-031 | Academy enrollment no auth guard | Backend | Academy | High | ✅ Reclassified / Accepted Risk (Sprint 1-R3): `@Public()` added to `createEnrollment` explicitly; enrollment is by phone/email (no user account); no global APP_GUARD; adding auth guard would break public enrollment flow |
 | AUDIT-032 | Internal UUID in public DTOs | Backend | Practitioner DTO | Medium | ✅ Done + Verified — Phase 9a Sprint 1 |
-| AUDIT-033 | Web refresh token no httpOnly | Web | Auth | Medium | ✅ Done + Verified — Sprint 1-R2: backend `Set-Cookie` header with `HttpOnly; Secure; SameSite=Strict`; Sprint 1-R3: `WebResponseHardeningInterceptor` strips `refreshToken` from web JSON response body |
+| AUDIT-033 | Web refresh token no httpOnly | Web | Auth | Medium | ✅ Done + Verified — Sprint 1-R2: backend `Set-Cookie` header with `HttpOnly; Secure; SameSite=Strict`; Sprint 1-R3 + R3.1: `WebResponseHardeningInterceptor` with `X-Client-Platform: web` header detection (primary) + Origin fallback; `refreshToken` field deleted from web JSON response body |
 | AUDIT-010 | Instant booking accept race / Prisma exception | Backend | Instant Booking | High | ✅ Done + Verified — Phase 9a Sprint 1 |
 | AUDIT-034 | Support ticket bypasses OTP | Backend | Support | Medium |
 | AUDIT-035 | Financial ops bypass OTP | Backend | Financial | Medium |
-| AUDIT-037 | Practitioner approval/rejection not logged | Backend | Audit | Medium |
-| AUDIT-038 | Manual payout not logged | Backend | Audit | Medium |
-| AUDIT-039 | No account lockout | Backend | Auth | High |
+| AUDIT-037 | Practitioner approval/rejection not logged | Backend | Audit | Medium | ✅ Fixed — Phase 9b Sprint 2: use-case-level `SecurityAuditService` logging added to approve and reject paths |
+| AUDIT-038 | Manual payout not logged | Backend | Audit | Medium | ✅ Fixed — Phase 9b Sprint 2: controller-level `SecurityAuditService.logAsync` added to `POST /admin/practitioner-payouts` |
+| AUDIT-039 | No account lockout | Backend | Auth | 🔴 BLOCKED — schema change required (User.lockedUntil/failedLoginAttempts) |
 | AUDIT-040 | No global JWT auth guard | Backend | Auth | High |
-| AUDIT-041 | Practitioner login missing deviceId | Backend | Auth | Low |
+| AUDIT-041 | Practitioner login missing deviceId | Backend | Auth | 🟡 Implemented — Verification Pending (Phase 9b Sprint 4): mobile+backend done; web does not send deviceId |
 | AUDIT-044 | __DEV__ URL allowlist in production | Web | Auth | Medium |
 | AUDIT-047 | GeneralChatConversationsController lacks RolesGuard | Backend | Chat | Medium |
 | AUDIT-053 | Room name/URL in blocked join contract | Backend | Daily Join | High |
 | AUDIT-055 | DISPLAY_NAME_MATCH fraud risk | Backend | Attendance | Medium |
 | AUDIT-056 | No instant booking notifications | Backend | Notifications | High |
-| AUDIT-057 | Push payload PHI fields | Backend | Notifications | Medium |
-| AUDIT-062 | APP_URL localhost fallback | Backend | Config | Low |
+| AUDIT-057 | Push payload PHI fields | Backend | Notifications | Medium | 🟡 Implemented — Verification Pending (Phase 9b Sprint 3): `threadId`, `relatedEntityType`, `category`, `relatedEntityId`, `scheduledStartAt`, `packagePlanTitle` removed from push payloads; `{{sessionAt}}` removed from push body via push-specific i18n keys; Expo `data` object sanitized. |
+| AUDIT-062 | APP_URL localhost fallback | Backend | Config | Low | 🟡 Implemented — Verification Pending (Phase 9b Sprint 3): `app.config.ts` removed localhost fallback; `SessionJoinAvailableNotificationSweeperService` uses proper ConfigService DI; `env.schema.ts` rejects localhost in production. |
 | AUDIT-067 | Care-chat notifications bypass Messages Shell | Mobile | Notifications | Medium |
-| AUDIT-068 | admin/care-chat/[id] missing gate | Web Admin | Permissions | Low |
-| AUDIT-069 | admin/sessions/runtime-inspection missing gate | Web Admin | Permissions | Low |
-| AUDIT-102 | admin/refund-policies missing gate | Web Admin | Permissions | Low |
-| AUDIT-103 | admin/notifications/[id] missing gate | Web Admin | Permissions | Low |
+| AUDIT-068 | admin/care-chat/[id] missing gate | Web Admin | Permissions | Low | ✅ Fixed — Phase 9b Sprint 1 Wave 0 Batch 1 |
+| AUDIT-069 | admin/sessions/runtime-inspection missing gate | Web Admin | Permissions | Low | ✅ Fixed — Phase 9b Sprint 1 Wave 0 Batch 1 |
+| AUDIT-102 | admin/refund-policies missing gate | Web Admin | Permissions | Low | ✅ Fixed — Phase 9b Sprint 1 Wave 0 Batch 1 (frontend gate + backend `PermissionsGuard` + method-level permissions: `REFUNDS_RETRY` for reads, `REFUNDS_APPROVE` for writes) |
+| AUDIT-103 | admin/notifications/[id] missing gate | Web Admin | Permissions | Low | ✅ Fixed — Phase 9b Sprint 1 Wave 0 Batch 1 |
 | AUDIT-003 | Admin refund panel no max cap | Web Admin | Payment Ops | Medium |
 | AUDIT-004 | Settlement mark-paid/failed no confirmation | Web Admin | Settlement | Medium |
 
@@ -61,18 +61,18 @@
 1. AUDIT-040 (global auth guard)    → Prerequisite for most other backend fixes
 2. AUDIT-031 (academy auth guard)    → ✅ CLOSED — Reclassified Accepted Risk (Sprint 1-R3): phone/email enrollment intentionally public
 3. AUDIT-032 (UUID removal)          → ✅ DONE — Phase 9a Sprint 1 (Sprint 1-R1 verified)
-4. AUDIT-033 (httpOnly cookie)       → ✅ DONE + VERIFIED — Sprint 1-R2 (backend Set-Cookie) + Sprint 1-R3 (response body hardening)
+4. AUDIT-033 (httpOnly cookie)       → ✅ DONE + VERIFIED — Sprint 1-R2 (backend Set-Cookie) + Sprint 1-R3 + R3.1 (X-Client-Platform header detection + response body field deletion)
 5. AUDIT-010 (race condition)        → ✅ DONE — Phase 9a Sprint 1 (Sprint 1-R1 verified)
 6. AUDIT-044 (__DEV__ allowlist)     → Independent; quick verify + strip
-7. AUDIT-039 (account lockout)       → After AUDIT-040
+7. AUDIT-039 (account lockout)       → 🔴 BLOCKED — schema change required (User.lockedUntil/failedLoginAttempts); partial mitigation via rate limiting
 8. AUDIT-034/035 (OTP bypass)        → After AUDIT-040
 9. AUDIT-037/038 (audit logging)     → After AUDIT-040
-10. AUDIT-041 (deviceId)             → Independent
+10. AUDIT-041 (deviceId)             → 🟡 DONE (mobile+backend) — Phase 9b Sprint 4; web gap remains
 11. AUDIT-047 (RolesGuard)           → After AUDIT-040
 12. AUDIT-053 (room URL exposure)    → After AUDIT-040
 13. AUDIT-055 (DISPLAY_NAME_MATCH)   → Independent
-14. AUDIT-056/057 (notifications)    → After AUDIT-040
-15. AUDIT-062 (APP_URL)              → Independent; env config
+14. AUDIT-056/057 (notifications)    → 🟡 Implemented — Verification Pending (Phase 9b Sprint 3)
+15. AUDIT-062 (APP_URL)              → 🟡 Implemented — Verification Pending (Phase 9b Sprint 3) — Independent; env config
 16. AUDIT-067 (care-chat routing)    → Independent
 17. AUDIT-068/069/102/103 (gates)   → Independent; permission gate wiring
 18. AUDIT-003/004 (admin dialogs)    → Independent; UI work
@@ -80,7 +80,7 @@
 
 ### Smallest Safe Next Step for Wave 0
 
-**Start with AUDIT-062 (APP_URL localhost fallback)** — a single environment variable check in the notification service. No code refactoring required. Provides immediate risk reduction (no risk of push notifications pointing to localhost in production).
+**Start with AUDIT-062 (APP_URL localhost fallback)** — a single environment variable check in the notification service. No code refactoring required. Provides immediate risk reduction (no risk of push notifications pointing to localhost in production). → 🟡 **IMPLEMENTED — VERIFICATION PENDING — Phase 9b Sprint 3**
 
 **Second action: AUDIT-044 (__DEV__ allowlist)** — add a runtime check `if (process.env.NODE_ENV === 'production') { assert(!__DEV__URLs.length) }`. Quick verification and strip.
 
@@ -92,15 +92,15 @@
 |---------|------------------|
 | AUDIT-031 | Attempt `POST /api/v1/academy/enrollments` without auth token — expect 200 (public phone/email enrollment by design) ✅ VALIDATED — Phase 9a Sprint 1-R3; Reclassified as Accepted Risk |
 | AUDIT-032 | Enumerate practitioner IDs 1–100 via public endpoint — expect no internal UUID in response ✅ VALIDATED — Phase 9a Sprint 1 |
-| AUDIT-033 | Inspect `refreshToken` cookie in browser DevTools — expect `HttpOnly`, `Secure`, `SameSite` ✅ VALIDATED (Sprint 1-R2); Response body hardening verified: `refreshToken` absent from web JSON response body for web clients (Origin-header detection) ✅ VALIDATED (Sprint 1-R3) |
+| AUDIT-033 | Inspect `refreshToken` cookie in browser DevTools — expect `HttpOnly`, `Secure`, `SameSite` ✅ VALIDATED (Sprint 1-R2); Response body hardening verified: `refreshToken` field absent from web JSON response body (X-Client-Platform header detection) ✅ VALIDATED (Sprint 1-R3 + R3.1) |
 | AUDIT-010 | Concurrent accept test: 10 simultaneous accepts on same request — expect 1×200 + 9×409, zero 500s ✅ VALIDATED — Phase 9a Sprint 1 |
 | AUDIT-040 | Create new endpoint without guard, attempt access — expect 401 by default |
 | AUDIT-039 | Attempt 10 failed logins on test account — expect account locked after N attempts |
 | AUDIT-003/004 | Attempt refund/settlement action without dialog confirmation — expect action blocked |
 | AUDIT-056 | Trigger instant booking accept — expect push notification received by patient device |
-| AUDIT-057 | Inspect push payload — expect no `threadId`, `relatedEntityType`, `userId` |
+| AUDIT-057 | Inspect push payload — expect no `threadId`, `relatedEntityType`, `userId` | 🟡 Implemented — Verification Pending (Phase 9b Sprint 3) — payload sanitized; runtime verification still required |
 | AUDIT-068/069/102/103 | Navigate to each route without admin session — expect redirect to login |
-| AUDIT-062 | Trigger push in production — confirm `APP_URL` resolves to production domain |
+| AUDIT-062 | Trigger push in production — confirm `APP_URL` resolves to production domain | 🟡 Implemented — Verification Pending (Phase 9b Sprint 3) — startup throws if APP_URL missing; runtime confirmation still required |
 
 ---
 

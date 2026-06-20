@@ -5,10 +5,10 @@ import type { ComponentType } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useSearchParams } from "next/navigation";
 import { ChevronLeft, Eye, EyeOff, LayoutGrid, Stethoscope, UserRound } from "lucide-react";
-import { Link, useRouter } from "@/i18n/navigation";
+import { Link } from "@/i18n/navigation";
 import Input from "@/components/form/input/InputField";
 import Label from "@/components/form/Label";
 import PatientGoogleAuthButton from "@/components/auth/PatientGoogleAuthButton";
@@ -221,7 +221,7 @@ const ADMIN_TEST_CREDENTIALS: CredentialPreset[] = [
 
 export default function SignInForm({ mode }: SignInFormProps) {
   const t = useTranslations("auth");
-  const router = useRouter();
+  const locale = useLocale();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl");
   const normalizedCallbackUrl = normalizeCallbackPath(callbackUrl);
@@ -255,6 +255,22 @@ export default function SignInForm({ mode }: SignInFormProps) {
     },
   });
 
+  const toLocalizedPath = (path: string): string => {
+    if (/^https?:\/\//i.test(path)) {
+      return path;
+    }
+
+    if (!path.startsWith("/")) {
+      return path;
+    }
+
+    if (path === "/") {
+      return `/${locale}`;
+    }
+
+    return `/${locale}${path}`;
+  };
+
   const redirectAfterAuth = (user: AuthenticatedUser) => {
     const resolvedRole = resolveRole(user.roles[0]) ?? "PATIENT";
     const practitionerNeedsOnboarding =
@@ -262,9 +278,7 @@ export default function SignInForm({ mode }: SignInFormProps) {
     const target = practitionerNeedsOnboarding
       ? "/practitioner/application"
       : (normalizedCallbackUrl ?? getDefaultRouteByRole(resolvedRole));
-
-    router.replace(target);
-    router.refresh();
+    window.location.replace(toLocalizedPath(target));
   };
 
   const resetPractitionerOtpState = () => {

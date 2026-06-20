@@ -22,10 +22,13 @@ import {
 } from '@nestjs/swagger';
 import { RefundPolicyType } from '@prisma/client';
 import { RequireAccountStates } from '@common/decorators/account-state.decorator';
+import { Permissions } from '@common/decorators/permissions.decorator';
 import { Roles } from '@common/decorators/roles.decorator';
 import { AccountStateRequirement } from '@common/enums/account-state-requirement.enum';
 import { AppRole } from '@common/enums/app-role.enum';
+import { PermissionKey } from '@common/enums/permission-key.enum';
 import { JwtAccessAuthGuard } from '@common/guards/authentication/jwt-access-auth.guard';
+import { PermissionsGuard } from '@common/guards/authorization/permissions.guard';
 import { RolesGuard } from '@common/guards/authorization/roles.guard';
 import {
   CreateRefundPolicyClauseDto,
@@ -39,14 +42,16 @@ import { RefundPolicyService } from '../services/refund-policy.service';
 
 @ApiTags('Refund Policies')
 @ApiBearerAuth()
-@UseGuards(JwtAccessAuthGuard, RolesGuard)
+@UseGuards(JwtAccessAuthGuard, RolesGuard, PermissionsGuard)
 @RequireAccountStates(AccountStateRequirement.ACTIVE_ACCOUNT)
 @Roles(AppRole.ADMIN)
+@Permissions(PermissionKey.REFUNDS_APPROVE)
 @Controller('admin/refund-policies')
 export class AdminRefundPoliciesController {
   constructor(private readonly refundPolicyService: RefundPolicyService) {}
 
   @Get()
+  @Permissions(PermissionKey.REFUNDS_RETRY)
   @ApiOperation({
     summary: 'List refund policies',
     description:
@@ -62,6 +67,7 @@ export class AdminRefundPoliciesController {
   }
 
   @Get(':policyType')
+  @Permissions(PermissionKey.REFUNDS_RETRY)
   @ApiOperation({
     summary: 'Read a refund policy',
     description: 'Returns a single refund policy with its ordered clauses.',

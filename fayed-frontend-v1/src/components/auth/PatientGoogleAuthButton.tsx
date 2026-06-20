@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useTranslations } from "next-intl";
-import { useRouter } from "@/i18n/navigation";
+import { useLocale, useTranslations } from "next-intl";
 import { usePatientGoogleAuth } from "@/features/auth/hooks/use-auth";
 import { normalizeCallbackPath } from "@/lib/auth/callback-url";
 
@@ -43,7 +42,7 @@ export default function PatientGoogleAuthButton({
   defaultRedirect,
 }: Props) {
   const t = useTranslations("auth");
-  const router = useRouter();
+  const locale = useLocale();
   const buttonContainerRef = useRef<HTMLDivElement | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [scriptReady, setScriptReady] = useState(false);
@@ -54,6 +53,13 @@ export default function PatientGoogleAuthButton({
   const redirectTarget = useMemo(() => {
     return normalizeCallbackPath(callbackUrl) ?? defaultRedirect;
   }, [callbackUrl, defaultRedirect]);
+  const localizedRedirectTarget = useMemo(() => {
+    if (redirectTarget.startsWith("/")) {
+      return `/${locale}${redirectTarget}`;
+    }
+
+    return redirectTarget;
+  }, [locale, redirectTarget]);
 
   useEffect(() => {
     if (!googleClientId) return;
@@ -109,8 +115,7 @@ export default function PatientGoogleAuthButton({
             await googleAuthMutation.mutateAsync({
               idToken: response.credential,
             });
-            router.replace(redirectTarget);
-            router.refresh();
+            window.location.replace(localizedRedirectTarget);
           } catch {
             setError(t("googleLoginError"));
           }
@@ -131,7 +136,13 @@ export default function PatientGoogleAuthButton({
     return () => {
       window.google?.accounts?.id.cancel();
     };
-  }, [googleAuthMutation, googleClientId, redirectTarget, router, scriptReady, t]);
+  }, [
+    googleAuthMutation,
+    googleClientId,
+    localizedRedirectTarget,
+    scriptReady,
+    t,
+  ]);
 
   if (!googleClientId) {
     return (

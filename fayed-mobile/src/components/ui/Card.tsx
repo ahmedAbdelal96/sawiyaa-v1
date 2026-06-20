@@ -22,25 +22,21 @@ export const Card = ({
     switch (variant) {
       case "outlined":
         return {
-          backgroundColor: theme.colors.surface,
+          backgroundColor: theme.colors.surfaceRaised,
           borderWidth: 1,
-          borderColor: theme.colors.borderLight,
+          borderColor: theme.colors.border,
         };
       case "flat":
         return {
-          backgroundColor: theme.colors.surfaceSecondary,
+          backgroundColor: theme.colors.surfaceContainer,
         };
       case "elevated":
       default:
         return {
-          backgroundColor: theme.colors.surface,
+          backgroundColor: theme.colors.surfaceRaised,
           borderWidth: 1,
-          borderColor: theme.colors.borderLight,
-          shadowColor: "#000",
-          shadowOffset: { width: 0, height: 10 },
-          shadowOpacity: 0.09,
-          shadowRadius: 20,
-          elevation: 6,
+          borderColor: theme.colors.border,
+          ...theme.shadows.md,
         };
     }
   };

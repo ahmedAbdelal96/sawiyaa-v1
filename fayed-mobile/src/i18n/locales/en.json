@@ -1,5 +1,5 @@
 {
-  "welcome": "Welcome to Fayed",
+  "welcome": "Welcome to Sawiyaa",
   "retry": "Retry",
   "assessments": {
     "tab": "Assessments",
@@ -296,6 +296,20 @@
     "notifications": {
       "title": "Notifications",
       "subtitle": "Session reminders and account alerts",
+      "categories": {
+        "sessions": {
+          "title": "Sessions & Appointments",
+          "subtitle": "Alerts about booking confirmation and join availability"
+        },
+        "messages": {
+          "title": "Chats & Messages",
+          "subtitle": "Alerts when you receive a message from practitioners or support"
+        },
+        "general": {
+          "title": "General Alerts",
+          "subtitle": "Other system alerts and updates"
+        }
+      },
       "unavailableSubtitle": "Notification preferences are not available for this account yet",
       "modalTitle": "Notification preferences",
       "screenTitle": "Notification preferences",
@@ -707,6 +721,7 @@
   },
   "articlesMobile": {
     "header": "Articles",
+    "detailTitle": "Article",
     "loading": "Loading articles...",
     "error": "We could not load articles right now. Please try again.",
     "emptyTitle": "No articles found",
@@ -922,6 +937,11 @@
             "subtitle": "Completed or closed sessions."
           }
         }
+      },
+      "filters": {
+        "upcoming": "Upcoming",
+        "previous": "Previous",
+        "cancelled": "Cancelled"
       }
     },
     "detail": {
@@ -1088,6 +1108,12 @@
         "INSTANT_NO_CANCEL": "Cancellation not permitted for instant bookings",
         "UNKNOWN": "Policy not specified"
       }
+    },
+    "sessionModes": {
+      "VIDEO": "Video",
+      "AUDIO": "Audio",
+      "CHAT": "Chat",
+      "UNKNOWN": "Not specified"
     }
   },
   "commonNotFound": {
@@ -2510,7 +2536,7 @@
       "unverifiedPhone": "Phone not verified",
       "healthTitle": "Account health",
       "summary": {
-        "helper": "Your professional account details and approval status on Fayed.",
+        "helper": "Your professional account details and approval status on Sawiyaa.",
         "nextStep": "Next step",
         "payout": "Payout",
         "account": "Account"
@@ -2525,7 +2551,7 @@
         "basicInfo": "Basic info",
         "workInfo": "Work settings",
         "professional": "Professional info",
-        "professionalSubtitle": "The core professional details shown inside Fayed.",
+        "professionalSubtitle": "The core professional details shown inside Sawiyaa.",
         "financial": "Financial details",
         "financialSubtitle": "Payout summary and related payment details."
       },
@@ -3132,6 +3158,7 @@
       "scheduleTitle": "Program content",
       "scheduleSubtitle": "The units available in this program, in order.",
       "unnamedLesson": "Lesson",
+      "priceTitle": "Registration Fee",
       "enrollTitle": "Start enrollment",
       "enrollSubtitle": "Complete your details in a separate enrollment screen.",
       "form": {
@@ -3451,4 +3478,3 @@
     }
   }
 }
-

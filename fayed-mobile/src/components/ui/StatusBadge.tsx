@@ -24,7 +24,7 @@ export const StatusBadge = ({ label, status = 'default' }: StatusBadgeProps) => 
         },
       ]}
     >
-      <Text style={styles.label} weight="600" color={colors.text}>
+      <Text variant="caption" style={styles.label} weight="600" color={colors.text}>
         {label}
       </Text>
     </View>
@@ -38,33 +38,33 @@ function resolveColors(
   switch (status) {
     case 'success':
       return {
-        bg: theme.colors.successLight ?? '#dcfce7',
-        border: theme.colors.successLight ?? '#bbf7d0',
-        text: theme.colors.success ?? '#166534',
+        bg: theme.colors.statusSuccessBg,
+        border: theme.colors.statusSuccessBg,
+        text: theme.colors.statusSuccessText,
       };
     case 'warning':
       return {
-        bg: theme.colors.warningLight ?? '#fef9c3',
-        border: theme.colors.warningLight ?? '#fde68a',
-        text: theme.colors.warning ?? '#854d0e',
+        bg: theme.colors.statusWarningBg,
+        border: theme.colors.statusWarningBg,
+        text: theme.colors.statusWarningText,
       };
     case 'error':
       return {
-        bg: theme.colors.errorLight ?? '#fee2e2',
-        border: theme.colors.errorLight ?? '#fecaca',
-        text: theme.colors.error ?? '#991b1b',
+        bg: theme.colors.statusErrorBg,
+        border: theme.colors.statusErrorBg,
+        text: theme.colors.statusErrorText,
       };
     case 'info':
       return {
-        bg: theme.colors.infoLight ?? '#dbeafe',
-        border: theme.colors.infoLight ?? '#bfdbfe',
-        text: theme.colors.info ?? '#1e40af',
+        bg: theme.colors.statusInfoBg,
+        border: theme.colors.statusInfoBg,
+        text: theme.colors.statusInfoText,
       };
     case 'default':
     default:
       return {
-        bg: theme.colors.surfaceSecondary,
-        border: theme.colors.borderLight,
+        bg: theme.colors.surfaceContainer,
+        border: theme.colors.border,
         text: theme.colors.textSecondary,
       };
   }
@@ -72,14 +72,13 @@ function resolveColors(
 
 const styles = StyleSheet.create({
   badge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 999,
     alignSelf: 'flex-start',
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
   },
   label: {
-    fontSize: 12,
     textTransform: 'none',
   },
 });

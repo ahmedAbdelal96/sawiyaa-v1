@@ -6,6 +6,7 @@ import { useRouter } from "@/i18n/navigation";
 import { Link } from "@/i18n/navigation";
 import { Loader2, Lock, StickyNote, ArrowLeft } from "lucide-react";
 import { useCurrentUser } from "@/features/users/hooks/use-users";
+import { toAppError } from "@/lib/api/errors";
 import DirectionalArrowIcon from "@/components/ui/navigation/DirectionalArrowIcon";
 import {
   ChatConversationPanel,
@@ -91,7 +92,13 @@ function InternalNoteBubble({
   );
 }
 
-function OperationsPanel({ ticketId }: { ticketId: string }) {
+function OperationsPanel({
+  ticketId,
+  currentUserId,
+}: {
+  ticketId: string;
+  currentUserId: string | null;
+}) {
   const t = useTranslations("support.admin");
   const ticket = useAdminSupportTicket(ticketId);
   const updateStatus = useUpdateAdminSupportTicketStatus(ticketId);
@@ -215,7 +222,11 @@ function OperationsPanel({ ticketId }: { ticketId: string }) {
         {item?.assignedAdminUserId && (
           <p className="mt-2 text-[11px] text-text-secondary font-semibold">
             {t("operations.assign.currentLabel")}:{" "}
-            <span className="font-mono text-teal-600 dark:text-teal-400">{item.assignedAdminUserId.slice(0, 8)}</span>
+            <span className="font-mono text-teal-600 dark:text-teal-400">
+              {item.assignedAdminUserId === currentUserId
+                ? t("operations.assign.assignedToYou")
+                : item.assignedAdminUserId.slice(0, 8)}
+            </span>
           </p>
         )}
 
@@ -295,25 +306,61 @@ export default function AdminSupportTicketScreen({ ticketId }: Props) {
   const [replyText, setReplyText] = useState("");
   const [noteText, setNoteText] = useState("");
   const [isSending, setIsSending] = useState(false);
+  const [replyError, setReplyError] = useState<string | null>(null);
   const [noteFeedback, setNoteFeedback] = useState<"success" | "error" | null>(null);
 
   // Clear states when ticket shifts
   useEffect(() => {
     setReplyText("");
     setNoteText("");
+    setReplyError(null);
     setNoteFeedback(null);
   }, [ticketId]);
 
   const ticketItem = ticket.data?.item ?? null;
+  const isClosed = ticketItem?.status === "CLOSED";
+  const currentUserId = meQuery.data?.userId ?? null;
+  const hasSupportReplyAccess = Boolean(
+    meQuery.data?.roles?.hasAdminRole || meQuery.data?.roles?.hasSupportAgentRole,
+  );
   const currentUserRole: SupportMessageSenderRole =
     meQuery.data?.roles?.hasSupportAgentRole && !meQuery.data?.roles?.hasAdminRole
       ? "SUPPORT_AGENT"
       : "ADMIN";
 
+  const canReplyPublicly = Boolean(
+    ticketItem &&
+      !isClosed &&
+      hasSupportReplyAccess &&
+      currentUserId &&
+      (!ticketItem.assignedAdminUserId ||
+        ticketItem.assignedAdminUserId === currentUserId),
+  );
+  const replyBlockedReason =
+    !isClosed &&
+    ticketItem?.assignedAdminUserId &&
+    currentUserId &&
+    ticketItem.assignedAdminUserId !== currentUserId
+      ? t("reply.blockedOtherAgent")
+      : null;
+  const unassignedReplyNotice =
+    !isClosed && !ticketItem?.assignedAdminUserId && hasSupportReplyAccess
+      ? t("reply.unassignedNotice")
+      : null;
+  const replyNotice = replyError ?? replyBlockedReason ?? unassignedReplyNotice;
+  const replyNoticeTone =
+    replyError || replyBlockedReason ? "blocked" : replyNotice ? "info" : null;
+
+  useEffect(() => {
+    if (canReplyPublicly) {
+      setReplyError(null);
+    }
+  }, [canReplyPublicly]);
+
   const realtimeThread = useSupportChatRealtime({
     ticketId,
     serverMessages: ticketItem?.messages ?? [],
-    currentUserId: meQuery.data?.userId ?? null,
+    currentUserId,
     currentUserRole,
     refetchTicket: () => ticket.refetch(),
     sendViaRest: (payload) => reply.mutateAsync(payload),
@@ -341,11 +388,34 @@ export default function AdminSupportTicketScreen({ ticketId }: Props) {
   const handleReply = async () => {
     const clean = replyText.trim();
     if (!clean) return;
+
+    if (!canReplyPublicly) {
+      setReplyError(replyBlockedReason ?? t("reply.error"));
+      return;
+    }
+
     try {
       setIsSending(true);
       realtimeThread.reportTypingActivity(false);
-      await realtimeThread.sendMessage(clean);
+      const ack = await realtimeThread.sendMessage(clean);
+      if (ack && !ack.ok) {
+        const appErrorCode = ack.code ?? "";
+        setReplyError(
+          appErrorCode === "SUPPORT_TICKET_ASSIGNED_TO_ANOTHER_AGENT"
+            ? t("reply.blockedOtherAgent")
+            : t("reply.error"),
+        );
+        return;
+      }
+      setReplyError(null);
       setReplyText("");
+    } catch (error) {
+      const appError = toAppError(error);
+      setReplyError(
+        appError.code === "SUPPORT_TICKET_ASSIGNED_TO_ANOTHER_AGENT"
+          ? t("reply.blockedOtherAgent")
+          : t("reply.error"),
+      );
     } finally {
       setIsSending(false);
     }
@@ -379,7 +449,6 @@ export default function AdminSupportTicketScreen({ ticketId }: Props) {
   }
 
   const item = ticket.data.item;
-  const isClosed = item.status === "CLOSED";
 
   return (
     <div className="flex flex-col lg:flex-row gap-4 lg:gap-5 h-full min-h-0 items-stretch w-full overflow-hidden">
@@ -426,17 +495,31 @@ export default function AdminSupportTicketScreen({ ticketId }: Props) {
           }
           composer={
             !isClosed ? (
-              <ChatComposer
-                placeholder={t("reply.placeholder")}
-                value={replyText}
-                onChange={(next) => {
-                  setReplyText(next);
-                  realtimeThread.reportTypingActivity(next.trim().length > 0);
-                }}
-                onSubmit={handleReply}
-                isSubmitting={isSending || reply.isPending}
-                disabled={reply.isPending}
-              />
+              <div className="space-y-2">
+                {replyNotice ? (
+                  <div
+                    className={cn(
+                      "mx-4 rounded-2xl px-4 py-3 text-xs font-medium leading-relaxed",
+                      replyNoticeTone === "blocked"
+                        ? "border border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-200"
+                        : "border border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-500/30 dark:bg-sky-500/10 dark:text-sky-200",
+                    )}
+                  >
+                    {replyNotice}
+                  </div>
+                ) : null}
+                <ChatComposer
+                  placeholder={t("reply.placeholder")}
+                  value={replyText}
+                  onChange={(next) => {
+                    setReplyText(next);
+                    realtimeThread.reportTypingActivity(next.trim().length > 0);
+                  }}
+                  onSubmit={handleReply}
+                  isSubmitting={isSending || reply.isPending}
+                  disabled={!canReplyPublicly || reply.isPending}
+                />
+              </div>
             ) : undefined
           }
         >
@@ -560,7 +643,7 @@ export default function AdminSupportTicketScreen({ ticketId }: Props) {
           </section>
         )}
 
-        <OperationsPanel ticketId={ticketId} />
+        <OperationsPanel ticketId={ticketId} currentUserId={currentUserId} />
       </div>
     </div>
   );

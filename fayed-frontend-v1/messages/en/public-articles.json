@@ -11,6 +11,11 @@
   "detail": {
     "backToArticles": "Back to articles",
     "noPublishDate": "Publication date unavailable",
+    "byAuthor": "By {author}",
+    "readingNotes": "Reading notes",
+    "publicationLabel": "Publication",
+    "authorLabel": "Author",
+    "trustLabel": "Trust signals",
     "nextStep": {
       "title": "Ready for a practical next step?",
       "note": "Use guided matching for a more directed start, or browse practitioners directly if you already know what you need.",
@@ -79,6 +84,10 @@
       "backToArticles": "Back to care articles",
       "noPublishDate": "Publication date unavailable",
       "byAuthor": "By {author}",
+      "readingNotes": "Reading notes",
+      "publicationLabel": "Publication",
+      "authorLabel": "Author",
+      "trustLabel": "Trust signals",
       "nextStep": {
         "title": "Ready for your next care step",
         "note": "If you need guided direction, start matching. If you already know your preference, browse practitioners directly.",

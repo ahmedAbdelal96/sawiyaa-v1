@@ -106,7 +106,7 @@ Each finding follows this structure:
 - **Risk:** Push notification aggregation interfaces (iOS notification center, Android lock screen) display notification content and may expose these metadata fields. An observer with access to the device's notification log could infer conversation threading relationships.
 - **Root cause hypothesis:** Push payloads were designed to carry routing metadata but the fields were not reviewed for PHI/relationship disclosure risk.
 - **Recommended action:** Remove `threadId`, `relatedEntityType` from the visible push payload. Use them server-side for routing decisions only; do not include in the APNs/FCM payload sent to the OS.
-- **Do not fix yet:** Yes
+- **Do not fix yet:** No — **Fixed in Phase 9b Sprint 3**
 
 ---
 

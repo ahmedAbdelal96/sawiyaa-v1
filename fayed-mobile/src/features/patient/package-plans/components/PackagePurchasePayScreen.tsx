@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { I18nManager, Platform, StyleSheet, Switch, View } from "react-native";
+import { Platform, StyleSheet, Switch, View } from "react-native";
 import * as WebBrowser from "expo-web-browser";
 import * as Linking from "expo-linking";
 import { useRouter } from "expo-router";
@@ -19,6 +19,7 @@ import { resolveSupportedCurrencyCode } from "../../../../lib/currency";
 import { normalizeAllowedExternalUrl } from "../../../../lib/external-url";
 import { useInitiatePackagePurchasePayment, useMyPackagePurchase, usePackageRefundPolicy } from "../hooks";
 import { isInvalidPaymentReturnUrlError, logPaymentInitiationError } from "../../payments/payment-initiation-errors";
+import { useAppDirection } from "../../../../i18n/direction";
 import {
   canContinuePackagePurchasePayment,
   formatDatetime,
@@ -41,6 +42,7 @@ export default function PackagePurchasePayScreen({
   const router = useRouter();
   const { theme } = useTheme();
   const { t, i18n } = useTranslation();
+  const { rowDirection, textAlign } = useAppDirection();
   const locale = i18n.language?.startsWith("ar") ? "ar-SA" : "en-US";
   const purchaseQuery = useMyPackagePurchase(purchaseId);
   const purchase = purchaseQuery.data?.item ?? null;
@@ -271,12 +273,12 @@ export default function PackagePurchasePayScreen({
           titleVariant="h2"
         />
         <Card variant="elevated" padding="lg" style={styles.heroCard}>
-          <View style={[styles.heroTopRow, I18nManager.isRTL && styles.heroTopRowRtl]}>
+          <View style={[styles.heroTopRow, { flexDirection: rowDirection }]}>
             <View style={styles.heroMeta}>
-              <Text weight="bold" style={styles.heroTitle}>
+              <Text weight="bold" style={[styles.heroTitle, { textAlign }]}>
                 {title}
               </Text>
-              <Text color={theme.colors.textSecondary} style={styles.heroSubtitle}>
+              <Text color={theme.colors.textSecondary} style={[styles.heroSubtitle, { textAlign }]}>
                 {t("packagePurchases.pay.subtitle", "Complete the package payment securely.")}
               </Text>
             </View>
@@ -320,17 +322,17 @@ export default function PackagePurchasePayScreen({
             )}
           />
           {refundPolicyQuery.isLoading ? (
-            <Text color={theme.colors.textSecondary} style={styles.helperText}>
+            <Text color={theme.colors.textSecondary} style={[styles.helperText, { textAlign }]}>
               {t("packagePurchases.pay.refundLoading", "Loading refund policy...")}
             </Text>
           ) : refundPolicy ? (
             <Card variant="outlined" padding="md" style={styles.policyCard}>
-              <Text weight="600" style={styles.policyTitle}>
+              <Text weight="600" style={[styles.policyTitle, { textAlign }]}>
                 {i18n.language?.startsWith("ar")
                   ? (refundPolicy.titleAr ?? refundPolicy.titleEn ?? refundPolicy.key)
                   : (refundPolicy.titleEn ?? refundPolicy.titleAr ?? refundPolicy.key)}
               </Text>
-              <Text color={theme.colors.textSecondary} style={styles.policyMeta}>
+              <Text color={theme.colors.textSecondary} style={[styles.policyMeta, { textAlign }]}>
                 {t("packagePurchases.pay.policyClauses", {
                   count: refundPolicy.clauseCount,
                   defaultValue:
@@ -339,7 +341,7 @@ export default function PackagePurchasePayScreen({
                       : `${refundPolicy.clauseCount} clauses`,
                 })}
               </Text>
-              <View style={[styles.acceptRow, I18nManager.isRTL && styles.acceptRowRtl]}>
+              <View style={[styles.acceptRow, { flexDirection: rowDirection }]}>
                 <Switch
                   value={accepted}
                   onValueChange={setAccepted}
@@ -349,7 +351,7 @@ export default function PackagePurchasePayScreen({
                     true: theme.colors.primary,
                   }}
                 />
-                <Text color={theme.colors.textSecondary} style={styles.acceptText}>
+                <Text color={theme.colors.textSecondary} style={[styles.acceptText, { textAlign }]}>
                   {t(
                     "packagePurchases.pay.acceptNote",
                     "I accept the package refund policy.",
@@ -358,7 +360,7 @@ export default function PackagePurchasePayScreen({
               </View>
             </Card>
           ) : (
-            <Text color={theme.colors.textSecondary} style={styles.helperText}>
+            <Text color={theme.colors.textSecondary} style={[styles.helperText, { textAlign }]}>
               {t("packagePurchases.pay.refundUnavailable", "The refund policy is unavailable right now.")}
             </Text>
           )}
@@ -366,13 +368,13 @@ export default function PackagePurchasePayScreen({
 
         {localError ? (
           <Card variant="flat" padding="sm" style={styles.noticeCard}>
-            <Text color="#ba1a1a">{localError}</Text>
+            <Text color="#ba1a1a" style={{ textAlign }}>{localError}</Text>
           </Card>
         ) : null}
 
         {isRedirecting ? (
           <Card variant="flat" padding="sm" style={styles.noticeCard}>
-            <Text color={theme.colors.textSecondary}>
+            <Text color={theme.colors.textSecondary} style={{ textAlign }}>
               {t("packagePurchases.pay.redirecting", "Redirecting to payment...")}
             </Text>
           </Card>
@@ -411,15 +413,12 @@ const styles = StyleSheet.create({
   },
   heroCard: {
     marginHorizontal: 0,
+    borderRadius: 20,
   },
   heroTopRow: {
-    flexDirection: "row",
     alignItems: "flex-start",
     justifyContent: "space-between",
     gap: 12,
-  },
-  heroTopRowRtl: {
-    flexDirection: "row-reverse",
   },
   heroMeta: {
     flex: 1,
@@ -438,6 +437,7 @@ const styles = StyleSheet.create({
   },
   sectionCard: {
     marginHorizontal: 0,
+    borderRadius: 20,
   },
   helperText: {
     fontSize: 13,
@@ -449,6 +449,7 @@ const styles = StyleSheet.create({
   policyCard: {
     marginHorizontal: 0,
     marginTop: 12,
+    borderRadius: 16,
   },
   policyTitle: {
     fontSize: 15,
@@ -458,13 +459,9 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   acceptRow: {
-    flexDirection: "row",
     alignItems: "center",
     gap: 10,
     marginTop: 12,
-  },
-  acceptRowRtl: {
-    flexDirection: "row-reverse",
   },
   acceptText: {
     flex: 1,
@@ -475,4 +472,3 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
 });
-

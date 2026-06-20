@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
+import AdminPermissionGate from "@/components/admin/AdminPermissionGate";
+import { PermissionKey } from "@/lib/auth/permissions";
 import AdminRefundPoliciesScreen from "@/features/admin/refund-policies/components/AdminRefundPoliciesScreen";
 
 type Props = {
@@ -20,5 +22,11 @@ export default async function AdminRefundPoliciesPage({ params }: Props) {
   const { locale } = await params;
   setRequestLocale(locale);
 
-  return <AdminRefundPoliciesScreen />;
+  return (
+    <AdminPermissionGate
+      requiredPermissions={[PermissionKey.REFUNDS_APPROVE]}
+    >
+      <AdminRefundPoliciesScreen />
+    </AdminPermissionGate>
+  );
 }

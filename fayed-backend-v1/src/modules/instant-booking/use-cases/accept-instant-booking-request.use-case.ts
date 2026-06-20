@@ -14,6 +14,7 @@ import { CreateSessionFromInstantBookingService } from '../services/create-sessi
 import { ValidateInstantBookingEligibilityService } from '../services/validate-instant-booking-eligibility.service';
 import { ValidateInstantBookingStatusTransitionService } from '../services/validate-instant-booking-status-transition.service';
 import { OperationalNotificationService } from '@modules/notifications/services/operational-notification.service';
+import { toSessionOverlapConflictException } from '@modules/sessions/utils/session-overlap-conflict.util';
 
 type AcceptedInstantBookingRequest = Awaited<
   ReturnType<InstantBookingRequestRepository['updateRequest']>
@@ -153,6 +154,11 @@ export class AcceptInstantBookingRequestUseCase {
         );
       });
     } catch (error) {
+      const overlapConflict = toSessionOverlapConflictException(error);
+      if (overlapConflict) {
+        throw overlapConflict;
+      }
+
       if (
         error instanceof PrismaClientKnownRequestError &&
         error.code === 'P2002'

@@ -192,4 +192,33 @@ describe('AcceptInstantBookingRequestUseCase', () => {
       }),
     ).rejects.toBeInstanceOf(ConflictException);
   });
+
+  it('remaps session overlap exclusion violations to a domain conflict', async () => {
+    (createSessionService.createFromAcceptedRequest as jest.Mock).mockRejectedValueOnce(
+      {
+        code: '23P01',
+        message:
+          'conflicting key value violates exclusion constraint "Session_patient_time_no_overlap_excl"',
+        meta: {
+          constraint: 'Session_patient_time_no_overlap_excl',
+        },
+      },
+    );
+
+    const error = await useCase
+      .execute({
+        userId: practitioner.userId,
+        locale: 'ar',
+        requestId: pendingRequest.id,
+      })
+      .catch((caught: unknown) => caught);
+
+    expect(error).toBeInstanceOf(ConflictException);
+    expect(JSON.stringify((error as ConflictException).getResponse())).not.toContain(
+      '23P01',
+    );
+    expect(JSON.stringify((error as ConflictException).getResponse())).not.toContain(
+      'Session_patient_time_no_overlap_excl',
+    );
+  });
 });

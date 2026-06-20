@@ -120,7 +120,7 @@ AUDIT-105 fix requires verifying key existence in both `en.json` and `ar.json`. 
 | **Web Admin** | Admin panel | No instant booking oversight surface | AUDIT-026 — No admin controls |
 
 ### Propagation Action
-AUDIT-024 fix requires notification dispatch on all three state transitions (accept, reject, expire) to the patient device. Push payload must not include `threadId` or `relatedEntityType` (AUDIT-057). See notification payload contract below.
+AUDIT-024 fix requires notification dispatch on all three state transitions (accept, reject, expire) to the patient device. Push payload must not include `threadId` or `relatedEntityType` (AUDIT-057 — 🟡 Implemented — Verification Pending in Phase 9b Sprint 3). See notification payload contract below.
 
 ---
 
@@ -243,7 +243,7 @@ AUDIT-053 fix must strip all room-related fields from the blocked contract respo
 
 | Surface | File(s) | Current Behavior | Risk if Not Fixed |
 |---------|---------|-----------------|------------------|
-| **Backend** | Notification dispatch | `threadId`, `relatedEntityType` in payload | AUDIT-057 — PHI risk |
+| **Backend** | Notification dispatch | `threadId`, `relatedEntityType` in payload | AUDIT-057 — 🟡 Implemented — Verification Pending (Phase 9b Sprint 3) |
 | **Backend** | Notification dispatch | `targetRole` may be absent | AUDIT-065/074 — Role fallback risk |
 | **Mobile** | `extractNotificationHref` | `routePath` used as fallback | AUDIT-058 — Shell bypass |
 | **Mobile** | `handleResponse` | `sessionRef.current` used for role | AUDIT-110 — Race condition |
@@ -251,7 +251,7 @@ AUDIT-053 fix must strip all room-related fields from the blocked contract respo
 | **Mobile** | Push registration | No EAS project ID in some configs | AUDIT-064 — Token delivery issues |
 
 ### Propagation Action
-AUDIT-057 fix requires backend confirmation of which fields are actually populated in the push payload. AUDIT-065 fix requires ensuring `targetRole` is always set by the backend on notification creation.
+AUDIT-057 fix (Phase 9b Sprint 3): backend confirmed and sanitized push payload — `threadId`, `relatedEntityType`, `category`, `relatedEntityId`, `scheduledStartAt`, `packagePlanTitle` removed from push payloads. AUDIT-065 fix requires ensuring `targetRole` is always set by the backend on notification creation.
 
 ---
 

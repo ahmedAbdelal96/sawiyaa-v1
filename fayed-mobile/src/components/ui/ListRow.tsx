@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, type StyleProp, type ViewStyle } from 'react-native';
 import { Text } from './Text';
 import { useTheme } from '../../providers/ThemeProvider';
 import { I18nManager } from 'react-native';
@@ -12,6 +12,7 @@ export interface ListRowProps {
   rightElement?: React.ReactNode;
   onPress?: () => void;
   showChevron?: boolean;
+  style?: StyleProp<ViewStyle>;
 }
 
 export const ListRow = ({
@@ -21,6 +22,7 @@ export const ListRow = ({
   rightElement,
   onPress,
   showChevron = false,
+  style,
 }: ListRowProps) => {
   const { theme } = useTheme();
   const isRTL = I18nManager.isRTL;
@@ -42,9 +44,10 @@ export const ListRow = ({
       style={[
         styles.row,
         {
-          borderBottomColor: theme.colors.borderLight,
+          borderBottomColor: theme.colors.divider,
           flexDirection: isRTL ? "row-reverse" : "row",
         },
+        style,
       ]}
       {...containerProps}
     >
@@ -74,12 +77,12 @@ export const ListRow = ({
 const styles = StyleSheet.create({
   row: {
     alignItems: 'center',
-    minHeight: 64,
-    paddingVertical: 22,
+    minHeight: 60,
+    paddingVertical: 16,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
   leftContainer: {
-    marginEnd: 16,
+    marginEnd: 12,
   },
   contentContainer: {
     flex: 1,
@@ -88,7 +91,7 @@ const styles = StyleSheet.create({
   rightContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginStart: 16,
+    marginStart: 12,
   },
   title: {
     fontSize: 16,

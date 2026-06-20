@@ -14,6 +14,7 @@ import { CreateAdminUserDto } from '../dto/create-admin-user.dto';
 import { AdminUserManagementPolicy } from '../policies/admin-user-management.policy';
 import { AdminUsersRepository } from '../repositories/admin-users.repository';
 import { PrismaService } from '@common/prisma/prisma.service';
+import { isAuthUniqueConstraintError } from '@modules/auth/utils/is-auth-unique-constraint-error';
 
 function normalizeEmail(email: string): string {
   return email.trim().toLowerCase();
@@ -155,6 +156,21 @@ export class CreateAdminUserUseCase {
         userId: created.id,
       };
     } catch (error) {
+      if (isAuthUniqueConstraintError(error)) {
+        this.securityAuditService.logAsync({
+          action: 'security.adminUsers.create.failure',
+          outcome: SecurityAuditOutcome.FAILURE,
+          actorUserId: input.actor.id,
+          actorRoles: input.actor.roles,
+          resourceType: 'User',
+          reason: 'EMAIL_ALREADY_EXISTS',
+        });
+        throw new ConflictException({
+          messageKey: 'admin.adminUsers.errors.emailAlreadyExists',
+          error: 'ADMIN_USER_EMAIL_EXISTS',
+        });
+      }
+
       this.securityAuditService.logAsync({
         action: 'security.adminUsers.create.failure',
         outcome: SecurityAuditOutcome.FAILURE,

@@ -4,23 +4,19 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Check, ChevronDown, Loader2, Search, X } from "lucide-react";
 import Avatar from "@/components/ui/avatar/Avatar";
-import { AdminStatusBadge } from "@/components/shared/admin/AdminDashboardKit";
 import { useDebouncedValue } from "@/hooks/use-debounce";
-import { useAdminPractitioners } from "@/features/admin/practitioners/hooks/use-admin-practitioners";
-import type { AdminPractitionerListItem } from "@/features/admin/practitioners/types/admin-practitioners.types";
 import { cn } from "@/lib/utils";
+import { AdminStatusBadge } from "@/components/shared/admin/AdminDashboardKit";
+import { useEligibleFeaturedPractitionerCandidates } from "../hooks/use-featured-practitioner-candidates";
 
-export type FeaturedPractitionerCandidate = Pick<
-  AdminPractitionerListItem,
-  | "id"
-  | "slug"
-  | "displayName"
-  | "avatarUrl"
-  | "professionalTitle"
-  | "status"
-  | "isVerified"
-> & {
-  email?: string | null;
+export type FeaturedPractitionerCandidate = {
+  id: string;
+  slug: string;
+  displayName: string | null;
+  avatarUrl: string | null;
+  professionalTitle: string | null;
+  status: string;
+  isVerified: boolean;
 };
 
 type Props = {
@@ -53,13 +49,8 @@ export default function FeaturedPractitionerPicker({
 
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const practitionersQuery = useAdminPractitioners(
-    {
-      search: debouncedSearch.trim() || undefined,
-      page: 1,
-      limit: 8,
-      sort: "recommended",
-    },
+  const practitionersQuery = useEligibleFeaturedPractitionerCandidates(
+    debouncedSearch.trim(),
     shouldQuery,
   );
 
@@ -71,9 +62,8 @@ export default function FeaturedPractitionerPicker({
         displayName: item.displayName,
         avatarUrl: item.avatarUrl,
         professionalTitle: item.professionalTitle,
-        status: item.status,
-        isVerified: item.isVerified,
-        email: item.email ?? null,
+        status: "APPROVED" as const,
+        isVerified: true as const,
       })),
     [practitionersQuery.data?.items],
   );
@@ -89,13 +79,6 @@ export default function FeaturedPractitionerPicker({
     document.addEventListener("mousedown", handleMouseDown);
     return () => document.removeEventListener("mousedown", handleMouseDown);
   }, [isOpen]);
-
-  // Reset search when value is cleared
-  useEffect(() => {
-    if (!value) {
-      setSearch("");
-    }
-  }, [value]);
 
   const handleSelect = (candidate: FeaturedPractitionerCandidate) => {
     onChange(candidate);
@@ -118,11 +101,11 @@ export default function FeaturedPractitionerPicker({
 
       {/* Combobox input */}
       <div className="relative">
-<div className="relative">
+        <div className="relative">
           <Search className="pointer-events-none absolute start-4 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
           <input
             type="text"
-            value={isOpen ? search : (value ? value.displayName ?? value.slug : search)}
+            value={isOpen ? search : value ? value.displayName ?? value.slug : search}
             onChange={(event) => {
               setSearch(event.target.value);
               if (!isOpen) setIsOpen(true);
@@ -192,16 +175,14 @@ export default function FeaturedPractitionerPicker({
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-sm font-medium text-text-primary">
                           {candidate.displayName ?? candidate.slug}
-</p>
+                        </p>
                         <p className="truncate text-xs text-text-muted">
-                          {candidate.professionalTitle ?? candidate.email ?? candidate.slug}
+                          {candidate.professionalTitle ?? candidate.slug}
                         </p>
                       </div>
                       <div className="flex items-center gap-1.5">
                         <AdminStatusBadge tone={getPractitionerStatusTone(candidate.status)}>
-                          {candidate.status
-                            ? t(`practitionerStatus.${candidate.status}` as Parameters<typeof t>[0])
-                            : t("picker.statusUnknown")}
+                          {t("practitionerStatus.APPROVED" as Parameters<typeof t>[0])}
                         </AdminStatusBadge>
                         {active ? (
                           <Check className="h-4 w-4 text-success-600" />
@@ -229,13 +210,11 @@ export default function FeaturedPractitionerPicker({
               {value.displayName ?? value.slug}
             </p>
             <p className="truncate text-xs text-text-muted">
-              {value.professionalTitle ?? value.email ?? value.slug}
+              {value.professionalTitle ?? value.slug}
             </p>
           </div>
           <AdminStatusBadge tone={getPractitionerStatusTone(value.status)}>
-            {value.status
-              ? t(`practitionerStatus.${value.status}` as Parameters<typeof t>[0])
-              : t("picker.statusUnknown")}
+            {t("practitionerStatus.APPROVED" as Parameters<typeof t>[0])}
           </AdminStatusBadge>
         </div>
       ) : null}
@@ -245,7 +224,7 @@ export default function FeaturedPractitionerPicker({
         <p className="text-xs text-text-muted">{t("picker.searchHint")}</p>
       ) : null}
 
-      {error ?<p className="text-sm font-medium text-error-500">{error}</p> : null}
+      {error ? <p className="text-sm font-medium text-error-500">{error}</p> : null}
     </div>
   );
 }

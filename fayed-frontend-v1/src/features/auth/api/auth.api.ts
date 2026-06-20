@@ -44,6 +44,7 @@ function buildRefreshAuthHeader(refreshToken?: string) {
  */
 function storeAuthSession(payload: AuthSuccessResponse) {
   if (!isBrowserRuntime()) return;
+
   tokenManager.setTokens(payload.tokens.accessToken, payload.tokens.refreshToken);
   tokenManager.setUser(payload.user);
   seedAuthStore({

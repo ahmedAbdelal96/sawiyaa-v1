@@ -95,6 +95,12 @@ signin*.png
 post-login.png
 tmp-*.png
 tmp-*.exe
+\.qa-*.png
+\.tmp-*.png
+\.tmp-http-*.png
+.qa-*.png
+.tmp-*.png
+.tmp-http-*.png
 qa_*.png
 .tmp_*.png
 

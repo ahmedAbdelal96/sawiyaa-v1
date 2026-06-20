@@ -1,30 +1,32 @@
 import React from "react";
-import { View, StyleSheet, TouchableOpacity, I18nManager, Image } from "react-native";
+import {
+  View,
+  StyleSheet,
+  TouchableOpacity,
+  Image,
+} from "react-native";
 import { useRouter, useNavigation, usePathname } from "expo-router";
 import { useTranslation } from "react-i18next";
+import { Ionicons } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Text } from "./Text";
 import { useTheme } from "../../providers/ThemeProvider";
 import { useAuth } from "../../providers/AuthProvider";
-import { Ionicons } from "@expo/vector-icons";
 import { MOBILE_HEADER_HEIGHT, MOBILE_HORIZONTAL_PADDING } from "../mobile-shell";
 import { useGeneralChatUnreadSummary } from "../../features/messages/hooks";
 import { usePatientProfile } from "../../features/patient/profile/hooks";
 import { usePatientUnreadNotificationCount } from "../../features/patient/notifications/hooks";
 import { usePractitionerUnreadNotificationCount } from "../../features/practitioner/notifications/hooks";
 import { useNavigationHistory } from "../../providers/NavigationHistoryProvider";
+import { getAppDirection } from "../../i18n/direction";
 
-const BackIcon = ({ color, isRTL }: { color: string; isRTL: boolean }) => {
-  return (
-    <Ionicons
-      name={isRTL ? "arrow-forward" : "arrow-back"}
-      size={24}
-      color={color}
-    />
-  );
-};
+const BackIcon = ({ color, isRTL }: { color: string; isRTL: boolean }) => (
+  <Ionicons name={isRTL ? "arrow-forward" : "arrow-back"} size={24} color={color} />
+);
 
-export interface HeaderProps {
+export interface AppHeaderProps {
   title?: string;
+  subtitle?: React.ReactNode;
   showBack?: boolean;
   onBack?: () => void;
   leftElement?: React.ReactNode;
@@ -33,23 +35,28 @@ export interface HeaderProps {
   hideQuickActions?: boolean;
 }
 
-export const Header = ({
+export const AppHeader = ({
   title,
+  subtitle,
   showBack = false,
   onBack,
   leftElement,
   rightElement,
-  variant,
+  variant = "tab",
   hideQuickActions = false,
-}: HeaderProps) => {
+}: AppHeaderProps) => {
   const { theme } = useTheme();
   const { i18n } = useTranslation();
+  const direction = getAppDirection(i18n.language);
+  const isRTL = direction === "rtl";
+  const logoAccessibilityLabel = isRTL ? "شعار سويّـة" : "Sawiyaa logo";
+  const insets = useSafeAreaInsets();
   const router = useRouter();
   const navigation = useNavigation();
   const pathname = usePathname();
-  const isRTL = i18n.language?.startsWith("ar") || I18nManager.isRTL;
   const { role, user } = useAuth();
-  const { canGoBackInApp, goBackInApp, previousRoute, debugSnapshot } = useNavigationHistory();
+  const { canGoBackInApp, goBackInApp, previousRoute, debugSnapshot } =
+    useNavigationHistory();
 
   const isAuthenticatedRole = role === "patient" || role === "practitioner";
   const showIdentityRow = isAuthenticatedRole && !hideQuickActions;
@@ -190,17 +197,49 @@ export const Header = ({
       ? { uri: String((user as any).avatarUrl) }
       : null;
 
+  const badgePosition = isRTL ? styles.badgeRTL : styles.badgeLTR;
+  const badgeTextPosition = isRTL ? styles.badgeTextRTL : styles.badgeTextLTR;
+
+  const renderCountBadge = (count: number) =>
+    count > 0 ? (
+      <View
+        style={[
+          styles.unreadBadge,
+          badgePosition,
+          {
+            backgroundColor: theme.colors.error,
+            borderColor: theme.colors.surfaceRaised,
+          },
+        ]}
+      >
+        <Text
+          weight="700"
+          style={[styles.unreadBadgeText, badgeTextPosition, { color: theme.colors.onError }]}
+        >
+          {count > 99 ? "99+" : count.toString()}
+        </Text>
+      </View>
+    ) : null;
+
   const quickActions = (
     <View
       style={[
         styles.quickActionsRow,
-        { flexDirection: isRTL ? "row" : "row-reverse" },
+        { flexDirection: isRTL ? "row-reverse" : "row" },
       ]}
     >
       <TouchableOpacity
         onPress={handleOpenMessages}
-        style={styles.iconButton}
+        style={[
+          styles.iconButton,
+          {
+            backgroundColor: theme.colors.surfaceContainerLow,
+            borderColor: theme.colors.divider,
+          },
+        ]}
         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        accessibilityRole="button"
+        accessibilityLabel="app-header-messages-button"
       >
         <View style={styles.iconContainer}>
           <Ionicons
@@ -208,28 +247,22 @@ export const Header = ({
             size={21}
             color={theme.colors.textPrimary}
           />
-          {unreadMessages > 0 ? (
-            <View
-              style={[
-                styles.unreadBadge,
-                {
-                  backgroundColor: theme.colors.error,
-                  borderColor: theme.colors.surface,
-                },
-              ]}
-            >
-              <Text weight="700" style={[styles.unreadBadgeText, { color: "#fff" }]}>
-                {unreadMessages > 99 ? "99+" : unreadMessages.toString()}
-              </Text>
-            </View>
-          ) : null}
+          {renderCountBadge(unreadMessages)}
         </View>
       </TouchableOpacity>
 
       <TouchableOpacity
         onPress={handleOpenNotifications}
-        style={styles.iconButton}
+        style={[
+          styles.iconButton,
+          {
+            backgroundColor: theme.colors.surfaceContainerLow,
+            borderColor: theme.colors.divider,
+          },
+        ]}
         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        accessibilityRole="button"
+        accessibilityLabel="app-header-notifications-button"
       >
         <View style={styles.iconContainer}>
           <Ionicons
@@ -237,38 +270,7 @@ export const Header = ({
             size={21}
             color={theme.colors.textPrimary}
           />
-          {unreadNotifications > 0 ? (
-            role === "practitioner" ? (
-              <View
-                style={[
-                  styles.unreadBadge,
-                  {
-                    backgroundColor: theme.colors.error,
-                    borderColor: theme.colors.surface,
-                  },
-                ]}
-              >
-                <Text
-                  weight="700"
-                  style={[styles.unreadBadgeText, { color: "#fff" }]}
-                >
-                  {unreadNotifications > 99
-                    ? "99+"
-                    : unreadNotifications.toString()}
-                </Text>
-              </View>
-            ) : (
-              <View
-                style={[
-                  styles.unreadDot,
-                  {
-                    backgroundColor: theme.colors.error,
-                    borderColor: theme.colors.surface,
-                  },
-                ]}
-              />
-            )
-          ) : null}
+          {renderCountBadge(unreadNotifications)}
         </View>
       </TouchableOpacity>
 
@@ -276,9 +278,16 @@ export const Header = ({
         onPress={handleOpenProfile}
         style={[
           styles.profileButton,
-          !hasAvatar ? { backgroundColor: theme.colors.primaryLight } : null,
+          {
+            backgroundColor: hasAvatar
+              ? "transparent"
+              : theme.colors.primarySoft,
+            borderColor: theme.colors.divider,
+          },
         ]}
         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        accessibilityRole="button"
+        accessibilityLabel="app-header-profile-button"
       >
         {avatarSource ? (
           <Image source={avatarSource} style={styles.avatar} />
@@ -294,18 +303,29 @@ export const Header = ({
       style={[
         styles.header,
         {
-          backgroundColor: theme.colors.surface,
-          borderBottomColor: theme.colors.borderLight,
+          paddingTop: insets.top,
+          minHeight: MOBILE_HEADER_HEIGHT + insets.top,
+          backgroundColor: theme.colors.surfaceRaised,
+          borderBottomColor: theme.colors.divider,
         },
       ]}
     >
       {showIdentityRow ? (
-        <View style={[styles.identityRow, { flexDirection: isRTL ? "row" : "row-reverse" }]}>
-          <View style={[styles.identitySide, styles.quickActionsWrap]}>
-            {quickActions}
-            {leftElement}
-          </View>
-          <View style={[styles.identitySide, styles.brandWrap]}>
+        <View
+          style={[
+            styles.identityRow,
+            {
+              flexDirection: isRTL ? "row-reverse" : "row",
+            },
+          ]}
+        >
+          <View
+            style={[
+              styles.identitySide,
+              styles.brandWrap,
+              { flexDirection: isRTL ? "row-reverse" : "row" },
+            ]}
+          >
             {rightElement}
             <View
               style={[
@@ -316,7 +336,13 @@ export const Header = ({
               {showBackInIdentityRow ? (
                 <TouchableOpacity
                   onPress={handleBack}
-                  style={styles.brandBackButton}
+                  style={[
+                    styles.brandBackButton,
+                    {
+                      backgroundColor: theme.colors.surfaceContainerLow,
+                      borderColor: theme.colors.divider,
+                    },
+                  ]}
                   testID="app-header-back-button"
                   accessibilityRole="button"
                   accessibilityLabel="app-header-back-button"
@@ -324,10 +350,28 @@ export const Header = ({
                   <BackIcon color={theme.colors.textPrimary} isRTL={isRTL} />
                 </TouchableOpacity>
               ) : null}
-              <Text weight="bold" style={[styles.brandText, { color: theme.colors.primary }]}>
-                Fayed
-              </Text>
+              <View style={styles.brandTextWrap}>
+                <Image
+                  source={require("../../../assets/logo.png")}
+                  style={styles.brandLogo}
+                  resizeMode="contain"
+                  accessible
+                  accessibilityRole="image"
+                  accessibilityLabel={logoAccessibilityLabel}
+                />
+              </View>
             </View>
+          </View>
+
+          <View
+            style={[
+              styles.identitySide,
+              styles.quickActionsWrap,
+              { flexDirection: isRTL ? "row-reverse" : "row" },
+            ]}
+          >
+            {quickActions}
+            {leftElement}
           </View>
         </View>
       ) : null}
@@ -337,8 +381,9 @@ export const Header = ({
           style={[
             styles.titleRow,
             {
-              borderTopWidth: showIdentityRow ? 1 : 0,
-              borderTopColor: theme.colors.borderLight,
+              borderTopWidth: showIdentityRow ? StyleSheet.hairlineWidth : 0,
+              borderTopColor: theme.colors.divider,
+              flexDirection: isRTL ? "row-reverse" : "row",
             },
           ]}
         >
@@ -346,27 +391,50 @@ export const Header = ({
             {!showIdentityRow && showBack ? (
               <TouchableOpacity
                 onPress={handleBack}
-                style={styles.backButton}
+                style={[
+                  styles.backButton,
+                  {
+                    backgroundColor: theme.colors.surfaceContainerLow,
+                    borderColor: theme.colors.divider,
+                  },
+                ]}
                 testID="app-header-back-button"
                 accessibilityRole="button"
                 accessibilityLabel="app-header-back-button"
               >
                 <BackIcon color={theme.colors.textPrimary} isRTL={isRTL} />
               </TouchableOpacity>
-            ) : (
-              !showIdentityRow ? leftElement : null
-            )}
+            ) : !showIdentityRow ? (
+              leftElement
+            ) : null}
           </View>
 
           <View style={styles.titleContainer}>
             {title ? (
-              <Text weight="bold" style={styles.title} numberOfLines={1}>
-                {title}
-              </Text>
+              <View style={styles.titleStack}>
+                <Text weight="700" style={styles.title} numberOfLines={1}>
+                  {title}
+                </Text>
+                {subtitle ? (
+                  <Text
+                    variant="caption"
+                    color={theme.colors.textSecondary}
+                    style={styles.subtitle}
+                    numberOfLines={1}
+                  >
+                    {subtitle}
+                  </Text>
+                ) : null}
+              </View>
             ) : variant === "home" ? (
-              <Text weight="bold" style={[styles.brandText, { color: theme.colors.primary }]} numberOfLines={1}>
-                Fayed
-              </Text>
+              <Image
+                source={require("../../../assets/logo.png")}
+                style={styles.brandLogoCompact}
+                resizeMode="contain"
+                accessible
+                accessibilityRole="image"
+                accessibilityLabel={logoAccessibilityLabel}
+              />
             ) : null}
           </View>
 
@@ -379,45 +447,50 @@ export const Header = ({
   );
 };
 
+export const Header = AppHeader;
+
 const styles = StyleSheet.create({
   header: {
-    minHeight: MOBILE_HEADER_HEIGHT,
-    paddingHorizontal: 0,
-    borderBottomWidth: 1,
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
   identityRow: {
     minHeight: 58,
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: MOBILE_HORIZONTAL_PADDING,
+    gap: 12,
   },
   identitySide: {
-    flexDirection: "row",
     alignItems: "center",
-  },
-  quickActionsWrap: {
-    justifyContent: "flex-start",
+    minWidth: 0,
   },
   brandWrap: {
-    justifyContent: "flex-end",
-    marginStart: 12,
+    flexShrink: 1,
+  },
+  quickActionsWrap: {
+    flexShrink: 0,
   },
   brandGroup: {
-    flexDirection: "row",
     alignItems: "center",
     gap: 8,
+    minWidth: 0,
+  },
+  brandTextWrap: {
+    minWidth: 0,
   },
   brandBackButton: {
     width: 34,
     height: 34,
+    borderRadius: 17,
+    borderWidth: StyleSheet.hairlineWidth,
     alignItems: "center",
     justifyContent: "center",
   },
   titleRow: {
     minHeight: 50,
-    flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: MOBILE_HORIZONTAL_PADDING,
+    gap: 12,
   },
   titleSide: {
     width: 52,
@@ -434,6 +507,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 12,
+    minWidth: 0,
+  },
+  titleStack: {
+    alignItems: "center",
+    minWidth: 0,
   },
   brandText: {
     fontSize: 30,
@@ -441,9 +519,23 @@ const styles = StyleSheet.create({
     letterSpacing: 0.2,
     lineHeight: 34,
   },
+  brandLogo: {
+    width: 140,
+    height: 44,
+  },
+  brandLogoCompact: {
+    width: 112,
+    height: 36,
+  },
+  subtitle: {
+    marginTop: 2,
+    textAlign: "center",
+  },
   backButton: {
     width: 36,
     height: 36,
+    borderRadius: 18,
+    borderWidth: StyleSheet.hairlineWidth,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -458,9 +550,10 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   iconButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    borderWidth: StyleSheet.hairlineWidth,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -470,40 +563,45 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   profileButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    borderWidth: StyleSheet.hairlineWidth,
     overflow: "hidden",
     alignItems: "center",
     justifyContent: "center",
   },
   avatar: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-  },
-  unreadDot: {
-    position: "absolute",
-    top: 3,
-    right: 3,
-    width: 7,
-    height: 7,
-    borderRadius: 999,
-    borderWidth: 1.25,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
   },
   unreadBadge: {
     position: "absolute",
-    top: -4,
-    right: -6,
-    minWidth: 18,
-    height: 18,
-    borderRadius: 9,
-    paddingHorizontal: 5,
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
+    paddingHorizontal: 4,
     alignItems: "center",
     justifyContent: "center",
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  badgeLTR: {
+    top: -4,
+    right: -6,
+  },
+  badgeRTL: {
+    top: -4,
+    left: -6,
   },
   unreadBadgeText: {
     fontSize: 10,
     lineHeight: 12,
+  },
+  badgeTextLTR: {
+    textAlign: "left",
+  },
+  badgeTextRTL: {
+    textAlign: "right",
   },
 });

@@ -9,11 +9,10 @@ import {
   DetailPageScaffold,
   EmptyState,
   SectionHeader,
-  StatusChip,
   Text,
 } from "../../../../components/ui";
 import { useTheme } from "../../../../providers/ThemeProvider";
-import { getAppDirection } from "../../../../i18n/direction";
+import { useAppDirection } from "../../../../i18n/direction";
 import { resolveMediaUrl } from "../../../../lib/resolve-media-url";
 import { resolveSupportedCurrencyCode } from "../../../../lib/currency";
 import { formatViewerDate } from "../../../../lib/time-formatting";
@@ -30,9 +29,9 @@ export default function AcademyDetailScreen({
   const router = useRouter();
   const { theme } = useTheme();
   const { t, i18n } = useTranslation();
+  const { rowDirection, textAlign } = useAppDirection();
   const courseQuery = usePublicAcademyCourse(slug, { cacheScopeKey: "guest" });
   const course = courseQuery.data ?? null;
-  const isRtl = getAppDirection(i18n.language) === "rtl";
   const coverUri = resolveMediaUrl(course?.coverImageUrl ?? course?.thumbnailUrl);
   const startLabel = course?.startsAt ? formatViewerDate(course.startsAt, { locale }) : null;
   const displayCurrency = resolveSupportedCurrencyCode({
@@ -40,12 +39,13 @@ export default function AcademyDetailScreen({
     regionalPricingMode: course?.regionalPricingMode,
     resolvedCountryIsoCode: course?.resolvedCountryIsoCode,
   });
-  const isFreeCourse = isAcademyCourseFree(course);
-  const priceLabel =
-    isFreeCourse
+  const hasPrice = course?.priceAmount !== null && course?.priceAmount !== undefined;
+  const isFreeCourse = hasPrice && isAcademyCourseFree(course);
+  const priceLabel = hasPrice
+    ? (isFreeCourse
       ? t("academy.detail.free")
-      : formatAcademyMoney(course?.priceAmount ?? null, displayCurrency, i18n.language) ??
-        t("academy.detail.paid");
+      : formatAcademyMoney(course?.priceAmount ?? null, displayCurrency, i18n.language))
+    : null;
   const lectures = course?.lectures ?? [];
   const contentBlocks = useMemo(
     () => (course?.fullDescription ? splitCourseContent(course.fullDescription) : []),
@@ -77,7 +77,7 @@ export default function AcademyDetailScreen({
       ) : course ? (
         <View style={styles.stack}>
           <Card variant="outlined" padding="sm" style={styles.heroCard}>
-            <View style={[styles.heroLayout, isRtl && styles.heroLayoutRtl]}>
+            <View style={[styles.heroLayout, { flexDirection: rowDirection }]}>
               <View
                 style={[
                   styles.heroMedia,
@@ -93,50 +93,58 @@ export default function AcademyDetailScreen({
               </View>
 
               <View style={styles.heroContent}>
-                <View style={[styles.heroTopRow, isRtl && styles.heroTopRowRtl]}>
-                  <StatusChip
-                    label={t("academy.detail.available")}
-                    tone="success"
-                    showDot={false}
-                  />
-                  <Text color={theme.colors.textMuted} style={styles.price}>
-                    {priceLabel}
-                  </Text>
+                <View style={[styles.heroTopRow, { flexDirection: rowDirection }]}>
+                  {priceLabel ? (
+                    <View style={[styles.priceTag, { backgroundColor: theme.colors.primaryLight }]}>
+                      <Text color={theme.colors.primary} weight="700" style={styles.price}>
+                        {priceLabel}
+                      </Text>
+                    </View>
+                  ) : <View />}
                 </View>
 
-                <Text weight="600" style={styles.title} numberOfLines={2}>
+                <Text weight="600" style={[styles.title, { textAlign }]} numberOfLines={2}>
                   {course.title}
                 </Text>
 
                 {course.shortDescription ? (
                   <Text
                     color={theme.colors.textSecondary}
-                    style={styles.description}
+                    style={[styles.description, { textAlign }]}
                     numberOfLines={3}
                   >
                     {course.shortDescription}
                   </Text>
                 ) : null}
 
-                <View style={styles.metaRow}>
+                <View style={[styles.metaRow, { flexDirection: rowDirection }]}>
                   {startLabel ? (
-                    <Text color={theme.colors.textMuted} style={styles.metaText}>
-                      {startLabel}
-                    </Text>
+                    <View style={[styles.metaBadge, { backgroundColor: theme.colors.surfaceMuted }]}>
+                      <Ionicons name="calendar-outline" size={13} color={theme.colors.textSecondary} />
+                      <Text color={theme.colors.textSecondary} style={styles.metaText}>
+                        {startLabel}
+                      </Text>
+                    </View>
                   ) : null}
                   {course.plannedLectureCount ? (
-                    <Text color={theme.colors.textMuted} style={styles.metaText}>
-                      {t("academy.detail.lectures", {
-                        count: course.plannedLectureCount,
-                      })}
-                    </Text>
+                    <View style={[styles.metaBadge, { backgroundColor: theme.colors.surfaceMuted }]}>
+                      <Ionicons name="book-outline" size={13} color={theme.colors.textSecondary} />
+                      <Text color={theme.colors.textSecondary} style={styles.metaText}>
+                        {t("academy.detail.lectures", {
+                          count: course.plannedLectureCount,
+                        })}
+                      </Text>
+                    </View>
                   ) : null}
                   {course.plannedDurationDays ? (
-                    <Text color={theme.colors.textMuted} style={styles.metaText}>
-                      {t("academy.detail.durationDays", {
-                        count: course.plannedDurationDays,
-                      })}
-                    </Text>
+                    <View style={[styles.metaBadge, { backgroundColor: theme.colors.surfaceMuted }]}>
+                      <Ionicons name="time-outline" size={13} color={theme.colors.textSecondary} />
+                      <Text color={theme.colors.textSecondary} style={styles.metaText}>
+                        {t("academy.detail.durationDays", {
+                          count: course.plannedDurationDays,
+                        })}
+                      </Text>
+                    </View>
                   ) : null}
                 </View>
               </View>
@@ -154,7 +162,7 @@ export default function AcademyDetailScreen({
                   <Text
                     key={`${index}-${block.slice(0, 24)}`}
                     color={theme.colors.textSecondary}
-                    style={styles.paragraph}
+                    style={[styles.paragraph, { textAlign }]}
                   >
                     {block}
                   </Text>
@@ -189,28 +197,36 @@ export default function AcademyDetailScreen({
                       key={lecture.id}
                       style={[
                         styles.lessonRow,
-                        !isLast && {
-                          borderBottomColor: theme.colors.borderLight,
-                        },
+                        { flexDirection: rowDirection },
                       ]}
                     >
-                      <View
-                        style={[
-                          styles.lessonIndexBubble,
-                          { backgroundColor: theme.colors.primaryLight },
-                        ]}
-                      >
-                        <Text weight="600" style={styles.lessonIndex}>
-                          {lecture.lectureOrder}
-                        </Text>
+                      <View style={styles.timelineLeftCol}>
+                        <View
+                          style={[
+                            styles.lessonIndexBubble,
+                            { backgroundColor: theme.colors.primaryLight },
+                          ]}
+                        >
+                          <Text weight="600" style={[styles.lessonIndex, { color: theme.colors.primary }]}>
+                            {lecture.lectureOrder}
+                          </Text>
+                        </View>
+                        {!isLast && (
+                          <View
+                            style={[
+                              styles.timelineLine,
+                              { backgroundColor: theme.colors.primaryLight },
+                            ]}
+                          />
+                        )}
                       </View>
                       <View style={styles.lessonMeta}>
-                        <Text weight="600" style={styles.lessonTitle} numberOfLines={1}>
+                        <Text weight="600" style={[styles.lessonTitle, { textAlign }]} numberOfLines={1}>
                           {lecture.lectureTitle ?? t("academy.detail.unnamedLesson")}
                         </Text>
                         <Text
                           color={theme.colors.textSecondary}
-                          style={styles.lessonSchedule}
+                          style={[styles.lessonSchedule, { textAlign }]}
                           numberOfLines={1}
                         >
                           {formatAcademyLectureDateRange(
@@ -222,7 +238,7 @@ export default function AcademyDetailScreen({
                         {durationLabel ? (
                           <Text
                             color={theme.colors.textMuted}
-                            style={styles.lessonDuration}
+                            style={[styles.lessonDuration, { textAlign }]}
                             numberOfLines={1}
                           >
                             {durationLabel}
@@ -241,20 +257,32 @@ export default function AcademyDetailScreen({
               title={t("academy.detail.enrollTitle")}
               subtitle={t("academy.detail.enrollSubtitle")}
             />
-            <Button
-              title={
-                isFreeCourse
-                  ? t("academy.detail.registerFree")
-                  : t("academy.detail.subscribeNow")
-              }
-              onPress={() =>
-                router.push({
-                  pathname: "/(patient)/academy/enroll/[slug]",
-                  params: { slug },
-                } as never)
-              }
-              style={styles.ctaButton}
-            />
+            <View style={styles.ctaVerticalStack}>
+              {priceLabel ? (
+                <View style={[styles.priceRow, { flexDirection: rowDirection }]}>
+                  <Text color={theme.colors.textSecondary} style={[styles.priceLabelSub, { textAlign }]}>
+                    {t("academy.detail.priceTitle")}
+                  </Text>
+                  <Text color={theme.colors.primary} weight="700" style={[styles.priceValue, { textAlign }]}>
+                    {priceLabel}
+                  </Text>
+                </View>
+              ) : null}
+              <Button
+                title={
+                  isFreeCourse
+                    ? t("academy.detail.registerFree")
+                    : t("academy.detail.subscribeNow")
+                }
+                onPress={() =>
+                  router.push({
+                    pathname: "/(patient)/academy/enroll/[slug]",
+                    params: { slug },
+                  } as never)
+                }
+                style={styles.ctaButton}
+              />
+            </View>
           </Card>
         </View>
       ) : null}
@@ -293,11 +321,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 0,
   },
   heroLayout: {
-    flexDirection: "row",
     gap: 12,
-  },
-  heroLayoutRtl: {
-    flexDirection: "row-reverse",
   },
   heroMedia: {
     width: 76,
@@ -320,16 +344,55 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   heroTopRow: {
-    flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     gap: 10,
   },
-  heroTopRowRtl: {
-    flexDirection: "row-reverse",
-  },
   price: {
     fontSize: 13,
+  },
+  priceTag: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+    alignSelf: "flex-start",
+  },
+  metaBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    gap: 4,
+  },
+  timelineLeftCol: {
+    alignItems: "center",
+    width: 30,
+  },
+  timelineLine: {
+    width: 2,
+    flex: 1,
+    minHeight: 24,
+    marginTop: 4,
+    marginBottom: -16,
+  },
+  ctaVerticalStack: {
+    gap: 16,
+    marginTop: 8,
+  },
+  priceRow: {
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 10,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: "#E8DED0",
+  },
+  priceLabelSub: {
+    fontSize: 13,
+    opacity: 0.85,
+  },
+  priceValue: {
+    fontSize: 16,
   },
   title: {
     fontSize: 20,
@@ -340,7 +403,6 @@ const styles = StyleSheet.create({
     lineHeight: 19,
   },
   metaRow: {
-    flexDirection: "row",
     flexWrap: "wrap",
     gap: 8,
   },
@@ -363,11 +425,9 @@ const styles = StyleSheet.create({
     gap: 0,
   },
   lessonRow: {
-    flexDirection: "row",
     alignItems: "flex-start",
     gap: 10,
     paddingVertical: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
   },
   lessonIndexBubble: {
     width: 30,

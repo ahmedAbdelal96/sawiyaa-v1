@@ -37,7 +37,7 @@ All findings use the standard format from `findings-register-template.md`.
 **Smallest safe next step:** Add explicit `@Public()` decorator to `PublicAcademyController` and all its methods. For enrollment creation, add `JwtAccessAuthGuard` or a custom guard that validates the enrollment token. Add `@ThrottlePolicy('academy-public-enrollment')` for rate limiting.
 **Do not fix yet:** yes
 **Fixed in phase:** Phase 9a Sprint 1 (initial); Sprint 1-R2 (corrected); Sprint 1-R3 (final closure)
-**Resolution summary:** Phase 9a Sprint 1 added `@Public()` + `@UseGuards(JwtAccessAuthGuard)` but class-level `@Public()` caused guard bypass (structural failure). Sprint 1-R2 corrected: class-level `@Public()` removed; `@Public()` added to individual GET methods only. `createEnrollment` POST endpoint has no explicit `@UseGuards`. Sprint 1-R3 final: Added explicit `@Public()` to `createEnrollment` to make the intentional public design unambiguous. `CreateAcademyEnrollmentUseCase.execute()` has no `currentUserId` parameter — enrollment is by phone/email only. No global JWT APP_GUARD exists. Adding `@UseGuards(JwtAccessAuthGuard)` would break the public enrollment flow. Reclassified as Accepted Risk. Full closure: `sprints/sprint-1-r3-final-p0-gate-closure.md`.
+**Resolution summary:** Phase 9a Sprint 1 added `@Public()` + `@UseGuards(JwtAccessAuthGuard)` but class-level `@Public()` caused guard bypass (structural failure). Sprint 1-R2 corrected: class-level `@Public()` removed; `@Public()` added to individual GET methods only. `createEnrollment` POST endpoint has no explicit `@UseGuards`. Sprint 1-R3 final: Added explicit `@Public()` to `createEnrollment` to make the intentional public design unambiguous. `CreateAcademyEnrollmentUseCase.execute()` has no `currentUserId` parameter — enrollment is by phone/email only. No global JWT APP_GUARD exists. Adding `@UseGuards(JwtAccessAuthGuard)` would break the public enrollment flow. Reclassified as Accepted Risk. Full closure: `phase-9a-security-first-fix-sprint/sprint-1-r3-final-p0-gate-closure.md`.
 
 ---
 
@@ -68,8 +68,8 @@ All findings use the standard format from `findings-register-template.md`.
 **Risk:** Any XSS vulnerability anywhere on the Fayed domain allows an attacker to read `document.cookie, extract the access and refresh tokens, and hijack the user's session. With a 7-day access token expiry and no httpOnly protection, the attack window is large. The `sameSite: lax` CSRF risk means a malicious site can trigger token refresh on behalf of the user.
 **Smallest safe next step:** Investigate whether the SSR token access pattern can be refactored to use httpOnly cookies with a server-side token reader for API calls, or encrypt the cookie value so JavaScript cannot read the raw token. At minimum, set `sameSite: "strict"` on the access token cookie and ensure the refresh token is httpOnly. This is a complex change because it affects the entire auth architecture.
 **Do not fix yet:** yes
-**Fixed in phase:** Phase 9a Sprint 1 (initial fix ineffective); Sprint 1-R2 (corrected); Sprint 1-R3 (hardening)
-**Resolution summary:** Sprint 1 added `httpOnly: true` to js-cookie's `Cookies.set()` — browser-ignored no-op. Sprint 1-R2 corrected: Backend sets real `HttpOnly; Secure; SameSite=Strict` refresh cookie via `Set-Cookie` header on login/register/refresh/logout across all three auth controllers. Frontend `tokenManager.setTokens()` no longer overwrites server httpOnly cookie. Sprint 1-R3 hardening: `WebResponseHardeningInterceptor` strips `refreshToken` from JSON response body for web clients (detected by Origin header). Browser JavaScript at login/refresh time can no longer read refreshToken from response body — it is only in the HttpOnly cookie (inaccessible to JS). Native/mobile clients receive full token body. TypeScript `tsc --noEmit`: ✅ pass (0 src/ errors). Full closure: `sprints/sprint-1-r3-final-p0-gate-closure.md`.
+**Fixed in phase:** Phase 9a Sprint 1 (initial fix ineffective); Sprint 1-R2 (corrected); Sprint 1-R3 + R3.1 (hardening)
+**Resolution summary:** Sprint 1 added `httpOnly: true` to js-cookie's `Cookies.set()` — browser-ignored no-op. Sprint 1-R2 corrected: Backend sets real `HttpOnly; Secure; SameSite=Strict` refresh cookie via `Set-Cookie` header on login/register/refresh/logout across all three auth controllers. Frontend `tokenManager.setTokens()` no longer overwrites server httpOnly cookie. Sprint 1-R3 hardening + R3.1 corrections: `WebResponseHardeningInterceptor` added at class level on all three auth controllers. Primary detection: `X-Client-Platform: web` header (explicit frontend signal on all API requests). Fallback: `Origin` header matching Fayed origins. Interceptor deletes `refreshToken` and `refreshTokenExpiresAt` from the JSON response body for web clients. Browser JavaScript at login/refresh time can no longer read refreshToken from response body. `httpOnly` cookie still carries real refresh token — independent of body. Native/mobile unchanged. TypeScript: backend `tsc --noEmit` ✅ pass (0 src/ errors); frontend ✅ pass. Full closure: `phase-9a-security-first-fix-sprint/sprint-1-r3-final-p0-gate-closure.md`.
 
 ---
 
@@ -112,6 +112,7 @@ All findings use the standard format from `findings-register-template.md`.
 ### Finding ID: AUDIT-036
 **Title:** Login failures (admin, patient, practitioner) not security-audit logged — brute-force detection not possible
 **Severity:** P1
+**Status:** ✅ Fixed + Verified — Phase 9b Sprint 2
 **Module:** Auth / Security Audit Logging
 **Affected users:** Platform operators monitoring auth security
 **Affected surfaces:** `POST /auth/admin/login`; `POST /auth/patient/login`; `POST /auth/practitioner/login`; `POST /auth/practitioner/login/verify-otp`
@@ -136,8 +137,8 @@ All findings use the standard format from `findings-register-template.md`.
 **Risk:** Practitioner application approval/rejection decisions leave no security audit trail. In the event of a compliance dispute, internal investigation, or fraud case, there is no record of who approved or rejected a specific application, when, or from which IP. An insider with admin access could approve fraudulent practitioner applications without detection.
 **Smallest safe next step:** Add `securityAuditService.logAsync()` calls to both `ApprovePractitionerApplicationUseCase` and `RejectPractitionerApplicationUseCase`, recording `action: 'practitioner_application.approved'` / `'practitioner_application.rejected'`, `outcome: 'SUCCESS'`, `resourceType: 'PractitionerApplication'`, `resourceId`, `actorUserId`, `ipAddress`.
 **Do not fix yet:** yes
-**Fixed in phase:**
-**Resolution summary:**
+**Fixed in phase:** ✅ Fixed + Verified — Phase 9b Sprint 2
+**Resolution summary:** `ApprovePractitionerApplicationUseCase` (3 FAILURE paths) and `RejectPractitionerApplicationUseCase` (2 FAILURE paths) now inject `SecurityAuditService` and call `logAsync` on failure. `operatorRoles: string[]` added to use case input interface and passed from controller. Controller SUCCESS logs preserved via `.then()` — no duplicate. Pattern: "Controller logs success; use cases log failure paths."
 
 ---
 
@@ -152,8 +153,8 @@ All findings use the standard format from `findings-register-template.md`.
 **Risk:** Manual practitioner payouts are high-value financial operations. A financial operator could record a fraudulent manual payout to a practitioner's account without any security audit trail. This is a financial fraud enabler.
 **Smallest safe next step:** Add `securityAuditService.logAsync()` to `RecordAdminPractitionerManualPayoutUseCase`, recording `action: 'finance.manual_payout.recorded'`, `outcome: 'SUCCESS'`, `resourceType: 'PractitionerPayout'`, `resourceId`, `targetUserId` (practitioner ID), `amount`, `currency`, `actorUserId`, `ipAddress`.
 **Do not fix yet:** yes
-**Fixed in phase:**
-**Resolution summary:**
+**Fixed in phase:** ✅ Fixed + Verified — Phase 9b Sprint 2
+**Resolution summary:** `AdminPractitionerManualPayoutsController.record()` now injects `SecurityAuditService` and calls `logAsync` after successful payout recording via `.then()` promise chain. Uses same action slug (`finance.practitioner_payout.record`) as automatic payout endpoint for consistency. Failure paths (use case exceptions) not logged — future hardening opportunity, not part of this finding's closure scope.
 
 ---
 
@@ -169,7 +170,7 @@ All findings use the standard format from `findings-register-template.md`.
 **Smallest safe next step:** Implement account lockout after N consecutive failed attempts (e.g., 10 failures → lock for 30 minutes). Log lockout events to `SecurityAuditLog`. Notify the user via email when their account is locked.
 **Do not fix yet:** yes
 **Fixed in phase:**
-**Resolution summary:**
+**Resolution summary:** 🔴 BLOCKED — Phase 9b Sprint 4: implementing persistent account lockout requires `User.lockedUntil`/`failedLoginAttempts` schema change (add fields + migration). `SecurityAuditLog` can serve as failure-count source (already logs all login failures with `actorUserId` and `occurredAt`). Rate limiting (10 req/15 min per IP) provides partial mitigation. Full fix needs explicit migration approval.
 
 ---
 
@@ -199,9 +200,9 @@ All findings use the standard format from `findings-register-template.md`.
 **Root cause hypothesis:** The device tracking feature was added to patient login first, and when practitioner login was built (with its two-step OTP flow), the deviceId was only included in the OTP verification step, not the initial login.
 **Risk:** Practitioner login credentials (email + password) are sent without a device identifier. If an attacker intercepts practitioner credentials, they can authenticate from any device without the device binding that patients have. The weaker device binding makes practitioner credential theft more exploitable on mobile.
 **Smallest safe next step:** Add `deviceId: string` to `PractitionerLoginRequest` and include it in the `practitionerLogin` API call from the mobile signin screen, consistent with how `patientLogin` includes it.
-**Do not fix yet:** yes
-**Fixed in phase:**
-**Resolution summary:**
+**Do not fix yet:** no
+**Fixed in phase:** Phase 9b Sprint 4
+**Resolution summary:** 🟡 IMPLEMENTED — VERIFICATION PENDING — Phase 9b Sprint 4: `PractitionerLoginDto` now accepts `deviceId?: string`; `PractitionerAuthController.login()` now passes `dto.deviceId` to `getRequestDeviceContext(request, dto.deviceId)`; mobile `PractitionerLoginRequest` interface and `AuthProvider.startPractitionerLogin` now inject `deviceId` via `getOrCreateDeviceId()`, consistent with `patientGoogleAuth` and `verifyPractitionerOtp` patterns. ⚠️ Web practitioner login does NOT send deviceId on either the password step or OTP verification step — web scope clarification and/or fix needed before this finding can be marked fully resolved.
 
 ---
 
@@ -391,12 +392,12 @@ All findings use the standard format from `findings-register-template.md`.
 | AUDIT-033 | Web refresh token cookie lacks httpOnly — XSS can exfiltrate tokens | P0 | ✅ Fixed — Sprint 1-R2: backend sets real httpOnly cookie via `Set-Cookie` header |
 | AUDIT-034 | Practitioner support tickets bypass PRACTITIONER_OTP_VERIFIED | P1 | Open |
 | AUDIT-035 | Practitioner financial operations bypass PRACTITIONER_OTP_VERIFIED | P1 | Open |
-| AUDIT-036 | Login failures not security-audit logged | P1 | Open |
-| AUDIT-037 | Practitioner application approval/rejection not security-audit logged | P1 | Open |
-| AUDIT-038 | Manual practitioner payout not security-audit logged | P1 | Open |
-| AUDIT-039 | No account lockout after repeated failed login attempts | P1 | Open |
+| AUDIT-036 | Login failures not security-audit logged | P1 | ✅ Fixed (Phase 9b Sprint 2) |
+| AUDIT-037 | Practitioner application approval/rejection not security-audit logged | P1 | ✅ Fixed (Phase 9b Sprint 2) |
+| AUDIT-038 | Manual practitioner payout not security-audit logged | P1 | ✅ Fixed (Phase 9b Sprint 2) |
+| AUDIT-039 | No account lockout after repeated failed login attempts | P1 | 🔴 Blocked — requires DB schema change (User lockout fields); rate limiting partial mitigation |
 | AUDIT-040 | No global JWT auth guard — new endpoints default to unprotected | P1 | Open |
-| AUDIT-041 | Practitioner login missing deviceId — weaker device binding | P1 | Open |
+| AUDIT-041 | Practitioner login missing deviceId — weaker device binding | P1 | 🟡 Implemented — Verification Pending (Phase 9b Sprint 4): mobile+backend done; web does not send deviceId |
 | AUDIT-042 | Android SecureStore uses software-backed encryption | P1 | Open |
 | AUDIT-043 | Web session access token 7-day expiry — compounds cookie risk | P1 | Open |
 | AUDIT-044 | `__DEV__` URL allowlist exception could be active in production | P1 | Open |
@@ -410,6 +411,29 @@ All findings use the standard format from `findings-register-template.md`.
 | AUDIT-052 | Silent logout on refresh token expiry | P2 | Open |
 
 **Phase 4 total: 21 findings | Open: 21 | Closed: 0**
+
+---
+
+## Cross-Phase Updates (Phase 9b — Auth & Permission Wave 0 / Sprint 1)
+
+The following findings are tracked here for cross-phase resolution status:
+
+| ID | Title | Phase of Origin | Severity | Status |
+|----|-------|---------------|----------|--------|
+| AUDIT-068 | `admin/care-chat/[id]` missing `AdminPermissionGate` | Phase 5 | P1 | ✅ Fixed + Verified — Phase 9b Sprint 1 Wave 0 Batch 1: frontend `AdminPermissionGate` + `CARE_CHAT_REQUEST_READ_ADMIN` added; backend guard already existed |
+| AUDIT-069 | `admin/sessions/runtime-inspection` missing permission gate | Phase 5 | P1 | ✅ Fixed + Verified — Phase 9b Sprint 1 Wave 0 Batch 1: frontend `AdminPermissionGate` + `SESSIONS_READ_ADMIN` added; backend guard already existed |
+| AUDIT-102 | `admin/refund-policies` missing `AdminPermissionGate` + weak backend | Phase 7 | P1 | ✅ Fixed + Verified — Phase 9b Sprint 1 Wave 0 Batch 1: frontend gate + backend `PermissionsGuard` with method-level permissions (`REFUNDS_RETRY` for GETs, `REFUNDS_APPROVE` for writes) |
+| AUDIT-103 | `admin/notifications/[id]` missing permission gate | Phase 7 | P1 | ✅ Fixed + Verified — Phase 9b Sprint 1 Wave 0 Batch 1: frontend `AdminPermissionGate` + `NOTIFICATION_OPS_READ` added; backend guard already existed |
+
+---
+
+## Cross-Phase Updates (Phase 9b — Auth & Permission Wave 0 / Sprint 2)
+
+| ID | Title | Phase of Origin | Severity | Status |
+|----|-------|---------------|----------|--------|
+| AUDIT-036 | Login failures (admin, patient, practitioner) not security-audit logged | Phase 4 | P1 | ✅ Fixed + Verified — Phase 9b Sprint 2: `LoginAdminUseCase`, `LoginPatientWithEmailPasswordUseCase`, `LoginPractitionerPasswordUseCase`, `VerifyPractitionerLoginOtpUseCase` now log via `SecurityAuditService.logAsync()` on all failure and success paths; controllers forward IP/user-agent |
+| AUDIT-037 | Practitioner application approval/rejection not security-audit logged | Phase 4 | P1 | ✅ Fixed + Verified — Phase 9b Sprint 2: Option A pattern — use cases log FAILURE paths (3 for approve, 2 for reject); controller SUCCESS logs preserved; no duplicates |
+| AUDIT-038 | Manual practitioner payout not security-audit logged | Phase 4 | P1 | ✅ Fixed + Verified — Phase 9b Sprint 2: `AdminPractitionerManualPayoutsController.record()` logs `finance.practitioner_payout.record` on success; failure paths not in scope for this finding's closure |
 
 ---
 
