@@ -1,5 +1,5 @@
 ---
-name: Fayed Healthcare Platform
+name: Sawiyaa Healthcare Platform
 description: Professional healthcare platform connecting patients with practitioners
 colors:
   primary: "#44a194"
@@ -94,7 +94,7 @@ components:
     padding: "12px 16px"
 ---
 
-# Design System: Fayed Healthcare Platform
+# Design System: Sawiyaa Healthcare Platform
 
 ## 1. Overview
 
@@ -230,7 +230,7 @@ These rules are the default implementation style for the whole project. When a s
 - Use accordions for long legal or policy content instead of large wall-of-text sections.
 - Keep the active policy section open by default when the page has multiple sections.
 - Use short summary cards or chips to preview the structure of the policy.
-- Avoid black accordion headers; use brand-tinted neutral headers that fit the Fayed palette.
+- Avoid black accordion headers; use brand-tinted neutral headers that fit the Sawiyaa palette.
 - Public header and footer should be separated from content with clear vertical spacing.
 - Public pages must work in both RTL and LTR without duplicated layouts.
 

@@ -1,0 +1,147 @@
+services:
+  postgres:
+    image: postgres:16-bookworm
+    restart: unless-stopped
+    env_file:
+      - ./.env.production.db
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-sawiyaa}
+      POSTGRES_USER: ${POSTGRES_USER:-sawiyaa}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - sawiyaa_internal
+
+  backend:
+    build:
+      context: ./sawiyaa-backend-v1
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file:
+      - ./.env.production.backend
+    environment:
+      APP_ENV: production
+      NODE_ENV: production
+      PORT: 7000
+      APP_NAME: sawiyaa-backend-v1
+      APP_URL: https://sawiyaa.com
+      APP_BASE_URL: https://sawiyaa.com
+      CORS_ORIGINS: https://sawiyaa.com
+      THROTTLE_STORE: memory
+    volumes:
+      - backend_storage:/app/storage
+      - backend_uploads:/app/uploads
+    expose:
+      - "7000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:7000/api/v1/health').then((r) => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    networks:
+      - sawiyaa_internal
+
+  frontend:
+    build:
+      context: ./sawiyaa-frontend-v1
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: /api/v1
+        API_PROXY_TARGET: http://backend:7000
+        NEXT_PUBLIC_APP_NAME: Sawiyaa
+        NEXT_PUBLIC_APP_URL: https://sawiyaa.com
+        NEXT_PUBLIC_SITE_URL: https://sawiyaa.com
+        NEXT_PUBLIC_APP_ENV: production
+        NEXT_PUBLIC_SHOW_DETAILED_ERRORS: "false"
+        NEXT_PUBLIC_TOKEN_EXPIRY_DAYS: "7"
+        NEXT_PUBLIC_REFRESH_TOKEN_EXPIRY_DAYS: "30"
+        NEXT_PUBLIC_CHAT_SOCKET_URL: https://sawiyaa.com
+        NEXT_PUBLIC_GOOGLE_CLIENT_ID: ""
+        NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: ""
+        NEXT_PUBLIC_SHOW_TEST_CREDENTIALS: "false"
+        NEXT_PUBLIC_PRACTITIONER_LOGIN_OTP_ENABLED: "true"
+        NEXT_PUBLIC_ENABLE_ANALYTICS: "false"
+        NEXT_PUBLIC_ENABLE_NOTIFICATIONS: "true"
+        NEXT_PUBLIC_ENABLE_DEVTOOLS: "false"
+        NEXT_PUBLIC_DEBUG_PRACTITIONER_WIZARD: "0"
+    restart: unless-stopped
+    env_file:
+      - ./.env.production.frontend
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      HOSTNAME: 0.0.0.0
+      NEXT_PUBLIC_API_URL: /api/v1
+      API_PROXY_TARGET: http://backend:7000
+      NEXT_PUBLIC_APP_URL: https://sawiyaa.com
+      NEXT_PUBLIC_SITE_URL: https://sawiyaa.com
+      NEXT_PUBLIC_APP_ENV: production
+      NEXT_PUBLIC_SHOW_DETAILED_ERRORS: "false"
+      NEXT_PUBLIC_CHAT_SOCKET_URL: https://sawiyaa.com
+    expose:
+      - "3000"
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3000/').then((r) => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    networks:
+      - sawiyaa_internal
+
+  nginx:
+    image: nginx:1.27-bookworm
+    restart: unless-stopped
+    depends_on:
+      frontend:
+        condition: service_healthy
+      backend:
+        condition: service_healthy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./deploy/nginx/sawiyaa.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./deploy/certs:/etc/letsencrypt:ro
+    networks:
+      - sawiyaa_internal
+
+volumes:
+  postgres_data:
+  backend_storage:
+  backend_uploads:
+
+networks:
+  sawiyaa_internal:
+    driver: bridge

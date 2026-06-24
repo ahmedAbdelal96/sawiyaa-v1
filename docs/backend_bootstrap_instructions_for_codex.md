@@ -1,4 +1,4 @@
-# Backend Bootstrap Instructions for Codex — Fayed Backend v1
+# Backend Bootstrap Instructions for Codex — Sawiyaa Backend v1
 
 ## الهدف
 هذا الملف موجه إلى Codex لمساعدته في **تهيئة مشروع الباك اند بالكامل قبل بدء بناء الموديولات**، والتأكد أن النظام جاهز تقنيًا للعمل على:
@@ -13,7 +13,7 @@
 - Project structure baseline
 
 اسم المشروع الحالي:
-- `fayed-backend-v1`
+- `sawiyaa-backend-v1`
 
 ---
 
@@ -333,7 +333,7 @@ src/
 ```json
 {
   "success": true,
-  "service": "fayed-backend-v1",
+  "service": "sawiyaa-backend-v1",
   "status": "ok"
 }
 ```
@@ -475,7 +475,7 @@ src/
 يرجى أن ينجز Codex الآتي:
 
 ## A) تعديل المشروع فعليًا
-داخل `fayed-backend-v1`
+داخل `sawiyaa-backend-v1`
 
 ## B) تزويدنا بقائمة واضحة لما تم
 مثل:

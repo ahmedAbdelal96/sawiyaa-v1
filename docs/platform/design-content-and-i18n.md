@@ -1,12 +1,12 @@
 # Design, Content, and i18n
 
-Fayed uses a design language called **Clinical Warmth**.
+Sawiyaa uses a design language called **Clinical Warmth**.
 
 The root `DESIGN.md` remains the canonical source for the visual token palette and brand values. This document summarizes the product-facing design rules, copy rules, and localization rules that should stay consistent across the platform.
 
 ## Core visual rules
 
-- Use the Fayed teal palette for primary actions and important highlights.
+- Use the Sawiyaa teal palette for primary actions and important highlights.
 - Use a light gray page background with white cards on top.
 - Keep corners soft and surfaces calm.
 - Prefer spacing and hierarchy over decoration.
@@ -60,7 +60,7 @@ The root `DESIGN.md` remains the canonical source for the visual token palette a
 
 ## i18n rules
 
-Fayed is bilingual. English and Arabic must both be treated as first-class product languages.
+Sawiyaa is bilingual. English and Arabic must both be treated as first-class product languages.
 
 - Do not surface raw translation keys to users.
 - Keep namespaces organized by feature.

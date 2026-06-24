@@ -4,8 +4,8 @@
 
 ## 1) نطاق التحقق
 
-- Backend controllers: `fayed-backend-v1/src/modules/**/controllers/*.controller.ts`
-- Frontend API usage: `fayed-frontend-v1/src/features/**/api/*.ts`
+- Backend controllers: `sawiyaa-backend-v1/src/modules/**/controllers/*.controller.ts`
+- Frontend API usage: `sawiyaa-frontend-v1/src/features/**/api/*.ts`
 
 ## 2) Mobile-Relevant Endpoint Map
 

@@ -1,0 +1,280 @@
+{
+  "nav": {
+    "home": "Home",
+    "specialties": "Specialties",
+    "practitioners": "Practitioners",
+    "academy": "Academy",
+    "articles": "Articles",
+    "policies": "Policies",
+    "courses": "Courses",
+    "about": "About Sawiyaa",
+    "login": "Sign in",
+    "startJourney": "Get started",
+    "openMenu": "Open menu"
+  },
+  "hero": {
+    "badge": "Mental care that feels calmer and closer",
+    "headline": "Start a care journey that fits you with confidence and clarity",
+    "subtext": "Find the right specialist, book your session easily, and track your steps in one place — from choosing to session and support when needed.",
+    "ctaPrimary": "Start choosing a specialist",
+    "ctaSecondary": "Help me choose the right one",
+    "trustChips": {
+      "trustedPractitioners": "Trusted specialists",
+      "clearBooking": "Clear booking and payment",
+      "secureSessions": "Secure sessions",
+      "supportWhenNeeded": "Support when needed"
+    },
+    "panel": {
+      "guidedPathLabel": "Choose how you want to start",
+      "pathNotSure": "I'm not sure where to start",
+      "pathKnowSpecialty": "I know the specialty",
+      "pathDirect": "I want to choose directly",
+      "bookingPreview": "Example of booking and session",
+      "bookingPreviewHint": "See specialist and time before confirming",
+      "clearSteps": "Clear steps from start to session",
+      "trustLabel": "Step by step",
+      "trustValue": "From choosing to session"
+    }
+  },
+  "reassurance": {
+    "eyebrow": "A platform that helps you start care without confusion",
+    "choice": {
+      "title": "Clearer choice",
+      "desc": "Starting paths that fit your needs."
+    },
+    "booking": {
+      "title": "Easier booking",
+      "desc": "See the time and price before confirming."
+    },
+    "followUp": {
+      "title": "Calmer follow-up",
+      "desc": "Sessions, chat, and support in one clear place."
+    }
+  },
+  "startPaths": {
+    "title": "Choose the starting path that fits you best",
+    "subtitle": "Start from the path closest to your need — you can always change your choice later.",
+    "notSure": {
+      "title": "I'm not sure where to start",
+      "desc": "Answer a few short questions and we'll help you understand the path closest to your need.",
+      "cta": "Start guided matching"
+    },
+    "knowSpecialty": {
+      "title": "I know the specialty I need",
+      "desc": "Explore available specialties and compare specialists easily.",
+      "cta": "Explore specialties"
+    },
+    "chooseDirectly": {
+      "title": "I want to choose a specialist directly",
+      "desc": "Browse specialist profiles and see experience and availability before booking.",
+      "cta": "View specialists"
+    },
+    "practitionerJoin": {
+      "title": "I'm a specialist and want to join",
+      "desc": "Apply to join the Sawiyaa network and manage your sessions from one place.",
+      "cta": "Apply as a specialist"
+    }
+  },
+  "guidedEntry": {
+    "eyebrow": "A clearer way to start",
+    "title": "Choose the public entry path that fits you best",
+    "subtitle": "You do not need to figure out the whole product structure on your own. Start with the path that best matches how certain or uncertain you feel right now.",
+    "accountRequired": "Account required",
+    "matching": {
+      "title": "Start with guided matching",
+      "desc": "Use guided matching after creating your patient account if you want help narrowing down the right type of practitioner before browsing profiles.",
+      "cta": "Create a patient account"
+    },
+    "assessment": {
+      "title": "Understand your needs first",
+      "desc": "Start with a short initial check-in after creating your patient account if you want more clarity before choosing a practitioner or next care step.",
+      "cta": "Create a patient account"
+    },
+    "practitioners": {
+      "title": "Browse practitioners directly",
+      "desc": "Go straight to practitioner discovery if you already know you want to compare profiles, experience, and specialties.",
+      "cta": "Explore practitioners"
+    },
+    "support": {
+      "title": "Get help choosing",
+      "desc": "If you are unsure where to begin, patient support is the calmer route once you sign in to your patient account.",
+      "cta": "Sign in for support"
+    }
+  },
+  "howItWorks": {
+    "eyebrow": "A clear journey",
+    "title": "How does your care start with Sawiyaa?",
+    "subtitle": "A clear journey from choosing a path to following your session.",
+    "stepLabel": "Step",
+    "step1Title": "Choose the right path",
+    "step1Desc": "Start with a specialty you know, or use guided matching if you are not sure where to begin.",
+    "step2Title": "Book your session clearly",
+    "step2Desc": "Choose the right specialist and time, and know the price and payment steps before confirming.",
+    "step3Title": "Follow your session and next step",
+    "step3Desc": "Join the session at the right time, and use chat or support when available."
+  },
+  "specialties": {
+    "eyebrow": "Choose your care path",
+    "title": "Choose the care path closest to you",
+    "subtitle": "Explore available specialties and find a specialist that fits your need and preferred way of communication.",
+    "viewAll": "View all specialties",
+    "anxiety": "Anxiety",
+    "depression": "Depression",
+    "relationships": "Relationships",
+    "psychiatry": "Psychiatry"
+  },
+  "practitioners": {
+    "eyebrow": "Trusted specialists",
+    "title": "Explore specialists with clear information to help you choose",
+    "subtitle": "Compare experience, specialty, and availability before booking your session.",
+    "viewAll": "Explore all specialists",
+    "viewProfile": "View profile",
+    "bookSession": "Book session",
+    "reviewsCount": "{count} reviews",
+    "experience": "{years} years experience",
+    "verified": "Verified",
+    "checkAvailability": "Check availability",
+    "fallbackTitle": "Recommended practitioners",
+    "emptyTitle": "Specialists will be shown soon",
+    "emptyNote": "We are preparing specialist profiles to show you clear information to help you choose."
+  },
+  "guidedCare": {
+    "eyebrow": "Not sure where to start?",
+    "title": "Let us help you find the right path",
+    "subtitle": "Start with simple guidance that helps you understand your need and choose the closest path — without pressure or complex terminology.",
+    "bullets": {
+      "bullet1": "Short and clear questions.",
+      "bullet2": "Does not provide a medical diagnosis.",
+      "bullet3": "Helps you choose a suitable path.",
+      "bullet4": "You can then explore specialists or request support."
+    },
+    "ctaPrimary": "Start guided matching",
+    "ctaSecondary": "Explore specialties",
+    "visualLabel": "Example of guided matching result",
+    "visualHint": "This path may suit you",
+    "visualStep": {
+      "1": "Answer a few short questions",
+      "2": "Understand the right path for you",
+      "3": "Choose the right specialist"
+    },
+    "visualResult": "View specialists"
+  },
+  "bookingClarity": {
+    "eyebrow": "From booking to session",
+    "title": "From booking to session… every step is clear",
+    "subtitle": "Before confirming your booking, you see the time and price. After payment, you see your session status and next step clearly.",
+    "beforeBooking": {
+      "title": "Before booking",
+      "desc": "Know the specialist, time, and price before proceeding."
+    },
+    "afterPayment": {
+      "title": "After payment",
+      "desc": "Track payment and session status without confusing messages."
+    },
+    "sessionTime": {
+      "title": "Session time",
+      "desc": "Know when you can join and what you need before starting."
+    },
+    "ifProblem": {
+      "title": "When there is an issue",
+      "desc": "Use support when payment fails, joining is difficult, or you have a question."
+    },
+    "cta": "Learn how sessions work"
+  },
+  "articles": {
+    "eyebrow": "Content that helps you make a clearer decision",
+    "title": "Content that helps you understand the next step",
+    "subtitle": "Short and clear articles that help you understand common questions before starting care.",
+    "viewAll": "View all articles",
+    "viewPractitioners": "Browse specialists",
+    "readArticle": "Read article",
+    "unavailableTitle": "Articles are unavailable right now",
+    "unavailableNote": "You can continue exploring specialists for now.",
+    "emptyTitle": "Published articles are still limited",
+    "emptyNote": "You can continue through specialties and specialist discovery."
+  },
+  "academy": {
+    "eyebrow": "Academy",
+    "title": "Interested in Academy content?",
+    "subtitle": "Explore Academy and educational content aimed at specialists and those interested in care fields.",
+    "cta": "Explore the academy"
+  },
+  "practitionerCTA": {
+    "eyebrow": "For specialists",
+    "title": "Are you a specialist and want to join Sawiyaa?",
+    "subtitle": "Join the Sawiyaa network, showcase your expertise, and organize your schedule and sessions from one place.",
+    "benefits": {
+      "benefit1": "Clear professional profile.",
+      "benefit2": "Schedule and availability management.",
+      "benefit3": "Session tracking.",
+      "benefit4": "Operational support from the platform."
+    },
+    "ctaPrimary": "Apply now as a specialist",
+    "ctaSecondary": "Learn more about joining",
+    "features": {
+      "profile": "Professional profile",
+      "schedule": "Schedule management",
+      "sessions": "Session tracking",
+      "support": "Ongoing support"
+    }
+  },
+  "helpPreview": {
+    "eyebrow": "Support",
+    "title": "Need help before you start?",
+    "subtitle": "You can visit the help center to learn more about booking, sessions, payments, and cancellation policies.",
+    "items": {
+      "bookingQuestions": "Booking questions",
+      "paymentQuestions": "Payment questions",
+      "sessionAccess": "Session access",
+      "cancellationRefund": "Cancellation and refund"
+    },
+    "cta": "Visit the help center"
+  },
+  "finalCTA": {
+    "title": "Start with a clear step toward the right care for you",
+    "subtitle": "Choose a specialist directly, or start with simple guided matching if you are not sure where to begin.",
+    "ctaPrimary": "Start choosing a specialist",
+    "ctaSecondary": "Help me choose the right one"
+  },
+  "footer": {
+    "tagline": "Sawiyaa is a care platform that helps you choose the right specialist, book your sessions, and follow your journey with clear steps.",
+    "copyright": "Sawiyaa Mental Wellness. All rights reserved.",
+    "sectionPlatform": "Sawiyaa",
+    "sectionCare": "Care",
+    "sectionSupport": "Support and policies",
+    "sectionAccount": "Account",
+    "linkHome": "Home",
+    "linkSpecialties": "Specialties",
+    "linkPractitioners": "Practitioners",
+    "linkArticles": "Articles",
+    "linkAcademy": "Academy",
+    "linkAbout": "About Sawiyaa",
+    "linkHelp": "Help center",
+    "linkRefund": "Refund policy",
+    "linkPrivacy": "Privacy",
+    "linkTerms": "Terms and conditions",
+    "linkLogin": "Sign in",
+    "linkSignup": "Create account",
+    "linkJoinPractitioner": "Apply as a specialist"
+  },
+  "whySawiyaa": {
+    "eyebrow": "Why trust Sawiyaa",
+    "title": "Clearer care starts from a trusted platform",
+    "desc": "Sawiyaa does not just show you specialists — it helps you understand the next step, book your session, and follow it with clarity.",
+    "cta": "Explore specialties",
+    "secondaryCta": "Browse specialists",
+    "privacyTitle": "Specialists with clear profiles",
+    "privacyDesc": "Know the specialty, experience, and availability before deciding.",
+    "certifiedTitle": "Booking and payment without ambiguity",
+    "certifiedDesc": "The price, time, and payment status are shown clearly at every step.",
+    "flexibleTitle": "Sessions and chat with clear rules",
+    "flexibleDesc": "Know when you can join the session and when chat is available.",
+    "arabicTitle": "Support nearby when needed",
+    "arabicDesc": "If you face an issue with booking, payment, or joining a session, you will find a clear support path.",
+    "signals": {
+      "verifiedProfiles": "Verified specialist profiles with clear specialty and availability context.",
+      "publishedContent": "Published public articles with clear context, not decorative snippets.",
+      "secureJourney": "A clear path from exploration to booking and secure session flow."
+    }
+  }
+}

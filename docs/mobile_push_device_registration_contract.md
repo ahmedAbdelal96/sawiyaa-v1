@@ -168,7 +168,7 @@ Chosen path for real-device validation in this workspace:
 Exact safe path A (only if fayed_db is disposable and explicit reset is approved):
 
 ```powershell
-Set-Location D:\Web\full-projects\fayed\fayed-backend-v1
+Set-Location D:\Web\full-projects\sawiyaa\sawiyaa-backend-v1
 npx prisma migrate reset
 ```
 
@@ -180,7 +180,7 @@ Exact safe path B (recommended when data may matter):
 # 1) Create a new local PostgreSQL database, for example:
 #    fayed_push_device_real_device_db
 
-Set-Location D:\Web\full-projects\fayed\fayed-backend-v1
+Set-Location D:\Web\full-projects\sawiyaa\sawiyaa-backend-v1
 
 # 2) Build an override URL for this terminal session only (no .env edits required)
 $line = Get-Content .env | Where-Object { $_ -match '^DATABASE_URL=' } | Select-Object -First 1

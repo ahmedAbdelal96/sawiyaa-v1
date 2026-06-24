@@ -92,7 +92,7 @@ It should answer quickly:
 
 ## Chat policy
 
-Fayed uses two distinct chat experiences:
+Sawiyaa uses two distinct chat experiences:
 
 1. **Session chat** - tied to one booked session.
 2. **Care chat** - broader support or ongoing care conversation.

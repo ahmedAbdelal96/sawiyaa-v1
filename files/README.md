@@ -2,13 +2,23 @@
 
 Production codebase for the Sawiyaa care platform, organized as a multi-app repository (backend, web frontend, mobile) with shared product and architecture documentation.
 
+Current repo structure:
+
+```text
+sawiyaa-backend-v1
+sawiyaa-frontend-v1
+sawiyaa-mobile
+docs
+files
+```
+
 ## What Is In This Repository
 
 | Path | Purpose | Stack |
 |---|---|---|
-| `fayed-backend-v1` | Main backend API | NestJS + Prisma + PostgreSQL |
-| `fayed-frontend-v1` | Main web app (admin + product surfaces) | Next.js + React + TypeScript |
-| `fayed-mobile-v1` | Mobile app | Expo + React Native + TypeScript |
+| `sawiyaa-backend-v1` | Main backend API | NestJS + Prisma + PostgreSQL |
+| `sawiyaa-frontend-v1` | Main web app (admin + product surfaces) | Next.js + React + TypeScript |
+| `sawiyaa-mobile` | Mobile app | Expo + React Native + TypeScript |
 | `docs` | Product plans, schemas, roadmaps, integration notes | Markdown + Prisma docs |
 
 Additional folders such as `figma design`, `shezlong`, and `stitch` are references/artifacts and are not primary runtime services.
@@ -32,7 +42,7 @@ Mobile App (Expo) ---------/
 ### 1) Backend API
 
 ```powershell
-cd D:\Web\full-projects\fayed\fayed-backend-v1
+cd D:\Web\full-projects\sawiyaa\sawiyaa-backend-v1
 npm install
 npm run prisma:generate
 npm run prisma:migrate:dev
@@ -50,7 +60,7 @@ Backend notes:
 ### 2) Web Frontend
 
 ```powershell
-cd D:\Web\full-projects\fayed\fayed-frontend-v1
+cd D:\Web\full-projects\sawiyaa\sawiyaa-frontend-v1
 npm install
 npm run dev
 ```
@@ -58,14 +68,14 @@ npm run dev
 ### 3) Mobile (Optional During Web/Backend Work)
 
 ```powershell
-cd D:\Web\full-projects\fayed\fayed-mobile-v1
+cd D:\Web\full-projects\sawiyaa\sawiyaa-mobile
 npm install
 npm run start
 ```
 
 ## Common Commands
 
-### Backend (`fayed-backend-v1`)
+### Backend (`sawiyaa-backend-v1`)
 
 - `npm run start:dev` - run NestJS in watch mode
 - `npm run test` - run test suite
@@ -74,14 +84,14 @@ npm run start
 - `npm run prisma:migrate:dev` - apply/create dev migrations
 - `npm run prisma:studio` - open Prisma Studio
 
-### Frontend (`fayed-frontend-v1`)
+### Frontend (`sawiyaa-frontend-v1`)
 
 - `npm run dev` - run Next.js locally
 - `npm run lint` - lint + i18n checks
 - `npm run i18n:check` - translation integrity checks
 - `npm run build` - production build (includes i18n check)
 
-### Mobile (`fayed-mobile-v1`)
+### Mobile (`sawiyaa-mobile`)
 
 - `npm run start` - start Expo dev server
 - `npm run android` - run Android target
@@ -92,9 +102,9 @@ npm run start
 
 Each app manages its own environment file(s):
 
-- `fayed-backend-v1/.env`
-- `fayed-frontend-v1/.env.local`
-- `fayed-mobile-v1/.env` (if used by mobile setup)
+- `sawiyaa-backend-v1/.env`
+- `sawiyaa-frontend-v1/.env.local`
+- `sawiyaa-mobile/.env` (if used by mobile setup)
 
 Keep API base URLs aligned across frontend/mobile to the backend host and port.
 
@@ -109,7 +119,7 @@ Keep API base URLs aligned across frontend/mobile to the backend host and port.
 
 - `docs/` (architecture, DB schema docs, roadmaps)
 - `FULLSTACK_INTEGRATION_TRACKER.md`
-- `fayed-frontend-v1/fayed_master_system_gap_plan.md`
+- `sawiyaa-frontend-v1/fayed_master_system_gap_plan.md`
 
 ## Troubleshooting
 
@@ -127,17 +137,17 @@ If you want to open the dev frontend/backend from another device on the same net
 ipconfig | Select-String -Pattern 'IPv4 Address'
 ```
 
-2) Run the backend (default `PORT=7000` from `fayed-backend-v1/.env`):
+2) Run the backend (default `PORT=7000` from `sawiyaa-backend-v1/.env`):
 
 ```powershell
-cd D:\Web\full-projects\fayed\fayed-backend-v1
+cd D:\Web\full-projects\sawiyaa\sawiyaa-backend-v1
 npm run start:dev
 ```
 
 3) Run the frontend bound to your LAN interface:
 
 ```powershell
-cd D:\Web\full-projects\fayed\fayed-frontend-v1
+cd D:\Web\full-projects\sawiyaa\sawiyaa-frontend-v1
 npm run dev:lan
 ```
 

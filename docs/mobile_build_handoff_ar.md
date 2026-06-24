@@ -3,7 +3,7 @@
 آخر تحديث: 2026-04-09
 
 ## 1) Platform One-Paragraph Summary
-Fayed منصة رعاية رقمية موجهة تربط المستفيدين بالمختصين عبر جلسات أونلاين، مع مسار منتجي يتجاوز "الحجز فقط" إلى تجربة guided care تشمل التوجيه للمختص المناسب (matching)، التقييمات الأولية (assessments)، رحلة متابعة (journey)، والدعم التشغيلي (support/care chat)، مع بنية backend قوية ومتكاملة عبر auth/sessions/payments/operations.
+سويّة منصة رعاية رقمية موجهة تربط المستفيدين بالمختصين عبر جلسات أونلاين، مع مسار منتجي يتجاوز "الحجز فقط" إلى تجربة guided care تشمل التوجيه للمختص المناسب (matching)، التقييمات الأولية (assessments)، رحلة متابعة (journey)، والدعم التشغيلي (support/care chat)، مع بنية backend قوية ومتكاملة عبر auth/sessions/payments/operations.
 
 ## 2) Final Recommended Mobile Direction
 ابدأ بتطبيق مستفيد فقط (Single-app MVP) يركز على مسار القيمة الكامل:  
@@ -57,4 +57,3 @@ Definition of Done:
 3. التأخر في حسم terminology يؤدي لإعادة عمل UX واسعة.
 4. تعقيد الدفع/redirect قد يستهلك وقتًا أكبر من المتوقع.
 5. فتح مسارات ثانوية مبكرًا (training/content/advanced notifications) يهدد إطلاق MVP.
-

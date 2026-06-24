@@ -1,6 +1,6 @@
 # Operations and Support
 
-Fayed is designed to be operated, not just used.
+Sawiyaa is designed to be operated, not just used.
 
 The platform has a clear operational layer that keeps the product safe, financially correct, and responsive when exceptions happen.
 
@@ -145,5 +145,4 @@ An operational platform needs screens that are:
 - calm in error states
 - explicit about next steps
 
-This is why Fayed screens should prioritize clarity, hierarchy, and policy-aware messaging.
-
+This is why Sawiyaa screens should prioritize clarity, hierarchy, and policy-aware messaging.

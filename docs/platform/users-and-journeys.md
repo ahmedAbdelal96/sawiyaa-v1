@@ -4,7 +4,7 @@ This document groups the product by audience so the care experience is easier to
 
 ## Public web
 
-The public web is the first impression of Fayed.
+The public web is the first impression of Sawiyaa.
 
 It should feel like a calm, trustworthy healthcare platform, not a generic marketing site.
 
@@ -21,7 +21,7 @@ It should feel like a calm, trustworthy healthcare platform, not a generic marke
 
 ### Public UX goals
 
-- Help visitors understand what Fayed does quickly.
+- Help visitors understand what Sawiyaa does quickly.
 - Reduce anxiety around booking and payments.
 - Make the next step obvious without shouting.
 - Keep legal and policy pages readable, not overwhelming.
@@ -201,4 +201,3 @@ It should prioritize control, clarity, auditing, and safe moderation.
 - Sensitive states should not be hidden behind vague copy.
 - Financial data should be precise and currency-aware.
 - Admin tooling should feel operational, not decorative.
-

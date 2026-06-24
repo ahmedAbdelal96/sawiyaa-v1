@@ -1,12 +1,12 @@
 # Architecture and Developer Guide
 
-Fayed is organized as a monorepo with separate apps and shared product rules.
+Sawiyaa is organized as a monorepo with separate apps and shared product rules.
 
 ## Top-level applications
 
-- `D:\Web\full-projects\fayed\fayed-backend-v1` - backend API and business logic.
-- `D:\Web\full-projects\fayed\fayed-frontend-v1` - web application used by public users, patients, practitioners, and admins.
-- `D:\Web\full-projects\fayed\fayed-mobile` - mobile client and mobile-specific flows.
+- `D:\Web\full-projects\sawiyaa\sawiyaa-backend-v1` - backend API and business logic.
+- `D:\Web\full-projects\sawiyaa\sawiyaa-frontend-v1` - web application used by public users, patients, practitioners, and admins.
+- `D:\Web\full-projects\sawiyaa\sawiyaa-mobile` - mobile client and mobile-specific flows.
 
 ## Backend shape
 
@@ -41,7 +41,7 @@ The web app is organized by audience and route group:
 - practitioner web
 - admin web
 
-The app relies on shared UI primitives, route guards, translations, and feature folders. That keeps each screen close to the user task while still sharing the Fayed visual system.
+The app relies on shared UI primitives, route guards, translations, and feature folders. That keeps each screen close to the user task while still sharing the Sawiyaa visual system.
 
 ## Mobile shape
 
@@ -57,7 +57,7 @@ The mobile app mirrors the patient and practitioner journeys where it matters mo
 - **Permissions**: access must be enforced in both backend and frontend.
 - **Translations**: English and Arabic must stay in sync for user-facing text.
 - **Money**: currency-aware formatting is mandatory.
-- **Design system**: page structure should follow the Fayed Clinical Warmth rules.
+- **Design system**: page structure should follow the Sawiyaa Clinical Warmth rules.
 - **Chat states**: available, read-only, unavailable, and error states must be explicit.
 - **Cancellation and refunds**: must be data-driven and policy-based, not guessed.
 - **Instant booking**: pricing stays backend-owned and payment confirmation must come before session access.
@@ -78,7 +78,7 @@ The frontend should present these values clearly, without inventing fallback log
 
 ## Timezone contract
 
-Fayed should use one explicit timezone contract across backend, web, mobile, and docs.
+Sawiyaa should use one explicit timezone contract across backend, web, mobile, and docs.
 
 ### Storage rules
 
@@ -321,9 +321,9 @@ Use the app roots, not this docs folder, for runtime checks.
 
 ### Common paths
 
-- Backend: `D:\Web\full-projects\fayed\fayed-backend-v1`
-- Web: `D:\Web\full-projects\fayed\fayed-frontend-v1`
-- Mobile: `D:\Web\full-projects\fayed\fayed-mobile`
+- Backend: `D:\Web\full-projects\sawiyaa\sawiyaa-backend-v1`
+- Web: `D:\Web\full-projects\sawiyaa\sawiyaa-frontend-v1`
+- Mobile: `D:\Web\full-projects\sawiyaa\sawiyaa-mobile`
 
 ### Common ports
 

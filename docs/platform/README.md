@@ -1,6 +1,6 @@
-# Fayed Platform Docs
+# Sawiyaa Platform Docs
 
-This is the consolidated English handbook for the Fayed healthcare platform.
+This is the consolidated English handbook for the Sawiyaa healthcare platform.
 
 It explains how the platform works today:
 
@@ -10,7 +10,7 @@ It explains how the platform works today:
 - admin web
 - backend service boundaries
 - money, sessions, chat, support, and content flows
-- the Fayed Clinical Warmth design language
+- the Sawiyaa Clinical Warmth design language
 
 Start here when you need the product model, the current status, or the practical rules behind the screens.
 

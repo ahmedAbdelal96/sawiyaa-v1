@@ -85,11 +85,16 @@ run-articles-only.ts
 
 # Local backups (do not commit)
 git-subrepos-backup/
+deploy/backups/
+deploy/tmp/
+deploy/*.log
+deploy/*.tmp
+deploy/*.sql
 
 # Backend runtime storage (can contain user uploads / sensitive data)
-fayed-backend-v1/storage/**
-!fayed-backend-v1/storage/.gitkeep
-!fayed-backend-v1/storage/**/.gitkeep
+sawiyaa-backend-v1/storage/**
+!sawiyaa-backend-v1/storage/.gitkeep
+!sawiyaa-backend-v1/storage/**/.gitkeep
 
 # Local screenshot exports (optional artifacts)
 WhatsApp Image *.jpg
@@ -128,7 +133,7 @@ qa_*.png
 .tmp_*.png
 
 # Local upload/runtime folders
-fayed-backend-v1/uploads/
+sawiyaa-backend-v1/uploads/
 
 # Local AI/tooling folders
 opencode/

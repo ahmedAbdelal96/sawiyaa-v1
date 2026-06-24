@@ -1,6 +1,6 @@
 # Security, Roles, and Permissions
 
-Fayed uses role-based access control with permission checks on both the backend and frontend.
+Sawiyaa uses role-based access control with permission checks on both the backend and frontend.
 
 ## Primary roles
 
@@ -53,4 +53,3 @@ This is especially important for:
 - Do not expose raw enum names as permissions or statuses in the UI.
 - Do not assume frontend-only hiding is enough for protection.
 - Treat backend enforcement as the final source of truth.
-

@@ -1,6 +1,6 @@
 # Platform Overview
 
-Fayed is a healthcare platform that connects patients with practitioners for discovery, booking, sessions, follow-up, support, and structured content.
+Sawiyaa is a healthcare platform that connects patients with practitioners for discovery, booking, sessions, follow-up, support, and structured content.
 
 The product is not a generic SaaS dashboard. It is a care platform, so the experience must feel calm, trustworthy, and clear.
 
@@ -40,7 +40,7 @@ The product is not a generic SaaS dashboard. It is a care platform, so the exper
 
 ## Business model snapshot
 
-Fayed behaves like a managed healthcare marketplace:
+Sawiyaa behaves like a managed healthcare marketplace:
 
 - the patient side creates demand
 - the practitioner side supplies expertise and availability
@@ -59,9 +59,9 @@ In practical terms, the product is centered on:
 
 Only document fee and revenue rules that the code currently enforces.
 
-## What Fayed Is
+## What Sawiyaa Is
 
-Fayed is a managed healthcare marketplace.
+Sawiyaa is a managed healthcare marketplace.
 
 It connects patients with practitioners and combines discovery, booking, instant booking, availability, sessions, payments, wallet, support, chat, admin operations, and mobile parity into one care platform.
 
@@ -72,9 +72,9 @@ Its value is more than taking a booking. It gives the platform:
 - clarity in what happens before, during, and after payment
 - operational control for admins, support, and finance teams
 
-## What Fayed Is Not
+## What Sawiyaa Is Not
 
-Fayed is not:
+Sawiyaa is not:
 
 - a generic SaaS dashboard
 - a simple doctor directory
@@ -121,9 +121,9 @@ The competitor study exists to sharpen product choices, not to encourage imitati
 
 - Shezlong shows the value of depth, trust, and structured mental-health booking.
 - Esaal shows the value of mobile-first access and multi-specialty breadth.
-- Fayed should compete through clearer UX, stronger session-state handling, better financial correctness, and guided care.
+- Sawiyaa should compete through clearer UX, stronger session-state handling, better financial correctness, and guided care.
 
-The practical outcome is that Fayed should feel easier to trust, easier to navigate, and more operationally consistent than a generic booking product.
+The practical outcome is that Sawiyaa should feel easier to trust, easier to navigate, and more operationally consistent than a generic booking product.
 
 ## Source note
 
