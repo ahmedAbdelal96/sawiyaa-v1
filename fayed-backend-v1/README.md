@@ -1,6 +1,6 @@
-# Fayed Backend v1
+# Sawiyaa Backend v1
 
-NestJS modular-monolith backend for the Fayed guided-care platform.
+NestJS modular-monolith backend for the Sawiyaa guided-care platform.
 
 ## Stack
 

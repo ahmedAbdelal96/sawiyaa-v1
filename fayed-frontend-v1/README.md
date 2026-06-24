@@ -1,6 +1,6 @@
-# Fayed Frontend Base
+# Sawiyaa Frontend Base
 
-Clean admin frontend baseline for the Fayed web project.
+Clean admin frontend baseline for the Sawiyaa web project.
 
 ## Included
 

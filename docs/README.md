@@ -1,6 +1,6 @@
-# Fayed Documentation
+# Sawiyaa Documentation
 
-This repository now has a canonical English documentation set for the platform.
+This repository now has a canonical English documentation set for the Sawiyaa platform.
 
 Start here:
 

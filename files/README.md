@@ -1,6 +1,6 @@
-# Fayed Platform Monorepo
+# Sawiyaa Platform Monorepo
 
-Production codebase for the Fayed care platform, organized as a multi-app repository (backend, web frontend, mobile) with shared product and architecture documentation.
+Production codebase for the Sawiyaa care platform, organized as a multi-app repository (backend, web frontend, mobile) with shared product and architecture documentation.
 
 ## What Is In This Repository
 

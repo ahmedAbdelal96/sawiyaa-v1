@@ -4,6 +4,7 @@
 **/node_modules/
 **/.pnp
 **/.pnp.js
+node_modules/
 
 # Build outputs
 **/dist/
@@ -14,17 +15,19 @@
 **/.nyc_output/
 dist/
 build/
+out/
 .next/
 coverage/
 
 # Local env files (never commit secrets)
+.env
+.env.*
 **/.env
 **/.env.*
 !**/.env.example
 !**/.env.*.example
-.env
-.env.*
 !.env.example
+!.env.*.example
 
 # Logs & temp
 **/logs/
@@ -36,7 +39,9 @@ logs/
 **/.tmp/
 **/.temp/
 **/tmp_*
+**/temp/
 tmp/
+temp/
 cache/
 .cache/
 test-reports/
@@ -52,6 +57,24 @@ run-articles-only.ts
 **/.vscode/
 .expo/
 **/.expo/
+.cursor/
+**/.cursor/
+.codex/
+**/.codex/
+.claude/
+**/.claude/
+.opencode/
+**/.opencode/
+.agents/
+**/.agents/
+.gemini/
+**/.gemini/
+.impeccable/
+**/.impeccable/
+.pi/
+**/.pi/
+.kiro/
+**/.kiro/
 **/.DS_Store
 **/Thumbs.db
 
@@ -79,6 +102,7 @@ patient_mobile_app_screen/whatsapp_image_*
 **/smokes/
 **/tmp/
 **/*.tmp*
+artifacts/
 
 # Test screenshots and test artifacts
 **/test-results/
@@ -107,13 +131,7 @@ qa_*.png
 fayed-backend-v1/uploads/
 
 # Local AI/tooling folders
-.agents/
-.claude/
-.codex/
-.cursor/
-.gemini/
-.kiro/
-.opencode/
+opencode/
 .qodo/
 .qoder/
 .rovodev/
@@ -122,8 +140,6 @@ fayed-backend-v1/uploads/
 
 # Local app/browser artifacts
 .artifacts/
-artifacts/
-tmp/
 smokes/
 stitch_*/
 button-list.json
